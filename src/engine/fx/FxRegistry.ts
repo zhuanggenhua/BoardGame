@@ -41,6 +41,9 @@ const DEFAULT_OPTIONS: Required<FxRendererOptions> = {
     reducedMaxDpr: 1,
     areaPolicy: 'cell',
     estimatedCost: 'medium',
+    allowAutoReduce: true,
+    reduceWhenHighCostActiveAt: 1,
+    dropWhenHighCostActiveAt: 0,
   },
 };
 

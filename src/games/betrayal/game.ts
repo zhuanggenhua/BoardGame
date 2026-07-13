@@ -4102,7 +4102,9 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 }, timestamp)];
             }
 
-            const drawnCard = createDrawnCard(core, deckKind);
+            const roomDiscoveryDrawnCard = roomDiscoveryCards.roomDiscoveryCards?.[0];
+            const drawnCard = roomDiscoveryDrawnCard ?? createDrawnCard(core, deckKind);
+            const regularDrawnCard = roomDiscoveryDrawnCard ? undefined : drawnCard;
             const drawnCardEffect = resolveUseEffect(drawnCard);
             const drawnCardDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
             return [nowEvent(EVENTS.ROOM_EXPLORED, {
@@ -4122,7 +4124,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 },
                 deckKind,
                 ...roomDiscoveryCards,
-                drawnCard,
+                drawnCard: regularDrawnCard,
                 skippedRoomWithHolySymbol: skippedRoomTemplate
                     ? { name: skippedRoomTemplate.name }
                     : undefined,
@@ -4153,7 +4155,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         },
                         deckKind,
                         ...roomDiscoveryCards,
-                        drawnCard,
+                        drawnCard: regularDrawnCard,
                         skippedRoomWithHolySymbol: skippedRoomTemplate
                             ? { name: skippedRoomTemplate.name }
                             : undefined,

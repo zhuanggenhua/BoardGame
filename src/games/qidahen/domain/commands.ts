@@ -372,7 +372,7 @@ export function validate(
             if (!hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'unknownAction' };
             }
-            if (!state.core.playerIds.includes(command.playerId)) {
+            if (command.playerId !== state.core.scenarioVote.hostPlayerId) {
                 return { valid: false, error: 'unknownAction' };
             }
             if (command.payload.scenarioId == null) {

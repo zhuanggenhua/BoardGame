@@ -87,7 +87,7 @@ function HarnessBoard() {
                 dispatch={dispatch as never}
                 playerID={playerID}
                 matchData={[
-                    { id: 0, name: '玩家 1', isConnected: true },
+                    { id: 0, name: '玩家 1', isConnected: true, isOwner: true },
                     { id: 1, name: '玩家 2', isConnected: true },
                     { id: 2, name: '玩家 3', isConnected: true },
                 ]}
@@ -151,7 +151,7 @@ const buildCoreReadyForShowdown = () => {
 };
 
 const defaultMatchData = [
-    { id: 0, name: '玩家 1', isConnected: true },
+    { id: 0, name: '玩家 1', isConnected: true, isOwner: true },
     { id: 1, name: 'AI 2 号位', isConnected: true },
     { id: 2, name: 'AI 3 号位', isConnected: true },
 ];
@@ -213,8 +213,9 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('玩家 1');
         expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).not.toHaveTextContent('玩家 1');
         expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('the-gang-hand-rank-nameplate-toggle'));
-        expect(screen.getByTestId('the-gang-current-hand-rank')).not.toHaveTextContent('board.currentHandRankPending');
+        expect(screen.queryByTestId('the-gang-hand-rank-nameplate-toggle')).not.toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-utility-dock')).toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeInTheDocument();
         expect(screen.getAllByText('AI 2 号位').length).toBeGreaterThan(0);
         expect(screen.getAllByText('AI 3 号位').length).toBeGreaterThan(0);
 
@@ -262,8 +263,8 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="opponent-cards"] img')).toHaveLength(0);
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('2♣');
         expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('the-gang-hand-rank-nameplate-toggle'));
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('board.currentHandRankPending');
+        expect(screen.queryByTestId('the-gang-hand-rank-nameplate-toggle')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeInTheDocument();
 
         unmount();
 
@@ -306,81 +307,6 @@ describe('The Gang Board 运行入口', () => {
             __internalPlayerId: '0',
             chip: 2,
         });
-    });
-
-    test('当前牌型提示显示 TTS 口径的组成细节和最佳五张', () => {
-        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
-        const player = initial.players['0'];
-        const core: TheGangCore = {
-            ...initial,
-            communityCards: [
-                { suit: 'hearts', rank: 'A', kind: 'standard' },
-                { suit: 'clubs', rank: 'A', kind: 'standard' },
-                { suit: 'diamonds', rank: '6', kind: 'standard' },
-                { suit: 'spades', rank: '4', kind: 'standard' },
-                { suit: 'clubs', rank: '2', kind: 'standard' },
-            ],
-            players: {
-                ...initial.players,
-                0: {
-                    ...player,
-                    pocketCards: [
-                        { suit: 'spades', rank: 'A', kind: 'standard' },
-                        { suit: 'hearts', rank: 'K', kind: 'standard' },
-                    ],
-                },
-            },
-        };
-
-        renderBoardForCore(core);
-
-        expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('the-gang-hand-rank-nameplate-toggle'));
-        const marker = screen.getByTestId('the-gang-current-hand-rank');
-        expect(marker).toHaveTextContent('三条A + K + 6');
-        expect(marker).not.toHaveTextContent('单');
-        expect(marker.querySelector('[data-card-suit="hearts"]')).toHaveTextContent('K');
-        expect(marker.querySelector('[data-card-suit="diamonds"]')).toHaveTextContent('6');
-        expect(screen.queryByTestId('the-gang-current-hand-rank-detail')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('the-gang-current-hand-rank-best-cards')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('the-gang-current-hand-rank-hand-cards')).not.toBeInTheDocument();
-        expect(marker).toHaveAttribute('title', expect.stringContaining('三条A + K + 6'));
-        expect(marker).toHaveAttribute('title', expect.stringContaining('A♠'));
-    });
-
-    test('当前牌型提示在公共牌自己成牌时标出公共牌最大', () => {
-        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
-        const player = initial.players['0'];
-        const core: TheGangCore = {
-            ...initial,
-            communityCards: [
-                { suit: 'hearts', rank: 'A', kind: 'standard' },
-                { suit: 'clubs', rank: 'A', kind: 'standard' },
-                { suit: 'diamonds', rank: 'A', kind: 'standard' },
-                { suit: 'spades', rank: 'K', kind: 'standard' },
-                { suit: 'clubs', rank: 'K', kind: 'standard' },
-            ],
-            players: {
-                ...initial.players,
-                0: {
-                    ...player,
-                    pocketCards: [
-                        { suit: 'spades', rank: '2', kind: 'standard' },
-                        { suit: 'hearts', rank: '3', kind: 'standard' },
-                    ],
-                },
-            },
-        };
-
-        renderBoardForCore(core);
-
-        expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('the-gang-hand-rank-nameplate-toggle'));
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('葫芦：三条A + 对K');
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveTextContent('board.currentHandRankBoardOnly');
-        expect(screen.queryByTestId('the-gang-current-hand-rank-detail')).not.toBeInTheDocument();
-        expect(screen.getByTestId('the-gang-current-hand-rank')).toHaveAttribute('title', expect.stringContaining('葫芦：三条A + 对K'));
-        expect(screen.queryByTestId('the-gang-current-hand-rank-hand-cards')).not.toBeInTheDocument();
     });
 
     test('真实 Board 会把撤回状态提供给通用 HUD 上下文', () => {
@@ -461,6 +387,33 @@ describe('The Gang Board 运行入口', () => {
         });
     });
 
+    test('扩展设置权限跟随房主标记而不是固定 0 号位', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        render(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="1"
+                matchData={[
+                    { id: 0, name: '玩家 1', isConnected: true },
+                    { id: 1, name: '玩家 2', isConnected: true, isOwner: true },
+                    { id: 2, name: '玩家 3', isConnected: true },
+                ]}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
+        fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.objectContaining({
+            __internalPlayerId: '1',
+            config: expect.objectContaining({ omaha: true }),
+        }));
+    });
+
     test('工具面板可以发放工具牌并通过已实现工具派发使用命令', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
@@ -487,6 +440,7 @@ describe('The Gang Board 运行入口', () => {
         );
 
         expect(screen.getByTestId('the-gang-tools-panel')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'board.toolPanelSummary' }));
         fireEvent.click(screen.getByRole('button', { name: 'board.dealTools' }));
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.DEAL_TOOLS, {
             __internalPlayerId: '0',
@@ -511,6 +465,7 @@ describe('The Gang Board 运行入口', () => {
             />,
         );
 
+        fireEvent.click(screen.getByRole('button', { name: 'board.toolPanelSummary' }));
         expect(screen.getByTestId('the-gang-tool-card-grid')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-specialist-card-grid')).toBeInTheDocument();
         expect(screen.getByRole('img', { name: '一次性手机' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/tools/compressed/burner-phone.webp'));

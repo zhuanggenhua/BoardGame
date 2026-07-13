@@ -17,7 +17,8 @@
  * ```
  */
 
-import React, { useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useLayoutEffect } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type ParticlePreset,
   type Particle,
@@ -185,6 +186,8 @@ export const BURST_PRESETS: Record<string, ParticlePreset> = {
 // 组件
 // ============================================================================
 
+const DEFAULT_BURST_COLORS = ['#f87171', '#fb923c', '#fbbf24', '#fff'];
+
 export interface BurstParticlesProps {
   /** 是否激活 */
   active: boolean;
@@ -198,6 +201,8 @@ export interface BurstParticlesProps {
   onComplete?: () => void;
   /** Canvas 溢出倍数（默认 2，即 canvas 比容器大 2 倍以容纳飞出的粒子） */
   overflow?: number;
+  /** 特效质量档：reduced 降低 DPR 和粒子数 */
+  quality?: FxQuality;
   /** 额外类名 */
   className?: string;
 }
@@ -206,9 +211,10 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
   active,
   preset = 'explosion',
   config,
-  color = ['#f87171', '#fb923c', '#fbbf24', '#fff'],
+  color = DEFAULT_BURST_COLORS,
   onComplete,
   overflow = 2,
+  quality = 'full',
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -217,16 +223,19 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
   const particlesRef = useRef<Particle[]>([]);
   // 用 ref 持有回调，避免 onComplete 引用变化导致 useEffect 重跑（粒子重生）
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const mergedPreset = useMemo<ParticlePreset>(() => {
     const base = BURST_PRESETS[preset] ?? BURST_PRESETS.explosion;
-    return config ? { ...base, ...config } : base;
-  }, [preset, config]);
+    const configured = config ? { ...base, ...config } : base;
+    return quality === 'reduced'
+      ? { ...configured, count: Math.ceil(configured.count * 0.55) }
+      : configured;
+  }, [preset, config, quality]);
 
-  // 用 JSON 序列化做值比较，避免数组字面量引用变化导致 useEffect 重跑
-  const colorKey = JSON.stringify(color);
-  const rgbColors = useMemo(() => color.map(parseColorToRgb), [colorKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const rgbColors = useMemo(() => color.map(parseColorToRgb), [color]);
 
   useEffect(() => {
     if (!active || typeof window === 'undefined') return;
@@ -238,7 +247,7 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     // 使用 offsetWidth/offsetHeight 获取 CSS 布局尺寸（不受父级 transform scale 影响）
     const cw = container.offsetWidth * overflow;
     const ch = container.offsetHeight * overflow;
@@ -278,7 +287,7 @@ export const BurstParticles: React.FC<BurstParticlesProps> = ({
       cancelAnimationFrame(rafRef.current);
       particlesRef.current = [];
     };
-  }, [active, mergedPreset, rgbColors, overflow]);
+  }, [active, mergedPreset, rgbColors, overflow, quality]);
 
   if (!active || typeof window === 'undefined') return null;
 

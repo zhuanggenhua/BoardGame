@@ -10,11 +10,12 @@
  * 替代原 `useBoardEffects()` hook，提供更通用的接口。
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import type { FxRegistry } from './FxRegistry';
-import type { FxCue, FxContext, FxParams, FxEvent, FxEventInput } from './types';
+import type { FxCue, FxContext, FxParams, FxEvent, FxEventInput, FxQuality } from './types';
 import { flushRegisteredShaders } from './shader/ShaderPrecompile';
 import { resolveDevFlag } from '../env';
+import { resolveFxQuality } from './performance';
 
 // ============================================================================
 // ID 生成
@@ -24,6 +25,10 @@ let _fxIdCounter = 0;
 
 function generateFxId(): string {
   return `fx-${++_fxIdCounter}-${Date.now().toString(36)}`;
+}
+
+function resolvePositiveThreshold(value: number | undefined): number {
+  return value && value > 0 ? value : Number.POSITIVE_INFINITY;
 }
 
 // ============================================================================
@@ -45,6 +50,12 @@ export interface FxBusOptions {
   playSound?: FxSoundPlayer;
   /** 震动触发函数（由游戏层注入） */
   triggerShake?: FxShakeTrigger;
+  /** 默认质量档；可由游戏设置注入，事件 ctx/params 可覆盖 */
+  quality?: FxQuality;
+  /** 同时活跃的高成本特效数达到该值后，新特效自动降级 */
+  reduceWhenHighCostActiveAt?: number;
+  /** 同时活跃的高成本特效数达到该值后，拒绝新的高成本特效；0 表示不拒绝 */
+  dropWhenHighCostActiveAt?: number;
 }
 
 /** 序列步骤定义 */
@@ -87,7 +98,15 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   const [effects, setEffects] = useState<FxEvent[]>([]);
   // 同步 ref 用于 fireImpact 查找事件上下文（避免闭包过期）
   const effectsRef = useRef<FxEvent[]>([]);
-  effectsRef.current = effects;
+
+  const commitEffects = useCallback((nextEffects: FxEvent[]) => {
+    effectsRef.current = nextEffects;
+    setEffects(nextEffects);
+  }, []);
+
+  useLayoutEffect(() => {
+    effectsRef.current = effects;
+  }, [effects]);
 
   // 挂载时自动预编译所有自注册的 shader
   useEffect(() => {
@@ -96,13 +115,18 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
 
   // registry ref（供 removeEffect 闭包内安全访问）
   const registryRef = useRef(registry);
-  registryRef.current = registry;
 
   // 反馈回调 ref（避免闭包过期）
   const playSoundRef = useRef(options?.playSound);
-  playSoundRef.current = options?.playSound;
   const triggerShakeRef = useRef(options?.triggerShake);
-  triggerShakeRef.current = options?.triggerShake;
+  const optionsRef = useRef(options);
+
+  useLayoutEffect(() => {
+    registryRef.current = registry;
+    playSoundRef.current = options?.playSound;
+    triggerShakeRef.current = options?.triggerShake;
+    optionsRef.current = options;
+  }, [registry, options]);
 
   // 防抖时间戳记录：cue → lastPushTime
   const debounceMapRef = useRef(new Map<FxCue, number>());
@@ -110,6 +134,35 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
   const timeoutsRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   // 事件 → 注册条目映射（用于 fireImpact 查找反馈包）
   const eventEntryMapRef = useRef(new Map<string, { cue: FxCue; impactFired: boolean }>());
+
+  const countActiveHighCostEffects = useCallback((activeEffects: FxEvent[]): number => {
+    let count = 0;
+    for (const effect of activeEffects) {
+      const activeEntry = registryRef.current.resolve(effect.cue);
+      if (activeEntry?.options.budget.estimatedCost === 'high') {
+        count += 1;
+      }
+    }
+    return count;
+  }, []);
+
+  const resolveEventQuality = useCallback((input: FxEventInput, activeHighCostCount: number): FxQuality => {
+    const budget = registryRef.current.resolve(input.cue)?.options.budget;
+    const baseQuality = resolveFxQuality(
+      input.params?.quality,
+      resolveFxQuality(input.ctx.quality, resolveFxQuality(optionsRef.current?.quality, budget?.quality ?? 'full')),
+    );
+
+    if (baseQuality === 'reduced') return 'reduced';
+    if (!budget || budget.estimatedCost !== 'high' || budget.allowAutoReduce === false) return baseQuality;
+
+    const threshold = Math.min(
+      optionsRef.current?.reduceWhenHighCostActiveAt ?? Number.POSITIVE_INFINITY,
+      budget.reduceWhenHighCostActiveAt,
+    );
+
+    return activeHighCostCount >= threshold ? 'reduced' : baseQuality;
+  }, []);
 
   // ========================================================================
   // 序列管理
@@ -148,7 +201,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
       }
     }
     eventEntryMapRef.current.delete(id);
-    setEffects(prev => prev.filter(e => e.id !== id));
+    commitEffects(effectsRef.current.filter(e => e.id !== id));
 
     // 序列推进：检查该 effect 是否属于某个序列
     const seqMeta = effectToSequenceRef.current.get(id);
@@ -169,7 +222,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
         }
       }
     }
-  }, []);
+  }, [commitEffects]);
 
   /** 触发 on-impact 反馈（音效 + 震动） */
   const fireImpact = useCallback((id: string) => {
@@ -210,7 +263,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
       return null;
     }
 
-    const { maxConcurrent, debounceMs, timeoutMs } = entry.options;
+    const { maxConcurrent, debounceMs, timeoutMs, budget } = entry.options;
 
     // 防抖检查
     if (debounceMs > 0) {
@@ -220,30 +273,54 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
       debounceMapRef.current.set(input.cue, now);
     }
 
+    const activeHighCostCount = countActiveHighCostEffects(effectsRef.current);
+    const dropThreshold = Math.min(
+      resolvePositiveThreshold(optionsRef.current?.dropWhenHighCostActiveAt),
+      resolvePositiveThreshold(budget.dropWhenHighCostActiveAt),
+    );
+
+    if (budget.estimatedCost === 'high' && activeHighCostCount >= dropThreshold) {
+      if (resolveDevFlag()) {
+        console.warn(`[FxBus] 高成本特效超过预算，已跳过: cue="${input.cue}" activeHighCost=${activeHighCostCount}`);
+      }
+      return null;
+    }
+
+    const resolvedQuality = resolveEventQuality(input, activeHighCostCount);
     const id = generateFxId();
-    const event: FxEvent = { ...input, id };
+    const event: FxEvent = {
+      ...input,
+      id,
+      ctx: {
+        ...input.ctx,
+        quality: resolvedQuality,
+      },
+      params: {
+        ...input.params,
+        quality: resolvedQuality,
+      },
+    };
 
     // 记录事件元信息（用于 fireImpact + on-impact 检测）
     eventEntryMapRef.current.set(id, { cue: input.cue, impactFired: false });
 
-    setEffects(prev => {
-      // 并发上限检查
-      if (maxConcurrent > 0) {
-        const cueCurrent = prev.filter(e => e.cue === input.cue);
-        if (cueCurrent.length >= maxConcurrent) {
-          // 移除最早的同 cue 特效
-          const oldest = cueCurrent[0];
-          const timer = timeoutsRef.current.get(oldest.id);
-          if (timer) {
-            clearTimeout(timer);
-            timeoutsRef.current.delete(oldest.id);
-          }
-          eventEntryMapRef.current.delete(oldest.id);
-          return [...prev.filter(e => e.id !== oldest.id), event];
+    let nextEffects = effectsRef.current;
+    // 并发上限检查
+    if (maxConcurrent > 0) {
+      const cueCurrent = nextEffects.filter(e => e.cue === input.cue);
+      if (cueCurrent.length >= maxConcurrent) {
+        // 移除最早的同 cue 特效
+        const oldest = cueCurrent[0];
+        const timer = timeoutsRef.current.get(oldest.id);
+        if (timer) {
+          clearTimeout(timer);
+          timeoutsRef.current.delete(oldest.id);
         }
+        eventEntryMapRef.current.delete(oldest.id);
+        nextEffects = nextEffects.filter(e => e.id !== oldest.id);
       }
-      return [...prev, event];
-    });
+    }
+    commitEffects([...nextEffects, event]);
 
     // 安全超时
     if (timeoutMs > 0) {
@@ -262,7 +339,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
           }
         }
         eventEntryMapRef.current.delete(id);
-        setEffects(prev => prev.filter(e => e.id !== id));
+        commitEffects(effectsRef.current.filter(e => e.id !== id));
 
         // 超时也需要推进序列，避免序列卡死
         const seqMeta = effectToSequenceRef.current.get(id);
@@ -297,7 +374,7 @@ export function useFxBus(registry: FxRegistry, options?: FxBusOptions): FxBus {
     }
 
     return id;
-  }, [registry]);
+  }, [commitEffects, countActiveHighCostEffects, registry, resolveEventQuality]);
 
   const push = useCallback((cue: FxCue, ctx: FxContext, params?: FxParams): string | null => {
     return pushEvent({ cue, ctx, params });

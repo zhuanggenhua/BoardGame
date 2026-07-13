@@ -7,6 +7,7 @@ import {
     readJsonFile,
     updateProjectVersion,
 } from './version-utils.mjs';
+import { resolveAndroidOtaClientBuildEnv } from './ota-publish-config.mjs';
 
 const rootDir = process.cwd();
 const rawArgs = process.argv.slice(2);
@@ -224,6 +225,16 @@ const ensureNoForbiddenOtaCompatibilityArgs = (sourceArgs = args) => {
     );
 };
 
+const applyOtaClientBuildDefaults = () => {
+    const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable');
+    const otaEnv = resolveAndroidOtaClientBuildEnv({
+        channel,
+        assetsBaseUrl: process.env.VITE_ASSETS_BASE_URL,
+    });
+    Object.assign(process.env, otaEnv);
+    logStep(`OTA 客户端配置: channel=${channel}, manifest=${otaEnv.VITE_ANDROID_OTA_MANIFEST_URL}`);
+};
+
 const ensureForcedOta = (sourceArgs = args) => {
     if (hasFlag('no-force-update', sourceArgs)) {
         throw new Error('所有 OTA 已强制更新，禁止使用 --no-force-update。');
@@ -318,6 +329,7 @@ const runOtaRelease = async () => {
     const releaseInfo = prepareReleaseVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
     ensureForcedOta();
+    applyOtaClientBuildDefaults();
     await runDoctor();
     await runTypecheck();
     await runSync();
@@ -357,6 +369,7 @@ const runFullRelease = async () => {
     const nativeInfo = prepareNativeVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
     ensureForcedOta();
+    applyOtaClientBuildDefaults();
     await runDoctor();
     await runSync();
     logStep(`发布 Android OTA (expectedBaseVersion=${nativeInfo.version})`);

@@ -138,7 +138,12 @@ const isNonReleaseAndroidAppId = (appId: string) => (
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()))
 )
 
-const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2DraftEnabled: boolean) => ({
+const createAndroidBuildMetaPlugin = (
+  mode: string,
+  backendUrl: string,
+  homeV2DraftEnabled: boolean,
+  env: Record<string, string>,
+) => ({
   name: 'android-build-meta',
   apply: 'build' as const,
   generateBundle() {
@@ -151,6 +156,9 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2Dr
         || process.env.ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || '',
     )
+    const otaEnabled = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ENABLED?.trim() || '')
+    const otaManifestUrl = env.VITE_ANDROID_OTA_MANIFEST_URL?.trim() || ''
+    const otaChannel = env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable'
     // Android shell root already treats Home V2 as the default homepage.
     // Keep the packaged build metadata aligned with the web/router contract.
     const homeV2EnabledForAndroidBuild = mode === 'android' || homeV2DraftEnabled
@@ -168,6 +176,9 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2Dr
           shellType: appId && !isNonReleaseAndroidAppId(appId) ? 'release' : 'non-release',
           forceBuiltinBundle,
           homeV2DraftEnabled: homeV2EnabledForAndroidBuild,
+          otaEnabled,
+          otaManifestUrl,
+          otaChannel,
         },
         null,
         2,
@@ -642,7 +653,7 @@ export default defineConfig(({ mode }) => {
       publicFileHashPlugin(),
       readyCheckPlugin(),
       createQidahenRegionMaskDevtoolsPlugin(),
-      createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1'),
+      createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1', env),
       createIosBuildMetaPlugin(mode, backendUrl, env),
     ],
     esbuild: forceInlineVite ? false : undefined,

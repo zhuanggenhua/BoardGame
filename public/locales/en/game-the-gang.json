@@ -136,6 +136,8 @@
     },
     "challengeSettings": "Challenges",
     "toolsPanel": "Tools",
+    "toolPanelSummary": "Tools {{tools}} / Specialists {{specialists}}",
+    "closeToolsPanel": "Close tools and specialists",
     "toolBadge": "Tool",
     "toolActiveBadge": "Active",
     "toolDeck": "Tool deck {{count}}",

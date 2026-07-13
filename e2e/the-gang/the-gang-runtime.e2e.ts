@@ -224,6 +224,43 @@ async function expectHudActionLogAndUndoAvailable(page: Page) {
     await expect(page.getByText('可以请求撤回上一步操作')).toBeVisible();
 }
 
+async function expectUtilityDockLayout(page: Page, expectedDirection: 'row' | 'column') {
+    const dock = page.getByTestId('the-gang-utility-dock');
+    const handRankButton = dock.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary');
+    const rulesButton = dock.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' });
+    const toolsButton = dock.getByTestId('the-gang-tools-panel').getByRole('button', { name: /工具/u });
+
+    await expect(dock).toBeVisible();
+    await expect(dock).toHaveCSS('flex-direction', expectedDirection);
+    for (const button of [handRankButton, rulesButton, toolsButton]) {
+        await expect(button).toBeVisible();
+        const box = await button.boundingBox();
+        expect(box, '左下角辅助入口必须有可测量的真实尺寸').not.toBeNull();
+        expect(box!.height, '左下角辅助入口点击高度不得小于 44px').toBeGreaterThanOrEqual(44);
+        expect(box!.width, '左下角辅助入口点击宽度不得小于 44px').toBeGreaterThanOrEqual(44);
+    }
+
+    const overlap = await page.evaluate(() => {
+        const dockRect = document.querySelector('[data-testid="the-gang-utility-dock"]')?.getBoundingClientRect();
+        const handRect = document.querySelector('[data-bgg-zone="hand-groupzone"]')?.getBoundingClientRect();
+        if (!dockRect || !handRect) return null;
+        return {
+            dockLeft: dockRect.left,
+            dockBottom: dockRect.bottom,
+            viewportHeight: window.innerHeight,
+            viewportWidth: window.innerWidth,
+            intersectsHand: dockRect.left < handRect.right
+                && dockRect.right > handRect.left
+                && dockRect.top < handRect.bottom
+                && dockRect.bottom > handRect.top,
+        };
+    });
+    expect(overlap, '辅助栏和手牌区必须同时存在').not.toBeNull();
+    expect(overlap!.dockLeft, '辅助栏必须贴近视口左侧安全区').toBeLessThanOrEqual(20);
+    expect(overlap!.dockBottom, '辅助栏必须贴近视口底部安全区').toBeGreaterThanOrEqual(overlap!.viewportHeight - 24);
+    expect(overlap!.intersectsHand, '辅助栏不得覆盖手牌区').toBe(false);
+}
+
 test.describe('The Gang 测试入口与代表态截图', () => {
     test('桌面端扩展选择和工具牌发放通过真实入口生效', async ({ game, page }, testInfo) => {
         test.setTimeout(120000);
@@ -237,6 +274,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await expectUtilityDockLayout(page, 'row');
         const rulesPanel = page.getByTestId('the-gang-rules-config');
         await expect(rulesPanel).toBeVisible();
         await rulesPanel.getByRole('button', { name: '扩展' }).click();
@@ -290,6 +328,20 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         const toolsPanel = page.getByTestId('the-gang-tools-panel');
         await expect(toolsPanel).toBeVisible();
+        await expect(toolsPanel.getByRole('button', { name: /工具/ })).toHaveAttribute('aria-expanded', 'false');
+        await expect(toolsPanel.getByRole('button', { name: '重设工具牌' })).toHaveCount(0);
+        await game.screenshot('桌面工具入口关闭态', testInfo);
+        await toolsPanel.getByRole('button', { name: /工具/ }).click();
+        const toolsModal = page.getByTestId('the-gang-tools-modal');
+        await expect(toolsModal).toBeVisible();
+        await expect(toolsModal).toHaveCSS('position', 'fixed');
+        const toolsModalBox = await toolsModal.boundingBox();
+        expect(toolsModalBox, '工具与专家牌必须由完整视口弹窗承载').not.toBeNull();
+        expect(toolsModalBox!.x).toBeLessThanOrEqual(1);
+        expect(toolsModalBox!.y).toBeLessThanOrEqual(1);
+        expect(toolsModalBox!.width).toBeGreaterThanOrEqual(1365);
+        expect(toolsModalBox!.height).toBeGreaterThanOrEqual(767);
+        await expect(toolsModal.getByRole('button', { name: '关闭工具与专家牌' })).toBeVisible();
         await expect(toolsPanel.getByRole('button', { name: '重设工具牌' })).toBeVisible();
         await expect(toolsPanel.getByRole('button', { name: '重设专家牌' })).toBeVisible();
         await game.screenshot('桌面工具专家承载区空态', testInfo);
@@ -446,9 +498,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
         await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
-        await page.getByTestId('the-gang-hand-rank-nameplate-toggle').click();
-        await expect(page.getByTestId('the-gang-current-hand-rank')).toBeVisible();
-        await expect(page.getByTestId('the-gang-current-hand-rank')).toContainText('等待公共牌');
+        await expect(page.getByTestId('the-gang-hand-rank-nameplate-toggle')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-hotseat-switcher')).toHaveCount(0);
         await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(5);
         await expectChipRoundForPlayerCount(page, '白筹码', 6);
@@ -599,6 +649,11 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
         await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-mobile-layout-preset', 'board-shell');
+        await expectUtilityDockLayout(page, 'row');
+        await page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary').click();
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '高牌' })).toBeVisible();
+        await game.screenshot('移动横屏左下角辅助栏和牌型展开', testInfo);
+        await page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary').click();
         await expectChipRound(page, '白筹码');
         await dispatchTheGangCommand(page, '0', 'TAKE_CHIP', { chip: 1 });
         await dispatchTheGangCommand(page, '1', 'TAKE_CHIP', { chip: 2 });
@@ -629,6 +684,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-mobile-profile', 'landscape-adapted');
         await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-preferred-orientation', 'landscape');
         await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-mobile-layout-preset', 'board-shell');
+        await expectUtilityDockLayout(page, 'column');
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).toBeVisible();
         await expect(page.locator('[data-bgg-zone="token-pile"]')).toBeInViewport();
         await expect(page.locator('[data-bgg-zone="hand-cards"]')).toBeInViewport();
@@ -658,13 +714,14 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await expectUtilityDockLayout(page, 'row');
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
+        await expect(page.getByTestId('the-gang-hand-rank-nameplate-toggle')).toHaveCount(0);
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeVisible();
         await page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary').click();
         await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '高牌' })).toBeVisible();
         await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '皇家同花顺' })).toBeVisible();
-        await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
-        await page.getByTestId('the-gang-hand-rank-nameplate-toggle').click();
-        await expect(page.getByTestId('the-gang-current-hand-rank')).toContainText('等待公共牌');
-        await game.screenshot('桌面牌型辅助表展开且当前牌型等待公共牌', testInfo);
+        await game.screenshot('桌面左下角牌型辅助表展开且等待公共牌', testInfo);
 
         await expectChipRound(page, '白筹码');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeDisabled();
@@ -692,11 +749,12 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await confirmProgressForAllPlayers(page, '下一轮');
         await expectChipRound(page, '黄筹码');
-        await expect(page.getByTestId('the-gang-current-hand-rank')).not.toContainText('等待公共牌');
-        await expect(page.getByTestId('the-gang-current-hand-rank')).toContainText(/高牌|一对|两对|三条|顺子|同花|葫芦|四条|五花|五花顺|五条|同花顺|皇家同花顺|公共牌最大/u);
+        await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
+        await expect(page.getByTestId('the-gang-hand-rank-nameplate-toggle')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-current-hand-rank-detail')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-current-hand-rank-best-cards')).toHaveCount(0);
-        await game.screenshot('桌面局中自动牌型提示和辅助表展开', testInfo);
+        await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeVisible();
+        await game.screenshot('桌面局中左下角牌型入口保持可用', testInfo);
         await chooseAllPlayerChips(page, '黄筹码');
 
         await confirmProgressForAllPlayers(page, '下一轮');

@@ -23,6 +23,7 @@ interface DiceResultOverlayProps {
   /** 是否为对手攻击（用于翻转显示） */
   isOpponentAttack?: boolean;
   duration?: number;
+  onRevealComplete?: () => void;
   onClose?: () => void;
 }
 
@@ -161,6 +162,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
   damageReduced,
   isOpponentAttack: _isOpponentAttack = false,
   duration = 2500,
+  onRevealComplete,
   onClose,
 }) => {
   const { t } = useTranslation('game-summonerwars');
@@ -170,7 +172,10 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
   const dismissed = dismissedSignature === resultSignature;
   const visible = hasResults && !dismissed;
   const timerRef = useRef<number | null>(null);
+  const revealCompleteTimerRef = useRef<number | null>(null);
+  const revealedSignatureRef = useRef<string | null>(null);
   const resultSignatureRef = useRef(resultSignature);
+  const onRevealCompleteRef = useRef(onRevealComplete);
   const onCloseRef = useRef(onClose);
   const closeNow = useCallback(() => {
     const latestSignature = resultSignatureRef.current;
@@ -182,14 +187,19 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    if (revealCompleteTimerRef.current) {
+      window.clearTimeout(revealCompleteTimerRef.current);
+      revealCompleteTimerRef.current = null;
+    }
     setDismissedSignature(latestSignature);
     onCloseRef.current?.();
   }, [duration]);
 
   useEffect(() => {
     resultSignatureRef.current = resultSignature;
+    onRevealCompleteRef.current = onRevealComplete;
     onCloseRef.current = onClose;
-  }, [onClose, resultSignature]);
+  }, [onClose, onRevealComplete, resultSignature]);
 
   useEffect(() => {
     if (!hasResults) {
@@ -209,6 +219,19 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
         window.clearTimeout(timerRef.current);
       }
       timerRef.current = window.setTimeout(closeNow, duration);
+      if (revealCompleteTimerRef.current) {
+        window.clearTimeout(revealCompleteTimerRef.current);
+      }
+      const revealDelayMs = Math.max(800, 600 + Math.max(0, (results?.length ?? 1) - 1) * 100);
+      revealCompleteTimerRef.current = window.setTimeout(() => {
+        if (revealedSignatureRef.current === resultSignature) return;
+        revealedSignatureRef.current = resultSignature;
+        swAttackDebugLog('dice_overlay_reveal_complete', {
+          resultSignature,
+          revealDelayMs,
+        });
+        onRevealCompleteRef.current?.();
+      }, revealDelayMs);
       return () => {
         swAttackDebugLog('dice_overlay_timer_cleared', {
           resultSignature,
@@ -217,10 +240,14 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
           window.clearTimeout(timerRef.current);
           timerRef.current = null;
         }
+        if (revealCompleteTimerRef.current) {
+          window.clearTimeout(revealCompleteTimerRef.current);
+          revealCompleteTimerRef.current = null;
+        }
       };
     }
     return undefined;
-  }, [visible, duration, closeNow, resultSignature]);
+  }, [visible, duration, closeNow, resultSignature, results?.length]);
 
   if (!results || results.length === 0) return null;
 

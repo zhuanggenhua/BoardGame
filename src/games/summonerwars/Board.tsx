@@ -105,6 +105,8 @@ const MOBILE_LANDSCAPE_MAP_INITIAL_SCALE = 1.18;
 const MOBILE_LANDSCAPE_MAP_PADDING = '4vw';
 const DESKTOP_MAP_SIDE_RATIO = 0.1;
 const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
+const DICE_RESULT_OVERLAY_DURATION_MS = 3000;
+
 export const SummonerWarsBoard: React.FC<Props> = ({
   G, dispatch, playerID, reset, matchData, isMultiplayer, locale,
 }) => {
@@ -348,6 +350,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const fxBus = useFxBus(summonerWarsFxRegistry, {
     playSound,
     triggerShake,
+    quality: shouldReduceCombatEffects ? 'reduced' : 'full',
+    reduceWhenHighCostActiveAt: 1,
   });
 
   // 视觉序列门控（攻击动画期间延迟交互事件 + 游戏结束 overlay）
@@ -371,6 +375,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const [attackAnimState, setAttackAnimState] = useState<{
     attacker: CellCoord; target: CellCoord; hits: number;
   } | null>(null);
+  const startedAttackAnimEventIdRef = useRef<number | null>(null);
 
   // 事件流消费 Hook（回调函数在 hook 内部通过 ref 稳定化，无需外部包装）
   const {
@@ -548,14 +553,23 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     hasSwInteraction: !!swInteraction,
   });
 
-  // 关闭骰子结果 → 播放攻击动画
-  const handleCloseDiceResult = () => {
-    const pending = rawCloseDiceResult();
+  const startPendingAttackVisual = useCallback((reason: 'dice-reveal-complete' | 'dice-close') => {
+    const pending = pendingAttackRef.current;
     if (!pending) {
-      swAttackDebugLog('board_close_dice_no_pending_attack', {});
+      swAttackDebugLog('board_start_attack_visual_no_pending_attack', { reason });
       return;
     }
-    swAttackDebugLog('board_close_dice_received_pending_attack', {
+    if (startedAttackAnimEventIdRef.current === pending.attackEventId) {
+      swAttackDebugLog('board_start_attack_visual_duplicate_ignored', {
+        reason,
+        attackEventId: pending.attackEventId,
+      });
+      return;
+    }
+    startedAttackAnimEventIdRef.current = pending.attackEventId;
+
+    swAttackDebugLog('board_start_attack_visual_received_pending_attack', {
+      reason,
       attackEventId: pending.attackEventId,
       attackType: pending.attackType,
       hits: pending.hits,
@@ -631,6 +645,12 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       });
       setAttackAnimState({ attacker: pending.attacker, target: pending.target, hits: pending.hits });
     }
+  }, [clearPendingAttack, core, flushPendingDestroys, fxBus, pendingAttackRef, releaseDamageSnapshot, shouldReduceCombatEffects, useSafeCombatVisualFallback]);
+
+  // 关闭骰子结果只负责关闭浮层；攻击动画由骰子揭示完成独立触发，关闭时兜底触发一次。
+  const handleCloseDiceResult = () => {
+    startPendingAttackVisual('dice-close');
+    rawCloseDiceResult();
   };
 
   // 近战攻击命中回调（卡牌冲到目标时触发，播放伤害特效）
@@ -678,6 +698,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     clearPendingAttack();
     flushPendingDestroys();
     setAttackAnimState(null);
+    startedAttackAnimEventIdRef.current = null;
   };
 
   // FX 特效完成回调：远程气浪到达目标时播放伤害特效 + flush 摧毁
@@ -1187,6 +1208,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                       <DestroyEffectsLayer
                         effects={destroyEffects}
                         getCellPosition={getCellPositionWithView}
+                        quality={shouldReduceCombatEffects ? 'reduced' : 'full'}
                         onEffectComplete={removeDestroyEffect}
                       />
                       {/* 召唤暗角已内置于 SummonShaderEffect（dimStrength），此处不再需要 CSS 遮罩 */}
@@ -1524,7 +1546,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 hits={diceResult?.hits ?? 0}
                 damageReduced={diceResult?.damageReduced}
                 isOpponentAttack={diceResult?.isOpponentAttack ?? false}
-                duration={3000}
+                duration={DICE_RESULT_OVERLAY_DURATION_MS}
+                onRevealComplete={() => startPendingAttackVisual('dice-reveal-complete')}
                 onClose={handleCloseDiceResult}
               />
 

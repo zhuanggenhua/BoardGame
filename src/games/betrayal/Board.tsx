@@ -656,6 +656,28 @@ function resolveOccupiedRoomMapFloors(core: BetrayalCore): BetrayalRoomNode['flo
     return ROOM_MAP_FLOOR_ORDER.filter((floor) => occupiedFloors.has(floor));
 }
 
+const FIXED_LINK_ROOM_IDS_BY_VISUAL_ID: Partial<Record<BetrayalRoomVisualId, string>> = {
+    secretStaircase: 'hallway',
+};
+
+const FIXED_LINK_TARGET_VISUAL_IDS_BY_VISUAL_ID: Partial<Record<BetrayalRoomVisualId, BetrayalRoomVisualId>> = {
+    graveyard: 'undergroundCavern',
+    undergroundCavern: 'graveyard',
+    gallery: 'ballroom',
+};
+
+function resolveFixedLinkTargetRoomId(rooms: BetrayalRoomNode[], room: BetrayalRoomNode): string | null {
+    const fixedTargetRoomId = FIXED_LINK_ROOM_IDS_BY_VISUAL_ID[room.visualId];
+    if (fixedTargetRoomId) {
+        return fixedTargetRoomId;
+    }
+    const fixedTargetVisualId = FIXED_LINK_TARGET_VISUAL_IDS_BY_VISUAL_ID[room.visualId];
+    if (!fixedTargetVisualId) {
+        return null;
+    }
+    return rooms.find((item) => item.state === 'discovered' && item.visualId === fixedTargetVisualId)?.id ?? null;
+}
+
 function resolveConnectedRoomIds(rooms: BetrayalRoomNode[], roomId: string): Set<string> {
     const room = rooms.find((item) => item.id === roomId);
     if (!room) {
@@ -675,6 +697,21 @@ function resolveConnectedRoomIds(rooms: BetrayalRoomNode[], roomId: string): Set
             ) {
                 connectedIds.add(secretPassageRoom.id);
             }
+        }
+    }
+    if (room.state === 'discovered') {
+        const fixedTargetRoomId = resolveFixedLinkTargetRoomId(rooms, room);
+        if (fixedTargetRoomId) {
+            connectedIds.add(fixedTargetRoomId);
+        }
+    }
+    for (const sourceRoom of rooms) {
+        if (sourceRoom.state !== 'discovered') {
+            continue;
+        }
+        const fixedTargetRoomId = resolveFixedLinkTargetRoomId(rooms, sourceRoom);
+        if (fixedTargetRoomId === room.id) {
+            connectedIds.add(sourceRoom.id);
         }
     }
     return connectedIds;

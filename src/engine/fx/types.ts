@@ -55,6 +55,12 @@ export interface FxPerformanceBudget {
   areaPolicy?: FxAreaPolicy;
   /** 预估成本，用于限制高成本特效并发 */
   estimatedCost?: FxEstimatedCost;
+  /** 高成本特效拥挤时是否允许自动降级，而不是直接丢弃 */
+  allowAutoReduce?: boolean;
+  /** 同时活跃多少个高成本特效后自动降级 */
+  reduceWhenHighCostActiveAt?: number;
+  /** 同时活跃多少个高成本特效后拒绝新的高成本特效；0 表示不拒绝 */
+  dropWhenHighCostActiveAt?: number;
 }
 
 /** 棋盘格坐标 */

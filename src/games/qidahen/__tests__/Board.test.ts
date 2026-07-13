@@ -203,30 +203,57 @@ describe('Qidahen Board 结构门禁', () => {
     it('Board 会把剧本待决项收口到局内 setup 页，而不是继续塞回建房页或主 HUD', () => {
         expect(boardSource).toContain('qidahen-scenario-vote-screen');
         expect(boardSource).toContain('qidahen-scenario-vote-title');
-        expect(boardSource).toContain('qidahen-scenario-vote-confirm');
-        expect(boardSource).toContain('qidahen-scenario-vote-clear');
+        expect(boardSource).toContain('qidahen-scenario-host-selected');
+        expect(boardSource).toContain('data-qidahen-inline-choice="character"');
+        expect(boardSource).toContain('data-qidahen-inline-choice="armament"');
+        expect(boardSource).toContain('data-ui-family="qidahen-book-setup"');
+        expect(boardSource).toContain('UI_SURFACE.bookPaper');
+        expect(boardSource).toContain('UI_SURFACE.bookPage');
+        expect(boardSource).toContain('qidahen-scenario-vote-book-page-intro');
+        expect(boardSource).toContain('data-ui-page="qidahen-scenario-vote-book-page-status"');
         expect(boardSource).toContain('CAST_SCENARIO_VOTE');
         expect(boardSource).toContain('core.pendingScenarioCharacterChoices');
         expect(boardSource).toContain('core.pendingScenarioArmamentChoices');
         expect(boardSource).toContain('qidahen-inmatch-setup-overlay');
+        expect(boardSource).toContain('z-[140] flex items-center justify-center');
         expect(boardSource).toContain('qidahen-inmatch-setup-title');
         expect(boardSource).toContain('qidahen-inmatch-setup-scenario');
-        expect(boardSource).toContain('qidahen-inmatch-setup-character-confirm-');
-        expect(boardSource).toContain('qidahen-inmatch-setup-armament-confirm-');
+        expect(boardSource).toContain('qidahen-inmatch-setup-book-page-player');
+        expect(boardSource).toContain('qidahen-inmatch-setup-book-page-status');
+        expect(boardSource).toContain('applyInlineChoice');
+        expect(boardSource).toContain('pickCountAuto');
+        expect(boardSource).toContain('getQidahenScenarioCardPreview(option.scenarioId)');
+        expect(boardSource).toContain('getQidahenSetupCharacterPreview(group.factionId, characterId)');
+        expect(boardSource).toContain('getQidahenSetupArmamentPreview(armamentId)');
+        expect(boardSource).toContain('<SelectableGameObject');
         expect(boardSource).toContain('qidahen-actions-blocked-by-scenario');
         expect(boardSource).toContain('RESOLVE_SCENARIO_CHARACTER_CHOICE');
         expect(boardSource).toContain('RESOLVE_SCENARIO_ARMAMENT_CHOICE');
     });
 
     it('剧本待决项出现时，动作区只保留阻断提示，真正交互在单独 setup 覆层里完成', () => {
-        expect(boardSource).toContain('局内剧本投票尚未完成');
-        expect(boardSource).toContain('当前只可处理剧本介绍与投票');
-        expect(boardSource).toContain('选择剧本介绍卡后确认投票');
+        expect(boardSource).toContain('局内剧本选择尚未完成');
+        expect(boardSource).toContain('当前只可处理剧本介绍与房主选择');
+        expect(boardSource).toContain('选择一张剧本卡');
         expect(boardSource).toContain('剧本待决项尚未确认');
         expect(boardSource).toContain('当前只可处理剧本选择');
-        expect(boardSource).toContain('确认人物');
-        expect(boardSource).toContain('确认军备');
         expect(boardSource).toContain('等待其他玩家完成其所属阵营的前置项');
+    });
+
+    it('手牌选中态必须绑定完整卡牌外层，禁止回到左右色块叠层', () => {
+        const handCardSource = boardSource.slice(
+            boardSource.indexOf('const HandCard: React.FC<'),
+            boardSource.indexOf('const HandZone: React.FC<'),
+        );
+
+        expect(boardSource).toContain('rounded-[9px]');
+        expect(boardSource).toContain('data-qidahen-hand-card-selected');
+        expect(boardSource).toContain('selected={selected}');
+        expect(boardSource).toContain('available={Boolean(onClick)}');
+        expect(boardSource).not.toContain('before:inset-[-7px]');
+        expect(handCardSource).not.toContain("boxShadow: 'none'");
+        expect(boardSource).not.toContain('qidahen-hand-selection-frame-layer');
+        expect(boardSource).not.toContain('qidahen-hand-selection-frame-layer absolute inset-y-0');
     });
 
     it('正式联机手牌区只允许本地模式保留 currentFaction fallback，在线 seat 不再退回别人的当前手牌', () => {
@@ -743,6 +770,9 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-testid={`qidahen-hand-card-magnify-${card.id}`}');
         expect(boardSource).toContain('onMagnifyCard?.({');
         expect(boardSource).toContain('hover:-translate-y-[18px]');
+        expect(boardSource).toContain('data-qidahen-hand-card-selected');
+        expect(boardSource).toContain('selected={selected}');
+        expect(boardSource).not.toContain('before:inset-[-7px]');
         expect(boardSource).toContain('width={handCardWidth}');
         expect(boardSource).toContain('height={handCardHeight}');
         expect(boardSource).toContain('overlapPx={handCardOverlapPx}');

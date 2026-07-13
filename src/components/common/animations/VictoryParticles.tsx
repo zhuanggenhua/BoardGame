@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect, useRef, useMemo } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -17,6 +18,7 @@ import {
 
 export interface VictoryParticlesProps {
   active: boolean;
+  quality?: FxQuality;
   className?: string;
 }
 
@@ -43,7 +45,7 @@ const VICTORY_PRESET: ParticlePreset = {
   pulseFreq: 6,
 };
 
-export function VictoryParticles({ active, className = '' }: VictoryParticlesProps): React.ReactElement | null {
+export function VictoryParticles({ active, quality = 'full', className = '' }: VictoryParticlesProps): React.ReactElement | null {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -61,7 +63,7 @@ export function VictoryParticles({ active, className = '' }: VictoryParticlesPro
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     // 使用 offsetWidth/offsetHeight 获取 CSS 布局尺寸（不受父级 transform scale 影响）
     const cw = container.offsetWidth;
     const ch = container.offsetHeight;
@@ -73,7 +75,10 @@ export function VictoryParticles({ active, className = '' }: VictoryParticlesPro
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // 从顶部中央喷射（UI 层庆祝效果）
-    particlesRef.current = spawnParticles(VICTORY_PRESET, rgbColors, cw / 2, ch * 0.3);
+    const preset = quality === 'reduced'
+      ? { ...VICTORY_PRESET, count: Math.ceil(VICTORY_PRESET.count * 0.55) }
+      : VICTORY_PRESET;
+    particlesRef.current = spawnParticles(preset, rgbColors, cw / 2, ch * 0.3);
 
     let lastTime = 0;
 
@@ -84,8 +89,8 @@ export function VictoryParticles({ active, className = '' }: VictoryParticlesPro
 
       ctx.clearRect(0, 0, cw, ch);
 
-      updateParticles(particlesRef.current, dt, VICTORY_PRESET);
-      drawParticles(ctx, particlesRef.current, VICTORY_PRESET, cw, ch);
+      updateParticles(particlesRef.current, dt, preset);
+      drawParticles(ctx, particlesRef.current, preset, cw, ch);
 
       if (particlesRef.current.length > 0) {
         rafRef.current = requestAnimationFrame(loop);
@@ -98,7 +103,7 @@ export function VictoryParticles({ active, className = '' }: VictoryParticlesPro
       cancelAnimationFrame(rafRef.current);
       particlesRef.current = [];
     };
-  }, [active, rgbColors]);
+  }, [active, quality, rgbColors]);
 
   if (!active || typeof window === 'undefined') return null;
 

@@ -1,22 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { GameBoardProps } from '../../engine/transport/protocol';
+import { ListOrdered, SlidersHorizontal, Wrench, X } from 'lucide-react';
+import type { GameBoardProps, MatchPlayerInfo } from '../../engine/transport/protocol';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorialBridge } from '../../contexts/TutorialContext';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { EndgameOverlay, type ContentSlotProps } from '../../components/game/framework/widgets/EndgameOverlay';
 import { buildPlayerDisplayNameMap } from '../../components/game/framework/playerDisplay';
+import { HudPortal } from '../../core';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { useGameAudio } from '../../lib/audio/useGameAudio';
 import { THE_GANG_AUDIO_CONFIG } from './audio.config';
-import { RANK_VALUE, formatCard } from './domain/cards';
+import { formatCard } from './domain/cards';
 import {
-    compareHandStrength,
-    evaluateBestTheGangHand,
     THE_GANG_EXPANDED_HAND_RANK_RULES,
     TEXAS_HOLDEM_HAND_RANK_RULES,
     type PokerHandRankRule,
-    type PokerEvaluationOptions,
 } from './domain/poker';
 import {
     THE_GANG_CHALLENGES,
@@ -45,6 +44,17 @@ import {
 import { THE_GANG_MANIFEST } from './manifest';
 
 type Props = GameBoardProps<TheGangCore, TheGangCommandMap>;
+
+const resolveCanConfigureRules = (
+    matchData: MatchPlayerInfo[] | undefined,
+    playerID: string | null | undefined,
+    fallbackOwnerPlayerId: string,
+) => {
+    const localPlayerId = playerID ?? fallbackOwnerPlayerId;
+    const ownerSeat = matchData?.find((player) => player.isOwner === true);
+    if (!ownerSeat) return localPlayerId === fallbackOwnerPlayerId;
+    return String(ownerSeat.id) === localPlayerId;
+};
 
 const ROUND_LABELS = {
     1: '白筹码',
@@ -123,225 +133,19 @@ const BGG_LAYOUT_CONTRACT = {
 
 const DEFAULT_HAND_RANK_RULES = TEXAS_HOLDEM_HAND_RANK_RULES;
 
+const UTILITY_BUTTON_CLASS = [
+    'flex h-12 min-w-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md border border-amber-200/35',
+    'bg-emerald-950/90 px-3 text-sm font-black text-amber-100 shadow-[0_0.25rem_0.9rem_rgba(0,0,0,0.34)] backdrop-blur-sm',
+    'transition-[transform,background-color,border-color,color] hover:-translate-y-0.5 hover:border-amber-100/65 hover:bg-emerald-900 hover:text-amber-50',
+    'active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+    'sm:min-w-[5.75rem] sm:px-4',
+].join(' ');
+
+const UTILITY_ICON_CLASS = 'h-5 w-5 shrink-0';
+
 type TFunction = ReturnType<typeof useTranslation>['t'];
 
 type CardFaceEmphasis = 'table' | 'river' | 'hand' | 'showdown';
-
-interface CurrentHandRankHint {
-    label: string;
-    detail: string;
-    detailParts: HandRankDetailPart[];
-    bestCards: string;
-    handCards: string;
-    boardOnly: boolean;
-}
-
-type HandRankDetailPart = {
-    text: string;
-    card?: PlayingCard;
-};
-
-const PLAYER_HAND_RANK_MARKER_STYLES = [
-    { backgroundColor: '#ffffff' },
-    { backgroundColor: '#e7e52c' },
-    { backgroundColor: '#dc2626' },
-    { backgroundColor: '#2563eb' },
-    { backgroundColor: '#16a34a' },
-    { backgroundColor: '#fb923c' },
-    { backgroundColor: '#14b8a6' },
-    { backgroundColor: '#8b5cf6' },
-    { backgroundColor: '#6b3f1d' },
-    { backgroundColor: '#f472b6' },
-] as const;
-
-const VALUE_LABELS: Record<number, string> = {
-    0: '空白',
-    1: 'A',
-    2: '2',
-    3: '3',
-    4: '4',
-    5: '5',
-    6: '6',
-    7: '7',
-    8: '8',
-    9: '9',
-    10: '10',
-    11: 'J',
-    12: 'Q',
-    13: 'K',
-    14: 'A',
-    15: 'B',
-    16: 'C',
-    17: 'D',
-};
-
-const valueLabel = (value?: number) => VALUE_LABELS[value ?? 0] ?? String(value ?? 0);
-
-const rankChain = (values: number[]) => values.filter((value) => value > 0).map(valueLabel).join(' > ');
-
-const kickerDetails = (values: number[]) => values
-    .filter((value) => value > 0)
-    .map((value) => ` + ${valueLabel(value)}`)
-    .join('');
-
-const cardSortValue = (card: PlayingCard) => RANK_VALUE[card.rank] ?? 0;
-
-const formatCardChain = (cards: PlayingCard[]) => [...cards]
-    .sort((left, right) => cardSortValue(right) - cardSortValue(left) || formatCard(left).localeCompare(formatCard(right)))
-    .map(formatCard)
-    .join(' > ');
-
-const suitTextClass = (suit: PlayingCard['suit']) => {
-    switch (suit) {
-        case 'hearts':
-            return 'text-red-700';
-        case 'diamonds':
-            return 'text-red-600';
-        case 'spades':
-            return 'text-slate-950';
-        case 'clubs':
-            return 'text-emerald-950';
-        case 'gear':
-            return 'text-amber-800';
-        case 'special':
-        default:
-            return 'text-purple-800';
-    }
-};
-
-const cardsByRankValue = (cards: PlayingCard[]) => {
-    const byValue = new Map<number, PlayingCard[]>();
-    [...cards]
-        .sort((left, right) => cardSortValue(right) - cardSortValue(left) || formatCard(left).localeCompare(formatCard(right)))
-        .forEach((card) => {
-            const value = cardSortValue(card);
-            byValue.set(value, [...(byValue.get(value) ?? []), card]);
-        });
-    return byValue;
-};
-
-const cardForRankValue = (cards: PlayingCard[], value?: number) => {
-    if (!value) return undefined;
-    return cardsByRankValue(cards).get(value)?.[0];
-};
-
-const detailPartText = (parts: HandRankDetailPart[]) => parts.map((part) => part.text).join('');
-
-const cardRankPart = (cards: PlayingCard[], value?: number): HandRankDetailPart => {
-    const card = cardForRankValue(cards, value);
-    return { text: valueLabel(value), card };
-};
-
-const kickerDetailParts = (cards: PlayingCard[], values: number[]) => values
-    .filter((value) => value > 0)
-    .flatMap((value): HandRankDetailPart[] => [
-        { text: ' + ' },
-        cardRankPart(cards, value),
-    ]);
-
-const describeHandStrengthParts = (hint: {
-    code?: string;
-    label: string;
-    ranks: number[];
-    cards: PlayingCard[];
-}): HandRankDetailPart[] => {
-    const [primary, secondary, ...rest] = hint.ranks;
-    switch (hint.code) {
-        case '4s':
-            return [{ text: `四条${valueLabel(primary)}` }, ...kickerDetailParts(hint.cards, [secondary])];
-        case 'FH':
-            return [{ text: `葫芦：三条${valueLabel(primary)} + 对${valueLabel(secondary)}` }];
-        case 'FL':
-            return [{ text: `同花：${rankChain(hint.ranks)}` }];
-        case '3s':
-            return [{ text: `三条${valueLabel(primary)}` }, ...kickerDetailParts(hint.cards, [secondary, ...rest])];
-        case 'FA':
-            return [{ text: '五花：' }, ...[...hint.cards]
-                .sort((left, right) => cardSortValue(right) - cardSortValue(left) || formatCard(left).localeCompare(formatCard(right)))
-                .flatMap((card, index): HandRankDetailPart[] => [
-                    ...(index === 0 ? [] : [{ text: ' > ' }]),
-                    { text: formatCard(card), card },
-                ])];
-        case '2p':
-            return [
-                { text: `两对：对${valueLabel(primary)} + 对${valueLabel(secondary)}` },
-                ...kickerDetailParts(hint.cards, rest),
-            ];
-        case '1p':
-            return [{ text: `一对${valueLabel(primary)}` }, ...kickerDetailParts(hint.cards, [secondary, ...rest])];
-        default:
-            return [{ text: describeHandStrength(hint) }];
-    }
-};
-
-const describeHandStrength = (hint: {
-    code?: string;
-    label: string;
-    ranks: number[];
-    cards: PlayingCard[];
-}) => {
-    const [primary, secondary, ...rest] = hint.ranks;
-    switch (hint.code) {
-        case 'RF':
-            return 'A高皇家同花顺';
-        case 'SF':
-            return `${valueLabel(primary)}高同花顺`;
-        case 'FS':
-            return `${valueLabel(primary)}高五花顺`;
-        case '5s':
-            return `五条${valueLabel(primary)}`;
-        case '4s':
-            return `四条${valueLabel(primary)}${kickerDetails([secondary])}`;
-        case 'FH':
-            return `葫芦：三条${valueLabel(primary)} + 对${valueLabel(secondary)}`;
-        case 'FL':
-            return `同花：${rankChain(hint.ranks)}`;
-        case 'ST':
-            return `${valueLabel(primary)}高顺子`;
-        case '3s':
-            return `三条${valueLabel(primary)}${kickerDetails([secondary, ...rest])}`;
-        case 'FA':
-            return `五花：${formatCardChain(hint.cards)}`;
-        case '2p':
-            return `两对：对${valueLabel(primary)} + 对${valueLabel(secondary)}${kickerDetails(rest)}`;
-        case '1p':
-            return `一对${valueLabel(primary)}${kickerDetails([secondary, ...rest])}`;
-        case 'HC':
-            return `高牌：${rankChain(hint.ranks)}`;
-        default:
-            return hint.label;
-    }
-};
-
-const buildCurrentHandRankHint = (
-    evaluated: ReturnType<typeof evaluateBestTheGangHand>,
-    handCards: PlayingCard[],
-    boardCards: PlayingCard[],
-    options?: PokerEvaluationOptions,
-): CurrentHandRankHint => {
-    const boardOnlyEvaluation = options?.rulesConfig?.omaha === true || boardCards.length < 5
-        ? undefined
-        : evaluateBestTheGangHand([], boardCards, options);
-    const boardOnly = boardOnlyEvaluation
-        ? compareHandStrength(boardOnlyEvaluation.strength, evaluated.strength) === 0
-        : false;
-    const detailSource = boardOnly && boardOnlyEvaluation ? boardOnlyEvaluation : evaluated;
-    const usedHandCards = boardOnly ? [] : evaluated.cards.filter((card) => handCards.includes(card));
-    const detailParts = describeHandStrengthParts({
-        code: detailSource.strength.code,
-        label: detailSource.strength.label,
-        ranks: detailSource.strength.ranks,
-        cards: detailSource.cards,
-    });
-    return {
-        label: detailSource.strength.label,
-        detail: detailPartText(detailParts),
-        detailParts,
-        bestCards: formatCardChain(detailSource.cards),
-        handCards: formatCardChain(usedHandCards),
-        boardOnly,
-    };
-};
 
 interface ProgressButtonState {
     approvals: string[];
@@ -500,77 +304,29 @@ function HandRankReference({ rules = DEFAULT_HAND_RANK_RULES }: { rules?: readon
 
     return (
         <details
-            className="pointer-events-auto group absolute bottom-1 left-1 z-20 max-w-[20rem] text-[0.62rem] font-black text-amber-50/94 lg:bottom-2 lg:left-2 lg:text-xs"
+            className="pointer-events-auto group relative z-30 text-xs font-black text-amber-50/94 lg:text-sm"
             data-tutorial-id="the-gang-hand-rank-reference"
             data-bgg-zone="hand-rank-reference"
         >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full bg-emerald-950/82 px-3 py-1.5 text-amber-100 shadow-[0_0.18rem_0.8rem_rgba(0,0,0,0.28)] ring-1 ring-amber-200/24 transition marker:hidden hover:bg-emerald-900/88 hover:text-amber-50 group-open:bg-amber-200 group-open:text-emerald-950 [&::-webkit-details-marker]:hidden" aria-label={t('board.handRankReferenceAria')}>
-                <span aria-hidden="true" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-200/45 text-[0.62rem] leading-none">?</span>
-                {t('board.handRankReference')}
+            <summary className={`${UTILITY_BUTTON_CLASS} list-none marker:hidden group-open:border-amber-100 group-open:bg-amber-200 group-open:text-emerald-950 [&::-webkit-details-marker]:hidden`} aria-label={t('board.handRankReferenceAria')}>
+                <ListOrdered aria-hidden="true" className={UTILITY_ICON_CLASS} strokeWidth={2.25} />
+                <span className="hidden sm:inline">{t('board.handRankReference')}</span>
             </summary>
-            <div className="mt-1 rounded-lg bg-emerald-950/92 p-2 shadow-[0_0.25rem_1rem_rgba(0,0,0,0.35)] ring-1 ring-amber-200/22">
+            <div className="absolute bottom-full left-0 mb-2 w-[20rem] max-w-[calc(100vw-1rem)] rounded-lg bg-emerald-950/94 p-2 shadow-[0_0.35rem_1.2rem_rgba(0,0,0,0.42)] ring-1 ring-amber-200/28">
                 <div className="mb-1 flex items-center justify-between gap-3 text-[0.58rem] tracking-[0.12em] text-amber-200/72 lg:text-[0.66rem]">
                     <span>{t('board.handRankWeak')}</span>
                     <span>{t('board.handRankStrong')}</span>
                 </div>
                 <ol className="grid grid-cols-2 gap-x-4 gap-y-0.5" aria-label={t('board.handRankListAria')}>
-                {orderedRules.map((rule, index) => (
-                    <li key={rule.category} className="flex items-center gap-1.5 whitespace-nowrap rounded-sm px-1 py-0.5 leading-tight odd:bg-amber-50/[0.04]">
-                        <span className="w-3 text-right text-amber-200/70 tabular-nums">{index + 1}</span>
-                        <span className="text-amber-50">{rule.label}</span>
-                    </li>
-                ))}
+                    {orderedRules.map((rule, index) => (
+                        <li key={rule.category} className="flex items-center gap-1.5 whitespace-nowrap rounded-sm px-1 py-0.5 leading-tight odd:bg-amber-50/[0.04]">
+                            <span className="w-3 text-right text-amber-200/70 tabular-nums">{index + 1}</span>
+                            <span className="text-amber-50">{rule.label}</span>
+                        </li>
+                    ))}
                 </ol>
             </div>
         </details>
-    );
-}
-
-function CurrentHandRankMarker({
-    hint,
-    playerIndex,
-    visible,
-}: {
-    hint?: CurrentHandRankHint;
-    playerIndex: number;
-    visible: boolean;
-}) {
-    const { t } = useTranslation('game-the-gang');
-    if (!visible) return null;
-
-    const label = hint
-        ? `${hint.detail}${hint.boardOnly ? ` ${t('board.currentHandRankBoardOnly')}` : ''}`
-        : t('board.currentHandRankPending');
-    const markerStyle = PLAYER_HAND_RANK_MARKER_STYLES[playerIndex % PLAYER_HAND_RANK_MARKER_STYLES.length];
-
-    return (
-        <div
-            className="flex h-7 min-w-[5.25rem] items-center justify-center border border-black/70 px-2.5 text-center text-[0.56rem] font-black leading-none tracking-[0.02em] text-black shadow-[0.14rem_0.16rem_0_rgba(0,0,0,0.45)] lg:h-8 lg:min-w-[6.75rem] lg:px-3 lg:text-[0.68rem]"
-            data-testid="the-gang-current-hand-rank"
-            data-bgg-zone="hand-rank-current"
-            aria-label={hint ? t('board.currentHandRankAria', { rank: hint.label, detail: hint.detail, cards: hint.bestCards }) : t('board.currentHandRankPendingAria')}
-            title={hint ? `${hint.detail} | ${hint.bestCards}${hint.handCards ? ` | ${hint.handCards}` : ''}` : undefined}
-            style={markerStyle}
-        >
-            <span className="whitespace-nowrap">
-                {hint
-                    ? (
-                        <>
-                            {hint.detailParts.map((part, index) => (
-                                <span
-                                    key={`${part.text}-${index}`}
-                                    className={part.card ? suitTextClass(part.card.suit) : undefined}
-                                    data-card-suit={part.card?.suit}
-                                >
-                                    {part.text}
-                                </span>
-                            ))}
-                            {hint.boardOnly ? ` ${t('board.currentHandRankBoardOnly')}` : ''}
-                        </>
-                    )
-                    : label}
-            </span>
-        </div>
     );
 }
 
@@ -619,17 +375,19 @@ function RulesConfigPanel({
 
     return (
         <div
-            className="absolute bottom-1 right-48 z-50 max-w-[22rem] text-[0.62rem] font-black text-amber-50/94 lg:bottom-2 lg:right-64 lg:text-xs"
+            className="pointer-events-auto relative z-50 max-w-[22rem] text-xs font-black text-amber-50/94 lg:text-sm"
             data-bgg-zone="rules-config"
             data-testid="the-gang-rules-config"
         >
             <button
                 type="button"
                 onClick={() => setIsOpen(true)}
-                className="flex cursor-pointer items-center gap-1.5 rounded-full bg-emerald-950/82 px-3 py-1.5 text-amber-100 shadow-[0_0.18rem_0.8rem_rgba(0,0,0,0.28)] ring-1 ring-amber-200/24 transition hover:bg-emerald-900/88 hover:text-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                className={UTILITY_BUTTON_CLASS}
+                aria-label={t('board.rulesConfig')}
+                aria-haspopup="dialog"
             >
-                <span aria-hidden="true" className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-amber-200/45 text-[0.62rem] leading-none">⚙</span>
-                {t('board.rulesConfig')}
+                <SlidersHorizontal aria-hidden="true" className={UTILITY_ICON_CLASS} strokeWidth={2.25} />
+                <span className="hidden sm:inline">{t('board.rulesConfig')}</span>
             </button>
             {isOpen && (
                 <div
@@ -937,6 +695,7 @@ function SpecialistCardBadge({ specialist }: { specialist: TheGangSpecialistId }
 function ToolsPanel({
     core,
     localPlayerId,
+    canConfigure,
     onDealTools,
     onResetTools,
     onResetSpecialists,
@@ -944,147 +703,200 @@ function ToolsPanel({
 }: {
     core: TheGangCore;
     localPlayerId: string;
+    canConfigure: boolean;
     onDealTools: () => void;
     onResetTools: () => void;
     onResetSpecialists: () => void;
     onUseTool: (tool: TheGangToolId) => void;
 }) {
     const { t } = useTranslation('game-the-gang');
+    const [isOpen, setIsOpen] = useState(false);
     const localPlayer = core.players[localPlayerId];
     const toolsDealt = core.playerIds.some((id) => core.players[id].toolCards.length > 0);
     const activeToolLabels = localPlayer.activeTools.map((tool) => THE_GANG_TOOLS[tool].label);
+    const localToolCount = localPlayer.toolCards.length;
+    const localSpecialistCount = localPlayer.specialistCards.length;
 
     return (
         <div
-            className="absolute bottom-20 left-2 z-30 w-[23rem] max-w-[42vw] rounded-xl border border-amber-200/24 bg-emerald-950/90 p-2 text-[0.62rem] font-black text-amber-50/94 shadow-[0_0.5rem_1.6rem_rgba(0,0,0,0.35)] backdrop-blur-sm lg:bottom-24 lg:left-4 lg:w-[30rem] lg:text-xs"
+            className="pointer-events-auto relative z-50 text-xs font-black text-amber-50/94 lg:text-sm"
             data-bgg-zone="tools-panel"
             data-testid="the-gang-tools-panel"
         >
-            <div className="mb-2 flex items-center justify-between gap-2">
-                <div>
-                    <div className="text-[0.58rem] uppercase tracking-[0.18em] text-amber-200/62">{t('board.toolsPanel')}</div>
-                    <div className="text-amber-100">{t('board.toolDeck', { count: core.toolDeck.length })}</div>
-                </div>
-                <div className="flex flex-wrap justify-end gap-1">
-                    <button
-                        type="button"
-                        disabled={toolsDealt || core.toolDeck.length < core.playerIds.length}
-                        onClick={onDealTools}
-                        className="rounded-full border border-amber-200/55 bg-amber-300 px-2.5 py-1 text-[0.62rem] font-black text-emerald-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
-                    >
-                        {t('board.dealTools')}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onResetTools}
-                        className="rounded-full border border-amber-100/32 bg-emerald-900/82 px-2.5 py-1 text-[0.62rem] font-black text-amber-100 transition hover:border-amber-100/70 hover:bg-emerald-800"
-                    >
-                        {t('board.resetTools')}
-                    </button>
-                </div>
-            </div>
-            <div className="mb-2 rounded-md bg-black/18 px-2 py-1 text-amber-100">
-                {activeToolLabels.length > 0
-                    ? t('board.activeTools', { tools: activeToolLabels.join(' / ') })
-                    : t('board.noActiveTools')}
-            </div>
-            <div className="max-h-[28rem] overflow-y-auto pr-1 lg:max-h-[32rem]">
+            <button
+                type="button"
+                aria-expanded={isOpen}
+                aria-label={t('board.toolPanelSummary', { tools: localToolCount, specialists: localSpecialistCount })}
+                aria-haspopup="dialog"
+                onClick={() => setIsOpen(true)}
+                className={UTILITY_BUTTON_CLASS}
+            >
+                <Wrench aria-hidden="true" className={UTILITY_ICON_CLASS} strokeWidth={2.25} />
+                <span className="hidden sm:inline">{t('board.toolsPanel')}</span>
+                <span aria-hidden="true" className="hidden rounded bg-black/24 px-1.5 py-0.5 text-[0.62rem] tabular-nums text-amber-100/88 lg:inline-flex">
+                    {localToolCount}/{localSpecialistCount}
+                </span>
+                <span className="sr-only">
+                    {t('board.toolPanelSummary', { tools: localToolCount, specialists: localSpecialistCount })}
+                </span>
+            </button>
+            {isOpen && (
                 <div
-                    className="relative mb-2 rounded-lg border border-amber-200/18 bg-black/12 p-2"
-                    data-testid="the-gang-local-tools"
+                    className="fixed inset-0 z-[90] flex items-center justify-center bg-black/62 px-3 py-4 backdrop-blur-sm sm:px-5"
+                    data-testid="the-gang-tools-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={t('board.toolsPanel')}
                 >
-                    {localPlayer.toolCards.length === 0 ? (
-                        <OptimizedImage
-                            src={RULE_SURFACE_ASSETS.toolsZone}
-                            alt=""
-                            aria-hidden="true"
-                            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-75"
-                            draggable={false}
-                            placeholder={false}
-                        />
-                    ) : (
-                        <OptimizedImage
-                            src={RULE_SURFACE_ASSETS.toolsZone}
-                            alt=""
-                            aria-hidden="true"
-                            className="pointer-events-none absolute right-2 top-2 h-14 w-10 rounded opacity-18"
-                            draggable={false}
-                            placeholder={false}
-                        />
-                    )}
-                    <div className="relative z-10">
-                        {localPlayer.toolCards.length > 0 ? (
-                            <div className="flex flex-wrap justify-center gap-2 lg:gap-3" data-testid="the-gang-tool-card-grid">
-                                {localPlayer.toolCards.map((tool, index) => (
-                                    <ToolCardBadge
-                                        key={`${tool}-${index}`}
-                                        tool={tool}
-                                        active={localPlayer.activeTools.includes(tool)}
-                                        onUse={onUseTool}
-                                    />
-                                ))}
+                    <div className="flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-amber-200/30 bg-[#102319] shadow-[0_1.5rem_4rem_rgba(0,0,0,0.62)]">
+                        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-amber-200/18 bg-black/18 px-4 py-3 sm:px-5">
+                            <div className="min-w-0">
+                                <h2 className="text-lg font-black text-amber-100 sm:text-xl">{t('board.toolsPanel')}</h2>
+                                <div className="truncate text-[0.68rem] text-amber-100/72">
+                                    {t('board.toolPanelSummary', { tools: localToolCount, specialists: localSpecialistCount })}
+                                </div>
                             </div>
-                        ) : (
-                            <div className="flex min-h-[8.5rem] items-end justify-center rounded-md border border-amber-200/18 bg-black/8 px-2 pb-2 text-center text-amber-100/88 lg:min-h-[10.5rem]">
-                                {t('board.noTools')}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div data-testid="the-gang-local-specialists">
-                    <div className="mb-1 flex items-center justify-between gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsOpen(false)}
+                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-amber-200/30 bg-black/24 text-amber-100 transition hover:bg-amber-200 hover:text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                                aria-label={t('board.closeToolsPanel')}
+                            >
+                                <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
+                            </button>
+                        </header>
+                        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-3 sm:p-4 lg:grid-cols-2 lg:p-5">
+                            <section className="min-w-0 rounded-lg border border-amber-200/16 bg-black/12 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
                         <div>
-                            <div className="text-[0.58rem] uppercase tracking-[0.18em] text-sky-100/72">
-                                {t('board.specialistZone')}
-                            </div>
-                            <div className="text-[0.58rem] text-sky-100/82">
-                                {t('board.specialistDeck', { count: core.specialistDeck.length })}
+                            <div className="text-[0.58rem] uppercase tracking-[0.18em] text-amber-200/62">{t('board.toolsPanel')}</div>
+                            <div className="text-amber-100">{t('board.toolDeck', { count: core.toolDeck.length })}</div>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-1">
+                            <button
+                                type="button"
+                                disabled={!canConfigure || toolsDealt || core.toolDeck.length < core.playerIds.length}
+                                onClick={onDealTools}
+                                className="rounded-full border border-amber-200/55 bg-amber-300 px-2.5 py-1 text-[0.62rem] font-black text-emerald-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
+                            >
+                                {t('board.dealTools')}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={!canConfigure}
+                                onClick={onResetTools}
+                                className="rounded-full border border-amber-100/32 bg-emerald-900/82 px-2.5 py-1 text-[0.62rem] font-black text-amber-100 transition hover:border-amber-100/70 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
+                            >
+                                {t('board.resetTools')}
+                            </button>
+                        </div>
+                    </div>
+                    <div className="mb-2 rounded-md bg-black/18 px-2 py-1 text-amber-100">
+                        {activeToolLabels.length > 0
+                            ? t('board.activeTools', { tools: activeToolLabels.join(' / ') })
+                            : t('board.noActiveTools')}
+                    </div>
+                        <div
+                            className="relative rounded-lg border border-amber-200/18 bg-black/12 p-2"
+                            data-testid="the-gang-local-tools"
+                        >
+                            {localPlayer.toolCards.length === 0 ? (
+                                <OptimizedImage
+                                    src={RULE_SURFACE_ASSETS.toolsZone}
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-75"
+                                    draggable={false}
+                                    placeholder={false}
+                                />
+                            ) : (
+                                <OptimizedImage
+                                    src={RULE_SURFACE_ASSETS.toolsZone}
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute right-2 top-2 h-14 w-10 rounded opacity-18"
+                                    draggable={false}
+                                    placeholder={false}
+                                />
+                            )}
+                            <div className="relative z-10">
+                                {localPlayer.toolCards.length > 0 ? (
+                                    <div className="flex flex-wrap justify-center gap-2 lg:gap-3" data-testid="the-gang-tool-card-grid">
+                                        {localPlayer.toolCards.map((tool, index) => (
+                                            <ToolCardBadge
+                                                key={`${tool}-${index}`}
+                                                tool={tool}
+                                                active={localPlayer.activeTools.includes(tool)}
+                                                onUse={onUseTool}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex min-h-[8.5rem] items-end justify-center rounded-md border border-amber-200/18 bg-black/8 px-2 pb-2 text-center text-amber-100/88 lg:min-h-[10.5rem]">
+                                        {t('board.noTools')}
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={onResetSpecialists}
-                            className="rounded-full border border-sky-100/32 bg-sky-950/72 px-2.5 py-1 text-[0.62rem] font-black text-sky-100 transition hover:border-sky-100/70 hover:bg-sky-900"
-                        >
-                            {t('board.resetSpecialists')}
-                        </button>
-                    </div>
-                    <div className="relative rounded-lg border border-sky-200/18 bg-black/12 p-2">
-                        {localPlayer.specialistCards.length === 0 ? (
-                            <OptimizedImage
-                                src={RULE_SURFACE_ASSETS.specialistsZone}
-                                alt=""
-                                aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-75"
-                                draggable={false}
-                                placeholder={false}
-                            />
-                        ) : (
-                            <OptimizedImage
-                                src={RULE_SURFACE_ASSETS.specialistsZone}
-                                alt=""
-                                aria-hidden="true"
-                                className="pointer-events-none absolute right-2 top-2 h-14 w-10 rounded opacity-18"
-                                draggable={false}
-                                placeholder={false}
-                            />
-                        )}
-                        <div className="relative z-10">
-                            {localPlayer.specialistCards.length > 0 ? (
-                                <div className="flex flex-wrap justify-center gap-2 lg:gap-3" data-testid="the-gang-specialist-card-grid">
-                                    {localPlayer.specialistCards.map((specialist, index) => (
-                                        <SpecialistCardBadge key={`${specialist}-${index}`} specialist={specialist} />
-                                    ))}
+                            </section>
+                        <section className="min-w-0 rounded-lg border border-sky-200/16 bg-black/12 p-3" data-testid="the-gang-local-specialists">
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                                <div>
+                                    <div className="text-[0.58rem] uppercase tracking-[0.18em] text-sky-100/72">
+                                        {t('board.specialistZone')}
+                                    </div>
+                                    <div className="text-[0.58rem] text-sky-100/82">
+                                        {t('board.specialistDeck', { count: core.specialistDeck.length })}
+                                    </div>
                                 </div>
-                            ) : (
-                                <div className="flex min-h-[8.5rem] items-end justify-center rounded-md border border-sky-200/18 bg-black/8 px-2 pb-2 text-center text-sky-100/88 lg:min-h-[10.5rem]">
-                                    {t('board.noSpecialists')}
+                                <button
+                                    type="button"
+                                    disabled={!canConfigure}
+                                    onClick={onResetSpecialists}
+                                    className="rounded-full border border-sky-100/32 bg-sky-950/72 px-2.5 py-1 text-[0.62rem] font-black text-sky-100 transition hover:border-sky-100/70 hover:bg-sky-900 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
+                                >
+                                    {t('board.resetSpecialists')}
+                                </button>
+                            </div>
+                            <div className="relative rounded-lg border border-sky-200/18 bg-black/12 p-2">
+                                {localPlayer.specialistCards.length === 0 ? (
+                                    <OptimizedImage
+                                        src={RULE_SURFACE_ASSETS.specialistsZone}
+                                        alt=""
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-75"
+                                        draggable={false}
+                                        placeholder={false}
+                                    />
+                                ) : (
+                                    <OptimizedImage
+                                        src={RULE_SURFACE_ASSETS.specialistsZone}
+                                        alt=""
+                                        aria-hidden="true"
+                                        className="pointer-events-none absolute right-2 top-2 h-14 w-10 rounded opacity-18"
+                                        draggable={false}
+                                        placeholder={false}
+                                    />
+                                )}
+                                <div className="relative z-10">
+                                    {localPlayer.specialistCards.length > 0 ? (
+                                        <div className="flex flex-wrap justify-center gap-2 lg:gap-3" data-testid="the-gang-specialist-card-grid">
+                                            {localPlayer.specialistCards.map((specialist, index) => (
+                                                <SpecialistCardBadge key={`${specialist}-${index}`} specialist={specialist} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex min-h-[8.5rem] items-end justify-center rounded-md border border-sky-200/18 bg-black/8 px-2 pb-2 text-center text-sky-100/88 lg:min-h-[10.5rem]">
+                                            {t('board.noSpecialists')}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
+                        </section>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
@@ -1520,7 +1332,6 @@ function TheGangEndgameContent({
 export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, seatControllers, isMultiplayer }: Props) {
     const core = G.core;
     const { t } = useTranslation('game-the-gang');
-    const [handRankVisibleByPlayer, setHandRankVisibleByPlayer] = useState<Record<string, boolean>>({});
     useTutorialBridge(G.sys.tutorial, dispatch);
     useGameAudio({
         config: THE_GANG_AUDIO_CONFIG,
@@ -1550,8 +1361,6 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         ? (playerID ?? core.playerIds[0])
         : (hasAiSeat ? (playerID ?? localHumanPlayerId) : (playerID ?? core.playerIds[0]));
     const localPlayer = core.players[localPlayerId];
-    const localPlayerIndex = Math.max(0, core.playerIds.indexOf(localPlayerId));
-    const isLocalHandRankVisible = handRankVisibleByPlayer[localPlayerId] === true;
     const allPlayersHaveChip = core.playerIds.every((id) => core.currentRoundChips[id] !== undefined);
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
     const revealShowdownProgress = getProgressButtonState(core, 'reveal-showdown', localPlayerId, t('board.revealShowdown'), t);
@@ -1565,30 +1374,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         || core.phase !== 'chip-selection'
         || Object.keys(core.currentRoundChips).length > 0
         || core.roundHistory.length > 0;
+    const canConfigureRules = resolveCanConfigureRules(matchData, playerID, core.playerIds[0]);
     const handRankRules = isChallengeActive(core.rules.config, 'grinding-gears') || isChallengeActive(core.rules.config, 'the-joker') || isChallengeActive(core.rules.config, 'master-key')
         ? THE_GANG_EXPANDED_HAND_RANK_RULES
         : TEXAS_HOLDEM_HAND_RANK_RULES;
-    const currentHandRankHint = useMemo<CurrentHandRankHint | undefined>(() => {
-        if (!localPlayer) return undefined;
-        const handCards = [
-            ...localPlayer.pocketCards,
-            ...localPlayer.nightVisionCards,
-        ];
-        const boardCards = [
-            ...(localPlayer.communityCards ?? core.communityCards),
-            ...localPlayer.flashlightCards,
-        ];
-        if (handCards.length + boardCards.length < 5) return undefined;
-
-        const evaluated = evaluateBestTheGangHand(handCards, boardCards, {
-            rulesConfig: core.rules.config,
-            blankedRank: core.rules.blankedRank,
-        });
-        return buildCurrentHandRankHint(evaluated, handCards, boardCards, {
-            rulesConfig: core.rules.config,
-            blankedRank: core.rules.blankedRank,
-        });
-    }, [core.communityCards, core.rules.blankedRank, core.rules.config, localPlayer]);
 
     const playerNames = buildPlayerDisplayNameMap(
         core.playerIds,
@@ -1668,6 +1457,31 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
             >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,rgba(245,214,132,0.16),transparent_36%),radial-gradient(circle_at_50%_112%,rgba(5,8,5,0.55),transparent_42%),linear-gradient(90deg,rgba(245,214,132,0.06),transparent_18%,transparent_82%,rgba(245,214,132,0.06)),repeating-linear-gradient(135deg,rgba(255,255,255,0.028)_0,rgba(255,255,255,0.028)_1px,transparent_1px,transparent_20px)] opacity-80" />
 
+                <HudPortal>
+                    <div
+                        className="pointer-events-none fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] z-50 flex flex-col items-start gap-2 sm:flex-row sm:items-end lg:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:left-[max(1rem,env(safe-area-inset-left))]"
+                        data-bgg-zone="utility-dock"
+                        data-testid="the-gang-utility-dock"
+                    >
+                        <HandRankReference rules={handRankRules} />
+                        <RulesConfigPanel
+                            config={core.rules.config}
+                            locked={rulesLocked}
+                            canConfigure={canConfigureRules}
+                            onChange={setRulesConfig}
+                        />
+                        <ToolsPanel
+                            core={core}
+                            localPlayerId={localPlayerId}
+                            canConfigure={canConfigureRules}
+                            onDealTools={dealTools}
+                            onResetTools={resetTools}
+                            onResetSpecialists={resetSpecialists}
+                            onUseTool={useTool}
+                        />
+                    </div>
+                </HudPortal>
+
                 <header className="relative z-10 flex shrink-0 items-center justify-end gap-2 lg:gap-3">
                     <div className="sr-only" data-tutorial-id="the-gang-title">
                         <p>{t('title.secondary')}</p>
@@ -1696,23 +1510,9 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     className="flex min-w-0 basis-[12rem] flex-col items-center gap-1 lg:basis-[26rem] lg:gap-2"
                                     data-bgg-zone="plboard"
                                 >
-                                    {isSelf ? (
-                                        <button
-                                            type="button"
-                                            className="truncate text-xs font-black tracking-[0.08em] text-amber-200 transition hover:text-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:text-sm"
-                                            data-testid="the-gang-hand-rank-nameplate-toggle"
-                                            data-bgg-zone="hand-rank-nameplate-toggle"
-                                            aria-pressed={isLocalHandRankVisible}
-                                            aria-label={t(isLocalHandRankVisible ? 'board.currentHandRankToggleOff' : 'board.currentHandRankToggleOn')}
-                                            onClick={() => setHandRankVisibleByPlayer((prev) => ({ ...prev, [id]: prev[id] !== true }))}
-                                        >
-                                            {playerName(id)}
-                                        </button>
-                                    ) : (
-                                        <span className="truncate text-xs font-black tracking-[0.08em] text-stone-100/72 lg:text-sm">
-                                            {playerName(id)}
-                                        </span>
-                                    )}
+                                    <span className={`truncate text-xs font-black tracking-[0.08em] lg:text-sm ${isSelf ? 'text-amber-200' : 'text-stone-100/72'}`}>
+                                        {playerName(id)}
+                                    </span>
                                     <PlayerChipStrip
                                         roundHistory={core.roundHistory}
                                         currentRound={core.round}
@@ -1775,25 +1575,9 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
                     <section className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-end justify-center overflow-visible pb-0" data-bgg-zone="bottom-zone">
                         <VaultsAlarmsZone successes={core.successes} failures={core.failures} />
-                        <HandRankReference rules={handRankRules} />
-                        <RulesConfigPanel
-                            config={core.rules.config}
-                            locked={rulesLocked}
-                            canConfigure={localPlayerId === core.playerIds[0]}
-                            onChange={setRulesConfig}
-                        />
-                        <ToolsPanel
-                            core={core}
-                            localPlayerId={localPlayerId}
-                            onDealTools={dealTools}
-                            onResetTools={resetTools}
-                            onResetSpecialists={resetSpecialists}
-                            onUseTool={useTool}
-                        />
 
                         <div className="pointer-events-auto flex flex-col items-center gap-1.5 lg:gap-2" data-bgg-zone="hand-groupzone" data-tutorial-id="the-gang-hand">
                             <span className="sr-only">{t('board.myHand')}</span>
-                            <CurrentHandRankMarker hint={currentHandRankHint} playerIndex={localPlayerIndex} visible={isLocalHandRankVisible} />
                             <HandChipStrip
                                 roundHistory={core.roundHistory}
                                 currentRound={core.round}

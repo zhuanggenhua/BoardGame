@@ -1,6 +1,27 @@
 export const DEFAULT_FORCE_UPDATE_TITLE = '正在更新';
 export const DEFAULT_FORCE_UPDATE_MESSAGE = '正在下载必要更新，请稍候';
 export const ANDROID_OTA_VERSION_FLOOR = '6.0.0';
+export const DEFAULT_ANDROID_OTA_CHANNEL = 'stable';
+export const DEFAULT_ANDROID_ASSETS_BASE_URL = 'https://assets.easyboardgame.top/official';
+
+export const resolveAndroidOtaClientBuildEnv = ({
+    channel = DEFAULT_ANDROID_OTA_CHANNEL,
+    assetsBaseUrl = DEFAULT_ANDROID_ASSETS_BASE_URL,
+} = {}) => {
+    const normalizedChannel = String(channel || '').trim() || DEFAULT_ANDROID_OTA_CHANNEL;
+    const normalizedAssetsBaseUrl = String(assetsBaseUrl || '').trim().replace(/\/+$/, '')
+        || DEFAULT_ANDROID_ASSETS_BASE_URL;
+
+    if (!/^https?:\/\//i.test(normalizedAssetsBaseUrl)) {
+        throw new Error(`Android OTA 素材根地址必须是绝对 HTTP/HTTPS URL：${normalizedAssetsBaseUrl}`);
+    }
+
+    return {
+        VITE_ANDROID_OTA_ENABLED: 'true',
+        VITE_ANDROID_OTA_MANIFEST_URL: `${normalizedAssetsBaseUrl}/app-updates/android/${normalizedChannel}/latest.json`,
+        VITE_ANDROID_OTA_CHANNEL: normalizedChannel,
+    };
+};
 
 const parseVersionTriplet = (value) => {
     const match = String(value || '').trim().match(/^(\d+)\.(\d+)\.(\d+)/);

@@ -136,6 +136,8 @@
     },
     "challengeSettings": "挑战牌",
     "toolsPanel": "工具",
+    "toolPanelSummary": "工具 {{tools}} / 专家 {{specialists}}",
+    "closeToolsPanel": "关闭工具与专家牌",
     "toolBadge": "工具",
     "toolActiveBadge": "生效中",
     "toolDeck": "工具牌堆 {{count}}",

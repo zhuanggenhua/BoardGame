@@ -5,6 +5,7 @@ export const THE_GANG_CHIP_TAKEN_KEY = 'token.decks_and_cards_sound_fx_pack.toke
 export const THE_GANG_ROUND_ENDED_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_deal_1';
 export const THE_GANG_SHOWDOWN_REVEALED_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_1';
 export const THE_GANG_NEXT_HEIST_KEY = 'ui.general.ui_menu_sound_fx_pack_vol.signals.update.update_chime_c';
+export const THE_GANG_PROGRESS_APPROVED_KEY = 'ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none';
 export const THE_GANG_SHOWDOWN_SUCCESS_KEY = 'ui.general.mini_games_sound_effects_and_music_pack.success.sfx_success_point_medium';
 export const THE_GANG_SHOWDOWN_WIN_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_win';
 export const THE_GANG_SHOWDOWN_LOSE_KEY = 'stinger.mini_games_sound_effects_and_music_pack.stinger.stgr_action_lose';
@@ -47,7 +48,7 @@ export const THE_GANG_AUDIO_CONFIG: GameAudioConfig = {
         THE_GANG_ROUND_ENDED_KEY,
         THE_GANG_SHOWDOWN_REVEALED_KEY,
         THE_GANG_NEXT_HEIST_KEY,
-        THE_GANG_SHOWDOWN_SUCCESS_KEY,
+        THE_GANG_PROGRESS_APPROVED_KEY,
         THE_GANG_SHOWDOWN_WIN_KEY,
         THE_GANG_SHOWDOWN_LOSE_KEY,
     ],
@@ -56,13 +57,13 @@ export const THE_GANG_AUDIO_CONFIG: GameAudioConfig = {
             key: THE_GANG_BGM_NORMAL_KEY,
             name: 'Double Agent',
             src: '',
-            volume: 0.38,
+            volume: 0.18,
         },
         {
             key: THE_GANG_BGM_SHOWDOWN_KEY,
             name: 'The Boss',
             src: '',
-            volume: 0.42,
+            volume: 0.22,
         },
     ],
     bgmGroups: {
@@ -76,7 +77,7 @@ export const THE_GANG_AUDIO_CONFIG: GameAudioConfig = {
             case THE_GANG_EVENTS.ROUND_ENDED:
                 return THE_GANG_ROUND_ENDED_KEY;
             case THE_GANG_EVENTS.PROGRESS_APPROVED:
-                return THE_GANG_SHOWDOWN_SUCCESS_KEY;
+                return THE_GANG_PROGRESS_APPROVED_KEY;
             case THE_GANG_EVENTS.SHOWDOWN_REVEALED:
                 return resolveShowdownSound(event);
             case THE_GANG_EVENTS.NEXT_HEIST_STARTED:

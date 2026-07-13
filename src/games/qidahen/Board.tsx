@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import {
+    SelectableGameObject,
     ZoomPanViewport,
     type ZoomPanViewportState,
     type ZoomPanViewportZoomAnchorArgs,
@@ -89,6 +90,15 @@ import { getActionRuleDisplayRegionName } from './domain/regionRuleSemantics';
 import { getQidahenStatefulRegionDisplayName } from './domain/runtimeRegionRules';
 import { resolveQidahenPrimaryRuntimeRegionId } from './domain/regionConfig';
 import { canPlaceRegularTroopsInRegion } from './domain/regionSelectionPreferences';
+import {
+    QIDAHEN_SCENARIO_SETUP_OPTIONS,
+    getQidahenScenarioVoteMeta,
+} from './roomSetup';
+import {
+    getQidahenScenarioCardPreview,
+    getQidahenSetupArmamentPreview,
+    getQidahenSetupCharacterPreview,
+} from './ui/setupCardPreviews';
 
 type QidahenYearCardSlot = QidahenCore['yearCards'][number];
 import { getCurrentFactionId } from './domain/factionTurnAccessors';
@@ -123,10 +133,6 @@ import {
     resolveQidahenRuntimeRegionEntryPoint,
 } from './ui/runtimeRegionOwnership';
 import qidahenRegionMaskUrl from './data/region-mask.png?url';
-import {
-    QIDAHEN_SCENARIO_SETUP_OPTIONS,
-    getQidahenScenarioVoteMeta,
-} from './roomSetup';
 import { QIDAHEN_AUDIO_CONFIG } from './audio.config';
 import { QIDAHEN_MANIFEST } from './manifest';
 
@@ -392,6 +398,15 @@ const UI_SURFACE = {
     mapPanelShadow: '0 2px 0 rgba(7,5,3,0.7), 0 10px 18px rgba(22,14,8,0.32)',
     mapPanelInset: 'inset 0 0 0 1px rgba(232,200,133,0.2), inset 0 -2px 0 rgba(0,0,0,0.2)',
     mapOpenPanelShadow: '0 3px 8px rgba(56,35,15,0.1), inset 0 0 0 1px rgba(255,250,232,0.62), inset 0 -1px 0 rgba(95,71,45,0.1)',
+    bookPaper: [
+        'linear-gradient(90deg, rgba(174,129,73,0.22) 0%, transparent 7%, transparent 93%, rgba(112,78,38,0.18) 100%)',
+        'linear-gradient(180deg, rgba(255,248,224,0.98) 0%, rgba(237,218,174,0.98) 56%, rgba(217,190,132,0.98) 100%)',
+        'radial-gradient(circle at 18% 14%, rgba(255,255,242,0.55), transparent 32%)',
+    ].join(', '),
+    bookPage: [
+        'linear-gradient(180deg, rgba(255,250,232,0.96) 0%, rgba(236,218,176,0.94) 100%)',
+        'radial-gradient(circle at 16% 12%, rgba(255,255,245,0.42), transparent 36%)',
+    ].join(', '),
     cutCorner: 'polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)',
     smallCutCorner: 'polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px)',
 } as const;
@@ -712,7 +727,7 @@ const _buildQidahenPrimaryStageHint = (
             return '选择手牌行动';
         }
         if (selectedAction.id === 'upgrade-armament') {
-            return '弃牌后执行';
+            return '选军备牌升级';
         }
         return '选择行动目标';
     }
@@ -746,7 +761,7 @@ const buildQidahenPrimaryActionEntryText = (
         case 'ma-shi-trade':
             return '选择行动目标';
         case 'upgrade-armament':
-            return '弃牌后执行';
+            return '选军备牌升级';
         default:
             return selectedAction ? selectedAction.label : '选择手牌行动';
     }
@@ -1085,16 +1100,26 @@ const HandInteractionTray: React.FC<{
                     <div className="min-w-0 flex-1">
                         <div className="text-[13px] font-black leading-5">{selectedAction.label}</div>
                         <div className="mt-1 text-[11px]" data-testid="qidahen-action-payment-status" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.handInteraction.actionPaymentStatus', {
-                                cost: selectedAction.cost,
-                                selected: core.selectedPaymentCardIds.length,
-                                defaultValue: '需弃 {{cost}} 张 · 已选 {{selected}} 张',
-                            })}
+                            {selectedAction.id === 'upgrade-armament'
+                                ? t('board.handInteraction.armamentPaymentStatus', {
+                                    cost: selectedAction.cost,
+                                    selected: core.selectedPaymentCardIds.length,
+                                    defaultValue: '需选 {{cost}} 张军备牌 · 已选 {{selected}} 张',
+                                })
+                                : t('board.handInteraction.actionPaymentStatus', {
+                                    cost: selectedAction.cost,
+                                    selected: core.selectedPaymentCardIds.length,
+                                    defaultValue: '需弃 {{cost}} 张 · 已选 {{selected}} 张',
+                                })}
                         </div>
                         <div className="mt-1 text-[11px]" data-testid="qidahen-action-payment-hint" style={{ color: '#f3d1a5' }}>
-                            {t('board.handInteraction.actionPaymentHint', {
-                                defaultValue: '点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。',
-                            })}
+                            {selectedAction.id === 'upgrade-armament'
+                                ? t('board.handInteraction.armamentPaymentHint', {
+                                    defaultValue: '点选要使用的军备牌；先作为升级军备打出，结算后才进入弃牌堆。',
+                                })
+                                : t('board.handInteraction.actionPaymentHint', {
+                                    defaultValue: '点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。',
+                                })}
                         </div>
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -1106,7 +1131,9 @@ const HandInteractionTray: React.FC<{
                             onClick={onConfirmSelectedAction}
                             style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                         >
-                            {t('board.handInteraction.confirmExecute', { defaultValue: '确认执行' })}
+                            {selectedAction.id === 'upgrade-armament'
+                                ? t('board.handInteraction.confirmUseArmament', { defaultValue: '使用并升级' })
+                                : t('board.handInteraction.confirmExecute', { defaultValue: '确认执行' })}
                         </button>
                         <button
                             type="button"
@@ -1530,14 +1557,14 @@ const PlayerChip: React.FC<{
         });
     return (
         <div
-            className="relative flex h-[46px] min-w-0 flex-1 items-center gap-1.5 overflow-hidden border px-2"
+            className="relative flex h-[58px] min-w-0 flex-1 items-center gap-2 overflow-hidden border px-2.5"
             data-testid={`qidahen-player-${faction.id}`}
             style={{
                 borderColor: current ? tone.border : UI_STYLE.mapInk,
                 background: current ? UI_SURFACE.mapOpenPanelSelected : UI_SURFACE.mapOpenPanel,
                 color: UI_STYLE.ink,
                 boxShadow: current ? UI_SURFACE.mapOpenPanelShadow : '0 2px 7px rgba(56,35,15,0.08), inset 0 0 0 1px rgba(255,250,232,0.42)',
-                borderRadius: 9,
+                borderRadius: 10,
             }}
         >
             <span
@@ -1548,27 +1575,27 @@ const PlayerChip: React.FC<{
             <OptimizedImage
                 src={tone.chip}
                 alt={faction.name}
-                className="h-7 w-7 shrink-0 rounded-full border object-cover"
+                className="h-9 w-9 shrink-0 rounded-full border object-cover"
                 style={{ borderColor: tone.border, boxShadow: '0 2px 6px rgba(56,35,15,0.18)' }}
                 draggable={false}
                 placeholder={false}
             />
-            <div className="min-w-0 flex-1 text-[13px] font-black leading-none tracking-[0.02em]">
+            <div className="min-w-0 flex-1 text-[15px] font-black leading-none tracking-[0.02em]">
                 <div className="min-w-0 whitespace-nowrap">
                     <span>{faction.name}</span>
-                    <span className="ml-1.5 text-[11px]" style={{ color: UI_STYLE.bronze }}>VP{effectiveVp}</span>
+                    <span className="ml-2 text-[12px]" style={{ color: UI_STYLE.bronze }}>VP{effectiveVp}</span>
                     {prestigeBonus > 0 ? (
-                        <span className="ml-1.5 text-[10px]" style={{ color: UI_STYLE.bronze }}>
+                        <span className="ml-2 text-[11px]" style={{ color: UI_STYLE.bronze }}>
                             {t('board.player.prestigeBonus', {
                                 bonus: prestigeBonus,
                                 defaultValue: '汉城+{{bonus}}',
                             })}
                         </span>
                     ) : null}
-                    <span className="ml-1.5 text-[11px]" style={{ color: UI_STYLE.bronze }}>{faction.handCount}/{faction.handLimit}</span>
+                    <span className="ml-2 text-[12px]" style={{ color: UI_STYLE.bronze }}>{faction.handCount}/{faction.handLimit}</span>
                 </div>
                 <div
-                    className="mt-0.5 truncate text-[10px] leading-none"
+                    className="mt-1 truncate text-[11px] leading-none"
                     data-testid={`qidahen-armaments-${faction.id}`}
                     style={{ color: UI_STYLE.mutedInk }}
                 >
@@ -1578,7 +1605,7 @@ const PlayerChip: React.FC<{
                     })}
                 </div>
                 <div
-                    className="mt-0.5 truncate text-[10px] leading-none"
+                    className="mt-1 truncate text-[11px] leading-none"
                     data-testid={`qidahen-character-markers-${faction.id}`}
                     style={{ color: markedCharacters.length > 0 ? UI_STYLE.mutedInk : 'rgba(42,31,21,0.62)' }}
                 >
@@ -1587,7 +1614,7 @@ const PlayerChip: React.FC<{
             </div>
             {faction.defeatMarkers > 0 ? (
                 <span
-                    className="grid h-[19px] min-w-[30px] shrink-0 place-items-center border px-1 text-[9px] font-black"
+                    className="grid h-[24px] min-w-[38px] shrink-0 place-items-center border px-1.5 text-[11px] font-black"
                     style={{
                         borderColor: UI_STYLE.mapInk,
                         background: 'rgba(238, 210, 159, 0.78)',
@@ -1604,7 +1631,7 @@ const PlayerChip: React.FC<{
             ) : null}
             {current ? (
                 <span
-                    className="grid h-[19px] w-[34px] shrink-0 place-items-center border text-[9px] font-black"
+                    className="grid h-[24px] w-[44px] shrink-0 place-items-center border text-[11px] font-black"
                     style={{
                         background: 'linear-gradient(180deg, rgba(216,123,82,0.78) 0%, rgba(180,76,54,0.72) 100%)',
                         borderColor: UI_STYLE.mapInk,
@@ -1624,11 +1651,11 @@ const PlayerFloat: React.FC<{ core: QidahenCore }> = ({ core }) => {
     const prestigeBonusByFaction = getQidahenPrestigeBonusByFaction(core);
     return (
         <div
-            className="pointer-events-auto absolute left-[820px] top-[16px] z-40 flex w-[560px] gap-1.5"
+            className="pointer-events-auto absolute left-[740px] top-[16px] z-40 flex w-[720px] gap-2"
             data-testid="qidahen-player-float"
             data-ui-anchor="top-right"
             style={{
-                left: 'calc(780px + var(--qidahen-mobile-edge-pull, 0px))',
+                left: 'calc(740px + var(--qidahen-mobile-edge-pull, 0px))',
                 top: 'calc(16px + var(--qidahen-mobile-top-inset, 0px))',
             }}
         >
@@ -3827,7 +3854,7 @@ const ActionsZone: React.FC<{
                     <div className="mt-1 text-[11px]" data-testid="qidahen-actions-blocked-by-scenario" style={{ color: '#f3d1a5' }}>
                         {core.scenarioVote
                             ? t('board.actions.scenarioVoteBlocked', {
-                                defaultValue: '局内剧本投票尚未完成，当前只可处理剧本介绍与投票。',
+                                defaultValue: '局内剧本选择尚未完成，当前只可处理剧本介绍与房主选择。',
                             })
                             : t('board.actions.scenarioBlocked', {
                                 defaultValue: '剧本待决项尚未确认，当前只可处理剧本选择。',
@@ -4657,7 +4684,8 @@ const HandCard: React.FC<{
 
     return (
         <div
-            className="relative shrink-0"
+            className="relative shrink-0 rounded-[11px]"
+            data-qidahen-hand-card-selected={selected ? 'true' : undefined}
             style={{
                 width,
                 height,
@@ -4665,26 +4693,26 @@ const HandCard: React.FC<{
                 marginLeft: stackIndex === 0 ? 0 : overlapPx,
             }}
         >
-            <button
-                type="button"
+            <SelectableGameObject
                 aria-label={card.label}
                 disabled={disabled}
+                selected={selected}
+                available={Boolean(onClick)}
                 data-testid={`qidahen-hand-card-${card.id}`}
                 data-tutorial-id={getQidahenHandCardTutorialTargetId(card)}
                 tabIndex={disabled ? -1 : 0}
-                className={`relative z-20 h-full w-full overflow-visible transition-[transform,filter] duration-150 hover:z-50 hover:brightness-[1.03] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 disabled:cursor-not-allowed disabled:opacity-55 ${selected ? '-translate-y-[26px]' : 'hover:-translate-y-[18px]'}`}
+                className={`z-20 h-full w-full rounded-[9px] bg-transparent hover:z-50 hover:brightness-[1.03] ${selected ? '-translate-y-[26px] brightness-[1.06]' : 'hover:-translate-y-[18px]'}`}
                 onClick={onClick}
                 style={{
                     background: 'transparent',
-                    boxShadow: 'none',
-                    borderRadius: 7,
+                    borderRadius: 9,
                 }}
             >
                 <span
-                    className="pointer-events-none absolute inset-0 z-0 rounded-[7px]"
-                    style={{ boxShadow: selected ? '0 10px 18px rgba(56,35,15,0.28)' : '0 8px 16px rgba(56,35,15,0.18)' }}
+                    className="pointer-events-none absolute inset-0 z-0 rounded-[9px]"
+                    style={{ boxShadow: selected ? '0 12px 22px rgba(56,35,15,0.32)' : '0 8px 16px rgba(56,35,15,0.18)' }}
                 />
-                <span className="pointer-events-none relative z-10 block h-full w-full overflow-hidden rounded-[7px]">
+                <span className="pointer-events-none relative z-10 block h-full w-full overflow-hidden rounded-[9px]">
                     <CardPreviewFit
                         previewRef={card.previewRef}
                         locale={locale}
@@ -4709,7 +4737,7 @@ const HandCard: React.FC<{
                         {cardKindBadge}
                     </span>
                 ) : null}
-            </button>
+            </SelectableGameObject>
         </div>
     );
 };
@@ -4913,49 +4941,6 @@ const HandZone: React.FC<{
                 </div>
             </div>
             <div
-                className="pointer-events-none absolute left-1/2 z-[90] flex items-end justify-center overflow-visible"
-                data-testid="qidahen-hand-selection-frame-layer"
-                style={{
-                    bottom: BOTTOM_DOCK_INSET,
-                    transform: 'translateX(-50%)',
-                    height: BOTTOM_DOCK_HEIGHT,
-                    width: handDockWidth,
-                    maxWidth: handDockMaxWidth,
-                }}
-            >
-                <div className="mx-auto flex min-w-max items-end justify-center px-2">
-                    {currentHandCards.map((card, index) => {
-                        const selected = isHandCardSelected(card);
-                        return (
-                            <div
-                                key={`selected-frame-${card.id}`}
-                                className="pointer-events-none relative shrink-0"
-                                style={{
-                                    width: handCardWidth,
-                                    height: handCardHeight,
-                                    zIndex: selected ? currentHandCards.length + index + 64 : index + 1,
-                                    marginLeft: index === 0 ? 0 : handCardOverlapPx,
-                                    transform: selected ? `translateY(-${HAND_CARD_SELECTED_LIFT}px)` : undefined,
-                                }}
-                            >
-                                {selected ? (
-                                    <span
-                                        aria-hidden="true"
-                                        className="pointer-events-none absolute inset-[2px] rounded-[10px]"
-                                        data-testid={`qidahen-hand-card-selected-frame-${card.id}`}
-                                        style={{
-                                            border: '5px solid #f0d386',
-                                            boxShadow: '0 0 0 2px rgba(70, 45, 20, 0.78), 0 0 18px rgba(240, 211, 134, 0.52)',
-                                            boxSizing: 'border-box',
-                                        }}
-                                    />
-                                ) : null}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-            <div
                 className="pointer-events-none absolute left-1/2 flex items-end justify-center overflow-visible"
                 style={{
                     bottom: BOTTOM_DOCK_INSET,
@@ -5021,6 +5006,42 @@ const HandZone: React.FC<{
     );
 };
 
+const QidahenSetupObjectChoice: React.FC<{
+    label: string;
+    previewRef: CardPreviewRef | null;
+    selected: boolean;
+    testId: string;
+    onClick: () => void;
+}> = ({ label, previewRef, selected, testId, onClick }) => (
+    <SelectableGameObject
+        aria-label={label}
+        selected={selected}
+        available
+        data-testid={testId}
+        data-qidahen-choice-selected={selected ? 'true' : undefined}
+        className={`group h-[196px] w-[142px] shrink-0 rounded-[9px] bg-transparent hover:-translate-y-2 active:translate-y-0 ${selected ? '-translate-y-2' : ''}`}
+        onClick={onClick}
+    >
+        {previewRef ? (
+            <span className="pointer-events-none relative block h-full w-full overflow-hidden rounded-[9px] bg-[#efe3c4] shadow-[0_8px_18px_rgba(56,35,15,0.24)]">
+                <CardPreviewFit
+                    previewRef={previewRef}
+                    title={label}
+                    width={142}
+                    height={196}
+                    rawWidth={CARD_DIMENSIONS.hand.rawWidth}
+                    rawHeight={CARD_DIMENSIONS.hand.rawHeight}
+                />
+            </span>
+        ) : (
+            <span className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[9px] border-[2px] border-dashed px-3 text-center" style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.paperQuiet, color: UI_STYLE.ink }}>
+                <span className="text-[15px] font-black">{label}</span>
+                <span className="text-[11px]" style={{ color: UI_STYLE.mutedInk }}>缺少正式卡图</span>
+            </span>
+        )}
+    </SelectableGameObject>
+);
+
 const QidahenInMatchSetupOverlay: React.FC<{
     core: QidahenCore;
     viewerFactionId: QidahenFactionId | null;
@@ -5044,6 +5065,29 @@ const QidahenInMatchSetupOverlay: React.FC<{
     const waitingArmamentChoices = pendingArmamentChoices.filter((group) => isViewerScoped && group.factionId !== viewerFactionId);
     const [selectedCharacterIdsByGroup, setSelectedCharacterIdsByGroup] = React.useState<Record<string, string[]>>({});
     const [selectedArmamentIdsByGroup, setSelectedArmamentIdsByGroup] = React.useState<Record<string, string[]>>({});
+    const applyInlineChoice = React.useCallback((
+        groupId: string,
+        optionId: string,
+        maxCount: number,
+        currentSelections: Record<string, string[]>,
+        setSelections: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
+        resolveChoice: (groupId: string, selectedIds: string[]) => void,
+    ) => {
+        const selectedIds = currentSelections[groupId] ?? [];
+        const alreadySelected = selectedIds.includes(optionId);
+        const nextSelectedIds = alreadySelected
+            ? selectedIds.filter((id) => id !== optionId)
+            : selectedIds.length >= maxCount
+                ? [...selectedIds.slice(0, Math.max(0, maxCount - 1)), optionId]
+                : [...selectedIds, optionId];
+        setSelections((current) => ({
+            ...current,
+            [groupId]: nextSelectedIds,
+        }));
+        if (nextSelectedIds.length === maxCount) {
+            resolveChoice(groupId, nextSelectedIds);
+        }
+    }, []);
     const waitingSummaryLines = React.useMemo(() => {
         const waitingSummaries = new Map<string, {
             factionName: string;
@@ -5092,36 +5136,18 @@ const QidahenInMatchSetupOverlay: React.FC<{
         ));
     }, [pendingArmamentChoices, pendingCharacterChoices]);
 
-    const toggleChoiceId = React.useCallback((
-        groupId: string,
-        optionId: string,
-        maxCount: number,
-        currentSelections: Record<string, string[]>,
-        setSelections: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
-    ) => {
-        const selectedIds = currentSelections[groupId] ?? [];
-        const alreadySelected = selectedIds.includes(optionId);
-        const nextSelectedIds = alreadySelected
-            ? selectedIds.filter((id) => id !== optionId)
-            : selectedIds.length >= maxCount
-                ? [...selectedIds.slice(0, Math.max(0, maxCount - 1)), optionId]
-                : [...selectedIds, optionId];
-        setSelections((current) => ({
-            ...current,
-            [groupId]: nextSelectedIds,
-        }));
-    }, []);
-
     return (
         <div
-            className="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(14,10,7,0.78)] px-6 py-8 backdrop-blur-[2px]"
+            className="absolute inset-0 z-[140] flex items-center justify-center bg-[rgba(14,10,7,0.78)] px-6 py-8 backdrop-blur-[2px]"
             data-testid="qidahen-inmatch-setup-overlay"
         >
             <div
-                className="max-h-full w-full max-w-[1080px] overflow-auto border-[3px] p-6"
-                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 6 }}
+                className="relative max-h-full w-full max-w-[1180px] overflow-hidden border-[4px] p-5"
+                data-ui-family="qidahen-book-setup"
+                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.bookPaper, color: UI_STYLE.ink, boxShadow: '0 8px 0 rgba(58,37,17,0.26), 0 28px 46px rgba(13,8,4,0.42)', borderRadius: 8 }}
             >
-                <div className="flex flex-wrap items-end justify-between gap-3 border-b-[2px] pb-4" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                <div className="pointer-events-none absolute bottom-5 left-1/2 top-5 w-[2px] -translate-x-1/2" style={{ background: 'linear-gradient(180deg, transparent, rgba(84,55,24,0.38), transparent)' }} />
+                <div className="relative flex flex-wrap items-end justify-between gap-3 border-b-[2px] pb-4" style={{ borderColor: UI_STYLE.bronzeFaint }}>
                     <div>
                         <div className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: UI_STYLE.cinnabar }}>
                             {t('board.setup.eyebrow', { defaultValue: '局内开局设置' })}
@@ -5142,54 +5168,61 @@ const QidahenInMatchSetupOverlay: React.FC<{
                     </div>
                 </div>
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <div className="relative mt-5 grid min-h-0 gap-5 md:grid-cols-2">
+                    <section
+                        className="min-h-0 overflow-y-auto border-[3px] p-4"
+                        data-testid="qidahen-inmatch-setup-book-page-player"
+                        style={{ borderColor: UI_STYLE.paperEdge, background: UI_SURFACE.bookPage, boxShadow: UI_SURFACE.inkInset, borderRadius: 5 }}
+                    >
+                        <div className="mb-3 flex items-center justify-between gap-3 border-b pb-2" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                            <div className="text-[12px] font-black tracking-[0.16em]" style={{ color: UI_STYLE.cinnabar }}>
+                                {viewerFactionId ? core.factions[viewerFactionId]?.name ?? '本席' : '本席'}
+                            </div>
+                            <div className="text-[11px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                {t('board.setup.playerPage', { defaultValue: '人物与军备' })}
+                            </div>
+                        </div>
                     {interactiveCharacterChoices.map((group) => {
                         const selectedIds = selectedCharacterIdsByGroup[group.id] ?? [];
                         return (
                             <div
                                 key={group.id}
-                                className="border-[2px] p-4"
+                                className="mb-4 border-b-[2px] pb-4 last:mb-0 last:border-b-0 last:pb-0"
                                 data-testid={`qidahen-inmatch-setup-character-${group.id}`}
-                                style={{ borderColor: UI_STYLE.paperEdge, background: UI_STYLE.paperLight, borderRadius: 4 }}
+                                data-qidahen-inline-choice="character"
+                                style={{ borderColor: UI_STYLE.bronzeFaint }}
                             >
-                                <div className="text-[12px] font-black" style={{ color: UI_STYLE.cinnabar }}>
-                                    {group.factionName} · {t('board.setup.characterLabel', { defaultValue: '人物' })}
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <div className="text-[12px] font-black tracking-[0.18em]" style={{ color: UI_STYLE.cinnabar }}>
+                                        {group.factionName} · {t('board.setup.characterLabel', { defaultValue: '人物' })}
+                                    </div>
+                                    <div className="text-[11px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                        {t('board.setup.pickCountAuto', { count: group.count, defaultValue: '点选 {{count}} 项即生效' })}
+                                    </div>
                                 </div>
-                                <div className="mt-1 text-[16px] font-black">
-                                    {t('board.setup.pickCount', { count: group.count, defaultValue: '请选择 {{count}} 项' })}
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
+                                <div className="mt-3 flex flex-wrap items-end gap-4">
                                     {group.characterIds.map((characterId, index) => {
                                         const selected = selectedIds.includes(characterId);
+                                        const label = group.characterNames[index] ?? characterId;
                                         return (
-                                            <button
+                                            <QidahenSetupObjectChoice
                                                 key={characterId}
-                                                type="button"
-                                                data-testid={`qidahen-inmatch-setup-character-option-${group.id}-${characterId}`}
-                                                className="min-h-[40px] border-[2px] px-3 text-[13px] font-black transition hover:-translate-y-0.5"
-                                                onClick={() => toggleChoiceId(group.id, characterId, group.count, selectedCharacterIdsByGroup, setSelectedCharacterIdsByGroup)}
-                                                style={{
-                                                    borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.paperEdge,
-                                                    background: selected ? UI_STYLE.cinnabarGlow : 'rgba(255,255,255,0.56)',
-                                                    color: UI_STYLE.ink,
-                                                    borderRadius: 4,
-                                                }}
-                                            >
-                                                {group.characterNames[index] ?? characterId}
-                                            </button>
+                                                label={label}
+                                                previewRef={getQidahenSetupCharacterPreview(group.factionId, characterId)}
+                                                selected={selected}
+                                                testId={`qidahen-inmatch-setup-character-option-${group.id}-${characterId}`}
+                                                onClick={() => applyInlineChoice(
+                                                    group.id,
+                                                    characterId,
+                                                    group.count,
+                                                    selectedCharacterIdsByGroup,
+                                                    setSelectedCharacterIdsByGroup,
+                                                    onResolveScenarioCharacterChoice,
+                                                )}
+                                            />
                                         );
                                     })}
                                 </div>
-                                <button
-                                    type="button"
-                                    data-testid={`qidahen-inmatch-setup-character-confirm-${group.id}`}
-                                    disabled={selectedIds.length !== group.count}
-                                    className="mt-4 min-h-[42px] min-w-[164px] border-[3px] px-4 text-[13px] font-black transition disabled:cursor-not-allowed disabled:opacity-50"
-                                    onClick={() => onResolveScenarioCharacterChoice(group.id, selectedIds)}
-                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 4 }}
-                                >
-                                    {t('board.setup.confirmCharacter', { defaultValue: '确认人物' })}
-                                </button>
                             </div>
                         );
                     })}
@@ -5199,65 +5232,92 @@ const QidahenInMatchSetupOverlay: React.FC<{
                         return (
                             <div
                                 key={group.id}
-                                className="border-[2px] p-4"
+                                className="mb-4 border-b-[2px] pb-4 last:mb-0 last:border-b-0 last:pb-0"
                                 data-testid={`qidahen-inmatch-setup-armament-${group.id}`}
-                                style={{ borderColor: UI_STYLE.paperEdge, background: UI_STYLE.paperLight, borderRadius: 4 }}
+                                data-qidahen-inline-choice="armament"
+                                style={{ borderColor: UI_STYLE.bronzeFaint }}
                             >
-                                <div className="text-[12px] font-black" style={{ color: UI_STYLE.cinnabar }}>
-                                    {group.factionName} · {t('board.setup.armamentLabel', { defaultValue: '军备' })}
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <div className="text-[12px] font-black tracking-[0.18em]" style={{ color: UI_STYLE.cinnabar }}>
+                                        {group.factionName} · {t('board.setup.armamentLabel', { defaultValue: '军备' })}
+                                    </div>
+                                    <div className="text-[11px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                        {t('board.setup.pickCountAuto', { count: group.count, defaultValue: '点选 {{count}} 项即生效' })}
+                                    </div>
                                 </div>
-                                <div className="mt-1 text-[16px] font-black">
-                                    {t('board.setup.pickCount', { count: group.count, defaultValue: '请选择 {{count}} 项' })}
-                                </div>
-                                <div className="mt-3 flex flex-wrap gap-2">
+                                <div className="mt-3 flex flex-wrap items-end gap-4">
                                     {group.armamentIds.map((armamentId, index) => {
                                         const selected = selectedIds.includes(armamentId);
+                                        const label = group.armamentNames[index] ?? armamentId;
                                         return (
-                                            <button
+                                            <QidahenSetupObjectChoice
                                                 key={armamentId}
-                                                type="button"
-                                                data-testid={`qidahen-inmatch-setup-armament-option-${group.id}-${armamentId}`}
-                                                className="min-h-[40px] border-[2px] px-3 text-[13px] font-black transition hover:-translate-y-0.5"
-                                                onClick={() => toggleChoiceId(group.id, armamentId, group.count, selectedArmamentIdsByGroup, setSelectedArmamentIdsByGroup)}
-                                                style={{
-                                                    borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.paperEdge,
-                                                    background: selected ? UI_STYLE.cinnabarGlow : 'rgba(255,255,255,0.56)',
-                                                    color: UI_STYLE.ink,
-                                                    borderRadius: 4,
-                                                }}
-                                            >
-                                                {group.armamentNames[index] ?? armamentId}
-                                            </button>
+                                                label={label}
+                                                previewRef={getQidahenSetupArmamentPreview(armamentId)}
+                                                selected={selected}
+                                                testId={`qidahen-inmatch-setup-armament-option-${group.id}-${armamentId}`}
+                                                onClick={() => applyInlineChoice(
+                                                    group.id,
+                                                    armamentId,
+                                                    group.count,
+                                                    selectedArmamentIdsByGroup,
+                                                    setSelectedArmamentIdsByGroup,
+                                                    (resolvedGroupId, selectedIds) => onResolveScenarioArmamentChoice(
+                                                        resolvedGroupId,
+                                                        selectedIds as QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds'],
+                                                    ),
+                                                )}
+                                            />
                                         );
                                     })}
                                 </div>
-                                <button
-                                    type="button"
-                                    data-testid={`qidahen-inmatch-setup-armament-confirm-${group.id}`}
-                                    disabled={selectedIds.length !== group.count}
-                                    className="mt-4 min-h-[42px] min-w-[164px] border-[3px] px-4 text-[13px] font-black transition disabled:cursor-not-allowed disabled:opacity-50"
-                                    onClick={() => onResolveScenarioArmamentChoice(group.id, selectedIds as QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds'])}
-                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 4 }}
-                                >
-                                    {t('board.setup.confirmArmament', { defaultValue: '确认军备' })}
-                                </button>
                             </div>
                         );
                     })}
-                </div>
+                    </section>
 
-                {(waitingCharacterChoices.length > 0 || waitingArmamentChoices.length > 0) ? (
-                    <div
-                        className="mt-5 border-[2px] px-4 py-3 text-[13px] font-black leading-6"
-                        data-testid="qidahen-inmatch-setup-waiting"
-                        style={{ borderColor: UI_STYLE.paperEdge, background: 'rgba(255,255,255,0.48)', borderRadius: 4 }}
+                    <section
+                        className="min-h-0 overflow-y-auto border-[3px] p-4"
+                        data-testid="qidahen-inmatch-setup-book-page-status"
+                        style={{ borderColor: UI_STYLE.paperEdge, background: UI_SURFACE.bookPage, boxShadow: UI_SURFACE.inkInset, borderRadius: 5 }}
                     >
-                        {t('board.setup.waiting', { defaultValue: '等待其他玩家完成其所属阵营的前置项。' })}
-                        <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mutedInk }}>
-                            {waitingSummaryLines.join(' / ')}
+                        <div className="mb-3 flex items-center justify-between gap-3 border-b pb-2" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                            <div className="text-[12px] font-black tracking-[0.16em]" style={{ color: UI_STYLE.cinnabar }}>
+                                {t('board.setup.tablePage', { defaultValue: '席位状态' })}
+                            </div>
+                            <div className="text-[11px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                {core.scenarioLabel}
+                            </div>
                         </div>
-                    </div>
-                ) : null}
+                        <div
+                            className="border-[2px] px-4 py-3 text-[13px] font-black leading-6"
+                            data-testid="qidahen-inmatch-setup-waiting"
+                            style={{ borderColor: UI_STYLE.paperEdge, background: 'rgba(255,255,255,0.48)', borderRadius: 4 }}
+                        >
+                            {waitingCharacterChoices.length > 0 || waitingArmamentChoices.length > 0
+                                ? t('board.setup.waiting', { defaultValue: '等待其他玩家完成其所属阵营的前置项。' })
+                                : t('board.setup.noWaiting', { defaultValue: '本席当前没有等待中的他人前置项。' })}
+                            <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mutedInk }}>
+                                {waitingSummaryLines.length > 0
+                                    ? waitingSummaryLines.join(' / ')
+                                    : t('board.setup.privateOnly', { defaultValue: '只显示你所属阵营可处理的项目，不暴露他人私有候选。' })}
+                            </div>
+                        </div>
+                        <div className="mt-4 grid gap-2 text-[12px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                            {core.currentFactionOrder.map((factionId) => {
+                                const faction = core.factions[factionId];
+                                const ownCharacterCount = pendingCharacterChoices.filter((group) => group.factionId === factionId).length;
+                                const ownArmamentCount = pendingArmamentChoices.filter((group) => group.factionId === factionId).length;
+                                return (
+                                    <div key={factionId} className="flex items-center justify-between border-b pb-2" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                                        <span>{faction.name}</span>
+                                        <span>{ownCharacterCount + ownArmamentCount > 0 ? `待完成 ${ownCharacterCount + ownArmamentCount} 项` : '已完成'}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
     );
@@ -5274,38 +5334,21 @@ const QidahenScenarioVoteScreen: React.FC<{
 }) => {
     const { t } = useTranslation('game-qidahen');
     const scenarioVote = core.scenarioVote;
-    const [draftScenarioId, setDraftScenarioId] = React.useState<QidahenScenarioId | null>(
-        scenarioVote?.options[0]?.scenarioId ?? null,
-    );
-
-    React.useEffect(() => {
-        if (!scenarioVote) {
-            setDraftScenarioId(null);
-            return;
-        }
-        const confirmedVote = playerID ? scenarioVote.votes[playerID] ?? null : null;
-        setDraftScenarioId(confirmedVote ?? scenarioVote.options[0]?.scenarioId ?? null);
-    }, [playerID, scenarioVote]);
 
     if (!scenarioVote) {
         return null;
     }
 
-    const currentVote = playerID ? scenarioVote.votes[playerID] ?? null : null;
+    const hostSelection = scenarioVote.votes[scenarioVote.hostPlayerId] ?? null;
+    const isHostViewer = playerID === scenarioVote.hostPlayerId;
     const playableScenarioIds = new Set(scenarioVote.options.map((option) => option.scenarioId));
-    const allScenarioOptions = QIDAHEN_SCENARIO_SETUP_OPTIONS.map((setupOption, index) => {
+    const scenarioOptions = QIDAHEN_SCENARIO_SETUP_OPTIONS.map((setupOption) => {
         const scenarioId = setupOption.value as QidahenScenarioId;
-        const meta = getQidahenScenarioVoteMeta(scenarioId);
         return {
-            ...meta,
-            orderNo: index + 1,
+            ...getQidahenScenarioVoteMeta(scenarioId),
             isPlayable: playableScenarioIds.has(scenarioId),
         };
     });
-    const voteCountByScenarioId = scenarioVote.options.reduce<Record<string, number>>((counts, option) => {
-        counts[option.scenarioId] = Object.values(scenarioVote.votes).filter((vote) => vote === option.scenarioId).length;
-        return counts;
-    }, {});
     const factionRows = core.currentFactionOrder
         .map((factionId) => {
             const faction = core.factions[factionId];
@@ -5316,19 +5359,18 @@ const QidahenScenarioVoteScreen: React.FC<{
                 factionId,
                 factionName: faction.name,
                 playerId: faction.playerId,
-                confirmedVote: scenarioVote.votes[faction.playerId] ?? null,
+                confirmedVote: faction.playerId === scenarioVote.hostPlayerId ? hostSelection : null,
             };
         })
         .filter((row): row is NonNullable<typeof row> => row != null);
     const hostFactionName = factionRows.find((row) => row.playerId === scenarioVote.hostPlayerId)?.factionName ?? '房主';
-    const canConfirmDraft = Boolean(playerID && draftScenarioId && playableScenarioIds.has(draftScenarioId));
-    const selectedScenarioLabel = draftScenarioId
-        ? allScenarioOptions.find((option) => option.scenarioId === draftScenarioId)?.label ?? null
+    const selectedScenarioLabel = hostSelection
+        ? scenarioOptions.find((option) => option.scenarioId === hostSelection)?.label ?? null
         : null;
 
     return (
         <div
-            className="absolute inset-0 overflow-hidden px-[66px] py-[46px]"
+            className="absolute inset-0 overflow-hidden px-[60px] py-[40px]"
             data-testid="qidahen-scenario-vote-screen"
             style={{
                 background: [
@@ -5355,23 +5397,29 @@ const QidahenScenarioVoteScreen: React.FC<{
                 style={{ borderColor: UI_STYLE.cinnabar }}
             />
             <div
-                className="relative grid h-full min-h-0 grid-cols-[1fr_360px] gap-5"
+                className="relative grid h-full min-h-0 grid-cols-[1.35fr_0.9fr] gap-0 border-[4px] p-5"
                 data-testid="qidahen-scenario-vote-layout"
+                data-ui-family="qidahen-book-setup"
+                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.bookPaper, boxShadow: '0 8px 0 rgba(58,37,17,0.26), 0 28px 46px rgba(13,8,4,0.36)', borderRadius: 8 }}
             >
+                <div className="pointer-events-none absolute bottom-5 left-1/2 top-5 w-[2px] -translate-x-1/2" style={{ background: 'linear-gradient(180deg, transparent, rgba(84,55,24,0.42), transparent)' }} />
                 <section
-                    className="flex min-h-0 flex-col border-[4px] p-5"
-                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, boxShadow: UI_SURFACE.mapPanelShadow, clipPath: UI_SURFACE.cutCorner }}
+                    className="flex min-h-0 flex-col border-[3px] p-5"
+                    data-testid="qidahen-scenario-vote-book-page-intro"
+                    style={{ borderColor: UI_STYLE.paperEdge, background: UI_SURFACE.bookPage, boxShadow: UI_SURFACE.inkInset, borderRadius: 5 }}
                 >
-                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-[2px] pb-4" style={{ borderColor: 'rgba(210,183,117,0.4)' }}>
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-[2px] pb-4" style={{ borderColor: UI_STYLE.bronzeFaint }}>
                         <div>
                         <div className="text-[12px] font-black uppercase tracking-[0.28em]" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.scenarioVote.eyebrow', { defaultValue: '局内剧本投票' })}
+                            {t('board.scenarioVote.eyebrow', { defaultValue: '局内剧本选择' })}
                         </div>
-                        <div className="mt-2 text-[31px] font-black tracking-[0.04em]" data-testid="qidahen-scenario-vote-title" style={{ color: UI_STYLE.mapIvory }}>
-                            {t('board.scenarioVote.title', { defaultValue: '先看剧本介绍，再为本局投票' })}
+                        <div className="mt-2 text-[31px] font-black tracking-[0.04em]" data-testid="qidahen-scenario-vote-title" style={{ color: UI_STYLE.ink }}>
+                            {t('board.scenarioVote.title', { defaultValue: '房主选择本局剧本' })}
                         </div>
-                        <div className="mt-2 max-w-[820px] text-[13px] leading-6" style={{ color: 'rgba(234,215,167,0.82)' }}>
-                            {t('board.scenarioVote.description', { defaultValue: '联机房间不再在建房阶段预设剧本。全部席位在局内完成介绍阅读与投票后，才会进入人物、军备前置。' })}
+                        <div className="mt-2 text-[13px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                            {isHostViewer
+                                ? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
+                                : t('board.scenarioVote.waitingHost', { defaultValue: '等待房主选择' })}
                         </div>
                     </div>
                     <div
@@ -5386,126 +5434,58 @@ const QidahenScenarioVoteScreen: React.FC<{
                     </div>
                 </div>
 
-                    <div className="mt-5 grid min-h-0 flex-1 grid-cols-3 items-start gap-4 overflow-y-auto pr-1">
-                    {allScenarioOptions.map((option) => {
-                        const isDraft = draftScenarioId === option.scenarioId;
-                        const isConfirmed = currentVote === option.scenarioId;
+                    <div className="mt-5 flex min-h-0 flex-1 items-center justify-center gap-10 overflow-x-auto px-8 py-6">
+                    {scenarioOptions.map((option) => {
+                        const isDraft = hostSelection === option.scenarioId;
                         const disabledReason = t('board.scenarioVote.unavailableForPlayerCount', {
                             count: scenarioVote.playerCount,
                             supported: option.supportedPlayerCounts.join('/'),
-                            defaultValue: `当前 ${scenarioVote.playerCount} 人房不可投，适用 ${option.supportedPlayerCounts.join('/')} 人`,
+                            defaultValue: `当前 ${scenarioVote.playerCount} 人房不可用，适用 ${option.supportedPlayerCounts.join('/')} 人`,
                         });
                         return (
-                            <button
+                            <SelectableGameObject
                                 key={option.scenarioId}
-                                type="button"
                                 data-testid={`qidahen-scenario-vote-option-${option.scenarioId}`}
-                                disabled={!option.isPlayable}
+                                disabled={!isHostViewer || !option.isPlayable}
+                                selected={isDraft}
+                                available={isHostViewer && option.isPlayable}
                                 aria-label={option.isPlayable ? option.label : `${option.label}，${disabledReason}`}
-                                className="relative flex min-h-[560px] flex-col border-[3px] p-4 text-left transition-[transform,filter,box-shadow] duration-150 hover:-translate-y-1 active:translate-y-0.5 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                                className={`group h-[390px] w-[282px] shrink-0 rounded-[12px] bg-transparent hover:-translate-y-3 active:translate-y-0 ${isDraft ? '-translate-y-3' : ''}`}
                                 onClick={() => {
-                                    if (option.isPlayable) {
-                                        setDraftScenarioId(option.scenarioId);
+                                    if (isHostViewer && option.isPlayable) {
+                                        onCastScenarioVote(option.scenarioId);
                                     }
                                 }}
-                                style={{
-                                    borderColor: isDraft ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
-                                    background: option.isPlayable
-                                        ? (isDraft ? UI_SURFACE.mapPanelSelected : UI_SURFACE.paperQuiet)
-                                        : 'linear-gradient(180deg, rgba(72,58,39,0.7) 0%, rgba(42,33,24,0.72) 100%)',
-                                    color: option.isPlayable && !isDraft ? UI_STYLE.ink : UI_STYLE.mapIvory,
-                                    boxShadow: isDraft
-                                        ? '0 0 0 3px rgba(210,183,117,0.5), 0 16px 28px rgba(18,11,6,0.36)'
-                                        : UI_SURFACE.mapPanelShadow,
-                                    clipPath: UI_SURFACE.cutCorner,
-                                    opacity: option.isPlayable ? 1 : 0.78,
-                                }}
                             >
-                                <div
-                                    className="absolute inset-x-[18px] top-[18px] h-[3px]"
-                                    aria-hidden="true"
-                                    style={{ background: option.isPlayable ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.28)' }}
-                                />
-                                <div
-                                    className="mb-5 mt-4 flex h-[88px] items-center justify-center border-[2px] text-[28px] font-black tracking-[0.18em]"
-                                    aria-hidden="true"
-                                    style={{
-                                        borderColor: isDraft ? UI_STYLE.mapGold : 'rgba(32,21,13,0.62)',
-                                        background: option.isPlayable
-                                            ? 'radial-gradient(circle at 50% 25%, rgba(210,183,117,0.24), transparent 50%), rgba(32,21,13,0.72)'
-                                            : 'rgba(32,21,13,0.68)',
-                                        color: option.isPlayable ? UI_STYLE.mapGold : 'rgba(234,215,167,0.46)',
-                                        clipPath: UI_SURFACE.smallCutCorner,
-                                    }}
-                                >
-                                    {t('board.scenarioVote.orderBadge', {
-                                        orderNo: option.orderNo,
-                                        defaultValue: '战局 {{orderNo}}',
-                                    })}
-                                </div>
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="text-[18px] font-black leading-7">{option.label}</div>
-                                    <div
-                                        className="shrink-0 border px-2 py-1 text-[11px] font-black"
-                                        data-testid={`qidahen-scenario-vote-count-${option.scenarioId}`}
-                                        style={{
-                                            borderColor: option.isPlayable ? UI_STYLE.mapInk : 'rgba(234,215,167,0.24)',
-                                            background: option.isPlayable ? UI_STYLE.paperLight : 'rgba(32,21,13,0.5)',
-                                            color: option.isPlayable ? UI_STYLE.ink : 'rgba(234,215,167,0.56)',
-                                            borderRadius: 999,
-                                        }}
-                                    >
-                                        {t('board.scenarioVote.voteCount', {
-                                            count: voteCountByScenarioId[option.scenarioId] ?? 0,
-                                            defaultValue: '{{count}} 票',
-                                        })}
-                                    </div>
-                                </div>
-                                <div className="mt-4 min-h-[116px] text-[14px] leading-7">{option.intro}</div>
-                                <div
-                                    className="mt-4 border-l-[4px] py-2 pl-3 text-[12px] leading-6"
-                                    style={{
-                                        borderColor: option.isPlayable ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.28)',
-                                        color: option.isPlayable && !isDraft ? UI_STYLE.mutedInk : 'rgba(234,215,167,0.74)',
-                                    }}
-                                >
-                                    {option.overview}
-                                </div>
-                                <div className="mt-auto flex flex-wrap items-center gap-2 pt-5 text-[11px] font-black">
+                                <span className="pointer-events-none relative block h-full w-full overflow-hidden rounded-[12px] bg-[#efe3c4] shadow-[0_16px_30px_rgba(44,27,13,0.34)]">
+                                    <CardPreviewFit
+                                        previewRef={getQidahenScenarioCardPreview(option.scenarioId)}
+                                        title={option.label}
+                                        width={282}
+                                        height={390}
+                                        rawWidth={CARD_DIMENSIONS.hand.rawWidth}
+                                        rawHeight={CARD_DIMENSIONS.hand.rawHeight}
+                                    />
+                                </span>
+                                {isDraft ? (
                                     <span
-                                        className="border px-2 py-1"
-                                        style={{
-                                            borderColor: option.isPlayable ? UI_STYLE.mapInk : 'rgba(234,215,167,0.24)',
-                                            background: option.isPlayable ? 'rgba(243,231,196,0.72)' : 'rgba(32,21,13,0.52)',
-                                            color: option.isPlayable ? UI_STYLE.ink : 'rgba(234,215,167,0.62)',
-                                            borderRadius: 999,
-                                        }}
+                                        className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap border-[2px] px-3 py-1 text-[11px] font-black"
+                                        data-testid={`qidahen-scenario-host-selected-${option.scenarioId}`}
+                                        style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow }}
                                     >
-                                        {t('board.scenarioVote.supportedPlayers', {
-                                            count: option.supportedPlayerCounts.join('/'),
-                                            defaultValue: '适用 {{count}} 人',
-                                        })}
+                                        {t('board.scenarioVote.myVote', { defaultValue: '本局采用' })}
                                     </span>
-                                    {isConfirmed ? (
-                                        <span
-                                            className="border px-2 py-1"
-                                            data-testid={`qidahen-scenario-vote-confirmed-${option.scenarioId}`}
-                                            style={{ borderColor: UI_STYLE.cinnabar, background: UI_STYLE.cinnabarGlow, borderRadius: 999 }}
-                                        >
-                                            {t('board.scenarioVote.myVote', { defaultValue: '本席已投' })}
-                                        </span>
-                                    ) : null}
-                                    {!option.isPlayable ? (
-                                        <span
-                                            className="border px-2 py-1"
-                                            data-testid={`qidahen-scenario-vote-locked-${option.scenarioId}`}
-                                            style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(32,21,13,0.72)', color: UI_STYLE.mapGold, borderRadius: 999 }}
-                                        >
-                                            {disabledReason}
-                                        </span>
-                                    ) : null}
-                                </div>
-                            </button>
+                                ) : null}
+                                {!option.isPlayable ? (
+                                    <span
+                                        className="pointer-events-none absolute inset-x-3 bottom-3 z-20 border-[2px] px-3 py-2 text-center text-[11px] font-black"
+                                        data-testid={`qidahen-scenario-vote-locked-${option.scenarioId}`}
+                                        style={{ borderColor: UI_STYLE.mapGold, background: 'rgba(32,21,13,0.88)', color: UI_STYLE.mapGold, boxShadow: UI_SURFACE.mapPanelShadow }}
+                                    >
+                                        {disabledReason}
+                                    </span>
+                                ) : null}
+                            </SelectableGameObject>
                         );
                     })}
                     </div>
@@ -5513,12 +5493,13 @@ const QidahenScenarioVoteScreen: React.FC<{
 
                 <aside className="grid min-h-0 grid-rows-[1fr_auto] gap-4">
                     <div
-                        className="min-h-0 overflow-y-auto border-[4px] px-4 py-4"
+                        className="min-h-0 overflow-y-auto border-[3px] px-4 py-4"
                         data-testid="qidahen-scenario-vote-seat-status"
-                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, boxShadow: UI_SURFACE.mapPanelShadow, clipPath: UI_SURFACE.cutCorner }}
+                        data-ui-page="qidahen-scenario-vote-book-page-status"
+                        style={{ borderColor: UI_STYLE.paperEdge, background: UI_SURFACE.bookPage, color: UI_STYLE.ink, boxShadow: UI_SURFACE.inkInset, borderRadius: 5 }}
                     >
-                        <div className="text-[12px] font-black tracking-[0.14em]" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.scenarioVote.seatStatusTitle', { defaultValue: '各席位当前投票' })}
+                        <div className="text-[12px] font-black tracking-[0.14em]" style={{ color: UI_STYLE.cinnabar }}>
+                            {t('board.scenarioVote.seatStatusTitle', { defaultValue: '席位状态' })}
                         </div>
                         <div className="mt-3 grid gap-2">
                             {factionRows.map((row) => (
@@ -5526,68 +5507,46 @@ const QidahenScenarioVoteScreen: React.FC<{
                                     key={row.playerId}
                                     className="flex items-center justify-between gap-3 border-b pb-3 text-[13px]"
                                     data-testid={`qidahen-scenario-vote-status-${row.playerId}`}
-                                    style={{ borderColor: 'rgba(210,183,117,0.22)' }}
+                                    style={{ borderColor: UI_STYLE.bronzeFaint }}
                                 >
                                     <div className="font-black">
                                         {row.factionName}
                                         {row.playerId === playerID ? ` · ${t('board.scenarioVote.you', { defaultValue: '你' })}` : ''}
                                         {row.playerId === scenarioVote.hostPlayerId ? ` · ${t('board.scenarioVote.host', { defaultValue: '房主' })}` : ''}
                                     </div>
-                                    <div className="text-right leading-5" style={{ color: row.confirmedVote ? UI_STYLE.mapIvory : 'rgba(234,215,167,0.56)' }}>
+                                    <div className="text-right leading-5" style={{ color: row.confirmedVote ? UI_STYLE.ink : UI_STYLE.mutedInk }}>
                                         {row.confirmedVote
-                                            ? allScenarioOptions.find((option) => option.scenarioId === row.confirmedVote)?.label ?? row.confirmedVote
-                                            : t('board.scenarioVote.pendingVote', { defaultValue: '未投票' })}
+                                            ? scenarioOptions.find((option) => option.scenarioId === row.confirmedVote)?.label ?? row.confirmedVote
+                                            : row.playerId === scenarioVote.hostPlayerId
+                                                ? t('board.scenarioVote.pendingVote', { defaultValue: '等待房主选择' })
+                                                : t('board.scenarioVote.waitingHost', { defaultValue: '等待剧本结果' })}
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-3 text-[12px] leading-5" style={{ color: 'rgba(234,215,167,0.68)' }}>
+                        <div className="mt-3 text-[12px] leading-5" style={{ color: UI_STYLE.mutedInk }}>
                             {t('board.scenarioVote.tiebreakNote', {
                                 hostFactionName,
-                                defaultValue: '全部席位确认后立即结算；若票数相同，则按{{hostFactionName}}的房主票裁定。',
+                                defaultValue: '{{hostFactionName}}点选剧本后立即进入人物与军备前置。',
                             })}
                         </div>
                     </div>
 
                     <div
-                        className="border-[4px] px-4 py-4"
+                        className="border-[3px] px-4 py-4"
                         data-testid="qidahen-scenario-vote-actions"
-                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, clipPath: UI_SURFACE.cutCorner }}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 5 }}
                     >
                         <div className="text-[12px] font-black" style={{ color: UI_STYLE.mapGold }}>
-                            {t('board.scenarioVote.actionTitle', { defaultValue: '本席操作' })}
+                            {t('board.scenarioVote.actionTitle', { defaultValue: isHostViewer ? '房主操作' : '等待房主' })}
                         </div>
                         <div className="mt-2 text-[13px] leading-6" style={{ color: UI_STYLE.mapIvory }}>
-                            {playerID
-                                ? currentVote
-                                    ? t('board.scenarioVote.changeableHint', { defaultValue: '你已经提交过一票；在所有席位投完前，仍可改投或撤回。' })
-                                    : t('board.scenarioVote.selectHint', { defaultValue: '选择剧本介绍卡后确认投票。' })
-                                : t('board.scenarioVote.spectatorHint', { defaultValue: '观战视角只显示当前票型，不提供代投入口。' })}
+                            {isHostViewer
+                                ? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
+                                : t('board.scenarioVote.waitingHost', { defaultValue: '等待房主选择' })}
                         </div>
                         <div className="mt-3 border px-3 py-2 text-[12px] font-black" style={{ borderColor: 'rgba(210,183,117,0.34)', background: 'rgba(32,21,13,0.42)', color: UI_STYLE.mapGold, clipPath: UI_SURFACE.smallCutCorner }}>
                             {selectedScenarioLabel ?? t('board.scenarioVote.noDraft', { defaultValue: '尚未选择剧本' })}
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                            <button
-                                type="button"
-                                data-testid="qidahen-scenario-vote-confirm"
-                                disabled={!canConfirmDraft}
-                                className="min-h-[44px] min-w-[156px] border-[3px] px-4 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-                                onClick={() => draftScenarioId && onCastScenarioVote(draftScenarioId)}
-                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paperPressed, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, clipPath: UI_SURFACE.smallCutCorner }}
-                            >
-                                {t('board.scenarioVote.confirm', { defaultValue: '确认投票' })}
-                            </button>
-                            <button
-                                type="button"
-                                data-testid="qidahen-scenario-vote-clear"
-                                disabled={!playerID || currentVote == null}
-                                className="min-h-[44px] min-w-[156px] border-[3px] px-4 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-                                onClick={() => onCastScenarioVote(null)}
-                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, clipPath: UI_SURFACE.smallCutCorner }}
-                            >
-                                {t('board.scenarioVote.clear', { defaultValue: '撤回本票' })}
-                            </button>
                         </div>
                     </div>
                 </aside>

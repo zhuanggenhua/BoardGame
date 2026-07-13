@@ -19,7 +19,7 @@
  * ```
  */
 
-import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { SummonShaderEffect } from './SummonShaderEffect';
 import { setupCanvas2d, type FxQuality } from '../../../engine/fx';
@@ -415,12 +415,15 @@ interface DimmingOverlayProps {
 }
 
 function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayProps) {
-  const [opacity, setOpacity] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 动画重置需同步清零避免闪烁
-    if (!active) { setOpacity(0); return; }
+    const overlay = overlayRef.current;
+    if (!active || !overlay) {
+      if (overlay) overlay.style.opacity = '0';
+      return;
+    }
 
     let startTime = 0;
     const loop = (now: number) => {
@@ -431,7 +434,7 @@ function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayPr
       // 与 shader 原始 dimUp/dimDown 曲线一致
       const dimUp = smoothstep(0, 0.25, t);
       const dimDown = 1 - smoothstep(0.65, 1.0, t);
-      setOpacity(dimUp * dimDown * dimStrength);
+      overlay.style.opacity = String(dimUp * dimDown * dimStrength);
 
       if (t < 1) {
         rafRef.current = requestAnimationFrame(loop);
@@ -447,10 +450,11 @@ function DimmingOverlay({ active, dimStrength, totalDuration }: DimmingOverlayPr
   // 不使用 originY（那是 FX 容器内的相对坐标，受 transform scale 影响）
   const overlay = (
     <div
+      ref={overlayRef}
       className="fixed inset-0 pointer-events-none"
       style={{
         zIndex: 50,
-        opacity,
+        opacity: 0,
         background: `radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 30%, rgba(0,0,0,0.75) 60%, rgba(0,0,0,0.92) 100%)`,
       }}
     />
