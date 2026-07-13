@@ -93,6 +93,7 @@ export class UserSettingsController {
         sfxVolume: number;
         bgmVolume: number;
         bgmSelections?: Record<string, Record<string, string>>;
+        singleTrackLoop?: boolean;
     }) {
         return {
             muted: settings.muted,
@@ -100,6 +101,7 @@ export class UserSettingsController {
             sfxVolume: settings.sfxVolume,
             bgmVolume: settings.bgmVolume,
             bgmSelections: settings.bgmSelections ?? {},
+            singleTrackLoop: settings.singleTrackLoop === true,
         };
     }
 

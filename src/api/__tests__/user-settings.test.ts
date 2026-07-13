@@ -40,6 +40,7 @@ describe('user-settings api', () => {
             masterVolume: 0.8,
             sfxVolume: 0.6,
             bgmVolume: 0.4,
+            singleTrackLoop: true,
             bgmSelections: {
                 summonerwars: { normal: 'bgm_key_a', battle: 'bgm_key_b' },
             },

@@ -293,6 +293,28 @@ describe('AudioManager', () => {
         expect(typeof howlInstances[0].options.onend).toBe('function');
     });
 
+    it('BGM 结束事件可由播放列表接管，接管后不执行默认单曲重播', async () => {
+        vi.useFakeTimers();
+        const config: GameAudioConfig = {
+            bgm: [{ key: 'bgm-auto', name: 'Auto BGM', src: 'bgm-auto.mp3' }],
+        };
+
+        AudioManager.registerAll(config);
+        AudioManager.playBgm('bgm-auto');
+
+        const listener = vi.fn(() => true);
+        const unsubscribe = AudioManager.onBgmEnd(listener);
+        const instance = howlInstances[0];
+        const onEnd = instance.options.onend as (() => void);
+
+        onEnd();
+        await vi.runAllTimersAsync();
+
+        expect(listener).toHaveBeenCalledWith('bgm-auto');
+        expect(instance.play).toHaveBeenCalledTimes(1);
+        unsubscribe();
+    });
+
     it('BGM 源地址为空时不会抛异常打挂页面', () => {
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const config: GameAudioConfig = {

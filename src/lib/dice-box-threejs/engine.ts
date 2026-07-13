@@ -295,13 +295,22 @@ export class DiceBoxThreeEngine {
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
         }
-        if (typeof window !== 'undefined' && config?.canvasTestId === 'dicethrone-board-dice-box-canvas') {
-            (window as unknown as {
+        if (typeof window !== 'undefined' && config?.canvasTestId) {
+            const debugWindow = window as unknown as {
+                __E2E_TEST_MODE__?: boolean;
+                __diceBoxThreeDebug?: Record<string, () => unknown>;
                 __dicethroneBoardDiceDebug?: () => unknown;
-            }).__dicethroneBoardDiceDebug = () => {
-                engine.renderFrame();
-                return engine.getDebugSnapshot();
             };
+            if (debugWindow.__E2E_TEST_MODE__ || config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
+                debugWindow.__diceBoxThreeDebug = debugWindow.__diceBoxThreeDebug ?? {};
+                debugWindow.__diceBoxThreeDebug[config.canvasTestId] = () => {
+                    engine.renderFrame();
+                    return engine.getDebugSnapshot();
+                };
+                if (config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
+                    debugWindow.__dicethroneBoardDiceDebug = debugWindow.__diceBoxThreeDebug[config.canvasTestId];
+                }
+            }
         }
         if ((config?.rendererMode ?? 'debug-visible') === 'physics-only') {
             box.renderer.domElement.style.opacity = '0';
@@ -921,7 +930,7 @@ export class DiceBoxThreeEngine {
             return;
         }
         if (!this.hasDice(values.length)) {
-            this.restoreDiceWithoutVisibleThrow(values);
+            await this.restoreDiceWithoutVisibleThrow(values);
             return;
         }
         this.syncValues(values);
@@ -1695,12 +1704,12 @@ export class DiceBoxThreeEngine {
         });
     }
 
-    private restoreDiceWithoutVisibleThrow(values: number[]): void {
+    private async restoreDiceWithoutVisibleThrow(values: number[]): Promise<void> {
         const box = this.box as DiceBoxInternalRuntime;
         const notationVectors = box.startClickThrow?.(createNotation(values));
         const vectors = notationVectors?.vectors;
         if (!notationVectors || !Array.isArray(vectors) || vectors.length === 0 || !box.spawnDice || !box.simulateThrow) {
-            void this.rollToValues(values);
+            await this.rollToValues(values);
             return;
         }
 

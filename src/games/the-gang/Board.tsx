@@ -627,19 +627,25 @@ function ToolCardBadge({
     tool,
     active = false,
     onUse,
+    actionLabel,
 }: {
     tool: TheGangToolId;
     active?: boolean;
     onUse?: (tool: TheGangToolId) => void;
+    actionLabel?: string;
 }) {
     const { t } = useTranslation('game-the-gang');
     const rule = THE_GANG_TOOLS[tool];
-    const canUse = rule.runtimeStatus === 'implemented' && !active && !!onUse;
+    const implemented = rule.runtimeStatus === 'implemented';
+    const canUse = implemented && !active && !!onUse;
+    const statusLabel = active
+        ? t('board.toolActiveBadge')
+        : (implemented ? t('board.toolUsableBadge') : t('board.toolDrawOnlyBadge'));
     const className = [
         'group relative block w-full max-w-[9.5rem] rounded-lg border bg-transparent p-0 shadow-[0_0.55rem_1.25rem_rgba(0,0,0,0.34)] transition',
         active
             ? 'border-emerald-200/80 shadow-[0_0_0_0.15rem_rgba(110,231,183,0.3),0_0.55rem_1.25rem_rgba(0,0,0,0.36)]'
-            : 'border-amber-200/34',
+            : implemented ? 'border-amber-200/34' : 'border-stone-400/28 grayscale-[0.25]',
         canUse ? 'hover:border-amber-100 hover:brightness-110' : 'cursor-default',
     ].join(' ');
     const content = (
@@ -652,6 +658,9 @@ function ToolCardBadge({
                 draggable={false}
                 placeholder={false}
             />
+            <span className="absolute bottom-1 left-1 right-1 rounded bg-black/78 px-1.5 py-1 text-center text-[0.58rem] font-black tracking-[0.08em] text-amber-50 ring-1 ring-white/10">
+                {statusLabel}
+            </span>
             <span className="sr-only">{active ? t('board.toolActiveBadge') : t('board.toolBadge')}</span>
             <span className="sr-only">{rule.summary}</span>
         </>
@@ -666,9 +675,66 @@ function ToolCardBadge({
     }
 
     return (
-        <button type="button" className={className} onClick={() => onUse(tool)} title={rule.summary}>
+        <button
+            type="button"
+            className={className}
+            onClick={() => onUse(tool)}
+            title={rule.summary}
+            aria-label={`${rule.label}，${actionLabel ?? t('board.useTool')}`}
+        >
             {content}
         </button>
+    );
+}
+
+function NightVisionCardPicker({
+    cards,
+    onSelect,
+    onCancel,
+}: {
+    cards: PlayingCard[];
+    onSelect: (cardIndex: number) => void;
+    onCancel: () => void;
+}) {
+    const { t } = useTranslation('game-the-gang');
+
+    return (
+        <section
+            className="mb-3 rounded-lg border border-amber-200/28 bg-amber-200/10 p-3"
+            data-testid="the-gang-night-vision-picker"
+            aria-label={t('board.nightVisionPickerTitle')}
+        >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h3 className="text-sm font-black tracking-[0.12em] text-amber-100">
+                        {t('board.nightVisionPickerTitle')}
+                    </h3>
+                    <p className="mt-1 text-[0.68rem] font-bold leading-relaxed text-amber-50/72">
+                        {t('board.nightVisionPickerHint')}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="rounded-full border border-amber-100/32 bg-black/24 px-3 py-1.5 text-[0.68rem] font-black text-amber-100 transition hover:border-amber-100/70 hover:bg-emerald-900"
+                >
+                    {t('board.cancelNightVisionPicker')}
+                </button>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+                {cards.map((card, index) => (
+                    <button
+                        key={`${card.rank}-${card.suit}-${index}`}
+                        type="button"
+                        onClick={() => onSelect(index)}
+                        className="rounded-lg border border-amber-200/38 bg-black/18 p-2 transition hover:border-amber-100 hover:bg-emerald-900/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                        aria-label={t('board.chooseNightVisionCard', { card: formatCard(card), index: index + 1 })}
+                    >
+                        <CardFace card={card} emphasis="showdown" t={t} />
+                    </button>
+                ))}
+            </div>
+        </section>
     );
 }
 
@@ -707,15 +773,25 @@ function ToolsPanel({
     onDealTools: () => void;
     onResetTools: () => void;
     onResetSpecialists: () => void;
-    onUseTool: (tool: TheGangToolId) => void;
+    onUseTool: (tool: TheGangToolId, cardIndex?: number) => void;
 }) {
     const { t } = useTranslation('game-the-gang');
     const [isOpen, setIsOpen] = useState(false);
+    const [nightVisionPickerOpen, setNightVisionPickerOpen] = useState(false);
     const localPlayer = core.players[localPlayerId];
     const toolsDealt = core.playerIds.some((id) => core.players[id].toolCards.length > 0);
     const activeToolLabels = localPlayer.activeTools.map((tool) => THE_GANG_TOOLS[tool].label);
     const localToolCount = localPlayer.toolCards.length;
     const localSpecialistCount = localPlayer.specialistCards.length;
+    const canDealTools = canConfigure && !toolsDealt && core.toolDeck.length >= core.playerIds.length;
+
+    const handleUseTool = (tool: TheGangToolId) => {
+        if (tool === 'night-vision-goggles') {
+            setNightVisionPickerOpen(true);
+            return;
+        }
+        onUseTool(tool);
+    };
 
     return (
         <div
@@ -775,11 +851,11 @@ function ToolsPanel({
                         <div className="flex flex-wrap justify-end gap-1">
                             <button
                                 type="button"
-                                disabled={!canConfigure || toolsDealt || core.toolDeck.length < core.playerIds.length}
+                                disabled={!canDealTools}
                                 onClick={onDealTools}
                                 className="rounded-full border border-amber-200/55 bg-amber-300 px-2.5 py-1 text-[0.62rem] font-black text-emerald-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
                             >
-                                {t('board.dealTools')}
+                                {toolsDealt ? t('board.toolsDealt') : t('board.dealTools')}
                             </button>
                             <button
                                 type="button"
@@ -796,6 +872,21 @@ function ToolsPanel({
                             ? t('board.activeTools', { tools: activeToolLabels.join(' / ') })
                             : t('board.noActiveTools')}
                     </div>
+                    <div className="mb-3 rounded-md border border-amber-200/16 bg-black/16 px-2 py-1.5 text-[0.68rem] font-bold leading-relaxed text-amber-50/72" data-testid="the-gang-tools-deal-status">
+                        {toolsDealt
+                            ? t('board.toolsDealtStatus', { players: core.playerIds.length })
+                            : t(canConfigure ? 'board.toolsReadyToDealStatus' : 'board.toolsGuestStatus')}
+                    </div>
+                    {nightVisionPickerOpen && localPlayer.toolCards.includes('night-vision-goggles') && (
+                        <NightVisionCardPicker
+                            cards={localPlayer.pocketCards}
+                            onCancel={() => setNightVisionPickerOpen(false)}
+                            onSelect={(cardIndex) => {
+                                onUseTool('night-vision-goggles', cardIndex);
+                                setNightVisionPickerOpen(false);
+                            }}
+                        />
+                    )}
                         <div
                             className="relative rounded-lg border border-amber-200/18 bg-black/12 p-2"
                             data-testid="the-gang-local-tools"
@@ -827,7 +918,8 @@ function ToolsPanel({
                                                 key={`${tool}-${index}`}
                                                 tool={tool}
                                                 active={localPlayer.activeTools.includes(tool)}
-                                                onUse={onUseTool}
+                                                onUse={handleUseTool}
+                                                actionLabel={tool === 'night-vision-goggles' ? t('board.chooseHandCardForTool') : t('board.useTool')}
                                             />
                                         ))}
                                     </div>
@@ -1422,10 +1514,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         dispatchForPlayer(THE_GANG_COMMANDS.RESET_SPECIALISTS, {});
     };
 
-    const useTool = (tool: TheGangToolId) => {
+    const useTool = (tool: TheGangToolId, cardIndex?: number) => {
         dispatchForPlayer(THE_GANG_COMMANDS.USE_TOOL, {
             tool,
-            ...(tool === 'night-vision-goggles' ? { cardIndex: 0 } : {}),
+            ...(typeof cardIndex === 'number' ? { cardIndex } : {}),
         });
     };
 
@@ -1494,7 +1586,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                     </div>
                 </header>
 
-                <section className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-1 overflow-visible lg:gap-2 xl:gap-3" data-testid="the-gang-bgg-board">
+                <section className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-1 overflow-visible pb-[clamp(5.5rem,22vh,9rem)] lg:gap-2 lg:pb-[clamp(8.5rem,20vh,13.5rem)] xl:gap-3" data-testid="the-gang-bgg-board">
                     <section
                         className="pointer-events-auto flex shrink-0 justify-evenly gap-3 overflow-visible lg:gap-6"
                         data-bgg-zone="top-zone"
