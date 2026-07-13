@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    CLOUDFLARE_PAGES_MAX_FILE_BYTES,
     DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
+    isCloudflarePagesFileSizeAllowed,
     isRetainedDistI18nFile,
 } from '../../../scripts/deploy/prune-web-dist-assets.mjs';
 
@@ -22,5 +24,10 @@ describe('Android embedded 资源裁剪', () => {
         expect(diceThroneRetainedImages).toEqual([
             'zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
         ]);
+    });
+
+    it('Web 发布产物不允许超过 Cloudflare Pages 单文件上限', () => {
+        expect(isCloudflarePagesFileSizeAllowed(CLOUDFLARE_PAGES_MAX_FILE_BYTES)).toBe(true);
+        expect(isCloudflarePagesFileSizeAllowed(CLOUDFLARE_PAGES_MAX_FILE_BYTES + 1)).toBe(false);
     });
 });
