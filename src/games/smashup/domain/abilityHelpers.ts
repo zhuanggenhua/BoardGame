@@ -170,10 +170,21 @@ export function canControllerPlayTitan(
     titanUid: string,
     options?: { allowConcurrentOwnTitan?: boolean },
 ): boolean {
-    const activeTitan = getTitanByController(state, controllerId);
-    if (!activeTitan) return true;
-    if (activeTitan.uid === titanUid) return true;
-    return options?.allowConcurrentOwnTitan === true;
+    const core = 'core' in state ? state.core : state;
+    const activeTitans = (core.titans ?? []).filter(
+        titan => titan.controllerId === controllerId && titan.location.zone === 'base',
+    );
+    if (activeTitans.some(titan => titan.uid === titanUid)) return true;
+    if (options?.allowConcurrentOwnTitan === true) return true;
+
+    const hasMegaTroopersPodRedTrooper = core.bases.some(base =>
+        base.minions.some(minion =>
+            minion.controller === controllerId
+            && minion.defId === 'mega_troopers_red_trooper_pod',
+        ),
+    );
+    const titanLimit = hasMegaTroopersPodRedTrooper ? 2 : 1;
+    return activeTitans.length < titanLimit;
 }
 
 export function getSpiritOfTheForestByController(
@@ -981,13 +992,14 @@ export function addOngoingCardCounter(
 /** 队列化随从打出后效果（如打出后自动+1指示物），在 fireMinionPlayedTriggers 中消费 */
 export function queueMinionPlayEffect(
     playerId: PlayerId,
-    effect: 'addPowerCounter',
+    effect: 'addPowerCounter' | 'addTempPower',
     amount: number,
-    now: number
+    now: number,
+    reason?: string,
 ): SmashUpEvent {
     return {
         type: SU_EVENTS.MINION_PLAY_EFFECT_QUEUED,
-        payload: { playerId, effect, amount },
+        payload: { playerId, effect, amount, ...(reason ? { reason } : {}) },
         timestamp: now,
     } as unknown as SmashUpEvent;
 }
@@ -1510,6 +1522,13 @@ export function fireMinionPlayedTriggers(params: {
         const effect = player.pendingMinionPlayEffects[0];
         if (effect.effect === 'addPowerCounter') {
             events.push(addPowerCounter(cardUid, baseIndex, effect.amount, 'pendingMinionPlayEffect', now));
+        } else if (effect.effect === 'addTempPower') {
+            events.push(addTempPower(cardUid, baseIndex, effect.amount, effect.reason ?? 'pendingMinionPlayEffect', now, {
+                sourcePlayerId: playerId,
+                sourceDefId: effect.reason,
+                sourceControllerId: playerId,
+                sourceBaseIndex: baseIndex,
+            }));
         }
         // 生成消费事件（reducer 负责 shift 队列）
         events.push({

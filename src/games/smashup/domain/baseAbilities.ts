@@ -66,6 +66,8 @@ export type BaseTriggerTiming =
     | 'whenScoring'       // 计分时
     | 'afterScoring'      // 记分后
     | 'onTurnStart'       // 回合开始时
+    | 'onTurnEnd'         // 回合结束时
+    | 'onTalentUsed'      // 天赋使用后
     | 'onActionPlayed';   // 行动卡打出时
 
 export interface BaseAbilityContext {
@@ -106,6 +108,10 @@ export interface BaseAbilityContext {
     actionTargetType?: 'base' | 'minion';
     /** onActionPlayed 时：行动卡目标随从（附着行动卡时有值） */
     actionTargetMinionUid?: string;
+    /** onActionPlayed 时：刚打出的行动卡 uid / defId / owner */
+    triggerCardUid?: string;
+    triggerCardDefId?: string;
+    triggerCardOwnerId?: PlayerId;
     /** queued trigger 所属 frame 身份；用于排序/诊断/后续上下文对齐 */
     frameId?: string;
     /** queued trigger 源事件身份；用于运行时上下文恢复 */

@@ -49,6 +49,8 @@ export interface ProtectionCheckContext {
 
     sourceKind?: 'action' | 'nonAction';
 
+    sourceBaseIndex?: number;
+
     protectionType: ProtectionType;
 }
 
@@ -1231,6 +1233,30 @@ export function registerPodOngoingAliases(): void {
 
     baseScoringSuppressionRegistry.push(...scoringSuppressionsToAdd);
 
+    const baseVpModifiersToAdd: BaseVpModifierEntry[] = [];
+    for (const entry of baseVpModifierRegistry) {
+        const { sourceDefId, checker } = entry;
+
+        if (sourceDefId.endsWith('_pod')) continue;
+        if (getTitanDef(sourceDefId)) continue;
+        if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
+
+        const podDefId = `${sourceDefId}_pod`;
+        const alreadyRegistered = baseVpModifierRegistry.some(
+            candidate => candidate.sourceDefId === podDefId && candidate.checker === checker,
+        );
+        if (alreadyRegistered) continue;
+
+        baseVpModifiersToAdd.push({
+            sourceDefId: podDefId,
+            checker,
+            generatedPodAlias: true,
+        });
+        _mappedCount++;
+    }
+
+    baseVpModifierRegistry.push(...baseVpModifiersToAdd);
+
 
     const cardSuppressionsToAdd: CardAbilitySuppressionEntry[] = [];
     for (const entry of cardAbilitySuppressionRegistry) {
@@ -1504,7 +1530,7 @@ export function isMinionProtected(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction' },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1515,6 +1541,7 @@ export function isMinionProtected(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
     for (const entry of protectionRegistry) {
@@ -1542,7 +1569,7 @@ export function isMinionProtectedNonConsumable(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction' },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1553,6 +1580,7 @@ export function isMinionProtectedNonConsumable(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
     for (const entry of protectionRegistry) {

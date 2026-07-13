@@ -78,6 +78,7 @@ import { MAGICAL_GIRLS_CARDS } from './factions/magical_girls';
 import { MAGICAL_GIRLS_POD_CARDS } from './factions/magical_girls_pod';
 import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
 import { MEGA_TROOPERS_POD_CARDS } from './factions/mega_troopers_pod';
+import { CEASE_AND_DESIST_BASES, CEASE_AND_DESIST_CARDS } from './factions/cease_and_desist';
 import { DRAGONS_CARDS } from './factions/dragons';
 import { DRAGONS_POD_CARDS } from './factions/dragons_pod';
 import { SUPERHEROES_CARDS } from './factions/superheroes';
@@ -225,6 +226,7 @@ registerCards(MAGICAL_GIRLS_CARDS);
 registerCards(MAGICAL_GIRLS_POD_CARDS);
 registerCards(MEGA_TROOPERS_CARDS);
 registerCards(MEGA_TROOPERS_POD_CARDS);
+registerCards(CEASE_AND_DESIST_CARDS);
 registerCards(DRAGONS_CARDS);
 registerCards(DRAGONS_POD_CARDS);
 registerCards(SUPERHEROES_CARDS);
@@ -1269,6 +1271,7 @@ export const BASE_CARDS_ZHONGGUO: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_ZHONGGUO);
+registerBases(CEASE_AND_DESIST_BASES);
 
 registerPodBaseSkeletons();
 

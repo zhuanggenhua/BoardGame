@@ -31,7 +31,7 @@ import {
 } from './playLegality';
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
-import { hasCardActivatableAbility } from './activationMetadata';
+import { getCardActivatableAbilities, hasCardActivatableAbility } from './activationMetadata';
 import {
     actionLikeNeedsResponseWindowBase,
     canCardBePlayedInResponseWindowForMatchState,
@@ -130,6 +130,7 @@ export function getManualSpecialScoringBaseIndices(
 function validateManualSpecialScoringBase(
     state: MatchState<SmashUpCore>,
     baseIndex: number,
+    defId?: string,
 ): ValidationResult | undefined {
     if (state.sys.phase !== 'scoreBases') {
         return undefined;
@@ -143,8 +144,13 @@ function validateManualSpecialScoringBase(
         return undefined;
     }
 
+    const canSourceFromAnyBase = defId !== undefined
+        && getCardActivatableAbilities(defId).some(ability =>
+            ability.kind === 'special'
+            && ability.window === 'beforeScoring'
+            && ability.sourceScope === 'anyBase');
     const eligibleIndices = getManualSpecialScoringBaseIndices(state);
-    if (!eligibleIndices.includes(baseIndex)) {
+    if (!canSourceFromAnyBase && !eligibleIndices.includes(baseIndex)) {
         return { valid: false, error: '只能在达到临界点的基地上激活计分前特殊能力' };
     }
 
@@ -1005,7 +1011,7 @@ export function validate(
                 if (!specialAvailability.hasSpecialExecutor) {
                     return { valid: false, error: '该手牌的特殊能力不能手动激活' };
                 }
-                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, handCard.defId);
                 if (scoringBaseValidation) {
                     return scoringBaseValidation;
                 }
@@ -1079,7 +1085,7 @@ export function validate(
                 if (!titanValidation.valid) {
                     return titanValidation;
                 }
-                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, titan.defId);
                 if (scoringBaseValidation) {
                     return scoringBaseValidation;
                 }
@@ -1091,7 +1097,7 @@ export function validate(
             if (spMinion.controller !== command.playerId) {
                 return { valid: false, error: '只能激活自己控制的随从的特殊能力' };
             }
-            const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+            const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, spMinion.defId);
             if (scoringBaseValidation) {
                 return scoringBaseValidation;
             }

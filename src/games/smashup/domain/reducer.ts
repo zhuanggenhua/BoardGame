@@ -1528,6 +1528,7 @@ export function processReturnToHandTriggers(
     random: RandomFn,
     now: number,
 ): PostProcessResult {
+    const retainedEvents: SmashUpEvent[] = [];
     const extraEvents: SmashUpEvent[] = [];
     let ms: MatchState<SmashUpCore> | undefined;
 
@@ -1721,17 +1722,40 @@ export function processReturnToHandTriggers(
         if (event.type === SU_EVENTS.MINION_RETURNED) {
             const payload = (event as MinionReturnedEvent).payload;
             const returnedMinionLki = findReturnedMinionLkiFromPlay(coreBeforeReturn, event as MinionReturnedEvent);
+            const { frameId, sourceEventId } = buildReturnToHandFrameMeta(event, eventIndex);
+            if (!payload.skipReturnReplacement && returnedMinionLki) {
+                const replacement = fireTriggers(coreBeforeReturn, 'onCardReturnedToHand', {
+                    state: coreBeforeReturn,
+                    matchState: stateBeforeReturn,
+                    playerId: payload.toPlayerId,
+                    baseIndex: returnedMinionLki.baseIndex,
+                    frameId,
+                    sourceEventId,
+                    affectEvent: event,
+                    triggerMinion: returnedMinionLki.minion,
+                    triggerMinionUid: payload.minionUid,
+                    triggerMinionDefId: payload.minionDefId,
+                    reason: payload.reason,
+                    random,
+                    now,
+                }, { phase: 'replacement' });
+                if (replacement.events.length > 0 || (replacement.matchState && replacement.matchState !== stateBeforeReturn)) {
+                    extraEvents.push(...replacement.events);
+                    if (replacement.matchState) ms = replacement.matchState;
+                    continue;
+                }
+            }
             const advancedCore = reduce(coreBeforeReturn, event);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             const dedupKey = buildReturnToHandDedupKey(event);
             if (dedupKey && processedReturnToHandEventKeys.has(dedupKey)) {
+                retainedEvents.push(event);
                 ms = advancedMatchState;
                 continue;
             }
             if (dedupKey) {
                 processedReturnToHandEventKeys.add(dedupKey);
             }
-            const { frameId, sourceEventId } = buildReturnToHandFrameMeta(event, eventIndex);
             const queued = collectTriggers(advancedCore, 'onCardReturnedToHand', {
                 state: advancedCore,
                 matchState: advancedMatchState,
@@ -1789,6 +1813,7 @@ export function processReturnToHandTriggers(
                     if (attachedQueued) extraEvents.push(attachedQueued);
                 }
             }
+            retainedEvents.push(event);
             ms = advancedMatchState;
             continue;
         }
@@ -1799,11 +1824,13 @@ export function processReturnToHandTriggers(
             const advancedCore = reduce(coreBeforeReturn, event);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             if (!isCardTransferFromPlayOrDiscard(coreBeforeReturn, event as CardTransferredEvent)) {
+                retainedEvents.push(event);
                 ms = advancedMatchState;
                 continue;
             }
             const dedupKey = buildReturnToHandDedupKey(event);
             if (dedupKey && processedReturnToHandEventKeys.has(dedupKey)) {
+                retainedEvents.push(event);
                 ms = advancedMatchState;
                 continue;
             }
@@ -1869,6 +1896,7 @@ export function processReturnToHandTriggers(
                     if (attachedQueued) extraEvents.push(attachedQueued);
                 }
             }
+            retainedEvents.push(event);
             ms = advancedMatchState;
             continue;
         }
@@ -1878,6 +1906,7 @@ export function processReturnToHandTriggers(
             const advancedCore = reduce(coreBeforeReturn, event);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             if ((payload.cardUids?.length ?? 0) === 0) {
+                retainedEvents.push(event);
                 ms = advancedMatchState;
                 continue;
             }
@@ -1906,6 +1935,7 @@ export function processReturnToHandTriggers(
                 });
                 if (queued) extraEvents.push(queued);
             }
+            retainedEvents.push(event);
             ms = advancedMatchState;
             continue;
         }
@@ -1916,6 +1946,7 @@ export function processReturnToHandTriggers(
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
             const dedupKey = buildReturnToHandDedupKey(event);
             if (dedupKey && processedReturnToHandEventKeys.has(dedupKey)) {
+                retainedEvents.push(event);
                 ms = advancedMatchState;
                 continue;
             }
@@ -1952,19 +1983,21 @@ export function processReturnToHandTriggers(
                 });
                 if (queuedBase) extraEvents.push(queuedBase);
             }
+            retainedEvents.push(event);
             ms = advancedMatchState;
             continue;
         }
 
         // 同批次里前置的非回手事件也可能改写 source controller / base 现场。
         // 若这里不顺序推进现场，后续 return carrier 仍会按旧 core 收集 queued trigger。
+        retainedEvents.push(event);
         ms = { ...stateBeforeReturn, core: reduce(coreBeforeReturn, event) };
     }
 
     if (extraEvents.length > 0) {
-        return { events: [...events, ...extraEvents], matchState: ms };
+        return { events: [...retainedEvents, ...extraEvents], matchState: ms };
     }
-    return ms ? { events, matchState: ms } : { events };
+    return ms ? { events: retainedEvents, matchState: ms } : { events: retainedEvents };
 }
 
 // ============================================================================
