@@ -1198,7 +1198,21 @@
     "spider_verse_deck_selection_title": "Choose one of them to put into your hand",
     "spider_verse_view_from_above_minion_option": "Minion",
     "spider_verse_view_from_above_action_option": "Action",
-    "spider_verse_view_from_above_title": "View from Above: declare the card type to reveal until"
+    "spider_verse_view_from_above_title": "View from Above: declare the card type to reveal until",
+    "mega_troopers_form_megabot_pod_title": "Form Megabot: choose a base for Megabot",
+    "mega_troopers_form_megabot_pod_move_title": "Form Megabot: move any number of your minions to Megabot's base",
+    "mega_troopers_red_trooper_pod_title": "Red Trooper: play Megabot on another base or move it",
+    "mega_troopers_lightning_crystal_pod_title": "Lightning Crystal: destroy an action or titan",
+    "mega_troopers_its_blitzin_time_pod_title": "It's Blitzin' Time: choose one of your minions",
+    "mega_troopers_plan_for_more_pod_title": "Plan for More: draw one card or play one revealed minion",
+    "mega_troopers_plan_for_more_pod_order_title": "Plan for More: return the rest to the top and/or bottom",
+    "mega_troopers_beta_6_pod_title": "Beta 6: place a +1 power counter on one of your minions",
+    "mega_troopers_blue_trooper_pod_title": "Blue Trooper: draw a card or gain +2 power",
+    "mega_troopers_blue_trooper_pod_draw": "Draw 1 card",
+    "mega_troopers_blue_trooper_pod_power": "This minion gains +2 power until the end of your turn",
+    "mega_troopers_lightning_rescue_pod_title": "Lightning Rescue: you may play an extra action",
+    "mega_troopers_blitzing_sword_attack_pod_title": "Blitzing Sword Attack: destroy a minion of power 4 or less",
+    "mega_troopers_power_pose_pod_after_scoring_title": "Power Pose: you may play a minion on the replacement base"
   },
   "mechanics": {
     "madness": {
@@ -1658,6 +1672,22 @@
     "ultimates": {
       "name": "Ultimates",
       "description": "Exploit movement, temporary power, and hand cycling to arrive where the fight matters most."
+    },
+    "dragons_pod": {
+      "name": "Dragons (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Dragons."
+    },
+    "superheroes_pod": {
+      "name": "Superheroes (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Superheroes."
+    },
+    "magical_girls_pod": {
+      "name": "Magical Girls (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Magical Girls."
+    },
+    "mega_troopers_pod": {
+      "name": "Mega Troopers (POD)",
+      "description": "POD edition with revised scoring-window actions, trooper specials, Megabot support, and Omega Protocol."
     }
   },
   "tutorial": {
@@ -7025,6 +7055,231 @@
       "name": "Scramble",
       "abilityText": "Move one of your characters to another base. Special: You may play this before scoring.",
       "effectText": "Move one of your characters to another base. Special: You may play this before scoring."
+    },
+    "mega_troopers_blitzing_sword_attack_pod": {
+      "name": "Blitzing Sword Attack",
+      "effectText": "Special: Before a base scores where you have a titan, destroy a minion there of power 4 or less."
+    },
+    "mega_troopers_form_megabot_pod": {
+      "name": "Form Megabot!",
+      "effectText": "Play Megabot, OR move any number of your minions to Megabot's base."
+    },
+    "mega_troopers_its_blitzin_time_pod": {
+      "name": "It's Blitzin' Time!",
+      "effectText": "One of your minions gains +4 power until the end of the turn."
+    },
+    "mega_troopers_lightning_rescue_pod": {
+      "name": "Lightning Rescue!",
+      "effectText": "Special: Before a base scores, if you have a minion there and do not have the most power, you may play an extra action."
+    },
+    "mega_troopers_power_pose_pod": {
+      "name": "Power Pose",
+      "effectText": "Play on a base. Ongoing: Before this base scores, if you do not have the most power, draw two cards. After it scores, if you were the winner, you may play a minion of power 3 or less on the replacement base as an extra minion."
+    },
+    "mega_troopers_lightning_crystal_pod": {
+      "name": "Lightning Crystal",
+      "effectText": "Destroy an action or a titan."
+    },
+    "mega_troopers_omega_protocol_pod": {
+      "name": "Omega Protocol",
+      "effectText": "Play on a base. Ongoing: At the start of each other player's turn, this base has -10 breakpoint until the end of that turn."
+    },
+    "mega_troopers_plan_for_more_pod": {
+      "name": "Plan for More!",
+      "effectText": "Look at the top three cards of your deck. You may draw one of them, OR play one minion from among them as an extra minion. Return the rest in any order to the top and/or bottom of your deck."
+    },
+    "mega_troopers_beta_6_pod": {
+      "name": "Beta 6",
+      "abilityText": "Special: Before any base scores, you may place a +1 power counter on one of your minions."
+    },
+    "mega_troopers_green_trooper_pod": {
+      "name": "Green Trooper",
+      "abilityText": "Special: Before a base scores, you may play this minion there as an extra minion."
+    },
+    "mega_troopers_pink_trooper_pod": {
+      "name": "Pink Trooper",
+      "abilityText": "Special: After this base scores, return one of your minions here of power 3 or less to your hand instead of the discard pile."
+    },
+    "mega_troopers_black_trooper_pod": {
+      "name": "Black Trooper",
+      "abilityText": "Ongoing: After a special ability is used, this minion gains +1 power until the end of the turn."
+    },
+    "mega_troopers_blue_trooper_pod": {
+      "name": "Blue Trooper",
+      "abilityText": "Special: Before any base scores, you may draw a card, OR this minion gains +2 power until the end of your turn."
+    },
+    "mega_troopers_yellow_trooper_pod": {
+      "name": "Yellow Trooper",
+      "abilityText": "Special: Before this base scores, you may move another one of your minions to here."
+    },
+    "mega_troopers_red_trooper_pod": {
+      "name": "Red Trooper",
+      "abilityText": "Ongoing: You may have one additional titan in play. Talent: Play Megabot on another base, OR move Megabot."
+    },
+    "magical_girls_silver_shard_pod": {
+      "name": "Silver Shard",
+      "effectText": "All players shuffle all minions in their discard piles into their decks."
+    },
+    "magical_girls_coronet_attack_pod": {
+      "name": "Coronet Attack",
+      "effectText": "Destroy a minion you don’t control with power less than or equal to the number of your minions at the same base."
+    },
+    "magical_girls_magical_staff_pod": {
+      "name": "Magical Staff",
+      "effectText": "Play on your minion. Ongoing: This minion gains +1 power. When this minion goes to the discard pile, place it on top of your deck instead."
+    },
+    "magical_girls_purge_the_demon_pod": {
+      "name": "Purge the Demon",
+      "effectText": "Choose a card. Destroy an action on it, OR remove all counters on it."
+    },
+    "magical_girls_coordination_pod": {
+      "name": "Coordination",
+      "effectText": "Play either an extra minion or Walking Castle."
+    },
+    "magical_girls_lunar_healing_love_spell_pod": {
+      "name": "Lunar Healing Love Spell",
+      "effectText": "Choose a minion in each player’s discard pile and place it into its owner’s hand."
+    },
+    "magical_girls_kiss_the_sky_spell_pod": {
+      "name": "Kiss the Sky Spell",
+      "effectText": "Place a minion from your discard pile into your hand. You may play an extra action this turn."
+    },
+    "magical_girls_celestial_teleport_pod": {
+      "name": "Celestial Teleport",
+      "effectText": "Move one of your minions to another base."
+    },
+    "magical_girls_black_magicat_pod": {
+      "name": "Black Magicat",
+      "abilityText": "Search your deck and/or discard pile for Lunar Captain and place it into your hand."
+    },
+    "magical_girls_white_magicat_pod": {
+      "name": "White Magicat",
+      "abilityText": "Search your deck and/or discard pile for Power Maid and place it into your hand."
+    },
+    "magical_girls_rainbow_girl_pod": {
+      "name": "Rainbow Girl",
+      "abilityText": "Your other minions here gain +1 power until the end of the turn."
+    },
+    "magical_girls_fancy_suit_lad_pod": {
+      "name": "Fancy Suit Lad",
+      "abilityText": "Ongoing: Your other minions here are not affected by other players’ cards."
+    },
+    "magical_girls_power_maid_pod": {
+      "name": "Power Maid",
+      "abilityText": "Talent: Choose a minion with power less than or equal to the number of your minions here, and move it to or from here."
+    },
+    "magical_girls_bewitching_gal_pod": {
+      "name": "Bewitching Gal",
+      "abilityText": "Talent: Reduce the breakpoint of this base by the number of your minions here until the end of the turn."
+    },
+    "magical_girls_technomagical_lass_pod": {
+      "name": "Technomagical Lass",
+      "abilityText": "Talent: Destroy a minion you don’t control here with power less than or equal to the number of your minions here."
+    },
+    "magical_girls_sakura_warrior_pod": {
+      "name": "Sakura Warrior",
+      "abilityText": "Talent: Reduce a minion’s power here by the number of your minions here until the start of your next turn."
+    },
+    "magical_girls_lunar_captain_pod": {
+      "name": "Lunar Captain",
+      "abilityText": "Talent: Choose a minion in your discard pile with power less than or equal to the number of your minions here, and place it into your hand."
+    },
+    "dragons_burn_it_down_pod": {
+      "name": "Burn it Down",
+      "effectText": "Choose a base. Replace it with the top card of the base deck or a base from the base discard pile."
+    },
+    "dragons_ruins_pod": {
+      "name": "Ruins",
+      "effectText": "Play on a base. Ongoing: When this base scores, other players gain 1 less VP."
+    },
+    "dragons_raze_pod": {
+      "name": "Raze",
+      "effectText": "Play on a base. Ongoing: This base's ability is canceled."
+    },
+    "dragons_dangerous_ground_pod": {
+      "name": "Dangerous Ground",
+      "effectText": "Play on a base. Ongoing: After another player plays a minion here, that player discards 1 card."
+    },
+    "dragons_flank_attack_pod": {
+      "name": "Flank Attack",
+      "effectText": "Choose an action in your deck and/or discard pile that can be played on a base and play it as an extra action."
+    },
+    "dragons_intimidating_presence_pod": {
+      "name": "Intimidating Presence",
+      "effectText": "Special: You may play this on a base before it scores. Ongoing: Other players' minions here each have -1 power."
+    },
+    "dragons_dragon_lands_pod": {
+      "name": "Dragon Lands",
+      "effectText": "Special: You may play this on a base before it scores. Ongoing: Your minions here each have +1 power."
+    },
+    "dragons_bring_down_the_walls_pod": {
+      "name": "Bring Down the Walls",
+      "effectText": "Play on a base. Ongoing: Before this base scores, you may play an extra minion here."
+    },
+    "dragons_hatchling_pod": {
+      "name": "Hatchling",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, that minion gets -1 power until the end of the turn."
+    },
+    "dragons_imperial_dragon_pod": {
+      "name": "Imperial Dragon",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, draw 1 card."
+    },
+    "dragons_wyvern_pod": {
+      "name": "Wyvern",
+      "abilityText": "On play: Destroy a minion here of power 3 or less. Talent: Reduce this base's breakpoint by 3 until the end of the turn."
+    },
+    "dragons_great_wyrm_pod": {
+      "name": "Great Wyrm",
+      "abilityText": "Ongoing: When this minion's base scores, other players gain 1 less VP."
+    },
+    "superheroes_not_really_dead_pod": {
+      "name": "Not Really Dead",
+      "effectText": "Choose up to two minions of power 2 or less in any discard pile and return them to their owners' hands."
+    },
+    "superheroes_justice_friends_pod": {
+      "name": "Justice Friends",
+      "effectText": "Choose a base. Draw 1 card for each of your minions of power 5 or more there."
+    },
+    "superheroes_my_only_weakness_pod": {
+      "name": "My Only Weakness!",
+      "effectText": "Play on a minion. Ongoing: This minion has -3 power."
+    },
+    "superheroes_golden_age_pod": {
+      "name": "Golden Age",
+      "effectText": "Choose up to three minions and place them on the bottoms of their owners' decks."
+    },
+    "superheroes_secret_base_pod": {
+      "name": "Secret Base",
+      "effectText": "Play on a base. Ongoing: Other players cannot play actions on this base."
+    },
+    "superheroes_radioactive_exposure_pod": {
+      "name": "Radioactive Exposure",
+      "effectText": "Choose a minion. Until the end of the turn, it has +2 power and is not affected by other players' cards."
+    },
+    "superheroes_expanded_power_pod": {
+      "name": "Expanded Power",
+      "effectText": "Play on one of your minions. Ongoing: This minion has +2 power."
+    },
+    "superheroes_sidekick_pod": {
+      "name": "Sidekick",
+      "effectText": "Play an extra minion of power 2 or less."
+    },
+    "superheroes_mild_mannered_citizen_pod": {
+      "name": "Mild Mannered Citizen"
+    },
+    "superheroes_the_burst_pod": {
+      "name": "The Burst"
+    },
+    "superheroes_captain_amazing_pod": {
+      "name": "Captain Amazing",
+      "abilityText": "Talent: Search your deck for a minion of power 5 or more, play it as an extra minion, then shuffle your deck."
+    },
+    "superheroes_mind_lady_pod": {
+      "name": "Mind Lady",
+      "abilityText": "Choose another player's minion. Its ability is canceled until the start of your next turn."
+    },
+    "superheroes_awesome_guy_pod": {
+      "name": "Awesome Guy"
     }
   },
   "debug": {

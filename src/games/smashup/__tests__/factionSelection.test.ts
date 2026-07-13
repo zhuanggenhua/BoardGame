@@ -633,6 +633,14 @@ describe('派系选择系统', () => {
                 'base_mermaid_reef_pod',
                 'base_oracle_at_delphi_pod',
                 'base_wooden_horse_pod',
+                'base_wyrms_desolation_pod',
+                'base_dragons_lair_pod',
+                'base_converted_cave_pod',
+                'base_crystal_fortress_pod',
+                'base_akihabara_high_pod',
+                'base_q_point_pod',
+                'base_moon_dumpster_pod',
+                'base_juice_bar_pod',
             ]);
 
             const missingPodBaseMappings = getAllBaseDefs()

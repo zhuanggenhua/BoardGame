@@ -8,7 +8,6 @@ import React, { useEffect, useRef } from 'react';
 import { motion, useAnimate } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { GridConfig } from '../../../core/ui/board-layout.types';
-import { cellToNormalizedBounds } from '../../../core/ui/board-hit-test';
 import type { SummonerWarsCore, CellCoord, PlayerId } from '../domain/types';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
 import { CardSprite } from './CardSprite';
@@ -27,6 +26,7 @@ import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { useArmedActivation } from '../../../hooks/ui/useArmedActivation';
 import { BOARD_SHELL_REFERENCE_WIDTH } from './layoutConstants';
+import { getCellPosition } from './boardGridGeometry';
 
 // ============================================================================
 // 辅助函数
@@ -57,18 +57,6 @@ const MAGNIFY_ICON_STYLE: React.CSSProperties = {
   width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
   height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
 };
-
-/** 计算格子位置（百分比） */
-// eslint-disable-next-line react-refresh/only-export-components
-export function getCellPosition(row: number, col: number, grid: GridConfig) {
-  const cellBounds = cellToNormalizedBounds({ row, col }, grid);
-  return {
-    left: cellBounds.x * 100,
-    top: cellBounds.y * 100,
-    width: cellBounds.width * 100,
-    height: cellBounds.height * 100,
-  };
-}
 
 /** 格子唯一 key */
 const getCellKey = (row: number, col: number) => `${row}-${col}`;

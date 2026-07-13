@@ -1589,6 +1589,7 @@ describe('systemInteractionAdapter', () => {
   it('关键 UI 文案入口不再依赖 fallback/defaultValue 掩盖缺 key', () => {
     const uiSources = [
       '../ui/StatusBanners.tsx',
+      '../ui/statusBannerText.ts',
       '../ui/HandArea.tsx',
       '../ui/CustomDeckCard.tsx',
       '../ui/deckbuilder/MyDeckPanel.tsx',
