@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "scope": "official",
   "id": "smashup",
-  "basePrefix": "official/smashup/",
+  "basePrefix": "official/i18n/zh-CN/smashup/",
   "files": {
     "base/baokemeng": {
       "variants": {
@@ -577,6 +577,24 @@
           "sha256": "1793e25b548566f6a8973ba8d09d9c824dc94e593fdf5a7e8963cca979dda200",
           "bytes": 4723065,
           "mime": "image/png"
+        }
+      }
+    },
+    "cards/promos_sheep_all_stars": {
+      "variants": {
+        "png": {
+          "sha256": "f01d0ab000a18f0e167045f1279372c9a54b13d16d9794cf02bc1640e4fbc7c3",
+          "bytes": 34483656,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/promos_sheep_all_stars": {
+      "variants": {
+        "webp": {
+          "sha256": "c052ca0f5e79ff77be9de8d9bcb4a7974cc5ce11f7f9e8c2f03dc6f7168dc23a",
+          "bytes": 704114,
+          "mime": "image/webp"
         }
       }
     }
