@@ -1,0 +1,11 @@
+[Unit]
+Description=Disabled legacy BoardGame asset backup queue
+
+[Timer]
+OnBootSec=3650d
+AccuracySec=10s
+Persistent=true
+Unit=boardgame-asset-backup.service
+
+[Install]
+WantedBy=timers.target

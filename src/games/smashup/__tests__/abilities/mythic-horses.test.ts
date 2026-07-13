@@ -453,4 +453,144 @@ describe('Mythic Horses abilities', () => {
             && (event as any).payload.cardUids.includes('draw-1'),
         )).toBe(true);
     });
+
+    it('mythic_horses_seastar_pod 打出时若同基地已有己方其他随从则授予额外随从额度', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('seastar-pod-1', 'mythic_horses_seastar_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('friend-1', 'robot_microbot_alpha', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'seastar-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        expect(played.success, played.error).toBe(true);
+        expect(played.finalState.core.players['0'].minionLimit).toBe(2);
+    });
+
+    it('mythic_horses_super_future_space_armor_power_pod 自动给有同基地友军的己方随从 +2，不弹单目标 prompt', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('armor-pod-1', 'mythic_horses_super_future_space_armor_power_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('friend-1', 'test_friend_one', '0', 2),
+                        makeMinion('friend-2', 'test_friend_two', '0', 2),
+                        makeMinion('enemy-1', 'test_enemy', '1', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('lonely-1', 'test_lonely', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'armor-pod-1' } },
+            defaultTestRandom,
+        );
+
+        expect(played.success, played.error).toBe(true);
+        expectNoPrompt(played.finalState);
+        const friend1 = played.finalState.core.bases[0].minions.find(minion => minion.uid === 'friend-1')!;
+        const friend2 = played.finalState.core.bases[0].minions.find(minion => minion.uid === 'friend-2')!;
+        const enemy = played.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-1')!;
+        const lonely = played.finalState.core.bases[1].minions.find(minion => minion.uid === 'lonely-1')!;
+        expect(getEffectivePower(played.finalState.core, friend1, 0)).toBe(4);
+        expect(getEffectivePower(played.finalState.core, friend2, 0)).toBe(4);
+        expect(getEffectivePower(played.finalState.core, enemy, 0)).toBe(3);
+        expect(getEffectivePower(played.finalState.core, lonely, 1)).toBe(2);
+        expect(isMinionProtected(played.finalState.core, friend1, 0, '1', 'destroy')).toBe(true);
+    });
+
+    it('mythic_horses_sharing_power_pod 在回合结束且该基地有两个己方随从时由拥有者抽 1', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('draw-1', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('friend-1', 'robot_microbot_beta', '0', 2),
+                    makeMinion('friend-2', 'robot_microbot_alpha', '0', 2),
+                ],
+                ongoingActions: [{ uid: 'sharing-pod-1', defId: 'mythic_horses_sharing_power_pod', ownerId: '0' }],
+            }],
+        });
+
+        const triggered = fireTriggers(core, 'onTurnEnd', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(triggered.events.some(event =>
+            event.type === SU_EVENTS.CARDS_DRAWN
+            && (event as any).payload.playerId === '0'
+            && (event as any).payload.cardUids.includes('draw-1'),
+        )).toBe(true);
+    });
+
+    it('mythic_horses_starlyte_pod 自身按同基地其他己方随从数获得力量', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('starlyte-pod-1', 'mythic_horses_starlyte_pod', '0', 5),
+                    makeMinion('friend-1', 'robot_microbot_alpha', '0', 2),
+                    makeMinion('friend-2', 'robot_microbot_beta', '0', 2),
+                    makeMinion('enemy-1', 'pirate_first_mate', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const starlyte = core.bases[0].minions.find(minion => minion.uid === 'starlyte-pod-1')!;
+        expect(getEffectivePower(core, starlyte, 0)).toBe(7);
+    });
+
+    it('mythic_horses_encouragement_power_pod 让宿主按同基地其他己方随从数获得力量', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('host-1', 'test_host', '0', 2, {
+                        attachedActions: [{ uid: 'enc-pod-1', defId: 'mythic_horses_encouragement_power_pod', ownerId: '0' }],
+                    }),
+                    makeMinion('friend-1', 'test_friend', '0', 2),
+                    makeMinion('enemy-1', 'test_enemy', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const host = core.bases[0].minions.find(minion => minion.uid === 'host-1')!;
+        expect(getEffectivePower(core, host, 0)).toBe(3);
+    });
 });

@@ -478,6 +478,12 @@ export const getNextPlayerId = (state: DiceThroneCore): PlayerId => {
  * 获取当前掷骰玩家 ID
  */
 export const getRollerId = (state: DiceThroneCore, phase?: TurnPhase): PlayerId => {
+    if (
+        state.pendingBonusDiceSettlement?.allowDiceModification === true
+        && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
+    ) {
+        return state.pendingBonusDiceSettlement.attackerId;
+    }
     if (phase === 'defensiveRoll') {
         return state.pendingAttack?.defenderId ?? state.activePlayerId;
     }
@@ -762,6 +768,27 @@ const getAttackModifierPlayFailureReason = (
     return null;
 };
 
+const canPlayRollCardOutsideRollPhaseWithDiceResult = (
+    state: DiceThroneCore,
+    card: AbilityCard,
+    phase: TurnPhase,
+): boolean => (
+    (card.timing === 'roll' || card.timing === 'instant')
+    && hasAnyDiceEffect(card)
+    && (phase === 'upkeep' || phase === 'income' || phase === 'main1' || phase === 'main2')
+    && (
+        (
+            state.dice.length > 0
+            && state.rollCount > 0
+            && state.rollConfirmed
+        )
+        || (
+            state.pendingBonusDiceSettlement?.allowDiceModification === true
+            && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
+        )
+    )
+);
+
 const matchesPendingDamagePlayCondition = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -888,8 +915,10 @@ const checkStandardCardPlay = (
         const isAfterAttackRollResponse =
             responseWindowType === 'afterAttackResolved'
             && card.playCondition?.requireMinDamageDealt !== undefined;
+        const isDiceResultInterference = canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase);
         if (
             !isAfterAttackRollResponse
+            && !isDiceResultInterference
             && phase !== 'offensiveRoll'
             && phase !== 'targetingRoll'
             && phase !== 'defensiveRoll'
@@ -902,6 +931,23 @@ const checkStandardCardPlay = (
 
     if (card.cpCost > 0 && playerCp < card.cpCost) {
         return { ok: false, reason: 'notEnoughCp' };
+    }
+
+    if (card.timing === 'roll' && hasAnyDiceEffect(card)) {
+        const diceEffectTarget = getDiceEffectTarget(card);
+        if (diceEffectTarget === 'self' && playerId !== getRollerId(state, phase)) {
+            return { ok: false, reason: 'requireIsRoller' };
+        }
+    }
+
+    if (
+        !responseWindowType
+        && phase === 'offensiveRoll'
+        && card.isAttackModifier === true
+        && playerId !== getRollerId(state, phase)
+        && !state.pendingAttack?.sourceAbilityId
+    ) {
+        return { ok: false, reason: 'attackModifierRequiresSelectedAttack' };
     }
 
     const attackModifierFailureReason = getAttackModifierPlayFailureReason(state, playerId, card, phase);
@@ -933,23 +979,36 @@ const checkStandardCardPlay = (
         }
 
         if (cond.requireHasRolled && state.rollCount === 0) {
-            return { ok: false, reason: 'requireHasRolled' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireHasRolled' };
+            }
         }
 
         if (cond.requireDiceExists && state.dice.length === 0) {
-            return { ok: false, reason: 'requireDiceExists' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireDiceExists' };
+            }
         }
 
         if (cond.requireMinDiceCount && state.dice.length < cond.requireMinDiceCount) {
-            return { ok: false, reason: 'requireMinDiceCount' };
+            const diceResultCount = state.pendingBonusDiceSettlement?.allowDiceModification === true
+                ? getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length
+                : state.dice.length;
+            if (diceResultCount < cond.requireMinDiceCount) {
+                return { ok: false, reason: 'requireMinDiceCount' };
+            }
         }
 
         if (cond.requireOpponentDiceExists && state.dice.length === 0) {
-            return { ok: false, reason: 'requireOpponentDiceExists' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireOpponentDiceExists' };
+            }
         }
 
         if (cond.requireRollConfirmed && !state.rollConfirmed) {
-            return { ok: false, reason: 'requireRollConfirmed' };
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+                return { ok: false, reason: 'requireRollConfirmed' };
+            }
         }
 
         if (cond.requireNotRollConfirmed && state.rollConfirmed) {
@@ -1409,13 +1468,6 @@ export const getResponderQueue = (
     excludeId: PlayerId | undefined,
     phase: TurnPhase
 ): PlayerId[] => {
-    // 规则 4.4：终极技能行动锁定 - 对手不能采取任何行动
-    // 影响的窗口：afterRollConfirmed
-    if (state.pendingAttack?.isUltimate && windowType === 'afterRollConfirmed') {
-        // 终极技能激活后，对手不能响应，返回空队列
-        return [];
-    }
-    
     const allPlayers = getPlayerOrder(state);
     const queue: PlayerId[] = [];
     const shouldExcludeSameTeam = isTeamMode(state);

@@ -465,7 +465,7 @@ export interface PlayerState {
     /** 同名额外随从约束：已锁定的 defId（null = 尚未锁定，string = 已锁定） */
     sameNameMinionDefId?: string | null;
     /** 待消费的随从打出后效果队列（如 crack_of_dusk/its_alive 的打出后+1指示物） */
-    pendingMinionPlayEffects?: Array<{ effect: 'addPowerCounter'; amount: number }>;
+    pendingMinionPlayEffects?: Array<{ effect: 'addPowerCounter' | 'addTempPower'; amount: number; reason?: string }>;
     /** 本回合已消耗的“额外第二次 talent”次数（如 Great Wolf Spirit） */
     extraTalentUsesConsumed?: number;
     /** 选择的派系 */

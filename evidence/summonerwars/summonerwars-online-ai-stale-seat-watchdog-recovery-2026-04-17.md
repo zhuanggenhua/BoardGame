@@ -93,3 +93,42 @@ npm run test:e2e:ci:file -- e2e/summonerwars/summonerwars.e2e.ts "在线 AI 回�
 ## 剩余风险
 
 - 目前新增的 `legal-action-recovered` 属于“已恢复 incident”留痕，不是 `failed` 告警；后续若要在管理台单独筛“被 watchdog 救回的 AI 房间”，建议再补 UI 侧筛选口径或统计口径
+
+## 2026-07-13：公开选阵营等待 8 秒优化
+
+### 原始现象
+
+- 真人选择阵营后，AI 需要等待很多秒才显示所选阵营。
+- 生产日志在多个召唤师战争房间中直接命中：AI 1 号座位均由 `seat-legal-only` watchdog 从 `unselected` 推进到具体阵营。
+- 公开选阵营属于 `legalActions` 可解链，不涉及 `interactionId / sourceId`、`currentResponderId / responderQueue`；`playerView / isBlocked` 也不是本次阻塞来源。
+
+### 根因层级
+
+- 根因位于在线 AI watchdog 的接管时序。
+- AI seat 没有 live socket 时，局内 `active-turn / response-window / response-loop / visible-interaction / hidden-interaction` 已经立即接管；但公开预开局 `seat-legal-only` 仍固定等待默认 8000ms。
+- 这使合法的 AI 选阵营被延迟到 watchdog 超时，看起来像页面卡住。
+
+### 修复
+
+- 当且仅当同时满足以下条件时，恢复超时改为 0：
+  - 当前候选是 `seat-legal-only`；
+  - `hostStarted=false`；
+  - 当前阶段存在于游戏声明的 `publicPregameLegalActionPhases`；
+  - 目标 AI seat 没有 live socket。
+- `AI seat only / human guard`：真人座位不会成为候选；非公开开局阶段不走该分支；手动代 AI 选择仍由既有门禁抑制 watchdog。
+
+### 验证
+
+```powershell
+node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "summonerwars 公开选阵营阶段的 AI seat 未连接时应立即接管"
+```
+
+- 首跑：失败，实际返回 `8000`，预期 `0`。
+- 修复后：通过，实际返回 `0`。
+
+相邻链路定向验证 4 条通过：
+
+- 召唤师战争公开选阵营仍执行真实合法动作；
+- 手动代 AI 选派系不产生 `legal_action_unavailable` 噪音；
+- 普通真人阶段不触发 `seat-legal-only` 代打；
+- 离线 remote-ai 的 response-loop 立即接管行为保持不变。

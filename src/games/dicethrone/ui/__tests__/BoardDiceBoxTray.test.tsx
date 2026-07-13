@@ -72,6 +72,48 @@ describe('BoardDiceBoxTray', () => {
         expect(onDieClick).toHaveBeenCalledWith(0);
     });
 
+    it('dice-box-threejs 运行期失败时会切回可点击的回退骰台', async () => {
+        const engineMock = {
+            setDieSkins: vi.fn(),
+            resize: vi.fn(),
+            destroy: vi.fn(),
+            clear: vi.fn(),
+            rollToValues: vi.fn().mockRejectedValueOnce(new Error('render failed')),
+            syncValues: vi.fn(),
+            removeDice: removeDiceMock,
+            hasDice: vi.fn().mockReturnValue(false),
+            getProjectedLayout: vi.fn(),
+            getMotionSnapshot: vi.fn(),
+        };
+        createEngineMock.mockResolvedValue(engineMock);
+        const onDieClick = vi.fn();
+
+        render(
+            <BoardDiceBoxTray
+                dice={[{
+                    id: 0,
+                    displayValue: 3,
+                    isKept: false,
+                    selected: false,
+                    clickable: true,
+                    definitionId: 'artificer-dice',
+                }]}
+                isRolling={false}
+                onDieClick={onDieClick}
+                locale="zh-CN"
+            />,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('dicethrone-board-dice-box-fallback')).toHaveAttribute('data-engine-state', 'failed');
+        });
+
+        const button = screen.getByTestId('die-button-0');
+        expect(button).toHaveAttribute('data-render-mode', 'fallback');
+        fireEvent.click(button);
+        expect(onDieClick).toHaveBeenCalledWith(0);
+    });
+
     it('锁定骰子离开棋盘时应调用 dice-box-threejs remove 产生移除动画', async () => {
         const engineMock = {
             setDieSkins: vi.fn(),

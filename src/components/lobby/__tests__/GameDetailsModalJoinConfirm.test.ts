@@ -1487,6 +1487,42 @@ describe('GameDetailsModal create room ai entry', () => {
         }, { timeout: 4000 });
     }, 10000);
 
+    it('确认下载时远端清单仍缺素材包地址，不调用原生安装器', async () => {
+        vi.mocked(manifestClient.resolveGamePackageManifest).mockResolvedValue({
+            gameId: 'dicethrone',
+            runtimeChannel: 'stable',
+            modulePackId: 'dicethrone',
+            assetPackId: 'dicethrone',
+            modulePackVersion: 'test-module-pack-v1',
+            assetPackVersion: 'test-asset-pack-v1',
+            source: 'remote',
+        });
+
+        render(createElement(GameDetailsModal, baseProps));
+
+        await waitFor(() => {
+            expect(vi.mocked(manifestClient.resolveGamePackageManifest)).toHaveBeenCalledTimes(1);
+        });
+
+        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
+        fireEvent.click(screen.getByText('packageManager.installAction'));
+        expect(screen.getByText('package-install-confirm')).toBeInTheDocument();
+
+        const modalProps = latestPackageInstallModalProps.current as null | {
+            onConfirm?: () => Promise<void>;
+        };
+        expect(modalProps?.onConfirm).toBeTypeOf('function');
+
+        await act(async () => {
+            await modalProps?.onConfirm?.();
+        });
+
+        expect(nativeGamePackagePlugin.createNativeGamePackageInstallHandle).not.toHaveBeenCalled();
+        await waitFor(() => {
+            expect(screen.getByText('packageManager.manifestMissingHint')).toBeInTheDocument();
+        });
+    });
+
     it('确认下载进行中时重复点击只触发一次 re-resolve', async () => {
         vi.mocked(manifestClient.resolveGamePackageManifest).mockImplementationOnce(async (gameId: string, delivery?: {
             runtimeChannel?: string;

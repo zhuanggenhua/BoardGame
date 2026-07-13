@@ -155,9 +155,12 @@ describe('持续力量修正基础设施', () => {
         expect(getTotalEffectivePowerOnBase(state, base, 0)).toBe(3);
     });
 
-    it('mermaids_temptress 在其他玩家自己的回合把自己的随从移动到这里时仍应 +2', () => {
+    it.each([
+        'mermaids_temptress',
+        'mermaids_temptress_pod',
+    ])('%s 在其他玩家自己的回合把自己的随从移动到这里时仍应 +2', (temptressDefId) => {
         const enemy = makeMinion('enemy-1', 'test_minion', '1', 3, { powerModifier: 0 });
-        const temptress = makeMinion('temptress-1', 'mermaids_temptress', '0', 4, { powerModifier: 0 });
+        const temptress = makeMinion('temptress-1', temptressDefId, '0', 4, { powerModifier: 0 });
         const state = makeState({
             turnOrder: ['0', '1'],
             currentPlayerIndex: 1,

@@ -13,7 +13,8 @@ const helpText = `
   1. 先检查 package.json 版本已随本次发布自增
   2. 等待 10 分钟
   3. ssh 到生产机执行: bash scripts/deploy/deploy-image.sh update
-  4. 本地执行: node scripts/mobile/release-android.mjs ota --channel stable
+  4. 本地执行强制更新 OTA: node scripts/mobile/release-android.mjs ota --channel stable --force-update
+  5. OTA 发布脚本必须等 bundle/latest.json 线上可读，并校验 latest.json 的 CORS 预检
 
 准备版本:
   node scripts/release/deploy-and-ota.mjs --prepare-version
@@ -23,6 +24,7 @@ const helpText = `
   1. 先执行 --prepare-version，默认 patch，会同步更新 package.json.version 与 androidVersionCode
   2. 提交并 push 版本改动，等待 CI 镜像构建完成
   3. 再执行 deploy-and-ota，部署 latest 并发布同一产品版本的 stable OTA
+  4. 若 latest.json 或 CORS 预检不可读，OTA 步骤必须失败，不能汇报更新完成
 
 选项:
   --prepare-version          只准备版本自增，不执行部署或 OTA
@@ -36,7 +38,7 @@ const helpText = `
   --deploy-tag <tag>         远端执行 update <tag>；不传则执行 update latest
   --ota-channel <name>       OTA channel，默认 stable
   --skip-ota                 只更新服务器，不执行本地 Android OTA 发布
-  --ota-extra "<args>"       追加给 release-android ota 的额外参数
+  --ota-extra "<args>"       追加给 release-android ota 的额外参数；禁止传 --no-force-update
 `.trim();
 
 const readArgValue = (name, fallback = '') => {
@@ -70,6 +72,10 @@ const otaChannel = readArgValue('ota-channel', 'stable');
 const skipOta = hasFlag('skip-ota');
 const otaExtraRaw = readArgValue('ota-extra', '').trim();
 const otaExtraArgs = otaExtraRaw ? otaExtraRaw.split(/\s+/).filter(Boolean) : [];
+
+if (otaExtraArgs.includes('--no-force-update')) {
+    throw new Error('所有 OTA 已强制更新，--ota-extra 禁止传入 --no-force-update。');
+}
 
 if (hasFlag('help') || rawArgs.includes('-h')) {
     console.log(helpText);
@@ -129,6 +135,7 @@ const otaCommandArgs = [
     'ota',
     '--channel',
     otaChannel,
+    '--force-update',
     ...otaExtraArgs,
 ];
 

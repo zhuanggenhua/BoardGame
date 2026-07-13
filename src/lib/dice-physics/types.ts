@@ -4,6 +4,8 @@ export interface DicePhysicsProjectedLayout {
     y: number;
     width: number;
     height: number;
+    visualWidth?: number;
+    visualHeight?: number;
     minX: number;
     maxX: number;
     minY: number;

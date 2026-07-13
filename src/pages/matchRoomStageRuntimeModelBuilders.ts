@@ -150,6 +150,16 @@ export function buildMatchRoomTutorialBoardRuntimeModel(args: {
         numPlayers: stage.tutorialManifest?.numPlayers
             ?? stage.engineConfig.minPlayers
             ?? 2,
+        seatControllers: Object.fromEntries(
+            Array.from(
+                {
+                    length: stage.tutorialManifest?.numPlayers
+                        ?? stage.engineConfig.minPlayers
+                        ?? 2,
+                },
+                (_, index) => [String(index), { type: 'human' as const }],
+            ),
+        ),
         onCommandRejected: stage.onCommandRejected,
         title: tLobby('matchRoom.title.tutorial'),
         preparingDescription: tLobby('matchRoom.preparingMatch'),

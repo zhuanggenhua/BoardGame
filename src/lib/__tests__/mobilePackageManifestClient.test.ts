@@ -33,7 +33,7 @@ describe('resolveGamePackageManifest', () => {
         vi.resetModules();
     });
 
-    it('远端 diff-only 素材包不应从本地配置补回旧完整 ZIP', async () => {
+    it('远端差异索引素材包应透出完整兜底 ZIP 地址供 App 下载', async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             headers: new Headers({ 'content-type': 'application/json' }),
@@ -61,8 +61,8 @@ describe('resolveGamePackageManifest', () => {
         expect(manifest.assetPackDiffOnly).toBe(true);
         expect(manifest.assetPackVersion).toBe('0.6.1-dicethrone-idx-abc123');
         expect(manifest.assetPackFileIndexUrl).toContain('/file-index/dicethrone/');
-        expect(manifest.assetPackUrl).toBeUndefined();
-        expect(manifest.assetPackChecksum).toBeUndefined();
+        expect(manifest.assetPackUrl).toBe('https://assets.example.test/official/mobile-packages/android/stable/bundles/dicethrone/previous.zip');
+        expect(manifest.assetPackChecksum).toBe('previous-checksum');
         expect(manifest.assetPackBytes).toBe(22616359);
     });
 });

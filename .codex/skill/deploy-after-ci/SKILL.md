@@ -1,6 +1,6 @@
 ---
 name: deploy-after-ci
-description: 用于 BoardGame 生产更新的最短路径工作流。用户说“更新部署”“部署生产”“发生产”“更新线上”时使用；默认动作是“服务器镜像更新 + Android stable OTA 发布”。若用户没有明确要求看 CI，则直接执行这条组合发布脚本。用户说“看下 CI 好了就更新部署”“CI 好了就部署”“查 CI 后部署”等需要先确认 GitHub Actions / Docker 镜像构建状态时使用，先查 origin/main 对应的 Build & Push Docker Images workflow，成功后再执行服务器更新与 OTA。
+description: "BoardGame 生产更新最短路径。用于更新部署、发生产、更新线上；默认服务器镜像更新 + Android stable OTA，提 CI 时先查 Actions/Docker。"
 ---
 
 # BoardGame CI 后部署

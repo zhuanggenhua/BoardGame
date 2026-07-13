@@ -24,6 +24,10 @@ on:
         description: '显式 OTA bundle 内部游标（可选；留空自动按 OTA Version Base + UTC 时间生成）'
         required: false
         type: string
+      display_version:
+        description: '用户可见更新号（可选，例如 600、601；留空自动递增，最低 600）'
+        required: false
+        type: string
       ota_version_base:
         description: 'OTA 内部游标基线（可选，例如 6.0.0 用于桥接旧客户端；留空默认 package.json.version）'
         required: false
@@ -34,14 +38,14 @@ on:
         default: false
         type: boolean
       skip_latest:
-        description: '上传 bundle，但不覆盖 latest.json'
+        description: '仅允许 dry_run 诊断；正式发布禁止跳过 latest.json'
         required: true
         default: false
         type: boolean
       force_update:
-        description: '是否强制 OTA（默认关闭；如需下载完成后立即切换请显式开启）'
+        description: '兼容旧触发器的强制更新字段；项目规定必须为 true'
         required: true
-        default: false
+        default: true
         type: boolean
       force_update_title:
         description: '强更页标题（可选）'
@@ -62,7 +66,10 @@ concurrency:
 jobs:
   publish-ota:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: ${{ github.event_name == 'workflow_dispatch' && inputs.channel == 'stable' && !inputs.dry_run && 'android-ota-production' || 'android-ota-nonprod' }}
+    env:
+      BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS: 1800000
 
     steps:
       - name: Resolve publish parameters
@@ -79,6 +86,7 @@ jobs:
             force_update_message="${{ inputs.force_update_message }}"
             expected_base_version="${{ inputs.expected_base_version }}"
             explicit_version="${{ inputs.version }}"
+            display_version="${{ inputs.display_version }}"
             ota_version_base="${{ inputs.ota_version_base }}"
             source_mode="manual"
           else
@@ -90,11 +98,22 @@ jobs:
             target_ref="${GITHUB_SHA}"
           fi
 
+          if [[ "${force_update}" != "true" ]]; then
+            echo "::error::所有 OTA 已强制更新，force_update 必须为 true。"
+            exit 1
+          fi
+
+          if [[ "${skip_latest}" == "true" && "${dry_run}" != "true" ]]; then
+            echo "::error::正式 Android OTA 发布禁止跳过 latest.json。手机端依赖 latest.json 发现更新，跳过会导致无法更新。"
+            exit 1
+          fi
+
           {
             echo "channel=${channel}"
             echo "target_ref=${target_ref}"
             echo "expected_base_version=${expected_base_version}"
             echo "explicit_version=${explicit_version}"
+            echo "display_version=${display_version}"
             echo "ota_version_base=${ota_version_base}"
             echo "dry_run=${dry_run}"
             echo "skip_latest=${skip_latest}"
@@ -109,10 +128,8 @@ jobs:
         shell: bash
         env:
           ANDROID_BACKEND_URL: ${{ vars.VITE_BACKEND_URL || vars.ANDROID_VITE_BACKEND_URL || secrets.VITE_BACKEND_URL || secrets.ANDROID_VITE_BACKEND_URL }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
           DRY_RUN: ${{ steps.params.outputs.dry_run }}
         run: |
           missing=()
@@ -122,10 +139,8 @@ jobs:
           fi
 
           if [[ "${DRY_RUN}" != "true" ]]; then
-            [[ -n "${R2_ACCOUNT_ID}" ]] || missing+=("R2_ACCOUNT_ID")
-            [[ -n "${R2_ACCESS_KEY_ID}" ]] || missing+=("R2_ACCESS_KEY_ID")
-            [[ -n "${R2_SECRET_ACCESS_KEY}" ]] || missing+=("R2_SECRET_ACCESS_KEY")
-            [[ -n "${R2_BUCKET_NAME}" ]] || missing+=("R2_BUCKET_NAME")
+            [[ -n "${ASSET_SERVER_SSH_PRIVATE_KEY}" ]] || missing+=("ASSET_SERVER_SSH_PRIVATE_KEY")
+            [[ -n "${ASSET_SERVER_SSH_KNOWN_HOSTS}" ]] || missing+=("ASSET_SERVER_SSH_KNOWN_HOSTS")
           fi
 
           if [[ ${#missing[@]} -eq 0 ]]; then
@@ -173,9 +188,7 @@ jobs:
             exit 1
           fi
 
-          if [[ -z "${ota_version_base}" ]]; then
-            ota_version_base="${package_version}"
-          fi
+          ota_version_base="$(node --input-type=module -e "import { resolveAndroidOtaVersionBase } from './scripts/mobile/ota-publish-config.mjs'; console.log(resolveAndroidOtaVersionBase({ packageVersion: process.argv[1], requestedVersionBase: process.argv[2] }))" "${package_version}" "${ota_version_base}")"
 
           if [[ ! "${ota_version_base}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::OTA 内部游标基线非法：${ota_version_base}"
@@ -183,6 +196,7 @@ jobs:
           fi
 
           if [[ -n "${explicit_version}" ]]; then
+            node --input-type=module -e "import { resolveAndroidOtaVersionBase } from './scripts/mobile/ota-publish-config.mjs'; resolveAndroidOtaVersionBase({ packageVersion: process.argv[1], requestedVersionBase: process.argv[2] })" "${package_version}" "${explicit_version}"
             if [[ ! "${explicit_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?(-ota-[0-9TZ.-]+)?$ ]]; then
               echo "::error::显式 OTA 内部游标非法：${explicit_version}"
               exit 1
@@ -234,13 +248,25 @@ jobs:
         if: steps.prereq.outputs.ready == 'true'
         run: npm run mobile:android:sync
 
+      - name: Configure asset server SSH
+        if: steps.prereq.outputs.ready == 'true' && steps.params.outputs.dry_run != 'true'
+        shell: bash
+        env:
+          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${ASSET_SERVER_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/asset-publisher"
+          chmod 600 "${HOME}/.ssh/asset-publisher"
+          printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+          chmod 600 "${HOME}/.ssh/known_hosts"
+
       - name: Publish Android OTA bundle
         if: steps.prereq.outputs.ready == 'true'
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          ASSET_SERVER_SSH_TARGET: ${{ vars.ASSET_SERVER_SSH_TARGET || 'admin@8.148.71.102' }}
+          ASSET_SERVER_SSH_KEY_PATH: /home/runner/.ssh/asset-publisher
+          ASSET_SERVER_SSH_KNOWN_HOSTS_PATH: /home/runner/.ssh/known_hosts
         shell: bash
         run: |
           args=(
@@ -259,11 +285,7 @@ jobs:
             args+=(--skip-latest)
           fi
 
-          if [[ "${{ steps.params.outputs.force_update }}" == "false" ]]; then
-            args+=(--no-force-update)
-          else
-            args+=(--force-update)
-          fi
+          args+=(--force-update)
 
           if [[ -n "${{ steps.params.outputs.force_update_title }}" ]]; then
             args+=(--force-update-title "${{ steps.params.outputs.force_update_title }}")
@@ -271,6 +293,10 @@ jobs:
 
           if [[ -n "${{ steps.params.outputs.force_update_message }}" ]]; then
             args+=(--force-update-message "${{ steps.params.outputs.force_update_message }}")
+          fi
+
+          if [[ -n "${{ steps.params.outputs.display_version }}" ]]; then
+            args+=(--display-version "${{ steps.params.outputs.display_version }}")
           fi
 
           npm run mobile:android:ota:publish -- "${args[@]}"
@@ -290,9 +316,10 @@ jobs:
             echo "| Expected Base Version | ${{ steps.params.outputs.expected_base_version || '未提供' }} |"
             echo "| OTA Version Base | ${{ steps.bundle.outputs.ota_version_base || '未生成' }} |"
             echo "| Bundle Version | ${{ steps.bundle.outputs.bundle_version || '未生成' }} |"
+            echo "| Display Version | ${{ steps.params.outputs.display_version || '自动递增' }} |"
             echo "| Dry Run | ${{ steps.params.outputs.dry_run }} |"
             echo "| Skip Latest | ${{ steps.params.outputs.skip_latest }} |"
-            echo "| Force Update | ${{ steps.params.outputs.force_update || 'false' }} |"
+            echo "| Force Update | true（项目硬门禁） |"
             echo "| Native Compatibility Gate | disabled（所有版本都必须更新） |"
             echo "| Manifest URL | ${{ steps.bundle.outputs.manifest_url || '未生成' }} |"
             echo "| 缺失配置 | ${{ steps.prereq.outputs.missing || '无' }} |"

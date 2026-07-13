@@ -43,11 +43,24 @@ describe('Betrayal 教程配置', () => {
             'move-explore-use',
             'crimson-jack-objective',
             'haunt-actions-and-finish',
+            'hero-attack-path',
+            'jack-spirit-path',
             'traitor-path',
         ]);
+        expect(Object.entries(tutorialCatalog.tutorials)
+            .filter(([, entry]) => entry.hiddenFromCatalog !== true)
+            .map(([id]) => id)).toEqual([
+            'basic-setup-and-turn',
+            'haunt-actions-and-finish',
+            'hero-attack-path',
+            'jack-spirit-path',
+            'traitor-path',
+        ]);
+        expect(tutorialCatalog.tutorials['move-explore-use']?.hiddenFromCatalog).toBe(true);
+        expect(tutorialCatalog.tutorials['crimson-jack-objective']?.hiddenFromCatalog).toBe(true);
     });
 
-    it('默认教程会直接落到真实恶兆前运行时，并覆盖首轮必需的规则入口', () => {
+    it('默认教程会合并恶兆前基础回合，并覆盖首轮必需的规则入口', () => {
         const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
         expect(manifest?.steps.map((step) => step.id)).toEqual([
             'setup-runtime',
@@ -56,6 +69,10 @@ describe('Betrayal 教程配置', () => {
             'moves-remaining',
             'room-board',
             'inventory-and-help',
+            'use-book',
+            'open-move-targets',
+            'move-to-hallway',
+            'explore-upper',
             'finish',
         ]);
 
@@ -78,11 +95,13 @@ describe('Betrayal 教程配置', () => {
         expect(injectedPayloads).not.toMatch(/测试牌|测试事件|中性占位结果/);
     });
 
-    it('移动探索教程只允许真实的使用、移动、探索命令链', () => {
-        const manifest = tutorialCatalog.tutorials['move-explore-use']?.manifest;
+    it('基础回合教程只允许真实的使用、移动、探索命令链，旧移动探索路由隐藏兼容', () => {
+        const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
+        const legacyManifest = tutorialCatalog.tutorials['move-explore-use']?.manifest;
         const setupStep = manifest?.steps.find((step) => step.id === 'setup-runtime');
         const setupFields = setupStep?.aiActions?.[0]?.payload?.fields as { eventOrder?: Array<{ name?: string }> } | undefined;
         const actionSteps = manifest?.steps.filter((step) => step.requireAction) ?? [];
+        expect(legacyManifest).toBe(manifest);
         expect(actionSteps.map((step) => step.id)).toEqual([
             'use-book',
             'move-to-hallway',
@@ -100,7 +119,7 @@ describe('Betrayal 教程配置', () => {
             ['hallway'],
             null,
         ]);
-        expect(actionSteps[0]?.highlightTarget).toBe('betrayal-action-use');
+        expect(actionSteps[0]?.highlightTarget).toBe('betrayal-inventory-omen-book');
         expect(setupFields?.eventOrder?.map((event) => event.name)).toEqual(['外星几何']);
         expect(JSON.stringify(setupFields)).not.toContain('测试中性事件');
     });
@@ -145,19 +164,45 @@ describe('Betrayal 教程配置', () => {
         expect(String(style.transform)).toContain('-39.993');
     });
 
-    it('haunt 章节会直接指向第一剧本目标与真实收尾入口', () => {
+    it('haunt 章节会合并第一剧本目标与真实收尾入口', () => {
         const objectiveManifest = tutorialCatalog.tutorials['crimson-jack-objective']?.manifest;
         const hauntActionsManifest = tutorialCatalog.tutorials['haunt-actions-and-finish']?.manifest;
+        const heroAttackManifest = tutorialCatalog.tutorials['hero-attack-path']?.manifest;
+        const jackSpiritManifest = tutorialCatalog.tutorials['jack-spirit-path']?.manifest;
         const traitorManifest = tutorialCatalog.tutorials['traitor-path']?.manifest;
-        expect(objectiveManifest?.steps.find((step) => step.id === 'hero-goal')?.highlightTarget).toBe('betrayal-action-use');
-        expect(objectiveManifest?.steps.find((step) => step.id === 'traitor-goal')?.highlightTarget).toBe('betrayal-room-board');
+        expect(objectiveManifest).toBe(hauntActionsManifest);
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'help-entry')?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(hauntActionsManifest?.steps.find((step) => step.id === 'haunt-actions')?.highlightTarget).toBe('betrayal-action-use');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'exorcise-jack')?.allowedCommands).toEqual(['EXORCISE_JACK']);
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'exorcise-jack')?.randomPolicy).toEqual({
             mode: 'fixed',
             values: [3],
         });
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'endgame-review')?.highlightTarget).toBe('betrayal-endgame-screen');
+        expect(heroAttackManifest?.steps.map((step) => step.id)).toEqual([
+            'setup-hero-attack',
+            'hero-attack-objective',
+            'attack-traitor',
+            'hero-attack-review',
+        ]);
+        expect(heroAttackManifest?.steps.find((step) => step.id === 'hero-attack-objective')?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(heroAttackManifest?.steps.find((step) => step.id === 'attack-traitor')?.allowedCommands).toEqual(['HAUNT_ATTACK']);
+        expect(heroAttackManifest?.steps.find((step) => step.id === 'attack-traitor')?.advanceOnEvents).toEqual([
+            { type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '0', target: 'traitor' } },
+        ]);
+        expect(heroAttackManifest?.steps.find((step) => step.id === 'hero-attack-review')?.highlightTarget).toBe('betrayal-attack-roll-review');
+        expect(jackSpiritManifest?.steps.map((step) => step.id)).toEqual([
+            'setup-jack-spirit',
+            'jack-spirit-objective',
+            'jack-spirit-attack',
+            'jack-spirit-review',
+        ]);
+        expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-objective')?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-attack')?.allowedCommands).toEqual(['HAUNT_ATTACK']);
+        expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-attack')?.advanceOnEvents).toEqual([
+            { type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '2', target: 'hero' } },
+        ]);
+        expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-review')?.highlightTarget).toBe('betrayal-attack-roll-review');
         expect(traitorManifest?.steps.map((step) => step.id)).toEqual([
             'setup-traitor-turn',
             'traitor-objective',
@@ -172,19 +217,38 @@ describe('Betrayal 教程配置', () => {
     });
 
     it('中文教程文案会聚焦玩家能理解的规则动作与结果', () => {
-        expect(zhCNLocale.tutorial.basicSetup.steps.setupRuntime).toContain('角色已经选好');
-        expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('底部 5 个主动作');
+        expect(zhCNLocale.tutorial.basicSetup.steps.setupRuntime).toContain('基础回合');
+        expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('底部动作');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitsAndSpeed).toContain('速度');
-        expect(zhCNLocale.tutorial.basicSetup.steps.movesRemaining).toContain('剩余移动');
-        expect(zhCNLocale.tutorial.moveExploreUse.steps.exploreUpper).toContain('房间会翻开');
-        expect(zhCNLocale.tutorial.moveExploreUse.steps.finish).not.toMatch(/发现牌|回到牌桌/);
-        expect(zhCNLocale.tutorial.crimsonJack.steps.heroGoal).toContain('调查杰克');
-        expect(zhCNLocale.tutorial.crimsonJack.steps.heroGoal).toContain('驱魔法阵');
-        expect(zhCNLocale.tutorial.hauntActions.steps.exorciseJack).toContain('驱魔');
-        expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('杰克之灵被驱散');
+        expect(zhCNLocale.tutorial.basicSetup.steps.movesRemaining).toContain('移动圆牌');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('先选择持有区里的书本');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('再点“使用”');
+        expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索的盖着房间');
+        expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('翻开成新房间');
+        expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('兔脚');
+        expect(zhCNLocale.tutorial.hauntActions.title).toContain('看目标，再驱魔');
+        expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('探索和预兆');
+        expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('赤红杰克归来');
+        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('作祟后目标已经变了');
+        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('确认双方怎么赢');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('驱魔不是凭空出现');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('调查杰克');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('驱魔法阵');
+        expect(zhCNLocale.tutorial.hauntActions.steps.exorciseJack).toContain('神志检定');
+        expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('驱魔成功');
         expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('幸存者逃脱');
-        expect(zhCNLocale.tutorial.traitorPath.steps.traitorObjective).toContain('击倒全部英雄');
-        expect(zhCNLocale.tutorial.traitorPath.steps.attackHero).toContain('对攻');
-        expect(JSON.stringify(zhCNLocale.tutorial)).not.toMatch(/真实链路|运行态|不是动画|不是说明图层|不是教程按钮|E2E|正式验证|收口|收尾|终局页/);
+        expect(zhCNLocale.tutorial.heroAttackPath.steps.heroAttackObjective).toContain('打开剧本提示');
+        expect(zhCNLocale.tutorial.heroAttackPath.steps.attackTraitor).toContain('攻击叛徒');
+        expect(zhCNLocale.tutorial.heroAttackPath.steps.heroAttackReview).toContain('攻击骰');
+        expect(zhCNLocale.tutorial.jackSpiritPath.title).toContain('杰克之灵');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.setupJackSpirit).toContain('会继续行动的怪物');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritObjective).toContain('回到尸体房间');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritAttack).toContain('怪物攻击');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritReview).toContain('同一套攻击骰盘');
+        expect(zhCNLocale.tutorial.traitorPath.steps.setupTraitorTurn).toContain('不是英雄路线的下一步');
+        expect(zhCNLocale.tutorial.traitorPath.steps.traitorObjective).toContain('所有英雄倒下');
+        expect(zhCNLocale.tutorial.traitorPath.steps.attackHero).toContain('敌方攻击');
+        expect(zhCNLocale.tutorial.traitorPath.steps.attackHero).toContain('投骰对抗');
+        expect(JSON.stringify(zhCNLocale.tutorial)).not.toMatch(/真实链路|运行态|不是动画|不是说明图层|不是教程按钮|E2E|正式验证|收口|收尾|终局页|房间焦点入口|对攻/);
     });
 });

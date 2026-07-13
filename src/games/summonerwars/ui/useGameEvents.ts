@@ -87,6 +87,12 @@ export interface AbilityModeState {
   selectedUnitId?: string;
   targetPosition?: CellCoord;
   context?: AbilityActivationContext;
+  systemStep?: string;
+  systemChoiceOptions?: Array<{
+    id: string;
+    label?: string;
+    labelKey?: string;
+  }>;
   /** 寒冰冲撞：建筑新位置 */
   structurePosition?: CellCoord;
   /** 被动触发：记住攻击目标（用于确认后自动发送攻击命令） */

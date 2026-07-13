@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { i18n as I18nInstance } from 'i18next';
 import type { GameImplementation } from '../core/types';
-import { getGameImplementation, resolveGameTutorialManifest } from '../games/registry';
+import { getGameImplementation } from '../games/registry';
 import { preloadWarmImages } from '../core';
 import { resolveCriticalImages } from '../core/CriticalImageResolverRegistry';
 import { appendMatchLoadTrace } from '../lib/matchLoadTrace';

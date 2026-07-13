@@ -10,7 +10,8 @@
  * 使用场景：单位死亡/卡牌销毁
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import { isTestEnvironment } from '../../../engine/testing/environment';
 
 /** 直接传入图片源，跳过 DOM 截取（更可靠） */
@@ -32,6 +33,8 @@ export interface ShatterEffectProps {
   cols?: number;
   /** 碎片网格行数（默认 2） */
   rows?: number;
+  /** 特效质量档：reduced 保留碎裂表现，但降低移动端 DPR 和碎片数 */
+  quality?: FxQuality;
   /**
    * 直接传入图片源（推荐）：跳过 DOM 截取，避免 CORS/异步问题
    * 当提供此 prop 时，不再从 [data-shatter-target] 截取
@@ -66,10 +69,11 @@ interface Shard {
 function captureFromImageSource(
   src: ShatterImageSource,
   w: number, h: number,
+  quality: FxQuality,
 ): Promise<HTMLCanvasElement | null> {
   return new Promise((resolve) => {
     if (w < 1 || h < 1) { resolve(null); return; }
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     const offscreen = document.createElement('canvas');
     offscreen.width = w * dpr;
     offscreen.height = h * dpr;
@@ -94,14 +98,14 @@ function captureFromImageSource(
 }
 
 /** 异步截取：加载背景图后绘制到离屏 Canvas（DOM 回退路径） */
-function captureElementAsync(el: HTMLElement): Promise<HTMLCanvasElement | null> {
+function captureElementAsync(el: HTMLElement, quality: FxQuality): Promise<HTMLCanvasElement | null> {
   return new Promise((resolve) => {
     const rect = el.getBoundingClientRect();
     const w = Math.round(rect.width);
     const h = Math.round(rect.height);
     if (w < 1 || h < 1) { resolve(null); return; }
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     const offscreen = document.createElement('canvas');
     offscreen.width = w * dpr;
     offscreen.height = h * dpr;
@@ -184,6 +188,7 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
   intensity = 'normal',
   cols: colsProp,
   rows: rowsProp,
+  quality = 'full',
   imageSource,
   onStart,
   onComplete,
@@ -196,16 +201,18 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
   const animStartedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const onStartRef = useRef(onStart);
-  onCompleteRef.current = onComplete;
-  onStartRef.current = onStart;
   // imageSource 是对象 prop，每次父组件渲染都会新建引用
   // 必须用 ref 持有，从 useCallback 依赖中移除，否则动画会无限重启
   const imageSourceRef = useRef(imageSource);
-  imageSourceRef.current = imageSource;
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+    onStartRef.current = onStart;
+    imageSourceRef.current = imageSource;
+  }, [onComplete, onStart, imageSource]);
 
   const isStrong = intensity === 'strong';
   const useSafeTestFallback = isTestEnvironment() || (typeof navigator !== 'undefined' && navigator.webdriver);
-  const cols = colsProp ?? (isStrong ? 4 : 3);
+  const cols = colsProp ?? (quality === 'reduced' ? 3 : (isStrong ? 4 : 3));
   const rows = rowsProp ?? (isStrong ? 2 : 2);
 
   const render = useCallback(async () => {
@@ -224,13 +231,13 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
     const imgSrc = imageSourceRef.current;
 
     if (imgSrc) {
-      snapshot = await captureFromImageSource(imgSrc, Math.round(parentW), Math.round(parentH));
+      snapshot = await captureFromImageSource(imgSrc, Math.round(parentW), Math.round(parentH), quality);
     } else {
       // 回退：从 DOM 截取
       contentEl = parent.querySelector('[data-shatter-target]') as HTMLElement
         ?? parent.firstElementChild as HTMLElement;
       if (!contentEl || contentEl === container) return;
-      snapshot = await captureElementAsync(contentEl);
+      snapshot = await captureElementAsync(contentEl, quality);
     }
 
     if (!snapshot) {
@@ -243,7 +250,7 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
     animStartedRef.current = true;
     onStartRef.current?.();
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     
     // Canvas 覆盖区域要大于父容器，碎片可以飞出去
     const overflow = isStrong ? 120 : 80;
@@ -372,7 +379,7 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
 
     rafRef.current = requestAnimationFrame(loop);
   // imageSource 通过 imageSourceRef 访问，不放入依赖（对象引用不稳定）
-  }, [isStrong, cols, rows]);
+  }, [isStrong, cols, rows, quality]);
 
   useEffect(() => {
     if (!active) return;

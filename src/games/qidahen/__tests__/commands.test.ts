@@ -721,6 +721,43 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             playerId: '0',
             payload: { cardId: mingJirinaiInfantryCardId },
         })).toEqual({ valid: true });
+        expect(QidahenDomain.validate(mingDefenderFieldState, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '2',
+            payload: { cardId: jinJirinaiInfantryCardId },
+        })).toEqual({ valid: true });
+        const mongolDefenderFieldState = syncQidahenRuntimeInteractionState(clearQidahenRuntimeInteractionCurrent({
+            ...state,
+            core: {
+                ...state.core,
+                pendingTargetAction: {
+                    ...state.core.pendingTargetAction!,
+                    attackerFactionId: 'jin',
+                    sourceRegionId: 'city-region-14',
+                    sourceRegionName: '察哈尔',
+                    targetRegionId: 'city-region-16',
+                    targetRegionName: '克什克腾部',
+                    targetRuntimeRegionId: 'city-region-16',
+                    defenderFactionId: 'mongol',
+                    defenderLabel: '蒙古',
+                },
+            },
+        }));
+        expect(QidahenDomain.validate(mongolDefenderFieldState, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '2',
+            payload: { cardId: jinJirinaiInfantryCardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        const blockedJirinaiAttackResult = applyPipeline(mongolDefenderFieldState, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '2',
+            payload: { cardId: jinJirinaiInfantryCardId },
+        });
+        expect(blockedJirinaiAttackResult.success).toBe(false);
+        expect(blockedJirinaiAttackResult.state.core.handCards.some(
+            (card) => card.id === jinJirinaiInfantryCardId,
+        )).toBe(true);
+        expect(blockedJirinaiAttackResult.state.core.discardPileCount).toBe(core.discardPileCount);
         const cityBattleState = syncQidahenRuntimeInteractionState(clearQidahenRuntimeInteractionCurrent({
             ...state,
             core: {
@@ -836,7 +873,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         expect(chevalDeFriseResult.success).toBe(true);
         expect(chevalDeFriseResult.state.core.handCards.some((card) => card.id === jinChevalDeFriseCardId)).toBe(false);
         expect(chevalDeFriseResult.state.core.discardPileCount).toBe(core.discardPileCount + 1);
-        expect(chevalDeFriseResult.state.core.lastSeasonSummary?.lines.join(' ')).toContain('拒马：本次野战中使对手箭如雨下');
+        expect(chevalDeFriseResult.state.core.lastSeasonSummary?.lines.join(' ')).toContain('拒马：本次野战中取消先于本牌发动的对手箭如雨下');
         expect(chevalDeFriseResult.state.core.pendingTargetAction?.restriction).toContain('拒马：取消对手先结算/跨阶段修正');
         expect(chevalDeFriseResult.state.core.pendingTargetAction?.resolutionHint).toContain('拒马取消对手先结算/跨阶段');
         expect(chevalDeFriseResult.state.core.pendingTargetAction?.tacticModifiers).toEqual(expect.arrayContaining([
@@ -845,8 +882,9 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 label: '后金拒马',
                 side: 'defender',
                 troopKind: 'infantry',
+                playedAt: expect.any(Number),
+                cancelEnemyTacticSourceCardDefIds: ['qidahen-atlas05-1615-arrows-like-rain'],
                 cancelEnemyPrioritySourceCardDefIds: [
-                    'qidahen-atlas05-1615-arrows-like-rain',
                     'qidahen-atlas05-1646-linked-muskets',
                 ],
             }),
@@ -855,6 +893,8 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 label: '后金拒马',
                 side: 'defender',
                 troopKind: 'cavalry',
+                playedAt: expect.any(Number),
+                cancelEnemyTacticSourceCardDefIds: ['qidahen-atlas05-1615-arrows-like-rain'],
                 cancelEnemyPrioritySourceCardDefIds: ['qidahen-atlas05-1639-cavalry-firearm'],
                 cancelEnemyRollAsPhaseSourceCardDefIds: ['qidahen-atlas05-1639-cavalry-firearm'],
             }),
@@ -884,6 +924,167 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         expect(result.state.core.lastSeasonSummary?.lines.join(' ')).toContain('打出战术牌');
         expect(result.state.core.lastSeasonSummary?.lines.join(' ')).toContain('战斗中我方步兵骰子等级 +1');
         expect(result.state.core.actionLog.at(-1)?.text).toContain('战斗中我方步兵骰子等级 +1');
+    });
+
+    it.each([
+        ['策反/内应', 'qidahen-atlas05-1604-instigate-defection-insider'],
+        ['策反', 'qidahen-atlas05-1611-instigate-defection'],
+    ] as const)('%s在守方没有参战炮兵时不能打出且不消耗手牌', (label, cardDefId) => {
+        const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        const cardId = `test-${cardDefId}`;
+        core.turnPhase = 'resolve-pending';
+        core.pendingTargetAction = {
+            actionId: 'raid',
+            title: '突袭作战待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '克什克腾部',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '察哈尔',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: `测试 · ${label}`,
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-infantry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        core.handCards = [{
+            ...mingCard!,
+            id: cardId,
+            label,
+            status: 'payable',
+            cardKind: 'tactic',
+            armamentId: null,
+            cardDefId,
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[cardDefId],
+        }];
+        core.regions = core.regions.map((region) => (
+            !region.isLogicalRegion && region.id === 'city-region-14'
+                ? {
+                    ...region,
+                    troops: 1,
+                    specialTroops: [{
+                        id: 'jin-infantry-only',
+                        label: '后金步兵',
+                        faction: 'jin',
+                        troopKind: 'infantry',
+                        count: 1,
+                        level: 2,
+                    }],
+                }
+                : region
+        ));
+        const state = syncQidahenRuntimeInteractionState({
+            core,
+            sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
+        });
+        const discardPileCount = state.core.discardPileCount;
+
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+
+        const result = applyPipeline(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId },
+        });
+        expect(result.success).toBe(false);
+        expect(result.state.core.handCards.some((card) => card.id === cardId)).toBe(true);
+        expect(result.state.core.discardPileCount).toBe(discardPileCount);
+    });
+
+    it('箭如雨下在攻方没有参战步兵时不能打出且不消耗手牌', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], () => 0.5);
+        const mingCard = core.handCards.find((card) => card.faction === 'ming');
+        expect(mingCard).toBeTruthy();
+        const cardId = 'test-arrows-like-rain-without-infantry';
+        core.turnPhase = 'resolve-pending';
+        core.pendingTargetAction = {
+            actionId: 'wheel-dispatch',
+            title: '调骑进攻待结算',
+            attackerFactionId: 'ming',
+            battleMode: 'field',
+            sourceRegionId: 'city-region-16',
+            sourceRegionName: '克什克腾部',
+            targetRegionId: 'city-region-14',
+            targetRegionName: '察哈尔',
+            targetRuntimeRegionId: 'city-region-14',
+            defenderFactionId: 'jin',
+            defenderLabel: '后金',
+            restriction: '测试 · 箭如雨下',
+            battleWidth: 3,
+            boundaryUnitCap: null,
+            sourceAvailableTroops: 2,
+            committedTroops: 2,
+            movementProfileId: 'dispatch-cavalry',
+            attackPressure: 2,
+            attackBoundaryType: 'plain',
+            resolutionHint: '测试',
+            defenderPayCost: null,
+        };
+        core.handCards = [{
+            ...mingCard!,
+            id: cardId,
+            label: '箭如雨下',
+            status: 'payable',
+            cardKind: 'tactic',
+            armamentId: null,
+            cardDefId: 'qidahen-atlas05-1615-arrows-like-rain',
+            rulesSummary: QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[
+                'qidahen-atlas05-1615-arrows-like-rain'
+            ],
+        }];
+        core.regions = core.regions.map((region) => (
+            !region.isLogicalRegion && region.id === 'city-region-16'
+                ? {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 2,
+                    specialTroops: [{
+                        id: 'ming-cavalry-only',
+                        label: '大明骑兵',
+                        faction: 'ming',
+                        troopKind: 'cavalry',
+                        count: 2,
+                        level: 2,
+                    }],
+                }
+                : region
+        ));
+        const state = syncQidahenRuntimeInteractionState({
+            core,
+            sys: createInitialSystemState(['0', '1', '2'], engineConfig.systems as any),
+        });
+        const discardPileCount = state.core.discardPileCount;
+
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId },
+        })).toEqual({ valid: false, error: 'unknownPaymentCard' });
+
+        const result = applyPipeline(state, {
+            type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+            playerId: '0',
+            payload: { cardId },
+        });
+        expect(result.success).toBe(false);
+        expect(result.state.core.handCards.some((card) => card.id === cardId)).toBe(true);
+        expect(result.state.core.discardPileCount).toBe(discardPileCount);
     });
 
     it('atlas05 战术牌时机门禁会按当前攻方战术窗口拦截城战禁用和守城专用牌', () => {
@@ -961,23 +1162,27 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         const triggerOnlyIdentities = tacticIdentities.filter((identity) => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
             return rulesSummary.includes('敌人增援时')
-                || rulesSummary.includes('取消对手宣告的附兵劫掠')
+                || rulesSummary.includes('取消对手宣告的骑兵劫掠')
                 || rulesSummary.includes('扎营过程中');
         });
         expect(triggerOnlyIdentities.map((identity) => identity.displayName)).toEqual(['打草惊蛇', '偷袭与伏击', '诈败诱敌']);
         const raidGrainIdentity = triggerOnlyIdentities.find((identity) => identity.displayName === '打草惊蛇');
         expect(raidGrainIdentity).toBeTruthy();
         const blockedTriggerOnlyIdentities = triggerOnlyIdentities.filter((identity) => identity !== raidGrainIdentity);
-        const unimplementedBattleChainIdentities = tacticIdentities.filter((identity) => {
+        const stateDependentBattleChainIdentities = tacticIdentities.filter((identity) => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
             return rulesSummary.includes('附兵部队视为步兵部队')
+                || rulesSummary.includes('我方骑兵在步兵攻击阶段可撤离')
                 || rulesSummary.includes('再移动最多 2 个没有参战的部队进入战斗')
-                || rulesSummary.includes('敌方次级部队参战时使用');
+                || rulesSummary.includes('敌方次级部队参战时使用')
+                || rulesSummary.includes('提前在炮兵阶段');
         });
-        expect(unimplementedBattleChainIdentities.map((identity) => identity.cardDefId)).toEqual([
+        expect(stateDependentBattleChainIdentities.map((identity) => identity.cardDefId)).toEqual([
             'qidahen-atlas05-1620-mounted-infantry',
+            'qidahen-atlas05-1628-infantry-cavalry-combined',
             'qidahen-atlas05-1629-instigate-defection-alt',
             'qidahen-atlas05-1632-pincer-advance',
+            'qidahen-atlas05-1650-wuzhen-chaoha-special',
         ]);
         const phaseOnlyIdentities = tacticIdentities.filter((identity) => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
@@ -996,7 +1201,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             return isCityBlockedSummary(rulesSummary)
                 || rulesSummary.includes('只能于守城时使用')
                 || rulesSummary.includes('敌人增援时')
-                || rulesSummary.includes('取消对手宣告的附兵劫掠')
+                || rulesSummary.includes('取消对手宣告的骑兵劫掠')
                 || rulesSummary.includes('扎营过程中')
                 || rulesSummary.includes('附兵部队视为步兵部队')
                 || rulesSummary.includes('再移动最多 2 个没有参战的部队进入战斗')
@@ -1029,7 +1234,7 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
             expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
         }
-        for (const identity of unimplementedBattleChainIdentities) {
+        for (const identity of stateDependentBattleChainIdentities) {
             expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
             expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
         }
@@ -1040,10 +1245,16 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         for (const identity of cityBlockedIdentities.filter((identity) => (
             !defenderOnlyIdentities.includes(identity)
             && !triggerOnlyIdentities.includes(identity)
-            && !unimplementedBattleChainIdentities.includes(identity)
+            && !stateDependentBattleChainIdentities.includes(identity)
             && !unimplementedPhaseOnlyIdentities.includes(identity)
         ))) {
-            expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: true });
+            expect({
+                card: `${identity.displayName}（${identity.cardDefId}）`,
+                validation: validateTactic(fieldState, identity.cardDefId),
+            }).toEqual({
+                card: `${identity.displayName}（${identity.cardDefId}）`,
+                validation: { valid: true },
+            });
             expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
         }
 
@@ -1063,8 +1274,9 @@ describe('Qidahen Commands 交互宿主门禁', () => {
                 label: '箭如雨下',
                 side: 'attacker',
                 troopKind: 'infantry',
+                playedAt: expect.any(Number),
                 priorityRoll: true,
-                cancelEnemyPrioritySourceCardDefIds: ['qidahen-atlas05-1636-cheval-de-frise'],
+                cancelEnemyTacticSourceCardDefIds: ['qidahen-atlas05-1636-cheval-de-frise'],
             }),
         ]));
         expect(arrowsResult.state.core.pendingTargetAction?.restriction).toContain('箭如雨下：攻方步兵先结算');
@@ -1116,6 +1328,27 @@ describe('Qidahen Commands 交互宿主门禁', () => {
         }
         const raidGrainCard = tacticCards.find((card) => card.cardDefId === 'qidahen-atlas05-1612-raid-grain');
         expect(raidGrainCard).toBeTruthy();
+        const blockedRaidGrainState = buildBattleState('field');
+        if (blockedRaidGrainState.core.pendingTargetAction) {
+            blockedRaidGrainState.core.pendingTargetAction = {
+                ...blockedRaidGrainState.core.pendingTargetAction,
+                movementProfileId: 'dispatch-infantry',
+            };
+        }
+        expect(validateTactic(
+            syncQidahenRuntimeInteractionState(clearQidahenRuntimeInteractionCurrent(blockedRaidGrainState)),
+            raidGrainCard!.cardDefId!,
+        )).toEqual({ valid: false, error: 'unknownPaymentCard' });
+        const blockedRaidGrainResult = applyPipeline(
+            syncQidahenRuntimeInteractionState(clearQidahenRuntimeInteractionCurrent(blockedRaidGrainState)),
+            {
+                type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
+                playerId: '0',
+                payload: { cardId: raidGrainCard!.id },
+            },
+        );
+        expect(blockedRaidGrainResult.success).toBe(false);
+        expect(blockedRaidGrainResult.state.core.handCards.some((card) => card.id === raidGrainCard!.id)).toBe(true);
         const raidGrainResult = applyPipeline(raidGrainState, {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
             playerId: '0',

@@ -1,3 +1,5 @@
+import type { FxQuality } from '../types';
+
 /**
  * Shader FX 系统 — 类型定义
  *
@@ -56,6 +58,12 @@ export interface ShaderCanvasProps {
    * 默认 1.5（特效天然模糊，超过 1.5x 几乎无视觉收益）。
    */
   maxDpr?: number;
+
+  /** 特效质量档：reduced 会使用 reducedMaxDpr 降低像素填充成本 */
+  quality?: FxQuality;
+
+  /** reduced 档 DPR 上限，默认 1 */
+  reducedMaxDpr?: number;
 
   /** 额外 className */
   className?: string;

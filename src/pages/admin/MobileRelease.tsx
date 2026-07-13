@@ -53,7 +53,7 @@ type AndroidReleaseStatus = {
         otaWorkflow?: boolean;
         dist: boolean;
         releaseApk: boolean;
-        r2Configured: boolean;
+        serverAssetsReady: boolean;
     };
     deploy: {
         statusCommand: string;
@@ -152,12 +152,9 @@ export default function MobileReleasePage() {
 
     const [otaBundleVersion, setOtaBundleVersion] = useState('');
     const [otaVersionBase, setOtaVersionBase] = useState('6.0.0');
-    const [otaForceUpdate, setOtaForceUpdate] = useState(true);
-    const [otaSkipLatest, setOtaSkipLatest] = useState(false);
 
     const [nativeBump, setNativeBump] = useState<typeof BUMP_OPTIONS[number]>('');
     const [nativeForceUpdate, setNativeForceUpdate] = useState(true);
-    const [nativeSkipLatest, setNativeSkipLatest] = useState(false);
     const [nativeSkipBuild, setNativeSkipBuild] = useState(false);
     const [nativeNotes, setNativeNotes] = useState('');
 
@@ -200,9 +197,9 @@ export default function MobileReleasePage() {
     const nativeApkReady = !nativeSkipBuild || Boolean(status?.releaseReady.releaseApk);
     const canRunNative = Boolean(canRun && nativeApkReady && status?.releaseReady.script && status?.releaseReady.nativeScript);
     const canRunPackages = Boolean(canRun && status?.releaseReady.script && status?.releaseReady.packageScript);
-    const canPublishOta = Boolean(canRunOta && (status?.releaseReady.r2Configured || status?.releaseReady.otaWorkflow));
-    const canPublishNative = Boolean(canRunNative && status?.releaseReady.r2Configured);
-    const canPublishPackages = Boolean(canRunPackages && status?.releaseReady.r2Configured);
+    const canPublishOta = Boolean(canRunOta && (status?.releaseReady.serverAssetsReady || status?.releaseReady.otaWorkflow));
+    const canPublishNative = Boolean(canRunNative && status?.releaseReady.serverAssetsReady);
+    const canPublishPackages = Boolean(canRunPackages && status?.releaseReady.serverAssetsReady);
     const canPreviewDeployUpdate = Boolean(canRun && status?.releaseReady.deployScript);
     const canExecuteDeployUpdate = Boolean(
         canPreviewDeployUpdate
@@ -337,9 +334,9 @@ export default function MobileReleasePage() {
                         value={status?.native.latest?.version ?? '-'}
                     />
                     <MetricCard
-                        icon={<ShieldCheck size={18} className={status?.releaseReady.r2Configured ? 'text-emerald-600' : 'text-red-500'} />}
+                        icon={<ShieldCheck size={18} className={status?.releaseReady.serverAssetsReady ? 'text-emerald-600' : 'text-red-500'} />}
                         label={pageT('cards.release_ready')}
-                        value={status?.releaseReady.r2Configured ? pageT('status.ready') : pageT('status.not_ready')}
+                        value={status?.releaseReady.serverAssetsReady ? pageT('status.ready') : pageT('status.not_ready')}
                     />
                 </div>
 
@@ -384,9 +381,9 @@ export default function MobileReleasePage() {
                                     />
                                 </label>
                             </div>
-                            <CheckboxRow>
-                                <Checkbox checked={otaForceUpdate} onChange={setOtaForceUpdate} label={pageT('form.force_update')} />
-                            </CheckboxRow>
+                            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                                {pageT('ota.force_update_required')}
+                            </div>
                             <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-950">
                                 {pageT('deployUpdate.description')}
                             </div>
@@ -399,7 +396,7 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                     }, 'toast.preview_success')}
                                 >
                                     {busyAction === 'deploy-update-preview' ? runningText : pageT('actions.preview_command')}
@@ -413,7 +410,7 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                         confirmText: DEPLOY_UPDATE_CONFIRM_TEXT,
                                     }, 'toast.deploy_update_success')}
                                 >
@@ -444,10 +441,6 @@ export default function MobileReleasePage() {
                                     />
                                 </label>
                             </div>
-                            <CheckboxRow>
-                                <Checkbox checked={otaForceUpdate} onChange={setOtaForceUpdate} label={pageT('form.force_update')} />
-                                <Checkbox checked={otaSkipLatest} onChange={setOtaSkipLatest} label={pageT('form.skip_latest')} />
-                            </CheckboxRow>
                             <ActionRow>
                                 <ActionButton
                                     icon={<CheckCircle2 size={16} />}
@@ -456,9 +449,8 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                         dryRun: true,
-                                        skipLatest: otaSkipLatest,
                                     }, 'toast.dry_run_success')}
                                 >
                                     {busyAction === 'ota-dry-run' ? runningText : pageT('actions.dry_run')}
@@ -471,9 +463,8 @@ export default function MobileReleasePage() {
                                         channel,
                                         version: otaBundleVersion.trim() || undefined,
                                         otaVersionBase: otaVersionBase.trim() || undefined,
-                                        forceUpdate: otaForceUpdate,
+                                        forceUpdate: true,
                                         dryRun: false,
-                                        skipLatest: otaSkipLatest,
                                     }, 'toast.publish_success')}
                                 >
                                     {busyAction === 'ota-publish' ? runningText : pageT('actions.publish')}
@@ -508,7 +499,6 @@ export default function MobileReleasePage() {
                             </div>
                             <CheckboxRow>
                                 <Checkbox checked={nativeForceUpdate} onChange={setNativeForceUpdate} label={pageT('form.force_update')} />
-                                <Checkbox checked={nativeSkipLatest} onChange={setNativeSkipLatest} label={pageT('form.skip_latest')} />
                                 <Checkbox checked={nativeSkipBuild} onChange={setNativeSkipBuild} label={pageT('form.skip_build')} />
                             </CheckboxRow>
                             <ActionRow>
@@ -518,7 +508,6 @@ export default function MobileReleasePage() {
                                     onClick={() => void runAction('native-dry-run', '/mobile-release/android/native/publish', {
                                         channel,
                                         dryRun: true,
-                                        skipLatest: nativeSkipLatest,
                                         skipBuild: nativeSkipBuild,
                                         forceUpdate: nativeForceUpdate,
                                         notes: nativeNotes.trim() || undefined,
@@ -534,7 +523,6 @@ export default function MobileReleasePage() {
                                         channel,
                                         bump: nativeBump || undefined,
                                         dryRun: false,
-                                        skipLatest: nativeSkipLatest,
                                         skipBuild: nativeSkipBuild,
                                         forceUpdate: nativeForceUpdate,
                                         notes: nativeNotes.trim() || undefined,

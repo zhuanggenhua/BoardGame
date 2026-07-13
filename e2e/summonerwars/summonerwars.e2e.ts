@@ -5679,6 +5679,215 @@ test.describe('SummonerWars', () => {
     await hostContext.close();
   });
 
+  test('平板无悬浮能力时点按单位和建筑查看血量', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    await clearEvidenceScreenshotsForTest(testInfo);
+
+    const tabletContext = await browser.newContext({
+      baseURL,
+      viewport: { width: 1180, height: 820 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    await tabletContext.addInitScript(() => {
+      (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ = true;
+      (window as Window & { __BG_HIDE_DEBUG_PANEL__?: boolean }).__BG_HIDE_DEBUG_PANEL__ = true;
+      localStorage.removeItem('hud_fab_position');
+      localStorage.removeItem('hud_fab_offset');
+
+      const nativeMatchMedia = window.matchMedia.bind(window);
+      const createMediaQueryList = (query: string, matches: boolean) => ({
+        matches,
+        media: query,
+        onchange: null,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        dispatchEvent: () => false,
+      }) as MediaQueryList;
+
+      window.matchMedia = ((query: string) => {
+        const clauses = query.split(',').map(clause => clause.trim());
+        if (clauses.some(clause => clause === '(hover: none)')) {
+          return createMediaQueryList(query, false);
+        }
+        if (clauses.some(clause => clause === '(pointer: coarse)')) {
+          return createMediaQueryList(query, false);
+        }
+        return nativeMatchMedia(query);
+      }) as typeof window.matchMedia;
+    });
+    await blockAudioRequests(tabletContext);
+    await mockSummonerWarsMapImage(tabletContext);
+    await setChineseLocale(tabletContext);
+    await disableAudio(tabletContext);
+
+    const tabletPage = await tabletContext.newPage();
+    await openSummonerWarsMobileEvidencePage(tabletPage);
+    await waitForSummonerWarsVisualStable(tabletPage);
+
+    const capabilities = await tabletPage.evaluate(() => ({
+      width: window.innerWidth,
+      coarsePointer: window.matchMedia('(pointer: coarse)').matches,
+      hoverNone: window.matchMedia('(hover: none)').matches,
+      maxTouchPoints: navigator.maxTouchPoints,
+    }));
+    expect(capabilities.width).toBeGreaterThan(1023);
+    expect(capabilities.coarsePointer).toBe(false);
+    expect(capabilities.hoverNone).toBe(false);
+    expect(capabilities.maxTouchPoints).toBeGreaterThan(0);
+
+    const unitTestId = await tabletPage
+      .locator('[data-testid^="sw-unit-"][data-cell-coord][data-owner="0"]:visible')
+      .evaluateAll((elements) => {
+        const viewportCenter = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        const closest = elements
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            return {
+              testId: element.getAttribute('data-testid'),
+              distance: Math.hypot(centerX - viewportCenter.x, centerY - viewportCenter.y),
+            };
+          })
+          .filter((candidate): candidate is { testId: string; distance: number } => Boolean(candidate.testId))
+          .sort((a, b) => a.distance - b.distance)[0];
+        return closest?.testId ?? null;
+      });
+    if (!unitTestId) {
+      throw new Error('默认平板证据场景没有可用于查看血量的单位');
+    }
+    const unit = tabletPage.getByTestId(unitTestId);
+    const unitLife = unit.locator('[data-testid^="sw-unit-life-"]');
+    const unitCoord = await unit.getAttribute('data-cell-coord');
+    if (!unitCoord) {
+      throw new Error('目标单位缺少 data-cell-coord，无法验证首次点按不执行选择');
+    }
+    const unitCell = tabletPage.getByTestId(`sw-cell-${unitCoord}`);
+    await expect(unit).toBeVisible({ timeout: 5000 });
+    await expect(unitCell).toHaveAttribute('data-selected', 'false');
+    await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
+    await unit.tap();
+    await expect(unitLife).toHaveAttribute('data-tap-visible', 'true');
+    await expect(unitLife).toHaveCSS('opacity', '1');
+    await expect(unitCell).toHaveAttribute('data-selected', 'false');
+
+    await tabletPage.screenshot({
+      path: getEvidenceScreenshotPath(testInfo, '20-平板点按单位-显示血量', {
+        filename: '20-平板点按单位-显示血量.png',
+      }),
+      fullPage: false,
+    });
+
+    await unit.tap();
+    await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
+    await expect(unitCell).toHaveAttribute('data-selected', 'true');
+
+    const structureTestId = await tabletPage
+      .locator('[data-testid^="sw-structure-"][data-cell-coord]:visible')
+      .evaluateAll((elements) => {
+        const viewportCenter = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        const closest = elements
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            return {
+              testId: element.getAttribute('data-testid'),
+              distance: Math.hypot(centerX - viewportCenter.x, centerY - viewportCenter.y),
+            };
+          })
+          .filter((candidate): candidate is { testId: string; distance: number } => Boolean(candidate.testId))
+          .sort((a, b) => a.distance - b.distance)[0];
+        return closest?.testId ?? null;
+      });
+    if (!structureTestId) {
+      throw new Error('默认平板证据场景没有可用于查看血量的建筑');
+    }
+    const structure = tabletPage.getByTestId(structureTestId);
+    const structureLife = structure.locator('[data-testid^="sw-structure-life-"]');
+    await expect(structure).toBeVisible({ timeout: 5000 });
+    await expect(structureLife).toHaveAttribute('data-tap-visible', 'false');
+    await structure.tap();
+    await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
+    await expect(structureLife).toHaveAttribute('data-tap-visible', 'true');
+    await expect(structureLife).toHaveCSS('opacity', '1');
+
+    await tabletPage.screenshot({
+      path: getEvidenceScreenshotPath(testInfo, '21-平板点按建筑-显示血量', {
+        filename: '21-平板点按建筑-显示血量.png',
+      }),
+      fullPage: false,
+    });
+
+    const occupiedCoords = await tabletPage
+      .locator('[data-testid^="sw-unit-"][data-cell-coord], [data-testid^="sw-structure-"][data-cell-coord]')
+      .evaluateAll((elements) => elements
+        .map((element) => element.getAttribute('data-cell-coord'))
+        .filter((coord): coord is string => Boolean(coord)));
+    const emptyCellTestId = await tabletPage
+      .locator('[data-testid^="sw-cell-"][data-cell-coord]')
+      .evaluateAll((elements, occupied) => {
+        const occupiedSet = new Set(occupied);
+        const emptyCell = elements.find((element) => {
+          const coord = element.getAttribute('data-cell-coord');
+          return coord !== null && !occupiedSet.has(coord);
+        });
+        return emptyCell?.getAttribute('data-testid') ?? null;
+      }, occupiedCoords);
+    if (!emptyCellTestId) {
+      throw new Error('默认平板证据场景没有可用于关闭血量提示的空格');
+    }
+    const emptyCell = tabletPage.getByTestId(emptyCellTestId);
+    await expect(emptyCell).toBeVisible({ timeout: 5000 });
+    await emptyCell.tap();
+    await expect(structureLife).toHaveAttribute('data-tap-visible', 'false');
+
+    await tabletContext.close();
+
+    const desktopContext = await browser.newContext({
+      baseURL,
+      viewport: DESKTOP_REFERENCE_VIEWPORT,
+    });
+    await desktopContext.addInitScript(() => {
+      (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ = true;
+      (window as Window & { __BG_HIDE_DEBUG_PANEL__?: boolean }).__BG_HIDE_DEBUG_PANEL__ = true;
+    });
+    await blockAudioRequests(desktopContext);
+    await mockSummonerWarsMapImage(desktopContext);
+    await setChineseLocale(desktopContext);
+    await disableAudio(desktopContext);
+
+    const desktopPage = await desktopContext.newPage();
+    await openSummonerWarsMobileEvidencePage(desktopPage);
+    await waitForSummonerWarsVisualStable(desktopPage);
+
+    const desktopUnit = desktopPage
+      .locator('[data-testid^="sw-unit-"][data-cell-coord][data-owner="0"]:visible')
+      .first();
+    const desktopUnitLife = desktopUnit.locator('[data-testid^="sw-unit-life-"]');
+    const desktopUnitCoord = await desktopUnit.getAttribute('data-cell-coord');
+    if (!desktopUnitCoord) {
+      throw new Error('桌面目标单位缺少 data-cell-coord，无法验证单击立即执行');
+    }
+    const desktopUnitCell = desktopPage.getByTestId(`sw-cell-${desktopUnitCoord}`);
+    await expect(desktopUnitCell).toHaveAttribute('data-selected', 'false');
+    await expect(desktopUnitLife).toHaveAttribute('data-tap-visible', 'false');
+    await expect(desktopUnitLife).toHaveCSS('opacity', '0');
+    await desktopUnit.hover();
+    await expect(desktopUnitLife).toHaveCSS('opacity', '1');
+    await desktopUnit.click();
+    await expect(desktopUnitLife).toHaveAttribute('data-tap-visible', 'false');
+    await expect(desktopUnitCell).toHaveAttribute('data-selected', 'true');
+    await desktopPage.mouse.move(0, 0);
+    await expect(desktopUnitLife).toHaveCSS('opacity', '0');
+
+    await desktopContext.close();
+  });
+
   test('移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮', async ({ browser }, testInfo) => {
     test.setTimeout(120000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;

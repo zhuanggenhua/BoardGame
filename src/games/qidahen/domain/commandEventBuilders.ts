@@ -1,5 +1,9 @@
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { QIDAHEN_COMMANDS } from './commands';
+import { createQidahenStructuredBattleRolls } from './battleRollMath';
+import {
+    isQidahenFeignedRetreatCardPlayable,
+} from './feignedRetreatSelection';
 import type {
     QidahenCommand,
     QidahenCore,
@@ -24,6 +28,7 @@ import type {
     GaoDiDispatchCardSelectedEvent,
     HandLimitDiscardCardSelectedEvent,
     PaymentCardSelectedEvent,
+    PlayBattleResponseEventCardCommand,
     PreviewActionConfirmedEvent,
     PreviewActionCancelledEvent,
     QidahenCommand,
@@ -201,6 +206,174 @@ const buildQidahenTacticCardPlayedEvent = (
     timestamp,
 });
 
+const buildQidahenTacticCardPlayedEvents: QidahenCommandEventBuilder = (
+    state,
+    command,
+    random,
+    timestamp,
+) => {
+    const tacticCommand = command as PlayTacticCardCommand;
+    const playedEvent = buildQidahenTacticCardPlayedEvent(tacticCommand, timestamp);
+    const selection = state.core.feignedRetreatSelection;
+    const card = state.core.handCards.find((candidate) => candidate.id === tacticCommand.payload.cardId);
+    if (!selection || !card || !isQidahenFeignedRetreatCardPlayable(state.core, card)) {
+        return [playedEvent];
+    }
+    return [
+        playedEvent,
+        {
+            type: 'PENDING_ACTION_RESOLVED',
+            payload: {
+                ...selection.cavalryPlunderPayload,
+                pendingTargetAction: {
+                    ...selection.pendingTargetAction,
+                },
+                attackerCavalryPlunder: false,
+                battleRolls: createQidahenStructuredBattleRolls(
+                    state.core,
+                    selection.pendingTargetAction,
+                    random,
+                    {
+                        defenderSortieBattle: selection.cavalryPlunderPayload.defenderSortieBattle === true,
+                        defenderHoldCity: selection.cavalryPlunderPayload.defenderHoldCity === true,
+                        defenderCavalryEvasion: selection.cavalryPlunderPayload.defenderCavalryEvasion === true,
+                        attackerCavalryPlunder: false,
+                    },
+                ),
+                feignedRetreatResponseResolved: true,
+            },
+            sourceCommandType: tacticCommand.type,
+            timestamp: timestamp + 1,
+        },
+    ];
+};
+
+const buildQidahenBattleResponseEventCardPlayedEvent = (
+    command: PlayBattleResponseEventCardCommand,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'BATTLE_RESPONSE_EVENT_CARD_PLAYED',
+    payload: {
+        cardId: command.payload.cardId,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenPincerAdvanceTroopToggledEvent = (
+    command: Extract<QidahenCommand, { type: 'TOGGLE_PINCER_ADVANCE_TROOP' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'PINCER_ADVANCE_TROOP_TOGGLED',
+    payload: {
+        choiceId: command.payload.choiceId,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenPincerAdvanceResolvedEvent = (
+    command: Extract<QidahenCommand, { type: 'RESOLVE_PINCER_ADVANCE' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'PINCER_ADVANCE_RESOLVED',
+    payload: {
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenPincerAdvanceCancelledEvent = (
+    command: Extract<QidahenCommand, { type: 'CANCEL_PINCER_ADVANCE' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'PINCER_ADVANCE_CANCELLED',
+    payload: {
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenInfantryCavalryCombinedResolvedEvent = (
+    command: Extract<QidahenCommand, { type: 'RESOLVE_INFANTRY_CAVALRY_COMBINED' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'INFANTRY_CAVALRY_COMBINED_RESOLVED',
+    payload: {
+        mode: command.payload.mode,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenInstigateDefectionResolvedEvent = (
+    command: Extract<QidahenCommand, { type: 'RESOLVE_INSTIGATE_DEFECTION' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'INSTIGATE_DEFECTION_RESOLVED',
+    payload: {
+        choiceId: command.payload.choiceId,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenInstigateDefectionCancelledEvent = (
+    command: Extract<QidahenCommand, { type: 'CANCEL_INSTIGATE_DEFECTION' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'INSTIGATE_DEFECTION_CANCELLED',
+    payload: {
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenWuzhenChaohaArtilleryTechCountSetEvent = (
+    command: Extract<QidahenCommand, { type: 'SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT_SET',
+    payload: {
+        count: command.payload.count,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenWuzhenChaohaResolvedEvent = (
+    command: Extract<QidahenCommand, { type: 'RESOLVE_WUZHEN_CHAOHA' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'WUZHEN_CHAOHA_RESOLVED',
+    payload: {
+        choiceId: command.payload.choiceId,
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
+const buildQidahenWuzhenChaohaCancelledEvent = (
+    command: Extract<QidahenCommand, { type: 'CANCEL_WUZHEN_CHAOHA' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'WUZHEN_CHAOHA_CANCELLED',
+    payload: {
+        playerId: command.playerId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
 const buildQidahenHandLimitDiscardCardSelectedEvent = (
     command: SelectHandLimitDiscardCardCommand,
     timestamp: number,
@@ -314,8 +487,66 @@ const QIDAHEN_COMMAND_EVENT_BUILDERS: readonly QidahenCommandEventBuilderSpec[] 
     },
     {
         commandTypes: [QIDAHEN_COMMANDS.PLAY_TACTIC_CARD],
-        buildEvents: buildSingleCommandEvents<PlayTacticCardCommand>(
-            buildQidahenTacticCardPlayedEvent,
+        buildEvents: buildQidahenTacticCardPlayedEvents,
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.PLAY_BATTLE_RESPONSE_EVENT_CARD],
+        buildEvents: buildSingleCommandEvents<PlayBattleResponseEventCardCommand>(
+            buildQidahenBattleResponseEventCardPlayedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.TOGGLE_PINCER_ADVANCE_TROOP],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenPincerAdvanceTroopToggledEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_PINCER_ADVANCE],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenPincerAdvanceResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.CANCEL_PINCER_ADVANCE],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenPincerAdvanceCancelledEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_INFANTRY_CAVALRY_COMBINED],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenInfantryCavalryCombinedResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_INSTIGATE_DEFECTION],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenInstigateDefectionResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.CANCEL_INSTIGATE_DEFECTION],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenInstigateDefectionCancelledEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.SET_WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenWuzhenChaohaArtilleryTechCountSetEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.RESOLVE_WUZHEN_CHAOHA],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenWuzhenChaohaResolvedEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.CANCEL_WUZHEN_CHAOHA],
+        buildEvents: buildSingleCommandEvents(
+            buildQidahenWuzhenChaohaCancelledEvent,
         ),
     },
     {

@@ -24,5 +24,5 @@
 - [x] 4.2 运行 3 条真实入口 E2E 并人工看图验收
 - [x] 4.3 生成 evidence 文档，记录资源合同、测试结果、截图路径与剩余风险
 - [x] 4.4 运行图片压缩、更新资产 manifest，并完成必要的资源可用性抽查
-  - 已完成葫芦娃 3 个压缩 WebP 精确上传、R2 ETag 校验和 CDN HEAD 200 回查；未上传 unrelated `pretty_pretty.webp` 本地差异。
+  - 已完成葫芦娃 3 个压缩 WebP 精确发布、远端 ETag 校验和官方资源域名 HEAD 200 回查；未上传 unrelated `pretty_pretty.webp` 本地差异。
 - [x] 4.5 运行 `openspec validate add-smashup-huluwawa-faction --strict --no-interactive`

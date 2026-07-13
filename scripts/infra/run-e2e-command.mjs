@@ -621,6 +621,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
             globalBudgetHandle = await acquireGlobalHeavyBudget({
                 group: 'e2e',
                 command: [runtimeNode, playwrightCli, 'test', ...extraArgs].join(' '),
+                waitForBudget: true,
                 metadata: {
                     mode,
                     target: explicitTargetPath || '<all>',

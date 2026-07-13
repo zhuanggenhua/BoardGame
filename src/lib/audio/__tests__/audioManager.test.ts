@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { setAssetsBaseUrl, setCommonAudioAssetBaseOverride } from '../../../core/AssetLoader';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setAssetsBaseUrl, setCommonAudioAssetBaseOverride, signalCriticalImagesReady } from '../../../core/AssetLoader';
 import { AUDIO_RUNTIME_TOAST_EVENT } from '../audioRuntimeNotifications';
 
 const { howlInstances, readInstalledGamePackageAssetBlobUrl } = vi.hoisted(() => ({
@@ -8,6 +8,8 @@ const { howlInstances, readInstalledGamePackageAssetBlobUrl } = vi.hoisted(() =>
         play: ReturnType<typeof vi.fn>;
         stop: ReturnType<typeof vi.fn>;
         unload: ReturnType<typeof vi.fn>;
+        stateValue: 'loaded' | 'loading' | 'unloaded';
+        trigger: (event: string, ...args: unknown[]) => void;
     }>,
     readInstalledGamePackageAssetBlobUrl: vi.fn(),
 }));
@@ -24,25 +26,43 @@ vi.mock('howler', () => {
         play = vi.fn(() => 1);
         stop = vi.fn();
         unload = vi.fn();
+        stateValue: 'loaded' | 'loading' | 'unloaded';
+        listeners = new Map<string, Array<(...args: unknown[]) => void>>();
         constructor(options: Record<string, unknown>) {
             this.options = options;
+            this.stateValue = options.preload === true ? 'loading' : 'loaded';
             howlInstances.push(this as unknown as {
                 options: Record<string, any>;
                 play: ReturnType<typeof vi.fn>;
                 stop: ReturnType<typeof vi.fn>;
                 unload: ReturnType<typeof vi.fn>;
+                stateValue: 'loaded' | 'loading' | 'unloaded';
+                trigger: (event: string, ...args: unknown[]) => void;
             });
         }
         fade() {}
         volume() {}
         state() {
-            return 'loaded';
+            return this.stateValue;
         }
         playing() {
             return false;
         }
-        once() {
+        once(event: string, callback: (...args: unknown[]) => void) {
+            const listeners = this.listeners.get(event) ?? [];
+            listeners.push(callback);
+            this.listeners.set(event, listeners);
             return this;
+        }
+        trigger(event: string, ...args: unknown[]) {
+            if (event === 'load') {
+                this.stateValue = 'loaded';
+            }
+            const listeners = this.listeners.get(event) ?? [];
+            this.listeners.delete(event);
+            for (const listener of listeners) {
+                listener(...args);
+            }
         }
     }
 
@@ -64,6 +84,10 @@ describe('AudioManager', () => {
         setCommonAudioAssetBaseOverride(undefined);
         howlInstances.length = 0;
         readInstalledGamePackageAssetBlobUrl.mockReset();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     it('onBgmChange 在播放/停止时触发，并支持取消订阅', () => {
@@ -108,6 +132,7 @@ describe('AudioManager', () => {
     });
 
     it('共享音频包本地 _capacitor_file_ 路径失败时，会优先走原生 blob 读取并续播当前音效', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(1000);
         setCommonAudioAssetBaseOverride('http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/common-audio/current/assets');
         readInstalledGamePackageAssetBlobUrl.mockResolvedValue({
             blobUrl: 'blob:common-audio-click',
@@ -142,7 +167,54 @@ describe('AudioManager', () => {
         expect(howlInstances[1].options.src).toEqual([
             'blob:common-audio-click',
         ]);
+        howlInstances[1].trigger('load');
         expect(howlInstances[1].play).toHaveBeenCalledTimes(1);
+    });
+
+    it('首播音效 1 秒内加载完成才播放，避免事件过期后补播', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(1000);
+        const config: GameAudioConfig = {
+            sounds: {
+                click: { src: 'sfx/ui/click.ogg' },
+            },
+        };
+
+        AudioManager.registerAll(config, 'common/audio');
+        const result = AudioManager.play('click');
+
+        expect(result).toBeNull();
+        expect(howlInstances).toHaveLength(1);
+        expect(howlInstances[0].play).not.toHaveBeenCalled();
+
+        vi.mocked(Date.now).mockReturnValue(1800);
+        howlInstances[0].trigger('load');
+
+        expect(howlInstances[0].play).toHaveBeenCalledTimes(1);
+    });
+
+    it('首播音效超过 1 秒才加载完成时只缓存，不再补播过期事件', async () => {
+        vi.spyOn(Date, 'now').mockReturnValue(1000);
+        const config: GameAudioConfig = {
+            sounds: {
+                click: { src: 'sfx/ui/click.ogg' },
+            },
+        };
+
+        AudioManager.registerAll(config, 'common/audio');
+        const result = AudioManager.play('click');
+
+        expect(result).toBeNull();
+        expect(howlInstances).toHaveLength(1);
+        expect(howlInstances[0].play).not.toHaveBeenCalled();
+
+        vi.mocked(Date.now).mockReturnValue(2101);
+        howlInstances[0].trigger('load');
+
+        expect(howlInstances[0].play).not.toHaveBeenCalled();
+
+        const nextResult = AudioManager.play('click');
+        expect(nextResult).toBe(1);
+        expect(howlInstances[0].play).toHaveBeenCalledTimes(1);
     });
 
     it('共享音频包本地 _capacitor_file_ 路径原生读取失败时，才回退到官方资源域名', async () => {
@@ -171,6 +243,41 @@ describe('AudioManager', () => {
         expect(howlInstances[1].options.src).toEqual([
             'https://assets.easyboardgame.top/official/common/audio/sfx/ui/compressed/click.ogg',
         ]);
+    });
+
+    it('后台预加载音频失败时只标记失败，不产生未处理 Promise', async () => {
+        vi.useFakeTimers();
+        signalCriticalImagesReady();
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const unhandledSpy = vi.fn();
+        window.addEventListener('unhandledrejection', unhandledSpy);
+
+        const config: GameAudioConfig = {
+            sounds: {
+                click: { src: 'sfx/ui/click.ogg' },
+            },
+        };
+
+        AudioManager.registerAll(config, 'common/audio');
+        AudioManager.preloadKeys(['click']);
+
+        await vi.runAllTimersAsync();
+        expect(howlInstances).toHaveLength(1);
+
+        const firstLoadError = howlInstances[0].options.onloaderror as ((id: number, error: unknown) => void);
+        firstLoadError(1, new Error('Failed loading audio file with status: 502.'));
+        await vi.runAllTimersAsync();
+
+        expect(howlInstances).toHaveLength(2);
+        const fallbackLoadError = howlInstances[1].options.onloaderror as ((id: number, error: unknown) => void);
+        fallbackLoadError(1, new Error('Failed loading audio file with status: 502.'));
+        await vi.runAllTimersAsync();
+
+        expect(AudioManager.isFailed('click')).toBe(true);
+        expect(unhandledSpy).not.toHaveBeenCalled();
+
+        window.removeEventListener('unhandledrejection', unhandledSpy);
+        consoleErrorSpy.mockRestore();
     });
 
     it('BGM 使用手动循环而不是 Howler 内建 loop，避免 vendor 递归重播', () => {

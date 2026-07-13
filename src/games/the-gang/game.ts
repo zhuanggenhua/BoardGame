@@ -30,7 +30,7 @@ export const engineConfig = createGameEngine<TheGangCore, TheGangCommand, TheGan
     domain: TheGangDomain,
     systems,
     minPlayers: 3,
-    maxPlayers: 6,
+    maxPlayers: 10,
     commandTypes: Object.values(THE_GANG_COMMANDS),
 });
 

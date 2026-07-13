@@ -3,6 +3,7 @@ import { LOBBY_ALL, LOBBY_EVENTS, type LobbyHeartbeatPayload, type LobbyGameId, 
 import type { MatchStorage } from '../engine/transport/storage';
 import { hasOccupiedPlayers } from './matchOccupancy';
 import { buildLobbyMatch } from './lobbyMatch';
+import { shouldReadGameStateForPublicRoomSummary } from '../games/serverLobbySummary';
 
 const LOBBY_ROOM = 'lobby:subscribers';
 const LOBBY_ALL_ROOM = `${LOBBY_ROOM}:${LOBBY_ALL}`;
@@ -58,10 +59,14 @@ export function createLobbyCoordinator<TGame extends string>(args: CreateLobbyCo
 
     const fetchLobbyMatch = async (matchID: string): Promise<LobbyMatch | null> => {
         try {
-            const result = await args.storage.fetch(matchID, { metadata: true });
+            let result = await args.storage.fetch(matchID, { metadata: true });
             if (!result.metadata) return null;
-            const match = buildLobbyMatch(matchID, result.metadata);
             const game = args.normalizeGameName(result.metadata.gameName);
+            if (game && shouldReadGameStateForPublicRoomSummary(game)) {
+                const stateResult = await args.storage.fetch(matchID, { state: true });
+                result = { ...result, state: stateResult.state };
+            }
+            const match = buildLobbyMatch(matchID, result.metadata, result.state?.G);
             if (game && args.isSupportedGame(game)) {
                 matchGameIndex.set(matchID, game);
                 ensureGameState(game);
@@ -77,12 +82,13 @@ export function createLobbyCoordinator<TGame extends string>(args: CreateLobbyCo
         try {
             const matchIds = await args.storage.listMatches({ gameName });
             const matches: LobbyMatch[] = [];
+            const shouldReadState = shouldReadGameStateForPublicRoomSummary(gameName);
             for (const matchID of matchIds) {
-                const result = await args.storage.fetch(matchID, { metadata: true });
+                const result = await args.storage.fetch(matchID, { metadata: true, state: shouldReadState });
                 if (!result.metadata) continue;
                 const players = result.metadata.players as Record<string, { name?: string; credentials?: string; isConnected?: boolean | null }> | undefined;
                 if (!hasOccupiedPlayers(players)) continue;
-                const match = buildLobbyMatch(matchID, result.metadata);
+                const match = buildLobbyMatch(matchID, result.metadata, result.state?.G);
                 matchGameIndex.set(matchID, gameName);
                 matches.push(match);
             }

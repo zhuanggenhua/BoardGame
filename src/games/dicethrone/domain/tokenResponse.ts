@@ -49,6 +49,23 @@ function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerI
 // Token 可用性检查
 // ============================================================================
 
+export function hasBeforeDamageReceivedCard(
+    state: DiceThroneCore,
+    playerId: PlayerId,
+): boolean {
+    const player = state.players[playerId];
+    if (!player) return false;
+
+    return (player.hand ?? []).some(card => {
+        const pendingDamage = card.playCondition?.pendingDamage;
+        if (!pendingDamage || pendingDamage.responseType !== 'beforeDamageReceived') return false;
+        if (pendingDamage.role === 'source') return false;
+        if (card.timing !== 'instant' && card.timing !== 'roll') return false;
+        if (!card.effects?.some(effect => effect.action)) return false;
+        return (player.resources?.[RESOURCE_IDS.CP] ?? 0) >= card.cpCost;
+    });
+}
+
 function resolveAdditionalTokenCosts(
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -285,6 +302,132 @@ export function createTokenResponseRequestedEvent(
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     };
+}
+
+/**
+ * 估算既有护盾吸收后的有效伤害，仅用于 Token/卡牌响应开窗门禁。
+ *
+ * 注意：
+ * - 这里只判断“是否还剩可响应伤害”，不会真正消耗护盾。
+ * - 真正护盾消耗仍由 DAMAGE_DEALT 的 reducer 统一处理，避免双扣。
+ */
+export function estimateDamageAfterExistingShields(
+    state: DiceThroneCore,
+    targetId: PlayerId,
+    incomingDamage: number,
+    options?: { bypassShields?: boolean },
+): number {
+    if (incomingDamage <= 0) return 0;
+    if (options?.bypassShields) return incomingDamage;
+    if (state.pendingAttack?.isUltimate) return incomingDamage;
+
+    const target = state.players[targetId];
+    const shields = target?.damageShields ?? [];
+    if (shields.length === 0) return incomingDamage;
+
+    let remainingDamage = incomingDamage;
+    const percentShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent !== undefined);
+    const fixedShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent === undefined);
+
+    for (const shield of percentShields) {
+        if (remainingDamage <= 0) break;
+        const reductionPercent = shield.reductionPercent ?? 0;
+        const reductionAmount = Math.ceil(remainingDamage * (reductionPercent / 100));
+        remainingDamage = Math.max(0, remainingDamage - reductionAmount);
+    }
+
+    for (const shield of fixedShields) {
+        if (remainingDamage <= 0) break;
+        remainingDamage = Math.max(0, remainingDamage - shield.value);
+    }
+
+    return remainingDamage;
+}
+
+export const resolveDamageResponseType = (
+    state: DiceThroneCore,
+    defenderId: PlayerId,
+    rawTokenResponseType: 'attackerBoost' | 'defenderMitigation' | null,
+): 'attackerBoost' | 'defenderMitigation' | null => {
+    const isUltimateDamage = state.pendingAttack?.isUltimate === true;
+    const hasDefenderCardResponse = hasBeforeDamageReceivedCard(state, defenderId);
+    if (rawTokenResponseType === 'attackerBoost') return 'attackerBoost';
+    if (isUltimateDamage) return null;
+    if (rawTokenResponseType === 'defenderMitigation') return 'defenderMitigation';
+    return hasDefenderCardResponse ? 'defenderMitigation' : null;
+};
+
+export function maybeCreateDamageResponseEvent(params: {
+    state: DiceThroneCore;
+    damageEvent: DamageDealtEvent;
+    attackerId: PlayerId;
+    sourceAbilityId?: string;
+    timestamp?: number;
+    isDefensiveContext?: boolean;
+    allowAttackerBoost?: boolean;
+}): TokenResponseRequestedEvent | null {
+    const {
+        state,
+        damageEvent,
+        attackerId,
+        sourceAbilityId,
+        timestamp = 0,
+        isDefensiveContext,
+        allowAttackerBoost = true,
+    } = params;
+    const dmgPayload = damageEvent.payload;
+    const dmgAmount = dmgPayload.amount ?? 0;
+    const dmgTargetId = dmgPayload.targetId;
+    if (dmgAmount <= 0) return null;
+    if (state.pendingDamage) return null;
+    if (isDefensiveContext) return null;
+
+    const isUnblockable = dmgPayload.unblockable === true;
+    const bypassShields = dmgPayload.bypassShields === true;
+    const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
+    const hasDefenderAvoidanceResponse = hasBeforeDamageReceivedCard(state, dmgTargetId)
+        || hasDefensiveTokens(state, dmgTargetId, damageScope, dmgAmount);
+
+    if (!allowAttackerBoost && !hasDefenderAvoidanceResponse) {
+        return null;
+    }
+
+    const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
+        state,
+        dmgTargetId,
+        dmgAmount,
+        { bypassShields },
+    );
+
+    const rawTokenResponseType = allowAttackerBoost
+        ? shouldOpenTokenResponse(
+            state,
+            attackerId,
+            dmgTargetId,
+            effectiveDamageForTokenResponse,
+            isDefensiveContext,
+            damageScope,
+        )
+        : (hasDefenderAvoidanceResponse && effectiveDamageForTokenResponse > 0 ? 'defenderMitigation' : null);
+    const tokenResponseType = resolveDamageResponseType(state, dmgTargetId, rawTokenResponseType);
+
+    if (!tokenResponseType) return null;
+
+    const responseType = tokenResponseType === 'attackerBoost'
+        ? 'beforeDamageDealt'
+        : 'beforeDamageReceived';
+    const pendingDamage = createPendingDamage(
+        attackerId,
+        dmgTargetId,
+        dmgAmount,
+        responseType,
+        sourceAbilityId ?? dmgPayload.sourceAbilityId,
+        timestamp,
+        dmgPayload.modifiers,
+        damageScope,
+        isUnblockable,
+    );
+    return createTokenResponseRequestedEvent(pendingDamage, timestamp);
 }
 
 // ============================================================================
@@ -661,8 +804,10 @@ export function finalizeTokenResponse(
         events.push(damageEvent);
     }
 
-    for (const deferredDamage of pendingDamage.deferredDamageEvents ?? []) {
-        events.push({
+    const deferredDamages = pendingDamage.deferredDamageEvents ?? [];
+    for (let i = 0; i < deferredDamages.length; i++) {
+        const deferredDamage = deferredDamages[i];
+        const damageEvent: DamageDealtEvent = {
             type: 'DAMAGE_DEALT',
             payload: {
                 targetId: deferredDamage.targetId,
@@ -671,10 +816,28 @@ export function finalizeTokenResponse(
                 sourceAbilityId: deferredDamage.sourceAbilityId,
                 sourcePlayerId: deferredDamage.sourcePlayerId,
                 damageScope: deferredDamage.damageScope,
+                ...(deferredDamage.unblockable ? { unblockable: true } : {}),
             },
             sourceCommandType: deferredDamage.sourceCommandType ?? 'ABILITY_EFFECT',
             timestamp,
-        } as DamageDealtEvent);
+        } as DamageDealtEvent;
+        const followupResponseEvent = maybeCreateDamageResponseEvent({
+            state: { ...state, pendingDamage: undefined },
+            damageEvent,
+            attackerId: deferredDamage.sourcePlayerId ?? pendingDamage.sourcePlayerId,
+            sourceAbilityId: deferredDamage.sourceAbilityId,
+            timestamp,
+            allowAttackerBoost: deferredDamage.damageScope === 'attack',
+        });
+        if (followupResponseEvent) {
+            const remainingDeferredDamages = deferredDamages.slice(i + 1);
+            if (remainingDeferredDamages.length > 0) {
+                followupResponseEvent.payload.pendingDamage.deferredDamageEvents = remainingDeferredDamages;
+            }
+            events.push(followupResponseEvent);
+            break;
+        }
+        events.push(damageEvent);
     }
     
     return events;
@@ -712,7 +875,8 @@ export function shouldOpenTokenResponse(
         return null;
     }
 
-    // 终极技能（规则 §4.4）：伤害可被攻击方强化，但不可被防御方降低/忽略/回避
+    // Ultimate Damage 伤害类型：可被攻击方强化，但不可被防御方降低/忽略/回避。
+    // 当前 pendingAttack.isUltimate 表示这段待结算伤害来自终极伤害类型，不应扩展到普通不可防御伤害。
     const isUltimate = state.pendingAttack?.isUltimate ?? false;
     
     // 先检查攻击方是否有太极可用于加伤。
@@ -722,7 +886,7 @@ export function shouldOpenTokenResponse(
         return 'attackerBoost';
     }
     
-    // 终极技能跳过防御方 Token 响应（规则 §4.4：不可被降低/忽略/回避）
+    // Ultimate Damage 跳过防御方 Token 响应（不可被降低/忽略/回避）。
     if (isUltimate) {
         return null;
     }

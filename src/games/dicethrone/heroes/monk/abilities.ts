@@ -16,9 +16,14 @@ export const MONK_SFX_THUNDER = 'combat.general.fight_fury_vol_2.versatile_punch
 export const MONK_SFX_ZEN = 'magic.general.simple_magic_sound_fx_pack_vol.light.heavenly_flame';
 
 // 辅助函数：创建伤害效果
-const damage = (value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition }): AbilityEffect => ({
+const damage = (value: number, description: string, opts?: { timing?: EffectTiming; condition?: EffectCondition; unblockable?: boolean }): AbilityEffect => ({
     description,
-    action: { type: 'damage', target: 'opponent', value },
+    action: {
+        type: 'damage',
+        target: 'opponent',
+        value,
+        ...(opts?.unblockable ? { unblockable: true } : {}),
+    },
     timing: opts?.timing,
     condition: opts?.condition,
 });
@@ -112,20 +117,14 @@ export const MONK_ABILITIES: AbilityDef[] = [
         description: abilityText('lotus-palm', 'description'),
         sfxKey: MONK_SFX_KICK_2,
         trigger: { type: 'diceSet', faces: { [DICE_FACE_IDS.LOTUS]: 4 } },
+        tags: ['unblockable'],
         effects: [
-            // 你可以花费2个太极标记令此次攻击不可防御（在进入防御阶段前选择）
-            {
-                description: abilityEffectText('lotus-palm', 'unblockable'),
-                action: { type: 'custom', target: 'self', customActionId: 'lotus-palm-unblockable-choice' },
-                timing: 'preDefense',
-            },
-            damage(5, abilityEffectText('lotus-palm', 'damage5')),
-            // onHit：太极上限+1，并立即补满太极
+            damage(5, abilityEffectText('lotus-palm', 'damage5'), { unblockable: true }),
+            // 然后：太极上限+1，并获得5个太极
             {
                 description: abilityEffectText('lotus-palm', 'taijiCapMax'),
-                action: { type: 'custom', target: 'self', customActionId: 'lotus-palm-taiji-cap-up-and-fill' },
+                action: { type: 'custom', target: 'self', customActionId: 'lotus-palm-taiji-cap-up-and-grant5' },
                 timing: 'postDamage',
-                condition: { type: 'onHit' },
             },
         ],
     },

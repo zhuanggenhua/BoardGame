@@ -20,13 +20,13 @@
 | 对象 | 当前实现入口 | 对齐项 | 疑点/缺口 | 分流状态 | 下一步 |
 | --- | --- | --- | --- | --- | --- |
 | `prepare` | `src/games/summonerwars/domain/abilities-barbaric.ts:109-138` | `trigger: activated`、`requiredPhase: move`、`costsMoveAction: true`、未移动校验、给自身 1 充能，能表达“代替本单位移动并给自己充能” | 已补 L4 验证：完整管线执行准备后无交互残留，自身 +1 充能且 `hasMoved=true`；准备后移动命令被拒绝且不二次充能。`usesPerTurn: 1` 仍记录为实现保护，不作为卡面原文子句 | `match-with-L4-proof` | 已完成真实管线行动经济补证；后续只在 UI 行动入口与该行动经济不一致时追加专项 |
-| `inspire` | 定义入口：`src/games/summonerwars/domain/abilities-barbaric.ts:165-184`；实际自动结算入口：`src/games/summonerwars/domain/execute.ts:271-290` | 移动后自动遍历四向相邻格；只给同玩家单位加 1 充能；`requiresButton: false`，符合强制/自动结算方向 | 已补 L4 验证：完整管线移动后不生成交互，只给移动后相邻友方单位各 +1；不作用于自身、敌方相邻单位、只在移动前相邻但移动后非相邻的友方单位 | `match-with-L4-proof` | 已完成真实移动入口与目标全集边界补证；后续只在 UI 回放层重复展示自动充能时追加专项 |
+| `inspire` | 定义入口：`src/games/summonerwars/domain/abilities-barbaric.ts:165-184`；实际自动结算入口：`src/games/summonerwars/domain/execute.ts:271-290` | 移动后自动遍历四向相邻格；只给同玩家单位加 1 充能；静态定义已于 2026-07-10 从 `trigger: activated` 修正为 `trigger: afterMove`，与强制移动后结算一致 | 已补 L4 验证：完整管线移动后不生成交互，只给移动后相邻友方单位各 +1；不作用于自身、敌方相邻单位、只在移动前相邻但移动后非相邻的友方单位；AI 合法动作回归确认该能力不再被当作主动按钮技能 | `fixed-with-L4-proof` | 旧结论“定义为 activated 也可接受”失效；本轮已修正静态触发合同并复跑完整 AI 回合 |
 
 ## 分流边界
 
-- 当前没有把 B2 判为 bug；两项完整管线 L4 验证均通过，首轮实现对照从 `proof-needed` 回写为 `match-with-L4-proof`。
+- 2026-07-10 修订：`inspire` 的运行时移动后结算虽正确，但静态 `trigger: activated` 会被 AI 合法动作生成器当作普通主动技能消费，因此旧的 `match-with-L4-proof` 结论失效；当前已改为 `fixed-with-L4-proof`。
 - `prepare` 的每回合一次字段不能倒推成卡面规则；本轮只证明当前行动经济与“代替移动”一致，不删除字段。
-- `inspire` 的定义层 `activated` 不直接等于玩家主动技能；当前事实是移动执行链里有自动结算入口，最小验证证明移动后状态对齐。
+- `inspire` 的定义层现在明确使用 `afterMove`。静态定义必须独立表达真实触发时机，不能再依赖运行时旁路正确来容忍错误的 `activated` 合同。
 - 后续若 UI 入口、刷新/回放或展示层发现冲突，再追加 UI 层专项；不再把 B2 已 locked 对象回录入层。
 
 ## 最小验证

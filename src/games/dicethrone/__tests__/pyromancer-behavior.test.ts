@@ -20,6 +20,7 @@ import { initializeCustomActions } from '../domain/customActions';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { pyromancerDiceDefinition } from '../heroes/pyromancer/diceConfig';
 import { reduce } from '../domain/reducer';
+import { getBonusDiceSettlementHandler } from '../domain/bonusDiceSettlement';
 
 // 模块顶层初始化
 initializeCustomActions();
@@ -158,6 +159,26 @@ function eventsOfType<T extends DiceThroneEvent>(events: DiceThroneEvent[], type
 
 function reduceAll(state: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore {
     return events.reduce((acc, event) => reduce(acc, event as any), state);
+}
+
+function getPyroBlastSettlement(events: DiceThroneEvent[]) {
+    const request = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED')[0] as any;
+    expect(request).toBeDefined();
+    const settlement = request.payload.settlement;
+    expect(settlement.customResolutionId).toBe('pyro-blast-roll');
+    expect(settlement.allowDiceModification).toBe(true);
+    return settlement;
+}
+
+function settlePyroBlastDice(state: DiceThroneCore, settlement: any, dice = settlement.dice): DiceThroneEvent[] {
+    const handler = getBonusDiceSettlementHandler('pyro-blast-roll');
+    expect(handler).toBeDefined();
+
+    return handler!({
+        state,
+        settlement: { ...settlement, dice },
+        timestamp: 2000,
+    })?.followupEvents ?? [];
 }
 
 // ============================================================================
@@ -872,8 +893,12 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
                 },
             }));
 
-            // FM=0 所以不会进入reroll模式，直接结算
-            const dmgEvents = eventsOfType(events, 'DAMAGE_DEALT');
+            const settlement = getPyroBlastSettlement(events);
+            expect(settlement.displayOnly).toBe(true);
+            expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+
+            const followupEvents = settlePyroBlastDice(state, settlement);
+            const dmgEvents = eventsOfType(followupEvents, 'DAMAGE_DEALT');
             const totalDmg = dmgEvents.reduce((s, e) => s + (e as any).payload.amount, 0);
             expect(totalDmg).toBe(6); // 2 × 3
         });
@@ -890,7 +915,11 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
                 },
             }));
 
-            const tokenEvents = eventsOfType(events, 'TOKEN_GRANTED');
+            const settlement = getPyroBlastSettlement(events);
+            expect(settlement.displayOnly).toBe(true);
+
+            const followupEvents = settlePyroBlastDice(state, settlement);
+            const tokenEvents = eventsOfType(followupEvents, 'TOKEN_GRANTED');
             expect(tokenEvents).toHaveLength(1);
             expect((tokenEvents[0] as any).payload.amount).toBe(2);
         });
@@ -907,7 +936,11 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
                 },
             }));
 
-            const statusEvents = eventsOfType(events, 'STATUS_APPLIED');
+            const settlement = getPyroBlastSettlement(events);
+            expect(settlement.displayOnly).toBe(true);
+
+            const followupEvents = settlePyroBlastDice(state, settlement);
+            const statusEvents = eventsOfType(followupEvents, 'STATUS_APPLIED');
             expect(statusEvents).toHaveLength(1);
             expect((statusEvents[0] as any).payload.statusId).toBe(STATUS_IDS.BURN);
         });
@@ -924,7 +957,39 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
                 },
             }));
 
-            const statusEvents = eventsOfType(events, 'STATUS_APPLIED');
+            const settlement = getPyroBlastSettlement(events);
+            expect(settlement.displayOnly).toBe(true);
+
+            const followupEvents = settlePyroBlastDice(state, settlement);
+            const statusEvents = eventsOfType(followupEvents, 'STATUS_APPLIED');
+            expect(statusEvents).toHaveLength(1);
+            expect((statusEvents[0] as any).payload.statusId).toBe(STATUS_IDS.KNOCKDOWN);
+        });
+
+        it('奖励骰被惊不惊喜改面后按改后的高温爆破效果结算', () => {
+            const state = createState({ attackerFM: 0 });
+            let callCount = 0;
+            const handler = getCustomActionHandler('pyro-blast-2-roll')!;
+            const events = handler(buildCtx(state, 'pyro-blast-2-roll', {
+                random: () => {
+                    callCount++;
+                    return callCount === 1 ? 1 / 6 : 2 / 6; // 原本两颗都是 fire
+                },
+            }));
+
+            const settlement = getPyroBlastSettlement(events);
+            const modifiedDice = settlement.dice.map((die: any, index: number) => (
+                index === 0
+                    ? { ...die, value: 6, face: PYROMANCER_DICE_FACE_IDS.METEOR }
+                    : die
+            ));
+
+            const followupEvents = settlePyroBlastDice(state, settlement, modifiedDice);
+            const dmgEvents = eventsOfType(followupEvents, 'DAMAGE_DEALT');
+            const statusEvents = eventsOfType(followupEvents, 'STATUS_APPLIED');
+
+            expect(dmgEvents).toHaveLength(1);
+            expect((dmgEvents[0] as any).payload.amount).toBe(3);
             expect(statusEvents).toHaveLength(1);
             expect((statusEvents[0] as any).payload.statusId).toBe(STATUS_IDS.KNOCKDOWN);
         });
@@ -947,6 +1012,7 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             const settlement = (rerollEvents[0] as any).payload.settlement;
             expect(settlement.maxRerollCount).toBe(1);
             expect(settlement.rerollCostTokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
+            expect(settlement.allowDiceModification).toBe(true);
         });
 
         it('FM=0时也进入免费重投模式', () => {
@@ -967,6 +1033,7 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             expect(settlement.rerollCostAmount).toBe(0);
             expect(settlement.maxRerollCount).toBe(1);
             expect(settlement.rerollCostTokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
+            expect(settlement.allowDiceModification).toBe(true);
         });
     });
 });

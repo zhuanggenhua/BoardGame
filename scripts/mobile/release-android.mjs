@@ -7,6 +7,7 @@ import {
     readJsonFile,
     updateProjectVersion,
 } from './version-utils.mjs';
+import { resolveAndroidOtaClientBuildEnv } from './ota-publish-config.mjs';
 
 const rootDir = process.cwd();
 const rawArgs = process.argv.slice(2);
@@ -34,13 +35,14 @@ Android 统一发布入口
 常用选项:
   --channel <stable|gray|edge>
   --dry-run
-  --skip-latest
+  --skip-latest 仅允许 Android OTA dry-run 诊断；正式 Android OTA 禁止跳过 latest.json
 
 ota / native / full 额外选项:
   --bump <patch|minor|major>   自动更新 package.json / package-lock.json 版本
 
 ota 额外选项:
   --version <bundleVersion>     显式指定 OTA 内部游标
+  --display-version <number>    显式指定用户可见更新号；不传则从线上 latest.json 自动递增，最低 600
 
 ota / full 额外选项:
   --ota-version-base <semver>   未显式 --version 时的 OTA 游标基线，可与产品版本解耦
@@ -54,6 +56,8 @@ full 额外选项:
 
 说明:
   - OTA 发布已禁止隐式版本；发布时会强制传 --expected-base-version=<package.json.version>
+  - 所有 OTA 都强制更新；--no-force-update 已禁用
+  - 正式 Android OTA 必须写入 latest.json，禁止跳过更新发现入口
   - OTA 客户端按 bundle version 这个内部游标判断新旧；publishedAt 只用于审计和展示
   - OTA / native / full 可使用 --bump 自动递增版本后再发布
   - full 的顺序固定为: OTA -> packages(可选) -> native
@@ -221,10 +225,27 @@ const ensureNoForbiddenOtaCompatibilityArgs = (sourceArgs = args) => {
     );
 };
 
+const applyOtaClientBuildDefaults = () => {
+    const channel = readArgValue('channel', process.env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable');
+    const otaEnv = resolveAndroidOtaClientBuildEnv({
+        channel,
+        assetsBaseUrl: process.env.VITE_ASSETS_BASE_URL,
+    });
+    Object.assign(process.env, otaEnv);
+    logStep(`OTA 客户端配置: channel=${channel}, manifest=${otaEnv.VITE_ANDROID_OTA_MANIFEST_URL}`);
+};
+
+const ensureForcedOta = (sourceArgs = args) => {
+    if (hasFlag('no-force-update', sourceArgs)) {
+        throw new Error('所有 OTA 已强制更新，禁止使用 --no-force-update。');
+    }
+};
+
 const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
     new Set([
         'channel',
         'version',
+        'display-version',
         'ota-version-base',
         'native-version',
         'expected-base-version',
@@ -232,7 +253,7 @@ const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
         'force-update-message',
         'notes',
     ]),
-    new Set(['dry-run', 'skip-latest', 'force-update', 'no-force-update']),
+    new Set(['dry-run', 'skip-latest', 'force-update']),
     sourceArgs,
 );
 
@@ -307,6 +328,8 @@ const buildOtaArgsWithExpectedVersion = (releaseVersion, sourceArgs = args) => [
 const runOtaRelease = async () => {
     const releaseInfo = prepareReleaseVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
+    ensureForcedOta();
+    applyOtaClientBuildDefaults();
     await runDoctor();
     await runTypecheck();
     await runSync();
@@ -345,6 +368,8 @@ const shouldRunPackagesInFull = () => hasFlag('with-packages', args) || Boolean(
 const runFullRelease = async () => {
     const nativeInfo = prepareNativeVersion();
     ensureNoForbiddenOtaCompatibilityArgs();
+    ensureForcedOta();
+    applyOtaClientBuildDefaults();
     await runDoctor();
     await runSync();
     logStep(`发布 Android OTA (expectedBaseVersion=${nativeInfo.version})`);

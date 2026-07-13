@@ -10,6 +10,8 @@
 
 - 新增 Android `embedded` 模式下的 OTA / Live Update 能力
 - 定义 OTA bundle 的版本、渠道、兼容性、完整性校验和激活/回滚机制
+- 所有 Android OTA channel 固定强制更新，禁止生成或发布非强制 OTA manifest
+- OTA bundle 只携带 Web 本体与资源清单，嵌套游戏资源继续走服务器资源主源或移动游戏包
 - 为 Android App 增加启动时检查更新、后台下载、下次启动生效或安全切换的统一流程
 - 增加服务端/静态清单侧的 bundle 发布元数据约定
 - 增加 GitHub Actions Android 自动发布链路：`push main` 直接发布 stable 正式版本，并在成功后自动回写下一 patch 版本
@@ -23,6 +25,8 @@
   - `android-live-updates`（new）
 - Affected code:
   - `.github/workflows/android-ota-publish.yml`
+  - `scripts/mobile/ota-publish-config.mjs`
+  - `scripts/mobile/ota-bundle-files.mjs`
   - `scripts/mobile/android.mjs`
   - `capacitor.config.ts`
   - `android/` 原生壳启动与本地 bundle 激活逻辑

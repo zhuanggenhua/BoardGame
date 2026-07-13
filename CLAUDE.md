@@ -43,8 +43,8 @@ npm run generate:locales        # Generate card multilingual files
 npm run compress:images         # Compress image assets
 npm run compress:audio          # Compress audio (wav → ogg)
 npm run assets:manifest         # Generate asset manifest
-npm run assets:download         # Download resources from Cloudflare R2
-npm run assets:upload           # Upload compressed resources to R2
+npm run assets:download         # Server asset source compatibility entry
+npm run assets:upload           # Publish compressed resources to the server asset source
 npm run check:arch              # Architecture validation
 ```
 
@@ -98,7 +98,7 @@ e2e/                    # Playwright end-to-end tests
 
 **Backend:** Custom Game Engine (Koa + Socket.IO), NestJS 10, MongoDB 6, Redis 7, Winston (logging), JWT, Bcryptjs
 
-**Infrastructure:** Docker, Docker Compose, GitHub Actions CI/CD, Cloudflare Pages/R2, Nginx
+**Infrastructure:** Docker, Docker Compose, GitHub Actions CI/CD, server asset origin, Nginx
 
 ### Port Configuration
 
@@ -156,7 +156,7 @@ Copy `.env.example` to `.env`. Development works with defaults. Key variables:
 | `JWT_SECRET` | dev default | JWT key (change in production) |
 | `REDIS_HOST` / `REDIS_PORT` | localhost / 6379 | Redis cache |
 
-For production, also configure: Cloudflare R2 credentials, SMTP/email, Sentry DSN, E2E test settings.
+For production, also configure: server asset origin access, SMTP/email, Sentry DSN, E2E test settings.
 
 ## Internationalization (i18n)
 

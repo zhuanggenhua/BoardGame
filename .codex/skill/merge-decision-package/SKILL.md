@@ -1,6 +1,6 @@
 ---
 name: merge-decision-package
-description: 在 BoardGame 仓库中生成面向非程序用户的保留/合并/真相源决策包。用于多 worktree、双边内容归并、UI 基线选择、历史候选收口、需要回答“是不是只能二选一”“能不能都保留”“正式版本先认哪边”时。覆盖决策分类、推荐动作、普通人版结论、一句话拍板口径和最小技术附录。
+description: "BoardGame 保留/合并/真相源决策包。用于多 worktree、双边归并、UI 基线、历史候选收口和正式版本认定。"
 ---
 
 # 保留与合并决策包

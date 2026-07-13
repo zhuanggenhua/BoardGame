@@ -253,6 +253,8 @@ const NEW_CHARACTER_PORTRAIT_INDEX: Partial<Record<HeroState['characterId'], num
     ninja: 2,
     zhanshujia: 5,
     cursed_pirate: 6,
+    artificer: 7,
+    huntress: 10,
     treant: 13,
 };
 

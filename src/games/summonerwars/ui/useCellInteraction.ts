@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAutoSkipPhase } from '../../../components/game/framework';
 import { useTranslation } from 'react-i18next';
-import type { SummonerWarsCore, CellCoord, UnitCard, GamePhase } from '../domain/types';
+import type { SummonerWarsCore, CellCoord, UnitCard, GamePhase, EventCard } from '../domain/types';
 import { SW_COMMANDS } from '../domain/types';
 import { FLOW_COMMANDS } from '../../../engine';
 import {
@@ -184,6 +184,13 @@ export function useCellInteraction({
     return myHand.find(c => c.id === selectedHandCardId) ?? null;
   }, [selectedHandCardId, myHand]);
 
+  const selectedStructureEventCard = useMemo(() => {
+    if (!selectedHandCard || selectedHandCard.cardType !== 'event') return null;
+    const eventCard = selectedHandCard as EventCard;
+    if (eventCard.life === undefined || eventCard.playPhase !== 'build') return null;
+    return eventCard;
+  }, [selectedHandCard]);
+
   const validSummonPositions = useMemo(() => {
     // 火祀召唤模式：先选牺牲品，不显示普通召唤位置
     if (fireSacrificeSummonMode) return [];
@@ -229,9 +236,9 @@ export function useCellInteraction({
 
   const validBuildPositions = useMemo(() => {
     if (currentPhase !== 'build' || !isMyTurn || !selectedHandCard) return [];
-    if (selectedHandCard.cardType !== 'structure') return [];
+    if (selectedHandCard.cardType !== 'structure' && !selectedStructureEventCard) return [];
     return getValidBuildPositions(core, myPlayerId as '0' | '1');
-  }, [core, currentPhase, isMyTurn, myPlayerId, selectedHandCard]);
+  }, [core, currentPhase, isMyTurn, myPlayerId, selectedHandCard, selectedStructureEventCard]);
 
   // 技能目标位置（系统交互分支优先使用 InteractionSystem options 作为权威真相源）
   const validAbilityPositions = useMemo(() => {
@@ -364,6 +371,7 @@ export function useCellInteraction({
     const isArmedNonInteractiveEvent = !!selectedCard
       && selectedCard.cardType === 'event'
       && !isSelectedInteractiveEvent
+      && !(currentPhase === 'build' && (selectedCard as EventCard).life !== undefined)
       && !eventCardModes.hasActiveEventMode
       && !swInteraction;
     if (isArmedNonInteractiveEvent) {
@@ -514,7 +522,14 @@ export function useCellInteraction({
     if (currentPhase === 'build' && selectedHandCardId) {
       const isValidPosition = validBuildPositions.some(p => p.row === gameRow && p.col === gameCol);
       if (isValidPosition) {
-        dispatch(SW_COMMANDS.BUILD_STRUCTURE, { cardId: selectedHandCardId, position: { row: gameRow, col: gameCol } });
+        if (selectedStructureEventCard) {
+          dispatch(SW_COMMANDS.PLAY_EVENT, {
+            cardId: selectedHandCardId,
+            targets: [{ row: gameRow, col: gameCol }],
+          });
+        } else {
+          dispatch(SW_COMMANDS.BUILD_STRUCTURE, { cardId: selectedHandCardId, position: { row: gameRow, col: gameCol } });
+        }
       } else {
         showToast.warning(t('interaction.cannotBuildThere'));
       }
@@ -945,6 +960,17 @@ export function useCellInteraction({
     dispatch(INTERACTION_COMMANDS.CANCEL, { interactionId: swInteraction.id });
   }, [dispatch, swInteraction]);
 
+  const handleSystemAbilityChoice = useCallback((choice: string) => {
+    if (!swInteraction) return;
+    const option = swInteraction.options.find((opt) => opt.id === choice);
+    if (!option) return;
+    dispatch(INTERACTION_COMMANDS.RESPOND, {
+      interactionId: swInteraction.id,
+      optionId: option.id,
+    });
+    setAbilityMode(null);
+  }, [dispatch, setAbilityMode, swInteraction]);
+
   // ---------- 返回 ----------
 
   return {
@@ -962,6 +988,8 @@ export function useCellInteraction({
     stunMode: eventCardModes.stunMode,
     hypnoticLureMode: eventCardModes.hypnoticLureMode,
     chantEntanglementMode: eventCardModes.chantEntanglementMode,
+    moguSymbioticSelfHealingMode: eventCardModes.moguSymbioticSelfHealingMode,
+    moguReleaseSporesMode: eventCardModes.moguReleaseSporesMode,
     sneakMode: eventCardModes.sneakMode,
     glacialShiftMode: eventCardModes.glacialShiftMode,
     withdrawMode: eventCardModes.withdrawMode,
@@ -975,6 +1003,8 @@ export function useCellInteraction({
     annihilateHighlights: eventCardModes.annihilateHighlights,
     mindControlHighlights: eventCardModes.mindControlHighlights,
     entanglementHighlights: eventCardModes.entanglementHighlights,
+    moguSymbioticSelfHealingHighlights: eventCardModes.moguSymbioticSelfHealingHighlights,
+    moguReleaseSporesHighlights: eventCardModes.moguReleaseSporesHighlights,
     sneakHighlights: eventCardModes.sneakHighlights,
     glacialShiftHighlights: eventCardModes.glacialShiftHighlights,
     withdrawHighlights: eventCardModes.withdrawHighlights,
@@ -987,11 +1017,15 @@ export function useCellInteraction({
     handleConfirmDiscard, handlePlayEvent: eventCardModes.handlePlayEvent, handleEndPhase,
     handleConfirmMindControl: eventCardModes.handleConfirmMindControl,
     handleConfirmEntanglement: eventCardModes.handleConfirmEntanglement,
+    handleConfirmMoguSymbioticSelfHealing: eventCardModes.handleConfirmMoguSymbioticSelfHealing,
+    handleSkipMoguSymbioticSelfHealing: eventCardModes.handleSkipMoguSymbioticSelfHealing,
+    handleConfirmMoguReleaseSpores: eventCardModes.handleConfirmMoguReleaseSpores,
+    handleSkipMoguReleaseSpores: eventCardModes.handleSkipMoguReleaseSpores,
     handleConfirmSneak: eventCardModes.handleConfirmSneak,
     handleConfirmGlacialShift: eventCardModes.handleConfirmGlacialShift,
     handleConfirmMindCapture,
     handleConfirmBeforeAttackCards, handleCancelBeforeAttack,
-    handlePlayMagicEvent, handleDiscardMagicEvent, handleCancelMagicEventChoice, handleCancelEventTargetInteraction,
+    handlePlayMagicEvent, handleDiscardMagicEvent, handleCancelMagicEventChoice, handleCancelEventTargetInteraction, handleSystemAbilityChoice,
     clearAllEventModes: eventCardModes.clearAllEventModes,
     hasActiveEventMode: eventCardModes.hasActiveEventMode,
     isMandatoryAbilityActive,

@@ -22,6 +22,7 @@ import {
     processTokenUsage,
     finalizeTokenResponse,
     hasDefensiveTokens,
+    hasBeforeDamageReceivedCard,
     createTokenResponseRequestedEvent,
     getUsableTokenAmountForTiming,
 } from './tokenResponse';
@@ -195,6 +196,8 @@ export function executeTokenCommand(
                             actualDamage: payload.actualDamage ?? payload.amount,
                             sourceAbilityId: payload.sourceAbilityId,
                             sourcePlayerId: payload.sourcePlayerId,
+                            damageScope: payload.damageScope,
+                            unblockable: payload.unblockable,
                             sourceCommandType: customEvent.sourceCommandType,
                         });
                     }
@@ -237,9 +240,17 @@ export function executeTokenCommand(
             }
             
             // 检查是否需要切换到下一个响应者
-            if (pendingDamage.responseType === 'beforeDamageDealt' && !pendingDamage.unblockable) {
-                // 攻击方跳过加伤，检查防御方是否有可用 Token
-                if (hasDefensiveTokens(state, pendingDamage.targetPlayerId, pendingDamage.damageScope)) {
+            if (
+                pendingDamage.responseType === 'beforeDamageDealt'
+                && state.pendingAttack?.isUltimate !== true
+            ) {
+                // 攻击方结束增伤后，普通不可防御伤害仍允许符合条件的卡牌与状态 Token 响应。
+                const hasDefenderResponse = hasDefensiveTokens(
+                    state,
+                    pendingDamage.targetPlayerId,
+                    pendingDamage.damageScope,
+                ) || hasBeforeDamageReceivedCard(state, pendingDamage.targetPlayerId);
+                if (hasDefenderResponse) {
                     // 切换到防御方响应
                     const newPendingDamage: PendingDamage = {
                         ...pendingDamage,

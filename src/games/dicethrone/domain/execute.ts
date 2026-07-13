@@ -37,6 +37,7 @@ import {
     getTokenStackLimit,
     getSeatingOrder,
     isTeamMode,
+    getPendingBonusSettlementDice,
 } from './rules';
 import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
 import { applyEvents } from './utils';
@@ -74,6 +75,44 @@ const isArtificerNanobotPassiveActivation = (
 const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
     if (!playerId) return false;
     return findPlayerAbility(state, playerId, abilityId) !== null;
+};
+
+const buildAfterRollConfirmedWindowEvent = (
+    state: DiceThroneCore,
+    rollerId: PlayerId,
+    phase: TurnPhase,
+    timestamp: number,
+    commandType: string,
+): ResponseWindowOpenedEvent | null => {
+    const rollSignature = buildAfterRollConfirmedSignature(state);
+    if (hasAfterRollConfirmedWindowBeenHandled(state, rollSignature)) {
+        return null;
+    }
+
+    const responseTriggerId = getCombatOpponentId(state, rollerId) ?? rollerId;
+    const responderQueue = getResponderQueue(
+        state,
+        'afterRollConfirmed',
+        responseTriggerId,
+        undefined,
+        rollerId,
+        phase,
+    );
+    if (responderQueue.length === 0) {
+        return null;
+    }
+
+    return {
+        type: 'RESPONSE_WINDOW_OPENED',
+        payload: {
+            windowId: `afterRollConfirmed-${timestamp}`,
+            responderQueue,
+            windowType: 'afterRollConfirmed',
+            sourceId: rollSignature,
+        },
+        sourceCommandType: commandType,
+        timestamp,
+    };
 };
 
 const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): string => {
@@ -118,7 +157,7 @@ const buildSwappedSeatingOrder = (
  * 设计原则（规则 §4.3/§4.4）：
  * - 进攻技能默认可防御（进入防御阶段）
  * - 标记 'unblockable' 的技能/变体不可防御
- * - 终极技能（'ultimate' tag）不可防御（规则 §4.4：不可阻挡）
+ * - 终极技能（'ultimate' tag）产生 Ultimate Damage，因此不可防御且不可避免
  * - 没有任何伤害效果的技能不进入防御阶段（无需防御）
  */
 const isDefendableAttack = (state: DiceThroneCore, attackerId: string, abilityId: string): boolean => {
@@ -131,7 +170,7 @@ const isDefendableAttack = (state: DiceThroneCore, attackerId: string, abilityId
     const variantTags = match.variant?.tags ?? [];
     const abilityTags = match.ability.tags ?? [];
 
-    // 终极技能：不可阻挡（规则 §4.4）
+    // 终极技能会产生 Ultimate Damage：不可防御且不可避免
     if (abilityTags.includes('ultimate')) return false;
 
     // 不可防御标签：跳过防御阶段
@@ -440,36 +479,22 @@ export function execute(
             // - 排除 rollerId（当前投掷方），因为他们可以主动出牌
             // - triggerId 是对手（优先响应）
             // 例如：防御阶段防御方确认骰面，攻击方可以响应（强制重投等）
+            // 进攻投掷阶段需要等攻击技能选定后再给对手改骰响应时机。
             // 
             // 关键：必须用 ROLL_CONFIRMED 事件应用后的状态来检查响应窗口
             // 否则 rollConfirmed 仍为 false，requireRollConfirmed 的卡牌（如抬一手）会被过滤掉
             const stateAfterConfirm = applyEvents(state, [event] as DiceThroneEvent[], reduce);
-            const rollSignature = buildAfterRollConfirmedSignature(stateAfterConfirm);
-            if (hasAfterRollConfirmedWindowBeenHandled(stateAfterConfirm, rollSignature)) {
-                break;
-            }
-            const responseTriggerId = getCombatOpponentId(stateAfterConfirm, rollerId) ?? rollerId;
-            const responderQueue = getResponderQueue(
-                stateAfterConfirm,
-                'afterRollConfirmed',
-                responseTriggerId,
-                undefined,
-                rollerId,
-                phase,
-            );
-            if (responderQueue.length > 0) {
-                const windowId = `afterRollConfirmed-${timestamp}`;
-                const responseWindowEvent: ResponseWindowOpenedEvent = {
-                    type: 'RESPONSE_WINDOW_OPENED',
-                    payload: {
-                        windowId,
-                        responderQueue,
-                        windowType: 'afterRollConfirmed',
-                        sourceId: rollSignature,
-                    },
-                    sourceCommandType: command.type,
+            if (phase !== 'offensiveRoll') {
+                const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
+                    stateAfterConfirm,
+                    rollerId,
+                    phase,
                     timestamp,
-                };
+                    command.type,
+                );
+                if (!responseWindowEvent) {
+                    break;
+                }
                 events.push(responseWindowEvent);
                 return events; // 等待响应窗口关闭
             }
@@ -517,7 +542,7 @@ export function execute(
                     : (getDefaultOpponentId(state, state.activePlayerId) ?? getNextPlayerId(state));
                 const isDefendable = isDefendableAttack(state, state.activePlayerId, abilityId);
                 
-                // 检查是否为终极技能
+                // 检查这次技能是否会产生 Ultimate Damage
                 const match = findPlayerAbility(state, state.activePlayerId, abilityId);
                 const isUltimate = match?.ability?.tags?.includes('ultimate') ?? false;
                 
@@ -534,6 +559,19 @@ export function execute(
                     timestamp,
                 };
                 events.push(attackEvent);
+
+                const stateAfterAttack = applyEvents(state, events as DiceThroneEvent[], reduce);
+                const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
+                    stateAfterAttack,
+                    state.activePlayerId,
+                    phase,
+                    timestamp,
+                    command.type,
+                );
+                if (responseWindowEvent) {
+                    events.push(responseWindowEvent);
+                    return events; // 等待攻击选定后的改骰响应窗口关闭
+                }
             }
             break;
         }
@@ -603,20 +641,23 @@ export function execute(
         case 'MODIFY_DIE': {
             const { dieId, newValue } = command.payload as { dieId: number; newValue: number };
             const die = state.dice.find(d => d.id === dieId);
-            if (die) {
+            const pendingBonusDie = state.pendingBonusDiceSettlement?.allowDiceModification === true
+                ? getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).find(d => d.index === dieId)
+                : undefined;
+            if (die || pendingBonusDie) {
                 const event: DieModifiedEvent = {
                     type: 'DIE_MODIFIED',
-                    payload: { dieId, oldValue: die.value, newValue, playerId: command.playerId },
+                    payload: { dieId, oldValue: die?.value ?? pendingBonusDie?.value ?? newValue, newValue, playerId: command.playerId },
                     sourceCommandType: command.type,
                     timestamp,
                 };
                 events.push(event);
                 
-                // 规则 3.3 步骤 3：如果骰面被修改且已选择技能，触发重选
-                // 注意：终极技能不受影响（行动锁定）
+                // 规则 3.3 步骤 3：如果骰面被修改且已选择技能，触发重选。
+                // 终极技能只有正式发动后才行动锁定；发动前仍可被改骰取消。
                 if (phase === 'offensiveRoll'
                     && state.pendingAttack
-                    && !state.pendingAttack.isUltimate
+                    && die
                     && newValue !== die.value) {
                     events.push({
                         type: 'ABILITY_RESELECTION_REQUIRED',
@@ -640,6 +681,7 @@ export function execute(
             const { dieId } = command.payload as { dieId: number };
             const die = state.dice.find(d => d.id === dieId);
             const newValue = random.d(6);
+            const rollerId = getRollerId(state, phase);
             const duelAttackerDieActive = state.pendingAttack?.defenseAbilityId === 'duel'
                 && phase === 'defensiveRoll'
                 && dieId === 1
@@ -653,15 +695,15 @@ export function execute(
                         : die?.value ?? newValue,
                     newValue,
                     playerId: command.playerId,
-                    ownerId: duelAttackerDieActive ? state.pendingAttack?.attackerId : die?.ownerId,
+                    ownerId: duelAttackerDieActive ? state.pendingAttack?.attackerId : die?.ownerId ?? rollerId,
                 },
                 sourceCommandType: command.type,
                 timestamp,
             };
             events.push(event);
             
-            // 规则 3.3 步骤 3：如果骰面被重掷且已选择技能，触发重选
-            // 注意：终极技能不受影响（行动锁定）
+            // 规则 3.3 步骤 3：如果骰面被重掷且已选择技能，触发重选。
+            // 终极技能只有正式发动后才行动锁定；发动前仍可被重掷取消。
             const currentInteraction = matchState.sys?.interaction?.current;
             const interactionMeta = currentInteraction?.kind === 'multistep-choice'
                 ? (currentInteraction.data as { meta?: { dtType?: string; skipAbilityReselection?: boolean } } | undefined)?.meta
@@ -671,8 +713,7 @@ export function execute(
 
             if (!skipAbilityReselection
                 && phase === 'offensiveRoll'
-                && state.pendingAttack
-                && !state.pendingAttack.isUltimate) {
+                && state.pendingAttack) {
                 events.push({
                     type: 'ABILITY_RESELECTION_REQUIRED',
                     payload: {
@@ -695,28 +736,27 @@ export function execute(
             const targetPlayer = state.players[targetPlayerId];
             if (targetPlayer) {
                 if (statusId) {
-                    // 移除单个状态
+                    // 移除单个状态/标记的一层；“移除全部”走 statusId 为空的分支。
                     const currentStacks = targetPlayer.statusEffects[statusId] ?? 0;
                     if (currentStacks > 0) {
                         // 检查状态是否可被移除
                         if (isRemovableStatusId(state, statusId)) {
                             const event: StatusRemovedEvent = {
                                 type: 'STATUS_REMOVED',
-                                payload: { targetId: targetPlayerId, statusId, stacks: currentStacks },
+                                payload: { targetId: targetPlayerId, statusId, stacks: 1 },
                                 sourceCommandType: command.type,
                                 timestamp,
                             };
                             events.push(event);
                         }
-                    }
-                    // 也检查 tokens
-                    const tokenAmount = targetPlayer.tokens[statusId] ?? 0;
-                    if (tokenAmount > 0) {
+                    } else {
+                        // 也检查 tokens
+                        const tokenAmount = targetPlayer.tokens[statusId] ?? 0;
                         // 检查 token 是否可被移除
-                        if (isRemovableStatusId(state, statusId)) {
+                        if (tokenAmount > 0 && isRemovableStatusId(state, statusId)) {
                             events.push({
                                 type: 'TOKEN_CONSUMED',
-                                payload: { playerId: targetPlayerId, tokenId: statusId, amount: tokenAmount, newTotal: 0 },
+                                payload: { playerId: targetPlayerId, tokenId: statusId, amount: 1, newTotal: Math.max(0, tokenAmount - 1) },
                                 sourceCommandType: command.type,
                                 timestamp,
                             } as DiceThroneEvent);
@@ -1099,10 +1139,10 @@ export function execute(
                     timestamp: timestamp + 1,
                 } as DieRerolledEvent);
 
-                // 重掷后如果在进攻阶段且已选技能，触发重选
+                // 重掷后如果在进攻阶段且已选技能，触发重选。
+                // 终极技能只有正式发动后才行动锁定；发动前仍可被重掷取消。
                 if (phase === 'offensiveRoll'
                     && state.pendingAttack
-                    && !state.pendingAttack.isUltimate
                     && newValue !== die.value) {
                     events.push({
                         type: 'ABILITY_RESELECTION_REQUIRED',

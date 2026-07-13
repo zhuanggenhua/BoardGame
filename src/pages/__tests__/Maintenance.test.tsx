@@ -288,18 +288,18 @@ const translationMap: Record<string, string> = {
     'admin.systemHealth.overview.banned_users': '封禁用户',
     'admin.roomsPage.online.online': '在线',
     'admin.roomsPage.online.offline': '离线',
-    'ota.footer.bundleLabel': 'Bundle {{version}}',
+    'ota.footer.bundleLabel': '更新号 {{version}}',
     'ota.footer.appLabel': 'App {{version}}',
-    'ota.footer.latestLabel': 'Latest {{version}}',
+    'ota.footer.latestLabel': '最新更新 {{version}}',
     'ota.footer.mismatchUpdateNow': 'OTA 未对齐，点击立即更新',
     'ota.footer.checkNow': '检查更新',
-    'ota.footer.currentBundleTitle': 'current bundle version {{version}}',
+    'ota.footer.currentBundleTitle': 'current update number {{version}}',
     'ota.footer.currentAppShellTitle': 'app version {{version}}',
-    'ota.footer.latestOtaTitle': 'latest OTA version {{version}}',
+    'ota.footer.latestOtaTitle': 'latest update number {{version}}',
     'ota.footer.statusMismatchUpdateNow': 'versions are not aligned',
     'ota.footer.statusCheckNow': 'check for updates now',
-    'ota.footer.ariaBundleAndApp': 'current bundle version {{bundleVersion}}, app version {{appVersion}}',
-    'ota.footer.ariaBundleAndAppMismatch': 'current bundle version {{bundleVersion}}, app version {{appVersion}}, latest OTA version {{latestVersion}}, versions are not aligned',
+    'ota.footer.ariaBundleAndApp': 'current update number {{bundleVersion}}, app version {{appVersion}}',
+    'ota.footer.ariaBundleAndAppMismatch': 'current update number {{bundleVersion}}, app version {{appVersion}}, latest update number {{latestVersion}}, versions are not aligned',
 };
 
 vi.mock('react-i18next', () => ({
@@ -1553,7 +1553,7 @@ describe('Home native runtime footer', () => {
         render(<Home />);
 
         await waitFor(() => {
-            expect(screen.getByText(`Bundle ${currentAppVersionLabel}`)).toBeInTheDocument();
+            expect(screen.getByText(`更新号 ${currentAppVersionLabel}`)).toBeInTheDocument();
         });
 
         expect(screen.getByText(`App ${currentAppVersionLabel}`)).toBeInTheDocument();
@@ -1569,17 +1569,20 @@ describe('Home native runtime footer', () => {
             updaterLoaded: true,
             nativeVersion: '0.5.1',
             currentBundleVersion: '0.5.0-ota-2026-04-04',
+            currentDisplayVersion: '600',
             manifestVersion: '0.5.1-ota-2026-04-04',
+            manifestDisplayVersion: '601',
         };
 
         render(<Home />);
 
         await waitFor(() => {
-            expect(screen.getByText('Bundle 0.5.0')).toBeInTheDocument();
+            expect(screen.getByText('更新号 600')).toBeInTheDocument();
         });
 
         expect(screen.getByText('App 0.5.1')).toBeInTheDocument();
-        expect(screen.getByText('Latest 0.5.1')).toBeInTheDocument();
+        expect(screen.getByText('最新更新 601')).toBeInTheDocument();
+        expect(screen.queryByText(/0\.5\.1-ota-2026-04-04/)).toBeNull();
         expect(screen.getByText('OTA 未对齐，点击立即更新')).toBeInTheDocument();
     });
 
@@ -1593,7 +1596,9 @@ describe('Home native runtime footer', () => {
             updaterLoaded: true,
             nativeVersion: '0.5.1',
             currentBundleVersion: '0.5.0-ota-2026-04-04',
+            currentDisplayVersion: '600',
             manifestVersion: '0.5.1-ota-2026-04-04',
+            manifestDisplayVersion: '601',
         };
 
         render(<Home />);
@@ -1623,13 +1628,15 @@ describe('Home native runtime footer', () => {
             updaterLoaded: true,
             nativeVersion: '0.5.1',
             currentBundleVersion: '0.5.1-ota-2026-04-04',
+            currentDisplayVersion: '601',
             manifestVersion: '0.5.1-ota-2026-04-04',
+            manifestDisplayVersion: '601',
         };
 
         render(<Home />);
 
         const footerButton = await screen.findByRole('button', {
-            name: /current bundle version 0\.5\.1, app version 0\.5\.1/i,
+            name: /current update number 601, app version 0\.5\.1/i,
         });
 
         await act(async () => {
@@ -1641,6 +1648,6 @@ describe('Home native runtime footer', () => {
             applyMode: 'immediate',
             initialImmediatePhase: 'checking',
         });
-        expect(screen.queryByText('Bundle 0.5.1-ota-2026-04-04')).toBeNull();
+        expect(screen.queryByText('更新号 0.5.1-ota-2026-04-04')).toBeNull();
     });
 });

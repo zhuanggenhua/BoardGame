@@ -1,8 +1,10 @@
 import {
     getFriendlyReceivingRegionSnapshot,
+    getPendingActionSourceForceSnapshot,
     isRegionControlledByFaction,
     isRegionFriendlyToFaction,
 } from './battleState';
+import { getQidahenEffectivePopulation } from './populationRules';
 import { isQidahenCityRuntimeRegion } from './regionConfig';
 import {
     collapseCompatPiecesToSpecialTroopStacks,
@@ -29,6 +31,46 @@ import type {
     QidahenSpecialTroopStack,
     QidahenTroopKind,
 } from './types';
+
+export const pendingBattleHasDefenderArtillery = (
+    state: QidahenCore,
+    pendingTargetAction: QidahenPendingTargetAction,
+): boolean => {
+    const targetRegion = state.regions.find((region) => (
+        !region.isLogicalRegion
+        && region.id === pendingTargetAction.targetRuntimeRegionId
+    ));
+    return Boolean(targetRegion?.specialTroops.some((stack) => (
+        stack.troopKind === 'artillery'
+        && stack.count > 0
+    )));
+};
+
+export const pendingAttackHasCommittedTroopKind = (
+    state: QidahenCore,
+    pendingTargetAction: QidahenPendingTargetAction,
+    troopKind: QidahenTroopKind,
+): boolean => {
+    const sourceRegion = getPendingActionSourceForceSnapshot(state, pendingTargetAction);
+    if (!sourceRegion) {
+        return false;
+    }
+    const committedSpecialTroops = takeCommittedSpecialTroopStacks(
+        sourceRegion,
+        pendingTargetAction.committedTroops,
+        pendingTargetAction.movementProfileId,
+    );
+    const committedSpecialCount = getSpecialTroopCount({
+        specialTroops: committedSpecialTroops,
+    });
+    const committedGenericTroops = Math.max(
+        0,
+        pendingTargetAction.committedTroops - committedSpecialCount,
+    );
+    return expandSpecialTroopStacksToCompatPieces(committedSpecialTroops)
+        .some((piece) => piece.troopKind === troopKind)
+        || (troopKind === 'infantry' && committedGenericTroops > 0);
+};
 
 export const applyCasualtiesToSpecialStacks = (
     stacks: QidahenSpecialTroopStack[],
@@ -125,6 +167,7 @@ export const applyCommittedTroopRemovalToRegion = (
     region: QidahenCore['regions'][number],
     committedTroops: number,
     movementProfileId?: string | null,
+    selectedSpecialPieceIds?: readonly string[],
 ): QidahenCore['regions'][number] => {
     const remainingRemoval = Math.max(0, committedTroops);
     if (remainingRemoval <= 0 || region.specialTroops.length === 0) {
@@ -132,14 +175,17 @@ export const applyCommittedTroopRemovalToRegion = (
     }
 
     const allPieces = expandSpecialTroopStacksToCompatPieces(region.specialTroops);
-    const removedPieceIds = new Set(
-        sortCompatPiecesForSelection(
-            allPieces.filter((piece) => isTroopKindAllowedForMovementProfile(piece.troopKind, movementProfileId)),
-            'highest-level',
-        )
-            .slice(0, remainingRemoval)
-            .map((piece) => piece.id),
-    );
+    const explicitPieceIds = new Set(selectedSpecialPieceIds ?? []);
+    const removedPieceIds = explicitPieceIds.size > 0
+        ? explicitPieceIds
+        : new Set(
+            sortCompatPiecesForSelection(
+                allPieces.filter((piece) => isTroopKindAllowedForMovementProfile(piece.troopKind, movementProfileId)),
+                'highest-level',
+            )
+                .slice(0, remainingRemoval)
+                .map((piece) => piece.id),
+        );
 
     return {
         ...region,
@@ -196,7 +242,7 @@ export const takePreferredCityGarrison = (
     };
 };
 
-const applyRoutDamageToSpecialStacks = (
+export const applyRoutDamageToSpecialStacks = (
     stacks: QidahenSpecialTroopStack[],
 ): {
     damagedTroops: number;
@@ -243,7 +289,8 @@ const findDefenderRetreatRegions = (
             const rightSource = getFriendlyReceivingRegionSnapshot(right);
             return Number(isRegionControlledByFaction(right, defenderFactionId)) - Number(isRegionControlledByFaction(left, defenderFactionId))
                 || rightSource.troops - leftSource.troops
-                || rightSource.population - leftSource.population
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
         })
 );

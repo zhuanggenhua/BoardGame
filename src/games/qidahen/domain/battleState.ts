@@ -1,6 +1,10 @@
 import { getQidahenBattleResolutionTroopCount, QIDAHEN_NEUTRAL_GARRISON_MAX_TROOPS } from './attackRules';
 import { getNonSiegedCityActionSourceSnapshot } from './actionSourceRegionState';
+import { getQidahenBattleForceCommitments } from './battleForceCommitments';
+import { takeCommittedSpecialTroopStacks } from './movementProfileTroopSelection';
+import { getQidahenEffectivePopulation } from './populationRules';
 import { isQidahenCityRuntimeRegion, isQidahenKoreaRuntimeRegionId } from './regionConfig';
+import { mergeSpecialTroopStackGroupsAsPieces } from './troopCompat';
 import type {
     QidahenBattleMode,
     QidahenCore,
@@ -176,6 +180,41 @@ export const getPendingActionSourceForceSnapshot = (
     state: QidahenCore,
     pendingTargetAction: QidahenPendingTargetAction,
 ): Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'specialTroops'> | null => {
+    const forceCommitments = getQidahenBattleForceCommitments(pendingTargetAction);
+    if (forceCommitments.length > 1) {
+        const sourceForces = forceCommitments.flatMap((commitment) => {
+            const sourceRegion = state.regions.find((region) => (
+                !region.isLogicalRegion
+                && region.id === commitment.sourceRegionId
+            ));
+            if (!sourceRegion) {
+                return [];
+            }
+            const sourceSnapshot = getRegionSiegeAttackerForceSnapshot(
+                sourceRegion,
+                pendingTargetAction.attackerFactionId,
+            ) ?? getNonSiegedCityActionSourceSnapshot(sourceRegion);
+            return [{
+                committedTroops: Math.min(commitment.committedTroops, sourceSnapshot.troops),
+                specialTroops: takeCommittedSpecialTroopStacks(
+                    sourceSnapshot,
+                    commitment.committedTroops,
+                    commitment.movementProfileId,
+                ),
+            }];
+        });
+        if (sourceForces.length === 0) {
+            return null;
+        }
+        return {
+            controller: pendingTargetAction.attackerFactionId,
+            troops: sourceForces.reduce((total, force) => total + force.committedTroops, 0),
+            specialTroops: sourceForces.reduce(
+                (merged, force) => mergeSpecialTroopStackGroupsAsPieces(merged, force.specialTroops),
+                [],
+            ),
+        };
+    }
     const positionRegionId = getPendingActionAttackerPositionRegionId(pendingTargetAction);
     if (!positionRegionId) {
         return null;
@@ -216,7 +255,10 @@ const getNeutralGarrisonTroops = (
 ): number => {
     const battleRegion = getBattleRegionSnapshot(region, battleMode);
     return battleRegion.controller === 'neutral' && battleRegion.troops <= 0
-        ? Math.max(0, Math.min(battleRegion.population, QIDAHEN_NEUTRAL_GARRISON_MAX_TROOPS))
+        ? Math.min(
+            getQidahenEffectivePopulation(region, battleRegion.population),
+            QIDAHEN_NEUTRAL_GARRISON_MAX_TROOPS,
+        )
         : 0;
 };
 

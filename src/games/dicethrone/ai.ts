@@ -26,6 +26,7 @@ import type {
     AiSelectPlayerDecisionDescriptor,
     GameAiRuntime,
     LocalAiActionScorer,
+    OnlineAiDecisionVisibility,
 } from '../../engine/ai';
 import type { InteractionDescriptor as EngineInteractionDescriptor, MultistepChoiceData, PromptMultiConfig } from '../../engine/systems/InteractionSystem';
 import { DiceThroneDomain } from './domain';
@@ -79,6 +80,28 @@ const isDiceThroneCharacterReadyForAiSetup = (character: CharacterDefinition): b
 const AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG = DICETHRONE_CHARACTER_CATALOG.filter(
     isDiceThroneCharacterReadyForAiSetup,
 );
+
+const resolveDiceThroneOnlineDecisionOwnerId = (
+    state: MatchState<unknown> | null | undefined,
+): PlayerId | null => {
+    const diceThroneState = state as DiceThroneState | null | undefined;
+    if (diceThroneState?.sys?.phase !== 'defensiveRoll') return null;
+    const defenderId = diceThroneState.core?.pendingAttack?.defenderId;
+    return typeof defenderId === 'string' && defenderId.length > 0 ? defenderId : null;
+};
+
+const resolveDiceThroneOnlineDecisionVisibility = (args: {
+    playerId: PlayerId;
+    sharedState: MatchState<unknown>;
+    privateOverlay: MatchState<unknown> | null;
+}): OnlineAiDecisionVisibility | null => {
+    const sharedDecisionOwnerId = resolveDiceThroneOnlineDecisionOwnerId(args.sharedState);
+    if (sharedDecisionOwnerId !== args.playerId) {
+        return null;
+    }
+
+    return 'private-required';
+};
 
 type DiceRequirement =
     | { kind: 'faces'; faces: Record<string, number> }
@@ -4844,5 +4867,6 @@ export const diceThroneAiRuntime: GameAiRuntime = {
             proposedAction,
         });
     },
+    resolveOnlineDecisionVisibility: resolveDiceThroneOnlineDecisionVisibility,
     shouldUseRemoteDecision: shouldUseRemoteDecisionForDiceThrone,
 };

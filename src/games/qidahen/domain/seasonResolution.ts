@@ -20,6 +20,10 @@ import {
 import { hasActiveCharacter } from './characterPresenceAccessors';
 import { getFactionDisplayName, toFactionLabel } from './factionLabelSemantics';
 import { getEffectiveKoreaTributeCardsForFaction } from './koreaTributeRules';
+import {
+    getQidahenEffectiveCityPopulation,
+    getQidahenEffectivePopulation,
+} from './populationRules';
 import { isQidahenKoreaRuntimeRegionId } from './regionConfig';
 import {
     QIDAHEN_HAN_RUNTIME_REGION_IDS,
@@ -82,22 +86,6 @@ export interface QidahenCharacterJudgementResolution {
 }
 
 type QidahenMidyearResolution = Pick<QidahenCore, 'factions' | 'lastSeasonSummary'>;
-
-const hasQidahenDroughtMarker = (region: QidahenCore['regions'][number]): boolean => (
-    region.eventMarkers.some((marker) => marker.kind === 'drought')
-);
-
-const getQidahenEffectivePopulationForUpkeep = (region: QidahenCore['regions'][number]): number => (
-    hasQidahenDroughtMarker(region)
-        ? 0
-        : region.population
-);
-
-const getQidahenEffectiveCityPopulationForUpkeep = (region: QidahenCore['regions'][number]): number => (
-    hasQidahenDroughtMarker(region)
-        ? 0
-        : region.cityState?.population ?? 0
-);
 
 type QidahenNewYearResolution = Pick<
     QidahenCore,
@@ -838,8 +826,8 @@ export const resolveQidahenMidyear = (
         if (region.siegeState) {
             continue;
         }
-        const totalPopulation = getQidahenEffectivePopulationForUpkeep(region)
-            + getQidahenEffectiveCityPopulationForUpkeep(region);
+        const totalPopulation = getQidahenEffectivePopulation(region)
+            + getQidahenEffectiveCityPopulation(region);
         const totalTroops = region.troops + (region.cityState?.troops ?? 0);
         if (totalPopulation > totalTroops) {
             landTaxGain[region.controller] += 1;
@@ -983,7 +971,7 @@ export const resolveQidahenNewYear = (
         const regularTroopCount = isMingNonHanRegion ? getRegularTroopCount(region.cityState, 'ming') : 0;
         const supportPopulation = isKoreaRegion
             ? 0
-            : Math.max(0, getQidahenEffectiveCityPopulationForUpkeep(region) - regularTroopCount);
+            : Math.max(0, getQidahenEffectiveCityPopulation(region) - regularTroopCount);
         const citySupportGap = Math.max(0, region.cityState.troops - supportPopulation);
         if (citySupportGap <= 0) {
             return;
@@ -1086,7 +1074,7 @@ export const resolveQidahenNewYear = (
         const regularTroopCount = isMingNonHanRegion ? getRegularTroopCount(region, 'ming') : 0;
         const supportPopulation = isKoreaRegion || isFriendlyNeutralRegion
             ? 0
-            : Math.max(0, getQidahenEffectivePopulationForUpkeep(region) - regularTroopCount);
+            : Math.max(0, getQidahenEffectivePopulation(region) - regularTroopCount);
         const supportGap = Math.max(0, region.troops - supportPopulation);
         if (supportGap <= 0) {
             applyCityStateUpkeep(region, '守城耗损');

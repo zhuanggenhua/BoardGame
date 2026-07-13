@@ -17,6 +17,7 @@
 - [x] 3.3 Keep Android compatibility exports and UI components during migration.
 - [x] 3.4 Add iOS OTA config resolution and iOS manifest URL support.
 - [x] 3.5 Ensure iOS native update path points to TestFlight documentation/state, not APK installer behavior.
+- [x] 3.6 Enforce mandatory OTA manifests and blocking immediate application across mobile platforms.
 
 ## 4. Mobile Game Packages
 
@@ -29,6 +30,7 @@
 - [x] 5.1 Add iOS OTA publish script skeleton or platform option while preserving Android scripts.
 - [x] 5.2 Add iOS docs for channel naming, artifact paths, and manual first release.
 - [x] 5.3 Defer iOS CI signing workflow until Apple credentials are available.
+- [x] 5.4 Reuse the lightweight OTA file classifier for iOS publishing.
 
 ## 6. Verification
 
@@ -37,3 +39,4 @@
 - [x] 6.3 Run Android doctor or equivalent config smoke if Android scripts are touched.
 - [ ] 6.4 On Mac, verify `npx cap sync ios` and Xcode archive.
 - [ ] 6.5 On TestFlight device, verify login, room flow, game launch, H5 OTA check, and package loading behavior.
+- [x] 6.6 Verify iOS OTA manifests are mandatory and bundles exclude nested game assets.

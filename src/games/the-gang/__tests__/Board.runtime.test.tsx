@@ -1,12 +1,20 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { useUndo } from '../../../contexts/UndoContext';
 import Board from '../Board';
 import { TheGangDomain, buildShowdownResults } from '../domain';
 import { THE_GANG_COMMANDS, type ShowdownPlayerResult, type TheGangCore } from '../domain/types';
+import { THE_GANG_AUDIO_CONFIG } from '../audio.config';
+import { THE_GANG_MANIFEST } from '../manifest';
+
+const useGameAudioMock = vi.fn();
+
+vi.mock('../../../lib/audio/useGameAudio', () => ({
+    useGameAudio: (...args: unknown[]) => useGameAudioMock(...args),
+}));
 
 const stateOf = (core: TheGangCore): MatchState<TheGangCore> => ({
     core,
@@ -79,7 +87,7 @@ function HarnessBoard() {
                 dispatch={dispatch as never}
                 playerID={playerID}
                 matchData={[
-                    { id: 0, name: '玩家 1', isConnected: true },
+                    { id: 0, name: '玩家 1', isConnected: true, isOwner: true },
                     { id: 1, name: '玩家 2', isConnected: true },
                     { id: 2, name: '玩家 3', isConnected: true },
                 ]}
@@ -143,7 +151,7 @@ const buildCoreReadyForShowdown = () => {
 };
 
 const defaultMatchData = [
-    { id: 0, name: '玩家 1', isConnected: true },
+    { id: 0, name: '玩家 1', isConnected: true, isOwner: true },
     { id: 1, name: 'AI 2 号位', isConnected: true },
     { id: 2, name: 'AI 3 号位', isConnected: true },
 ];
@@ -175,6 +183,19 @@ const expectBggTableAnchors = () => {
 };
 
 describe('The Gang Board 运行入口', () => {
+    test('接入 The Gang 音效和 BGM 运行时配置', () => {
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        renderBoardForCore(initial);
+
+        expect(useGameAudioMock).toHaveBeenCalledWith(expect.objectContaining({
+            config: THE_GANG_AUDIO_CONFIG,
+            gameId: THE_GANG_MANIFEST.id,
+            G: initial,
+            ctx: { isGameOver: false },
+        }));
+    });
+
     test('真实 Board 可以完成四轮抢劫并显示摊牌结果', () => {
         const readyForShowdown = buildCoreReadyForShowdown();
         const { unmount } = renderBoardForCore(readyForShowdown);
@@ -185,11 +206,16 @@ describe('The Gang Board 运行入口', () => {
         expect(readyForShowdown.roundHistory).toHaveLength(3);
         expect(Object.keys(readyForShowdown.currentRoundChips)).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="card-river"] img')).toHaveLength(5);
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
-        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(2);
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
+        expect(document.querySelectorAll('[data-bgg-zone="token-empty-slot"]')).toHaveLength(0);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('玩家 1');
         expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).not.toHaveTextContent('玩家 1');
+        expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-hand-rank-nameplate-toggle')).not.toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-utility-dock')).toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeInTheDocument();
         expect(screen.getAllByText('AI 2 号位').length).toBeGreaterThan(0);
         expect(screen.getAllByText('AI 3 号位').length).toBeGreaterThan(0);
 
@@ -223,14 +249,22 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.queryByRole('button', { name: '摊牌' })).not.toBeInTheDocument();
     });
 
-    test('选筹阶段只在有公开状态时显示对手区，不常驻玩家列表', () => {
+    test('选筹阶段显示玩家名但不显示无意义切座，也不在顶部重复底牌', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
         const { unmount } = renderBoardForCore(initial);
 
-        expect(document.querySelector('[data-tutorial-id="the-gang-opponent-state"]')).toBeInTheDocument();
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(0);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 3 号位');
+        expect(document.querySelector('[data-tutorial-id="the-gang-player-list"]')).toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('玩家 1');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 3 号位');
+        expect(document.querySelector('[data-testid="the-gang-hotseat-switcher"]')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-testid="the-gang-showdown-hotseat-switcher"]')).not.toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="opponent-cards"] img')).toHaveLength(0);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('2♣');
+        expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-hand-rank-nameplate-toggle')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeInTheDocument();
 
         unmount();
 
@@ -242,14 +276,210 @@ describe('The Gang Board 运行入口', () => {
         } as Parameters<typeof TheGangDomain.execute>[1]);
         renderBoardForCore(withOpponentChip);
 
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(1);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
+    });
+
+    test('选筹阶段可以直接点击对手当前轮筹码拿走', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const withOpponentChip = reduceCommand(initial, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 2 },
+            timestamp: 1,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+
+        render(
+            <Board
+                G={stateOf(withOpponentChip)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        screen.getByTestId('the-gang-take-player-chip-1').click();
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
+            __internalPlayerId: '0',
+            chip: 2,
+        });
     });
 
     test('真实 Board 会把撤回状态提供给通用 HUD 上下文', () => {
         render(<HarnessBoard />);
 
         expect(screen.getByTestId('undo-provider-state')).toHaveTextContent('0:local');
+    });
+
+    test('扩展设置面板复用牌桌折叠入口并派发规则配置命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        render(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-rules-config')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
+        expect(screen.getByTestId('the-gang-rules-modal')).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: '快速通道' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/challenges/compressed/quick-access.webp'));
+        expect(screen.getByRole('img', { name: '万能钥匙' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/challenges/compressed/master-key.webp'));
+        expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-rule-toggle-twoHand')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-rule-toggle-automode')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-rule-toggle-antiTroll')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-exit-mode-mastermind')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, {
+            __internalPlayerId: '0',
+            config: {
+                gameMode: 'texas-holdem',
+                exitChipMode: 'default',
+                omaha: true,
+                twoHand: false,
+                automode: false,
+                antiTroll: false,
+                challenges: {},
+                lockedHandRanks: [],
+            },
+        });
+
+        fireEvent.click(screen.getByTestId('the-gang-exit-mode-mastermind'));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, {
+            __internalPlayerId: '0',
+            config: {
+                gameMode: 'texas-holdem',
+                exitChipMode: 'mastermind',
+                omaha: false,
+                twoHand: false,
+                automode: false,
+                antiTroll: false,
+                challenges: {},
+                lockedHandRanks: [],
+            },
+        });
+
+        fireEvent.click(screen.getByTestId('the-gang-mode-seven-card-stud'));
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, {
+            __internalPlayerId: '0',
+            config: {
+                gameMode: 'seven-card-stud',
+                exitChipMode: 'default',
+                omaha: false,
+                twoHand: false,
+                automode: false,
+                antiTroll: false,
+                challenges: {},
+                lockedHandRanks: [],
+            },
+        });
+    });
+
+    test('扩展设置权限跟随房主标记而不是固定 0 号位', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        render(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="1"
+                matchData={[
+                    { id: 0, name: '玩家 1', isConnected: true },
+                    { id: 1, name: '玩家 2', isConnected: true, isOwner: true },
+                    { id: 2, name: '玩家 3', isConnected: true },
+                ]}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
+        fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.objectContaining({
+            __internalPlayerId: '1',
+            config: expect.objectContaining({ omaha: true }),
+        }));
+    });
+
+    test('工具面板可以发放工具牌并通过已实现工具派发使用命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const localToolCore: TheGangCore = {
+            ...initial,
+            players: {
+                ...initial.players,
+                '0': {
+                    ...initial.players['0'],
+                    toolCards: ['burner-phone', 'flashlight'],
+                    specialistCards: ['mastermind'],
+                },
+            },
+        };
+
+        const { unmount } = render(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-tools-panel')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'board.toolPanelSummary' }));
+        fireEvent.click(screen.getByRole('button', { name: 'board.dealTools' }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.DEAL_TOOLS, {
+            __internalPlayerId: '0',
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'board.resetTools' }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.RESET_TOOLS, {
+            __internalPlayerId: '0',
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'board.resetSpecialists' }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.RESET_SPECIALISTS, {
+            __internalPlayerId: '0',
+        });
+        unmount();
+
+        render(
+            <Board
+                G={stateOf(localToolCore)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'board.toolPanelSummary' }));
+        expect(screen.getByTestId('the-gang-tool-card-grid')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-specialist-card-grid')).toBeInTheDocument();
+        expect(screen.getByRole('img', { name: '一次性手机' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/tools/compressed/burner-phone.webp'));
+        expect(screen.getByRole('img', { name: '手电筒' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/tools/compressed/flashlight.webp'));
+        expect(screen.getByRole('img', { name: 'Mastermind' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/specialists/compressed/mastermind.webp'));
+        fireEvent.click(screen.getByRole('button', { name: /一次性手机/ }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.USE_TOOL, {
+            __internalPlayerId: '0',
+            tool: 'burner-phone',
+        });
+        fireEvent.click(screen.getByRole('button', { name: /手电筒/ }));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.USE_TOOL, {
+            __internalPlayerId: '0',
+            tool: 'flashlight',
+        });
     });
 });

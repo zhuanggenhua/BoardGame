@@ -49,6 +49,8 @@
 | tutorial-engine | 本轮明确跳过 | 规则文档先落地，教程作为后续 change |
 | debug-config | 仅保留底层接口，UI 暂不交付 | 可通过测试直接覆盖领域流程 |
 
+> 2026-07-10 口径更新：上表“本地热座”是 foundation 阶段的历史计划，已被后续用户裁定替代。现行正式牌桌固定单客户端玩家视角，不提供多人热座切换；本地 AI / 测试运行能力不等同于多人热座产品合同。详见 `docs/games/the-gang/user-stories/online-viewer-and-landscape-contract-2026-07-10.md`。
+
 ## Candidate Shared Extractions
 - 扑克牌牌型评估器未来可服务其它扑克类游戏，但本轮先放在 `src/games/the-gang/domain/` 内。
 - 可交换筹码选择交互未来可能抽成通用 ranking interaction，但本轮先做游戏内命令。

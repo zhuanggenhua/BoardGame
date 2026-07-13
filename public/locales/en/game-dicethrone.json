@@ -479,6 +479,7 @@
     "confirmRollDefenseWithAbility": "Confirmed defense roll ({{abilityName}}):",
     "compareRollPrefix": "Roll-off result:",
     "cardRollResult": "Roll result:",
+    "cardChoiceResult": "Choice result:",
     "dieModified": "Modified die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieModifiedSource": "({{source}})",
     "dieRerolled": "Rerolled die #{{dieId}}: {{oldValue}} → {{newValue}}",
@@ -934,6 +935,7 @@
     "noTokenToReroll": "No {{token}} tokens available to reroll",
     "rerollLimitReached": "Reroll limit reached",
     "diceResult": "Dice Results",
+    "choiceResult": "Choice Results",
     "total": "Total Damage",
     "closeSpotlight": "Close Spotlight",
     "confirmDamage": "Confirm Damage",
@@ -1523,9 +1525,9 @@
       "name": "Lotus Bloom",
       "description": "Lotus blooms, Taiji perfected",
       "effects": {
-        "damage5": "Deal 5 damage",
-        "taijiCapMax": "Taiji stack limit +1 and immediately gain the maximum Taiji tokens",
-        "unblockable": "You may spend 2 Taiji tokens to make this attack undefendable"
+        "damage5": "Deal 5 undefendable damage",
+        "taijiCapMax": "Taiji stack limit +1 and gain 5 Taiji tokens",
+        "unblockable": "Deal 5 undefendable damage"
       }
     },
     "lotus-palm-2": {

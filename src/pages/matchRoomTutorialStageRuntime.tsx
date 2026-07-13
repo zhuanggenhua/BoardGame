@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import { BoardBridge, LocalGameProvider } from '../engine/transport/react';
 import type { GameEngineConfig } from '../engine/transport/server';
+import type { AiSeatController } from '../engine/ai/types';
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LoadingScreen } from '../components/system/LoadingScreen';
 import { useModalStack } from '../contexts/ModalStackContext';
@@ -27,6 +28,7 @@ export type MatchRoomTutorialBoardRuntimeModel = {
     board: MatchRoomBoardComponent;
     engineConfig: GameEngineConfig;
     numPlayers?: number;
+    seatControllers?: Record<string, AiSeatController>;
     onCommandRejected: (type: string, error: string) => void;
     title: string;
     preparingDescription: string;
@@ -158,6 +160,8 @@ const TutorialLocalGameRuntime = ({
             playerId={playerID ?? '0'}
             setupData={setupData}
             onCommandRejected={runtime.onCommandRejected}
+            seatControllers={runtime.seatControllers}
+            followCurrentTurnPlayer={false}
             persistSession={Boolean(runtime.gameId)}
         >
             <TutorialDispatchBridge>

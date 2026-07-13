@@ -59,7 +59,7 @@ BordGame 是一个现代化桌游平台，核心解决"桌游教学"与"轻量�
 │                    服务端                                  │
 │  server.ts (GameTransportServer + socket.io + Koa)        │
 │  apps/api/ (NestJS REST API)                              │
-│  MongoDB · Cloudflare R2 CDN                              │
+│  MongoDB · server asset origin                            │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -476,7 +476,7 @@ src/games/<gameId>/
 
 - **HybridStorage**（`src/server/storage/`）：游戏状态持久化到 MongoDB（MongoStorage + 内存缓存）
 - **MongoDB**：用户数据、对局记录、自定义卡组、好友关系
-- **Cloudflare R2**：图片/音频/国际化文件 CDN 分发
+- **服务器素材主源**：图片/音频/国际化文件通过公开资源域名分发
 
 ---
 

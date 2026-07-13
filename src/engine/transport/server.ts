@@ -21,7 +21,12 @@ import type {
     MatchPlayerInfo,
     BatchDispatchMeta,
 } from './protocol';
-import type { TrainingDataRecorder, TrainingDecisionSample } from './trainingData';
+import type {
+    TrainingCompletedMatch,
+    TrainingDataRecorder,
+    TrainingDecisionSample,
+    TrainingMatchCommitResult,
+} from './trainingData';
 import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
@@ -113,6 +118,22 @@ const extractSetupSeatControllers = (setupData: unknown): Record<string, { type?
     return rawSeatControllers as Record<string, { type?: unknown } | undefined>;
 };
 
+const extractStateSeatControllers = (
+    state: MatchState<unknown> | undefined,
+): Record<string, { type?: unknown } | undefined> | undefined => {
+    const core = state?.core;
+    if (!core || typeof core !== 'object' || Array.isArray(core)) {
+        return undefined;
+    }
+
+    const rawSeatControllers = (core as { seatControllers?: unknown }).seatControllers;
+    if (!rawSeatControllers || typeof rawSeatControllers !== 'object' || Array.isArray(rawSeatControllers)) {
+        return undefined;
+    }
+
+    return rawSeatControllers as Record<string, { type?: unknown } | undefined>;
+};
+
 const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): boolean => {
     if (!setupData || typeof setupData !== 'object' || Array.isArray(setupData)) {
         return false;
@@ -126,6 +147,24 @@ const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): bool
     return Object.values(rawSeatControllers as Record<string, { type?: unknown } | undefined>).some(
         (controller) => controller?.type === 'local-ai' || controller?.type === 'remote-ai',
     );
+};
+
+const resolveRawOnlineAiWatchdogSeatControllers = (
+    state: MatchState<unknown> | undefined,
+    setupData: unknown,
+): Record<string, { type?: unknown } | undefined> | undefined => {
+    const setupSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(setupData)
+        ? extractSetupSeatControllers(setupData)
+        : undefined;
+    const stateSeatControllers = extractStateSeatControllers(state);
+    if (!setupSeatControllers && !stateSeatControllers) {
+        return undefined;
+    }
+
+    return {
+        ...(setupSeatControllers ?? {}),
+        ...(stateSeatControllers ?? {}),
+    };
 };
 
 type GameManifestIndex = Record<string, Pick<GameManifestEntry, 'ai'> | undefined>;
@@ -200,12 +239,6 @@ type CommandFailureFeedbackPayload = {
     progressMarker: string;
     stateSnapshot: string;
     actionLog?: string;
-};
-
-type PendingTrainingSamples = {
-    matchId: string;
-    gameId: string;
-    samples: TrainingDecisionSample[];
 };
 
 const UNSATISFIABLE_INTERACTION_REASONS = new Set([
@@ -850,8 +883,10 @@ export interface GameTransportServerConfig {
     ) => boolean | Promise<boolean>;
     /** 游戏结束回调（可选） */
     onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void;
+    /** 命令成功后回调（可选），用于刷新大厅摘要等非游戏状态视图 */
+    onCommandSucceeded?: (matchID: string, gameName: string, commandType: string) => void;
     trainingDataRecorder?: TrainingDataRecorder;
-    trainingDataMinMatchDurationMs?: number;
+    trainingDataMinCompletedMatchDurationMs?: number;
     rulesVersion?: string | null;
     gameManifests?: GameManifestIndex;
     onlineAiRecoveryTickMs?: number;
@@ -873,8 +908,9 @@ export class GameTransportServer {
     private readonly offlineGraceMs: number;
     private readonly authenticate?: GameTransportServerConfig['authenticate'];
     private readonly onGameOver?: GameTransportServerConfig['onGameOver'];
+    private readonly onCommandSucceeded?: GameTransportServerConfig['onCommandSucceeded'];
     private readonly trainingDataRecorder?: TrainingDataRecorder;
-    private readonly trainingDataMinMatchDurationMs: number;
+    private readonly trainingDataMinCompletedMatchDurationMs: number | null;
     private readonly rulesVersion: string | null;
     private readonly gameManifests: GameManifestIndex;
     private readonly onlineAiRecoveryTickMs: number;
@@ -891,8 +927,6 @@ export class GameTransportServer {
     private readonly onlineAiOverlayResyncCooldown = new Map<string, number>();
     private readonly onlineAiRecoveryInFlight = new Set<string>();
     private onlineAiRecoveryTimer: ReturnType<typeof setInterval> | null = null;
-    private readonly pendingTrainingSamples = new Map<string, PendingTrainingSamples>();
-    private readonly eligibleTrainingMatches = new Set<string>();
 
     constructor(config: GameTransportServerConfig) {
         this.io = config.io;
@@ -903,10 +937,14 @@ export class GameTransportServer {
         this.offlineGraceMs = config.offlineGraceMs ?? 30000;
         this.authenticate = config.authenticate;
         this.onGameOver = config.onGameOver;
+        this.onCommandSucceeded = config.onCommandSucceeded;
         this.trainingDataRecorder = config.trainingDataRecorder;
-        this.trainingDataMinMatchDurationMs = Number.isFinite(config.trainingDataMinMatchDurationMs ?? 0)
-            ? Math.max(0, config.trainingDataMinMatchDurationMs ?? 0)
-            : 0;
+        this.trainingDataMinCompletedMatchDurationMs = (
+            Number.isFinite(config.trainingDataMinCompletedMatchDurationMs)
+            && (config.trainingDataMinCompletedMatchDurationMs ?? 0) > 0
+        )
+            ? config.trainingDataMinCompletedMatchDurationMs!
+            : null;
         this.rulesVersion = config.rulesVersion ?? null;
         this.gameManifests = config.gameManifests ?? {};
         this.onlineAiRecoveryTickMs = config.onlineAiRecoveryTickMs ?? DEFAULT_ONLINE_AI_RECOVERY_TICK_MS;
@@ -1537,14 +1575,21 @@ export class GameTransportServer {
         candidate: ForceEndTurnStalledAiResolution,
     ): number {
         const liveSeatConnectionCount = match.connections.get(candidate.playerId)?.size ?? 0;
+        const currentPhase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
+        const core = match.state.core as { hostStarted?: unknown } | undefined;
+        const publicPregameLegalActionPhases = match.engineConfig.onlineAiRecovery?.publicPregameLegalActionPhases ?? [];
+        const isPublicPregameLegalAction = candidate.reason === 'seat-legal-only'
+            && core?.hostStarted === false
+            && publicPregameLegalActionPhases.includes(currentPhase);
         // 商业口径：在线 AI 不应依赖宿主页保持前台/存活。
         // 一旦对应 AI seat 没有 live socket，watchdog 立即接管真正的“对局中 AI 回合/交互”。
-        // pregame 的 legal-only 选阵营链仍保留原有时序，避免改变既有恢复/反馈语义。
+        // 公开预开局选择同样不依赖宿主页：这里只执行 AI 自己的合法选择，不会推进真人操作。
         const shouldImmediateTakeover = candidate.reason === 'active-turn'
             || candidate.reason === 'response-window'
             || candidate.reason === 'response-loop'
             || candidate.reason === 'visible-interaction'
-            || candidate.reason === 'hidden-interaction';
+            || candidate.reason === 'hidden-interaction'
+            || isPublicPregameLegalAction;
         if (liveSeatConnectionCount === 0 && shouldImmediateTakeover) {
             return 0;
         }
@@ -1569,9 +1614,10 @@ export class GameTransportServer {
                 continue;
             }
 
-            const rawSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(match.metadata.setupData)
-                ? extractSetupSeatControllers(match.metadata.setupData)
-                : undefined;
+            const rawSeatControllers = resolveRawOnlineAiWatchdogSeatControllers(
+                match.state,
+                match.metadata.setupData,
+            );
             const seatControllers = Object.fromEntries(
                 Object.keys(match.metadata.players).map((playerId) => {
                     const controller = rawSeatControllers?.[playerId];
@@ -2538,8 +2584,8 @@ export class GameTransportServer {
         playerId: string,
         seatView: MatchState<unknown>,
     ): Promise<OnlineAiRecoveryAiSummary> {
-        const setupSeatControllers = extractSetupSeatControllers(match.metadata.setupData);
-        const seatControllerType = resolveSeatControllerTypeForTraining(setupSeatControllers, playerId);
+        const rawSeatControllers = resolveRawOnlineAiWatchdogSeatControllers(match.state, match.metadata.setupData);
+        const seatControllerType = resolveSeatControllerTypeForTraining(rawSeatControllers, playerId);
 
         try {
             const decisionContext = buildAiDecisionContext({
@@ -2570,7 +2616,7 @@ export class GameTransportServer {
                 };
             }
 
-            const seatController = setupSeatControllers?.[playerId] as aiModule.AiSeatController | undefined;
+            const seatController = rawSeatControllers?.[playerId] as aiModule.AiSeatController | undefined;
             const previewPolicy = seatControllerType === 'local-ai' && seatController?.type === 'local-ai'
                 ? aiModule.resolveLocalAiPolicy(runtime, seatController)
                 : seatControllerType === 'remote-ai'
@@ -4096,15 +4142,14 @@ export class GameTransportServer {
         return Date.now() - createdAt;
     }
 
-    private isTrainingCaptureEligible(match: ActiveMatch): boolean {
-        if (this.trainingDataMinMatchDurationMs <= 0) {
-            return true;
+    private resolveTrainingMinCompletedDurationMs(match: ActiveMatch): number | null {
+        const manifestDurationMs = this.gameManifests[
+            match.engineConfig.gameId
+        ]?.ai?.trainingMinCompletedDurationMs;
+        if (Number.isFinite(manifestDurationMs) && (manifestDurationMs ?? 0) > 0) {
+            return manifestDurationMs!;
         }
-        const durationMs = this.resolveTrainingMatchDurationMs(match);
-        if (durationMs === null) {
-            return false;
-        }
-        return durationMs >= this.trainingDataMinMatchDurationMs;
+        return this.trainingDataMinCompletedMatchDurationMs;
     }
 
     private recordTrainingDecisionSample(args: {
@@ -4119,100 +4164,142 @@ export class GameTransportServer {
         gameOver?: unknown;
     }): void {
         if (!this.trainingDataRecorder) return;
+
+        const matchIdentity = {
+            schemaVersion: 1,
+            gameId: args.match.engineConfig.gameId,
+            matchId: args.match.matchID,
+        } as const;
+        const isCompleted = args.gameOver !== undefined && args.gameOver !== null;
         const manifest = this.gameManifests[args.match.engineConfig.gameId];
-        if (manifest?.ai?.capture === false) return;
+        if (manifest?.ai?.capture === false) {
+            if (isCompleted) {
+                this.discardPendingTrainingMatch(matchIdentity);
+            }
+            return;
+        }
+
+        const minDurationMs = this.resolveTrainingMinCompletedDurationMs(args.match);
+        if (minDurationMs === null) {
+            if (isCompleted) {
+                this.discardPendingTrainingMatch(matchIdentity);
+            }
+            return;
+        }
+
         const seatControllers = extractSetupSeatControllers(args.match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(seatControllers, args.playerID);
         const capturePolicy = manifest?.ai?.capturePolicy ?? DEFAULT_TRAINING_CAPTURE_POLICY;
-        if (capturePolicy === 'human-only' && seatControllerType !== 'human') {
-            return;
-        }
-
-        const sample = buildTrainingDecisionSample({
-            rulesVersion: this.rulesVersion,
-            gameId: args.match.engineConfig.gameId,
-            matchId: args.match.matchID,
-            playerId: args.playerID,
-            seatControllerType,
-            stateIdBefore: args.stateIdBefore,
-            stateIdAfter: args.stateIdAfter,
-            commandType: args.commandType,
-            payload: args.payload,
-            preState: args.preState,
-            postState: args.postState,
-            legalActions: buildAiDecisionContext({
+        const shouldCaptureCommand = (
+            capturePolicy !== 'human-only'
+            || seatControllerType === 'human'
+        );
+        const sample = shouldCaptureCommand
+            ? buildTrainingDecisionSample({
+                rulesVersion: this.rulesVersion,
                 gameId: args.match.engineConfig.gameId,
                 matchId: args.match.matchID,
                 playerId: args.playerID,
-                visibleState: args.preState as MatchState<unknown>,
-                rulesVersion: this.rulesVersion,
-                decisionBudgetMs: 250,
-                source: 'online',
-            }).legalActions,
-            gameOver: args.gameOver,
+                seatControllerType,
+                stateIdBefore: args.stateIdBefore,
+                stateIdAfter: args.stateIdAfter,
+                commandType: args.commandType,
+                payload: args.payload,
+                preState: args.preState,
+                postState: args.postState,
+                legalActions: buildAiDecisionContext({
+                    gameId: args.match.engineConfig.gameId,
+                    matchId: args.match.matchID,
+                    playerId: args.playerID,
+                    visibleState: args.preState as MatchState<unknown>,
+                    rulesVersion: this.rulesVersion,
+                    decisionBudgetMs: 250,
+                    source: 'online',
+                }).legalActions,
+                gameOver: args.gameOver,
+            })
+            : undefined;
+
+        if (!isCompleted) {
+            if (sample) {
+                this.stageTrainingDecisionSample(sample);
+            }
+            return;
+        }
+
+        const durationMs = this.resolveTrainingMatchDurationMs(args.match);
+        if (durationMs === null || durationMs < minDurationMs) {
+            this.discardPendingTrainingMatch(matchIdentity);
+            return;
+        }
+
+        this.commitCompletedTrainingMatch({
+            ...matchIdentity,
+            completedAt: Date.now(),
+            durationMs,
+            ...(sample ? { finalSample: sample } : {}),
         });
-
-        const matchId = args.match.matchID;
-        if (this.eligibleTrainingMatches.has(matchId)) {
-            this.recordTrainingDecisionSampleNow(sample);
-            if (args.gameOver) {
-                this.eligibleTrainingMatches.delete(matchId);
-                this.pendingTrainingSamples.delete(matchId);
-            }
-            return;
-        }
-
-        const pending = this.pendingTrainingSamples.get(matchId) ?? {
-            matchId,
-            gameId: args.match.engineConfig.gameId,
-            samples: [],
-        };
-        pending.samples.push(sample);
-        this.pendingTrainingSamples.set(matchId, pending);
-
-        if (this.isTrainingCaptureEligible(args.match)) {
-            this.eligibleTrainingMatches.add(matchId);
-            this.flushTrainingDecisionSamples(matchId, args.gameOver);
-            if (args.gameOver) {
-                this.eligibleTrainingMatches.delete(matchId);
-            }
-            return;
-        }
-
-        if (args.gameOver) {
-            this.pendingTrainingSamples.delete(matchId);
-        }
     }
 
-    private flushTrainingDecisionSamples(matchID: string, gameOver?: unknown): void {
-        const pending = this.pendingTrainingSamples.get(matchID);
-        if (!pending || pending.samples.length === 0) {
-            this.pendingTrainingSamples.delete(matchID);
-            return;
-        }
-
-        this.pendingTrainingSamples.delete(matchID);
-
-        for (const sample of pending.samples) {
-            if (gameOver && sample.gameOver === undefined) {
-                sample.gameOver = gameOver;
-            }
-            this.recordTrainingDecisionSampleNow(sample, pending);
-        }
+    private stageTrainingDecisionSample(sample: TrainingDecisionSample): void {
+        Promise.resolve(this.trainingDataRecorder?.stageDecisionSample(sample)).catch((error) => {
+            this.logTrainingDataFailure('stage', sample, error);
+        });
     }
 
-    private recordTrainingDecisionSampleNow(
-        sample: TrainingDecisionSample,
-        context?: { matchId: string; gameId: string },
-    ): void {
-        Promise.resolve(this.trainingDataRecorder?.recordDecisionSample(sample)).catch((error) => {
-            logger.warn('[GameTransport] training data capture failed', {
-                matchID: context?.matchId ?? sample.matchId,
-                gameId: context?.gameId ?? sample.gameId,
-                commandType: sample.command.type,
-                playerID: sample.playerId,
-                error: error instanceof Error ? error.message : String(error),
+    private commitCompletedTrainingMatch(match: TrainingCompletedMatch): void {
+        Promise.resolve(this.trainingDataRecorder?.commitCompletedMatch(match))
+            .then((result) => {
+                if (!result) return;
+                this.logTrainingCommitResult(match, result);
+            })
+            .catch((error) => {
+                this.logTrainingDataFailure('commit', match, error);
             });
+    }
+
+    private discardPendingTrainingMatch(
+        match: Pick<TrainingCompletedMatch, 'schemaVersion' | 'gameId' | 'matchId'>,
+    ): void {
+        Promise.resolve(this.trainingDataRecorder?.discardPendingMatch(match)).catch((error) => {
+            this.logTrainingDataFailure('discard', match, error);
+        });
+    }
+
+    private logTrainingCommitResult(
+        match: TrainingCompletedMatch,
+        result: TrainingMatchCommitResult,
+    ): void {
+        if (result.status === 'capacity-reached') {
+            logger.warn('[GameTransport] training data game capacity reached', {
+                matchID: match.matchId,
+                gameId: match.gameId,
+                pendingBytes: result.pendingBytes,
+                gameBytes: result.gameBytes,
+                maxBytes: result.maxBytes,
+            });
+        } else if (result.status === 'failed') {
+            logger.warn('[GameTransport] training data match commit skipped after staging failure', {
+                matchID: match.matchId,
+                gameId: match.gameId,
+            });
+        }
+    }
+
+    private logTrainingDataFailure(
+        operation: 'stage' | 'commit' | 'discard',
+        context: Pick<TrainingCompletedMatch, 'gameId' | 'matchId'> | TrainingDecisionSample,
+        error: unknown,
+    ): void {
+        logger.warn('[GameTransport] training data capture failed', {
+            operation,
+            matchID: context.matchId,
+            gameId: context.gameId,
+            ...('command' in context ? {
+                commandType: context.command.type,
+                playerID: context.playerId,
+            } : {}),
+            error: error instanceof Error ? error.message : String(error),
         });
     }
 
@@ -4491,6 +4578,7 @@ export class GameTransportServer {
             randomCursor: match.getRandomCursor(),
         };
         await this.storage.setState(match.matchID, storedState);
+        this.onCommandSucceeded?.(match.matchID, engineConfig.gameId, effectiveCommandType);
 
         const gameOver = result.state.sys.gameover;
         const postTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
@@ -4733,6 +4821,10 @@ export class GameTransportServer {
 
     private buildMatchPlayers(match: ActiveMatch): MatchPlayerInfo[] {
         const seatControllers = extractSetupSeatControllers(match.metadata.setupData);
+        const setupData = match.metadata.setupData;
+        const ownerKey = setupData && typeof setupData === 'object' && !Array.isArray(setupData)
+            ? (setupData as { ownerKey?: string }).ownerKey
+            : undefined;
         return Object.entries(match.metadata.players).map(([id, data]) => ({
             id: Number(id),
             name: resolveSeatPlayerDisplayName({
@@ -4741,6 +4833,7 @@ export class GameTransportServer {
                 seatControllers,
             }),
             isConnected: data.isConnected,
+            isOwner: typeof ownerKey === 'string' && ownerKey.length > 0 && data.ownerKey === ownerKey,
         }));
     }
 

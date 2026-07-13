@@ -483,6 +483,9 @@ describe('CreateRoomModal AI default state', () => {
         expect(screen.getByTestId('qidahen-pregame-choice-fields')).toBeInTheDocument();
         expect(screen.getByTestId('qidahen-pregame-choice-inline-note')).toBeInTheDocument();
         expect(screen.queryByText('开局剧本')).toBeNull();
+        expect(screen.queryByTestId('setup-option-select-scenario')).toBeNull();
+        expect(screen.queryByTestId('setup-option-select-shanhaiguan-1622')).toBeNull();
+        expect(screen.queryByTestId('setup-option-select-post-sarhu-1619')).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
@@ -492,7 +495,7 @@ describe('CreateRoomModal AI default state', () => {
         }));
     });
 
-    it('七大恨默认人数会按 bestPlayers 落到三人房，并带局内剧本投票模式提交', () => {
+    it('七大恨默认人数会按 bestPlayers 落到三人房，并带局内剧本选择模式提交', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {

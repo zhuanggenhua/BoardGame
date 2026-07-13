@@ -14,6 +14,13 @@ import { ActionHandlerRegistry } from '../../../engine/primitives/actionRegistry
 import type { GameEvent } from '../../../engine/types';
 import type { AbilityContext } from './abilityResolver';
 import { SW_EVENTS } from './types';
+import {
+    getUnitAt,
+    isCellEmpty,
+    manhattanDistance,
+    normalizeUnitBoosts,
+} from './helpers';
+import { isMoguFungalBeastCard, isMoguSporePlagueBodyCard } from './ids';
 
 // ============================================================================
 // Handler 上下文与签名
@@ -121,3 +128,120 @@ swCustomActionRegistry.register('magic_addiction_check', ({ ctx, timestamp }) =>
 // --- 占位 handler（逻辑在 execute.ts 中处理，此处 no-op） ---
 swCustomActionRegistry.register('divine_shield_check', () => []);
 swCustomActionRegistry.register('healing_convert', () => []);
+
+// --- 莫古：菌化野兽“感染”替换被消灭单位 ---
+swCustomActionRegistry.register('mogu_infection_replace', ({ ctx, timestamp }) => {
+    if (!ctx.victimPosition) return [];
+    const card = ctx.state.players[ctx.ownerId].discard.find(isMoguSporePlagueBodyCard);
+    if (!card || card.cardType !== 'unit') return [];
+    return [{
+        type: SW_EVENTS.UNIT_SUMMONED,
+        payload: {
+            playerId: ctx.ownerId,
+            cardId: card.id,
+            position: ctx.victimPosition,
+            card,
+            fromDiscard: true,
+            sourceAbilityId: 'mogu_infection',
+        },
+        timestamp,
+    }];
+});
+
+// --- 莫古：菌袍疫病体“菌化变异”替换自身 ---
+swCustomActionRegistry.register('mogu_fungal_mutation_replace', ({ ctx, timestamp }) => {
+    if (normalizeUnitBoosts(ctx.sourceUnit.boosts) < 3) return [];
+    const card = ctx.state.players[ctx.ownerId].discard.find(isMoguFungalBeastCard);
+    if (!card || card.cardType !== 'unit') return [];
+    return [{
+        type: SW_EVENTS.UNIT_SUMMONED,
+        payload: {
+            playerId: ctx.ownerId,
+            cardId: card.id,
+            position: ctx.sourcePosition,
+            card,
+            fromDiscard: true,
+            sourceAbilityId: 'mogu_fungal_mutation',
+        },
+        timestamp,
+    }];
+});
+
+// --- 莫古：枯萎法师“鲜血灌注” ---
+swCustomActionRegistry.register('mogu_blood_infusion', ({ ctx, timestamp }) => {
+    const targetPosition = ctx.payload?.targetPosition as import('./types').CellCoord | undefined;
+    if (!targetPosition) return [];
+    const target = getUnitAt(ctx.state, targetPosition);
+    if (!target || target.owner !== ctx.ownerId) return [];
+    if (manhattanDistance(ctx.sourcePosition, targetPosition) > 2) return [];
+    return [
+        {
+            type: SW_EVENTS.UNIT_CHARGED,
+            payload: { position: targetPosition, delta: 1, sourceAbilityId: 'mogu_blood_infusion' },
+            timestamp,
+        },
+        {
+            type: SW_EVENTS.UNIT_DAMAGED,
+            payload: { position: targetPosition, damage: 1, reason: 'mogu_blood_infusion', sourcePlayerId: ctx.ownerId },
+            timestamp,
+        },
+    ];
+});
+
+// --- 莫古：鲜血萨满“传输” ---
+swCustomActionRegistry.register('mogu_transmission', ({ ctx, timestamp }) => {
+    const mode = ctx.payload?.mode as string | undefined;
+    const fromPosition = ctx.payload?.fromPosition as import('./types').CellCoord | undefined;
+    const toPosition = ctx.payload?.toPosition as import('./types').CellCoord | undefined;
+    const amount = Number(ctx.payload?.amount ?? 0);
+    if (!toPosition || !Number.isFinite(amount) || amount <= 0) return [];
+    const sourcePosition = mode === 'self_to_target' ? ctx.sourcePosition : fromPosition;
+    if (!sourcePosition) return [];
+    const fromUnit = getUnitAt(ctx.state, sourcePosition);
+    const toUnit = getUnitAt(ctx.state, toPosition);
+    if (!fromUnit || !toUnit || fromUnit.owner !== ctx.ownerId || toUnit.owner !== ctx.ownerId) return [];
+    if (manhattanDistance(ctx.sourcePosition, sourcePosition) > 2 || manhattanDistance(ctx.sourcePosition, toPosition) > 2) return [];
+    const transferAmount = Math.min(amount, normalizeUnitBoosts(fromUnit.boosts));
+    if (transferAmount <= 0) return [];
+    return [
+        {
+            type: SW_EVENTS.UNIT_CHARGED,
+            payload: { position: sourcePosition, delta: -transferAmount, sourceAbilityId: 'mogu_transmission' },
+            timestamp,
+        },
+        {
+            type: SW_EVENTS.UNIT_CHARGED,
+            payload: { position: toPosition, delta: transferAmount, sourceAbilityId: 'mogu_transmission' },
+            timestamp,
+        },
+    ];
+});
+
+// --- 莫古：狂热菌菇持续效果的手动结算 ---
+swCustomActionRegistry.register('mogu_fanatical_fungus', ({ ctx, timestamp }) => {
+    const targetPosition = ctx.payload?.targetPosition as import('./types').CellCoord | undefined;
+    const newPosition = ctx.payload?.newPosition as import('./types').CellCoord | undefined;
+    if (!targetPosition) return [];
+    const target = getUnitAt(ctx.state, targetPosition);
+    if (!target || target.owner !== ctx.ownerId) return [];
+    const finalPosition = newPosition ?? targetPosition;
+    const events: GameEvent[] = [];
+    if (newPosition && isCellEmpty(ctx.state, newPosition) && manhattanDistance(targetPosition, newPosition) === 1) {
+        events.push({
+            type: SW_EVENTS.UNIT_PUSHED,
+            payload: { targetPosition, newPosition },
+            timestamp,
+        });
+    }
+    events.push({
+        type: SW_EVENTS.UNIT_CHARGED,
+        payload: { position: finalPosition, delta: 1, sourceAbilityId: 'mogu_fanatical_fungus' },
+        timestamp,
+    });
+    events.push({
+        type: SW_EVENTS.UNIT_DAMAGED,
+        payload: { position: finalPosition, damage: 1, reason: 'mogu_fanatical_fungus', sourcePlayerId: ctx.ownerId },
+        timestamp,
+    });
+    return events;
+});

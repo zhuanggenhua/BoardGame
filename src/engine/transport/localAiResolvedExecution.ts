@@ -19,6 +19,7 @@ import {
     releaseAiAttemptKeyIfMatches,
     scheduleLocalAiRetryAfterDispatch,
 } from './aiAttemptGuard';
+import { resolveRuntimeSeatControllers } from './stateNormalization';
 
 export async function executeResolvedLocalAiAction(args: {
     gameId: string;
@@ -99,6 +100,16 @@ export async function executeResolvedLocalAiAction(args: {
             delayPlan,
             isCancelled: args.isCancelled,
         });
+        releaseAiAttemptKeyIfMatches(args.activeAttemptKeyRef, args.resolution.attemptKey);
+        return;
+    }
+
+    const latestSeatControllers = resolveRuntimeSeatControllers({
+        state: args.getState(),
+        seatControllers: args.seatControllers,
+    });
+    const latestController = latestSeatControllers[args.resolution.playerId];
+    if (!latestController || latestController.type === 'human') {
         releaseAiAttemptKeyIfMatches(args.activeAttemptKeyRef, args.resolution.attemptKey);
         return;
     }

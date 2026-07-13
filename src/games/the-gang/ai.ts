@@ -50,14 +50,16 @@ const allPlayersHaveChips = (core: TheGangCore): boolean =>
     core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined);
 
 const getAvailableChipsForPlayer = (core: TheGangCore, playerId: PlayerId): number[] => {
-    const occupiedByOtherPlayers = new Set(
-        Object.entries(core.currentRoundChips)
-            .filter(([owner]) => owner !== playerId)
-            .map(([, chip]) => chip),
-    );
+    const ownChip = core.currentRoundChips[playerId];
 
     return getChipValues(core.playerIds.length)
-        .filter((chip) => !occupiedByOtherPlayers.has(chip));
+        .filter((chip) => chip !== ownChip);
+};
+
+const getUnoccupiedCurrentRoundChips = (core: TheGangCore): number[] => {
+    const occupied = new Set(Object.values(core.currentRoundChips));
+    return getChipValues(core.playerIds.length)
+        .filter((chip) => !occupied.has(chip));
 };
 
 const getVisibleStrengthScore = (core: TheGangCore, playerId: PlayerId): number => {
@@ -109,8 +111,8 @@ export function buildTheGangAiLegalActions(args: {
     if (state.sys?.gameover || core.gameResult || core.phase === 'game-over') return [];
 
     if (core.phase === 'chip-selection') {
-        const alreadySelected = core.currentRoundChips[args.playerId] !== undefined;
-        const actions = alreadySelected
+        const playerHasChip = core.currentRoundChips[args.playerId] !== undefined;
+        const actions = playerHasChip
             ? []
             : getAvailableChipsForPlayer(core, args.playerId).map(createTakeChipAction);
 
@@ -158,10 +160,18 @@ const baselineLocalPolicy: LocalAiPolicy = {
         const state = context.visibleState as TheGangState;
         const chipActions = context.legalActions.filter((action) => action.kind === ACTION_KIND_TAKE_CHIP);
         if (chipActions.length > 0) {
-            const availableChips = chipActions
+            const allAvailableChips = chipActions
                 .map((action) => action.metadata?.chip)
                 .filter((chip): chip is number => typeof chip === 'number');
-            const preferredChip = getPreferredChip(state.core, context.playerId, availableChips);
+            const unoccupiedChips = getUnoccupiedCurrentRoundChips(state.core);
+            const candidateChips = allPlayersHaveChips(state.core)
+                ? allAvailableChips
+                : allAvailableChips.filter((chip) => unoccupiedChips.includes(chip));
+            const preferredChip = getPreferredChip(
+                state.core,
+                context.playerId,
+                candidateChips.length > 0 ? candidateChips : allAvailableChips,
+            );
             const preferredAction = chipActions.find((action) => action.metadata?.chip === preferredChip);
             return preferredAction ? { actionId: preferredAction.actionId } : { actionId: chipActions[0].actionId };
         }

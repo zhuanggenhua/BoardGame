@@ -23,7 +23,7 @@ import {
 import type { GameManifestEntry } from '../../games/manifest.types';
 import type { MatchState } from '../../engine/types';
 import type { GameEngineConfig } from '../../engine/transport/server';
-import { registerGameAiRuntime, resolveNextAiAction, resolveNextAiDispatch, resolveOnlineAiDecisionView } from '../../engine/ai';
+import { registerGameAiRuntime, resolveNextAiAction, resolveNextAiDispatch, resolveOnlineAiDecisionView, getGameAiRuntime } from '../../engine/ai';
 import {
     buildAiProgressMarker,
     LocalGameProvider,
@@ -82,6 +82,7 @@ import { resolveOnlineHudPresence } from '../matchHudPresence';
 import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
 import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
 import { resolveExitMatchErrorMessageKey } from '../../components/lobby/roomActions';
+import { diceThroneAiRuntime } from '../../games/dicethrone/ai';
 
 type Player = { id: number; name?: string | null };
 
@@ -1257,7 +1258,7 @@ describe('onlineAiSeats', () => {
         expect(resolveDispatchImpl).not.toHaveBeenCalled();
     });
 
-    it('手动强制结束在 legalActionOnly 场景应退回 AI 合法动作，而不是直接判 unavailable', async () => {
+    it('手动强制结束在 legalActionOnly 场景应直接强制推进，不再退回 AI 合法动作', async () => {
         const resolveDispatchImpl = vi.fn().mockResolvedValue({
             kind: 'action',
             resolution: {
@@ -1313,13 +1314,72 @@ describe('onlineAiSeats', () => {
         });
 
         expect(result).toMatchObject({
-            kind: 'legal-action',
-            resolution: {
+            kind: 'force-end-turn',
+            candidate: {
                 playerId: '1',
-                attemptKey: 'manual-legal-action',
+                reason: 'active-turn',
+                resolution: {
+                    action: {
+                        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                    },
+                },
             },
         });
-        expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+        expect(resolveDispatchImpl).not.toHaveBeenCalled();
+    });
+
+    it('DiceThrone 手动强制结束在无交互但攻击阶段卡住时应直接推进阶段', async () => {
+        const resolveDispatchImpl = vi.fn();
+        const result = await resolveManualOnlineAiRecovery({
+            engineConfig: {
+                gameId: 'dicethrone',
+                onlineAiRecovery: {
+                    activeTurnLegalActionOnlyPhases: ['offensiveRoll', 'targetingRoll', 'defensiveRoll'],
+                },
+            },
+            matchId: 'match-manual-dicethrone-attack-stuck',
+            sharedState: {
+                core: {
+                    activePlayerId: '1',
+                    currentPlayerId: '1',
+                    pendingAttack: {
+                        attackerId: '1',
+                        sourceAbilityId: 'steadfast-2-3',
+                    },
+                },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 3,
+                    phase: 'offensiveRoll',
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+            resolveDispatchImpl,
+        });
+
+        expect(result).toMatchObject({
+            kind: 'force-end-turn',
+            candidate: {
+                playerId: '1',
+                reason: 'active-turn',
+                resolution: {
+                    action: {
+                        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                    },
+                },
+            },
+        });
+        expect(resolveDispatchImpl).not.toHaveBeenCalled();
     });
 
     it('手动恢复遇到 compare-roll contestant 时，应把 blocked seat snapshot 交给 dispatch，而不是提前 force-end-turn', async () => {
@@ -4437,6 +4497,110 @@ describe('resolveForceEndTurnForStalledAi', () => {
             playerId: '1',
             reason: 'active-turn-legal-only',
             legalActionOnly: true,
+        });
+    });
+
+    it('DiceThrone 防御阶段在线 AI 应允许防御方用共享状态恢复合法动作', async () => {
+        registerGameAiRuntime(diceThroneAiRuntime);
+        const sharedState = {
+            core: {
+                activePlayerId: '0',
+                players: {
+                    '0': {
+                        resources: {},
+                        hand: [],
+                        statusEffects: {},
+                        tokens: {},
+                        abilities: [],
+                    },
+                    '1': {
+                        resources: {},
+                        hand: [],
+                        statusEffects: {},
+                        tokens: {},
+                        abilities: [],
+                    },
+                },
+                pendingAttack: {
+                    attackerId: '0',
+                    defenderId: '1',
+                    isDefendable: true,
+                    sourceAbilityId: 'dagger-strike-5',
+                },
+                dice: [],
+                rollCount: 0,
+                rollLimit: 3,
+                rollConfirmed: false,
+            },
+            sys: {
+                phase: 'defensiveRoll',
+                turnNumber: 3,
+                eventStream: { nextId: 1 },
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        } as MatchState<unknown>;
+        const privateOverlay = {
+            ...sharedState,
+            core: {
+                ...(sharedState.core as Record<string, unknown>),
+                players: {
+                    ...((sharedState.core as { players: Record<string, unknown> }).players),
+                    '1': {
+                        ...((sharedState.core as { players: Record<string, Record<string, unknown>> }).players['1']),
+                        abilities: [
+                            {
+                                id: 'shadow-defense',
+                                type: 'defensive',
+                            },
+                        ],
+                    },
+                },
+            },
+        } as MatchState<unknown>;
+
+        const dispatch = await resolveNextAiDispatch({
+            engineConfig: {
+                gameId: 'dicethrone',
+                onlineAiRecovery: {
+                    activeTurnLegalActionOnlyPhases: ['offensiveRoll', 'targetingRoll', 'defensiveRoll'],
+                    resolveCurrentPlayerId: ({ state, phase, fallbackPlayerId }) => {
+                        if (phase !== 'defensiveRoll') return fallbackPlayerId;
+                        const pendingAttack = (state.core as { pendingAttack?: { defenderId?: unknown } }).pendingAttack;
+                        return typeof pendingAttack?.defenderId === 'string'
+                            ? pendingAttack.defenderId
+                            : fallbackPlayerId;
+                    },
+                },
+            } as Pick<GameEngineConfig, 'gameId' | 'onlineAiRecovery'>,
+            state: sharedState,
+            matchId: 'match-watchdog-dicethrone-defensive-legal-action',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
+                runtime: getGameAiRuntime('dicethrone') ?? null,
+                sharedState,
+                privateOverlay,
+                playerId,
+            }),
+        });
+
+        expect(dispatch).toMatchObject({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                action: {
+                    kind: 'select-ability',
+                    commands: [{ type: 'SELECT_ABILITY', payload: { abilityId: 'shadow-defense' } }],
+                },
+            },
         });
     });
 

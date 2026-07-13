@@ -1,0 +1,26 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "thumbnails",
+  "basePrefix": "official/i18n/zh-CN/the-gang/thumbnails/",
+  "files": {
+    "compressed/the-gang-vault-heist-thumbnail": {
+      "variants": {
+        "webp": {
+          "sha256": "467b496553441c48a946e782e391613f55de814cc10e878cae15bf55573883eb",
+          "bytes": 67012,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "the-gang-vault-heist-thumbnail": {
+      "variants": {
+        "png": {
+          "sha256": "9c7b5fdee4de1c811e3fdb86db195953aba22024ba4d4794ed16fcf5dbf4bbdd",
+          "bytes": 295968,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

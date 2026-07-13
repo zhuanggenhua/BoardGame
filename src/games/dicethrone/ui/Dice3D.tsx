@@ -47,6 +47,7 @@ export interface DiceField3DProps {
     selectedDieIds?: number[];
     isRolling: boolean;
     rerollingDiceIds?: number[];
+    rerollAnimationSeq?: number;
     locale?: string;
     characterId?: string;
     slots: Array<{
@@ -79,6 +80,8 @@ export interface ProjectedDiceLayout {
     y: number;
     width: number;
     height: number;
+    visualWidth?: number;
+    visualHeight?: number;
     minX: number;
     maxX: number;
     minY: number;
@@ -199,7 +202,7 @@ const BOARD_TOPDOWN_SETTLED_TILTS = [
     [  0.004,  0.2, -0.003 ],
 ] as const;
 
-const BOARD_TOPDOWN_VISUAL_SCALE = 0.62;
+const BOARD_TOPDOWN_VISUAL_SCALE = 0.70;
 const BOARD_TOPDOWN_COLLISION_RADIUS = 0.56;
 
 let sharedBoardShadowTexture: THREE.CanvasTexture | null = null;
@@ -781,6 +784,19 @@ function buildTargetQuaternion(
     return base;
 }
 
+function buildCssSpotlightTransform(value: number, index: number): string {
+    const base = getSettledEuler(value);
+    const tilt = getSpotlightTilt(index);
+    return [
+        `rotateX(${base.x.toFixed(6)}rad)`,
+        `rotateY(${base.y.toFixed(6)}rad)`,
+        `rotateZ(${base.z.toFixed(6)}rad)`,
+        `rotateX(${tilt.x.toFixed(6)}rad)`,
+        `rotateY(${tilt.y.toFixed(6)}rad)`,
+        `rotateZ(${tilt.z.toFixed(6)}rad)`,
+    ].join(' ');
+}
+
 function getExternalPhysicsVisualQuaternion(
     value: number,
     index: number,
@@ -1024,6 +1040,7 @@ export const DiceField3D = ({
     selectedDieIds = [],
     isRolling,
     rerollingDiceIds,
+    rerollAnimationSeq,
     locale,
     characterId = 'monk',
     slots,
@@ -1064,12 +1081,13 @@ export const DiceField3D = ({
             wasRolling: boolean;
             settledVisualX: number | null;
             settledVisualZ: number | null;
+            lastRerollAnimationSeq: number;
         }>;
         raycaster: THREE.Raycaster;
         pointer: THREE.Vector2;
         disposed: boolean;
     } | null>(null);
-    const rollingRef = React.useRef({ isRolling, rerollingDiceIds });
+    const rollingRef = React.useRef({ isRolling, rerollingDiceIds, rerollAnimationSeq });
     const selectedDieIdsRef = React.useRef(new Set<number>(selectedDieIds));
     const signature = React.useMemo(
         () => dice.map((die) => `${die.id}:${die.value}:${die.definitionId ?? ''}`).join('|'),
@@ -1087,8 +1105,8 @@ export const DiceField3D = ({
     );
 
     React.useEffect(() => {
-        rollingRef.current = { isRolling, rerollingDiceIds };
-    }, [isRolling, rerollingDiceIds]);
+        rollingRef.current = { isRolling, rerollingDiceIds, rerollAnimationSeq };
+    }, [isRolling, rerollAnimationSeq, rerollingDiceIds]);
 
     React.useEffect(() => {
         selectedDieIdsRef.current = new Set(selectedDieIds);
@@ -1334,6 +1352,7 @@ export const DiceField3D = ({
                 wasRolling: false,
                 settledVisualX: null,
                 settledVisualZ: null,
+                lastRerollAnimationSeq: 0,
             };
         });
 
@@ -1611,7 +1630,16 @@ export const DiceField3D = ({
                     item.mesh.position.z = item.posZ;
                     return;
                 }
-                const dieRolling = rolling.isRolling || Boolean(die && rolling.rerollingDiceIds?.includes(die.id));
+                const rerollingThisDie = Boolean(die && rolling.rerollingDiceIds?.includes(die.id));
+                const rerollSeq = rolling.rerollAnimationSeq ?? 0;
+                const hasNewRerollEdge = rerollingThisDie
+                    && rerollSeq > 0
+                    && item.lastRerollAnimationSeq !== rerollSeq;
+                if (hasNewRerollEdge) {
+                    item.wasRolling = false;
+                    item.lastRerollAnimationSeq = rerollSeq;
+                }
+                const dieRolling = rolling.isRolling || rerollingThisDie;
                 const wasRolling = item.wasRolling;
                 if (dieRolling) {
                     if (!wasRolling) {
@@ -2772,7 +2800,7 @@ export const Dice3D = ({
 
     const animationClass = isSpotlight ? 'animate-dice3d-bonus-tumble' : 'animate-dice3d-tumble';
     const settledTransform = isSpotlight
-        ? `rotateX(-0.28rad) rotateY(0.33rad) rotateZ(-0.05rad)`
+        ? buildCssSpotlightTransform(value, index)
         : (isBoardTopdown
             ? `rotateX(-1.18rad) rotateY(${0.38 + (index * 0.07)}rad) rotateZ(${(-0.1 + (index * 0.035)).toFixed(2)}rad)`
             : `rotateX(0deg) rotateY(0deg)`);

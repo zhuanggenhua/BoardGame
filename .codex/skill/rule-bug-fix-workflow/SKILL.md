@@ -1,6 +1,6 @@
 ---
 name: rule-bug-fix-workflow
-description: "BoardGame 项目规则 bug 修复 workflow。用于用户反馈卡牌、技能、Token、状态、阶段、伤害、资源、升级版/基础版差异、规则结算顺序、规则回归或审计漏审时；强制先核对录入合同是否被实现正确消费，再决定修实现、回录入层、补测试和做回归收口。"
+description: "BoardGame 规则 bug 修复流程。用于卡牌、技能、Token、状态、阶段、伤害、资源、升级/基础差异、结算顺序和审计漏审。"
 ---
 
 # 规则 Bug 修复流程

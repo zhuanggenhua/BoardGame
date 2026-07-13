@@ -344,6 +344,101 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(next.pendingDamage).toBeUndefined();
     });
 
+    it('烟雾阵 II 的九字切分支是普通不可防御直伤，应允许僧侣用太极减伤', () => {
+        const state = createHeroMatchup('ninja', 'monk')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].hand = [];
+        state.core.players['1'].hand = [];
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.players['1'].tokens = { [TOKEN_IDS.TAIJI]: 1 };
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        const events = resolveEffectsToEvents(
+            SMOKE_SCREEN_2.variants?.[1].effects ?? [],
+            'preDefense',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+                state: state.core,
+                damageDealt: 0,
+                timestamp: 180,
+            },
+            { random: createQueuedRandom([1]) },
+        );
+        const choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
+        const options = ((choiceEvent as any)?.payload?.options ?? []) as ChoiceOption[];
+        const selectedOption = findChoiceOption(options, (option) =>
+            option.labelKey === 'choices.ninjaSmokeScreen.kujiKiriSameTarget'
+            && option.labelParams?.opponent === 2
+        );
+        expect(selectedOption).toBeDefined();
+
+        let next = applyEvents(state.core, events);
+        const followupHandler = getChoiceResolvedEventHandler(selectedOption!.customId);
+        expect(followupHandler).toBeDefined();
+        const followupEvents = followupHandler?.({
+            state: next,
+            playerId: '0',
+            customId: selectedOption!.customId,
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            value: selectedOption!.value,
+            timestamp: 181,
+        }) ?? [];
+
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+                customId: selectedOption!.customId,
+                value: selectedOption!.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 181,
+        } as DiceThroneEvent);
+        next = applyEvents(next, followupEvents);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(30);
+        expect(next.pendingDamage).toMatchObject({
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            sourceAbilityId: 'smoke-screen-2-kuji-kiri',
+            originalDamage: 4,
+            currentDamage: 4,
+            damageScope: 'direct',
+            unblockable: true,
+            responseType: 'beforeDamageReceived',
+            responderId: '1',
+        });
+        expect(next.pendingDamage?.deferredDamageEvents).toHaveLength(1);
+
+        let tokenEvents = execute(
+            { ...state, core: next },
+            command('USE_TOKEN', '1', { tokenId: TOKEN_IDS.TAIJI, amount: 1 }),
+            createQueuedRandom([1]),
+        );
+        next = applyEvents(next, tokenEvents);
+        expect(next.pendingDamage?.currentDamage).toBe(3);
+        expect(next.players['1'].tokens[TOKEN_IDS.TAIJI] ?? 0).toBe(0);
+
+        tokenEvents = execute(
+            { ...state, core: next },
+            command('SKIP_TOKEN_RESPONSE', '1'),
+            createQueuedRandom([1]),
+        );
+        next = applyEvents(next, tokenEvents);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(23);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
+    });
+
     it('烟雾阵 II 主分支在 4 人局应暴露完整玩家-对手目标矩阵，并允许把增益给队友、把慢性中毒给另一名对手', () => {
         const state = createNinjaTeamMatchup();
         state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;

@@ -6,7 +6,7 @@ import {
 } from './regionEthnicity';
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 import { addSpecialTroopStackToRegion } from './troopCompat';
-import { buildRegularTroopStack } from './troopStacks';
+import { buildRegularTroopStack, buildSecondaryTroopStack } from './troopStacks';
 import type {
     QidahenArmamentId,
     QidahenCore,
@@ -69,15 +69,23 @@ interface QidahenRegionMarkerEventConfig {
     markerIdPrefix: string;
     markerLabel: string;
     markerImageSrc?: string;
+    markerMapLabel?: string;
     regionKindLabel: string;
     isTargetRegion: (regionId: string) => boolean;
 }
 
-const QIDAHEN_SEVEN_GRIEVANCES_BANNER_ARMAMENT_IDS: QidahenArmamentId[] = [
-    'han-banners',
-    'manzhou-banners',
-    'mongol-banners',
+const QIDAHEN_SEVEN_GRIEVANCES_BANNER_CARD_DEF_IDS = [
+    'qidahen-atlas05-1605-establish-han-banners',
+    'qidahen-atlas05-1606-establish-manzhou-banners',
+    'qidahen-atlas05-1607-establish-mongol-banners',
 ];
+const QIDAHEN_MONGOL_BANNERS_EXCLUDED_REGION_IDS = new Set(['city-region-14']);
+
+const isQidahenMongolBannersTargetRegion = (regionId: string): boolean => {
+    const runtimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionId);
+    return isQidahenMongolRuntimeRegionId(runtimeRegionId)
+        && !QIDAHEN_MONGOL_BANNERS_EXCLUDED_REGION_IDS.has(runtimeRegionId);
+};
 
 interface QidahenSelectedActionExecutionResolutionResult {
     factions: QidahenCore['factions'];
@@ -142,7 +150,7 @@ export const resolveQidahenSelectedActionExecutionResolution = (
                 ? nextRegion
                 : addSpecialTroopStackToRegion(
                     nextRegion,
-                    buildRegularTroopStack('jin', `${config.troopSourceId}-${region.id}`, 1, 2),
+                    buildSecondaryTroopStack('jin', `${config.troopSourceId}-${region.id}`, 1, 2),
                 );
         });
         nextFactions = {
@@ -216,7 +224,7 @@ export const resolveQidahenSelectedActionExecutionResolution = (
             hasDroughtMarker
                 ? `${selectedRegion.name} 已有旱灾标记，本次不重复放置。`
                 : `在 ${selectedRegion.name} 放置旱灾标记。`,
-            '旱灾区域人口数视为 0，但仍可被劫掠；完整人口结算入口仍需后续逐项接入。',
+            '旱灾区域的非劫掠人口规则按 0 结算，真实人口仍保留并可被劫掠。',
         ]);
         return true;
     };
@@ -255,6 +263,7 @@ export const resolveQidahenSelectedActionExecutionResolution = (
                                 label: config.markerLabel,
                                 sourceCardDefId: selectedEventActionCardDefId,
                                 imageSrc: config.markerImageSrc,
+                                mapLabel: config.markerMapLabel,
                             },
                         ],
                     note: [
@@ -271,7 +280,9 @@ export const resolveQidahenSelectedActionExecutionResolution = (
             hasMarker
                 ? `${selectedRegion.name} 已有${config.markerLabel}，本次不重复放置。`
                 : `在 ${selectedRegion.name} 放置${config.markerLabel}。`,
-            '甲喇标记的新年限制与完整目标选择入口仍需后续接入。',
+            config.markerMapLabel
+                ? `${config.markerLabel}在地图上以“${config.markerMapLabel}”汉字显示。`
+                : `${config.markerLabel}当前只记录结构化状态，不生成地图图形。`,
         ]);
         return true;
     };
@@ -327,8 +338,18 @@ export const resolveQidahenSelectedActionExecutionResolution = (
         armamentId: 'mongol-banners',
         regionKindLabel: '蒙古人',
         troopSourceId: 'mongol-banners',
-        isTargetRegion: isQidahenMongolRuntimeRegionId,
+        isTargetRegion: isQidahenMongolBannersTargetRegion,
     });
+    if (
+        actionId === 'play-event-card'
+        && selectedEventActionCardDefId != null
+        && QIDAHEN_SEVEN_GRIEVANCES_BANNER_CARD_DEF_IDS.includes(selectedEventActionCardDefId)
+        && currentFactionId !== 'jin'
+    ) {
+        nextLastSeasonSummary = dependencies.buildSeasonSummary(selectedEventActionCardLabel ?? '八旗事件', timestamp, [
+            `${nextFactions[currentFactionId].name}使用${selectedEventActionCardLabel ?? '八旗事件'}无效果；不建立次级部队，也不改变后金本土判定。`,
+        ]);
+    }
     resolveDroughtEvent({
         cardDefIds: [
             'qidahen-atlas05-1608-mongol-drought',
@@ -350,6 +371,7 @@ export const resolveQidahenSelectedActionExecutionResolution = (
         markerKind: 'jala',
         markerIdPrefix: 'jala-marker',
         markerLabel: '甲喇标记',
+        markerMapLabel: '甲喇',
         regionKindLabel: '女真人',
         isTargetRegion: isQidahenJurchenRuntimeRegionId,
     });
@@ -395,10 +417,14 @@ export const resolveQidahenSelectedActionExecutionResolution = (
             && selectedRegion.controller === 'jin'
             && getEffectiveHomelandController(state, selectedRegion.id) === 'jin'
         ) {
-            const activeBannerCount = QIDAHEN_SEVEN_GRIEVANCES_BANNER_ARMAMENT_IDS
-                .filter((armamentId) => (
-                    (nextFactions.jin.armaments.find((armament) => armament.id === armamentId)?.level ?? 0) > 0
-                )).length;
+            const activeBannerCount = new Set(
+                state.activeEventCards
+                    .filter((card) => (
+                        card.ownerFactionId === 'jin'
+                        && QIDAHEN_SEVEN_GRIEVANCES_BANNER_CARD_DEF_IDS.includes(card.cardDefId)
+                    ))
+                    .map((card) => card.cardDefId),
+            ).size;
             const addedTroops = 2 + activeBannerCount;
             nextRegions = nextRegions.map((region) => (
                 region.id === selectedRegion.id

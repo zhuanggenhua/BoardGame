@@ -6,6 +6,7 @@ import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getOppon
 import { reduce } from '../reducer';
 import { applyEvents } from '../utils';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { maybeCreateDamageResponseEvent } from '../tokenResponse';
 import type {
     AttackMadeUndefendableEvent,
     BonusDamageAddedEvent,
@@ -795,8 +796,55 @@ export function registerNinjaCustomActions(): void {
         if (!firstTargetId || !secondTargetId) return [];
 
         const firstDamageEvents = createUnblockableDamageEvents(state, playerId, sourceAbilityId, firstTargetId, 4, timestamp);
+        const firstDamageEvent = firstDamageEvents.find((event): event is DamageDealtEvent => event.type === 'DAMAGE_DEALT');
         const stateAfterFirstDamage = applyEvents(state, firstDamageEvents, reduce);
         const secondDamageEvents = createUnblockableDamageEvents(stateAfterFirstDamage, playerId, sourceAbilityId, secondTargetId, 4, timestamp + 1);
+        const secondDamageEvent = secondDamageEvents.find((event): event is DamageDealtEvent => event.type === 'DAMAGE_DEALT');
+        const firstResponseEvent = firstDamageEvent
+            ? maybeCreateDamageResponseEvent({
+                state,
+                damageEvent: firstDamageEvent,
+                attackerId: playerId,
+                sourceAbilityId,
+                timestamp,
+                allowAttackerBoost: false,
+            })
+            : null;
+        if (firstResponseEvent && secondDamageEvent) {
+            firstResponseEvent.payload.pendingDamage.deferredDamageEvents = [
+                {
+                    targetId: secondDamageEvent.payload.targetId,
+                    amount: secondDamageEvent.payload.amount,
+                    actualDamage: secondDamageEvent.payload.actualDamage,
+                    sourceAbilityId: secondDamageEvent.payload.sourceAbilityId,
+                    sourcePlayerId: secondDamageEvent.payload.sourcePlayerId,
+                    damageScope: secondDamageEvent.payload.damageScope,
+                    unblockable: secondDamageEvent.payload.unblockable,
+                    sourceCommandType: secondDamageEvent.sourceCommandType,
+                },
+            ];
+            return [
+                firstResponseEvent,
+                closeoutNonAttackVariant(playerId, timestamp + 2),
+            ];
+        }
+        const secondResponseEvent = secondDamageEvent
+            ? maybeCreateDamageResponseEvent({
+                state: stateAfterFirstDamage,
+                damageEvent: secondDamageEvent,
+                attackerId: playerId,
+                sourceAbilityId,
+                timestamp: timestamp + 1,
+                allowAttackerBoost: false,
+            })
+            : null;
+        if (secondResponseEvent) {
+            return [
+                ...firstDamageEvents,
+                secondResponseEvent,
+                closeoutNonAttackVariant(playerId, timestamp + 2),
+            ];
+        }
         return [
             ...firstDamageEvents,
             ...secondDamageEvents,

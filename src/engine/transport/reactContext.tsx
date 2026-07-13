@@ -6,6 +6,7 @@ import {
 import type { ReactNode } from 'react';
 import type { MatchState } from '../types';
 import type { MatchPlayerInfo, GameBoardProps } from './protocol';
+import type { AiSeatController } from '../ai/types';
 
 export interface GameClientContextValue {
     /** 完整游戏状态 */
@@ -16,6 +17,8 @@ export interface GameClientContextValue {
     playerId: string | null;
     /** 对局玩家信息 */
     matchPlayers: MatchPlayerInfo[];
+    /** 座位控制器：human / local-ai / remote-ai */
+    seatControllers?: Record<string, AiSeatController>;
     /** 是否已连接（本地模式始终为 true） */
     isConnected: boolean;
     /** 是否为多人在线模式 */
@@ -44,6 +47,7 @@ export function useGameClient<
         dispatch: <K extends string & keyof TCommandMap>(type: K, payload: TCommandMap[K]) => void;
         playerId: string | null;
         matchPlayers: MatchPlayerInfo[];
+        seatControllers?: Record<string, AiSeatController>;
         isConnected: boolean;
         isMultiplayer: boolean;
         reset?: () => void;
@@ -88,13 +92,14 @@ export function useBoardProps<TCore = unknown>(): GameBoardProps<TCore> | null {
 
     if (!ctx || !ctx.state) return null;
 
-    const { state, dispatch, playerId, matchPlayers, isConnected, isMultiplayer, reset } = ctx;
+    const { state, dispatch, playerId, matchPlayers, seatControllers, isConnected, isMultiplayer, reset } = ctx;
 
     return {
         G: state as MatchState<TCore>,
         dispatch: dispatch as GameBoardProps<TCore>['dispatch'],
         playerID: playerId,
         matchData: matchPlayers,
+        seatControllers,
         isConnected,
         isMultiplayer,
         reset,

@@ -28,13 +28,18 @@ The Gang SHALL maintain auditable source and intake contracts before external ru
 - **AND** real-page E2E evidence MUST be reported only as runtime-flow validation when the Board has not been checked against the layout contract
 
 ### Requirement: The Gang runtime entry validation
-The Gang SHALL have a real-entry validation path that proves the registered game can be entered and a base heist can be completed through the user-facing board. The core-flow E2E MUST use visible UI controls for chip choices and public progression; test harness command dispatch MUST NOT substitute the player-facing flow. Runtime entry validation SHALL NOT override unresolved base-game material blockers.
+The Gang SHALL have a supported-entry validation path that proves the registered game can be entered and the current viewer can operate through the user-facing board. One client MUST remain bound to one viewer identity and MUST NOT expose a multi-human hotseat switcher. The current viewer's key chip choices and public progression MUST use visible UI controls. A single-client representative-state E2E MAY use state injection or test command dispatch for other seats, but it MUST be labeled as state-injection evidence and MUST NOT claim natural multi-client flow, seat authorization, or synchronization. Runtime entry validation SHALL NOT override unresolved base-game material blockers.
 
 #### Scenario: One heist playable through the board
 - **GIVEN** `the-gang` is discoverable from the generated game registry
-- **WHEN** a user enters a The Gang match from a supported local or online entry
+- **WHEN** a user enters a The Gang match from a supported online entry or an approved local-AI/test entry
 - **THEN** the board MUST reach the first actionable chip-selection state
-- **AND** the user-facing flow MUST complete four rounds by selecting chips through visible seat/chip controls and revealing a success/failure result through the visible progression controls
+- **AND** all player names and public chip states MUST remain visible without a hotseat switcher
+- **AND** hidden hand contents MUST remain limited to the current viewer
+- **AND** the current viewer MUST select chips and use visible progression controls through the user-facing board
+- **AND** other seats MAY be driven by state injection or test commands only when the evidence is explicitly reported as a representative-state test
+- **AND** evidence claiming natural multiplayer operation, seat authorization, or synchronization MUST use separate player clients
+- **AND** mobile delivery MUST treat landscape as the primary orientation; portrait evidence MAY validate compatibility and key-region visibility without requiring direct horizontal scrolling inside the Board
 - **AND** if any base-game required asset remains missing, blocked, or unapproved as a programmatic replacement, the E2E result MUST be reported only as runtime-code validation, not as base-game completion
 
 ### Requirement: The Gang completion reporting

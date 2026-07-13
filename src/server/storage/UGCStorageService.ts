@@ -184,7 +184,7 @@ export function createUGCStorageService(): UGCStorageService {
   }
   
   // 对象存储模式（需要额外配置）
-  // 示例：使用 R2/OSS/COS
+  // 示例：使用 S3 兼容对象存储 / OSS / COS
   return new UGCStorageService({
     mode: 'object-storage',
     publicUrlBase,

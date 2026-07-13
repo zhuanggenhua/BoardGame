@@ -2,6 +2,32 @@ import type { MatchState } from '../types';
 import type { GameEngineConfig } from './server';
 import type { AiSeatController } from '../ai/types';
 
+function extractStateSeatControllers(
+    state: MatchState<unknown> | undefined,
+): Record<string, AiSeatController> | undefined {
+    const core = state?.core;
+    if (!core || typeof core !== 'object' || Array.isArray(core)) {
+        return undefined;
+    }
+
+    const rawSeatControllers = (core as { seatControllers?: unknown }).seatControllers;
+    if (!rawSeatControllers || typeof rawSeatControllers !== 'object' || Array.isArray(rawSeatControllers)) {
+        return undefined;
+    }
+
+    return rawSeatControllers as Record<string, AiSeatController>;
+}
+
+export function resolveRuntimeSeatControllers(args: {
+    state: MatchState<unknown> | undefined;
+    seatControllers: Record<string, AiSeatController>;
+}): Record<string, AiSeatController> {
+    return {
+        ...args.seatControllers,
+        ...(extractStateSeatControllers(args.state) ?? {}),
+    };
+}
+
 export function buildLocalAiSeatStates(
     state: MatchState<unknown>,
     seatControllers: Record<string, AiSeatController>,

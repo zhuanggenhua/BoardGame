@@ -16,11 +16,13 @@ set -euo pipefail
 #   查看日志：  bash deploy-image.sh logs [service]
 #
 # 一键远程执行（服务器上无需克隆仓库）：
-#   curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts/deploy/deploy-image.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts/deploy/deploy-image.sh -o deploy-image.sh
+#   bash deploy-image.sh update
 #
 # 环境变量（可选，用于非交互环境）：
 #   JWT_SECRET=xxx bash deploy-image.sh
-#   DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=300 bash deploy-image.sh update
+#   DEPLOY_TOTAL_TIMEOUT_SECONDS=1800 bash deploy-image.sh update
+#   DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=1800 bash deploy-image.sh update
 #
 # 架构：Cloudflare CDN (HTTPS) → 服务器 80 端口 → Docker web 容器 (NestJS monolith) → 内部 game-server
 # 同域部署，无 CORS 问题。Cloudflare 自动缓存静态资源，服务器只承担 API 和 WebSocket 带宽。
@@ -37,6 +39,56 @@ die() {
   echo "${LOG_PREFIX} 错误: $*" >&2
   exit 1
 }
+
+DEPLOY_TOTAL_TIMEOUT_SECONDS="${DEPLOY_TOTAL_TIMEOUT_SECONDS:-1800}"
+
+run_with_total_timeout_if_needed() {
+  local action="${1:-deploy}"
+  local timeout_seconds="${DEPLOY_TOTAL_TIMEOUT_SECONDS:-1800}"
+  local script_path="${BASH_SOURCE[0]}"
+  local timeout_status=0
+
+  case "$action" in
+    deploy|update|deploy-local|update-local|rollback|rollback-last)
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+
+  if [ "${BG_DEPLOY_TOTAL_TIMEOUT_ACTIVE:-0}" = "1" ]; then
+    return 0
+  fi
+
+  if ! [[ "$timeout_seconds" =~ ^[0-9]+$ ]]; then
+    die "DEPLOY_TOTAL_TIMEOUT_SECONDS 必须是非负整数秒：${timeout_seconds}"
+  fi
+
+  if [ "$timeout_seconds" -eq 0 ]; then
+    return 0
+  fi
+
+  if ! command -v timeout >/dev/null 2>&1; then
+    die "缺少 timeout 命令，无法为整次部署提供 ${timeout_seconds}s 总时限保护"
+  fi
+
+  if [ ! -f "$script_path" ]; then
+    die "变更操作必须从已下载的脚本文件执行，不能通过管道直接执行；否则无法提供整次部署总时限保护"
+  fi
+
+  log "整次部署总时限：${timeout_seconds}s"
+  BG_DEPLOY_TOTAL_TIMEOUT_ACTIVE=1 \
+    timeout --signal=TERM --kill-after=30s "${timeout_seconds}s" \
+      bash "$script_path" "$@" || timeout_status=$?
+
+  if [ "$timeout_status" -eq 124 ] || [ "$timeout_status" -eq 137 ]; then
+    die "整次部署超过 ${timeout_seconds}s，已终止本次操作；请确认当前容器状态后再决定是否重试或改走镜像流式分发"
+  fi
+
+  exit "$timeout_status"
+}
+
+run_with_total_timeout_if_needed "$@"
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 COMPOSE_URL="https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/docker-compose.prod.yml"
@@ -56,7 +108,7 @@ PUBLIC_ENTRY_SYNC_RETRY="${PUBLIC_ENTRY_SYNC_RETRY:-4}"
 PUBLIC_ENTRY_SYNC_DELAY="${PUBLIC_ENTRY_SYNC_DELAY:-5}"
 REQUIRE_PUBLIC_ENTRY_SYNC="${REQUIRE_PUBLIC_ENTRY_SYNC:-1}"
 CLOUDFLARE_PURGE_MODE="${CLOUDFLARE_PURGE_MODE:-auto}"
-DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-300}"
+DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-1800}"
 
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
@@ -1250,7 +1302,7 @@ ensure_local_target_image() {
 
 pull_image_ref() {
   local image_ref="${1:-}"
-  local timeout_seconds="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-300}"
+  local timeout_seconds="${DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS:-1800}"
   local pull_status=0
 
   if [ -z "$image_ref" ]; then

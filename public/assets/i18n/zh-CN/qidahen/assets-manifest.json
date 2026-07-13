@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "scope": "official",
   "id": "qidahen",
-  "basePrefix": "official/qidahen/",
+  "basePrefix": "official/i18n/zh-CN/qidahen/",
   "files": {
     "aids/compressed/jin-player-aid": {
       "variants": {
@@ -217,24 +217,6 @@
           "sha256": "019ba850018746b50abe3fc9bd9bd86b573f65486b24171d69fe0ffe8257cbc4",
           "bytes": 100275,
           "mime": "image/png"
-        }
-      }
-    },
-    "cards/atlases/chronology-deck-atlas": {
-      "variants": {
-        "jpg": {
-          "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
-          "bytes": 4138087,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "cards/atlases/compressed/chronology-deck-atlas": {
-      "variants": {
-        "webp": {
-          "sha256": "2d607caad2eae3b9a3e2f0830bc0f7cabd0983b7b1c24efa3ff053c4eef86e6a",
-          "bytes": 368140,
-          "mime": "image/webp"
         }
       }
     },

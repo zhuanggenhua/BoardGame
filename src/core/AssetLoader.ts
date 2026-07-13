@@ -1630,8 +1630,8 @@ export function getDirectAssetPath(relativePath: string): string {
 }
 
 /**
- * 构建本地资源路径（始终走 /assets/，不走 CDN）
- * 用于 JSON 配置文件等不应上传到 R2 的资源
+ * 构建本地资源路径（始终走 /assets/，不走远程资源域名）
+ * 用于 JSON 配置文件等必须随本地包提供的资源
  */
 export function getLocalAssetPath(path: string): string {
     if (!isString(path) || !path) return '/assets';
@@ -1650,8 +1650,8 @@ export function getLocalAssetPath(path: string): string {
 }
 
 /**
- * 构建本地语言化资源路径（始终走 /assets/，不走 CDN）
- * 用于 JSON 配置文件等不应上传到 R2 的资源
+ * 构建本地语言化资源路径（始终走 /assets/，不走远程资源域名）
+ * 用于 JSON 配置文件等必须随本地包提供的资源
  */
 export function getLocalizedLocalAssetPath(path: string, locale?: string): string {
     if (!locale || isPassthroughSource(path)) return getLocalAssetPath(path);

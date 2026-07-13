@@ -1069,4 +1069,121 @@ describe('Fairies abilities', () => {
         expect(result.events).toHaveLength(0);
         expect(getInteractionsFromResult(result)).toHaveLength(0);
     });
+
+    it('fairies_titania_pod 回手分支只允许选择对手随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('titania-pod-1', 'fairies_titania_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ally-1', 'robot_microbot_beta', '0', 2, { owner: '0', powerModifier: 0 }),
+                    makeMinion('enemy-1', 'robot_microbot_alpha', '1', 1, { owner: '1', powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'titania-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        expect(played.success, played.error).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'fairies_titania_pod');
+        const returnBranchOption = getPromptOption(prompt, entry => entry.value?.branchId === 'return_minion_pod', 'POD return branch');
+        const choseReturnBranch = respondToPrompt(played.finalState, returnBranchOption.id, '0', defaultTestRandom);
+        const targetPrompt = getSimpleChoicePrompt(choseReturnBranch.finalState, 'fairies_titania_pod_return_minion');
+
+        getPromptOption(targetPrompt, entry => entry.value?.minionUid === 'enemy-1', 'opponent minion');
+        expect(getPromptOptions(targetPrompt).some((entry: any) => entry.value?.minionUid === 'ally-1')).toBe(false);
+
+        const targetOption = getPromptOption(targetPrompt, entry => entry.value?.minionUid === 'enemy-1', 'return target');
+        const resolved = respondToPrompt(choseReturnBranch.finalState, targetOption.id, '0', defaultTestRandom);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
+        expect(resolved.finalState.core.players['1'].hand.some(card => card.uid === 'enemy-1')).toBe(true);
+    });
+
+    it('fairies_leaf_armor_pod 天赋给宿主临时 +2 力量且不弹转移 prompt', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('host-1', 'pirate_first_mate', '0', 3, {
+                        attachedActions: [{ uid: 'leaf-pod-1', defId: 'fairies_leaf_armor_pod', ownerId: '0' }],
+                    }),
+                    makeMinion('other-1', 'robot_microbot_beta', '0', 2),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { ongoingCardUid: 'leaf-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        expect(used.success, used.error).toBe(true);
+        expectNoPrompt(used.finalState);
+        const host = used.finalState.core.bases[0].minions.find(minion => minion.uid === 'host-1');
+        expect(host).toBeDefined();
+        expect(getEffectivePower(used.finalState.core, host!, 0)).toBe(5);
+        expect(used.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-1')?.attachedActions).toHaveLength(0);
+    });
+
+    it('fairies_glymmer_pod 目标分支最低力量为 0，并在你的下回合开始恢复', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('glymmer-pod-1', 'fairies_glymmer_pod', '0', 4, { powerModifier: 0 }),
+                    makeMinion('enemy-1', 'robot_microbot_alpha', '1', 3, { powerModifier: 0 }),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const used = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'glymmer-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        expect(used.success, used.error).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(used.finalState, 'fairies_glymmer');
+        const targetBranch = getPromptOption(prompt, entry => entry.value?.choice === 'target_other', 'target-other branch');
+        const choseTargetBranch = respondToPrompt(used.finalState, targetBranch.id, '0', defaultTestRandom);
+        const targetPrompt = getSimpleChoicePrompt(choseTargetBranch.finalState, 'fairies_glymmer_target');
+        const targetOption = getPromptOption(targetPrompt, entry => entry.value?.minionUid === 'enemy-1', 'weaken target');
+        const resolved = respondToPrompt(choseTargetBranch.finalState, targetOption.id, '0', defaultTestRandom);
+
+        const weakened = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-1');
+        expect(weakened).toBeDefined();
+        expect(getEffectivePower(resolved.finalState.core, weakened!, 0)).toBe(0);
+
+        const afterTurnStart = reduce(resolved.finalState.core, {
+            type: SU_EVENTS.TURN_STARTED,
+            payload: { playerId: '0', turnNumber: 3 },
+            timestamp: 3000,
+        } as any);
+        const restored = afterTurnStart.bases[0].minions.find(minion => minion.uid === 'enemy-1');
+        expect(getEffectivePower(afterTurnStart, restored!, 0)).toBe(3);
+    });
 });

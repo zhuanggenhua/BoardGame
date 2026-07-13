@@ -21,11 +21,14 @@ export interface DiceStagePolicyParams {
 
 export function canInteractDiceForCurrentBoard(params: DiceStagePolicyParams): boolean {
     const canOperateOwnRoll = !params.isSpectator && params.isSelfView && params.isViewRolling;
+    const canOperateOwnedDiceInteraction = !params.isSpectator
+        && params.hasDiceMultistepInteraction
+        && params.diceInteractionPlayerId === params.rootPid;
     const canOperateResponseDice = !params.isSpectator
         && params.diceInteractionPlayerId === params.rootPid
         && (params.isManualSelfResponseWindow || params.isDirectDiceActor || params.currentResponderId === params.rootPid);
 
-    return (canOperateOwnRoll || canOperateResponseDice)
+    return (canOperateOwnRoll || canOperateOwnedDiceInteraction || canOperateResponseDice)
         && !params.isAttackShowcaseVisible
         && !params.isDuelDirectDefenseOnly;
 }
@@ -36,14 +39,18 @@ export function shouldUseBoardDiceStage(params: DiceStagePolicyParams): boolean 
     const shouldShowForRolling = params.boardDice3dEnabled
         && params.isRollPhase
         && params.isViewRolling
-        && (params.rollCount > 0 || params.isRolling || params.hasPassiveRerollSelection);
+        && !params.isAttackShowcaseVisible
+        && !params.isDuelDirectDefenseOnly;
 
     const shouldShowForResponseDice = params.diceInteractionPlayerId === params.rootPid
         && !params.isSpectator
         && (params.isManualSelfResponseWindow || params.isDirectDiceActor || params.currentResponderId === params.rootPid);
+    const shouldShowForOwnedDiceInteraction = params.hasDiceMultistepInteraction
+        && params.diceInteractionPlayerId === params.rootPid
+        && !params.isSpectator;
 
     const shouldShowForInteraction = params.hasDiceMultistepInteraction
-        && (params.isViewRolling || shouldShowForResponseDice);
+        && (params.isViewRolling || shouldShowForResponseDice || shouldShowForOwnedDiceInteraction);
 
     return shouldShowForRolling || shouldShowForInteraction;
 }

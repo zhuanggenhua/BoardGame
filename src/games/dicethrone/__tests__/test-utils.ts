@@ -750,6 +750,7 @@ export function injectPendingInteraction(
             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
             localReducer: (current, step) => diceModifyReducer(current, step, config, selectCount),
             toCommands: (result) => diceModifyToCommands(result, selectCount),
+            getCompletedSteps: (result) => result.modCount,
             meta: {
                 dtType: 'modifyDie',
                 dieModifyConfig: config,
@@ -779,8 +780,9 @@ export function injectPendingInteraction(
         maxSteps: selectCount,
         minSteps: 1,
         initialResult: { selectedDiceIds: [] },
-        localReducer: diceSelectReducer,
-        toCommands: diceSelectToCommands,
+        localReducer: (current, step) => diceSelectReducer(current, step, selectCount),
+        toCommands: (result) => diceSelectToCommands(result, selectCount),
+        getCompletedSteps: (result) => result.selectedDiceIds.length,
         meta: {
             dtType: 'selectDie',
             selectCount,

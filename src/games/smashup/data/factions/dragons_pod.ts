@@ -2,7 +2,7 @@ import type { ActionCardDef, CardDef, MinionCardDef } from '../../domain/types';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const FACTION = SMASHUP_FACTION_IDS.DRAGONS_POD;
-const ATLAS = SMASHUP_ATLAS_IDS.DRAGONS_POD_CARDS;
+const ATLAS = SMASHUP_ATLAS_IDS.DRAGONS_POD;
 
 export const DRAGONS_POD_ACTIONS: ActionCardDef[] = [
     {

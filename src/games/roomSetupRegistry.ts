@@ -9,12 +9,13 @@ import {
     buildFantasyRealmsPublicRoomSummary,
     getFantasyRealmsAllowedPlayerCounts,
 } from './fantasyrealms/roomSetup';
+import { buildBetrayalPublicRoomSummary } from './betrayal/roomSetup';
 import { buildQidahenPublicRoomSummary } from './qidahen/roomSetup';
 import { buildSmashUpPublicRoomSummary } from './smashup/roomSetup';
 
 type SetupDataRecord = Record<string, unknown> | undefined;
 type PlayerOptionsResolver = (setupData?: SetupDataRecord) => readonly number[] | undefined;
-type PublicSetupSummaryBuilder = (setupData?: SetupDataRecord) => PublicSetupSummary;
+type PublicSetupSummaryBuilder = (setupData?: SetupDataRecord, runtimeState?: unknown) => PublicSetupSummary;
 type CreateRoomSetupDefaultsResolver = (args: {
     numPlayers: number;
     setupSelections: GameSetupSelections;
@@ -26,6 +27,7 @@ const PLAYER_OPTIONS_RESOLVERS: Record<string, PlayerOptionsResolver | undefined
 };
 
 const PUBLIC_SETUP_SUMMARY_BUILDERS: Record<string, PublicSetupSummaryBuilder | undefined> = {
+    betrayal: buildBetrayalPublicRoomSummary,
     fantasyrealms: buildFantasyRealmsPublicRoomSummary,
     qidahen: buildQidahenPublicRoomSummary,
     smashup: buildSmashUpPublicRoomSummary,
@@ -99,8 +101,17 @@ export function resolveAllowedPlayerCountsForGame(args: {
 export function buildGamePublicRoomSummary(
     gameId: string,
     setupData?: SetupDataRecord,
+    runtimeState?: unknown,
 ): PublicSetupSummary {
-    return PUBLIC_SETUP_SUMMARY_BUILDERS[normalizeGameId(gameId)]?.(setupData);
+    return PUBLIC_SETUP_SUMMARY_BUILDERS[normalizeGameId(gameId)]?.(setupData, runtimeState);
+}
+
+export function shouldReadGameStateForPublicRoomSummary(gameId?: string): boolean {
+    return normalizeGameId(gameId) === 'betrayal';
+}
+
+export function shouldRefreshPublicRoomSummaryAfterCommand(gameId: string | undefined, commandType: string): boolean {
+    return normalizeGameId(gameId) === 'betrayal' && commandType === 'START_SCENARIO';
 }
 
 export function applyCreateRoomSetupDefaultsForGame(args: {

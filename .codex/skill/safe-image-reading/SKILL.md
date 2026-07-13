@@ -1,6 +1,6 @@
 ---
 name: safe-image-reading
-description: BoardGame 项目内的需求交接式安全图片处理 workflow。用于用户当前需求需要 AI 读取 JPG/PNG/WebP、图集裁片、卡图、房间图、规则页或截图时；普通单图默认先压缩/裁切成轻量图，由主线程直接读取并按当前目的给结论，压缩图就是给 AI 看的默认输入；只有大图、批量图、atlas/整页图、SpriteSheet 或用户明确要求“本会话安全读取图片”时，才升级为带目的和验收标准的子代理/OCR/外部开图链路。数据录入需求才返回官方原文、原子子句和结构化规则字段；验收/对比需求只返回是否满足用户预期、失败点和证据，并避免原图/base64 污染后续上下文。
+description: "BoardGame 安全读图流程。用于 JPG/PNG/WebP、图集裁片、卡图、房间图、规则页、OCR 或截图验收；默认轻量裁图。"
 ---
 
 # Safe Image Reading

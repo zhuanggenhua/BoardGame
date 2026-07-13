@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { FxQuality } from '../../../engine/fx';
 import { ShatterEffect } from '../../../components/common/animations/ShatterEffect';
 import type { ShatterImageSource } from '../../../components/common/animations/ShatterEffect';
 import { getSpriteAtlasSource, getSpriteAtlasStyle } from './cardAtlas';
@@ -27,6 +28,7 @@ interface DestroyEffectProps {
   effect: DestroyEffectData;
   /** 格子位置计算函数 */
   getCellPosition: (row: number, col: number) => { left: number; top: number; width: number; height: number };
+  quality?: FxQuality;
   onComplete: (id: string) => void;
 }
 
@@ -40,6 +42,7 @@ const CARD_PADDING_TOP = `${100 / CARD_ASPECT_RATIO}%`;
 const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
   effect,
   getCellPosition,
+  quality = 'full',
   onComplete,
 }) => {
   const { t } = useTranslation('game-summonerwars');
@@ -104,6 +107,7 @@ const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
             <ShatterEffect
               active
               intensity={isStructure ? 'strong' : 'normal'}
+              quality={quality}
               imageSource={imageSource}
               onStart={() => setCardHidden(true)}
               onComplete={() => onComplete(effect.id)}
@@ -157,8 +161,9 @@ const DestroyEffectItem: React.FC<DestroyEffectProps> = ({
 export const DestroyEffectsLayer: React.FC<{
   effects: DestroyEffectData[];
   getCellPosition: (row: number, col: number) => { left: number; top: number; width: number; height: number };
+  quality?: FxQuality;
   onEffectComplete: (id: string) => void;
-}> = ({ effects, getCellPosition, onEffectComplete }) => {
+}> = ({ effects, getCellPosition, quality = 'full', onEffectComplete }) => {
   return (
     <div className="absolute inset-0 pointer-events-none z-20" style={{ overflow: 'visible' }}>
       <AnimatePresence>
@@ -167,6 +172,7 @@ export const DestroyEffectsLayer: React.FC<{
             key={effect.id}
             effect={effect}
             getCellPosition={getCellPosition}
+            quality={quality}
             onComplete={onEffectComplete}
           />
         ))}

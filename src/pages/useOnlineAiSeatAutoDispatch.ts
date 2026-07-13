@@ -26,9 +26,16 @@ import {
     buildOnlineAiSeamAwareAttemptMarkers,
     buildOnlineAiIdleSeatRecoveryKey,
     buildOnlineAiSubmitBlockedRecoveryKey,
+    resolveOnlineAiEffectiveSeatStates,
     resolveOnlineAiSeatRecoveryAttempt,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from './onlineAiRecovery';
+import {
+    ONLINE_AI_NO_PROGRESS_FORCE_END_THRESHOLD,
+    resolveOnlineAiNoProgressLoopTracker,
+    shouldForceEndOnlineAiNoProgressLoop,
+    type OnlineAiNoProgressLoopTracker,
+} from './onlineAiNoProgressLoop';
 import {
     emitOnlineAiPerf,
     onlineAiPerfLogger,
@@ -41,6 +48,8 @@ import {
 import {
     finalizeOnlineAiResolutionConfirmation,
     resolveCurrentPlayerId,
+    resolveForceEndTurnForStalledAi,
+    submitForceEndTurnRecoverySequence,
     submitOnlineAiResolution,
 } from './onlineAiForceSkip';
 import type { OnlineAiSeatTransportRuntime } from './useOnlineAiSeatTransportRuntime';
@@ -69,6 +78,7 @@ type OnlineAiResolutionSubmissionLifecycleArgs = {
     matchId: string;
     engineConfig: OnlineAiRecoveryEngineConfig;
     sharedState: MatchState<unknown>;
+    beforeResolutionState: MatchState<unknown>;
     resolution: AiResolution;
     commandTypes: string[];
     client: GameTransportClient;
@@ -161,12 +171,14 @@ function createOnlineAiResolutionSubmissionLifecycle(args: OnlineAiResolutionSub
         matchId,
         engineConfig,
         sharedState,
+        beforeResolutionState,
         resolution,
         commandTypes,
         client,
         submittedAt,
         lastAiAttemptKeyRef,
         activeAiAttemptRef,
+        noProgressLoopTrackerRef,
         aiSeatDecisionDebugRef,
         aiSeatStateOverridesRef,
         getSeatLatestState,
@@ -190,15 +202,30 @@ function createOnlineAiResolutionSubmissionLifecycle(args: OnlineAiResolutionSub
             });
         },
         onConfirmed: (authoritativeState: unknown) => {
+            const confirmedSeatState = authoritativeState && typeof authoritativeState === 'object'
+                ? authoritativeState as MatchState<unknown>
+                : null;
+            if (confirmedSeatState) {
+                const loopResolution = resolveOnlineAiNoProgressLoopTracker({
+                    current: noProgressLoopTrackerRef.current,
+                    beforeState: beforeResolutionState,
+                    afterState: confirmedSeatState,
+                    playerId: resolution.playerId,
+                    resolution,
+                    commandTypes,
+                    engineConfig,
+                });
+                noProgressLoopTrackerRef.current = loopResolution.nextTracker;
+            } else {
+                noProgressLoopTrackerRef.current = null;
+            }
             setOnlineAiSeatDecisionDebug(aiSeatDecisionDebugRef, resolution.playerId, {
                 stage: 'confirmed',
                 source: resolution.source,
                 actionKind: resolution.action.kind,
                 commandTypes,
+                noProgressLoopCount: noProgressLoopTrackerRef.current?.count ?? 0,
             });
-            const confirmedSeatState = authoritativeState && typeof authoritativeState === 'object'
-                ? authoritativeState as MatchState<unknown>
-                : null;
             const shouldStageOverride = shouldStageOnlineAiSeatOverrideFromConfirmedState({
                 authoritativeState,
                 latestSeatState: getSeatLatestState(resolution.playerId),
@@ -465,6 +492,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
     const lastVisibleAiActionAtRef = useRef<number | null>(null);
     const staleSeatDecisionKeyRef = useRef<string | null>(null);
     const staleSeatRecoveryRef = useRef<OnlineAiSeatRecoveryTracker | null>(null);
+    const noProgressLoopTrackerRef = useRef<OnlineAiNoProgressLoopTracker | null>(null);
     const aiActivePhaseRef = useRef<{ key: string; startedAt: number } | null>(null);
     const activeAiAttemptRef = useRef<ActiveAiAttempt | null>(null);
 
@@ -506,6 +534,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
             activeAiAttemptRef.current = null;
             lastVisibleAiActionAtRef.current = null;
             staleSeatRecoveryRef.current = null;
+            noProgressLoopTrackerRef.current = null;
             return;
         }
         const sharedState = state as MatchState<unknown>;
@@ -709,6 +738,7 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
             decisionResolvedAt: number,
             commandTypes: string[],
         ) => {
+            const beforeResolutionState = getEffectiveSeatState(resolution.playerId) ?? sharedState;
             aiSeatDecisionDebugRef.current[resolution.playerId] = {
                 stage: 'action',
                 source: resolution.source,
@@ -740,6 +770,63 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                     updatedAt: Date.now(),
                 };
                 return;
+            }
+            if (shouldForceEndOnlineAiNoProgressLoop({
+                tracker: noProgressLoopTrackerRef.current,
+                state: beforeResolutionState,
+                playerId: resolution.playerId,
+                engineConfig,
+            })) {
+                const seatStates = resolveOnlineAiEffectiveSeatStates({
+                    playerIds: Object.keys(seatControllers),
+                    seatStateOverrides: aiSeatStateOverridesRef.current,
+                    seatLatestStates: Object.fromEntries(
+                        Object.keys(seatControllers).map((playerId) => [playerId, getSeatLatestState(playerId)]),
+                    ),
+                    engineConfig,
+                });
+                const forceEndCandidate = resolveForceEndTurnForStalledAi({
+                    sharedState,
+                    seatControllers,
+                    seatStates,
+                    engineConfig,
+                    gameId: engineConfig.gameId,
+                });
+                const forceEndClient = forceEndCandidate ? getSeatClient(forceEndCandidate.playerId) : null;
+                if (
+                    forceEndCandidate
+                    && forceEndCandidate.legalActionOnly !== true
+                    && forceEndCandidate.resolution.action.commands.length > 0
+                    && forceEndClient?.isConnected
+                    && lastAiAttemptKeyRef.current === null
+                ) {
+                    aiSeatDecisionDebugRef.current[resolution.playerId] = {
+                        stage: 'no-progress-force-end',
+                        source: resolution.source,
+                        actionKind: resolution.action.kind,
+                        commandTypes,
+                        loopCount: noProgressLoopTrackerRef.current?.count ?? ONLINE_AI_NO_PROGRESS_FORCE_END_THRESHOLD,
+                        forceEndReason: forceEndCandidate.reason,
+                    };
+                    noProgressLoopTrackerRef.current = null;
+                    submitForceEndTurnRecoverySequence({
+                        client: forceEndClient,
+                        candidate: forceEndCandidate,
+                        lastAiAttemptKeyRef,
+                        scheduleRetry,
+                        seatControllers,
+                        engineConfig,
+                        gameId: engineConfig.gameId,
+                        onCompleted: () => {
+                            noProgressLoopTrackerRef.current = null;
+                            scheduleAiRetry();
+                        },
+                        onRejected: () => {
+                            scheduleAiRetry();
+                        },
+                    });
+                    return;
+                }
             }
             activeAiAttemptRef.current = {
                 attemptKey: resolution.attemptKey,
@@ -1008,12 +1095,14 @@ export function useOnlineAiSeatAutoDispatch(args: OnlineAiSeatAutoDispatchArgs):
                 matchId,
                 engineConfig,
                 sharedState,
+                beforeResolutionState,
                 resolution,
                 commandTypes,
                 client,
                 submittedAt,
                 lastAiAttemptKeyRef,
                 activeAiAttemptRef,
+                noProgressLoopTrackerRef,
                 aiSeatDecisionDebugRef,
                 aiSeatStateOverridesRef,
                 getSeatLatestState,

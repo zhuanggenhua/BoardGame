@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { resolveRoomExpansionLabel, type RoomItem, type ActiveMatchInfo } from './roomActions';
+import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, type RoomItem, type ActiveMatchInfo } from './roomActions';
 
 interface RoomListProps {
     roomItems: RoomItem[];
@@ -167,6 +167,27 @@ export const RoomList = ({
                                                     })}
                                                 </div>
                                             )}
+                                            {(() => {
+                                                const isBetrayalRoom = room.gameName?.trim().toLowerCase() === 'betrayal';
+                                                const scenarioLabel = room.publicSetupSummary?.scenarioId
+                                                    ? resolveRoomScenarioLabel(t, room.gameName, room.publicSetupSummary.scenarioId)
+                                                    : isBetrayalRoom
+                                                        ? t('rooms.scenarioPending', { defaultValue: '未定剧本' })
+                                                        : '';
+                                                return scenarioLabel ? (
+                                                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                                        <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-parchment-light-text/85">
+                                                            {t('rooms.scenario', { defaultValue: '剧本' })}
+                                                        </span>
+                                                        <span
+                                                            data-testid={`room-scenario-tag-${room.matchID}`}
+                                                            className="inline-flex min-w-[2.4rem] items-center justify-center rounded-full border border-parchment-card-border/35 bg-parchment-base-bg/60 px-2 py-0.5 text-[9px] font-bold tracking-[0.08em] text-parchment-base-text"
+                                                        >
+                                                            {scenarioLabel}
+                                                        </span>
+                                                    </div>
+                                                ) : null;
+                                            })()}
                                         </>
                                     );
                                 })()}

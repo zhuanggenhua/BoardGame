@@ -724,11 +724,29 @@
         }
       }
     },
+    "audio/phrase-mappings.zh-CN": {
+      "variants": {
+        "json": {
+          "sha256": "dae7ccaedd84fc67d47da5a09adc7a6f1bdfa66e38363f3e21e327bcd7562c19",
+          "bytes": 173271,
+          "mime": "application/json"
+        }
+      }
+    },
     "audio/phrase-mappings.zh-CN.json": {
       "variants": {
         "json": {
           "sha256": "dae7ccaedd84fc67d47da5a09adc7a6f1bdfa66e38363f3e21e327bcd7562c19",
           "bytes": 173271,
+          "mime": "application/json"
+        }
+      }
+    },
+    "audio/registry": {
+      "variants": {
+        "json": {
+          "sha256": "8a634a26f2c8621a51293b83508b9759ba778c54f099103e61f271cd06c8941b",
+          "bytes": 3692624,
           "mime": "application/json"
         }
       }

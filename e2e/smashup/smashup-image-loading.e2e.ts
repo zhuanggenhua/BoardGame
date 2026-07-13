@@ -212,6 +212,105 @@ test.describe('SmashUp Image Loading', () => {
         await saveEvidenceScreenshot(page, testInfo, 'giant-ants-pirates-local-board');
     });
 
+    test('Pretty Pretty POD 本地对局应正常显示 POD 图集与手牌卡图', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        const imageRequests: string[] = [];
+        page.on('request', request => {
+            const url = request.url();
+            if (url.includes('.webp') && url.includes('smashup')) {
+                imageRequests.push(url);
+            }
+        });
+
+        await game.openTestGame('smashup', {
+            p0: 'kitty_cats_pod,mythic_horses_pod',
+            p1: 'fairies_pod,princesses_pod',
+            skipFactionSelect: true,
+            skipInitialization: false,
+            seed: 20260708,
+        }, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [
+                    { uid: 'hand-kitty-muffin-pod', defId: 'kitty_cats_muffin_pod', type: 'minion', owner: '0' },
+                    { uid: 'hand-horse-seastar-pod', defId: 'mythic_horses_seastar_pod', type: 'minion', owner: '0' },
+                ],
+                deck: [],
+                discard: [],
+                factions: ['kitty_cats_pod', 'mythic_horses_pod'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                hand: [
+                    { uid: 'hand-fairy-titania-pod', defId: 'fairies_titania_pod', type: 'minion', owner: '1' },
+                    { uid: 'hand-princess-griselda-pod', defId: 'princesses_griselda_pod', type: 'minion', owner: '1' },
+                ],
+                deck: [],
+                discard: [],
+                factions: ['fairies_pod', 'princesses_pod'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                { defId: 'base_house_of_nine_lives_pod' },
+                { defId: 'base_pony_paradise_pod' },
+                { defId: 'base_fairy_ring_pod' },
+                { defId: 'base_beautiful_castle_pod' },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+        });
+
+        await game.waitForPhase('playCards');
+        await game.waitForCurrentPlayer('0');
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-card-uid="hand-kitty-muffin-pod"]')).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('[data-card-uid="hand-horse-seastar-pod"]')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText(/The House of Nine Lives|九命|Pony Land|小马/i).first())
+            .toBeVisible({ timeout: 5000 });
+
+        const handPreviews = await collectPreviewStats(
+            page,
+            '[data-card-uid="hand-kitty-muffin-pod"], [data-card-uid="hand-horse-seastar-pod"]',
+        );
+        expect(handPreviews.visible).toBe(2);
+        expect(handPreviews.rendered).toBe(handPreviews.visible);
+
+        const podHoverTranslation = page.locator(
+            '[data-card-uid="hand-kitty-muffin-pod"] [data-testid="su-card-text-overlay"]',
+        );
+        await expect(podHoverTranslation).toHaveAttribute('data-overlay-visibility', 'hover');
+        await expect(podHoverTranslation).toContainText('松饼');
+        await expect(podHoverTranslation).toContainText('控制一个力量为 3 或更低的仆从直到回合结束。');
+
+        await page.locator('[data-card-uid="hand-kitty-muffin-pod"]').hover();
+        await expect.poll(async () => podHoverTranslation.evaluate((node) =>
+            window.getComputedStyle(node).opacity,
+        )).toBe('1');
+
+        const requestedPrettyPrettyPodAssets = imageRequests.filter((url) =>
+            url.includes('kitty_cats_pod.webp')
+            || url.includes('mythic_horses_pod.webp')
+            || url.includes('pretty_pretty_pod.webp'),
+        );
+        expect(requestedPrettyPrettyPodAssets.length).toBeGreaterThan(0);
+
+        const player0 = await game.getPlayerState('0');
+        const player1 = await game.getPlayerState('1');
+        expect(player0?.factions).toEqual(['kitty_cats_pod', 'mythic_horses_pod']);
+        expect(player1?.factions).toEqual(['fairies_pod', 'princesses_pod']);
+
+        await saveEvidenceScreenshot(page, testInfo, 'pretty-pretty-pod-local-board');
+    });
+
     test('应该成功加载手牌区域的卡牌图片', async ({ browser }, testInfo) => {
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const setup = await setupTwoPlayerMatch(browser, baseURL);

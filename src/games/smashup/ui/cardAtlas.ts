@@ -1,5 +1,5 @@
+// @asset-pipeline-allow
 import type { CSSProperties } from 'react';
-import { getLocalizedAssetPath } from '../../../core';
 import {
     type SpriteAtlasConfig,
     computeSpriteStyle,
@@ -29,48 +29,22 @@ export const generateUniformAtlasConfig = (
 ): CardAtlasConfig => engineGenerateUniform(imageW, imageH, rows, cols);
 
 /**
- * 获取图片尺寸
- */
-const getImageSize = (src: string): Promise<{ width: number; height: number }> => {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-        img.onerror = reject;
-        img.src = src;
-    });
-};
-
-/**
  * 加载卡牌图集配置
- * SmashUp 所有图集都是规则网格，通过图片实际尺寸 + 行列数生成配置
- * 图片尺寸探测使用 getLocalizedAssetPath + 固定 locale，因为图片已迁移到 i18n/ 目录
- * 像素尺寸与语言无关，但文件只存在于国际化路径下
+ * SmashUp 图集运行时通过 cardAtlasRegistry 的懒解析链路从 AssetLoader 预加载缓存读取尺寸。
+ * 这里保留旧导出兼容历史调用方，不再自建图片加载链路。
  * @param imageBase 图片基础路径（不含扩展名），如 'smashup/base/base1'
  * @param defaultGrid 网格配置（行列数）
  */
 export const loadCardAtlasConfig = async (
-    imageBase: string,
+    _imageBase: string,
     defaultGrid: UniformAtlasDefault,
 ): Promise<CardAtlasConfig> => {
-    const fileName = imageBase.split('/').pop() ?? imageBase;
-    // 固定使用 zh-CN 探测尺寸（像素尺寸与语言无关，但文件只存在于 i18n/ 目录下）
-    const PROBE_LOCALE = 'zh-CN';
-
-    // 从压缩版图片获取实际尺寸，生成均匀网格配置
-    try {
-        const webpPath = `${imageBase.split('/').slice(0, -1).join('/')}/compressed/${fileName}.webp`;
-        const imgUrl = getLocalizedAssetPath(webpPath, PROBE_LOCALE);
-        const { width, height } = await getImageSize(imgUrl);
-        return generateUniformAtlasConfig(width, height, defaultGrid.rows, defaultGrid.cols);
-    } catch {
-        // 全部失败，回退到虚拟尺寸
-        return generateUniformAtlasConfig(
-            defaultGrid.cols,
-            defaultGrid.rows,
-            defaultGrid.rows,
-            defaultGrid.cols
-        );
-    }
+    return generateUniformAtlasConfig(
+        defaultGrid.cols,
+        defaultGrid.rows,
+        defaultGrid.rows,
+        defaultGrid.cols
+    );
 };
 
 export const getCardAtlasStyle = (index: number, atlas: CardAtlasConfig) => {
@@ -88,9 +62,13 @@ type EnglishMapConfig = { atlasId: string; index: number };
 
 const REQUIRED_TTS_ATLAS_IDS = Array.from(
     new Set(
-        Object.values(smashUpEnglishMap as Record<string, EnglishMapConfig>).map(entry => entry.atlasId)
+        Object.values(smashUpEnglishMap as Record<string, EnglishMapConfig>)
+            .map(entry => entry.atlasId)
+            .filter(atlasId => atlasId.startsWith('tts_atlas_'))
     )
-).sort();
+)
+    .filter(atlasId => !SMASHUP_ATLAS_DEFINITIONS.some(atlas => atlas.id === atlasId))
+    .sort();
 
 /**
  * 初始化 SmashUp 所有图集（模块加载时同步注册）

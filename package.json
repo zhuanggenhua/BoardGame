@@ -1,8 +1,8 @@
 {
   "name": "boardgame-platform",
   "private": true,
-  "version": "0.6.1",
-  "androidVersionCode": 564,
+  "version": "0.6.5",
+  "androidVersionCode": 568,
   "type": "module",
   "engines": {
     "node": "24.1.0"
@@ -106,6 +106,7 @@
     "check:prod-deps": "bash scripts/deploy/verify-prod-deps.sh",
     "deploy:runner": "node scripts/deploy/deploy-runner.mjs",
     "release:deploy-and-ota": "node scripts/release/deploy-and-ota.mjs",
+    "audit:no-r2-runtime": "node scripts/audit/assert-no-r2-runtime.mjs",
     "merge:audit": "node scripts/verify/merge-conflict-audit.mjs",
     "merge:audit:strict": "node scripts/verify/merge-conflict-audit.mjs --fail-on-single-side",
     "verify:open-image": "node scripts/verify/open-verified-image.mjs",
@@ -142,11 +143,11 @@
     "mobile:ios:open": "npx cap open ios",
     "mobile:ios:ota:publish": "node scripts/mobile/publish-ios-ota.mjs",
     "typecheck": "tsc --noEmit",
-    "assets:download": "node scripts/assets/download-from-r2.js",
-    "assets:upload": "node scripts/assets/upload-to-r2.js",
-    "assets:upload:force": "cross-env FORCE_UPLOAD=1 node scripts/assets/upload-to-r2.js",
-    "assets:check": "node scripts/assets/upload-to-r2.js --check",
-    "assets:sync": "node scripts/assets/upload-to-r2.js --sync",
+    "assets:download": "node scripts/assets/download-from-server.js",
+    "assets:upload": "node scripts/assets/upload-to-server.js",
+    "assets:upload:force": "cross-env FORCE_UPLOAD=1 node scripts/assets/upload-to-server.js",
+    "assets:check": "node scripts/assets/upload-to-server.js --check",
+    "assets:sync": "node scripts/assets/upload-to-server.js --sync",
     "prepare": "simple-git-hooks",
     "dev:parallel": "concurrently \"npm:dev:game\" \"npm:dev:api\" \"npm:dev:frontend:wait\"",
     "dev:game:lite": "cross-env NODE_ENV=development USE_PERSISTENT_STORAGE=false node scripts/infra/dev-bundle-runner.mjs --label game-lite --entry server.ts --outfile temp/dev-bundles/game-lite/server.mjs --tsconfig tsconfig.server.json"

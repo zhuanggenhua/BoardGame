@@ -25,12 +25,12 @@ import {
 
 describe('撤销系统：抬一手打出后的多级撤回', () => {
     it('完整流程：打出抬一手 → 完成交互 → 连续撤回应成功', () => {
-        // 骰子值：5个3，重掷后得1
-        const random = createQueuedRandom([3, 3, 3, 3, 3, /* 重掷 */ 1]);
+        // 骰子值：5 个拳，选定攻击后，对手用“抬一手”重掷 1 颗
+        const random = createQueuedRandom([1, 1, 1, 1, 1, /* 重掷 */ 2]);
         const runner = createRunner(random, true);
 
-        // 阶段 1：推进到 offensiveRoll → 掷骰 → 确认 → 打出抬一手
-        // 快照创建点：ADVANCE_PHASE(S1) + CONFIRM_ROLL(S2) = 2
+        // 阶段 1：推进到 offensiveRoll → 掷骰 → 确认 → 选定攻击 → 打出抬一手
+        // 快照创建点：ADVANCE_PHASE(S1) + CONFIRM_ROLL(S2) + SELECT_ABILITY(S3) = 3
         // 注意：PLAY_CARD 在响应窗口中，不创建快照（响应窗口有独立的快照机制）
         const result1 = runner.run({
             name: '打出抬一手并创建交互',
@@ -46,6 +46,7 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
                 ...advanceTo('offensiveRoll'),
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }),
                 cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
             ],
         });
@@ -55,9 +56,9 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
         expect(interaction1, '交互应已创建').toBeDefined();
         expect(interaction1?.kind).toBe('multistep-choice');
 
-        // ADVANCE_PHASE(S1) + CONFIRM_ROLL(S2) = 2
+        // ADVANCE_PHASE(S1) + CONFIRM_ROLL(S2) + SELECT_ABILITY(S3) = 3
         const snapshotCount1 = result1.finalState.sys.undo.snapshots.length;
-        expect(snapshotCount1).toBe(2);
+        expect(snapshotCount1).toBe(3);
 
         // 阶段 2：完成骰子选择交互 → 重掷 → 响应窗口关闭
         const result2 = runner.run({
@@ -73,9 +74,9 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
         expect(result2.finalState.sys.interaction?.current).toBeUndefined();
         expect(result2.finalState.sys.responseWindow?.current).toBeUndefined();
 
-        // 快照数量应保持 2（REROLL_DIE 和 SYS_INTERACTION_CONFIRM 不在白名单中）
+        // 快照数量应保持 3（REROLL_DIE 和 SYS_INTERACTION_CONFIRM 不在白名单中）
         const snapshotCount2 = result2.finalState.sys.undo.snapshots.length;
-        expect(snapshotCount2).toBe(2);
+        expect(snapshotCount2).toBe(3);
 
         // 阶段 3：第一次撤回（requireApproval=true，需要 REQUEST + APPROVE）
         const result3 = runner.run({
@@ -87,8 +88,8 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
             ],
         });
 
-        // 撤回成功，快照 2 → 1
-        expect(result3.finalState.sys.undo.snapshots.length).toBe(1);
+        // 撤回成功，快照 3 → 2
+        expect(result3.finalState.sys.undo.snapshots.length).toBe(2);
         expect(result3.finalState.sys.undo.pendingRequest).toBeUndefined();
 
         // 阶段 4：第二次撤回
@@ -101,14 +102,28 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
             ],
         });
 
-        // 快照 1 → 0
-        expect(result4.finalState.sys.undo.snapshots.length).toBe(0);
+        // 快照 2 → 1
+        expect(result4.finalState.sys.undo.snapshots.length).toBe(1);
         expect(result4.finalState.sys.undo.pendingRequest).toBeUndefined();
 
-        // 阶段 5：快照为空时撤回应失败
+        // 阶段 5：第三次撤回
         const result5 = runner.run({
-            name: '快照为空时撤回应失败',
+            name: '第三次撤回',
             setup: () => result4.finalState,
+            commands: [
+                cmd('SYS_REQUEST_UNDO', '0'),
+                cmd('SYS_APPROVE_UNDO', '1'),
+            ],
+        });
+
+        // 快照 1 → 0
+        expect(result5.finalState.sys.undo.snapshots.length).toBe(0);
+        expect(result5.finalState.sys.undo.pendingRequest).toBeUndefined();
+
+        // 阶段 6：快照为空时撤回应失败
+        const result6 = runner.run({
+            name: '快照为空时撤回应失败',
+            setup: () => result5.finalState,
             commands: [
                 cmd('SYS_REQUEST_UNDO', '0'),
             ],
@@ -116,11 +131,11 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
                 expectError: { command: 'SYS_REQUEST_UNDO', error: '没有可撤销的操作' },
             },
         });
-        expect(result5.passed).toBe(true);
+        expect(result6.passed).toBe(true);
     });
 
     it('maxSnapshots=5 限制：快照不超过上限', () => {
-        const random = createQueuedRandom([3, 3, 3, 3, 3, 1, 2, 3, 4, 5]);
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 2, 3, 4, 5, 6]);
         const runner = createRunner(random, true);
 
         const result1 = runner.run({
@@ -137,11 +152,12 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
                 ...advanceTo('offensiveRoll'),  // ADVANCE_PHASE → S1
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),       // S2
+                cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-5' }), // S3
                 cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),  // 不创建快照（响应窗口）
             ],
         });
 
-        expect(result1.finalState.sys.undo.snapshots.length).toBe(2);
+        expect(result1.finalState.sys.undo.snapshots.length).toBe(3);
 
         // 完成交互
         const result2 = runner.run({
@@ -154,13 +170,13 @@ describe('撤销系统：抬一手打出后的多级撤回', () => {
         });
 
         // REROLL_DIE 和 SYS_INTERACTION_CONFIRM 不在白名单，快照数不变
-        expect(result2.finalState.sys.undo.snapshots.length).toBe(2);
+        expect(result2.finalState.sys.undo.snapshots.length).toBe(3);
 
-        // 连续撤回 2 次
+        // 连续撤回 3 次
         let state = result2.finalState;
-        for (let i = 2; i > 0; i--) {
+        for (let i = 3; i > 0; i--) {
             const r = runner.run({
-                name: `撤回第 ${3 - i} 次`,
+                name: `撤回第 ${4 - i} 次`,
                 setup: () => state,
                 commands: [
                     cmd('SYS_REQUEST_UNDO', '0'),

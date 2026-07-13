@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
+import { ImplementationStatusRibbon } from '../../../components/game/framework/ImplementationStatusRibbon';
 import clsx from 'clsx';
 import type { PlayerId } from '../../../engine/types';
 import type { FactionId } from '../domain/types';
@@ -886,6 +887,7 @@ const FactionCard: React.FC<FactionCardProps> = ({
   faction, index, isSelectedByMe, occupyingPlayers, t, onSelect, onHover, onMagnify,
 }) => {
   const atlasId = getSummonerAtlasIdByFaction(faction.id);
+  const isUnderConstruction = faction.statusTag === 'under_construction';
   const footerStyle = {
     paddingTop: 'calc(var(--sw-selection-inline-unit) * 2)',
     paddingBottom: 'calc(var(--sw-selection-inline-unit) * 0.4)',
@@ -945,6 +947,13 @@ const FactionCard: React.FC<FactionCardProps> = ({
           className="w-full"
         />
       </div>
+
+      {isUnderConstruction && (
+        <ImplementationStatusRibbon
+          label={t('common:status_tags.under_construction')}
+          testId={`sw-faction-card-${faction.id}-status-ribbon`}
+        />
+      )}
 
       {/* 底部渐变遮罩 + 阵营名 + 放大按钮 */}
       <div

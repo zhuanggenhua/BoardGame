@@ -1,1 +1,5 @@
-export { buildGamePublicRoomSummary } from './roomSetupRegistry';
+export {
+    buildGamePublicRoomSummary,
+    shouldReadGameStateForPublicRoomSummary,
+    shouldRefreshPublicRoomSummaryAfterCommand,
+} from './roomSetupRegistry';

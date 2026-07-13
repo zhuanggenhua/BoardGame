@@ -302,7 +302,6 @@ export const resolveQidahenSelectedActionFollowUp = (
                     ? '持续事件：此牌未进入弃牌堆，按持续事件留在场上。'
                     : '使用后移出游戏：此牌未进入弃牌堆。'
                 : '使用后进入当前势力弃牌堆。',
-            '其它完整事件效果仍待逐张实现。',
         ])
         : null;
     const resolution: QidahenSelectedActionFollowUpResolutionResult = {

@@ -1,6 +1,6 @@
 ---
 name: smashup-faction-addition
-description: "Smash Up 新增派系端到端流程。用于用户说“新增派系”“新派系增加流程”“加了卡牌和基地素材”“把派系做进游戏”“从素材做到可玩”等场景；默认整合 intake、图片上传、静态数据、玩法实现、审计、E2E 与 evidence，除非用户明确说只做 intake。"
+description: "Smash Up 新增派系端到端流程。用于新增派系、卡牌/基地素材、从素材做到可玩；含 intake、上传、数据、玩法、审计、E2E。"
 ---
 
 # Smash Up 新增派系端到端流程
@@ -10,7 +10,7 @@ description: "Smash Up 新增派系端到端流程。用于用户说“新增派
 当用户要求 Smash Up 新增派系或“新派系增加流程”时，默认不是只做素材 intake，而是连续完成：
 
 1. 素材与真相源合同
-2. 图片压缩、manifest、R2/CDN 上传与 HEAD 回查
+2. 图片压缩、manifest、服务器素材主源发布与 HEAD 回查
 3. atlas / faction / card / base / locale / metadata 静态接入
 4. 逐派系玩法 implementation
 5. 逐派系测试与 evidence
@@ -21,9 +21,9 @@ description: "Smash Up 新增派系端到端流程。用于用户说“新增派
 
 ## 素材与 Git 边界（强制）
 
-- 大图源文件、压缩图、卡图/基地图默认走 R2/CDN 链路，不把 `.gitignore` 命中的图片当成必须提交的问题。
+- 大图源文件、压缩图、卡图/基地图默认走服务器素材主源发布链路，不把 `.gitignore` 命中的图片当成必须提交的问题。
 - Git 默认只提交代码、数据、manifest、atlas 注册、locale、测试与 evidence；不要建议 `git add -f` 大图，除非用户明确要求或项目规范另有硬性例外。
-- 上传完成后必须记录远端验证证据：至少包含 R2/CDN URL、`HEAD`/等价请求结果、manifest 条目、atlas grid 尺寸。
+- 上传完成后必须记录远端验证证据：至少包含服务器素材主源 URL、`HEAD`/等价请求结果、manifest 条目、atlas grid 尺寸。
 - 如果远端验证失败，只能汇报“资源上传/回查未完成”，不得用本地图片存在或压缩成功冒充素材链路完成。
 - Smash Up 新 atlas 进入运行时前，必须同时核对两层 manifest：
   - `public/assets/i18n/zh-CN/smashup/assets-manifest.json`

@@ -54,6 +54,26 @@ export function validateAbilityActivation(
     }
     return { valid: true };
   }
+
+  // 狂热菌菇：事件卡持续效果，来源是主动事件区，不要求移动后的单位自身拥有该技能。
+  if (abilityId === 'mogu_fanatical_fungus') {
+    const hasFanaticalFungus = core.players[playerId]?.activeEvents.some(ev =>
+      getBaseCardId(ev.id) === CARD_IDS.MOGU_FANATICAL_FUNGUS && ev.isActive
+    );
+    if (!hasFanaticalFungus) return { valid: false, error: '没有狂热菌菇主动事件' };
+    if (core.phase !== 'move') return { valid: false, error: '只能在移动阶段使用' };
+    const targetPosition = payload.targetPosition as CellCoord | undefined;
+    const newPosition = payload.newPosition as CellCoord | undefined;
+    if (!targetPosition) return { valid: false, error: '必须选择刚移动的单位' };
+    const target = getUnitAt(core, targetPosition);
+    if (!target || target.owner !== playerId) return { valid: false, error: '目标必须是友方单位' };
+    if (newPosition) {
+      if (!isValidCoord(newPosition)) return { valid: false, error: '推拉目标位置无效' };
+      if (manhattanDistance(targetPosition, newPosition) !== 1) return { valid: false, error: '推拉距离必须为1格' };
+      if (!isCellEmpty(core, newPosition)) return { valid: false, error: '推拉目标位置不为空' };
+    }
+    return { valid: true };
+  }
   
   // 查找源单位（sourceUnitId 为 instanceId）
   let sourceUnit: BoardUnit | undefined;

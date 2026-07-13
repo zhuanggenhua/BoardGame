@@ -1,6 +1,6 @@
 ---
 name: adapt-game-mobile
-description: "审查并接入本项目中单个游戏的移动端适配，遵循“PC 优先、移动端条件覆盖”的通用接入框架。用于用户要求“给某个游戏做移动端适配”“评估某个游戏是否适合手机横屏”“给 manifest 声明 mobileProfile / preferredOrientation / mobileLayoutPreset / shellTargets”“把 hover / 拖拽 / 常驻侧栏接入通用 mobile shell”“梳理游戏层移动端接入流程”时。只处理游戏层接入与验收，不重写原生 App 或小程序，不替代框架层实现。"
+description: "BoardGame 单游戏移动端适配入口。用于 mobileProfile、横竖屏、mobile shell、hover/拖拽替代、游戏层手机/平板验收；不重写原生 App 或框架层。"
 ---
 
 # 适配游戏移动端

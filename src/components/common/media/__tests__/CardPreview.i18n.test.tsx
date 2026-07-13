@@ -10,6 +10,7 @@ import { __resetAssetLoaderCachesForTests } from '../../../../core/AssetLoader';
 import { OptimizedImage } from '../OptimizedImage';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../../lib/i18n';
+import { QIDAHEN_CARD_ATLAS_IDS } from '../../../../games/qidahen/ui/cardAtlas';
 
 const TEST_UNIFORM_ATLAS: SpriteAtlasConfig = {
     imageW: 100,
@@ -165,6 +166,36 @@ describe('CardPreview i18n atlas path', () => {
         expect(candidates).toContain('/assets/i18n/en/smashup/cards/compressed/tts_atlas_8789f47742.webp');
     });
 
+    it('七大恨普通手牌图集在 App 已安装包下应使用真实 img 裁片', () => {
+        const installedAtlasUrl = '/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/qidahen/current/assets/i18n/zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05.webp';
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('qidahen', '/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/qidahen/current/assets');
+
+        const img = new Image();
+        Object.defineProperty(img, 'naturalWidth', { value: 4798, configurable: true });
+        Object.defineProperty(img, 'naturalHeight', { value: 4625, configurable: true });
+        Object.defineProperty(img, 'src', {
+            value: installedAtlasUrl,
+            configurable: true,
+        });
+        Object.defineProperty(img, 'currentSrc', {
+            value: installedAtlasUrl,
+            configurable: true,
+        });
+        markImageLoaded('qidahen/cards/atlases/ordinary-hand-atlas05', 'zh-CN', img);
+
+        const html = renderToStaticMarkup(
+            <CardPreview
+                previewRef={{ type: 'atlas', atlasId: QIDAHEN_CARD_ATLAS_IDS.ATLAS05_ORDINARY_HAND, index: 0 }}
+                locale="zh-CN"
+            />
+        );
+
+        expect(html).toContain('data-card-atlas-img="true"');
+        expect(html).toContain(installedAtlasUrl);
+        expect(html).not.toContain('background-image');
+    });
+
     it('游戏包 override 的 _capacitor_file_ 本地路径不应走 fetch/blob workaround', async () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
         setGameAssetBaseOverride('smashup', '/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets');
@@ -314,7 +345,7 @@ describe('CardPreview i18n atlas path', () => {
         });
     });
 
-    it('图集仅命中远端回退缓存时，背景图应使用真实加载成功的候选 URL', () => {
+    it('图集仅命中远端回退缓存时，裁片图片应使用真实加载成功的候选 URL', () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
         setGameAssetBaseOverride('smashup', '/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets');
 
@@ -423,9 +454,64 @@ describe('CardPreview i18n atlas path', () => {
             });
 
             await waitFor(() => {
-                const atlasNode = container.querySelector('div[style*="background-image"]');
+                const atlasNode = container.querySelector('[data-card-atlas-frame="true"]');
+                const atlasImage = container.querySelector('img[data-card-atlas-img="true"]');
                 expect(atlasNode).not.toBeNull();
-                expect(atlasNode?.getAttribute('style')).toContain(primaryUrl);
+                expect(atlasImage).not.toBeNull();
+                expect(atlasImage?.getAttribute('src')).toBe(primaryUrl);
+                expect(atlasNode?.className).not.toContain('atlas-shimmer');
+            });
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it('懒注册 atlas fallback 加载成功后应在提升 source 后继续渲染 img', async () => {
+        const atlasId = 'test:card-preview:lazy-fallback-promotes-source';
+        const atlasImage = 'smashup/cards/lazy-fallback-promotes-source';
+        registerLazyCardAtlasSource(atlasId, {
+            image: atlasImage,
+            grid: { rows: 1, cols: 1 },
+        });
+
+        const primaryUrl = getCardAtlasCandidateUrls(atlasImage, 'zh-CN')[0];
+
+        class MockImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 100;
+            naturalHeight = 200;
+            complete = false;
+            currentSrc = '';
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                this.currentSrc = value;
+                this.complete = true;
+                setTimeout(() => {
+                    this.onload?.();
+                }, 0);
+            }
+        }
+
+        vi.stubGlobal('Image', MockImage as unknown as typeof Image);
+
+        try {
+            const { container } = render(
+                <CardPreview previewRef={{ type: 'atlas', atlasId, index: 0 }} locale="zh-CN" />
+            );
+
+            await waitFor(() => {
+                const atlasNode = container.querySelector('[data-card-atlas-frame="true"]');
+                const atlasImageNode = container.querySelector('img[data-card-atlas-img="true"]');
+                expect(atlasNode).not.toBeNull();
+                expect(atlasImageNode).not.toBeNull();
+                expect(atlasImageNode?.getAttribute('src')).toBe(primaryUrl);
                 expect(atlasNode?.className).not.toContain('atlas-shimmer');
             });
         } finally {
@@ -513,7 +599,8 @@ describe('CardPreview i18n atlas path', () => {
 
             expect(attemptCount.get(primaryUrl)).toBeGreaterThanOrEqual(2);
             expect(atlasNode?.className).not.toContain('atlas-shimmer');
-            expect(atlasNode?.style.backgroundImage).toContain(primaryUrl);
+            const atlasImage = container.querySelector('img[data-card-atlas-img="true"]');
+            expect(atlasImage?.getAttribute('src')).toBe(primaryUrl);
         } finally {
             vi.useRealTimers();
             vi.unstubAllGlobals();

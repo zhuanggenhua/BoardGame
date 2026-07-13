@@ -235,20 +235,20 @@ const applyRemotePack = (
         };
     }
 
-    const remoteDiffOnly = remotePack?.diffOnly === true;
-    const shouldUseFallbackBundle = !remoteDiffOnly;
+    const remoteFallbackUrl = normalizeOptionalHttpUrl(remotePack?.fallbackUrl);
+    const remoteFallbackChecksum = normalizeOptionalString(remotePack?.fallbackChecksum);
     const remoteBytes = normalizeOptionalRemoteNumber(remotePack?.bytes);
     const remoteFallbackBytes = normalizeOptionalRemoteNumber(remotePack?.fallbackBytes);
 
     return {
         id: normalizeOptionalString(remotePack?.id) ?? fallbackId,
         version: normalizeOptionalString(remotePack?.version) ?? fallbackVersion,
-        url: normalizeOptionalHttpUrl(remotePack?.url) ?? (shouldUseFallbackBundle ? fallbackUrl : undefined),
-        checksum: normalizeOptionalString(remotePack?.checksum) ?? (shouldUseFallbackBundle ? fallbackChecksum : undefined),
+        url: normalizeOptionalHttpUrl(remotePack?.url) ?? remoteFallbackUrl ?? fallbackUrl,
+        checksum: normalizeOptionalString(remotePack?.checksum) ?? remoteFallbackChecksum ?? fallbackChecksum,
         fileIndexUrl: normalizeOptionalHttpUrl(remotePack?.fileIndexUrl) ?? fallbackFileIndexUrl,
         fileIndexChecksum: normalizeOptionalString(remotePack?.fileIndexChecksum) ?? fallbackFileIndexChecksum,
         diffOnly: typeof remotePack?.diffOnly === 'boolean' ? remotePack.diffOnly : fallbackDiffOnly,
-        bytes: remoteBytes ?? remoteFallbackBytes ?? (shouldUseFallbackBundle ? fallbackBytes : undefined),
+        bytes: remoteBytes ?? remoteFallbackBytes ?? fallbackBytes,
         fileCount: normalizeOptionalRemoteNumber(remotePack?.fileCount) ?? fallbackFileCount,
     };
 };
