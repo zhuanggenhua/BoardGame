@@ -782,9 +782,6 @@
     "base_fairy_ring_title": "精灵之环：选择额外打出一个随从到这里，或额外打出一张行动卡",
     "base_fairy_ring_extra_minion_option": "额外打出一个随从到这里",
     "base_fairy_ring_extra_action_option": "额外打出一张行动卡",
-    "fairies_titania_pod_return_title": "泰坦妮娅：选择一个对手随从移回其拥有者手牌",
-    "princesses_griselda_pod_title": "格丽泽尔达：取回一张传家宝，或额外打出一张传家宝行动",
-    "princesses_griselda_pod_extra_action_option": "额外打出一张传家宝行动",
     "base_land_of_balance_title": "平衡之地：选择一个己方随从移动到这里",
     "base_house_of_nine_lives_title": "九命之家：是否将随从移动到九命之家？",
     "base_house_of_nine_lives_move_option": "移动到九命之家",
@@ -1146,6 +1143,26 @@
     "ninja_disguise_choose_play_title": "伪装：选择要打出的手牌随从",
     "ninja_disguise_choose_second_play_title": "伪装：选择第二个要打出的手牌随从",
     "faction_implementation_in_progress": "实施中",
+    "mega_troopers_form_megabot_pod_title": "合体超级佐德：选择超级佐德要进入的基地",
+    "mega_troopers_form_megabot_pod_move_title": "合体超级佐德：将任意数量你的随从移动到超级佐德所在基地",
+    "mega_troopers_red_trooper_pod_title": "红骑士：在另一个基地打出或移动超级佐德",
+    "mega_troopers_lightning_crystal_pod_title": "闪电水晶：消灭一张行动牌或一个泰坦",
+    "mega_troopers_its_blitzin_time_pod_title": "闪电时刻：选择你的一个随从",
+    "mega_troopers_plan_for_more_pod_title": "谋划更多：抓取一张牌或额外打出一个展示的随从",
+    "mega_troopers_plan_for_more_pod_order_title": "谋划更多：将其余牌放到牌库顶和/或牌库底",
+    "mega_troopers_beta_6_pod_title": "贝塔6号：在你的一个随从上放置 +1 力量指示物",
+    "mega_troopers_blue_trooper_pod_title": "蓝骑士：抓一张牌或获得 +2 力量",
+    "mega_troopers_blue_trooper_pod_draw": "抓 1 张牌",
+    "mega_troopers_blue_trooper_pod_power": "此随从直到你的回合结束获得 +2 力量",
+    "mega_troopers_lightning_rescue_pod_title": "闪电救援：你可以额外打出一个行动",
+    "mega_troopers_blitzing_sword_attack_pod_title": "闪电剑攻击：消灭一个力量 4 或以下的随从",
+    "mega_troopers_power_pose_pod_after_scoring_title": "胜利姿态：你可以在替换基地额外打出一个随从",
+    "astroknights_prepare_for_battle_title": "战斗准备：选择要加入手牌的牌",
+    "astroknights_astro_robot_title": "宇航机器人：你可以消灭一个行动",
+    "star_roamers_return_replacement_move_option": "改为移动到另一基地",
+    "fairies_titania_pod_return_title": "泰坦妮娅：选择一个对手随从移回其拥有者手牌",
+    "princesses_griselda_pod_title": "格丽泽尔达：取回一张传家宝，或额外打出一张传家宝行动",
+    "princesses_griselda_pod_extra_action_option": "额外打出一张传家宝行动",
     "paladins_heavenly_soldiers_descend_skip_minion_option": "跳过额外随从",
     "avengers_hawkeye_discard_title": "鹰眼：弃掉两张牌",
     "avengers_jarvis_discard_title": "贾维斯：弃掉一张牌",
@@ -1181,21 +1198,7 @@
     "spider_verse_deck_selection_title": "选择其中一张加入手牌",
     "spider_verse_view_from_above_minion_option": "角色",
     "spider_verse_view_from_above_action_option": "法术",
-    "spider_verse_view_from_above_title": "高处不胜寒：声明要展示到的牌类型",
-    "mega_troopers_form_megabot_pod_title": "合体超级佐德：选择超级佐德要进入的基地",
-    "mega_troopers_form_megabot_pod_move_title": "合体超级佐德：将任意数量你的随从移动到超级佐德所在基地",
-    "mega_troopers_red_trooper_pod_title": "红骑士：在另一个基地打出或移动超级佐德",
-    "mega_troopers_lightning_crystal_pod_title": "闪电水晶：消灭一张行动牌或一个泰坦",
-    "mega_troopers_its_blitzin_time_pod_title": "闪电时刻：选择你的一个随从",
-    "mega_troopers_plan_for_more_pod_title": "谋划更多：抓取一张牌或额外打出一个展示的随从",
-    "mega_troopers_plan_for_more_pod_order_title": "谋划更多：将其余牌放到牌库顶和/或牌库底",
-    "mega_troopers_beta_6_pod_title": "贝塔6号：在你的一个随从上放置 +1 力量指示物",
-    "mega_troopers_blue_trooper_pod_title": "蓝骑士：抓一张牌或获得 +2 力量",
-    "mega_troopers_blue_trooper_pod_draw": "抓 1 张牌",
-    "mega_troopers_blue_trooper_pod_power": "此随从直到你的回合结束获得 +2 力量",
-    "mega_troopers_lightning_rescue_pod_title": "闪电救援：你可以额外打出一个行动",
-    "mega_troopers_blitzing_sword_attack_pod_title": "闪电剑攻击：消灭一个力量 4 或以下的随从",
-    "mega_troopers_power_pose_pod_after_scoring_title": "胜利姿态：你可以在替换基地额外打出一个随从"
+    "spider_verse_view_from_above_title": "高处不胜寒：声明要展示到的牌类型"
   },
   "mechanics": {
     "madness": {
@@ -1556,10 +1559,6 @@
       "name": "迷你萌宠",
       "description": "以低力量萌宠的检索、临时上场与回收循环来适应不同基地。"
     },
-    "itty_critters_pod": {
-      "name": "迷你萌宠（POD）",
-      "description": "POD 版迷你萌宠，使用独立基地与专属卡图，同时沿用经典萌宠的检索、临时上场与回收打法。"
-    },
     "kaiju": {
       "name": "怪兽",
       "description": "围绕泰坦、基地行动与破坏点压制，逐步把基地变成怪兽战场。"
@@ -1588,10 +1587,6 @@
       "name": "时间旅行者",
       "description": "回收弃牌、返回手牌、改写基地补充与计分后去向，反复重做关键回合。"
     },
-    "time_travelers_pod": {
-      "name": "时间旅行者（POD）",
-      "description": "POD 版时间旅行者，使用独立基地与专属卡图，同时沿用经典时间循环、回收与重打工具箱。"
-    },
     "kung_fu_fighters": {
       "name": "功夫斗士",
       "description": "依靠 +1 力量标记、时机调整和精准移动，在关键基地爆发。"
@@ -1607,6 +1602,46 @@
     "disco_dancers": {
       "name": "迪厅舞王",
       "description": "围绕额外战术、移动和力量标记连跳组合，把舞池变成得分舞台。"
+    },
+    "dragons_pod": {
+      "name": "龙族（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与龙族一致。"
+    },
+    "superheroes_pod": {
+      "name": "超级英雄（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与超级英雄一致。"
+    },
+    "magical_girls_pod": {
+      "name": "魔法少女（POD版）",
+      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与魔法少女一致。"
+    },
+    "mega_troopers_pod": {
+      "name": "超级战队（POD版）",
+      "description": "采用新版计分窗口行动、战队成员特殊能力、超级佐德支援与欧米伽协议的 POD 版本。"
+    },
+    "astroknights": {
+      "name": "宇宙武士",
+      "description": "用特殊计分窗口、临时力量和行动回收守住关键基地。"
+    },
+    "ignobles": {
+      "name": "卑劣封臣",
+      "description": "通过交出控制权、额外出牌和背叛反应，把政治交易变成得分优势。"
+    },
+    "star_roamers": {
+      "name": "星际旅者",
+      "description": "围绕回手、移动和基地调度，在计分前后重新布置战场。"
+    },
+    "changerbots": {
+      "name": "百变机兵",
+      "description": "把随从变形、搬运并临时强化，在关键基地组装出爆发力量。"
+    },
+    "itty_critters_pod": {
+      "name": "迷你萌宠（POD）",
+      "description": "POD 版迷你萌宠，使用独立基地与专属卡图，同时沿用经典萌宠的检索、临时上场与回收打法。"
+    },
+    "time_travelers_pod": {
+      "name": "时间旅行者（POD）",
+      "description": "POD 版时间旅行者，使用独立基地与专属卡图，同时沿用经典时间循环、回收与重打工具箱。"
     },
     "kitty_cats_pod": {
       "name": "猫咪 (POD版)",
@@ -1663,22 +1698,6 @@
     "ultimates": {
       "name": "终极战队",
       "description": "围绕移动、临时力量和手牌调度，快速抵达目标基地并放大团队协同。"
-    },
-    "dragons_pod": {
-      "name": "龙族（POD版）",
-      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与龙族一致。"
-    },
-    "superheroes_pod": {
-      "name": "超级英雄（POD版）",
-      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与超级英雄一致。"
-    },
-    "magical_girls_pod": {
-      "name": "魔法少女（POD版）",
-      "description": "使用独立卡牌与基地身份的 POD 卡图版本，玩法与魔法少女一致。"
-    },
-    "mega_troopers_pod": {
-      "name": "超级战队（POD版）",
-      "description": "采用新版计分窗口行动、战队成员特殊能力、超级佐德支援与欧米伽协议的 POD 版本。"
     }
   },
   "tutorial": {
@@ -5740,15 +5759,7 @@
       "name": "我选择你！",
       "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
-    "itty_critters_i_select_you_pod": {
-      "name": "我选择你！",
-      "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
-    },
     "itty_critters_recall_critter": {
-      "name": "召回萌宠",
-      "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
-    },
-    "itty_critters_recall_critter_pod": {
       "name": "召回萌宠",
       "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -5756,15 +5767,7 @@
       "name": "进化论",
       "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
     },
-    "itty_critters_evolution_pod": {
-      "name": "进化论",
-      "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
-    },
     "itty_critters_gotta_get_em_all": {
-      "name": "我要得到一切",
-      "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
-    },
-    "itty_critters_gotta_get_em_all_pod": {
       "name": "我要得到一切",
       "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
     },
@@ -5772,15 +5775,7 @@
       "name": "生物立方",
       "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
     },
-    "itty_critters_critter_cube_pod": {
-      "name": "生物立方",
-      "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
-    },
     "itty_critters_super_effective": {
-      "name": "超级有效！",
-      "effectText": "摧毁一张打在随从上或基地上的行动牌。"
-    },
-    "itty_critters_super_effective_pod": {
       "name": "超级有效！",
       "effectText": "摧毁一张打在随从上或基地上的行动牌。"
     },
@@ -5788,15 +5783,7 @@
       "name": "小小百科",
       "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
     },
-    "itty_critters_ittypedia_pod": {
-      "name": "小小百科",
-      "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
-    },
     "itty_critters_coach_combat": {
-      "name": "战斗训练",
-      "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
-    },
-    "itty_critters_coach_combat_pod": {
       "name": "战斗训练",
       "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
     },
@@ -5804,15 +5791,7 @@
       "name": "叶袋兽",
       "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
     },
-    "itty_critters_leafaroo_pod": {
-      "name": "叶袋兽",
-      "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
-    },
     "itty_critters_flooffairy": {
-      "name": "芙露仙灵",
-      "abilityText": "你可以抓 1 张牌。"
-    },
-    "itty_critters_flooffairy_pod": {
       "name": "芙露仙灵",
       "abilityText": "你可以抓 1 张牌。"
     },
@@ -5820,15 +5799,7 @@
       "name": "金币猫",
       "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
     },
-    "itty_critters_calicoin_pod": {
-      "name": "金币猫",
-      "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
-    },
     "itty_critters_tadpour": {
-      "name": "塔德波尔",
-      "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
-    },
-    "itty_critters_tadpour_pod": {
       "name": "塔德波尔",
       "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
     },
@@ -5836,15 +5807,7 @@
       "name": "克拉卡蟾",
       "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
     },
-    "itty_critters_krakatoad_pod": {
-      "name": "克拉卡蟾",
-      "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
-    },
     "itty_critters_critter_coach": {
-      "name": "导师",
-      "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
-    },
-    "itty_critters_critter_coach_pod": {
       "name": "导师",
       "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -5852,15 +5815,7 @@
       "name": "壳震",
       "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
     },
-    "itty_critters_shellshock_pod": {
-      "name": "壳震",
-      "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
-    },
     "itty_critters_critter_champion": {
-      "name": "宠物冠军",
-      "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
-    },
-    "itty_critters_critter_champion_pod": {
       "name": "宠物冠军",
       "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -6236,15 +6191,7 @@
       "name": "令人震惊",
       "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
     },
-    "time_travelers_its_astounding_pod": {
-      "name": "令人震惊",
-      "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
-    },
     "time_travelers_time_is_fleeting": {
-      "name": "时间流逝",
-      "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
-    },
-    "time_travelers_time_is_fleeting_pod": {
       "name": "时间流逝",
       "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
     },
@@ -6252,15 +6199,7 @@
       "name": "时间流动",
       "effectText": "将场上的一张牌返回其拥有者的手牌。"
     },
-    "time_travelers_into_the_time_slip_pod": {
-      "name": "时间流动",
-      "effectText": "将场上的一张牌返回其拥有者的手牌。"
-    },
     "time_travelers_1_21_gigawatts": {
-      "name": "千兆瓦",
-      "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
-    },
-    "time_travelers_1_21_gigawatts_pod": {
       "name": "千兆瓦",
       "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
     },
@@ -6268,15 +6207,7 @@
       "name": "从头来过",
       "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
     },
-    "time_travelers_do_over_pod": {
-      "name": "从头来过",
-      "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
-    },
     "time_travelers_jumper": {
-      "name": "跳跃者",
-      "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
-    },
-    "time_travelers_jumper_pod": {
       "name": "跳跃者",
       "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
     },
@@ -6284,15 +6215,7 @@
       "name": "静滞立场",
       "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
     },
-    "time_travelers_stasis_field_pod": {
-      "name": "静滞立场",
-      "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
-    },
     "time_travelers_time_raider": {
-      "name": "时间掠夺者",
-      "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
-    },
-    "time_travelers_time_raider_pod": {
       "name": "时间掠夺者",
       "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
     },
@@ -6300,15 +6223,7 @@
       "name": "时间旅行",
       "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
     },
-    "time_travelers_time_walk_pod": {
-      "name": "时间旅行",
-      "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
-    },
     "time_travelers_repeater_perfect": {
-      "name": "重复时间者",
-      "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
-    },
-    "time_travelers_repeater_perfect_pod": {
       "name": "重复时间者",
       "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
     },
@@ -6316,15 +6231,7 @@
       "name": "虫洞",
       "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
     },
-    "time_travelers_wormhole_pod": {
-      "name": "虫洞",
-      "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
-    },
     "time_travelers_doctor_when": {
-      "name": "时间博士",
-      "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
-    },
-    "time_travelers_doctor_when_pod": {
       "name": "时间博士",
       "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
     },
@@ -6359,6 +6266,430 @@
     "base_monkey_lab": {
       "name": "猴子实验室",
       "abilityText": "这里的每个随从上每有一张行动牌，就获得 +1 力量。"
+    },
+    "mega_troopers_blitzing_sword_attack_pod": {
+      "name": "闪电剑攻击",
+      "effectText": "特殊：在一个有你泰坦的基地计分前，消灭那里一个力量 4 或以下的随从。"
+    },
+    "mega_troopers_form_megabot_pod": {
+      "name": "合体超级佐德！",
+      "effectText": "打出超级佐德，或将任意数量你的随从移动到超级佐德所在基地。"
+    },
+    "mega_troopers_its_blitzin_time_pod": {
+      "name": "闪电时刻！",
+      "effectText": "你的一个随从直到回合结束获得 +4 力量。"
+    },
+    "mega_troopers_lightning_rescue_pod": {
+      "name": "闪电救援！",
+      "effectText": "特殊：在一个基地计分前，若你在那里有随从且力量不是最多，你可以额外打出一个行动。"
+    },
+    "mega_troopers_power_pose_pod": {
+      "name": "胜利姿态",
+      "effectText": "对一个基地打出。持续：此基地计分前，若你的力量不是最多，抓两张牌。此基地计分后，若你获胜，你可以在替换基地额外打出一个力量 3 或以下的随从。"
+    },
+    "mega_troopers_lightning_crystal_pod": {
+      "name": "闪电水晶",
+      "effectText": "消灭一张行动牌或一个泰坦。"
+    },
+    "mega_troopers_omega_protocol_pod": {
+      "name": "欧米伽协议",
+      "effectText": "对一个基地打出。持续：每个其他玩家的回合开始时，此基地直到该回合结束临界点 -10。"
+    },
+    "mega_troopers_plan_for_more_pod": {
+      "name": "谋划更多！",
+      "effectText": "查看你牌库顶三张牌。你可以抓取其中一张，或将其中一个随从作为额外随从打出。将其余牌按任意顺序放到你的牌库顶和/或牌库底。"
+    },
+    "mega_troopers_beta_6_pod": {
+      "name": "贝塔6号",
+      "abilityText": "特殊：任意基地计分前，你可以在你的一个随从上放置一枚 +1 力量指示物。"
+    },
+    "mega_troopers_green_trooper_pod": {
+      "name": "绿骑士",
+      "abilityText": "特殊：一个基地计分前，你可以将此随从作为额外随从打到那里。"
+    },
+    "mega_troopers_pink_trooper_pod": {
+      "name": "粉骑士",
+      "abilityText": "特殊：此基地计分后，将你在这里一个力量 3 或以下的随从返回手牌，而不是置入弃牌堆。"
+    },
+    "mega_troopers_black_trooper_pod": {
+      "name": "黑骑士",
+      "abilityText": "持续：一个特殊能力使用后，此随从直到回合结束获得 +1 力量。"
+    },
+    "mega_troopers_blue_trooper_pod": {
+      "name": "蓝骑士",
+      "abilityText": "特殊：任意基地计分前，你可以抓一张牌，或令此随从直到你的回合结束获得 +2 力量。"
+    },
+    "mega_troopers_yellow_trooper_pod": {
+      "name": "黄骑士",
+      "abilityText": "特殊：此基地计分前，你可以将你的另一个随从移动到这里。"
+    },
+    "mega_troopers_red_trooper_pod": {
+      "name": "红骑士",
+      "abilityText": "持续：你可以额外拥有一个在场泰坦。天赋：在另一个基地打出超级佐德，或移动超级佐德。"
+    },
+    "astroknights_block_the_probe": {
+      "name": "阻止探解",
+      "effectText": "选择一个随从。它获得 +2 力量直到回合结束。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "astroknights_hidden_base": {
+      "name": "隐蔽基地",
+      "effectText": "打出到一个基地上。持续：在你的回合开始时，若你在这里有随从，抽一张牌。"
+    },
+    "astroknights_recycle_the_trash": {
+      "name": "垃圾回收",
+      "effectText": "将你弃牌堆中至多两张行动洗入你的牌库。"
+    },
+    "astroknights_yield_to_rage": {
+      "name": "狂怒支配",
+      "effectText": "你的一个随从获得 +2 力量直到回合结束。额外打出一个行动。"
+    },
+    "astroknights_laser_sword": {
+      "name": "激光剑",
+      "effectText": "打出到一个随从上。持续：此随从获得 +2 力量，且不受其他玩家随从影响。"
+    },
+    "astroknights_prepare_for_battle": {
+      "name": "战斗准备",
+      "effectText": "展示你牌库顶三张牌。抽其中两张，将另一张放回牌库顶或牌库底。"
+    },
+    "astroknights_use_the_fours": {
+      "name": "使用“似”原力",
+      "effectText": "你的一个随从获得 +4 力量直到回合结束。"
+    },
+    "astroknights_its_a_trap": {
+      "name": "这是个陷阱！",
+      "effectText": "特殊：在一个基地计分前，从你的牌库展示牌，直到展示出一张行动。你可以抽取它或立即打出它。将未使用的牌洗入你的牌库。"
+    },
+    "astroknights_annoying_alien": {
+      "name": "恼人的外星",
+      "abilityText": "天赋：说出一个随从名称。这里所有该名称的随从获得 -2 力量，直到你的下个回合开始。"
+    },
+    "astroknights_pupoks": {
+      "name": "帕伯克人",
+      "abilityText": "天赋：失去 1 VP，以展示你牌库顶三张牌并抽取它们。你可以将其中一张作为额外牌打出。"
+    },
+    "astroknights_alien_guru": {
+      "name": "外星人大师",
+      "abilityText": "持续：每回合一次，在你打出一个直接增加随从力量的行动后，你也可以在该随从上放置 1 枚 +1 力量标记。"
+    },
+    "astroknights_walking_carpet": {
+      "name": "自主地毯",
+      "abilityText": "特殊：在此基地计分前，若你没有领先，你可以打出一个直接增加此随从力量的行动。"
+    },
+    "astroknights_scoundrel": {
+      "name": "恶棍",
+      "abilityText": "天赋：将此随从和这里你的另一个随从移动到另一个基地。"
+    },
+    "astroknights_ghost_knight": {
+      "name": "幽灵武士",
+      "abilityText": "持续：此随从不能被消灭。这里你的其他随从获得 +2 力量。"
+    },
+    "astroknights_mannersbot": {
+      "name": "礼仪机器人",
+      "abilityText": "天赋：展示你牌库顶一张牌。若它是行动，抽取它；否则将它放回。"
+    },
+    "astroknights_space_prince": {
+      "name": "太空王子",
+      "abilityText": "天赋：额外打出一个直接增加你的一个随从力量的行动。"
+    },
+    "astroknights_space_knight": {
+      "name": "太空武士",
+      "abilityText": "天赋：展示你牌库顶三张牌。你可以从展示的牌中抽取一张行动。将其余牌以任意顺序放回。"
+    },
+    "astroknights_astro_robot": {
+      "name": "宇航机器人",
+      "abilityText": "你可以消灭一张打在此基地上或这里一个随从上的行动。"
+    },
+    "ignobles_repaying_debts": {
+      "name": "有债必还",
+      "effectText": "将你的一个随从的控制权交给另一名玩家，以抽两张牌并额外打出一个随从。"
+    },
+    "ignobles_fate_of_the_favorites": {
+      "name": "宠儿的命运",
+      "effectText": "每位玩家消灭一个自己拥有的随从。"
+    },
+    "ignobles_red_birthday_party": {
+      "name": "红色生日聚会",
+      "effectText": "消灭一个你拥有的随从，以及同一基地上所有力量更低的随从。"
+    },
+    "ignobles_hostage_exchange": {
+      "name": "交换人质",
+      "effectText": "将你的一个随从的控制权交给另一名玩家，以获得其一个力量等于或更低的随从的控制权。"
+    },
+    "ignobles_inevitable_betrayal": {
+      "name": "必然的背叛",
+      "effectText": "特殊：在一个基地计分前，获得那里一个你拥有的随从的控制权。"
+    },
+    "ignobles_activate_the_spy": {
+      "name": "启用间谍",
+      "effectText": "获得一个你拥有的随从的控制权。额外打出一个行动。"
+    },
+    "ignobles_out_of_sight": {
+      "name": "视线之外",
+      "effectText": "每位玩家将一个自己拥有的随从返回手牌。"
+    },
+    "ignobles_banner_call": {
+      "name": "家族召唤",
+      "effectText": "获得任意数量你拥有的随从的控制权。"
+    },
+    "ignobles_sneaky_squire": {
+      "name": "奸诈贵族",
+      "abilityText": "你可以将此随从的控制权交给另一名玩家，以额外打出一个随从。"
+    },
+    "ignobles_betrothed": {
+      "name": "未婚妻",
+      "abilityText": "你可以将此随从的控制权交给另一名玩家。持续：若另一名玩家赢得此基地且控制此随从，此随从的拥有者获得 1 VP。"
+    },
+    "ignobles_foot_of_the_king": {
+      "name": "国王之脚",
+      "abilityText": "持续：在你的回合结束时，你可以获得一个你拥有的随从的控制权。"
+    },
+    "ignobles_aunt_of_drakes": {
+      "name": "龙之伯母",
+      "abilityText": "天赋：将你的一个随从的控制权交给另一名玩家，以抽一张牌并额外打出一个行动。"
+    },
+    "star_roamers_weird_new_worlds": {
+      "name": "奇异新世界",
+      "effectText": "打出一个新基地。你可以在那里额外打出一个随从。"
+    },
+    "star_roamers_whiplash_maneuver": {
+      "name": "鞭绳回旋",
+      "effectText": "打出到一个基地上。持续：若其他基地上你的任意随从将要返回你的手牌，你可以改为将它们移动到这里。"
+    },
+    "star_roamers_protector_fields": {
+      "name": "防御力场",
+      "effectText": "打出到一个你有随从的基地上。持续：这里你的随从不受其他玩家的牌影响。"
+    },
+    "star_roamers_teleport_overflow": {
+      "name": "传送超额",
+      "effectText": "将你的一个随从返回其拥有者手牌。从你的手牌展示任意数量同名随从，并将它们作为额外随从打出。"
+    },
+    "star_roamers_teleport_error": {
+      "name": "传送事故",
+      "effectText": "选择一个随从。将它移动到另一个随机基地。"
+    },
+    "star_roamers_hyperspeed_10": {
+      "name": "超高速运转",
+      "effectText": "选择一个基地。将那里的所有随从移动到同一个其他基地。"
+    },
+    "star_roamers_port_me_up": {
+      "name": "传送我上船",
+      "effectText": "将你的一个随从返回其拥有者手牌。特殊：你可以在一个基地计分后打出此牌；该随从必须在计分基地上。"
+    },
+    "star_roamers_mass_teleport": {
+      "name": "大规模传送",
+      "effectText": "每位玩家将自己的一个随从返回其拥有者手牌。"
+    },
+    "star_roamers_ships_engineer": {
+      "name": "舰船工程师",
+      "abilityText": "持续：若你的另一个随从将要返回你的手牌，你可以改为将它移动到另一个基地。"
+    },
+    "star_roamers_medical_officer": {
+      "name": "医疗指挥官",
+      "abilityText": "持续：当你的一个或多个其他随从将要返回你的手牌时，你可以抽一张牌来代替返回其中一个。"
+    },
+    "star_roamers_science_officer": {
+      "name": "科学指挥官",
+      "abilityText": "天赋：将你一个力量 4 或以下的随从返回其拥有者手牌。额外打出一个不同名称的随从。"
+    },
+    "star_roamers_ensign": {
+      "name": "炮灰",
+      "abilityText": "持续：当一名对手打出一张直接影响这里你的另一个随从的牌时，你可以改为让它影响此随从。"
+    },
+    "star_roamers_ships_captain": {
+      "name": "舰长",
+      "abilityText": "从你的牌库搜寻一个随从，展示它，加入手牌并洗牌。若它力量为 3 或以下，将它作为额外随从打到这里。"
+    },
+    "changerbots_matrix_of_bossiness": {
+      "name": "跋扈模块",
+      "effectText": "打出到你的一个随从上。持续：此随从的印刷力量视为 5。"
+    },
+    "changerbots_change_into_a_gun": {
+      "name": "重组形态",
+      "effectText": "打出到你的一个随从上，以消灭那里一个力量 4 或以下的随从。持续：此随从获得 -2 力量。在你的回合开始时消灭此牌。"
+    },
+    "changerbots_passengers": {
+      "name": "乘客",
+      "effectText": "打出到一个随从上。持续：此随从获得能力：“天赋：若此随从本回合移动过，将你的另一个随从从先前基地移动到这里。”"
+    },
+    "changerbots_the_touch": {
+      "name": "触动",
+      "effectText": "打出到你的一个随从上。持续：此随从获得能力：“天赋：此随从获得 +3 力量，并失去所有其他能力直到回合结束。”"
+    },
+    "changerbots_flighterizer": {
+      "name": "飞行组件",
+      "effectText": "打出到你的一个随从上。持续：此随从获得能力：“天赋：将此随从移动到另一个基地，并令其获得 -1 力量直到回合结束。”"
+    },
+    "changerbots_change_up_and_roll_on": {
+      "name": "变形，出发！",
+      "effectText": "特殊：在一个基地计分前，你可以将任意数量你的随从移动到那里。它们各获得 -1 力量直到回合结束。"
+    },
+    "changerbots_cesium_armor": {
+      "name": "铯装甲",
+      "effectText": "打出到一个随从上。持续：此随从获得 +2 力量且不能被消灭。"
+    },
+    "changerbots_form_mergacon": {
+      "name": "合体形态",
+      "effectText": "选择一个基地。那里你的每个随从获得 +1 力量直到回合结束。"
+    },
+    "changerbots_leader_two": {
+      "name": "李德徒",
+      "abilityText": "天赋：你的另一个随从获得 +2 力量直到回合结束。"
+    },
+    "changerbots_solarshout": {
+      "name": "破空",
+      "abilityText": "天赋：额外打出一个行动。令此随从获得 -2 力量直到回合结束。"
+    },
+    "changerbots_huffie": {
+      "name": "飞撕",
+      "abilityText": "天赋：将此随从移动到另一个基地，并令其获得 -1 力量直到回合结束。"
+    },
+    "changerbots_bruiser": {
+      "name": "创世",
+      "abilityText": "持续：此随从不能被消灭。天赋：此随从获得 +2 力量，并失去其持续能力和所有其他能力，直到你的下个回合开始。"
+    },
+    "base_spikey_chair_room": {
+      "name": "刺王座",
+      "effectText": "在任意玩家曾在这里打出至少一个随从的回合结束时，该玩家可以消灭一个自己拥有的随从以抽一张牌。"
+    },
+    "base_no_moon": {
+      "name": "非月球",
+      "effectText": "在此基地计分前，消灭另一个随机基地（正常替换它）。"
+    },
+    "base_uss_undertaking": {
+      "name": "联邦星舰",
+      "effectText": "在你的回合开始时，你可以将你的一个随从移动到这里，或从这里移动到另一个基地。"
+    },
+    "base_unicrave": {
+      "name": "宇宙大王",
+      "effectText": "在此基地计分前，将它替换为基地牌库顶牌。保留其上的所有牌，弃掉此牌，并继续计分。"
+    },
+    "base_wintersquashed": {
+      "name": "雪覆城",
+      "effectText": "在你于这里打出一个随从后，你可以将它的控制权交给另一名玩家。"
+    },
+    "base_changing_room": {
+      "name": "改造室",
+      "effectText": "在这里一个随从使用天赋后，它获得 +1 力量直到回合结束。"
+    },
+    "base_neutral_space": {
+      "name": "中立区",
+      "effectText": "这里的随从不受这里其他玩家随从影响。"
+    },
+    "base_hive_of_scum_and_villainy": {
+      "name": "渣渣和坏蛋的老巢",
+      "effectText": "每回合第一次你打出一个直接增加这里你的一个随从力量的行动后，抽一张牌。"
+    },
+    "itty_critters_i_select_you_pod": {
+      "name": "我选择你！",
+      "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_recall_critter_pod": {
+      "name": "召回萌宠",
+      "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_evolution_pod": {
+      "name": "进化论",
+      "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
+    },
+    "itty_critters_gotta_get_em_all_pod": {
+      "name": "我要得到一切",
+      "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
+    },
+    "itty_critters_critter_cube_pod": {
+      "name": "生物立方",
+      "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
+    },
+    "itty_critters_super_effective_pod": {
+      "name": "超级有效！",
+      "effectText": "摧毁一张打在随从上或基地上的行动牌。"
+    },
+    "itty_critters_ittypedia_pod": {
+      "name": "小小百科",
+      "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
+    },
+    "itty_critters_coach_combat_pod": {
+      "name": "战斗训练",
+      "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
+    },
+    "itty_critters_leafaroo_pod": {
+      "name": "叶袋兽",
+      "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
+    },
+    "itty_critters_flooffairy_pod": {
+      "name": "芙露仙灵",
+      "abilityText": "你可以抓 1 张牌。"
+    },
+    "itty_critters_calicoin_pod": {
+      "name": "金币猫",
+      "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
+    },
+    "itty_critters_tadpour_pod": {
+      "name": "塔德波尔",
+      "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
+    },
+    "itty_critters_krakatoad_pod": {
+      "name": "克拉卡蟾",
+      "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
+    },
+    "itty_critters_critter_coach_pod": {
+      "name": "导师",
+      "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_shellshock_pod": {
+      "name": "壳震",
+      "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
+    },
+    "itty_critters_critter_champion_pod": {
+      "name": "宠物冠军",
+      "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "time_travelers_its_astounding_pod": {
+      "name": "令人震惊",
+      "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
+    },
+    "time_travelers_time_is_fleeting_pod": {
+      "name": "时间流逝",
+      "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
+    },
+    "time_travelers_into_the_time_slip_pod": {
+      "name": "时间流动",
+      "effectText": "将场上的一张牌返回其拥有者的手牌。"
+    },
+    "time_travelers_1_21_gigawatts_pod": {
+      "name": "千兆瓦",
+      "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
+    },
+    "time_travelers_do_over_pod": {
+      "name": "从头来过",
+      "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    },
+    "time_travelers_jumper_pod": {
+      "name": "跳跃者",
+      "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
+    },
+    "time_travelers_stasis_field_pod": {
+      "name": "静滞立场",
+      "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
+    },
+    "time_travelers_time_raider_pod": {
+      "name": "时间掠夺者",
+      "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
+    },
+    "time_travelers_time_walk_pod": {
+      "name": "时间旅行",
+      "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
+    },
+    "time_travelers_repeater_perfect_pod": {
+      "name": "重复时间者",
+      "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
+    },
+    "time_travelers_wormhole_pod": {
+      "name": "虫洞",
+      "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
+    },
+    "time_travelers_doctor_when_pod": {
+      "name": "时间博士",
+      "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
     },
     "kitty_cats_mr_grumpers_pod": {
       "name": "坏脾气先生",
@@ -7158,66 +7489,6 @@
       "name": "争夺",
       "abilityText": "把你的一个角色移动到另一个基地。特别：你可以在计分前打出。",
       "effectText": "把你的一个角色移动到另一个基地。特殊：你可以在一个基地计分前打出此牌。"
-    },
-    "mega_troopers_blitzing_sword_attack_pod": {
-      "name": "闪电剑攻击",
-      "effectText": "特殊：在一个有你泰坦的基地计分前，消灭那里一个力量 4 或以下的随从。"
-    },
-    "mega_troopers_form_megabot_pod": {
-      "name": "合体超级佐德！",
-      "effectText": "打出超级佐德，或将任意数量你的随从移动到超级佐德所在基地。"
-    },
-    "mega_troopers_its_blitzin_time_pod": {
-      "name": "闪电时刻！",
-      "effectText": "你的一个随从直到回合结束获得 +4 力量。"
-    },
-    "mega_troopers_lightning_rescue_pod": {
-      "name": "闪电救援！",
-      "effectText": "特殊：在一个基地计分前，若你在那里有随从且力量不是最多，你可以额外打出一个行动。"
-    },
-    "mega_troopers_power_pose_pod": {
-      "name": "胜利姿态",
-      "effectText": "对一个基地打出。持续：此基地计分前，若你的力量不是最多，抓两张牌。此基地计分后，若你获胜，你可以在替换基地额外打出一个力量 3 或以下的随从。"
-    },
-    "mega_troopers_lightning_crystal_pod": {
-      "name": "闪电水晶",
-      "effectText": "消灭一张行动牌或一个泰坦。"
-    },
-    "mega_troopers_omega_protocol_pod": {
-      "name": "欧米伽协议",
-      "effectText": "对一个基地打出。持续：每个其他玩家的回合开始时，此基地直到该回合结束临界点 -10。"
-    },
-    "mega_troopers_plan_for_more_pod": {
-      "name": "谋划更多！",
-      "effectText": "查看你牌库顶三张牌。你可以抓取其中一张，或将其中一个随从作为额外随从打出。将其余牌按任意顺序放到你的牌库顶和/或牌库底。"
-    },
-    "mega_troopers_beta_6_pod": {
-      "name": "贝塔6号",
-      "abilityText": "特殊：任意基地计分前，你可以在你的一个随从上放置一枚 +1 力量指示物。"
-    },
-    "mega_troopers_green_trooper_pod": {
-      "name": "绿骑士",
-      "abilityText": "特殊：一个基地计分前，你可以将此随从作为额外随从打到那里。"
-    },
-    "mega_troopers_pink_trooper_pod": {
-      "name": "粉骑士",
-      "abilityText": "特殊：此基地计分后，将你在这里一个力量 3 或以下的随从返回手牌，而不是置入弃牌堆。"
-    },
-    "mega_troopers_black_trooper_pod": {
-      "name": "黑骑士",
-      "abilityText": "持续：一个特殊能力使用后，此随从直到回合结束获得 +1 力量。"
-    },
-    "mega_troopers_blue_trooper_pod": {
-      "name": "蓝骑士",
-      "abilityText": "特殊：任意基地计分前，你可以抓一张牌，或令此随从直到你的回合结束获得 +2 力量。"
-    },
-    "mega_troopers_yellow_trooper_pod": {
-      "name": "黄骑士",
-      "abilityText": "特殊：此基地计分前，你可以将你的另一个随从移动到这里。"
-    },
-    "mega_troopers_red_trooper_pod": {
-      "name": "红骑士",
-      "abilityText": "持续：你可以额外拥有一个在场泰坦。天赋：在另一个基地打出超级佐德，或移动超级佐德。"
     },
     "magical_girls_silver_shard_pod": {
       "name": "银色碎片",

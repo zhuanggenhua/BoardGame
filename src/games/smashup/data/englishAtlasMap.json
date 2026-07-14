@@ -2642,5 +2642,21 @@
   "base_portal_room_pod": {
     "atlasId": "smashup:base9",
     "index": 1
+  },
+  "base_the_vats_pod": {
+    "atlasId": "smashup:base9",
+    "index": 4
+  },
+  "base_faceless_city_pod": {
+    "atlasId": "smashup:base9",
+    "index": 5
+  },
+  "base_boneyard_pod": {
+    "atlasId": "smashup:base6",
+    "index": 2
+  },
+  "base_ossuary_pod": {
+    "atlasId": "smashup:base6",
+    "index": 3
   }
 }

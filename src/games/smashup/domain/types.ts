@@ -56,11 +56,14 @@ export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra' |
 export type SmashUpActivationKind = 'special' | 'talent' | 'ongoing';
 export type SmashUpActivationZone = 'board' | 'discard' | 'setaside' | 'hand';
 export type SmashUpActivationWindow = 'playCards' | 'beforeScoring' | 'afterScoring';
+export type SmashUpActivationSourceScope = 'scoringBase' | 'anyBase';
 
 export interface SmashUpActivatableAbility {
     kind: SmashUpActivationKind;
     zone: SmashUpActivationZone;
     window?: SmashUpActivationWindow;
+    /** 计分窗口中，承载此能力的对象必须位于计分基地，还是可以位于任意基地。 */
+    sourceScope?: SmashUpActivationSourceScope;
 }
 
 /**
@@ -523,6 +526,8 @@ export type PendingPostScoringAction =
         cardUid: string;
         defId: string;
         ownerId?: PlayerId;
+        /** 默认从牌库打出；少数计分后效果会从手牌预约到替换基地。 */
+        fromZone?: 'deck' | 'hand';
         baseIndex: number;
         targetBaseDefId: string;
         power: number;
@@ -1478,6 +1483,8 @@ export interface MinionReturnedEvent extends GameEvent<'su:minion_returned'> {
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        /** Internal guard used when an optional return replacement is declined. */
+        skipReturnReplacement?: boolean;
     };
 }
 
