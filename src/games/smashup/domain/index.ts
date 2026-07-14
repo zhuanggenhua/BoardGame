@@ -2658,13 +2658,25 @@ function postProcessSystemEvents(
                 ms = queued.matchState ?? ms;
             }
             prePlayEvents.push(event);
-        } else if (event.type === SU_EVENTS.CARDS_DISCARDED) {
+        } else if (event.type === SU_EVENTS.CARDS_DISCARDED || event.type === SU_EVENTS.CARDS_MILLED) {
             const discardEvt = event as { type: string; payload: { playerId: PlayerId; cardUids: string[] }; timestamp: number };
             const tempCore = prePlayEvents.reduce((acc, preEvt) => reduce(acc, preEvt), state);
+            const sourceZone = event.type === SU_EVENTS.CARDS_MILLED ? 'deck' : 'hand';
+            const sourceCards = sourceZone === 'deck'
+                ? tempCore.players[discardEvt.payload.playerId]?.deck ?? []
+                : tempCore.players[discardEvt.payload.playerId]?.hand ?? [];
+            const uidSet = new Set(discardEvt.payload.cardUids);
+            const discardedCards = sourceCards
+                .filter(card => uidSet.has(card.uid))
+                .map(card => ({ uid: card.uid, defId: card.defId, ownerId: card.owner }));
             const queued = collectTriggers(tempCore, 'onCardsDiscarded', {
                 state: tempCore,
                 matchState: ms,
                 playerId: discardEvt.payload.playerId,
+                discardedCards,
+                discardedFromZone: sourceZone,
+                frameId: `cards-discarded-frame:${event.type}:${discardEvt.payload.playerId}:${event.timestamp}`,
+                sourceEventId: `cards-discarded:${event.type}:${discardEvt.payload.playerId}:${event.timestamp}`,
                 random,
                 now: event.timestamp,
             });
@@ -2783,6 +2795,9 @@ function postProcessSystemEvents(
                     actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,
                     actionTargetType: playedEvt.payload.targetType,
                     actionTargetMinionUid: playedEvt.payload.targetMinionUid,
+                    triggerCardUid: playedEvt.payload.cardUid,
+                    triggerCardDefId: playedEvt.payload.defId,
+                    triggerCardOwnerId: playedEvt.payload.ownerId ?? playedEvt.payload.playerId,
                     frameId,
                     sourceEventId,
                     now: event.timestamp,
@@ -2802,6 +2817,9 @@ function postProcessSystemEvents(
                 actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,
                 actionTargetType: playedEvt.payload.targetType,
                 actionTargetMinionUid: playedEvt.payload.targetMinionUid,
+                triggerCardUid: playedEvt.payload.cardUid,
+                triggerCardDefId: playedEvt.payload.defId,
+                triggerCardOwnerId: playedEvt.payload.ownerId ?? playedEvt.payload.playerId,
                 frameId,
                 sourceEventId,
                 random,

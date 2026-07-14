@@ -674,6 +674,13 @@ export interface TriggerInstance {
     triggerCardDefId?: string;
     triggerCardOwnerId?: PlayerId;
     triggerCardKind?: 'ongoing' | 'attached_action';
+    transferredCardUid?: string;
+    transferredCardDefId?: string;
+    transferredCardOwnerId?: PlayerId;
+    transferredFromPlayerId?: PlayerId;
+    transferredToPlayerId?: PlayerId;
+    discardedCards?: Array<{ uid: string; defId: string; ownerId: PlayerId }>;
+    discardedFromZone?: 'hand' | 'deck';
     /** destroyer (for onMinionDestroyed "after you destroy" checks) */
     destroyerId?: PlayerId;
     /** 被影响/被消灭随从的控制者等事件控制者上下文 */
@@ -858,6 +865,13 @@ export interface SmashUpCore {
     minionMoveEventsByBaseThisTurn?: Record<number, number>;
     /** 本回合各玩家发起的随从移动总次数（用于 Category 5 的进场条件） */
     minionMovesThisTurnByPlayer?: Record<PlayerId, number>;
+    /**
+     * 本回合禁止某玩家再次打出的行动 defId。
+     *
+     * 用于蜘蛛阿南西：“你本回合不能再打出该行动的任意复制”。
+     * 生命周期：任意 TURN_STARTED 时清空，因为规则限定为当前玩家回合。
+     */
+    blockedActionDefIdsThisTurn?: Record<PlayerId, string[]>;
     /**
      * 本回合各玩家是否曾把对手随从移动到各基地（你们已经完蛋 POD）
      * key1 = baseIndex, key2 = playerId, value = true
@@ -1563,6 +1577,8 @@ export type SmashUpEvent =
     | MinionMovedEvent
     | MinionControlChangedEvent
     | MinionMetadataUpdatedEvent
+    | BaseMetadataUpdatedEvent
+    | ActionDefBlockedThisTurnEvent
     | PowerCounterAddedEvent
     | PowerCounterRemovedEvent
     | OngoingAttachedEvent
@@ -2048,6 +2064,25 @@ export interface BreakpointModifiedEvent extends GameEvent<typeof SU_EVENTS.BREA
         baseIndex: number;
         baseInstanceId?: string;
         delta: number;
+        reason: string;
+    };
+}
+
+/** 基地运行时 metadata 更新事件 */
+export interface BaseMetadataUpdatedEvent extends GameEvent<typeof SU_EVENTS.BASE_METADATA_UPDATED> {
+    payload: {
+        baseIndex: number;
+        baseInstanceId?: string;
+        metadataUpdate: Record<string, unknown>;
+        reason: string;
+    };
+}
+
+/** 本回合禁止某玩家再次打出某个行动 defId */
+export interface ActionDefBlockedThisTurnEvent extends GameEvent<typeof SU_EVENTS.ACTION_DEF_BLOCKED_THIS_TURN> {
+    payload: {
+        playerId: PlayerId;
+        defId: string;
         reason: string;
     };
 }
