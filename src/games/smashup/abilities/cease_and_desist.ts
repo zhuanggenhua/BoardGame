@@ -9,6 +9,7 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     buildValidatedReturnEvents,
@@ -698,7 +699,8 @@ const giveControlPrompt = createPromptProgram<
             },
         );
     },
-    onResolve: ({ context, state, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, value, timestamp } = args;
         if (isSkip(value)) return { events: [] };
         const targetPlayerId = (value as { playerId?: PlayerId } | undefined)?.playerId;
         const minion = state.core.bases[context.baseIndex]?.minions.find(candidate => candidate.uid === context.minionUid);
@@ -715,11 +717,11 @@ const giveControlPrompt = createPromptProgram<
         const preview = applyPreview(state, [control]);
         const events: SmashUpEvent[] = [control];
         if (context.afterGive === 'draw2_extra_minion') {
-            events.push(...buildStandardDrawEvents(preview.core, context.playerId, 2, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: preview }, context.playerId, 2));
             events.push(grantContextualExtraMinion({ playerId: context.playerId, now: timestamp, matchState: preview }, context.sourceId));
         }
         if (context.afterGive === 'draw1_extra_action') {
-            events.push(...buildStandardDrawEvents(preview.core, context.playerId, 1, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: preview }, context.playerId, 1));
             events.push(grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: preview }, context.sourceId));
         }
         if (context.afterGive === 'extra_minion') {
@@ -1570,7 +1572,8 @@ const baseDestroyForDrawPrompt = createPromptProgram<
             responseValidationMode: 'live',
         },
     ),
-    onResolve: ({ context, state, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, value, timestamp } = args;
         if (isSkip(value)) return { events: [] };
         const selected = value as MinionChoice | undefined;
         if (!selected) return { events: [] };
@@ -1590,7 +1593,7 @@ const baseDestroyForDrawPrompt = createPromptProgram<
             sourceKind: 'nonAction',
         });
         const preview = applyPreview(state, destroyEvents);
-        return { events: [...destroyEvents, ...buildStandardDrawEvents(preview.core, context.playerId, 1, random, timestamp)] };
+        return { events: [...destroyEvents, ...buildStandardDrawEventsFromRuntimeContext({ ...args, state: preview }, context.playerId, 1)] };
     },
 });
 
