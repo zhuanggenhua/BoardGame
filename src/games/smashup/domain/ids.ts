@@ -42,6 +42,7 @@ export const SMASHUP_ATLAS_IDS = {
     MYTHIC_GREEKS_POD_CARDS: 'smashup:mythic-greeks-pod-cards',
     SHAPESHIFTERS_POD_CARDS: 'smashup:shapeshifters-pod-cards',
     DRAGONS_POD: 'smashup:dragons-pod',
+    DRAGONS_POD_CARDS: 'smashup:dragons-pod',
     SUPERHEROES_POD: 'smashup:superheroes-pod',
     MAGICAL_GIRLS_POD: 'smashup:magical-girls-pod',
     MEGA_TROOPERS_POD: 'smashup:mega-troopers-pod',

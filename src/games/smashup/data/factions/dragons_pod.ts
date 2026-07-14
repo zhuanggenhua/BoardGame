@@ -161,4 +161,3 @@ export const DRAGONS_POD_CARDS: CardDef[] = [
     ...DRAGONS_POD_ACTIONS,
     ...DRAGONS_POD_MINIONS,
 ];
-

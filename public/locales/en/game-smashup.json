@@ -1702,6 +1702,14 @@
       "name": "Mega Troopers (POD)",
       "description": "POD edition with revised scoring-window actions, trooper specials, Megabot support, and Omega Protocol."
     },
+    "skeletons_pod": {
+      "name": "Skeletons (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Skeletons."
+    },
+    "shapeshifters_pod": {
+      "name": "Shapeshifters (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Shapeshifters."
+    },
     "hydra": {
       "name": "Hydra",
       "description": "Turn sacrificed characters into card draw, low-power redeployment, and relentless board rebuilding."
@@ -5234,6 +5242,54 @@
       "name": "Lord of Bones",
       "abilityText": "Ongoing: After another minion is uncovered, you may place a +1 power counter on it. Talent: Bury a card from your hand here or uncover one of your buried cards here."
     },
+    "skeletons_spooky_scary_pod": {
+      "name": "Spooky, Scary...",
+      "effectText": "Bury a minion of power 3 or less from your discard pile. Draw a card."
+    },
+    "skeletons_grave_goods_pod": {
+      "name": "Grave Goods",
+      "effectText": "Bury a card from your hand. Then you may discard a card to bury one extra card, or uncover one of your buried cards. If it is a minion, you may place two +1 power counters on it."
+    },
+    "skeletons_place_em_down_pod": {
+      "name": "Place 'em Down",
+      "effectText": "Bury up to three minions from your discard pile with total power 6 or less."
+    },
+    "skeletons_graveyard_pod": {
+      "name": "Graveyard",
+      "effectText": "Play on a base. Talent: Uncover one of your buried cards here. If it is a minion, you may place a +1 power counter on it."
+    },
+    "skeletons_hearse_fleet_pod": {
+      "name": "Hearse Fleet",
+      "effectText": "Move any number of your buried cards from one base to another base. You may play this card before a base scores to move up to two of your buried cards to or from that base."
+    },
+    "skeletons_gravestones_pod": {
+      "name": "Gravestones",
+      "effectText": "Play on a base. Ongoing: After a minion here is uncovered, you may place a +1 power counter on it. Special: After this base scores, bury this card on another base."
+    },
+    "skeletons_burst_forth_pod": {
+      "name": "Burst Forth",
+      "effectText": "Special: Before a base scores, uncover one of your buried cards there."
+    },
+    "skeletons_dig_em_up_pod": {
+      "name": "Dig 'em Up",
+      "effectText": "Choose a base. Uncover up to three of your buried cards there."
+    },
+    "skeletons_returned_one_pod": {
+      "name": "Returned One",
+      "abilityText": "You may bury this minion here. Special: After this card is uncovered, you may uncover another of your buried cards here."
+    },
+    "skeletons_revenant_pod": {
+      "name": "Revenant",
+      "abilityText": "Special: During your turn, you may bury this card from your discard pile. You may only use a Revenant's ability once per turn."
+    },
+    "skeletons_gravetender_pod": {
+      "name": "Gravetender",
+      "abilityText": "Ongoing: Once per turn, after another one of your cards is buried or uncovered, draw a card."
+    },
+    "skeletons_lord_of_bones_pod": {
+      "name": "Lord of Bones",
+      "abilityText": "Ongoing: After another minion is uncovered, you may place a +1 power counter on it. Talent: Bury a card from your hand here or uncover one of your buried cards here."
+    },
     "world_champs_sheriff": {
       "name": "Sheriff",
       "abilityText": "Special: Before this base scores, this minion may duel another player’s minion here. Destroy the losing minion."
@@ -6131,6 +6187,54 @@
       "effectText": "Choose one of your minions in play. Play an extra minion with the same name from your hand."
     },
     "shapeshifters_doppelganger": {
+      "name": "Doppelganger",
+      "abilityText": "Special: When this card goes to the discard pile from a base, search your deck for a minion and play it as an extra minion. Shuffle your deck."
+    },
+    "shapeshifters_transmogrify_pod": {
+      "name": "Transmogrify",
+      "effectText": "Destroy one of your minions. Search your deck for a minion of equal or lower power and play it here as an extra minion. Shuffle your deck."
+    },
+    "shapeshifters_genetic_shift_pod": {
+      "name": "Genetic Shift",
+      "effectText": "Choose either all of your minions gain +1 power until the end of the turn, or one of your minions gains +3 power until the end of the turn."
+    },
+    "shapeshifters_mitosis_pod": {
+      "name": "Mitosis",
+      "effectText": "Choose one of your minions in play. Play an extra minion with the same name from your hand."
+    },
+    "shapeshifters_really_pod": {
+      "name": "... Really?",
+      "effectText": "Destroy one of your minions. Play an extra minion of equal or lower power from your discard pile."
+    },
+    "shapeshifters_shell_game_pod": {
+      "name": "Shell Game",
+      "effectText": "Play on a minion. Ongoing: This minion cannot be destroyed."
+    },
+    "shapeshifters_splice_as_nice_pod": {
+      "name": "Splice as Nice",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power."
+    },
+    "shapeshifters_cellular_bonding_pod": {
+      "name": "Cellular Bonding",
+      "effectText": "Play on a minion. Choose an action on that minion. Ongoing: This card has the ability of the chosen card."
+    },
+    "shapeshifters_bacta_the_future_pod": {
+      "name": "Bacta the Future",
+      "effectText": "Destroy a minion. Its owner may immediately play an extra minion."
+    },
+    "shapeshifters_copycat_pod": {
+      "name": "Copycat",
+      "abilityText": "Choose another player's minion in play. This card has that minion's ability until the end of the turn."
+    },
+    "shapeshifters_mimic_pod": {
+      "name": "Mimic",
+      "abilityText": "Ongoing: This minion has the power of the minion in play with the highest printed power."
+    },
+    "shapeshifters_gelf_pod": {
+      "name": "G.E.L.F.",
+      "abilityText": "Talent: Search your deck for a non-G.E.L.F. minion of power 4 or less. Shuffle this card into your deck and play that minion here as an extra minion. Shuffle your deck."
+    },
+    "shapeshifters_doppelganger_pod": {
       "name": "Doppelganger",
       "abilityText": "Special: When this card goes to the discard pile from a base, search your deck for a minion and play it as an extra minion. Shuffle your deck."
     },

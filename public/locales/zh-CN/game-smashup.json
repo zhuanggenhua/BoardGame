@@ -1685,6 +1685,14 @@
       "name": "超级战队（POD版）",
       "description": "采用新版计分窗口行动、战队成员特殊能力、超级佐德支援与欧米伽协议的 POD 版本。"
     },
+    "skeletons_pod": {
+      "name": "骷髅 (POD版)",
+      "description": "POD 卡图版本；玩法与骷髅一致，使用独立卡牌与基地身份。"
+    },
+    "shapeshifters_pod": {
+      "name": "变形者 (POD版)",
+      "description": "POD 卡图版本；玩法与变形者一致，使用独立卡牌与基地身份。"
+    },
     "hydra": {
       "name": "九头蛇",
       "description": "通过摧毁己方角色、回收低力量角色和额外部署，把牺牲变成持续补牌与爆发。"
@@ -5217,6 +5225,54 @@
       "name": "骸骨之王",
       "abilityText": "持续：当另一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。天赋：从你手中埋葬 1 张牌到这里，或挖掘这里的 1 张牌。"
     },
+    "skeletons_spooky_scary_pod": {
+      "name": "诡异。可怕。",
+      "effectText": "从你的弃牌堆埋葬 1 个力量 3 或更低的随从。抓 1 张牌。"
+    },
+    "skeletons_grave_goods_pod": {
+      "name": "殉葬品",
+      "effectText": "从你手中埋葬 1 张牌。然后你可以弃 1 张牌来额外埋葬 1 张牌，或挖掘你埋葬的 1 张牌。如果它是随从，你可以在其上放置 2 枚 +1 力量指示物。"
+    },
+    "skeletons_place_em_down_pod": {
+      "name": "往下埋",
+      "effectText": "从你的弃牌堆埋葬至多 3 个力量总和为 6 或更低的随从。"
+    },
+    "skeletons_graveyard_pod": {
+      "name": "墓园",
+      "effectText": "对一个基地打出。天赋：挖掘你埋葬在这里的 1 张牌。如果它是随从，你可以在其上放置 1 枚 +1 力量指示物。"
+    },
+    "skeletons_hearse_fleet_pod": {
+      "name": "灵车队伍",
+      "effectText": "将你埋葬的任意数量牌从一个基地移动到另一个基地。特殊：你可以在一个基地计分前打出此牌，将你埋葬的至多 2 张牌移入或移出该基地。"
+    },
+    "skeletons_gravestones_pod": {
+      "name": "墓碑",
+      "effectText": "对一个基地打出。持续：这里的一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。特殊：本基地计分后，你可以将此牌埋葬到另一个基地。"
+    },
+    "skeletons_burst_forth_pod": {
+      "name": "墓地爆发",
+      "effectText": "特殊：一个基地计分前，挖掘你埋葬在那里的 1 张牌。"
+    },
+    "skeletons_dig_em_up_pod": {
+      "name": "他们出来了",
+      "effectText": "选择一个基地。挖掘你埋葬在那里的至多 3 张牌。"
+    },
+    "skeletons_returned_one_pod": {
+      "name": "轮回者",
+      "abilityText": "你可以将此随从埋葬在这里。特殊：此牌被挖掘后，你可以再挖掘你埋葬在这里的另一张牌。"
+    },
+    "skeletons_revenant_pod": {
+      "name": "复仇者",
+      "abilityText": "特殊：在你的回合中，你可以从弃牌堆埋葬此牌。复仇者的能力每回合只能使用一次。"
+    },
+    "skeletons_gravetender_pod": {
+      "name": "守墓人",
+      "abilityText": "持续：每回合一次，当你的另一张牌被埋葬或挖掘后，抓 1 张牌。"
+    },
+    "skeletons_lord_of_bones_pod": {
+      "name": "骸骨之王",
+      "abilityText": "持续：当另一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。天赋：从你手中埋葬 1 张牌到这里，或挖掘这里的 1 张牌。"
+    },
     "world_champs_sheriff": {
       "name": "警长",
       "abilityText": "特殊：本基地计分前，此随从可以与这里另一位玩家的一个随从决斗。摧毁失败的随从。"
@@ -6114,6 +6170,54 @@
       "effectText": "选择你场上的一个随从。从你的手牌打出一张同名随从作为一个额外随从。"
     },
     "shapeshifters_doppelganger": {
+      "name": "相似者",
+      "abilityText": "特殊：当此牌从基地进入弃牌堆时，从你的牌库搜寻一个随从，并将其作为额外随从打出。然后洗牌。"
+    },
+    "shapeshifters_transmogrify_pod": {
+      "name": "变形",
+      "effectText": "摧毁你的一个随从。从你的牌库搜寻一个力量不高于它的随从，并将其作为额外随从打到这里。然后洗牌。"
+    },
+    "shapeshifters_genetic_shift_pod": {
+      "name": "基因转变",
+      "effectText": "选择一项：你的所有随从直到回合结束获得 +1 力量；或你的一个随从直到回合结束获得 +3 力量。"
+    },
+    "shapeshifters_mitosis_pod": {
+      "name": "有丝分裂",
+      "effectText": "选择你场上的一个随从。从你的手牌打出一张同名随从作为一个额外随从。"
+    },
+    "shapeshifters_really_pod": {
+      "name": "...你确定？",
+      "effectText": "摧毁你的一个随从。从你的弃牌堆将一个力量不高于它的随从作为额外随从打出。"
+    },
+    "shapeshifters_shell_game_pod": {
+      "name": "甲壳比赛",
+      "effectText": "对一个随从打出。持续：该随从不能被摧毁。"
+    },
+    "shapeshifters_splice_as_nice_pod": {
+      "name": "拼接很美子",
+      "effectText": "对一个随从打出。持续：该随从获得 +2 力量。"
+    },
+    "shapeshifters_cellular_bonding_pod": {
+      "name": "细胞结合",
+      "effectText": "对一个随从打出。选择打在该随从上的一个行动。持续：此牌拥有所选卡牌的能力。"
+    },
+    "shapeshifters_bacta_the_future_pod": {
+      "name": "巴卡塔维持的未来",
+      "effectText": "摧毁一个随从。该随从的拥有者可以立即打出一个额外的随从。"
+    },
+    "shapeshifters_copycat_pod": {
+      "name": "模仿者",
+      "abilityText": "选择另一位玩家场上的一个随从。此牌获得该随从的能力，直到回合结束。"
+    },
+    "shapeshifters_mimic_pod": {
+      "name": "变形者",
+      "abilityText": "持续：此随从的力量等于场上印刷力量最高的随从。"
+    },
+    "shapeshifters_gelf_pod": {
+      "name": "凝胶精灵",
+      "abilityText": "天赋：从你的牌库搜寻一个非凝胶精灵、力量 4 或更低的随从；将此牌洗入你的牌库，并将该随从作为额外随从打到这里。然后洗牌。"
+    },
+    "shapeshifters_doppelganger_pod": {
       "name": "相似者",
       "abilityText": "特殊：当此牌从基地进入弃牌堆时，从你的牌库搜寻一个随从，并将其作为额外随从打出。然后洗牌。"
     },
