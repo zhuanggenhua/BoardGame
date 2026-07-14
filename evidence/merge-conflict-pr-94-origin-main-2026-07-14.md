@@ -48,9 +48,21 @@
 - 双侧重叠文件为 `public/assets/i18n/assets-manifest.json`，结果保留主线新增 i18n 资产清单，同时保留 #94 的 Cease and Desist 资产清单。
 - 未改动 #94 的 Cease and Desist 卡牌、能力和文案语义；本次只是跟随主线资产清单更新。
 
+## 2026-07-14 POD 基地图集门禁修复
+
+- 远端 quality-gate 在 `factionSelection.test.ts` 的 POD 基地图集映射检查失败。
+- 缺口为 4 个已启用 POD 的基地：`base_the_vats_pod`、`base_faceless_city_pod`、`base_boneyard_pod`、`base_ossuary_pod`。
+- 修复方式：在 `englishAtlasMap.json` 中复用原基地的英文图集坐标：
+  - `base_the_vats_pod` -> `smashup:base9` index 4
+  - `base_faceless_city_pod` -> `smashup:base9` index 5
+  - `base_boneyard_pod` -> `smashup:base6` index 2
+  - `base_ossuary_pod` -> `smashup:base6` index 3
+- 本次只补齐图集映射契约，不改变基地、派系或能力规则。
+
 ## 验证
 
 - `npm run i18n:check`
+- `npx vitest run src/games/smashup/__tests__/factionSelection.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/smashup.smoke.test.ts src/games/smashup/__tests__/ongoingEffects.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/abilities/cease-and-desist.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts --config vitest.config.audit.ts --configLoader native`
