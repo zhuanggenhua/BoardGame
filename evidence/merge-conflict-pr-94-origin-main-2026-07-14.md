@@ -41,6 +41,13 @@
 - 修正 `cease_and_desist.ts` 中 3 处运行时 `onResolve` 抽牌手传 random，改为 `buildStandardDrawEventsFromRuntimeContext`。
 - 修正 Cease and Desist 随从文案字段，将中英文 locale 中的随从能力文本从 `effectText` 改为 `abilityText`。
 
+## 2026-07-14 二次同步主线
+
+- 最新主线推进到 `f757e2366` 后，#94 再次合入 `origin/main`。
+- 本次同步没有文本冲突标记，也没有未解决冲突。
+- 双侧重叠文件为 `public/assets/i18n/assets-manifest.json`，结果保留主线新增 i18n 资产清单，同时保留 #94 的 Cease and Desist 资产清单。
+- 未改动 #94 的 Cease and Desist 卡牌、能力和文案语义；本次只是跟随主线资产清单更新。
+
 ## 验证
 
 - `npm run i18n:check`
