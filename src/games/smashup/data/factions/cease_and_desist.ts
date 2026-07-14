@@ -10,7 +10,7 @@ const STAR_ROAMERS = SMASHUP_FACTION_IDS.STAR_ROAMERS;
 const CHANGERBOTS = SMASHUP_FACTION_IDS.CHANGERBOTS;
 
 export const ASTROKNIGHTS_ACTIONS: ActionCardDef[] = [
-    { id: 'astroknights_block_the_probe', type: 'action', subtype: 'special', name: '阻止探解', nameEn: 'Block the Probe', faction: ASTROKNIGHTS, abilityTags: ['onPlay', 'special'], specialTiming: 'beforeScoring', playNeedsMinion: true, playTargetMinionController: 'any', count: 2, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 0 } },
+    { id: 'astroknights_block_the_probe', type: 'action', subtype: 'special', name: '阻止探解', nameEn: 'Block the Probe', faction: ASTROKNIGHTS, abilityTags: ['onPlay', 'special'], specialTiming: 'beforeScoring', count: 2, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 0 } },
     { id: 'astroknights_hidden_base', type: 'action', subtype: 'ongoing', name: '隐蔽基地', nameEn: 'Hidden Base', faction: ASTROKNIGHTS, abilityTags: ['ongoing'], ongoingTarget: 'base', playNeedsBase: true, count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 1 } },
     { id: 'astroknights_recycle_the_trash', type: 'action', subtype: 'standard', name: '垃圾回收', nameEn: 'Recycle the Trash', faction: ASTROKNIGHTS, abilityTags: ['onPlay'], count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 2 } },
     { id: 'astroknights_yield_to_rage', type: 'action', subtype: 'standard', name: '狂怒支配', nameEn: 'Yield to Rage', faction: ASTROKNIGHTS, abilityTags: ['onPlay', 'extra'], playNeedsMinion: true, playTargetMinionController: 'self', count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 3 } },
@@ -58,7 +58,7 @@ export const STAR_ROAMERS_ACTIONS: ActionCardDef[] = [
     { id: 'star_roamers_teleport_overflow', type: 'action', subtype: 'standard', name: '传送超额', nameEn: 'Teleport Overflow', faction: STAR_ROAMERS, abilityTags: ['onPlay', 'extra'], playNeedsMinion: true, playTargetMinionController: 'self', count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 33 } },
     { id: 'star_roamers_teleport_error', type: 'action', subtype: 'standard', name: '传送事故', nameEn: 'Teleport Error', faction: STAR_ROAMERS, abilityTags: ['onPlay'], playNeedsMinion: true, playTargetMinionController: 'any', count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 34 } },
     { id: 'star_roamers_hyperspeed_10', type: 'action', subtype: 'standard', name: '超高速运转', nameEn: 'Hyperspeed 10', faction: STAR_ROAMERS, abilityTags: ['onPlay'], playNeedsBase: true, count: 1, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 35 } },
-    { id: 'star_roamers_port_me_up', type: 'action', subtype: 'special', name: '传送我上船', nameEn: 'Port Me Up', faction: STAR_ROAMERS, abilityTags: ['onPlay', 'special'], specialTiming: 'afterScoring', playNeedsMinion: true, playTargetMinionController: 'self', count: 2, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 37 } },
+    { id: 'star_roamers_port_me_up', type: 'action', subtype: 'special', name: '传送我上船', nameEn: 'Port Me Up', faction: STAR_ROAMERS, abilityTags: ['onPlay', 'special'], specialTiming: 'afterScoring', count: 2, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 37 } },
     { id: 'star_roamers_mass_teleport', type: 'action', subtype: 'standard', name: '大规模传送', nameEn: 'Mass Teleport', faction: STAR_ROAMERS, abilityTags: ['onPlay'], count: 2, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 39 } },
 ];
 

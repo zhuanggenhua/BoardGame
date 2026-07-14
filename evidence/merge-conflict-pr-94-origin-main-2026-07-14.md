@@ -66,12 +66,21 @@
 - 修复方式：测试改为截取完整 `fireTriggers(...)` 调用表达式，并把 `onCardReturnedToHand` 作为已审计的 replacement 入口加入白名单。
 - 本次只修测试契约与审计范围，不改变回手后处理运行时逻辑。
 
+## 2026-07-14 响应窗口行动牌目标契约修复
+
+- 远端 quality-gate 在 `reactionSessionResponseActionTargetContext.test.ts` 失败。
+- 缺口为 2 张 Cease and Desist 响应窗口行动牌：`astroknights_block_the_probe`、`star_roamers_port_me_up`。
+- 当前响应窗口的 `play_action` 选择尚不携带 `targetMinionUid`，因此响应窗口行动牌不能声明 play-time 随从目标。
+- 修复方式：去掉这两张 special 行动牌的 `playNeedsMinion` / `playTargetMinionController` 声明，保留能力实现中的目标处理。
+- 本次只收窄响应窗口牌的数据契约，不改变普通行动牌的 play-time 目标声明。
+
 ## 验证
 
 - `npm run i18n:check`
 - `npx vitest run src/games/smashup/__tests__/factionSelection.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/reactionQueueFireTriggersCallerContract.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
+- `npx vitest run src/games/smashup/__tests__/reactionSessionResponseActionTargetContext.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/smashup.smoke.test.ts src/games/smashup/__tests__/ongoingEffects.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/abilities/cease-and-desist.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts --config vitest.config.audit.ts --configLoader native`
