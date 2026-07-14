@@ -1,8 +1,32 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DiceBoxThreeEngine, type DiceBoxDieSkin } from '../dice-box-threejs/engine';
+import { DiceBoxThreeEngine, installWebGlInfoLogNullGuard, type DiceBoxDieSkin } from '../dice-box-threejs/engine';
 
 describe('DiceBoxThreeEngine', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('兼容返回 null 的 WebGL shader 日志，避免第三方 three trim 崩溃', () => {
+        class MockWebGLRenderingContext {
+            getShaderInfoLog(_shader: WebGLShader): string | null {
+                return null;
+            }
+
+            getProgramInfoLog(_program: WebGLProgram): string | null {
+                return null;
+            }
+        }
+
+        vi.stubGlobal('WebGLRenderingContext', MockWebGLRenderingContext);
+
+        installWebGlInfoLogNullGuard();
+
+        const context = new MockWebGLRenderingContext() as unknown as WebGLRenderingContext;
+        expect(context.getShaderInfoLog({} as WebGLShader)).toBe('');
+        expect(context.getProgramInfoLog({} as WebGLProgram)).toBe('');
+    });
+
     it('应用 DiceThrone 画布皮肤时不应把画布写入第三方骰子预设 labels', () => {
         const preset = {
             labels: ['', '', '1', '2', '3', '4', '5', '6'],

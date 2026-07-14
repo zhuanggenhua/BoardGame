@@ -92,6 +92,7 @@ import { MAGICAL_GIRLS_CARDS } from './factions/magical_girls';
 import { MAGICAL_GIRLS_POD_CARDS } from './factions/magical_girls_pod';
 import { MEGA_TROOPERS_CARDS } from './factions/mega_troopers';
 import { MEGA_TROOPERS_POD_CARDS } from './factions/mega_troopers_pod';
+import { CEASE_AND_DESIST_BASES, CEASE_AND_DESIST_CARDS } from './factions/cease_and_desist';
 import { DRAGONS_CARDS } from './factions/dragons';
 import { DRAGONS_POD_CARDS } from './factions/dragons_pod';
 import { SUPERHEROES_CARDS } from './factions/superheroes';
@@ -100,6 +101,10 @@ import { AVENGERS_CARDS } from './factions/avengers';
 import { SHIELD_CARDS } from './factions/shield';
 import { SPIDER_VERSE_CARDS } from './factions/spider_verse';
 import { ULTIMATES_CARDS } from './factions/ultimates';
+import { HYDRA_CARDS } from './factions/hydra';
+import { KREE_CARDS } from './factions/kree';
+import { MASTERS_OF_EVIL_CARDS } from './factions/masters_of_evil';
+import { SINISTER_SIX_CARDS } from './factions/sinister_six';
 import { GEEKS_CARDS } from './factions/geeks';
 import {
     DISCO_DANCERS_CARDS,
@@ -257,6 +262,7 @@ registerCards(MAGICAL_GIRLS_CARDS);
 registerCards(MAGICAL_GIRLS_POD_CARDS);
 registerCards(MEGA_TROOPERS_CARDS);
 registerCards(MEGA_TROOPERS_POD_CARDS);
+registerCards(CEASE_AND_DESIST_CARDS);
 registerCards(DRAGONS_CARDS);
 registerCards(DRAGONS_POD_CARDS);
 registerCards(SUPERHEROES_CARDS);
@@ -265,6 +271,10 @@ registerCards(AVENGERS_CARDS);
 registerCards(SHIELD_CARDS);
 registerCards(SPIDER_VERSE_CARDS);
 registerCards(ULTIMATES_CARDS);
+registerCards(HYDRA_CARDS);
+registerCards(KREE_CARDS);
+registerCards(MASTERS_OF_EVIL_CARDS);
+registerCards(SINISTER_SIX_CARDS);
 registerCards(GEEKS_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
@@ -1330,6 +1340,7 @@ export const BASE_CARDS_ZHONGGUO: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_ZHONGGUO);
+registerBases(CEASE_AND_DESIST_BASES);
 
 registerPodBaseSkeletons();
 

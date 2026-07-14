@@ -24,7 +24,7 @@ async function ensureLobbyReady(page: Page): Promise<void> {
     await expect(page.locator('[data-game-id="qidahen"]')).toBeVisible({ timeout: 15000 });
 }
 
-async function clickMapRegion(
+async function hoverMapRegion(
     page: Page,
     regionId: keyof typeof MAP_REGION_POINTS,
 ): Promise<void> {
@@ -44,8 +44,6 @@ async function clickMapRegion(
             cancelable: true,
         };
         element.dispatchEvent(new PointerEvent('pointermove', init));
-        element.dispatchEvent(new PointerEvent('pointerdown', init));
-        element.dispatchEvent(new PointerEvent('pointerleave', init));
     }, point);
 }
 
@@ -84,12 +82,18 @@ async function openQidahenCreateRoomModal(page: Page): Promise<void> {
 async function enterQidahenBoard(page: Page): Promise<void> {
     await expect(page).toHaveURL(/\/play\/qidahen\/match\//, { timeout: 30000 });
 
-    const pregameScreen = page.getByTestId('qidahen-scenario-pregame-screen');
-    if (await pregameScreen.isVisible().catch(() => false)) {
-        await page.getByTestId('qidahen-pregame-confirm').click();
+    const url = new URL(page.url());
+    if (!url.searchParams.get('playerID')) {
+        url.searchParams.set('playerID', '0');
+        await page.goto(url.toString(), { waitUntil: 'domcontentloaded' });
     }
 
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-scenario-pregame-screen')).toHaveCount(0);
+    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
+    await page.getByTestId('qidahen-scenario-vote-option-post-sarhu-1619').click();
+    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toHaveCount(0, { timeout: 30000 });
     await expect(page.getByTestId('qidahen-turn-banner')).toContainText('大明', { timeout: 15000 });
 }
 
@@ -128,27 +132,32 @@ test.describe('七大恨主页首回合黄金链', () => {
         await expect(wheelMoveTarget).toBeVisible({ timeout: 15000 });
         await captureEvidence(page, testInfo, '七大恨-首页进入并完成首回合-02-进入对局后可操作.png');
 
-        await clickMapRegion(page, 'songjin');
+        await hoverMapRegion(page, 'songjin');
         await expect(page.getByTestId('qidahen-map-region-tip')).toContainText('皮岛 · 大明', { timeout: 15000 });
         await wheelMoveTarget.click();
-        await page.waitForTimeout(250);
-        await wheelMoveTarget.click();
-        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('大明 · 势力行动', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('大明 · 行动窗口', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('轮盘 已用', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-turn-banner')).toContainText('手牌行动 未用', { timeout: 15000 });
         await expect(page.getByTestId('qidahen-season-summary')).toContainText('轮盘征兵/训练', { timeout: 15000 });
-        await expect(page.getByTestId('qidahen-season-summary')).toContainText('皮岛', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-season-summary')).toContainText('顺天', { timeout: 15000 });
 
-        const actionButton = page.getByTestId('qidahen-action-upgrade-armament');
-        await expect(actionButton).toBeVisible({ timeout: 15000 });
-        await actionButton.click();
-        await expect(page.getByTestId('qidahen-primary-action-current')).toContainText('升级军备', { timeout: 15000 });
-        await actionButton.click();
+        const artilleryTechCard = page.locator('[data-tutorial-id="qidahen-atlas05-1626-artillery-tech"]').first();
+        await expect(artilleryTechCard).toBeVisible({ timeout: 15000 });
+        await artilleryTechCard.click();
 
-        const handCards = page.locator('[data-testid^="qidahen-hand-card-"]');
-        await expect(handCards.nth(0)).toBeVisible({ timeout: 15000 });
-        await expect(handCards.nth(1)).toBeVisible({ timeout: 15000 });
-        await handCards.nth(0).click();
-        await handCards.nth(1).click();
-        await captureEvidence(page, testInfo, '七大恨-首页进入并完成首回合-03-升级军备弃牌确认.png');
+        const paymentPanel = page.getByTestId('qidahen-action-payment-panel');
+        await expect(paymentPanel).toBeVisible({ timeout: 15000 });
+        await expect(paymentPanel).toContainText('升级军备', { timeout: 15000 });
+        await expect(page.getByTestId('qidahen-action-payment-status')).toContainText('已选 1 张', { timeout: 15000 });
+        await expect(page.locator('[data-qidahen-hand-card-selected="true"]')).toBeVisible({ timeout: 15000 });
+
+        const paymentCards = page.locator(
+            'button[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-magnify-"]):not([data-tutorial-id="qidahen-atlas05-1626-artillery-tech"])',
+        );
+        await expect(paymentCards.first()).toBeVisible({ timeout: 15000 });
+        await paymentCards.first().click();
+        await expect(page.getByTestId('qidahen-action-payment-status')).toContainText('已选 2 张', { timeout: 15000 });
+        await captureEvidence(page, testInfo, '七大恨-首页进入并完成首回合-03-打出火炮技术并确认升级军备.png');
 
         const confirmPaymentButton = page.getByTestId('qidahen-action-payment-confirm');
         await expect(confirmPaymentButton).toBeEnabled({ timeout: 15000 });

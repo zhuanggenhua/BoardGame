@@ -56,21 +56,26 @@ export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra' |
 export type SmashUpActivationKind = 'special' | 'talent' | 'ongoing';
 export type SmashUpActivationZone = 'board' | 'discard' | 'setaside' | 'hand';
 export type SmashUpActivationWindow = 'playCards' | 'beforeScoring' | 'afterScoring';
+export type SmashUpActivationSourceScope = 'scoringBase' | 'anyBase';
 
 export interface SmashUpActivatableAbility {
     kind: SmashUpActivationKind;
     zone: SmashUpActivationZone;
     window?: SmashUpActivationWindow;
+    /** 计分窗口中，承载此能力的对象必须位于计分基地，还是可以位于任意基地。 */
+    sourceScope?: SmashUpActivationSourceScope;
 }
 
 /**
  * 卡牌打出约束（数据驱动）。
  * - 'requireOwnMinion'：目标基地上必须有自己的至少一个随从
+ * - 'requireNoCharacters'：目标基地上不能有任何角色
  * - { type: 'requireOwnPower', minPower: N }：目标基地上己方力量必须 ≥ N
  * - 'onlyCardInHand'：本卡必须是手牌中的唯一一张
  */
 export type PlayConstraint =
     | 'requireOwnMinion'
+    | 'requireNoCharacters'
     | 'onlyCardInHand'
     | { type: 'requireOwnPower'; minPower: number };
 
@@ -523,6 +528,8 @@ export type PendingPostScoringAction =
         cardUid: string;
         defId: string;
         ownerId?: PlayerId;
+        /** 默认从牌库打出；少数计分后效果会从手牌预约到替换基地。 */
+        fromZone?: 'deck' | 'hand';
         baseIndex: number;
         targetBaseDefId: string;
         power: number;
@@ -807,6 +814,7 @@ export interface SmashUpCore {
         minionUid: string;
         amount: number;
         expiresOnTurnNumber: number;
+        expiresOnPlayerId?: PlayerId;
         reason: string;
     }>;
     /**
@@ -1478,6 +1486,8 @@ export interface MinionReturnedEvent extends GameEvent<'su:minion_returned'> {
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        /** Internal guard used when an optional return replacement is declined. */
+        skipReturnReplacement?: boolean;
     };
 }
 
@@ -2023,6 +2033,7 @@ export interface PermanentPowerAddedEvent extends GameEvent<typeof SU_EVENTS.PER
         amount: number;
         reason: string;
         expiresOnTurnNumber?: number;
+        expiresOnPlayerId?: PlayerId;
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;

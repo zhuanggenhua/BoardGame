@@ -20,6 +20,10 @@ const skipLintInQualityGate = process.env.QUALITY_GATE_SKIP_LINT === '1';
 const isDryRun = process.env.QUALITY_GATE_DRY_RUN === '1';
 const targetHeadRef = (process.env.QUALITY_GATE_HEAD || 'HEAD').trim() || 'HEAD';
 const CACHE_SCHEMA_VERSION = 2;
+const ZERO_SHA_PATTERN = /^0{40}$/;
+const prePushInput = isPrePushMode ? readPrePushInput() : '';
+const prePushRefs = parsePrePushRefs(prePushInput);
+const auditedMergeConflictCommits = new Set();
 
 // pre-push changed test runs touch a large cross-section of suites and can emit
 // huge log payloads. `threads` has been unstable on Windows here because worker
@@ -333,15 +337,20 @@ function runMergeAuditStrict(commit) {
   return result.status ?? 1;
 }
 
-function runMergeConflictGuards({ baseRef, headRef }) {
+function runMergeConflictGuards({ baseRef, headRef, scopeLabel = '' }) {
   if (isPreCommitMode) return;
-  const mergeCommits = getMergeCommitsInRange(baseRef, headRef);
+  const mergeCommits = getMergeCommitsInRange(baseRef, headRef)
+    .filter((commit) => !auditedMergeConflictCommits.has(commit));
   if (mergeCommits.length === 0) return;
 
   console.log('\n[changed-quality-gate] Merge conflict guard');
+  if (scopeLabel) {
+    console.log(`[changed-quality-gate] 审计范围: ${scopeLabel}`);
+  }
   console.log(`[changed-quality-gate] merge commits: ${mergeCommits.length}`);
 
   for (const commit of mergeCommits) {
+    auditedMergeConflictCommits.add(commit);
     const parents = getMergeCommitParents(commit);
     const overlapFiles = parents ? getIntersectingChangedFiles(parents[0], parents[1]) : [];
     const conflictFiles = getConflictFilesFromCommitMessage(commit);
@@ -373,6 +382,36 @@ function runMergeConflictGuards({ baseRef, headRef }) {
       console.log(`[changed-quality-gate] merge commit ${commit} 存在单边结果，但已检测到冲突汇报文档，继续执行后续门禁。`);
     }
   }
+}
+
+function readPrePushInput() {
+  if (typeof process.env.QUALITY_GATE_PRE_PUSH_STDIN === 'string') {
+    return process.env.QUALITY_GATE_PRE_PUSH_STDIN;
+  }
+  if (process.stdin.isTTY) return '';
+  try {
+    return readFileSync(0, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+function parsePrePushRefs(input) {
+  if (!input) return [];
+  return input
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [localRef, localSha, remoteRef, remoteSha] = line.split(/\s+/);
+      if (!localRef || !localSha || !remoteRef || !remoteSha) return null;
+      return { localRef, localSha, remoteRef, remoteSha };
+    })
+    .filter(Boolean);
+}
+
+function isZeroSha(value) {
+  return ZERO_SHA_PATTERN.test(value);
 }
 
 function normalizeFile(file) {
@@ -563,6 +602,61 @@ function resolveTargetHeadRef() {
   const resolved = runGit(['rev-parse', '--verify', targetHeadRef], { allowFailure: true });
   if (resolved) return resolved;
   throw new Error(`[changed-quality-gate] 无法解析目标提交: ${targetHeadRef}`);
+}
+
+function resolveCommitSha(ref) {
+  if (!ref) return '';
+  return runGit(['rev-parse', '--verify', `${ref}^{commit}`], { allowFailure: true });
+}
+
+function resolvePrePushRefContexts(defaultBaseRef) {
+  if (!isPrePushMode || prePushRefs.length === 0) return [];
+
+  const contexts = [];
+  for (const pushedRef of prePushRefs) {
+    if (isZeroSha(pushedRef.localSha)) {
+      continue;
+    }
+
+    const localSha = resolveCommitSha(pushedRef.localSha);
+    if (!localSha) {
+      console.warn(`[changed-quality-gate] 无法解析本次 push 的本地提交 ${pushedRef.localSha}（${pushedRef.localRef}），跳过该 ref 的 merge 审计。`);
+      continue;
+    }
+
+    let rangeBaseRef = '';
+    let rangeSource = '';
+    if (!isZeroSha(pushedRef.remoteSha)) {
+      const remoteSha = resolveCommitSha(pushedRef.remoteSha);
+      if (remoteSha) {
+        rangeBaseRef = remoteSha;
+        rangeSource = 'remote';
+      } else {
+        console.warn(`[changed-quality-gate] 无法解析本次 push 的远端旧提交 ${pushedRef.remoteSha}（${pushedRef.remoteRef}），改用基线 merge-base。`);
+      }
+    }
+
+    if (!rangeBaseRef && defaultBaseRef) {
+      const mergeBase = runGit(['merge-base', localSha, defaultBaseRef], { allowFailure: true });
+      rangeBaseRef = mergeBase || defaultBaseRef;
+      rangeSource = mergeBase ? 'merge-base' : 'base';
+    }
+
+    if (!rangeBaseRef) {
+      console.warn(`[changed-quality-gate] 无法为本次 push ref ${pushedRef.remoteRef} 解析审计范围，跳过该 ref 的 merge 审计。`);
+      continue;
+    }
+
+    contexts.push({
+      ...pushedRef,
+      localSha,
+      rangeBaseRef,
+      rangeSource,
+      scopeLabel: `${rangeBaseRef}..${localSha}`,
+    });
+  }
+
+  return contexts;
 }
 
 function resolveChangeContext() {
@@ -1621,6 +1715,7 @@ const {
   baselinePathByFile: prePushLintBaselinePathByFile,
   scopeLabel: prePushLintScopeLabel,
 } = resolvePrePushLintContext();
+const prePushRefContexts = resolvePrePushRefContexts(baseRef);
 const isLatestCommitScopeMode = isPrePushMode && effectiveBaseRef !== baseRef;
 const affectsTypecheck = createTypecheckPredicate(effectiveBaseRef, headSha);
 console.log(`[changed-quality-gate] 模式: ${mode}`);
@@ -1633,10 +1728,29 @@ if (isPrePushMode && aheadCount > 1 && effectiveBaseRef !== baseRef) {
 } else {
   console.log(`[changed-quality-gate] 当前校验范围: ${effectiveScopeLabel}`);
 }
+if (isPrePushMode && prePushRefs.length > 0) {
+  console.log('[changed-quality-gate] 本次 push refs:');
+  if (prePushRefContexts.length === 0) {
+    console.log('[changed-quality-gate] - 未发现需要审计的非删除 ref');
+  } else {
+    for (const context of prePushRefContexts) {
+      console.log(`[changed-quality-gate] - ${context.remoteRef}: ${context.scopeLabel} (${context.rangeSource})`);
+    }
+  }
+}
+
+for (const context of prePushRefContexts) {
+  runMergeConflictGuards({
+    baseRef: context.rangeBaseRef,
+    headRef: context.localSha,
+    scopeLabel: `push ${context.remoteRef}: ${context.scopeLabel}`,
+  });
+}
 
 runMergeConflictGuards({
   baseRef: effectiveBaseRef,
   headRef: resolvedTargetHead,
+  scopeLabel: effectiveScopeLabel,
 });
 
 if (files.length === 0) {

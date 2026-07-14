@@ -9766,8 +9766,8 @@
     "zh-CN/summonerwars/hero/mogu/compressed/cards": {
       "variants": {
         "webp": {
-          "sha256": "4c35deb3fe40dd0ff7f819ba4cb4ccc3a827ac2d4501281acebf3956613c07e3",
-          "bytes": 137518,
+          "sha256": "afa10cb4567d0fa9b3c1594257ffae86eca52bffe3d11cedf7119ccb9b0e58c3",
+          "bytes": 1960640,
           "mime": "image/webp"
         }
       }
@@ -12369,6 +12369,24 @@
         "png": {
           "sha256": "415d5b3d99625a17fd884abd8e2543b3099ffe74df3416edfbfb8188172822d5",
           "bytes": 5865058,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/marvel_villains": {
+      "variants": {
+        "webp": {
+          "sha256": "8de4b7142573d115f31507aea90a320c4d4a09c850d0c1e44e2d05b7cc27b098",
+          "bytes": 1046742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/marvel_villains": {
+      "variants": {
+        "png": {
+          "sha256": "44ae80f5629ad1d33a2c438a2955112a38c1ae5d7addaa2d8ae44418ef15a5fb",
+          "bytes": 33423555,
           "mime": "image/png"
         }
       }

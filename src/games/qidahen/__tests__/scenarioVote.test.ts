@@ -34,6 +34,34 @@ const applyCommand = (
     state.core.playerIds,
 ).state;
 
+const resolveAllPendingScenarioChoices = (state: MatchState<QidahenCore>): MatchState<QidahenCore> => {
+    for (const group of [...state.core.pendingScenarioCharacterChoices]) {
+        const playerId = state.core.factions[group.factionId].playerId;
+        const characterIds = group.characterIds.slice(0, group.count);
+        const command = {
+            type: QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE,
+            playerId,
+            payload: { groupId: group.id, characterIds },
+        };
+        expect(QidahenDomain.validate(state, command as never)).toEqual({ valid: true });
+        state = applyCommand(state, command);
+    }
+
+    for (const group of [...state.core.pendingScenarioArmamentChoices]) {
+        const playerId = state.core.factions[group.factionId].playerId;
+        const armamentIds = group.armamentIds.slice(0, group.count);
+        const command = {
+            type: QIDAHEN_COMMANDS.RESOLVE_SCENARIO_ARMAMENT_CHOICE,
+            playerId,
+            payload: { groupId: group.id, armamentIds },
+        };
+        expect(QidahenDomain.validate(state, command as never)).toEqual({ valid: true });
+        state = applyCommand(state, command);
+    }
+
+    return state;
+};
+
 describe('七大恨局内剧本选择', () => {
     it('剧本选择阶段会阻断正式行动命令，只允许房主选择剧本', () => {
         const state = createVoteState(['0', '1', '2']);
@@ -70,5 +98,36 @@ describe('七大恨局内剧本选择', () => {
         expect(state.core.scenarioLabel).toBe('剧本二：山海关之议（1622）');
         expect(state.core.pendingScenarioCharacterChoices).toHaveLength(3);
         expect(state.core.pendingScenarioArmamentChoices).toHaveLength(2);
+    });
+
+    it('局内剧本选择后，各阵营完成前置项才会放行正式行动', () => {
+        let state = createVoteState(['0', '1', '2']);
+
+        state = applyCommand(state, {
+            type: QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
+            playerId: '0',
+            payload: { scenarioId: 'shanhaiguan-1622' },
+        });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+            playerId: state.core.currentPlayer,
+            payload: { actionId: 'raid' },
+        } as never)).toEqual({ valid: false, error: 'pendingScenarioChoices' });
+
+        state = resolveAllPendingScenarioChoices(state);
+
+        expect(state.core.scenarioVote).toBeNull();
+        expect(state.core.pendingScenarioCharacterChoices).toEqual([]);
+        expect(state.core.pendingScenarioArmamentChoices).toEqual([]);
+        const interactionData = state.sys.interaction?.current?.data as {
+            qidahenInternalDispatchSelection?: { candidates: Array<{ id: string }> };
+        } | undefined;
+        const internalDispatchChoiceId = interactionData?.qidahenInternalDispatchSelection?.candidates[0]?.id;
+        expect(internalDispatchChoiceId).toBeTruthy();
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.RESOLVE_INTERNAL_DISPATCH,
+            playerId: state.core.currentPlayer,
+            payload: { choiceId: internalDispatchChoiceId },
+        } as never)).toEqual({ valid: true });
     });
 });

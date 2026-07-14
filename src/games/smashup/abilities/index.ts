@@ -54,11 +54,13 @@ import { registerIttyCrittersAbilities } from './itty_critters';
 import { registerKaijuAbilities, registerKaijuInteractionHandlers } from './kaiju';
 import { registerMagicalGirlsAbilities, registerMagicalGirlsInteractionHandlers } from './magical_girls';
 import { registerMegaTroopersAbilities, registerMegaTroopersInteractionHandlers } from './mega_troopers';
+import { registerCeaseAndDesistAbilities } from './cease_and_desist';
 import { registerHuluwawaAbilities } from './huluwawa';
 import { registerPaladinAbilities } from './paladins';
 import { registerZhongguoAbilities } from './zhongguo';
 import { registerAvengersAbilities } from './avengers';
 import { registerMarvelAbilities } from './marvel';
+import { registerMarvelVillainsAbilities } from './marvel_villains';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -181,11 +183,13 @@ export function initAllAbilities(): void {
     registerMagicalGirlsInteractionHandlers();
     registerMegaTroopersAbilities();
     registerMegaTroopersInteractionHandlers();
+    registerCeaseAndDesistAbilities();
     registerHuluwawaAbilities();
     registerPaladinAbilities();
     registerZhongguoAbilities();
     registerAvengersAbilities();
     registerMarvelAbilities();
+    registerMarvelVillainsAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

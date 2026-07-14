@@ -468,6 +468,12 @@ export function checkPlayConstraint(
         return null;
     }
 
+    if (constraint === 'requireNoCharacters') {
+        const hasCharacters = core.bases[baseIndex].minions.length > 0;
+        if (hasCharacters) return '目标基地上不能有任何角色';
+        return null;
+    }
+
     if (constraint === 'onlyCardInHand') {
         const handSize = effectiveHandSize ?? (core.players[playerId]?.hand.length ?? 0);
         if (handSize !== 1) return '只能在本卡是你的唯一手牌时打出';

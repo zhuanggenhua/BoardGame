@@ -544,6 +544,24 @@
         }
       }
     },
+    "cards/compressed/marvel_villains": {
+      "variants": {
+        "webp": {
+          "sha256": "8de4b7142573d115f31507aea90a320c4d4a09c850d0c1e44e2d05b7cc27b098",
+          "bytes": 1046742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/marvel_villains": {
+      "variants": {
+        "png": {
+          "sha256": "44ae80f5629ad1d33a2c438a2955112a38c1ae5d7addaa2d8ae44418ef15a5fb",
+          "bytes": 33423555,
+          "mime": "image/png"
+        }
+      }
+    },
     "cards/compressed/itty_critters_pod": {
       "variants": {
         "webp": {

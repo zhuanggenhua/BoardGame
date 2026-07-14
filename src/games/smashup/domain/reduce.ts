@@ -1708,7 +1708,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.TURN_STARTED: {
             const { playerId, turnNumber } = event.payload;
             const expiredTimedPowerModifiers = (state.timedPowerModifiers ?? []).filter(
-                modifier => turnNumber >= modifier.expiresOnTurnNumber,
+                modifier => turnNumber >= modifier.expiresOnTurnNumber
+                    && (modifier.expiresOnPlayerId === undefined || modifier.expiresOnPlayerId === playerId),
             );
             const timedPowerReverts = new Map<string, number>();
             for (const modifier of expiredTimedPowerModifiers) {
@@ -1725,6 +1726,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     const {
                         mythicHorsesSeastarExtraTalent: _seastarExtra,
                         mythicHorsesSeastarExtraTalentConsumed: _seastarConsumed,
+                        passengersOriginalBaseIndex: _passengersOriginalBaseIndex,
+                        passengersMovedTurnNumber: _passengersMovedTurnNumber,
                         ...remainingMetadata
                     } = m.metadata ?? {};
                     const metadata = Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined;
@@ -1817,7 +1820,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 })(),
                 timedPowerModifiers: (() => {
                     const remaining = (state.timedPowerModifiers ?? []).filter(
-                        modifier => turnNumber < modifier.expiresOnTurnNumber,
+                        modifier => turnNumber < modifier.expiresOnTurnNumber
+                            || (modifier.expiresOnPlayerId !== undefined && modifier.expiresOnPlayerId !== playerId),
                     );
                     return remaining.length ? remaining : undefined;
                 })(),
@@ -2006,6 +2010,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             // 但是 reduce 是基于事件的，不应该依赖 scoreOneBase 的返回值
             // 所以这里需要找到 newBaseDefId 在 baseDeck 中的索引，然后移除它
             const baseDefIdIndex = state.baseDeck.indexOf(newBaseDefId);
+            const replacementAlreadyApplied = state.bases[baseIndex]?.defId === newBaseDefId;
+            if (baseDefIdIndex < 0 && replacementAlreadyApplied) {
+                return state;
+            }
             if (baseDefIdIndex < 0 && !allowMissingFromBaseDeck) {
                 console.warn(`[BASE_REPLACED] newBaseDefId ${newBaseDefId} not found in baseDeck`, {
                     baseDeck: state.baseDeck,
@@ -2567,13 +2575,24 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 }
             }
             if (movedMinion) {
+                const hasPassengers = movedMinion.attachedActions.some(action => action.defId === 'changerbots_passengers');
+                const movedMinionWithMetadata = hasPassengers
+                    ? {
+                        ...movedMinion,
+                        metadata: {
+                            ...(movedMinion.metadata ?? {}),
+                            passengersOriginalBaseIndex: fromBaseIndex,
+                            passengersMovedTurnNumber: state.turnNumber,
+                        },
+                    }
+                    : movedMinion;
                 // Stakeout POD: moving away reduces that player's power on fromBaseIndex
                 const basePowerDecreasedPlayersThisTurn = {
                     ...(state.basePowerDecreasedPlayersThisTurn ?? {}),
-                    [fromBaseIndex]: Array.from(new Set([...(state.basePowerDecreasedPlayersThisTurn?.[fromBaseIndex] ?? []), movedMinion.controller])),
+                    [fromBaseIndex]: Array.from(new Set([...(state.basePowerDecreasedPlayersThisTurn?.[fromBaseIndex] ?? []), movedMinionWithMetadata.controller])),
                 };
                 // 追踪本回合移动到各基地的次数（用于牧场等"首次移动"触发）
-                const mover = movedMinion.controller;
+                const mover = movedMinionWithMetadata.controller;
                 const prevMoves = state.minionsMovedToBaseThisTurn ?? {};
                 const playerMoves = prevMoves[mover] ?? {};
                 const updatedMoves = {
@@ -2590,7 +2609,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 };
 
                 // 你们已经完蛋 POD：追踪“本回合是否把对手随从移动到该基地”
-                const movedOpponentMinion = movedMinion.controller !== currentPlayerId;
+                const movedOpponentMinion = movedMinionWithMetadata.controller !== currentPlayerId;
                 const updatedMovedOpp = movedOpponentMinion
                     ? {
                         ...(state.movedToBasesThisTurn ?? {}),
@@ -2611,7 +2630,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     buccaneerPodUsedUids,
                     bases: removalResult.bases.map((base, i) => {
                         if (i !== resolvedToBaseIndex) return base;
-                        return { ...base, minions: [...base.minions, movedMinion!] };
+                        return { ...base, minions: [...base.minions, movedMinionWithMetadata] };
                     }),
                 };
             }
@@ -3540,7 +3559,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         // 永久力量修正（非指示物，不可移动/转移）
         case SU_EVENTS.PERMANENT_POWER_ADDED: {
-            const { minionUid, amount, reason, expiresOnTurnNumber } = (event as PermanentPowerAddedEvent).payload;
+            const { minionUid, amount, reason, expiresOnTurnNumber, expiresOnPlayerId } = (event as PermanentPowerAddedEvent).payload;
             let decreased: { baseIndex: number; playerId: PlayerId } | undefined;
             const newBases = state.bases.map((base, bi) => ({
                 ...base,
@@ -3559,7 +3578,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const timedPowerModifiers = typeof expiresOnTurnNumber === 'number'
                 ? [
                     ...(state.timedPowerModifiers ?? []),
-                    { minionUid, amount, expiresOnTurnNumber, reason },
+                    {
+                        minionUid,
+                        amount,
+                        expiresOnTurnNumber,
+                        ...(expiresOnPlayerId !== undefined ? { expiresOnPlayerId } : {}),
+                        reason,
+                    },
                 ]
                 : state.timedPowerModifiers;
             return {

@@ -12,6 +12,7 @@ import {
     ChevronDown,
     ChevronUp,
     Play,
+    Repeat1,
 } from 'lucide-react';
 import { useAudio } from '../../../../contexts/AudioContext';
 import clsx from 'clsx';
@@ -93,6 +94,8 @@ export const AudioControlSection = ({ isDark = true }: AudioControlSectionProps)
         setBgmVolume,
         playlist,
         currentBgm,
+        singleTrackLoop,
+        setSingleTrackLoop,
         switchBgm,
         switchBgmPrev,
         playBgm,
@@ -136,6 +139,7 @@ export const AudioControlSection = ({ isDark = true }: AudioControlSectionProps)
     const cardBgClass = isDark ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5';
     const sliderClass = isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-black/10 hover:bg-black/20';
     const iconMutedClass = isDark ? 'hover:bg-white/10 text-white/40' : 'hover:bg-black/5 text-[#8c7b64]';
+    const iconActiveClass = isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-500/10 text-indigo-600';
     const listBgClass = isDark ? 'bg-black/30' : 'bg-white/60';
 
     return (
@@ -224,6 +228,15 @@ export const AudioControlSection = ({ isDark = true }: AudioControlSectionProps)
                         title={t('audio.switchTrack')}
                     >
                         <SkipForward size={16} />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSingleTrackLoop(!singleTrackLoop)}
+                        aria-pressed={singleTrackLoop}
+                        className={clsx('p-1.5 rounded-lg transition-all', singleTrackLoop ? iconActiveClass : iconMutedClass)}
+                        title={singleTrackLoop ? t('audio.singleTrackLoopOn') : t('audio.singleTrackLoopOff')}
+                    >
+                        <Repeat1 size={16} />
                     </button>
                 </div>
             </div>

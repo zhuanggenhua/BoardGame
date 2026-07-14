@@ -1535,6 +1535,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             const events: SmashUpEvent[] = [];
             let currentMatchState: MatchState<SmashUpCore> = state;
             let hasPendingTurnEndResolution = false;
+            let hasQueuedTurnEndResolution = false;
             const turnEndFrameId = `turn-end:${pid}:${core.turnNumber}:${now}`;
 
             // 触发 onTurnEnd（与 startTurn 统一的入队时序）
@@ -1547,13 +1548,35 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 random,
                 now,
             });
+            for (let baseIndex = 0; baseIndex < currentMatchState.core.bases.length; baseIndex += 1) {
+                const queuedBaseTurnEnd = collectBaseAbilityTriggers({
+                    core: currentMatchState.core,
+                    timing: 'onTurnEnd',
+                    ownerPlayerId: pid,
+                    baseIndex,
+                    frameId: turnEndFrameId,
+                    sourceEventId: turnEndFrameId,
+                    now,
+                });
+                if (!queuedBaseTurnEnd) continue;
+                hasQueuedTurnEndResolution = true;
+                events.push(queuedBaseTurnEnd as unknown as SmashUpEvent);
+                currentMatchState = {
+                    ...currentMatchState,
+                    core: reduce(currentMatchState.core, queuedBaseTurnEnd as unknown as SmashUpEvent),
+                };
+            }
             if (queuedTurnEnd) {
+                hasQueuedTurnEndResolution = true;
                 events.push(queuedTurnEnd);
                 // Seed an explicit turn-end reaction frame so onTurnEnd follows the same Step 3/4 session model as startTurn.
                 currentMatchState = {
                     ...currentMatchState,
                     core: reduce(currentMatchState.core, queuedTurnEnd as unknown as SmashUpEvent),
                 };
+            }
+
+            if (hasQueuedTurnEndResolution) {
                 currentMatchState = startSmashUpReactionSession(currentMatchState, {
                     frameId: turnEndFrameId,
                     frameKind: 'turn-end',
@@ -2738,6 +2761,9 @@ function postProcessSystemEvents(
                     actionTargetBaseIndex: playedEvt.payload.targetBaseIndex,
                     actionTargetType: playedEvt.payload.targetType,
                     actionTargetMinionUid: playedEvt.payload.targetMinionUid,
+                    triggerCardUid: playedEvt.payload.cardUid,
+                    triggerCardDefId: playedEvt.payload.defId,
+                    triggerCardOwnerId: playedEvt.payload.ownerId ?? playedEvt.payload.playerId,
                     frameId,
                     sourceEventId,
                     now: event.timestamp,
@@ -2848,6 +2874,22 @@ function postProcessSystemEvents(
         if (queuedTalentTriggers) {
             talentDerived.push(queuedTalentTriggers);
             talentCore = reduce(talentCore, queuedTalentTriggers);
+        }
+        const queuedBaseTalent = collectBaseAbilityTriggers({
+            core: talentCore,
+            timing: 'onTalentUsed',
+            ownerPlayerId: playerId,
+            baseIndex,
+            triggerMinionUid: minionUid,
+            triggerMinionDefId: defId,
+            triggerMinionPower: triggerMinion?.basePower,
+            frameId: sourceEventId,
+            sourceEventId,
+            now: event.timestamp,
+        });
+        if (queuedBaseTalent) {
+            talentDerived.push(queuedBaseTalent as unknown as SmashUpEvent);
+            talentCore = reduce(talentCore, queuedBaseTalent as unknown as SmashUpEvent);
         }
     }
     const combinedWithTalent = [...combined, ...talentDerived];

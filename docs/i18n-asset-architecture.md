@@ -147,7 +147,7 @@ npm run assets:upload -- --sync
 
 1. 创建语言目录：`mkdir -p public/assets/i18n/en`
 2. 复制/翻译图片资源到对应目录
-3. 运行压缩脚本：`npm run assets:compress`
+3. 运行压缩脚本：`npm run compress:images -- public/assets/i18n/<locale>/<gameId>`（正式对局素材默认不降采样）
 4. 上传到 CDN：`npm run assets:upload -- --sync`
 5. 代码无需修改（组件自动从 i18next 获取当前语言）
 
