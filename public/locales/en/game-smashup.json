@@ -1222,7 +1222,10 @@
     "marvel_villains_mysterio_choice_title": "Mysterio: choose an effect",
     "marvel_villains_mysterio_extra_base_modifier_option": "Play an extra base modifier",
     "marvel_villains_mysterio_draw_option": "Draw a card",
-    "marvel_villains_deck_own_minions_title": "Choose up to two of your characters to place on the bottom of your deck"
+    "marvel_villains_deck_own_minions_title": "Choose up to two of your characters to place on the bottom of your deck",
+    "astroknights_prepare_for_battle_title": "Prepare for Battle: Choose cards to put into your hand",
+    "astroknights_astro_robot_title": "Astro Robot: You may destroy an action",
+    "star_roamers_return_replacement_move_option": "Move it to another base instead"
   },
   "mechanics": {
     "madness": {
@@ -1714,6 +1717,30 @@
     "sinister_six": {
       "name": "Sinister Six",
       "description": "Lower base breakpoints and manipulate base modifiers to shut down opponents at vulnerable scoring windows."
+    },
+    "astroknights": {
+      "name": "Astroknights",
+      "description": "Use special scoring windows, temporary power, and action recycling to defend key bases."
+    },
+    "ignobles": {
+      "name": "Ignobles",
+      "description": "Trade control, extra plays, and betrayal reactions to turn political deals into points."
+    },
+    "star_roamers": {
+      "name": "Star Roamers",
+      "description": "Return, move, and redeploy minions around bases before and after scoring."
+    },
+    "changerbots": {
+      "name": "Changerbots",
+      "description": "Transform, transport, and temporarily boost minions to assemble bursts at decisive bases."
+    },
+    "itty_critters_pod": {
+      "name": "Itty Critters (POD)",
+      "description": "A POD-ready Itty Critters deck with its own bases and card atlas while sharing the classic play style."
+    },
+    "time_travelers_pod": {
+      "name": "Time Travelers (POD)",
+      "description": "A POD-ready Time Travelers deck with its own bases and card atlas while sharing the classic time-loop toolkit."
     }
   },
   "tutorial": {
@@ -7502,6 +7529,370 @@
     "sinister_six_witness_our_superiority": {
       "name": "Witness Our Superiority",
       "abilityText": "Base modifier. Ongoing: This base’s abilities are cancelled."
+    },
+    "astroknights_block_the_probe": {
+      "name": "Block the Probe",
+      "effectText": "Choose a minion. It gains +2 power until the end of the turn. Special: You may play this card before a base scores."
+    },
+    "astroknights_hidden_base": {
+      "name": "Hidden Base",
+      "effectText": "Play on a base. Ongoing: At the start of your turn, if you have a minion here, draw a card."
+    },
+    "astroknights_recycle_the_trash": {
+      "name": "Recycle the Trash",
+      "effectText": "Shuffle up to two actions from your discard pile into your deck."
+    },
+    "astroknights_yield_to_rage": {
+      "name": "Yield to Rage",
+      "effectText": "One of your minions gains +2 power until the end of the turn. Play an extra action."
+    },
+    "astroknights_laser_sword": {
+      "name": "Laser Sword",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power and is not affected by other players’ minions."
+    },
+    "astroknights_prepare_for_battle": {
+      "name": "Prepare for Battle",
+      "effectText": "Reveal the top three cards of your deck. Draw two of them and return the other to the top or bottom of your deck."
+    },
+    "astroknights_use_the_fours": {
+      "name": "Use the Fours",
+      "effectText": "One of your minions gains +4 power until the end of the turn."
+    },
+    "astroknights_its_a_trap": {
+      "name": "It's a Trap!",
+      "effectText": "Special: Before a base scores, reveal cards from your deck until you reveal an action. You may draw it or play it immediately. Shuffle the unused cards into your deck."
+    },
+    "astroknights_annoying_alien": {
+      "name": "Annoying Alien",
+      "abilityText": "Talent: Name a minion. All minions here with that name get -2 power until the start of your next turn."
+    },
+    "astroknights_pupoks": {
+      "name": "Pupoks",
+      "abilityText": "Talent: Lose 1 VP to reveal the top three cards of your deck and draw them. You may play one of them as an extra card."
+    },
+    "astroknights_alien_guru": {
+      "name": "Alien Guru",
+      "abilityText": "Ongoing: Once per turn, after you play an action that directly increases a minion’s power, you may also place a +1 power counter on it."
+    },
+    "astroknights_walking_carpet": {
+      "name": "Walking Carpet",
+      "abilityText": "Special: Before this base scores, if you are not winning, you may play an action that directly increases the power of this minion."
+    },
+    "astroknights_scoundrel": {
+      "name": "Scoundrel",
+      "abilityText": "Talent: Move this minion and another one of your minions here to another base."
+    },
+    "astroknights_ghost_knight": {
+      "name": "Ghost Knight",
+      "abilityText": "Ongoing: This minion cannot be destroyed. Your other minions here have +2 power."
+    },
+    "astroknights_mannersbot": {
+      "name": "Mannersbot",
+      "abilityText": "Talent: Reveal the top card of your deck. If it is an action, draw it, otherwise return it."
+    },
+    "astroknights_space_prince": {
+      "name": "Space Prince",
+      "abilityText": "Talent: Play an extra action that directly increases the power of one of your minions."
+    },
+    "astroknights_space_knight": {
+      "name": "Space Knight",
+      "abilityText": "Talent: Reveal the top three cards of your deck. You may draw one action from the revealed cards. Return the rest in any order."
+    },
+    "astroknights_astro_robot": {
+      "name": "Astro Robot",
+      "abilityText": "You may destroy an action played on this base or on a minion here."
+    },
+    "ignobles_repaying_debts": {
+      "name": "Repaying Debts",
+      "effectText": "Give control of one of your minions to another player to draw two cards and play an extra minion."
+    },
+    "ignobles_fate_of_the_favorites": {
+      "name": "Fate of the Favorites",
+      "effectText": "Each player destroys a minion they own."
+    },
+    "ignobles_red_birthday_party": {
+      "name": "Red Birthday Party",
+      "effectText": "Destroy a minion you own and all minions with less power on the same base."
+    },
+    "ignobles_hostage_exchange": {
+      "name": "Hostage Exchange",
+      "effectText": "Give another player control of one of your minions to take control of one of their minions of equal or less power."
+    },
+    "ignobles_inevitable_betrayal": {
+      "name": "Inevitable Betrayal",
+      "effectText": "Special: Before a base scores, take control of a minion you own there."
+    },
+    "ignobles_activate_the_spy": {
+      "name": "Activate the Spy",
+      "effectText": "Take control of a minion you own. Play an extra action."
+    },
+    "ignobles_out_of_sight": {
+      "name": "Out of Sight",
+      "effectText": "Each player returns a minion they own to their hand."
+    },
+    "ignobles_banner_call": {
+      "name": "Banner Call",
+      "effectText": "Take control of any number of minions you own."
+    },
+    "ignobles_sneaky_squire": {
+      "name": "Sneaky Squire",
+      "abilityText": "You may give control of this minion to another player to play an extra minion."
+    },
+    "ignobles_betrothed": {
+      "name": "Betrothed",
+      "abilityText": "You may give control of this minion to another player. Ongoing: The owner of this minion gains 1 VP if another player wins this base and controls this minion."
+    },
+    "ignobles_foot_of_the_king": {
+      "name": "Foot of the King",
+      "abilityText": "Ongoing: At the end of your turn, you may take control of a minion you own."
+    },
+    "ignobles_aunt_of_drakes": {
+      "name": "Aunt of Drakes",
+      "abilityText": "Talent: Give control of one of your minions to another player to draw a card and play an extra action."
+    },
+    "star_roamers_weird_new_worlds": {
+      "name": "Weird New Worlds",
+      "effectText": "Play a new base. You may play an extra minion there."
+    },
+    "star_roamers_whiplash_maneuver": {
+      "name": "Whiplash Maneuver",
+      "effectText": "Play on a base. Ongoing: If any of your minions on other bases would be returned to your hand, you may move them here instead."
+    },
+    "star_roamers_protector_fields": {
+      "name": "Protector Fields",
+      "effectText": "Play on a base where you have a minion. Ongoing: Your minions here are not affected by other players’ cards."
+    },
+    "star_roamers_teleport_overflow": {
+      "name": "Teleport Overflow",
+      "effectText": "Return one of your minions to its owner’s hand. Reveal any number of minions with the same name from your hand, and play them as extra minions."
+    },
+    "star_roamers_teleport_error": {
+      "name": "Teleport Error",
+      "effectText": "Choose a minion. Move it to another random base."
+    },
+    "star_roamers_hyperspeed_10": {
+      "name": "Hyperspeed 10",
+      "effectText": "Choose a base. Move all minions from there to a single other base."
+    },
+    "star_roamers_port_me_up": {
+      "name": "Port Me Up",
+      "effectText": "Return one of your minions to its owner’s hand. Special: You may play this after a base scores; the minion must be on the scoring base."
+    },
+    "star_roamers_mass_teleport": {
+      "name": "Mass Teleport",
+      "effectText": "Each player returns one of their minions to its owner’s hand."
+    },
+    "star_roamers_ships_engineer": {
+      "name": "Ship's Engineer",
+      "abilityText": "Ongoing: If another one of your minions would be returned to your hand, you may move it to another base instead."
+    },
+    "star_roamers_medical_officer": {
+      "name": "Medical Officer",
+      "abilityText": "Ongoing: When one or more of your other minions would be returned to your hand, you may draw a card instead of returning one of them."
+    },
+    "star_roamers_science_officer": {
+      "name": "Science Officer",
+      "abilityText": "Talent: Return one of your minions of power 4 or less to its owner’s hand. Play an extra minion with a different name."
+    },
+    "star_roamers_ensign": {
+      "name": "Ensign",
+      "abilityText": "Ongoing: When an opponent plays a card that directly affects one of your other minions here, you may have it affect this minion instead."
+    },
+    "star_roamers_ships_captain": {
+      "name": "Ship's Captain",
+      "abilityText": "Search your deck for a minion, reveal it, add it to your hand and shuffle your deck. If it has power 3 or less, play it here as an extra minion."
+    },
+    "changerbots_matrix_of_bossiness": {
+      "name": "Matrix of Bossiness",
+      "effectText": "Play on one of your minions. Ongoing: This minion’s printed power is treated as if it were 5."
+    },
+    "changerbots_change_into_a_gun": {
+      "name": "Change Into A Gun",
+      "effectText": "Play on one of your minions to destroy a minion of power 4 or less there. Ongoing: This minion has -2 power. Destroy this card at the start of your turn."
+    },
+    "changerbots_passengers": {
+      "name": "Passengers",
+      "effectText": "Play on a minion. Ongoing: This minion has the ability: “Talent: If this minion moved this turn, move another one of your minions from the previous base to here.”"
+    },
+    "changerbots_the_touch": {
+      "name": "The Touch",
+      "effectText": "Play on one of your minions. Ongoing: This minion has the ability: “Talent: This minion gains +3 power and loses all other abilities until the end of the turn.”"
+    },
+    "changerbots_flighterizer": {
+      "name": "Flighterizer",
+      "effectText": "Play on one of your minions. Ongoing: This minion has the ability: “Talent: Move this minion to another base and give it -1 power until the end of the turn.”"
+    },
+    "changerbots_change_up_and_roll_on": {
+      "name": "Change Up and Roll On",
+      "effectText": "Special: Before a base scores you may move any number of your minions to there. They each get -1 power until the end of the turn."
+    },
+    "changerbots_cesium_armor": {
+      "name": "Cesium Armor",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power and cannot be destroyed."
+    },
+    "changerbots_form_mergacon": {
+      "name": "Form Mergacon",
+      "effectText": "Choose a base. Each of your minions there gains +1 power until the end of the turn."
+    },
+    "changerbots_leader_two": {
+      "name": "Leader Two",
+      "abilityText": "Talent: One of your other minions gains +2 power until the end of the turn."
+    },
+    "changerbots_solarshout": {
+      "name": "Solarshout",
+      "abilityText": "Talent: Play an extra action. Give this minion -2 power until the end of the turn."
+    },
+    "changerbots_huffie": {
+      "name": "Huffie",
+      "abilityText": "Talent: Move this minion to another base and give it -1 power until the end of the turn."
+    },
+    "changerbots_bruiser": {
+      "name": "Bruiser",
+      "abilityText": "Ongoing: This minion cannot be destroyed. Talent: This minion gains +2 power and loses its Ongoing ability and all other abilities until the start of your next turn."
+    },
+    "base_spikey_chair_room": {
+      "name": "Spikey Chair Room",
+      "effectText": "At the end of any turn that a player has played at least one minion here, they may destroy a minion they own to draw a card."
+    },
+    "base_no_moon": {
+      "name": "No-Moon",
+      "effectText": "Before this base scores, destroy a random other base (replace it normally)."
+    },
+    "base_uss_undertaking": {
+      "name": "USS Undertaking",
+      "effectText": "At the start of your turn, you may move one of your minions to here, or from here to another base."
+    },
+    "base_unicrave": {
+      "name": "Unicrave",
+      "effectText": "Before this base scores, replace it with the top card of the base deck. Keep all cards on it, discard this card, and keep scoring."
+    },
+    "base_wintersquashed": {
+      "name": "Wintersquashed",
+      "effectText": "After you play a minion here, you may give control of it to another player."
+    },
+    "base_changing_room": {
+      "name": "Changing Room",
+      "effectText": "After a minion here uses a talent, it gains +1 power until the end of the turn."
+    },
+    "base_neutral_space": {
+      "name": "Neutral Space",
+      "effectText": "Minions here are not affected by other players’ minions here."
+    },
+    "base_hive_of_scum_and_villainy": {
+      "name": "Hive of Scum and Villainy",
+      "effectText": "After the first time each turn that you play an action that directly increases the power of one of your minions here, draw a card."
+    },
+    "itty_critters_i_select_you_pod": {
+      "name": "I Select You!",
+      "effectText": "Search your deck for a minion of power 3 or less and play it as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
+    "itty_critters_recall_critter_pod": {
+      "name": "Recall Critter",
+      "effectText": "Play a minion of power 2 or less from your discard pile as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
+    "itty_critters_evolution_pod": {
+      "name": "Evolution",
+      "effectText": "Choose one of your minions. Destroy it to either play Rainboroc there, or search your deck for a minion with up to 1 more power and play it there as an extra minion."
+    },
+    "itty_critters_gotta_get_em_all_pod": {
+      "name": "Gotta Get ‘Em All",
+      "effectText": "Shuffle one of each minion with a different name from your discard pile into your deck."
+    },
+    "itty_critters_critter_cube_pod": {
+      "name": "Critter Cube",
+      "effectText": "Choose a minion in play of power 3 or less, owned by any player, and shuffle it into your deck."
+    },
+    "itty_critters_super_effective_pod": {
+      "name": "Super Effective!",
+      "effectText": "Destroy an action on a minion or on a base."
+    },
+    "itty_critters_ittypedia_pod": {
+      "name": "Ittypedia",
+      "effectText": "Play on a base. Ongoing: After you play a minion here, it gains +1 power until the end of the turn."
+    },
+    "itty_critters_coach_combat_pod": {
+      "name": "Coach Combat",
+      "effectText": "Choose one of your minions. Destroy a minion with lower power at its base."
+    },
+    "itty_critters_leafaroo_pod": {
+      "name": "Leafaroo",
+      "abilityText": "You may shuffle a card from your discard pile into your deck."
+    },
+    "itty_critters_flooffairy_pod": {
+      "name": "Flooffairy",
+      "abilityText": "You may draw a card."
+    },
+    "itty_critters_calicoin_pod": {
+      "name": "Calicoin",
+      "abilityText": "You may place +1 power counter on another minion here."
+    },
+    "itty_critters_tadpour_pod": {
+      "name": "Tadpour",
+      "abilityText": "You may move another minion from here to another base."
+    },
+    "itty_critters_krakatoad_pod": {
+      "name": "Krakatoad",
+      "abilityText": "You may choose another minion here to gain +2 power until the end of the turn."
+    },
+    "itty_critters_critter_coach_pod": {
+      "name": "Critter Coach",
+      "abilityText": "You may search your deck for a minion of power 2 or less and play it here as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
+    "itty_critters_shellshock_pod": {
+      "name": "Shellshock",
+      "abilityText": "You may destroy another minion of power 2 or less here."
+    },
+    "itty_critters_critter_champion_pod": {
+      "name": "Critter Champion",
+      "abilityText": "Talent: Search your deck for a minion of power 2 or less and play it here as an extra minion. If you control it at the end of the turn, place it on the bottom of your deck."
+    },
+    "time_travelers_its_astounding_pod": {
+      "name": "It's Astounding",
+      "effectText": "Play an action from your discard pile as an extra action."
+    },
+    "time_travelers_time_is_fleeting_pod": {
+      "name": "Time is Fleeting",
+      "effectText": "Special: Play after a base scores. If there is at least one base in the discard pile, choose one of them instead of drawing a new base from the base deck."
+    },
+    "time_travelers_into_the_time_slip_pod": {
+      "name": "Into the Time Slip",
+      "effectText": "Return a card in play to its owner's hand."
+    },
+    "time_travelers_1_21_gigawatts_pod": {
+      "name": "1.21 Gigawatts",
+      "effectText": "Shuffle all actions or all minions from your discard pile into your deck."
+    },
+    "time_travelers_do_over_pod": {
+      "name": "Do Over!",
+      "effectText": "Return one of your minions from a base to your hand. You may play it again as an extra minion."
+    },
+    "time_travelers_jumper_pod": {
+      "name": "Jumper",
+      "abilityText": "Ongoing: When this minion goes to the discard pile from play, you may return it to your hand."
+    },
+    "time_travelers_stasis_field_pod": {
+      "name": "Stasis Field",
+      "effectText": "Play on a base. Ongoing: This base cannot score. At the start of your turn, destroy this action."
+    },
+    "time_travelers_time_raider_pod": {
+      "name": "Time Raider",
+      "abilityText": "Talent: Place a card from your discard pile on the bottom of your deck."
+    },
+    "time_travelers_time_walk_pod": {
+      "name": "Time Walk",
+      "effectText": "You may play an extra minion and an extra action this turn. Draw 2 cards. Place this card on the bottom of your deck instead of the discard pile."
+    },
+    "time_travelers_repeater_perfect_pod": {
+      "name": "Repeater Perfect",
+      "abilityText": "Place an action from your discard pile on top of your deck."
+    },
+    "time_travelers_wormhole_pod": {
+      "name": "Wormhole",
+      "effectText": "Special: Play after a base scores. Shuffle your minions here into your deck instead of placing them in the discard pile."
+    },
+    "time_travelers_doctor_when_pod": {
+      "name": "Doctor When",
+      "abilityText": "You may return another of your minions in play to your hand. You may play it again as an extra minion."
     }
   },
   "debug": {

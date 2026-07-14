@@ -5,6 +5,7 @@ import { getAudioSettings, updateAudioSettings, type AudioSettings, type BgmSele
 import { useAuth } from './AuthContext';
 
 const BGM_SELECTIONS_STORAGE_KEY = 'audio_bgm_selections';
+const BGM_SINGLE_TRACK_LOOP_STORAGE_KEY = 'audio_bgm_single_track_loop';
 
 const readLocalBgmSelections = (): BgmSelections => {
     if (typeof window === 'undefined') return {};
@@ -23,6 +24,24 @@ const writeLocalBgmSelections = (selections: BgmSelections): void => {
     if (typeof window === 'undefined') return;
     try {
         localStorage.setItem(BGM_SELECTIONS_STORAGE_KEY, JSON.stringify(selections));
+    } catch {
+        // 忽略写入失败
+    }
+};
+
+const readLocalSingleTrackLoop = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    try {
+        return localStorage.getItem(BGM_SINGLE_TRACK_LOOP_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+};
+
+const writeLocalSingleTrackLoop = (enabled: boolean): void => {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(BGM_SINGLE_TRACK_LOOP_STORAGE_KEY, String(enabled));
     } catch {
         // 忽略写入失败
     }
@@ -55,12 +74,14 @@ interface AudioContextValue {
     currentBgm: string | null;
     playlist: BgmDefinition[];
     bgmSelections: BgmSelections;
+    singleTrackLoop: boolean;
     activeGameId: string | null;
     activeBgmGroup: string | null;
     toggleMute: () => void;
     setMasterVolume: (volume: number) => void;
     setSfxVolume: (volume: number) => void;
     setBgmVolume: (volume: number) => void;
+    setSingleTrackLoop: (enabled: boolean) => void;
     play: (key: string, spriteKey?: string) => void;
     playBgm: (key: string) => void;
     stopBgm: () => void;
@@ -83,6 +104,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const [currentBgm, setCurrentBgmState] = useState<string | null>(null);
     const [playlist, setPlaylist] = useState<BgmDefinition[]>([]);
     const [bgmSelections, setBgmSelectionsState] = useState<BgmSelections>(() => readLocalBgmSelections());
+    const [singleTrackLoop, setSingleTrackLoopState] = useState(() => readLocalSingleTrackLoop());
     const [activeGameId, setActiveGameId] = useState<string | null>(null);
     const [activeBgmGroup, setActiveBgmGroup] = useState<string | null>(null);
     const lastActiveContextRef = useRef<{ gameId: string; groupId: string } | null>(null);
@@ -153,6 +175,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setSfxVolumeState(AudioManager.sfxVolume);
             setBgmVolumeState(AudioManager.bgmVolume);
             setBgmSelectionsState(readLocalBgmSelections());
+            setSingleTrackLoopState(readLocalSingleTrackLoop());
             return;
         }
 
@@ -171,15 +194,18 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                         sfxVolume: AudioManager.sfxVolume,
                         bgmVolume: AudioManager.bgmVolume,
                         bgmSelections: localSelections,
+                        singleTrackLoop: readLocalSingleTrackLoop(),
                     };
                     await updateAudioSettings(token, localSettings);
                     if (cancelled) return;
                     lastSyncedRef.current = localSettings;
                     setBgmSelectionsState(localSelections);
+                    setSingleTrackLoopState(localSettings.singleTrackLoop === true);
                 } else {
                     const remoteSettings = response.settings;
                     const remoteSelections = remoteSettings.bgmSelections;
                     const fallbackSelections = remoteSelections ?? readLocalBgmSelections();
+                    const remoteSingleTrackLoop = remoteSettings.singleTrackLoop === true;
                     const shouldSyncSelections = remoteSelections === undefined
                         && Object.keys(fallbackSelections).length > 0;
                     skipNextSyncRef.current = !shouldSyncSelections;
@@ -194,7 +220,11 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     setSfxVolumeState(remoteSettings.sfxVolume);
                     setBgmVolumeState(remoteSettings.bgmVolume);
                     setBgmSelectionsState(fallbackSelections);
-                    lastSyncedRef.current = remoteSettings;
+                    setSingleTrackLoopState(remoteSingleTrackLoop);
+                    lastSyncedRef.current = {
+                        ...remoteSettings,
+                        singleTrackLoop: remoteSingleTrackLoop,
+                    };
                 }
 
                 hasRemoteSyncRef.current = true;
@@ -208,6 +238,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     sfxVolume: AudioManager.sfxVolume,
                     bgmVolume: AudioManager.bgmVolume,
                     bgmSelections: readLocalBgmSelections(),
+                    singleTrackLoop: readLocalSingleTrackLoop(),
                 };
             }
         };
@@ -232,6 +263,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             sfxVolume,
             bgmVolume,
             bgmSelections,
+            singleTrackLoop,
         };
         const last = lastSyncedRef.current;
         if (
@@ -240,6 +272,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             && last.masterVolume === nextSettings.masterVolume
             && last.sfxVolume === nextSettings.sfxVolume
             && last.bgmVolume === nextSettings.bgmVolume
+            && (last.singleTrackLoop === true) === nextSettings.singleTrackLoop
             && areBgmSelectionsEqual(last.bgmSelections, nextSettings.bgmSelections)
         ) {
             return;
@@ -249,7 +282,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         void updateAudioSettings(token, nextSettings).catch(() => {
             // 失败时保持本地缓存
         });
-    }, [token, muted, masterVolume, sfxVolume, bgmVolume, bgmSelections]);
+    }, [token, muted, masterVolume, sfxVolume, bgmVolume, bgmSelections, singleTrackLoop]);
 
     const toggleMute = useCallback(() => {
         const newMuted = !muted;
@@ -270,6 +303,11 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const setBgmVolume = useCallback((vol: number) => {
         AudioManager.setBgmVolume(vol);
         setBgmVolumeState(vol);
+    }, []);
+
+    const setSingleTrackLoop = useCallback((enabled: boolean) => {
+        setSingleTrackLoopState(enabled);
+        writeLocalSingleTrackLoop(enabled);
     }, []);
 
     const setBgmSelection = useCallback((gameId: string, groupId: string, key: string) => {
@@ -317,9 +355,13 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, []);
 
     // 通用切换方向逻辑
-    const switchBgmByDirection = useCallback((direction: 1 | -1) => {
+    const switchBgmByDirection = useCallback((
+        direction: 1 | -1,
+        fromKey: string | null = currentBgm,
+        options?: { playImmediately?: boolean },
+    ) => {
         if (playlist.length === 0) return;
-        const currentIndex = playlist.findIndex(track => track.key === currentBgm);
+        const currentIndex = playlist.findIndex(track => track.key === fromKey);
         const nextIndex = (currentIndex + direction + playlist.length) % playlist.length;
         const nextKey = playlist[nextIndex]?.key;
         if (!nextKey) return;
@@ -335,7 +377,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const targetGroups = resolvedGroup === 'normal' || resolvedGroup === 'battle'
             ? ['normal', 'battle']
             : [resolvedGroup];
-        const shouldPlayImmediately = !activeGameId || !activeBgmGroup;
+        const shouldPlayImmediately = options?.playImmediately === true || !activeGameId || !activeBgmGroup;
         if (shouldPlayImmediately) {
             playBgm(nextKey);
         }
@@ -360,6 +402,16 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const switchBgm = useCallback(() => switchBgmByDirection(1), [switchBgmByDirection]);
     const switchBgmPrev = useCallback(() => switchBgmByDirection(-1), [switchBgmByDirection]);
 
+    useEffect(() => AudioManager.onBgmEnd((endedKey) => {
+        if (playlist.length === 0) return false;
+        if (singleTrackLoop || playlist.length === 1) {
+            playBgm(endedKey);
+            return true;
+        }
+        switchBgmByDirection(1, endedKey, { playImmediately: true });
+        return true;
+    }), [playlist.length, playBgm, singleTrackLoop, switchBgmByDirection]);
+
     const value = useMemo(() => ({
         muted,
         masterVolume,
@@ -368,12 +420,14 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         currentBgm,
         playlist,
         bgmSelections,
+        singleTrackLoop,
         activeGameId,
         activeBgmGroup,
         toggleMute,
         setMasterVolume,
         setSfxVolume,
         setBgmVolume,
+        setSingleTrackLoop,
         play,
         playBgm,
         stopBgm,
@@ -391,12 +445,14 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         currentBgm,
         playlist,
         bgmSelections,
+        singleTrackLoop,
         activeGameId,
         activeBgmGroup,
         toggleMute,
         setMasterVolume,
         setSfxVolume,
         setBgmVolume,
+        setSingleTrackLoop,
         play,
         playBgm,
         stopBgm,

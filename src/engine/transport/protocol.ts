@@ -15,6 +15,8 @@ export interface MatchPlayerInfo {
     id: number;
     name?: string;
     isConnected?: boolean;
+    /** 当前座位是否为房主。 */
+    isOwner?: boolean;
 }
 
 export interface SyncStateMeta {

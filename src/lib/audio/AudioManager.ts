@@ -209,6 +209,7 @@ class AudioManagerClass {
     private bgmLastPlayStartedAt: Map<string, number> = new Map();
 
     private bgmListeners: Set<(currentBgm: string | null) => void> = new Set();
+    private bgmEndListeners: Set<(endedBgm: string) => boolean | void> = new Set();
 
     private _muted: boolean = false;
     private _masterVolume: number = 1.0;
@@ -514,6 +515,16 @@ class AudioManagerClass {
         this.bgmListeners.forEach((listener) => listener(this._currentBgm));
     }
 
+    private notifyBgmEnd(key: string): boolean {
+        let handled = false;
+        for (const listener of Array.from(this.bgmEndListeners)) {
+            if (listener(key) === true) {
+                handled = true;
+            }
+        }
+        return handled;
+    }
+
     private resolveRegistrySoundDefinition(key: SoundKey): SoundDefinition | null {
         const entry = this.registryEntries.get(key);
         if (!entry || entry.type !== 'sfx') return null;
@@ -608,6 +619,10 @@ class AudioManagerClass {
 
         if (rapidEndCount >= MAX_RAPID_BGM_ENDS) {
             this.stopBrokenBgmLoop(key, howl);
+            return;
+        }
+
+        if (this.notifyBgmEnd(key)) {
             return;
         }
 
@@ -1034,6 +1049,13 @@ class AudioManagerClass {
         this.bgmListeners.add(listener);
         return () => {
             this.bgmListeners.delete(listener);
+        };
+    }
+
+    onBgmEnd(listener: (endedBgm: string) => boolean | void): () => void {
+        this.bgmEndListeners.add(listener);
+        return () => {
+            this.bgmEndListeners.delete(listener);
         };
     }
 

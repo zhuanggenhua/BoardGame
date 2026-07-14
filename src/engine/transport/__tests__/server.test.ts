@@ -4407,6 +4407,80 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(serverInternal.resolveOnlineAiRecoveryTimeoutMs(match, candidate)).toBe(0);
     });
 
+    it('summonerwars 公开选阵营阶段的 AI seat 未连接时应立即接管，而不是等待 watchdog 超时', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const initialState = createOnlineAiRecoveryState({
+            activePlayerId: '0',
+            phase: 'summon',
+        });
+        initialState.G.core = {
+            ...initialState.G.core,
+            hostStarted: false,
+            hostPlayerId: '0',
+            selectedFactions: {
+                '0': 'necromancer',
+                '1': 'unselected',
+            },
+            readyPlayers: {
+                '0': false,
+                '1': false,
+            },
+        };
+
+        await storage.createMatch('match-watchdog-summonerwars-pregame-timeout', {
+            initialState,
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'summonerwars',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai' },
+                },
+            }),
+        });
+
+        const gameConfig = createEngineConfigWithId('summonerwars');
+        gameConfig.onlineAiRecovery = {
+            publicPregameLegalActionPhases: ['factionSelect', 'summon'],
+        };
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [gameConfig],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 8_000,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            resolveOnlineAiRecoveryTimeoutMs: (match: any, candidate: any) => number;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-summonerwars-pregame-timeout');
+        expect(match).toBeTruthy();
+        expect(match.connections.get('1')?.size ?? 0).toBe(0);
+
+        const candidate = {
+            playerId: '1',
+            reason: 'seat-legal-only',
+            legalActionOnly: true,
+            fingerprintHint: 'seat-legal-only:1:summon:setup-select-faction:sw:select-faction:paladin',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'force-end-turn:1:summonerwars-pregame-select-faction',
+                source: 'local-ai',
+                action: {
+                    actionId: 'force-end-turn:summonerwars-pregame-select-faction',
+                    kind: 'force-end-turn',
+                    label: '服务端代 AI 选择阵营',
+                    commands: [],
+                },
+            },
+        };
+
+        expect(serverInternal.resolveOnlineAiRecoveryTimeoutMs(match, candidate)).toBe(0);
+    });
+
     it('online AI watchdog 完成 legal action 恢复后也应写入系统反馈', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

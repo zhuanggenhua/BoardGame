@@ -29,8 +29,8 @@
       "dingmaoRebellion1627": "Two-Player Scenario: Dingmao Rebellion (1627)"
     },
     "pregameChoices": {
-      "title": "Scenario Preselection",
-      "description": "Applied directly when the room is created; the board only keeps a compact scenario summary.",
+      "title": "In-Match Setup",
+      "description": "Room creation only decides player count and AI seats. After entering the board, the host reads and chooses the scenario, then each seat resolves its character and armament setup.",
       "fields": {
         "shanhaiguan1622": {
           "mingCharacter": "Ming Character",
@@ -63,14 +63,14 @@
       }
     },
     "pregameGate": {
-      "eyebrow": "Scenario Gate",
-      "title": "Confirm the opening characters and armaments before entering the board",
-      "description": "The live board keeps only a compact scenario summary. Finish these setup picks first, then enter the main map.",
-      "playerCount": "{{count}}-player scenario",
-      "summaryTitle": "This match will start with",
+      "eyebrow": "In-Match Scenario Setup",
+      "title": "Enter the board to choose the scenario and resolve setup",
+      "description": "The official flow no longer preselects a scenario at room creation. The board first shows the scenario briefing and host choice, then character and armament setup.",
+      "playerCount": "{{count}}-player room",
+      "summaryTitle": "Handled after entering the board",
       "summaryScenario": "Scenario",
-      "noExtraChoices": "This scenario has no extra pregame picks. Confirm to enter the board.",
-      "confirm": "Confirm and enter board"
+      "noExtraChoices": "After entering the board, resolve the scenario briefing and host choice first.",
+      "confirm": "Enter board"
     }
   },
   "board": {
@@ -88,7 +88,14 @@
       "sunYuanhuaStatus": "Discard {{requiredCardCount}} card(s) · Selected {{selected}}",
       "sunYuanhuaHint": "Click a hand card at the bottom to discard it.",
       "confirmSunYuanhua": "Confirm tech",
-      "skipSunYuanhua": "Skip Sun Yuanhua tech"
+      "skipSunYuanhua": "Skip Sun Yuanhua tech",
+      "armamentPaymentStatus": "Select {{cost}} armament card(s) · Selected {{selected}}",
+      "armamentPaymentHint": "Select the armament card to use; it is played as an armament upgrade first, then goes to the discard pile after resolving.",
+      "confirmUseArmament": "Use and upgrade",
+      "selectedTacticCard": "Selected tactic card \"{{card}}\"",
+      "tacticCardHint": "Click Play Tactic Card to confirm. Click this hand card again to cancel the selection.",
+      "confirmTacticCard": "Play Tactic Card",
+      "cancelTacticCard": "Cancel"
     },
     "player": {
       "armamentsUndeveloped": "Not developed",
@@ -157,7 +164,7 @@
       },
       "turnStatus": "{{year}} · Wheel {{wheelStatus}} · Hand action {{factionStatus}}",
       "scenarioBlocked": "Scenario decisions are still pending. Only scenario choices can be resolved now.",
-      "scenarioVoteBlocked": "In-match scenario voting is not finished yet. Only scenario briefing and voting can be resolved right now.",
+      "scenarioVoteBlocked": "In-match scenario selection is not finished yet. Only the scenario briefing and host selection can be resolved right now.",
       "primaryActionSelectPrompt": "Hand action",
       "grantPardon": {
         "mapFirstHint": "Click the receiving region on the map to complete Grant Pardon; the list below is only a fallback. {{summary}}",
@@ -269,34 +276,49 @@
       "title": "Finish scenario character, armament, and faction setup first",
       "description": "Finish your faction setup items inside the match, then proceed to the live board.",
       "characterLabel": "Characters",
-      "pickCount": "Choose {{count}} item(s)",
-      "confirmCharacter": "Confirm characters",
+      "pickCount": "Pick {{count}} item(s) to apply",
+      "pickCountAuto": "Pick {{count}} item(s) to apply",
+      "selectedSeal": "Selected",
+      "confirmCharacter": "Pick characters",
       "armamentLabel": "Armaments",
-      "confirmArmament": "Confirm armaments",
-      "waiting": "Waiting for other players to finish the setup items for their factions."
+      "confirmArmament": "Pick armaments",
+      "waiting": "Waiting for other players to finish the setup items for their factions.",
+      "playerPage": "Characters and armaments",
+      "tablePage": "Seat status",
+      "noWaiting": "This seat has no pending setup items from other players.",
+      "privateOnly": "Only items available to your faction are shown; other players' private options stay hidden.",
+      "missingOfficialCardArt": "Missing official card art",
+      "currentSeat": "This seat",
+      "pendingItems": "{{count}} item(s) pending",
+      "completed": "Complete"
     },
     "scenarioVote": {
-      "eyebrow": "In-match scenario vote",
-      "title": "Read the scenario briefing, then vote for this match",
-      "description": "Online rooms no longer preset a scenario during room creation. All seats must finish the in-match briefing and vote before character and armament setup begins.",
+      "eyebrow": "In-match scenario selection",
+      "title": "Host chooses this match scenario",
+      "selectCard": "Choose a scenario card",
+      "description": "Room creation only decides player count and AI seats. After entering the board, the host reads the scenario pages and chooses directly while other seats wait.",
       "playerCount": "{{count}}-player room",
       "unavailableForPlayerCount": "Unavailable for the current {{count}}-player room; supports {{supported}} players",
-      "voteCount": "{{count}} vote(s)",
+      "voteCount": "{{count}} option(s)",
       "supportedPlayers": "Supports {{count}} players",
       "orderBadge": "Scenario {{orderNo}}",
-      "myVote": "Your vote is in",
-      "seatStatusTitle": "Current vote by seat",
+      "myVote": "Selected for this match",
+      "seatStatusTitle": "Seat status",
       "you": "You",
       "host": "Host",
-      "pendingVote": "No vote yet",
-      "tiebreakNote": "Resolution happens as soon as every seat confirms. If votes tie, the host vote of {{hostFactionName}} breaks the tie.",
+      "pendingVote": "Waiting for host",
+      "tiebreakNote": "{{hostFactionName}} selects a scenario to move into character and armament setup.",
       "actionTitle": "This seat",
-      "changeableHint": "You have already submitted a vote. Until every seat has voted, you can still change or withdraw it.",
-      "selectHint": "Select a scenario briefing card, then confirm your vote.",
-      "spectatorHint": "Spectator view only shows the current vote shape and does not provide a proxy voting entry.",
+      "changeableHint": "The host has selected the scenario. Waiting for setup.",
+      "selectHint": "Click a scenario book page on the left; it is adopted immediately.",
+      "spectatorHint": "Non-host seats read the scenario briefing and wait for the host selection.",
       "noDraft": "No scenario selected yet",
-      "confirm": "Confirm vote",
-      "clear": "Withdraw vote"
+      "confirm": "Use scenario",
+      "clear": "Clear selection",
+      "hostSelected": "Host selected",
+      "hostMayPick": "Click to use",
+      "waitingHost": "Waiting for the host",
+      "waitingHint": "Waiting for the host to choose a scenario."
     }
   },
   "battle": {
@@ -331,17 +353,18 @@
     },
     "attackAndBattle": {
       "title": "Attack And Field Battle",
-      "description": "Attack dispatch covers map movement, tactic timing, damage assignment, and retreat after field battle.",
+      "description": "Raid starts from a hand action, then flows into field battle, tactics, damage assignment, and retreat handling.",
       "steps": {
-        "overview": "This chapter starts with Ming attack dispatch. The goal is not to finish combat immediately; first send troops from Jizhen and click Chahar on the map to move them into battle.",
-        "moveEntry": "Click the highlighted Chahar region on the map now. Ming will attack it from Jizhen; cavalry can move 2 regions, while artillery and infantry move 1, so reachable targets are highlighted on the map.",
-        "borderWidth": "The target is now locked as Chahar. The side panel shows the battle width from Jizhen to Chahar: plains can deploy 3 troops, and that width decides how many troops actually fight.",
+        "overview": "This chapter starts from Ming's normal action window. First take the hand action Raid, pay 1 card, and then read how it creates a field battle.",
+        "chooseAction": "Click Raid. This is Ming's faction action: discard 1 hand card to make an attack action, without using attack dispatch.",
+        "payRaid": "Discard 1 hand card as the cost. Once the cost is paid, Raid actually triggers and pushes the adjacent front into a pending battle.",
+        "borderWidth": "Raid has now brought the battle to Chahar. The side panel shows the battle width from Keshiketeng to Chahar: plains can deploy 3 troops, and that width decides how many troops actually fight.",
         "battleOpen": "Now the battle is waiting to resolve. First read the revealed troops on both sides, then decide whether to play a tactic card; tactic cards are used only in this battle window.",
-        "tacticWindow": "Look at the hand area and click the tactic card for this battle. Tactic cards are not played freely during normal actions; they change the trade in this fight.",
-        "battleDamage": "After the tactic card is played, click the battle resolution button. The system rolls artillery, cavalry, then infantry; each 3 points in one stage deals 1 damage, usually absorbed by higher-level troops first.",
+        "tacticWindow": "Look at the hand area, click Cavalry Charge to select it, then click Play Tactic Card to confirm. The selected card lifts up; click it again to cancel if you picked the wrong card.",
+        "battleDamage": "The tactic card is now in the battle. Click Rear Guard in the right battle panel to finish this battle resolution; the system rolls artillery, cavalry, then infantry, and each 3 points deals 1 damage.",
         "battleResult": "After the field battle resolves, compare the surviving infantry and cavalry on both sides. If the totals tie, the defender wins. This result has now moved into post-battle handling.",
         "retreatAndDefeat": "In post-battle handling, the losing side chooses rear guard or rout and takes a defeat marker. Defeat markers wait for Midyear character checks.",
-        "finish": "The attack dispatch chain is: click the map target, move troops, reveal the battle, play tactics, resolve damage, then handle victory and retreat."
+        "finish": "The basic attack chain is: choose Raid, pay with a card, enter the battlefield, play tactics, resolve damage, then handle victory and retreat."
       }
     },
     "siege": {

@@ -4,9 +4,29 @@ import {
     ANDROID_OTA_VERSION_FLOOR,
     DEFAULT_FORCE_UPDATE_MESSAGE,
     DEFAULT_FORCE_UPDATE_TITLE,
+    resolveAndroidOtaClientBuildEnv,
     resolveAndroidOtaVersionBase,
     resolveOtaForceUpdateOptions,
 } from './ota-publish-config.mjs';
+
+test('Android OTA 客户端构建默认指向正式 stable 清单', () => {
+    assert.deepEqual(resolveAndroidOtaClientBuildEnv(), {
+        VITE_ANDROID_OTA_ENABLED: 'true',
+        VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+        VITE_ANDROID_OTA_CHANNEL: 'stable',
+    });
+});
+
+test('Android OTA 客户端构建使用命令指定的 channel', () => {
+    assert.deepEqual(resolveAndroidOtaClientBuildEnv({
+        channel: 'gray',
+        assetsBaseUrl: 'https://assets.example.com/root/',
+    }), {
+        VITE_ANDROID_OTA_ENABLED: 'true',
+        VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.example.com/root/app-updates/android/gray/latest.json',
+        VITE_ANDROID_OTA_CHANNEL: 'gray',
+    });
+});
 
 test('Android OTA 默认游标不得低于历史桥接下限', () => {
     assert.equal(resolveAndroidOtaVersionBase({

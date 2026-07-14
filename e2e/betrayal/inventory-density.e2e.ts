@@ -211,10 +211,24 @@ test.describe('山屋惊魂持有区高密度证据', () => {
         expect(previewMetrics.height).toBeGreaterThan(280);
         await saveScreenshot(page, MOBILE_MAP_PREVIEW_SCREENSHOT);
 
-        await page.mouse.click(
-            (previewMetrics.left + previewMetrics.right) / 2,
-            (previewMetrics.top + previewMetrics.bottom) / 2,
-        );
+        const blankPoint = await previewOverlay.evaluate((overlay) => {
+            const overlayRect = overlay.getBoundingClientRect();
+            const previewCard = document.querySelector<HTMLElement>('[data-testid="betrayal-inventory-preview-card"]');
+            const cardRect = previewCard?.getBoundingClientRect();
+            const candidates = [
+                { x: overlayRect.left + 24, y: overlayRect.top + 24 },
+                { x: overlayRect.right - 24, y: overlayRect.top + 24 },
+                { x: overlayRect.left + 24, y: overlayRect.bottom - 24 },
+                { x: overlayRect.right - 24, y: overlayRect.bottom - 24 },
+            ];
+            return candidates.find((point) => !cardRect || (
+                point.x < cardRect.left
+                || point.x > cardRect.right
+                || point.y < cardRect.top
+                || point.y > cardRect.bottom
+            )) ?? { x: overlayRect.left + 8, y: overlayRect.top + 8 };
+        });
+        await page.mouse.click(blankPoint.x, blankPoint.y);
         await expect(previewOverlay).toBeHidden();
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-map-card-mobile-preview', diagnostics }]);

@@ -11,6 +11,7 @@ import { normalizeUnitBoosts } from '../domain/helpers';
 import { GameButton } from './GameButton';
 import { ActionBanner } from './ActionBanner';
 import type { AbilityModeState, SoulTransferModeState, MindCaptureModeState, AfterAttackAbilityModeState } from './useGameEvents';
+import { getAbilityModeBannerFallbackText } from './statusBannerText';
 import type {
   MindControlModeState,
   StunModeState,
@@ -23,7 +24,6 @@ import type {
   WithdrawModeState,
   TelekinesisTargetModeState,
 } from './modeTypes';
-import { getAbilityModeBannerFallbackText } from './statusBannerText';
 
 // ============================================================================
 // 类型定义

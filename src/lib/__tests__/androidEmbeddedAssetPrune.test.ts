@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+    CLOUDFLARE_PAGES_MAX_FILE_BYTES,
     DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
+    isCloudflarePagesFileSizeAllowed,
+    isRemovedWebLegacyGameAssetDir,
     isRetainedDistI18nFile,
+    WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE,
 } from '../../../scripts/deploy/prune-web-dist-assets.mjs';
 
 describe('Android embedded 资源裁剪', () => {
@@ -22,5 +26,17 @@ describe('Android embedded 资源裁剪', () => {
         expect(diceThroneRetainedImages).toEqual([
             'zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
         ]);
+    });
+
+    it('Web 发布产物不允许超过 Cloudflare Pages 单文件上限', () => {
+        expect(isCloudflarePagesFileSizeAllowed(CLOUDFLARE_PAGES_MAX_FILE_BYTES)).toBe(true);
+        expect(isCloudflarePagesFileSizeAllowed(CLOUDFLARE_PAGES_MAX_FILE_BYTES + 1)).toBe(false);
+    });
+
+    it('Web 发布产物会移除旧顶层游戏素材目录', () => {
+        expect(WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE).toContain('smashup');
+        expect(isRemovedWebLegacyGameAssetDir('smashup')).toBe(true);
+        expect(isRemovedWebLegacyGameAssetDir('i18n')).toBe(false);
+        expect(isRemovedWebLegacyGameAssetDir('atlas-configs')).toBe(false);
     });
 });

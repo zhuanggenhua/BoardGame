@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useRef, useCallback } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -31,6 +32,8 @@ export interface BaseCaptureEffectProps {
   showParticles?: boolean;
   /** 是否显示中心光晕（默认 true） */
   showGlow?: boolean;
+  /** 特效质量档：reduced 保留占领表现，但降低 DPR 和粒子量 */
+  quality?: FxQuality;
   /** 完成回调 */
   onComplete?: () => void;
   /** 碎裂完成、新基地开始出现时的回调（用于切换显示内容） */
@@ -90,6 +93,7 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
   gatherColors = ['#fbbf24', '#f59e0b', '#fcd34d', '#fff'],
   showParticles = true,
   showGlow = true,
+  quality = 'full',
   onComplete,
   onTransition,
   className = '',
@@ -111,7 +115,7 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     const overflow = 1.5;
     const baseW = container.offsetWidth;
     const baseH = container.offsetHeight;
@@ -134,8 +138,14 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
 
     // 阶段1：碎裂粒子（从中心向外飞散）
     const shatterRgb = shatterColors.map(parseColorToRgb);
+    const shatterPreset = quality === 'reduced'
+      ? { ...SHATTER_PRESET, count: Math.ceil(SHATTER_PRESET.count * 0.55) }
+      : SHATTER_PRESET;
+    const gatherPreset = quality === 'reduced'
+      ? { ...GATHER_PRESET, count: Math.ceil(GATHER_PRESET.count * 0.55) }
+      : GATHER_PRESET;
     const shatterParticles = showParticles && shatterRgb.length > 0
-      ? spawnParticles(SHATTER_PRESET, shatterRgb, cx, cy)
+      ? spawnParticles(shatterPreset, shatterRgb, cx, cy)
       : [];
 
     // 阶段2：汇聚粒子（从外围向中心收缩）— 延迟生成
@@ -160,9 +170,9 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
       ctx.clearRect(0, 0, cw, ch);
 
       // 阶段1：碎裂（0 ~ 0.8s）
-      const shatterAlive = updateParticles(shatterParticles, dt, SHATTER_PRESET);
+      const shatterAlive = updateParticles(shatterParticles, dt, shatterPreset);
       if (shatterAlive > 0) {
-        drawParticles(ctx, shatterParticles, SHATTER_PRESET, cw, ch);
+        drawParticles(ctx, shatterParticles, shatterPreset, cw, ch);
       }
 
       // 阶段2：汇聚粒子（0.3s 后生成，从外围向中心飞）
@@ -171,7 +181,7 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
         if (showParticles && gatherRgb.length > 0) {
           // 在外围生成粒子，手动设置速度指向中心
           const spread = Math.min(baseW, baseH) * 0.6;
-          gatherParticles = spawnParticles(GATHER_PRESET, gatherRgb, cx, cy);
+          gatherParticles = spawnParticles(gatherPreset, gatherRgb, cx, cy);
           for (const p of gatherParticles) {
             // 将粒子移到外围随机位置
             const angle = Math.random() * Math.PI * 2;
@@ -191,9 +201,9 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
 
       let gatherAlive = 0;
       if (gatherParticles.length > 0) {
-        gatherAlive = updateParticles(gatherParticles, dt, GATHER_PRESET);
+        gatherAlive = updateParticles(gatherParticles, dt, gatherPreset);
         if (gatherAlive > 0) {
-          drawParticles(ctx, gatherParticles, GATHER_PRESET, cw, ch);
+          drawParticles(ctx, gatherParticles, gatherPreset, cw, ch);
         }
       }
 
@@ -240,7 +250,7 @@ export const BaseCaptureEffect: React.FC<BaseCaptureEffectProps> = ({
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [shatterColors, gatherColors, showParticles, showGlow]);
+  }, [shatterColors, gatherColors, showParticles, showGlow, quality]);
 
   useEffect(() => {
     if (!active) return;

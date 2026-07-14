@@ -1609,4 +1609,19 @@ describe('systemInteractionAdapter', () => {
     expect(boardSource).not.toContain('board_auto_close_dice_for_interaction');
     expect(boardSource).not.toMatch(/if\s*\(\s*!diceResult\s*\|\|\s*!swInteraction\s*\)\s*return[\s\S]{0,300}handleCloseDiceResult\s*\(\s*\)/);
   });
+
+  it('近战攻击动画应与骰子浮层关闭分离，骰子揭示完成即可启动位移动画', () => {
+    const boardSource = readFileSync(resolve(__dirname, '../Board.tsx'), 'utf-8');
+    const diceOverlaySource = readFileSync(resolve(__dirname, '../ui/DiceResultOverlay.tsx'), 'utf-8');
+
+    expect(boardSource).toContain('const DICE_RESULT_OVERLAY_DURATION_MS = 3000;');
+    expect(boardSource).toContain("startPendingAttackVisual('dice-reveal-complete')");
+    expect(boardSource).toContain("startPendingAttackVisual('dice-close')");
+    expect(boardSource).toContain('startedAttackAnimEventIdRef.current === pending.attackEventId');
+    expect(boardSource).toContain('duration={DICE_RESULT_OVERLAY_DURATION_MS}');
+    expect(boardSource).not.toContain('duration={3000}');
+    expect(boardSource).not.toContain('OPPONENT_MELEE_DICE_RESULT_DURATION_MS');
+    expect(diceOverlaySource).toContain('onRevealComplete?: () => void;');
+    expect(diceOverlaySource).toContain('dice_overlay_reveal_complete');
+  });
 });

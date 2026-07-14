@@ -960,7 +960,7 @@ describe('七大恨支付手牌选择', () => {
         expect(executed.handCards.some((card) => card.id === paymentCard.id)).toBe(false);
     });
 
-    it('atlas05 已确认军备牌全集都能直点升级军备并指向对应军备', () => {
+    it('atlas05 已核对军备牌全集都能直点升级军备并指向对应军备', () => {
         const armamentIdentities = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES
             .filter((identity) => identity.cardKind === 'armament');
         expect(armamentIdentities).toHaveLength(12);

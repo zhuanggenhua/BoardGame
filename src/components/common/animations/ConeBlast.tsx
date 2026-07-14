@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -28,7 +29,7 @@ export interface ConeBlastProps {
   /** 强度 */
   intensity?: 'normal' | 'strong';
   /** 低成本模式：保留飞行和命中感，减少移动端最重的全屏粒子绘制 */
-  quality?: 'full' | 'reduced';
+  quality?: FxQuality;
   /** 保留兼容 */
   showProjectile?: boolean;
   /** 完成回调 */
@@ -125,7 +126,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, isReduced ? 1 : 1.5);
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.5, reducedMaxDpr: 1 });
     // 使用 offsetWidth/offsetHeight 获取 CSS 布局尺寸（不受父级 transform scale 影响）
     const cw = container.offsetWidth;
     const ch = container.offsetHeight;
@@ -367,7 +368,7 @@ export const ConeBlast: React.FC<ConeBlastProps> = ({
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [sx0, sy0, ex0, ey0, isReduced, isStrong]);
+  }, [sx0, sy0, ex0, ey0, isReduced, isStrong, quality]);
 
   useEffect(() => {
     render();

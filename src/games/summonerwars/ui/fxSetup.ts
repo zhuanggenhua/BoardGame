@@ -13,7 +13,15 @@
  */
 
 import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { FxRegistry, resolveFxQuality, type FxRendererProps, type FeedbackPack, type FxQuality } from '../../../engine/fx';
+import {
+  FxRegistry,
+  createFxPathBox,
+  createFxScaledCellBox,
+  resolveFxQuality,
+  type FxRendererProps,
+  type FeedbackPack,
+  type FxQuality,
+} from '../../../engine/fx';
 import { SummonHybridEffect } from '../../../components/common/animations/SummonHybridEffect';
 import { VortexShaderEffect } from '../../../components/common/animations/VortexShaderEffect';
 import { ConeBlast } from '../../../components/common/animations/ConeBlast';
@@ -49,59 +57,6 @@ const CARD_PADDING_TOP = `${100 / CARD_ASPECT_RATIO}%`;
 // ============================================================================
 // 通用容器工具
 // ============================================================================
-
-/** 以格子为中心，按 scale 放大容器定位 */
-function scaledCellBox(
-  pos: { left: number; top: number; width: number; height: number },
-  scale: number,
-) {
-  const w = pos.width * scale;
-  const h = pos.height * scale;
-  const l = pos.left - (w - pos.width) / 2;
-  const t = pos.top - (h - pos.height) / 2;
-  return { left: `${l}%`, top: `${t}%`, width: `${w}%`, height: `${h}%` };
-}
-
-/** 让远程攻击气浪只在飞行路径附近重绘，避免一个特效每帧清掉整层棋盘画布。 */
-function pathEffectBox(
-  source: { left: number; top: number; width: number; height: number },
-  target: { left: number; top: number; width: number; height: number },
-) {
-  const srcCx = source.left + source.width / 2;
-  const srcCy = source.top + source.height / 2;
-  const tgtCx = target.left + target.width / 2;
-  const tgtCy = target.top + target.height / 2;
-  const cellSpan = Math.max(source.width, source.height, target.width, target.height);
-  const padding = cellSpan * 1.35;
-  const minSize = cellSpan * 2.25;
-
-  const pathLeft = Math.min(srcCx, tgtCx);
-  const pathTop = Math.min(srcCy, tgtCy);
-  const pathWidth = Math.abs(tgtCx - srcCx);
-  const pathHeight = Math.abs(tgtCy - srcCy);
-  const width = Math.max(pathWidth + padding * 2, minSize);
-  const height = Math.max(pathHeight + padding * 2, minSize);
-  const left = pathLeft - (width - pathWidth) / 2;
-  const top = pathTop - (height - pathHeight) / 2;
-
-  return {
-    style: {
-      left: `${left}%`,
-      top: `${top}%`,
-      width: `${width}%`,
-      height: `${height}%`,
-      overflow: 'visible' as const,
-    },
-    start: {
-      xPct: ((srcCx - left) / width) * 100,
-      yPct: ((srcCy - top) / height) * 100,
-    },
-    end: {
-      xPct: ((tgtCx - left) / width) * 100,
-      yPct: ((tgtCy - top) / height) * 100,
-    },
-  };
-}
 
 // ============================================================================
 // 稳定回调 hook（避免父组件重新渲染导致动画重播）
@@ -140,7 +95,7 @@ const SummonRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   const quality = resolveEventQuality(event);
 
   const scale = 7.5;
-  const box = scaledCellBox(pos, scale);
+  const box = createFxScaledCellBox(pos, scale);
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none z-30',
@@ -173,7 +128,7 @@ const ChargeVortexRenderer: React.FC<FxRendererProps> = ({ event, getCellPositio
   const quality = resolveEventQuality(event);
 
   const scale = 4;
-  const box = scaledCellBox(pos, scale);
+  const box = createFxScaledCellBox(pos, scale);
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none z-30',
@@ -265,7 +220,7 @@ const ShockwaveRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, 
   const srcPos = getCellPosition(source.row, source.col);
   const tgtPos = getCellPosition(cell.row, cell.col);
 
-  const pathBox = pathEffectBox(srcPos, tgtPos);
+  const pathBox = createFxPathBox(srcPos, tgtPos);
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none z-30',
@@ -307,7 +262,8 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   const pos = getCellPosition(cell.row, cell.col);
   const isStrong = event.ctx.intensity === 'strong';
   const dmg = (event.params?.damageAmount as number) ?? (isStrong ? 3 : 1);
-  const reduced = event.params?.reduced === true;
+  const quality = resolveEventQuality(event);
+  const reduced = event.params?.reduced === true || quality === 'reduced';
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none flex items-center justify-center z-30',
@@ -336,6 +292,7 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
           active: true,
           damage: dmg,
           intensity: event.ctx.intensity ?? 'normal',
+          quality,
           showSlash: !reduced,
           showRedPulse: true,
           showNumber: true,

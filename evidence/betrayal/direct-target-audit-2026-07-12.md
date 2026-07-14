@@ -28,11 +28,13 @@
 
 ## 验证命令
 
+> 2026-07-12 回写：当前 `Board.foundation.test.tsx` 已随头骨死亡保护和器械库页面行为补证增至 44 条；本文件下方保留的直选优先专项结论仍有效，但当前测试数量以主审计文档和最新复跑结果为准。
+
 - `npx eslint src/games/betrayal/Board.tsx e2e/betrayal/first-scenario-core-interactions.e2e.ts e2e/betrayal/betrayal-tutorial.e2e.ts --quiet` 通过。
 - `npm run test:e2e:file -- e2e/betrayal/first-scenario-core-interactions.e2e.ts` 通过，6 passed。
 - `npm run test:e2e:file -- e2e/betrayal/event-choice-coverage.e2e.ts` 通过，12 passed。
 - `npm run test:e2e:file -- e2e/betrayal/explore-unknown-room.e2e.ts` 通过，1 passed。
-- `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native` 通过，42 passed。
+- `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --configLoader native` 当前复跑通过，44 passed。
 
 ## 已知非本轮阻塞
 

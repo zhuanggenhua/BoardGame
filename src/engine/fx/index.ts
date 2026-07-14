@@ -51,6 +51,18 @@ export {
   type FxCanvasSize,
 } from './performance';
 
+export {
+  createFxPathBox,
+  createFxScaledCellBox,
+  createFxScreenPathBox,
+  type FxBox,
+  type FxBoxStyle,
+  type FxPathBox,
+  type FxPercentPoint,
+  type FxScreenPathBox,
+  type FxScreenPoint,
+} from './layout';
+
 // 注册表
 export { FxRegistry } from './FxRegistry';
 

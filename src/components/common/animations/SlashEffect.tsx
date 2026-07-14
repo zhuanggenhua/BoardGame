@@ -21,8 +21,9 @@
  * ```
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 
 // ============================================================================
 // 类型
@@ -43,6 +44,8 @@ export interface SlashConfig {
     glow?: boolean;
     /** 拖尾效果，默认 true */
     trail?: boolean;
+    /** 特效质量档：reduced 降低 DPR 和火花密度 */
+    quality?: FxQuality;
 }
 
 export interface SlashEffectProps extends SlashConfig {
@@ -312,8 +315,9 @@ const SlashCanvas: React.FC<{
     width: number;
     glow: boolean;
     trail: boolean;
+    quality: FxQuality;
     onComplete: () => void;
-}> = ({ lines, color, duration, width, glow, trail, onComplete }) => {
+}> = ({ lines, color, duration, width, glow, trail, quality, onComplete }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rafRef = useRef(0);
@@ -323,7 +327,9 @@ const SlashCanvas: React.FC<{
     const prevTimeRef = useRef(0);
     // onComplete/lines 通过 ref 持有，避免 useEffect 依赖不稳定导致动画重启
     const onCompleteRef = useRef(onComplete);
-    onCompleteRef.current = onComplete;
+    useLayoutEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
 
     // Canvas 溢出倍数：Canvas 比父容器大 OVERFLOW 倍，确保弧形刀光和火花不被裁切
     const OVERFLOW = 2;
@@ -336,7 +342,7 @@ const SlashCanvas: React.FC<{
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
         // 使用 offsetWidth/offsetHeight 获取 CSS 布局尺寸（不受父级 transform scale 影响）
         const baseW = container.offsetWidth;
         const baseH = container.offsetHeight;
@@ -406,7 +412,7 @@ const SlashCanvas: React.FC<{
 
                 if (trail && t < 0.9 && t > 0.05) {
                     const headAngle = arcStartAngle + arcSpan * headProgress;
-                    spawnSparks(sparksRef.current, arcCx, arcCy, arcRadius, headAngle, 2);
+                    spawnSparks(sparksRef.current, arcCx, arcCy, arcRadius, headAngle, quality === 'reduced' ? 1 : 2);
                 }
             }
 
@@ -421,7 +427,7 @@ const SlashCanvas: React.FC<{
             sparksRef.current = [];
         };
     // lines/onComplete 通过快照/ref 持有，不放入依赖
-    }, [color, duration, width, glow, trail, rgb]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [color, duration, width, glow, trail, quality, rgb]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Canvas 居中于容器，溢出不裁切
     const offset = ((OVERFLOW - 1) / 2) * 100;
@@ -450,6 +456,7 @@ export const SlashEffect: React.FC<SlashEffectProps> = ({
     width = 3,
     glow = true,
     trail = true,
+    quality = 'full',
     className = '',
 }) => {
     const [activeKey, setActiveKey] = useState<number | null>(null);
@@ -488,6 +495,7 @@ export const SlashEffect: React.FC<SlashEffectProps> = ({
                         width={width}
                         glow={glow}
                         trail={trail}
+                        quality={quality}
                         onComplete={handleComplete}
                     />
                 )}

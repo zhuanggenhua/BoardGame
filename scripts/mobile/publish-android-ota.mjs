@@ -291,6 +291,15 @@ if (androidBuildMeta.appId.trim() !== releaseAndroidAppId) {
 if (isNonReleaseAndroidAppId(androidBuildMeta.appId.trim())) {
     throw new Error(`dist/android-build-meta.json 检测到测试壳 appId=${androidBuildMeta.appId.trim()}，已阻止 OTA 发布。`);
 }
+if (androidBuildMeta.otaEnabled !== true) {
+    throw new Error('dist/android-build-meta.json 显示 OTA 未启用。已阻止发布，避免正式 App 更新后误报“测试壳已禁用 OTA”。');
+}
+if (typeof androidBuildMeta.otaManifestUrl !== 'string' || !/^https?:\/\//i.test(androidBuildMeta.otaManifestUrl.trim())) {
+    throw new Error('dist/android-build-meta.json 缺少合法 otaManifestUrl。已阻止发布，请通过统一 Android OTA 入口重新构建。');
+}
+if (androidBuildMeta.otaChannel !== channel) {
+    throw new Error(`Android OTA 构建 channel 与发布目标不一致：构建=${String(androidBuildMeta.otaChannel || '')}，发布=${channel}`);
+}
 
 const collectFiles = (dirPath, baseDir, entries = {}, stats = {
     includedFiles: 0,

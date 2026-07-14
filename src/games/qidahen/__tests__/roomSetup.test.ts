@@ -97,7 +97,7 @@ describe('七大恨房间 setup 解析', () => {
         expect(getQidahenPlayableFactions('dingmao-rebellion-1627')).toEqual(['ming', 'jin']);
     });
 
-    it('显式局内剧本投票标记会让房间进入 match 后再决定剧本', () => {
+    it('显式局内剧本选择标记会让房间进入 match 后再决定剧本', () => {
         expect(shouldUseQidahenInMatchScenarioVote({
             setupSelections: {
                 [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',
@@ -528,7 +528,7 @@ describe('七大恨房间 setup 解析', () => {
         expect(core.factions.jin.armaments.find((armament) => armament.id === 'infantry-armor')?.level).toBe(2);
     });
 
-    it('domain.setup 在联机局内剧本投票模式下会先停在剧本介绍与投票态', () => {
+    it('domain.setup 在联机局内剧本选择模式下会先停在剧本介绍与房主选择态', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], testRandom, {
             setupSelections: {
                 [QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD]: 'enabled',

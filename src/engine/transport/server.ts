@@ -1575,14 +1575,21 @@ export class GameTransportServer {
         candidate: ForceEndTurnStalledAiResolution,
     ): number {
         const liveSeatConnectionCount = match.connections.get(candidate.playerId)?.size ?? 0;
+        const currentPhase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
+        const core = match.state.core as { hostStarted?: unknown } | undefined;
+        const publicPregameLegalActionPhases = match.engineConfig.onlineAiRecovery?.publicPregameLegalActionPhases ?? [];
+        const isPublicPregameLegalAction = candidate.reason === 'seat-legal-only'
+            && core?.hostStarted === false
+            && publicPregameLegalActionPhases.includes(currentPhase);
         // 商业口径：在线 AI 不应依赖宿主页保持前台/存活。
         // 一旦对应 AI seat 没有 live socket，watchdog 立即接管真正的“对局中 AI 回合/交互”。
-        // pregame 的 legal-only 选阵营链仍保留原有时序，避免改变既有恢复/反馈语义。
+        // 公开预开局选择同样不依赖宿主页：这里只执行 AI 自己的合法选择，不会推进真人操作。
         const shouldImmediateTakeover = candidate.reason === 'active-turn'
             || candidate.reason === 'response-window'
             || candidate.reason === 'response-loop'
             || candidate.reason === 'visible-interaction'
-            || candidate.reason === 'hidden-interaction';
+            || candidate.reason === 'hidden-interaction'
+            || isPublicPregameLegalAction;
         if (liveSeatConnectionCount === 0 && shouldImmediateTakeover) {
             return 0;
         }
@@ -4814,6 +4821,10 @@ export class GameTransportServer {
 
     private buildMatchPlayers(match: ActiveMatch): MatchPlayerInfo[] {
         const seatControllers = extractSetupSeatControllers(match.metadata.setupData);
+        const setupData = match.metadata.setupData;
+        const ownerKey = setupData && typeof setupData === 'object' && !Array.isArray(setupData)
+            ? (setupData as { ownerKey?: string }).ownerKey
+            : undefined;
         return Object.entries(match.metadata.players).map(([id, data]) => ({
             id: Number(id),
             name: resolveSeatPlayerDisplayName({
@@ -4822,6 +4833,7 @@ export class GameTransportServer {
                 seatControllers,
             }),
             isConnected: data.isConnected,
+            isOwner: typeof ownerKey === 'string' && ownerKey.length > 0 && data.ownerKey === ownerKey,
         }));
     }
 

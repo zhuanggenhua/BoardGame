@@ -14,8 +14,9 @@
  * ```
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 
 // ============================================================================
 // 类型
@@ -36,6 +37,8 @@ export interface RiftSlashConfig {
     glow?: boolean;
     /** 拖尾效果，默认 true */
     trail?: boolean;
+    /** 特效质量档：reduced 降低 DPR 和火花密度，但保留刀光主体 */
+    quality?: FxQuality;
 }
 
 export interface RiftSlashProps extends RiftSlashConfig {
@@ -259,8 +262,9 @@ const RiftCanvas: React.FC<{
     width: number;
     glow: boolean;
     trail: boolean;
+    quality: FxQuality;
     onComplete: () => void;
-}> = ({ lines, color, duration, width, glow, trail, onComplete }) => {
+}> = ({ lines, color, duration, width, glow, trail, quality, onComplete }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const rafRef = useRef(0);
@@ -269,7 +273,9 @@ const RiftCanvas: React.FC<{
     const sparksRef = useRef<Spark[]>([]);
     const rgb = React.useMemo(() => parseColor(color), [color]);
     const onCompleteRef = useRef(onComplete);
-    onCompleteRef.current = onComplete;
+    useLayoutEffect(() => {
+        onCompleteRef.current = onComplete;
+    }, [onComplete]);
 
     const OVERFLOW = 1.6;
 
@@ -281,7 +287,7 @@ const RiftCanvas: React.FC<{
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
         // 使用 offsetWidth/offsetHeight 获取 CSS 布局尺寸（不受父级 transform scale 影响）
         const baseW = container.offsetWidth;
         const baseH = container.offsetHeight;
@@ -364,7 +370,7 @@ const RiftCanvas: React.FC<{
                     const hx = sx + (ex - sx) * headProgress;
                     const hy = sy + (ey - sy) * headProgress;
                     const nx = -Math.sin(rad), ny = Math.cos(rad);
-                    spawnLineSparks(sparksRef.current, hx, hy, nx, ny, 2);
+                    spawnLineSparks(sparksRef.current, hx, hy, nx, ny, quality === 'reduced' ? 1 : 2);
                 }
             }
 
@@ -378,7 +384,7 @@ const RiftCanvas: React.FC<{
             cancelAnimationFrame(rafRef.current);
             sparksRef.current = [];
         };
-    }, [color, duration, width, glow, trail, rgb]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [color, duration, width, glow, trail, quality, rgb]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const offset = ((OVERFLOW - 1) / 2) * 100;
 
@@ -406,6 +412,7 @@ export const RiftSlash: React.FC<RiftSlashProps> = ({
     width = 4,
     glow = true,
     trail = true,
+    quality = 'full',
     className = '',
 }) => {
     const [activeKey, setActiveKey] = useState<number | null>(null);
@@ -445,6 +452,7 @@ export const RiftSlash: React.FC<RiftSlashProps> = ({
                         width={width}
                         glow={glow}
                         trail={trail}
+                        quality={quality}
                         onComplete={handleComplete}
                     />
                 )}
