@@ -47,7 +47,7 @@ export const SUMMONER_GOBLIN: UnitCard = {
   name: '思尼克斯',
   unitClass: 'summoner',
   faction: 'goblin',
-  strength: 2, // 左侧红色图标显示战力
+  strength: 3, // 卡面右下角攻击力图标显示战力
   life: 11,
   cost: 0,
   attackType: 'melee',

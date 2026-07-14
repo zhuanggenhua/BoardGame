@@ -1,4 +1,5 @@
 import { createBaseSystems, createGameEngine } from '../../engine';
+import { registerGameAiRuntime } from '../../engine/ai';
 import { registerCriticalImageResolver } from '../../core';
 import type {
     Command,
@@ -10,7 +11,15 @@ import type {
     ValidationResult,
 } from '../../engine/types';
 import { createCheatSystem } from '../../engine/systems';
+import {
+    BETRAYAL_ACTION_LOG_ALLOWLIST,
+    BETRAYAL_UNDO_ALLOWLIST,
+    formatBetrayalActionEntry,
+} from './actionLog';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
+import { createBetrayalAiRuntime } from './ai';
+import { BETRAYAL_COMMANDS } from './commands';
+import { readBetrayalScenarioId } from './roomSetup';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     BETRAYAL_EXPLORER_CATALOG,
@@ -33,9 +42,18 @@ import {
     type BetrayalScenarioOutcome,
     type BetrayalTraitKey as ConfigTraitKey,
     type BetrayalTraitorSelectionPolicy,
-    type BetrayalUseEffectSeed,
     type BetrayalSurvivorSelectionPolicy,
 } from './scenarioConfig';
+import {
+    POSSESSION_USE_EFFECTS as USE_EFFECTS,
+    resolveInventoryEffectId,
+    resolveUseEffect,
+    type PossessionUseEffectProfile,
+    type UseEffectProfile,
+} from './possessionEffects';
+
+export { resolveUseEffect } from './possessionEffects';
+export type { PossessionUseEffectProfile, UseEffectProfile } from './possessionEffects';
 
 export type BetrayalTraitKey = ConfigTraitKey;
 export type BetrayalInventoryKind = ConfigInventoryKind;
@@ -151,7 +169,7 @@ interface BetrayalRoomEnterEffectResult {
 
 export interface BetrayalRecentRollState {
     id: string;
-    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck';
+    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
     playerId: string;
     sourceTitle: string;
     trait?: BetrayalTraitKey;
@@ -204,6 +222,17 @@ export interface BetrayalRecentRollState {
         releasedJackSpiritRoomId?: string;
     };
     consumedRabbitFootCardIds: string[];
+    lastRabbitFootRerollDieIndex?: number;
+}
+
+interface BetrayalMonsterMovementRollResult {
+    monsterId: string;
+    monsterName: string;
+    playerId: string;
+    speed: number;
+    dice: number[];
+    total: number;
+    moveAllowance: number;
 }
 
 export interface BetrayalPendingEventChoiceState {
@@ -309,26 +338,6 @@ export interface BetrayalCore {
     scenarioRuntime: BetrayalScenarioRuntimeStatus;
     endgameResult: BetrayalEndgameResult | null;
 }
-
-export const BETRAYAL_COMMANDS = {
-    SELECT_EXPLORER: 'SELECT_EXPLORER',
-    CONFIRM_EXPLORER: 'CONFIRM_EXPLORER',
-    START_SCENARIO: 'START_SCENARIO',
-    MOVE_TO_ROOM: 'MOVE_TO_ROOM',
-    EXPLORE_ROOM: 'EXPLORE_ROOM',
-    USE_POSSESSION: 'USE_POSSESSION',
-    USE_RABBIT_FOOT: 'USE_RABBIT_FOOT',
-    RESOLVE_EVENT_CHOICE: 'RESOLVE_EVENT_CHOICE',
-    USE_ROOM_EFFECT: 'USE_ROOM_EFFECT',
-    TRADE_POSSESSION: 'TRADE_POSSESSION',
-    LOOT_CORPSE: 'LOOT_CORPSE',
-    END_TURN: 'END_TURN',
-    HAUNT_ATTACK: 'HAUNT_ATTACK',
-    LEARN_ABOUT_JACK: 'LEARN_ABOUT_JACK',
-    STUDY_EXORCISM: 'STUDY_EXORCISM',
-    EXORCISE_JACK: 'EXORCISE_JACK',
-    COMPLETE_SCENARIO: 'COMPLETE_SCENARIO',
-} as const;
 
 export type BetrayalCommandType = typeof BETRAYAL_COMMANDS[keyof typeof BETRAYAL_COMMANDS];
 
@@ -482,6 +491,7 @@ type BetrayalEvent =
         nextPlayerId: string;
         logText: string;
         roomEndTurnEffect?: BetrayalRoomEndTurnEffectResult | null;
+        monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
     }>
     | GameEvent<typeof EVENTS.HAUNT_TRIGGERED, {
         traitorPlayerId: string;
@@ -561,29 +571,6 @@ export const EXPLORER_CATALOG: BetrayalExplorerTemplate[] = BETRAYAL_EXPLORER_CA
 
 type RoomTemplate = BetrayalRoomDiscoveryTemplate;
 
-export type UseEffectProfile = BetrayalUseEffectSeed;
-export type PossessionUseEffectProfile = UseEffectProfile | {
-    mode: 'nextNonCombatTraitReplacement';
-    replacementTrait: BetrayalTraitKey;
-    sanityCost: number;
-    recommendedAction: BetrayalRecommendedAction;
-} | {
-    mode: 'healTraits';
-    traits: BetrayalTraitKey[];
-    consumeOnUse: boolean;
-    target: 'self' | 'selfOrSameRoomExplorer';
-    recommendedAction: BetrayalRecommendedAction;
-} | {
-    mode: 'placeExplorer';
-    target: 'anyDiscoveredRoom';
-    consumeOnUse: boolean;
-    recommendedAction: BetrayalRecommendedAction;
-} | {
-    mode: 'moveOthersInRoom';
-    target: 'sameRoomOtherExplorersAndMonsters';
-    recommendedAction: BetrayalRecommendedAction;
-};
-
 type EventTemplate = BetrayalEventSeed;
 type EventEffectSnapshot = NonNullable<BetrayalRecentRollState['eventEffectSnapshot']>;
 
@@ -598,58 +585,6 @@ const ROOM_DISCOVERY_POOL: Record<BetrayalRoomNode['floor'], RoomTemplate[]> = {
     ground: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.map((room) => ({ ...room, tags: [...room.tags] })),
     upper: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.map((room) => ({ ...room, tags: [...room.tags] })),
     basement: BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.basement.map((room) => ({ ...room, tags: [...room.tags] })),
-};
-
-const USE_EFFECTS: Record<string, PossessionUseEffectProfile> = {
-    'omen-book': {
-        mode: 'nextNonCombatTraitReplacement',
-        replacementTrait: 'knowledge',
-        sanityCost: 1,
-        recommendedAction: 'explore',
-    },
-    notebook: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
-    'medical-kit': {
-        mode: 'healTraits',
-        traits: ['might', 'speed', 'knowledge', 'sanity'],
-        consumeOnUse: true,
-        target: 'selfOrSameRoomExplorer',
-        recommendedAction: 'explore',
-    },
-    mask: {
-        mode: 'moveOthersInRoom',
-        target: 'sameRoomOtherExplorersAndMonsters',
-        recommendedAction: 'move',
-    },
-    map: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
-    journal: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
-    'holy-water': {
-        mode: 'healTraits',
-        traits: ['might', 'speed'],
-        consumeOnUse: true,
-        target: 'self',
-        recommendedAction: 'explore',
-    },
-    manuscript: {
-        mode: 'placeExplorer',
-        target: 'anyDiscoveredRoom',
-        consumeOnUse: true,
-        recommendedAction: 'explore',
-    },
 };
 
 const TRAIT_CHECK_PASSIVE_BONUSES: Record<string, Partial<Record<BetrayalTraitKey, number>>> = {
@@ -1220,6 +1155,7 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
                     }
                     : undefined,
                 consumedRabbitFootCardIds: [...core.recentRoll.consumedRabbitFootCardIds],
+                lastRabbitFootRerollDieIndex: core.recentRoll.lastRabbitFootRerollDieIndex,
             }
             : null,
         pendingEventChoice: core.pendingEventChoice
@@ -1343,9 +1279,13 @@ function buildRepresentativeRuntimeExplorers(core: BetrayalCore): BetrayalExplor
     });
 }
 
-function makeBaseCore(playerIds: string[], phase: BetrayalPhase, random: RandomFn): BetrayalCore {
+function makeBaseCore(
+    playerIds: string[],
+    phase: BetrayalPhase,
+    random: RandomFn,
+    scenarioId: BetrayalScenarioId = DEFAULT_BETRAYAL_SCENARIO_ID,
+): BetrayalCore {
     const normalizedPlayerIds = normalizePlayerIds(playerIds);
-    const scenarioId = DEFAULT_BETRAYAL_SCENARIO_ID;
     const rooms = createInitialRoomLayout(BETRAYAL_SHARED_PRE_HAUNT_SETUP.startingRoomLayout);
     const discoveryState = createShuffledDiscoveryState(random);
     const currentExplorer = createExplorer(
@@ -1409,8 +1349,9 @@ function makeBaseCore(playerIds: string[], phase: BetrayalPhase, random: RandomF
 export function createBetrayalCharacterSelectCore(
     playerIds: string[] = ['0', '1', '2', '3'],
     random: RandomFn = DEFAULT_BETRAYAL_RANDOM,
+    setupData?: unknown,
 ): BetrayalCore {
-    return makeBaseCore(playerIds, 'characterSelect', random);
+    return makeBaseCore(playerIds, 'characterSelect', random, readBetrayalScenarioId(setupData));
 }
 
 export function createBetrayalFoundationCore(
@@ -1545,10 +1486,19 @@ function healExplorerTraitsToTemplate(
     }
 }
 
-function healTraitorForHaunt(explorer: BetrayalExplorerSummary): void {
+function resolveCrimsonJackTraitorPhysicalBonus(playerCount: number): number {
+    return playerCount >= 5 ? 2 : 1;
+}
+
+function healTraitorForHaunt(explorer: BetrayalExplorerSummary, playerCount: number): void {
     healExplorerToTemplate(explorer);
-    explorer.traits.might += 2;
-    explorer.traits.speed += 2;
+    const physicalBonus = resolveCrimsonJackTraitorPhysicalBonus(playerCount);
+    explorer.traits.might += physicalBonus;
+    explorer.traits.speed += physicalBonus;
+}
+
+function reviveTraitorFromJackSpirit(explorer: BetrayalExplorerSummary): void {
+    healExplorerToTemplate(explorer);
 }
 
 function resolveMagicCameraOwnerPlayerId(core: BetrayalCore): string | null {
@@ -1742,6 +1692,10 @@ function ensureLibraryPresent(core: BetrayalCore): void {
         upperWest.state = 'discovered';
         upperWest.discoveryReward = null;
     }
+}
+
+export function isBetrayalLibraryRoom(room: BetrayalRoomNode | undefined): boolean {
+    return room?.name === '图书馆' || room?.visualId === 'library';
 }
 
 function resolveHauntRollTotal(core: BetrayalCore): number {
@@ -1992,6 +1946,7 @@ export function canUseRabbitFootForRecentRoll(core: BetrayalCore, playerId: stri
     return Boolean(
         card
         && core.recentRoll
+        && core.recentRoll.kind !== 'monsterMoveRoll'
         && core.recentRoll.playerId === playerId
         && !core.recentRoll.consumedRabbitFootCardIds.includes(card.id)
         && existedAtRollWindowStart
@@ -2609,6 +2564,17 @@ function resolveConnectedRoomIds(rooms: BetrayalRoomNode[], roomId: string): Set
         if (fixedTargetRoomId) {
             connectedIds.add(fixedTargetRoomId);
         }
+        if (room.markerTokens?.includes('secretPassage')) {
+            for (const secretPassageRoom of rooms) {
+                if (
+                    secretPassageRoom.id !== room.id
+                    && secretPassageRoom.state === 'discovered'
+                    && secretPassageRoom.markerTokens?.includes('secretPassage')
+                ) {
+                    connectedIds.add(secretPassageRoom.id);
+                }
+            }
+        }
     }
     for (const sourceRoom of rooms) {
         if (sourceRoom.state !== 'discovered') {
@@ -3210,17 +3176,6 @@ function resolveEvent(core: BetrayalCore): EventTemplate {
     return cloneEventTemplate(core.eventOrder[drawnCount % core.eventOrder.length]!);
 }
 
-function resolveInventoryEffectId(cardId: string): string {
-    return cardId
-        .replace(/-preview-\d+$/, '')
-        .replace(/-armory-\d+-\d+$/, '')
-        .replace(/-\d+$/, '');
-}
-
-export function resolveUseEffect(card: BetrayalInventoryCard): PossessionUseEffectProfile | null {
-    return USE_EFFECTS[resolveInventoryEffectId(card.id)] ?? null;
-}
-
 function formatEffectLabel(effect: PossessionUseEffectProfile): string {
     if (effect.mode === 'none') {
         return '无事发生';
@@ -3308,7 +3263,7 @@ function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boo
             return core.scenarioRuntime.exorcismCircleRoomIds.length >= 2 ? 'use' : 'move';
         }
         if (
-            core.activeRoomId === 'upper-west'
+            isBetrayalLibraryRoom(core.rooms.find((room) => room.id === core.activeRoomId))
             && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(core.currentExplorer.playerId)
         ) {
             return 'use';
@@ -3334,23 +3289,50 @@ function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boo
     return 'endTurn';
 }
 
+function canReviveTraitorAtMonsterTurnStart(core: BetrayalCore, nextPlayerId: string): boolean {
+    return (
+        nextPlayerId === core.scenarioRuntime.traitorPlayerId
+        && core.scenarioRuntime.deadExplorerPlayerIds.includes(nextPlayerId)
+        && core.scenarioRuntime.jackSpiritReleased
+        && Boolean(core.scenarioRuntime.jackSpiritRoomId)
+        && core.scenarioRuntime.jackSpiritHasMovedSinceRelease
+        && Boolean(core.scenarioRuntime.traitorCorpseRoomId)
+        && core.scenarioRuntime.jackSpiritRoomId === core.scenarioRuntime.traitorCorpseRoomId
+        && Boolean(findExplorerByPlayerId(core, nextPlayerId))
+    );
+}
+
+function resolveJackSpiritMonsterMovementRoll(
+    core: BetrayalCore,
+    nextPlayerId: string,
+    random: RandomFn,
+): BetrayalMonsterMovementRollResult | null {
+    if (!shouldDeadTraitorControlJackSpirit(core, nextPlayerId)) {
+        return null;
+    }
+    const jackSpirit = findJackSpirit(core);
+    if (!jackSpirit) {
+        return null;
+    }
+    const dice = rollDicePips(random, jackSpirit.speed);
+    const total = dice.reduce((sum, pip) => sum + pip, 0);
+    return {
+        monsterId: jackSpirit.id,
+        monsterName: jackSpirit.name,
+        playerId: nextPlayerId,
+        speed: jackSpirit.speed,
+        dice,
+        total,
+        moveAllowance: Math.max(1, total),
+    };
+}
+
 function tryReviveTraitorAtMonsterTurnStart(core: BetrayalCore, nextPlayerId: string): { core: BetrayalCore; revived: boolean } {
-    if (
-        nextPlayerId !== core.scenarioRuntime.traitorPlayerId
-        || !core.scenarioRuntime.deadExplorerPlayerIds.includes(nextPlayerId)
-        || !core.scenarioRuntime.jackSpiritReleased
-        || !core.scenarioRuntime.jackSpiritRoomId
-        || !core.scenarioRuntime.jackSpiritHasMovedSinceRelease
-        || !core.scenarioRuntime.traitorCorpseRoomId
-        || core.scenarioRuntime.jackSpiritRoomId !== core.scenarioRuntime.traitorCorpseRoomId
-    ) {
+    if (!canReviveTraitorAtMonsterTurnStart(core, nextPlayerId)) {
         return { core, revived: false };
     }
-    const traitor = findExplorerByPlayerId(core, nextPlayerId);
-    if (!traitor) {
-        return { core, revived: false };
-    }
-    healTraitorForHaunt(traitor);
+    const traitor = findExplorerByPlayerId(core, nextPlayerId)!;
+    reviveTraitorFromJackSpirit(traitor);
     core.scenarioRuntime.deadExplorerPlayerIds = core.scenarioRuntime.deadExplorerPlayerIds.filter((playerId) => playerId !== nextPlayerId);
     core.scenarioRuntime.jackSpiritReleased = false;
     core.scenarioRuntime.jackSpiritRoomId = null;
@@ -3754,6 +3736,9 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 if (!core.scenarioRuntime.jackSpiritReleased || actor.playerId !== core.scenarioRuntime.traitorPlayerId) {
                     return { valid: false, error: '该角色已死亡，当前不能移动。' };
                 }
+                if (core.movesRemaining <= 0) {
+                    return { valid: false, error: '杰克之灵本回合没有剩余移动点。' };
+                }
                 const targetRoom = core.rooms.find((room) => room.id === command.payload.roomId);
                 if (!targetRoom || targetRoom.state !== 'discovered') {
                     return { valid: false, error: '目标房间不可移动。' };
@@ -3836,20 +3821,26 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 return { valid: false, error: '当前只有叛徒侧可主动攻击英雄。' };
             }
             return { valid: true };
-        case BETRAYAL_COMMANDS.LEARN_ABOUT_JACK:
+        case BETRAYAL_COMMANDS.LEARN_ABOUT_JACK: {
             if (isTraitor || isDead) {
                 return { valid: false, error: '只有存活英雄能调查杰克。' };
             }
-            if (actor.roomId !== 'upper-west' && core.rooms.find((room) => room.id === actor.roomId)?.name !== '图书馆') {
+            if (!isBetrayalLibraryRoom(core.rooms.find((room) => room.id === actor.roomId))) {
                 return { valid: false, error: '必须在图书馆才能调查杰克。' };
             }
-            if (core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(command.playerId)) {
-                return { valid: false, error: '该英雄已经掌握杰克线索。' };
+            const livingHeroWithoutKnowledge = getAllExplorers(core).some((explorer) => (
+                explorer.playerId !== core.scenarioRuntime.traitorPlayerId
+                && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(explorer.playerId)
+            ));
+            if (!livingHeroWithoutKnowledge) {
+                return { valid: false, error: '所有存活英雄都已经掌握杰克线索。' };
             }
             if (core.usedCardIdsThisTurn.includes('learn-about-jack')) {
                 return { valid: false, error: '本回合已经调查过杰克。' };
             }
             return { valid: true };
+        }
         case BETRAYAL_COMMANDS.STUDY_EXORCISM:
             if (isTraitor || isDead) {
                 return { valid: false, error: '只有存活英雄能研究驱魔法阵。' };
@@ -3870,9 +3861,6 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             }
             if (actor.roomId !== core.scenarioRuntime.jackSpiritRoomId) {
                 return { valid: false, error: '必须与杰克之灵处于同一房间。' };
-            }
-            if (core.scenarioRuntime.exorcismCircleRoomIds.length < 2) {
-                return { valid: false, error: '至少需要两处驱魔法阵才能尝试驱魔。' };
             }
             if (core.usedCardIdsThisTurn.includes('exorcise-jack')) {
                 return { valid: false, error: '本回合已经尝试过驱魔。' };
@@ -4114,7 +4102,9 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 }, timestamp)];
             }
 
-            const drawnCard = createDrawnCard(core, deckKind);
+            const roomDiscoveryDrawnCard = roomDiscoveryCards.roomDiscoveryCards?.[0];
+            const drawnCard = roomDiscoveryDrawnCard ?? createDrawnCard(core, deckKind);
+            const regularDrawnCard = roomDiscoveryDrawnCard ? undefined : drawnCard;
             const drawnCardEffect = resolveUseEffect(drawnCard);
             const drawnCardDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
             return [nowEvent(EVENTS.ROOM_EXPLORED, {
@@ -4134,7 +4124,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 },
                 deckKind,
                 ...roomDiscoveryCards,
-                drawnCard,
+                drawnCard: regularDrawnCard,
                 skippedRoomWithHolySymbol: skippedRoomTemplate
                     ? { name: skippedRoomTemplate.name }
                     : undefined,
@@ -4165,7 +4155,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         },
                         deckKind,
                         ...roomDiscoveryCards,
-                        drawnCard,
+                        drawnCard: regularDrawnCard,
                         skippedRoomWithHolySymbol: skippedRoomTemplate
                             ? { name: skippedRoomTemplate.name }
                             : undefined,
@@ -4241,7 +4231,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 dieIndex,
                 newPip,
                 eventRerollEffect: nextEventBranch ? materializeEventEffect(nextEventBranch.effect, random, core.currentExplorer) : undefined,
-                logText: `${actor.displayName}使用兔脚重掷一颗骰子：${previousPip} → ${newPip}`,
+                logText: `${actor.displayName}使用兔脚重掷第 ${dieIndex + 1} 颗骰子：${previousPip} → ${newPip}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE: {
@@ -4536,18 +4526,25 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 })();
             const nextExplorer = findExplorerByPlayerId(core, nextPlayerId) ?? core.currentExplorer;
             const previewCore = replaceExplorers(core, getExplorersInTurnOrder(core), nextExplorer.playerId);
+            const monsterMovementRoll = canReviveTraitorAtMonsterTurnStart(previewCore, nextPlayerId)
+                ? null
+                : resolveJackSpiritMonsterMovementRoll(previewCore, nextPlayerId, random);
             const targets = resolveMoveTargetRooms(previewCore);
             const baseLogText = targets.length > 0
                 ? `轮到${nextExplorer.displayName}，可前往${formatRoomTargetList(targets)}`
                 : `轮到${nextExplorer.displayName}`;
-            const logText = roomEndTurnEffect
-                ? `${formatEndTurnRoomEffectLog(roomEndTurnEffect, core.currentExplorer.displayName)}；${baseLogText}`
+            const turnLogText = monsterMovementRoll
+                ? `${baseLogText}；${monsterMovementRoll.monsterName}速度 ${monsterMovementRoll.speed} 投出 ${monsterMovementRoll.total}，本回合可移动 ${monsterMovementRoll.moveAllowance} 间`
                 : baseLogText;
+            const logText = roomEndTurnEffect
+                ? `${formatEndTurnRoomEffectLog(roomEndTurnEffect, core.currentExplorer.displayName)}；${turnLogText}`
+                : turnLogText;
             return [nowEvent(EVENTS.TURN_ENDED, {
                 previousPlayerId: core.currentPlayer,
                 nextPlayerId,
                 logText,
                 roomEndTurnEffect,
+                monsterMovementRoll,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
@@ -4792,20 +4789,21 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         case BETRAYAL_COMMANDS.LEARN_ABOUT_JACK: {
             const actor = core.currentExplorer;
             const rollTotal = rollNonCombatTraitCheck(random, core, actor, 'knowledge');
-            const grantedToPlayerId = rollTotal >= 5
+            const grantedToExplorer = rollTotal >= 5
                 ? getAllExplorers(core).find((explorer) => (
                     explorer.playerId !== core.scenarioRuntime.traitorPlayerId
                     && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
                     && !core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(explorer.playerId)
-                ))?.playerId ?? actor.playerId
+                )) ?? actor
                 : null;
+            const grantedToPlayerId = grantedToExplorer?.playerId ?? null;
             return [nowEvent(EVENTS.JACK_LEARNED, {
                 playerId: command.playerId,
                 grantedToPlayerId,
                 rollTotal,
                 success: rollTotal >= 5,
                 logText: rollTotal >= 5
-                    ? `${actor.displayName}在图书馆查到了 Crimson Jack 的线索`
+                    ? `${actor.displayName}在图书馆查到了 Crimson Jack 的线索，交给${grantedToExplorer?.displayName ?? actor.displayName}`
                     : `${actor.displayName}翻遍了图书馆，但还没找到足够线索`,
             }, timestamp)];
         }
@@ -5148,6 +5146,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ...recentRoll,
                 dice,
                 consumedRabbitFootCardIds: [...recentRoll.consumedRabbitFootCardIds, event.payload.cardId],
+                lastRabbitFootRerollDieIndex: event.payload.dieIndex,
             };
             const nextTotal = resolveRecentRollTotal(nextRoll);
 
@@ -5449,6 +5448,11 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             const next = replaceExplorers(roomEffectCore, explorers, event.payload.nextPlayerId);
             const revived = tryReviveTraitorAtMonsterTurnStart(next, event.payload.nextPlayerId);
             const nextCore = revived.core;
+            const monsterMovementRoll = !revived.revived
+                && shouldDeadTraitorControlJackSpirit(nextCore, event.payload.nextPlayerId)
+                ? event.payload.monsterMovementRoll ?? null
+                : null;
+            const nextMovesRemaining = monsterMovementRoll?.moveAllowance ?? 4;
             const recentRoll = event.payload.roomEndTurnEffect?.kind === 'speedCheckFallToBasement'
                 && event.payload.roomEndTurnEffect.speedRollDice
                 ? {
@@ -5474,11 +5478,24 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     },
                     consumedRabbitFootCardIds: [],
                 }
-                : nextCore.recentRoll;
+                : monsterMovementRoll
+                    ? {
+                        id: `monster-move-${monsterMovementRoll.monsterId}-${event.timestamp}`,
+                        kind: 'monsterMoveRoll' as const,
+                        playerId: monsterMovementRoll.playerId,
+                        sourceTitle: `${monsterMovementRoll.monsterName}移动`,
+                        trait: 'speed' as const,
+                        rollLabel: `速度 ${monsterMovementRoll.speed}`,
+                        dice: [...monsterMovementRoll.dice],
+                        passiveBonus: 0,
+                        latestLabel: `可移动 ${monsterMovementRoll.moveAllowance} 间`,
+                        consumedRabbitFootCardIds: [],
+                    }
+                    : nextCore.recentRoll;
             return {
                 ...nextCore,
-                movesRemaining: 4,
-                recommendedAction: resolveRecommendedAction({ ...nextCore, movesRemaining: 4 }),
+                movesRemaining: nextMovesRemaining,
+                recommendedAction: resolveRecommendedAction({ ...nextCore, movesRemaining: nextMovesRemaining, recentRoll }),
                 usedCardIdsThisTurn: [],
                 receivedCardIdsThisTurnByPlayerId: {
                     ...nextCore.receivedCardIdsThisTurnByPlayerId,
@@ -5531,7 +5548,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.turnEndedByDiscovery = false;
             const traitor = findExplorerByPlayerId(core, event.payload.traitorPlayerId);
             if (traitor) {
-                healTraitorForHaunt(traitor);
+                healTraitorForHaunt(traitor, core.playerIds.length);
             }
             const nextCore = replaceExplorers(core, getAllExplorers(core), event.payload.nextPlayerId);
             return {
@@ -5832,7 +5849,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
 
 export const BetrayalDomain: DomainCore<BetrayalCore, BetrayalCommand, BetrayalEvent> = {
     gameId: 'betrayal',
-    setup: (playerIds: PlayerId[], random: RandomFn) => createBetrayalCharacterSelectCore(playerIds, random),
+    setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown) => createBetrayalCharacterSelectCore(playerIds, random, setupData),
     validate: validateCommand,
     execute: executeCommand,
     reduce: reduceEvent,
@@ -5852,7 +5869,15 @@ export const BetrayalDomain: DomainCore<BetrayalCore, BetrayalCommand, BetrayalE
 };
 
 const systems = [
-    ...createBaseSystems<BetrayalCore>(),
+    ...createBaseSystems<BetrayalCore>({
+        actionLog: {
+            commandAllowlist: BETRAYAL_ACTION_LOG_ALLOWLIST,
+            formatEntry: formatBetrayalActionEntry,
+        },
+        undo: {
+            snapshotCommandAllowlist: BETRAYAL_UNDO_ALLOWLIST,
+        },
+    }),
     createCheatSystem<BetrayalCore>(),
 ];
 
@@ -5862,9 +5887,18 @@ export const engineConfig = createGameEngine<BetrayalCore, BetrayalCommand, Betr
     minPlayers: 3,
     maxPlayers: 6,
     commandTypes: Object.values(BETRAYAL_COMMANDS),
-    disableUndo: true,
+});
+
+export const betrayalAiRuntime = createBetrayalAiRuntime({
+    validate: (state, command) => BetrayalDomain.validate(
+        state as MatchState<BetrayalCore>,
+        command as BetrayalCommand,
+    ),
 });
 
 registerCriticalImageResolver('betrayal', betrayalCriticalImageResolver);
+registerGameAiRuntime(betrayalAiRuntime);
 
 export default engineConfig;
+export { BETRAYAL_COMMANDS } from './commands';
+export { BETRAYAL_AUDIO_CONFIG as audioConfig } from './audio.config';

@@ -12,6 +12,7 @@ import {
     buildPendingTargetRearGuardChoiceValue,
     buildPendingTargetRoutChoiceValue,
 } from './pendingTargetChoicePayload';
+import { getQidahenEffectivePopulation } from './populationRules';
 import type { QidahenCore, QidahenPlunderSource } from './types';
 
 interface QidahenPendingTargetChoiceOption {
@@ -56,13 +57,13 @@ const getDefenderCavalryEvasionRetreatChoices = (
         .sort((left, right) => (
             Number(right.controller === pending.defenderFactionId) - Number(left.controller === pending.defenderFactionId)
             || right.troops - left.troops
-            || right.population - left.population
+            || getQidahenEffectivePopulation(right) - getQidahenEffectivePopulation(left)
             || left.name.localeCompare(right.name, 'zh-CN')
         ))
         .map((region) => ({ id: region.id, name: region.name }));
 };
 
-const canUseAttackerCavalryPlunder = (
+export const canUseAttackerCavalryPlunder = (
     core: QidahenCore,
     pending: QidahenCore['pendingTargetAction'],
 ): boolean => {

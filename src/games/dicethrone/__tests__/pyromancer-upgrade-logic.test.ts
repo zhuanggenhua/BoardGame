@@ -86,6 +86,22 @@ describe('Pyromancer 技能升级路径验证', () => {
         expect(customAction).toBeDefined();
     });
 
+    it('点燃 II 升级后必须保留下半段炎热之魂入口', () => {
+        const ability = getUpgradedAbilityFromCard('card-ignite-2');
+        expect(ability).toBeDefined();
+
+        const variants = ability.variants || [];
+        expect(variants.map(v => v.id)).toContain('ignite-2');
+        expect(variants.map(v => v.id)).toContain('heat-of-soul');
+
+        const lowerHalf = variants.find(v => v.id === 'heat-of-soul');
+        expect(lowerHalf?.trigger).toEqual({
+            type: 'diceSet',
+            faces: { fire: 2, fiery_soul: 2 },
+        });
+        expect(lowerHalf?.effects.find(e => e.action.customActionId === 'ignite-heat-of-soul-resolve')).toBeDefined();
+    });
+
     it('Magma Armor II & III 升级校验', () => {
         const ab2 = getUpgradedAbilityFromCard('card-magma-armor-2');
         const ab3 = getUpgradedAbilityFromCard('card-magma-armor-3');

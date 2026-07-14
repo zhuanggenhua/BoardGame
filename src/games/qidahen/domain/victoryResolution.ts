@@ -4,6 +4,11 @@ import {
     isQidahenRuleRegionEquivalent,
     resolveQidahenRuleRegionConfig,
 } from './regionConfig';
+import {
+    getQidahenGuihuaController,
+    QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID,
+    QIDAHEN_ORDOS_RUNTIME_REGION_ID,
+} from './jadeCasketControl';
 import type {
     QidahenCore,
     QidahenFactionId,
@@ -11,8 +16,6 @@ import type {
 } from './types';
 
 const QIDAHEN_VICTORY_FACTION_ORDER: readonly QidahenFactionId[] = ['ming', 'mongol', 'jin'];
-const QIDAHEN_JADE_CASKET_UNEARTHED_CARD_DEF_ID = 'qidahen-atlas05-1625-jade-casket-unearthed';
-const QIDAHEN_ORDOS_RUNTIME_REGION_ID = 'city-region-26';
 
 const canApplyPrestigeCardBonus = (state: QidahenCore, regionId: string): boolean => {
     const unlockMode = resolveQidahenRuleRegionConfig(regionId).prestigeCardBonusUnlock;
@@ -52,7 +55,7 @@ export const getQidahenPrestigeBonusByFaction = (state: QidahenCore): Record<Qid
     ))?.controller;
     if (
         jadeCasketOwner
-        && state.guihuaPrestigeMarkerController === jadeCasketOwner
+        && getQidahenGuihuaController(state) === jadeCasketOwner
         && ordosController === jadeCasketOwner
     ) {
         bonusByFaction[jadeCasketOwner] += 1;

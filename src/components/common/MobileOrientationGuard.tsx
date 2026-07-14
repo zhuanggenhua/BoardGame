@@ -1,6 +1,8 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { ScreenOrientation } from '@capacitor/screen-orientation';
 import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
 import type { GameManifestEntry } from '../../games/manifest';
 import {
@@ -28,46 +30,6 @@ type GameMobileEntry = Pick<
     'mobileProfile' | 'preferredOrientation' | 'mobileLayoutPreset' | 'shellTargets' | 'mobileDelivery'
 >;
 
-type CapacitorCoreModule = {
-    Capacitor: {
-        isNativePlatform(): boolean;
-    };
-};
-
-type ScreenOrientationModule = {
-    ScreenOrientation: {
-        lock(options: { orientation: 'landscape' | 'portrait' }): Promise<void>;
-    };
-};
-
-let capacitorCoreLoader: Promise<CapacitorCoreModule | null> | null = null;
-let screenOrientationLoader: Promise<ScreenOrientationModule | null> | null = null;
-
-const runtimeImport = async <TModule,>(specifier: string): Promise<TModule> => {
-    const importer = new Function('s', 'return import(s)') as (value: string) => Promise<TModule>;
-    return importer(specifier);
-};
-
-const loadCapacitorCore = async (): Promise<CapacitorCoreModule | null> => {
-    if (!capacitorCoreLoader) {
-        capacitorCoreLoader = runtimeImport<CapacitorCoreModule>('@capacitor/core')
-            .then(module => module as CapacitorCoreModule)
-            .catch(() => null);
-    }
-
-    return capacitorCoreLoader;
-};
-
-const loadScreenOrientation = async (): Promise<ScreenOrientationModule | null> => {
-    if (!screenOrientationLoader) {
-        screenOrientationLoader = runtimeImport<ScreenOrientationModule>('@capacitor/screen-orientation')
-            .then(module => module as ScreenOrientationModule)
-            .catch(() => null);
-    }
-
-    return screenOrientationLoader;
-};
-
 const hasNativeMobileRuntime = () => detectNativeMobileRuntime();
 
 const isNativeAppShell = async () => {
@@ -75,17 +37,13 @@ const isNativeAppShell = async () => {
         return true;
     }
 
-    const capacitorCore = await loadCapacitorCore();
-    return capacitorCore?.Capacitor.isNativePlatform() ?? false;
+    return Capacitor.isNativePlatform();
 };
 
 const lockScreenByRoute = async (targetOrientation: 'landscape' | 'portrait'): Promise<boolean> => {
     try {
-        const screenOrientation = await loadScreenOrientation();
-        if (screenOrientation) {
-            await screenOrientation.ScreenOrientation.lock({ orientation: targetOrientation });
-            return true;
-        }
+        await ScreenOrientation.lock({ orientation: targetOrientation });
+        return true;
     } catch {
         // ignore and fallback below
     }

@@ -10,10 +10,10 @@ export interface AssetLibraryPanelProps {
 
 function resolveAssetSourceLabel(entry: UISceneAssetRegistrySource['assets'][string]) {
     if (entry.remoteUrl && !entry.path) {
-        return '仅 R2';
+        return '仅远程';
     }
     if (entry.remoteUrl && entry.path) {
-        return '本地 + R2';
+        return '本地 + 远程';
     }
     return '仅本地';
 }
@@ -32,7 +32,7 @@ export function AssetLibraryPanel({
         >
             <div className="border-b border-white/10 px-4 py-3">
                 <div className="text-[11px] font-semibold tracking-[0.22em] text-amber-200/70">资源</div>
-                <div className="mt-1 text-sm font-semibold text-amber-50">本地素材 / R2 素材</div>
+                <div className="mt-1 text-sm font-semibold text-amber-50">本地素材 / 远程素材</div>
             </div>
             <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
                 {entries.map(([assetRef, entry]) => (

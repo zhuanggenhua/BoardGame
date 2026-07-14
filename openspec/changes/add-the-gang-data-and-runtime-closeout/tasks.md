@@ -3,6 +3,7 @@
 - [x] 0.2 将 `add-the-gang-foundation` 从“整体完成”降级为“foundation 阶段完成”并在对齐表中写清
 - [x] 0.3 建立 The Gang 后续 change 列表，标明哪些待批准、哪些可继续实现
 - [x] 0.4 记录本 change 已在用户要求继续推进后实施；该记录不等同于逐条 change 批准门禁已在实施前满足
+- [x] 0.5 记录 2026-07-10 用户裁定：纸牌帮正式牌桌固定单客户端玩家视角，不提供多人热座切换；所有玩家公开状态常驻可见，本地 AI / 测试运行能力不等同于多人热座产品合同
 
 ## 1. Data Intake Contracts
 - [x] 1.1 建立真相源表：PDF、DOM、Images、已有实现、规则合同
@@ -19,15 +20,15 @@
 ## 2. Runtime Resource Closeout
 - [x] 2.1 只复制并压缩已 locked 的基础版运行时图片资源；未 locked 的必需对象必须保持阻塞或取得明确替代批准
 - [x] 2.2 重建 asset manifest 并确认 The Gang 新增资源 hash/bytes 匹配
-- [ ] 2.3 上传 R2/CDN 并抽查代表性资源 URL；若环境阻塞，明确列出未上传资源和影响
+- [ ] 2.3 发布到服务器资源主源/官方资源域名 并抽查代表性资源 URL；若环境阻塞，明确列出未上传资源和影响
 - [x] 2.4 不把既有 DiceThrone manifest 漂移混入本 change
 - [x] 2.5 牌背 `the-gang/cards/card-back` 已语义落盘、压缩、写入 The Gang manifest，并接入隐藏牌运行时
 
 ## 3. Runtime Entry Validation
 - [x] 3.1 验证游戏注册表可发现 `the-gang`
 - [x] 3.2 通过真实页面进入 The Gang 对局
-- [x] 3.3 通过可见 UI 控件完成一次四轮抢劫并看到成功/失败结算；不得用 harness command dispatch 代替选筹码或推进轮次
-- [x] 3.4 记录桌面与移动横屏页面证据；桌面核心流程截图来自可见 UI 端到端
+- [x] 3.3 当前查看者的关键筹码选择与推进必须通过可见 UI 完成；单客户端代表态测试允许用状态注入或测试命令补齐其它座位的公开决策，但必须明确标注状态注入，不能冒充多人自然操作、座位权限或多端同步证明
+- [x] 3.4 记录桌面与移动横屏页面证据；横屏是移动主交付方向，竖屏只验证兼容显示和关键区域可见性，不要求 Board 内层直接横向拖动
 - [x] 3.5 当前真实页面 E2E 只能证明代码链路可跑；不得把 E2E 通过升级为基础版完整闭环
 - [ ] 3.6 按新的 BGG 电子版 `layout-source-contract.md` 对 Board 布局做逐项复核并重新截图验收；桌面中局满元素截图已生成、PureRef 打开并 AI 复看，手机横屏仍待桌面验收后继续
 
@@ -41,4 +42,4 @@
 ## 5. Verification
 - [x] 5.1 `openspec validate add-the-gang-data-and-runtime-closeout --strict --no-interactive`
 - [x] 5.2 The Gang 定向测试与 typecheck 继续通过
-- [ ] 5.3 对齐表逐项证明：基础版素材已接入，BGG 电子版桌面过程态已通过；R2/CDN、手机验收和最终完成口径仍需继续，当前只标记 `in_progress`
+- [ ] 5.3 对齐表逐项证明：基础版素材已接入，BGG 电子版桌面过程态已通过；官方资源域名/服务器资源、手机验收和最终完成口径仍需继续，当前只标记 `in_progress`

@@ -112,6 +112,25 @@ describe('useMultistepInteraction', () => {
             expect(result.current.canConfirm).toBe(true);
         });
 
+        it('同一批次连续修改两颗骰子时不得丢失第一颗骰子的结果', () => {
+            const dispatch = vi.fn();
+            const interaction = createAnyModeInteraction();
+
+            const { result } = renderHook(() =>
+                useMultistepInteraction(interaction, dispatch),
+            );
+
+            act(() => {
+                result.current.step({ action: 'setAny', dieId: 3, newValue: 6 });
+                result.current.step({ action: 'setAny', dieId: 4, newValue: 6 });
+            });
+
+            expect(result.current.result).toEqual({
+                modifications: { 3: 6, 4: 6 },
+                modCount: 2,
+            });
+        });
+
         it('手动 confirm 正确 dispatch 命令', () => {
             const dispatch = vi.fn();
             const interaction = createAnyModeInteraction();

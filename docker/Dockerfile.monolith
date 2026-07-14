@@ -53,7 +53,7 @@ COPY package.json ./
 # 复制前端构建产物
 COPY --from=builder /app/dist ./dist
 
-# 复制静态资源（仅保留不参与 R2 图片链的本地文案与少量白名单文件）
+# 复制静态资源（仅保留不参与服务器素材主源图片链的本地文案与少量白名单文件）
 COPY public/locales ./public/locales
 
 COPY --from=builder /app/temp/prod-bundles/api/main.mjs ./main.mjs

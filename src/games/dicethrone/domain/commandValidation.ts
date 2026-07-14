@@ -204,14 +204,25 @@ const validateDieInteraction = (
         && phase === 'defensiveRoll'
         && dieId === 1
         && allowedDieIds.includes(1);
+    const isPendingBonusDie = state.pendingBonusDiceSettlement?.allowDiceModification === true
+        && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).some(die => die.index === dieId);
     if (isDuelAttackerDie && interaction.diceOwnerId !== state.pendingAttack?.attackerId) {
         return fail('invalid_die_selection');
     }
     const die = state.dice.find(entry => entry.id === dieId);
-    if (!die && !isDuelAttackerDie) {
+    if (!die && !isDuelAttackerDie && !isPendingBonusDie) {
         return fail('die_not_found');
     }
     if (!allowedDieIds.includes(dieId)) {
+        return fail('invalid_die_selection');
+    }
+    if (
+        interaction.diceOwnerId
+        && interaction.targetOpponentDice !== true
+        && interaction.diceOwnerId !== playerId
+        && !isDuelAttackerDie
+        && !isPendingBonusDie
+    ) {
         return fail('invalid_die_selection');
     }
 

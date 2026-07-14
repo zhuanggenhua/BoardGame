@@ -160,25 +160,19 @@ async function expectViewerPrivateHand(page: Page, factionName: '大明' | '蒙�
     }
 }
 
-async function confirmScenarioVote(page: Page, scenarioId: 'post-sarhu-1619' | 'shanhaiguan-1622'): Promise<void> {
+async function hostPickScenario(page: Page, scenarioId: 'post-sarhu-1619' | 'shanhaiguan-1622'): Promise<void> {
     await page.getByTestId(`qidahen-scenario-vote-option-${scenarioId}`).click();
-    await page.getByTestId('qidahen-scenario-vote-confirm').click();
 }
 
 async function resolveMingSetup(hostPage: Page): Promise<void> {
     await hostPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:ming:character:0-ming-xiong-tingbi').click();
-    await hostPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:ming:character:0').click();
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:0-artillery-tech').click();
-    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:0').click();
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:1-long-barreled-musket').click();
-    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:1').click();
 }
 
 async function resolveJinSetup(jinPage: Page): Promise<void> {
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:0-jin-fan-wencheng').click();
-    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:0').click();
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:1-jin-manggultai').click();
-    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:1').click();
 }
 
 async function clickMapRegion(
@@ -399,7 +393,7 @@ async function logHostPendingState(page: Page, label: string): Promise<void> {
 }
 
 test.describe('七大恨联机完整首轮到第二回合开始', () => {
-    test('真实联机 match 从局内剧本投票走到第二回合开始', async ({ browser }, testInfo) => {
+    test('真实联机 match 从房主局内选择剧本走到第二回合开始', async ({ browser }, testInfo) => {
         test.setTimeout(300000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const host = await createQidahenPlayerContext(browser, baseURL, '__qidahen_full_round_host__');
@@ -426,11 +420,10 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
                 waitForScenarioVoteScreen(mongol.page),
                 waitForScenarioVoteScreen(jin.page),
             ]);
-            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-01-局内剧本介绍与投票页.png');
+            await captureEvidence(host.page, testInfo, '七大恨-完整首轮-01-房主局内选择剧本页.png');
 
-            await confirmScenarioVote(host.page, 'shanhaiguan-1622');
-            await confirmScenarioVote(mongol.page, 'shanhaiguan-1622');
-            await confirmScenarioVote(jin.page, 'shanhaiguan-1622');
+            await expect(mongol.page.getByTestId('qidahen-scenario-vote-actions')).toContainText('等待房主');
+            await hostPickScenario(host.page, 'shanhaiguan-1622');
 
             await Promise.all([
                 waitForInMatchSetupOverlay(host.page),

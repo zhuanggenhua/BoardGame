@@ -975,6 +975,55 @@ describe('七大恨战斗军备效果', () => {
         expect(meleeStage?.attackerDamage).toBe(0);
     });
 
+    it('坚守不屈会先计算攻城骑兵减值再除以 2 并向下取整', () => {
+        const core = buildSteadfastDefenseBattleCore();
+        core.pendingTargetAction = {
+            ...core.pendingTargetAction!,
+            movementProfileId: 'dispatch-cavalry',
+        };
+        core.regions = core.regions.map((region) => {
+            if (region.id !== 'city-region-14') {
+                return region;
+            }
+            return {
+                ...region,
+                specialTroops: [
+                    {
+                        id: 'jin-cavalry-lv2',
+                        label: '后金骑兵',
+                        faction: 'jin',
+                        troopKind: 'cavalry',
+                        count: 1,
+                        level: 2,
+                    },
+                ],
+            };
+        });
+        const rolls = createQidahenStructuredBattleRolls(
+            core,
+            core.pendingTargetAction,
+            {
+                ...testRandom,
+                d: () => 5,
+            },
+            {
+                defenderHoldCity: false,
+                defenderSortieBattle: false,
+                defenderCavalryEvasion: false,
+                attackerCavalryPlunder: false,
+            },
+        );
+        const meleeStage = rolls?.stages.find((stage) => stage.phase === 'melee');
+
+        expect(meleeStage?.attackerRolls).toEqual([
+            expect.objectContaining({
+                troopKind: 'cavalry',
+                raw: 5,
+                value: 2,
+            }),
+        ]);
+    });
+
     it('连环火铳升级后会让野战步兵阶段每个步兵额外掷 1 颗骰', () => {
         const core = buildLinkedMusketsBattleCore();
         const rolls = createQidahenStructuredBattleRolls(

@@ -1,0 +1,1374 @@
+{
+  "generatedAt": "2026-07-12",
+  "source": "src/games/betrayal/scenarioConfig.ts::BETRAYAL_DISCOVERY_POOLS",
+  "counts": {
+    "rooms": {
+      "ground": 18,
+      "upper": 14,
+      "basement": 10
+    },
+    "events": 23,
+    "items": 11,
+    "omens": 9
+  },
+  "rooms": {
+    "ground": [
+      {
+        "id": "observatory",
+        "name": "观测台",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "观察"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "conservatory",
+        "name": "温室",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "植物"
+        ],
+        "doorways": [
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "graveyard",
+        "name": "墓园",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "室外"
+        ],
+        "doorways": [
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "ballroom",
+        "name": "舞厅",
+        "floor": "ground",
+        "tags": [
+          "会合",
+          "开阔"
+        ],
+        "doorways": [
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "kitchen",
+        "name": "厨房",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "物资"
+        ],
+        "doorways": [
+          "east",
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "diningRoom",
+        "name": "餐厅",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "会合"
+        ],
+        "doorways": [
+          "north",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "chapel",
+        "name": "礼拜堂",
+        "floor": "ground",
+        "tags": [
+          "神秘",
+          "静压"
+        ],
+        "doorways": [
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": "gainSanity1",
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "laboratory",
+        "name": "实验室",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "危险"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "vault",
+        "name": "金库",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "目标"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "furnaceRoom",
+        "name": "火炉房",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "危险"
+        ],
+        "doorways": [
+          "east",
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": "physicalDamage1",
+        "enterEffect": null
+      },
+      {
+        "id": "guestQuarters",
+        "name": "客房",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "上层",
+          "卧室"
+        ],
+        "doorways": [
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "bloodyRoom",
+        "name": "血腥房间",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "上层",
+          "危险"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "specimenRoom",
+        "name": "标本室",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "事件"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "salon",
+        "name": "沙龙",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "会合"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "primaryBedroom",
+        "name": "主卧",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "上层",
+          "卧室"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "nursery",
+        "name": "育婴室",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "上层",
+          "事件"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "operatingTheatre",
+        "name": "手术室",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "地下",
+          "危险"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "armory",
+        "name": "器械库",
+        "floor": "ground",
+        "tags": [
+          "一层",
+          "物品"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": "drawUntilWeapon",
+        "endTurnEffect": null,
+        "enterEffect": null
+      }
+    ],
+    "upper": [
+      {
+        "id": "tower",
+        "name": "塔楼",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "高处"
+        ],
+        "doorways": [
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "statuaryCorridor",
+        "name": "雕像走廊",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "走廊"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "study",
+        "name": "书房",
+        "floor": "upper",
+        "tags": [
+          "知识",
+          "调查"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": "gainKnowledge1",
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "gallery",
+        "name": "长廊",
+        "floor": "upper",
+        "tags": [
+          "视野",
+          "走位"
+        ],
+        "doorways": [
+          "north",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "library",
+        "name": "图书馆",
+        "floor": "upper",
+        "tags": [
+          "知识",
+          "调查"
+        ],
+        "doorways": [
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": "gainKnowledge1",
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "winterBedroom",
+        "name": "冬季卧室",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "卧室"
+        ],
+        "doorways": [
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "collapsedRoom",
+        "name": "倒塌房间",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "危险"
+        ],
+        "doorways": [
+          "north",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": "speedCheckFallToBasement",
+        "enterEffect": null
+      },
+      {
+        "id": "charredRoom",
+        "name": "烧焦房间",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "危险"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "organRoom",
+        "name": "管风琴室",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "精神"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "soundproofedRoom",
+        "name": "隔音室",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "封闭"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "gameRoom",
+        "name": "游戏室",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "事件"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "gymnasium",
+        "name": "体育馆",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "力量"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": "gainSpeed1",
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "crampedPassageway",
+        "name": "狭窄通道",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "通道"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "mysticElevator",
+        "name": "神秘电梯",
+        "floor": "upper",
+        "tags": [
+          "上层",
+          "地下",
+          "特殊移动"
+        ],
+        "doorways": [
+          "north",
+          "east",
+          "south",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": "mysticElevator"
+      }
+    ],
+    "basement": [
+      {
+        "id": "laundryChute",
+        "name": "洗衣滑槽",
+        "floor": "basement",
+        "tags": [
+          "上层",
+          "地下",
+          "特殊移动"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": "moveToBasementLanding",
+        "enterEffect": null
+      },
+      {
+        "id": "chasm",
+        "name": "裂隙",
+        "floor": "basement",
+        "tags": [
+          "地下",
+          "危险"
+        ],
+        "doorways": [
+          "north",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "larder",
+        "name": "储物间",
+        "floor": "basement",
+        "tags": [
+          "物资",
+          "翻找"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": "gainMight1",
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "undergroundLake",
+        "name": "地下湖",
+        "floor": "basement",
+        "tags": [
+          "地下",
+          "水域"
+        ],
+        "doorways": [
+          "north",
+          "west"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "undergroundCavern",
+        "name": "地下洞窟",
+        "floor": "basement",
+        "tags": [
+          "地下",
+          "危险"
+        ],
+        "doorways": [
+          "east",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "ritualRoom",
+        "name": "仪式室",
+        "floor": "basement",
+        "tags": [
+          "仪式",
+          "危险"
+        ],
+        "doorways": [
+          "west",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "catacombs",
+        "name": "地下墓穴",
+        "floor": "basement",
+        "tags": [
+          "地下",
+          "墓穴"
+        ],
+        "doorways": [
+          "north",
+          "south"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "secretStaircase",
+        "name": "密道楼梯",
+        "floor": "basement",
+        "tags": [
+          "地下",
+          "特殊移动"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "junkRoom",
+        "name": "杂物间",
+        "floor": "basement",
+        "tags": [
+          "地下",
+          "物品"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": "placeObstacleToken",
+        "endTurnEffect": null,
+        "enterEffect": null
+      },
+      {
+        "id": "crawlspace",
+        "name": "爬行空间",
+        "floor": "basement",
+        "tags": [
+          "地下",
+          "通道"
+        ],
+        "doorways": [
+          "north",
+          "east"
+        ],
+        "discoveryReward": null,
+        "discoveryEffect": null,
+        "endTurnEffect": null,
+        "enterEffect": null
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "标本剥制",
+      "name": "标本剥制",
+      "rollTrait": "might",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 5,
+          "label": "获得 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "受到 1 点物理伤害；放置障碍物",
+          "effectMode": "compound"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "说“茄子”！",
+      "name": "说“茄子”！",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalHauntRoll",
+      "modes": []
+    },
+    {
+      "id": "外星几何",
+      "name": "外星几何",
+      "rollTrait": "knowledge",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点知识",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "失去 1 点速度",
+          "effectMode": "trait"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "小丑房间",
+      "name": "小丑房间",
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "无事发生",
+          "effectMode": "none"
+        },
+        {
+          "min": 0,
+          "label": "受到 2 点精神伤害",
+          "effectMode": "generalDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "咬一口！",
+      "name": "咬一口！",
+      "rollTrait": "might",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "无事发生",
+          "effectMode": "none"
+        },
+        {
+          "min": 2,
+          "label": "受到 1 点物理伤害",
+          "effectMode": "generalDamage"
+        },
+        {
+          "min": 0,
+          "label": "受到 3 点物理伤害",
+          "effectMode": "generalDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "吊死鬼",
+      "name": "吊死鬼",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "allTraitChecks",
+      "modes": []
+    },
+    {
+      "id": "电话铃声",
+      "name": "电话铃声",
+      "rollTrait": null,
+      "rollDice": 2,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 3,
+          "label": "获得 1 点知识",
+          "effectMode": "trait"
+        },
+        {
+          "min": 1,
+          "label": "受到一颗骰子的精神伤害",
+          "effectMode": "rolledDamage"
+        },
+        {
+          "min": 0,
+          "label": "受到两颗骰子的物理伤害",
+          "effectMode": "rolledDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "小机器人",
+      "name": "小机器人",
+      "rollTrait": "knowledge",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 5,
+          "label": "抽取一张物品卡",
+          "effectMode": "drawPossession"
+        },
+        {
+          "min": 0,
+          "label": "受到一颗骰子的物理伤害",
+          "effectMode": "rolledDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "嘎吱的木门",
+      "name": "嘎吱的木门",
+      "rollTrait": "knowledge",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 5,
+          "label": "放置到上层起始板块",
+          "effectMode": "placeExplorerInFloorStartingRoom"
+        },
+        {
+          "min": 3,
+          "label": "放置到地面层起始板块",
+          "effectMode": "placeExplorerInFloorStartingRoom"
+        },
+        {
+          "min": 0,
+          "label": "放置到地下室起始板块",
+          "effectMode": "placeExplorerInFloorStartingRoom"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "脑状食品",
+      "name": "脑状食品",
+      "rollTrait": "might",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 5,
+          "label": "获得 1 点力量或速度",
+          "effectMode": "chosenTrait"
+        },
+        {
+          "min": 1,
+          "label": "获得 1 点速度并失去 1 点神志",
+          "effectMode": "compound"
+        },
+        {
+          "min": 0,
+          "label": "受到 2 点通用伤害",
+          "effectMode": "generalDamageChoice"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "上古旧宅",
+      "name": "上古旧宅",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "chooseTraitRoll",
+      "modes": []
+    },
+    {
+      "id": "肉质苔癣",
+      "name": "肉质苔癣",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalEventRoll",
+      "modes": []
+    },
+    {
+      "id": "夜幕众星",
+      "name": "夜幕众星",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "chooseTraitRoll",
+      "modes": []
+    },
+    {
+      "id": "一抹鲜红",
+      "name": "一抹鲜红",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalHauntRoll",
+      "modes": []
+    },
+    {
+      "id": "一瓶微尘",
+      "name": "一瓶微尘",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalHauntRoll",
+      "modes": []
+    },
+    {
+      "id": "大宅饿了",
+      "name": "大宅饿了",
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalHauntRoll",
+      "modes": []
+    },
+    {
+      "id": "一条秘密通道",
+      "name": "一条秘密通道",
+      "rollTrait": "knowledge",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 5,
+          "label": "在任意另一板块放置另一个秘密通道标志物，获得 1 点知识",
+          "effectMode": "compound"
+        },
+        {
+          "min": 3,
+          "label": "在任意地面层板块放置另一个秘密通道标志物",
+          "effectMode": "compound"
+        },
+        {
+          "min": 0,
+          "label": "在任意地下室板块放置另一个秘密通道标志物，失去 1 点神志",
+          "effectMode": "compound"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "最深的壁橱",
+      "name": "最深的壁橱",
+      "rollTrait": "speed",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "抽取一张物品卡",
+          "effectMode": "drawPossession"
+        },
+        {
+          "min": 1,
+          "label": "受到 1 点精神伤害",
+          "effectMode": "generalDamage"
+        },
+        {
+          "min": 0,
+          "label": "受到一颗骰子的物理伤害，并放置到地下室起始点",
+          "effectMode": "compound"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "磁带播放器",
+      "name": "磁带播放器",
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点知识",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "受到 1 点精神伤害",
+          "effectMode": "generalDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "在你背后！",
+      "name": "在你背后！",
+      "rollTrait": "speed",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "受到 1 点物理伤害",
+          "effectMode": "generalDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "蜘蛛！",
+      "name": "蜘蛛！",
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点神志或速度，并放置到相邻板块",
+          "effectMode": "compound"
+        },
+        {
+          "min": 2,
+          "label": "获得 1 点速度并失去 1 点神志",
+          "effectMode": "compound"
+        },
+        {
+          "min": 0,
+          "label": "失去 1 点速度",
+          "effectMode": "trait"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "一种怪异的感觉",
+      "name": "一种怪异的感觉",
+      "rollTrait": null,
+      "rollDice": 2,
+      "branches": [
+        {
+          "min": 4,
+          "label": "无事发生",
+          "effectMode": "none"
+        },
+        {
+          "min": 3,
+          "label": "失去 1 点速度",
+          "effectMode": "trait"
+        },
+        {
+          "min": 2,
+          "label": "失去 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 1,
+          "label": "失去 1 点知识",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "失去 1 点力量",
+          "effectMode": "trait"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    },
+    {
+      "id": "葬礼",
+      "name": "葬礼",
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 2,
+          "label": "失去 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "失去 1 点神志及 1 点力量；若墓园或地下墓穴已发现，将探险者放置在上述板块之一",
+          "effectMode": "compound"
+        }
+      ],
+      "effectMode": null,
+      "modes": []
+    }
+  ],
+  "possessions": {
+    "item": [
+      {
+        "id": "camera",
+        "name": "魔法相机",
+        "kind": "item"
+      },
+      {
+        "id": "medical-kit",
+        "name": "急救包",
+        "kind": "item"
+      },
+      {
+        "id": "holy-water",
+        "name": "奇怪的药品",
+        "kind": "item"
+      },
+      {
+        "id": "flashlight",
+        "name": "手电筒",
+        "kind": "item"
+      },
+      {
+        "id": "radio",
+        "name": "头戴耳机",
+        "kind": "item"
+      },
+      {
+        "id": "map",
+        "name": "地图",
+        "kind": "item"
+      },
+      {
+        "id": "rope",
+        "name": "兔脚",
+        "kind": "item"
+      },
+      {
+        "id": "lockpick-tool",
+        "name": "骨制钥匙",
+        "kind": "item"
+      },
+      {
+        "id": "hunting-knife",
+        "name": "砍刀",
+        "kind": "item"
+      },
+      {
+        "id": "notebook",
+        "name": "地图",
+        "kind": "item"
+      },
+      {
+        "id": "manuscript",
+        "name": "地图",
+        "kind": "item"
+      }
+    ],
+    "omen": [
+      {
+        "id": "omen-book",
+        "name": "书本",
+        "kind": "omen"
+      },
+      {
+        "id": "dog",
+        "name": "狗",
+        "kind": "omen"
+      },
+      {
+        "id": "mask",
+        "name": "面具",
+        "kind": "omen"
+      },
+      {
+        "id": "skull",
+        "name": "头骨",
+        "kind": "omen"
+      },
+      {
+        "id": "holy-symbol",
+        "name": "圣符",
+        "kind": "omen"
+      },
+      {
+        "id": "armor",
+        "name": "盔甲",
+        "kind": "omen"
+      },
+      {
+        "id": "idol",
+        "name": "雕像",
+        "kind": "omen"
+      },
+      {
+        "id": "ring",
+        "name": "指环",
+        "kind": "omen"
+      },
+      {
+        "id": "dagger",
+        "name": "匕首",
+        "kind": "omen"
+      }
+    ]
+  },
+  "firstScenarioObjects": [
+    {
+      "id": "haunt-trigger",
+      "name": "作祟触发",
+      "category": "scenario"
+    },
+    {
+      "id": "traitor-selection",
+      "name": "叛徒确认",
+      "category": "scenario"
+    },
+    {
+      "id": "learn-about-jack",
+      "name": "知晓杰克",
+      "category": "hero-action"
+    },
+    {
+      "id": "study-exorcism",
+      "name": "研究驱魔法阵",
+      "category": "hero-action"
+    },
+    {
+      "id": "hero-attack-traitor",
+      "name": "英雄攻击叛徒",
+      "category": "combat"
+    },
+    {
+      "id": "traitor-attack-hero",
+      "name": "叛徒攻击英雄",
+      "category": "combat"
+    },
+    {
+      "id": "jack-spirit-release",
+      "name": "杰克之灵释放",
+      "category": "monster"
+    },
+    {
+      "id": "jack-spirit-speed-3-roll",
+      "name": "杰克之灵 Speed 3 怪物移动投骰",
+      "category": "monster"
+    },
+    {
+      "id": "jack-spirit-attack-hero",
+      "name": "杰克之灵攻击英雄",
+      "category": "monster"
+    },
+    {
+      "id": "jack-spirit-revive-traitor",
+      "name": "杰克之灵回尸体房复活叛徒",
+      "category": "monster"
+    },
+    {
+      "id": "corpse-loot",
+      "name": "尸体搜刮",
+      "category": "haunt-side-rule"
+    },
+    {
+      "id": "exorcise-jack",
+      "name": "驱魔杰克之灵",
+      "category": "hero-action"
+    },
+    {
+      "id": "survivor-victory",
+      "name": "英雄胜利终局",
+      "category": "endgame"
+    },
+    {
+      "id": "traitor-victory",
+      "name": "叛徒胜利终局",
+      "category": "endgame"
+    }
+  ]
+}

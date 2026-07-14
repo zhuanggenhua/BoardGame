@@ -332,10 +332,6 @@ export const Home = () => {
                 render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => (
                     <HomeModalErrorBoundary
                         resetKey={game.id}
-                        onError={() => {
-                            close();
-                            gameModalNavigateAwayBridgeRef.current();
-                        }}
                     >
                         <Suspense fallback={<HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
                             <LazyGameDetailsModal

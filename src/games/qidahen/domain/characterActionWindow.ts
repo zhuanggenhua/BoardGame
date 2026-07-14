@@ -15,6 +15,7 @@ import {
     buildWangHuazhenInternalDispatchSelectionFromRegionSemantics,
 } from './dispatchSelectionBuilders';
 import { getCurrentFactionId } from './factionTurnAccessors';
+import { getQidahenEffectivePopulation } from './populationRules';
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 import {
     type QidahenExplicitRegionSelectionSemantics,
@@ -198,7 +199,8 @@ const resolveQidahenXiongTingbiFreeTraining = (
             const rightSource = getNonSiegedCityActionSourceSnapshot(right);
             return Number(right.id === selectedRuntimeRegionId) - Number(left.id === selectedRuntimeRegionId)
                 || rightSource.troops - leftSource.troops
-                || rightSource.population - leftSource.population
+                || getQidahenEffectivePopulation(right, rightSource.population)
+                    - getQidahenEffectivePopulation(left, leftSource.population)
                 || left.name.localeCompare(right.name, 'zh-CN');
         });
 

@@ -5,7 +5,7 @@
  *
  * Property 3: 可防御性判定正确性（ultimate → 不可防御, unblockable → 不可防御, 无伤害 → 不可防御）
  * Property 6: 阶段流转正确性（PHASE_ORDER 序列, 第一回合跳过 income, 击倒跳过 offensiveRoll）
- * Property 7: 伤害类型处理正确性（终极技能跳过防御方 Token 响应, 不可防御跳过 defensiveRoll）
+ * Property 7: 伤害类型处理正确性（Ultimate Damage 跳过防御方 Token 响应, 普通不可防御只跳过 defensiveRoll）
  * Property 8: 状态效果叠加正确性（stackLimit 被尊重）
  */
 
@@ -336,8 +336,8 @@ describe('Property 6: 阶段流转正确性', () => {
 // ============================================================================
 
 describe('Property 7: 伤害类型处理', () => {
-    it('终极技能伤害跳过防御方 Token 响应', () => {
-        // shouldOpenTokenResponse 在 isUltimate=true 时应跳过防御方
+    it('Ultimate Damage 伤害类型跳过防御方 Token 响应', () => {
+        // 当前实现用 pendingAttack.isUltimate 表示这段伤害按 Ultimate Damage 结算，应跳过防御方。
         const mockState = {
             players: {
                 '0': { tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
@@ -360,12 +360,12 @@ describe('Property 7: 伤害类型处理', () => {
                 '1': { tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
             },
         } as any;
-        // 防御方不能减伤（终极技能）
+        // 防御方不能减伤（Ultimate Damage）
         const defenderResult = shouldOpenTokenResponse(mockStateNoAttackerTokens, '0', '1', 10);
         expect(defenderResult).toBeNull();
     });
 
-    it('非终极技能伤害允许防御方 Token 响应', () => {
+    it('非 Ultimate Damage 的普通伤害允许防御方 Token 响应', () => {
         const mockState = {
             players: {
                 '0': { tokens: {}, resources: { [RESOURCE_IDS.HP]: 50 } },

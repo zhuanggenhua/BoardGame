@@ -1,6 +1,13 @@
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { createHeistRecord } from './showdown';
-import { createInitialHeistCore } from './setup';
+import { createInitialHeistCore, discardHighestCard, discardLowestCard } from './setup';
+import {
+    buildDealPlan,
+    createSpecialistDeck,
+    createToolDeck,
+    isChallengeActive,
+    normalizeRulesConfig,
+} from './expansions';
 import {
     THE_GANG_COMMANDS,
     THE_GANG_EVENTS,
@@ -9,15 +16,108 @@ import {
     type TheGangEvent,
     type TheGangProgressKind,
     type TheGangRound,
+    type TheGangSpecialistId,
+    type TheGangToolId,
 } from './types';
 
 const timestampOf = (command: TheGangCommand) =>
     typeof command.timestamp === 'number' ? command.timestamp : 0;
 
-const drawCommunityCardsForNextRound = (core: TheGangCore) => {
-    const drawCount = core.round === 1 ? 3 : 1;
-    return core.deck.slice(0, drawCount);
+type CardList = TheGangCore['deck'];
+
+const shuffleItems = <T,>(items: readonly T[], random: RandomFn): T[] => {
+    const next = [...items];
+    for (let index = next.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(random.random() * (index + 1));
+        [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+    }
+    return next;
 };
+
+interface RoundAdvanceDraw {
+    revealedCards: CardList;
+    playerRevealedCards?: Record<string, CardList>;
+    playerDrawnCards?: Record<string, CardList>;
+    cardsConsumed: number;
+}
+
+const applyCommunityDiscardRule = (core: TheGangCore, cards: CardList) => {
+    if (core.round === 2 && isChallengeActive(core.rules.config, 'motion-detector')) {
+        return discardLowestCard(cards);
+    }
+    if (core.round === 2 && isChallengeActive(core.rules.config, 'laser-tripwires')) {
+        return discardHighestCard(cards);
+    }
+    if (core.round === 3 && isChallengeActive(core.rules.config, 'ventilation-shaft')) {
+        const dealPlan = buildDealPlan(core.rules.config);
+        const baseDrawCount = dealPlan.roundDraws[core.round as 1 | 2 | 3] ?? 0;
+        return cards.slice(-baseDrawCount);
+    }
+    return cards;
+};
+
+const buildRoundAdvanceDraw = (core: TheGangCore): RoundAdvanceDraw => {
+    const drawRound = core.round as 1 | 2 | 3;
+    const dealPlan = buildDealPlan(core.rules.config);
+    const baseDrawCount = dealPlan.roundDraws[drawRound] ?? 0;
+    const extraCommunityDrawCount = (
+        (core.round === 2 && (isChallengeActive(core.rules.config, 'motion-detector') || isChallengeActive(core.rules.config, 'laser-tripwires')))
+        || (core.round === 3 && isChallengeActive(core.rules.config, 'ventilation-shaft'))
+    ) ? 1 : 0;
+    let cursor = 0;
+    const take = (count: number) => {
+        const cards = core.deck.slice(cursor, cursor + count);
+        cursor += count;
+        return cards;
+    };
+
+    const playerDrawnCards: Record<string, CardList> = {};
+    if (core.round === 1 && isChallengeActive(core.rules.config, 'balance')) {
+        for (const playerId of core.playerIds) {
+            playerDrawnCards[playerId] = take(1);
+        }
+    }
+
+    if (dealPlan.perPlayerCommunity) {
+        const playerRevealedCards: Record<string, CardList> = {};
+        for (const playerId of core.playerIds) {
+            playerRevealedCards[playerId] = applyCommunityDiscardRule(
+                core,
+                take(baseDrawCount + extraCommunityDrawCount),
+            );
+        }
+        return {
+            revealedCards: [],
+            playerRevealedCards,
+            playerDrawnCards: Object.keys(playerDrawnCards).length > 0 ? playerDrawnCards : undefined,
+            cardsConsumed: cursor,
+        };
+    }
+
+    return {
+        revealedCards: applyCommunityDiscardRule(core, take(baseDrawCount + extraCommunityDrawCount)),
+        playerDrawnCards: Object.keys(playerDrawnCards).length > 0 ? playerDrawnCards : undefined,
+        cardsConsumed: cursor,
+    };
+};
+
+const nextPlayableRound = (core: TheGangCore) => {
+    const dealPlan = buildDealPlan(core.rules.config);
+    let nextRound = core.round + 1;
+    while (dealPlan.skippedRounds.includes(nextRound) && nextRound < 4) {
+        nextRound += 1;
+    }
+    return nextRound as TheGangRound;
+};
+
+const buildCoreWithRulesConfig = (core: TheGangCore, random: RandomFn, config: Partial<TheGangCore['rules']['config']>) =>
+    createInitialHeistCore(core.playerIds, random, {
+        heistNumber: core.heistNumber,
+        successes: core.successes,
+        failures: core.failures,
+        heistHistory: core.heistHistory,
+        rulesConfig: normalizeRulesConfig(config),
+    });
 
 const progressKindForCommand = (command: TheGangCommand): TheGangProgressKind | null => {
     switch (command.type) {
@@ -61,6 +161,44 @@ const hasAllProgressApprovals = (core: TheGangCore, events: TheGangEvent[]) => {
     return core.playerIds.every((playerId) => approval.payload.approvals.includes(playerId));
 };
 
+const drawFirstNonJoker = (core: TheGangCore) => {
+    const drawnCards = core.deck.slice();
+    const index = drawnCards.findIndex((card) => card.kind !== 'joker');
+    const cardIndex = index >= 0 ? index : 0;
+    const drawnCard = drawnCards[cardIndex];
+    return {
+        drawnCard,
+        remainingDeck: drawnCards.slice(cardIndex + 1),
+        discardPile: [
+            ...core.discardPile,
+            ...drawnCards.slice(0, cardIndex).filter((card) => card.kind === 'joker'),
+        ],
+    };
+};
+
+const buildToolUsedPayload = (core: TheGangCore, playerId: string, tool: TheGangToolId, cardIndex?: number) => {
+    if (tool === 'burner-phone') {
+        return {
+            playerId,
+            tool,
+            remainingSpecialistDeck: core.specialistDeck.slice(2),
+            specialistCards: core.specialistDeck.slice(0, 2),
+        };
+    }
+    if (tool === 'flashlight') {
+        return {
+            playerId,
+            tool,
+            ...drawFirstNonJoker(core),
+        };
+    }
+    return {
+        playerId,
+        tool,
+        movedCardIndex: cardIndex,
+    };
+};
+
 export function execute(
     state: MatchState<TheGangCore>,
     command: TheGangCommand,
@@ -81,8 +219,56 @@ export function execute(
                 sourceCommandType: command.type,
                 timestamp,
             }];
+        case THE_GANG_COMMANDS.SET_RULES_CONFIG:
+            return [{
+                type: THE_GANG_EVENTS.RULES_CONFIG_SET,
+                payload: {
+                    nextCore: buildCoreWithRulesConfig(core, random, command.payload.config),
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
+        case THE_GANG_COMMANDS.DEAL_TOOLS: {
+            const dealtTools = Object.fromEntries(
+                core.playerIds.map((playerId, index) => [playerId, core.toolDeck[index]]),
+            );
+            return [{
+                type: THE_GANG_EVENTS.TOOLS_DEALT,
+                payload: {
+                    dealtTools,
+                    remainingToolDeck: core.toolDeck.slice(core.playerIds.length),
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
+        }
+        case THE_GANG_COMMANDS.RESET_TOOLS:
+            return [{
+                type: THE_GANG_EVENTS.TOOLS_RESET,
+                payload: {
+                    toolDeck: shuffleItems<TheGangToolId>(createToolDeck(), random),
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
+        case THE_GANG_COMMANDS.RESET_SPECIALISTS:
+            return [{
+                type: THE_GANG_EVENTS.SPECIALISTS_RESET,
+                payload: {
+                    specialistDeck: shuffleItems<TheGangSpecialistId>(createSpecialistDeck(), random),
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
+        case THE_GANG_COMMANDS.USE_TOOL:
+            return [{
+                type: THE_GANG_EVENTS.TOOL_USED,
+                payload: buildToolUsedPayload(core, command.playerId, command.payload.tool, command.payload.cardIndex),
+                sourceCommandType: command.type,
+                timestamp,
+            }];
         case THE_GANG_COMMANDS.END_ROUND: {
-            const nextRound = (core.round + 1) as TheGangRound;
+            const nextRound = nextPlayableRound(core);
             const events = buildProgressApprovalEvent(core, command, timestamp);
             if (!hasAllProgressApprovals(core, events)) return events;
             return [...events, {
@@ -90,7 +276,7 @@ export function execute(
                 payload: {
                     round: core.round,
                     nextRound,
-                    revealedCards: drawCommunityCardsForNextRound(core),
+                    ...buildRoundAdvanceDraw(core),
                 },
                 sourceCommandType: command.type,
                 timestamp,
@@ -129,6 +315,7 @@ export function execute(
                         successes: core.successes,
                         failures: core.failures,
                         heistHistory: core.heistHistory,
+                        rulesConfig: core.rules.config,
                     }),
                 },
                 sourceCommandType: command.type,
@@ -142,15 +329,105 @@ export function execute(
 
 export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
     switch (event.type) {
-        case THE_GANG_EVENTS.CHIP_TAKEN:
+        case THE_GANG_EVENTS.CHIP_TAKEN: {
+            const nextRoundChips = Object.fromEntries(
+                Object.entries(core.currentRoundChips)
+                    .filter(([owner, chip]) => owner === event.payload.playerId || chip !== event.payload.chip),
+            );
             return {
                 ...core,
                 currentRoundChips: {
-                    ...core.currentRoundChips,
+                    ...nextRoundChips,
                     [event.payload.playerId]: event.payload.chip,
                 },
                 pendingProgress: undefined,
             };
+        }
+        case THE_GANG_EVENTS.RULES_CONFIG_SET:
+            return event.payload.nextCore;
+        case THE_GANG_EVENTS.TOOLS_DEALT: {
+            const players = Object.fromEntries(core.playerIds.map((playerId) => {
+                const tool = event.payload.dealtTools[playerId];
+                const player = core.players[playerId];
+                return [playerId, {
+                    ...player,
+                    toolCards: tool ? [...player.toolCards, tool] : player.toolCards,
+                }];
+            }));
+            return {
+                ...core,
+                players,
+                toolDeck: event.payload.remainingToolDeck,
+            };
+        }
+        case THE_GANG_EVENTS.TOOLS_RESET: {
+            const players = Object.fromEntries(core.playerIds.map((playerId) => {
+                const player = core.players[playerId];
+                return [playerId, {
+                    ...player,
+                    toolCards: [],
+                    activeTools: [],
+                    flashlightCards: [],
+                    nightVisionCards: [],
+                }];
+            }));
+            return {
+                ...core,
+                players,
+                toolDeck: event.payload.toolDeck,
+                toolDiscardPile: [],
+            };
+        }
+        case THE_GANG_EVENTS.SPECIALISTS_RESET: {
+            const players = Object.fromEntries(core.playerIds.map((playerId) => {
+                const player = core.players[playerId];
+                return [playerId, {
+                    ...player,
+                    specialistCards: [],
+                }];
+            }));
+            return {
+                ...core,
+                players,
+                specialistDeck: event.payload.specialistDeck,
+                specialistDiscardPile: [],
+            };
+        }
+        case THE_GANG_EVENTS.TOOL_USED: {
+            const player = core.players[event.payload.playerId];
+            const removeTool = (tools: TheGangToolId[]) => {
+                const index = tools.indexOf(event.payload.tool);
+                return index < 0 ? tools : tools.filter((_, toolIndex) => toolIndex !== index);
+            };
+            const nextPlayer = {
+                ...player,
+                toolCards: removeTool(player.toolCards),
+                activeTools: [...player.activeTools, event.payload.tool],
+                pocketCards: event.payload.tool === 'night-vision-goggles' && event.payload.movedCardIndex !== undefined
+                    ? player.pocketCards.filter((_, cardIndex) => cardIndex !== event.payload.movedCardIndex)
+                    : player.pocketCards,
+                specialistCards: event.payload.specialistCards
+                    ? [...player.specialistCards, ...event.payload.specialistCards]
+                    : player.specialistCards,
+                flashlightCards: event.payload.drawnCard
+                    ? [...player.flashlightCards, event.payload.drawnCard]
+                    : player.flashlightCards,
+                nightVisionCards: event.payload.tool === 'night-vision-goggles' && event.payload.movedCardIndex !== undefined
+                    ? [...player.nightVisionCards, player.pocketCards[event.payload.movedCardIndex]]
+                    : player.nightVisionCards,
+            };
+            return {
+                ...core,
+                players: {
+                    ...core.players,
+                    [event.payload.playerId]: nextPlayer,
+                },
+                deck: event.payload.remainingDeck ?? core.deck,
+                discardPile: event.payload.discardPile ?? core.discardPile,
+                specialistDeck: event.payload.remainingSpecialistDeck ?? core.specialistDeck,
+                toolDiscardPile: [...core.toolDiscardPile, event.payload.tool],
+            };
+        }
         case THE_GANG_EVENTS.PROGRESS_APPROVED:
             return {
                 ...core,
@@ -161,10 +438,23 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                 round: event.payload.round,
                 chipsByPlayer: { ...core.currentRoundChips },
             };
+            const players = Object.fromEntries(core.playerIds.map((playerId) => {
+                const player = core.players[playerId];
+                const drawnCards = event.payload.playerDrawnCards?.[playerId] ?? [];
+                const revealedCards = event.payload.playerRevealedCards?.[playerId];
+                return [playerId, {
+                    ...player,
+                    pocketCards: [...player.pocketCards, ...drawnCards],
+                    ...(revealedCards
+                        ? { communityCards: [...(player.communityCards ?? []), ...revealedCards] }
+                        : {}),
+                }];
+            }));
             return {
                 ...core,
+                players,
                 round: event.payload.nextRound,
-                deck: core.deck.slice(event.payload.revealedCards.length),
+                deck: core.deck.slice(event.payload.cardsConsumed ?? event.payload.revealedCards.length),
                 communityCards: [...core.communityCards, ...event.payload.revealedCards],
                 currentRoundChips: {},
                 pendingProgress: undefined,

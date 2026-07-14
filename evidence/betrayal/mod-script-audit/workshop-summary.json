@@ -1,0 +1,2325 @@
+{
+  "saveName": "山屋惊魂(小黑屋)第三版（渣图汉化自用）",
+  "version": "v13.3",
+  "objectCount": 172,
+  "typeCounts": [
+    {
+      "type": "Custom_Token",
+      "count": 199
+    },
+    {
+      "type": "Card",
+      "count": 128
+    },
+    {
+      "type": "Custom_Model",
+      "count": 95
+    },
+    {
+      "type": "Custom_Assetbundle",
+      "count": 29
+    },
+    {
+      "type": "CardCustom",
+      "count": 27
+    },
+    {
+      "type": "Custom_PDF",
+      "count": 9
+    },
+    {
+      "type": "Bag",
+      "count": 9
+    },
+    {
+      "type": "Deck",
+      "count": 7
+    },
+    {
+      "type": "HandTrigger",
+      "count": 6
+    },
+    {
+      "type": "BlockSquare",
+      "count": 6
+    },
+    {
+      "type": "DeckCustom",
+      "count": 4
+    },
+    {
+      "type": "Figurine_Custom",
+      "count": 4
+    },
+    {
+      "type": "Counter",
+      "count": 2
+    },
+    {
+      "type": "Infinite_Bag",
+      "count": 1
+    },
+    {
+      "type": "Custom_Dice",
+      "count": 1
+    },
+    {
+      "type": "Custom_Token_Stack",
+      "count": 1
+    }
+  ],
+  "scriptCount": 31,
+  "buttonObjectCount": 0,
+  "pdfLikeCount": 18,
+  "urlLikeCount": 563,
+  "topObjects": [
+    {
+      "guid": "2dd9ff",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "f9a212",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "a33f3c",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "e73e55",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "d9c709",
+      "type": "Counter",
+      "nick": "Turn/Damage Track",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "8d28cd",
+      "type": "Counter",
+      "nick": "Omen Counter",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "98f78a",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "2c3f30",
+      "type": "CardCustom",
+      "nick": "Upper Landing",
+      "desc": "Leads to Ground Floor Staircase",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "a76895",
+      "type": "CardCustom",
+      "nick": "Basement Landing",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "7e0bed",
+      "type": "Infinite_Bag",
+      "nick": "Secrets of Survival",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 1
+    },
+    {
+      "guid": "90e226",
+      "type": "Bag",
+      "nick": "小型数字标志物",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 18
+    },
+    {
+      "guid": "54b6f2",
+      "type": "Bag",
+      "nick": "小型角色标志物",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 6
+    },
+    {
+      "guid": "5df037",
+      "type": "Bag",
+      "nick": "属性标志物",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 8
+    },
+    {
+      "guid": "117980",
+      "type": "Bag",
+      "nick": "小型物品标志物",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 59
+    },
+    {
+      "guid": "e82075",
+      "type": "Bag",
+      "nick": "大型怪物标志物",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 16
+    },
+    {
+      "guid": "ba385f",
+      "type": "Bag",
+      "nick": "小型怪物标志物",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 20
+    },
+    {
+      "guid": "3ff143",
+      "type": "Bag",
+      "nick": "符号标志物",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 8
+    },
+    {
+      "guid": "b14471",
+      "type": "Custom_Dice",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "f4ad6e",
+      "type": "DeckCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 42
+    },
+    {
+      "guid": "59016a",
+      "type": "DeckCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 22
+    },
+    {
+      "guid": "2229af",
+      "type": "DeckCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 9
+    },
+    {
+      "guid": "e90e43",
+      "type": "Deck",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 5
+    },
+    {
+      "guid": "fe369d",
+      "type": "Custom_Assetbundle",
+      "nick": "安妮塔·赫南德兹",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "b38b27",
+      "type": "Custom_Assetbundle",
+      "nick": "杰登·琼斯",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "048526",
+      "type": "Custom_Assetbundle",
+      "nick": "布里塔妮·B-BOX·鲍温",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "d67207",
+      "type": "Custom_Assetbundle",
+      "nick": "米歇尔·梦露",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "92b3fb",
+      "type": "Custom_Assetbundle",
+      "nick": "珀尔塞福涅·普拉里",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "cd8764",
+      "type": "Custom_Assetbundle",
+      "nick": "约瑟夫·“铁子”·斯威夫特",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "c3c2b0",
+      "type": "Custom_Assetbundle",
+      "nick": "阮单 医学博士",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "2396bb",
+      "type": "Custom_Assetbundle",
+      "nick": "斯蒂芬妮·里克特",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "8b84b0",
+      "type": "Custom_Assetbundle",
+      "nick": "伊莎·瓦伦西娅",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "c2e746",
+      "type": "Custom_Assetbundle",
+      "nick": "神父 梁沃伦",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "cad8fc",
+      "type": "Custom_Assetbundle",
+      "nick": "奥利弗·斯威夫特",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "07d7a4",
+      "type": "Custom_Assetbundle",
+      "nick": "塞米·昂勒尔",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "c317c4",
+      "type": "HandTrigger",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "73058e",
+      "type": "HandTrigger",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "0c1644",
+      "type": "HandTrigger",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "e44e63",
+      "type": "HandTrigger",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "3c97b6",
+      "type": "HandTrigger",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "096a1a",
+      "type": "HandTrigger",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "437cd7",
+      "type": "Custom_Model",
+      "nick": "Board",
+      "desc": "",
+      "luaLen": 643,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "0b2ed0",
+      "type": "Custom_Assetbundle",
+      "nick": "The Kraken Table",
+      "desc": "",
+      "luaLen": 54,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "665355",
+      "type": "Custom_Assetbundle",
+      "nick": "Board Cabinet (Drawn)",
+      "desc": "Click on the handle to close.",
+      "luaLen": 3475,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "3c4e81",
+      "type": "Custom_Assetbundle",
+      "nick": "Board Cabinet (Drawn)",
+      "desc": "Click on the handle to close.",
+      "luaLen": 3475,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "0c8d35",
+      "type": "Custom_Assetbundle",
+      "nick": "Board Cabinet (Drawn)",
+      "desc": "Click on the handle to close.",
+      "luaLen": 3475,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "6e517a",
+      "type": "Custom_Assetbundle",
+      "nick": "Table Extension",
+      "desc": "",
+      "luaLen": 408,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "04c44a",
+      "type": "Custom_Assetbundle",
+      "nick": "Table Extension",
+      "desc": "",
+      "luaLen": 408,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "5dd89b",
+      "type": "Custom_Assetbundle",
+      "nick": "Board Cabinet (Drawn)",
+      "desc": "Click on the handle to close.",
+      "luaLen": 3475,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "88b8d6",
+      "type": "Custom_Assetbundle",
+      "nick": "Board Cabinet (Drawn)",
+      "desc": "Click on the handle to close.",
+      "luaLen": 3475,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "4f3b8f",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "279161",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "290fe6",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "b50474",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "fccc45",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "6a6696",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "c8fc52",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "58b6f7",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "0a1fdb",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "9db6d5",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "e15fad",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "12c120",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "e92f82",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "de6346",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "d36335",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "7bd7ba",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "2295a3",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "91e8db",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "1de55b",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "283f71",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "661907",
+      "type": "Custom_Assetbundle",
+      "nick": "Board Cabinet (Drawn)",
+      "desc": "Click on the handle to close.",
+      "luaLen": 3475,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "ac3660",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "f5c8ba",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "926d19",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "7b1a9b",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "bd599a",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "86a605",
+      "type": "Custom_Model",
+      "nick": "Small Monster 1",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "67fc44",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "4dafc6",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "b065c3",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "cb9474",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "5c9a74",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "af2ab4",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "bfa305",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "bd7828",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "7bc9aa",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "19b8ce",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "7d3cb2",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "667fdd",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "4a6844",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "80ac90",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "6b34da",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "6e28fa",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "773ee2",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "055384",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "f92291",
+      "type": "CardCustom",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "22a19d",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "7a1217",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "65db7a",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "e0999d",
+      "type": "Custom_Token",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "712452",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "12c866",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "18dc90",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "5202d5",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "f780a9",
+      "type": "BlockSquare",
+      "nick": "Orange Dice",
+      "desc": "",
+      "luaLen": 1135,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "ffaa93",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "3fab77",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "29ea73",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "05eedf",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "634889",
+      "type": "BlockSquare",
+      "nick": "Red Dice",
+      "desc": "",
+      "luaLen": 1135,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "a9cc56",
+      "type": "BlockSquare",
+      "nick": "White Dice",
+      "desc": "",
+      "luaLen": 1135,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "beb487",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "eceae1",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "3d4416",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "00c980",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "383b23",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "145a04",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "11edda",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "03a6f4",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "aa46d9",
+      "type": "BlockSquare",
+      "nick": "Green Dice",
+      "desc": "",
+      "luaLen": 1135,
+      "buttons": 0,
+      "contained": 0
+    },
+    {
+      "guid": "f45462",
+      "type": "Custom_Model",
+      "nick": "",
+      "desc": "",
+      "luaLen": 0,
+      "buttons": 0,
+      "contained": 0
+    }
+  ],
+  "scripts": [
+    {
+      "name": "",
+      "guid": "",
+      "type": "",
+      "path": "",
+      "desc": "",
+      "len": 336,
+      "preview": "--[[ Lua code. See documentation: http://berserk-games.com/knowledgebase/scripting/ --]] --[[ The onLoad event is called after the game save finishes loading. --]] function onLoad() --[[ print('onLoad!') --]] end --[[ The onUpdate event is called once per frame. --]] function onUpdate () --[[ print('onUpdate loop!') --]] end"
+    },
+    {
+      "name": "Board",
+      "guid": "437cd7",
+      "type": "Custom_Model",
+      "path": "ObjectStates/40",
+      "desc": "",
+      "len": 643,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"CUSTOMIZE BOARD\", click_function = \"onButtonClick\", function_owner = self, width = 750, height = 75, color = {1, 1, 1, 1.0}, position = {-15.5, 10, -5}, rotation = {180, 270, 80}, font_size = 75 }) end function onButtonClick() if self.interactable == false then self.interactable = true; self.setColorTint({1, 1, 1}) self.edit"
+    },
+    {
+      "name": "The Kraken Table",
+      "guid": "0b2ed0",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/41",
+      "desc": "",
+      "len": 54,
+      "preview": "function onLoad() self.interactable = false; end"
+    },
+    {
+      "name": "Board Cabinet (Drawn)",
+      "guid": "665355",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/42",
+      "desc": "Click on the handle to close.",
+      "len": 3475,
+      "preview": "local ConcealedStorageHeight = 3.0 local ConceiledStorageOffset = 10000.0 local StorageState = 1 local ObjectLockStates = {} local BB = { Min = { x = -16.0, y = 41.99, z = -50.0 }, Max = { x = 16.0, y = 41.99, z = -32.0 } } function onSave() local saveObj = {}; for k,v in pairs( ObjectLockStates ) do if v ~= nil then saveObj[k] = v; end end return JSON.encode( saveObj ); end function onLoad( saveD"
+    },
+    {
+      "name": "Board Cabinet",
+      "guid": "b1ab11",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/42/States/1",
+      "desc": "Click to open.",
+      "len": 406,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 1000, height = 750, color = {1, 0, 0, 0.0}, position = {0, 40.7, 32.8}, rotation = {-90, 0, 0}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Board Cabinet (Drawn)",
+      "guid": "3c4e81",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/43",
+      "desc": "Click on the handle to close.",
+      "len": 3475,
+      "preview": "local ConcealedStorageHeight = 3.0 local ConceiledStorageOffset = 10000.0 local StorageState = 1 local ObjectLockStates = {} local BB = { Min = { x = -16.0, y = 41.99, z = -50.0 }, Max = { x = 16.0, y = 41.99, z = -32.0 } } function onSave() local saveObj = {}; for k,v in pairs( ObjectLockStates ) do if v ~= nil then saveObj[k] = v; end end return JSON.encode( saveObj ); end function onLoad( saveD"
+    },
+    {
+      "name": "Board Cabinet",
+      "guid": "e2b080",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/43/States/1",
+      "desc": "Click to open.",
+      "len": 406,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 1000, height = 750, color = {1, 0, 0, 0.0}, position = {0, 40.7, 32.8}, rotation = {-90, 0, 0}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Board Cabinet (Drawn)",
+      "guid": "0c8d35",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/44",
+      "desc": "Click on the handle to close.",
+      "len": 3475,
+      "preview": "local ConcealedStorageHeight = 3.0 local ConceiledStorageOffset = 10000.0 local StorageState = 1 local ObjectLockStates = {} local BB = { Min = { x = -16.0, y = 41.99, z = -50.0 }, Max = { x = 16.0, y = 41.99, z = -32.0 } } function onSave() local saveObj = {}; for k,v in pairs( ObjectLockStates ) do if v ~= nil then saveObj[k] = v; end end return JSON.encode( saveObj ); end function onLoad( saveD"
+    },
+    {
+      "name": "Board Cabinet",
+      "guid": "390971",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/44/States/1",
+      "desc": "Click to open.",
+      "len": 406,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 1000, height = 750, color = {1, 0, 0, 0.0}, position = {0, 40.7, 32.8}, rotation = {-90, 0, 0}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Table Extension",
+      "guid": "6e517a",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/45",
+      "desc": "",
+      "len": 408,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 5000, height = 1000, color = {0, 0, 0, 0.0}, position = {62.4, 40.75, 0}, rotation = {0, 90, 90}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Extend",
+      "guid": "ac7918",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/45/States/1",
+      "desc": "Click to add an extension to the table.",
+      "len": 408,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 5000, height = 1000, color = {0, 0, 0, 0.0}, position = {62.4, 40.75, 0}, rotation = {0, 90, 90}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Table Extension",
+      "guid": "04c44a",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/46",
+      "desc": "",
+      "len": 408,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 5000, height = 1000, color = {0, 0, 0, 0.0}, position = {62.4, 40.75, 0}, rotation = {0, 90, 90}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Extend",
+      "guid": "dcbdb2",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/46/States/1",
+      "desc": "Click to add an extension to the table.",
+      "len": 408,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 5000, height = 1000, color = {0, 0, 0, 0.0}, position = {62.4, 40.75, 0}, rotation = {0, 90, 90}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Board Cabinet (Drawn)",
+      "guid": "5dd89b",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/47",
+      "desc": "Click on the handle to close.",
+      "len": 3475,
+      "preview": "local ConcealedStorageHeight = 3.0 local ConceiledStorageOffset = 10000.0 local StorageState = 1 local ObjectLockStates = {} local BB = { Min = { x = -16.0, y = 41.99, z = -50.0 }, Max = { x = 16.0, y = 41.99, z = -32.0 } } function onSave() local saveObj = {}; for k,v in pairs( ObjectLockStates ) do if v ~= nil then saveObj[k] = v; end end return JSON.encode( saveObj ); end function onLoad( saveD"
+    },
+    {
+      "name": "Board Cabinet",
+      "guid": "7d257b",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/47/States/1",
+      "desc": "Click to open.",
+      "len": 406,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 1000, height = 750, color = {1, 0, 0, 0.0}, position = {0, 40.7, 32.8}, rotation = {-90, 0, 0}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Board Cabinet (Drawn)",
+      "guid": "88b8d6",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/48",
+      "desc": "Click on the handle to close.",
+      "len": 3475,
+      "preview": "local ConcealedStorageHeight = 3.0 local ConceiledStorageOffset = 10000.0 local StorageState = 1 local ObjectLockStates = {} local BB = { Min = { x = -16.0, y = 41.99, z = -50.0 }, Max = { x = 16.0, y = 41.99, z = -32.0 } } function onSave() local saveObj = {}; for k,v in pairs( ObjectLockStates ) do if v ~= nil then saveObj[k] = v; end end return JSON.encode( saveObj ); end function onLoad( saveD"
+    },
+    {
+      "name": "Board Cabinet",
+      "guid": "2fa11f",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/48/States/1",
+      "desc": "Click to open.",
+      "len": 406,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 1000, height = 750, color = {1, 0, 0, 0.0}, position = {0, 40.7, 32.8}, rotation = {-90, 0, 0}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Board Cabinet (Drawn)",
+      "guid": "661907",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/69",
+      "desc": "Click on the handle to close.",
+      "len": 3475,
+      "preview": "local ConcealedStorageHeight = 3.0 local ConceiledStorageOffset = 10000.0 local StorageState = 1 local ObjectLockStates = {} local BB = { Min = { x = -16.0, y = 41.99, z = -50.0 }, Max = { x = 16.0, y = 41.99, z = -32.0 } } function onSave() local saveObj = {}; for k,v in pairs( ObjectLockStates ) do if v ~= nil then saveObj[k] = v; end end return JSON.encode( saveObj ); end function onLoad( saveD"
+    },
+    {
+      "name": "Board Cabinet",
+      "guid": "3dcbdd",
+      "type": "Custom_Assetbundle",
+      "path": "ObjectStates/69/States/1",
+      "desc": "Click to open.",
+      "len": 406,
+      "preview": "function onLoad() self.interactable = false; self.createButton({ label = \"\", click_function = \"onButtonClick\", function_owner = self, width = 1000, height = 750, color = {1, 0, 0, 0.0}, position = {0, 40.7, 32.8}, rotation = {-90, 0, 0}, font_size = 200 }) end function onButtonClick() self.setState( 1 + (self.getStateId() % 2) ) end"
+    },
+    {
+      "name": "Orange Dice",
+      "guid": "f780a9",
+      "type": "BlockSquare",
+      "path": "ObjectStates/103",
+      "desc": "",
+      "len": 1135,
+      "preview": "function onLoad(save_state) local button = {index = 0, click_function = 'returnDice', function_owner = self, label = 'Return Dice', position = {x = 0, y = 1, z = 0}, rotation = {x = 0, y = 0, z = 0}, scale = {x = 0.5, y = 1, z = 0.5}, width = 2100, height = 400, font_size = 400, font_color = {r = 0, g = 0, b = 0, a = 1}} button.color = self.getColorTint() self.createButton(button) end local dice ="
+    },
+    {
+      "name": "Red Dice",
+      "guid": "634889",
+      "type": "BlockSquare",
+      "path": "ObjectStates/108",
+      "desc": "",
+      "len": 1135,
+      "preview": "function onLoad(save_state) local button = {index = 0, click_function = 'returnDice', function_owner = self, label = 'Return Dice', position = {x = 0, y = 1, z = 0}, rotation = {x = 0, y = 0, z = 0}, scale = {x = 0.5, y = 1, z = 0.5}, width = 2100, height = 400, font_size = 400, font_color = {r = 0, g = 0, b = 0, a = 1}} button.color = self.getColorTint() self.createButton(button) end local dice ="
+    },
+    {
+      "name": "White Dice",
+      "guid": "a9cc56",
+      "type": "BlockSquare",
+      "path": "ObjectStates/109",
+      "desc": "",
+      "len": 1135,
+      "preview": "function onLoad(save_state) local button = {index = 0, click_function = 'returnDice', function_owner = self, label = 'Return Dice', position = {x = 0, y = 1, z = 0}, rotation = {x = 0, y = 0, z = 0}, scale = {x = 0.5, y = 1, z = 0.5}, width = 2100, height = 400, font_size = 400, font_color = {r = 0, g = 0, b = 0, a = 1}} button.color = self.getColorTint() self.createButton(button) end local dice ="
+    },
+    {
+      "name": "Green Dice",
+      "guid": "aa46d9",
+      "type": "BlockSquare",
+      "path": "ObjectStates/118",
+      "desc": "",
+      "len": 1135,
+      "preview": "function onLoad(save_state) local button = {index = 0, click_function = 'returnDice', function_owner = self, label = 'Return Dice', position = {x = 0, y = 1, z = 0}, rotation = {x = 0, y = 0, z = 0}, scale = {x = 0.5, y = 1, z = 0.5}, width = 2100, height = 400, font_size = 400, font_color = {r = 0, g = 0, b = 0, a = 1}} button.color = self.getColorTint() self.createButton(button) end local dice ="
+    },
+    {
+      "name": "Blue Dice",
+      "guid": "73ebce",
+      "type": "BlockSquare",
+      "path": "ObjectStates/131",
+      "desc": "",
+      "len": 1135,
+      "preview": "function onLoad(save_state) local button = {index = 0, click_function = 'returnDice', function_owner = self, label = 'Return Dice', position = {x = 0, y = 1, z = 0}, rotation = {x = 0, y = 0, z = 0}, scale = {x = 0.5, y = 1, z = 0.5}, width = 2100, height = 400, font_size = 400, font_color = {r = 0, g = 0, b = 0, a = 1}} button.color = self.getColorTint() self.createButton(button) end local dice ="
+    },
+    {
+      "name": "Purple Dice",
+      "guid": "27cdec",
+      "type": "BlockSquare",
+      "path": "ObjectStates/144",
+      "desc": "",
+      "len": 1135,
+      "preview": "function onLoad(save_state) local button = {index = 0, click_function = 'returnDice', function_owner = self, label = 'Return Dice', position = {x = 0, y = 1, z = 0}, rotation = {x = 0, y = 0, z = 0}, scale = {x = 0.5, y = 1, z = 0.5}, width = 2100, height = 400, font_size = 400, font_color = {r = 0, g = 0, b = 0, a = 1}} button.color = self.getColorTint() self.createButton(button) end local dice ="
+    },
+    {
+      "name": "Betrayal Dice Calculator",
+      "guid": "277822",
+      "type": "Custom_Token",
+      "path": "ObjectStates/155",
+      "desc": "",
+      "len": 3973,
+      "preview": "function onload() xpos = -1.65 self.setName('Betrayal Dice Calculator') self.setColorTint({ (56.0/255.0), (64.0/255.0), (72.0/255.0) }) --Button 0. Displays Total Result. Left. self.createButton({ click_function = 'test', label = '', function_owner = self, position = {-2.3, 0.10, 0}, rotation = {0, 0, 0}, width = 750, height = 750, font_size = 500 } ) -- Buttons 1 thru 8. Rolls Dice. Bottom Row. r"
+    },
+    {
+      "name": "Betrayal Dice Calculator",
+      "guid": "6b6763",
+      "type": "Custom_Token",
+      "path": "ObjectStates/156",
+      "desc": "",
+      "len": 3973,
+      "preview": "function onload() xpos = -1.65 self.setName('Betrayal Dice Calculator') self.setColorTint({ (56.0/255.0), (64.0/255.0), (72.0/255.0) }) --Button 0. Displays Total Result. Left. self.createButton({ click_function = 'test', label = '', function_owner = self, position = {-2.3, 0.10, 0}, rotation = {0, 0, 0}, width = 750, height = 750, font_size = 500 } ) -- Buttons 1 thru 8. Rolls Dice. Bottom Row. r"
+    },
+    {
+      "name": "Betrayal Dice Calculator",
+      "guid": "e20e31",
+      "type": "Custom_Token",
+      "path": "ObjectStates/157",
+      "desc": "",
+      "len": 3973,
+      "preview": "function onload() xpos = -1.65 self.setName('Betrayal Dice Calculator') self.setColorTint({ (56.0/255.0), (64.0/255.0), (72.0/255.0) }) --Button 0. Displays Total Result. Left. self.createButton({ click_function = 'test', label = '', function_owner = self, position = {-2.3, 0.10, 0}, rotation = {0, 0, 0}, width = 750, height = 750, font_size = 500 } ) -- Buttons 1 thru 8. Rolls Dice. Bottom Row. r"
+    },
+    {
+      "name": "Betrayal Dice Calculator",
+      "guid": "a89cdf",
+      "type": "Custom_Token",
+      "path": "ObjectStates/158",
+      "desc": "",
+      "len": 3973,
+      "preview": "function onload() xpos = -1.65 self.setName('Betrayal Dice Calculator') self.setColorTint({ (56.0/255.0), (64.0/255.0), (72.0/255.0) }) --Button 0. Displays Total Result. Left. self.createButton({ click_function = 'test', label = '', function_owner = self, position = {-2.3, 0.10, 0}, rotation = {0, 0, 0}, width = 750, height = 750, font_size = 500 } ) -- Buttons 1 thru 8. Rolls Dice. Bottom Row. r"
+    },
+    {
+      "name": "Betrayal Dice Calculator",
+      "guid": "f044a1",
+      "type": "Custom_Token",
+      "path": "ObjectStates/159",
+      "desc": "",
+      "len": 3973,
+      "preview": "function onload() xpos = -1.65 self.setName('Betrayal Dice Calculator') self.setColorTint({ (56.0/255.0), (64.0/255.0), (72.0/255.0) }) --Button 0. Displays Total Result. Left. self.createButton({ click_function = 'test', label = '', function_owner = self, position = {-2.3, 0.10, 0}, rotation = {0, 0, 0}, width = 750, height = 750, font_size = 500 } ) -- Buttons 1 thru 8. Rolls Dice. Bottom Row. r"
+    },
+    {
+      "name": "Betrayal Dice Calculator",
+      "guid": "68520f",
+      "type": "Custom_Token",
+      "path": "ObjectStates/160",
+      "desc": "",
+      "len": 3973,
+      "preview": "function onload() xpos = -1.65 self.setName('Betrayal Dice Calculator') self.setColorTint({ (56.0/255.0), (64.0/255.0), (72.0/255.0) }) --Button 0. Displays Total Result. Left. self.createButton({ click_function = 'test', label = '', function_owner = self, position = {-2.3, 0.10, 0}, rotation = {0, 0, 0}, width = 750, height = 750, font_size = 500 } ) -- Buttons 1 thru 8. Rolls Dice. Bottom Row. r"
+    }
+  ],
+  "buttons": [],
+  "pdfs": [
+    {
+      "name": "ObjectStates/9/ContainedObjects/0/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/9/ContainedObjects/0/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/2036224757691786097/834E3D0A1DAF9857A9457AC9B4C5DCD3B0DDAC91/"
+    },
+    {
+      "name": "ObjectStates/9/ContainedObjects/0/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/9/ContainedObjects/0/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/161/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/161/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733381207/EF2829E0BAB90FAF74D7A6A57159CE16B3437547/"
+    },
+    {
+      "name": "ObjectStates/161/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/161/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/162/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/162/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733382701/7872D2DFD6AD97F2235BF0CF34B217DD42568AC8/"
+    },
+    {
+      "name": "ObjectStates/162/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/162/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/163/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/163/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733384150/066C520D90205C5267273A3DBE2976208E4E770E/"
+    },
+    {
+      "name": "ObjectStates/163/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/163/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/164/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/164/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733385671/9137BEF42284B68D85DA82BDC9E4560B9F3C9460/"
+    },
+    {
+      "name": "ObjectStates/164/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/164/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/165/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/165/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733387025/5A534678B1E6CBB5F0F589FB6B7DC55EDD63317E/"
+    },
+    {
+      "name": "ObjectStates/165/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/165/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/166/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/166/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733384150/066C520D90205C5267273A3DBE2976208E4E770E/"
+    },
+    {
+      "name": "ObjectStates/166/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/166/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/170/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/170/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31064245708009062/7FD87C2BCA0FFCA52146109EE5DA6070E5661EDD/"
+    },
+    {
+      "name": "ObjectStates/170/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/170/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    },
+    {
+      "name": "ObjectStates/171/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/171/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31064245708010756/F93FA088B537E8753F086564FEEF5F57931DDC2F/"
+    },
+    {
+      "name": "ObjectStates/171/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/171/CustomPDF",
+      "desc": "",
+      "key": "PDFPassword",
+      "value": ""
+    }
+  ],
+  "urls": [
+    {
+      "name": "",
+      "guid": "",
+      "type": "",
+      "path": "",
+      "desc": "",
+      "key": "SkyURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/2008073659351776695/6937C599095F227C3DD41E18953DAC9FC37F742E/"
+    },
+    {
+      "name": "ObjectStates/0/CustomMesh",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/0/CustomMesh",
+      "desc": "",
+      "key": "MeshURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733378196/48D51385C80C857B29EC7D5AFE90998A5B407649/"
+    },
+    {
+      "name": "ObjectStates/1/CustomMesh",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/1/CustomMesh",
+      "desc": "",
+      "key": "MeshURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733378196/48D51385C80C857B29EC7D5AFE90998A5B407649/"
+    },
+    {
+      "name": "ObjectStates/2/CustomMesh",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/2/CustomMesh",
+      "desc": "",
+      "key": "MeshURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733378196/48D51385C80C857B29EC7D5AFE90998A5B407649/"
+    },
+    {
+      "name": "ObjectStates/3/CustomMesh",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/3/CustomMesh",
+      "desc": "",
+      "key": "MeshURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/31063611733378196/48D51385C80C857B29EC7D5AFE90998A5B407649/"
+    },
+    {
+      "name": "ObjectStates/6/CustomDeck/363",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/6/CustomDeck/363",
+      "desc": "",
+      "key": "FaceURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1925869443037575940/5883D544F4CC67351B41B7892D037A8437962DDB/"
+    },
+    {
+      "name": "ObjectStates/6/CustomDeck/363",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/6/CustomDeck/363",
+      "desc": "",
+      "key": "BackURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1925869443037575940/5883D544F4CC67351B41B7892D037A8437962DDB/"
+    },
+    {
+      "name": "ObjectStates/7/CustomDeck/365",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/7/CustomDeck/365",
+      "desc": "",
+      "key": "FaceURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1925869443037576849/1664D0D2FFF8406E35E8F82FADC8310CD8D4F866/"
+    },
+    {
+      "name": "ObjectStates/7/CustomDeck/365",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/7/CustomDeck/365",
+      "desc": "",
+      "key": "BackURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1925869443037576849/1664D0D2FFF8406E35E8F82FADC8310CD8D4F866/"
+    },
+    {
+      "name": "ObjectStates/8/CustomDeck/364",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/8/CustomDeck/364",
+      "desc": "",
+      "key": "FaceURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1925869443037575839/EAC20D8CD35987BACD71F32A974E6F56DB3B5EFF/"
+    },
+    {
+      "name": "ObjectStates/8/CustomDeck/364",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/8/CustomDeck/364",
+      "desc": "",
+      "key": "BackURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1925869443037575839/EAC20D8CD35987BACD71F32A974E6F56DB3B5EFF/"
+    },
+    {
+      "name": "ObjectStates/9/ContainedObjects/0/CustomPDF",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/9/ContainedObjects/0/CustomPDF",
+      "desc": "",
+      "key": "PDFUrl",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/2036224757691786097/834E3D0A1DAF9857A9457AC9B4C5DCD3B0DDAC91/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/0/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/0/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003152/B99C482983570EAE8F2B6D50015B356701CD13EF/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/0/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/0/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/1/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/1/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003152/B99C482983570EAE8F2B6D50015B356701CD13EF/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/1/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/1/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003058/33D28A823E6B3BFEE279A046961F5318E097D80B/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/2/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/2/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/3/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/3/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003058/33D28A823E6B3BFEE279A046961F5318E097D80B/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/3/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/3/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/4/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/4/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002974/5874C829CA41AD424B85D3C85B3C87C39E65FFB5/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/4/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/4/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/5/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/5/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002974/5874C829CA41AD424B85D3C85B3C87C39E65FFB5/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/5/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/5/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/6/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/6/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002897/B3D6D2F64CCE3ADE56923B2BAFBAE51465E9CD8A/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/6/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/6/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/7/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/7/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002897/B3D6D2F64CCE3ADE56923B2BAFBAE51465E9CD8A/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/7/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/7/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/8/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/8/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002821/9B8B535FBF332F9679EA8A45BA7CB9E8BA472C18/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/8/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/8/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/9/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/9/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002821/9B8B535FBF332F9679EA8A45BA7CB9E8BA472C18/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/9/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/9/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/10/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/10/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002737/A936862BF0DA41494CDDCB73ECB7E399FB9E1F03/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/10/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/10/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/11/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/11/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002737/A936862BF0DA41494CDDCB73ECB7E399FB9E1F03/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/11/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/11/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/12/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/12/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002658/8BD97CFEE4CDF6C88362314097ED5CEFB1057003/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/12/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/12/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/13/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/13/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002658/8BD97CFEE4CDF6C88362314097ED5CEFB1057003/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/13/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/13/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/14/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/14/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002602/27B70A929CB2DBC511793A6343C917A117A8F0E2/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/14/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/14/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/15/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/15/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002602/27B70A929CB2DBC511793A6343C917A117A8F0E2/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/15/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/15/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/16/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/16/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002455/367F6E3604E028BD5A419DDB70FA45D7F3CFDF94/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/16/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/16/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/17/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/17/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002455/367F6E3604E028BD5A419DDB70FA45D7F3CFDF94/"
+    },
+    {
+      "name": "ObjectStates/10/ContainedObjects/17/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/10/ContainedObjects/17/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182002534/49034CEC6845BCAA0199277268C0C2FD09E5CCA6/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/0/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/0/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182006176/F92CB356076A3D52EE2EC3176CA4FAB154384393/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/0/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/0/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182006104/55963F811E1050949F60D543AAC3B3C5629AF986/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/1/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/1/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182006328/914A4B043295BFE8DC0F1BA33DC55F98DF2D030B/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/1/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/1/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182006252/2F3CCC3E36EA81E73A60117C0C76B0AF89BE31D0/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182007050/71552C929FC70CBA75EFEAE873B8A027E6510A60/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/2/States/1/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/2/States/1/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182007121/4B70CAE6075AEE1070830AD79EDF55B44EE2998E/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/3/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/3/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182007319/8B1C899FC54A12B01B46328B8645965EF84820A5/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/3/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/3/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182007198/94AED1A44BD5ACB8C2C46CB2BAF5E89FD82E37B8/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/4/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/4/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182006017/22A96255C80FA27FC5F28459840A7FFC7191B084/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/4/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/4/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182005957/3B63D75D14CC4B00164909AF53B667598F2B7FB9/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/5/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/5/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182005639/809347EDD838C02BDBD328B19A0E4109A23D0E5C/"
+    },
+    {
+      "name": "ObjectStates/11/ContainedObjects/5/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/11/ContainedObjects/5/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182005578/A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/0/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/0/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004141/BD9930D93160F3E9948E6E4BC7D526B447BBB333/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/0/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/0/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/1/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/1/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004141/BD9930D93160F3E9948E6E4BC7D526B447BBB333/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/1/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/1/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003961/E8CC7109B442743670A9F46E321EE63DA6C4E600/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/2/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/2/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/3/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/3/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003961/E8CC7109B442743670A9F46E321EE63DA6C4E600/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/3/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/3/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/4/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/4/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003714/F10C54AA397C58BB29BD7DAC0414D8598792A6B1/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/4/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/4/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/5/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/5/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003714/F10C54AA397C58BB29BD7DAC0414D8598792A6B1/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/5/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/5/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/6/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/6/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003655/266BAB4E7F9316C3070B2399BB51776DD0D2DCC5/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/6/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/6/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/7/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/7/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003655/266BAB4E7F9316C3070B2399BB51776DD0D2DCC5/"
+    },
+    {
+      "name": "ObjectStates/12/ContainedObjects/7/States/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/12/ContainedObjects/7/States/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182004384/06319CB96BE7BBF5D1D21D86BCC4814D9F351719/"
+    },
+    {
+      "name": "ObjectStates/13/ContainedObjects/0/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/13/ContainedObjects/0/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003304/F262CF39857544D8FA8C5BDC352D8B57AF0AB138/"
+    },
+    {
+      "name": "ObjectStates/13/ContainedObjects/1/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/13/ContainedObjects/1/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003885/A2E7EA837C05EEB78CAE994DE57A9766F8C37F17/"
+    },
+    {
+      "name": "ObjectStates/13/ContainedObjects/2/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/13/ContainedObjects/2/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003885/A2E7EA837C05EEB78CAE994DE57A9766F8C37F17/"
+    },
+    {
+      "name": "ObjectStates/13/ContainedObjects/3/CustomImage",
+      "guid": "",
+      "type": "",
+      "path": "ObjectStates/13/ContainedObjects/3/CustomImage",
+      "desc": "",
+      "key": "ImageURL",
+      "value": "https://steamusercontent-a.akamaihd.net/ugc/1842549310182003885/A2E7EA837C05EEB78CAE994DE57A9766F8C37F17/"
+    }
+  ]
+}

@@ -236,6 +236,7 @@ describe('卡牌 playCondition 一致性审计', () => {
         it('card-play-six 必须有骰子存在限制', () => {
             const card = COMMON_CARDS.find(c => c.id === 'card-play-six')!;
             expect(card.playCondition).toEqual({
+                requireIsRoller: true,
                 requireDiceExists: true,
                 requireHasRolled: true,
             });
@@ -254,6 +255,7 @@ describe('卡牌 playCondition 一致性审计', () => {
         it('card-me-too 必须有最少骰子数量限制', () => {
             const card = COMMON_CARDS.find(c => c.id === 'card-me-too')!;
             expect(card.playCondition).toEqual({
+                requireIsRoller: true,
                 requireDiceExists: true,
                 requireHasRolled: true,
                 requireMinDiceCount: 2,

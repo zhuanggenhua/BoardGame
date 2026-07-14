@@ -32,12 +32,16 @@
     "paladin": "Vanguard",
     "goblin": "Cave Goblins",
     "frost": "Frost Dwarves",
-    "barbaric": "Barbarian Horde"
+    "barbaric": "Barbarian Horde",
+    "mogu": "Mogu"
   },
   "actions": {
     "closePreview": "Close Preview",
     "close": "Close",
     "cancel": "Cancel",
+    "moguTransmissionSelf": "Transfer from self",
+    "moguTransmissionAlly": "Transfer from ally",
+    "moguFanaticalFungusStay": "Do not push or pull",
     "magnify": "Magnify",
     "confirm": "Confirm",
     "confirmDiscard": "Confirm Discard",
@@ -84,6 +88,16 @@
     "activeEvents": "Active Effects",
     "attached": "Attached",
     "click_to_magnify": "Click to Magnify"
+  },
+  "hud": {
+    "combatEffects": {
+      "title": "Combat Presentation",
+      "hint": "Only affects local attack animations on mobile. Resolution, damage, and audio volume stay unchanged.",
+      "reduced": "Reduce attack effects",
+      "reducedHint": "Use on slower devices: mobile keeps the ranged wave, hit flash, and damage numbers while reducing the heaviest particles, shake, and lunge presentation.",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    }
   },
   "debug": {
     "phase_labels": {
@@ -489,7 +503,10 @@
       "iceRamSelectPush": "Ice Ram: Choose push/pull direction (or skip)",
       "telekinesisInstead": "Telekinesis Instead of Attack: Select a target to push or pull",
       "highTelekinesisInstead": "High Telekinesis Instead of Attack: Select a target to push or pull",
-      "vanish": "Vanish: Select a 0-cost friendly unit to swap positions"
+      "vanish": "Vanish: Select a 0-cost friendly unit to swap positions",
+      "moguBloodInfusion": "Blood Infusion: Select a friendly unit within 2 spaces",
+      "moguTransmission": "Fungal Transmission: Choose charge transfer mode",
+      "moguFanaticalFungus": "Fanatical Fungus: Choose push or pull destination"
     },
     "beforeAttack": {
       "lifeDrain": "Pre-attack: Life Drain ready, select an attack target",
@@ -517,6 +534,12 @@
     },
     "entanglement": {
       "message": "Chant of Entanglement: Select 2 friendly commons within 3 spaces (selected {{count}})"
+    },
+    "moguSymbioticSelfHealing": {
+      "message": "Symbiotic Self-Healing: {{count}} units selected"
+    },
+    "moguReleaseSpores": {
+      "message": "Release Spores: {{count}} spaces selected"
     },
     "sneak": {
       "selectUnit": "Sneak: Select a 0-cost friendly unit to push/pull (recorded {{count}})",
@@ -580,7 +603,9 @@
     "guidance": "📖 Guidance (Draw two cards)",
     "bloodRune": "🩸 Blood Rune (Self-damage or spend magic to charge)",
     "feedBeast": "🍖 Feed Beast (Remove adjacent ally or self-destroy)",
-    "inspire": "✨ Inspire (Charge adjacent allies)"
+    "inspire": "✨ Inspire (Charge adjacent allies)",
+    "moguBloodInfusion": "🩸 Blood Infusion (Wound and charge a friendly unit)",
+    "moguTransmission": "🧬 Fungal Transmission (Move charges to a friendly unit)"
   },
   "status": {
     "yourTurn": "Your Turn",
@@ -619,6 +644,7 @@
       "glacialShiftDestination": "Glacial Shift: choose a destination",
       "infection": "Infection: choose a plague zombie to revive",
       "grabFollow": "Grab: choose a follow-up position",
+      "grabFollowWithSource": "Grab: {{unit}} ({{position}}) choose a follow-up position",
       "soulTransfer": "Soul Transfer: confirm movement",
       "mindCapture": "Mind Capture: choose control or damage",
       "iceShards": "Ice Shards: confirm charge spending",
@@ -662,6 +688,54 @@
     "blood_rage_decay": {
       "name": "Blood Rage Decay",
       "description": "At the end of your turn, remove 2 charges from this unit."
+    },
+    "mogu_blood_bloom": {
+      "name": "Blood Bloom",
+      "description": "After a friendly unit within 2 spaces of this summoner is destroyed, charge each other friendly unit within 2 spaces of this summoner."
+    },
+    "mogu_blood_rage": {
+      "name": "Blood Rage",
+      "description": "Whenever a unit is destroyed during your turn, charge this unit."
+    },
+    "mogu_blood_rage_decay": {
+      "name": "Blood Rage Decay",
+      "description": "At the end of your turn, remove up to 2 charges from this unit."
+    },
+    "mogu_final_form": {
+      "name": "Final Form",
+      "description": "When summoning this unit, if you control a Fungal Beast with at least 5 charges, destroy that unit and place this unit in its space."
+    },
+    "mogu_blood_infusion": {
+      "name": "Blood Infusion",
+      "description": "Once per turn, during your Move phase, target a friendly unit within 2 spaces of this unit. Charge the target, then deal 1 damage to it."
+    },
+    "mogu_transmission": {
+      "name": "Fungal Transmission",
+      "description": "Once per turn, after this unit moves, you may move any number of charges from this unit or a friendly unit within 2 spaces to another friendly unit within 2 spaces of this unit."
+    },
+    "mogu_decay": {
+      "name": "Decay",
+      "description": "At the end of your Move phase, deal 1 damage to this unit. If it survives, charge an adjacent friendly unit twice."
+    },
+    "mogu_infection": {
+      "name": "Infection",
+      "description": "After this unit destroys a unit, you may replace the destroyed unit with a Spore Plague Body from your discard pile."
+    },
+    "mogu_parasite": {
+      "name": "Parasite",
+      "description": "At the end of your Attack phase, remove 1 charge from this unit. If it has no charges, deal 1 damage to it instead."
+    },
+    "mogu_burst": {
+      "name": "Burst",
+      "description": "At the end of your Magic phase, if this unit has at least 3 charges, destroy it."
+    },
+    "mogu_fungal_mutation": {
+      "name": "Fungal Mutation",
+      "description": "When this unit is destroyed with at least 3 charges, you may replace it with a Fungal Beast from your discard pile."
+    },
+    "mogu_fanatical_fungus": {
+      "name": "Fanatical Fungus",
+      "description": "Ongoing. After you move a unit, you may charge it. If you do, first you may push or pull it 1 space, then you must deal 1 damage to it."
     },
     "sacrifice": {
       "name": "Sacrifice",

@@ -58,6 +58,23 @@ export const BoardDiceBoxTray = ({
     const [diceSettled, setDiceSettled] = React.useState(false);
     const [skinsReady, setSkinsReady] = React.useState(false);
 
+    const failEngine = React.useCallback((error: unknown) => {
+        console.warn('[BoardDiceBoxTray] dice-box-threejs failed; falling back to 2D dice', error);
+        const engine = engineRef.current;
+        engineReadyRef.current = false;
+        engineRef.current = null;
+        activeMotionRef.current = null;
+        setProjectedLayouts({});
+        setMotionSnapshots({});
+        setDiceSettled(true);
+        setEngineState('failed');
+        try {
+            engine?.destroy();
+        } catch {
+            // Ignore renderer cleanup failures after WebGL errors.
+        }
+    }, []);
+
     const values = React.useMemo(() => dice.map((die) => die.displayValue), [dice]);
     const valuesKey = React.useMemo(() => values.join(','), [values]);
     const rerollIds = React.useMemo(
@@ -99,11 +116,9 @@ export const BoardDiceBoxTray = ({
                 engine.resize();
                 setEngineState('ready');
                 setEngineVersion((count) => count + 1);
-            } catch {
+            } catch (error) {
                 if (cancelled) return;
-                engineReadyRef.current = false;
-                engineRef.current = null;
-                setEngineState('failed');
+                failEngine(error);
             }
         };
 
@@ -116,7 +131,7 @@ export const BoardDiceBoxTray = ({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, []);
+    }, [failEngine]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -158,7 +173,12 @@ export const BoardDiceBoxTray = ({
 
         let frameId = 0;
         const tick = () => {
-            update();
+            try {
+                update();
+            } catch (error) {
+                failEngine(error);
+                return;
+            }
             frameId = window.requestAnimationFrame(tick);
         };
 
@@ -174,7 +194,7 @@ export const BoardDiceBoxTray = ({
             window.cancelAnimationFrame(frameId);
             observer?.disconnect();
         };
-    }, [dice, engineVersion]);
+    }, [dice, engineVersion, failEngine]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -268,8 +288,10 @@ export const BoardDiceBoxTray = ({
             setDiceSettled(true);
         };
 
-        void run();
-    }, [dice, engineVersion, isRolling, rerollIds, rerollKey, skinsReady, values, valuesKey]);
+        void run().catch((error) => {
+            failEngine(error);
+        });
+    }, [dice, engineVersion, failEngine, isRolling, rerollIds, rerollKey, skinsReady, values, valuesKey]);
 
     const renderFallbackDice = () => (
         <div

@@ -68,7 +68,7 @@ const dispatch = (state: MatchState<unknown>, command: Command): MatchState<unkn
         random,
         playerIds,
     );
-    expect(result.success).toBe(true);
+    expect(result.success, result.error ?? `command failed: ${command.type}`).toBe(true);
     return result.state;
 };
 
@@ -366,6 +366,7 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('move-entry');
+        expect(state.sys.tutorial.step?.allowedTargets).toEqual(['city-region-14']);
         expect((state.core as any).turnPhase).toBe('dispatch-targeting');
         expect((state.core as any).pendingTargetAction).toBeNull();
 
@@ -425,9 +426,11 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('tactic-window');
 
-        const tacticCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1615-arrows-like-rain');
+        const tacticCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1618-cavalry-charge');
+        expect((state.core as any).pendingTargetAction?.movementProfileId).toBe('dispatch-cavalry');
+        expect((state.core as any).pendingTargetAction?.committedTroops).toBe(2);
         expect(tacticCard?.cardKind).toBe('tactic');
-        expect(tacticCard?.label).toBe('箭如雨下');
+        expect(tacticCard?.label).toBe('骑兵冲锋');
         state = dispatch(state, {
             type: QIDAHEN_COMMANDS.PLAY_TACTIC_CARD,
             playerId: '0',

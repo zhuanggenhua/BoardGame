@@ -75,15 +75,15 @@ registerCardAtlasSource(QIDAHEN_JIN_ATLAS_ID, {
 });
 
 registerCardAtlasSource(QIDAHEN_CHRONOLOGY_ATLAS_ID, {
-    image: 'qidahen/cards/atlases/chronology-deck-atlas',
+    image: 'qidahen/cards/atlases/mongol-faction-deck-atlas',
     config: {
-        imageW: 4798,
-        imageH: 4625,
+        imageW: 4783,
+        imageH: 4641,
         frames: buildFrames(
-            [0, 476, 952, 1428, 1904, 2380, 2856, 3332, 3808],
-            [661, 1322, 1983, 2644, 3305],
-            476,
-            661,
+            [1434, 1912, 2390, 2868, 3346, 3824, 4302],
+            [663, 1326, 1989, 2652, 3315, 3978],
+            478,
+            663,
         ),
     },
 });

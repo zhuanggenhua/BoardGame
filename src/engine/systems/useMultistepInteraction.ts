@@ -40,14 +40,23 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
     // 用 ref 追踪最新的 result/stepCount，避免 confirm 闭包捕获旧值
     const resultRef = useRef(result);
     const stepCountRef = useRef(stepCount);
-    resultRef.current = result;
-    stepCountRef.current = stepCount;
 
     // 防止 auto-confirm（step 达到 maxSteps）和手动 confirm 重复 dispatch
     const confirmedRef = useRef(false);
 
+    useEffect(() => {
+        resultRef.current = result;
+    }, [result]);
+
+    useEffect(() => {
+        stepCountRef.current = stepCount;
+    }, [stepCount]);
+
     // 交互 ID 变化时重置本地状态
     useEffect(() => {
+        const initialResult = data?.initialResult ?? null;
+        resultRef.current = initialResult;
+        stepCountRef.current = 0;
         if (data) {
             setResult(data.initialResult);
         } else {
@@ -71,9 +80,13 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
             ? data.localReducer(resultRef.current, typedPayload)
             : null;
 
+        // 同一事件循环内可能连续触发多个 step（快速点击、触摸连点或测试批处理）。
+        // 必须立即推进 ref，不能等待 React 下一次渲染后再同步，否则后一步会基于旧结果计算。
+        resultRef.current = newResult;
         setResult(newResult);
         setStepCount(prev => {
             const next = prev + 1;
+            stepCountRef.current = next;
             // maxSteps 达到时自动 confirm
             // 直接使用上方已计算好的 newResult，不依赖 ref（避免 React 批量更新导致 ref 仍是旧值）
             if (data.maxSteps !== undefined && newResult !== null) {

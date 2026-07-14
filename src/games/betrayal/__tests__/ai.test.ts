@@ -1,0 +1,598 @@
+import { buildAiDecisionContext } from '../../../engine/ai';
+import { resolveNextLocalAiAction } from '../../../engine/ai/localRunner';
+import { createReplayAdapter } from '../../../engine/adapter';
+import { createInitialSystemState, createSeededRandom, executePipeline } from '../../../engine/pipeline';
+import type { MatchState, RandomFn } from '../../../engine/types';
+import {
+    BETRAYAL_AI_ACTION_KINDS,
+} from '../ai';
+import {
+    BETRAYAL_COMMANDS,
+    BetrayalDomain,
+    betrayalAiRuntime,
+    engineConfig,
+    type BetrayalCommand,
+    type BetrayalCore,
+} from '../game';
+import { BETRAYAL_MANIFEST } from '../manifest';
+import {
+    applyBetrayalCommand,
+    createBetrayalScriptedRandom,
+    createFirstScenarioReadyToExorciseCore,
+    createFirstScenarioReadyToLearnAboutJackCore,
+    createFirstScenarioReadyToStudyExorcismCore,
+    createFirstScenarioReadyToTraitorVictoryCore,
+    createHeroAttackTraitorReadyCore,
+    createStartedFirstScenarioCore,
+} from '../testing/firstScenarioTestUtils';
+
+function stateOf(core: BetrayalCore, seed = 'betrayal-ai-test'): MatchState<BetrayalCore> {
+    const adapter = createReplayAdapter(BetrayalDomain, seed);
+    return {
+        ...adapter.setup(core.playerIds),
+        core,
+    };
+}
+
+function buildContext(state: MatchState<BetrayalCore>, playerId: string) {
+    return buildAiDecisionContext({
+        gameId: 'betrayal',
+        matchId: 'betrayal-ai-test',
+        playerId,
+        visibleState: state,
+        rulesVersion: null,
+        decisionBudgetMs: 250,
+        source: 'local',
+        seatController: { type: 'local-ai', minimumActionDelayMs: 0 },
+    });
+}
+
+function buildActions(state: MatchState<BetrayalCore>, playerId: string) {
+    return betrayalAiRuntime.buildLegalActions({ playerId, state });
+}
+
+function applyAiResolution(
+    state: MatchState<BetrayalCore>,
+    resolution: NonNullable<Awaited<ReturnType<typeof resolveNextLocalAiAction>>>,
+    random: RandomFn = createBetrayalScriptedRandom(),
+): MatchState<BetrayalCore> {
+    return resolution.action.commands.reduce((nextState, command) => executePipeline(
+        {
+            domain: engineConfig.domain,
+            systems: engineConfig.systems,
+        },
+        nextState,
+        {
+            type: command.type,
+            playerId: resolution.playerId,
+            payload: command.payload,
+            timestamp: 100,
+        } as BetrayalCommand,
+        random,
+        nextState.core.playerIds,
+    ).state, state);
+}
+
+describe('小黑屋本地 AI', () => {
+    test('manifest 开启本地 AI，默认把其余座位设为 AI，远程 AI 保持关闭', () => {
+        expect(BETRAYAL_MANIFEST.ai).toEqual({
+            capture: true,
+            localAi: true,
+            remoteAi: false,
+            defaultLocalAiSeats: 'all-opponents',
+        });
+    });
+
+    test('选角阶段只生成未被占用的探索者，并在选中后确认', () => {
+        const adapter = createReplayAdapter(BetrayalDomain, 'betrayal-ai-character-select');
+        let state = adapter.setup(['0', '1', '2']);
+        state = adapter.execute(state, {
+            type: BETRAYAL_COMMANDS.SELECT_EXPLORER,
+            playerId: '0',
+            payload: { explorerId: 'jaden-jones' },
+            timestamp: 1,
+        }).state;
+
+        const selectActions = buildActions(state, '1');
+        expect(selectActions.length).toBeGreaterThan(0);
+        expect(selectActions.every((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.SELECT_EXPLORER)).toBe(true);
+        expect(selectActions.some((action) => action.metadata?.explorerId === 'jaden-jones')).toBe(false);
+
+        const selectedAction = selectActions[0]!;
+        state = adapter.execute(state, {
+            type: selectedAction.commands[0]!.type,
+            playerId: '1',
+            payload: selectedAction.commands[0]!.payload,
+            timestamp: 2,
+        }).state;
+
+        expect(buildActions(state, '1'))
+            .toHaveLength(1);
+        expect(buildActions(state, '1')[0]?.kind)
+            .toBe(BETRAYAL_AI_ACTION_KINDS.CONFIRM_EXPLORER);
+    });
+
+    test('非当前 AI 不会生成运行时动作', () => {
+        const state = stateOf(createStartedFirstScenarioCore());
+
+        expect(buildActions(state, '1')).toEqual([]);
+    });
+
+    test('待处理事件选择只生成领域校验通过的动作', () => {
+        const core = createStartedFirstScenarioCore();
+        core.pendingEventChoice = {
+            id: 'ai-choice',
+            playerId: '0',
+            sourceTitle: '选择属性',
+            effect: {
+                mode: 'chooseTraitRoll',
+                prompt: '选择一个属性',
+                allowedTraits: ['knowledge', 'sanity'],
+                branches: [{
+                    min: 0,
+                    label: '完成',
+                    effect: { mode: 'none', recommendedAction: 'endTurn' },
+                }],
+                recommendedAction: 'endTurn',
+            },
+        };
+        const state = stateOf(core);
+        const actions = buildActions(state, '0');
+
+        expect(actions.map((action) => action.metadata?.trait)).toEqual(['knowledge', 'sanity']);
+        for (const action of actions) {
+            const command = action.commands[0]!;
+            expect(BetrayalDomain.validate(state, {
+                type: command.type,
+                playerId: '0',
+                payload: command.payload,
+                timestamp: 1,
+            } as never).valid).toBe(true);
+        }
+    });
+
+    test('英雄 AI 在图书馆优先调查杰克', () => {
+        const state = stateOf(createFirstScenarioReadyToLearnAboutJackCore());
+        const actions = buildActions(state, '0');
+
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.LEARN_ABOUT_JACK)).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '0'))?.actionId)
+            .toBe(BETRAYAL_AI_ACTION_KINDS.LEARN_ABOUT_JACK);
+    });
+
+    test('英雄 AI 在事件房间优先研究驱魔法阵', () => {
+        const state = stateOf(createFirstScenarioReadyToStudyExorcismCore());
+        const actions = buildActions(state, '0');
+
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.STUDY_EXORCISM)).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '0'))?.actionId)
+            .toBe(BETRAYAL_AI_ACTION_KINDS.STUDY_EXORCISM);
+    });
+
+    test('英雄 AI 在两处法阵完成后会驱魔并进入英雄终局', async () => {
+        const state = stateOf(createFirstScenarioReadyToExorciseCore());
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-exorcise-finish',
+            seatControllers: {
+                '0': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '1': { type: 'human' },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.EXORCISE_JACK);
+        expect(resolution).not.toBeNull();
+        if (!resolution) return;
+
+        const nextState = applyAiResolution(
+            state,
+            resolution,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
+        );
+        expect(nextState.core.phase).toBe('endgame');
+        expect(nextState.core.endgameResult?.outcome).toBe('survivors');
+    });
+
+    test('AI 会用急救包治疗同房受伤队友，并通过正式领域管线生效', async () => {
+        const core = createStartedFirstScenarioCore();
+        const teammate = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
+        const healthyTraits = { ...teammate.traits };
+        teammate.roomId = core.currentExplorer.roomId;
+        teammate.traits = {
+            might: Math.max(1, teammate.traits.might - 1),
+            speed: Math.max(1, teammate.traits.speed - 1),
+            knowledge: Math.max(1, teammate.traits.knowledge - 1),
+            sanity: Math.max(1, teammate.traits.sanity - 1),
+        };
+        core.currentExplorer.inventory = [{ id: 'medical-kit', name: '急救包', kind: 'item' }];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['medical-kit'];
+        const state = stateOf(core, 'betrayal-ai-medical-kit');
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-medical-kit',
+            seatControllers: {
+                '0': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '1': { type: 'human' },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.USE_POSSESSION);
+        expect(resolution?.action.commands[0]?.payload).toMatchObject({
+            cardId: 'medical-kit',
+            targetPlayerId: '1',
+        });
+        expect(resolution).not.toBeNull();
+        if (!resolution) return;
+
+        const nextState = applyAiResolution(state, resolution);
+        const healedTeammate = nextState.core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
+        expect(healedTeammate.traits).toEqual(healthyTraits);
+        expect(nextState.core.currentExplorer.inventory).toEqual([]);
+    });
+
+    test('AI 会为地图和面具生成领域校验通过的目标房间参数', () => {
+        const core = createFirstScenarioReadyToLearnAboutJackCore();
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'entrance-hall',
+            inventory: [
+                { id: 'map', name: '地图', kind: 'item' },
+                { id: 'mask', name: '面具', kind: 'omen' },
+            ],
+        };
+        core.activeRoomId = 'entrance-hall';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? { ...explorer, roomId: 'entrance-hall' }
+                : explorer
+        ));
+        core.monsters = [{
+            id: 'jack-spirit',
+            name: '杰克之灵',
+            portraitAsset: 'betrayal/monsters/spirit',
+            roomId: 'entrance-hall',
+            might: 5,
+            speed: 3,
+            damage: 1,
+        }];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['map', 'mask'];
+        const state = stateOf(core, 'betrayal-ai-possession-targets');
+        const actions = buildActions(state, '0')
+            .filter((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.USE_POSSESSION);
+
+        expect(actions.some((action) => action.metadata?.possessionEffectId === 'map')).toBe(true);
+        expect(actions.some((action) => action.metadata?.possessionEffectId === 'mask')).toBe(true);
+        for (const action of actions) {
+            const command = action.commands[0]!;
+            expect(BetrayalDomain.validate(state, {
+                type: command.type,
+                playerId: '0',
+                payload: command.payload,
+                timestamp: 1,
+            } as never).valid).toBe(true);
+        }
+    });
+
+    test('AI 只在持有物更适合队友时生成普通交易和狗的远程交易', () => {
+        const core = createStartedFirstScenarioCore();
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'entrance-hall',
+            traits: {
+                ...core.currentExplorer.traits,
+                speed: 1,
+                knowledge: 1,
+            },
+            inventory: [
+                { id: 'dog', name: '狗', kind: 'omen' },
+                { id: 'map', name: '地图', kind: 'item' },
+            ],
+        };
+        core.activeRoomId = 'entrance-hall';
+        core.otherExplorers = core.otherExplorers.map((explorer) => {
+            if (explorer.playerId === '1') {
+                return {
+                    ...explorer,
+                    roomId: 'entrance-hall',
+                    traits: { ...explorer.traits, speed: 6, knowledge: 6 },
+                };
+            }
+            if (explorer.playerId === '2') {
+                return {
+                    ...explorer,
+                    roomId: 'upper-landing',
+                    traits: { ...explorer.traits, speed: 6, knowledge: 6 },
+                };
+            }
+            return explorer;
+        });
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['dog', 'map'];
+        const state = stateOf(core, 'betrayal-ai-trade');
+        const tradeActions = buildActions(state, '0')
+            .filter((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.TRADE_POSSESSION);
+
+        expect(tradeActions.some((action) => (
+            action.metadata?.targetPlayerId === '1'
+            && action.metadata?.cardId === 'map'
+            && action.metadata?.useDog === false
+        ))).toBe(true);
+        expect(tradeActions.some((action) => (
+            action.metadata?.targetPlayerId === '2'
+            && action.metadata?.cardId === 'map'
+            && action.metadata?.useDog === true
+        ))).toBe(true);
+
+        const noGainCore = createStartedFirstScenarioCore();
+        noGainCore.currentExplorer.inventory = [{ id: 'map', name: '地图', kind: 'item' }];
+        noGainCore.currentExplorerInventory = [...noGainCore.currentExplorer.inventory];
+        noGainCore.turnStartInventoryCardIds = ['map'];
+        noGainCore.otherExplorers = noGainCore.otherExplorers.map((explorer) => ({
+            ...explorer,
+            roomId: noGainCore.currentExplorer.roomId,
+            traits: {
+                ...explorer.traits,
+                speed: 1,
+                knowledge: 1,
+            },
+        }));
+        expect(buildActions(stateOf(noGainCore, 'betrayal-ai-no-trade-gain'), '0')
+            .some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.TRADE_POSSESSION))
+            .toBe(false);
+    });
+
+    test('AI 会选择尸体上的具体持有物并完成搜刮', async () => {
+        const core = createStartedFirstScenarioCore();
+        const corpse = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
+        corpse.roomId = core.currentExplorer.roomId;
+        corpse.inventory = [{ id: 'map', name: '地图', kind: 'item' }];
+        core.scenarioRuntime.deadExplorerPlayerIds = ['1'];
+        const state = stateOf(core, 'betrayal-ai-loot');
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-loot',
+            seatControllers: {
+                '0': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '1': { type: 'human' },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.LOOT_CORPSE);
+        expect(resolution?.action.commands[0]?.payload).toEqual({
+            sourcePlayerId: '1',
+            cardId: 'map',
+        });
+        expect(resolution).not.toBeNull();
+        if (!resolution) return;
+
+        const nextState = applyAiResolution(state, resolution);
+        expect(nextState.core.currentExplorer.inventory.map((card) => card.id)).toContain('map');
+        expect(nextState.core.otherExplorers.find((explorer) => explorer.playerId === '1')?.inventory).toEqual([]);
+    });
+
+    test('AI 会重掷失败结果中的最低点兔脚骰子，但不会破坏成功结果', () => {
+        const failedCore = createStartedFirstScenarioCore();
+        failedCore.currentExplorer.inventory = [{ id: 'rope', name: '兔脚', kind: 'item' }];
+        failedCore.currentExplorerInventory = [...failedCore.currentExplorer.inventory];
+        failedCore.turnStartInventoryCardIds = ['rope'];
+        failedCore.recentRoll = {
+            id: 'failed-attack-roll',
+            kind: 'attackRoll',
+            playerId: '0',
+            sourceTitle: '攻击投骰',
+            dice: [2, 0, 1],
+            passiveBonus: 0,
+            latestLabel: '反受 2 点伤害',
+            attack: {
+                target: 'traitor',
+                defenderPlayerId: '1',
+                damageKind: 'physical',
+                previousDamageToAttacker: 2,
+                previousDamageToDefender: 0,
+                defenderRoll: 4,
+                attackerTraitsBeforeDamage: { ...failedCore.currentExplorer.traits },
+                defenderTraitsBeforeDamage: {
+                    ...failedCore.otherExplorers.find((explorer) => explorer.playerId === '1')!.traits,
+                },
+            },
+            consumedRabbitFootCardIds: [],
+        };
+        const failedState = stateOf(failedCore, 'betrayal-ai-rabbit-foot-failed');
+        const failedActions = buildActions(failedState, '0');
+
+        expect(failedActions.every((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.USE_RABBIT_FOOT)).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(failedState, '0'))?.actionId)
+            .toBe('use-rabbit-foot:rope:1');
+
+        const successfulCore = createStartedFirstScenarioCore();
+        successfulCore.currentExplorer.inventory = [{ id: 'rope', name: '兔脚', kind: 'item' }];
+        successfulCore.currentExplorerInventory = [...successfulCore.currentExplorer.inventory];
+        successfulCore.turnStartInventoryCardIds = ['rope'];
+        successfulCore.recentRoll = {
+            ...failedCore.recentRoll,
+            id: 'successful-attack-roll',
+            dice: [3, 3, 2],
+            latestLabel: '造成 4 点伤害',
+            attack: {
+                ...failedCore.recentRoll.attack!,
+                defenderRoll: 4,
+            },
+        };
+        expect(buildActions(stateOf(successfulCore, 'betrayal-ai-rabbit-foot-success'), '0')
+            .some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.USE_RABBIT_FOOT))
+            .toBe(false);
+    });
+
+    test('AI 会优先使用当前可用的神秘电梯房间效果', async () => {
+        const core = createStartedFirstScenarioCore();
+        core.rooms = core.rooms.map((room) => (
+            room.id === core.activeRoomId
+                ? { ...room, enterEffect: 'mysticElevator' }
+                : room
+        ));
+        const state = stateOf(core, 'betrayal-ai-room-effect');
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-room-effect',
+            seatControllers: {
+                '0': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '1': { type: 'human' },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.USE_ROOM_EFFECT);
+        expect(resolution).not.toBeNull();
+        if (!resolution) return;
+
+        const nextState = applyAiResolution(
+            state,
+            resolution,
+            createBetrayalScriptedRandom(3, 3),
+        );
+        expect(nextState.core.scenarioRuntime.usedRoomEffectIdsThisTurn).toContain('mysticElevator');
+        expect(nextState.core.recentRoll?.kind).toBe('mysticElevator');
+    });
+
+    test('叛徒 AI 与英雄同房时优先攻击英雄', () => {
+        const state = stateOf(createFirstScenarioReadyToTraitorVictoryCore());
+        const actions = buildActions(state, '2');
+
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.TRAITOR_ATTACK_HERO)).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '2'))?.actionId)
+            .toMatch(/^traitor-attack-hero:/);
+    });
+
+    test('叛徒死亡后轮到其行动时会生成杰克之灵移动动作', () => {
+        let core = createHeroAttackTraitorReadyCore();
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'traitor' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
+        );
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        const state = stateOf(core);
+        const actions = buildActions(state, '2');
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('2');
+        expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.MOVE_TO_ROOM)).toBe(true);
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.END_TURN)).toBe(true);
+    });
+
+    test('公共 AI runner 能在英雄目标状态解析出真实命令', async () => {
+        const state = stateOf(createFirstScenarioReadyToLearnAboutJackCore());
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-runner-test',
+            seatControllers: {
+                '0': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '1': { type: 'human' },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.LEARN_ABOUT_JACK);
+        expect(resolution?.action.commands[0]?.type).toBe(BETRAYAL_COMMANDS.LEARN_ABOUT_JACK);
+    });
+
+    test('公共 AI runner 能连续执行恶兆前动作并把回合交给下一位玩家', async () => {
+        let state = stateOf(createStartedFirstScenarioCore(), 'betrayal-ai-continuous-turn');
+        const initialPlayerId = state.core.currentPlayer;
+        const seenActionKinds: string[] = [];
+        const seatControllers = {
+            '0': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+            '1': { type: 'human' as const },
+            '2': { type: 'human' as const },
+        };
+
+        for (let step = 0; step < 8 && state.core.currentPlayer === initialPlayerId; step += 1) {
+            const resolution = await resolveNextLocalAiAction({
+                engineConfig,
+                state,
+                matchId: `betrayal-ai-continuous-turn-${step}`,
+                seatControllers,
+            });
+
+            expect(resolution).not.toBeNull();
+            if (!resolution) break;
+
+            seenActionKinds.push(resolution.action.kind);
+            state = applyAiResolution(state, resolution);
+        }
+
+        expect(seenActionKinds).toContain(BETRAYAL_AI_ACTION_KINDS.EXPLORE_ROOM);
+        expect(state.core.currentPlayer).not.toBe(initialPlayerId);
+    });
+
+    test('全 AI 对局会真实分配 AI 叛徒并通过合法阵营动作推进到终局', async () => {
+        const playerIds = ['0', '1', '2'];
+        const random = createSeededRandom('betrayal-ai-full-audit');
+        let state: MatchState<BetrayalCore> = {
+            core: engineConfig.domain.setup(playerIds, random),
+            sys: createInitialSystemState(playerIds, engineConfig.systems, engineConfig.systemsConfig),
+        };
+        const seatControllers = Object.fromEntries(playerIds.map((playerId) => [
+            playerId,
+            { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+        ]));
+        let sawAiTraitor = false;
+        let sawTraitorAttack = false;
+        let sawHeroAttack = false;
+        let sawCorpseAttack = false;
+        let executedSteps = 0;
+
+        for (; executedSteps < 160 && !state.core.endgameResult; executedSteps += 1) {
+            const resolution = await resolveNextLocalAiAction({
+                engineConfig,
+                state,
+                matchId: `betrayal-ai-full-audit-${executedSteps}`,
+                seatControllers,
+            });
+
+            expect(resolution).not.toBeNull();
+            if (!resolution) break;
+
+            const traitorPlayerId = state.core.scenarioRuntime.traitorPlayerId;
+            if (traitorPlayerId) {
+                sawAiTraitor = true;
+                sawTraitorAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.TRAITOR_ATTACK_HERO;
+                sawHeroAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.HERO_ATTACK_TRAITOR;
+                const traitorIsDead = state.core.scenarioRuntime.deadExplorerPlayerIds.includes(traitorPlayerId);
+                if (traitorIsDead) {
+                    sawCorpseAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.HERO_ATTACK_TRAITOR;
+                }
+            }
+
+            state = applyAiResolution(state, resolution, random);
+        }
+
+        expect(new Set(Object.values(state.core.selectedExplorerByPlayerId))).toHaveLength(playerIds.length);
+        expect(state.core.readyPlayerIds).toHaveLength(playerIds.length);
+        expect(sawAiTraitor).toBe(true);
+        expect(state.core.scenarioRuntime.traitorPlayerId).toBe(state.core.scenarioRuntime.hauntRevealerPlayerId);
+        expect(sawTraitorAttack).toBe(true);
+        expect(sawHeroAttack).toBe(true);
+        expect(sawCorpseAttack).toBe(false);
+        expect(executedSteps).toBeLessThan(160);
+        expect(state.core.phase).toBe('endgame');
+        expect(state.core.endgameResult?.outcome).toBe('traitor');
+    });
+});

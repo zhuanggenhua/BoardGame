@@ -70,6 +70,24 @@ describe('useGameAudio', () => {
     });
   });
 
+  it('初始化后会后台预热非核心音效，并跳过已作为关键音效预热的 key', async () => {
+    const config: GameAudioConfig = {
+      criticalSounds: ['sfx-critical'],
+      warmSounds: ['sfx-critical', 'sfx-warm', 'sfx-warm'],
+      feedbackResolver: () => null,
+    };
+
+    renderHook(() => useGameAudio({ config, gameId: 'cardia', G: {}, ctx: {} }));
+
+    await waitFor(() => {
+      expect(AudioManager.preloadKeys).toHaveBeenCalledWith(['sfx-critical']);
+    });
+
+    await waitFor(() => {
+      expect(AudioManager.preloadKeys).toHaveBeenCalledWith(['sfx-warm']);
+    });
+  });
+
   it('optimistic rollback 后恢复旧 eventEntries 时不应重播旧音效，只应播放新增事件', async () => {
     let now = 1000;
     vi.spyOn(Date, 'now').mockImplementation(() => now);

@@ -239,6 +239,22 @@ function mythicHorsesSeastar(ctx: AbilityContext): AbilityResult {
     return { events: [grantContextualExtraMinion(ctx, 'mythic_horses_seastar', ctx.baseIndex)] };
 }
 
+function mythicHorsesSeastarPod(ctx: AbilityContext): AbilityResult {
+    const base = ctx.matchState.core.bases[ctx.baseIndex];
+    if (!base) return { events: [] };
+    const source = base.minions.find(minion => minion.uid === ctx.cardUid);
+    if (!source) return { events: [] };
+    const hasOtherOwnMinion = base.minions.some(minion => (
+        minion.uid !== source.uid
+        && minion.controller === ctx.playerId
+    ));
+    if (!hasOtherOwnMinion) return { events: [] };
+    if (ctx.matchState.core.extraMinionSourcesUsed?.[ctx.playerId]?.includes('mythic_horses_seastar_pod')) {
+        return { events: [] };
+    }
+    return { events: [grantContextualExtraMinion(ctx, 'mythic_horses_seastar_pod')] };
+}
+
 function mythicHorsesSuperFutureSpaceArmorPower(ctx: AbilityContext): AbilityResult {
     const targets = collectMinions(ctx.matchState.core, () => true);
     if (targets.length === 0) {
@@ -257,6 +273,35 @@ function mythicHorsesSuperFutureSpaceArmorPower(ctx: AbilityContext): AbilityRes
         },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, prompt) };
+}
+
+function mythicHorsesSuperFutureSpaceArmorPowerPod(ctx: AbilityContext): AbilityResult {
+    const events: SmashUpEvent[] = [];
+    ctx.matchState.core.bases.forEach((base, baseIndex) => {
+        const ownMinions = base.minions.filter(minion => minion.controller === ctx.playerId);
+        if (ownMinions.length < 2) return;
+        ownMinions.forEach((minion) => {
+            events.push(
+                addTempPower(minion.uid, baseIndex, 2, 'mythic_horses_super_future_space_armor_power_pod', ctx.now),
+                buildMetadataUpdatedEvent(
+                    minion.uid,
+                    baseIndex,
+                    {
+                        tempProtectSourcePlayerId: ctx.playerId,
+                        tempProtectDestroyUntilTurnNumber: ctx.matchState.core.turnNumber,
+                        tempProtectMoveUntilTurnNumber: ctx.matchState.core.turnNumber,
+                        tempProtectAffectUntilTurnNumber: ctx.matchState.core.turnNumber,
+                    },
+                    'mythic_horses_super_future_space_armor_power_pod',
+                    ctx.now,
+                ),
+            );
+        });
+    });
+    if (events.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    return { events };
 }
 
 function mythicHorsesTeachingPower(ctx: AbilityContext): AbilityResult {
@@ -452,6 +497,20 @@ function mythicHorsesSharingPowerOnTurnStart(ctx: TriggerContext): TriggerResult
     const hasSmallMinion = base.minions.some(minion => getMinionPower(ctx.state, minion, ctx.sourceBaseIndex!) <= 2);
     if (!hasSmallMinion) return [];
     return buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
+}
+
+function mythicHorsesSharingPowerPodOnTurnStart(_ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    return [];
+}
+
+function mythicHorsesSharingPowerPodOnTurnEnd(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
+    if (ctx.sourceBaseIndex === undefined) return [];
+    const base = ctx.state.bases[ctx.sourceBaseIndex];
+    if (!base) return [];
+    const ownerId = ctx.sourceControllerId ?? ctx.playerId;
+    const ownMinionCount = base.minions.filter(minion => minion.controller === ownerId).length;
+    if (ownMinionCount < 2) return [];
+    return buildStandardDrawEvents(ctx.state, ownerId, 1, ctx.random, ctx.now);
 }
 
 function handleArmorPower(
@@ -779,14 +838,24 @@ function handleFriendshipPowerTop(
 
 export function registerMythicHorsesAbilities(): void {
     registerAbility('mythic_horses_seastar', 'talent', mythicHorsesSeastar);
+    registerAbility('mythic_horses_seastar_pod', 'onPlay', mythicHorsesSeastarPod);
     registerAbility('mythic_horses_rainbow', 'talent', mythicHorsesRainbow);
     registerAbility('mythic_horses_teaching_power', 'special', mythicHorsesTeachingPower);
     registerAbility('mythic_horses_super_future_space_armor_power', 'onPlay', mythicHorsesSuperFutureSpaceArmorPower);
+    registerAbility('mythic_horses_super_future_space_armor_power_pod', 'onPlay', mythicHorsesSuperFutureSpaceArmorPowerPod);
     registerAbility('mythic_horses_togetherness_power', 'onPlay', mythicHorsesTogethernessPower);
     registerAbility('mythic_horses_adventure_power', 'onPlay', mythicHorsesAdventurePower);
     registerAbility('mythic_horses_freedom_power', 'onPlay', mythicHorsesFreedomPower);
     registerAbility('mythic_horses_friendship_power', 'onPlay', mythicHorsesFriendshipPower);
     registerTrigger('mythic_horses_sharing_power', 'onTurnStart', mythicHorsesSharingPowerOnTurnStart, {
+        playerContext: 'sourceController',
+        perInstance: true,
+    });
+    registerTrigger('mythic_horses_sharing_power_pod', 'onTurnStart', mythicHorsesSharingPowerPodOnTurnStart, {
+        playerContext: 'sourceController',
+        perInstance: true,
+    });
+    registerTrigger('mythic_horses_sharing_power_pod', 'onTurnEnd', mythicHorsesSharingPowerPodOnTurnEnd, {
         playerContext: 'sourceController',
         perInstance: true,
     });

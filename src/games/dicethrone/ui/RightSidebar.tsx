@@ -42,7 +42,7 @@ export const RightSidebar = ({
     isRolling,
     setIsRolling,
     rerollingDiceIds,
-    setRerollingDiceIds,
+    rerollAnimationSeq,
     locale,
     onToggleLock,
     onRoll,
@@ -77,7 +77,7 @@ export const RightSidebar = ({
     isRolling: boolean;
     setIsRolling: (isRolling: boolean) => void;
     rerollingDiceIds?: number[];
-    setRerollingDiceIds: (ids: number[]) => void;
+    rerollAnimationSeq?: number;
     locale?: string;
     onToggleLock: (id: number) => void;
     onRoll: () => void;
@@ -214,11 +214,11 @@ export const RightSidebar = ({
                         canInteract={canInteractDice}
                         isRolling={isRolling}
                         rerollingDiceIds={rerollingDiceIds}
+                        rerollAnimationSeq={rerollAnimationSeq}
                         locale={locale}
                         interaction={isDiceMultistep ? interaction : undefined}
                         multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
                         isPassiveRerollMode={!!passiveAbilityProps?.rerollSelectingAction}
-                        rootPlayerId={rootPlayerId}
                     />
                 </div>
                 )}
@@ -235,7 +235,6 @@ export const RightSidebar = ({
                         setIsRolling={setIsRolling}
                         interaction={isDiceMultistep ? interaction : undefined}
                         multistepInteraction={isDiceMultistep ? multistepInteraction : undefined}
-                        setRerollingDiceIds={setRerollingDiceIds}
                     />
                 )}
                 <div className={`w-full flex justify-center ${showAdvancePhaseButton ? '' : 'invisible pointer-events-none'}`}>

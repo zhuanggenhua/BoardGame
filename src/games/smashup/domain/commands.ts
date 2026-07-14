@@ -23,7 +23,7 @@ import { canPlayActionFromDiscard } from './discardActionPlayability';
 import { canPlayFromDiscard } from './discardPlayability';
 import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
-import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility } from './baseAbilities';
+import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility, type BaseAbilityContext } from './baseAbilities';
 import {
     getActionPlayRestrictionError,
     validateActionPlaySemantics,
@@ -130,7 +130,7 @@ export function getManualSpecialScoringBaseIndices(
 function validateManualSpecialScoringBase(
     state: MatchState<SmashUpCore>,
     baseIndex: number,
-    defId?: string,
+    defIdOrSourceScope?: string | 'anyBase',
 ): ValidationResult | undefined {
     if (state.sys.phase !== 'scoreBases') {
         return undefined;
@@ -144,11 +144,12 @@ function validateManualSpecialScoringBase(
         return undefined;
     }
 
-    const canSourceFromAnyBase = defId !== undefined
-        && getCardActivatableAbilities(defId).some(ability =>
-            ability.kind === 'special'
-            && ability.window === 'beforeScoring'
-            && ability.sourceScope === 'anyBase');
+    const canSourceFromAnyBase = defIdOrSourceScope === 'anyBase'
+        || (defIdOrSourceScope !== undefined
+            && getCardActivatableAbilities(defIdOrSourceScope).some(ability =>
+                ability.kind === 'special'
+                && ability.window === 'beforeScoring'
+                && ability.sourceScope === 'anyBase'));
     const eligibleIndices = getManualSpecialScoringBaseIndices(state);
     if (!canSourceFromAnyBase && !eligibleIndices.includes(baseIndex)) {
         return { valid: false, error: '只能在达到临界点的基地上激活计分前特殊能力' };
@@ -819,14 +820,15 @@ export function validate(
                 }
             }
 
-            const canUse = canUseActiveBaseAbility(base.defId, {
+            const baseAbilityContext: BaseAbilityContext = {
                 state: core,
                 matchState: state,
                 baseIndex,
                 baseDefId: base.defId,
                 playerId: command.playerId,
                 now: core.turnNumber ?? 0,
-            } as any);
+            };
+            const canUse = canUseActiveBaseAbility(base.defId, baseAbilityContext);
             if (!canUse) {
                 return { valid: false, error: '当前不能使用该基地能力' };
             }
@@ -1085,6 +1087,8 @@ export function validate(
                 if (!titanValidation.valid) {
                     return titanValidation;
                 }
+                const titan = getTitanByUid(core, spTitanUid);
+                if (!titan) return { valid: false, error: '该泰坦不存在' };
                 const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, titan.defId);
                 if (scoringBaseValidation) {
                     return scoringBaseValidation;
@@ -1097,10 +1101,6 @@ export function validate(
             if (spMinion.controller !== command.playerId) {
                 return { valid: false, error: '只能激活自己控制的随从的特殊能力' };
             }
-            const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, spMinion.defId);
-            if (scoringBaseValidation) {
-                return scoringBaseValidation;
-            }
             const specialAvailability = getManualSpecialAvailability(spMinion.defId, {
                 zone: 'board',
                 window: activationWindow,
@@ -1111,6 +1111,19 @@ export function validate(
             }
             if (!specialAvailability.hasSpecialExecutor) {
                 return { valid: false, error: '该随从的特殊能力不能手动激活' };
+            }
+            const spMinionDef = getMinionDef(spMinion.defId);
+            const sourceScope = spMinionDef?.activatableAbilities?.some(ability =>
+                ability.kind === 'special'
+                && ability.zone === 'board'
+                && ability.window === activationWindow
+                && ability.sourceScope === 'anyBase',
+            )
+                ? 'anyBase'
+                : undefined;
+            const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, sourceScope ?? spMinion.defId);
+            if (scoringBaseValidation) {
+                return scoringBaseValidation;
             }
             // specialLimitGroup 检查
             if (isSpecialLimitBlocked(core, spMinion.defId, spBaseIndex)) {

@@ -442,13 +442,38 @@ export const IGNITE_2: AbilityDef = {
     type: 'offensive',
     description: abilityText('ignite-2', 'description'),
     sfxKey: PYROMANCER_SFX_IGNITE,
-    trigger: { type: 'largeStraight' },
-    effects: [
-        // FM 获得由 ignite-2-resolve 内部处理（先获得FM再基于FM算伤害）
-        inflictStatus(STATUS_IDS.BURN, 1, abilityEffectText('ignite-2', 'inflictBurn')),
+    variants: [
         {
-            description: abilityEffectText('ignite-2', 'main'),
-            action: { type: 'custom', target: 'self', customActionId: 'ignite-2-resolve' }
+            id: 'ignite-2',
+            name: abilityText('ignite-2', 'name'),
+            trigger: { type: 'largeStraight' },
+            effects: [
+                // FM 获得由 ignite-2-resolve 内部处理（先获得FM再基于FM算伤害）
+                inflictStatus(STATUS_IDS.BURN, 1, abilityEffectText('ignite-2', 'inflictBurn')),
+                {
+                    description: abilityEffectText('ignite-2', 'main'),
+                    action: { type: 'custom', target: 'self', customActionId: 'ignite-2-resolve' }
+                }
+            ],
+            priority: 1,
+        },
+        {
+            id: 'heat-of-soul',
+            name: abilityText('heat-of-soul', 'name'),
+            trigger: {
+                type: 'diceSet',
+                faces: {
+                    [PYROMANCER_DICE_FACE_IDS.FIRE]: 2,
+                    [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 2,
+                }
+            },
+            effects: [
+                {
+                    description: abilityEffectText('heat-of-soul', 'main'),
+                    action: { type: 'custom', target: 'self', customActionId: 'ignite-heat-of-soul-resolve' }
+                }
+            ],
+            priority: 2,
         }
     ]
 };

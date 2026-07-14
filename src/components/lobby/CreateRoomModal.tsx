@@ -867,14 +867,16 @@ export const CreateRoomModal = ({
                                         </select>
                                     </div>
 
-                                    <SetupOptionsFields
-                                        gameManifest={gameManifest}
-                                        selections={setupSelections}
-                                        onSelectionsChange={handleSetupSelectionsChange}
-                                        t={t}
-                                        gameNamespace={gameNamespace}
-                                        numPlayers={numPlayers}
-                                    />
+                                    {!isQidahenRoom ? (
+                                        <SetupOptionsFields
+                                            gameManifest={gameManifest}
+                                            selections={setupSelections}
+                                            onSelectionsChange={handleSetupSelectionsChange}
+                                            t={t}
+                                            gameNamespace={gameNamespace}
+                                            numPlayers={numPlayers}
+                                        />
+                                    ) : null}
 
                                     {renderQidahenPregameChoiceSection(
                                         isCompactHomeV2Layout

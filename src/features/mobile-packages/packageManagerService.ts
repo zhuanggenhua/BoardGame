@@ -22,7 +22,11 @@ import {
     writeStoredGamePackageState,
 } from './storage';
 import type { GamePackageInstallHandle, ResolvedGamePackageManifest, StoredGamePackageState } from './types';
-import { hasUsableInstalledGamePackageState, mergeGamePackageState } from './types';
+import {
+    canInstallResolvedAssetPack,
+    hasUsableInstalledGamePackageState,
+    mergeGamePackageState,
+} from './types';
 import { resolveMissingAssetPackErrorCode } from './errorMessages';
 
 type GamePackageStateListener = (state: StoredGamePackageState) => void;
@@ -653,11 +657,7 @@ export const startGamePackageInstall = (
         gameId: manifest.gameId,
         manifest,
     });
-    const canInstallDiffOnlyAssetPack = Boolean(
-        manifest.assetPackDiffOnly
-        && manifest.assetPackFileIndexUrl
-    );
-    if (!manifest.assetPackUrl && !canInstallDiffOnlyAssetPack) {
+    if (!canInstallResolvedAssetPack(manifest)) {
         const fallbackState = fallbackCache.get(manifest.gameId) ?? {
             gameId: manifest.gameId,
             runtimeChannel: manifest.runtimeChannel,

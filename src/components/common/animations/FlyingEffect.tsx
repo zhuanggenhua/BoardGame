@@ -10,6 +10,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue, useAnimate } from 'framer-motion';
 import { UI_Z_INDEX } from '../../../core';
+import { createFxScreenPathBox, resolveFxDpr, type FxQuality, type FxScreenPathBox } from '../../../engine/fx';
 
 // ============================================================================
 // 类型
@@ -24,6 +25,8 @@ export interface FlyingEffectData {
     endPos: { x: number; y: number };
     /** 效果强度（伤害/治疗量），影响粒子密度。默认 1 */
     intensity?: number;
+    /** 特效质量档：reduced 保留飞行主体和少量拖尾，降低全屏 canvas 成本 */
+    quality?: FxQuality;
     /** 可选：覆盖飘字的视觉预设 */
     floatingTextPreset?: 'default' | 'dicethrone-damage';
     /** 飞行体到达目标（冲击帧）时触发的回调，用于同步播放音效/震屏等 */
@@ -156,7 +159,9 @@ const FlameTrailCanvas: React.FC<{
     intensity: number;
     /** 画布层级 */
     zIndex: number;
-}> = ({ headXRef, headYRef, dirX, dirY, flameColors, emitting, intensity, zIndex }) => {
+    quality: FxQuality;
+    trailBox: FxScreenPathBox;
+}> = ({ headXRef, headYRef, dirX, dirY, flameColors, emitting, intensity, zIndex, quality, trailBox }) => {
     const canvasRef = React.useRef<HTMLCanvasElement>(null);
     const particlesRef = React.useRef<Particle[]>([]);
     const rafRef = React.useRef(0);
@@ -176,20 +181,23 @@ const FlameTrailCanvas: React.FC<{
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const dpr = window.devicePixelRatio || 1;
+        const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
 
         const resize = () => {
-            canvas.width = window.innerWidth * dpr;
-            canvas.height = window.innerHeight * dpr;
-            canvas.style.width = `${window.innerWidth}px`;
-            canvas.style.height = `${window.innerHeight}px`;
+            const width = Number.parseFloat(trailBox.style.width);
+            const height = Number.parseFloat(trailBox.style.height);
+            canvas.width = Math.round(width * dpr);
+            canvas.height = Math.round(height * dpr);
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         };
         resize();
-        window.addEventListener('resize', resize);
 
         // 每帧喷射的粒子数
-        const spawnRate = Math.min(25, 6 + intensity * 3);
+        const spawnRate = Math.min(quality === 'reduced' ? 10 : 25, quality === 'reduced' ? 3 + intensity : 6 + intensity * 3);
+        const left = Number.parseFloat(trailBox.style.left);
+        const top = Number.parseFloat(trailBox.style.top);
 
         const loop = (time: number) => {
             if (!lastTimeRef.current) lastTimeRef.current = time;
@@ -197,8 +205,8 @@ const FlameTrailCanvas: React.FC<{
             lastTimeRef.current = time;
 
             const particles = particlesRef.current;
-            const hx = headXRef.current;
-            const hy = headYRef.current;
+            const hx = headXRef.current - left;
+            const hy = headYRef.current - top;
 
             // 喷射新粒子
             if (emittingRef.current) {
@@ -301,15 +309,17 @@ const FlameTrailCanvas: React.FC<{
 
         return () => {
             cancelAnimationFrame(rafRef.current);
-            window.removeEventListener('resize', resize);
         };
-    }, [dirX, dirY, intensity, rgbColors, headXRef, headYRef]);
+    }, [dirX, dirY, intensity, quality, rgbColors, headXRef, headYRef, trailBox]);
 
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none"
-            style={{ zIndex }}
+            className="fixed pointer-events-none"
+            style={{
+                ...trailBox.style,
+                zIndex,
+            }}
         />
     );
 };
@@ -505,6 +515,7 @@ const FlyingEffectItem: React.FC<{
     const style = getStyle(effect.type, effect.color);
     const hasTrail = effect.type === 'damage' || effect.type === 'heal';
     const intensity = effect.intensity ?? 1;
+    const quality = effect.quality ?? 'full';
     const flightDuration = calcFlightDuration(deltaX, deltaY);
     const effectZIndex = effect.floatingTextPreset === 'dicethrone-damage'
         ? DICETHRONE_DAMAGE_Z_INDEX
@@ -512,6 +523,14 @@ const FlyingEffectItem: React.FC<{
     const trailZIndex = effect.floatingTextPreset === 'dicethrone-damage'
         ? DICETHRONE_DAMAGE_Z_INDEX - 1
         : UI_Z_INDEX.overlayRaised;
+    const trailBox = React.useMemo(() => createFxScreenPathBox(
+        effect.startPos,
+        effect.endPos,
+        {
+            paddingPx: quality === 'reduced' ? 64 : 96,
+            minSizePx: quality === 'reduced' ? 144 : 192,
+        },
+    ), [effect.startPos, effect.endPos, quality]);
 
     // 零距离标记：framer-motion 在 initial === animate 时不触发 onAnimationComplete
     const isZeroDistance = dist < 1;
@@ -599,6 +618,8 @@ const FlyingEffectItem: React.FC<{
                     emitting={emitting}
                     intensity={intensity}
                     zIndex={trailZIndex}
+                    quality={quality}
+                    trailBox={trailBox}
                 />
             )}
 

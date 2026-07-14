@@ -131,10 +131,11 @@ export function HomeVersionFooter({
         });
     }, [isNativeAndroid]);
 
+    const currentInternalBundleVersion = otaSnapshot?.currentBundleVersion?.trim() || null;
     const activeBundleVersion = useMemo(() => {
-        const bundleVersion = otaSnapshot?.currentBundleVersion?.trim();
-        return bundleVersion || packageJson.version;
-    }, [otaSnapshot?.currentBundleVersion]);
+        const displayVersion = otaSnapshot?.currentDisplayVersion?.trim();
+        return displayVersion || packageJson.version;
+    }, [otaSnapshot?.currentDisplayVersion]);
     const shouldShowNativeAppVersion = isNativeAndroid;
     const homeVersionLabel = useMemo(
         () => isVersionExpanded ? activeBundleVersion.replace(/^v/i, '') : toShortVersionLabel(activeBundleVersion),
@@ -146,15 +147,18 @@ export function HomeVersionFooter({
         [isVersionExpanded, nativeAppVersion],
     );
     const latestManifestVersion = otaSnapshot?.manifestVersion?.trim() || null;
+    const latestDisplayVersion = otaSnapshot?.manifestDisplayVersion?.trim()
+        || otaSnapshot?.manifestProductVersion?.trim()
+        || null;
     const latestManifestVersionLabel = useMemo(
-        () => latestManifestVersion
-            ? (isVersionExpanded ? latestManifestVersion.replace(/^v/i, '') : toShortVersionLabel(latestManifestVersion))
+        () => latestDisplayVersion
+            ? (isVersionExpanded ? latestDisplayVersion.replace(/^v/i, '') : toShortVersionLabel(latestDisplayVersion))
             : null,
-        [isVersionExpanded, latestManifestVersion],
+        [isVersionExpanded, latestDisplayVersion],
     );
     const otaVersionMismatch = otaEnabledForCurrentShell
         && Boolean(latestManifestVersion)
-        && latestManifestVersion !== activeBundleVersion;
+        && latestManifestVersion !== currentInternalBundleVersion;
     const isImmediateOtaActive = otaEnabledForCurrentShell && otaActivityState.active;
 
     const handleVersionFooterClick = () => {
@@ -188,8 +192,8 @@ export function HomeVersionFooter({
             t('ota.footer.currentBundleTitle', { version: activeBundleVersion.replace(/^v/i, '') }),
             t('ota.footer.currentAppShellTitle', { version: nativeAppVersion.replace(/^v/i, '') }),
         ];
-        if (latestManifestVersion) {
-            lines.push(t('ota.footer.latestOtaTitle', { version: latestManifestVersion.replace(/^v/i, '') }));
+        if (latestDisplayVersion) {
+            lines.push(t('ota.footer.latestOtaTitle', { version: latestDisplayVersion.replace(/^v/i, '') }));
         }
         lines.push(
             !otaEnabledForCurrentShell
@@ -205,7 +209,7 @@ export function HomeVersionFooter({
         activeBundleVersion,
         isImmediateOtaActive,
         isVersionExpanded,
-        latestManifestVersion,
+        latestDisplayVersion,
         nativeAppVersion,
         otaEnabledForCurrentShell,
         otaVersionMismatch,

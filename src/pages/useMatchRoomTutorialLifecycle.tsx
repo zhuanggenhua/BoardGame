@@ -12,6 +12,7 @@ import {
 import { getTutorialCatalogEntry } from './useMatchRoomRuntimeSetup';
 
 let latestTutorialLifecycleMountId = 0;
+let latestTutorialRouteKey: string | null = null;
 const TUTORIAL_COMPLETION_STORAGE_PREFIX = 'boardgame:tutorial-completion:v1';
 const TUTORIAL_PROGRESS_SEED_PREFIX = 'tutorial-progress:v1';
 const TUTORIAL_PROGRESS_STORAGE_CHANGED_EVENT = 'boardgame:tutorial-progress-storage-changed';
@@ -161,6 +162,11 @@ const writeCompletedTutorialIds = (gameId: string, ids: Set<string>): void => {
     }
 };
 
+export const resetMatchRoomTutorialLifecycleRouteTrackingForTests = (): void => {
+    latestTutorialLifecycleMountId = 0;
+    latestTutorialRouteKey = null;
+};
+
 export const markTutorialChapterCompleted = (gameId: string, tutorialId: string): void => {
     const completedIds = readCompletedTutorialIds(gameId);
     completedIds.add(tutorialId);
@@ -234,6 +240,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         closeModal,
     } = args;
     const {
+        tutorial,
         startTutorial,
         closeTutorial,
         isActive,
@@ -250,7 +257,12 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
     });
     const tutorialModalIdRef = useRef<string | null>(null);
     const currentManifestId = resolvedTutorialManifest?.id ?? null;
-    const currentManifestLastStepId = resolvedTutorialManifest?.steps.at(-1)?.id ?? null;
+    const activeTutorialManifestId = tutorial.manifestId ?? null;
+    const currentManifestSteps = resolvedTutorialManifest?.steps ?? null;
+    const currentManifestLastStepId = currentManifestSteps?.[currentManifestSteps.length - 1]?.id ?? null;
+    const currentTutorialRouteKey = isTutorialRoute && currentManifestId
+        ? `${tutorialId ?? currentManifestId}:${currentManifestId}`
+        : null;
     const currentTutorialEntry = getTutorialCatalogEntry(tutorialCatalog, tutorialId);
     const nextTutorialId = currentTutorialEntry?.nextTutorialId;
     const completedTutorialCatalogId = resolveCompletedTutorialCatalogId(tutorialCatalog, tutorialId);
@@ -278,6 +290,29 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         lifecycleMountIdRef.current = latestTutorialLifecycleMountId;
     }, []);
 
+    const tutorialRouteKeyRef = useRef<string | null>(null);
+    useLayoutEffect(() => {
+        if (!currentTutorialRouteKey) {
+            tutorialRouteKeyRef.current = null;
+            tutorialStartedRef.current = false;
+            return;
+        }
+
+        if (
+            tutorialRouteKeyRef.current
+            && tutorialRouteKeyRef.current !== currentTutorialRouteKey
+        ) {
+            tutorialStartedRef.current = false;
+            lastTutorialProgressRef.current = {
+                manifestId: currentManifestId,
+                stepId: null,
+            };
+        }
+
+        latestTutorialRouteKey = currentTutorialRouteKey;
+        tutorialRouteKeyRef.current = currentTutorialRouteKey;
+    }, [currentManifestId, currentTutorialRouteKey]);
+
     // 教程启动 effect
     // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行。
     // 配合 TutorialDispatchBridge 的 useLayoutEffect（先 bindDispatch），
@@ -293,13 +328,27 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (!gameImplReady) return;
         if (shouldWaitForTutorialResumeDecision) return;
 
-        // 只在未激活且未启动过时调用 startTutorial
+        // 只在未启动过当前章节时调用 startTutorial。
+        // 切到隐藏续章时，旧章节可能仍 active；此时必须用当前 manifest 替换旧教程。
         // 不依赖 tutorial.manifestId/steps.length，避免 startTutorial 的 setTutorial 触发循环
-        if (!isActive && !tutorialStartedRef.current && resolvedTutorialManifest) {
+        const shouldStartCurrentTutorial = Boolean(resolvedTutorialManifest)
+            && !tutorialStartedRef.current
+            && (!isActive || activeTutorialManifestId !== currentManifestId);
+        if (shouldStartCurrentTutorial && resolvedTutorialManifest) {
             tutorialStartedRef.current = true;
             startTutorial(resolvedTutorialManifest);
         }
-    }, [startTutorial, isTutorialRoute, isActive, isGameNamespaceReady, gameImplReady, resolvedTutorialManifest, shouldWaitForTutorialResumeDecision]);
+    }, [
+        activeTutorialManifestId,
+        currentManifestId,
+        gameImplReady,
+        isActive,
+        isGameNamespaceReady,
+        isTutorialRoute,
+        resolvedTutorialManifest,
+        shouldWaitForTutorialResumeDecision,
+        startTutorial,
+    ]);
 
     // gameImplReady 变为 true 时补触发一次教程启动
     // 场景：dev 模式首次加载时 i18n namespace 先于游戏实现加载完成，
@@ -310,12 +359,25 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (!isTutorialRoute) return;
         if (!isGameNamespaceReady) return;
         if (shouldWaitForTutorialResumeDecision) return;
-        if (isActive || tutorialStartedRef.current) return;
+        const shouldStartCurrentTutorial = Boolean(resolvedTutorialManifest)
+            && !tutorialStartedRef.current
+            && (!isActive || activeTutorialManifestId !== currentManifestId);
+        if (!shouldStartCurrentTutorial) return;
         if (resolvedTutorialManifest) {
             tutorialStartedRef.current = true;
             startTutorial(resolvedTutorialManifest);
         }
-    }, [gameImplReady, isTutorialRoute, isGameNamespaceReady, shouldWaitForTutorialResumeDecision, isActive, startTutorial, resolvedTutorialManifest]);
+    }, [
+        activeTutorialManifestId,
+        currentManifestId,
+        gameImplReady,
+        isActive,
+        isGameNamespaceReady,
+        isTutorialRoute,
+        resolvedTutorialManifest,
+        shouldWaitForTutorialResumeDecision,
+        startTutorial,
+    ]);
 
     useEffect(() => {
         if (!isTutorialRoute) return;
@@ -323,7 +385,10 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         if (!gameImplReady) return;
         if (!isGameNamespaceReady) return;
         if (shouldWaitForTutorialResumeDecision) return;
-        if (isActive) return;
+        const shouldStartCurrentTutorial = Boolean(resolvedTutorialManifest)
+            && !tutorialStartedRef.current
+            && (!isActive || activeTutorialManifestId !== currentManifestId);
+        if (!shouldStartCurrentTutorial) return;
         if (
             lastTutorialProgressRef.current.manifestId === currentManifestId
             && lastTutorialProgressRef.current.stepId != null
@@ -336,6 +401,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         tutorialStartedRef.current = true;
         startTutorial(resolvedTutorialManifest);
     }, [
+        activeTutorialManifestId,
         currentManifestId,
         currentManifestLastStepId,
         gameImplReady,
@@ -362,10 +428,17 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
         return () => {
             if (tutorialStartedRef.current) {
                 const capturedMountId = lifecycleMountIdRef.current;
+                const capturedTutorialRouteKey = tutorialRouteKeyRef.current;
                 // 延迟清理：给 StrictMode remount 一个取消的机会
                 cleanupTimerRef.current = window.setTimeout(() => {
                     cleanupTimerRef.current = undefined;
                     if (capturedMountId !== latestTutorialLifecycleMountId) {
+                        return;
+                    }
+                    if (
+                        capturedTutorialRouteKey
+                        && latestTutorialRouteKey !== capturedTutorialRouteKey
+                    ) {
                         return;
                     }
                     if (tutorialStartedRef.current) {

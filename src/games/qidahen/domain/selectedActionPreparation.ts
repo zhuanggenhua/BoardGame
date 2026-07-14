@@ -11,14 +11,25 @@ import {
     buildQidahenCounterSpyPlotSelection,
     buildQidahenGinsengAndSableOpponentSelection,
     buildQidahenMongolNoblesCongressEffectSelection,
-    buildQidahenPowerStruggleCoupCharacterJudgementSelection,
     buildQidahenTributeEdictOpponentSelection,
 } from './eventCharacterTargetSelection';
+import { buildQidahenOpenGateSurrenderSelection } from './openGateSurrenderSelection';
 import type {
     QidahenArmamentId,
     QidahenCore,
     QidahenSeasonSummary,
 } from './types';
+
+const QIDAHEN_DROUGHT_EVENT_CARD_DEF_IDS = new Set([
+    'qidahen-atlas05-1608-mongol-drought',
+    'qidahen-atlas05-1613-northeast-drought',
+    'qidahen-atlas05-1637-mongol-drought-alt',
+]);
+
+const QIDAHEN_SECOND_HALF_WHEEL_POSITIONS = new Set([
+    'wheel-midyear',
+    'wheel-new-year',
+]);
 
 interface QidahenSelectedActionPreparationDependencies {
     updateTurnLabel: (
@@ -98,35 +109,18 @@ export function prepareQidahenSelectedAction(
     const selectedEventActionCardPersistent = Boolean(selectedEventActionCard?.rulesSummary?.includes('持续事件'));
     const selectedEventIsGinsengAndSable = selectedEventActionCard?.cardDefId === 'qidahen-atlas05-1630-ginseng-and-sable';
     const selectedEventIsTributeEdict = selectedEventActionCard?.cardDefId === 'qidahen-atlas05-1633-tribute-edict';
-    const selectedEventRequiresOpponentDiscardOwner = Boolean(
-        selectedEventActionCard?.rulesSummary?.includes('放入该对手弃牌堆')
-        && !(selectedEventIsGinsengAndSable && currentFactionId !== 'jin')
-        && !selectedEventIsTributeEdict
-    );
     const selectedEventIsMongolNoblesCongress = selectedEventActionCard?.cardDefId === 'qidahen-atlas05-1623-mongol-nobles-congress';
     const selectedEventIsPowerStruggleCoup = selectedEventActionCard?.cardDefId === 'qidahen-atlas05-1621-power-struggle-coup';
-    const selectedEventRequiresUnimplementedTargetChoice = Boolean(
-        (
-            selectedEventActionCard?.rulesSummary?.includes('指定并移除一张对手场上的人物牌')
-            && selectedEventActionCard.cardDefId !== 'qidahen-atlas05-1600-counter-spy-plot'
-        )
-        || (
-            selectedEventActionCard?.rulesSummary?.includes('执行两项效果之一')
-            && !(selectedEventIsMongolNoblesCongress && currentFactionId !== 'mongol')
-            && !selectedEventIsPowerStruggleCoup
-        ),
-    );
+    const selectedEventIsDefeatInDetail = selectedEventActionCard?.cardDefId === 'qidahen-atlas05-1601-defeat-in-detail';
     const selectedEventIsNortheastArmy = selectedEventActionCard?.cardDefId === 'qidahen-atlas05-1631-northeast-army';
     const selectedEventIsNortheastArmyBlockedByNewYear = Boolean(
         selectedEventIsNortheastArmy
         && state.actionWheelPosition === 'wheel-new-year'
     );
-    const selectedEventRequiresUnimplementedTimingOrBoardTarget = Boolean(
-        selectedEventActionCard?.rulesSummary?.includes('只能在遭到攻击时自手牌打出')
-        || (
-            selectedEventActionCard?.rulesSummary?.includes('放置甲喇标记')
-            && !selectedEventIsNortheastArmy
-        ),
+    const selectedEventIsDroughtBlockedBySecondHalf = Boolean(
+        selectedEventActionCard?.cardDefId
+        && QIDAHEN_DROUGHT_EVENT_CARD_DEF_IDS.has(selectedEventActionCard.cardDefId)
+        && QIDAHEN_SECOND_HALF_WHEEL_POSITIONS.has(state.actionWheelPosition)
     );
     const discardedCardCount = Math.max(0, spentCardCount - (selectedEventActionCardRemovedFromGame ? 1 : 0));
     const selectedArmamentActionCard = actionId === 'upgrade-armament'
@@ -246,7 +240,7 @@ export function prepareQidahenSelectedAction(
                 eventOpponentHandChoiceSelection: selection,
                 lastSeasonSummary: dependencies.buildSeasonSummary('封贡敕书', timestamp, [
                     '指定一个对手；随后由该对手选择执行赐印招安或驱虎吞狼。',
-                    '选择后封贡敕书进入该对手弃牌堆；具体行动效果仍需后续承接。',
+                    '选择后封贡敕书进入该对手弃牌堆，并承接对应的赐印招安或驱虎吞狼流程。',
                 ]),
             }),
         };
@@ -288,27 +282,6 @@ export function prepareQidahenSelectedAction(
                 lastSeasonSummary: dependencies.buildSeasonSummary('王公大会', timestamp, [
                     '选择打出 1 张蒙古人物，或回收 1 张已登场在大明/后金侧的蒙古人物。',
                 ]),
-            }),
-        };
-    }
-
-    if (selectedEventRequiresOpponentDiscardOwner && selectedEventActionCard) {
-        return {
-            kind: 'blocked',
-            state: dependencies.updateTurnLabel({
-                ...state,
-                lastSeasonSummary: dependencies.buildSeasonSummary('执行事件', timestamp, [
-                    `${selectedEventActionCard.label} 需要指定对手，并结算进入该对手弃牌堆；当前事件执行入口尚未实现这条跨势力归属链。`,
-                    '本次未消耗手牌，也未结算事件效果。',
-                ]),
-                actionLog: [
-                    {
-                        id: `log-${timestamp}`,
-                        faction: currentFactionId,
-                        text: `${state.factions[currentFactionId].name} 尝试执行事件「${selectedEventActionCard.label}」，但需要对手选择和对手弃牌堆归属链，当前尚未结算。`,
-                    },
-                    ...state.actionLog,
-                ].slice(0, 6),
             }),
         };
     }
@@ -355,7 +328,7 @@ export function prepareQidahenSelectedAction(
     }
 
     if (selectedEventIsPowerStruggleCoup && selectedEventActionCard) {
-        const selection = buildQidahenPowerStruggleCoupCharacterJudgementSelection(
+        const selection = buildQidahenOpenGateSurrenderSelection(
             state,
             currentFactionId,
             selectedEventActionCard,
@@ -367,14 +340,14 @@ export function prepareQidahenSelectedAction(
                 state: dependencies.updateTurnLabel({
                     ...state,
                     lastSeasonSummary: dependencies.buildSeasonSummary('开门迎降', timestamp, [
-                        '开门迎降的人物判定窄口需要一个可按既有人物判定表结算的敌方在场人物；当前没有合法目标。',
-                        '第二项效果文本仍未锁定，本次未消耗手牌，也未结算事件效果。',
+                        '开门迎降只能由后金或大明使用；当前势力不能执行这张牌。',
+                        '本次未消耗手牌，也未结算事件效果。',
                     ]),
                     actionLog: [
                         {
                             id: `log-${timestamp}`,
                             faction: currentFactionId,
-                            text: `${state.factions[currentFactionId].name} 尝试执行事件「开门迎降」，但当前没有可判定的敌方在场人物。`,
+                            text: `${state.factions[currentFactionId].name} 尝试执行事件「开门迎降」，但该势力不能使用这张牌。`,
                         },
                         ...state.actionLog,
                     ].slice(0, 6),
@@ -385,11 +358,11 @@ export function prepareQidahenSelectedAction(
             kind: 'blocked',
             state: dependencies.updateTurnLabel({
                 ...state,
-                turnPhase: 'event-character-target',
-                eventCharacterTargetSelection: selection,
+                turnPhase: 'open-gate-surrender',
+                openGateSurrenderSelection: selection,
                 lastSeasonSummary: dependencies.buildSeasonSummary('开门迎降', timestamp, [
-                    '选择一张敌方在场人物，按既有人物额外判定表执行一次掷骰判定。',
-                    '第二项效果文本仍未锁定，本次只承接人物判定窄口。',
+                    '选择只执行第一项、只执行第二项，或依次执行两项。',
+                    '第一项由后金处理人物与部队损失，第二项由大明选择一个派系弃掉全部在场人物。',
                 ]),
             }),
         };
@@ -416,20 +389,21 @@ export function prepareQidahenSelectedAction(
         };
     }
 
-    if (selectedEventRequiresUnimplementedTargetChoice && selectedEventActionCard) {
+    if (selectedEventIsDroughtBlockedBySecondHalf && selectedEventActionCard) {
+        const wheelPositionLabel = state.actionWheelPosition === 'wheel-midyear' ? '年中' : '新年';
         return {
             kind: 'blocked',
             state: dependencies.updateTurnLabel({
                 ...state,
                 lastSeasonSummary: dependencies.buildSeasonSummary('执行事件', timestamp, [
-                    `${selectedEventActionCard.label} 需要目标选择或二择一效果选择；当前事件执行入口尚未实现这条承接链。`,
+                    `${selectedEventActionCard.label}不能在轮盘行动标记进入下半年后使用。`,
                     '本次未消耗手牌，也未结算事件效果。',
                 ]),
                 actionLog: [
                     {
                         id: `log-${timestamp}`,
                         faction: currentFactionId,
-                        text: `${state.factions[currentFactionId].name} 尝试执行事件「${selectedEventActionCard.label}」，但需要目标选择或二择一效果选择，当前尚未结算。`,
+                        text: `${state.factions[currentFactionId].name} 尝试执行事件「${selectedEventActionCard.label}」，但轮盘行动标记在${wheelPositionLabel}位置，当前不能使用。`,
                     },
                     ...state.actionLog,
                 ].slice(0, 6),
@@ -437,20 +411,20 @@ export function prepareQidahenSelectedAction(
         };
     }
 
-    if (selectedEventRequiresUnimplementedTimingOrBoardTarget && selectedEventActionCard) {
+    if (selectedEventIsDefeatInDetail && selectedEventActionCard) {
         return {
             kind: 'blocked',
             state: dependencies.updateTurnLabel({
                 ...state,
                 lastSeasonSummary: dependencies.buildSeasonSummary('执行事件', timestamp, [
-                    `${selectedEventActionCard.label} 需要特定打出时机或地图目标选择；当前事件执行入口尚未实现这条承接链。`,
+                    '各个击破需要特定打出时机或地图目标选择：只能在遭到攻击时作为防守响应打出；不能从普通执行事件入口使用。',
                     '本次未消耗手牌，也未结算事件效果。',
                 ]),
                 actionLog: [
                     {
                         id: `log-${timestamp}`,
                         faction: currentFactionId,
-                        text: `${state.factions[currentFactionId].name} 尝试执行事件「${selectedEventActionCard.label}」，但需要特定时机或地图目标选择，当前尚未结算。`,
+                        text: `${state.factions[currentFactionId].name} 尝试执行事件「各个击破」，但此牌只能在遭到攻击时作为防守响应打出。`,
                     },
                     ...state.actionLog,
                 ].slice(0, 6),

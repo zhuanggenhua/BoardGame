@@ -32,6 +32,7 @@ import {
 } from './troopCompat';
 import type {
     QidahenBattleCasualtyPriority,
+    QidahenBattleForceOutcome,
     QidahenCore,
     QidahenFactionId,
     QidahenPostBattleSelection,
@@ -64,6 +65,7 @@ interface QidahenPostBattleResolutionDependencies {
         region: QidahenRuntimeRegion,
         committedTroops: number,
         movementProfileId?: string | null,
+        selectedSpecialPieceIds?: readonly string[],
     ) => QidahenRuntimeRegion;
     applyCasualtyPriorityToRegion: (
         region: QidahenRuntimeRegion,
@@ -243,29 +245,82 @@ export const resolvePostBattleDecision = (
         selection.movementProfileId,
         selection.attackerBattleCasualtyPriority ?? selection.attackerCasualtyPriority,
     );
+    const forceOutcomes: QidahenBattleForceOutcome[] = selection.forceOutcomes?.length
+        ? selection.forceOutcomes.map((outcome) => ({
+            ...outcome,
+            survivingSpecialTroops: outcome.survivingSpecialTroops.map((stack) => ({ ...stack })),
+        }))
+        : [{
+            id: `force-${sourceRemovalRegionId}`,
+            sourceRegionId: sourceRemovalRegionId,
+            sourceRegionName: state.regions.find((region) => region.id === sourceRemovalRegionId)?.name
+                ?? selection.sourceRegionName,
+            sourceAvailableTroops: selection.committedTroops,
+            committedTroops: selection.committedTroops,
+            movementProfileId: selection.movementProfileId ?? null,
+            battleWidth: selection.committedTroops,
+            boundaryUnitCap: null,
+            attackBoundaryType: 'plain',
+            attackerLosses: selection.attackerLosses,
+            survivingTroops: selection.survivingTroops,
+            survivingSpecialTroops,
+        }];
+    const mergedSurvivingSpecialTroops = mergeSpecialTroopStackGroupsAsPieces(
+        ...forceOutcomes.map((outcome) => outcome.survivingSpecialTroops),
+    );
     const nextRuntimeRegions = runtimeRegions.map((region) => {
-        if (region.id === sourceRemovalRegionId && sourceRemovalRegionId !== selection.targetRuntimeRegionId) {
-            const sourceActionRegion = dependencies.materializeNonSiegedCityActionSourceRegion(region);
+        const sourceOutcomes = forceOutcomes.filter((outcome) => outcome.sourceRegionId === region.id);
+        if (sourceOutcomes.length > 0 && region.id !== selection.targetRuntimeRegionId) {
+            let sourceActionRegion = dependencies.materializeNonSiegedCityActionSourceRegion(region);
+            const committedTroops = sourceOutcomes.reduce((total, outcome) => total + outcome.committedTroops, 0);
+            const attackerLosses = sourceOutcomes.reduce((total, outcome) => total + outcome.attackerLosses, 0);
+            const survivingTroops = sourceOutcomes.reduce((total, outcome) => total + outcome.survivingTroops, 0);
             if (choice.mode === 'occupy' || choice.mode === 'besiege') {
-                return dependencies.applyCommittedTroopRemovalToRegion({
+                for (const outcome of sourceOutcomes) {
+                    sourceActionRegion = dependencies.applyCommittedTroopRemovalToRegion({
+                        ...sourceActionRegion,
+                        troops: Math.max(0, sourceActionRegion.troops - outcome.committedTroops),
+                    }, outcome.committedTroops, outcome.movementProfileId, outcome.selectedSpecialPieceIds);
+                }
+                return {
                     ...sourceActionRegion,
-                    troops: Math.max(0, sourceActionRegion.troops - selection.committedTroops),
-                    note: `${sourceActionRegion.name} 战后派出 ${selection.survivingTroops} 个幸存部队${choice.mode === 'occupy' ? '占领' : '围困'} ${selection.targetRegionName}。`,
-                }, selection.committedTroops, selection.movementProfileId);
+                    note: `${sourceActionRegion.name} 战后派出 ${survivingTroops} 个幸存部队${choice.mode === 'occupy' ? '占领' : '围困'} ${selection.targetRegionName}；本来源投入 ${committedTroops}，损失 ${attackerLosses}。`,
+                };
             }
-            if (choice.mode === 'withdraw' && withdrawRegionId === sourceRemovalRegionId) {
-                return dependencies.applyCasualtyPriorityToRegion({
+            if (choice.mode === 'withdraw' && withdrawRegionId === region.id) {
+                for (const outcome of sourceOutcomes) {
+                    sourceActionRegion = dependencies.applyCasualtyPriorityToRegion({
+                        ...sourceActionRegion,
+                        troops: Math.max(0, sourceActionRegion.troops - outcome.attackerLosses),
+                    }, outcome.attackerLosses, outcome.movementProfileId, selection.attackerBattleCasualtyPriority ?? selection.attackerCasualtyPriority);
+                }
+                const incomingOutcomes = forceOutcomes.filter((outcome) => outcome.sourceRegionId !== region.id);
+                const incomingTroops = incomingOutcomes.reduce((total, outcome) => total + outcome.survivingTroops, 0);
+                const incomingSpecialTroops = mergeSpecialTroopStackGroupsAsPieces(
+                    ...incomingOutcomes.map((outcome) => outcome.survivingSpecialTroops),
+                );
+                if (incomingTroops > 0) {
+                    sourceActionRegion = addSpecialTroopStacksToRegion({
+                        ...sourceActionRegion,
+                        troops: sourceActionRegion.troops + incomingTroops,
+                    }, incomingSpecialTroops);
+                }
+                return {
                     ...sourceActionRegion,
-                    troops: Math.max(0, sourceActionRegion.troops - selection.attackerLosses),
-                    note: `${sourceActionRegion.name} 战后回收幸存部队，但损失 ${selection.attackerLosses} 个部队。`,
-                }, selection.attackerLosses, selection.movementProfileId, selection.attackerBattleCasualtyPriority ?? selection.attackerCasualtyPriority);
+                    note: `${sourceActionRegion.name} 战后保留本来源 ${survivingTroops} 个幸存部队${incomingTroops > 0 ? `，并接收其他来源 ${incomingTroops} 个幸存部队` : ''}；本来源损失 ${attackerLosses}。`,
+                };
             }
-            if (choice.mode === 'withdraw' && withdrawRegionId !== sourceRemovalRegionId) {
-                return dependencies.applyCommittedTroopRemovalToRegion({
+            if (choice.mode === 'withdraw' && withdrawRegionId !== region.id) {
+                for (const outcome of sourceOutcomes) {
+                    sourceActionRegion = dependencies.applyCommittedTroopRemovalToRegion({
+                        ...sourceActionRegion,
+                        troops: Math.max(0, sourceActionRegion.troops - outcome.committedTroops),
+                    }, outcome.committedTroops, outcome.movementProfileId, outcome.selectedSpecialPieceIds);
+                }
+                return {
                     ...sourceActionRegion,
-                    troops: Math.max(0, sourceActionRegion.troops - selection.committedTroops),
-                    note: `${sourceActionRegion.name} 战后撤出 ${selection.survivingTroops} 个幸存部队，改退回 ${state.regions.find((item) => item.id === withdrawRegionId)?.name ?? '友方区域'}。`,
-                }, selection.committedTroops, selection.movementProfileId);
+                    note: `${sourceActionRegion.name} 战后撤出 ${survivingTroops} 个幸存部队，改退回 ${state.regions.find((item) => item.id === withdrawRegionId)?.name ?? '友方区域'}；本来源损失 ${attackerLosses}。`,
+                };
             }
             return region;
         }
@@ -276,7 +331,7 @@ export const resolvePostBattleDecision = (
                     controller: selection.originalController,
                     controlLabel: selection.originalControlLabel,
                     troops: selection.survivingTroops,
-                    specialTroops: survivingSpecialTroops,
+                    specialTroops: mergedSurvivingSpecialTroops,
                     siegeState: null,
                     note: `${region.name} 围城已解除，${selection.survivingTroops} 个幸存援军进驻城外。`,
                 };
@@ -295,7 +350,7 @@ export const resolvePostBattleDecision = (
                     troops: selection.survivingTroops,
                     siegeState: null,
                     cityState: null,
-                    specialTroops: survivingSpecialTroops,
+                    specialTroops: mergedSurvivingSpecialTroops,
                     note: `${region.name} 被攻下后由 ${selection.originalController === 'neutral' ? `${dependencies.toFactionLabel(selection.attackerFactionId)}附庸` : dependencies.toFactionLabel(selection.attackerFactionId)} 占领，并进驻 ${selection.survivingTroops} 个幸存部队${plunderPopulation > 0 ? `，劫掠移除 ${plunderPopulation} 人口` : ''}。`,
                 };
                 return {
@@ -312,7 +367,7 @@ export const resolvePostBattleDecision = (
                     siegeState: {
                         attackerFactionId: selection.attackerFactionId,
                         attackerTroops: selection.survivingTroops,
-                        attackerSpecialTroops: survivingSpecialTroops,
+                        attackerSpecialTroops: mergedSurvivingSpecialTroops,
                         sourceRegionId: selection.sourceRegionId,
                     },
                     cityState: isQidahenCityRuntimeRegion(region.id)
@@ -361,7 +416,7 @@ export const resolvePostBattleDecision = (
                         attackerTroops: region.siegeState.attackerTroops + selection.survivingTroops,
                         attackerSpecialTroops: mergeSpecialTroopStackGroupsAsPieces(
                             region.siegeState.attackerSpecialTroops,
-                            survivingSpecialTroops,
+                            mergedSurvivingSpecialTroops,
                         ),
                     },
                     note: `${region.name} 在战后接收 ${selection.survivingTroops} 个撤回围城增援部队。`,
@@ -372,7 +427,7 @@ export const resolvePostBattleDecision = (
                 ...actionWithdrawRegion,
                 troops: actionWithdrawRegion.troops + selection.survivingTroops,
                 note: `${actionWithdrawRegion.name} 在战后接收 ${selection.survivingTroops} 个撤回部队。`,
-            }, survivingSpecialTroops);
+            }, mergedSurvivingSpecialTroops);
         }
         return region;
     });

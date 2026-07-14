@@ -378,6 +378,41 @@ async function runSmashUpTutorialScenario() {
     );
 }
 
+async function runBetrayalTutorialPhoneLandscapeScenario() {
+    await waitForCondition(
+        '山屋惊魂教程棋盘出现',
+        () => Boolean(getVisibleElement('[data-testid="betrayal-board"]')),
+        40000,
+    );
+
+    if (getVisibleElement('[data-testid="mobile-orientation-game-gate"]')) {
+        throw new Error('山屋惊魂移动端仍停在旋转提示，未进入横屏游戏画面');
+    }
+
+    if (getVisibleElement('[data-tutorial-step="setup-runtime"]')) {
+        if (!clickElement('[data-testid="tutorial-next-button"]', true)) {
+            throw new Error('山屋惊魂教程初始步骤存在，但未找到继续按钮');
+        }
+    }
+
+    await waitForCondition(
+        '山屋惊魂教程进入书本使用步骤',
+        () => Boolean(getVisibleElement('[data-tutorial-step="use-book"]')),
+        10000,
+    );
+    await waitForCondition(
+        '山屋惊魂书本持有物可见',
+        () => Boolean(getVisibleElement('[data-testid="betrayal-inventory-omen-book"]')),
+        10000,
+    );
+    await waitForCondition(
+        '山屋惊魂房间棋盘可见',
+        () => Boolean(getVisibleElement('[data-testid="betrayal-room-grid"]')),
+        10000,
+    );
+    await sleep(500);
+}
+
 async function prepareSummonerWarsBoard() {
     await waitForCondition(
         'Summoner Wars TestHarness 就绪',
@@ -559,6 +594,8 @@ async function runSmashUpTabletBoardScenario() {
 }
 
 const scenarioHandlers: Record<string, () => Promise<void>> = {
+    'betrayal-tutorial-phone-landscape': runBetrayalTutorialPhoneLandscapeScenario,
+    'betrayal-tutorial-mobile-landscape': runBetrayalTutorialPhoneLandscapeScenario,
     'smashup-tutorial-mobile-landscape': runSmashUpTutorialScenario,
     'summonerwars-tutorial-phone-landscape': runSummonerWarsPhoneBoardScenario,
     'summonerwars-mobile-10-phone-landscape-board': runSummonerWarsPhoneBoardScenario,

@@ -13,7 +13,15 @@
  */
 
 import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
-import { FxRegistry, type FxRendererProps, type FeedbackPack } from '../../../engine/fx';
+import {
+  FxRegistry,
+  createFxPathBox,
+  createFxScaledCellBox,
+  resolveFxQuality,
+  type FxRendererProps,
+  type FeedbackPack,
+  type FxQuality,
+} from '../../../engine/fx';
 import { SummonHybridEffect } from '../../../components/common/animations/SummonHybridEffect';
 import { VortexShaderEffect } from '../../../components/common/animations/VortexShaderEffect';
 import { ConeBlast } from '../../../components/common/animations/ConeBlast';
@@ -50,18 +58,6 @@ const CARD_PADDING_TOP = `${100 / CARD_ASPECT_RATIO}%`;
 // 通用容器工具
 // ============================================================================
 
-/** 以格子为中心，按 scale 放大容器定位 */
-function scaledCellBox(
-  pos: { left: number; top: number; width: number; height: number },
-  scale: number,
-) {
-  const w = pos.width * scale;
-  const h = pos.height * scale;
-  const l = pos.left - (w - pos.width) / 2;
-  const t = pos.top - (h - pos.height) / 2;
-  return { left: `${l}%`, top: `${t}%`, width: `${w}%`, height: `${h}%` };
-}
-
 // ============================================================================
 // 稳定回调 hook（避免父组件重新渲染导致动画重播）
 // ============================================================================
@@ -72,6 +68,10 @@ function useStableComplete(onComplete: () => void): () => void {
     ref.current = onComplete;
   }, [onComplete]);
   return useCallback(() => ref.current(), []);
+}
+
+function resolveEventQuality(event: FxRendererProps['event'], fallback: FxQuality = 'full'): FxQuality {
+  return resolveFxQuality(event.params?.quality, resolveFxQuality(event.ctx.quality, fallback));
 }
 
 // ============================================================================
@@ -92,9 +92,10 @@ const SummonRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   const pos = getCellPosition(cell.row, cell.col);
   // 召唤光柱统一蓝色，与传送门视觉一致
   const color = (event.params?.color as 'blue' | 'gold') ?? 'blue';
+  const quality = resolveEventQuality(event);
 
   const scale = 7.5;
-  const box = scaledCellBox(pos, scale);
+  const box = createFxScaledCellBox(pos, scale);
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none z-30',
@@ -105,6 +106,7 @@ const SummonRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
       intensity: event.ctx.intensity ?? 'normal',
       color,
       originY: 0.5,
+      quality,
       onImpact,
       onComplete: stableComplete,
     }),
@@ -123,9 +125,10 @@ const ChargeVortexRenderer: React.FC<FxRendererProps> = ({ event, getCellPositio
   if (!cell) { stableComplete(); return null; }
 
   const pos = getCellPosition(cell.row, cell.col);
+  const quality = resolveEventQuality(event);
 
   const scale = 4;
-  const box = scaledCellBox(pos, scale);
+  const box = createFxScaledCellBox(pos, scale);
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none z-30',
@@ -134,6 +137,7 @@ const ChargeVortexRenderer: React.FC<FxRendererProps> = ({ event, getCellPositio
     React.createElement(VortexShaderEffect, {
       active: true,
       intensity: event.ctx.intensity ?? 'normal',
+      quality,
       onComplete: stableComplete,
     }),
   );
@@ -216,18 +220,20 @@ const ShockwaveRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, 
   const srcPos = getCellPosition(source.row, source.col);
   const tgtPos = getCellPosition(cell.row, cell.col);
 
-  const srcCx = srcPos.left + srcPos.width / 2;
-  const srcCy = srcPos.top + srcPos.height / 2;
-  const tgtCx = tgtPos.left + tgtPos.width / 2;
-  const tgtCy = tgtPos.top + tgtPos.height / 2;
+  const pathBox = createFxPathBox(srcPos, tgtPos);
 
-  return React.createElement(ConeBlast, {
-    start: { xPct: srcCx, yPct: srcCy },
-    end: { xPct: tgtCx, yPct: tgtCy },
-    intensity: event.ctx.intensity ?? 'normal',
-    onComplete: handleRangedComplete,
-    className: 'z-30',
-  });
+  return React.createElement('div', {
+    className: 'absolute pointer-events-none z-30',
+    style: pathBox.style,
+  },
+    React.createElement(ConeBlast, {
+      start: pathBox.start,
+      end: pathBox.end,
+      intensity: event.ctx.intensity ?? 'normal',
+      quality: resolveEventQuality(event),
+      onComplete: handleRangedComplete,
+    }),
+  );
 };
 
 // ============================================================================
@@ -256,6 +262,8 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
   const pos = getCellPosition(cell.row, cell.col);
   const isStrong = event.ctx.intensity === 'strong';
   const dmg = (event.params?.damageAmount as number) ?? (isStrong ? 3 : 1);
+  const quality = resolveEventQuality(event);
+  const reduced = event.params?.reduced === true || quality === 'reduced';
 
   return React.createElement('div', {
     className: 'absolute pointer-events-none flex items-center justify-center z-30',
@@ -274,7 +282,8 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
       React.createElement(ImpactContainer, {
         isActive: true,
         damage: dmg,
-        effects: { shake: true, hitStop: false },
+        effects: { shake: !reduced, hitStop: false },
+        shakeDuration: reduced ? 180 : undefined,
         className: 'absolute inset-0',
         style: { overflow: 'visible' },
         onComplete: stableComplete,
@@ -283,6 +292,10 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, getCellPosition, onC
           active: true,
           damage: dmg,
           intensity: event.ctx.intensity ?? 'normal',
+          quality,
+          showSlash: !reduced,
+          showRedPulse: true,
+          showNumber: true,
         }),
       ),
     ),
@@ -298,7 +311,7 @@ const SUMMON_SOUND_KEY = 'magic.general.spells_variations_vol_1.open_temporal_ri
 
 // 攻击音效（用于预览模式的 fallback）
 const MELEE_ATTACK_FALLBACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.weapon_swoosh.sfx_weapon_melee_swoosh_sword_1';
-const RANGED_ATTACK_FALLBACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.bow.sfx_weapon_bow_shoot_1';
+const _RANGED_ATTACK_FALLBACK_KEY = 'combat.general.mini_games_sound_effects_and_music_pack.bow.sfx_weapon_bow_shoot_1';
 
 /** 召唤光柱反馈：爆发瞬间播放音效 + 震动（强度跟随 event.ctx.intensity 动态覆盖） */
 const SUMMON_FEEDBACK: FeedbackPack = {
@@ -336,18 +349,50 @@ function createRegistry(): FxRegistry {
   // 召唤光柱：震动强度跟随 event.ctx.intensity 动态覆盖（normal/strong）
   registry.register(SW_FX.SUMMON, SummonRenderer, {
     timeoutMs: 4000,
+    maxConcurrent: 1,
+    debounceMs: 80,
+    budget: {
+      areaPolicy: 'cell',
+      estimatedCost: 'high',
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    },
   }, SUMMON_FEEDBACK);
 
   registry.register(SW_FX.CHARGE_VORTEX, ChargeVortexRenderer, {
     timeoutMs: 3000,
+    maxConcurrent: 2,
+    debounceMs: 60,
+    budget: {
+      areaPolicy: 'cell',
+      estimatedCost: 'high',
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    },
   });
 
   registry.register(SW_FX.COMBAT_SHOCKWAVE, ShockwaveRenderer, {
     timeoutMs: 3000,
+    maxConcurrent: 2,
+    debounceMs: 80,
+    budget: {
+      areaPolicy: 'path',
+      estimatedCost: 'high',
+      maxDpr: 1.5,
+      reducedMaxDpr: 1,
+    },
   }, COMBAT_SHOCKWAVE_FEEDBACK);
 
   registry.register(SW_FX.COMBAT_DAMAGE, DamageRenderer, {
     timeoutMs: 3000,
+    maxConcurrent: 4,
+    debounceMs: 20,
+    budget: {
+      areaPolicy: 'cell',
+      estimatedCost: 'medium',
+      maxDpr: 1.25,
+      reducedMaxDpr: 1,
+    },
   }, COMBAT_DAMAGE_FEEDBACK);
 
   return registry;

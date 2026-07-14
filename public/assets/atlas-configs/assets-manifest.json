@@ -4,11 +4,29 @@
   "id": "atlas-configs",
   "basePrefix": "official/atlas-configs/",
   "files": {
+    "dicethrone/ability-cards-common.atlas": {
+      "variants": {
+        "json": {
+          "sha256": "9ac143e7d5fc9ef781b568d1c13d433d72b6adfc72a6d1347249729c800ac629",
+          "bytes": 1239,
+          "mime": "application/json"
+        }
+      }
+    },
     "dicethrone/ability-cards-common.atlas.json": {
       "variants": {
         "json": {
           "sha256": "9ac143e7d5fc9ef781b568d1c13d433d72b6adfc72a6d1347249729c800ac629",
           "bytes": 1239,
+          "mime": "application/json"
+        }
+      }
+    },
+    "dicethrone/ability-cards-gunslinger.atlas": {
+      "variants": {
+        "json": {
+          "sha256": "9e462b4ac975030a8332436ba89ea0977b68027de36463f845d18ecaa3a2f564",
+          "bytes": 2047,
           "mime": "application/json"
         }
       }
@@ -22,7 +40,25 @@
         }
       }
     },
+    "dicethrone/ability-cards-ninja.atlas": {
+      "variants": {
+        "json": {
+          "sha256": "e5b00d850184f45219040f82513b8036bcf457ab4e980f29f7b3d681bc006c77",
+          "bytes": 3390,
+          "mime": "application/json"
+        }
+      }
+    },
     "dicethrone/ability-cards-ninja.atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "e5b00d850184f45219040f82513b8036bcf457ab4e980f29f7b3d681bc006c77",
+          "bytes": 3390,
+          "mime": "application/json"
+        }
+      }
+    },
+    "dicethrone/ability-cards-treant.atlas": {
       "variants": {
         "json": {
           "sha256": "e5b00d850184f45219040f82513b8036bcf457ab4e980f29f7b3d681bc006c77",
@@ -40,11 +76,29 @@
         }
       }
     },
+    "smashup/2833984701": {
+      "variants": {
+        "json": {
+          "sha256": "970652351bc66164c43d3c17cf2802ee4ae054e1c8818087082a7e48b3889d49",
+          "bytes": 9653431,
+          "mime": "application/json"
+        }
+      }
+    },
     "smashup/2833984701.json": {
       "variants": {
         "json": {
           "sha256": "970652351bc66164c43d3c17cf2802ee4ae054e1c8818087082a7e48b3889d49",
           "bytes": 9653431,
+          "mime": "application/json"
+        }
+      }
+    },
+    "smashup/pod-atlas-config": {
+      "variants": {
+        "json": {
+          "sha256": "00162dd07b4a09b7a5a14cae0230129340860b99d99fd4e7908079fc444a07a5",
+          "bytes": 4137,
           "mime": "application/json"
         }
       }

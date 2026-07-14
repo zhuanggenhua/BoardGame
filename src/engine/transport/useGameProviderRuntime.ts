@@ -304,6 +304,7 @@ export function useGameProviderRuntime(args: {
         dispatch,
         playerId,
         matchPlayers,
+        seatControllers: undefined,
         isConnected,
         isMultiplayer: true,
     }), [dispatch, isConnected, matchPlayers, playerId, state]);

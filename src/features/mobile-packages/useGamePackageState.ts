@@ -23,6 +23,7 @@ import {
 } from './packageManagerService';
 import type { GamePackageCardState, PendingGamePackageInstall, ResolvedGamePackageManifest } from './types';
 import {
+    canInstallResolvedAssetPack,
     createDefaultGamePackageState,
     hasGamePackageUpdateAvailable,
     hasUsableInstalledGamePackageState,
@@ -502,13 +503,14 @@ export const useGamePackageState = ({
                 gameId,
                 manifestSource: installManifest.source,
                 hasAssetPackUrl: Boolean(installManifest.assetPackUrl),
+                assetPackVersion: installManifest.assetPackVersion,
+                hasAssetPackFileIndexUrl: Boolean(installManifest.assetPackFileIndexUrl),
+                assetPackDiffOnly: installManifest.assetPackDiffOnly === true,
+                hasSharedAudioPackUrl: Boolean(installManifest.sharedAudioPackUrl),
+                sharedAudioPackVersion: installManifest.sharedAudioPackVersion,
             });
 
-            const canInstallDiffOnlyAssetPack = Boolean(
-                installManifest.assetPackDiffOnly
-                && installManifest.assetPackFileIndexUrl
-            );
-            if (!installManifest.assetPackUrl && !canInstallDiffOnlyAssetPack && hasRemoteGamePackageManifestEndpoint) {
+            if (!canInstallResolvedAssetPack(installManifest) && hasRemoteGamePackageManifestEndpoint) {
                 logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-re-resolve', {
                     gameId,
                     reason: 'missing-asset-pack-url',
@@ -522,19 +524,36 @@ export const useGamePackageState = ({
                         manifestSource: installManifest.source,
                         hasAssetPackUrl: Boolean(installManifest.assetPackUrl),
                         assetPackVersion: installManifest.assetPackVersion,
+                        hasAssetPackFileIndexUrl: Boolean(installManifest.assetPackFileIndexUrl),
+                        assetPackDiffOnly: installManifest.assetPackDiffOnly === true,
+                        hasSharedAudioPackUrl: Boolean(installManifest.sharedAudioPackUrl),
+                        sharedAudioPackVersion: installManifest.sharedAudioPackVersion,
                     });
                 } catch {
                     logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-re-resolve-failed', { gameId });
                 }
             }
 
-            if (!installManifest.assetPackUrl && !canInstallDiffOnlyAssetPack) {
+            if (!canInstallResolvedAssetPack(installManifest)) {
                 logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-manifest-still-missing-url', {
                     gameId,
                     manifestSource: installManifest.source,
                     assetPackId: installManifest.assetPackId,
                     assetPackVersion: installManifest.assetPackVersion,
+                    hasAssetPackUrl: Boolean(installManifest.assetPackUrl),
+                    hasAssetPackFileIndexUrl: Boolean(installManifest.assetPackFileIndexUrl),
+                    assetPackDiffOnly: installManifest.assetPackDiffOnly === true,
+                    hasSharedAudioPackUrl: Boolean(installManifest.sharedAudioPackUrl),
+                    sharedAudioPackVersion: installManifest.sharedAudioPackVersion,
                 });
+                const state = await startGamePackageInstall(installManifest, t('packageManager.runtimeUnsupported'));
+                logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-blocked-before-native', {
+                    gameId,
+                    resultStatus: state.status,
+                    errorCode: state.errorCode,
+                    errorMessage: state.errorMessage,
+                });
+                return;
             }
 
             logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-start-install', {
@@ -543,6 +562,9 @@ export const useGamePackageState = ({
                 hasAssetPackUrl: Boolean(installManifest.assetPackUrl),
                 assetPackDiffOnly: installManifest.assetPackDiffOnly === true,
                 hasAssetPackFileIndexUrl: Boolean(installManifest.assetPackFileIndexUrl),
+                assetPackVersion: installManifest.assetPackVersion,
+                hasSharedAudioPackUrl: Boolean(installManifest.sharedAudioPackUrl),
+                sharedAudioPackVersion: installManifest.sharedAudioPackVersion,
             });
             const state = await startGamePackageInstall(installManifest, t('packageManager.runtimeUnsupported'));
             logMobileRuntimeCritical('UseGamePackageState', 'confirm-install-finished', {

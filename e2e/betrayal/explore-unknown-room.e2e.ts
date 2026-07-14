@@ -17,6 +17,7 @@ const EVIDENCE_DIR = 'evidence/山屋惊魂-未知房间探索';
 const READY_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-未知房间-探索前.png`;
 const TARGETS_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-未知房间-选择门位.png`;
 const REVEALED_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-未知房间-翻开后.png`;
+const DISMISSED_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-未知房间-发现牌关闭后.png`;
 
 test.describe('山屋惊魂未知房间探索', () => {
     test('玩家可从真实牌桌入口选择未知房间并翻开新房间', async ({ page, context }) => {
@@ -46,12 +47,38 @@ test.describe('山屋惊魂未知房间探索', () => {
         await saveScreenshot(page, TARGETS_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.01]);
-        await page.getByTestId('betrayal-room-explore-target-ground-north').click();
+        await page.getByTestId('betrayal-room-ground-north').click();
 
         await expect(page.getByTestId('betrayal-room-ground-north')).not.toHaveAccessibleName(/未探索/);
         await expect(page.getByTestId('betrayal-room-occupant-ground-north-0')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/探索|发现|获得|事件|物品|预兆/);
+        const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+        await expect(discoveryPanel).toBeVisible();
+        await expect(page.getByTestId('betrayal-discovery-panel-content')).toBeVisible();
         await saveScreenshot(page, REVEALED_SCREENSHOT);
+
+        const blankPoint = await discoveryPanel.evaluate((panel) => {
+            const panelRect = panel.getBoundingClientRect();
+            const content = panel.querySelector('[data-testid="betrayal-discovery-panel-content"]');
+            const contentRect = content?.getBoundingClientRect();
+            const candidates = [
+                { x: panelRect.left + 16, y: panelRect.top + 16 },
+                { x: panelRect.right - 16, y: panelRect.top + 16 },
+                { x: panelRect.left + 16, y: panelRect.bottom - 16 },
+                { x: panelRect.right - 16, y: panelRect.bottom - 16 },
+            ];
+            const outsideContent = candidates.find((point) => !contentRect || (
+                point.x < contentRect.left
+                || point.x > contentRect.right
+                || point.y < contentRect.top
+                || point.y > contentRect.bottom
+            ));
+            return outsideContent ?? { x: panelRect.left + 8, y: panelRect.top + 8 };
+        });
+        await page.mouse.click(blankPoint.x, blankPoint.y);
+        await expect(discoveryPanel).toBeHidden();
+        await expect(page.getByTestId('betrayal-room-ground-north')).toBeVisible();
+        await saveScreenshot(page, DISMISSED_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-explore-unknown-room', diagnostics }]);
     });

@@ -60,8 +60,8 @@ scripts/
 - `profile_scan.py`：扫描性能分析
 - `extract_assets.js`：资源提取脚本（需在脚本内配置本地路径）
 - `generate_asset_manifests.js`：生成/校验 `assets-manifest.json`
-- `upload-to-r2.js`：上传资源到 Cloudflare R2（先读 `.env`，再用 `.env.example` 补齐缺失 R2 变量）
-- `download-from-r2.js`：从 Cloudflare R2 增量下载资源到本地（同样支持 `.env` + `.env.example` 补缺）
+- `upload-to-server.js`：上传资源到服务器素材主源
+- `download-from-server.js`：保留 `assets:download` 兼容入口；当前不再从对象存储反向同步全量素材
 
 ### 游戏（scripts/game/）
 

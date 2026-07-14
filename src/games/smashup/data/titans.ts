@@ -17,6 +17,17 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, index: 0 },
     },
     {
+        id: 'paladins_seraphim',
+        type: 'titan',
+        name: '神圣炽天使',
+        nameEn: 'Seraphim',
+        faction: SMASHUP_FACTION_IDS.PALADINS,
+        abilityTags: ['ongoing'],
+        activatableAbilities: [],
+        summonMode: 'explicit',
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.PALADIN_TITAN, index: 0 },
+    },
+    {
         id: 'dinosaurs_fort_titanosaurus',
         type: 'titan',
         name: 'Fort Titanosaurus',

@@ -108,7 +108,7 @@ const cases: EventChoiceCase[] = [
         }),
         actions: [
             'betrayal-event-choice-trait-might',
-            'betrayal-event-choice-room-hallway',
+            'betrayal-room-hallway',
             'betrayal-event-choice-damage-might',
             'betrayal-event-choice-confirm',
         ],
@@ -149,7 +149,7 @@ const cases: EventChoiceCase[] = [
         }),
         actions: [
             'betrayal-event-choice-trait-speed',
-            'betrayal-event-choice-room-grand-staircase',
+            'betrayal-room-grand-staircase',
             'betrayal-event-choice-confirm',
         ],
         expectedTexts: ['速度 +1', '放置到大阶梯'],
@@ -175,7 +175,7 @@ const cases: EventChoiceCase[] = [
             traits: { knowledge: 4 },
         }),
         actions: [
-            'betrayal-event-choice-room-hallway',
+            'betrayal-room-hallway',
             'betrayal-event-choice-confirm',
         ],
         expectedTexts: ['在当前板块放置秘密通道标志物', '在门厅放置秘密通道标志物', '知识 +1'],

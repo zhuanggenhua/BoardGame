@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { FxCue, FxRenderer, FxRendererOptions, FxRegistryEntry, FeedbackPack } from './types';
+import type { FxCue, FxRenderer, FxRendererOptions, FxRegistryEntry, FeedbackPack, FxPerformanceBudget } from './types';
 
 // ============================================================================
 // 默认选项
@@ -35,6 +35,23 @@ const DEFAULT_OPTIONS: Required<FxRendererOptions> = {
   maxConcurrent: 0,
   debounceMs: 0,
   timeoutMs: 5000,
+  budget: {
+    quality: 'full',
+    maxDpr: 1.5,
+    reducedMaxDpr: 1,
+    areaPolicy: 'cell',
+    estimatedCost: 'medium',
+    allowAutoReduce: true,
+    reduceWhenHighCostActiveAt: 1,
+    dropWhenHighCostActiveAt: 0,
+  },
+};
+
+const mergeBudget = (budget?: FxPerformanceBudget): Required<FxPerformanceBudget> => {
+  return {
+    ...DEFAULT_OPTIONS.budget,
+    ...budget,
+  };
 };
 
 // ============================================================================
@@ -59,7 +76,11 @@ export class FxRegistry {
     const entry: FxRegistryEntry = {
       cue,
       renderer,
-      options: { ...DEFAULT_OPTIONS, ...options },
+      options: {
+        ...DEFAULT_OPTIONS,
+        ...options,
+        budget: mergeBudget(options?.budget),
+      },
       feedback,
     };
 

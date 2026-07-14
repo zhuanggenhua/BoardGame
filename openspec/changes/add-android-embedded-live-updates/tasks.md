@@ -18,12 +18,15 @@
 - [x] 3.2 增加 bundle 上传、发布、回滚脚本
 - [x] 3.3 增加渠道/灰度/紧急停用开关
 - [x] 3.4 增加 GitHub Actions 自动发布链路：`push main` 直接发布 stable OTA + native，并在成功后自动 bump 下一 patch 版本
+- [x] 3.5 所有发布入口固定写入 `forceUpdate: true`，并拒绝关闭参数
+- [x] 3.6 OTA 打包器排除嵌套游戏资源，只保留 Web 本体和资源清单
 
 ## 4. Product Rules & Cleanup
 
 - [x] 4.1 把 `embedded + OTA` 写入 Android 主线发布文档
 - [x] 4.2 把 `remote WebView` 明确降级为兼容/调试模式
 - [x] 4.3 盘点现有“发 APK 才能更新前端”的流程文档并修正
+- [x] 4.4 记录“所有 OTA 强制更新与轻量包”项目用户故事和部署规范
 
 ## 5. Verification
 
@@ -32,3 +35,4 @@
 - [ ] 5.3 验证不兼容 bundle 被拒绝激活
 - [ ] 5.4 验证启动失败自动回滚
 - [ ] 5.5 验证游戏对局中不会被强制热切换打断
+- [x] 5.6 验证自动启动检查会立即应用强制 OTA，且 ZIP 不包含嵌套游戏资源

@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -n "${SSH_ORIGINAL_COMMAND:-}" && "${SSH_ORIGINAL_COMMAND}" != "boardgame-asset-publish" ]]; then
+    echo "unsupported command" >&2
+    exit 64
+fi
+
+ASSETS_ROOT="/home/admin/storage/assets"
+CONTROL_ROOT="${ASSETS_ROOT}/control"
+INCOMING_ROOT="${ASSETS_ROOT}/incoming"
+mkdir -p "${INCOMING_ROOT}"
+WORK_ROOT="$(mktemp -d "${INCOMING_ROOT}/publish-XXXXXXXX")"
+ARCHIVE_PATH="${WORK_ROOT}/upload.tar"
+ENTRIES_PATH="${WORK_ROOT}/entries.txt"
+STAGING_ROOT="${WORK_ROOT}/staging"
+
+cleanup() {
+    rm -rf "${WORK_ROOT}"
+}
+trap cleanup EXIT
+
+mkdir -p "${STAGING_ROOT}"
+cat > "${ARCHIVE_PATH}"
+tar -tf "${ARCHIVE_PATH}" > "${ENTRIES_PATH}"
+
+while IFS= read -r entry; do
+    normalized="${entry#./}"
+    case "${normalized}" in
+        ""|"."|"official"|"official/"|".boardgame-publish-manifest.json")
+            ;;
+        official/*)
+            if [[ "/${normalized}/" == *"/../"* ]]; then
+                echo "archive path traversal rejected: ${entry}" >&2
+                exit 65
+            fi
+            ;;
+        *)
+            echo "archive entry rejected: ${entry}" >&2
+            exit 65
+            ;;
+    esac
+done < "${ENTRIES_PATH}"
+
+tar --no-same-owner --no-same-permissions -xf "${ARCHIVE_PATH}" -C "${STAGING_ROOT}"
+flock "${ASSETS_ROOT}/publish.lock" \
+    /usr/bin/node "${CONTROL_ROOT}/apply-server-asset-publish.mjs" \
+    --staging "${STAGING_ROOT}" \
+    --assets-root "${ASSETS_ROOT}"

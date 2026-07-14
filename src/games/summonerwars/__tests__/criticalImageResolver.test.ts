@@ -9,6 +9,7 @@ const ALL_HERO_ATLASES = [
     'summonerwars/hero/Goblin/hero',
     'summonerwars/hero/Frost/hero',
     'summonerwars/hero/Barbaric/hero',
+    'summonerwars/hero/mogu/hero',
 ];
 
 const ALL_TIP_IMAGES = [
@@ -18,6 +19,7 @@ const ALL_TIP_IMAGES = [
     'summonerwars/hero/Goblin/tip',
     'summonerwars/hero/Frost/tip',
     'summonerwars/hero/Barbaric/tip',
+    'summonerwars/hero/mogu/tip',
 ];
 
 const SELECTION_CRITICAL = [

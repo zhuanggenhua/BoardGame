@@ -19,7 +19,8 @@
  * ```
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   createParticle,
@@ -41,6 +42,8 @@ export interface VortexEffectProps {
   /** 颜色主题，默认 blue（与充能球 bg-blue-400 一致） */
   color?: VortexColorTheme;
   customColors?: VortexColorSet;
+  /** 特效质量档：reduced 降低 DPR、纹理层数和爆发粒子量 */
+  quality?: FxQuality;
   onComplete?: () => void;
   className?: string;
 }
@@ -208,13 +211,16 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
   intensity = 'normal',
   color = 'blue',
   customColors,
+  quality = 'full',
   onComplete,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const isStrong = intensity === 'strong';
 
@@ -226,7 +232,7 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     const cw = parent.offsetWidth;
     const ch = parent.offsetHeight;
     canvas.width = cw * dpr;
@@ -244,7 +250,7 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
     const centerY = ch / 2;
     const maxRadius = Math.min(cw, ch) * 0.38;
     const totalDuration = isStrong ? 1.1 : 0.85;
-    const layerCount = isStrong ? 4 : 3;
+    const layerCount = quality === 'reduced' ? (isStrong ? 3 : 2) : (isStrong ? 4 : 3);
 
     // 阶段时间占比
     const GATHER_END = 0.55;
@@ -379,7 +385,7 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
         // 散射粒子（一次性）
         if (!burstSpawned) {
           burstSpawned = true;
-          const count = isStrong ? 22 : 14;
+          const count = quality === 'reduced' ? (isStrong ? 12 : 8) : (isStrong ? 22 : 14);
           for (let i = 0; i < count; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 1.5 + Math.random() * 3.5;
@@ -442,7 +448,7 @@ export const VortexEffect: React.FC<VortexEffectProps> = ({
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [color, customColors, isStrong]);
+  }, [color, customColors, isStrong, quality]);
 
   useEffect(() => {
     if (!active) return;

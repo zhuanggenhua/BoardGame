@@ -10,6 +10,7 @@ import {
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
     QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
     QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
+    QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
     QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
     QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
 } from './interactionSources';
@@ -23,6 +24,7 @@ import {
     getQidahenInternalDispatchSelectionFromInteraction,
     getQidahenKhanEdictSelectionFromInteraction,
     getQidahenMaShiTradeSelectionFromInteraction,
+    getQidahenOpenGateSurrenderSelectionFromInteraction,
     getQidahenRecruitSelectionFromInteraction,
     getQidahenWheelDispatchSelectionFromInteraction,
 } from './interactionSelectionAccessors';
@@ -48,6 +50,7 @@ import {
     resolveQidahenEventCharacterTargetChoice,
     resolveQidahenEventOpponentHandChoice,
 } from './eventCharacterTargetSelection';
+import { resolveQidahenOpenGateSurrenderInteraction } from './openGateSurrenderSelection';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
     Boolean(value)
@@ -401,6 +404,33 @@ const resolveQidahenEventOpponentHandChoiceInteractionEvent = (
     );
 };
 
+const resolveQidahenOpenGateSurrenderInteractionEvent = (
+    context: QidahenInteractionResolutionContext,
+): QidahenCore | null | undefined => {
+    const { state, payload, event } = context;
+    const selection = getQidahenOpenGateSurrenderSelectionFromInteraction(
+        asQidahenResolvedSelectionCarrier(payload),
+    );
+    if (
+        payload.sourceId !== QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID
+        && selection == null
+    ) {
+        return undefined;
+    }
+    const choiceId = getQidahenResolvedChoiceId(payload);
+    const optionIds = selection?.phase === 'jin-characters' || selection?.phase === 'jin-troops'
+        ? payload.optionIds
+        : choiceId
+            ? [choiceId]
+            : [];
+    return resolveQidahenOpenGateSurrenderInteraction(
+        state.core,
+        optionIds,
+        event.timestamp ?? 0,
+        selection,
+    );
+};
+
 export const resolveQidahenTurnActionInteractionEvent = (
     context: QidahenInteractionResolutionContext,
 ): QidahenCore | null | undefined => resolveQidahenHandLimitDiscardInteractionEvent(context)
@@ -414,4 +444,5 @@ export const resolveQidahenTurnActionInteractionEvent = (
     ?? resolveQidahenDriveTigerConsentInteractionEvent(context)
     ?? resolveQidahenFortificationMaintenanceInteractionEvent(context)
     ?? resolveQidahenEventCharacterTargetInteractionEvent(context)
-    ?? resolveQidahenEventOpponentHandChoiceInteractionEvent(context);
+    ?? resolveQidahenEventOpponentHandChoiceInteractionEvent(context)
+    ?? resolveQidahenOpenGateSurrenderInteractionEvent(context);

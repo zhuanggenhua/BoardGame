@@ -83,6 +83,19 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         meditate: ['holy-defense'],
         ultimate: ['unyielding-faith'],
     },
+    // Gunslinger v2 玩家面板与旧共享槽位语义不同。
+    // 必须按图面物理位置绑定升级卡覆盖层：死亡之眼在右上 lightning，执法者只是死亡之眼 II 的同卡分支，不是独立升级槽。
+    gunslinger: {
+        fist: ['revolver'],
+        chi: ['bounty-hunter'],
+        sky: ['showdown'],
+        lotus: ['quick-draw'],
+        combo: ['fan-the-hammer'],
+        lightning: ['deadeye'],
+        calm: ['take-cover'],
+        meditate: ['duel'],
+        ultimate: ['fill-em-with-lead'],
+    },
     // Ninja v2 玩家面板的中间四格与旧共享语义不同：
     // top-right 两格分别是毒刃 / 暗影步，bottom-left 两格分别是死亡盛放 / 烟雾阵。
     ninja: {

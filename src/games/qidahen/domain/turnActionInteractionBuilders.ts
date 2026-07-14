@@ -17,6 +17,7 @@ import type {
     QidahenInternalDispatchInteraction,
     QidahenKhanEdictInteraction,
     QidahenMaShiTradeInteraction,
+    QidahenOpenGateSurrenderInteraction,
     QidahenRecruitInteraction,
     QidahenWheelDispatchInteraction,
 } from './interactionContracts';
@@ -32,6 +33,7 @@ import {
     getQidahenInternalDispatchSelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
+    getQidahenOpenGateSurrenderSelectionForCore,
     getQidahenRecruitSelectionForCore,
     getQidahenWheelDispatchSelectionForCore,
 } from './interactionSelectionAccessors';
@@ -46,9 +48,11 @@ import {
     QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
     QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
     QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
+    QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
     QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
     QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
 } from './interactionSources';
+import { buildQidahenOpenGateSurrenderTroopChoices } from './openGateSurrenderSelection';
 import type { QidahenCore } from './types';
 
 function buildQidahenHandLimitDiscardInteraction(
@@ -550,6 +554,119 @@ function buildQidahenEventOpponentHandChoiceInteraction(
     return interaction;
 }
 
+function buildQidahenOpenGateSurrenderInteraction(
+    state: MatchState<QidahenCore>,
+): QidahenOpenGateSurrenderInteraction | null {
+    const selection = getQidahenOpenGateSurrenderSelectionForCore(
+        state.core,
+        state.sys.interaction?.current,
+    );
+    if (!selection) {
+        return null;
+    }
+
+    const playerId = selection.phase === 'choose-effects'
+        ? state.core.factions[selection.ownerFactionId]?.playerId
+        : selection.phase === 'ming-faction'
+            ? state.core.factions.ming.playerId
+            : state.core.factions.jin.playerId;
+    if (!playerId) {
+        return null;
+    }
+
+    const effectOptions = [
+        {
+            id: 'jin-effect',
+            label: '只执行第一项',
+            labelKey: 'board.actions.openGateSurrender.options.jinEffect',
+            value: { choiceId: 'jin-effect' },
+            displayMode: 'button' as const,
+            description: '后金可弃掉任意数量在场人物，再按剩余人物数每张弃掉 2 个部队。',
+        },
+        {
+            id: 'ming-effect',
+            label: '只执行第二项',
+            labelKey: 'board.actions.openGateSurrender.options.mingEffect',
+            value: { choiceId: 'ming-effect' },
+            displayMode: 'button' as const,
+            description: '由大明选择一个派系，弃掉该派系全部在场人物。',
+        },
+        {
+            id: 'both',
+            label: '两项都执行',
+            labelKey: 'board.actions.openGateSurrender.options.both',
+            value: { choiceId: 'both' },
+            displayMode: 'button' as const,
+            description: '先执行第一项，再执行第二项。',
+        },
+    ];
+    const characterOptions = state.core.factions.jin.characters
+        .filter((character) => character.inPlay && !character.removedFromGame)
+        .map((character) => ({
+            id: character.id,
+            label: character.name,
+            value: { choiceId: character.id },
+            displayMode: 'button' as const,
+            description: `后金弃掉在场人物「${character.name}」。`,
+        }));
+    const troopOptions = buildQidahenOpenGateSurrenderTroopChoices(state.core).map((choice) => ({
+        id: choice.id,
+        label: choice.label,
+        value: { choiceId: choice.id, tokenId: choice.id },
+        displayMode: 'button' as const,
+        description: `弃掉${choice.label}。`,
+    }));
+    const factionOptions = (['ming', 'mongol', 'jin'] as const).map((factionId) => ({
+        id: factionId,
+        label: state.core.factions[factionId].name,
+        value: { choiceId: factionId },
+        displayMode: 'button' as const,
+        description: `弃掉${state.core.factions[factionId].name}全部在场人物。`,
+    }));
+
+    const options = selection.phase === 'choose-effects'
+        ? effectOptions
+        : selection.phase === 'jin-characters'
+            ? characterOptions
+            : selection.phase === 'jin-troops'
+                ? troopOptions
+                : factionOptions;
+    const subtitle = selection.phase === 'choose-effects'
+        ? '第一项、第二项可以择一执行，也可以依次都执行'
+        : selection.phase === 'jin-characters'
+            ? '后金可选择弃掉任意数量的在场人物，也可以一张都不弃'
+            : selection.phase === 'jin-troops'
+                ? `后金必须选择并弃掉 ${selection.requiredJinTroopLoss} 个具体部队`
+                : '由大明选择一个派系，弃掉其全部在场人物';
+    const multi = selection.phase === 'jin-characters'
+        ? { min: 0, max: characterOptions.length }
+        : selection.phase === 'jin-troops'
+            ? { min: selection.requiredJinTroopLoss, max: selection.requiredJinTroopLoss }
+            : undefined;
+
+    const interaction = createSimpleChoice(
+        `qidahen-open-gate-surrender-${selection.eventCardId}-${selection.phase}`,
+        playerId,
+        '开门迎降',
+        options,
+        {
+            titleKey: 'board.actions.openGateSurrender.title',
+            sourceId: QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
+            targetType: 'button',
+            autoResolveIfSingle: false,
+            subtitle,
+            ...(multi ? { multi } : {}),
+        },
+    ) as QidahenOpenGateSurrenderInteraction;
+    interaction.data.qidahenOpenGateSurrenderSelection = {
+        ...selection,
+        paymentCardIds: [...selection.paymentCardIds],
+        discardedJinCharacterIds: [...selection.discardedJinCharacterIds],
+        summaryLines: [...selection.summaryLines],
+    };
+    return interaction;
+}
+
 export const QIDAHEN_TURN_ACTION_RUNTIME_INTERACTION_BUILDERS: readonly QidahenRuntimeInteractionBuilderSpec[] = [
     {
         sourceId: QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
@@ -598,5 +715,9 @@ export const QIDAHEN_TURN_ACTION_RUNTIME_INTERACTION_BUILDERS: readonly QidahenR
     {
         sourceId: QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
         buildInteraction: buildQidahenEventOpponentHandChoiceInteraction,
+    },
+    {
+        sourceId: QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
+        buildInteraction: buildQidahenOpenGateSurrenderInteraction,
     },
 ];

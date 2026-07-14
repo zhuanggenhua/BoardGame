@@ -14,6 +14,8 @@ const distCommonDir = path.join(distAssetsDir, 'common');
 const publicI18nDir = path.join(publicAssetsDir, 'i18n');
 const publicCommonDir = path.join(publicAssetsDir, 'common');
 const COMMON_ASSET_DIR_NAMES_TO_REMOVE = ['images', 'logos', 'audio'];
+export const WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE = ['betrayal', 'rules', 'smashup', 'splendor'];
+export const CLOUDFLARE_PAGES_MAX_FILE_BYTES = 25 * 1024 * 1024;
 export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
   'assets-manifest.json',
   'zh-CN/dicethrone/assets-manifest.json',
@@ -34,6 +36,9 @@ export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
   'zh-CN/dicethrone/images/treant/status-icons-atlas.json',
   'zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json',
   'zh-CN/qidahen/assets-manifest.json',
+  // Android 测试壳/首装场景可能尚未安装七大恨游戏包；
+  // 主地图是进入对局后的关键首屏资产，只保留压缩版作为离线兜底。
+  'zh-CN/qidahen/board/compressed/qidahen-main-map.webp',
   'zh-CN/smashup/assets-manifest.json',
   'zh-CN/splendor/assets-manifest.json',
   'zh-CN/tictactoe/assets-manifest.json',
@@ -54,12 +59,18 @@ const DIST_LOGOS_RETAIN_RELATIVE_PATH_SET = new Set(DIST_LOGOS_RETAIN_RELATIVE_P
 const DIST_PRUNE_PROFILES = {
   web: {
     allowedLocaleDirs: null,
+    maxAssetFileBytes: CLOUDFLARE_PAGES_MAX_FILE_BYTES,
+    assetDirNamesToRemove: WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE,
   },
   'android-embedded': {
     allowedLocaleDirs: ['zh-CN'],
+    maxAssetFileBytes: null,
+    assetDirNamesToRemove: [],
   },
   'ios-embedded': {
     allowedLocaleDirs: ['zh-CN'],
+    maxAssetFileBytes: null,
+    assetDirNamesToRemove: [],
   },
 };
 
@@ -120,6 +131,45 @@ const removeDirectoryIfExists = (targetPath, stats) => {
   fs.rmSync(targetPath, { recursive: true, force: true });
 };
 
+const removeOversizedFiles = (targetPath, maxFileBytes, stats) => {
+  if (!Number.isFinite(maxFileBytes) || !fs.existsSync(targetPath)) {
+    return;
+  }
+
+  const stack = [targetPath];
+  while (stack.length > 0) {
+    const currentPath = stack.pop();
+    let stat;
+    try {
+      stat = fs.statSync(currentPath);
+    } catch (error) {
+      if (error?.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
+
+    if (stat.isFile()) {
+      if (stat.size <= maxFileBytes) {
+        continue;
+      }
+
+      const relativePath = toRepoRelativePath(currentPath);
+      stats.removedPaths.push(relativePath);
+      stats.removedOversizedFiles.push({
+        path: relativePath,
+        bytes: stat.size,
+      });
+      fs.rmSync(currentPath, { force: true });
+      continue;
+    }
+
+    for (const entry of fs.readdirSync(currentPath, { withFileTypes: true })) {
+      stack.push(path.join(currentPath, entry.name));
+    }
+  }
+};
+
 const pruneLocales = (allowedLocaleDirs, stats) => {
   if (!Array.isArray(allowedLocaleDirs) || !fs.existsSync(distLocalesDir)) {
     return;
@@ -137,6 +187,8 @@ const pruneLocales = (allowedLocaleDirs, stats) => {
 export const isRetainedDistI18nFile = (relativePath) => DIST_I18N_JSON_RETAIN_RELATIVE_PATH_SET.has(relativePath);
 export const isRetainedDistCommonFile = (relativePath) => DIST_COMMON_JSON_RETAIN_RELATIVE_PATH_SET.has(relativePath);
 export const isRetainedDistLogoFile = (relativePath) => DIST_LOGOS_RETAIN_RELATIVE_PATH_SET.has(relativePath);
+export const isCloudflarePagesFileSizeAllowed = (bytes) => bytes <= CLOUDFLARE_PAGES_MAX_FILE_BYTES;
+export const isRemovedWebLegacyGameAssetDir = (dirName) => WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE.includes(dirName);
 
 export function pruneDistAssets(target = 'web') {
   const profile = DIST_PRUNE_PROFILES[target];
@@ -161,6 +213,7 @@ export function pruneDistAssets(target = 'web') {
     beforeBytes,
     afterBytes: beforeBytes,
     removedPaths: [],
+    removedOversizedFiles: [],
   };
 
   pruneLocales(profile.allowedLocaleDirs, stats);
@@ -169,6 +222,10 @@ export function pruneDistAssets(target = 'web') {
 
   for (const dirName of COMMON_ASSET_DIR_NAMES_TO_REMOVE) {
     removeDirectoryIfExists(path.join(distCommonDir, dirName), stats);
+  }
+
+  for (const dirName of profile.assetDirNamesToRemove) {
+    removeDirectoryIfExists(path.join(distAssetsDir, dirName), stats);
   }
 
   for (const relativePath of DIST_I18N_JSON_RETAIN_RELATIVE_PATHS) {
@@ -182,6 +239,8 @@ export function pruneDistAssets(target = 'web') {
   for (const relativePath of DIST_LOGOS_RETAIN_RELATIVE_PATHS) {
     copyRetainedFile(publicLogosDir, distLogosDir, relativePath);
   }
+
+  removeOversizedFiles(distAssetsDir, profile.maxAssetFileBytes, stats);
 
   stats.afterBytes = sizeOf(distAssetsDir);
   return stats;
@@ -215,6 +274,12 @@ if (isDirectRun) {
   console.log(`[web-dist-prune] 已清理目录 ${stats.removedPaths.length} 处`);
   if (stats.removedPaths.length > 0) {
     console.log(`[web-dist-prune] 清理目标: ${stats.removedPaths.join(', ')}`);
+  }
+  if (stats.removedOversizedFiles.length > 0) {
+    const removedOversizedFiles = stats.removedOversizedFiles
+      .map((file) => `${file.path}(${formatMb(file.bytes)})`)
+      .join(', ');
+    console.log(`[web-dist-prune] 超限文件: ${removedOversizedFiles}`);
   }
   console.log(`[web-dist-prune] dist/assets: ${formatMb(stats.beforeBytes)} -> ${formatMb(stats.afterBytes)}`);
 }

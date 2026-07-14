@@ -84,6 +84,34 @@ describe('localMatchPreferences create-room sanitization', () => {
         });
     });
 
+    it('The Gang 首次本地开局默认把所有非本地座位设为 AI，避免合作局空座卡住', () => {
+        const normalized = createDefaultLocalMatchPreferences({
+            id: 'the-gang',
+            type: 'game',
+            enabled: true,
+            titleKey: 'games.the-gang.title',
+            descriptionKey: 'games.the-gang.description',
+            category: 'card',
+            playersKey: 'games.the-gang.players',
+            icon: '🃏',
+            allowLocalMode: true,
+            playerOptions: [3, 4, 5, 6],
+            ai: {
+                capture: true,
+                localAi: true,
+                remoteAi: false,
+                defaultLocalAiSeats: 'all-opponents',
+            },
+        });
+
+        expect(normalized.numPlayers).toBe(3);
+        expect(normalized.seatControllers).toEqual({
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', difficulty: 'normal' },
+            '2': { type: 'local-ai', difficulty: 'normal' },
+        });
+    });
+
     it('Smash Up 手动关闭 diy 后，不会在后续归一化时被重新打开', () => {
         const normalized = normalizeLocalMatchPreferences(smashupManifest, {
             numPlayers: 2,

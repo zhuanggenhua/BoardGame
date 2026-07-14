@@ -4,6 +4,7 @@ import {
     type AiSeatController,
     type ManualSetupSeatControllerLike,
 } from '../ai';
+import type { MatchState } from '../types';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 
 type SetupSeatController = {
@@ -30,6 +31,22 @@ export function extractSetupSeatControllers(
     return rawSeatControllers as Record<string, SetupSeatController>;
 }
 
+export function extractStateSeatControllers(
+    state: MatchState<unknown> | undefined,
+): Record<string, SetupSeatController> | undefined {
+    const core = state?.core;
+    if (!core || typeof core !== 'object' || Array.isArray(core)) {
+        return undefined;
+    }
+
+    const rawSeatControllers = (core as { seatControllers?: unknown }).seatControllers;
+    if (!rawSeatControllers || typeof rawSeatControllers !== 'object' || Array.isArray(rawSeatControllers)) {
+        return undefined;
+    }
+
+    return rawSeatControllers as Record<string, SetupSeatController>;
+}
+
 function shouldTrustOnlineAiSeatControllersForWatchdog(setupData: unknown): boolean {
     const rawSeatControllers = extractSetupSeatControllers(setupData);
     if (!rawSeatControllers) {
@@ -39,6 +56,24 @@ function shouldTrustOnlineAiSeatControllersForWatchdog(setupData: unknown): bool
     return Object.values(rawSeatControllers).some(
         (controller) => controller?.type === 'local-ai' || controller?.type === 'remote-ai',
     );
+}
+
+export function resolveRawOnlineAiWatchdogSeatControllers(args: {
+    state?: MatchState<unknown>;
+    setupData: unknown;
+}): Record<string, SetupSeatController> | undefined {
+    const setupSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(args.setupData)
+        ? extractSetupSeatControllers(args.setupData)
+        : undefined;
+    const stateSeatControllers = extractStateSeatControllers(args.state);
+    if (!setupSeatControllers && !stateSeatControllers) {
+        return undefined;
+    }
+
+    return {
+        ...(setupSeatControllers ?? {}),
+        ...(stateSeatControllers ?? {}),
+    };
 }
 
 function normalizeOnlineAiWatchdogSeatControllerType(
@@ -113,14 +148,16 @@ export function resolveOnlineAiWatchdogSeatControllers(args: {
     gameId: string;
     playerIds: string[];
     setupData: unknown;
+    state?: MatchState<unknown>;
     gameManifests: GameManifestIndex;
 }): {
     seatControllers: Record<string, OnlineAiWatchdogSeatController>;
     hasAiSeat: boolean;
 } {
-    const rawSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(args.setupData)
-        ? extractSetupSeatControllers(args.setupData)
-        : undefined;
+    const rawSeatControllers = resolveRawOnlineAiWatchdogSeatControllers({
+        state: args.state,
+        setupData: args.setupData,
+    });
 
     const seatControllers = Object.fromEntries(
         args.playerIds.map((playerId) => {

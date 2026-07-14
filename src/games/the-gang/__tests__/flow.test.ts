@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { createReplayAdapter } from '../../../engine/adapter';
-import { TheGangDomain } from '../domain';
+import { buildShowdownResults, TheGangDomain } from '../domain';
 import { engineConfig } from '../game';
 import { THE_GANG_COMMANDS, type TheGangCommand, type TheGangCore } from '../domain/types';
 
@@ -80,12 +80,179 @@ describe('The Gang domain flow', () => {
         expect(view?.players?.['2'].pocketCards).toHaveLength(0);
     });
 
-    test('基础版玩家数边界注册为 3-6 人', () => {
+    test('扩展接入后玩家数边界注册为 3-10 人', () => {
         expect(engineConfig.minPlayers).toBe(3);
-        expect(engineConfig.maxPlayers).toBe(6);
+        expect(engineConfig.maxPlayers).toBe(10);
     });
 
-    test('每轮筹码不能重复，且所有玩家选完前不能推进', () => {
+    test('扩展配置只能在首轮未选筹码前修改，并会按新模式重新发牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-rules-config-test');
+        let state = adapter.setup(['0', '1', '2']);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'seven-card-stud',
+                    challenges: {
+                        'security-camera': 1,
+                        'foot-door': 1,
+                    },
+                },
+            },
+            timestamp: 1,
+        }).state;
+
+        expect(state.core.rules.config.gameMode).toBe('seven-card-stud');
+        expect(state.core.rules.config.challenges['security-camera']).toBe(1);
+        expect(state.core.rules.config.challenges['foot-door']).toBeUndefined();
+        expect(state.core.players['0'].pocketCards).toHaveLength(4);
+        expect(state.core.players['0'].communityCards).toHaveLength(1);
+        expect(state.core.communityCards).toHaveLength(0);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 2,
+        }).state;
+
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: { config: { gameMode: 'texas-holdem', challenges: {} } },
+            timestamp: 3,
+        })).toMatchObject({ valid: false, error: 'rulesLocked' });
+    });
+
+    test('工具牌会按玩家发放且不能重复发放', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-tools-deal-test');
+        let state = adapter.setup(['0', '1', '2']);
+        const initialToolDeck = [...state.core.toolDeck];
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.DEAL_TOOLS,
+            playerId: '0',
+            payload: {},
+            timestamp: 1,
+        }).state;
+
+        expect(state.core.players['0'].toolCards).toEqual([initialToolDeck[0]]);
+        expect(state.core.players['1'].toolCards).toEqual([initialToolDeck[1]]);
+        expect(state.core.players['2'].toolCards).toEqual([initialToolDeck[2]]);
+        expect(state.core.toolDeck).toEqual(initialToolDeck.slice(3));
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.DEAL_TOOLS,
+            playerId: '0',
+            payload: {},
+            timestamp: 2,
+        })).toMatchObject({ valid: false, error: 'toolsAlreadyDealt' });
+    });
+
+    test('一次性手机弃掉工具牌并抽取 2 张专家牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-burner-phone-test');
+        let state = adapter.setup(['0', '1', '2']);
+        const specialistDeck = [...state.core.specialistDeck];
+        state = stateOf({
+            ...state.core,
+            players: {
+                ...state.core.players,
+                '0': {
+                    ...state.core.players['0'],
+                    toolCards: ['burner-phone'],
+                },
+            },
+        });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.USE_TOOL,
+            playerId: '0',
+            payload: { tool: 'burner-phone' },
+            timestamp: 1,
+        }).state;
+
+        expect(state.core.players['0'].toolCards).toEqual([]);
+        expect(state.core.players['0'].activeTools).toContain('burner-phone');
+        expect(state.core.players['0'].specialistCards).toEqual(specialistDeck.slice(0, 2));
+        expect(state.core.specialistDeck).toEqual(specialistDeck.slice(2));
+        expect(state.core.toolDiscardPile).toEqual(['burner-phone']);
+    });
+
+    test('手电筒翻出第一张非鬼牌并把跳过的鬼牌弃掉', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-flashlight-test');
+        let state = adapter.setup(['0', '1', '2']);
+        const joker = { suit: 'special', rank: 'Joker', kind: 'joker' } as const;
+        const visibleCard = { suit: 'hearts', rank: 'A', kind: 'standard' } as const;
+        const remainingCard = { suit: 'clubs', rank: '2', kind: 'standard' } as const;
+        state = stateOf({
+            ...state.core,
+            deck: [joker, visibleCard, remainingCard],
+            players: {
+                ...state.core.players,
+                '0': {
+                    ...state.core.players['0'],
+                    toolCards: ['flashlight'],
+                },
+            },
+        });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.USE_TOOL,
+            playerId: '0',
+            payload: { tool: 'flashlight' },
+            timestamp: 1,
+        }).state;
+
+        expect(state.core.players['0'].toolCards).toEqual([]);
+        expect(state.core.players['0'].activeTools).toContain('flashlight');
+        expect(state.core.players['0'].flashlightCards).toEqual([visibleCard]);
+        expect(state.core.deck).toEqual([remainingCard]);
+        expect(state.core.discardPile).toEqual([joker]);
+        expect(state.core.toolDiscardPile).toEqual(['flashlight']);
+    });
+
+    test('夜视眼镜把一张手牌移到工具区但摊牌仍计入手牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-night-vision-test');
+        let state = adapter.setup(['0', '1', '2']);
+        const movedCard = state.core.players['0'].pocketCards[0];
+        state = stateOf({
+            ...state.core,
+            communityCards: [
+                { suit: 'spades', rank: 'A', kind: 'standard' },
+                { suit: 'hearts', rank: 'K', kind: 'standard' },
+                { suit: 'diamonds', rank: 'Q', kind: 'standard' },
+                { suit: 'clubs', rank: 'J', kind: 'standard' },
+                { suit: 'spades', rank: '10', kind: 'standard' },
+            ],
+            currentRoundChips: { '0': 1, '1': 2, '2': 3 },
+            players: {
+                ...state.core.players,
+                '0': {
+                    ...state.core.players['0'],
+                    toolCards: ['night-vision-goggles'],
+                },
+            },
+        });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.USE_TOOL,
+            playerId: '0',
+            payload: { tool: 'night-vision-goggles', cardIndex: 0 },
+            timestamp: 1,
+        }).state;
+
+        expect(state.core.players['0'].toolCards).toEqual([]);
+        expect(state.core.players['0'].activeTools).toContain('night-vision-goggles');
+        expect(state.core.players['0'].pocketCards).not.toContainEqual(movedCard);
+        expect(state.core.players['0'].nightVisionCards).toEqual([movedCard]);
+        expect(state.core.toolDiscardPile).toEqual(['night-vision-goggles']);
+
+        const result = buildShowdownResults(state.core).find((player) => player.playerId === '0');
+        expect(result?.pocketCards).toContainEqual(movedCard);
+    });
+
+    test('当前轮可以拿别人面前的筹码，原持有人失去该筹码，且失去筹码的人还能再拿', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-validation-test');
         let state = adapter.setup(['0', '1', '2']);
 
@@ -102,7 +269,16 @@ describe('The Gang domain flow', () => {
             playerId: '1',
             payload: { chip: 1 },
             timestamp: 2,
-        })).toMatchObject({ valid: false, error: 'chipTaken' });
+        })).toMatchObject({ valid: true });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 1 },
+            timestamp: 2,
+        }).state;
+
+        expect(state.core.currentRoundChips).toEqual({ '1': 1 });
 
         expect(TheGangDomain.validate(state, {
             type: THE_GANG_COMMANDS.END_ROUND,
@@ -111,15 +287,27 @@ describe('The Gang domain flow', () => {
             timestamp: 3,
         })).toMatchObject({ valid: false, error: 'missingChips' });
 
-        for (const [index, playerId] of ['1', '2'].entries()) {
-            state = adapter.execute(state, {
-                type: THE_GANG_COMMANDS.TAKE_CHIP,
-                playerId,
-                payload: { chip: index + 2 },
-                timestamp: index + 4,
-                skipValidation: true,
-            }).state;
-        }
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 2 },
+            timestamp: 4,
+        })).toMatchObject({ valid: true });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 2 },
+            timestamp: 4,
+        }).state;
+        expect(state.core.currentRoundChips).toEqual({ '1': 1, '0': 2 });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '2',
+            payload: { chip: 3 },
+            timestamp: 5,
+        }).state;
 
         expect(TheGangDomain.validate(state, {
             type: THE_GANG_COMMANDS.END_ROUND,
@@ -127,6 +315,13 @@ describe('The Gang domain flow', () => {
             payload: {},
             timestamp: 6,
         })).toMatchObject({ valid: true });
+
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 1 },
+            timestamp: 7,
+        })).toMatchObject({ valid: false, error: 'chipAlreadyHeld' });
     });
 
     test('推进轮次、摊牌和下一次抢劫都必须等待全员确认', () => {

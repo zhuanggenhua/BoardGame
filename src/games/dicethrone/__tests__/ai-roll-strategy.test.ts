@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildAiDecisionContext } from '../../../engine/ai';
 import { diceThroneAiRuntime } from '../ai';
-import type { DiceThroneCore } from '../domain/types';
+import type { DiceThroneCore, SelectableCharacterId } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import { RESOURCE_IDS } from '../domain/resources';
 import { createHeroMatchup, fixedRandom } from './test-utils';
@@ -10,6 +10,7 @@ import '../game';
 const setBarbarianOffensiveRoll = (
     values: number[],
     kept: boolean[] = values.map(() => false),
+    profileCharacterId: SelectableCharacterId = 'barbarian',
 ): MatchState<DiceThroneCore> => {
     const state = createHeroMatchup('barbarian', 'monk')(['0', '1'], fixedRandom);
     state.sys.phase = 'offensiveRoll';
@@ -18,6 +19,8 @@ const setBarbarianOffensiveRoll = (
     state.core.rollLimit = 3;
     state.core.rollDiceCount = 5;
     state.core.rollConfirmed = false;
+    state.core.players['0'].characterId = profileCharacterId;
+    state.core.selectedCharacters['0'] = profileCharacterId;
     state.core.players['0'].resources[RESOURCE_IDS.CP] = 2;
     state.core.players['0'].hand = [];
     state.core.dice = state.core.dice.map((die, index) => ({
@@ -93,5 +96,18 @@ describe('DiceThrone 本地 AI 掷骰策略', () => {
         const decision = await decide(state);
 
         expect(decision?.actionId).toBe('roll:dice');
+    });
+
+    it('同一骰面下应让爆发型英雄更敢直接重投，稳健型英雄先补锁保底骰', async () => {
+        const burstState = setBarbarianOffensiveRoll([1, 1, 1, 5, 6], [true, true, true, false, false], 'barbarian');
+        const steadyState = setBarbarianOffensiveRoll([1, 1, 1, 5, 6], [true, true, true, false, false], 'paladin');
+        burstState.core.players['0'].resources[RESOURCE_IDS.CP] = 0;
+        steadyState.core.players['0'].resources[RESOURCE_IDS.CP] = 0;
+
+        const burstDecision = await decide(burstState);
+        const steadyDecision = await decide(steadyState);
+
+        expect(burstDecision?.actionId).toBe('roll:dice');
+        expect(steadyDecision?.actionId).toBe('toggle-die-lock:3:lock');
     });
 });

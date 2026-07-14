@@ -38,7 +38,6 @@ import type {
     TitanState,
     MinionPlayedEvent,
     LimitModifiedEvent,
-    MinionReturnedEvent,
     MinionDestroyedEvent,
     MinionMovedEvent,
     MinionControlChangedEvent,
@@ -61,7 +60,6 @@ import type {
     DeckReorderedEvent,
     AbilityFeedbackEvent,
     OngoingAttachedEvent,
-    OngoingDetachedEvent,
     OngoingCardCounterChangedEvent,
     CardToDeckBottomEvent,
     TitanRemovedFromPlayEvent,
@@ -69,8 +67,7 @@ import type {
 } from './types';
 import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 import { getEffectivePower } from './ongoingModifiers';
-import { triggerAllBaseAbilities } from './baseAbilities';
-import { collectTriggers, fireTriggers } from './ongoingEffects';
+import { collectTriggers } from './ongoingEffects';
 import { reduce } from './reduce';
 import { getCardDef, getMinionDef, getTitanDef } from '../data/cards';
 import { drawCards } from './utils';
@@ -174,16 +171,17 @@ export function canControllerPlayTitan(
     const activeTitans = (core.titans ?? []).filter(
         titan => titan.controllerId === controllerId && titan.location.zone === 'base',
     );
+    if (activeTitans.length === 0) return true;
     if (activeTitans.some(titan => titan.uid === titanUid)) return true;
     if (options?.allowConcurrentOwnTitan === true) return true;
 
-    const hasMegaTroopersPodRedTrooper = core.bases.some(base =>
+    const redTrooperPodInPlay = core.bases.some(base =>
         base.minions.some(minion =>
             minion.controller === controllerId
             && minion.defId === 'mega_troopers_red_trooper_pod',
         ),
     );
-    const titanLimit = hasMegaTroopersPodRedTrooper ? 2 : 1;
+    const titanLimit = redTrooperPodInPlay ? 2 : 1;
     return activeTitans.length < titanLimit;
 }
 

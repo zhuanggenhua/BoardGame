@@ -323,6 +323,19 @@ describe('DECLARE_ATTACK 验证', () => {
     expect(r.error).toContain('不是攻击阶段');
   });
 
+  it('空格不能作为攻击目标', () => {
+    const core = createInitializedCore(['0', '1'], createTestRandom());
+    core.phase = 'attack';
+    clearArea(core, [4, 5], [3]);
+    placeUnit(core, { row: 5, col: 3 }, { card: makeUnitCard('atk'), owner: '0' });
+    const r = validate(core, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: { row: 5, col: 3 },
+      target: { row: 4, col: 3 },
+    });
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('无法攻击该目标');
+  });
+
   it('已攻击单位拒绝', () => {
     const core = createInitializedCore(['0', '1'], createTestRandom());
     core.phase = 'attack';

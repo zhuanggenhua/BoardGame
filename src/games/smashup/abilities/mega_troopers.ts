@@ -31,7 +31,7 @@ import { registerBaseAbility, registerExtended as registerExtendedBase, type Bas
 import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { registerInterceptor, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
-import { getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
+import { getActionControllerId, getPlayerEffectivePowerOnBase, registerBreakpointModifier } from '../domain/ongoingModifiers';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import {
     appendPendingPostScoringActions,
@@ -293,7 +293,7 @@ function redTrooperTalentPod(ctx: AbilityContext): AbilityResult {
         .map((_base, baseIndex) => ({ baseIndex, label: baseLabel(ctx.state, baseIndex) }))
         .filter(candidate => candidate.baseIndex !== blockedBaseIndex);
     if (eligibleBases.length === 0) return noTargets(ctx);
-    if (titan.location.zone === 'setaside' && !canControllerPlayTitan(ctx.state, ctx.playerId, titan.uid)) {
+    if (titan.location.zone === 'setaside' && !canControllerPlayTitan(ctx.state, ctx.playerId, titan.uid, { allowConcurrentOwnTitan: true })) {
         return noTargets(ctx);
     }
     if (eligibleBases.length === 1) {
@@ -1587,6 +1587,15 @@ export function registerMegaTroopersAbilities(): void {
             sourceScope: 'triggerBase',
         },
     );
+    registerBreakpointModifier('mega_troopers_omega_protocol_pod', (ctx) => {
+        const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
+        return ctx.base.ongoingActions
+            .filter(action =>
+                action.defId === 'mega_troopers_omega_protocol_pod'
+                && getActionControllerId(action) !== currentPlayerId,
+            )
+            .length * -10;
+    });
     registerExtendedBase('base_moon_dumpster', 'onBaseRevealed', moonDumpsterOnBaseRevealed);
     registerBaseAbility('base_juice_bar', 'beforeScoring', juiceBarBeforeScoring);
 }

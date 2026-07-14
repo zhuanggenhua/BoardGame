@@ -557,6 +557,65 @@ describe('formatDiceThroneActionEntry', () => {
         expect(healEntry!.timestamp).toBeGreaterThan(cardEntry!.timestamp);
     });
 
+    it('固定选择结果在 ActionLog 中应显示为选择结果而不是投掷结果', () => {
+        const state = createState();
+        const command: Command = {
+            type: 'PLAY_CARD',
+            playerId: '0',
+            payload: { cardId: 'test-card' },
+            timestamp: 100,
+        };
+        const testState = {
+            ...state,
+            core: {
+                ...state.core,
+                players: {
+                    ...state.core.players,
+                    '0': {
+                        ...state.core.players['0'],
+                        hand: [
+                            ...state.core.players['0'].hand,
+                            {
+                                id: 'test-card',
+                                name: 'test.card.name',
+                                type: 'action' as const,
+                                cpCost: 0,
+                                timing: 'instant' as const,
+                                description: 'test',
+                                previewRef: { type: 'atlas' as const, atlasId: 'test', index: 0 },
+                            },
+                        ],
+                    },
+                },
+            },
+        };
+        const choiceResultEvent = {
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value: 4,
+                face: 'gear',
+                playerId: '0',
+                targetPlayerId: '1',
+                effectKey: 'bonusDie.effect.artificerWrenchStrikeGear',
+                presentationKind: 'choice',
+            },
+            timestamp: 101,
+        } as GameEvent;
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state: testState,
+            events: [choiceResultEvent],
+        }));
+
+        const resultEntry = entries.find(entry => entry.kind === 'CARD_ROLL_RESULT');
+        expect(resultEntry).toBeTruthy();
+        const i18nKeys = getI18nKeys(resultEntry!.segments);
+        expect(i18nKeys).toContain('actionLog.cardChoiceResult');
+        expect(i18nKeys).not.toContain('actionLog.cardRollResult');
+        expect(i18nKeys).toContain('bonusDie.effect.artificerWrenchStrikeGear');
+    });
+
     it('STATUS_REMOVED 的共享状态名应写入正确的同 namespace i18n key', () => {
         const state = createState();
         const command: Command = {

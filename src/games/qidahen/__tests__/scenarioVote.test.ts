@@ -34,8 +34,8 @@ const applyCommand = (
     state.core.playerIds,
 ).state;
 
-describe('七大恨局内剧本投票', () => {
-    it('投票阶段会阻断正式行动命令，直到所有席位投完票', () => {
+describe('七大恨局内剧本选择', () => {
+    it('剧本选择阶段会阻断正式行动命令，只允许房主选择剧本', () => {
         const state = createVoteState(['0', '1', '2']);
 
         expect(QidahenDomain.validate(state, {
@@ -49,9 +49,15 @@ describe('七大恨局内剧本投票', () => {
             playerId: '0',
             payload: { moveId: 'move-1-free' },
         } as never)).toEqual({ valid: false, error: 'pendingScenarioChoices' });
+
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
+            playerId: '1',
+            payload: { scenarioId: 'shanhaiguan-1622' },
+        } as never)).toEqual({ valid: false, error: 'unknownAction' });
     });
 
-    it('全部席位投完票后会切到获胜剧本，并进入对应的人物军备前置', () => {
+    it('房主点选剧本后会立即切到该剧本，并进入对应的人物军备前置', () => {
         let state = createVoteState(['0', '1', '2']);
 
         state = applyCommand(state, {
@@ -59,22 +65,6 @@ describe('七大恨局内剧本投票', () => {
             playerId: '0',
             payload: { scenarioId: 'shanhaiguan-1622' },
         });
-        expect(state.core.scenarioVote?.votes['0']).toBe('shanhaiguan-1622');
-        expect(state.core.pendingScenarioCharacterChoices).toEqual([]);
-
-        state = applyCommand(state, {
-            type: QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
-            playerId: '1',
-            payload: { scenarioId: 'shanhaiguan-1622' },
-        });
-        expect(state.core.scenarioVote?.votes['1']).toBe('shanhaiguan-1622');
-
-        state = applyCommand(state, {
-            type: QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
-            playerId: '2',
-            payload: { scenarioId: 'post-sarhu-1619' },
-        });
-
         expect(state.core.scenarioVote).toBeNull();
         expect(state.core.scenarioId).toBe('shanhaiguan-1622');
         expect(state.core.scenarioLabel).toBe('剧本二：山海关之议（1622）');

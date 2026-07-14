@@ -105,6 +105,15 @@ export const resolveRoomScenarioLabel = (
     scenarioId: string,
 ): string => {
     const normalizedGameName = gameName?.trim().toLowerCase();
+    if (normalizedGameName === 'betrayal') {
+        if (scenarioId === 'first-scenario') {
+            return t('setup.scenario.firstScenario', {
+                ns: 'game-betrayal',
+                defaultValue: '赤红杰克归来',
+            });
+        }
+        return scenarioId;
+    }
     if (normalizedGameName !== 'qidahen') {
         return scenarioId;
     }

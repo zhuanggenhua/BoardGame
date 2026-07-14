@@ -104,7 +104,7 @@ test-out.txt
 3. 只要某张图是为了录入、核对、OCR、看清局部版式、人工复查而生成，就一律视为中间产物，必须放 `temp/`
    - 这条不要求先做过“后处理”；即使只是从正式图集切了一个 `slot-24.webp`、`deadeye-2.webp`、整卡单图，也仍然属于录入中间产物
    - 典型例子：单格裁片、整卡裁片、上下拆分图、放大图、锐化图、拼接图、normalized hand preview、临时 atlas、人工标注图
-   - 这些文件不能放进 `public/assets/**`、`public/assets/.../crops/**`，也不能进入 manifest 或 R2/CDN 上传链
+   - 这些文件不能放进 `public/assets/**`、`public/assets/.../crops/**`，也不能进入 manifest 或服务器资源主源发布链
 4. 如果最终运行时需要新的派生图，必须另外生成正式资源：
    - 正式图片放 `public/assets/i18n/<locale>/<gameId>/<分类>/compressed/`
    - atlas 配置放 `public/assets/atlas-configs/<gameId>/`

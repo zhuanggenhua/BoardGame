@@ -9,8 +9,11 @@ vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string) => {
             if (key === 'rooms.enabledExpansions') return '扩展';
+            if (key === 'rooms.scenario') return '剧本';
+            if (key === 'rooms.scenarioPending') return '未定剧本';
             if (key === 'rooms.empty') return '暂无活跃房间';
             if (key === 'rooms.emptySlot') return '空位';
+            if (key === 'setup.scenario.firstScenario') return '赤红杰克归来';
             if (key === 'rooms.seatSeparator') return ' / ';
             if (key === 'setup.expansions.titans') return '泰坦';
             if (key === 'setup.expansions.diy') return 'DIY';
@@ -68,5 +71,64 @@ describe('RoomList 扩展摘要', () => {
         expect(screen.getByTestId('room-expansion-tag-room-1-titans')).toHaveTextContent('泰坦');
         expect(screen.getByTestId('room-expansion-tag-room-1-diy')).toHaveTextContent('DIY');
         expect(screen.getByTestId('room-expansion-tag-room-1-deckQuery')).toHaveTextContent('余牌查询');
+    });
+
+    it('山屋惊魂房间展示当前剧本或未定剧本', () => {
+        render(createElement(RoomList, {
+            ...baseProps,
+            gameTranslationNamespace: 'game-betrayal',
+            roomItems: [
+                {
+                    matchID: 'room-selected',
+                    players: [
+                        { id: 0, name: '房主' },
+                        { id: 1 },
+                        { id: 2 },
+                    ],
+                    totalSeats: 3,
+                    gameName: 'betrayal',
+                    roomName: '已选剧本房间',
+                    isFull: false,
+                    isEmptyRoom: false,
+                    playerCount: 1,
+                    isMyRoom: false,
+                    isOwnerRoom: false,
+                    canReconnect: false,
+                    myPlayerID: null,
+                    myCredentials: null,
+                    isHost: false,
+                    gameKey: 'betrayal',
+                    publicSetupSummary: {
+                        scenarioId: 'first-scenario',
+                    },
+                },
+                {
+                    matchID: 'room-pending',
+                    players: [
+                        { id: 0, name: '房主' },
+                        { id: 1 },
+                        { id: 2 },
+                    ],
+                    totalSeats: 3,
+                    gameName: 'betrayal',
+                    roomName: '未定剧本房间',
+                    isFull: false,
+                    isEmptyRoom: false,
+                    playerCount: 1,
+                    isMyRoom: false,
+                    isOwnerRoom: false,
+                    canReconnect: false,
+                    myPlayerID: null,
+                    myCredentials: null,
+                    isHost: false,
+                    gameKey: 'betrayal',
+                    publicSetupSummary: {},
+                },
+            ],
+        }));
+
+        expect(screen.getAllByText('剧本')).toHaveLength(2);
+        expect(screen.getByTestId('room-scenario-tag-room-selected')).toHaveTextContent('赤红杰克归来');
+        expect(screen.getByTestId('room-scenario-tag-room-pending')).toHaveTextContent('未定剧本');
     });
 });

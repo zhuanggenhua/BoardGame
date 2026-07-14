@@ -24,11 +24,11 @@
 | 安卓方向映射 | 通过 | `android/app/src/main/assets/game-orientation-map.json` 含 `the-gang: landscape` |
 | The Gang 桌面 E2E 真实图片加载门禁 | 通过 | `e2e/the-gang/the-gang-runtime.e2e.ts`、`e2e/the-gang/the-gang-tutorial.e2e.ts` 均增加图片 `naturalWidth/naturalHeight > 1` 与非空地址断言，避免白块截图再次被误判为通过 |
 | The Gang 最新关键截图 | 通过 | 运行时满元素、运行时摊牌结果、教程满元素、教程摊牌结果 4 张 1920×1080 截图已在 PureRef 打开；`temp/the-gang-intake/the-gang-1920-desktop-contact.jpg` AI 复看确认牌面与筹码可见 |
-| The Gang R2/CDN 压缩资源发布 | 通过 | 2026-07-05 定向上传 `official/i18n/zh-CN/the-gang/**/compressed/*.webp` 共 77 个对象，覆盖 52 张牌面、1 张牌背和 24 个基础筹码；上传后逐个 `HeadObject` 校验远端大小一致，`npm run assets:check` 已确认 `THE_GANG_REMOTE_DIFF=none` |
+| The Gang 压缩资源远端发布 | 通过 | 2026-07-05 定向上传 `official/i18n/zh-CN/the-gang/**/compressed/*.webp` 共 77 个对象，覆盖 52 张牌面、1 张牌背和 24 个基础筹码；上传后逐个校验远端大小一致，`npm run assets:check` 已确认 `THE_GANG_REMOTE_DIFF=none`。2026-07-11 后当前验收必须回到服务器素材主源 URL 与 `X-Asset-Source: server`。 |
 | 全局资源校验 | 阻塞在既有 DiceThrone 漂移 | `npm run assets:validate` 报 `atlas-configs/dicethrone/ability-cards-gunslinger.atlas.json.json` hash/bytes 不一致 |
 
 ## 影响
 
 - The Gang 当前基础版素材 intake 已补到规则对象级运行时接入；不能再沿用“桌面/牌槽和帮助卡仍阻塞”的旧结论。
 - 既有 DiceThrone manifest 漂移不能算 The Gang 问题，也不能混入本 change 修复。
-- 本轮 The Gang 基础版运行时资源、R2/CDN 压缩资源发布和桌面布局检查点已闭合：定向测试、真实页面 E2E、R2 `HeadObject` 回查、PureRef 打开截图和 AI 复看均已完成。手机验收、用户桌面验收和最终完成口径按后续流程另行裁定，不混入本地桌面检查点。
+- 本轮 The Gang 基础版运行时资源、压缩资源远端发布和桌面布局检查点已闭合：定向测试、真实页面 E2E、远端资源回查、PureRef 打开截图和 AI 复看均已完成。手机验收、用户桌面验收和最终完成口径按后续流程另行裁定，不混入本地桌面检查点。当前和后续资源验收统一以服务器素材主源为准。

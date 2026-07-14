@@ -34,6 +34,42 @@ describe('buildMatchRoomTutorialBoardRuntimeModel', () => {
         expect(runtime?.tutorialManifest?.id).toBe('haunt-actions-and-finish');
     });
 
+    it('教程运行时所有座位都由当前用户操作，不得启用本地 AI 代选', () => {
+        const runtime = buildMatchRoomTutorialBoardRuntimeModel({
+            gameId: 'the-gang',
+            tLobby,
+            stage: {
+                tutorialId: 'basic',
+                tutorialManifest: {
+                    id: 'basic',
+                    numPlayers: 3,
+                    steps: [],
+                },
+                board,
+                engineConfig: {
+                    ...engineConfig,
+                    gameId: 'the-gang',
+                    minPlayers: 3,
+                    maxPlayers: 6,
+                },
+                aiSupport: {
+                    capture: true,
+                    localAi: true,
+                    remoteAi: false,
+                    defaultLocalAiSeats: 'all-opponents',
+                },
+                onCommandRejected: vi.fn(),
+                loadingProgressText: undefined,
+            },
+        });
+
+        expect(runtime?.seatControllers).toEqual({
+            '0': { type: 'human' },
+            '1': { type: 'human' },
+            '2': { type: 'human' },
+        });
+    });
+
     it('未声明教程人数时，回退到引擎最小人数', () => {
         const runtime = buildMatchRoomTutorialBoardRuntimeModel({
             gameId: 'cardia',

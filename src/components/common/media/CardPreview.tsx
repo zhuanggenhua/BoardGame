@@ -11,7 +11,7 @@ import {
 } from '../../../core';
 import { getOptimizedImageUrls, getLocalizedAssetPath } from '../../../core/AssetLoader';
 import { OptimizedImage } from './OptimizedImage';
-import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
+import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteImgStyle } from '../../../engine/primitives/spriteAtlas';
 import {
     registerCardAtlasSource,
     getCardAtlasSource,
@@ -383,8 +383,13 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
         () => (source ? getCardAtlasCandidateUrls(source.image, effectiveLocale) : []),
         [effectiveLocale, source],
     );
+    const lazyRegistration = useMemo(
+        () => (source ? undefined : getLazyRegistration(atlasId)),
+        [atlasId, source],
+    );
 
     const checkKey = `${atlasId}|${source?.image ?? ''}|${effectiveLocale}`;
+    const fallbackCheckKey = `${atlasId}|${lazyRegistration?.image ?? ''}|${effectiveLocale}`;
     const loadedCandidateUrl = useMemo(
         () => (source ? getResolvedImageCandidateUrl(checkUrls, source.image, effectiveLocale) : ''),
         [checkUrls, effectiveLocale, source],
@@ -528,7 +533,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
     // 自行加载图片获取尺寸，触发懒解析提升
     useEffect(() => {
         if (source) return; // 已有 source，无需 fallback
-        const lazy = getLazyRegistration(atlasId);
+        const lazy = lazyRegistration;
         if (!lazy) return; // 非懒注册，无法 fallback
 
         let cancelled = false;
@@ -551,7 +556,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             markImageLoaded(lazy.image, effectiveLocale, result.img);
             markImageLoaded(result.url, undefined, result.img);
             setLoadState((current) => ({
-                checkKey: current.checkKey,
+                checkKey: current.checkKey === checkKey ? current.checkKey : fallbackCheckKey,
                 activeUrl: result.url,
                 loaded: true,
             }));
@@ -561,7 +566,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
         return () => {
             cancelled = true;
         };
-    }, [source, atlasId, effectiveLocale, retryVersion, scheduleAtlasRetry]);
+    }, [source, atlasId, checkKey, effectiveLocale, fallbackCheckKey, lazyRegistration, retryVersion, scheduleAtlasRetry]);
 
     if (!source) {
         // 显示 shimmer 占位而非 null，等待 fallback 加载完成
@@ -578,8 +583,7 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
         return null;
     }
 
-    const atlasStyle = computeSpriteStyle(index, atlasConfig ?? source.config);
-    const backgroundImage = effectiveLoaded && activeUrl ? `url("${activeUrl}")` : '';
+    const atlasStyle = computeSpriteImgStyle(index, atlasConfig ?? source.config);
 
     return (
         <div
@@ -589,11 +593,32 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
             className={`${effectiveLoaded ? '' : 'atlas-shimmer'} ${className ?? ''}`}
             title={title}
             style={{
-                backgroundImage,
-                backgroundRepeat: 'no-repeat',
-                ...atlasStyle,
+                aspectRatio: atlasStyle.aspectRatio,
+                overflow: 'hidden',
+                position: 'relative',
                 ...style,
             }}
-        />
+        >
+            {effectiveLoaded && activeUrl ? (
+                <img
+                    alt={title ?? ''}
+                    data-card-atlas-img="true"
+                    draggable={false}
+                    src={activeUrl}
+                    style={{
+                        height: atlasStyle.imgHeight,
+                        left: 0,
+                        maxWidth: 'none',
+                        pointerEvents: 'none',
+                        position: 'absolute',
+                        top: 0,
+                        transform: `translate(${atlasStyle.translateX}, ${atlasStyle.translateY})`,
+                        transformOrigin: 'top left',
+                        userSelect: 'none',
+                        width: atlasStyle.imgWidth,
+                    }}
+                />
+            ) : null}
+        </div>
     );
 }

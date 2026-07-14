@@ -15,6 +15,7 @@ import { useLocalProviderDebugEffects } from './useLocalProviderDebugEffects';
 import { useLocalProviderSession } from './useLocalProviderSession';
 import { useLocalProviderViewModel } from './useLocalProviderViewModel';
 import { resolveSetupPlayerIds } from './setupPlayerOrder';
+import { resolveRuntimeSeatControllers } from './stateNormalization';
 
 export function useLocalGameProviderRuntime(args: {
     config: GameEngineConfig;
@@ -23,6 +24,7 @@ export function useLocalGameProviderRuntime(args: {
     setupData: unknown;
     onCommandRejected?: (commandType: string, error: string) => void;
     seatControllers: Record<string, AiSeatController>;
+    playerNames?: Record<string, string>;
     localPlayerId: string | null;
     followCurrentTurnPlayer: boolean;
     persistSession: boolean;
@@ -61,22 +63,29 @@ export function useLocalGameProviderRuntime(args: {
         aiSeatIds,
         persistSession: args.persistSession,
     });
+    const runtimeSeatControllers = useMemo(
+        () => resolveRuntimeSeatControllers({
+            state,
+            seatControllers: args.seatControllers,
+        }),
+        [args.seatControllers, state],
+    );
 
     const localPregameControlledPlayerId = useMemo(
         () => resolveLocalPregameControlledPlayerId({
             state,
-            seatControllers: args.seatControllers,
+            seatControllers: runtimeSeatControllers,
             localPlayerId: args.localPlayerId,
             resolver: args.config.resolveLocalPregameControlledPlayerId,
         }),
-        [args.config.resolveLocalPregameControlledPlayerId, args.localPlayerId, args.seatControllers, state],
+        [args.config.resolveLocalPregameControlledPlayerId, args.localPlayerId, runtimeSeatControllers, state],
     );
 
     const { dispatch } = useLocalAiRuntime({
         state,
         config: args.config,
         seed: args.seed,
-        seatControllers: args.seatControllers,
+        seatControllers: runtimeSeatControllers,
         localPregameControlledPlayerId,
         setState,
         stateRef,
@@ -90,7 +99,8 @@ export function useLocalGameProviderRuntime(args: {
         dispatch,
         reset,
         playerIds,
-        seatControllers: args.seatControllers,
+        seatControllers: runtimeSeatControllers,
+        playerNames: args.playerNames,
         localPregameControlledPlayerId,
         followCurrentTurnPlayer: args.followCurrentTurnPlayer,
         localPlayerId: args.localPlayerId,

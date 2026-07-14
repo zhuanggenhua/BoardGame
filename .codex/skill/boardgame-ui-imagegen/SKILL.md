@@ -1,6 +1,6 @@
 ---
 name: boardgame-ui-imagegen
-description: "为 BoardGame 项目生成桌游 UI 概念图或 imagegen prompt 前使用。适用于新游戏 UI 草稿、生图返工、按规则书和主地图/主棋盘素材做界面设计时；强制先拆规则与素材里的真实 UI 元素，避免凭空添加仪表盘、重复已有控件、拆分完整地图、或在 UI 中写规则说明。"
+description: "BoardGame 桌游 UI 概念图/imagegen prompt 前置流程。用于新游戏 UI、生图返工、规则书/主棋盘素材设计；先拆真实 UI 元素。"
 ---
 
 # Boardgame UI Imagegen

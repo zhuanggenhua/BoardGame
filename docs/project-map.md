@@ -424,7 +424,7 @@ scripts/
 │   ├── profile_scan.py
 │   ├── extract_assets.js
 │   ├── generate_asset_manifests.js
-│   └── upload-to-r2.js
+│   └── publish-primary-assets.mjs
 ├── deploy/                         # 部署
 │   ├── deploy-auto.sh
 │   ├── deploy-image.sh

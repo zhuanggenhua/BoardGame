@@ -37,38 +37,7 @@ async function nextTutorialStep(page: Page) {
     await page.getByTestId('tutorial-next-button').click();
 }
 
-async function selectHotseat(page: Page, seatName: string, scope: 'board' | 'showdown' = 'board') {
-    const testId = scope === 'showdown'
-        ? 'the-gang-showdown-hotseat-switcher'
-        : 'the-gang-hotseat-switcher';
-    const seatButton = page.getByTestId(testId).getByRole('button', { name: seatName });
-    await seatButton.click({ force: true });
-    await expect(seatButton).toHaveAttribute('aria-pressed', 'true');
-}
-
-async function chooseChipForSeat(page: Page, seatName: string, chipLabel: string) {
-    await selectHotseat(page, seatName);
-    await page.getByRole('button', { name: chipLabel }).click();
-}
-
-async function chooseTeammateChips(page: Page, chipPrefix: string) {
-    await chooseChipForSeat(page, '玩家 2', `${chipPrefix} 2 星`);
-    await chooseChipForSeat(page, '玩家 3', `${chipPrefix} 3 星`);
-    await selectHotseat(page, '玩家 1');
-}
-
-async function confirmProgressForAllPlayers(page: Page, buttonName: string) {
-    const hotseatScope = buttonName === '下一次抢劫' ? 'showdown' : 'board';
-    await selectHotseat(page, '玩家 1', hotseatScope);
-    await page.getByRole('button', { name: buttonName }).click();
-    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(1);
-    await expect(page.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
-
-    await selectHotseat(page, '玩家 2', hotseatScope);
-    await page.getByRole('button', { name: buttonName }).click();
-    await expect(page.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(2);
-
-    await selectHotseat(page, '玩家 3', hotseatScope);
+async function clickHumanProgressAndWaitForAi(page: Page, buttonName: string) {
     await page.getByRole('button', { name: buttonName }).click();
 }
 
@@ -101,46 +70,27 @@ async function expectImagesLoaded(page: Page, selector: string, expectedCount: n
         .poll(
             async () =>
                 images.evaluateAll((nodes) =>
-                    nodes.map((node) => {
-                        const image = node as HTMLImageElement;
-                        return {
-                            alt: image.alt,
-                            complete: image.complete,
-                            naturalHeight: image.naturalHeight,
-                            naturalWidth: image.naturalWidth,
-                            src: image.currentSrc || image.src,
-                        };
-                    }),
+                    nodes
+                        .map((node) => {
+                            const image = node as HTMLImageElement;
+                            return {
+                                alt: image.alt,
+                                complete: image.complete,
+                                naturalHeight: image.naturalHeight,
+                                naturalWidth: image.naturalWidth,
+                                src: image.currentSrc || image.src,
+                            };
+                        })
+                        .filter((image) =>
+                            !image.complete
+                            || image.src.length === 0
+                            || image.naturalWidth <= 1
+                            || image.naturalHeight <= 1
+                        ),
                 ),
             { message: `等待 ${selector} 的真实图片资源加载完成` },
         )
-        .toEqual(
-            expect.arrayContaining(
-                Array.from({ length: expectedCount }, () =>
-                    expect.objectContaining({
-                        complete: true,
-                        naturalHeight: expect.any(Number),
-                        naturalWidth: expect.any(Number),
-                        src: expect.any(String),
-                    }),
-                ),
-            ),
-        );
-
-    const failedImages = await images.evaluateAll((nodes) =>
-        nodes
-            .map((node) => {
-                const image = node as HTMLImageElement;
-                return {
-                    alt: image.alt,
-                    naturalHeight: image.naturalHeight,
-                    naturalWidth: image.naturalWidth,
-                    src: image.currentSrc || image.src,
-                };
-            })
-            .filter((image) => image.naturalWidth <= 1 || image.naturalHeight <= 1),
-    );
-    expect(failedImages, `${selector} 存在未真实加载的图片`).toEqual([]);
+        .toEqual([]);
     const emptySources = await images.evaluateAll((nodes) =>
         nodes
             .map((node) => {
@@ -150,6 +100,52 @@ async function expectImagesLoaded(page: Page, selector: string, expectedCount: n
             .filter((src) => src.length === 0),
     );
     expect(emptySources, `${selector} 存在空图片地址`).toEqual([]);
+}
+
+type TheGangHarnessState = {
+    core?: TheGangCore;
+};
+
+type TheGangTestWindow = Window & {
+    __BG_TEST_HARNESS__?: {
+        state?: {
+            get?: () => TheGangHarnessState | null;
+        };
+    };
+};
+
+async function getTheGangCore(page: Page): Promise<TheGangCore> {
+    const core = await page.evaluate(() => {
+        const harness = (window as TheGangTestWindow).__BG_TEST_HARNESS__;
+        return harness?.state?.get?.()?.core ?? null;
+    });
+    if (!core) throw new Error('The Gang tutorial state is unavailable');
+    return core;
+}
+
+async function expectCurrentRoundChips(page: Page, expectedCount: number) {
+    await expect
+        .poll(
+            async () => Object.keys((await getTheGangCore(page)).currentRoundChips ?? {}).length,
+            { message: `等待当前轮 ${expectedCount} 名玩家完成筹码选择` },
+        )
+        .toBe(expectedCount);
+}
+
+async function getCurrentRoundChips(page: Page): Promise<Record<string, number>> {
+    return (await getTheGangCore(page)).currentRoundChips;
+}
+
+async function expectTokenPileChipButtons(page: Page, chipPrefix: string, expectedValues: number[]) {
+    const tokenPile = page.locator('[data-bgg-zone="token-pile"]');
+    for (const value of [1, 2, 3]) {
+        const chipButton = tokenPile.getByRole('button', { name: `${chipPrefix} ${value} 星` });
+        if (expectedValues.includes(value)) {
+            await expect(chipButton).toBeVisible();
+        } else {
+            await expect(chipButton).toHaveCount(0);
+        }
+    }
 }
 
 async function expectTutorialHighlightCoversVisibleTarget(page: Page, targetId: string) {
@@ -284,17 +280,47 @@ test.describe('The Gang 教程 E2E', () => {
 
         await expect(page.locator('[data-tutorial-step="table-response"]')).toBeVisible();
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
-        await chooseChipForSeat(page, '玩家 2', '白筹码 2 星');
-        await chooseChipForSeat(page, '玩家 3', '白筹码 3 星');
-        await selectHotseat(page, '玩家 1');
+        await expectCurrentRoundChips(page, 3);
+        await expectTokenPileChipButtons(page, '白筹码', []);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+        await expect(page.getByText(/中间筹码池是默认来源/u)).toBeVisible();
+        await expect(page.getByText(/队友面前本轮刚拿的白筹码也还是可拿对象/u)).toBeVisible();
         await game.screenshot('教程首轮全员拿白筹码', testInfo);
 
         await nextTutorialStep(page);
+        await expect(page.locator('[data-tutorial-step="take-player-chip"]')).toBeVisible();
+        await expect(page.getByTestId('tutorial-action-hint')).toBeVisible();
+        await expect(page.getByText(/实际试一次/u)).toBeVisible();
+        await expect(page.getByText(/点队友面前发亮的当前轮白筹码/u)).toBeVisible();
+        await expect(page.getByText(/把它从队友那里拿走/u)).toBeVisible();
+        await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-opponent-state');
+        const chipsBeforeSteal = await getCurrentRoundChips(page);
+        const stolenTargetEntry = Object.entries(chipsBeforeSteal)
+            .find(([playerId]) => playerId !== '0');
+        expect(stolenTargetEntry, `必须有可被拿走的 AI 当前轮筹码: ${JSON.stringify(chipsBeforeSteal)}`).toBeDefined();
+        const [stolenPlayerId, stolenChip] = stolenTargetEntry!;
+
+        await page.getByTestId(`the-gang-take-player-chip-${stolenPlayerId}`).click();
+        await expect
+            .poll(
+                async () => (await getCurrentRoundChips(page))['0'],
+                { message: '等待真人实际拿走队友当前轮筹码' },
+            )
+            .toBe(stolenChip);
+        await expect
+            .poll(
+                async () => (await getCurrentRoundChips(page))[stolenPlayerId] !== undefined,
+                { message: '等待被拿走筹码的 AI 重新补筹码' },
+            )
+            .toBe(true);
+        await expectCurrentRoundChips(page, 3);
+        await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+        await game.screenshot('教程实际拿走队友当前轮筹码', testInfo);
+
         await expect(page.locator('[data-tutorial-step="advance-round"]')).toBeVisible();
         await expect(page.locator('[data-tutorial-step="advance-round"]').getByText(/全员确认/u)).toBeVisible();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
-        await confirmProgressForAllPlayers(page, '下一轮');
+        await clickHumanProgressAndWaitForAi(page, '下一轮');
 
         await expect(page.locator('[data-tutorial-step="community-cards"]')).toBeVisible();
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 3);
@@ -304,54 +330,58 @@ test.describe('The Gang 教程 E2E', () => {
         await nextTutorialStep(page);
 
         await expect(page.locator('[data-tutorial-step="yellow-chip"]')).toBeVisible();
-        await chooseChipForSeat(page, '玩家 1', '黄筹码 1 星');
+        await page.getByRole('button', { name: '黄筹码 1 星' }).click();
         await expect(page.locator('[data-tutorial-step="yellow-response"]')).toBeVisible();
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="turn-round"]')).toBeVisible();
-        await chooseTeammateChips(page, '黄筹码');
+        await expectCurrentRoundChips(page, 3);
+        await expectTokenPileChipButtons(page, '黄筹码', []);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
-        await confirmProgressForAllPlayers(page, '下一轮');
+        await clickHumanProgressAndWaitForAi(page, '下一轮');
 
         await expect(page.locator('[data-tutorial-step="turn-card"]')).toBeVisible();
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 4);
         await nextTutorialStep(page);
 
         await expect(page.locator('[data-tutorial-step="orange-chip"]')).toBeVisible();
-        await chooseChipForSeat(page, '玩家 1', '橙筹码 1 星');
+        await page.getByRole('button', { name: '橙筹码 1 星' }).click();
         await expect(page.locator('[data-tutorial-step="orange-response"]')).toBeVisible();
         await nextTutorialStep(page);
         await expect(page.locator('[data-tutorial-step="river-round"]')).toBeVisible();
-        await chooseTeammateChips(page, '橙筹码');
+        await expectCurrentRoundChips(page, 3);
+        await expectTokenPileChipButtons(page, '橙筹码', []);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-next-round');
-        await confirmProgressForAllPlayers(page, '下一轮');
+        await clickHumanProgressAndWaitForAi(page, '下一轮');
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
         await expect(page.locator('[data-tutorial-step="final-chip"]')).toBeVisible();
         await expect(page.getByText(/红筹码是最终承诺/u)).toBeVisible();
         await game.screenshot('教程红筹码最终承诺', testInfo);
 
         const finalChips = await computeFinalChipsForSuccessfulShowdown(page);
-        await chooseChipForSeat(page, '玩家 1', `红筹码 ${finalChips['0']} 星`);
+        await page.getByRole('button', { name: `红筹码 ${finalChips['0']} 星` }).click();
         await expect(page.locator('[data-tutorial-step="final-response"]')).toBeVisible();
         await nextTutorialStep(page);
-        await chooseChipForSeat(page, '玩家 2', `红筹码 ${finalChips['1']} 星`);
-        await chooseChipForSeat(page, '玩家 3', `红筹码 ${finalChips['2']} 星`);
-        await selectHotseat(page, '玩家 1');
+        await expectCurrentRoundChips(page, 3);
+        await expectTokenPileChipButtons(page, '红筹码', []);
 
         await expect(page.locator('[data-tutorial-step="reveal-showdown"]')).toBeVisible();
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-reveal-showdown');
-        await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(9);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(6);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
+        await expect(page.locator('[data-bgg-zone="hand-chips-previous"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 9);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 6);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
+        await expectImagesLoaded(page, '[data-bgg-zone="hand-chips-previous"] img', 3);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
         await game.screenshot('教程满元素待摊牌', testInfo);
 
         await expect(page.getByText(/摊牌也需要全员确认/u)).toBeVisible();
-        await confirmProgressForAllPlayers(page, '摊牌');
+        await clickHumanProgressAndWaitForAi(page, '摊牌');
         await expect(page.locator('[data-tutorial-step="showdown"]')).toBeVisible();
         await expectTutorialHighlightCoversVisibleTarget(page, 'the-gang-showdown-result');
         await expect(page.getByLabel('摊牌结算')).toBeVisible();

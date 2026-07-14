@@ -3,6 +3,14 @@ import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MobileOrientationGuard } from '../MobileOrientationGuard';
 
+const lockOrientationMock = vi.hoisted(() => vi.fn(async () => undefined));
+
+vi.mock('@capacitor/screen-orientation', () => ({
+    ScreenOrientation: {
+        lock: lockOrientationMock,
+    },
+}));
+
 const setViewport = (width: number, height: number) => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: height });
@@ -14,6 +22,7 @@ const setNativeAppShell = (value: boolean) => {
     Object.defineProperty(window, 'Capacitor', {
         configurable: true,
         value: {
+            getPlatform: vi.fn(() => (value ? 'android' : 'web')),
             isNativePlatform: vi.fn(() => value),
         },
     });
@@ -36,6 +45,14 @@ const renderGuard = () => render(
 
 const renderBetrayalGuard = () => render(
     <MemoryRouter initialEntries={["/play/betrayal/tutorial/basic-setup-and-turn"]}>
+        <MobileOrientationGuard>
+            <div data-testid="game-content">game content</div>
+        </MobileOrientationGuard>
+    </MemoryRouter>,
+);
+
+const renderTheGangGuard = () => render(
+    <MemoryRouter initialEntries={['/play/the-gang/local']}>
         <MobileOrientationGuard>
             <div data-testid="game-content">game content</div>
         </MobileOrientationGuard>
@@ -90,6 +107,20 @@ describe('MobileOrientationGuard native orientation behavior', () => {
 
         expect(screen.getByTestId('game-content')).toBeTruthy();
         expect(screen.queryByText('正在切换横屏…')).toBeNull();
+    });
+
+    it('纸牌帮路由必须通过已打包的原生插件请求横屏', () => {
+        vi.useFakeTimers();
+        setViewport(390, 844);
+        setNativeAppShell(true);
+
+        renderTheGangGuard();
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
+
+        expect(lockOrientationMock).toHaveBeenCalledWith({ orientation: 'landscape' });
+        expect(screen.getByTestId('game-content')).toBeTruthy();
     });
 
     it('legacy Android shell with only androidBridge is still handled by the global native shell path', () => {
@@ -149,14 +180,29 @@ describe('MobileOrientationGuard game orientation banner', () => {
         expect(document.documentElement.style.getPropertyValue('--mobile-orientation-banner-offset')).toBe('calc(env(safe-area-inset-top) + 3.75rem)');
     });
 
-    it('游戏方向提示条点击关闭后应立即消失并清空顶部让位变量', () => {
+    it('Web 端横屏游戏在竖屏视口下只提示旋转但保留真实游戏主界面', () => {
+        vi.useFakeTimers();
+        setViewport(390, 844);
+
+        renderGuard();
+        act(() => {
+            vi.runOnlyPendingTimers();
+        });
+
+        expect(screen.queryByTestId('mobile-orientation-game-gate')).toBeNull();
+        expect(screen.getByTestId('mobile-orientation-game-banner')).toBeTruthy();
+        expect(screen.getByText('mobileOrientation.banner.rotateToLandscape')).toBeTruthy();
+        expect(screen.getByTestId('game-content')).toBeTruthy();
+    });
+
+    it('首页方向提示条点击关闭后应立即消失并清空顶部让位变量', () => {
         vi.useFakeTimers();
         setViewport(844, 390);
 
         render(
-            <MemoryRouter initialEntries={['/play/tictactoe']}>
+            <MemoryRouter initialEntries={['/']}>
                 <MobileOrientationGuard>
-                    <div data-testid="game-content">game content</div>
+                    <div data-testid="home-content">home content</div>
                 </MobileOrientationGuard>
             </MemoryRouter>,
         );
@@ -169,8 +215,8 @@ describe('MobileOrientationGuard game orientation banner', () => {
             closeButton.click();
         });
 
-        expect(screen.queryByTestId('mobile-orientation-game-banner')).toBeNull();
-        expect(screen.getByTestId('game-content')).toBeTruthy();
+        expect(screen.queryByTestId('mobile-orientation-home-banner')).toBeNull();
+        expect(screen.getByTestId('home-content')).toBeTruthy();
         expect(document.documentElement.style.getPropertyValue('--mobile-orientation-banner-offset')).toBe('0px');
     });
 });

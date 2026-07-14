@@ -11,9 +11,19 @@ import { normalizeUnitBoosts } from '../domain/helpers';
 import { GameButton } from './GameButton';
 import { ActionBanner } from './ActionBanner';
 import type { AbilityModeState, SoulTransferModeState, MindCaptureModeState, AfterAttackAbilityModeState } from './useGameEvents';
-import type { MindControlModeState, StunModeState, HypnoticLureModeState, ChantEntanglementModeState, SneakModeState, GlacialShiftModeState, WithdrawModeState, TelekinesisTargetModeState } from './modeTypes';
-
-type BannerTranslate = (...args: any[]) => string;
+import { getAbilityModeBannerFallbackText } from './statusBannerText';
+import type {
+  MindControlModeState,
+  StunModeState,
+  HypnoticLureModeState,
+  ChantEntanglementModeState,
+  MoguSymbioticSelfHealingModeState,
+  MoguReleaseSporesModeState,
+  SneakModeState,
+  GlacialShiftModeState,
+  WithdrawModeState,
+  TelekinesisTargetModeState,
+} from './modeTypes';
 
 // ============================================================================
 // 类型定义
@@ -43,27 +53,6 @@ export interface FuneralPyreModeState {
   charges: number;
 }
 
-export function getAbilityModeBannerFallbackText(
-  t: BannerTranslate,
-  abilityMode: AbilityModeState,
-): string {
-  if (abilityMode.abilityId === 'fortress_power' && abilityMode.step === 'selectCard') {
-    return t('cardSelector.fortressPower');
-  }
-
-  if (abilityMode.abilityId === 'telekinesis_instead' && abilityMode.step === 'selectUnit') {
-    const abilityName = t('statusBanners.abilityNames.telekinesis_instead');
-    return t('statusBanners.afterAttack.message', { ability: abilityName });
-  }
-
-  if (abilityMode.abilityId === 'high_telekinesis_instead' && abilityMode.step === 'selectUnit') {
-    const abilityName = t('statusBanners.abilityNames.high_telekinesis_instead');
-    return t('statusBanners.afterAttack.message', { ability: abilityName });
-  }
-
-  return '';
-}
-
 // ============================================================================
 // Props
 // ============================================================================
@@ -82,6 +71,8 @@ interface StatusBannersProps {
   funeralPyreMode: FuneralPyreModeState | null;
   mindControlMode: MindControlModeState | null;
   chantEntanglementMode: ChantEntanglementModeState | null;
+  moguSymbioticSelfHealingMode: MoguSymbioticSelfHealingModeState | null;
+  moguReleaseSporesMode: MoguReleaseSporesModeState | null;
   sneakMode: SneakModeState | null;
   glacialShiftMode: GlacialShiftModeState | null;
   withdrawMode: WithdrawModeState | null;
@@ -116,6 +107,10 @@ interface StatusBannersProps {
   onCancelMindControl: () => void;
   onConfirmEntanglement: () => void;
   onCancelEntanglement: () => void;
+  onConfirmMoguSymbioticSelfHealing: () => void;
+  onSkipMoguSymbioticSelfHealing: () => void;
+  onConfirmMoguReleaseSpores: () => void;
+  onSkipMoguReleaseSpores: () => void;
   onConfirmSneak: () => void;
   onCancelSneak: () => void;
   onConfirmGlacialShift: () => void;
@@ -130,6 +125,7 @@ interface StatusBannersProps {
   onCancelRapidFire: () => void;
   onCancelTelekinesis: () => void;
   onAfterMoveSelfCharge: () => void;
+  onSystemAbilityChoice: (choice: string) => void;
   onPlayMagicEvent: () => void;
   onDiscardMagicEvent: () => void;
   onCancelMagicEventChoice: () => void;
@@ -173,7 +169,7 @@ const StunBanner: React.FC<{
 export const StatusBanners: React.FC<StatusBannersProps> = ({
   currentPhase, isMyTurn, core,
   abilityMode, fireSacrificeSummonMode, onCancelFireSacrifice, bloodSummonMode, annihilateMode, soulTransferMode, funeralPyreMode,
-  mindControlMode, chantEntanglementMode, sneakMode, glacialShiftMode, withdrawMode, stunMode, hypnoticLureMode,
+  mindControlMode, chantEntanglementMode, moguSymbioticSelfHealingMode, moguReleaseSporesMode, sneakMode, glacialShiftMode, withdrawMode, stunMode, hypnoticLureMode,
   mindCaptureMode, afterAttackAbilityMode, rapidFireMode, telekinesisTargetMode, magicEventChoiceMode,
   eventTargetMode,
   systemGrabFollowMode, systemIceShardsMode, systemFeedBeastMode,
@@ -183,6 +179,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   onConfirmSoulTransfer, onSkipSoulTransfer, onSkipFuneralPyre,
   onConfirmMindControl, onCancelMindControl,
   onConfirmEntanglement, onCancelEntanglement,
+  onConfirmMoguSymbioticSelfHealing, onSkipMoguSymbioticSelfHealing,
+  onConfirmMoguReleaseSpores, onSkipMoguReleaseSpores,
   onConfirmSneak, onCancelSneak,
   onConfirmGlacialShift, onCancelGlacialShift,
   onWithdrawCostSelect, onCancelWithdraw,
@@ -192,6 +190,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   onConfirmRapidFire, onCancelRapidFire,
   onCancelTelekinesis,
   onAfterMoveSelfCharge,
+  onSystemAbilityChoice,
   onPlayMagicEvent, onDiscardMagicEvent, onCancelMagicEventChoice,
   onCancelEventTargetInteraction,
 }) => {
@@ -286,6 +285,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
               ? t('statusBanners.ability.frostAxeChargeOnly')
               : t('statusBanners.ability.frostAxe')
           )}
+          {abilityMode.abilityId === 'mogu_transmission' && t('statusBanners.ability.moguTransmission')}
+          {abilityMode.abilityId === 'mogu_fanatical_fungus' && t('statusBanners.ability.moguFanaticalFungus')}
           {getAbilityModeBannerFallbackText(t, abilityMode)}
           {abilityMode.abilityId === 'vanish' && t('statusBanners.ability.vanish')}
         </span>
@@ -321,7 +322,29 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         {(abilityMode.abilityId === 'spirit_bond' || abilityMode.abilityId === 'frost_axe') && (
           <GameButton onClick={onAfterMoveSelfCharge} variant="primary" size="sm">{t('actions.chargeSelf')}</GameButton>
         )}
-        {['spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe'].includes(abilityMode.abilityId) && (
+        {abilityMode.abilityId === 'mogu_transmission' && abilityMode.systemStep === 'selectMode' && (
+          <>
+            {(abilityMode.systemChoiceOptions ?? [])
+              .filter((option) => option.id === 'self_to_target' || option.id === 'target_to_target')
+              .map((option, index) => (
+                <GameButton key={option.id} onClick={() => onSystemAbilityChoice(option.id)} variant={index === 0 ? 'primary' : 'secondary'} size="sm">
+                  {option.labelKey ? t(option.labelKey) : option.label ?? option.id}
+                </GameButton>
+              ))}
+          </>
+        )}
+        {abilityMode.abilityId === 'mogu_transmission' && abilityMode.systemStep === 'selectAmount' && (
+          <>
+            {(abilityMode.systemChoiceOptions ?? [])
+              .filter((option) => option.id.startsWith('amount:'))
+              .map((option) => (
+              <GameButton key={option.id} onClick={() => onSystemAbilityChoice(option.id)} variant="primary" size="sm">
+                {option.labelKey ? t(option.labelKey) : option.label ?? option.id.replace('amount:', '')}
+              </GameButton>
+            ))}
+          </>
+        )}
+        {['spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'mogu_transmission', 'mogu_fanatical_fungus'].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
         {abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit' && (
@@ -334,7 +357,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         {abilityMode.abilityId === 'life_drain' && abilityMode.context === 'beforeAttack' && abilityMode.step === 'selectUnit' && (
           <GameButton onClick={onCancelBeforeAttack} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
-        {!['blood_rune', 'spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'vanish', 'ice_ram', 'life_drain'].includes(abilityMode.abilityId) && (
+        {!['blood_rune', 'spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'mogu_transmission', 'mogu_fanatical_fungus', 'vanish', 'ice_ram', 'life_drain'].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
         )}
         {/* life_drain 在非 beforeAttack 上下文中显示"取消"按钮 */}
@@ -460,6 +483,34 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
           <GameButton onClick={onConfirmEntanglement} variant="primary" size="sm">{t('actions.confirmSelection')}</GameButton>
         )}
         <GameButton onClick={onCancelEntanglement} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
+      </div>
+    );
+  }
+
+  if (moguSymbioticSelfHealingMode) {
+    return (
+      <div data-testid="sw-ability-prompt" className="bg-fuchsia-950/95 px-4 py-2 rounded-lg border border-fuchsia-400/40 flex items-center gap-3 shadow-lg">
+        <span className="text-fuchsia-100 text-sm font-bold">
+          {t('statusBanners.moguSymbioticSelfHealing.message', { count: moguSymbioticSelfHealingMode.selectedTargets.length })}
+        </span>
+        {moguSymbioticSelfHealingMode.selectedTargets.length > 0 && (
+          <GameButton onClick={onConfirmMoguSymbioticSelfHealing} variant="primary" size="sm">{t('actions.confirmSelection')}</GameButton>
+        )}
+        <GameButton onClick={onSkipMoguSymbioticSelfHealing} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
+      </div>
+    );
+  }
+
+  if (moguReleaseSporesMode) {
+    return (
+      <div data-testid="sw-ability-prompt" className="bg-lime-950/95 px-4 py-2 rounded-lg border border-lime-400/40 flex items-center gap-3 shadow-lg">
+        <span className="text-lime-100 text-sm font-bold">
+          {t('statusBanners.moguReleaseSpores.message', { count: moguReleaseSporesMode.selectedTargets.length })}
+        </span>
+        {moguReleaseSporesMode.selectedTargets.length > 0 && (
+          <GameButton onClick={onConfirmMoguReleaseSpores} variant="primary" size="sm">{t('actions.confirmSelection')}</GameButton>
+        )}
+        <GameButton onClick={onSkipMoguReleaseSpores} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
       </div>
     );
   }

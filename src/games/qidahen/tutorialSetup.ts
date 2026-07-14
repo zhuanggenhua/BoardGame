@@ -210,7 +210,7 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
         if (mingTacticCardId) {
             core.handCards = core.handCards.map((card) => (
                 card.id === mingTacticCardId
-                    ? applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1615-arrows-like-rain')
+                    ? applyAtlas05TutorialHandCardIdentity(card, 'qidahen-atlas05-1618-cavalry-charge')
                     : card
             ));
         }

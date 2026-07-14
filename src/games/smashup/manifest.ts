@@ -48,6 +48,7 @@ const entry: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: false,
+        trainingMinCompletedDurationMs: 10 * 60 * 1000,
     },
     cursorTheme: 'smashup-popart',
     fontFamily: { display: 'Bangers' },

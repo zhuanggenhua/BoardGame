@@ -6,7 +6,7 @@ import { resolveNextLocalAiAction } from '../../../engine/ai/localRunner';
 import { TheGangDomain } from '../domain';
 import { buildTheGangAiLegalActions, theGangAiRuntime } from '../ai';
 import { engineConfig } from '../game';
-import { THE_GANG_COMMANDS } from '../domain/types';
+import { THE_GANG_COMMANDS, type TheGangCore } from '../domain/types';
 
 const setupState = () => {
     const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-test');
@@ -60,7 +60,7 @@ describe('The Gang local AI', () => {
         }
     });
 
-    test('其他玩家已占用的筹码不会进入 AI 候选', () => {
+    test('别人面前的筹码仍会进入空手 AI 候选，已拿筹码的 AI 等待空手玩家补齐', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-occupied-chip-test');
         let state = adapter.setup(['0', '1', '2']);
         state = adapter.execute(state, {
@@ -72,8 +72,83 @@ describe('The Gang local AI', () => {
 
         const actions = buildTheGangAiLegalActions({ playerId: '1', state });
 
-        expect(actions.map((action) => action.metadata?.chip)).toEqual([1, 3]);
-        expect(actions.some((action) => action.metadata?.chip === 2)).toBe(false);
+        expect(actions.map((action) => action.metadata?.chip)).toEqual([1, 2, 3]);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 2 },
+            timestamp: 2,
+        }).state;
+
+        expect(state.core.currentRoundChips).toEqual({ '1': 2 });
+        expect(buildTheGangAiLegalActions({ playerId: '1', state })
+            .filter((action) => action.kind === 'take-chip')
+            .map((action) => action.metadata?.chip)).toEqual([]);
+        expect(buildTheGangAiLegalActions({ playerId: '0', state })
+            .map((action) => action.metadata?.chip)).toEqual([1, 2, 3]);
+    });
+
+    test('AI 的筹码被拿走后会重新选筹码并允许全员推进，不会停在缺筹码状态', async () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-chip-stolen-runner-test');
+        let state = adapter.setup(['0', '1', '2']);
+        const seatControllers = {
+            '0': { type: 'human' as const },
+            '1': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+            '2': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+        };
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 2 },
+            timestamp: 1,
+        }).state;
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 2 },
+            timestamp: 2,
+        }).state;
+        expect(state.core.currentRoundChips).toEqual({ '0': 2 });
+
+        const recoveredAiChip = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'the-gang-ai-chip-stolen-runner-test',
+            seatControllers,
+        });
+        expect(recoveredAiChip?.playerId).toBe('1');
+        expect(recoveredAiChip?.action.kind).toBe('take-chip');
+        for (const command of recoveredAiChip?.action.commands ?? []) {
+            state = adapter.execute(state, {
+                type: command.type as typeof THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId: recoveredAiChip!.playerId,
+                payload: command.payload as { chip: number },
+                timestamp: 3,
+            }).state;
+        }
+
+        const secondAiChip = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'the-gang-ai-chip-stolen-runner-test',
+            seatControllers,
+        });
+        expect(secondAiChip?.playerId).toBe('2');
+        expect(secondAiChip?.action.kind).toBe('take-chip');
+        for (const command of secondAiChip?.action.commands ?? []) {
+            state = adapter.execute(state, {
+                type: command.type as typeof THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId: secondAiChip!.playerId,
+                payload: command.payload as { chip: number },
+                timestamp: 4,
+            }).state;
+        }
+
+        expect(Object.keys(state.core.currentRoundChips).sort()).toEqual(['0', '1', '2']);
+        expect(buildTheGangAiLegalActions({ playerId: '1', state })
+            .some((action) => action.kind === 'end-round')).toBe(true);
     });
 
     test('全员选完后 AI 能推进轮次、摊牌并开始下一次抢劫', () => {
@@ -141,6 +216,50 @@ describe('The Gang local AI', () => {
 
         expect(decision).not.toBeNull();
         expect(context.legalActions.some((action) => action.actionId === decision?.actionId)).toBe(true);
+    });
+
+    test('baseline policy 会按当前牌力评估选择对应强弱筹码', () => {
+        const state = setupState();
+        const core: TheGangCore = {
+            ...state.core,
+            communityCards: [
+                { suit: 'spades', rank: 'A' },
+                { suit: 'hearts', rank: 'K' },
+                { suit: 'diamonds', rank: 'Q' },
+            ],
+            players: {
+                ...state.core.players,
+                '0': {
+                    ...state.core.players['0'],
+                    pocketCards: [
+                        { suit: 'clubs', rank: '2' },
+                        { suit: 'diamonds', rank: '7' },
+                    ],
+                },
+                '1': {
+                    ...state.core.players['1'],
+                    pocketCards: [
+                        { suit: 'clubs', rank: 'K' },
+                        { suit: 'clubs', rank: '3' },
+                    ],
+                },
+                '2': {
+                    ...state.core.players['2'],
+                    pocketCards: [
+                        { suit: 'clubs', rank: 'A' },
+                        { suit: 'diamonds', rank: 'A' },
+                    ],
+                },
+            },
+        };
+        const rankedState: ReturnType<typeof setupState> = { ...state, core };
+
+        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(rankedState, '0'))?.actionId)
+            .toBe('take-chip:1');
+        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(rankedState, '1'))?.actionId)
+            .toBe('take-chip:2');
+        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(rankedState, '2'))?.actionId)
+            .toBe('take-chip:3');
     });
 
     test('本地 AI runner 会在真人操作后连续派发 AI 选筹码与推进确认', async () => {

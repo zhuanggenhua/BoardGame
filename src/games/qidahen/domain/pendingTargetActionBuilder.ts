@@ -23,10 +23,12 @@ import {
 } from './regionSelectionPreferences';
 import { getQidahenDirectedPassageRule } from './movement';
 import { getQidahenCharacterCommittedTroopLimit } from './pendingBattleCommittedTroops';
+import { getQidahenEffectivePopulation } from './populationRules';
 import {
     computeQidahenAttackPressure,
     computeQidahenEffectiveCommittedTroops,
 } from './attackRules';
+import { createQidahenBattleForceCommitment } from './battleForceCommitments';
 import type {
     QidahenCore,
     QidahenFactionId,
@@ -101,7 +103,7 @@ export const buildPendingTargetAction = (
             const regionSnapshot = getNonSiegedCityActionSourceSnapshot(region);
             return {
                 troops: regionSnapshot.troops,
-                population: regionSnapshot.population,
+                population: getQidahenEffectivePopulation(region, regionSnapshot.population),
             };
         };
         const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(selectedRegion.id);
@@ -239,5 +241,15 @@ export const buildPendingTargetAction = (
         attackBoundaryType,
         resolutionHint,
         defenderPayCost,
+        forceCommitments: [createQidahenBattleForceCommitment({
+            sourceRegionId: sourceRegion.id,
+            sourceRegionName,
+            sourceAvailableTroops: sourceRegion.troops,
+            committedTroops,
+            movementProfileId: null,
+            battleWidth,
+            boundaryUnitCap,
+            attackBoundaryType,
+        })],
     };
 };

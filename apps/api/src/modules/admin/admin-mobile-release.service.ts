@@ -43,6 +43,18 @@ type LatestManifest = {
     notes?: string;
 };
 
+type LatestManifestReadResult = {
+    latest: LatestManifest | null;
+    failure: LatestManifestReadFailure | null;
+};
+
+type LatestManifestReadFailure = {
+    reason: 'http-error' | 'invalid-json' | 'network-error';
+    status?: number;
+    statusText?: string;
+    message?: string;
+};
+
 type DeployRunnerResponse = {
     ok?: boolean;
     mode?: string;
@@ -65,7 +77,7 @@ type DeployRunnerHealthResponse = {
         packageScript?: boolean;
         dist?: boolean;
         releaseApk?: boolean;
-        r2Configured?: boolean;
+        serverAssetsReady?: boolean;
     };
 };
 
@@ -85,6 +97,8 @@ type DeployRunnerRequest = {
 
 const OUTPUT_LIMIT = 200_000;
 const ANDROID_OTA_WORKFLOW_ID = 'android-ota-publish.yml';
+const ANDROID_OTA_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android OTA 发布禁止跳过 latest.json。手机端依赖 latest.json 发现更新，跳过会导致无法更新。';
+const ANDROID_NATIVE_SKIP_LATEST_FORBIDDEN_MESSAGE = '正式 Android 原生更新发布禁止跳过 latest.json。手机端依赖 latest.json 发现新版 APK，跳过会导致无法更新。';
 
 @Injectable()
 export class AdminMobileReleaseService {
@@ -95,8 +109,8 @@ export class AdminMobileReleaseService {
         const packageJson = this.readPackageJson();
         const otaManifestUrl = this.buildOtaManifestUrl(channel);
         const nativeManifestUrl = this.buildNativeManifestUrl(channel);
-        const otaManifest = await this.fetchLatestManifest(otaManifestUrl);
-        const nativeManifest = await this.fetchLatestManifest(nativeManifestUrl);
+        const otaManifestResult = await this.readLatestManifest(otaManifestUrl);
+        const nativeManifestResult = await this.readLatestManifest(nativeManifestUrl);
         const deployRunnerHealth = await this.fetchDeployRunnerHealth();
         const runnerReleaseReady = deployRunnerHealth?.release;
         const hasRunnerConfig = this.isDeployRunnerConfigured();
@@ -109,8 +123,7 @@ export class AdminMobileReleaseService {
             deployScript: existsSync(path.join(this.rootDir, 'scripts/deploy/deploy-image.sh')),
             dist: existsSync(path.join(this.rootDir, 'dist/android-build-meta.json')),
             releaseApk: existsSync(path.join(this.rootDir, 'android/app/build/outputs/apk/release/easyboardgame-release.apk')),
-            r2Configured: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME']
-                .every((key) => Boolean(process.env[key])),
+            serverAssetsReady: existsSync(path.join(this.rootDir, 'scripts/assets/apply-server-asset-publish.mjs')),
         };
         const deployRunnerReady = Boolean(deployRunnerHealth?.ok);
         const deployScriptReady = hasRunnerConfig
@@ -122,14 +135,17 @@ export class AdminMobileReleaseService {
             androidVersionCode: packageJson.androidVersionCode,
             channel,
             manifestUrl: otaManifestUrl,
-            latest: otaManifest,
+            latest: otaManifestResult.latest,
+            latestError: otaManifestResult.failure,
             ota: {
                 manifestUrl: otaManifestUrl,
-                latest: otaManifest,
+                latest: otaManifestResult.latest,
+                latestError: otaManifestResult.failure,
             },
             native: {
                 manifestUrl: nativeManifestUrl,
-                latest: nativeManifest,
+                latest: nativeManifestResult.latest,
+                latestError: nativeManifestResult.failure,
             },
             releaseReady: {
                 script: runnerReleaseReady?.script ?? localReleaseReady.script,
@@ -140,7 +156,7 @@ export class AdminMobileReleaseService {
                 otaWorkflow: otaWorkflowReady,
                 dist: runnerReleaseReady?.dist ?? localReleaseReady.dist,
                 releaseApk: runnerReleaseReady?.releaseApk ?? localReleaseReady.releaseApk,
-                r2Configured: runnerReleaseReady?.r2Configured ?? localReleaseReady.r2Configured,
+                serverAssetsReady: runnerReleaseReady?.serverAssetsReady ?? localReleaseReady.serverAssetsReady,
             },
             deploy: {
                 statusCommand: this.buildDeployCommand(['status']),
@@ -173,7 +189,7 @@ export class AdminMobileReleaseService {
 
             const result = await this.runAndroidRelease(args);
             const manifestUrl = this.buildOtaManifestUrl(dto.channel);
-            const latest = dto.dryRun ? null : await this.fetchLatestManifest(manifestUrl);
+            const latest = dto.dryRun ? null : await this.requireLatestManifest(manifestUrl, 'Android OTA');
 
             return {
                 ok: true,
@@ -200,7 +216,7 @@ export class AdminMobileReleaseService {
             const args = this.buildNativeReleaseArgs(dto);
             const result = await this.runAndroidRelease(args);
             const manifestUrl = this.buildNativeManifestUrl(dto.channel);
-            const latest = dto.dryRun ? null : await this.fetchLatestManifest(manifestUrl);
+            const latest = dto.dryRun ? null : await this.requireLatestManifest(manifestUrl, 'Android 原生更新');
 
             return {
                 ok: true,
@@ -366,6 +382,7 @@ export class AdminMobileReleaseService {
     }
 
     private buildOtaReleaseArgs(dto: AndroidOtaReleaseDto) {
+        this.assertAndroidOtaLatestEnabled(dto);
         const args = ['ota', '--channel', dto.channel];
         const version = dto.version?.trim();
         if (version) {
@@ -375,11 +392,7 @@ export class AdminMobileReleaseService {
         if (otaVersionBase) {
             args.push('--ota-version-base', otaVersionBase);
         }
-        if (dto.forceUpdate === false) {
-            args.push('--no-force-update');
-        } else {
-            args.push('--force-update');
-        }
+        args.push('--force-update');
         if (dto.dryRun) {
             args.push('--dry-run');
         }
@@ -476,6 +489,7 @@ export class AdminMobileReleaseService {
     }
 
     private buildAndroidOtaWorkflowInputs(dto: AndroidOtaReleaseDto, packageVersion: string, gitRef: string) {
+        this.assertAndroidOtaLatestEnabled(dto);
         const inputs: Record<string, string> = {
             channel: dto.channel,
             git_ref: gitRef,
@@ -484,7 +498,7 @@ export class AdminMobileReleaseService {
             ota_version_base: dto.otaVersionBase?.trim() || '',
             dry_run: dto.dryRun ? 'true' : 'false',
             skip_latest: dto.skipLatest ? 'true' : 'false',
-            force_update: dto.forceUpdate === false ? 'false' : 'true',
+            force_update: 'true',
         };
         const forceUpdateTitle = dto.forceUpdateTitle?.trim();
         if (forceUpdateTitle) {
@@ -497,7 +511,20 @@ export class AdminMobileReleaseService {
         return inputs;
     }
 
+    private assertAndroidOtaLatestEnabled(dto: Pick<AndroidOtaReleaseDto, 'dryRun' | 'skipLatest'>) {
+        if (dto.skipLatest && !dto.dryRun) {
+            throw new HttpException(ANDROID_OTA_SKIP_LATEST_FORBIDDEN_MESSAGE, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    private assertAndroidNativeLatestEnabled(dto: Pick<AndroidNativeReleaseDto, 'dryRun' | 'skipLatest'>) {
+        if (dto.skipLatest && !dto.dryRun) {
+            throw new HttpException(ANDROID_NATIVE_SKIP_LATEST_FORBIDDEN_MESSAGE, HttpStatus.BAD_REQUEST);
+        }
+    }
+
     private buildNativeReleaseArgs(dto: AndroidNativeReleaseDto) {
+        this.assertAndroidNativeLatestEnabled(dto);
         const args = ['native', '--channel', dto.channel];
         if (dto.bump) {
             args.push('--bump', dto.bump);
@@ -652,7 +679,7 @@ export class AdminMobileReleaseService {
             channel: dto.channel ?? 'stable',
             version: dto.version,
             otaVersionBase: dto.otaVersionBase,
-            forceUpdate: dto.forceUpdate ?? true,
+            forceUpdate: true,
             dryRun: false,
             skipLatest: false,
         };
@@ -906,17 +933,61 @@ export class AdminMobileReleaseService {
         });
     }
 
-    private async fetchLatestManifest(url: string): Promise<LatestManifest | null> {
+    private async readLatestManifest(url: string): Promise<LatestManifestReadResult> {
         try {
             const response = await fetch(url, {
                 headers: { 'Cache-Control': 'no-cache' },
             });
             if (!response.ok) {
-                return null;
+                return {
+                    latest: null,
+                    failure: {
+                        reason: 'http-error',
+                        status: response.status,
+                        statusText: response.statusText,
+                    },
+                };
             }
-            return await response.json() as LatestManifest;
-        } catch {
-            return null;
+            try {
+                return {
+                    latest: await response.json() as LatestManifest,
+                    failure: null,
+                };
+            } catch (error) {
+                return {
+                    latest: null,
+                    failure: {
+                        reason: 'invalid-json',
+                        message: error instanceof Error ? error.message : String(error),
+                    },
+                };
+            }
+        } catch (error) {
+            return {
+                latest: null,
+                failure: {
+                    reason: 'network-error',
+                    message: error instanceof Error ? error.message : String(error),
+                },
+            };
         }
+    }
+
+    private async requireLatestManifest(url: string, releaseKind: string): Promise<LatestManifest> {
+        const { latest, failure } = await this.readLatestManifest(url);
+        const missingFields = latest
+            ? (['version', 'url', 'checksum', 'size'] as const).filter((field) => latest[field] === undefined || latest[field] === null || latest[field] === '')
+            : ['latest.json'];
+
+        if (!latest || missingFields.length > 0) {
+            throw new HttpException({
+                message: `${releaseKind} 发布后无法确认线上 latest.json。发布不能静默成功，请先修通服务器资源入口再重试。`,
+                error: 'latest manifest unavailable',
+                manifestUrl: url,
+                failure,
+                missingFields,
+            }, HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        return latest;
     }
 }

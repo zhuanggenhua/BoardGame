@@ -12,6 +12,12 @@ export { PlayerPanelSkeleton } from './PlayerPanelSkeleton';
 export { HandAreaSkeleton } from './HandAreaSkeleton';
 export { ActionBarSkeleton } from './ActionBarSkeleton';
 export { ResourceTraySkeleton } from './ResourceTraySkeleton';
+export { ZoomPanViewport } from './ZoomPanViewport';
+export type {
+    ZoomPanViewportProps,
+    ZoomPanViewportState,
+    ZoomPanViewportZoomAnchorArgs,
+} from './ZoomPanViewport';
 export { SpotlightSkeleton } from './SpotlightSkeleton';
 export { MobileBattlefieldViewport, MobileBoardShell } from './MobileBoardShell';
 export { CardListOverlay } from './CardListOverlay';
@@ -20,6 +26,8 @@ export type { CardSpotlightQueueProps } from './CardSpotlightQueue';
 export type { CardListOverlayProps, CardListItem } from './CardListOverlay';
 export { CharacterSelectionSkeleton } from './CharacterSelectionSkeleton';
 export type { CharacterSelectionSkeletonProps } from './CharacterSelectionSkeleton';
+export { SelectableGameObject } from './SelectableGameObject';
+export type { SelectableGameObjectProps } from './SelectableGameObject';
 export { ImplementationStatusRibbon } from './ImplementationStatusRibbon';
 export type { ImplementationStatusRibbonProps } from './ImplementationStatusRibbon';
 export { TutorialSelectionGate } from './TutorialSelectionGate';

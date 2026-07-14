@@ -18,6 +18,9 @@ const RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-高密度持有区-�
 const PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-高密度持有区-放大.png`;
 const EXTREME_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-极限持有区-运行时.png`;
 const EXTREME_INVENTORY_SECTION_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-极限持有区-局部.png`;
+const MOBILE_MAP_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-手机横屏-地图卡放大完整显示.png`;
+const MAP_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-地图物品-房间牌直选目标.png`;
+const MAP_USED_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-地图物品-使用后.png`;
 
 function createDenseInventoryCore(): BetrayalCore {
     const core = createRuntimeCore();
@@ -57,6 +60,21 @@ function createExtremeInventoryCore(): BetrayalCore {
 
     core.currentExplorer.inventory = extremeInventory.map((card) => ({ ...card }));
     core.currentExplorerInventory = extremeInventory.map((card) => ({ ...card }));
+    core.usedCardIdsThisTurn = [];
+    core.recommendedAction = 'use';
+
+    return core;
+}
+
+function createMapInventoryCore(): BetrayalCore {
+    const core = createRuntimeCore();
+    const mapInventory: BetrayalInventoryCard[] = [
+        { id: 'map', name: '地图', kind: 'item' },
+    ];
+
+    core.currentExplorer.inventory = mapInventory.map((card) => ({ ...card }));
+    core.currentExplorerInventory = mapInventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = ['map'];
     core.usedCardIdsThisTurn = [];
     core.recommendedAction = 'use';
 
@@ -146,5 +164,91 @@ test.describe('山屋惊魂持有区高密度证据', () => {
         await page.locator('#betrayal-inventory-section').screenshot({ path: EXTREME_INVENTORY_SECTION_SCREENSHOT });
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-inventory-density-extreme', diagnostics }]);
+    });
+
+    test('手机横屏地图卡放大完整显示并可点击关闭', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-map-card-mobile-preview');
+
+        await page.setViewportSize({ width: 932, height: 430 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        await injectCore(page, createMapInventoryCore());
+        await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toBeVisible({ timeout: 30000 });
+
+        const mapCard = page.getByTestId('betrayal-inventory-map');
+        await expect(mapCard).toBeVisible();
+        await mapCard.scrollIntoViewIfNeeded();
+        await mapCard.click();
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveText('地图');
+
+        await page.getByTestId('betrayal-inventory-map-magnify').click();
+        const previewOverlay = page.getByTestId('betrayal-inventory-preview-overlay');
+        const previewCard = page.getByTestId('betrayal-inventory-preview-card');
+        await expect(previewOverlay).toBeVisible();
+        await expect(previewCard).toContainText('地图');
+
+        const previewMetrics = await previewCard.evaluate((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                bottom: rect.bottom,
+                left: rect.left,
+                right: rect.right,
+                width: rect.width,
+                height: rect.height,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+            };
+        });
+        expect(previewMetrics.top).toBeGreaterThanOrEqual(0);
+        expect(previewMetrics.left).toBeGreaterThanOrEqual(0);
+        expect(previewMetrics.right).toBeLessThanOrEqual(previewMetrics.viewportWidth);
+        expect(previewMetrics.bottom).toBeLessThanOrEqual(previewMetrics.viewportHeight);
+        expect(previewMetrics.height).toBeGreaterThan(280);
+        await saveScreenshot(page, MOBILE_MAP_PREVIEW_SCREENSHOT);
+
+        await page.mouse.click(
+            (previewMetrics.left + previewMetrics.right) / 2,
+            (previewMetrics.top + previewMetrics.bottom) / 2,
+        );
+        await expect(previewOverlay).toBeHidden();
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-map-card-mobile-preview', diagnostics }]);
+    });
+
+    test('地图物品通过房间牌本体选择目标并放置探索者', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-map-card-room-target-flow');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        await injectCore(page, createMapInventoryCore());
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+
+        await page.getByTestId('betrayal-inventory-map').click();
+        await expect(page.getByTestId('betrayal-selected-inventory-card-name')).toHaveText('地图');
+        await expect(page.getByTestId('betrayal-inventory-target-room-selector')).toBeVisible();
+        await page.getByTestId('betrayal-room-floor-up').click();
+        await expect(page.getByTestId('betrayal-room-inventory-target-card-highlight-upper-landing')).toBeVisible();
+        await saveScreenshot(page, MAP_TARGET_SCREENSHOT);
+
+        await page.getByTestId('betrayal-room-upper-landing').click();
+        await expect(page.getByTestId('betrayal-inventory-target-room-upper-landing')).toHaveClass(/text-\[#eef4a8\]/);
+        await page.getByTestId('betrayal-action-use').click();
+
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('地图');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('上层起始点');
+        await expect(page.getByTestId('betrayal-room-occupant-upper-landing-0')).toBeVisible();
+        await saveScreenshot(page, MAP_USED_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-map-card-room-target-flow', diagnostics }]);
     });
 });

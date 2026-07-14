@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation.
+description: "BoardGame 创造性改动前置澄清。用于新功能、组件、行为修改和设计探索；先收敛意图、需求和方案，再进入实现。"
 ---
 
 # Brainstorming Ideas Into Designs

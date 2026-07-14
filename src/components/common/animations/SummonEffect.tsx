@@ -18,7 +18,8 @@
  * ```
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useLayoutEffect } from 'react';
+import { resolveFxDpr, type FxQuality } from '../../../engine/fx';
 import {
   type Particle,
   type ParticlePreset,
@@ -37,6 +38,8 @@ export interface SummonEffectProps {
   customColors?: SummonColorSet;
   /** 光柱原点 Y 位置（0~1，相对于 canvas 高度，默认 0.78） */
   originY?: number;
+  /** 特效质量档：reduced 降低 DPR 和持续粒子密度 */
+  quality?: FxQuality;
   onComplete?: () => void;
   className?: string;
 }
@@ -202,13 +205,16 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
   color = 'blue',
   customColors,
   originY = 0.78,
+  quality = 'full',
   onComplete,
   className = '',
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useLayoutEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const isStrong = intensity === 'strong';
 
@@ -220,7 +226,7 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = resolveFxDpr({ quality, maxDpr: 1.25, reducedMaxDpr: 1 });
     // 使用 offsetWidth/offsetHeight 获取 CSS 布局尺寸（不受父级 transform scale 影响）
     const cw = parent.offsetWidth;
     const ch = parent.offsetHeight;
@@ -232,7 +238,6 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
 
     const c = resolveColors(color, customColors);
     const [mr, mg, mb] = c.main;
-    const [sr, sg, sb] = c.sub;
     const [br, bg, bb] = c.bright;
 
     // 原点：由 originY prop 控制（默认底部居中偏上）
@@ -341,7 +346,7 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
 
       // --- 粒子（持续阶段生成，连续曲线控制生成率） ---
       const spawnRate = smoothstep(0.30, 0.38, t) * (1 - smoothstep(0.62, 0.68, t));
-      if (spawnRate > 0 && Math.random() < spawnRate * (isStrong ? 0.7 : 0.4)) {
+      if (spawnRate > 0 && Math.random() < spawnRate * (quality === 'reduced' ? 0.22 : (isStrong ? 0.7 : 0.4))) {
         const px = cx + (Math.random() - 0.5) * pillarW * 0.8;
         const py = cy - Math.random() * pillarH * 0.6;
         const rgb = particleColors[Math.floor(Math.random() * particleColors.length)];
@@ -369,7 +374,7 @@ export const SummonEffect: React.FC<SummonEffectProps> = ({
     };
 
     rafRef.current = requestAnimationFrame(loop);
-  }, [color, customColors, isStrong, originY]);
+  }, [color, customColors, isStrong, originY, quality]);
 
   useEffect(() => {
     if (!active) return;

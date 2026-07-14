@@ -1,17 +1,18 @@
 # 山屋惊魂第一剧本完成度审计
 
-> 对象：第一剧本 `Crimson Jack Returns`
+> 对象：第一剧本 `赤红杰克归来（Crimson Jack Returns）`
 > 目的：把“已经真实跑通到哪”和“还没被真实证据证明到哪”分开，避免把局部通过误说成整剧本已完整完成。
-> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`src/games/betrayal/__tests__/tutorial.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/betrayal-tutorial/`、`evidence/betrayal-first-scenario-corpse-loot/`。
+> 当前真相源：`src/games/betrayal/game.ts`、`src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`src/games/betrayal/__tests__/Board.foundation.test.tsx`、`src/games/betrayal/__tests__/tutorial.test.ts`、`e2e/betrayal/first-scenario.e2e.ts`、`e2e/betrayal/first-scenario-traitor-victory.e2e.ts`、`e2e/betrayal/first-scenario-core-interactions.e2e.ts`、`e2e/betrayal/first-scenario-jack-spirit-movement-roll.e2e.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario/`、`evidence/betrayal-first-scenario-traitor/`、`evidence/山屋惊魂-首剧本核心交互/`、`evidence/betrayal-first-scenario-jack-spirit-movement-roll/`、`evidence/betrayal-tutorial/`、`evidence/betrayal-first-scenario-corpse-loot/`。
 
 ## 当前结论
 
 - 第一剧本的英雄主线已经具备“真实页面可进入、真实 haunt 可推进、真实终局可到达”的闭环证据。
 - 第一剧本的叛徒主线现在也已经具备“真实 `Haunt` 页面可进入、真实叛徒收尾可触发、真实终局可到达”的独立页面证据。
-- `Jack's Spirit` 复活叛徒后，已经具备“真实页面继续攻击同房间英雄并推进回合”的独立页面证据。
+- 杰克之灵（Jack's Spirit）复活叛徒后，已经具备“真实页面继续攻击同房间英雄并推进回合”的独立页面证据。
 - 教程已补入第一剧本叛徒视角独立章节，能从真实教程进入叛徒攻击并到达真实终局。
 - 尸体搜刮已经补到二次限制：第一次搜尸后，同一正式动作位会回到普通交易且显示没有可搜尸 / 可交易对象。
 - 第一剧本与教程相关的最小真实回归矩阵已经在当前 `main` 现场重新串行通过；本轮另补了事件牌图集裁切、教程阻塞揭示主视线、骰面可见和参考页不复读素材内容的当前截图证据。
+- 杰克之灵（Jack's Spirit）的死叛徒怪物回合已补齐桌游化 Speed 3 移动骰结算：回合开始投 3 颗骰，点数决定本回合移动上限，移动后扣减，移动点耗尽会阻止继续移动。
 - 因此，当前可以说“第一剧本英雄线与叛徒线的最小可玩闭环都已成立”；但仍不能扩大成“第一剧本所有边界交互都已完整验收”。
 
 ## 当前现场的最新回归结果
@@ -34,13 +35,36 @@
   - `npx eslint src/games/betrayal/tutorial.ts src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario-corpse-loot.e2e.ts`：0 error
   - `git diff --check -- src/games/betrayal/tutorial.ts public/locales/zh-CN/game-betrayal.json public/locales/en/game-betrayal.json src/games/betrayal/__tests__/tutorial.test.ts e2e/betrayal/betrayal-tutorial.e2e.ts e2e/betrayal/first-scenario-corpse-loot.e2e.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx`：通过，仅 LF/CRLF 提示
 - 当前结论：
-  - 教程已经从 4 个短章扩到 5 个短章，新增叛徒视角最小收尾章节。
+  - 教程已压成 3 个可见章节：基础回合、作祟后看目标再驱魔、如果叛徒得手；旧移动探索与赤红杰克目标章节仅保留隐藏兼容入口。
   - 叛徒视角教程不是只写配置，已经通过真实页面攻击和终局截图证据。
   - 搜尸边界不是只验证第一次成功，已经补到二次限制的真实页面证据。
   - 发现牌揭示现在使用正式事件牌图集，图集合同锁定为 `6076x6376 / 9x5`，并通过 `外星几何` 第 `24` 格页面截图验证。
   - 阻塞式发现牌和第一剧本参考页以正式素材为主结果；发现牌底部确认条只保留“下一步”按钮，教程 / 帮助 UI 不再在旁边复读素材正文。
+  - 杰克之灵（Jack's Spirit）死叛徒回合的 Speed 3 怪物移动骰已补成规则级结算，当前新增规则测试覆盖投骰、移动点、扣点、耗尽拦截与回尸体房复活优先级；真实页面 E2E 已生成截图证据。
+  - 本轮已检查 TTS Mods 参考源 `Mods/Workshop/3420850553.json`：存在骰子计算器、骰子归位、桌柜开合等 Lua 辅助脚本；未发现第一剧本、杰克之灵、驱魔、怪物移动或自动结算脚本。因此 Mods 可参考桌面道具/骰子 UI，不是首剧本规则自动结算真相源。
 - 执行备注：
   - 这次只声明“教程 + 第一剧本必要部分”已收口，不声明全事件牌、全房间资源、更多剧本或山屋整游戏完成。
+
+## 2026-07-12 补充回归
+
+- 本轮新增并通过的定向验证：
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/first-scenario-jack-spirit-movement-roll.e2e.ts "死叛徒回合会显示杰克之灵 Speed 3 移动骰，并按点数扣减移动"`：`1 test passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/first-scenario-core-interactions.e2e.ts "真实页面允许已掌握线索的英雄继续调查并把线索交给队友"`：`1 test passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/first-scenario-core-interactions.e2e.ts "真实页面允许没有法阵时尝试驱魔并结算失败反扑"`：`1 test passed`
+- 已生成的真实页面证据：
+  - `evidence/betrayal-first-scenario-jack-spirit-movement-roll/01-山屋惊魂-第一剧本-杰克之灵移动骰后.jpg`
+  - `evidence/betrayal-first-scenario-jack-spirit-movement-roll/02-山屋惊魂-第一剧本-杰克之灵移动扣点后.jpg`
+  - `evidence/山屋惊魂-首剧本核心交互/11-山屋惊魂-调查杰克-帮队友前.jpg`
+  - `evidence/山屋惊魂-首剧本核心交互/12-山屋惊魂-调查杰克-帮队友后.jpg`
+  - `evidence/山屋惊魂-首剧本核心交互/13-山屋惊魂-无 法阵驱魔-执行前.jpg`
+  - `evidence/山屋惊魂-首剧本核心交互/14-山屋惊魂-无 法阵驱魔-反扑后.jpg`
+- 这次补齐的规则口径：
+  - 已掌握 `Knowledge of Jack` 的英雄仍可继续在图书馆调查，并把线索交给尚未掌握线索的队友；
+  - 英雄与杰克之灵同房时，即使当前没有法阵，也可以按官方规则尝试驱魔；失败时会结算杰克之灵反扑。
+- Mods 参考结论：
+  - `Mods/Workshop/3420850553.json` 有全局空脚本、骰子计算器脚本、骰子归位脚本、桌柜/桌面切换脚本；
+  - 关键字扫描未命中 `Jack`、`Crimson`、`Spirit`、`Haunt`、`Speed`、`杰克`、`剧本`、`驱魔`、`法阵`、`图书馆` 等首剧本规则自动结算内容；
+  - 因此当前首剧本规则仍以官方手册和本项目运行时/测试为真相源，Mods 只作为素材与桌面 UI 参考。
 
 ## 已有真实页面证据
 
@@ -120,6 +144,18 @@
   - 叛徒可以通过这个正式页面入口继续攻击同房间英雄；
   - 攻击结算后，正式页面会真实切给下一名英雄并更新反馈与属性结果。
 
+### 8. 杰克之灵（Jack's Spirit）死叛徒回合 Speed 3 移动骰
+
+- 证据：
+  - `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`
+  - `e2e/betrayal/first-scenario-jack-spirit-movement-roll.e2e.ts`
+  - `evidence/betrayal-first-scenario-jack-spirit-movement-roll/`
+- 已证明：
+  - 死叛徒回合开始时由杰克之灵（Jack's Spirit）接管，而不是按普通探索者固定移动点起跑；
+  - 页面会显示杰克之灵（Jack's Spirit）按 `Speed 3` 投骰后的移动上限；
+  - 正式移动入口可移动杰克之灵，移动后剩余移动点会扣减；
+  - 规则级测试覆盖移动点耗尽后的继续移动拦截。
+
 ## 已有规则级自动化证据
 
 ### 1. Haunt 触发与第一剧本起跑
@@ -144,8 +180,9 @@
 - 已证明：
   - 叛徒可通过击倒全部英雄进入终局；
   - 叛徒死亡后会释放 `Jack's Spirit`；
-  - `Jack's Spirit` 会按自身房间与移动规则接管回合；
-  - `Jack's Spirit` 回尸体房间后会让叛徒复活；
+  - 杰克之灵（Jack's Spirit）会按自身房间与移动规则接管回合；
+  - 杰克之灵（Jack's Spirit）死叛徒回合会按 `Speed 3` 投骰决定本回合最多移动间数，移动后扣点，耗尽后不能继续移动；
+  - 杰克之灵（Jack's Spirit）回尸体房间后会让叛徒复活；
   - `Stalk the Prey` 的每回合使用限制和“不消耗普通移动”已补上；
   - 尸体搜刮规则已补上最小正式限制。
 

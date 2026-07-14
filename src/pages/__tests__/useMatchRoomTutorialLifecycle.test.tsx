@@ -7,12 +7,16 @@ import {
     clearTutorialProgress,
     readCompletedTutorialIds,
     readRestorableTutorialProgress,
+    resetMatchRoomTutorialLifecycleRouteTrackingForTests,
     resolveCompletedTutorialCatalogId,
 } from '../useMatchRoomTutorialLifecycle';
 import { buildLocalMatchSnapshotKey, persistLocalMatchSnapshot } from '../../engine/transport/localSession';
 import type { MatchState, TutorialCollection, TutorialManifest, TutorialState } from '../../engine/types';
 
 const tutorialState = {
+    tutorial: {
+        manifestId: null as string | null,
+    },
     startTutorial: vi.fn(),
     closeTutorial: vi.fn(),
     isActive: false,
@@ -105,10 +109,12 @@ const persistTutorialSnapshot = (args: {
 describe('useMatchRoomTutorialLifecycle', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        resetMatchRoomTutorialLifecycleRouteTrackingForTests();
         window.localStorage.clear();
         tutorialState.startTutorial.mockReset();
         tutorialState.closeTutorial.mockReset();
         tutorialState.isActive = false;
+        tutorialState.tutorial.manifestId = null;
         tutorialState.currentStep = null;
         tutorialState.isBoardMounted = false;
     });
@@ -127,6 +133,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         const secondManifest = makeManifest('season-flow', ['overview', 'finish']);
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = firstManifest.id;
         tutorialState.currentStep = firstManifest.steps[1] ?? null;
         tutorialState.isBoardMounted = true;
 
@@ -163,6 +170,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         const manifest = makeManifest('field-battle', ['overview', 'finish']);
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
         tutorialState.currentStep = manifest.steps[1] ?? null;
         tutorialState.isBoardMounted = true;
 
@@ -198,6 +206,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         const manifest = makeManifest('season-flow', ['overview', 'finish']);
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
         tutorialState.currentStep = manifest.steps[1] ?? null;
         tutorialState.isBoardMounted = true;
 
@@ -230,6 +239,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         const secondManifest = makeManifest('haunt-actions-and-finish', ['setup-ready-to-exorcise', 'endgame-review']);
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = firstManifest.id;
         tutorialState.currentStep = firstManifest.steps[0] ?? null;
         tutorialState.isBoardMounted = true;
 
@@ -400,6 +410,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         ]);
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
         tutorialState.currentStep = manifest.steps[1] ?? null;
         tutorialState.isBoardMounted = true;
 
@@ -429,6 +440,93 @@ describe('useMatchRoomTutorialLifecycle', () => {
         expect(readCompletedTutorialIds('qidahen').has('attack-and-battle')).toBe(false);
     });
 
+    it('教程路由切到隐藏续章时，不会误清新 controller，并启动新章节 manifest', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const attackManifest = makeManifest('attack-and-battle', ['overview', 'finish']);
+        const retreatManifest = makeManifest('retreat-and-rout', ['overview', 'finish']);
+        const catalog = makeCatalog([
+            { id: 'attack-and-battle', nextTutorialId: 'retreat-and-rout' },
+            { id: 'retreat-and-rout', hiddenFromCatalog: true },
+        ]);
+        let tutorialId = 'attack-and-battle';
+        let manifest = attackManifest;
+
+        tutorialState.isActive = false;
+        tutorialState.currentStep = null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId,
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(attackManifest);
+        tutorialState.startTutorial.mockClear();
+        tutorialState.closeTutorial.mockClear();
+
+        tutorialId = 'retreat-and-rout';
+        manifest = retreatManifest;
+        rerender();
+
+        expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(retreatManifest);
+    });
+
+    it('旧章节仍处于激活态时切到隐藏续章，也会用当前 manifest 替换旧教程', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const attackManifest = makeManifest('attack-and-battle', ['overview', 'finish']);
+        const retreatManifest = makeManifest('retreat-and-rout', ['overview', 'finish']);
+        const catalog = makeCatalog([
+            { id: 'attack-and-battle', nextTutorialId: 'retreat-and-rout' },
+            { id: 'retreat-and-rout', hiddenFromCatalog: true },
+        ]);
+        let tutorialId = 'attack-and-battle';
+        let manifest = attackManifest;
+
+        tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = attackManifest.id;
+        tutorialState.currentStep = attackManifest.steps[1] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'qidahen',
+            tutorialId,
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).not.toHaveBeenCalled();
+
+        tutorialId = 'retreat-and-rout';
+        manifest = retreatManifest;
+        rerender();
+
+        expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(retreatManifest);
+    });
+
     it('隐藏续章完成后，会把对应的可见章节标记为已完成', async () => {
         const setPlayerID = vi.fn();
         const navigate = vi.fn();
@@ -441,6 +539,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         ]);
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
         tutorialState.currentStep = manifest.steps[1] ?? null;
         tutorialState.isBoardMounted = true;
 
@@ -481,6 +580,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         ]);
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
         tutorialState.currentStep = manifest.steps[1] ?? null;
         tutorialState.isBoardMounted = true;
 
@@ -523,6 +623,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         });
 
         tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
         tutorialState.currentStep = manifest.steps[1] ?? null;
         tutorialState.isBoardMounted = true;
 

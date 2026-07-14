@@ -52,10 +52,20 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'table-response',
             content: 'game-the-gang:tutorial.steps.tableResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+        },
+        {
+            id: 'take-player-chip',
+            content: 'game-the-gang:tutorial.steps.takePlayerChip',
+            highlightTarget: 'the-gang-opponent-state',
+            position: 'left',
+            viewAs: '0',
+            requireAction: true,
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.CHIP_TAKEN, match: { playerId: '0' } }],
         },
         {
             id: 'advance-round',
@@ -64,7 +74,7 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             requireAction: true,
             viewAs: '0',
-            allowedCommands: [THE_GANG_COMMANDS.END_ROUND],
+            allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         },
         {
@@ -88,7 +98,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'yellow-response',
             content: 'game-the-gang:tutorial.steps.yellowResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
@@ -124,7 +134,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'orange-response',
             content: 'game-the-gang:tutorial.steps.orangeResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
@@ -152,7 +162,7 @@ export const TheGangTutorial: TutorialManifest = {
         {
             id: 'final-response',
             content: 'game-the-gang:tutorial.steps.finalResponse',
-            highlightTarget: 'the-gang-player-list',
+            highlightTarget: 'the-gang-opponent-state',
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],

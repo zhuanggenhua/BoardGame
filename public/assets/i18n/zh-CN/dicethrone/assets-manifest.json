@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "scope": "official",
   "id": "dicethrone",
-  "basePrefix": "official/dicethrone/",
+  "basePrefix": "official/i18n/zh-CN/dicethrone/",
   "files": {
     "emotes/barbarian/compressed/thumbs-up-v1": {
       "variants": {
@@ -112,6 +112,317 @@
         }
       }
     },
+    "images/artificial/面板": {
+      "variants": {
+        "png": {
+          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
+          "bytes": 10727881,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/手牌": {
+      "variants": {
+        "png": {
+          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
+          "bytes": 14880819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/提示卡": {
+      "variants": {
+        "png": {
+          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
+          "bytes": 3714935,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/骰子": {
+      "variants": {
+        "jpg": {
+          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
+          "bytes": 104021,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "images/artificial/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "4484bacfb439f1551559364355c150774aef4ec08fdf63e2ed61671fe824a522",
+          "bytes": 14880819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/compressed/面板": {
+      "variants": {
+        "webp": {
+          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
+          "bytes": 442528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/手牌": {
+      "variants": {
+        "webp": {
+          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
+          "bytes": 380930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/提示卡": {
+      "variants": {
+        "webp": {
+          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
+          "bytes": 324350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/骰子": {
+      "variants": {
+        "webp": {
+          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
+          "bytes": 15502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "09bf40321dac63bf0656a79846aab4c28e4db04eeb8ed9935a2d700e5219a4d2",
+          "bytes": 380930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "3bcc3a898812dc2fb5246a39f5fbe08abe4067d0b7a119d060c68bfe3d1c03de",
+          "bytes": 15502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "bf69f784c8d7d8df73bb7ffadc0b70cd766ea5bfd294ba98b3bdd6588ed8d9fb",
+          "bytes": 442528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "344be371a69602de93dff5af2cc47e7084a7bc6d31e74e82d0ba4c7dddd95ebf",
+          "bytes": 84580,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "79e7eab7fc40c5eca98eca9e9510a4a2c18b3125b740be7a5fd7eb953d469ee9",
+          "bytes": 324350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/dice": {
+      "variants": {
+        "jpg": {
+          "sha256": "b1d4080ff56b5ce237805d7573474503ecc4b93a6baed5926babd6fe9198e837",
+          "bytes": 104021,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "images/artificial/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "00f33012db9a3e18bb485cc0931233476b65a03081cd6915dfc874d69943f5e6",
+          "bytes": 10727881,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
+          "bytes": 720,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "310d228f74c8bba1d08197d22f2058ccd77c734b09e2779abab42ef536131a07",
+          "bytes": 637977,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/电能机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "6f24fa8581cc3721565c32a89cf984bacbfaf32f5c4121bffcac0585b3574eb1",
+          "bytes": 402083,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/电能机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "63a92955784caa43724caffcc81bea9c960ae26abf8d7c71fdf466446ffaf693",
+          "bytes": 398106,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/合成器": {
+      "variants": {
+        "png": {
+          "sha256": "223f1d98be8696ec4a5b64ad16df7856d667f11363678b692ca3a28a54ec6af5",
+          "bytes": 89335,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/纳米爆蛋": {
+      "variants": {
+        "png": {
+          "sha256": "17e2c1b4eb96083dc94e4655a0e451786a464cca24b88eb4730cf80fa748f855",
+          "bytes": 64853,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/纳米机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "b1b24cf5dac0a4a91d43e43bb9b97561dbe733115f628a8b51c7ad1ef5e84d63",
+          "bytes": 329783,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/纳米机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "6ca19753dc92599621d57714c1d665bfbe093d2fd406406c6de9eb2f0f650dbb",
+          "bytes": 316452,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/治疗机器人1次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "642549b3ae84377948940170625ebca832f74d35a29122b7d750566fd3b1888a",
+          "bytes": 310633,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/治疗机器人2次使用机会": {
+      "variants": {
+        "png": {
+          "sha256": "0f1e60d20554766cfd373cafe0f4286ccf04bbd455684439063a79ca0a17bae8",
+          "bytes": 306226,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/artificial/status/compressed/电能机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "12fa98ff47d30a62f3e8a9ae28ff347fb47a6ac6c0a25095556a0ba72207b15e",
+          "bytes": 57152,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/status/compressed/电能机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "96aaf1ff1f33f98722805474182ca97c157d95d00628e52334ffe2a3b44d65ef",
+          "bytes": 57936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/status/compressed/合成器": {
+      "variants": {
+        "webp": {
+          "sha256": "55db363e3b599a16227fe689dd7ffcafb1d4e91f7e9d5c193f2e265cb4faa4f2",
+          "bytes": 9976,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/status/compressed/纳米爆蛋": {
+      "variants": {
+        "webp": {
+          "sha256": "b5d3be4460c7a52732be63687d76593a37eb556d6d877bad6969b027a6c87999",
+          "bytes": 6026,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/status/compressed/纳米机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "f8d0f56105cb7fe1c8a0a8d4a9ca7a708ebf106a9fdffe97d860fcee021094ad",
+          "bytes": 49818,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/status/compressed/纳米机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "6e1c87ab0de626fe35b9d8f05709660fdd92ca1b0877b9831f8931a123dcb433",
+          "bytes": 52470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/status/compressed/治疗机器人1次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "f4ff713f18fe8b98dbfbb88d907ea57348dc09518f712e30c875b74e99b25391",
+          "bytes": 45174,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/status/compressed/治疗机器人2次使用机会": {
+      "variants": {
+        "webp": {
+          "sha256": "757f0170e677b6cd82549c234a3a5743e589f683444a4eab2fbcba6ec7ef1ad3",
+          "bytes": 47180,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/artificial/tip": {
+      "variants": {
+        "png": {
+          "sha256": "e9ec54aaf05f700985ae6996d51fbd209feae51f1e9fc2ee21f5e0afadc6a55d",
+          "bytes": 3714935,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/barbarian/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -175,7 +486,7 @@
         }
       }
     },
-    "images/barbarian/status-icons-atlas.json": {
+    "images/barbarian/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
@@ -247,6 +558,15 @@
         }
       }
     },
+    "images/cursed/人类面板": {
+      "variants": {
+        "png": {
+          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
+          "bytes": 9335738,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/cursed/手牌": {
       "variants": {
         "png": {
@@ -289,6 +609,15 @@
           "sha256": "5275c30adb82c28f24918f3f1daa5d5c23aba146f2e24291b2eae087d575b946",
           "bytes": 16513454,
           "mime": "image/png"
+        }
+      }
+    },
+    "images/cursed/compressed/人类面板": {
+      "variants": {
+        "webp": {
+          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
+          "bytes": 338966,
+          "mime": "image/webp"
         }
       }
     },
@@ -346,6 +675,15 @@
         }
       }
     },
+    "images/cursed/compressed/human-player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "383aaff1120619ce831cfac12950f1dcbc389e1bff894dfe2ff976bc81f9b058",
+          "bytes": 338966,
+          "mime": "image/webp"
+        }
+      }
+    },
     "images/cursed/compressed/player-board": {
       "variants": {
         "webp": {
@@ -382,6 +720,15 @@
         }
       }
     },
+    "images/cursed/human-player-board": {
+      "variants": {
+        "png": {
+          "sha256": "c22433ef027f9bb7103a7e3f5493f5b1641550b37c27e9f8e9a32547f6558cc7",
+          "bytes": 9335738,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/cursed/player-board": {
       "variants": {
         "png": {
@@ -393,19 +740,15 @@
     },
     "images/cursed/status-icons-atlas": {
       "variants": {
-        "png": {
-          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
-          "bytes": 317204,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/cursed/status-icons-atlas.json": {
-      "variants": {
         "json": {
           "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
           "bytes": 604,
           "mime": "application/json"
+        },
+        "png": {
+          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
+          "bytes": 317204,
+          "mime": "image/png"
         }
       }
     },
@@ -553,7 +896,7 @@
         }
       }
     },
-    "images/gunslinger/status-icons-atlas.json": {
+    "images/gunslinger/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
@@ -625,7 +968,7 @@
         }
       }
     },
-    "images/monk/status-icons-atlas.json": {
+    "images/monk/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "d2cbd24524ddca7becefaa1f989710752858c5a28097b01be2eceef31fd4b36e",
@@ -697,7 +1040,7 @@
         }
       }
     },
-    "images/moon_elf/status-icons-atlas.json": {
+    "images/moon_elf/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
@@ -823,7 +1166,7 @@
         }
       }
     },
-    "images/ninja/status-icons-atlas.json": {
+    "images/ninja/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
@@ -886,7 +1229,7 @@
         }
       }
     },
-    "images/paladin/status-icons-atlas.json": {
+    "images/paladin/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "962e361650a870db0f66ae4f482a8c1fda062d66722f96cf1ce3446d7b4c3d44",
@@ -967,7 +1310,7 @@
         }
       }
     },
-    "images/pyromancer/status-icons-atlas.json": {
+    "images/pyromancer/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "755f2ea1a75ede21e635bd6db6bb70e24c8b7816681904c62d1d6cc18c5a5d72",
@@ -1066,7 +1409,7 @@
         }
       }
     },
-    "images/samurai/status-icons-atlas.json": {
+    "images/samurai/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
@@ -1129,7 +1472,7 @@
         }
       }
     },
-    "images/shadow_thief/status-icons-atlas.json": {
+    "images/shadow_thief/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
@@ -1264,7 +1607,7 @@
         }
       }
     },
-    "images/treant/status-icons-atlas.json": {
+    "images/treant/status-icons-atlas": {
       "variants": {
         "json": {
           "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
@@ -1419,19 +1762,15 @@
     },
     "images/zhanshujia/status-icons-atlas": {
       "variants": {
-        "png": {
-          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
-          "bytes": 135997,
-          "mime": "image/png"
-        }
-      }
-    },
-    "images/zhanshujia/status-icons-atlas.json": {
-      "variants": {
         "json": {
           "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
           "bytes": 370,
           "mime": "application/json"
+        },
+        "png": {
+          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
+          "bytes": 135997,
+          "mime": "image/png"
         }
       }
     },

@@ -26,7 +26,18 @@ export type NativeAndroidRuntimeDiagnostics = Pick<
 export const getNativeAndroidRuntimeDiagnostics = (options?: {
     capacitor?: CapacitorRuntimeLike;
     windowObject?: AndroidRuntimeWindowLike | undefined;
-}): NativeAndroidRuntimeDiagnostics => getNativeMobileRuntimeDiagnostics(options);
+}): NativeAndroidRuntimeDiagnostics => {
+    const diagnostics = getNativeMobileRuntimeDiagnostics(options);
+    const importedRuntimeExplicitlyReportsWeb = diagnostics.importCapacitorNative === false
+        || diagnostics.importCapacitorPlatform === 'web';
+
+    return {
+        ...diagnostics,
+        nativeAndroid: importedRuntimeExplicitlyReportsWeb
+            ? false
+            : diagnostics.nativeAndroid,
+    };
+};
 
 export const detectNativeAndroidRuntime = (options?: {
     capacitor?: CapacitorRuntimeLike;

@@ -262,6 +262,7 @@
     "mine": "Mine",
     "enabledExpansions": "Exp",
     "scenario": "Scenario",
+    "scenarioPending": "Scenario TBD",
     "seatSeparator": " / ",
     "emptySlot": "Empty",
     "ownerMustReconnect": "This is your room. Please reconnect.",
@@ -372,25 +373,25 @@
       "currentVersionTitle": "Current version {{version}}",
       "clickToCollapse": "Click to collapse the full version",
       "clickToExpand": "Click to expand the full version",
-      "currentBundleTitle": "Current bundle {{version}}",
+      "currentBundleTitle": "Current update no. {{version}}",
       "currentAppShellTitle": "App shell {{version}}",
-      "latestOtaTitle": "Latest OTA {{version}}",
+      "latestOtaTitle": "Latest update no. {{version}}",
       "statusDisabled": "Status: OTA is disabled in the current test shell. Please use the production app.",
       "statusCheckingAndApplying": "Status: checking and applying OTA update",
-      "statusMismatchUpdateNow": "Status: current bundle does not match the latest OTA. Click to update now.",
+      "statusMismatchUpdateNow": "Status: current update number does not match the latest update. Click to update now.",
       "statusCheckNow": "Status: click to check OTA updates now",
-      "bundleLabel": "Bundle {{version}}",
+      "bundleLabel": "Update {{version}}",
       "appLabel": "App {{version}}",
-      "latestLabel": "Latest {{version}}",
+      "latestLabel": "Latest update {{version}}",
       "disabledLabel": "OTA disabled in current test shell",
       "updatingNow": "Updating now",
       "mismatchUpdateNow": "OTA mismatch, click to update now",
       "checkingNow": "Checking for updates",
       "checkNow": "Click to check for updates",
       "ariaVersion": "Current version {{version}}",
-      "ariaBundleAndApp": "Current bundle {{bundleVersion}}, app shell {{appVersion}}",
-      "ariaBundleAndAppMismatch": "Current bundle {{bundleVersion}}, app shell {{appVersion}}, latest OTA {{latestVersion}}, versions are not aligned",
-      "ariaBundleAndAppDisabled": "Current bundle {{bundleVersion}}, app shell {{appVersion}}, OTA is disabled in the current test shell"
+      "ariaBundleAndApp": "Current update number {{bundleVersion}}, app shell {{appVersion}}",
+      "ariaBundleAndAppMismatch": "Current update number {{bundleVersion}}, app shell {{appVersion}}, latest update {{latestVersion}}, versions are not aligned",
+      "ariaBundleAndAppDisabled": "Current update number {{bundleVersion}}, app shell {{appVersion}}, OTA is disabled in the current test shell"
     },
     "forceUpdate": {
       "eyebrow": "Updating",
@@ -405,7 +406,7 @@
       "requiredDescriptionWithVersion": "This app build is too old. Update to app version {{version}} or newer to continue.",
       "errorTitle": "Update failed",
       "errorDescription": "Downloading or switching to the new version failed. Please retry.",
-      "bundleVersion": "Target bundle version",
+      "bundleVersion": "Target update no.",
       "currentAppVersion": "Current app version",
       "requiredAppVersion": "Required app version",
       "progressLabel": "Download progress",
@@ -431,6 +432,7 @@
       "permission": "Allow installing apps from unknown sources to continue.",
       "installing": "Launching the system installer. Please wait.",
       "error": "Download or verification failed. Please retry.",
+      "checkFailed": "Unable to read the app update manifest. Check latest.json and network connectivity.",
       "default": "Preparing the update. Please wait."
     },
     "eyebrow": "App update",
@@ -1060,7 +1062,8 @@
         "release_ready": "Release Environment"
       },
       "ota": {
-        "title": "Android OTA"
+        "title": "Android OTA",
+        "force_update_required": "All OTA releases are mandatory. Clients block while downloading and switch immediately; release entry points cannot disable this."
       },
       "packages": {
         "title": "Android Game Packages"

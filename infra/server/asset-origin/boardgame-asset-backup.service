@@ -1,0 +1,24 @@
+[Unit]
+Description=BoardGame disabled legacy asset backup queue
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=admin
+Group=admin
+Environment=HOME=/home/admin
+WorkingDirectory=/home/admin/storage/assets/control
+ExecStart=/usr/bin/true
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=25%
+IOWeight=10
+MemoryMax=256M
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/admin/storage/assets
+ReadOnlyPaths=/home/admin/.config/rclone

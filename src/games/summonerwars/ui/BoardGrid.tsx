@@ -8,7 +8,6 @@ import React, { useEffect, useRef } from 'react';
 import { motion, useAnimate } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { GridConfig } from '../../../core/ui/board-layout.types';
-import { cellToNormalizedBounds } from '../../../core/ui/board-hit-test';
 import type { SummonerWarsCore, CellCoord, PlayerId } from '../domain/types';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
 import { CardSprite } from './CardSprite';
@@ -24,7 +23,10 @@ import { normalizeUnitBoosts } from '../domain/helpers';
 import { StrengthBoostIndicator } from './StrengthBoostIndicator';
 import type { UseVisualStateBufferReturn } from '../../../components/game/framework/hooks/useVisualStateBuffer';
 import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
+import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
+import { useArmedActivation } from '../../../hooks/ui/useArmedActivation';
 import { BOARD_SHELL_REFERENCE_WIDTH } from './layoutConstants';
+import { getCellPosition } from './boardGridGeometry';
 
 // ============================================================================
 // 辅助函数
@@ -39,9 +41,11 @@ const BOARD_GRID_Z = {
 } as const;
 
 const LIFE_BADGE_STYLE: React.CSSProperties = {
-  fontSize: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.01)`,
-  paddingInline: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.004)`,
-  paddingBlock: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.001)`,
+  fontSize: `clamp(44px, calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.055), 58px)`,
+  lineHeight: 0.95,
+  paddingInline: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.018)`,
+  paddingBlock: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.007)`,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.65)',
 };
 const MAGNIFY_BUTTON_STYLE: React.CSSProperties = {
   top: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.006)`,
@@ -53,17 +57,6 @@ const MAGNIFY_ICON_STYLE: React.CSSProperties = {
   width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
   height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
 };
-
-/** 计算格子位置（百分比） */
-export function getCellPosition(row: number, col: number, grid: GridConfig) {
-  const cellBounds = cellToNormalizedBounds({ row, col }, grid);
-  return {
-    left: cellBounds.x * 100,
-    top: cellBounds.y * 100,
-    width: cellBounds.width * 100,
-    height: cellBounds.height * 100,
-  };
-}
 
 /** 格子唯一 key */
 const getCellKey = (row: number, col: number) => `${row}-${col}`;
@@ -97,6 +90,11 @@ interface BoardGridProps {
   // 交缠颂歌高亮
   entanglementHighlights: CellCoord[];
   entanglementSelectedTargets: CellCoord[];
+  // 莫古事件牌高亮
+  moguSymbioticSelfHealingHighlights: CellCoord[];
+  moguSymbioticSelfHealingSelectedTargets: CellCoord[];
+  moguReleaseSporesHighlights: CellCoord[];
+  moguReleaseSporesSelectedTargets: CellCoord[];
   // 潜行高亮
   sneakHighlights: CellCoord[];
   // 冰川位移高亮
@@ -117,6 +115,8 @@ interface BoardGridProps {
   dyingEntities?: DyingEntity[];
   // 视觉伤害缓冲：攻击动画期间冻结 damage 值，使用框架层 useVisualStateBuffer
   damageBuffer?: UseVisualStateBufferReturn;
+  // 降低攻击表现成本：保留命中反馈，跳过卡牌本体冲刺
+  reducedCombatEffects?: boolean;
   // 回调
   onCellClick: (row: number, col: number) => void;
   onAttackHit: () => void;
@@ -125,8 +125,8 @@ interface BoardGridProps {
   onMagnifyStructure: (structure: import('../domain/types').BoardStructure) => void;
   onMagnifyEventCard?: (card: import('../domain/types').EventCard) => void;
   onMagnifySpriteConfig?: (config: { atlasId: string; frameIndex: number }) => void;
-  // 用于动画追踪
-  newUnitIds?: Set<string>;
+  // 首屏完成后允许新挂载单位播放入场动画
+  enableEntryAnimations?: boolean;
 }
 
 // ============================================================================
@@ -156,7 +156,8 @@ const GridLayer: React.FC<{
   core: SummonerWarsCore;
   fromViewCoord: (c: CellCoord) => CellCoord;
   props: BoardGridProps;
-}> = ({ currentGrid, core, fromViewCoord, props }) => (
+  onCellClick: (row: number, col: number) => void;
+}> = ({ currentGrid, core, fromViewCoord, props, onCellClick }) => (
   <div className="absolute inset-0">
     {Array.from({ length: currentGrid.rows }).map((_, row) =>
       Array.from({ length: currentGrid.cols }).map((_, col) => {
@@ -171,7 +172,7 @@ const GridLayer: React.FC<{
         return (
           <div
             key={cellKey}
-            onClick={() => props.onCellClick(viewCoord.row, viewCoord.col)}
+            onClick={() => onCellClick(viewCoord.row, viewCoord.col)}
             data-testid={`sw-cell-${gameCoord.row}-${gameCoord.col}`}
             data-cell-coord={`${gameCoord.row}-${gameCoord.col}`}
             data-row={gameCoord.row}
@@ -216,6 +217,16 @@ function getCardTargetHighlight(row: number, col: number, props: BoardGridProps)
   const isEntanglementTarget = props.entanglementHighlights.some(p => p.row === row && p.col === col);
   if (isEntanglementSelected) return 'ring-2 ring-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]';
   if (isEntanglementTarget) return 'ring-2 ring-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] animate-pulse';
+
+  const isMoguSelfHealingSelected = props.moguSymbioticSelfHealingSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguSelfHealingTarget = props.moguSymbioticSelfHealingHighlights.some(p => p.row === row && p.col === col);
+  if (isMoguSelfHealingSelected) return 'ring-2 ring-fuchsia-300 shadow-[0_0_12px_rgba(240,171,252,0.75)]';
+  if (isMoguSelfHealingTarget) return 'ring-2 ring-fuchsia-400 shadow-[0_0_10px_rgba(232,121,249,0.65)] animate-pulse';
+
+  const isMoguReleaseSporesSelected = props.moguReleaseSporesSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguReleaseSporesTarget = props.moguReleaseSporesHighlights.some(p => p.row === row && p.col === col);
+  if (isMoguReleaseSporesSelected) return 'ring-2 ring-lime-300 shadow-[0_0_12px_rgba(190,242,100,0.75)]';
+  if (isMoguReleaseSporesTarget) return 'ring-2 ring-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.65)] animate-pulse';
 
   if (props.sneakHighlights.some(p => p.row === row && p.col === col))
     return 'ring-2 ring-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.6)] animate-pulse';
@@ -281,6 +292,10 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   const isMindControlTarget = props.mindControlHighlights.some(p => p.row === row && p.col === col);
   const isEntanglementSelected = props.entanglementSelectedTargets.some(p => p.row === row && p.col === col);
   const isEntanglementTarget = props.entanglementHighlights.some(p => p.row === row && p.col === col);
+  const isMoguSelfHealingSelected = props.moguSymbioticSelfHealingSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguSelfHealingTarget = props.moguSymbioticSelfHealingHighlights.some(p => p.row === row && p.col === col);
+  const isMoguReleaseSporesSelected = props.moguReleaseSporesSelectedTargets.some(p => p.row === row && p.col === col);
+  const isMoguReleaseSporesTarget = props.moguReleaseSporesHighlights.some(p => p.row === row && p.col === col);
   const isSneakTarget = props.sneakHighlights.some(p => p.row === row && p.col === col);
   const isGlacialShiftTarget = props.glacialShiftHighlights.some(p => p.row === row && p.col === col);
   const isWithdrawTarget = props.withdrawHighlights.some(p => p.row === row && p.col === col);
@@ -295,6 +310,10 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   if (isMindControlTarget) return baseCellVisualStyle('rgba(6,182,212,1)', 'rgba(6,182,212,0.3)', 'animate-pulse');
   if (isEntanglementSelected) return baseCellVisualStyle('rgba(52,211,153,1)', 'rgba(52,211,153,0.5)', 'ring-2 ring-emerald-300');
   if (isEntanglementTarget) return baseCellVisualStyle('rgba(16,185,129,1)', 'rgba(16,185,129,0.3)', 'animate-pulse');
+  if (isMoguSelfHealingSelected) return baseCellVisualStyle('rgba(240,171,252,1)', 'rgba(240,171,252,0.5)', 'ring-2 ring-fuchsia-200');
+  if (isMoguSelfHealingTarget) return baseCellVisualStyle('rgba(232,121,249,1)', 'rgba(232,121,249,0.3)', 'animate-pulse');
+  if (isMoguReleaseSporesSelected) return baseCellVisualStyle('rgba(190,242,100,1)', 'rgba(190,242,100,0.5)', 'ring-2 ring-lime-200');
+  if (isMoguReleaseSporesTarget) return baseCellVisualStyle('rgba(163,230,53,1)', 'rgba(163,230,53,0.3)', 'animate-pulse');
   if (isSneakTarget) return baseCellVisualStyle('rgba(163,230,53,1)', 'rgba(163,230,53,0.3)', 'animate-pulse');
   if (isGlacialShiftTarget) return baseCellVisualStyle('rgba(56,189,248,1)', 'rgba(56,189,248,0.3)', 'animate-pulse');
   if (isWithdrawTarget) return baseCellVisualStyle('rgba(251,191,36,1)', 'rgba(251,191,36,0.3)', 'animate-pulse');
@@ -305,7 +324,7 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   if (isBloodSummonTarget) return baseCellVisualStyle('rgba(244,63,94,1)', 'rgba(244,63,94,0.3)', 'animate-pulse');
   if (isValidEventTarget) return baseCellVisualStyle('rgba(251,146,60,1)', 'rgba(251,146,60,0.3)', 'animate-pulse');
   if (isValidSummon) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.3)');
-  if (isValidBuild) return baseCellVisualStyle('rgba(192,132,252,1)', 'rgba(192,132,252,0.3)');
+  if (isValidBuild) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.3)');
   if (isAbilityPos) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.5)', 'animate-pulse');
   if (isAbilityUnit) return baseCellVisualStyle('rgba(251,191,36,1)', 'rgba(251,191,36,0.4)', 'animate-pulse');
   if (isValidMove) return baseCellVisualStyle('rgba(96,165,250,1)', 'rgba(96,165,250,0.25)');
@@ -331,7 +350,17 @@ const CardLayer: React.FC<{
   myPlayerId: string;
   toViewCoord: (c: CellCoord) => CellCoord;
   props: BoardGridProps;
-}> = ({ core, currentGrid, myPlayerId, toViewCoord, props }) => (
+  tapLifeInspectKey: string | null;
+  onCellClick: (row: number, col: number, lifeInspectKey: string) => void;
+}> = ({
+  core,
+  currentGrid,
+  myPlayerId,
+  toViewCoord,
+  props,
+  tapLifeInspectKey,
+  onCellClick,
+}) => (
   <div className="absolute inset-0 pointer-events-none">
     {Array.from({ length: BOARD_ROWS }).map((_, row) =>
       Array.from({ length: BOARD_COLS }).map((_, col) => {
@@ -360,6 +389,8 @@ const CardLayer: React.FC<{
               toViewCoord={toViewCoord}
               currentGrid={currentGrid}
               props={props}
+              isTapLifeVisible={tapLifeInspectKey === `unit-${cell.unit.instanceId}`}
+              onCellClick={onCellClick}
             />
           );
         }
@@ -374,6 +405,8 @@ const CardLayer: React.FC<{
               viewCoord={viewCoord}
               myPlayerId={myPlayerId}
               props={props}
+              isTapLifeVisible={tapLifeInspectKey === `structure-${row}-${col}-${cell.structure.cardId}`}
+              onCellClick={onCellClick}
             />
           );
         }
@@ -434,12 +467,28 @@ const UnitCell: React.FC<{
   toViewCoord: (c: CellCoord) => CellCoord;
   currentGrid: GridConfig;
   props: BoardGridProps;
-}> = ({ row, col, unit, pos, viewCoord, core, myPlayerId, toViewCoord, currentGrid, props }) => {
-  const isNew = props.newUnitIds?.has(unit.instanceId) ?? false;
+  isTapLifeVisible: boolean;
+  onCellClick: (row: number, col: number, lifeInspectKey: string, pointerType?: string) => void;
+}> = ({
+  row,
+  col,
+  unit,
+  pos,
+  viewCoord,
+  core,
+  myPlayerId,
+  toViewCoord,
+  currentGrid,
+  props,
+  isTapLifeVisible,
+  onCellClick,
+}) => {
+  const shouldAnimateEntry = props.enableEntryAnimations ?? false;
   const { t, i18n } = useTranslation('game-summonerwars');
   const spriteConfig = getUnitSpriteConfig(unit);
   const isMyUnit = unit.owner === myPlayerId;
   const unitInspectKey = `unit-${unit.instanceId}`;
+  const lastPointerTypeRef = useRef<string | null>(null);
   // 视觉伤害：攻击动画期間优先读缓冲值，避免血条在动画 impact 前就变化
   const damage = props.damageBuffer
     ? props.damageBuffer.get(`${row}-${col}`, unit.damage)
@@ -467,6 +516,7 @@ const UnitCell: React.FC<{
       props.onMagnifyUnit(payload);
     },
   });
+  const touchInspectProps = getTouchInspectProps(unitInspectKey, unit);
 
   const isAttacker = props.attackAnimState
     && props.attackAnimState.attacker.row === row
@@ -493,6 +543,12 @@ const UnitCell: React.FC<{
 
     const run = async () => {
       try {
+        if (props.reducedCombatEffects) {
+          props.onAttackHit();
+          await new Promise(r => window.setTimeout(r, 120));
+          return;
+        }
+
         // 冲向目标
         await animate(scope.current, {
           x: `${lungeXPct}%`, y: `${lungeYPct}%`, scale: 1.05,
@@ -534,7 +590,11 @@ const UnitCell: React.FC<{
       data-unit-name={unit.card.name}
       data-unit-life={life}
       data-unit-damage={unit.damage}
-      {...getTouchInspectProps(unitInspectKey, unit)}
+      {...touchInspectProps}
+      onPointerDown={(event) => {
+        lastPointerTypeRef.current = event.pointerType;
+        touchInspectProps.onPointerDown(event);
+      }}
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
@@ -544,11 +604,11 @@ const UnitCell: React.FC<{
       }}
       onClick={() => {
         if (shouldBlockInspectClick(unitInspectKey)) return;
-        props.onCellClick(viewCoord.row, viewCoord.col);
+        onCellClick(viewCoord.row, viewCoord.col, unitInspectKey, lastPointerTypeRef.current ?? undefined);
       }}
-      initial={isNew ? { opacity: 0, scale: 1.1 } : false}
+      initial={shouldAnimateEntry ? { opacity: 0, scale: 1.1 } : false}
       animate={{ opacity: 1, scale: 1 }}
-      transition={isNew ? {
+      transition={shouldAnimateEntry ? {
         type: 'spring', stiffness: 80, damping: 15, mass: 1.2,
       } : {
         layout: { type: 'spring', stiffness: 300, damping: 30 },
@@ -595,7 +655,11 @@ const UnitCell: React.FC<{
           )}
           {/* 悬停显示生命值 - 保持正向可读 */}
           <div
-            className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyUnit ? 'rotate-180' : ''}`}
+            data-testid={`sw-unit-life-${row}-${col}`}
+            data-tap-visible={isTapLifeVisible ? 'true' : 'false'}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity pointer-events-none ${
+              isTapLifeVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            } ${!isMyUnit ? 'rotate-180' : ''}`}
             style={{ zIndex: BOARD_GRID_Z.overlay }}
           >
             <span
@@ -695,11 +759,24 @@ const StructureCell: React.FC<{
   viewCoord: CellCoord;
   myPlayerId: string;
   props: BoardGridProps;
-}> = ({ row, col, structure, pos, viewCoord, myPlayerId, props }) => {
+  isTapLifeVisible: boolean;
+  onCellClick: (row: number, col: number, lifeInspectKey: string, pointerType?: string) => void;
+}> = ({
+  row,
+  col,
+  structure,
+  pos,
+  viewCoord,
+  myPlayerId,
+  props,
+  isTapLifeVisible,
+  onCellClick,
+}) => {
   const spriteConfig = getStructureSpriteConfig(structure);
   const isMyStructure = structure.owner === myPlayerId;
-  const isNew = props.newUnitIds?.has(structure.cardId) ?? false;
+  const shouldAnimateEntry = props.enableEntryAnimations ?? false;
   const structureInspectKey = `structure-${row}-${col}-${structure.cardId}`;
+  const lastPointerTypeRef = useRef<string | null>(null);
   // 视觉伤害：攻击动画期间优先读缓冲值
   const damage = props.damageBuffer
     ? props.damageBuffer.get(`${row}-${col}`, structure.damage)
@@ -717,6 +794,7 @@ const StructureCell: React.FC<{
       props.onMagnifyStructure(payload);
     },
   });
+  const touchInspectProps = getTouchInspectProps(structureInspectKey, structure);
 
   return (
     <motion.div
@@ -730,14 +808,18 @@ const StructureCell: React.FC<{
       data-structure-life={life}
       data-structure-damage={structure.damage}
       data-structure-gate={structure.card.isGate ? 'true' : 'false'}
-      {...getTouchInspectProps(structureInspectKey, structure)}
+      {...touchInspectProps}
+      onPointerDown={(event) => {
+        lastPointerTypeRef.current = event.pointerType;
+        touchInspectProps.onPointerDown(event);
+      }}
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
         width: `${pos.width}%`,
         height: `${pos.height}%`,
       }}
-      initial={isNew ? { opacity: 0 } : false}
+      initial={shouldAnimateEntry ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
       transition={{
         layout: { type: 'spring', stiffness: 300, damping: 30 },
@@ -746,12 +828,12 @@ const StructureCell: React.FC<{
       layout="position"
       onClick={() => {
         if (shouldBlockInspectClick(structureInspectKey)) return;
-        props.onCellClick(viewCoord.row, viewCoord.col);
+        onCellClick(viewCoord.row, viewCoord.col, structureInspectKey, lastPointerTypeRef.current ?? undefined);
       }}
     >
       <motion.div
         className={`relative w-[85%] group ${!isMyStructure ? 'rotate-180' : ''}`}
-        initial={isNew ? { opacity: 0, scale: 1.1 } : false}
+        initial={shouldAnimateEntry ? { opacity: 0, scale: 1.1 } : false}
         animate={{ y: 0, opacity: 1, scale: 1 }}
         transition={{ type: 'spring', stiffness: 100, damping: 20 }}
       >
@@ -782,7 +864,11 @@ const StructureCell: React.FC<{
           })()}
           {/* 悬停显示生命值 - 保持正向可读 */}
           <div
-            className={`absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${!isMyStructure ? 'rotate-180' : ''}`}
+            data-testid={`sw-structure-life-${row}-${col}`}
+            data-tap-visible={isTapLifeVisible ? 'true' : 'false'}
+            className={`absolute inset-0 flex items-center justify-center transition-opacity pointer-events-none ${
+              isTapLifeVisible ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            } ${!isMyStructure ? 'rotate-180' : ''}`}
             style={{ zIndex: BOARD_GRID_Z.overlay }}
           >
             <span
@@ -815,41 +901,82 @@ const StructureCell: React.FC<{
 // ============================================================================
 
 export const BoardGrid: React.FC<BoardGridProps> = (props) => {
-  const { core, currentGrid, shouldFlipView, myPlayerId } = props;
+  const {
+    core,
+    currentGrid,
+    shouldFlipView,
+    myPlayerId,
+    onCellClick,
+  } = props;
   const { toViewCoord, fromViewCoord } = useViewCoords(shouldFlipView);
+  const isTouchFirstInteraction = useCoarsePointer();
+  const isLifeInspectKeyValid = React.useCallback((key: string) => {
+    for (let row = 0; row < BOARD_ROWS; row++) {
+      for (let col = 0; col < BOARD_COLS; col++) {
+        const cell = core.board[row]?.[col];
+        if (cell?.unit && key === `unit-${cell.unit.instanceId}`) return true;
+        if (cell?.structure && key === `structure-${row}-${col}-${cell.structure.cardId}`) return true;
+      }
+    }
+    return false;
+  }, [core.board]);
+  const {
+    armedKey: tapLifeInspectKey,
+    clearArmed: clearLifeInspect,
+    armOrActivate,
+  } = useArmedActivation<string>({
+    requireArming: true,
+    isKeyValid: isLifeInspectKeyValid,
+    validationDeps: [core.board],
+  });
 
-  // 追踪新出现的单位用于播放召唤动画
-  const prevUnitIdsRef = React.useRef<Set<string>>(new Set());
-  const newUnitIds = React.useMemo(() => {
-    const current = new Set<string>();
-    core.board.forEach(row => row.forEach(cell => {
-      if (cell.unit) current.add(cell.unit.instanceId);
-      if (cell.structure) current.add(cell.structure.cardId);
-    }));
+  const handleGridCellClick = React.useCallback((row: number, col: number) => {
+    clearLifeInspect();
+    onCellClick(row, col);
+  }, [clearLifeInspect, onCellClick]);
 
-    if (prevUnitIdsRef.current.size === 0) {
-      prevUnitIdsRef.current = current;
-      return new Set<string>();
+  const handleCardCellClick = React.useCallback((
+    row: number,
+    col: number,
+    lifeInspectKey: string,
+    pointerType?: string,
+  ) => {
+    const shouldUseTouchFirstInteraction = isTouchFirstInteraction
+      || pointerType === 'touch'
+      || pointerType === 'pen';
+    if (!shouldUseTouchFirstInteraction) {
+      clearLifeInspect();
+      onCellClick(row, col);
+      return;
     }
 
-    const added = new Set<string>();
-    current.forEach(id => {
-      if (!prevUnitIdsRef.current.has(id)) added.add(id);
+    armOrActivate(lifeInspectKey, {
+      onActivate: () => onCellClick(row, col),
     });
+  }, [armOrActivate, clearLifeInspect, isTouchFirstInteraction, onCellClick]);
 
-    prevUnitIdsRef.current = current;
-    return added;
-  }, [core.board]);
+  const [enableEntryAnimations, setEnableEntryAnimations] = React.useState(false);
+  React.useEffect(() => {
+    setEnableEntryAnimations(true);
+  }, []);
 
   return (
     <>
-      <GridLayer currentGrid={currentGrid} core={core} fromViewCoord={fromViewCoord} props={props} />
+      <GridLayer
+        currentGrid={currentGrid}
+        core={core}
+        fromViewCoord={fromViewCoord}
+        props={props}
+        onCellClick={handleGridCellClick}
+      />
       <CardLayer
         core={core}
         currentGrid={currentGrid}
         myPlayerId={myPlayerId}
         toViewCoord={toViewCoord}
-        props={{ ...props, newUnitIds }}
+        props={{ ...props, enableEntryAnimations }}
+        tapLifeInspectKey={tapLifeInspectKey}
+        onCellClick={handleCardCellClick}
       />
     </>
   );

@@ -1,6 +1,6 @@
 import type { MatchState } from '../types';
 import type { GameAiRuntime } from './types';
-import { resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
+import { resolveCurrentDecisionPlayerId, resolveCurrentTurnPlayerIdFromState } from '../sessionContext';
 
 export type OnlineAiDecisionVisibility = 'shared' | 'private-required';
 
@@ -61,6 +61,13 @@ export function resolveCurrentPlayerIdFromState(state: MatchState<unknown> | nul
     return resolveCurrentTurnPlayerIdFromState(state);
 }
 
+function resolveCurrentDecisionPlayerIdFromState(state: MatchState<unknown> | null | undefined): string | null {
+    return resolveCurrentDecisionPlayerId({
+        state,
+        preferPendingAttackDefenderAsDecisionOwner: true,
+    });
+}
+
 export function resolveEventStreamNextIdFromState(state: MatchState<unknown> | null | undefined): number | null {
     if (!state || typeof state !== 'object') return null;
     const nextId = (state.sys as { eventStream?: { nextId?: unknown } } | undefined)?.eventStream?.nextId;
@@ -98,7 +105,7 @@ function resolveVisibilityByDefault(args: {
     }
 
     const sharedPhase = resolveStatePhase(args.sharedState);
-    const sharedCurrentPlayerId = resolveCurrentPlayerIdFromState(args.sharedState);
+    const sharedCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState(args.sharedState);
     const setupLikePhases = new Set(['setup', 'characterSelection', 'characterSelect', 'factionSelect']);
     const isSetupLikePhase = typeof sharedPhase === 'string' && setupLikePhases.has(sharedPhase);
 
@@ -333,8 +340,8 @@ function isPrivateOverlayFreshEnough(args: {
         }
     }
 
-    const sharedCurrentPlayerId = resolveCurrentPlayerIdFromState(args.sharedState);
-    const privateCurrentPlayerId = resolveCurrentPlayerIdFromState(args.privateOverlay);
+    const sharedCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState(args.sharedState);
+    const privateCurrentPlayerId = resolveCurrentDecisionPlayerIdFromState(args.privateOverlay);
     if (!isResponseWindowDecision && !isInteractionDecision
         && (sharedCurrentPlayerId !== args.playerId || privateCurrentPlayerId !== args.playerId)) {
         return false;

@@ -16,3 +16,4 @@ import './goblin';
 import './paladin';
 import './frost';
 import './barbaric';
+import './mogu';

@@ -2,6 +2,7 @@ import type { PlayingCard, Rank, Suit } from './types';
 
 export const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
 export const RANKS: Rank[] = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+export const EXTENDED_RANKS: Rank[] = [...RANKS, 'B', 'C', 'D'];
 
 export const RANK_VALUE: Record<Rank, number> = {
     '2': 2,
@@ -17,6 +18,12 @@ export const RANK_VALUE: Record<Rank, number> = {
     Q: 12,
     K: 13,
     A: 14,
+    B: 15,
+    C: 16,
+    D: 17,
+    Joker: 0,
+    Wild: 0,
+    Blank: 0,
 };
 
 export const HAND_LABELS = [
@@ -28,12 +35,20 @@ export const HAND_LABELS = [
     '同花',
     '葫芦',
     '四条',
+    '五花',
+    '五花顺',
+    '五条',
     '同花顺',
     '皇家同花顺',
 ] as const;
 
-export function createDeck(): PlayingCard[] {
-    return SUITS.flatMap((suit) => RANKS.map((rank) => ({ suit, rank })));
+export function createDeck(options: { extendedRanks?: boolean; gearSuit?: boolean } = {}): PlayingCard[] {
+    const ranks = options.extendedRanks ? EXTENDED_RANKS : RANKS;
+    const standardCards = SUITS.flatMap((suit) => ranks.map((rank) => ({ suit, rank, kind: 'standard' as const })));
+    const gearCards = options.gearSuit
+        ? ranks.map((rank) => ({ suit: 'gear' as const, rank, kind: 'standard' as const }))
+        : [];
+    return [...standardCards, ...gearCards];
 }
 
 export function shuffleDeck(deck: PlayingCard[], random: { random(): number }): PlayingCard[] {
@@ -46,11 +61,17 @@ export function shuffleDeck(deck: PlayingCard[], random: { random(): number }): 
 }
 
 export function formatCard(card: PlayingCard): string {
-    const suitSymbol: Record<Suit, string> = {
+    if (card.kind === 'joker') return 'Joker';
+    if (card.kind === 'wild') return '万能';
+    if (card.kind === 'blank') return '空白';
+
+    const suitSymbol: Record<PlayingCard['suit'], string> = {
         spades: '♠',
         hearts: '♥',
         diamonds: '♦',
         clubs: '♣',
+        gear: '☼',
+        special: '',
     };
     return `${card.rank}${suitSymbol[card.suit]}`;
 }

@@ -40,6 +40,7 @@ import {
     resolveSeatControllersFromSearchParams,
 } from '../engine/ai';
 import { applySetupDefaultsForGame, resolveAllowedPlayerCountsForGame } from '../games/roomSetupRegistry';
+import { buildQidahenTutorialSetupData } from '../games/qidahen/tutorialSetup';
 
 // 闂備礁鎲￠崙褰掑垂閹惰棄鏋侀柕鍫濇偪閸︻厸鍋撻敐搴″箻婵℃彃鎲℃穱濠囶敍濡炶浜剧€规洖娲ㄩ、鍛存⒑閹稿海鈽夐柣妤€妫涢幑銏ゅ焵椤掆偓椤啴濡堕崼顐㈡濠电姭鍋撴い蹇撴绾惧ジ鏌涢弴銊ょ凹妞ゆ劘妫勯…鍧楁嚋閻㈤潧鈷岄梺绋块椤曨參骞忛锕€绀冩い蹇撴噺濞堛垽姊洪幐搴ｂ槈闁活剙銈搁崹鎯熼懡銈傛敵濠电娀娼уΛ娆撶叕椤掆偓闇夐柣妯硅閸炶櫣绱?Provider 婵犵數鍋為幐绋款嚕閸洘鍋傞悗锝庡枛缁€鍫⑩偓骞垮劚濞诧箓寮查幖浣圭厸濞达絽鎽滄晶宕囩磼?
 if (typeof window !== 'undefined') {
@@ -48,6 +49,21 @@ if (typeof window !== 'undefined') {
 }
 
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
+
+function resolveTestPlayerNames(searchParams: URLSearchParams, numPlayers: number): Record<string, string> {
+    const names: Record<string, string> = {};
+    for (let index = 0; index < numPlayers; index += 1) {
+        const id = String(index);
+        const explicitName = searchParams.get(`player${index}Name`)
+            ?? searchParams.get(`playerName${index}`)
+            ?? searchParams.get(`p${index}Name`);
+        const trimmedName = explicitName?.trim();
+        if (trimmedName) {
+            names[id] = trimmedName;
+        }
+    }
+    return names;
+}
 
 export const TestMatchRoom: React.FC = () => {
     const { gameId } = useParams<{ gameId: string }>();
@@ -125,20 +141,26 @@ export const TestMatchRoom: React.FC = () => {
             searchParams,
             aiSupport: gameConfig?.ai,
         });
-        const setupData = buildLocalMatchSetupData(resolvedSetupSelections);
+        const playerNames = resolveTestPlayerNames(searchParams, numPlayers);
+        const qidahenTutorialSetup = gameId === 'qidahen'
+            ? buildQidahenTutorialSetupData(searchParams.get('tutorialSetup') ?? undefined)
+            : null;
+        const setupData = qidahenTutorialSetup?.setupData ?? buildLocalMatchSetupData(resolvedSetupSelections);
+        const resolvedNumPlayers = qidahenTutorialSetup?.numPlayers ?? numPlayers;
         
         return {
             player0Factions: p0Factions,
             player1Factions: p1Factions,
             randomSeed: seed,
-            numPlayers,
+            numPlayers: resolvedNumPlayers,
             skipFactionSelect,
             skipInitialization,
             playerId,
             seatControllers,
+            playerNames,
             setupData,
         };
-    }, [gameConfig, searchParams]);
+    }, [gameConfig, gameId, searchParams]);
 
     useEffect(() => {
         if (!gameId) return;
@@ -309,6 +331,7 @@ export const TestMatchRoom: React.FC = () => {
                                         setupData={testConfig.setupData}
                                         onCommandRejected={handleCommandRejected}
                                         seatControllers={testConfig.seatControllers}
+                                        playerNames={testConfig.playerNames}
                                         followCurrentTurnPlayer={shouldFollowCurrentTurnPlayer}
                                     >
                                         <GameHUD gameId={gameId} mode="test" />

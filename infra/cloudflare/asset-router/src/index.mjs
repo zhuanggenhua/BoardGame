@@ -1,0 +1,117 @@
+const FORWARDED_REQUEST_HEADERS = [
+    'accept',
+    'if-match',
+    'if-modified-since',
+    'if-none-match',
+    'if-unmodified-since',
+    'range',
+];
+
+const resolveTimeoutMs = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1500;
+};
+
+const applySharedHeaders = (headers, source) => {
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set(
+        'Access-Control-Expose-Headers',
+        'Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified, X-Asset-Source',
+    );
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('X-Asset-Source', source);
+    headers.set('X-Content-Type-Options', 'nosniff');
+};
+
+const buildCorsPreflightResponse = (request) => {
+    const headers = new Headers({
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Max-Age': '86400',
+    });
+    const requestedHeaders = request.headers.get('Access-Control-Request-Headers');
+    headers.set(
+        'Access-Control-Allow-Headers',
+        requestedHeaders || 'Accept, Cache-Control, Content-Type, Range, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since',
+    );
+    applySharedHeaders(headers, 'preflight');
+    return new Response(null, { status: 204, headers });
+};
+
+const buildOriginRequest = (request, env) => {
+    const incomingUrl = new URL(request.url);
+    const originUrl = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, env.ORIGIN_BASE_URL);
+    const headers = new Headers();
+
+    for (const name of FORWARDED_REQUEST_HEADERS) {
+        const value = request.headers.get(name);
+        if (value !== null) headers.set(name, value);
+    }
+
+    headers.set('X-Asset-Origin-Token', env.ORIGIN_TOKEN);
+    const clientIp = request.headers.get('CF-Connecting-IP');
+    if (clientIp) headers.set('X-Asset-Client-IP', clientIp);
+
+    return new Request(originUrl, {
+        method: request.method,
+        headers,
+        redirect: 'manual',
+    });
+};
+
+const fetchOrigin = async (request, env, fetchImpl) => {
+    const controller = new AbortController();
+    const timer = setTimeout(
+        () => controller.abort('origin response timeout'),
+        resolveTimeoutMs(env.ORIGIN_TIMEOUT_MS),
+    );
+
+    try {
+        return await fetchImpl(buildOriginRequest(request, env), {
+            signal: controller.signal,
+        });
+    } finally {
+        clearTimeout(timer);
+    }
+};
+
+const withServerSource = (request, response) => {
+    const source = response.status >= 500 ? 'server-error' : 'server';
+    const headers = new Headers(response.headers);
+    headers.delete('CDN-Cache-Control');
+    headers.delete('Cloudflare-CDN-Cache-Control');
+    applySharedHeaders(headers, source);
+    return new Response(request.method === 'HEAD' ? null : response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+    });
+};
+
+export const createAssetRouter = ({ fetchImpl = fetch } = {}) => async (request, env) => {
+    if (request.method === 'OPTIONS') {
+        return buildCorsPreflightResponse(request);
+    }
+
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+        return new Response('Method Not Allowed', {
+            status: 405,
+            headers: { Allow: 'GET, HEAD, OPTIONS' },
+        });
+    }
+
+    try {
+        return withServerSource(request, await fetchOrigin(request, env, fetchImpl));
+    } catch {
+        const headers = new Headers({ 'Cache-Control': 'no-store' });
+        applySharedHeaders(headers, 'server-error');
+        return new Response('Asset origin unavailable', { status: 502, headers });
+    }
+};
+
+const assetRouter = createAssetRouter();
+
+export default {
+    fetch(request, env) {
+        return assetRouter(request, env);
+    },
+};

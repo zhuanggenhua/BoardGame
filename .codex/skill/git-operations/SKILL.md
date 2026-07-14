@@ -1,6 +1,6 @@
 ---
 name: git-operations
-description: "本项目 Git 操作 skill。用于提交、推送、同步主分支、处理 pre-push 阻塞、PR/worktree/fork/merge 等 Git 协作场景。目标是把 Git 规则按日常用法和复杂协作细则分层组织，避免根 AGENTS 一次性塞满。"
+description: "BoardGame Git 操作入口。用于提交、推送、同步主分支、pre-push 阻塞、PR、worktree、fork、merge 等协作场景。"
 ---
 
 # Git 操作 Skill

@@ -5,6 +5,7 @@ import type {
     QidahenFactionId,
     QidahenPiece,
     QidahenSpecialTroopStack,
+    QidahenTroopClass,
     QidahenTroopKind,
 } from './types';
 
@@ -14,6 +15,8 @@ type QidahenCompatPieceView = Pick<
     QidahenCore['pieces'][number],
     'id' | 'sourceStackId' | 'label' | 'faction' | 'troopKind' | 'level'
 > & {
+    originalFaction: QidahenFactionId;
+    troopClass: QidahenTroopClass;
     stackOrder: number;
     pieceOrder: number;
 };
@@ -35,6 +38,18 @@ export const inferTroopKindForStack = (stack: QidahenSpecialTroopStack): Qidahen
         return 'cavalry';
     }
     return 'infantry';
+};
+
+export const inferTroopClassForStack = (
+    stack: QidahenSpecialTroopStack,
+): QidahenTroopClass => {
+    if (stack.troopClass) {
+        return stack.troopClass;
+    }
+    if (stack.id.includes('mercenary') || stack.label.includes('雇佣')) {
+        return 'auxiliary';
+    }
+    return 'regular';
 };
 
 const isMercenaryCompatPiece = (
@@ -67,6 +82,8 @@ const normalizeSpecialTroopStack = (
     stack: QidahenSpecialTroopStack,
 ): QidahenSpecialTroopStack => ({
     ...stack,
+    originalFaction: stack.originalFaction ?? stack.faction,
+    troopClass: inferTroopClassForStack(stack),
     troopKind: inferTroopKindForStack(stack),
     ...(normalizeStackPieceIds(stack.pieceIds, stack.count).length > 0
         ? { pieceIds: normalizeStackPieceIds(stack.pieceIds, stack.count) }
@@ -100,6 +117,8 @@ export const expandSpecialTroopStacksToCompatPieces = (
             sourceStackId: normalizedStack.id,
             label: normalizedStack.label,
             faction: normalizedStack.faction,
+            originalFaction: normalizedStack.originalFaction ?? normalizedStack.faction,
+            troopClass: normalizedStack.troopClass ?? 'regular',
             troopKind: normalizedStack.troopKind,
             level: normalizedStack.level,
             stackOrder,
@@ -117,6 +136,8 @@ export const collapseCompatPiecesToSpecialTroopStacks = (
             piece.sourceStackId,
             piece.label,
             piece.faction,
+            piece.originalFaction,
+            piece.troopClass,
             piece.troopKind,
             piece.level.toString(),
         ].join('\u0000');
@@ -130,6 +151,8 @@ export const collapseCompatPiecesToSpecialTroopStacks = (
             id: piece.sourceStackId,
             label: piece.label,
             faction: piece.faction,
+            originalFaction: piece.originalFaction,
+            troopClass: piece.troopClass,
             troopKind: piece.troopKind,
             count: 1,
             level: piece.level,
@@ -166,7 +189,7 @@ export const filterCompatPiecesToSpecialTroopStacks = (
 const collapsePiecesToSpecialTroopStacks = (
     pieces: readonly Pick<
         QidahenCore['pieces'][number],
-        'id' | 'sourceStackId' | 'label' | 'faction' | 'troopKind' | 'level'
+        'id' | 'sourceStackId' | 'label' | 'faction' | 'originalFaction' | 'troopClass' | 'troopKind' | 'level'
     >[],
 ): QidahenSpecialTroopStack[] => collapseCompatPiecesToSpecialTroopStacks(
     pieces.map((piece, index) => ({
@@ -174,6 +197,8 @@ const collapsePiecesToSpecialTroopStacks = (
         sourceStackId: piece.sourceStackId,
         label: piece.label,
         faction: piece.faction,
+        originalFaction: piece.originalFaction ?? piece.faction,
+        troopClass: piece.troopClass ?? 'regular',
         troopKind: piece.troopKind,
         level: piece.level,
         stackOrder: index,
@@ -269,6 +294,8 @@ const expandSpecialTroopStacksToPieces = (
             sourceStackId: normalizedStack.id,
             label: normalizedStack.label,
             faction: normalizedStack.faction,
+            originalFaction: normalizedStack.originalFaction ?? normalizedStack.faction,
+            troopClass: normalizedStack.troopClass ?? 'regular',
             troopKind: normalizedStack.troopKind,
             level: normalizedStack.level,
             regionId,

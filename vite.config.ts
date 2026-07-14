@@ -111,6 +111,26 @@ const resolveGitCommitSha = (): string | undefined => {
 }
 
 const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa'])
+const sanitizeViteCacheSegment = (value: string) => (
+  value
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    || 'default'
+)
+
+const resolveViteCacheDir = (devPort: number) => {
+  const explicitCacheDir = process.env.VITE_CACHE_DIR?.trim()
+    || process.env.BG_VITE_CACHE_DIR?.trim()
+  if (explicitCacheDir) {
+    return explicitCacheDir
+  }
+
+  const cacheKey = process.env.BG_VITE_CACHE_KEY?.trim()
+    || `port-${devPort}`
+  return path.resolve(configDir, 'node_modules/.vite', sanitizeViteCacheSegment(cacheKey))
+}
 
 const isNonReleaseAndroidAppId = (appId: string) => (
   appId
@@ -118,7 +138,12 @@ const isNonReleaseAndroidAppId = (appId: string) => (
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()))
 )
 
-const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2DraftEnabled: boolean) => ({
+const createAndroidBuildMetaPlugin = (
+  mode: string,
+  backendUrl: string,
+  homeV2DraftEnabled: boolean,
+  env: Record<string, string>,
+) => ({
   name: 'android-build-meta',
   apply: 'build' as const,
   generateBundle() {
@@ -131,6 +156,9 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2Dr
         || process.env.ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || '',
     )
+    const otaEnabled = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ENABLED?.trim() || '')
+    const otaManifestUrl = env.VITE_ANDROID_OTA_MANIFEST_URL?.trim() || ''
+    const otaChannel = env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable'
     // Android shell root already treats Home V2 as the default homepage.
     // Keep the packaged build metadata aligned with the web/router contract.
     const homeV2EnabledForAndroidBuild = mode === 'android' || homeV2DraftEnabled
@@ -148,6 +176,9 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2Dr
           shellType: appId && !isNonReleaseAndroidAppId(appId) ? 'release' : 'non-release',
           forceBuiltinBundle,
           homeV2DraftEnabled: homeV2EnabledForAndroidBuild,
+          otaEnabled,
+          otaManifestUrl,
+          otaChannel,
         },
         null,
         2,
@@ -567,6 +598,7 @@ export default defineConfig(({ mode }) => {
   const useStableE2EOptimizeDeps = forceInlineVite || suppressE2EProxyNoise
   const devApiDisabled = isTruthyFlag(env.VITE_DEV_SKIP_API || process.env.VITE_DEV_SKIP_API)
   const backendUrl = env.VITE_BACKEND_URL || ''
+  const viteCacheDir = resolveViteCacheDir(devPort)
 
   const isIgnorableProxyError = (err: Error & NodeJS.ErrnoException) => {
     if (err.code === 'ECONNABORTED') return true
@@ -580,6 +612,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    cacheDir: viteCacheDir,
     define: {
       'globalThis.__APP_VERSION__': JSON.stringify(appVersion),
       'globalThis.__APP_COMMIT_SHA__': JSON.stringify(appCommitSha),
@@ -620,7 +653,7 @@ export default defineConfig(({ mode }) => {
       publicFileHashPlugin(),
       readyCheckPlugin(),
       createQidahenRegionMaskDevtoolsPlugin(),
-      createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1'),
+      createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1', env),
       createIosBuildMetaPlugin(mode, backendUrl, env),
     ],
     esbuild: forceInlineVite ? false : undefined,
