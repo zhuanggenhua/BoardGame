@@ -10,42 +10,6 @@
         }
       }
     },
-    "en/smashup/cards/compressed/dragons_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "8ef901a621ed68b6e2cf09f743fa35252b9ceaa4b507f26f285acdab3435bfa3",
-          "bytes": 867782,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/magical_girls_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "e5e0f01b554373e27cd20d81693f4c7a7b4fcf1a60a52b6277927f951cbbed62",
-          "bytes": 712978,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/mega_troopers_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "9beb67cfe600bff8e272a180bb123e6e6efb052f062417e82c57f557f5ad22c6",
-          "bytes": 714442,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/compressed/superheroes_pod": {
-      "variants": {
-        "webp": {
-          "sha256": "2e7eeb4137ebe476931c2ee671e9be138e5a1b945ec232f29077b8cd629cf755",
-          "bytes": 1007544,
-          "mime": "image/webp"
-        }
-      }
-    },
     "en/smashup/cards/compressed/tts_atlas_0157978c57": {
       "variants": {
         "webp": {
@@ -2293,42 +2257,6 @@
           "sha256": "12b29bce373c2f07607cdef8dff1be7461201e0aed5fec04741f10d322d9b9f5",
           "bytes": 308144,
           "mime": "image/webp"
-        }
-      }
-    },
-    "en/smashup/cards/dragons_pod": {
-      "variants": {
-        "png": {
-          "sha256": "3b7a5d5a132e2ac2d67b61e8496cd87c58dc5b29c24bd3e20e96d18938724996",
-          "bytes": 20757916,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/magical_girls_pod": {
-      "variants": {
-        "png": {
-          "sha256": "5a9458c4a338dc4d0c3f542bf098f20b5619373d9309735223f72fbdfb8af7d2",
-          "bytes": 6451853,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/mega_troopers_pod": {
-      "variants": {
-        "png": {
-          "sha256": "415d5b3d99625a17fd884abd8e2543b3099ffe74df3416edfbfb8188172822d5",
-          "bytes": 5865058,
-          "mime": "image/png"
-        }
-      }
-    },
-    "en/smashup/cards/superheroes_pod": {
-      "variants": {
-        "png": {
-          "sha256": "141e5bf1d0a775d33c3ca60f55db1e832c66a32bf4e1c57b820e107233f459ac",
-          "bytes": 21859039,
-          "mime": "image/png"
         }
       }
     },
@@ -12441,6 +12369,24 @@
         "png": {
           "sha256": "415d5b3d99625a17fd884abd8e2543b3099ffe74df3416edfbfb8188172822d5",
           "bytes": 5865058,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/marvel_villains": {
+      "variants": {
+        "webp": {
+          "sha256": "8de4b7142573d115f31507aea90a320c4d4a09c850d0c1e44e2d05b7cc27b098",
+          "bytes": 1046742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/marvel_villains": {
+      "variants": {
+        "png": {
+          "sha256": "44ae80f5629ad1d33a2c438a2955112a38c1ae5d7addaa2d8ae44418ef15a5fb",
+          "bytes": 33423555,
           "mime": "image/png"
         }
       }

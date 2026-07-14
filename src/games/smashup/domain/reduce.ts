@@ -1708,7 +1708,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.TURN_STARTED: {
             const { playerId, turnNumber } = event.payload;
             const expiredTimedPowerModifiers = (state.timedPowerModifiers ?? []).filter(
-                modifier => turnNumber >= modifier.expiresOnTurnNumber,
+                modifier => turnNumber >= modifier.expiresOnTurnNumber
+                    && (modifier.expiresOnPlayerId === undefined || modifier.expiresOnPlayerId === playerId),
             );
             const timedPowerReverts = new Map<string, number>();
             for (const modifier of expiredTimedPowerModifiers) {
@@ -1819,7 +1820,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 })(),
                 timedPowerModifiers: (() => {
                     const remaining = (state.timedPowerModifiers ?? []).filter(
-                        modifier => turnNumber < modifier.expiresOnTurnNumber,
+                        modifier => turnNumber < modifier.expiresOnTurnNumber
+                            || (modifier.expiresOnPlayerId !== undefined && modifier.expiresOnPlayerId !== playerId),
                     );
                     return remaining.length ? remaining : undefined;
                 })(),
@@ -3557,7 +3559,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         // 永久力量修正（非指示物，不可移动/转移）
         case SU_EVENTS.PERMANENT_POWER_ADDED: {
-            const { minionUid, amount, reason, expiresOnTurnNumber } = (event as PermanentPowerAddedEvent).payload;
+            const { minionUid, amount, reason, expiresOnTurnNumber, expiresOnPlayerId } = (event as PermanentPowerAddedEvent).payload;
             let decreased: { baseIndex: number; playerId: PlayerId } | undefined;
             const newBases = state.bases.map((base, bi) => ({
                 ...base,
@@ -3576,7 +3578,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const timedPowerModifiers = typeof expiresOnTurnNumber === 'number'
                 ? [
                     ...(state.timedPowerModifiers ?? []),
-                    { minionUid, amount, expiresOnTurnNumber, reason },
+                    {
+                        minionUid,
+                        amount,
+                        expiresOnTurnNumber,
+                        ...(expiresOnPlayerId !== undefined ? { expiresOnPlayerId } : {}),
+                        reason,
+                    },
                 ]
                 : state.timedPowerModifiers;
             return {

@@ -99,6 +99,10 @@ import { AVENGERS_CARDS } from './factions/avengers';
 import { SHIELD_CARDS } from './factions/shield';
 import { SPIDER_VERSE_CARDS } from './factions/spider_verse';
 import { ULTIMATES_CARDS } from './factions/ultimates';
+import { HYDRA_CARDS } from './factions/hydra';
+import { KREE_CARDS } from './factions/kree';
+import { MASTERS_OF_EVIL_CARDS } from './factions/masters_of_evil';
+import { SINISTER_SIX_CARDS } from './factions/sinister_six';
 import { GEEKS_CARDS } from './factions/geeks';
 import {
     DISCO_DANCERS_CARDS,
@@ -263,6 +267,10 @@ registerCards(AVENGERS_CARDS);
 registerCards(SHIELD_CARDS);
 registerCards(SPIDER_VERSE_CARDS);
 registerCards(ULTIMATES_CARDS);
+registerCards(HYDRA_CARDS);
+registerCards(KREE_CARDS);
+registerCards(MASTERS_OF_EVIL_CARDS);
+registerCards(SINISTER_SIX_CARDS);
 registerCards(GEEKS_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);

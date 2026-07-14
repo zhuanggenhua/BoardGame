@@ -60,6 +60,7 @@ import { registerPaladinAbilities } from './paladins';
 import { registerZhongguoAbilities } from './zhongguo';
 import { registerAvengersAbilities } from './avengers';
 import { registerMarvelAbilities } from './marvel';
+import { registerMarvelVillainsAbilities } from './marvel_villains';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -188,6 +189,7 @@ export function initAllAbilities(): void {
     registerZhongguoAbilities();
     registerAvengersAbilities();
     registerMarvelAbilities();
+    registerMarvelVillainsAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 
