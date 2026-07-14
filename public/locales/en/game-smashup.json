@@ -7356,27 +7356,27 @@
     },
     "hydra_fanatical_devotion": {
       "name": "Fanatical Devotion",
-      "abilityText": "Base modifier. Ongoing: Your characters here each have +2 power if one or more of your characters have been destroyed here this turn."
+      "effectText": "Base modifier. Ongoing: Your characters here each have +2 power if one or more of your characters have been destroyed here this turn."
     },
     "hydra_hail_hydra": {
       "name": "Hail Hydra!",
-      "abilityText": "Destroy one of your characters to draw cards equal to its power."
+      "effectText": "Destroy one of your characters to draw cards equal to its power."
     },
     "hydra_hour_of_destiny": {
       "name": "Hour of Destiny",
-      "abilityText": "Search your deck for up to two characters of power 2 or less, reveal them, and draw them. Then shuffle your deck."
+      "effectText": "Search your deck for up to two characters of power 2 or less, reveal them, and draw them. Then shuffle your deck."
     },
     "hydra_reactivate_agents": {
       "name": "Reactivate Agents",
-      "abilityText": "Place up to two characters of 2 power or less from your discard pile into your hand."
+      "effectText": "Place up to two characters of 2 power or less from your discard pile into your hand."
     },
     "hydra_secret_reserves": {
       "name": "Secret Reserves",
-      "abilityText": "Shuffle any number of characters of power 2 or less from your discard pile into your deck."
+      "effectText": "Shuffle any number of characters of power 2 or less from your discard pile into your deck."
     },
     "hydra_two_more_shall_take_its_place": {
       "name": "Two More Shall Take Its Place",
-      "abilityText": "Destroy one of your characters. After it is destroyed, play up to two characters of power 2 or less as extra characters onto that base."
+      "effectText": "Destroy one of your characters. After it is destroyed, play up to two characters of power 2 or less as extra characters onto that base."
     },
     "kree_supreme_intelligence": {
       "name": "Supreme Intelligence",
@@ -7396,35 +7396,35 @@
     },
     "kree_battle_rage": {
       "name": "Battle Rage",
-      "abilityText": "One of your characters gains +2 power until the end of the turn. Draw a card."
+      "effectText": "One of your characters gains +2 power until the end of the turn. Draw a card."
     },
     "kree_call_for_backup": {
       "name": "Call for Backup",
-      "abilityText": "Draw two cards."
+      "effectText": "Draw two cards."
     },
     "kree_it_begins": {
       "name": "It Begins",
-      "abilityText": "One of your characters gains +1 power until the end of the turn. Draw a card. You may play an extra action."
+      "effectText": "One of your characters gains +1 power until the end of the turn. Draw a card. You may play an extra action."
     },
     "kree_prepare_to_engage": {
       "name": "Prepare to Engage",
-      "abilityText": "Reveal the top five cards of your deck. Place up to two revealed actions into your hand and shuffle the rest into your deck."
+      "effectText": "Reveal the top five cards of your deck. Place up to two revealed actions into your hand and shuffle the rest into your deck."
     },
     "kree_proven_methods": {
       "name": "Proven Methods",
-      "abilityText": "Place up to two actions from your discard pile on top of your deck in any order."
+      "effectText": "Place up to two actions from your discard pile on top of your deck in any order."
     },
     "kree_relentless_attack": {
       "name": "Relentless Attack",
-      "abilityText": "Character modifier. Talent: Play an extra action."
+      "effectText": "Character modifier. Talent: Play an extra action."
     },
     "kree_righteous_fury": {
       "name": "Righteous Fury",
-      "abilityText": "Character modifier. Ongoing: This character has +3 power."
+      "effectText": "Character modifier. Ongoing: This character has +3 power."
     },
     "kree_speed_up": {
       "name": "Speed Up",
-      "abilityText": "Play up to two extra actions."
+      "effectText": "Play up to two extra actions."
     },
     "masters_of_evil_baron_zemo": {
       "name": "Baron Zemo",
@@ -7444,35 +7444,35 @@
     },
     "masters_of_evil_a_portent_of_doom": {
       "name": "A Portent of Doom",
-      "abilityText": "Base modifier. Play on a base with no player’s characters. Special: When this base scores, if you have 1 or more power here gain 1 VP."
+      "effectText": "Base modifier. Play on a base with no player’s characters. Special: When this base scores, if you have 1 or more power here gain 1 VP."
     },
     "masters_of_evil_acceptable_losses": {
       "name": "Acceptable Losses",
-      "abilityText": "Destroy one of your characters of power 4 or more to gain 1 VP."
+      "effectText": "Destroy one of your characters of power 4 or more to gain 1 VP."
     },
     "masters_of_evil_ball_and_chain": {
       "name": "Ball and Chain",
-      "abilityText": "Character modifier. Ongoing: This character has +2 power and cannot be destroyed by other players’ cards."
+      "effectText": "Character modifier. Ongoing: This character has +2 power and cannot be destroyed by other players’ cards."
     },
     "masters_of_evil_convergence": {
       "name": "Convergence",
-      "abilityText": "Move one of your characters to another base. After it is moved, if you have four or more characters at that base, gain 1 VP."
+      "effectText": "Move one of your characters to another base. After it is moved, if you have four or more characters at that base, gain 1 VP."
     },
     "masters_of_evil_gain_the_upper_hand": {
       "name": "Gain the Upper Hand",
-      "abilityText": "Destroy a character of power 3 or less."
+      "effectText": "Destroy a character of power 3 or less."
     },
     "masters_of_evil_indestructible_form": {
       "name": "Indestructible Form",
-      "abilityText": "Base modifier. Ongoing: Your characters here cannot be destroyed by other players’ cards."
+      "effectText": "Base modifier. Ongoing: Your characters here cannot be destroyed by other players’ cards."
     },
     "masters_of_evil_sonic_shockwave": {
       "name": "Sonic Shockwave",
-      "abilityText": "Destroy another player’s character with less power than your total power at its base. After it is destroyed, if that character had 5 or more power, gain 1 VP."
+      "effectText": "Destroy another player’s character with less power than your total power at its base. After it is destroyed, if that character had 5 or more power, gain 1 VP."
     },
     "masters_of_evil_world_domination": {
       "name": "World Domination",
-      "abilityText": "Base modifier. Talent: One of your characters here gains +2 power until the end of the turn. Ongoing: After this base scores, move this action to another base."
+      "effectText": "Base modifier. Talent: One of your characters here gains +2 power until the end of the turn. Ongoing: After this base scores, move this action to another base."
     },
     "sinister_six_doctor_octopus": {
       "name": "Doctor Octopus",
@@ -7500,35 +7500,35 @@
     },
     "sinister_six_ambush": {
       "name": "Ambush",
-      "abilityText": "Reduce a base’s breakpoint by 4 until the end of the turn."
+      "effectText": "Reduce a base’s breakpoint by 4 until the end of the turn."
     },
     "sinister_six_cover_the_exits": {
       "name": "Cover the Exits",
-      "abilityText": "Base modifier. Ongoing: Your characters here have +1 power. After this base scores, if its breakpoint was 19 or less, shuffle up to two of your characters here into their owners’ deck."
+      "effectText": "Base modifier. Ongoing: Your characters here have +1 power. After this base scores, if its breakpoint was 19 or less, shuffle up to two of your characters here into their owners’ deck."
     },
     "sinister_six_incite_panic": {
       "name": "Incite Panic",
-      "abilityText": "Base modifier. Ongoing: Other players’ characters here have -1 power. If the breakpoint here is 19 or less, other players cannot use Special abilities while this base is scoring."
+      "effectText": "Base modifier. Ongoing: Other players’ characters here have -1 power. If the breakpoint here is 19 or less, other players cannot use Special abilities while this base is scoring."
     },
     "sinister_six_move_the_goods": {
       "name": "Move the Goods",
-      "abilityText": "Move a base modifier from one base to another. Special: You may play this after a base scores."
+      "effectText": "Move a base modifier from one base to another. Special: You may play this after a base scores."
     },
     "sinister_six_my_master_plan": {
       "name": "My Master Plan",
-      "abilityText": "Base modifier. Talent: If the breakpoint here is 19 or less, draw a card."
+      "effectText": "Base modifier. Talent: If the breakpoint here is 19 or less, draw a card."
     },
     "sinister_six_pressure_from_all_sides": {
       "name": "Pressure from All Sides",
-      "abilityText": "Base modifier. Talent: Reduce this base’s breakpoint by 1 for each character on it until the end of the turn."
+      "effectText": "Base modifier. Talent: Reduce this base’s breakpoint by 1 for each character on it until the end of the turn."
     },
     "sinister_six_reroute_the_power": {
       "name": "Reroute the Power",
-      "abilityText": "Base modifier. Talent: If the breakpoint here is 19 or less, give one of your characters here +3 power until the start of your next turn."
+      "effectText": "Base modifier. Talent: If the breakpoint here is 19 or less, give one of your characters here +3 power until the start of your next turn."
     },
     "sinister_six_witness_our_superiority": {
       "name": "Witness Our Superiority",
-      "abilityText": "Base modifier. Ongoing: This base’s abilities are cancelled."
+      "effectText": "Base modifier. Ongoing: This base’s abilities are cancelled."
     },
     "astroknights_block_the_probe": {
       "name": "Block the Probe",

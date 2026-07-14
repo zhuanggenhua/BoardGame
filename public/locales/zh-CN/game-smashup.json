@@ -7339,27 +7339,27 @@
     },
     "hydra_fanatical_devotion": {
       "name": "狂热的献身",
-      "abilityText": "基地修正。持续：若本回合你有一个或更多角色在这里被摧毁，你在这里的每个角色获得 +2 力量。"
+      "effectText": "基地修正。持续：若本回合你有一个或更多角色在这里被摧毁，你在这里的每个角色获得 +2 力量。"
     },
     "hydra_hail_hydra": {
       "name": "九头蛇万岁!",
-      "abilityText": "摧毁你的一个角色，按其力量值抽等量的牌。"
+      "effectText": "摧毁你的一个角色，按其力量值抽等量的牌。"
     },
     "hydra_hour_of_destiny": {
       "name": "命运之时",
-      "abilityText": "从你的牌库搜寻至多两个力量为 2 或更低的角色，展示并抽取它们。然后洗牌。"
+      "effectText": "从你的牌库搜寻至多两个力量为 2 或更低的角色，展示并抽取它们。然后洗牌。"
     },
     "hydra_reactivate_agents": {
       "name": "再次激活",
-      "abilityText": "将至多两个力量为 2 或更低的角色从你的弃牌堆放入你的手牌。"
+      "effectText": "将至多两个力量为 2 或更低的角色从你的弃牌堆放入你的手牌。"
     },
     "hydra_secret_reserves": {
       "name": "秘密储备",
-      "abilityText": "将任意数量力量为 2 或更低的角色从你的弃牌堆洗入你的牌库。"
+      "effectText": "将任意数量力量为 2 或更低的角色从你的弃牌堆洗入你的牌库。"
     },
     "hydra_two_more_shall_take_its_place": {
       "name": "取而代之",
-      "abilityText": "摧毁你的一个角色。在它被摧毁后，在该基地额外打出至多两个力量为 2 或更低的角色。"
+      "effectText": "摧毁你的一个角色。在它被摧毁后，在该基地额外打出至多两个力量为 2 或更低的角色。"
     },
     "kree_supreme_intelligence": {
       "name": "至高智慧",
@@ -7379,35 +7379,35 @@
     },
     "kree_battle_rage": {
       "name": "战斗怒吼",
-      "abilityText": "你的一个角色获得 +2 力量直到回合结束。抽一张牌。"
+      "effectText": "你的一个角色获得 +2 力量直到回合结束。抽一张牌。"
     },
     "kree_call_for_backup": {
       "name": "呼叫支援",
-      "abilityText": "抽两张牌。"
+      "effectText": "抽两张牌。"
     },
     "kree_it_begins": {
       "name": "开始了",
-      "abilityText": "你的一个角色获得 +1 力量直到回合结束。抽一张牌。你可以额外打出一张战术。"
+      "effectText": "你的一个角色获得 +1 力量直到回合结束。抽一张牌。你可以额外打出一张战术。"
     },
     "kree_prepare_to_engage": {
       "name": "准备作战",
-      "abilityText": "展示你牌库顶的五张牌。将至多两张展示出的战术放入你的手牌，并将其余牌洗入你的牌库。"
+      "effectText": "展示你牌库顶的五张牌。将至多两张展示出的战术放入你的手牌，并将其余牌洗入你的牌库。"
     },
     "kree_proven_methods": {
       "name": "成熟的方法",
-      "abilityText": "将至多两张战术从你的弃牌堆以任意顺序放到你的牌库顶。"
+      "effectText": "将至多两张战术从你的弃牌堆以任意顺序放到你的牌库顶。"
     },
     "kree_relentless_attack": {
       "name": "无情攻击",
-      "abilityText": "角色修正。天赋：额外打出一张战术。"
+      "effectText": "角色修正。天赋：额外打出一张战术。"
     },
     "kree_righteous_fury": {
       "name": "正义之怒",
-      "abilityText": "角色修正。持续：此角色获得 +3 力量。"
+      "effectText": "角色修正。持续：此角色获得 +3 力量。"
     },
     "kree_speed_up": {
       "name": "加速",
-      "abilityText": "额外打出至多两张战术。"
+      "effectText": "额外打出至多两张战术。"
     },
     "masters_of_evil_baron_zemo": {
       "name": "泽莫男爵",
@@ -7427,35 +7427,35 @@
     },
     "masters_of_evil_a_portent_of_doom": {
       "name": "厄运之兆",
-      "abilityText": "基地修正。打出到一个没有任何玩家角色的基地上。特殊：此基地计分时，若你在这里有 1 或更多力量，获得 1 VP。"
+      "effectText": "基地修正。打出到一个没有任何玩家角色的基地上。特殊：此基地计分时，若你在这里有 1 或更多力量，获得 1 VP。"
     },
     "masters_of_evil_acceptable_losses": {
       "name": "可接受的损失",
-      "abilityText": "摧毁你的一个力量为 4 或更高的角色，获得 1 VP。"
+      "effectText": "摧毁你的一个力量为 4 或更高的角色，获得 1 VP。"
     },
     "masters_of_evil_ball_and_chain": {
       "name": "链球",
-      "abilityText": "角色修正。持续：此角色获得 +2 力量，且不能被其他玩家的牌摧毁。"
+      "effectText": "角色修正。持续：此角色获得 +2 力量，且不能被其他玩家的牌摧毁。"
     },
     "masters_of_evil_convergence": {
       "name": "汇聚",
-      "abilityText": "将你的一个角色移动到另一个基地。在它移动后，若你在该基地有四个或更多角色，获得 1 VP。"
+      "effectText": "将你的一个角色移动到另一个基地。在它移动后，若你在该基地有四个或更多角色，获得 1 VP。"
     },
     "masters_of_evil_gain_the_upper_hand": {
       "name": "取得优势",
-      "abilityText": "摧毁一个力量为 3 或更低的角色。"
+      "effectText": "摧毁一个力量为 3 或更低的角色。"
     },
     "masters_of_evil_indestructible_form": {
       "name": "坚不可摧的形态",
-      "abilityText": "基地修正。持续：你在这里的角色不能被其他玩家的牌摧毁。"
+      "effectText": "基地修正。持续：你在这里的角色不能被其他玩家的牌摧毁。"
     },
     "masters_of_evil_sonic_shockwave": {
       "name": "音速冲击波",
-      "abilityText": "摧毁另一个玩家的一个角色，其力量必须低于你在其所在基地的总力量。在它被摧毁后，若该角色力量为 5 或更高，获得 1 VP。"
+      "effectText": "摧毁另一个玩家的一个角色，其力量必须低于你在其所在基地的总力量。在它被摧毁后，若该角色力量为 5 或更高，获得 1 VP。"
     },
     "masters_of_evil_world_domination": {
       "name": "统治世界",
-      "abilityText": "基地修正。天赋：你在这里的一个角色获得 +2 力量直到回合结束。持续：在此基地计分后，将此战术移动到另一个基地。"
+      "effectText": "基地修正。天赋：你在这里的一个角色获得 +2 力量直到回合结束。持续：在此基地计分后，将此战术移动到另一个基地。"
     },
     "sinister_six_doctor_octopus": {
       "name": "章鱼博士",
@@ -7483,35 +7483,35 @@
     },
     "sinister_six_ambush": {
       "name": "伏击",
-      "abilityText": "使一个基地的临界点降低 4，直到回合结束。"
+      "effectText": "使一个基地的临界点降低 4，直到回合结束。"
     },
     "sinister_six_cover_the_exits": {
       "name": "隐藏出口",
-      "abilityText": "基地修正。持续：你在这里的角色获得 +1 力量。在此基地计分后，若其临界点为 19 或更低，将你在这里至多两个角色洗入其拥有者牌库。"
+      "effectText": "基地修正。持续：你在这里的角色获得 +1 力量。在此基地计分后，若其临界点为 19 或更低，将你在这里至多两个角色洗入其拥有者牌库。"
     },
     "sinister_six_incite_panic": {
       "name": "煽动恐慌",
-      "abilityText": "基地修正。持续：其他玩家在这里的角色获得 -1 力量。若这里的临界点为 19 或更低，其他玩家在此基地计分时不能使用特殊能力。"
+      "effectText": "基地修正。持续：其他玩家在这里的角色获得 -1 力量。若这里的临界点为 19 或更低，其他玩家在此基地计分时不能使用特殊能力。"
     },
     "sinister_six_move_the_goods": {
       "name": "移动货物",
-      "abilityText": "将一张基地修正从一个基地移动到另一个基地。特殊：你可以在一个基地计分后打出这张牌。"
+      "effectText": "将一张基地修正从一个基地移动到另一个基地。特殊：你可以在一个基地计分后打出这张牌。"
     },
     "sinister_six_my_master_plan": {
       "name": "我的总计划",
-      "abilityText": "基地修正。天赋：若这里的临界点为 19 或更低，抽一张牌。"
+      "effectText": "基地修正。天赋：若这里的临界点为 19 或更低，抽一张牌。"
     },
     "sinister_six_pressure_from_all_sides": {
       "name": "四面楚歌",
-      "abilityText": "基地修正。天赋：此基地上每有一个角色，就使此基地临界点降低 1，直到回合结束。"
+      "effectText": "基地修正。天赋：此基地上每有一个角色，就使此基地临界点降低 1，直到回合结束。"
     },
     "sinister_six_reroute_the_power": {
       "name": "改变力量",
-      "abilityText": "基地修正。天赋：若这里的临界点为 19 或更低，使你在这里的一个角色获得 +3 力量直到你的下个回合开始。"
+      "effectText": "基地修正。天赋：若这里的临界点为 19 或更低，使你在这里的一个角色获得 +3 力量直到你的下个回合开始。"
     },
     "sinister_six_witness_our_superiority": {
       "name": "见证我们的优势",
-      "abilityText": "基地修正。持续：此基地的能力被取消。"
+      "effectText": "基地修正。持续：此基地的能力被取消。"
     },
     "astroknights_block_the_probe": {
       "name": "阻止探解",
