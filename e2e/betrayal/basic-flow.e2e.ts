@@ -12,6 +12,7 @@ import {
 
 const EVIDENCE_DIR = 'evidence/betrayal-basic-flow';
 const CHARACTER_CONFIRM_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-基本流程-角色确认前.png`;
+const CHARACTER_DETAIL_SCROLLED_SCREENSHOT = `${EVIDENCE_DIR}/01b-山屋惊魂-角色详情滚动后看到特性.png`;
 const SCENARIO_SELECT_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/02a-山屋惊魂-基本流程-剧本弹窗入口.png`;
 const SCENARIO_SELECT_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/02b-山屋惊魂-基本流程-书本式剧本阅读首页.png`;
 const SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/02c-山屋惊魂-基本流程-书本式剧本阅读末页.png`;
@@ -26,6 +27,40 @@ const MOBILE_SCENARIO_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/09b-山屋惊魂-移�
 const MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/09c-山屋惊魂-移动端横屏-书本式剧本阅读末页.png`;
 
 test.describe('山屋惊魂基本流程', () => {
+    test('桌面低高视口角色详情必须能滚动到特性', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-character-detail-scroll-target');
+
+        await page.setViewportSize({ width: 1280, height: 620 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        await expect(page.getByTestId('betrayal-character-select-screen')).toBeVisible({ timeout: 30000 });
+        const characterDetailScroll = page.getByTestId('betrayal-character-detail-scroll');
+        const abilitySummary = page.getByTestId('betrayal-character-ability-summary');
+        await expect(characterDetailScroll).toBeVisible();
+        const scrollMetrics = await characterDetailScroll.evaluate((node) => ({
+            clientHeight: node.clientHeight,
+            scrollHeight: node.scrollHeight,
+            scrollTop: node.scrollTop,
+        }));
+        expect(scrollMetrics.scrollHeight).toBeGreaterThan(scrollMetrics.clientHeight + 20);
+        expect(scrollMetrics.scrollTop).toBe(0);
+
+        await characterDetailScroll.evaluate((node) => {
+            node.scrollTop = node.scrollHeight;
+        });
+        await expect.poll(async () => characterDetailScroll.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+        await expect(abilitySummary).toBeInViewport();
+        await expect(abilitySummary).toContainText('特性');
+        await expect(abilitySummary).toContainText(/大胆|攻击投掷/);
+        await saveScreenshot(page, CHARACTER_DETAIL_SCROLLED_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-character-detail-scroll-target', diagnostics }]);
+    });
+
     test('从角色选择确认到恶兆前运行时', async ({ page, context }) => {
         test.setTimeout(120000);
         await initBetrayalContext(context);
@@ -37,6 +72,9 @@ test.describe('山屋惊魂基本流程', () => {
         await waitForBetrayalPageReady(page);
 
         await expect(page.getByTestId('betrayal-character-select-screen')).toBeVisible({ timeout: 30000 });
+        const characterDetailScroll = page.getByTestId('betrayal-character-detail-scroll');
+        await expect(characterDetailScroll).toHaveClass(/overflow-y-auto/);
+        await expect(characterDetailScroll).toHaveClass(/overflow-x-hidden/);
         await expect(page.getByTestId('betrayal-character-confirm')).toHaveText(/确认/);
         await saveScreenshot(page, CHARACTER_CONFIRM_SCREENSHOT);
 
@@ -73,11 +111,14 @@ test.describe('山屋惊魂基本流程', () => {
         await page.waitForTimeout(400);
         await page.mouse.click(12, 12);
         await expect(page.getByTestId('betrayal-scenario-reader-dialog')).toBeHidden();
-        const scenarioSelectStillOpen = await page.getByTestId('betrayal-scenario-select-dialog').isVisible({ timeout: 800 }).catch(() => false);
+        const scenarioSelectDialog = page.getByTestId('betrayal-scenario-select-dialog');
+        const scenarioSelectStillOpen = await scenarioSelectDialog.isVisible({ timeout: 800 }).catch(() => false);
         if (scenarioSelectStillOpen) {
-            await expect(page.getByTestId('betrayal-scenario-select-current')).toBeVisible();
-            await page.getByTestId('betrayal-scenario-select-current').click();
-            await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeHidden();
+            await Promise.race([
+                scenarioSelectDialog.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => null),
+                page.getByTestId('betrayal-scenario-select-current').click({ timeout: 3000 }).catch(() => null),
+            ]);
+            await expect(scenarioSelectDialog).toBeHidden({ timeout: 5000 });
         }
         const boardOrConfirm = await Promise.race([
             page.getByTestId('betrayal-board').waitFor({ state: 'visible', timeout: 5000 }).then(() => 'board' as const).catch(() => null),
@@ -109,7 +150,9 @@ test.describe('山屋惊魂基本流程', () => {
         await saveScreenshot(page, USE_ITEM_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-move').click();
+        await expect(page.getByTestId('betrayal-action-move')).toContainText('取消移动');
         await expect(page.getByTestId('betrayal-room-hallway')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-hallway')).toBeEnabled();
         await saveScreenshot(page, MOVE_MODE_SCREENSHOT);
         await page.getByTestId('betrayal-room-hallway').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('移动到门厅');

@@ -83,7 +83,8 @@ async function createQidahenRoom(hostPage: Page): Promise<string> {
 
     const createRoomModal = hostPage.getByTestId('create-room-modal').last();
     await expect(createRoomModal).toBeVisible();
-    await expect(createRoomModal.getByTestId('qidahen-pregame-choice-inline-note')).toBeVisible({ timeout: 10000 });
+    await expect(createRoomModal.getByTestId('qidahen-pregame-choice-fields')).toHaveCount(0);
+    await expect(createRoomModal.getByTestId('qidahen-pregame-choice-inline-note')).toHaveCount(0);
 
     await createRoomModal.getByTestId('create-room-confirm-button').click();
     await hostPage.waitForURL(/\/play\/qidahen\/match\//, { timeout: 30000 });

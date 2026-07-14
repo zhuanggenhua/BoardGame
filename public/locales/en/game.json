@@ -275,6 +275,8 @@
     "switchTrack": "Switch Track",
     "prevTrack": "Previous Track",
     "trackList": "Track List ({{count}})",
+    "singleTrackLoopOn": "Single-track loop: on",
+    "singleTrackLoopOff": "Single-track loop: off, auto playlist",
     "tracks": {
       "main_theme": "Classic Duel",
       "chill_piano": "Chill Piano",

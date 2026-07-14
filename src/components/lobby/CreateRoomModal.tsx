@@ -654,41 +654,6 @@ export const CreateRoomModal = ({
         }
     };
 
-    const renderQidahenPregameChoiceSection = (
-        containerClassName: string,
-        titleClassName: string,
-        descriptionClassName: string,
-        fieldListClassName: string,
-    ) => {
-        if (!isQidahenRoom) {
-            return null;
-        }
-
-        return (
-            <div className={containerClassName} data-testid="qidahen-pregame-choice-fields">
-                <div className="space-y-1">
-                    <div className={titleClassName}>
-                        {t('createRoom.qidahenInMatchSetupTitle', {
-                            defaultValue: '局内完成剧本投票与前置项',
-                        })}
-                    </div>
-                    <div className={descriptionClassName}>
-                        {t('createRoom.qidahenInMatchSetupDescription', {
-                            defaultValue: '创建房间时只决定人数与 AI。进入棋盘后，再按联机席位完成剧本介绍、投票、人物与军备前置。',
-                        })}
-                    </div>
-                </div>
-                <div className={fieldListClassName}>
-                    <div className={descriptionClassName} data-testid="qidahen-pregame-choice-inline-note">
-                        {t('createRoom.qidahenPregameMovedInMatch', {
-                            defaultValue: '这里不再预设剧本，也不会代投。正式联机房间会先进入局内剧本介绍与投票页，再继续人物、军备前置。',
-                        })}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
     const lockedViewportHeight = 'var(--layout-viewport-height, var(--runtime-viewport-height, 100vh))';
     const lockedBottomInset = isHomeV2Style
         ? 'var(--safe-area-bottom)'
@@ -877,19 +842,6 @@ export const CreateRoomModal = ({
                                             numPlayers={numPlayers}
                                         />
                                     ) : null}
-
-                                    {renderQidahenPregameChoiceSection(
-                                        isCompactHomeV2Layout
-                                            ? 'space-y-[7px] rounded-[5px] border border-[#b6905e]/36 bg-[rgba(247,227,191,0.20)] px-[10px] py-[8px]'
-                                            : 'space-y-3 rounded-[8px] border border-[#b6905e]/40 bg-[rgba(247,227,191,0.22)] px-4 py-3',
-                                        isCompactHomeV2Layout
-                                            ? 'text-[8.2px] font-bold uppercase tracking-[0.08em] text-[#5b3822]'
-                                            : 'text-xs font-bold uppercase tracking-[0.08em] text-[#5b3822]',
-                                        isCompactHomeV2Layout
-                                            ? 'text-[7px] leading-[1.45] text-[#7a573d]'
-                                            : 'text-xs leading-5 text-[#7a573d]',
-                                        isCompactHomeV2Layout ? 'grid gap-[7px]' : 'grid gap-3',
-                                    )}
 
                                     {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
                                         <div className={isCompactHomeV2Layout ? 'space-y-[7px] rounded-[5px] border border-[#b6905e]/36 bg-[rgba(247,227,191,0.20)] px-[10px] py-[8px]' : 'space-y-3 rounded-[8px] border border-[#b6905e]/40 bg-[rgba(247,227,191,0.22)] px-4 py-3'}>
@@ -1169,21 +1121,16 @@ export const CreateRoomModal = ({
                                     </select>
                                 </div>
 
-                                <SetupOptionsFields
-                                    gameManifest={gameManifest}
-                                    selections={setupSelections}
-                                    onSelectionsChange={handleSetupSelectionsChange}
-                                    t={t}
-                                    gameNamespace={gameNamespace}
-                                    numPlayers={numPlayers}
-                                />
-
-                                {renderQidahenPregameChoiceSection(
-                                    'space-y-3 rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3',
-                                    'text-xs font-bold uppercase tracking-[0.08em] text-parchment-base-text',
-                                    'text-xs leading-5 text-parchment-light-text',
-                                    'grid gap-3',
-                                )}
+                                {!isQidahenRoom ? (
+                                    <SetupOptionsFields
+                                        gameManifest={gameManifest}
+                                        selections={setupSelections}
+                                        onSelectionsChange={handleSetupSelectionsChange}
+                                        t={t}
+                                        gameNamespace={gameNamespace}
+                                        numPlayers={numPlayers}
+                                    />
+                                ) : null}
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
                                     <div className="rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3 space-y-3">

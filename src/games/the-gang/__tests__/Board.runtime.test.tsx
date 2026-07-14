@@ -1,6 +1,6 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { useUndo } from '../../../contexts/UndoContext';
@@ -414,6 +414,33 @@ describe('The Gang Board 运行入口', () => {
         }));
     });
 
+    test('房主开局后规则设置会明确显示锁定而不是权限失效', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const lockedCore: TheGangCore = {
+            ...initial,
+            currentRoundChips: { '0': 1 },
+        };
+
+        render(
+            <Board
+                G={stateOf(lockedCore)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
+
+        expect(screen.getByText('board.rulesDialogLockedHostHint')).toBeInTheDocument();
+        expect(screen.getByText('board.rulesLocked')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toBeDisabled();
+        fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+    });
+
     test('工具面板可以发放工具牌并通过已实现工具派发使用命令', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
@@ -423,7 +450,7 @@ describe('The Gang Board 运行入口', () => {
                 ...initial.players,
                 '0': {
                     ...initial.players['0'],
-                    toolCards: ['burner-phone', 'flashlight'],
+                    toolCards: ['burner-phone', 'flashlight', 'night-vision-goggles', 'airpods'],
                     specialistCards: ['mastermind'],
                 },
             },
@@ -441,6 +468,7 @@ describe('The Gang Board 运行入口', () => {
 
         expect(screen.getByTestId('the-gang-tools-panel')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'board.toolPanelSummary' }));
+        expect(screen.getByTestId('the-gang-tools-deal-status')).toHaveTextContent('board.toolsReadyToDealStatus');
         fireEvent.click(screen.getByRole('button', { name: 'board.dealTools' }));
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.DEAL_TOOLS, {
             __internalPlayerId: '0',
@@ -471,6 +499,7 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByRole('img', { name: '一次性手机' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/tools/compressed/burner-phone.webp'));
         expect(screen.getByRole('img', { name: '手电筒' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/tools/compressed/flashlight.webp'));
         expect(screen.getByRole('img', { name: 'Mastermind' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/specialists/compressed/mastermind.webp'));
+        expect(screen.getByText('board.toolDrawOnlyBadge')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: /一次性手机/ }));
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.USE_TOOL, {
             __internalPlayerId: '0',
@@ -480,6 +509,17 @@ describe('The Gang Board 运行入口', () => {
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.USE_TOOL, {
             __internalPlayerId: '0',
             tool: 'flashlight',
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /夜视眼镜/ }));
+        const nightVisionPicker = screen.getByTestId('the-gang-night-vision-picker');
+        expect(nightVisionPicker).toBeInTheDocument();
+        const nightVisionCardButtons = within(nightVisionPicker).getAllByRole('button', { name: 'board.chooseNightVisionCard' });
+        fireEvent.click(nightVisionCardButtons[1]);
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.USE_TOOL, {
+            __internalPlayerId: '0',
+            tool: 'night-vision-goggles',
+            cardIndex: 1,
         });
     });
 });

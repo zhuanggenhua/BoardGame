@@ -163,6 +163,50 @@ const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
 
 let nextContainerId = 0;
 let diceBoxModulePromise: Promise<typeof DiceBoxModule> | null = null;
+const WEBGL_INFO_LOG_NULL_GUARD = Symbol.for('boardgame:dice-box-threejs:webgl-info-log-null-guard');
+
+type WebGlInfoLogContext = {
+    getShaderInfoLog?: (shader: WebGLShader) => string | null;
+    getProgramInfoLog?: (program: WebGLProgram) => string | null;
+    [WEBGL_INFO_LOG_NULL_GUARD]?: true;
+};
+
+type WebGlContextConstructor = {
+    prototype?: WebGlInfoLogContext;
+};
+
+function patchWebGlInfoLogPrototype(contextConstructor?: WebGlContextConstructor): void {
+    const prototype = contextConstructor?.prototype;
+    if (!prototype || prototype[WEBGL_INFO_LOG_NULL_GUARD]) return;
+
+    const originalGetShaderInfoLog = prototype.getShaderInfoLog;
+    if (typeof originalGetShaderInfoLog === 'function') {
+        prototype.getShaderInfoLog = function getShaderInfoLog(shader: WebGLShader): string {
+            return originalGetShaderInfoLog.call(this, shader) ?? '';
+        };
+    }
+
+    const originalGetProgramInfoLog = prototype.getProgramInfoLog;
+    if (typeof originalGetProgramInfoLog === 'function') {
+        prototype.getProgramInfoLog = function getProgramInfoLog(program: WebGLProgram): string {
+            return originalGetProgramInfoLog.call(this, program) ?? '';
+        };
+    }
+
+    Object.defineProperty(prototype, WEBGL_INFO_LOG_NULL_GUARD, {
+        configurable: true,
+        value: true,
+    });
+}
+
+export function installWebGlInfoLogNullGuard(): void {
+    const host = globalThis as typeof globalThis & {
+        WebGLRenderingContext?: WebGlContextConstructor;
+        WebGL2RenderingContext?: WebGlContextConstructor;
+    };
+    patchWebGlInfoLogPrototype(host.WebGLRenderingContext);
+    patchWebGlInfoLogPrototype(host.WebGL2RenderingContext);
+}
 
 async function loadDiceBoxModule(): Promise<typeof DiceBoxModule> {
     if (!diceBoxModulePromise) {
@@ -256,6 +300,7 @@ export class DiceBoxThreeEngine {
     }
 
     static async create(container: HTMLElement, config?: DiceBoxEngineConfig): Promise<DiceBoxThreeEngine> {
+        installWebGlInfoLogNullGuard();
         const DiceBox = await loadDiceBoxModule();
         const styleProfile = config?.styleProfile ?? DEFAULT_DICE_BOX_STYLE_PROFILE;
         if (!container.id) {
@@ -295,13 +340,22 @@ export class DiceBoxThreeEngine {
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
         }
-        if (typeof window !== 'undefined' && config?.canvasTestId === 'dicethrone-board-dice-box-canvas') {
-            (window as unknown as {
+        if (typeof window !== 'undefined' && config?.canvasTestId) {
+            const debugWindow = window as unknown as {
+                __E2E_TEST_MODE__?: boolean;
+                __diceBoxThreeDebug?: Record<string, () => unknown>;
                 __dicethroneBoardDiceDebug?: () => unknown;
-            }).__dicethroneBoardDiceDebug = () => {
-                engine.renderFrame();
-                return engine.getDebugSnapshot();
             };
+            if (debugWindow.__E2E_TEST_MODE__ || config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
+                debugWindow.__diceBoxThreeDebug = debugWindow.__diceBoxThreeDebug ?? {};
+                debugWindow.__diceBoxThreeDebug[config.canvasTestId] = () => {
+                    engine.renderFrame();
+                    return engine.getDebugSnapshot();
+                };
+                if (config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
+                    debugWindow.__dicethroneBoardDiceDebug = debugWindow.__diceBoxThreeDebug[config.canvasTestId];
+                }
+            }
         }
         if ((config?.rendererMode ?? 'debug-visible') === 'physics-only') {
             box.renderer.domElement.style.opacity = '0';
@@ -921,7 +975,7 @@ export class DiceBoxThreeEngine {
             return;
         }
         if (!this.hasDice(values.length)) {
-            this.restoreDiceWithoutVisibleThrow(values);
+            await this.restoreDiceWithoutVisibleThrow(values);
             return;
         }
         this.syncValues(values);
@@ -1695,12 +1749,12 @@ export class DiceBoxThreeEngine {
         });
     }
 
-    private restoreDiceWithoutVisibleThrow(values: number[]): void {
+    private async restoreDiceWithoutVisibleThrow(values: number[]): Promise<void> {
         const box = this.box as DiceBoxInternalRuntime;
         const notationVectors = box.startClickThrow?.(createNotation(values));
         const vectors = notationVectors?.vectors;
         if (!notationVectors || !Array.isArray(vectors) || vectors.length === 0 || !box.spawnDice || !box.simulateThrow) {
-            void this.rollToValues(values);
+            await this.rollToValues(values);
             return;
         }
 

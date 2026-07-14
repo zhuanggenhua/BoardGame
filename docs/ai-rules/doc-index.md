@@ -5,7 +5,7 @@
 | 场景 / 行为 | 必须阅读的文档 | 关注重点 |
 | :--- | :--- | :--- |
 | **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-action-log.md` § 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
-| **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` + `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` | 压缩指令、扫描参数、清单校验、图片链路/裁剪规范、正式素材优先、禁止未授权用占位/自绘替代、关键图片预加载、音频运行时合同 |
+| **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` + `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` | 压缩指令、正式对局素材禁止降采样、扫描参数、清单校验、图片链路/裁剪规范、正式素材优先、禁止未授权用占位/自绘替代、关键图片预加载、音频运行时合同 |
 | **需求交接式安全图片处理 / 视觉子代理 / OCR / 图集裁图核对** (图片文字读取、卡图/房间图规则录入、图片验收、读图卡死后继续任务) | `.codex/skill/safe-image-reading/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 主线程把用户当前需求、业务对象、图片需要补足的字段/判断点和结果用途交给短子代理或本地 OCR；录入需求返回官方原文、原子子句、结构化规则字段并写入 evidence/真相表；验收/对比需求只返回是否满足用户预期、失败点和最小证据；不得返回 base64/markdown 图片，也不得产出无关过程说明 |
 | **新增派系 / 新英雄 / 新角色** (从素材做到可玩、含录入/资源/机制/审计/E2E) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 这是新增批次的默认入口；先走项目 skill，再按 `gameId` 进入专项 workflow；默认包含对象级全面审计、evidence 留档与真实入口 E2E，不需要等用户额外提醒 |
 | **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.codex/skill/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现 |

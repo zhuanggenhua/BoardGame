@@ -1,6 +1,6 @@
 import { mkdirSync } from 'fs';
 import { dirname } from 'path';
-import type { BrowserContext, Page } from '@playwright/test';
+import { expect, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import {
     type BetrayalCommand,
     type BetrayalCommandMap,
@@ -157,6 +157,94 @@ export const warmBetrayalFrontend = async (context: BrowserContext, timeout = 45
 export const saveScreenshot = async (page: Page, path: string) => {
     mkdirSync(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: false });
+};
+
+export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
+    const diceGroup = rollPanel.getByTestId('betrayal-house-dice-3d-group');
+    await expect(diceGroup).toBeVisible();
+    await expect(diceGroup).toHaveAttribute('data-render-mode', 'betrayal-house-dice-box-visible');
+    await expect(diceGroup).toHaveAttribute('data-dice-tray-style', 'transparent-virtual');
+    await expect(diceGroup).toHaveAttribute('data-dice-count', /[1-9]/);
+    try {
+        await expect.poll(async () => diceGroup.getAttribute('data-dice-physics-ready'), { timeout: 30000 }).toBe('true');
+    } catch (error) {
+        const diagnostics = await rollPanel.evaluate((node) => {
+            const panel = node as HTMLElement;
+            const group = panel.querySelector('[data-testid="betrayal-house-dice-3d-group"]') as HTMLElement | null;
+            const source = panel.querySelector('[data-testid="betrayal-house-dice-physics-source"]') as HTMLElement | null;
+            const canvases = Array.from(panel.querySelectorAll('canvas'))
+                .filter((canvas): canvas is HTMLCanvasElement => canvas instanceof HTMLCanvasElement);
+            const describeElement = (element: HTMLElement | null) => {
+                if (!element) return null;
+                const rect = element.getBoundingClientRect();
+                const style = window.getComputedStyle(element);
+                return {
+                    width: Math.round(rect.width),
+                    height: Math.round(rect.height),
+                    clientWidth: element.clientWidth,
+                    clientHeight: element.clientHeight,
+                    display: style.display,
+                    visibility: style.visibility,
+                    opacity: style.opacity,
+                    dataset: { ...element.dataset },
+                };
+            };
+
+            return {
+                panel: describeElement(panel),
+                group: describeElement(group),
+                source: describeElement(source),
+                canvasCount: canvases.length,
+                canvases: canvases.map((canvas) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const style = window.getComputedStyle(canvas);
+                    return {
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height),
+                        clientWidth: canvas.clientWidth,
+                        clientHeight: canvas.clientHeight,
+                        display: style.display,
+                        visibility: style.visibility,
+                        opacity: style.opacity,
+                        dataset: { ...canvas.dataset },
+                    };
+                }),
+                engineDebug: (window as typeof window & {
+                    __diceBoxThreeDebug?: Record<string, () => unknown>;
+                }).__diceBoxThreeDebug?.['betrayal-house-dice-box-canvas']?.() ?? null,
+            };
+        });
+        throw new Error(`山屋物理骰子没有渲染就绪：${JSON.stringify(diagnostics)}\n${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    const physicsSource = rollPanel.getByTestId('betrayal-house-dice-physics-source');
+    await expect(physicsSource).toHaveAttribute('data-dice-physics-source', 'dice-box-threejs');
+    await expect(physicsSource).toHaveAttribute('data-dice-physics-mode', 'debug-visible');
+    await expect(physicsSource).toHaveAttribute('data-dice-face-system', 'betrayal-house-0-1-2-per-die-skin');
+    await expect.poll(async () => diceGroup.evaluate((node) => {
+        const canvases = Array.from(node.querySelectorAll('canvas'))
+            .filter((canvas): canvas is HTMLCanvasElement => canvas instanceof HTMLCanvasElement);
+        const source = node.querySelector('[data-testid="betrayal-house-dice-physics-source"]') as HTMLElement | null;
+        if (source?.dataset.dicePhysicsSource !== 'dice-box-threejs') return false;
+        if (source?.dataset.diceFaceSystem !== 'betrayal-house-0-1-2-per-die-skin') return false;
+
+        return canvases.some((canvas) => {
+            const rect = canvas.getBoundingClientRect();
+            const style = window.getComputedStyle(canvas);
+            return rect.width >= 160
+                && rect.height >= 120
+                && canvas.dataset.skinsReady === 'true'
+                && style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && Number(style.opacity || '1') > 0.5;
+        });
+    }), { timeout: 10000 }).toBe(true);
+};
+
+export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
+    const physicsSource = rollPanel.getByTestId('betrayal-house-dice-physics-source');
+    await expect.poll(async () => physicsSource.getAttribute('data-dice-settled'), { timeout: 15000 }).toBe('true');
+    await rollPanel.page().waitForTimeout(450);
 };
 
 function command<Type extends keyof BetrayalCommandMap>(

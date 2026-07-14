@@ -4431,6 +4431,7 @@ const ActionsZone: React.FC<{
                                                 key={option.id}
                                                 type="button"
                                                 data-testid={`qidahen-${group.id}-casualty-${option.id}`}
+                                                data-tutorial-id={`qidahen-${group.id}-casualty-${option.id}`}
                                                 className="inline-flex h-[28px] min-w-[54px] items-center justify-center border-[2px] px-2 text-[11px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                                 onClick={() => group.onSelect(option.id)}
                                                 style={{
@@ -4572,6 +4573,7 @@ const ActionsZone: React.FC<{
                                     key={choice.id}
                                     type="button"
                                     data-testid={getPendingTargetChoiceTestId(choice.id)}
+                                    data-tutorial-id={getPendingTargetChoiceTestId(choice.id)}
                                     className="inline-flex h-[38px] items-center justify-center border-[3px] px-3 text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                     onClick={() => onResolvePendingAction(choice.value, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, pendingCommittedTroops)}
                                     style={{ minWidth: getPendingTargetChoiceMinWidth(choice.id), borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
@@ -4789,6 +4791,7 @@ const HandZone: React.FC<{
         && window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH
         && window.innerWidth > window.innerHeight
     ));
+    const [selectedTacticCardId, setSelectedTacticCardId] = React.useState<string | null>(null);
     React.useEffect(() => {
         const updateViewportMode = () => {
             setIsMobileLandscapeViewport(window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH && window.innerWidth > window.innerHeight);
@@ -4806,6 +4809,7 @@ const HandZone: React.FC<{
     }
     const currentFaction = core.factions[currentFactionId];
     const currentHandCards = core.handCards.filter((card) => card.faction === currentFactionId);
+    const selectedTacticCard = currentHandCards.find((card) => card.id === selectedTacticCardId) ?? null;
     const handDockWidth = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_HAND_DOCK_WIDTH : HAND_DOCK_WIDTH;
     const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : 'calc(100vw - 320px)';
     const mobileHandLayout = getQidahenMobileLandscapeHandLayout(handDockWidth);
@@ -4825,6 +4829,7 @@ const HandZone: React.FC<{
         || selectedHandLimitCardIds.includes(card.id)
         || (core.sunYuanhuaTechSelection?.selectedCardIds.includes(card.id) ?? false)
         || (core.gaoDiDispatchSelection?.selectedCardId === card.id)
+        || selectedTacticCardId === card.id
     );
     const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';
 
@@ -4837,6 +4842,58 @@ const HandZone: React.FC<{
                 bottom: dockBottomInset,
             }}
         >
+            {selectedTacticCard ? (
+                <div
+                    className="pointer-events-auto absolute left-1/2 z-[96] flex items-center justify-between gap-3 border-[3px] px-4 py-3"
+                    data-testid="qidahen-tactic-card-selection-panel"
+                    data-ui-anchor="bottom-hand"
+                    style={{
+                        bottom: handCardHeight + 14,
+                        transform: 'translateX(-50%)',
+                        width: Math.min(620, handDockWidth - 48),
+                        borderColor: UI_STYLE.oldGold,
+                        background: UI_SURFACE.mapPanelSelected,
+                        color: UI_STYLE.mapIvory,
+                        boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                        borderRadius: 3,
+                    }}
+                >
+                    <div className="min-w-0 flex-1">
+                        <div className="truncate text-[13px] font-black leading-5" data-testid="qidahen-selected-tactic-card-label">
+                            {t('board.handInteraction.selectedTacticCard', {
+                                card: selectedTacticCard.label,
+                                defaultValue: '已选战术牌「{{card}}」',
+                            })}
+                        </div>
+                        <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
+                            {t('board.handInteraction.tacticCardHint', {
+                                defaultValue: '点击“打出战术牌”确认；再次点击这张手牌可取消选中。',
+                            })}
+                        </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <button
+                            type="button"
+                            data-testid="qidahen-confirm-tactic-card"
+                            data-tutorial-id="qidahen-confirm-tactic-card"
+                            className="inline-flex min-h-[40px] min-w-[128px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                            onClick={() => onPlayTacticCard(selectedTacticCard.id)}
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                        >
+                            {t('board.handInteraction.confirmTacticCard', { defaultValue: '打出战术牌' })}
+                        </button>
+                        <button
+                            type="button"
+                            data-testid="qidahen-cancel-tactic-card"
+                            className="inline-flex min-h-[40px] min-w-[88px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                            onClick={() => setSelectedTacticCardId(null)}
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                        >
+                            {t('board.handInteraction.cancelTacticCard', { defaultValue: '取消' })}
+                        </button>
+                    </div>
+                </div>
+            ) : null}
             <div
                 className="pointer-events-auto absolute left-[44px]"
                 data-testid="qidahen-draw-anchor"
@@ -4929,7 +4986,7 @@ const HandZone: React.FC<{
                                     : selectableForBattleResponseEvent && tutorialAllowed
                                         ? () => onPlayBattleResponseEventCard(card.id)
                                     : selectableForTactic && tutorialAllowed
-                                        ? () => onPlayTacticCard(card.id)
+                                        ? () => setSelectedTacticCardId((current) => (current === card.id ? null : card.id))
                                     : selectableForDirectHandAction
                                         ? () => onPreviewActionFromHandCard(card)
                                     : selectableForActionPayment
@@ -5871,11 +5928,16 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
 
     const playTacticCard = React.useCallback((cardId: string) => {
-        if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.PLAY_TACTIC_CARD) || !isTutorialTargetAllowed(cardId)) {
+        const card = core.handCards.find((candidate) => candidate.id === cardId);
+        const tutorialTargetId = card ? getQidahenHandCardTutorialTargetId(card) : cardId;
+        if (
+            !isTutorialCommandAllowed(QIDAHEN_COMMANDS.PLAY_TACTIC_CARD)
+            || (!isTutorialTargetAllowed(cardId) && !isTutorialTargetAllowed(tutorialTargetId))
+        ) {
             return;
         }
         dispatch(QIDAHEN_COMMANDS.PLAY_TACTIC_CARD, { cardId });
-    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
+    }, [core.handCards, dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed]);
 
     const playBattleResponseEventCard = React.useCallback((cardId: string) => {
         if (

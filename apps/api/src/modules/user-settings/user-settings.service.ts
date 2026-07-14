@@ -32,6 +32,7 @@ export class UserSettingsService {
                     sfxVolume: settings.sfxVolume,
                     bgmVolume: settings.bgmVolume,
                     bgmSelections: normalizedSelections,
+                    singleTrackLoop: settings.singleTrackLoop === true,
                 },
                 $setOnInsert: { userId },
             },
