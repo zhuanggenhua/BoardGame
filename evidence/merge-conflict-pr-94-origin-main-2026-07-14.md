@@ -59,10 +59,19 @@
   - `base_ossuary_pod` -> `smashup:base6` index 3
 - 本次只补齐图集映射契约，不改变基地、派系或能力规则。
 
+## 2026-07-14 反应队列调用点门禁修复
+
+- 远端 quality-gate 在 `reactionQueueFireTriggersCallerContract.test.ts` 失败。
+- 原因是 `reducer.ts` 中已存在一个经过替换阶段保护的回手后处理入口：`onCardReturnedToHand`，但契约测试只截取 `fireTriggers` 调用后 600 字符，未覆盖到完整 options 参数，误判为非 replacement 调用。
+- 修复方式：测试改为截取完整 `fireTriggers(...)` 调用表达式，并把 `onCardReturnedToHand` 作为已审计的 replacement 入口加入白名单。
+- 本次只修测试契约与审计范围，不改变回手后处理运行时逻辑。
+
 ## 验证
 
 - `npm run i18n:check`
 - `npx vitest run src/games/smashup/__tests__/factionSelection.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
+- `npx vitest run src/games/smashup/__tests__/reactionQueueFireTriggersCallerContract.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
+- `npx vitest run src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/smashup.smoke.test.ts src/games/smashup/__tests__/ongoingEffects.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/abilities/cease-and-desist.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts --config vitest.config.audit.ts --configLoader native`
