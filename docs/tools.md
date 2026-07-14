@@ -20,7 +20,8 @@ scripts/
 
 ## 常用入口
 
-- **图片压缩**：`npm run compress:images --clear`（入口 `scripts/assets/compress_images.js`）
+- **正式素材图片压缩**：`npm run compress:images -- --clean <资源根>` / `npm run compress:runtime-images -- <资源根>`（入口 `scripts/assets/compress_images.js`，默认不降采样）
+- **展示图图片压缩**：`npm run compress:display-images -- <展示图资源根>`（仅用于封面、缩略图、装饰图等非对局识别素材，允许缩放）
 - **音频压缩**：`npm run compress:audio --clear`（入口 `scripts/audio/compress_audio.js`，依赖 `FFMPEG_PATH`）
 - **资源清单生成**：`npm run assets:manifest`（入口 `scripts/assets/generate_asset_manifests.js`）
 - **资源清单校验**：`npm run assets:validate`（入口 `scripts/assets/generate_asset_manifests.js --validate`）
@@ -116,9 +117,11 @@ scripts/
 
 ### 图片压缩（compress_images）
 
-- `IMAGE_MAX_EDGE`：最大边长
-- `IMAGE_WEBP_QUALITY`：WebP 质量
-- `--clean` / `IMAGE_CLEAN=1`：清理 `compressed/`
+- `--mode runtime` / `IMAGE_ASSET_MODE=runtime`：正式对局素材模式，默认不降采样；`compress:images` 和 `compress:runtime-images` 都走该模式。
+- `--mode display` / `IMAGE_ASSET_MODE=display`：展示图模式，默认长边 `2048`，只允许用于封面、缩略图、装饰图等非对局识别素材。
+- `IMAGE_MAX_EDGE` / `--max-edge`：最大边长。`runtime` 模式下设置大于 0 会失败，除非同时传 `--allow-runtime-resize`，且必须已有用户当轮明确授权。
+- `IMAGE_WEBP_QUALITY` / `--quality`：WebP 质量；正式素材默认 95，展示图默认 82。
+- `--clean` / `--clear` / `IMAGE_CLEAN=1`：清理 `compressed/`。
 
 ### 音频压缩（compress_audio）
 

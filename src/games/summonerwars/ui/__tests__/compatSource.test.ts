@@ -36,10 +36,13 @@ describe('SummonerWars compatibility source guards', () => {
         expect(fxSetup).toContain('paddingTop: CARD_PADDING_TOP,');
     });
 
-    it('BoardGrid 充能圆点应使用正方形 padding 兜底，而不是只依赖 aspect-square', () => {
+    it('BoardGrid 充能圆点应使用正方形 padding 兜底，而不是只依赖 aspect-ratio 或 aspect-square', () => {
         const boardGrid = readUiSource('BoardGrid.tsx');
 
-        expect(boardGrid).toContain("style={{ height: 0, paddingTop: '100%' }}");
+        expect(boardGrid).toContain('const UNIT_CHARGE_MARKER_DOT_STYLE: React.CSSProperties = {');
+        expect(boardGrid).toContain('height: 0,');
+        expect(boardGrid).toContain("paddingTop: '16%',");
+        expect(boardGrid).not.toContain("aspectRatio: '1 / 1'");
         expect(boardGrid).not.toContain('w-[15%] aspect-square');
     });
 

@@ -46,10 +46,11 @@ const EVENT_STEP_01 = `${TUTORIAL_DIR}/19-事件第1步-先点大汗令箭.png`;
 const EVENT_STEP_02 = `${TUTORIAL_DIR}/20-事件第2步-点击底部手牌支付1张.png`;
 const EVENT_STEP_03 = `${TUTORIAL_DIR}/21-事件第3步-选择征兵训练效果.png`;
 const EVENT_STEP_04 = `${TUTORIAL_DIR}/22-事件第4步-看蒙古兵力增加到4.png`;
-const FIELD_BATTLE_STEP_01 = `${TUTORIAL_DIR}/23-进攻第1步-先看可攻目标.png`;
-const FIELD_BATTLE_STEP_02 = `${TUTORIAL_DIR}/24-进攻第2步-先看边界会限制展开兵力.png`;
-const FIELD_BATTLE_STEP_03 = `${TUTORIAL_DIR}/25-进攻第3步-进入战斗并确认战术时机.png`;
-const FIELD_BATTLE_STEP_04 = `${TUTORIAL_DIR}/26-进攻第4步-决定承伤顺序.png`;
+const FIELD_BATTLE_STEP_01 = `${TUTORIAL_DIR}/23-进攻第1步-点击突袭作战入口.png`;
+const FIELD_BATTLE_STEP_02 = `${TUTORIAL_DIR}/24-进攻第2步-弃1张手牌支付突袭.png`;
+const FIELD_BATTLE_STEP_03 = `${TUTORIAL_DIR}/25-进攻第3步-支付后进入察哈尔野战.png`;
+const FIELD_BATTLE_STEP_03A = `${TUTORIAL_DIR}/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png`;
+const FIELD_BATTLE_STEP_04 = `${TUTORIAL_DIR}/26-进攻第4步-打出战术牌后决定承伤顺序.png`;
 const FIELD_BATTLE_STEP_04A = `${TUTORIAL_DIR}/26a-进攻第4a步-看断后后的战后处理.png`;
 const FIELD_BATTLE_STEP_05 = `${TUTORIAL_DIR}/27-进攻第5步-看战败标记与战后选择.png`;
 const FIELD_BATTLE_STEP_06 = `${TUTORIAL_DIR}/27a-进攻第6步-看占领结果摘要.png`;
@@ -674,7 +675,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveCount(0, { timeout: 10000 });
     });
 
-    test('进攻与野战教程会从真实进攻调度入口进入，再进入战斗与战后处理', async ({ page }) => {
+    test('进攻与野战教程会从真实突袭作战入口支付后进入战斗与战后处理', async ({ page }) => {
         await setChineseLocale(page);
         await disableAudio(page);
         await page.addInitScript(() => {
@@ -686,89 +687,79 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-tutorial-step="overview"]')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('进攻调度不是点一个目标就结束');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('大明的正常行动窗口');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('突袭作战');
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
-        await expect(page.locator('[data-tutorial-step="move-entry"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('炮兵和步兵一次走 1 格');
-        await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
+        await expect(page.locator('[data-tutorial-step="choose-action"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击「突袭作战」');
+        await expect(page.locator('[data-tutorial-id="qidahen-action-raid"]')).toBeVisible();
         await expect(page.locator('[data-testid^="qidahen-map-guide-hit-target-"][data-action="wheel-dispatch"]')).toHaveCount(0);
-        const participatingTroops = page.locator(
-            '[data-testid^="qidahen-map-token-"][data-pending-committed-selectable="true"]',
-        );
-        await expect(participatingTroops).toHaveCount(2);
-        await participatingTroops.nth(0).click();
-        await participatingTroops.nth(1).click();
-        await expect(page.locator(
-            '[data-testid^="qidahen-map-token-"][data-pending-committed-selected="true"]',
-        )).toHaveCount(2);
-        await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('当前目标：察哈尔');
-        const guideGeometry = await page.evaluate(() => {
-            const selectedTokens = Array.from(document.querySelectorAll<HTMLElement>(
-                '[data-testid^="qidahen-map-token-"][data-pending-committed-selected="true"]',
-            ));
-            const routeLine = document.querySelector<SVGPathElement>(
-                '[data-testid="qidahen-map-guide-line-city-region-14"]',
-            );
-            const target = document.querySelector<HTMLElement>(
-                '[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]',
-            );
-            const matrix = routeLine?.getScreenCTM() ?? null;
-            if (selectedTokens.length <= 0 || !routeLine || !target || !matrix) {
-                return null;
-            }
-            const sourceCenter = selectedTokens.reduce(
-                (center, token) => {
-                    const rect = token.getBoundingClientRect();
-                    return {
-                        x: center.x + (rect.left + rect.width / 2) / selectedTokens.length,
-                        y: center.y + (rect.top + rect.height / 2) / selectedTokens.length,
-                    };
-                },
-                { x: 0, y: 0 },
-            );
-            const targetRect = target.getBoundingClientRect();
-            const targetCenter = {
-                x: targetRect.left + targetRect.width / 2,
-                y: targetRect.top + targetRect.height / 2,
-            };
-            const pathStart = new DOMPoint(
-                routeLine.getPointAtLength(0).x,
-                routeLine.getPointAtLength(0).y,
-            ).matrixTransform(matrix);
-            const pathEndPoint = routeLine.getPointAtLength(routeLine.getTotalLength());
-            const pathEnd = new DOMPoint(pathEndPoint.x, pathEndPoint.y).matrixTransform(matrix);
-            const distance = (left: { x: number; y: number }, right: { x: number; y: number }) => (
-                Math.hypot(left.x - right.x, left.y - right.y)
-            );
-            return {
-                startToSelectedTroops: distance(pathStart, sourceCenter),
-                startToTarget: distance(pathStart, targetCenter),
-                endToSelectedTroops: distance(pathEnd, sourceCenter),
-                endToTarget: distance(pathEnd, targetCenter),
-            };
-        });
-        expect(guideGeometry).not.toBeNull();
-        expect(guideGeometry!.startToSelectedTroops).toBeLessThan(40);
-        expect(guideGeometry!.startToSelectedTroops).toBeLessThan(guideGeometry!.startToTarget);
-        expect(guideGeometry!.endToTarget).toBeLessThan(guideGeometry!.endToSelectedTroops);
+        const initialAttackCore = await readQidahenCore(page) as {
+            turnPhase: string;
+            factionActionUsed: boolean;
+            selectedActionId: string | null;
+            pendingTargetAction: unknown | null;
+        };
+        expect(initialAttackCore.turnPhase).toBe('action-window');
+        expect(initialAttackCore.factionActionUsed).toBe(false);
+        expect(initialAttackCore.selectedActionId).toBe('raid');
+        expect(initialAttackCore.pendingTargetAction).toBeNull();
         await saveScreenshot(page, FIELD_BATTLE_STEP_01);
-        await page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-14"][data-action="wheel-dispatch"]').click();
+        await page.locator('[data-tutorial-id="qidahen-action-raid"]').click();
+
+        await expect(page.locator('[data-tutorial-step="pay-raid"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('弃 1 张');
+        await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toContainText('需弃 1');
+        const beforePaymentCore = await readQidahenCore(page) as {
+            handCards: Array<{
+                cardKind?: string;
+                faction?: string;
+                id: string;
+                status?: string;
+            }>;
+        };
+        const paymentCard = beforePaymentCore.handCards.find((card) => (
+            card.faction === 'ming'
+            && card.status !== 'disabled'
+            && card.cardKind !== 'tactic'
+        ));
+        expect(paymentCard).toBeTruthy();
+        await page.locator(`[data-testid="qidahen-hand-card-${paymentCard!.id}"]`).click();
+        await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText('已选 1 张');
+        await expect(page.locator('[data-testid="qidahen-action-payment-confirm"]')).toBeEnabled();
+        await saveScreenshot(page, FIELD_BATTLE_STEP_02);
+        await page.locator('[data-testid="qidahen-action-payment-confirm"]').click();
 
         await expect(page.locator('[data-tutorial-step="border-width"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('调度进攻待结算');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('边界会限制这场战斗能展开多少部队');
-        await saveScreenshot(page, FIELD_BATTLE_STEP_02);
+        await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('突袭待结算');
+        await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('察哈尔');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('突袭作战已经把战场带到察哈尔');
+        const afterPaymentCore = await readQidahenCore(page) as {
+            pendingTargetAction?: {
+                actionId?: string;
+                committedTroops?: number;
+                sourceRegionId?: string;
+                targetRegionId?: string;
+            } | null;
+            turnPhase: string;
+        };
+        expect(afterPaymentCore.turnPhase).toBe('resolve-pending');
+        expect(afterPaymentCore.pendingTargetAction?.actionId).toBe('raid');
+        expect(afterPaymentCore.pendingTargetAction?.sourceRegionId).toBe('city-region-16');
+        expect(afterPaymentCore.pendingTargetAction?.targetRegionId).toBe('city-region-14');
+        expect(afterPaymentCore.pendingTargetAction?.committedTroops ?? 0).toBeGreaterThan(0);
+        await saveScreenshot(page, FIELD_BATTLE_STEP_03);
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="battle-open"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('调度进攻待结算');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('公开双方部队');
+        await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('突袭待结算');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('双方公开出来的部队');
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="tactic-window"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('每场战斗通常只打 1 张');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击这张战术牌');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('只改变眼前这一仗');
         const pendingGuideGeometry = await page.evaluate(() => {
             const selectedTokens = Array.from(document.querySelectorAll<HTMLElement>(
                 '[data-testid^="qidahen-map-token-"][data-pending-committed-selected="true"]',
@@ -823,7 +814,7 @@ test.describe('七大恨新游戏收口', () => {
         expect(pendingGuideGeometry!.startToSelectedTroops).toBeLessThan(40);
         expect(pendingGuideGeometry!.nearestTargetTokenDistance).toBeGreaterThan(28);
         expect(pendingGuideGeometry!.overlapsTargetToken).toBe(false);
-        await saveScreenshot(page, FIELD_BATTLE_STEP_03);
+        await saveScreenshot(page, FIELD_BATTLE_STEP_03A);
         const beforeTacticCore = await readQidahenCore(page) as {
             discardPileCount: number;
             handCards: Array<{ id: string; cardDefId?: string | null }>;
@@ -871,8 +862,9 @@ test.describe('七大恨新游戏收口', () => {
         await saveScreenshot(page, FIELD_BATTLE_STEP_05);
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="battle-finish"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('移动、公开部队、战术阶段');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('承伤、胜负和撤退');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('选择突袭作战');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('弃牌支付');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('处理胜负和撤退');
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await page.locator('[data-testid="qidahen-post-battle-choice-occupy"]').click();
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('占领');

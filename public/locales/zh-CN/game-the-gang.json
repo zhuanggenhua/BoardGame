@@ -89,6 +89,7 @@
     "rulesDialogEyebrow": "开局规则台",
     "rulesDialogTitle": "房主规则设置",
     "rulesDialogHostHint": "开局前房主可以任意组合模式和挑战；本次抢劫开始后设置会锁定。",
+    "rulesDialogLockedHostHint": "你是房主，但本次抢劫已经开始；扩展和规则只能查看，不能再修改。",
     "rulesDialogGuestHint": "当前只有房主可以修改开局规则；你可以查看本局启用的模式和挑战。",
     "rulesDialogSource": "参考 TTS 的模式按钮、挑战区和说明牌承载",
     "closeRulesDialog": "关闭规则设置",

@@ -9766,8 +9766,8 @@
     "zh-CN/summonerwars/hero/mogu/compressed/cards": {
       "variants": {
         "webp": {
-          "sha256": "4c35deb3fe40dd0ff7f819ba4cb4ccc3a827ac2d4501281acebf3956613c07e3",
-          "bytes": 137518,
+          "sha256": "afa10cb4567d0fa9b3c1594257ffae86eca52bffe3d11cedf7119ccb9b0e58c3",
+          "bytes": 1960640,
           "mime": "image/webp"
         }
       }

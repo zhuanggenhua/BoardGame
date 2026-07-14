@@ -1,6 +1,5 @@
 import type { GameSetupSelections } from '../setupOptions';
 import { applyQidahenPregameChoiceDefaults } from './roomSetup';
-import { buildWheelDispatchSelectionFromWheel } from './domain/dispatchSelectionBuilders';
 import { qidahenAtlas05OrdinaryHandPreview } from './ui/cardAtlas';
 import {
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
@@ -194,15 +193,17 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
             .slice(0, 1)
             .map((card) => card.id);
         core.currentPlayer = '0';
-        core.turnLabel = '第 1 轮 · 大明 · 进攻调度';
-        core.turnPhase = 'dispatch-targeting';
+        core.turnLabel = '第 1 轮 · 大明 · 势力行动';
+        core.turnPhase = 'action-window';
         core.wheelActionUsed = true;
-        core.factionActionUsed = true;
+        core.factionActionUsed = false;
         core.actionWheelPosition = 'wheel-hire';
         core.selectedWheelMoveId = 'move-1-free';
-        core.selectedRegionId = 'city-region-16';
-        core.selectedActionId = '';
+        core.selectedRegionId = 'city-region-14';
+        core.selectedActionId = 'raid';
         core.confirmedActionId = null;
+        core.selectedPaymentCardIds = [];
+        core.payment = { required: 1, selected: 0, prompt: '需弃 1 / 已选 0' };
         core.pendingTargetAction = null;
         core.driveTigerConsentSelection = null;
         core.postBattleSelection = null;
@@ -234,6 +235,16 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
                     ],
                 };
             }
+            if (region.id === 'jinzhou') {
+                return {
+                    ...region,
+                    controller: 'ming',
+                    controlLabel: '大明',
+                    troops: 0,
+                    siegeState: null,
+                    specialTroops: [],
+                };
+            }
             if (region.id === 'city-region-14') {
                 return {
                     ...region,
@@ -249,12 +260,7 @@ const createAttackAndBattleTutorialSetup = (): QidahenTutorialPreset => ({
             }
             return region;
         });
-        core.wheelDispatchProgress = buildWheelDispatchSelectionFromWheel(
-            core,
-            'ming',
-            core.actionWheelPosition,
-            core.selectedRegionId,
-        );
+        core.wheelDispatchProgress = null;
         return core;
     },
 });
@@ -1030,7 +1036,13 @@ const createDiplomacyTutorialSetup = (): QidahenTutorialPreset => ({
         core.factionActionUsed = true;
         core.actionWheelPosition = 'wheel-hire';
         core.selectedWheelMoveId = 'move-1-free';
-        core.selectedRegionId = 'song-jin';
+        core.selectedRegionId = 'city-region-25';
+        core.regionFocusState = {
+            defaultFocusRegionId: 'city-region-25',
+            lockedSourceRegionId: null,
+            currentTargetRegionId: null,
+            displayAnchorRegionId: 'city-region-25',
+        };
         core.selectedActionId = '';
         core.selectedPaymentCardIds = [];
         core.recruitSelection = null;

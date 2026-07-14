@@ -347,6 +347,9 @@ function RulesConfigPanel({
     const activeLabels = getActiveChallengeLabels(normalized);
     const challengeIds = Object.keys(THE_GANG_CHALLENGES)
         .filter((challengeId) => THE_GANG_CHALLENGES[challengeId as TheGangChallengeId].runtimeStatus === 'implemented') as TheGangChallengeId[];
+    const rulesDialogHint = !canConfigure
+        ? 'board.rulesDialogGuestHint'
+        : locked ? 'board.rulesDialogLockedHostHint' : 'board.rulesDialogHostHint';
 
     const updateMode = (gameMode: TheGangGameMode) => {
         onChange(normalizeRulesConfig({ ...normalized, gameMode }));
@@ -407,7 +410,7 @@ function RulesConfigPanel({
                                     {t('board.rulesDialogTitle')}
                                 </h2>
                                 <p className="mt-2 max-w-3xl text-xs font-bold leading-relaxed text-amber-50/72 lg:text-sm">
-                                    {t(canConfigure ? 'board.rulesDialogHostHint' : 'board.rulesDialogGuestHint')}
+                                    {t(rulesDialogHint)}
                                 </p>
                             </div>
                             <button
@@ -428,6 +431,11 @@ function RulesConfigPanel({
                                     {t('board.activeExitChipMode', { mode: THE_GANG_EXIT_CHIP_MODES[normalized.exitChipMode].label })}
                                 </span>
                             </div>
+                            {locked && (
+                                <div className="mb-4 rounded-lg border border-amber-200/25 bg-amber-200/10 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100/88">
+                                    {t('board.rulesLocked')}
+                                </div>
+                            )}
                             <section className="grid gap-3 lg:grid-cols-3" aria-label={t('board.gameMode')}>
                                 {(Object.keys(THE_GANG_GAME_MODES) as TheGangGameMode[]).map((modeId) => {
                                     const mode = THE_GANG_GAME_MODES[modeId];
@@ -557,11 +565,6 @@ function RulesConfigPanel({
                                         {activeLabels.length > 0 ? activeLabels.join(' / ') : t('board.noChallenges')}
                                     </span>
                                 </div>
-                                {locked && (
-                                    <div className="mb-3 rounded-lg border border-amber-200/25 bg-amber-200/10 px-3 py-2 text-xs text-amber-100/88">
-                                        {t('board.rulesLocked')}
-                                    </div>
-                                )}
                                 <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
                                     {challengeIds.map((challengeId) => {
                                         const challenge = THE_GANG_CHALLENGES[challengeId];

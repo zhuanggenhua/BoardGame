@@ -206,6 +206,11 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-character-select-screen')).toBeInTheDocument();
         expect(screen.getByText('选择探索者')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-character-confirm')).toHaveTextContent('确认');
+        expect(screen.getByTestId('betrayal-character-detail-scroll')).toHaveClass(
+            'custom-scrollbar',
+            'overflow-y-auto',
+            'overflow-x-hidden',
+        );
         expect(screen.getByTestId('betrayal-character-selection-grid')).toHaveClass(
             'no-scrollbar',
             'overflow-x-hidden',
@@ -260,13 +265,21 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-open-active-room-preview')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent('特性:');
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent(/\S+，\S+/);
+        const currentTraits = screen.getByTestId('betrayal-current-traits');
+        expect(currentTraits.querySelector('[data-trait-pip-shape="square"]')).toBeInTheDocument();
+        expect(within(currentTraits).getByText('力量').parentElement).toHaveClass('text-[#e8b09f]');
+        expect(within(currentTraits).getByText('速度').parentElement).toHaveClass('text-[#ebdca1]');
+        expect(within(currentTraits).getByText('知识').parentElement).toHaveClass('text-[#cbe4ea]');
+        expect(within(currentTraits).getByText('神志').parentElement).toHaveClass('text-[#d9c4ef]');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('等待第一步');
         expect(screen.queryByRole('region', { name: '阶段提示' })).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-mobile-selected-card')).toHaveTextContent('未选卡牌');
         expect(screen.getByTestId('betrayal-action-use')).toBeDisabled();
         expect(screen.getByTestId('betrayal-inventory-row-item')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-inventory-row-omen')).toBeInTheDocument();
+        expect(document.querySelector('[data-resource-count-shape="square"]')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-bottom-teammate-1')).toHaveTextContent('队友一');
+        expect(screen.getByTestId('betrayal-bottom-teammate-1').querySelector('[data-trait-value-shape="square"]')).toBeInTheDocument();
     });
 
     it('第一剧本真实图书馆不在 upper-west 时也能显示调查杰克入口', async () => {
@@ -1180,6 +1193,7 @@ describe('Betrayal Board foundation', () => {
         const endgameMain = screen.getByTestId('betrayal-endgame-screen');
         expect(within(endgameMain).getByText('测试玩家')).toBeInTheDocument();
         expect(within(endgameMain).getByText('队友一')).toBeInTheDocument();
+        expect(endgameMain.querySelector('[data-trait-value-shape="square"]')).toBeInTheDocument();
     });
 
     it('叛徒复活后若同房间已有英雄，必须点击英雄对象而不是自动代选目标', async () => {
@@ -1446,7 +1460,12 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('上古旧宅');
+        const eventChoicePanel = screen.getByTestId('betrayal-event-choice-panel');
+        expect(eventChoicePanel).toHaveTextContent('上古旧宅');
+        expect(eventChoicePanel).toHaveAttribute('data-layout', 'main-stage');
+        expect(eventChoicePanel).toHaveAttribute('data-surface', 'open-table');
+        expect(screen.getByTestId('betrayal-event-choice-card-front-atlas')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-event-choice-trait-might')).toHaveClass('min-h-[64px]');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-might'));
         expect(screen.getByTestId('betrayal-room-event-choice-target-hallway')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));

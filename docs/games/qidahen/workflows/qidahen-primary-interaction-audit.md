@@ -890,26 +890,28 @@
 
 > 这一段只根据当前 `tutorial.ts` 与当前中英文语言包记录运行态真相，不代表已实施新文案。
 
-### 1. 基础教程的首个主操作仍未落在当前玩家第一层真实选择上
+### 1. 基础教程的首个主操作已回到真实开局顺序，但完整首回合裁决仍未全闭合
 
 - 当前 `basic-opening` 的步骤顺序是：
   - `welcome`
   - `hand-limit`
-  - `hand-resource`
   - `wheel-first`
   - `wheel-move`
   - `after-wheel`
+  - `hand-resource`
   - `pick-action`
   - `pay-cards`
+  - `choose-grant-pardon-target`
   - `action-result`
   - `morale-level`
   - `wheel-action`
-- 这轮实施后，基础章首个 `requireAction` 已改成 `wheel-move`，也就是先在轮盘本体上做首回合第一段真实选择。
+  - `finish`
+- 当前基础章首个 `requireAction` 是 `hand-limit`，先处理正式开局里的手牌上限；随后才进入轮盘本体的 `wheel-move`，再进入一次手牌行动与目标结果。
 - 但规则书级“完整首回合”仍要求：
   - 检查手牌上限
   - 转动轮盘
   - 再在 `手牌行动 / 轮盘行动` 之间决定先做哪一个
-- 因此这轮已经收掉“首个主操作跳过轮盘真实选择”的错误，但是否还要继续做到“玩家先在手牌行动与轮盘行动之间自己决定先后”，仍属于后续运行态缺口，不可误报为正式局完整收口。
+- 因此当前已经收掉“首个主操作跳过手牌上限与轮盘真实选择”的错误，但是否还要继续做到“玩家先在手牌行动与轮盘行动之间自己决定先后”，仍属于后续运行态缺口，不可误报为正式局完整收口。
 
 ### 1.1 信息步骤的真实摘要承接已经补齐一层
 
@@ -937,7 +939,8 @@
 - 当前玩家可见文案里仍存在大量“这一步 / 这次 / 这里 / 现在先”口吻，例如：
   - `board.setup.description`
   - `tutorial.basic.steps.actionResult`
-  - `tutorial.attackAndBattle.steps.moveEntry`
+  - `tutorial.attackAndBattle.steps.chooseAction`
+  - `tutorial.attackAndBattle.steps.payRaid`
   - `tutorial.siege.steps.defendCity`
   - `tutorial.wheelSharedCost.steps.dispatchReady`
 - 这些句子的问题不只是口气不好，而是它们没有稳定落在规则动作名、对象名或结果名上，容易把教程写成作者旁白，而不是游戏本身。

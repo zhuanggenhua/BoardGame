@@ -50,6 +50,16 @@ E2E、截图、单测、typecheck 或页面可交互只证明资源消费链路�
 
 **所有图片必须经过压缩后使用，禁止在代码中直接引用原始 `.png/.jpg` 文件。**
 
+### 正式对局素材禁止降采样（强制）
+
+**只要玩家会在对局、结算、放大预览、持有区、棋盘、地图、角色/派系面板、卡牌/事件/技能/帮助页、token/棋子/状态图中看到并据此识别对象、读取规则或判断状态，该图片就是正式对局素材。正式对局素材只允许从源图转成运行时 WebP，默认禁止改变像素尺寸。**
+
+- **禁止降采样对象**：卡牌图集、单张卡面、棋盘/地图、房间/区域板块、角色板、派系板、帮助/参考卡、骰面、token、棋子、状态图标、玩家提示板、剧本页，以及任何对局内可读/可识别的正式素材。
+- **禁止行为**：禁止把正式素材交给展示图/缩略图压缩参数处理；禁止用“端到端截图看得到”“网页加载更快”“文件太大”“只是 WebP”作为降采样理由；禁止在未获用户当轮明确授权时设置 `IMAGE_MAX_EDGE`、`--max-edge` 或其它方式缩小正式素材。
+- **唯一默认入口**：正式素材压缩必须使用 `npm run compress:images -- <资源根>` 或 `npm run compress:runtime-images -- <资源根>`；这两个入口默认 `runtime` 模式，不降采样，并会在发现旧的低分辨率 WebP 产物时按源图尺寸重生成。
+- **展示图例外**：只有游戏入口封面、列表缩略图、纯装饰背景、营销/相册预览这类不承担规则识别和对局判断的图片，才允许使用 `npm run compress:display-images -- <资源根>`；这类输出不得被接入卡面、图集、棋盘、token 或其它正式对局素材路径。
+- **验收门槛**：正式素材压缩后必须核对源图尺寸与 `compressed/*.webp` 尺寸一致；尺寸不一致时，结论必须写成“压缩流程误降采样 / 正式素材产物不合格”，不得继续发布、截图验收或提交。
+
 ### 正式线上素材只发布运行时交付物（强制）
 
 正式服务器素材源、移动素材包、file-index、服务器活动版本 `current` 都只能包含运行时交付物：
@@ -114,9 +124,10 @@ public/assets/
 ### 压缩流程
 
 **如果有原始图片**：
-1. **压缩命令**：`npm run compress:images -- public/assets/<gameId>`
-2. **压缩脚本**：`scripts/assets/compress_images.js`（启动器）+ `scripts/assets/compress_images.py`（实现）
-3. **输出位置**：同级 `compressed/` 子目录，生成 `.webp`
+1. **正式素材压缩命令**：`npm run compress:images -- public/assets/<gameId>` 或 `npm run compress:runtime-images -- public/assets/<gameId>`（默认不降采样）
+2. **展示图压缩命令**：仅对非对局识别素材使用 `npm run compress:display-images -- <展示图资源目录>`（允许长边缩放）
+3. **压缩脚本**：`scripts/assets/compress_images.js`（启动器）+ `scripts/assets/compress_images.py`（实现）
+4. **输出位置**：同级 `compressed/` 子目录，生成 `.webp`
 
 **如果只有 WebP 文件**：
 - 直接将 `.webp` 文件放入 `i18n/<locale>/<gameId>/<分类>/compressed/` 目录
@@ -317,8 +328,8 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 3. ✅ TTS/Workshop 材质色块、编辑器占位图、下载站装饰图、无规则对象对应的贴图、重复导出必须标为 `excluded` 或留在 `temp/<gameId>-intake/`，不得压缩、上传或引用
 4. ✅ 正式文件名必须使用稳定语义名（小写 kebab-case），能回溯到图面语义和规则配件表；看不清或无法对应规则表时先留在 `candidate`
 5. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录（如果有原始图片）
-6. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`（如果有原始图片）
-7. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件）
+6. ✅ 运行 `npm run compress:images -- public/assets/<gameId>` 或 `npm run compress:runtime-images -- public/assets/<gameId>`（如果有原始图片；正式素材默认不降采样）
+7. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件），并核对正式素材源图与 WebP 尺寸一致
 8. ✅ 先判断 JSON 是**语言无关图集配置**还是**运行时本地 JSON 配置**：前者放 `public/assets/atlas-configs/<gameId>/`，后者按实际读取链保留在 `public/assets/i18n/<locale>/<gameId>/...`
 9. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
 10. ✅ **确认路径中不含 `compressed/` 子目录**

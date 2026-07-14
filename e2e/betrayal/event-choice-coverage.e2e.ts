@@ -272,7 +272,54 @@ test.describe('山屋惊魂事件牌真实页面选择承接', () => {
 
             await injectCore(page, eventCase.buildCore());
             await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-            await expect(page.getByTestId('betrayal-event-choice-panel')).toContainText(eventCase.title);
+            const eventChoicePanel = page.getByTestId('betrayal-event-choice-panel');
+            await expect(eventChoicePanel).toContainText(eventCase.title);
+            await expect(eventChoicePanel).toHaveAttribute('data-layout', 'main-stage');
+            await expect(eventChoicePanel).toHaveAttribute('data-surface', 'open-table');
+            await expect(page.getByTestId('betrayal-event-choice-card-front-atlas').or(page.getByTestId('betrayal-event-choice-card-front-missing'))).toBeVisible();
+            const panelSurface = await eventChoicePanel.evaluate((node) => {
+                const style = getComputedStyle(node);
+                return {
+                    backgroundColor: style.backgroundColor,
+                    backgroundImage: style.backgroundImage,
+                    borderTopWidth: style.borderTopWidth,
+                };
+            });
+            expect(panelSurface.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+            expect(panelSurface.backgroundImage).toBe('none');
+            expect(panelSurface.borderTopWidth).toBe('0px');
+
+            const optionMetrics = await page.evaluate(() => {
+                const selectors = [
+                    '[data-testid^="betrayal-event-choice-trait-"]',
+                    '[data-testid^="betrayal-event-choice-damage-"]',
+                    '[data-testid="betrayal-event-choice-confirm"]',
+                    '[data-testid="betrayal-event-choice-decline"]',
+                ];
+                return selectors.flatMap((selector) => (
+                    Array.from(document.querySelectorAll<HTMLElement>(selector))
+                        .filter((element) => {
+                            const rect = element.getBoundingClientRect();
+                            const style = getComputedStyle(element);
+                            return rect.width > 0
+                                && rect.height > 0
+                                && style.display !== 'none'
+                                && style.visibility !== 'hidden';
+                        })
+                        .map((element) => {
+                            const rect = element.getBoundingClientRect();
+                            return {
+                                testId: element.dataset.testid ?? '',
+                                width: rect.width,
+                                height: rect.height,
+                            };
+                        })
+                ));
+            });
+            expect(optionMetrics.length).toBeGreaterThan(0);
+            for (const metric of optionMetrics) {
+                expect(metric.height, `${metric.testId} 不是可读可点的大选项`).toBeGreaterThanOrEqual(64);
+            }
             await saveScreenshot(page, `${screenshotBase}-选择前.jpg`);
 
             for (const testId of eventCase.actions) {

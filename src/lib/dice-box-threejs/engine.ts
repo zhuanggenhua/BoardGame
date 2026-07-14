@@ -163,6 +163,50 @@ const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
 
 let nextContainerId = 0;
 let diceBoxModulePromise: Promise<typeof DiceBoxModule> | null = null;
+const WEBGL_INFO_LOG_NULL_GUARD = Symbol.for('boardgame:dice-box-threejs:webgl-info-log-null-guard');
+
+type WebGlInfoLogContext = {
+    getShaderInfoLog?: (shader: WebGLShader) => string | null;
+    getProgramInfoLog?: (program: WebGLProgram) => string | null;
+    [WEBGL_INFO_LOG_NULL_GUARD]?: true;
+};
+
+type WebGlContextConstructor = {
+    prototype?: WebGlInfoLogContext;
+};
+
+function patchWebGlInfoLogPrototype(contextConstructor?: WebGlContextConstructor): void {
+    const prototype = contextConstructor?.prototype;
+    if (!prototype || prototype[WEBGL_INFO_LOG_NULL_GUARD]) return;
+
+    const originalGetShaderInfoLog = prototype.getShaderInfoLog;
+    if (typeof originalGetShaderInfoLog === 'function') {
+        prototype.getShaderInfoLog = function getShaderInfoLog(shader: WebGLShader): string {
+            return originalGetShaderInfoLog.call(this, shader) ?? '';
+        };
+    }
+
+    const originalGetProgramInfoLog = prototype.getProgramInfoLog;
+    if (typeof originalGetProgramInfoLog === 'function') {
+        prototype.getProgramInfoLog = function getProgramInfoLog(program: WebGLProgram): string {
+            return originalGetProgramInfoLog.call(this, program) ?? '';
+        };
+    }
+
+    Object.defineProperty(prototype, WEBGL_INFO_LOG_NULL_GUARD, {
+        configurable: true,
+        value: true,
+    });
+}
+
+export function installWebGlInfoLogNullGuard(): void {
+    const host = globalThis as typeof globalThis & {
+        WebGLRenderingContext?: WebGlContextConstructor;
+        WebGL2RenderingContext?: WebGlContextConstructor;
+    };
+    patchWebGlInfoLogPrototype(host.WebGLRenderingContext);
+    patchWebGlInfoLogPrototype(host.WebGL2RenderingContext);
+}
 
 async function loadDiceBoxModule(): Promise<typeof DiceBoxModule> {
     if (!diceBoxModulePromise) {
@@ -256,6 +300,7 @@ export class DiceBoxThreeEngine {
     }
 
     static async create(container: HTMLElement, config?: DiceBoxEngineConfig): Promise<DiceBoxThreeEngine> {
+        installWebGlInfoLogNullGuard();
         const DiceBox = await loadDiceBoxModule();
         const styleProfile = config?.styleProfile ?? DEFAULT_DICE_BOX_STYLE_PROFILE;
         if (!container.id) {

@@ -1173,17 +1173,21 @@ function BetrayalSelectionChip({
     selected,
     children,
     className = '',
+    selectedClassName = '',
+    idleClassName = '',
     ...buttonProps
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
     selected: boolean;
+    selectedClassName?: string;
+    idleClassName?: string;
 }) {
     return (
         <button
             {...buttonProps}
-            className={`min-h-[34px] border px-3 text-[12px] font-semibold tracking-[0.04em] transition ${
+            className={`inline-flex min-h-[64px] min-w-[136px] cursor-pointer items-center justify-center rounded-[10px] border-2 px-6 py-3 text-[20px] font-black tracking-[0.08em] shadow-[0_12px_28px_rgba(0,0,0,0.32)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4df9a] ${
                 selected
-                    ? 'border-[#d1b05f] bg-[rgba(209,176,95,0.22)] text-[#fff1b8] shadow-[0_0_16px_rgba(209,176,95,0.20)]'
-                    : 'border-[rgba(211,179,109,0.24)] bg-[rgba(18,15,10,0.34)] text-[#d6c498] hover:border-[rgba(211,179,109,0.44)] hover:bg-[rgba(209,176,95,0.10)] hover:text-[#f0dfad]'
+                    ? selectedClassName || 'border-[#d1b05f] bg-[rgba(209,176,95,0.22)] text-[#fff1b8] shadow-[0_0_16px_rgba(209,176,95,0.20)]'
+                    : idleClassName || 'border-[rgba(211,179,109,0.24)] bg-[rgba(18,15,10,0.34)] text-[#d6c498] hover:border-[rgba(211,179,109,0.44)] hover:bg-[rgba(209,176,95,0.10)] hover:text-[#f0dfad]'
             } ${className}`}
         >
             {children}
@@ -1901,6 +1905,25 @@ const TRAIT_TONE_CLASS: Record<BetrayalTraitKey, { active: string; inactive: str
     },
 };
 
+const TRAIT_CHOICE_TONE_CLASS: Record<BetrayalTraitKey, { selected: string; idle: string }> = {
+    might: {
+        selected: 'border-[#ff947f] bg-[rgba(207,113,95,0.38)] text-[#ffe1d8] shadow-[0_0_24px_rgba(207,113,95,0.34)]',
+        idle: 'border-[rgba(207,113,95,0.68)] bg-[rgba(54,22,19,0.66)] text-[#ffc6b8] hover:border-[#ff947f] hover:bg-[rgba(207,113,95,0.22)]',
+    },
+    speed: {
+        selected: 'border-[#f0d97b] bg-[rgba(214,190,103,0.36)] text-[#fff2b8] shadow-[0_0_24px_rgba(214,190,103,0.32)]',
+        idle: 'border-[rgba(214,190,103,0.68)] bg-[rgba(48,39,16,0.66)] text-[#ffeaa6] hover:border-[#f0d97b] hover:bg-[rgba(214,190,103,0.20)]',
+    },
+    knowledge: {
+        selected: 'border-[#a9d7e2] bg-[rgba(142,186,197,0.36)] text-[#e2f8ff] shadow-[0_0_24px_rgba(142,186,197,0.30)]',
+        idle: 'border-[rgba(142,186,197,0.66)] bg-[rgba(18,35,39,0.66)] text-[#dbf4fb] hover:border-[#a9d7e2] hover:bg-[rgba(142,186,197,0.20)]',
+    },
+    sanity: {
+        selected: 'border-[#c59af0] bg-[rgba(159,123,197,0.38)] text-[#f0dcff] shadow-[0_0_24px_rgba(159,123,197,0.34)]',
+        idle: 'border-[rgba(159,123,197,0.66)] bg-[rgba(35,22,48,0.66)] text-[#ead4ff] hover:border-[#c59af0] hover:bg-[rgba(159,123,197,0.20)]',
+    },
+};
+
 const TRAIT_VALUE_TEXT_CLASS: Record<BetrayalTraitKey, string> = {
     might: 'text-[#f0b29f]',
     speed: 'text-[#f2e09e]',
@@ -2484,7 +2507,11 @@ function EndgameScreen({
                                                 </div>
                                                 <div className="mt-1 grid grid-cols-2 gap-1">
                                                     {endgameTraitOrder.map((key) => (
-                                                        <span key={key} className="inline-flex items-center gap-1 rounded-full border border-[rgba(112,92,58,0.34)] bg-[rgba(17,15,12,0.42)] px-1 py-0.5 text-[9px] text-[#f3e6c9]">
+                                                        <span
+                                                            key={key}
+                                                            data-trait-value-shape="square"
+                                                            className="inline-flex items-center gap-1 rounded-[4px] border border-[rgba(112,92,58,0.34)] bg-[rgba(17,15,12,0.42)] px-1 py-0.5 text-[9px] text-[#f3e6c9]"
+                                                        >
                                                             <OptimizedImage
                                                                 src={ASSETS.trait[key]}
                                                                 locale={effectiveLocale}
@@ -4641,7 +4668,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                         <div className="grid gap-0.5">
                                             {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => (
                                                 <div key={trait} className="grid grid-cols-[66px_minmax(0,1fr)_24px] items-center gap-1.5 text-[12px]">
-                                                    <span className="inline-flex items-center gap-1.5 font-semibold text-[#d8bf81]">
+                                                    <span className={`inline-flex items-center gap-1.5 font-semibold ${TRAIT_TONE_CLASS[trait].text}`}>
                                                         <OptimizedImage src={ASSETS.trait[trait]} locale={effectiveLocale} alt="" className="h-4 w-4 object-contain opacity-86" draggable={false} />
                                                         <span className="truncate">{TRAIT_LABEL_LOCAL[trait]}</span>
                                                     </span>
@@ -4652,15 +4679,16 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                             return (
                                                                 <span
                                                                     key={`${trait}-${index}`}
+                                                                    data-trait-pip-shape="square"
                                                                     title={isDangerSlot ? t('board.hud.dangerZone') : undefined}
-                                                            className={`h-2.5 rounded-[2px] border ${
+                                                                    className={`h-2.5 rounded-[2px] border ${
                                                                         isDangerSlot
                                                                             ? isFilled
                                                                                 ? 'border-[#bd5545] bg-[linear-gradient(180deg,#e07159,#9e3b32)] shadow-[0_0_6px_rgba(213,78,57,0.28)]'
                                                                                 : 'border-[#73362f] bg-[rgba(91,31,28,0.5)]'
                                                                             : isFilled
-                                                                                ? 'border-[#d4b46d] bg-[linear-gradient(180deg,#ddc171,#cda95d)]'
-                                                                                : 'border-[#62543c] bg-[rgba(17,25,22,0.76)]'
+                                                                                ? `${TRAIT_TONE_CLASS[trait].active} shadow-[0_0_6px_rgba(214,191,129,0.14)]`
+                                                                                : TRAIT_TONE_CLASS[trait].inactive
                                                                     }`}
                                                                 />
                                                             );
@@ -4905,14 +4933,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     <div
                                         data-testid="betrayal-discovery-panel-content"
                                         onClick={(event) => event.stopPropagation()}
-                                        className={`flex max-h-[calc(100vh-8rem)] flex-col items-center justify-center gap-4 md:flex-row ${
+                                        className={`flex w-fit max-w-[calc(100vw-2rem)] max-h-[calc(100vh-8rem)] flex-col items-center justify-center gap-4 md:flex-row ${
                                         shouldShowLatestDiscoveryRoll && core.recentRoll
                                             ? rollModifierCardIds.size > 0
-                                                ? 'w-full max-w-[900px]'
-                                                : 'w-full max-w-[940px]'
+                                                ? 'md:max-w-[900px]'
+                                                : 'md:max-w-[940px]'
                                             : rollModifierCardIds.size > 0
-                                                ? 'w-[min(900px,calc(100vw-2rem))] md:w-[min(780px,calc(100vw-18rem))]'
-                                                : 'w-[min(900px,calc(100vw-2rem))]'
+                                                ? 'md:max-w-[min(780px,calc(100vw-18rem))]'
+                                                : 'md:max-w-[900px]'
                                     }`}
                                     >
                                         <div className={`shrink-0 ${
@@ -5006,14 +5034,15 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                     <div
                                         data-testid="betrayal-event-choice-panel"
                                         data-layout="main-stage"
+                                        data-surface="open-table"
                                         aria-label={pendingEventChoice.sourceTitle}
-                                        className={`pointer-events-auto grid overflow-hidden border border-[rgba(211,179,109,0.54)] bg-[linear-gradient(180deg,rgba(34,27,17,0.96),rgba(8,10,8,0.94))] text-[#f3e0a6] shadow-[0_34px_90px_rgba(0,0,0,0.66),inset_0_0_0_1px_rgba(236,212,150,0.08)] ${
+                                        className={`pointer-events-none grid overflow-visible text-[#f3e0a6] ${
                                             isPhoneLandscapeLayout
-                                                ? 'max-h-[calc(100vh-5.25rem)] w-[min(760px,calc(100vw-1rem))] grid-cols-[minmax(92px,28%)_minmax(0,1fr)] gap-3 p-3'
-                                                : 'max-h-[min(680px,calc(100vh-7rem))] w-[min(920px,calc(100vw-30rem))] min-w-[620px] grid-cols-[minmax(210px,280px)_minmax(0,1fr)] gap-5 p-5'
+                                                ? 'max-h-[calc(100vh-5.25rem)] w-[min(760px,calc(100vw-1rem))] grid-cols-[minmax(104px,28%)_minmax(0,1fr)] gap-4'
+                                                : 'max-h-[min(680px,calc(100vh-7rem))] w-[min(980px,calc(100vw-24rem))] min-w-[700px] grid-cols-[minmax(240px,300px)_minmax(360px,1fr)] gap-8'
                                         }`}
                                     >
-                                        <div className="w-full min-w-0 justify-self-center">
+                                        <div className="pointer-events-none w-full min-w-0 justify-self-center drop-shadow-[0_26px_54px_rgba(0,0,0,0.58)]">
                                             {latestDiscoveryVisual ? (
                                                 <DiscoveryAtlasFrame
                                                     visual={latestDiscoveryVisual}
@@ -5024,28 +5053,20 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                             ) : (
                                                 <div
                                                     data-testid="betrayal-event-choice-card-front-missing"
-                                                    className="flex aspect-[675/1275] items-center justify-center border border-[rgba(211,179,109,0.34)] bg-[rgba(13,15,11,0.94)] px-3 text-center text-[13px] font-semibold leading-tight text-[#d6c498]"
+                                                    className="flex aspect-[675/1275] items-center justify-center border border-[rgba(211,179,109,0.34)] bg-[rgba(13,15,11,0.74)] px-3 text-center text-[14px] font-semibold leading-tight text-[#d6c498]"
                                                 >
                                                     {pendingEventChoice.sourceTitle}
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex min-h-0 min-w-0 flex-col justify-center">
-                                            <div className="mb-3 border-b border-[rgba(211,179,109,0.22)] pb-3">
-                                                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#c9a35e]">
-                                                    {t('board.discovery.eventCard')}
-                                                </div>
-                                                <div className="mt-1 text-[18px] font-bold tracking-[0.08em] text-[#fff1b8]">
-                                                    {pendingEventChoice.sourceTitle}
-                                                </div>
-                                            </div>
-                                            <div className="custom-scrollbar flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-y-auto pr-1">
+                                        <div className="pointer-events-auto flex min-h-0 min-w-0 flex-col justify-center">
+                                            <div className="custom-scrollbar flex min-h-0 flex-1 flex-col justify-center gap-6 overflow-y-auto pr-1">
                                                 {pendingEventTraitChoices.length > 0 ? (
-                                                    <div className="grid gap-2" data-testid="betrayal-event-choice-traits">
-                                                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">
+                                                    <div className="grid gap-3.5" data-testid="betrayal-event-choice-traits">
+                                                        <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
                                                             {t('board.sections.traits')}
                                                         </span>
-                                                        <div className="flex flex-wrap gap-2">
+                                                        <div className="flex flex-wrap gap-4">
                                                             {pendingEventTraitChoices.map((trait) => {
                                                                 const isSelectedTrait = selectedEventTrait === trait;
                                                                 return (
@@ -5055,6 +5076,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                                         onClick={() => handleSelectEventTrait(trait)}
                                                                         data-testid={`betrayal-event-choice-trait-${trait}`}
                                                                         selected={isSelectedTrait}
+                                                                        selectedClassName={TRAIT_CHOICE_TONE_CLASS[trait].selected}
+                                                                        idleClassName={TRAIT_CHOICE_TONE_CLASS[trait].idle}
                                                                     >
                                                                         {TRAIT_LABEL_LOCAL[trait]}
                                                                     </BetrayalSelectionChip>
@@ -5064,18 +5087,18 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     </div>
                                                 ) : null}
                                                 {pendingEventTargetRooms.length > 0 ? (
-                                                    <div className="grid gap-2" data-testid="betrayal-event-choice-rooms">
-                                                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">
+                                                    <div className="grid gap-3.5" data-testid="betrayal-event-choice-rooms">
+                                                        <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
                                                             {t('board.inventory.map')}
                                                         </span>
-                                                        <div className="flex flex-wrap gap-2">
+                                                        <div className="flex flex-wrap gap-4">
                                                             {pendingEventTargetRooms.map((room) => {
                                                                 const isSelectedRoom = selectedEventTargetRoomId === room.id;
                                                                 return (
                                                                     <span
                                                                         key={room.id}
                                                                         data-testid={`betrayal-event-choice-room-${room.id}`}
-                                                                        className={`inline-flex min-h-[28px] items-center border px-2 text-[11px] font-semibold ${
+                                                                        className={`inline-flex min-h-[38px] items-center rounded-[7px] border px-3 text-[13px] font-semibold ${
                                                                             isSelectedRoom
                                                                                 ? 'border-[#d1b05f] bg-[rgba(209,176,95,0.18)] text-[#eef4a8]'
                                                                                 : 'border-[rgba(211,179,109,0.20)] bg-[rgba(18,15,10,0.30)] text-[#d6c498]'
@@ -5089,11 +5112,11 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     </div>
                                                 ) : null}
                                                 {pendingEventDamageChoice ? (
-                                                    <div className="grid gap-2" data-testid="betrayal-event-choice-damage-traits">
-                                                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#c9a35e]">
+                                                    <div className="grid gap-3.5" data-testid="betrayal-event-choice-damage-traits">
+                                                        <span className="text-[14px] font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
                                                             {t('board.status.damage')}
                                                         </span>
-                                                        <div className="flex flex-wrap gap-2">
+                                                        <div className="flex flex-wrap gap-4">
                                                             {pendingEventDamageChoice.allowedTraits.map((trait) => {
                                                                 const isSelectedDamageTrait = selectedEventDamageTraits.includes(trait);
                                                                 return (
@@ -5103,6 +5126,8 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                                         onClick={() => handleToggleEventDamageTrait(trait)}
                                                                         data-testid={`betrayal-event-choice-damage-${trait}`}
                                                                         selected={isSelectedDamageTrait}
+                                                                        selectedClassName={TRAIT_CHOICE_TONE_CLASS[trait].selected}
+                                                                        idleClassName={TRAIT_CHOICE_TONE_CLASS[trait].idle}
                                                                     >
                                                                         {TRAIT_LABEL_LOCAL[trait]}
                                                                     </BetrayalSelectionChip>
@@ -5112,14 +5137,14 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     </div>
                                                 ) : null}
                                             </div>
-                                            <div className="mt-5 flex shrink-0 justify-end gap-2 border-t border-[rgba(211,179,109,0.22)] pt-3">
+                                            <div className="mt-7 flex shrink-0 justify-end gap-4 pt-3">
                                                 {pendingEventChoice.declineLabel ? (
                                                     <button
                                                         type="button"
                                                         onClick={() => handleResolveEventChoice(false)}
                                                         disabled={!pendingEventCanDecline}
                                                         data-testid="betrayal-event-choice-decline"
-                                                        className="min-h-[38px] border border-[rgba(211,179,109,0.28)] bg-[rgba(18,15,10,0.34)] px-4 text-[12px] font-bold text-[#d6c498] transition hover:border-[rgba(211,179,109,0.48)] hover:text-[#f0dfad] disabled:border-[rgba(123,106,74,0.24)] disabled:text-[#7a6a4a]"
+                                                        className="min-h-[64px] min-w-[144px] cursor-pointer rounded-[10px] border-2 border-[rgba(211,179,109,0.42)] bg-[rgba(18,15,10,0.58)] px-7 text-[16px] font-black tracking-[0.06em] text-[#d6c498] shadow-[0_12px_26px_rgba(0,0,0,0.30)] transition-colors duration-150 hover:border-[rgba(211,179,109,0.68)] hover:text-[#f0dfad] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.24)] disabled:text-[#7a6a4a] disabled:shadow-none"
                                                     >
                                                         {pendingEventChoice.declineLabel}
                                                     </button>
@@ -5129,7 +5154,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     onClick={() => handleResolveEventChoice(true)}
                                                     disabled={!pendingEventReady}
                                                     data-testid="betrayal-event-choice-confirm"
-                                                    className="min-h-[38px] border border-[#d1b05f] bg-[rgba(209,176,95,0.24)] px-4 text-[12px] font-bold text-[#fff1b8] transition hover:bg-[rgba(209,176,95,0.32)] disabled:border-[rgba(123,106,74,0.26)] disabled:bg-[rgba(13,15,11,0.32)] disabled:text-[#7a6a4a]"
+                                                    className="min-h-[64px] min-w-[144px] cursor-pointer rounded-[10px] border-2 border-[#d1b05f] bg-[rgba(209,176,95,0.34)] px-7 text-[16px] font-black tracking-[0.06em] text-[#fff1b8] shadow-[0_0_28px_rgba(209,176,95,0.26)] transition-colors duration-150 hover:bg-[rgba(209,176,95,0.44)] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.26)] disabled:bg-[rgba(13,15,11,0.34)] disabled:text-[#7a6a4a] disabled:shadow-none"
                                                 >
                                                     {pendingEventChoice.acceptLabel ?? t('common:button.confirm')}
                                                 </button>
@@ -6041,7 +6066,10 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="-mt-2.5 inline-flex h-9 min-w-9 items-center justify-center rounded-full border border-[#6f5933] bg-[radial-gradient(circle_at_35%_25%,rgba(229,210,174,0.14),rgba(21,18,14,0.92))] px-2 text-[20px] font-semibold text-[#e3d2ae] shadow-[0_6px_12px_rgba(0,0,0,0.16)]">
+                                            <div
+                                                data-resource-count-shape="square"
+                                                className="-mt-2.5 inline-flex h-9 min-w-9 items-center justify-center rounded-[6px] border border-[#6f5933] bg-[radial-gradient(circle_at_35%_25%,rgba(229,210,174,0.14),rgba(21,18,14,0.92))] px-2 text-[20px] font-semibold text-[#e3d2ae] shadow-[0_6px_12px_rgba(0,0,0,0.16)]"
+                                            >
                                                 {item.count}
                                             </div>
                                         </div>
@@ -6189,6 +6217,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         {(['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((key) => (
                                                             <span
                                                                 key={`${explorer.playerId}-${key}`}
+                                                                data-trait-value-shape="square"
                                                                 className={`inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[4px] bg-[rgba(21,18,14,0.84)] px-1 text-[9px] font-semibold ${TRAIT_VALUE_TEXT_CLASS[key]}`}
                                                                 title={`${TRAIT_LABEL_LOCAL[key]} ${explorer.traits[key]}`}
                                                             >
