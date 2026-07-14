@@ -6361,43 +6361,43 @@
     },
     "astroknights_annoying_alien": {
       "name": "恼人的外星",
-      "effectText": "天赋：说出一个随从名称。这里所有该名称的随从获得 -2 力量，直到你的下个回合开始。"
+      "abilityText": "天赋：说出一个随从名称。这里所有该名称的随从获得 -2 力量，直到你的下个回合开始。"
     },
     "astroknights_pupoks": {
       "name": "帕伯克人",
-      "effectText": "天赋：失去 1 VP，以展示你牌库顶三张牌并抽取它们。你可以将其中一张作为额外牌打出。"
+      "abilityText": "天赋：失去 1 VP，以展示你牌库顶三张牌并抽取它们。你可以将其中一张作为额外牌打出。"
     },
     "astroknights_alien_guru": {
       "name": "外星人大师",
-      "effectText": "持续：每回合一次，在你打出一个直接增加随从力量的行动后，你也可以在该随从上放置 1 枚 +1 力量标记。"
+      "abilityText": "持续：每回合一次，在你打出一个直接增加随从力量的行动后，你也可以在该随从上放置 1 枚 +1 力量标记。"
     },
     "astroknights_walking_carpet": {
       "name": "自主地毯",
-      "effectText": "特殊：在此基地计分前，若你没有领先，你可以打出一个直接增加此随从力量的行动。"
+      "abilityText": "特殊：在此基地计分前，若你没有领先，你可以打出一个直接增加此随从力量的行动。"
     },
     "astroknights_scoundrel": {
       "name": "恶棍",
-      "effectText": "天赋：将此随从和这里你的另一个随从移动到另一个基地。"
+      "abilityText": "天赋：将此随从和这里你的另一个随从移动到另一个基地。"
     },
     "astroknights_ghost_knight": {
       "name": "幽灵武士",
-      "effectText": "持续：此随从不能被消灭。这里你的其他随从获得 +2 力量。"
+      "abilityText": "持续：此随从不能被消灭。这里你的其他随从获得 +2 力量。"
     },
     "astroknights_mannersbot": {
       "name": "礼仪机器人",
-      "effectText": "天赋：展示你牌库顶一张牌。若它是行动，抽取它；否则将它放回。"
+      "abilityText": "天赋：展示你牌库顶一张牌。若它是行动，抽取它；否则将它放回。"
     },
     "astroknights_space_prince": {
       "name": "太空王子",
-      "effectText": "天赋：额外打出一个直接增加你的一个随从力量的行动。"
+      "abilityText": "天赋：额外打出一个直接增加你的一个随从力量的行动。"
     },
     "astroknights_space_knight": {
       "name": "太空武士",
-      "effectText": "天赋：展示你牌库顶三张牌。你可以从展示的牌中抽取一张行动。将其余牌以任意顺序放回。"
+      "abilityText": "天赋：展示你牌库顶三张牌。你可以从展示的牌中抽取一张行动。将其余牌以任意顺序放回。"
     },
     "astroknights_astro_robot": {
       "name": "宇航机器人",
-      "effectText": "你可以消灭一张打在此基地上或这里一个随从上的行动。"
+      "abilityText": "你可以消灭一张打在此基地上或这里一个随从上的行动。"
     },
     "ignobles_repaying_debts": {
       "name": "有债必还",
@@ -6433,19 +6433,19 @@
     },
     "ignobles_sneaky_squire": {
       "name": "奸诈贵族",
-      "effectText": "你可以将此随从的控制权交给另一名玩家，以额外打出一个随从。"
+      "abilityText": "你可以将此随从的控制权交给另一名玩家，以额外打出一个随从。"
     },
     "ignobles_betrothed": {
       "name": "未婚妻",
-      "effectText": "你可以将此随从的控制权交给另一名玩家。持续：若另一名玩家赢得此基地且控制此随从，此随从的拥有者获得 1 VP。"
+      "abilityText": "你可以将此随从的控制权交给另一名玩家。持续：若另一名玩家赢得此基地且控制此随从，此随从的拥有者获得 1 VP。"
     },
     "ignobles_foot_of_the_king": {
       "name": "国王之脚",
-      "effectText": "持续：在你的回合结束时，你可以获得一个你拥有的随从的控制权。"
+      "abilityText": "持续：在你的回合结束时，你可以获得一个你拥有的随从的控制权。"
     },
     "ignobles_aunt_of_drakes": {
       "name": "龙之伯母",
-      "effectText": "天赋：将你的一个随从的控制权交给另一名玩家，以抽一张牌并额外打出一个行动。"
+      "abilityText": "天赋：将你的一个随从的控制权交给另一名玩家，以抽一张牌并额外打出一个行动。"
     },
     "star_roamers_weird_new_worlds": {
       "name": "奇异新世界",
@@ -6481,23 +6481,23 @@
     },
     "star_roamers_ships_engineer": {
       "name": "舰船工程师",
-      "effectText": "持续：若你的另一个随从将要返回你的手牌，你可以改为将它移动到另一个基地。"
+      "abilityText": "持续：若你的另一个随从将要返回你的手牌，你可以改为将它移动到另一个基地。"
     },
     "star_roamers_medical_officer": {
       "name": "医疗指挥官",
-      "effectText": "持续：当你的一个或多个其他随从将要返回你的手牌时，你可以抽一张牌来代替返回其中一个。"
+      "abilityText": "持续：当你的一个或多个其他随从将要返回你的手牌时，你可以抽一张牌来代替返回其中一个。"
     },
     "star_roamers_science_officer": {
       "name": "科学指挥官",
-      "effectText": "天赋：将你一个力量 4 或以下的随从返回其拥有者手牌。额外打出一个不同名称的随从。"
+      "abilityText": "天赋：将你一个力量 4 或以下的随从返回其拥有者手牌。额外打出一个不同名称的随从。"
     },
     "star_roamers_ensign": {
       "name": "炮灰",
-      "effectText": "持续：当一名对手打出一张直接影响这里你的另一个随从的牌时，你可以改为让它影响此随从。"
+      "abilityText": "持续：当一名对手打出一张直接影响这里你的另一个随从的牌时，你可以改为让它影响此随从。"
     },
     "star_roamers_ships_captain": {
       "name": "舰长",
-      "effectText": "从你的牌库搜寻一个随从，展示它，加入手牌并洗牌。若它力量为 3 或以下，将它作为额外随从打到这里。"
+      "abilityText": "从你的牌库搜寻一个随从，展示它，加入手牌并洗牌。若它力量为 3 或以下，将它作为额外随从打到这里。"
     },
     "changerbots_matrix_of_bossiness": {
       "name": "跋扈模块",
@@ -6533,19 +6533,19 @@
     },
     "changerbots_leader_two": {
       "name": "李德徒",
-      "effectText": "天赋：你的另一个随从获得 +2 力量直到回合结束。"
+      "abilityText": "天赋：你的另一个随从获得 +2 力量直到回合结束。"
     },
     "changerbots_solarshout": {
       "name": "破空",
-      "effectText": "天赋：额外打出一个行动。令此随从获得 -2 力量直到回合结束。"
+      "abilityText": "天赋：额外打出一个行动。令此随从获得 -2 力量直到回合结束。"
     },
     "changerbots_huffie": {
       "name": "飞撕",
-      "effectText": "天赋：将此随从移动到另一个基地，并令其获得 -1 力量直到回合结束。"
+      "abilityText": "天赋：将此随从移动到另一个基地，并令其获得 -1 力量直到回合结束。"
     },
     "changerbots_bruiser": {
       "name": "创世",
-      "effectText": "持续：此随从不能被消灭。天赋：此随从获得 +2 力量，并失去其持续能力和所有其他能力，直到你的下个回合开始。"
+      "abilityText": "持续：此随从不能被消灭。天赋：此随从获得 +2 力量，并失去其持续能力和所有其他能力，直到你的下个回合开始。"
     },
     "base_spikey_chair_room": {
       "name": "刺王座",

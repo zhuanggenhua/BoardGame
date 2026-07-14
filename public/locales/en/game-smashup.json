@@ -6378,43 +6378,43 @@
     },
     "astroknights_annoying_alien": {
       "name": "Annoying Alien",
-      "effectText": "Talent: Name a minion. All minions here with that name get -2 power until the start of your next turn."
+      "abilityText": "Talent: Name a minion. All minions here with that name get -2 power until the start of your next turn."
     },
     "astroknights_pupoks": {
       "name": "Pupoks",
-      "effectText": "Talent: Lose 1 VP to reveal the top three cards of your deck and draw them. You may play one of them as an extra card."
+      "abilityText": "Talent: Lose 1 VP to reveal the top three cards of your deck and draw them. You may play one of them as an extra card."
     },
     "astroknights_alien_guru": {
       "name": "Alien Guru",
-      "effectText": "Ongoing: Once per turn, after you play an action that directly increases a minion’s power, you may also place a +1 power counter on it."
+      "abilityText": "Ongoing: Once per turn, after you play an action that directly increases a minion’s power, you may also place a +1 power counter on it."
     },
     "astroknights_walking_carpet": {
       "name": "Walking Carpet",
-      "effectText": "Special: Before this base scores, if you are not winning, you may play an action that directly increases the power of this minion."
+      "abilityText": "Special: Before this base scores, if you are not winning, you may play an action that directly increases the power of this minion."
     },
     "astroknights_scoundrel": {
       "name": "Scoundrel",
-      "effectText": "Talent: Move this minion and another one of your minions here to another base."
+      "abilityText": "Talent: Move this minion and another one of your minions here to another base."
     },
     "astroknights_ghost_knight": {
       "name": "Ghost Knight",
-      "effectText": "Ongoing: This minion cannot be destroyed. Your other minions here have +2 power."
+      "abilityText": "Ongoing: This minion cannot be destroyed. Your other minions here have +2 power."
     },
     "astroknights_mannersbot": {
       "name": "Mannersbot",
-      "effectText": "Talent: Reveal the top card of your deck. If it is an action, draw it, otherwise return it."
+      "abilityText": "Talent: Reveal the top card of your deck. If it is an action, draw it, otherwise return it."
     },
     "astroknights_space_prince": {
       "name": "Space Prince",
-      "effectText": "Talent: Play an extra action that directly increases the power of one of your minions."
+      "abilityText": "Talent: Play an extra action that directly increases the power of one of your minions."
     },
     "astroknights_space_knight": {
       "name": "Space Knight",
-      "effectText": "Talent: Reveal the top three cards of your deck. You may draw one action from the revealed cards. Return the rest in any order."
+      "abilityText": "Talent: Reveal the top three cards of your deck. You may draw one action from the revealed cards. Return the rest in any order."
     },
     "astroknights_astro_robot": {
       "name": "Astro Robot",
-      "effectText": "You may destroy an action played on this base or on a minion here."
+      "abilityText": "You may destroy an action played on this base or on a minion here."
     },
     "ignobles_repaying_debts": {
       "name": "Repaying Debts",
@@ -6450,19 +6450,19 @@
     },
     "ignobles_sneaky_squire": {
       "name": "Sneaky Squire",
-      "effectText": "You may give control of this minion to another player to play an extra minion."
+      "abilityText": "You may give control of this minion to another player to play an extra minion."
     },
     "ignobles_betrothed": {
       "name": "Betrothed",
-      "effectText": "You may give control of this minion to another player. Ongoing: The owner of this minion gains 1 VP if another player wins this base and controls this minion."
+      "abilityText": "You may give control of this minion to another player. Ongoing: The owner of this minion gains 1 VP if another player wins this base and controls this minion."
     },
     "ignobles_foot_of_the_king": {
       "name": "Foot of the King",
-      "effectText": "Ongoing: At the end of your turn, you may take control of a minion you own."
+      "abilityText": "Ongoing: At the end of your turn, you may take control of a minion you own."
     },
     "ignobles_aunt_of_drakes": {
       "name": "Aunt of Drakes",
-      "effectText": "Talent: Give control of one of your minions to another player to draw a card and play an extra action."
+      "abilityText": "Talent: Give control of one of your minions to another player to draw a card and play an extra action."
     },
     "star_roamers_weird_new_worlds": {
       "name": "Weird New Worlds",
@@ -6498,23 +6498,23 @@
     },
     "star_roamers_ships_engineer": {
       "name": "Ship's Engineer",
-      "effectText": "Ongoing: If another one of your minions would be returned to your hand, you may move it to another base instead."
+      "abilityText": "Ongoing: If another one of your minions would be returned to your hand, you may move it to another base instead."
     },
     "star_roamers_medical_officer": {
       "name": "Medical Officer",
-      "effectText": "Ongoing: When one or more of your other minions would be returned to your hand, you may draw a card instead of returning one of them."
+      "abilityText": "Ongoing: When one or more of your other minions would be returned to your hand, you may draw a card instead of returning one of them."
     },
     "star_roamers_science_officer": {
       "name": "Science Officer",
-      "effectText": "Talent: Return one of your minions of power 4 or less to its owner’s hand. Play an extra minion with a different name."
+      "abilityText": "Talent: Return one of your minions of power 4 or less to its owner’s hand. Play an extra minion with a different name."
     },
     "star_roamers_ensign": {
       "name": "Ensign",
-      "effectText": "Ongoing: When an opponent plays a card that directly affects one of your other minions here, you may have it affect this minion instead."
+      "abilityText": "Ongoing: When an opponent plays a card that directly affects one of your other minions here, you may have it affect this minion instead."
     },
     "star_roamers_ships_captain": {
       "name": "Ship's Captain",
-      "effectText": "Search your deck for a minion, reveal it, add it to your hand and shuffle your deck. If it has power 3 or less, play it here as an extra minion."
+      "abilityText": "Search your deck for a minion, reveal it, add it to your hand and shuffle your deck. If it has power 3 or less, play it here as an extra minion."
     },
     "changerbots_matrix_of_bossiness": {
       "name": "Matrix of Bossiness",
@@ -6550,19 +6550,19 @@
     },
     "changerbots_leader_two": {
       "name": "Leader Two",
-      "effectText": "Talent: One of your other minions gains +2 power until the end of the turn."
+      "abilityText": "Talent: One of your other minions gains +2 power until the end of the turn."
     },
     "changerbots_solarshout": {
       "name": "Solarshout",
-      "effectText": "Talent: Play an extra action. Give this minion -2 power until the end of the turn."
+      "abilityText": "Talent: Play an extra action. Give this minion -2 power until the end of the turn."
     },
     "changerbots_huffie": {
       "name": "Huffie",
-      "effectText": "Talent: Move this minion to another base and give it -1 power until the end of the turn."
+      "abilityText": "Talent: Move this minion to another base and give it -1 power until the end of the turn."
     },
     "changerbots_bruiser": {
       "name": "Bruiser",
-      "effectText": "Ongoing: This minion cannot be destroyed. Talent: This minion gains +2 power and loses its Ongoing ability and all other abilities until the start of your next turn."
+      "abilityText": "Ongoing: This minion cannot be destroyed. Talent: This minion gains +2 power and loses its Ongoing ability and all other abilities until the start of your next turn."
     },
     "base_spikey_chair_room": {
       "name": "Spikey Chair Room",

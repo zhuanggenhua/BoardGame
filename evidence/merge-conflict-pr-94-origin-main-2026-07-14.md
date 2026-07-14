@@ -39,6 +39,7 @@
 - 修正 `commands.ts` 中重复声明的计分基地校验变量。
 - 修正泰坦 special 分支计分基地校验使用未定义 `titan` 的问题，改为按 `spTitanUid` 读取当前泰坦定义。
 - 修正 `cease_and_desist.ts` 中 3 处运行时 `onResolve` 抽牌手传 random，改为 `buildStandardDrawEventsFromRuntimeContext`。
+- 修正 Cease and Desist 随从文案字段，将中英文 locale 中的随从能力文本从 `effectText` 改为 `abilityText`。
 
 ## 验证
 
@@ -46,5 +47,6 @@
 - `npx vitest run src/games/smashup/__tests__/smashup.smoke.test.ts src/games/smashup/__tests__/ongoingEffects.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/abilities/cease-and-desist.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `npx vitest run src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts --config vitest.config.audit.ts --configLoader native`
+- `npx vitest run src/games/smashup/__tests__/cardI18nIntegrity.test.ts --config vitest.config.core.ts --pool forks --no-file-parallelism --maxWorkers 1`
 - `git diff --name-only --diff-filter=U`
 - `git diff --check`
