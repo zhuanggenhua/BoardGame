@@ -538,7 +538,7 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
         {
             id: 'battle-damage',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.battleDamage',
-            highlightTarget: 'qidahen-pending-casualty-priority',
+            highlightTarget: 'qidahen-resolve-pending-action',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],

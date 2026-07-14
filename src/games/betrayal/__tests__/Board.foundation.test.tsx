@@ -1461,7 +1461,7 @@ describe('Betrayal Board foundation', () => {
         );
 
         const eventChoicePanel = screen.getByTestId('betrayal-event-choice-panel');
-        expect(eventChoicePanel).toHaveTextContent('上古旧宅');
+        expect(eventChoicePanel).toHaveAttribute('aria-label', '上古旧宅');
         expect(eventChoicePanel).toHaveAttribute('data-layout', 'main-stage');
         expect(eventChoicePanel).toHaveAttribute('data-surface', 'open-table');
         expect(screen.getByTestId('betrayal-event-choice-card-front-atlas')).toBeInTheDocument();
@@ -1498,7 +1498,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('肉质苔癣');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '肉质苔癣');
         expect(screen.getByTestId('betrayal-event-choice-confirm')).toHaveTextContent('大口吸入芳香');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
 
@@ -1526,7 +1526,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('大宅饿了');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '大宅饿了');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
         fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
 
@@ -1567,7 +1567,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('蜘蛛！');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '蜘蛛！');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-speed'));
         expect(screen.getByTestId('betrayal-room-event-choice-target-grand-staircase')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-room-grand-staircase'));
@@ -1600,7 +1600,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('吊死鬼');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '吊死鬼');
         expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
         expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
@@ -1642,7 +1642,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('一条秘密通道');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '一条秘密通道');
         expect(screen.getByTestId('betrayal-room-event-choice-target-hallway')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
         fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
@@ -1676,7 +1676,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('脑状食品');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '脑状食品');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-speed'));
         fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
 
@@ -1699,7 +1699,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('脑状食品');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '脑状食品');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-might'));
         fireEvent.click(screen.getByTestId('betrayal-event-choice-damage-knowledge'));
         fireEvent.click(screen.getByTestId('betrayal-event-choice-confirm'));
@@ -1736,7 +1736,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('夜幕众星');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '夜幕众星');
         expect(screen.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
         fireEvent.click(screen.getByTestId('betrayal-event-choice-trait-knowledge'));
         expect(screen.getByTestId('betrayal-event-choice-confirm')).not.toBeDisabled();
@@ -1767,7 +1767,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('一抹鲜红');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '一抹鲜红');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
@@ -1794,7 +1794,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('一瓶微尘');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '一瓶微尘');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
@@ -1825,7 +1825,7 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveTextContent('说“茄子”！');
+        expect(screen.getByTestId('betrayal-event-choice-panel')).toHaveAttribute('aria-label', '说“茄子”！');
         fireEvent.click(screen.getByTestId('betrayal-event-choice-decline'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();

@@ -50,6 +50,7 @@ const FIELD_BATTLE_STEP_01 = `${TUTORIAL_DIR}/23-进攻第1步-点击突袭作�
 const FIELD_BATTLE_STEP_02 = `${TUTORIAL_DIR}/24-进攻第2步-弃1张手牌支付突袭.png`;
 const FIELD_BATTLE_STEP_03 = `${TUTORIAL_DIR}/25-进攻第3步-支付后进入察哈尔野战.png`;
 const FIELD_BATTLE_STEP_03A = `${TUTORIAL_DIR}/25a-进攻第3a步-战术牌时机高亮骑兵冲锋.png`;
+const FIELD_BATTLE_STEP_03B = `${TUTORIAL_DIR}/25b-进攻第3b步-战术牌选中后显示打出确认.png`;
 const FIELD_BATTLE_STEP_04 = `${TUTORIAL_DIR}/26-进攻第4步-打出战术牌后决定承伤顺序.png`;
 const FIELD_BATTLE_STEP_04A = `${TUTORIAL_DIR}/26a-进攻第4a步-看断后后的战后处理.png`;
 const FIELD_BATTLE_STEP_05 = `${TUTORIAL_DIR}/27-进攻第5步-看战败标记与战后选择.png`;
@@ -758,8 +759,8 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="tactic-window"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击这张战术牌');
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('只改变眼前这一仗');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击「骑兵冲锋」选中');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('再点“打出战术牌”确认');
         const pendingGuideGeometry = await page.evaluate(() => {
             const selectedTokens = Array.from(document.querySelectorAll<HTMLElement>(
                 '[data-testid^="qidahen-map-token-"][data-pending-committed-selected="true"]',
@@ -821,9 +822,23 @@ test.describe('七大恨新游戏收口', () => {
         };
         const tacticCard = beforeTacticCore.handCards.find((card) => card.cardDefId === 'qidahen-atlas05-1618-cavalry-charge');
         expect(tacticCard).toBeTruthy();
-        await page.locator('[data-tutorial-id="qidahen-atlas05-1618-cavalry-charge"]').click();
+        const tacticCardButton = page.locator(`[data-testid="qidahen-hand-card-${tacticCard!.id}"]`);
+        await tacticCardButton.click();
+        await expect(page.locator('[data-tutorial-step="tactic-window"]')).toBeVisible({ timeout: 10000 });
+        await expect(tacticCardButton).toHaveAttribute('data-game-object-selected', 'true');
+        await expect(page.locator('[data-testid="qidahen-tactic-card-selection-panel"]')).toContainText('骑兵冲锋');
+        await expect(page.locator('[data-testid="qidahen-confirm-tactic-card"]')).toContainText('打出战术牌');
+        await saveScreenshot(page, FIELD_BATTLE_STEP_03B);
+        await tacticCardButton.click();
+        await expect(tacticCardButton).not.toHaveAttribute('data-game-object-selected', 'true');
+        await expect(page.locator('[data-testid="qidahen-tactic-card-selection-panel"]')).toBeHidden();
+        await tacticCardButton.click();
+        await expect(tacticCardButton).toHaveAttribute('data-game-object-selected', 'true');
+        await page.locator('[data-testid="qidahen-confirm-tactic-card"]').click();
 
         await expect(page.locator('[data-tutorial-step="battle-damage"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击右侧战斗面板里的「断后」');
+        await expect(page.locator('[data-tutorial-id="qidahen-resolve-pending-action"]')).toContainText('断后');
         const afterTacticCore = await readQidahenCore(page) as {
             discardPileCount: number;
             handCards: Array<{ id: string }>;

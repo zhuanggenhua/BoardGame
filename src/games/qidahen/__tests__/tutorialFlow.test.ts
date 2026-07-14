@@ -454,6 +454,7 @@ describe('qidahen tutorial flow', () => {
             payload: { cardId: tacticCard.id },
         });
         expect(state.sys.tutorial.step?.id).toBe('battle-damage');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-resolve-pending-action');
         expect((state.core as any).handCards.some((card: any) => card.id === tacticCard.id)).toBe(false);
         expect((state.core as any).lastSeasonSummary?.title).toBe('战术牌');
         expect((state.core as any).lastSeasonSummary?.lines.join(' ')).toContain('打出战术牌');

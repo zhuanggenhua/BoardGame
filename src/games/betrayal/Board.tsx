@@ -1184,7 +1184,7 @@ function BetrayalSelectionChip({
     return (
         <button
             {...buttonProps}
-            className={`inline-flex min-h-[64px] min-w-[136px] cursor-pointer items-center justify-center rounded-[10px] border-2 px-6 py-3 text-[20px] font-black tracking-[0.08em] shadow-[0_12px_28px_rgba(0,0,0,0.32)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4df9a] ${
+            className={`pointer-events-auto inline-flex min-h-[64px] min-w-[136px] cursor-pointer items-center justify-center rounded-[10px] border-2 px-6 py-3 text-[20px] font-black tracking-[0.08em] shadow-[0_12px_28px_rgba(0,0,0,0.32)] transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f4df9a] ${
                 selected
                     ? selectedClassName || 'border-[#d1b05f] bg-[rgba(209,176,95,0.22)] text-[#fff1b8] shadow-[0_0_16px_rgba(209,176,95,0.20)]'
                     : idleClassName || 'border-[rgba(211,179,109,0.24)] bg-[rgba(18,15,10,0.34)] text-[#d6c498] hover:border-[rgba(211,179,109,0.44)] hover:bg-[rgba(209,176,95,0.10)] hover:text-[#f0dfad]'
@@ -5059,7 +5059,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="pointer-events-auto flex min-h-0 min-w-0 flex-col justify-center">
+                                        <div className="pointer-events-none flex min-h-0 min-w-0 flex-col justify-center">
                                             <div className="custom-scrollbar flex min-h-0 flex-1 flex-col justify-center gap-6 overflow-y-auto pr-1">
                                                 {pendingEventTraitChoices.length > 0 ? (
                                                     <div className="grid gap-3.5" data-testid="betrayal-event-choice-traits">
@@ -5144,7 +5144,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                         onClick={() => handleResolveEventChoice(false)}
                                                         disabled={!pendingEventCanDecline}
                                                         data-testid="betrayal-event-choice-decline"
-                                                        className="min-h-[64px] min-w-[144px] cursor-pointer rounded-[10px] border-2 border-[rgba(211,179,109,0.42)] bg-[rgba(18,15,10,0.58)] px-7 text-[16px] font-black tracking-[0.06em] text-[#d6c498] shadow-[0_12px_26px_rgba(0,0,0,0.30)] transition-colors duration-150 hover:border-[rgba(211,179,109,0.68)] hover:text-[#f0dfad] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.24)] disabled:text-[#7a6a4a] disabled:shadow-none"
+                                                        className="pointer-events-auto min-h-[64px] min-w-[144px] cursor-pointer rounded-[10px] border-2 border-[rgba(211,179,109,0.42)] bg-[rgba(18,15,10,0.58)] px-7 text-[16px] font-black tracking-[0.06em] text-[#d6c498] shadow-[0_12px_26px_rgba(0,0,0,0.30)] transition-colors duration-150 hover:border-[rgba(211,179,109,0.68)] hover:text-[#f0dfad] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.24)] disabled:text-[#7a6a4a] disabled:shadow-none"
                                                     >
                                                         {pendingEventChoice.declineLabel}
                                                     </button>
@@ -5154,7 +5154,7 @@ export default function BetrayalBoard({ G, dispatch, playerID, matchData, locale
                                                     onClick={() => handleResolveEventChoice(true)}
                                                     disabled={!pendingEventReady}
                                                     data-testid="betrayal-event-choice-confirm"
-                                                    className="min-h-[64px] min-w-[144px] cursor-pointer rounded-[10px] border-2 border-[#d1b05f] bg-[rgba(209,176,95,0.34)] px-7 text-[16px] font-black tracking-[0.06em] text-[#fff1b8] shadow-[0_0_28px_rgba(209,176,95,0.26)] transition-colors duration-150 hover:bg-[rgba(209,176,95,0.44)] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.26)] disabled:bg-[rgba(13,15,11,0.34)] disabled:text-[#7a6a4a] disabled:shadow-none"
+                                                    className="pointer-events-auto min-h-[64px] min-w-[144px] cursor-pointer rounded-[10px] border-2 border-[#d1b05f] bg-[rgba(209,176,95,0.34)] px-7 text-[16px] font-black tracking-[0.06em] text-[#fff1b8] shadow-[0_0_28px_rgba(209,176,95,0.26)] transition-colors duration-150 hover:bg-[rgba(209,176,95,0.44)] disabled:cursor-not-allowed disabled:border-[rgba(123,106,74,0.26)] disabled:bg-[rgba(13,15,11,0.34)] disabled:text-[#7a6a4a] disabled:shadow-none"
                                                 >
                                                     {pendingEventChoice.acceptLabel ?? t('common:button.confirm')}
                                                 </button>

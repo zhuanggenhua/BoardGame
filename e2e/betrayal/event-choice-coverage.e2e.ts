@@ -273,7 +273,7 @@ test.describe('山屋惊魂事件牌真实页面选择承接', () => {
             await injectCore(page, eventCase.buildCore());
             await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
             const eventChoicePanel = page.getByTestId('betrayal-event-choice-panel');
-            await expect(eventChoicePanel).toContainText(eventCase.title);
+            await expect(eventChoicePanel).toHaveAttribute('aria-label', eventCase.title);
             await expect(eventChoicePanel).toHaveAttribute('data-layout', 'main-stage');
             await expect(eventChoicePanel).toHaveAttribute('data-surface', 'open-table');
             await expect(page.getByTestId('betrayal-event-choice-card-front-atlas').or(page.getByTestId('betrayal-event-choice-card-front-missing'))).toBeVisible();

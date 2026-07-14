@@ -91,7 +91,11 @@
       "skipSunYuanhua": "Skip Sun Yuanhua tech",
       "armamentPaymentStatus": "Select {{cost}} armament card(s) · Selected {{selected}}",
       "armamentPaymentHint": "Select the armament card to use; it is played as an armament upgrade first, then goes to the discard pile after resolving.",
-      "confirmUseArmament": "Use and upgrade"
+      "confirmUseArmament": "Use and upgrade",
+      "selectedTacticCard": "Selected tactic card \"{{card}}\"",
+      "tacticCardHint": "Click Play Tactic Card to confirm. Click this hand card again to cancel the selection.",
+      "confirmTacticCard": "Play Tactic Card",
+      "cancelTacticCard": "Cancel"
     },
     "player": {
       "armamentsUndeveloped": "Not developed",
@@ -356,8 +360,8 @@
         "payRaid": "Discard 1 hand card as the cost. Once the cost is paid, Raid actually triggers and pushes the adjacent front into a pending battle.",
         "borderWidth": "Raid has now brought the battle to Chahar. The side panel shows the battle width from Keshiketeng to Chahar: plains can deploy 3 troops, and that width decides how many troops actually fight.",
         "battleOpen": "Now the battle is waiting to resolve. First read the revealed troops on both sides, then decide whether to play a tactic card; tactic cards are used only in this battle window.",
-        "tacticWindow": "Look at the hand area and click the tactic card for this battle. Tactic cards are not played freely during normal actions; they change the trade in this fight.",
-        "battleDamage": "After the tactic card is played, click the battle resolution button. The system rolls artillery, cavalry, then infantry; each 3 points in one stage deals 1 damage, usually absorbed by higher-level troops first.",
+        "tacticWindow": "Look at the hand area, click Cavalry Charge to select it, then click Play Tactic Card to confirm. The selected card lifts up; click it again to cancel if you picked the wrong card.",
+        "battleDamage": "The tactic card is now in the battle. Click Rear Guard in the right battle panel to finish this battle resolution; the system rolls artillery, cavalry, then infantry, and each 3 points deals 1 damage.",
         "battleResult": "After the field battle resolves, compare the surviving infantry and cavalry on both sides. If the totals tie, the defender wins. This result has now moved into post-battle handling.",
         "retreatAndDefeat": "In post-battle handling, the losing side chooses rear guard or rout and takes a defeat marker. Defeat markers wait for Midyear character checks.",
         "finish": "The basic attack chain is: choose Raid, pay with a card, enter the battlefield, play tactics, resolve damage, then handle victory and retreat."
