@@ -28,6 +28,7 @@ import {
 } from "./betrayalTestHelpers";
 
 const EVIDENCE_DIR = "evidence/山屋惊魂-事件牌页面承接E2E";
+const ARMOR_EVIDENCE_DIR = "evidence/山屋惊魂-盔甲物理减伤完整链路";
 
 type EventChoiceCase = {
   title: string;
@@ -178,6 +179,16 @@ async function readCurrentCore(page: Page): Promise<BetrayalCore> {
     }
     return snapshot.core;
   });
+}
+
+function physicalTraitTotal(core: BetrayalCore, playerId: string): number {
+  const explorer = [core.currentExplorer, ...core.otherExplorers].find(
+    (candidate) => candidate.playerId === playerId,
+  );
+  if (!explorer) {
+    throw new Error(`山屋 E2E 无法找到玩家 ${playerId} 的探险者`);
+  }
+  return explorer.traits.might + explorer.traits.speed;
 }
 
 async function dismissDiscoveryPanel(page: Page) {
@@ -2235,6 +2246,159 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       await runDirectRollEventFullChain(page, directRollCase);
     });
   }
+
+  test("盔甲真实链路从电话铃声翻牌到物理伤害减伤结算关闭", async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+    const diagnostics = attachPageDiagnostics(
+      page,
+      "betrayal-event-choice-盔甲物理减伤完整链路",
+    );
+    const screenshotBase = ARMOR_EVIDENCE_DIR;
+    const phoneCall = eventByName("电话铃声");
+    const armorCard = BETRAYAL_DISCOVERY_POOLS.possessions.omen.find(
+      (card) => card.id === "armor",
+    );
+    if (!armorCard) {
+      throw new Error("山屋预兆池缺少盔甲");
+    }
+    const core = createRuntimeCore();
+    core.drawOrder = ["event"];
+    core.eventOrder = [phoneCall];
+    core.currentExplorer = {
+      ...core.currentExplorer,
+      traits: {
+        ...core.currentExplorer.traits,
+        might: 4,
+        speed: 4,
+        knowledge: 4,
+        sanity: 4,
+      },
+      inventory: [{ ...armorCard }],
+    };
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.turnStartInventoryCardIds = ["armor"];
+
+    await injectCore(page, core);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible({
+      timeout: 30000,
+    });
+    const armorShell = page.getByTestId("betrayal-inventory-armor-shell");
+    await expect(armorShell).toBeVisible();
+    await expect(armorShell).toHaveAttribute(
+      "data-rules-summary",
+      /受到物理伤害 -1/,
+    );
+    const beforeCore = await readCurrentCore(page);
+    const physicalBefore = physicalTraitTotal(beforeCore, "0");
+    expect(physicalBefore).toBe(8);
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/01-盔甲减伤前牌桌可操作.jpg`,
+    );
+
+    await page.getByTestId("betrayal-action-move").click();
+    await page.getByTestId("betrayal-room-hallway").click();
+    await expect(
+      page.getByTestId("betrayal-room-ground-north"),
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    await page.getByTestId("betrayal-action-explore").click();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-south"),
+    ).toBeVisible();
+    await saveScreenshot(page, `${screenshotBase}/02-选择未知房间前.jpg`);
+
+    await setHarnessRandomQueue(page, [0, 0, 0.99, 0.99]);
+    await page.getByTestId("betrayal-room-ground-north").click();
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
+      0,
+    );
+    const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+    await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
+    await expect(discoveryPanel).toHaveAttribute(
+      "aria-label",
+      /事件牌 电话铃声/,
+    );
+    await expect(
+      page.getByTestId("betrayal-discovery-card-front-atlas"),
+    ).toBeVisible();
+    const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
+    await expect(discoveryDetail).toContainText("投 2 颗骰子 0");
+    await expect(discoveryDetail).toContainText("受到两颗骰子的物理伤害");
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/03-电话铃声翻出并显示物理伤害分支.jpg`,
+    );
+
+    const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
+    await expect(rollPanel).toBeVisible();
+    await expect(rollPanel).toContainText("投 2 颗骰子");
+    await expect(rollPanel).toContainText("总点数 0");
+    await expect(
+      page.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-count", "2");
+    await expect(
+      page.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-rule-subtotal", "0");
+    await expectVisiblePhysicalDiceBox(rollPanel);
+    await waitForPhysicalDiceSettled(rollPanel);
+    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 2 });
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/04-物理伤害骰盘停稳.jpg`,
+    );
+
+    const afterSettleCore = await readCurrentCore(page);
+    expect(afterSettleCore.recentRoll?.eventEffectSnapshot?.damageRolls).toEqual(
+      [2, 2],
+    );
+    expect(physicalTraitTotal(afterSettleCore, "0")).toBe(
+      physicalBefore - 3,
+    );
+    const armoredExplorer = [
+      afterSettleCore.currentExplorer,
+      ...afterSettleCore.otherExplorers,
+    ].find((explorer) => explorer.playerId === "0");
+    expect(armoredExplorer?.traits.might).toBe(1);
+    expect(armoredExplorer?.traits.speed).toBe(4);
+    await expect(discoveryDetail).toContainText("受到 2 颗骰子的物理伤害");
+    await expect(armorShell).toHaveAttribute(
+      "data-rules-summary",
+      /受到物理伤害 -1/,
+    );
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/05-盔甲减伤结算结果可见.jpg`,
+    );
+
+    await dismissDiscoveryPanel(page);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible();
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
+      0,
+    );
+    const closedCore = await readCurrentCore(page);
+    expect(physicalTraitTotal(closedCore, "0")).toBe(physicalBefore - 3);
+    await expect(
+      page.getByTestId("betrayal-room-occupant-ground-north-0"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/06-关闭后回牌桌状态清空.jpg`,
+    );
+
+    assertNoFatalFrontendErrors([
+      { label: "betrayal-event-choice-盔甲物理减伤完整链路", diagnostics },
+    ]);
+  });
 
   test("一条秘密通道真实链路从探索翻牌到检定后选房间结算关闭", async ({
     page,
