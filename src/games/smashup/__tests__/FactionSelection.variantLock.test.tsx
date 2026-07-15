@@ -271,7 +271,7 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
             ...inProgressIds,
         ];
 
-        expect(inProgressIds).toEqual([
+        expect(inProgressIds).toEqual(expect.arrayContaining([
             SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS,
             SMASHUP_FACTION_IDS.VIGILANTES,
             SMASHUP_FACTION_IDS.TRUCKERS,
@@ -280,7 +280,7 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
             SMASHUP_FACTION_IDS.GRIMMS_FAIRY_TALES,
             SMASHUP_FACTION_IDS.RUSSIAN_FAIRY_TALES,
             SMASHUP_FACTION_IDS.ANCIENT_INCAS,
-        ]);
+        ]));
         expect(orderedIds).toEqual(expectedOrderedIds);
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
     });

@@ -9466,6 +9466,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/promos_sheep_all_stars": {
+      "variants": {
+        "webp": {
+          "sha256": "c052ca0f5e79ff77be9de8d9bcb4a7974cc5ce11f7f9e8c2f03dc6f7168dc23a",
+          "bytes": 704114,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/huluwawa_cards": {
       "variants": {
         "png": {
@@ -9525,6 +9534,15 @@
         "png": {
           "sha256": "d2580992fa5dfd33082de91c1b1ba91917185bdd91a22649b84419b782f0176e",
           "bytes": 37611409,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/promos_sheep_all_stars": {
+      "variants": {
+        "png": {
+          "sha256": "f01d0ab000a18f0e167045f1279372c9a54b13d16d9794cf02bc1640e4fbc7c3",
+          "bytes": 34483656,
           "mime": "image/png"
         }
       }

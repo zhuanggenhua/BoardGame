@@ -131,6 +131,21 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical.filter(path => path === 'smashup/cards/marvel_wave_one')).toHaveLength(1);
     });
 
+    it('Promo 绵羊与全明星共享预热同一张新卡图并命中 BASE4 基地图集', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['sheep', 'all_stars'],
+                '1': ['robots', 'wizards'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/promos_sheep_all_stars');
+        expect(result.critical.filter(path => path === 'smashup/cards/promos_sheep_all_stars')).toHaveLength(1);
+        expect(result.critical).toContain('smashup/base/base4');
+    });
+
     it('文化冲击四派系会共享预热文化冲击卡图与基地 atlas', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

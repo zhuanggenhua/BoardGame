@@ -76,6 +76,8 @@ import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
 import { SHARKS_POD_CARDS } from './factions/sharks_pod';
 import { ALL_STARS_POD_CARDS } from './factions/all_stars_pod';
+import { SHEEP_CARDS } from './factions/sheep';
+import { ALL_STARS_CARDS } from './factions/all_stars';
 import { TORNADOS_POD_CARDS } from './factions/tornados_pod';
 import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
 import { MYTHIC_GREEKS_POD_CARDS } from './factions/mythic_greeks_pod';
@@ -249,6 +251,8 @@ registerCards(PRINCESSES_POD_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(SHARKS_POD_CARDS);
 registerCards(ALL_STARS_POD_CARDS);
+registerCards(SHEEP_CARDS);
+registerCards(ALL_STARS_CARDS);
 registerCards(TORNADOS_CARDS);
 registerCards(TORNADOS_POD_CARDS);
 registerCards(MYTHIC_GREEKS_CARDS);
@@ -842,7 +846,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'The Pasture',
         breakpoint: 25,
         vpAwards: [5, 3, 2],
-        faction: 'sheep',
+        faction: SMASHUP_FACTION_IDS.SHEEP,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 8 },
     },
     {
@@ -851,9 +855,27 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'Sheep Shrine',
         breakpoint: 19,
         vpAwards: [4, 2, 1],
-        faction: 'sheep',
+        faction: SMASHUP_FACTION_IDS.SHEEP,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 9 },
         replaceOnSetup: true,
+    },
+    {
+        id: 'base_locker_room',
+        name: '更衣室',
+        nameEn: 'Locker Room',
+        breakpoint: 23,
+        vpAwards: [3, 2, 2],
+        faction: SMASHUP_FACTION_IDS.ALL_STARS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 10 },
+    },
+    {
+        id: 'base_stadium',
+        name: '体育场',
+        nameEn: 'Stadium',
+        breakpoint: 17,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.ALL_STARS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 11 },
     },
     {
         id: 'base_castle_blood',

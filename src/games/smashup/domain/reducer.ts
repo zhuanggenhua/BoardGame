@@ -2139,9 +2139,15 @@ export function processAffectTriggers(
     random: RandomFn,
     now: number
 ): PostProcessResult {
+    const retainedEvents: SmashUpEvent[] = [];
     const extraEvents: SmashUpEvent[] = [];
     let ms: MatchState<SmashUpCore> | undefined;
 
+    const skipEnsignRedirect = (event: SmashUpEvent): boolean => (
+        ((event as { payload?: { skipEnsignRedirect?: boolean } }).payload?.skipEnsignRedirect ?? false) === true
+    );
+
+    eventLoop:
     for (const [eventIndex, event] of events.entries()) {
         const stateBeforeAffect = ms ?? state;
         const coreBeforeAffect = stateBeforeAffect.core;
@@ -2193,6 +2199,39 @@ export function processAffectTriggers(
             const sourceEventId = `minion-affected:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
             const frameId = `minion-affected-frame:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
 
+            if (!skipEnsignRedirect(event)) {
+                const replacement = fireTriggers(coreBeforeAffect, 'onMinionAffected', {
+                    state: coreBeforeAffect,
+                    matchState: stateBeforeAffect,
+                    playerId: record.sourcePlayerId ?? playerId,
+                    baseIndex: record.baseIndex,
+                    frameId,
+                    sourceEventId,
+                    sourceCardUid: record.sourceCardUid,
+                    sourceDefId: record.sourceDefId,
+                    sourceBaseIndex: record.sourceBaseIndex,
+                    sourceControllerId: record.sourceControllerId,
+                    sourceOwnerPlayerId: record.sourceOwnerPlayerId,
+                    triggerMinionUid: record.triggerMinionUid,
+                    triggerMinionDefId: record.triggerMinionDefId,
+                    triggerMinion: record.triggerMinion,
+                    controllerId: record.triggerMinion.controller,
+                    affectType: record.affectType,
+                    counterChangeKind: record.counterChangeKind,
+                    counterDelta: record.counterDelta,
+                    affectEvent: event,
+                    affectBatchTargets,
+                    reason: record.reason,
+                    random,
+                    now,
+                }, { phase: 'replacement' });
+                if (replacement.events.length > 0 || (replacement.matchState && replacement.matchState !== stateBeforeAffect)) {
+                    extraEvents.push(...replacement.events);
+                    if (replacement.matchState) ms = replacement.matchState;
+                    continue eventLoop;
+                }
+            }
+
             const queued = collectTriggers(coreBeforeAffect, 'onMinionAffected', {
                 state: coreBeforeAffect,
                 matchState: stateBeforeAffect,
@@ -2208,6 +2247,7 @@ export function processAffectTriggers(
                 triggerMinionUid: record.triggerMinionUid,
                 triggerMinionDefId: record.triggerMinionDefId,
                 triggerMinion: record.triggerMinion,
+                controllerId: record.triggerMinion.controller,
                 affectType: record.affectType,
                 counterChangeKind: record.counterChangeKind,
                 counterDelta: record.counterDelta,
@@ -2246,10 +2286,11 @@ export function processAffectTriggers(
                 core: advancedCore,
             };
         }
+        retainedEvents.push(event);
     }
 
-    if (extraEvents.length === 0) return ms ? { events, matchState: ms } : { events };
-    return { events: [...events, ...extraEvents], matchState: ms };
+    if (extraEvents.length === 0) return ms ? { events: retainedEvents, matchState: ms } : { events: retainedEvents };
+    return { events: [...retainedEvents, ...extraEvents], matchState: ms };
 }
 
 // ============================================================================

@@ -1247,7 +1247,32 @@
     "grimms_fairy_tales_basket_of_goodies_title": "Basket of Goodies: choose an action in your deck to put on deck top",
     "grimms_fairy_tales_rumpelstiltskin_title": "Rumpelstiltskin: choose a card in your deck to put on deck top",
     "russian_fairy_tales_skip_take_action_option": "Do not take an action",
-    "russian_fairy_tales_skip_give_toad_option": "Do not give Toad away"
+    "russian_fairy_tales_skip_give_toad_option": "Do not give Toad away",
+    "sheep_ram_title": "Ram: choose a base to move to",
+    "sheep_little_bo_peep_title": "Little Bo Peep: choose one of your minions to move here",
+    "sheep_ewe_shall_pass_title": "Ewe Shall Pass: choose one of your minions to move",
+    "sheep_on_the_lamb_title": "On the Lamb: choose your lead minion to move",
+    "sheep_to_follow_or_not_title": "To Follow, or Not?: choose another player",
+    "sheep_to_follow_or_not_resolve_title": "To Follow, or Not?: choose whether to play the random action or return it",
+    "sheep_to_follow_or_not_return_option": "Return that card",
+    "sheep_wood_for_sheep_title": "Wood for Sheep: choose another player",
+    "sheep_wood_for_sheep_resolve_title": "Wood for Sheep: choose a card to give, or return the revealed card",
+    "sheep_wood_for_sheep_return_option": "Return the revealed card",
+    "all_stars_favor_of_dionysus_title": "Favor of Dionysus: choose one of your minions to gain +1",
+    "all_stars_ensign_redirect_title": "Ensign: redirect the effect to Ensign?",
+    "all_stars_ensign_redirect_option": "Affect Ensign instead",
+    "all_stars_gelf_title": "G.E.L.F.: choose a non-G.E.L.F. minion of power 4 or less from your deck",
+    "all_stars_granny_title": "Granny: keep the top card on top or put it on the bottom",
+    "all_stars_granny_top_option": "Keep on top",
+    "all_stars_granny_bottom_option": "Put on bottom",
+    "all_stars_seeing_stars_title": "Seeing Stars: choose a minion of power 3 or less",
+    "all_stars_friendship_power_title": "Friendship Power: choose a minion to move",
+    "all_stars_non_infinite_loop_title": "Non-Infinite Loop: choose an action from your hand",
+    "all_stars_puck_title": "Puck: choose an effect",
+    "all_stars_puck_action_option": "Play an extra action",
+    "all_stars_puck_draw_option": "Draw 1 card",
+    "all_stars_lab_assistant_title": "Lab Assistant: choose another of your minions",
+    "all_stars_prepare_for_battle_title": "Prepare for Battle: choose a card to put into your hand"
   },
   "mechanics": {
     "madness": {
@@ -1787,6 +1812,14 @@
     "ancient_incas": {
       "name": "Ancient Incas",
       "description": "Build actions onto bases, move through sacred paths, and convert attached action engines into power."
+    },
+    "sheep": {
+      "name": "Sheep",
+      "description": "Move, follow, and copy opposing actions to suddenly converge on key bases."
+    },
+    "all_stars": {
+      "name": "All-Stars",
+      "description": "A classic-card all-star roster focused on card draw, discard recovery, and extra plays."
     }
   },
   "tutorial": {
@@ -8303,6 +8336,141 @@
     "base_cuzcu": {
       "name": "Cuzcu",
       "abilityText": "This base’s breakpoint is reduced by 3 for each action on it."
+    },
+    "sheep_counting_sheep": {
+      "name": "Counting Sheep",
+      "effectText": "Play on a base. Ongoing: Once per turn, after the power of another player's minion increases, your minions here gain +1 power until the end of the turn."
+    },
+    "sheep_hello_dolly": {
+      "name": "Hello, Dolly!",
+      "effectText": "Special: Play after another player plays an action. Copy the ability of that action."
+    },
+    "sheep_flock": {
+      "name": "Flock",
+      "abilityText": "Ongoing: After another minion moves from here to another base, move this minion to there as well."
+    },
+    "sheep_black_sheep": {
+      "name": "Black Sheep",
+      "abilityText": "Ongoing: After another minion is played here, move this minion to another base."
+    },
+    "sheep_ram": {
+      "name": "Ram",
+      "abilityText": "Talent: Move this minion to another base, then you may return a minion of power 2 or less at that base to its owner's hand."
+    },
+    "sheep_little_bo_peep": {
+      "name": "Little Bo Peep",
+      "abilityText": "Ongoing: Other players can not move minions to or from here. Talent: Move one of your minions to here."
+    },
+    "sheep_to_follow_or_not": {
+      "name": "To Follow, or Not?",
+      "effectText": "Choose another player. Choose a random action in their discard pile. Play it as an extra action or return it. Draw a card."
+    },
+    "sheep_on_the_lamb": {
+      "name": "On the Lamb",
+      "effectText": "Choose a base where you have a minion, and another player. Move that minion and all of that player's minions there to a single other base."
+    },
+    "sheep_shearing": {
+      "name": "Shearing",
+      "effectText": "Play on a minion. Draw a card. Ongoing: This minion has -2 power. At the start of your turn, return this action to your hand."
+    },
+    "sheep_wood_for_sheep": {
+      "name": "Wood for Sheep",
+      "effectText": "Choose another player. Reveal a random card from their hand. You may place a card from your hand into their hand to play the revealed card. Otherwise return it and play an extra action."
+    },
+    "sheep_ewe_shall_pass": {
+      "name": "Ewe Shall Pass",
+      "effectText": "Move one of your minions to another base. Draw a card. You may play an extra action."
+    },
+    "sheep_in_sheeps_clothing": {
+      "name": "In Sheep's Clothing",
+      "effectText": "Play on a minion. Ongoing: After another minion moves from here to another base, you may move this minion to there as well and destroy this action."
+    },
+    "all_stars_square_deal": {
+      "name": "Square Deal",
+      "effectText": "Draw cards until at least one player has fewer cards in their hand than you."
+    },
+    "all_stars_favor_of_dionysus": {
+      "name": "Favor of Dionysus",
+      "effectText": "One of your minions gains +1 power until the end of the turn. Play an extra action. You may place this card on top of your deck instead of the discard pile."
+    },
+    "all_stars_gelf": {
+      "name": "G.E.L.F.",
+      "abilityText": "Talent: Search your deck for a non-G.E.L.F. minion of power 4 or less. Shuffle this minion into your deck and play that minion here as an extra minion."
+    },
+    "all_stars_granny": {
+      "name": "Granny",
+      "abilityText": "Talent: Look at the top card of your deck. Place it on the top or bottom of your deck."
+    },
+    "all_stars_king_rex": {
+      "name": "King Rex"
+    },
+    "all_stars_seeing_stars": {
+      "name": "Seeing Stars",
+      "effectText": "Destroy a minion of power 3 or less."
+    },
+    "all_stars_begin_the_summoning": {
+      "name": "Begin the Summoning",
+      "effectText": "Place a minion from your discard pile on top of your deck. You may play an extra action this turn."
+    },
+    "all_stars_ghostly_arrival": {
+      "name": "Ghostly Arrival",
+      "effectText": "You may play an extra minion and/or an extra action."
+    },
+    "all_stars_friendship_power": {
+      "name": "Friendship Power",
+      "effectText": "Move one of your minions to a base where you have a minion. You may place this action into your hand instead of the discard pile."
+    },
+    "all_stars_non_infinite_loop": {
+      "name": "Non-Infinite Loop",
+      "effectText": "Choose an action in your hand. Play it as an extra action, then you may put it back into your hand instead of the discard pile."
+    },
+    "all_stars_full_moon": {
+      "name": "Full Moon",
+      "effectText": "Play on a base. Ongoing: Each of your minions here has +1 power."
+    },
+    "all_stars_its_astounding": {
+      "name": "It's Astounding",
+      "effectText": "Play an action from your discard pile as an extra action."
+    },
+    "all_stars_ensign": {
+      "name": "Ensign",
+      "abilityText": "Ongoing: When an opponent plays a card that directly affects one of your other minions here, you may have it affect this minion instead."
+    },
+    "all_stars_puck": {
+      "name": "Puck",
+      "abilityText": "Play an extra action OR draw a card."
+    },
+    "all_stars_lab_assistant": {
+      "name": "Lab Assistant",
+      "abilityText": "Place a +1 power counter on another one of your minions."
+    },
+    "all_stars_prepare_for_battle": {
+      "name": "Prepare for Battle",
+      "effectText": "Reveal the top two cards of your deck. Place one into your hand and the other on the bottom of your deck."
+    },
+    "all_stars_imperial_dragon": {
+      "name": "Imperial Dragon",
+      "abilityText": "Ongoing: After another player plays or moves a minion here, draw a card."
+    },
+    "all_stars_sprout": {
+      "name": "Sprout",
+      "abilityText": "Ongoing: Destroy this card at the start of your turn. You may search your deck for a minion of power 3 or less, and play it here as an extra minion. Shuffle your deck."
+    },
+    "all_stars_fan": {
+      "name": "Fan",
+      "abilityText": "Special: On your turn, you may discard this card from your hand to draw a card."
+    },
+    "all_stars_servitor_of_cthulhu": {
+      "name": "Servitor of Cthulhu",
+      "abilityText": "Talent: Destroy this minion and place an action card from your discard pile on top of your deck."
+    },
+    "base_locker_room": {
+      "name": "Locker Room",
+      "abilityText": "At the start of your turn, if you have a minion here, draw a card."
+    },
+    "base_stadium": {
+      "name": "Stadium",
+      "abilityText": "After a minion here is destroyed, its controller draws a card."
     }
   },
   "debug": {

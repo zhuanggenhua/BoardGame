@@ -307,6 +307,8 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.SKELETONS, nameKey: 'factions.skeletons.name', icon: Skull, color: '#6b7280', descriptionKey: 'factions.skeletons.description', mechanicRule: BURY_MECHANIC_RULE, locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.SKELETONS_POD, nameKey: 'factions.skeletons_pod.name', icon: Skull, color: '#6b7280', descriptionKey: 'factions.skeletons_pod.description', mechanicRule: BURY_MECHANIC_RULE },
     { id: SMASHUP_FACTION_IDS.WORLD_CHAMPS, nameKey: 'factions.world_champs.name', icon: Medal, color: '#eab308', descriptionKey: 'factions.world_champs.description' },
+    { id: SMASHUP_FACTION_IDS.SHEEP, nameKey: 'factions.sheep.name', icon: PawPrint, color: '#84cc16', descriptionKey: 'factions.sheep.description', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.ALL_STARS, nameKey: 'factions.all_stars.name', icon: Medal, color: '#f59e0b', descriptionKey: 'factions.all_stars.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.ALL_STARS_POD, nameKey: 'factions.all_stars_pod.name', icon: Medal, color: '#eab308', descriptionKey: 'factions.all_stars_pod.description' },
     // POD 版本阵营：英文和中文都显示（英文用户的主版本）
     { id: SMASHUP_FACTION_IDS.NINJAS_POD, nameKey: 'factions.ninjas_pod.name', icon: ShurikenIcon, color: '#991b1b', descriptionKey: 'factions.ninjas_pod.description' },

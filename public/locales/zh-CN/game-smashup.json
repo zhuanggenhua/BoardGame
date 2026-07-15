@@ -1230,7 +1230,32 @@
     "grimms_fairy_tales_basket_of_goodies_title": "一篮子好东西：选择牌库中的一个行动放到牌库顶",
     "grimms_fairy_tales_rumpelstiltskin_title": "侏儒怪：选择牌库中的一张牌放到牌库顶",
     "russian_fairy_tales_skip_take_action_option": "不拿行动",
-    "russian_fairy_tales_skip_give_toad_option": "不交出蟾蜍"
+    "russian_fairy_tales_skip_give_toad_option": "不交出蟾蜍",
+    "sheep_ram_title": "公羊：选择要移动到的基地",
+    "sheep_little_bo_peep_title": "小小牧羊女：选择你的一个随从移动到这里",
+    "sheep_ewe_shall_pass_title": "母羊放行：选择你的一个随从移动",
+    "sheep_on_the_lamb_title": "一块羊肉：选择要带队移动的你的随从",
+    "sheep_to_follow_or_not_title": "是不是要跟着？：选择另一位玩家",
+    "sheep_to_follow_or_not_resolve_title": "是不是要跟着？：选择打出随机行动或返回",
+    "sheep_to_follow_or_not_return_option": "返回该牌",
+    "sheep_wood_for_sheep_title": "木材换羊：选择另一位玩家",
+    "sheep_wood_for_sheep_resolve_title": "木材换羊：选择交给对手的牌，或返回展示牌",
+    "sheep_wood_for_sheep_return_option": "返回展示牌",
+    "all_stars_favor_of_dionysus_title": "狄俄尼索斯的青睐：选择你的一个随从 +1",
+    "all_stars_ensign_redirect_title": "少尉：是否改为影响少尉？",
+    "all_stars_ensign_redirect_option": "改为影响少尉",
+    "all_stars_gelf_title": "基因工程生命体：选择牌库中力量 4 或以下的非基因工程生命体随从",
+    "all_stars_granny_title": "老奶奶：将牌库顶牌留在牌库顶或置底",
+    "all_stars_granny_top_option": "留在牌库顶",
+    "all_stars_granny_bottom_option": "置于牌库底",
+    "all_stars_seeing_stars_title": "看星星：选择力量 3 或以下的随从",
+    "all_stars_friendship_power_title": "友情的力量：选择要移动的随从",
+    "all_stars_non_infinite_loop_title": "非无穷循环：选择手牌中的一个行动",
+    "all_stars_puck_title": "小精灵：选择效果",
+    "all_stars_puck_action_option": "额外打出一个行动",
+    "all_stars_puck_draw_option": "抽 1 张牌",
+    "all_stars_lab_assistant_title": "实验室助理：选择你的另一个随从",
+    "all_stars_prepare_for_battle_title": "准备战斗：选择加入手牌的牌"
   },
   "mechanics": {
     "madness": {
@@ -1770,6 +1795,14 @@
     "ancient_incas": {
       "name": "古代印加人",
       "description": "把行动牌筑在基地上，借道路移动与基地附着行动形成持续抽牌和力量引擎。"
+    },
+    "sheep": {
+      "name": "绵羊",
+      "description": "通过移动、跟随和复制对手行动突然集结到关键基地。"
+    },
+    "all_stars": {
+      "name": "全明星",
+      "description": "从经典派系精选的全明星阵容，专注抽牌、弃牌堆回收和额外出牌。"
     }
   },
   "tutorial": {
@@ -8286,6 +8319,141 @@
     "base_cuzcu": {
       "name": "库斯科",
       "abilityText": "此基地上每有一个行动，其断点降低 3。"
+    },
+    "sheep_counting_sheep": {
+      "name": "数羊",
+      "effectText": "对基地打出。持续：每回合一次，在另一位玩家的随从力量增加后，你在这里的随从直到回合结束各 +1 力量。"
+    },
+    "sheep_hello_dolly": {
+      "name": "你好，多莉！",
+      "effectText": "特殊：在另一位玩家打出一个行动后打出。复制该行动的能力。"
+    },
+    "sheep_flock": {
+      "name": "羊群",
+      "abilityText": "持续：在另一个随从从这里移动到另一个基地后，将此随从也移动到那里。"
+    },
+    "sheep_black_sheep": {
+      "name": "黑色牧羊",
+      "abilityText": "持续：在另一个随从打到这里后，将此随从移动到另一个基地。"
+    },
+    "sheep_ram": {
+      "name": "公羊",
+      "abilityText": "天赋：将此随从移动到另一个基地，然后你可以将该基地一个力量 2 或以下的随从返回其拥有者手牌。"
+    },
+    "sheep_little_bo_peep": {
+      "name": "小小牧羊女",
+      "abilityText": "持续：其他玩家不能将随从移动到这里或从这里移走。天赋：将你的一个随从移动到这里。"
+    },
+    "sheep_to_follow_or_not": {
+      "name": "是不是要跟着？",
+      "effectText": "选择另一位玩家。随机选择其弃牌堆中的一张行动。将其作为额外行动打出，或将其返回。抽 1 张牌。"
+    },
+    "sheep_on_the_lamb": {
+      "name": "一块羊肉",
+      "effectText": "选择一个你有随从的基地，并选择另一位玩家。将你的那个随从和那位玩家在那里的所有随从移动到同一个其它基地。"
+    },
+    "sheep_shearing": {
+      "name": "剪羊毛",
+      "effectText": "对一个随从打出。抽 1 张牌。持续：此随从 -2 力量。在你的回合开始时，将此行动返回你的手牌。"
+    },
+    "sheep_wood_for_sheep": {
+      "name": "木材换羊",
+      "effectText": "选择另一位玩家。随机展示其手牌中的一张牌。你可以将你手牌中的一张牌放入其手牌，以打出被展示的牌。否则将其返回并额外打出一个行动。"
+    },
+    "sheep_ewe_shall_pass": {
+      "name": "母羊放行",
+      "effectText": "将你的一个随从移动到另一个基地。抽 1 张牌。你可以额外打出一个行动。"
+    },
+    "sheep_in_sheeps_clothing": {
+      "name": "绵羊装",
+      "effectText": "对一个随从打出。持续：在另一个随从从这里移动到另一个基地后，你可以将此随从也移动到那里并消灭此行动。"
+    },
+    "all_stars_square_deal": {
+      "name": "公正待遇",
+      "effectText": "抽牌，直到至少一名玩家手牌数量少于你。"
+    },
+    "all_stars_favor_of_dionysus": {
+      "name": "狄俄尼索斯的青睐",
+      "effectText": "你的一个随从直到回合结束 +1 力量。额外打出一个行动。你可以将此牌置于你的牌库顶，而不是弃牌堆。"
+    },
+    "all_stars_gelf": {
+      "name": "基因工程生命体",
+      "abilityText": "天赋：从你的牌库搜寻一个非基因工程生命体且力量 4 或以下的随从。将此随从洗入你的牌库，并将搜到的随从作为额外随从打到这里。"
+    },
+    "all_stars_granny": {
+      "name": "老奶奶",
+      "abilityText": "天赋：查看你牌库顶牌。将其置于你的牌库顶或牌库底。"
+    },
+    "all_stars_king_rex": {
+      "name": "霸王龙国王"
+    },
+    "all_stars_seeing_stars": {
+      "name": "看星星",
+      "effectText": "消灭一个力量 3 或以下的随从。"
+    },
+    "all_stars_begin_the_summoning": {
+      "name": "开始召唤",
+      "effectText": "将你弃牌堆中的一个随从置于你的牌库顶。你本回合可以额外打出一个行动。"
+    },
+    "all_stars_ghostly_arrival": {
+      "name": "幽灵般的到来",
+      "effectText": "你可以额外打出一个随从和/或一个行动。"
+    },
+    "all_stars_friendship_power": {
+      "name": "友情的力量",
+      "effectText": "将你的一个随从移动到一个你有随从的基地。你可以将此行动置入你的手牌，而不是弃牌堆。"
+    },
+    "all_stars_non_infinite_loop": {
+      "name": "非无穷循环",
+      "effectText": "选择你手牌中的一个行动。将其作为额外行动打出，然后你可以将其放回手牌，而不是弃牌堆。"
+    },
+    "all_stars_full_moon": {
+      "name": "满月",
+      "effectText": "对基地打出。持续：你在这里的每个随从 +1 力量。"
+    },
+    "all_stars_its_astounding": {
+      "name": "令人惊叹",
+      "effectText": "从你的弃牌堆中打出一个行动作为额外行动。"
+    },
+    "all_stars_ensign": {
+      "name": "少尉",
+      "abilityText": "持续：当一位对手打出一张直接影响你这里另一个随从的牌时，你可以让它改为影响此随从。"
+    },
+    "all_stars_puck": {
+      "name": "小精灵",
+      "abilityText": "额外打出一个行动，或抽 1 张牌。"
+    },
+    "all_stars_lab_assistant": {
+      "name": "实验室助理",
+      "abilityText": "在你的另一个随从上放置一枚 +1 力量指示物。"
+    },
+    "all_stars_prepare_for_battle": {
+      "name": "准备战斗",
+      "effectText": "展示你牌库顶的两张牌。将其中一张加入手牌，另一张置于你的牌库底。"
+    },
+    "all_stars_imperial_dragon": {
+      "name": "帝国龙",
+      "abilityText": "持续：在另一位玩家将随从打到或移动到这里后，抽 1 张牌。"
+    },
+    "all_stars_sprout": {
+      "name": "幼苗",
+      "abilityText": "持续：在你的回合开始时消灭此牌。你可以从你的牌库搜寻一个力量 3 或以下的随从，并将其作为额外随从打到这里。洗你的牌库。"
+    },
+    "all_stars_fan": {
+      "name": "仰慕者",
+      "abilityText": "特殊：在你的回合中，你可以从手牌弃置此牌以抽 1 张牌。"
+    },
+    "all_stars_servitor_of_cthulhu": {
+      "name": "克苏鲁仆从",
+      "abilityText": "天赋：消灭此随从，并将你弃牌堆中的一张行动置于你的牌库顶。"
+    },
+    "base_locker_room": {
+      "name": "更衣室",
+      "abilityText": "在你的回合开始时，如果你在这里有随从，抽 1 张牌。"
+    },
+    "base_stadium": {
+      "name": "体育场",
+      "abilityText": "在这里的一个随从被消灭后，其控制者抽 1 张牌。"
     }
   },
   "debug": {

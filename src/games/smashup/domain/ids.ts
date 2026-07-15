@@ -60,6 +60,7 @@ export const SMASHUP_ATLAS_IDS = {
     TITANS: 'smashup:titans',
     SHARKS_POD_CARDS: 'smashup:sharks-pod-cards',
     ALL_STARS_POD_CARDS: 'smashup:all-stars-pod-cards',
+    PROMOS_SHEEP_ALL_STARS_CARDS: 'smashup:promos-sheep-all-stars-cards',
     TORNADOS_POD_CARDS: 'smashup:tornados-pod-cards',
 } as const;
 
@@ -177,6 +178,8 @@ export const SMASHUP_FACTION_IDS = {
     SKELETONS: 'skeletons',
     SKELETONS_POD: 'skeletons_pod',
     WORLD_CHAMPS: 'world_champs',
+    SHEEP: 'sheep',
+    ALL_STARS: 'all_stars',
     ALL_STARS_POD: 'all_stars_pod',
     SUPERHEROES: 'superheroes',
     SUPERHEROES_POD: 'superheroes_pod',
@@ -321,6 +324,8 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.SKELETONS]: '骷髅',
     [SMASHUP_FACTION_IDS.SKELETONS_POD]: '骷髅 (POD版)',
     [SMASHUP_FACTION_IDS.WORLD_CHAMPS]: '世界冠军',
+    [SMASHUP_FACTION_IDS.SHEEP]: '绵羊',
+    [SMASHUP_FACTION_IDS.ALL_STARS]: '全明星',
     [SMASHUP_FACTION_IDS.ALL_STARS_POD]: '全明星 (POD版)',
     [SMASHUP_FACTION_IDS.SUPERHEROES]: '超级英雄',
     [SMASHUP_FACTION_IDS.SUPERHEROES_POD]: '超级英雄 (POD版)',
