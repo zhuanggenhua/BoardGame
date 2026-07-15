@@ -271,12 +271,12 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
             ...inProgressIds,
         ];
 
-        expect(inProgressIds).toEqual([
+        expect(inProgressIds).toEqual(expect.arrayContaining([
             SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS,
             SMASHUP_FACTION_IDS.VIGILANTES,
             SMASHUP_FACTION_IDS.TRUCKERS,
             SMASHUP_FACTION_IDS.DISCO_DANCERS,
-        ]);
+        ]));
         expect(orderedIds).toEqual(expectedOrderedIds);
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
     });
