@@ -52,6 +52,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT,
   CARD_IDS.FROST_GLACIAL_SHIFT,
   CARD_IDS.GOBLIN_SNEAK,
+  CARD_IDS.MOGU_COMMAND,
   CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
   CARD_IDS.MOGU_RELEASE_SPORES,
 ]);
@@ -1098,10 +1099,18 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             case CARD_IDS.NECRO_HELLFIRE_BLADE:
             case CARD_IDS.BARBARIC_CHANT_OF_POWER:
             case CARD_IDS.BARBARIC_CHANT_OF_GROWTH:
-            case CARD_IDS.BARBARIC_CHANT_OF_WEAVING: {
+            case CARD_IDS.BARBARIC_CHANT_OF_WEAVING:
+            case CARD_IDS.MOGU_COMMAND: {
               const targets = (() => {
                 if (baseId === CARD_IDS.NECRO_HELLFIRE_BLADE) {
                   return friendlyUnits.filter((unit) => unit.card.unitClass === 'common').map((unit) => unit.position);
+                }
+                if (baseId === CARD_IDS.MOGU_COMMAND) {
+                  if (!summoner) return [];
+                  return friendlyUnits
+                    .filter((unit) => unit.card.unitClass === 'common'
+                      && manhattanDistance(summoner.position, unit.position) <= 3)
+                    .map((unit) => unit.position);
                 }
                 if (baseId === CARD_IDS.BARBARIC_CHANT_OF_POWER) {
                   if (!summoner) return [];

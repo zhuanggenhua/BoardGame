@@ -12,6 +12,7 @@ import {
 } from '../helpers/common';
 import {
     expectVisiblePhysicalDiceBox,
+    expectPhysicalDiceSeparated,
     initBetrayalContext,
     injectCore,
     saveScreenshot,
@@ -116,6 +117,9 @@ const createHuntingKnifeAttackCore = () => {
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
     core.currentExplorerTraits = { ...core.currentExplorer.traits };
     core.turnStartInventoryCardIds = ['hunting-knife'];
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+    core.recentRoll = null;
     return core;
 };
 
@@ -145,6 +149,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-recent-roll-subtotal')).toBeVisible();
         await expectVisiblePhysicalDiceBox(eventRollPanel);
         await waitForPhysicalDiceSettled(eventRollPanel);
+        await expectPhysicalDiceSeparated(eventRollPanel, { minDiceCount: 4 });
         await saveLocatorScreenshot(eventRollPanel, ORDINARY_ROLL_EVENT_DICE_SCREENSHOT);
         await saveScreenshot(page, ORDINARY_ROLL_EVENT_FULL_SCREENSHOT);
 
@@ -196,6 +201,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(attackRollPanel).toBeVisible();
         await expectVisiblePhysicalDiceBox(attackRollPanel);
         await waitForPhysicalDiceSettled(attackRollPanel);
+        await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 4 });
         await saveLocatorScreenshot(attackRollPanel, HUNTING_KNIFE_ATTACK_DICE_SCREENSHOT);
         await saveScreenshot(page, HUNTING_KNIFE_ATTACK_FEEDBACK_SCREENSHOT);
 

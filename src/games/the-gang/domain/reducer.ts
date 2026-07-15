@@ -1,6 +1,6 @@
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { createHeistRecord } from './showdown';
-import { createInitialHeistCore, discardHighestCard, discardLowestCard } from './setup';
+import { createInitialHeistCore, discardHighestCard, discardLowestCard, getChipValues } from './setup';
 import {
     buildDealPlan,
     createSpecialistDeck,
@@ -199,6 +199,19 @@ const buildToolUsedPayload = (core: TheGangCore, playerId: string, tool: TheGang
     };
 };
 
+const resolveTakeChipValue = (core: TheGangCore, command: Extract<TheGangCommand, { type: typeof THE_GANG_COMMANDS.TAKE_CHIP }>): number | null => {
+    if (command.payload.tutorialOnlyIfMissing && core.currentRoundChips[command.playerId] !== undefined) {
+        return null;
+    }
+    if (command.payload.tutorialChipMode === 'lowest-unoccupied') {
+        const occupied = new Set(Object.values(core.currentRoundChips));
+        return getChipValues(core.playerIds.length, core.rules.config, core.round)
+            .find((chip) => !occupied.has(chip))
+            ?? null;
+    }
+    return command.payload.chip;
+};
+
 export function execute(
     state: MatchState<TheGangCore>,
     command: TheGangCommand,
@@ -208,17 +221,30 @@ export function execute(
     const timestamp = timestampOf(command);
 
     switch (command.type) {
-        case THE_GANG_COMMANDS.TAKE_CHIP:
+        case THE_GANG_COMMANDS.START_HEIST:
+            return [{
+                type: THE_GANG_EVENTS.HEIST_STARTED,
+                payload: {
+                    playerId: command.playerId,
+                    heistNumber: core.heistNumber,
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
+        case THE_GANG_COMMANDS.TAKE_CHIP: {
+            const chip = resolveTakeChipValue(core, command);
+            if (chip === null) return [];
             return [{
                 type: THE_GANG_EVENTS.CHIP_TAKEN,
                 payload: {
                     playerId: command.playerId,
                     round: core.round,
-                    chip: command.payload.chip,
+                    chip,
                 },
                 sourceCommandType: command.type,
                 timestamp,
             }];
+        }
         case THE_GANG_COMMANDS.SET_RULES_CONFIG:
             return [{
                 type: THE_GANG_EVENTS.RULES_CONFIG_SET,
@@ -329,6 +355,12 @@ export function execute(
 
 export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
     switch (event.type) {
+        case THE_GANG_EVENTS.HEIST_STARTED:
+            return {
+                ...core,
+                heistStarted: true,
+                pendingProgress: undefined,
+            };
         case THE_GANG_EVENTS.CHIP_TAKEN: {
             const nextRoundChips = Object.fromEntries(
                 Object.entries(core.currentRoundChips)

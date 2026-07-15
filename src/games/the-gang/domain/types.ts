@@ -125,6 +125,7 @@ export interface HeistRecord {
 }
 
 export type TheGangProgressKind = 'end-round' | 'reveal-showdown' | 'start-next-heist';
+export type TheGangTutorialChipMode = 'lowest-unoccupied';
 
 export interface TheGangProgressConfirmation {
     kind: TheGangProgressKind;
@@ -171,6 +172,7 @@ export interface TheGangCore {
     communityCards: PlayingCard[];
     round: TheGangRound;
     phase: TheGangPhase;
+    heistStarted: boolean;
     heistNumber: number;
     successes: number;
     failures: number;
@@ -183,6 +185,7 @@ export interface TheGangCore {
 }
 
 export const THE_GANG_COMMANDS = {
+    START_HEIST: 'START_HEIST',
     TAKE_CHIP: 'TAKE_CHIP',
     SET_RULES_CONFIG: 'SET_RULES_CONFIG',
     DEAL_TOOLS: 'DEAL_TOOLS',
@@ -194,8 +197,16 @@ export const THE_GANG_COMMANDS = {
     START_NEXT_HEIST: 'START_NEXT_HEIST',
 } as const;
 
+export interface StartHeistCommand extends Command<typeof THE_GANG_COMMANDS.START_HEIST> {
+    payload: Record<string, never>;
+}
+
 export interface TakeChipCommand extends Command<typeof THE_GANG_COMMANDS.TAKE_CHIP> {
-    payload: { chip: number };
+    payload: {
+        chip: number;
+        tutorialChipMode?: TheGangTutorialChipMode;
+        tutorialOnlyIfMissing?: boolean;
+    };
 }
 
 export interface SetRulesConfigCommand extends Command<typeof THE_GANG_COMMANDS.SET_RULES_CONFIG> {
@@ -234,6 +245,7 @@ export interface StartNextHeistCommand extends Command<typeof THE_GANG_COMMANDS.
 }
 
 export type TheGangCommand =
+    | StartHeistCommand
     | TakeChipCommand
     | SetRulesConfigCommand
     | DealToolsCommand
@@ -245,7 +257,12 @@ export type TheGangCommand =
     | StartNextHeistCommand;
 
 export type TheGangCommandMap = {
-    [THE_GANG_COMMANDS.TAKE_CHIP]: { chip: number };
+    [THE_GANG_COMMANDS.START_HEIST]: Record<string, never>;
+    [THE_GANG_COMMANDS.TAKE_CHIP]: {
+        chip: number;
+        tutorialChipMode?: TheGangTutorialChipMode;
+        tutorialOnlyIfMissing?: boolean;
+    };
     [THE_GANG_COMMANDS.SET_RULES_CONFIG]: { config: Partial<TheGangRulesConfig> };
     [THE_GANG_COMMANDS.DEAL_TOOLS]: Record<string, never>;
     [THE_GANG_COMMANDS.RESET_TOOLS]: Record<string, never>;
@@ -257,6 +274,7 @@ export type TheGangCommandMap = {
 };
 
 export const THE_GANG_EVENTS = {
+    HEIST_STARTED: 'HEIST_STARTED',
     CHIP_TAKEN: 'CHIP_TAKEN',
     RULES_CONFIG_SET: 'RULES_CONFIG_SET',
     TOOLS_DEALT: 'TOOLS_DEALT',
@@ -269,6 +287,13 @@ export const THE_GANG_EVENTS = {
     NEXT_HEIST_STARTED: 'NEXT_HEIST_STARTED',
     GAME_FINISHED: 'GAME_FINISHED',
 } as const;
+
+export interface HeistStartedEvent extends GameEvent<typeof THE_GANG_EVENTS.HEIST_STARTED> {
+    payload: {
+        playerId: PlayerId;
+        heistNumber: number;
+    };
+}
 
 export interface ChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_TAKEN> {
     payload: {
@@ -350,6 +375,7 @@ export interface GameFinishedEvent extends GameEvent<typeof THE_GANG_EVENTS.GAME
 }
 
 export type TheGangEvent =
+    | HeistStartedEvent
     | ChipTakenEvent
     | RulesConfigSetEvent
     | ToolsDealtEvent

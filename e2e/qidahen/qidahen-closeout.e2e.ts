@@ -1,7 +1,7 @@
 import { mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
@@ -58,6 +58,7 @@ const FIELD_BATTLE_STEP_06 = `${TUTORIAL_DIR}/27a-进攻第6步-看占领结果�
 const ROUT_STEP_01 = `${TUTORIAL_DIR}/28-撤退第1步-先看断后和溃退入口.png`;
 const ROUT_STEP_02 = `${TUTORIAL_DIR}/29-撤退第2步-看溃退后的残部清空与战败标记.png`;
 const SIEGE_STEP_01 = `${TUTORIAL_DIR}/30-攻城第1步-真实守城宣告入口.png`;
+const SIEGE_STEP_01A = `${TUTORIAL_DIR}/30a-攻城第1a步-右侧断后结算城战.png`;
 const SIEGE_STEP_02 = `${TUTORIAL_DIR}/31-攻城第2步-选择围城该区.png`;
 const SIEGE_STEP_03 = `${TUTORIAL_DIR}/31a-攻城第3步-同章选择占领该区.png`;
 const DIPLOMACY_STEP_01 = `${TUTORIAL_DIR}/32-外交第1步-从轮盘进入外交雇佣.png`;
@@ -129,6 +130,39 @@ const expectTutorialOverlayFullyVisible = async (page: Page, stepId: string) => 
     expect(metrics.top, `${stepId} tutorial card top edge`).toBeGreaterThanOrEqual(0);
     expect(metrics.right, `${stepId} tutorial card right edge`).toBeLessThanOrEqual(metrics.viewportWidth);
     expect(metrics.bottom, `${stepId} tutorial card bottom edge`).toBeLessThanOrEqual(metrics.viewportHeight);
+};
+
+const readLocatorRect = async (locator: Locator) => (
+    locator.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+            bottom: rect.bottom,
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+        };
+    })
+);
+
+const getRectOverlapArea = (
+    a: { left: number; top: number; right: number; bottom: number },
+    b: { left: number; top: number; right: number; bottom: number },
+) => {
+    const width = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+    const height = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    return width * height;
+};
+
+const expectTutorialOverlayNotToCover = async (
+    page: Page,
+    target: Locator,
+    label: string,
+) => {
+    const [overlayRect, targetRect] = await Promise.all([
+        readLocatorRect(page.locator('[data-testid="tutorial-overlay-card"]')),
+        readLocatorRect(target),
+    ]);
+    expect(getRectOverlapArea(overlayRect, targetRect), label).toBeLessThanOrEqual(1);
 };
 
 const readQidahenCore = async (page: Page) => (
@@ -823,14 +857,30 @@ test.describe('七大恨新游戏收口', () => {
         const tacticCard = beforeTacticCore.handCards.find((card) => card.cardDefId === 'qidahen-atlas05-1618-cavalry-charge');
         expect(tacticCard).toBeTruthy();
         const tacticCardButton = page.locator(`[data-testid="qidahen-hand-card-${tacticCard!.id}"]`);
+        const tacticCardTopBeforeSelection = await tacticCardButton.evaluate((element) => element.getBoundingClientRect().top);
         await tacticCardButton.click();
         await expect(page.locator('[data-tutorial-step="tactic-window"]')).toBeVisible({ timeout: 10000 });
         await expect(tacticCardButton).toHaveAttribute('data-game-object-selected', 'true');
+        await expect.poll(async () => {
+            const selectedTop = await tacticCardButton.evaluate((element) => element.getBoundingClientRect().top);
+            return Math.round(tacticCardTopBeforeSelection - selectedTop);
+        }).toBeGreaterThanOrEqual(38);
         await expect(page.locator('[data-testid="qidahen-tactic-card-selection-panel"]')).toContainText('骑兵冲锋');
         await expect(page.locator('[data-testid="qidahen-confirm-tactic-card"]')).toContainText('打出战术牌');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toHaveAttribute('data-tutorial-placement', 'left');
+        await expectTutorialOverlayNotToCover(page, tacticCardButton, 'tactic tutorial overlay should not cover selected tactic card');
+        await expectTutorialOverlayNotToCover(
+            page,
+            page.locator('[data-testid="qidahen-tactic-card-selection-panel"]'),
+            'tactic tutorial overlay should not cover tactic confirmation strip',
+        );
         await saveScreenshot(page, FIELD_BATTLE_STEP_03B);
         await tacticCardButton.click();
         await expect(tacticCardButton).not.toHaveAttribute('data-game-object-selected', 'true');
+        await expect.poll(async () => {
+            const unselectedTop = await tacticCardButton.evaluate((element) => element.getBoundingClientRect().top);
+            return Math.abs(Math.round(unselectedTop - tacticCardTopBeforeSelection));
+        }).toBeLessThanOrEqual(4);
         await expect(page.locator('[data-testid="qidahen-tactic-card-selection-panel"]')).toBeHidden();
         await tacticCardButton.click();
         await expect(tacticCardButton).toHaveAttribute('data-game-object-selected', 'true');
@@ -935,6 +985,8 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="defend-city"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-raid-intent"]')).toContainText('守城宣告');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('守城避战');
+        await expect(page.locator('[data-tutorial-id="qidahen-resolve-pending-action-defender-hold-city"]')).toContainText('守城避战');
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action-defender-hold-city"]')).toContainText('守城避战');
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action-defender-sortie"]')).toContainText('出城野战');
         await saveScreenshot(page, SIEGE_STEP_01);
@@ -948,19 +1000,18 @@ test.describe('七大恨新游戏收口', () => {
         await expect(committedTroopTokens).toHaveCount(4);
         await expect(committedTroopTokens.nth(0)).toHaveAttribute('data-pending-committed-selected', 'true');
         await expect(committedTroopTokens.nth(3)).toHaveAttribute('data-pending-committed-selected', 'true');
-        await expect(page.locator('[data-testid="qidahen-resolve-pending-action"]')).toContainText('断后');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击右侧战斗面板里的「断后」');
+        await expect(page.locator('[data-tutorial-id="qidahen-resolve-pending-action"]')).toContainText('断后');
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action-rout"]')).toContainText('溃退');
-        await resolvePendingActionByCommand(page, {
-            attackerCasualtyPriority: 'highest-level',
-            defenderCasualtyPriority: 'highest-level',
-            committedTroops: 4,
-        });
+        await saveScreenshot(page, SIEGE_STEP_01A);
+        await page.locator('[data-testid="qidahen-resolve-pending-action"]').click();
 
         await expect(page.locator('[data-tutorial-step="city-result"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('已被突破');
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('幸存 1');
         await page.locator('[data-testid="tutorial-next-button"]').click();
         await expect(page.locator('[data-tutorial-step="besiege-choice"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('围城该区');
         await expect(page.locator('[data-testid="qidahen-post-battle-choice-besiege"]')).toContainText('围城该区');
         const beforeBesiegeCore = await readQidahenCore(page);
         const beforeBesiegeRegions = beforeBesiegeCore.regions as Array<{
@@ -976,7 +1027,7 @@ test.describe('七大恨新游戏收口', () => {
         await saveScreenshot(page, SIEGE_STEP_02);
         await page.locator('[data-testid="qidahen-post-battle-choice-besiege"]').click();
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('这座城最后落成什么状态');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('最后选择围城还是占领');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('战后围城');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('山海关');
         const afterBesiegeCore = await readQidahenCore(page);
@@ -1009,14 +1060,14 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="tutorial-next-button"]').click();
 
         await expect(page.locator('[data-tutorial-step="defend-city"]')).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('守城避战');
+        await expect(page.locator('[data-tutorial-id="qidahen-resolve-pending-action-defender-hold-city"]')).toContainText('守城避战');
         await page.locator('[data-testid="qidahen-resolve-pending-action-defender-hold-city"]').click();
 
         await expect(page.locator('[data-tutorial-step="city-battle"]')).toBeVisible({ timeout: 10000 });
-        await resolvePendingActionByCommand(page, {
-            attackerCasualtyPriority: 'highest-level',
-            defenderCasualtyPriority: 'highest-level',
-            committedTroops: 4,
-        });
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('点击右侧战斗面板里的「断后」');
+        await expect(page.locator('[data-tutorial-id="qidahen-resolve-pending-action"]')).toContainText('断后');
+        await page.locator('[data-testid="qidahen-resolve-pending-action"]').click();
 
         await expect(page.locator('[data-tutorial-step="city-result"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('已被突破');
@@ -1027,7 +1078,7 @@ test.describe('七大恨新游戏收口', () => {
         await page.locator('[data-testid="qidahen-post-battle-choice-occupy"]').click();
 
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('这座城最后落成什么状态');
+        await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('最后选择围城还是占领');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('战后占领');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('山海关');
         await saveScreenshot(page, SIEGE_STEP_03);

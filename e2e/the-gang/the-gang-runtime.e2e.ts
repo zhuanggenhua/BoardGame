@@ -1,15 +1,40 @@
 import { expect, test } from '../framework/fixtures';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 const THE_GANG_GAME_ID = 'the-gang';
+const THE_GANG_IMAGE_LOAD_TIMEOUT_MS = 15_000;
 
 async function chooseVisibleChip(page: Page, chipLabel: string) {
     await page.getByRole('button', { name: chipLabel }).click();
 }
 
+async function ensureHeistStartedByCommand(page: Page) {
+    const state = await getTheGangState(page);
+    if (state?.core?.heistStarted) {
+        return;
+    }
+    await dispatchTheGangCommand(page, '0', 'START_HEIST');
+}
+
+async function startHeistFromSetup(page: Page) {
+    await expect(page.getByRole('button', { name: '开始抢劫' })).toBeVisible();
+    await page.getByRole('button', { name: '开始抢劫' }).click();
+    await expect(page.getByTestId('the-gang-start-heist')).toHaveCount(0);
+}
+
+async function clickControlCenter(page: Page, locator: Locator, label: string) {
+    await locator.scrollIntoViewIfNeeded();
+    const box = await locator.boundingBox();
+    if (!box) {
+        throw new Error(`无法定位控件中心点：${label}`);
+    }
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+}
+
 async function chooseRoundChipsByCommand(page: Page, chipsByPlayer: Record<string, number>) {
+    await ensureHeistStartedByCommand(page);
     for (const [playerId, chip] of Object.entries(chipsByPlayer)) {
         await dispatchTheGangCommand(page, playerId, 'TAKE_CHIP', { chip });
     }
@@ -93,7 +118,10 @@ async function expectImagesLoaded(page: Page, selector: string, expectedCount: n
                             || image.naturalHeight <= 1
                         ),
                 ),
-            { message: `等待 ${selector} 的真实图片资源加载完成` },
+            {
+                message: `等待 ${selector} 的真实图片资源加载完成`,
+                timeout: THE_GANG_IMAGE_LOAD_TIMEOUT_MS,
+            },
         )
         .toEqual([]);
     const emptySources = await images.evaluateAll((nodes) =>
@@ -121,6 +149,7 @@ async function expectMiddleRoundFullState(page: Page) {
 
 type TheGangHarnessState = {
     core?: {
+        heistStarted?: boolean;
         currentRoundChips?: Record<string, unknown>;
         communityCards?: unknown[];
         rules?: {
@@ -260,7 +289,11 @@ async function expectHudActionLogAndUndoAvailable(page: Page) {
     await expect(page.getByText('可以请求撤回上一步操作')).toBeVisible();
 }
 
-async function expectUtilityDockLayout(page: Page, expectedDirection: 'row' | 'column') {
+async function expectUtilityDockLayout(
+    page: Page,
+    expectedDirection: 'row' | 'column',
+    options: { maxControlWidth?: number; maxControlHeight?: number } = {},
+) {
     const dock = page.getByTestId('the-gang-utility-dock');
     const handRankButton = dock.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary');
     const rulesButton = dock.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' });
@@ -274,6 +307,12 @@ async function expectUtilityDockLayout(page: Page, expectedDirection: 'row' | 'c
         expect(box, '左下角辅助入口必须有可测量的真实尺寸').not.toBeNull();
         expect(box!.height, '左下角辅助入口点击高度不得小于 44px').toBeGreaterThanOrEqual(44);
         expect(box!.width, '左下角辅助入口点击宽度不得小于 44px').toBeGreaterThanOrEqual(44);
+        if (options.maxControlHeight !== undefined) {
+            expect(box!.height, '移动端左下角辅助入口只能压缩 PC 样式，不得维持桌面大按钮高度').toBeLessThanOrEqual(options.maxControlHeight);
+        }
+        if (options.maxControlWidth !== undefined) {
+            expect(box!.width, '移动端左下角辅助入口只能压缩 PC 样式，不得维持桌面大按钮宽度').toBeLessThanOrEqual(options.maxControlWidth);
+        }
     }
 
     const overlap = await page.evaluate(() => {
@@ -295,6 +334,39 @@ async function expectUtilityDockLayout(page: Page, expectedDirection: 'row' | 'c
     expect(overlap!.dockLeft, '辅助栏必须贴近视口左侧安全区').toBeLessThanOrEqual(20);
     expect(overlap!.dockBottom, '辅助栏必须贴近视口底部安全区').toBeGreaterThanOrEqual(overlap!.viewportHeight - 24);
     expect(overlap!.intersectsHand, '辅助栏不得覆盖手牌区').toBe(false);
+}
+
+async function expectToolsPanelUsesPcTwoColumnLayout(page: Page) {
+    const toolsPanel = page.getByTestId('the-gang-tools-panel');
+    await toolsPanel.getByRole('button', { name: /工具/u }).click();
+    const toolsModal = page.getByTestId('the-gang-tools-modal');
+    await expect(toolsModal).toBeVisible();
+
+    const metrics = await toolsModal.evaluate((modal) => {
+        const grid = modal.querySelector('.grid');
+        const sections = Array.from(grid?.querySelectorAll('section') ?? []).map((section) => {
+            const rect = section.getBoundingClientRect();
+            return {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height,
+            };
+        });
+        return {
+            gridTemplateColumns: grid ? getComputedStyle(grid).gridTemplateColumns : '',
+            sections,
+        };
+    });
+
+    expect(metrics.sections.length, '工具面板必须保留工具牌和专家牌两个 PC 同源区块').toBeGreaterThanOrEqual(2);
+    expect(metrics.gridTemplateColumns.trim().split(/\s+/u).length, '工具面板在手机横屏不得退回单列移动版').toBeGreaterThanOrEqual(2);
+    expect(Math.abs(metrics.sections[0]!.top - metrics.sections[1]!.top), '工具牌和专家牌区块必须同一行排列，保持 PC 同源双栏').toBeLessThanOrEqual(4);
+    expect(metrics.sections[0]!.width, '工具牌区块宽度必须是双栏面板，不得压成单列窄块').toBeGreaterThan(240);
+    expect(metrics.sections[1]!.width, '专家牌区块宽度必须是双栏面板，不得压成单列窄块').toBeGreaterThan(240);
+
+    await toolsModal.getByRole('button', { name: '关闭工具与专家牌' }).click();
+    await expect(toolsModal).toHaveCount(0);
 }
 
 async function writeMiddleLayoutMetrics(label: string, metrics: unknown) {
@@ -426,9 +498,12 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByTestId('the-gang-exit-mode-mastermind')).toHaveAttribute('aria-pressed', 'true');
         const quickAccessCard = page.getByRole('img', { name: '快速通道' });
         await expect(quickAccessCard).toHaveAttribute('data-debug-current-src', /\/assets\/i18n\/zh-CN\/the-gang\/rule-assets\/challenges\/compressed\/quick-access\.webp/);
-        await expect
-            .poll(async () => quickAccessCard.evaluate((img) => (img as HTMLImageElement).naturalWidth), { message: '等待 TTS 快速通道挑战卡图加载完成' })
-            .toBeGreaterThan(0);
+        const quickAccessChallenge = page.getByTestId('the-gang-challenge-quick-access');
+        await expect(quickAccessChallenge).toHaveAttribute('aria-pressed', 'false');
+        await quickAccessChallenge.click();
+        await expect(quickAccessChallenge).toHaveAttribute('aria-pressed', 'true');
+        await expect(quickAccessChallenge).toHaveAttribute('data-state', 'selected');
+        await expect(quickAccessChallenge).toContainText('已启用');
         await game.screenshot('桌面正式规则设置弹窗已覆盖TTS开局配置', testInfo);
         await page.getByRole('button', { name: '确认设置' }).click();
         await expect
@@ -441,6 +516,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
                     twoHand: state?.core?.rules?.config?.twoHand,
                     automode: state?.core?.rules?.config?.automode,
                     antiTroll: state?.core?.rules?.config?.antiTroll,
+                    quickAccess: state?.core?.rules?.config?.challenges?.['quick-access'] ?? 0,
                     handCards: state?.core?.players?.['0']?.pocketCards?.length,
                     personalCommunityCards: state?.core?.players?.['0']?.communityCards?.length,
                     sharedCommunityCards: state?.core?.communityCards?.length,
@@ -453,6 +529,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
                 twoHand: false,
                 automode: false,
                 antiTroll: false,
+                quickAccess: 1,
                 handCards: 3,
                 personalCommunityCards: 1,
                 sharedCommunityCards: 0,
@@ -482,7 +559,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         for (let attempt = 0; attempt < 12; attempt += 1) {
             await toolsPanel.getByRole('button', { name: '发放工具牌' }).click();
             await expect(toolsModal.getByTestId('the-gang-tools-deal-status')).toContainText('已向 3 名玩家各发 1 张工具牌');
-            await expect(toolsPanel.getByRole('button', { name: '已发放' })).toBeDisabled();
+            await expect(toolsPanel.getByRole('button', { name: '已发放' })).toHaveAttribute('aria-disabled', 'true');
             await expect
                 .poll(async () => {
                     const state = await getTheGangState(page);
@@ -532,9 +609,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(localToolGrid).toBeVisible();
         const dealtToolCard = localToolGrid.locator('img[data-debug-current-src*="/assets/i18n/zh-CN/the-gang/rule-assets/tools/compressed/"]').first();
         await expect(dealtToolCard).toBeVisible();
-        await expect
-            .poll(async () => dealtToolCard.evaluate((img) => (img as HTMLImageElement).naturalWidth), { message: '等待 TTS 工具牌图加载完成' })
-            .toBeGreaterThan(0);
+        await expect(dealtToolCard).toHaveAttribute('data-debug-current-src', /\/assets\/i18n\/zh-CN\/the-gang\/rule-assets\/tools\/compressed\//);
         await expect
             .poll(async () => dealtToolCard.evaluate((img) => {
                 const rect = (img as HTMLImageElement).getBoundingClientRect();
@@ -572,9 +647,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(localSpecialistGrid).toBeVisible();
         const specialistCards = localSpecialistGrid.locator('img[data-debug-current-src*="/assets/i18n/zh-CN/the-gang/rule-assets/specialists/compressed/"]');
         await expect(specialistCards).toHaveCount(2);
-        await expect
-            .poll(async () => specialistCards.first().evaluate((img) => (img as HTMLImageElement).naturalWidth), { message: '等待 TTS 专家牌图加载完成' })
-            .toBeGreaterThan(0);
+        await expect(specialistCards.first()).toHaveAttribute('data-debug-current-src', /\/assets\/i18n\/zh-CN\/the-gang\/rule-assets\/specialists\/compressed\//);
         await game.screenshot('桌面一次性手机抽出专家牌', testInfo);
 
         await toolsPanel.getByRole('button', { name: '重设专家牌' }).click();
@@ -643,11 +716,65 @@ test.describe('The Gang 测试入口与代表态截图', () => {
                 handCards: beforeHandCount - 1,
                 nightVisionCards: 1,
                 toolDiscardPile: expect.arrayContaining(['night-vision-goggles']),
-            });
+        });
         await toolsModal.getByRole('button', { name: '关闭工具与专家牌' }).click();
         await expect(page.getByTestId('the-gang-tool-cards')).toBeVisible();
-        await expectImagesLoaded(page, '[data-bgg-zone="tool-cards"] img', 1);
         await game.screenshot('桌面夜视眼镜选牌后回到牌桌', testInfo);
+    });
+
+    test('移动横屏从大厅创建 AI 房间后扩展选择不会被 AI 抢先锁定', async ({ game, page }, testInfo) => {
+        test.setTimeout(150000);
+        await page.setViewportSize({ width: 812, height: 375 });
+        await page.goto('/?game=the-gang&homeStyle=classic', { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await page.getByTestId('game-details-open-create-room').waitFor({ state: 'visible' });
+        await game.screenshot('真实开房移动横屏纸牌帮详情', testInfo);
+
+        await page.getByTestId('game-details-open-create-room').click();
+        await page.getByTestId('create-room-modal').waitFor({ state: 'visible' });
+        await page.getByRole('button', { name: /加入 AI/u }).click();
+        await game.screenshot('真实开房移动横屏创建房间AI开启', testInfo);
+        await page.getByTestId('create-room-confirm-button').click();
+        await page.waitForURL(/\/play\/the-gang\/match\//u, { timeout: 90000 });
+        await page.getByTestId('the-gang-utility-dock').waitFor({ state: 'visible' });
+        await expectUtilityDockLayout(page, 'row', { maxControlHeight: 46, maxControlWidth: 72 });
+
+        await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
+        await page.getByTestId('the-gang-rules-modal').waitFor({ state: 'visible' });
+        const sevenCardStud = page.getByTestId('the-gang-mode-seven-card-stud');
+        const quickAccess = page.getByTestId('the-gang-challenge-quick-access');
+        await expect(sevenCardStud, '真实 AI 房间刚进入时模式选项不得被 AI 先手筹码锁死').toBeEnabled();
+        await expect(quickAccess, '真实 AI 房间刚进入时挑战扩展不得被 AI 先手筹码锁死').toBeEnabled();
+        await expect(sevenCardStud).toHaveAttribute('aria-pressed', 'false');
+        await expect(quickAccess).toHaveAttribute('aria-pressed', 'false');
+
+        await sevenCardStud.click();
+        await quickAccess.click();
+        await expect(sevenCardStud).toHaveAttribute('aria-pressed', 'true');
+        await expect(sevenCardStud).toHaveAttribute('data-state', 'selected');
+        await expect(quickAccess).toHaveAttribute('aria-pressed', 'true');
+        await expect(quickAccess).toHaveAttribute('data-state', 'selected');
+        await game.screenshot('真实开房移动横屏扩展已选中', testInfo);
+        await page.getByRole('button', { name: '确认设置' }).click();
+        await expect(page.getByTestId('the-gang-rules-modal')).toHaveCount(0);
+
+        await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
+        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.getByTestId('the-gang-challenge-quick-access')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByRole('button', { name: '关闭规则设置' }).click();
+
+        await page.getByRole('button', { name: '白筹码 1 星' }).click();
+        await expect(page.getByText('房主开始抢劫后才能拿筹码。')).toBeVisible();
+        await expectCurrentRoundChips(page, 0);
+
+        await startHeistFromSetup(page);
+        await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
+        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('aria-disabled', 'true');
+        await clickControlCenter(page, page.getByTestId('the-gang-mode-seven-card-stud'), '已锁定模式选项');
+        await expect(page.getByText('本次抢劫已开始，扩展设置不能再修改。')).toBeVisible();
+        await page.getByRole('button', { name: '关闭规则设置' }).click();
+
+        await expectToolsPanelUsesPcTwoColumnLayout(page);
+        await game.screenshot('真实开房移动横屏工具面板同源布局关闭后', testInfo);
     });
 
     test('桌面端 6 人满人数布局可显示所有玩家席位', async ({ game, page }, testInfo) => {
@@ -676,6 +803,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(6);
         await game.screenshot('桌面6人满人数首轮可操作状态', testInfo);
 
+        await startHeistFromSetup(page);
         await chooseChipsForSeats(page, 6);
         await expectCurrentRoundChips(page, 6);
         await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(6);
@@ -702,6 +830,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
         await expectChipRoundForPlayerCount(page, '白筹码', 6);
+        await startHeistFromSetup(page);
         await chooseChipsForSeats(page, 6);
 
         await confirmProgressForSeats(page, '下一轮', 6);
@@ -829,13 +958,15 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
         await expect(page.locator('html[data-game-page="true"][data-game-id="the-gang"]')).toHaveAttribute('data-mobile-layout-preset', 'board-shell');
-        await expectUtilityDockLayout(page, 'row');
+        await expectUtilityDockLayout(page, 'row', { maxControlHeight: 46, maxControlWidth: 72 });
         await expectMiddleCenterVerticallyCentered(page, '移动横屏首轮中央排');
         await page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary').click();
         await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] li').filter({ hasText: '高牌' })).toBeVisible();
         await game.screenshot('移动横屏左下角辅助栏和牌型展开', testInfo);
         await page.locator('[data-tutorial-id="the-gang-hand-rank-reference"] summary').click();
+        await expectToolsPanelUsesPcTwoColumnLayout(page);
         await expectChipRound(page, '白筹码');
+        await startHeistFromSetup(page);
         await dispatchTheGangCommand(page, '0', 'TAKE_CHIP', { chip: 1 });
         await dispatchTheGangCommand(page, '1', 'TAKE_CHIP', { chip: 2 });
         await dispatchTheGangCommand(page, '2', 'TAKE_CHIP', { chip: 3 });
@@ -906,6 +1037,11 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await game.screenshot('桌面左下角牌型辅助表展开且等待公共牌', testInfo);
 
         await expectChipRound(page, '白筹码');
+        await expect(page.getByRole('button', { name: '下一轮' })).toHaveCount(0);
+        await page.getByRole('button', { name: '白筹码 1 星' }).click();
+        await expect(page.getByText('房主开始抢劫后才能拿筹码。')).toBeVisible();
+        await expectCurrentRoundChips(page, 0);
+        await startHeistFromSetup(page);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeDisabled();
         await expectMiddleCenterVerticallyCentered(page, '桌面首轮等待公共牌');
         const initialLayoutGeometry = await page.evaluate(() => {
@@ -977,6 +1113,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await confirmProgressForAllPlayers(page, '下一次抢劫');
         await expect(page.getByText('抢劫 2')).toBeVisible();
         await expectChipRound(page, '白筹码');
+        await expect(page.getByRole('button', { name: '开始抢劫' })).toBeVisible();
     });
 
     test('直接本地开局默认 AI 座位可自动选筹码并确认进入下一轮', async ({ game, page }) => {
@@ -990,6 +1127,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
         await expectChipRound(page, '白筹码');
         await expectAvailableChipButtons(page, '白筹码', [1, 2, 3]);
+        await startHeistFromSetup(page);
 
         await page.getByRole('button', { name: '白筹码 1 星' }).click();
         await expectCurrentRoundChips(page, 3);

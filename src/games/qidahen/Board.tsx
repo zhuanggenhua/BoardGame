@@ -428,7 +428,8 @@ const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 168;
 const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 206;
 const HAND_ROW_HORIZONTAL_PADDING = 16;
 const MOBILE_LANDSCAPE_VISIBLE_HAND_LIMIT = 6;
-const HAND_CARD_SELECTED_LIFT = 26;
+const HAND_CARD_SELECTED_LIFT = 46;
+const HAND_CARD_SELECTED_SCALE = 1.055;
 const QIDAHEN_STAGE_BG = '#c8a970';
 const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;
 const HAND_INTERACTION_TRAY_WIDTH = 860;
@@ -4683,16 +4684,23 @@ const HandCard: React.FC<{
     const cardKindBadge = cardKindBadgeKind
         ? HAND_CARD_KIND_LABELS[cardKindBadgeKind]
         : null;
+    const selectedTransform = selected
+        ? `translateY(-${HAND_CARD_SELECTED_LIFT}px) scale(${HAND_CARD_SELECTED_SCALE})`
+        : undefined;
 
     return (
         <div
             className="relative shrink-0 rounded-[11px]"
             data-qidahen-hand-card-selected={selected ? 'true' : undefined}
+            data-testid={`qidahen-hand-card-shell-${card.id}`}
             style={{
                 width,
                 height,
                 zIndex: selected ? totalCards + 12 : stackIndex + 1,
                 marginLeft: stackIndex === 0 ? 0 : overlapPx,
+                transform: selectedTransform,
+                transformOrigin: 'bottom center',
+                transition: 'transform 180ms ease-out',
             }}
         >
             <SelectableGameObject
@@ -4703,7 +4711,7 @@ const HandCard: React.FC<{
                 data-testid={`qidahen-hand-card-${card.id}`}
                 data-tutorial-id={getQidahenHandCardTutorialTargetId(card)}
                 tabIndex={disabled ? -1 : 0}
-                className={`z-20 h-full w-full rounded-[9px] bg-transparent hover:z-50 hover:brightness-[1.03] ${selected ? '-translate-y-[26px] brightness-[1.06]' : 'hover:-translate-y-[18px]'}`}
+                className={`z-20 h-full w-full origin-bottom rounded-[9px] bg-transparent hover:z-50 hover:brightness-[1.03] ${selected ? 'brightness-[1.08]' : 'hover:-translate-y-[18px]'}`}
                 onClick={onClick}
                 style={{
                     background: 'transparent',
@@ -4848,7 +4856,7 @@ const HandZone: React.FC<{
                     data-testid="qidahen-tactic-card-selection-panel"
                     data-ui-anchor="bottom-hand"
                     style={{
-                        bottom: handCardHeight + 14,
+                        bottom: handCardHeight + HAND_CARD_SELECTED_LIFT + 12,
                         transform: 'translateX(-50%)',
                         width: Math.min(620, handDockWidth - 48),
                         borderColor: UI_STYLE.oldGold,
@@ -5008,42 +5016,50 @@ const HandZone: React.FC<{
                 }}
             >
                 <div className="mx-auto flex min-w-max items-end justify-center px-2">
-                    {currentHandCards.map((card, index) => (
-                        <div
-                            key={`magnify-${card.id}`}
-                            className="pointer-events-none relative shrink-0"
-                            style={{
-                                width: handCardWidth,
-                                height: handCardHeight,
-                                zIndex: currentHandCards.length + index + 24,
-                                marginLeft: index === 0 ? 0 : handCardOverlapPx,
-                            }}
-                        >
-                            <button
-                                type="button"
-                                data-testid={`qidahen-hand-card-magnify-${card.id}`}
-                                aria-label={t('board.magnifyCardAria', { card: card.label })}
-                                className={`${mapTargetSelectionActive || handLimitDiscardSelection != null ? 'pointer-events-none' : 'pointer-events-auto'} absolute right-2 top-2 inline-flex h-[26px] min-w-[26px] items-center justify-center rounded-full border-[2px] text-[11px] font-black transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30`}
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    onMagnifyCard?.({
-                                        previewRef: card.previewRef,
-                                        title: card.label,
-                                        rawWidth: CARD_DIMENSIONS.hand.rawWidth,
-                                        rawHeight: CARD_DIMENSIONS.hand.rawHeight,
-                                    });
-                                }}
+                    {currentHandCards.map((card, index) => {
+                        const selected = isHandCardSelected(card);
+                        return (
+                            <div
+                                key={`magnify-${card.id}`}
+                                className="pointer-events-none relative shrink-0"
                                 style={{
-                                    borderColor: '#4d3620',
-                                    background: 'rgba(245, 231, 206, 0.92)',
-                                    color: '#402a18',
-                                    boxShadow: '0 3px 8px rgba(56,35,15,0.18)',
+                                    width: handCardWidth,
+                                    height: handCardHeight,
+                                    zIndex: selected ? currentHandCards.length + 48 : currentHandCards.length + index + 24,
+                                    marginLeft: index === 0 ? 0 : handCardOverlapPx,
+                                    transform: selected
+                                        ? `translateY(-${HAND_CARD_SELECTED_LIFT}px) scale(${HAND_CARD_SELECTED_SCALE})`
+                                        : undefined,
+                                    transformOrigin: 'bottom center',
+                                    transition: 'transform 180ms ease-out',
                                 }}
                             >
-                                {t('board.magnifyButton')}
-                            </button>
-                        </div>
-                    ))}
+                                <button
+                                    type="button"
+                                    data-testid={`qidahen-hand-card-magnify-${card.id}`}
+                                    aria-label={t('board.magnifyCardAria', { card: card.label })}
+                                    className={`${mapTargetSelectionActive || handLimitDiscardSelection != null ? 'pointer-events-none' : 'pointer-events-auto'} absolute right-2 top-2 inline-flex h-[26px] min-w-[26px] items-center justify-center rounded-full border-[2px] text-[11px] font-black transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30`}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onMagnifyCard?.({
+                                            previewRef: card.previewRef,
+                                            title: card.label,
+                                            rawWidth: CARD_DIMENSIONS.hand.rawWidth,
+                                            rawHeight: CARD_DIMENSIONS.hand.rawHeight,
+                                        });
+                                    }}
+                                    style={{
+                                        borderColor: '#4d3620',
+                                        background: 'rgba(245, 231, 206, 0.92)',
+                                        color: '#402a18',
+                                        boxShadow: '0 3px 8px rgba(56,35,15,0.18)',
+                                    }}
+                                >
+                                    {t('board.magnifyButton')}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
             <div

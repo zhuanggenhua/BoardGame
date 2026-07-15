@@ -76,6 +76,8 @@ import { SHARKS_CARDS } from './factions/sharks';
 import { TORNADOS_CARDS } from './factions/tornados';
 import { SHARKS_POD_CARDS } from './factions/sharks_pod';
 import { ALL_STARS_POD_CARDS } from './factions/all_stars_pod';
+import { SHEEP_CARDS } from './factions/sheep';
+import { ALL_STARS_CARDS } from './factions/all_stars';
 import { TORNADOS_POD_CARDS } from './factions/tornados_pod';
 import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
 import { MYTHIC_GREEKS_POD_CARDS } from './factions/mythic_greeks_pod';
@@ -106,6 +108,10 @@ import { HYDRA_CARDS } from './factions/hydra';
 import { KREE_CARDS } from './factions/kree';
 import { MASTERS_OF_EVIL_CARDS } from './factions/masters_of_evil';
 import { SINISTER_SIX_CARDS } from './factions/sinister_six';
+import { ANANSI_TALES_BASES, ANANSI_TALES_CARDS } from './factions/anansi_tales';
+import { GRIMMS_FAIRY_TALES_BASES, GRIMMS_FAIRY_TALES_CARDS } from './factions/grimms_fairy_tales';
+import { RUSSIAN_FAIRY_TALES_BASES, RUSSIAN_FAIRY_TALES_CARDS } from './factions/russian_fairy_tales';
+import { ANCIENT_INCAS_BASES, ANCIENT_INCAS_CARDS } from './factions/ancient_incas';
 import { GEEKS_CARDS } from './factions/geeks';
 import {
     DISCO_DANCERS_CARDS,
@@ -246,6 +252,8 @@ registerCards(PRINCESSES_POD_CARDS);
 registerCards(SHARKS_CARDS);
 registerCards(SHARKS_POD_CARDS);
 registerCards(ALL_STARS_POD_CARDS);
+registerCards(SHEEP_CARDS);
+registerCards(ALL_STARS_CARDS);
 registerCards(TORNADOS_CARDS);
 registerCards(TORNADOS_POD_CARDS);
 registerCards(MYTHIC_GREEKS_CARDS);
@@ -277,6 +285,10 @@ registerCards(HYDRA_CARDS);
 registerCards(KREE_CARDS);
 registerCards(MASTERS_OF_EVIL_CARDS);
 registerCards(SINISTER_SIX_CARDS);
+registerCards(ANANSI_TALES_CARDS);
+registerCards(GRIMMS_FAIRY_TALES_CARDS);
+registerCards(RUSSIAN_FAIRY_TALES_CARDS);
+registerCards(ANCIENT_INCAS_CARDS);
 registerCards(GEEKS_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
@@ -836,7 +848,7 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'The Pasture',
         breakpoint: 25,
         vpAwards: [5, 3, 2],
-        faction: 'sheep',
+        faction: SMASHUP_FACTION_IDS.SHEEP,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 8 },
     },
     {
@@ -845,9 +857,27 @@ export const BASE_CARDS_SET4: BaseCardDef[] = [
         nameEn: 'Sheep Shrine',
         breakpoint: 19,
         vpAwards: [4, 2, 1],
-        faction: 'sheep',
+        faction: SMASHUP_FACTION_IDS.SHEEP,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 9 },
         replaceOnSetup: true,
+    },
+    {
+        id: 'base_locker_room',
+        name: '更衣室',
+        nameEn: 'Locker Room',
+        breakpoint: 23,
+        vpAwards: [3, 2, 2],
+        faction: SMASHUP_FACTION_IDS.ALL_STARS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 10 },
+    },
+    {
+        id: 'base_stadium',
+        name: '体育场',
+        nameEn: 'Stadium',
+        breakpoint: 17,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.ALL_STARS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE4, index: 11 },
     },
     {
         id: 'base_castle_blood',
@@ -1344,6 +1374,10 @@ export const BASE_CARDS_ZHONGGUO: BaseCardDef[] = [
 registerBases(BASE_CARDS_ZHONGGUO);
 registerBases(CEASE_AND_DESIST_BASES);
 registerBases(WHAT_WERE_WE_THINKING_BASES);
+registerBases(ANANSI_TALES_BASES);
+registerBases(GRIMMS_FAIRY_TALES_BASES);
+registerBases(RUSSIAN_FAIRY_TALES_BASES);
+registerBases(ANCIENT_INCAS_BASES);
 
 registerPodBaseSkeletons();
 

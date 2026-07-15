@@ -749,7 +749,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-tutorial-move-explore-use', diagnostics }]);
     });
 
-    test('手机横屏下教程真实入口应进入小黑屋移动布局并保持底部操作贴底', async ({ page, context }) => {
+    test('手机横屏下教程真实入口应保持 PC 同构布局并由 board-shell 缩放', async ({ page, context }) => {
         test.setTimeout(90000);
         await initBetrayalContext(context, { skipTutorial: false });
         const diagnostics = attachPageDiagnostics(page, 'betrayal-tutorial-phone-landscape');
@@ -766,74 +766,47 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await advanceToStep(page, 'use-book');
         await waitForStep(page, 'use-book');
         await expect(page.getByTestId('betrayal-board')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toHaveAttribute('data-layout-mode', 'phone-landscape-native');
-        await expect(page.getByTestId('betrayal-mobile-stage-status')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-traits-strip')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-context-strip')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-deck-summary')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-discard-summary')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-teammates-summary')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-open-scenario')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-open-active-room-preview')).toBeVisible();
+        await expect(page.getByTestId('betrayal-desktop-layout')).toBeVisible();
+        await expect(page.getByTestId('betrayal-desktop-layout')).toHaveAttribute('data-layout-mode', 'desktop-board');
+        await expect(page.getByTestId('betrayal-mobile-landscape-layout')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-mobile-stage-status')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-mobile-traits-strip')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-mobile-context-strip')).toHaveCount(0);
         await expect(page.locator('[data-fab-id="chat"]')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-grid')).toBeVisible();
-        await expect(page.getByTestId('betrayal-room-panel')).toHaveAttribute('data-mobile-role', 'primary-board-stage');
-        await expect(page.getByTestId('betrayal-inventory-section')).toHaveAttribute('data-mobile-role', 'possession-rail');
-        await expect(page.getByTestId('betrayal-action-rail')).toHaveAttribute('data-mobile-role', 'pc-action-rail-adapted');
+        await expect(page.getByTestId('betrayal-left-status-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-status-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-panel')).not.toHaveAttribute('data-mobile-role', /primary-board-stage/);
+        await expect(page.getByTestId('betrayal-inventory-section')).not.toHaveAttribute('data-mobile-role', /possession-rail/);
+        await expect(page.getByTestId('betrayal-action-rail')).not.toHaveAttribute('data-mobile-role', /pc-action-rail-adapted/);
         await expect(page.getByTestId('betrayal-inventory-omen-book')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-jump-inventory')).not.toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-jump-decks')).not.toBeVisible();
-        await expect(page.locator('[data-testid^="betrayal-mobile-dock-"]')).toHaveCount(0);
         await expect(page.locator('button[data-testid^="betrayal-action-"]').first()).toBeVisible();
 
         const mobileLayout = await page.evaluate(() => {
-            const hasVisibleBoxShadow = (boxShadow: string | null) => {
-                if (!boxShadow || boxShadow === 'none') return false;
-                return boxShadow.split(/,(?![^(]*\))/).some((layer) => {
-                    const rgba = layer.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([.\d]+)\s*\)/);
-                    if (rgba && Number(rgba[1]) === 0) return false;
-                    return !/0px\s+0px\s+0px\s+0px/.test(layer);
-                });
-            };
             const pcActionButton = document.querySelector<HTMLElement>('button[data-testid^="betrayal-action-"]');
-            const dock = document.querySelector<HTMLElement>('[data-testid="betrayal-action-rail"]')
-                ?? pcActionButton?.closest('.pointer-events-auto') as HTMLElement | null;
             const board = document.querySelector<HTMLElement>('[data-testid="betrayal-board"]');
-            const layout = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-landscape-layout"]');
-            const stageStatus = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-stage-status"]');
+            const layout = document.querySelector<HTMLElement>('[data-testid="betrayal-desktop-layout"]');
+            const shell = document.querySelector<HTMLElement>('.mobile-board-shell');
             const roomGrid = document.querySelector<HTMLElement>('[data-testid="betrayal-room-grid"]');
             const roomPanel = document.querySelector<HTMLElement>('[data-testid="betrayal-room-panel"]');
             const inventoryRail = document.querySelector<HTMLElement>('[data-testid="betrayal-inventory-section"]');
             const actionRail = document.querySelector<HTMLElement>('[data-testid="betrayal-action-rail"]');
-            const traitsStrip = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-traits-strip"]');
-            const contextStrip = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-context-strip"]');
-            const deckSummary = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-deck-summary"]');
-            const discardSummary = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-discard-summary"]');
-            const teammatesSummary = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-teammates-summary"]');
-            const scenarioButton = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-open-scenario"]');
-            const roomPreviewButton = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-open-active-room-preview"]');
             const floatingChatButton = document.querySelector<HTMLElement>('[data-fab-id="chat"]');
             const desktopActionButtons = Array.from(document.querySelectorAll<HTMLElement>('button[data-testid^="betrayal-action-"]'));
             const mobileDockButtons = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="betrayal-mobile-dock-"]'));
             const roomCanvas = document.querySelector<HTMLElement>('[data-testid="betrayal-room-canvas"]');
-            const selectedCardStatus = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-a11y-status"]');
             const leftRail = document.querySelector<HTMLElement>('[data-testid="betrayal-left-status-rail"]');
             const statusRail = document.querySelector<HTMLElement>('[data-testid="betrayal-status-rail"]');
             const tutorialCard = document.querySelector<HTMLElement>('[data-testid="tutorial-overlay-card"]');
-            const dockRect = dock?.getBoundingClientRect();
             const boardRect = board?.getBoundingClientRect();
-            const stageStatusRect = stageStatus?.getBoundingClientRect();
+            const shellRect = shell?.getBoundingClientRect();
             const roomGridRect = roomGrid?.getBoundingClientRect();
             const inventoryRailRect = inventoryRail?.getBoundingClientRect();
             const actionRailRect = actionRail?.getBoundingClientRect();
-            const contextStripRect = contextStrip?.getBoundingClientRect();
-            const selectedCardStatusRect = selectedCardStatus?.getBoundingClientRect();
             const leftRailRect = leftRail?.getBoundingClientRect();
             const statusRailRect = statusRail?.getBoundingClientRect();
             const tutorialRect = tutorialCard?.getBoundingClientRect();
-            const actionRailStyle = actionRail ? getComputedStyle(actionRail) : null;
-            const pcActionButtonStyle = pcActionButton ? getComputedStyle(pcActionButton) : null;
             const visibleElementCount = (elements: HTMLElement[]) => elements.filter((element) => {
                 const rect = element.getBoundingClientRect();
                 const style = getComputedStyle(element);
@@ -853,9 +826,6 @@ test.describe('山屋惊魂教程最小真实链路', () => {
                     && style.visibility !== 'hidden'
                     && Number(style.opacity || '1') > 0.01;
             };
-            const visibleHeightAboveDock = dockRect && roomGridRect
-                ? Math.max(0, Math.min(roomGridRect.bottom, dockRect.top) - Math.max(roomGridRect.top, 0))
-                : 0;
 
             return {
                 viewportWidth: window.innerWidth,
@@ -864,42 +834,24 @@ test.describe('山屋惊魂教程最小真实链路', () => {
                 roomPanelRole: roomPanel?.dataset.mobileRole ?? null,
                 inventoryRole: inventoryRail?.dataset.mobileRole ?? null,
                 actionRole: actionRail?.dataset.mobileRole ?? null,
-                dockBottomGap: dockRect ? window.innerHeight - dockRect.bottom : null,
-                dockHeight: dockRect?.height ?? 0,
+                shellTransform: shell ? getComputedStyle(shell).transform : null,
+                shellLeft: shellRect?.left ?? null,
+                shellRight: shellRect?.right ?? null,
                 boardWidth: boardRect?.width ?? 0,
                 boardHeight: boardRect?.height ?? 0,
                 roomGridWidth: roomGridRect?.width ?? 0,
                 roomGridHeight: roomGridRect?.height ?? 0,
                 roomCanvasTransform: roomCanvas ? getComputedStyle(roomCanvas).transform : null,
-                selectedCardStatusWidth: selectedCardStatusRect?.width ?? 0,
-                selectedCardStatusHeight: selectedCardStatusRect?.height ?? 0,
-                stageStatusTop: stageStatusRect?.top ?? null,
                 inventoryRailBottomGap: inventoryRailRect ? window.innerHeight - inventoryRailRect.bottom : null,
                 inventoryRailLeft: inventoryRailRect?.left ?? null,
                 actionRailBottomGap: actionRailRect ? window.innerHeight - actionRailRect.bottom : null,
                 actionRailLeft: actionRailRect?.left ?? null,
                 actionRailWidth: actionRailRect?.width ?? 0,
-                contextStripVisible: isVisible(contextStrip),
-                contextStripTop: contextStripRect?.top ?? null,
-                contextStripRightGap: contextStripRect ? window.innerWidth - contextStripRect.right : null,
-                contextStripWidth: contextStripRect?.width ?? 0,
-                traitsStripVisible: isVisible(traitsStrip),
-                deckSummaryVisible: isVisible(deckSummary),
-                discardSummaryVisible: isVisible(discardSummary),
-                teammatesSummaryVisible: isVisible(teammatesSummary),
-                scenarioButtonVisible: isVisible(scenarioButton),
-                roomPreviewButtonVisible: isVisible(roomPreviewButton),
                 floatingChatButtonVisible: isVisible(floatingChatButton),
-                actionRailBackground: actionRailStyle?.backgroundColor ?? null,
-                actionRailBorderTopWidth: actionRailStyle?.borderTopWidth ?? null,
-                actionRailHasVisibleBoxShadow: hasVisibleBoxShadow(actionRailStyle?.boxShadow ?? null),
                 visibleDesktopActionCount: visibleElementCount(desktopActionButtons),
                 visibleMobileDockCount: visibleElementCount(mobileDockButtons),
-                pcActionButtonBackground: pcActionButtonStyle?.backgroundColor ?? null,
-                pcActionButtonBorderTopWidth: pcActionButtonStyle?.borderTopWidth ?? null,
-                pcActionButtonHasVisibleBoxShadow: hasVisibleBoxShadow(pcActionButtonStyle?.boxShadow ?? null),
+                firstDesktopActionVisible: isVisible(pcActionButton),
                 roomPanelBottomPadding: roomPanel ? Number.parseFloat(getComputedStyle(roomPanel).paddingBottom || '0') : 0,
-                roomGridVisibleHeightAboveDock: visibleHeightAboveDock,
                 leftRailDisplay: leftRail ? getComputedStyle(leftRail).display : null,
                 statusRailDisplay: statusRail ? getComputedStyle(statusRail).display : null,
                 leftRailWidth: leftRailRect?.width ?? 0,
@@ -911,56 +863,34 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         });
 
         expect(mobileLayout.viewportWidth).toBeGreaterThan(mobileLayout.viewportHeight);
-        expect(mobileLayout.layoutMode).toBe('phone-landscape-native');
-        expect(mobileLayout.roomPanelRole).toBe('primary-board-stage');
-        expect(mobileLayout.inventoryRole).toBe('possession-rail');
-        expect(mobileLayout.actionRole).toBe('pc-action-rail-adapted');
-        expect(mobileLayout.dockBottomGap).not.toBeNull();
-        expect(mobileLayout.dockBottomGap ?? 999).toBeLessThanOrEqual(10);
-        expect(mobileLayout.actionRailBottomGap ?? 999).toBeLessThanOrEqual(8);
-        expect(mobileLayout.dockHeight).toBeLessThanOrEqual(58);
+        expect(mobileLayout.layoutMode).toBe('desktop-board');
+        expect(mobileLayout.roomPanelRole).toBeNull();
+        expect(mobileLayout.inventoryRole).toBeNull();
+        expect(mobileLayout.actionRole).toBeNull();
+        expect(mobileLayout.shellTransform).not.toBeNull();
+        expect(mobileLayout.shellTransform).not.toBe('none');
+        expect(mobileLayout.shellLeft ?? 999).toBeGreaterThanOrEqual(-1);
+        expect(mobileLayout.shellRight ?? -999).toBeLessThanOrEqual(mobileLayout.viewportWidth + 1);
         expect(mobileLayout.boardWidth).toBeGreaterThan(800);
         expect(mobileLayout.boardHeight).toBeGreaterThan(360);
-        expect(mobileLayout.roomGridWidth).toBeGreaterThan(880);
-        expect(mobileLayout.roomGridHeight).toBeGreaterThan(320);
-        expect(mobileLayout.roomGridVisibleHeightAboveDock).toBeGreaterThan(230);
+        expect(mobileLayout.roomGridWidth).toBeGreaterThan(760);
+        expect(mobileLayout.roomGridHeight).toBeGreaterThan(300);
         expect(mobileLayout.roomPanelBottomPadding).toBeGreaterThanOrEqual(80);
-        expect(mobileLayout.stageStatusTop).not.toBeNull();
-        expect(mobileLayout.stageStatusTop ?? 999).toBeLessThanOrEqual(12);
-        expect(mobileLayout.traitsStripVisible).toBe(true);
-        expect(mobileLayout.contextStripVisible).toBe(true);
-        expect(mobileLayout.deckSummaryVisible).toBe(true);
-        expect(mobileLayout.discardSummaryVisible).toBe(true);
-        expect(mobileLayout.teammatesSummaryVisible).toBe(true);
-        expect(mobileLayout.scenarioButtonVisible).toBe(true);
-        expect(mobileLayout.roomPreviewButtonVisible).toBe(true);
         expect(mobileLayout.floatingChatButtonVisible).toBe(true);
-        expect(mobileLayout.contextStripTop).not.toBeNull();
-        expect(mobileLayout.contextStripTop ?? 999).toBeLessThanOrEqual(12);
-        expect(mobileLayout.contextStripRightGap).not.toBeNull();
-        expect(mobileLayout.contextStripRightGap ?? 999).toBeLessThanOrEqual(12);
-        expect(mobileLayout.contextStripWidth).toBeGreaterThanOrEqual(260);
-        expect(mobileLayout.contextStripWidth).toBeLessThanOrEqual(360);
         expect(mobileLayout.inventoryRailBottomGap).not.toBeNull();
         expect(mobileLayout.inventoryRailBottomGap ?? 999).toBeLessThanOrEqual(112);
         expect(mobileLayout.inventoryRailLeft ?? 999).toBeLessThanOrEqual(12);
-        expect(mobileLayout.actionRailLeft ?? -1).toBeLessThanOrEqual(8);
-        expect(mobileLayout.actionRailWidth).toBeGreaterThan(900);
-        expect(mobileLayout.actionRailBackground).toBe('rgba(0, 0, 0, 0)');
-        expect(mobileLayout.actionRailBorderTopWidth).toBe('0px');
-        expect(mobileLayout.actionRailHasVisibleBoxShadow).toBe(false);
+        expect(mobileLayout.actionRailBottomGap ?? 999).toBeLessThanOrEqual(8);
+        expect(mobileLayout.actionRailLeft ?? 999).toBeGreaterThanOrEqual(-1);
+        expect(mobileLayout.actionRailWidth).toBeGreaterThan(760);
         expect(mobileLayout.visibleDesktopActionCount).toBeGreaterThan(0);
         expect(mobileLayout.visibleMobileDockCount).toBe(0);
-        expect(mobileLayout.pcActionButtonBackground).toBe('rgba(0, 0, 0, 0)');
-        expect(mobileLayout.pcActionButtonBorderTopWidth).toBe('0px');
-        expect(mobileLayout.pcActionButtonHasVisibleBoxShadow).toBe(false);
+        expect(mobileLayout.firstDesktopActionVisible).toBe(true);
         expect(mobileLayout.roomCanvasTransform).not.toBe('none');
-        expect(mobileLayout.selectedCardStatusWidth).toBeLessThanOrEqual(2);
-        expect(mobileLayout.selectedCardStatusHeight).toBeLessThanOrEqual(2);
-        expect(mobileLayout.leftRailDisplay).toBe('none');
-        expect(mobileLayout.statusRailDisplay).toBe('none');
-        expect(mobileLayout.leftRailWidth).toBe(0);
-        expect(mobileLayout.statusRailWidth).toBe(0);
+        expect(mobileLayout.leftRailDisplay).toBe('grid');
+        expect(mobileLayout.statusRailDisplay).toBe('flex');
+        expect(mobileLayout.leftRailWidth).toBeGreaterThan(180);
+        expect(mobileLayout.statusRailWidth).toBeGreaterThan(140);
         expect(mobileLayout.tutorialCenterOffset).not.toBeNull();
         expect(mobileLayout.tutorialCenterOffset ?? 999).toBeLessThanOrEqual(96);
 
@@ -1020,6 +950,7 @@ test.describe('山屋惊魂教程最小真实链路', () => {
                 viewport: { width: window.innerWidth, height: window.innerHeight },
                 leftRail: rect('[data-testid="betrayal-left-status-rail"]'),
                 rightRail: rect('[data-testid="betrayal-status-rail"]'),
+                phaseChip: rect('[data-testid="betrayal-phase-chip"]'),
                 inventory: rect('[data-testid="betrayal-inventory-section"]'),
                 mobileActionRail: rect('[data-testid="betrayal-mobile-action-rail"]'),
                 mobileStage: rect('[data-testid="betrayal-mobile-stage-status"]'),
@@ -1030,6 +961,12 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         expect(pcLayout.viewport).toEqual({ width: 1600, height: 900 });
         expect(pcLayout.leftRail?.display).toBe('grid');
         expect(pcLayout.rightRail?.display).toBe('flex');
+        expect(pcLayout.phaseChip?.display).toBe('flex');
+        expect(pcLayout.phaseChip).not.toBeNull();
+        if (pcLayout.phaseChip) {
+            const phaseChipCenter = pcLayout.phaseChip.left + pcLayout.phaseChip.width / 2;
+            expect(Math.abs(phaseChipCenter - pcLayout.viewport.width / 2)).toBeLessThanOrEqual(2);
+        }
         expect(pcLayout.leftRail?.width).toBeGreaterThan(250);
         expect(pcLayout.rightRail?.width).toBeGreaterThan(190);
         expect(pcLayout.inventory?.left).toBeLessThanOrEqual(12);

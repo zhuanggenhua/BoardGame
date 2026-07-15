@@ -373,9 +373,9 @@
       "steps": {
         "overview": "This chapter starts with Ming attacking Shanhaiguan. City battle is not just another field battle: defenders can fall back into the city, and the attacker still has to choose siege or occupation after winning.",
         "defendCity": "Click Hold City now. The defender moves up to 2 troops and 2 population into Shanhaiguan, while the units left outside keep fighting.",
-        "cityBattle": "After the defenders enter the city, click the city-battle resolution button. City battle resolves artillery first, then cavalry and infantry; cavalry takes a -1 penalty here.",
+        "cityBattle": "After the defenders enter the city, click Rear Guard in the right battle panel to resolve the city battle. City battle resolves artillery first, then cavalry and infantry; cavalry takes a -1 penalty here.",
         "cityResult": "The city-battle result tells you whether the city defenders were cleared. Even if the attacker wins, the battle still closes through siege or occupation.",
-        "besiegeChoice": "Click Besiege now. Besieging leaves Ming pressure outside the city, but Shanhaiguan control stays with the defender for the moment.",
+        "besiegeChoice": "Click Besiege This Region now. Besieging leaves Ming pressure outside the city, but Shanhaiguan control stays with the defender for the moment.",
         "occupyChoice": "Compare the occupation result: if you choose occupation, Shanhaiguan actually changes to Ming control and clears both city and siege states.",
         "finish": "The main point of this chapter: winning the city battle is only the first half. The final siege-or-occupy choice decides the city's state."
       }

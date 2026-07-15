@@ -40,7 +40,7 @@ interface BetrayalAiMonster {
 }
 
 interface BetrayalAiRecentRoll {
-    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck';
+    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck';
     playerId: string;
     dice: number[];
     passiveBonus: number;
@@ -661,6 +661,9 @@ function buildLootActions(
 
 function shouldRerollRecentResult(recentRoll: BetrayalAiRecentRoll): boolean {
     const total = recentRoll.dice.reduce((sum, pip) => sum + pip, 0) + recentRoll.passiveBonus;
+    if (recentRoll.kind === 'hauntRoll') {
+        return false;
+    }
     if (recentRoll.branchThresholds?.length) {
         const bestThreshold = Math.max(...recentRoll.branchThresholds.map((branch) => branch.min));
         return total < bestThreshold;

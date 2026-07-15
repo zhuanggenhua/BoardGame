@@ -10,6 +10,7 @@ import type {
   SummonerWarsCore,
   PlayerId,
   UnitCard,
+  BoardUnit,
   StructureCard,
   CellCoord,
 } from './types';
@@ -18,7 +19,6 @@ import {
   BOARD_ROWS,
   BOARD_COLS,
   getUnitAt,
-  isCellEmpty,
   isValidCoord,
   manhattanDistance,
   canAttackEnhanced,
@@ -104,6 +104,17 @@ export function executeCommand(
       
       if (card && card.cardType === 'unit') {
         const unitCard = card as UnitCard;
+        const hasMoguFinalForm = (unitCard.abilities ?? []).includes('mogu_final_form');
+        let moguFinalFormTarget: BoardUnit | undefined;
+        if (hasMoguFinalForm) {
+          if (!sacrificeUnitId) break;
+          moguFinalFormTarget = getPlayerUnits(core, playerId as PlayerId)
+            .find(unit => (unit.instanceId === sacrificeUnitId || unit.cardId === sacrificeUnitId)
+              && isMoguFungalBeastCard(unit.card)
+              && normalizeUnitBoosts(unit.boosts) >= 5);
+          if (!moguFinalFormTarget) break;
+        }
+
         if (unitCard.cost > 0) {
           events.push({
             type: SW_EVENTS.MAGIC_CHANGED,
@@ -126,20 +137,15 @@ export function executeCommand(
           }
         }
 
-        const hasMoguFinalForm = (unitCard.abilities ?? []).includes('mogu_final_form');
-        if (hasMoguFinalForm) {
-          const replacementTarget = getPlayerUnits(core, playerId as PlayerId)
-            .find(unit => isMoguFungalBeastCard(unit.card) && normalizeUnitBoosts(unit.boosts) >= 5);
-          if (replacementTarget) {
-            events.push(...emitDestroyWithTriggers(core, replacementTarget, replacementTarget.position, {
-              playerId: playerId as PlayerId,
-              timestamp,
-              reason: 'mogu_final_form',
-              triggerOnDeath: true,
-              skipMagicReward: true,
-            }));
-            summonPosition = replacementTarget.position;
-          }
+        if (moguFinalFormTarget) {
+          events.push(...emitDestroyWithTriggers(core, moguFinalFormTarget, moguFinalFormTarget.position, {
+            playerId: playerId as PlayerId,
+            timestamp,
+            reason: 'mogu_final_form',
+            triggerOnDeath: true,
+            skipMagicReward: true,
+          }));
+          summonPosition = moguFinalFormTarget.position;
         }
 
         events.push({
@@ -445,6 +451,9 @@ export function executeCommand(
       }
 
       attackerUnit = getUnitAt(workingCore, attacker);
+      const shouldDestroyAfterMoguCommandAttack =
+        (attackerUnit?.extraAttacks ?? 0) > 0
+        && attackerUnit?.destroyAfterExtraAttackSource === 'mogu_command';
       const applyBeforeAttackStrength = (strength: number) =>
         Math.max(0, Math.floor((strength + beforeAttackBonus) * beforeAttackMultiplier));
 
@@ -722,6 +731,14 @@ export function executeCommand(
         // 这里不能再手动补发 telekinesis / mind_transmission，否则会生成重复交互。
         const afterAttackEvents = triggerAbilities('afterAttack', afterAttackCtx);
         events.push(...afterAttackEvents);
+        if (shouldDestroyAfterMoguCommandAttack && attackerUnit) {
+          events.push(...emitDestroyWithTriggers(workingCore, attackerUnit, attacker, {
+            playerId,
+            timestamp,
+            reason: 'mogu_command',
+            triggerOnDeath: true,
+          }));
+        }
         // 连续射击（rapid_fire）：ABILITY_TRIGGERED 事件由 UI 检测，
         // 玩家确认后通过 ACTIVATE_ABILITY 命令执行消耗充能+授予额外攻击
       }
@@ -1029,7 +1046,10 @@ export function executeCommand(
       if (allSelected && allNonHostReady) {
         // 在 execute 层使用确定性随机洗牌，将洗好的牌序附带在事件中
         // reduce 只做状态写入，不再自行洗牌
-        const shuffledDecks: Record<PlayerId, (import('./types').UnitCard | import('./types').EventCard | import('./types').StructureCard)[]> = {} as any;
+        const shuffledDecks: Record<PlayerId, (UnitCard | import('./types').EventCard | StructureCard)[]> = {
+          '0': [],
+          '1': [],
+        };
         for (const pid of ['0', '1'] as PlayerId[]) {
           const factionId = core.selectedFactions[pid];
           if (factionId && factionId !== 'unselected') {

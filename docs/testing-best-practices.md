@@ -57,13 +57,13 @@
 
 ### 0.3 统一测试分层
 
-| 分层 | 默认用途 | 禁区 |
-|------|----------|------|
-| 逻辑/规则行为测试 | 验证领域规则、命令合法性、最终权威状态 | 绕过真实命令链直接调用深层 helper 来证明完整行为 |
-| 集成链路测试 | 验证 `executePipeline` / `execute()` / Interaction 链路 | 只断言某内部函数被调用 |
-| E2E | 验证真实 UI 入口、交互可操作、关键视觉结果 | 重复铺满同类卡牌逻辑或代替业务状态断言 |
-| 审计/属性测试 | 批量验证注册表、引用链、数据契约、规则覆盖 | 作为单个 bug 修复的唯一成功证据 |
-| 调试/临时测试 | 构造最小复现、定位根因 | 长期留在主测试集或作为收口证据 |
+| 分层              | 默认用途                                                | 禁区                                             |
+| ----------------- | ------------------------------------------------------- | ------------------------------------------------ |
+| 逻辑/规则行为测试 | 验证领域规则、命令合法性、最终权威状态                  | 绕过真实命令链直接调用深层 helper 来证明完整行为 |
+| 集成链路测试      | 验证 `executePipeline` / `execute()` / Interaction 链路 | 只断言某内部函数被调用                           |
+| E2E               | 验证真实 UI 入口、交互可操作、关键视觉结果              | 重复铺满同类卡牌逻辑或代替业务状态断言           |
+| 审计/属性测试     | 批量验证注册表、引用链、数据契约、规则覆盖              | 作为单个 bug 修复的唯一成功证据                  |
+| 调试/临时测试     | 构造最小复现、定位根因                                  | 长期留在主测试集或作为收口证据                   |
 
 ### 0.4 `e2e/src` Junction 禁写
 
@@ -120,13 +120,13 @@
 
 ### 1. 使用正确的测试工具
 
-| 场景 | 推荐工具 | 原因 |
-|------|----------|------|
-| 游戏逻辑测试 | `GameTestRunner` | 完整模拟引擎管线，自动处理状态初始化 |
-| 单个能力测试 | `runCommand` (testRunner.ts) | 简化的命令执行，自动包装 MatchState |
-| 基地能力测试 | `triggerBaseAbilityWithMS` (helpers.ts) | 自动注入 matchState |
+| 场景         | 推荐工具                                                                                                                          | 原因                                                           |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 游戏逻辑测试 | `GameTestRunner`                                                                                                                  | 完整模拟引擎管线，自动处理状态初始化                           |
+| 单个能力测试 | `runCommand` (testRunner.ts)                                                                                                      | 简化的命令执行，自动包装 MatchState                            |
+| 基地能力测试 | `triggerBaseAbilityWithMS` (helpers.ts)                                                                                           | 自动注入 matchState                                            |
 | 低层合同测试 | `invokeRegisteredAbilityContract` / `invokeRegisteredInteractionHandlerContract` / `invokeRegisteredRuntimePromptHandlerContract` | 显式锁能力注册表、prompt resolver、非法值、metadata 等底层合同 |
-| UI 集成测试 | Playwright E2E | 状态注入或真实链路的浏览器级验证 |
+| UI 集成测试  | Playwright E2E                                                                                                                    | 状态注入或真实链路的浏览器级验证                               |
 
 ### 1.1 E2E 去重与分层
 
@@ -137,7 +137,12 @@
 - 某次 CLI 排查里“点通了流程”只能证明当前复现/定位成功；若需要长期防回归，仍必须把覆盖沉淀到项目 Playwright E2E 用例，并按现有项目命令和配置执行。
 - E2E 的目标是验证真实 UI 入口、交互链是否可操作、以及最终可见结果是否完整，不是把同一种交互模式在不同卡上重复铺满。
 - 同一种交互模式通常只保留 1 条代表性完整流程；只有当入口位置、控件形态、链路阶段、布局风险或跨系统协作明显不同，才新增第二条 E2E。
-- 一条合格的“完整流程 E2E”至少应覆盖：真实 UI 入口 → 中间交互步骤 → 结算完成，并包含最终态断言，以及 `resolved`/`after` 类证据截图之一。
+- 写完整流程 E2E 前必须先锁定规则时序家族，例如 `先选择后投骰`、`先投骰后选择`、`投骰后直接结算`、`可选是否触发`。不同家族不能互相代表；测试标题、截图名和 evidence 必须写清本用例证明的是哪一种时序。
+- 一条合格的“完整流程 E2E”必须回到 `docs/ai-rules/e2e-verification.md` 的六段链口径：`触发前可操作 -> 牌或对象翻出/亮相 -> 选择或投骰前 -> 选择/投骰后 -> 结算结果可见 -> 关闭/继续后回到牌桌`。如果某类流程没有弹层或关闭按钮，最后一段也必须证明临时选择、目标锁定、高亮或确认提示已经清空，主界面可继续操作。
+- 牌翻出类流程必须按 `docs/ai-rules/e2e-verification.md` 的“牌翻出类完整链路固定执行表”记录 evidence：每一行都要有玩家动作、自动断言、截图文件和用户目标对应。只要缺少“牌翻出/亮相”“选择或投骰前”“选择/投骰后”“结算结果”“关闭后回牌桌”中的任一段，就只能登记为局部链路，不能写完整流程通过。
+- 被称为“完整端到端”的用例必须同时交付规则时序证据、真实入口 Playwright 用例、六段截图、六段四列表、用户目标矩阵和最终截图肉眼核图结论；缺任一项，即使测试 `passed` 也只能写局部链路。
+- 测试结果必须和用户目标直接相连：每段都要能对应 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`。直接注入最终 prompt、只截最终结果、只点按钮、只看日志或只证明 DOM 存在，都只能叫“阶段承接 / 局部链路”，不能写成“完整流程 E2E”。
+- `passed` 不是验收结论本身。完整流程用例通过后，evidence 或汇报还必须逐项说明它证明了哪个用户目标；没有出现在步骤、断言和截图里的目标，继续登记为 `待补`。
 - 如果测试只验证“交互出现”“可以进入下一步”“某个中间选择器可点”，标题必须明确写成中间态/入口验证，不能写成已经完成整条能力效果。
 - 业务最终状态、事件顺序、边界分支优先交给 `GameTestRunner` / smoke；E2E 只保留对 UI 和真实链路有独立价值的代表性流程。
 
@@ -161,12 +166,14 @@
 ### 2. 永远不要直接调用 domain 层函数
 
 ❌ **错误**：
+
 ```typescript
 const core: SmashUpCore = { players: {...}, bases: [...] };
 const events = SmashUpDomain.execute(core, command, random);  // 类型错误！
 ```
 
 ✅ **正确**：
+
 ```typescript
 const core: SmashUpCore = { players: {...}, bases: [...] };
 const matchState = makeMatchState(core);  // 包装为 MatchState
@@ -174,6 +181,7 @@ const events = SmashUpDomain.execute(matchState, command, random);
 ```
 
 ✅ **更好**：
+
 ```typescript
 // 使用 testRunner 的 runCommand，自动处理状态包装
 const result = runCommand(matchState, command);
@@ -188,31 +196,31 @@ const result = runCommand(matchState, command);
 ```typescript
 // Core：游戏领域状态（玩家、基地、手牌等）
 interface SmashUpCore {
-    players: Record<PlayerId, PlayerState>;
-    bases: BaseInPlay[];
-    turnOrder: PlayerId[];
-    // ... 游戏特定字段
+  players: Record<PlayerId, PlayerState>;
+  bases: BaseInPlay[];
+  turnOrder: PlayerId[];
+  // ... 游戏特定字段
 }
 
 // MatchState：完整对局状态（Core + 系统状态）
 interface MatchState<TCore> {
-    core: TCore;           // 游戏领域状态
-    sys: SystemState;      // 引擎系统状态（interaction、phase、undo 等）
+  core: TCore; // 游戏领域状态
+  sys: SystemState; // 引擎系统状态（interaction、phase、undo 等）
 }
 
 // SystemState：引擎层管理的状态
 interface SystemState {
-    phase: string;
-    turnNumber: number;
-    interaction: {
-        current?: Interaction;
-        queue: Interaction[];
-    };
-    undo: { snapshots: Snapshot[] };
-    eventStream: { entries: EventEntry[] };
-    actionLog: { entries: ActionEntry[] };
-    responseWindow: { current?: ResponseWindow };
-    // ... 其他系统状态
+  phase: string;
+  turnNumber: number;
+  interaction: {
+    current?: Interaction;
+    queue: Interaction[];
+  };
+  undo: { snapshots: Snapshot[] };
+  eventStream: { entries: EventEntry[] };
+  actionLog: { entries: ActionEntry[] };
+  responseWindow: { current?: ResponseWindow };
+  // ... 其他系统状态
 }
 ```
 
@@ -224,6 +232,7 @@ interface SystemState {
    - `UndoSystem` 需要 `sys.undo` 存储快照
 
 2. **能力函数需要创建交互**：
+
    ```typescript
    // 能力函数内部调用 queueInteraction
    const interaction = createSimpleChoice(...);
@@ -237,12 +246,12 @@ interface SystemState {
 
 ### 何时使用哪种类型？
 
-| 场景 | 使用类型 | 原因 |
-|------|----------|------|
-| 测试初始化 | `SmashUpCore` | 方便手写测试数据 |
-| 传递给 domain 函数 | `MatchState<SmashUpCore>` | domain 函数签名要求 |
-| 断言游戏状态 | `SmashUpCore` | 只关心游戏逻辑，不关心系统状态 |
-| 检查交互 | `MatchState<SmashUpCore>` | 需要访问 `sys.interaction` |
+| 场景               | 使用类型                  | 原因                           |
+| ------------------ | ------------------------- | ------------------------------ |
+| 测试初始化         | `SmashUpCore`             | 方便手写测试数据               |
+| 传递给 domain 函数 | `MatchState<SmashUpCore>` | domain 函数签名要求            |
+| 断言游戏状态       | `SmashUpCore`             | 只关心游戏逻辑，不关心系统状态 |
+| 检查交互           | `MatchState<SmashUpCore>` | 需要访问 `sys.interaction`     |
 
 ---
 
@@ -251,37 +260,44 @@ interface SystemState {
 ### GameTestRunner（推荐）
 
 **适用场景**：
+
 - 完整游戏流程测试
 - 多命令序列测试
 - 需要验证状态变化的测试
 
 **优点**：
+
 - ✅ 自动初始化 `MatchState`
 - ✅ 自动执行完整管线（validate → execute → reduce → postProcess）
 - ✅ 支持命令序列
 - ✅ 清晰的错误信息
 
 **示例**：
+
 ```typescript
-import { GameTestRunner } from '../../../engine/testing';
-import { SmashUpDomain } from '../domain';
+import { GameTestRunner } from "../../../engine/testing";
+import { SmashUpDomain } from "../domain";
 
 const runner = new GameTestRunner({
-    domain: SmashUpDomain,
-    playerIds: ['0', '1'],
-    assertFn: assertSmashUp,
+  domain: SmashUpDomain,
+  playerIds: ["0", "1"],
+  assertFn: assertSmashUp,
 });
 
 const testCases = [
-    {
-        name: '打出随从',
-        commands: [
-            { type: 'PLAY_MINION', playerId: '0', payload: { cardUid: 'm1', baseIndex: 0 } },
-        ],
-        expect: { 
-            minionsOnBase: [{ baseIndex: 0, count: 1 }],
-        },
+  {
+    name: "打出随从",
+    commands: [
+      {
+        type: "PLAY_MINION",
+        playerId: "0",
+        payload: { cardUid: "m1", baseIndex: 0 },
+      },
+    ],
+    expect: {
+      minionsOnBase: [{ baseIndex: 0, count: 1 }],
     },
+  },
 ];
 
 runner.runAll(testCases);
@@ -290,48 +306,53 @@ runner.runAll(testCases);
 ### runCommand（简化版）
 
 **适用场景**：
+
 - 单命令测试
 - 需要检查事件列表的测试
 - 需要访问 `sys` 状态的测试
 
 **优点**：
+
 - ✅ 自动包装 `MatchState`
 - ✅ 返回完整结果（success、events、state）
 - ✅ 比 GameTestRunner 更灵活
 
 **示例**：
-```typescript
-import { runCommand } from './testRunner';
-import { makeMatchState, makeState } from './helpers';
 
-const core = makeState({ /* ... */ });
+```typescript
+import { runCommand } from "./testRunner";
+import { makeMatchState, makeState } from "./helpers";
+
+const core = makeState({/* ... */});
 const matchState = makeMatchState(core);
 
 const result = runCommand(matchState, {
-    type: 'PLAY_MINION',
-    playerId: '0',
-    payload: { cardUid: 'm1', baseIndex: 0 },
+  type: "PLAY_MINION",
+  playerId: "0",
+  payload: { cardUid: "m1", baseIndex: 0 },
 });
 
 expect(result.success).toBe(true);
 expect(result.events).toContainEqual(
-    expect.objectContaining({ type: 'su:minion_played' })
+  expect.objectContaining({ type: "su:minion_played" }),
 );
 ```
 
 ### 直接调用 domain 函数（不推荐）
 
 **仅在以下情况使用**：
+
 - 测试 domain 层的纯函数（如 `reduce`、`validate`）
 - 不涉及交互系统的简单测试
 
 **必须手动包装 MatchState**：
-```typescript
-import { SmashUpDomain } from '../domain';
-import { makeMatchState, makeState } from './helpers';
 
-const core = makeState({ /* ... */ });
-const matchState = makeMatchState(core);  // ⚠️ 必须包装
+```typescript
+import { SmashUpDomain } from "../domain";
+import { makeMatchState, makeState } from "./helpers";
+
+const core = makeState({/* ... */});
+const matchState = makeMatchState(core); // ⚠️ 必须包装
 
 const events = SmashUpDomain.execute(matchState, command, random);
 ```
@@ -343,6 +364,7 @@ const events = SmashUpDomain.execute(matchState, command, random);
 ### 错误 1：传递裸 Core 给 domain 函数
 
 ❌ **错误**：
+
 ```typescript
 const core: SmashUpCore = { players: {...}, bases: [...] };
 const events = SmashUpDomain.execute(core, command, random);
@@ -350,11 +372,13 @@ const events = SmashUpDomain.execute(core, command, random);
 ```
 
 **原因**：
+
 - `domain.execute` 期望 `MatchState<SmashUpCore>`
 - 传递裸 `core` 导致 `state.sys` 为 `undefined`
 - 能力函数尝试访问 `state.sys.interaction` → 崩溃
 
 ✅ **修复**：
+
 ```typescript
 const core: SmashUpCore = { players: {...}, bases: [...] };
 const matchState = makeMatchState(core);  // 包装为 MatchState
@@ -364,82 +388,101 @@ const events = SmashUpDomain.execute(matchState, command, random);
 ### 错误 2：期望 execute 返回 { success, events }
 
 ❌ **错误**：
+
 ```typescript
 const result = SmashUpDomain.execute(matchState, command, random);
-console.log(result.success);  // undefined
-console.log(result.events);   // undefined
+console.log(result.success); // undefined
+console.log(result.events); // undefined
 ```
 
 **原因**：
+
 - `domain.execute` 直接返回 `SmashUpEvent[]`
 - 不返回包装对象
 
 ✅ **修复**：
+
 ```typescript
 // 方案 1：使用 runCommand（推荐）
 const result = runCommand(matchState, command);
-console.log(result.success);  // true/false
-console.log(result.events);   // SmashUpEvent[]
+console.log(result.success); // true/false
+console.log(result.events); // SmashUpEvent[]
 
 // 方案 2：直接使用返回值
 const events = SmashUpDomain.execute(matchState, command, random);
-console.log(events);  // SmashUpEvent[]
+console.log(events); // SmashUpEvent[]
 ```
 
 ### 错误 3：不使用 helpers.ts 中的工具函数
 
 ❌ **错误**：
+
 ```typescript
 // 每个测试文件重复定义
-function makeMinion(uid: string, defId: string, controller: string, power: number) {
-    return { uid, defId, controller, owner: controller, basePower: power, /* ... */ };
+function makeMinion(
+  uid: string,
+  defId: string,
+  controller: string,
+  power: number,
+) {
+  return {
+    uid,
+    defId,
+    controller,
+    owner: controller,
+    basePower: power /* ... */,
+  };
 }
 ```
 
 **问题**：
+
 - 16+ 个测试文件重复定义相同函数
 - 字段不一致（有的有 `powerModifier`，有的没有）
 - 维护困难
 
 ✅ **修复**：
-```typescript
-import { makeMinion, makePlayer, makeState, makeMatchState } from './helpers';
 
-const minion = makeMinion('m1', 'pirate_first_mate', '0', 3);
-const player = makePlayer('0', { hand: [card1, card2] });
-const core = makeState({ players: { '0': player }, bases: [base1] });
+```typescript
+import { makeMinion, makePlayer, makeState, makeMatchState } from "./helpers";
+
+const minion = makeMinion("m1", "pirate_first_mate", "0", 3);
+const player = makePlayer("0", { hand: [card1, card2] });
+const core = makeState({ players: { "0": player }, bases: [base1] });
 const matchState = makeMatchState(core);
 ```
 
 ### 错误 4：测试中不控制随机数
 
 ❌ **错误**：
+
 ```typescript
 const result = runCommand(matchState, {
-    type: 'DRAW_CARDS',
-    playerId: '0',
-    payload: { count: 5 },
+  type: "DRAW_CARDS",
+  playerId: "0",
+  payload: { count: 5 },
 });
 // 每次运行抽到的牌不同 → 测试不稳定
 ```
 
 ✅ **修复**：
+
 ```typescript
 // 方案 1：使用固定随机数
 const random: RandomFn = {
-    random: () => 0.5,
-    d: () => 1,
-    range: (min) => min,
-    shuffle: (arr) => arr,  // 不洗牌
+  random: () => 0.5,
+  d: () => 1,
+  range: (min) => min,
+  shuffle: (arr) => arr, // 不洗牌
 };
 
 // 方案 2：使用确定性初始状态
 const core = makeState({
-    players: {
-        '0': makePlayer('0', {
-            deck: [card1, card2, card3],  // 预设牌库顺序
-        }),
-    },
+  players: {
+    "0": makePlayer("0", {
+      deck: [card1, card2, card3], // 预设牌库顺序
+    }),
+  },
 });
 ```
 
@@ -474,33 +517,33 @@ const matchState = makeMatchState(core);
 
 ```typescript
 // 创建随从（常用签名）
-const minion = makeMinion('m1', 'pirate_first_mate', '0', 3);
+const minion = makeMinion("m1", "pirate_first_mate", "0", 3);
 
 // 创建随从（带额外字段）
-const minion = makeMinion('m1', 'pirate_first_mate', '0', 3, {
-    powerModifier: 2,
-    talentUsed: true,
+const minion = makeMinion("m1", "pirate_first_mate", "0", 3, {
+  powerModifier: 2,
+  talentUsed: true,
 });
 
 // 创建玩家
-const player = makePlayer('0', {
-    hand: [card1, card2],
-    vp: 5,
+const player = makePlayer("0", {
+  hand: [card1, card2],
+  vp: 5,
 });
 
 // 创建玩家（带自定义派系）
-const player = makePlayerWithFactions('0', ['pirates', 'aliens'], {
-    hand: [card1],
+const player = makePlayerWithFactions("0", ["pirates", "aliens"], {
+  hand: [card1],
 });
 
 // 创建卡牌实例（4 参数：uid, defId, type, owner）
-const card = makeCard('c1', 'pirate_first_mate', 'minion', '0');
+const card = makeCard("c1", "pirate_first_mate", "minion", "0");
 
 // 创建卡牌实例（3 参数：uid, defId, owner，默认 type='minion'）
-const card = makeCard('c1', 'pirate_first_mate', '0');
+const card = makeCard("c1", "pirate_first_mate", "0");
 
 // 创建基地
-const base = makeBase('test_base', [minion1, minion2]);
+const base = makeBase("test_base", [minion1, minion2]);
 ```
 
 #### 事件应用
@@ -578,6 +621,7 @@ const interactions = getInteractionsFromMS(matchState);
 ### 步骤 1：识别问题模式
 
 搜索以下模式：
+
 ```bash
 # 直接调用 domain.execute
 grep -r "SmashUpDomain.execute" src/games/smashup/__tests__/
@@ -593,11 +637,11 @@ grep -r "function makeMinion" src/games/smashup/__tests__/
 
 ```typescript
 // 修复前
-const core: SmashUpCore = { /* ... */ };
+const core: SmashUpCore = {/* ... */};
 const events = SmashUpDomain.execute(core, command, random);
 
 // 修复后
-const core: SmashUpCore = { /* ... */ };
+const core: SmashUpCore = {/* ... */};
 const matchState = makeMatchState(core);
 const events = SmashUpDomain.execute(matchState, command, random);
 ```
@@ -619,12 +663,23 @@ expect(result.events.length).toBeGreaterThan(0);
 
 ```typescript
 // 修复前
-function makeMinion(uid: string, defId: string, controller: string, power: number) {
-    return { uid, defId, controller, owner: controller, basePower: power, /* ... */ };
+function makeMinion(
+  uid: string,
+  defId: string,
+  controller: string,
+  power: number,
+) {
+  return {
+    uid,
+    defId,
+    controller,
+    owner: controller,
+    basePower: power /* ... */,
+  };
 }
 
 // 修复后
-import { makeMinion } from './helpers';
+import { makeMinion } from "./helpers";
 ```
 
 ---
@@ -641,14 +696,14 @@ import { makeMinion } from './helpers';
 
 ### 快速参考
 
-| 需求 | 使用工具 |
-|------|----------|
-| 完整流程测试 | `GameTestRunner` |
-| 单命令测试 | `runCommand` |
-| 创建测试状态 | `makeState` + `makeMatchState` |
-| 创建测试实体 | `makeMinion` / `makePlayer` / `makeCard` |
-| 检查交互 | `getSimpleChoicePrompt` / `getPromptOption` / `getPromptOptions` / `expectNoPrompt` |
-| 基地能力测试 | `triggerBaseAbilityWithMS` |
+| 需求         | 使用工具                                                                            |
+| ------------ | ----------------------------------------------------------------------------------- |
+| 完整流程测试 | `GameTestRunner`                                                                    |
+| 单命令测试   | `runCommand`                                                                        |
+| 创建测试状态 | `makeState` + `makeMatchState`                                                      |
+| 创建测试实体 | `makeMinion` / `makePlayer` / `makeCard`                                            |
+| 检查交互     | `getSimpleChoicePrompt` / `getPromptOption` / `getPromptOptions` / `expectNoPrompt` |
+| 基地能力测试 | `triggerBaseAbilityWithMS`                                                          |
 
 ### 相关文档
 
@@ -656,7 +711,6 @@ import { makeMinion } from './helpers';
 - `docs/ai-rules/engine-systems.md` - 引擎测试工具
 - `src/games/smashup/__tests__/helpers.ts` - 测试辅助函数源码
 - `src/games/smashup/__tests__/testRunner.ts` - runCommand 实现
-
 
 ---
 
@@ -666,13 +720,13 @@ import { makeMinion } from './helpers';
 
 项目包含大量测试，不同测试套件的运行时间差异很大：
 
-| 测试套件 | 命令 | 预计时间 | 说明 |
-|---------|------|---------|------|
-| 单个测试文件 | `npm run test -- <file>.test.ts` | 10-60秒 | 最快，推荐开发时使用 |
-| SmashUp 核心测试 | `npm run test:smashup` | 2-3分钟 | 包含大量单元测试 |
-| 所有游戏核心测试 | `npm run test:games:core` | 3-5分钟 | 排除 property/audit/E2E 测试 |
-| 所有游戏测试 | `npm run test:games` | 5-10分钟 | 包含所有测试类型 |
-| 完整测试套件 | `npm run test` | 10-15分钟 | 包含所有测试 |
+| 测试套件         | 命令                             | 预计时间  | 说明                         |
+| ---------------- | -------------------------------- | --------- | ---------------------------- |
+| 单个测试文件     | `npm run test -- <file>.test.ts` | 10-60秒   | 最快，推荐开发时使用         |
+| SmashUp 核心测试 | `npm run test:smashup`           | 2-3分钟   | 包含大量单元测试             |
+| 所有游戏核心测试 | `npm run test:games:core`        | 3-5分钟   | 排除 property/audit/E2E 测试 |
+| 所有游戏测试     | `npm run test:games`             | 5-10分钟  | 包含所有测试类型             |
+| 完整测试套件     | `npm run test`                   | 10-15分钟 | 包含所有测试                 |
 
 ### Property-Based 测试
 
@@ -684,11 +738,12 @@ fc.assert(
   fc.property(arbBaseStrength(), (baseStrength) => {
     // 测试逻辑
   }),
-  { numRuns: 200 }
+  { numRuns: 200 },
 );
 ```
 
 **位置**：
+
 - `src/games/summonerwars/__tests__/*.property.test.ts`
 - `src/games/summonerwars/__tests__/deck-*.property.test.ts`
 
@@ -709,15 +764,17 @@ test: {
 ### 开发时的最佳实践
 
 1. **只运行相关测试**：
+
    ```bash
    # 只运行你修改的文件的测试
    npm run test -- myFeature.test.ts
-   
+
    # 只运行特定游戏的测试
    npm run test:smashup
    ```
 
 2. **使用 watch 模式**（开发时）：
+
    ```bash
    npm run test:watch
    ```
@@ -741,12 +798,16 @@ test: {
    - 检查 `while` 循环的退出条件
 
 2. **减少 property-based 测试的运行次数**（开发时）：
+
    ```typescript
    // 临时减少运行次数
-   { numRuns: 10 }  // 而不是 200
+   {
+     numRuns: 10;
+   } // 而不是 200
    ```
 
 3. **使用测试分片**（CI 中）：
+
    ```bash
    # 将测试分成多个并行任务
    npm run test:smashup &
@@ -759,7 +820,6 @@ test: {
    - 开发时使用 `test:games:core` 而不是 `test:games`
 
 ---
-
 
 ---
 
@@ -791,39 +851,39 @@ test: {
 
 1. 必须先“看图并对照需求”再“下结论”：没有人工核对截图，或虽已看图但尚未确认其满足本轮需求，不得说“正常”或“已修复”。
 2. 必须先“看图并确认符合需求”再“写文档”：证据文档中的结论段不得早于人工看图和需求核对产生，禁止先写结论再回头补观察。
-2.1. 对用户症状的文字复述必须与用户原话等价：用户说“两次缩放”“弹两次”“没播动画”，就按这个症状原样记录；没有证据前不要自行改写成“像重开”“像二段”“像卡了一下”。
-2.2. 若当前证据只支持相近现象，不得写成“已复现原问题”；必须明确标注“仅复现到相近现象”或“未复现原症状”。
+   2.1. 对用户症状的文字复述必须与用户原话等价：用户说“两次缩放”“弹两次”“没播动画”，就按这个症状原样记录；没有证据前不要自行改写成“像重开”“像二段”“像卡了一下”。
+   2.2. 若当前证据只支持相近现象，不得写成“已复现原问题”；必须明确标注“仅复现到相近现象”或“未复现原症状”。
 3. 若失败产物目录无图，结论必须显式标注“无图可核对”，并说明为什么无图。
 4. 向他人汇报时必须提供已核对截图的完整工作区绝对路径和可见证据点，路径必须可直接复制使用（不是只贴文件夹名、相对路径或目录名）。
 5. 打开截图所在文件夹时，每轮只打开 1 个目标文件夹；不要连续列出或打开多个兄弟目录刷屏。
 6. 若只是汇报截图位置，默认只给实际核对过的截图完整绝对路径；除非用户明确要求，否则不要额外列父目录或多个文件夹路径。
 7. 证据文档中每张截图都要有自己对应的绝对路径说明；不要只给一个父目录路径再让读者自己找图。
 8. 黑图、纯加载页、纯空白页、只有遮罩层、只有单个亮点/噪点且无法辨认业务界面的截图，不算“已完成看图”；这类情况必须按“无有效截图”处理。
-8.1. 对象完整性优先于元素存在：截图里目标对象被视口、容器、遮挡层或截图边界裁切到只露边角/只露局部时，最多只能证明事件触发或元素存在，不能证明视觉达标。用于证明浮层、表情、popover、HUD overlay、特写、控件位置正确的截图，必须看到目标对象完整主体或足以识别的主要轮廓；若还要证明锚点位置，必须同时看到锚点参照物和目标对象完整边界。全页截图收不全时必须补局部放大图、调整截图时机或调整视口后重验。
+   8.1. 对象完整性优先于元素存在：截图里目标对象被视口、容器、遮挡层或截图边界裁切到只露边角/只露局部时，最多只能证明事件触发或元素存在，不能证明视觉达标。用于证明浮层、表情、popover、HUD overlay、特写、控件位置正确的截图，必须看到目标对象完整主体或足以识别的主要轮廓；若还要证明锚点位置，必须同时看到锚点参照物和目标对象完整边界。全页截图收不全时必须补局部放大图、调整截图时机或调整视口后重验。
 9. 如果只知道某张图存在，但还没亲自打开看过，就不能把这张图当作“已核对证据”汇报给用户；最多只能说“有产物，尚未验图”。
 10. 一旦发现当前轮只有无效截图，下一步应该是补拿有效截图或明确承认“本轮无法完成视觉验收”，不能继续给出像“截图在这”“可直接验收”这种误导性表述。
 
 ### 代码示例
 
 ```typescript
-import { test, expect } from './fixtures';
-import { GameTestContext } from './framework/GameTestContext';
+import { test, expect } from "./fixtures";
+import { GameTestContext } from "./framework/GameTestContext";
 
-test('wizard portal', async ({ page }) => {
+test("wizard portal", async ({ page }) => {
   const game = new GameTestContext(page);
-  
+
   await game.setupScene({
-    gameId: 'smashup',
-    player0: { hand: ['wizard_portal'], discard: ['alien_invader'] },
-    currentPlayer: '0',
-    phase: 'playCards'
+    gameId: "smashup",
+    player0: { hand: ["wizard_portal"], discard: ["alien_invader"] },
+    currentPlayer: "0",
+    phase: "playCards",
   });
-  
-  await game.playCard('wizard_portal');
-  await game.waitForInteraction('wizard_portal_pick');
-  await game.selectOption('minion-0');
+
+  await game.playCard("wizard_portal");
+  await game.waitForInteraction("wizard_portal_pick");
+  await game.selectOption("minion-0");
   await game.confirm();
-  await game.expectCardInHand('alien_invader');
+  await game.expectCardInHand("alien_invader");
 });
 ```
 

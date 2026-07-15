@@ -11,6 +11,7 @@
     "gameOver": "Game over"
   },
   "actionLog": {
+    "startHeist": "Player {{player}} starts heist {{heist}}",
     "takeChip": "Player {{player}} chooses the {{chip}}★ chip in round {{round}}",
     "endRound": "Player {{player}} ends round {{round}} and advances to round {{nextRound}}",
     "revealShowdown": "Player {{player}} reveals showdown: heist {{heist}} {{outcome}} (successes {{successes}} / failures {{failures}})",
@@ -22,6 +23,7 @@
       "goalTrack": "This shows the current heist plus gold and alarm progress. Three gold bars win the game; three alarms lose it.",
       "hand": "These are your pocket cards and current best hand. You cannot state your cards, so read your hand, the table cards, and the chips other players have taken.",
       "handRankReference": "The Hands button in the lower-left is the in-game quick reference. Keep it closed most of the time; open it only when you need to confirm the weak-to-strong order before choosing chips or reading showdown.",
+      "startHeist": "This heist has not officially started yet. The host starts it from the lower-right action button; after that, expansion settings lock and players can take chips.",
       "chipChoice": "Choose an available white chip. A higher number says you think your hand is stronger; a lower number leaves stronger positions for teammates.",
       "tableResponse": "Your teammates take white chips too. The center pool is the default source, but current-round white chips in front of teammates are also legal targets; taking one rewrites this round's public strength signal. Only chips are public for now, not hands.",
       "takePlayerChip": "Try it now: click the glowing current-round white chip in front of a teammate and take it from them. That player loses the chip, then the AI will choose another available chip. You may still keep only one chip of each color yourself.",
@@ -65,6 +67,8 @@
     "heistSuccess": "Heist succeeded",
     "heistFailure": "Heist failed",
     "safeSettlement": "Safe settlement",
+    "startHeist": "Start heist",
+    "setupWaitingHost": "Waiting for host",
     "nextHeist": "Next heist",
     "playerFallback": "Player {{player}}",
     "heistNumber": "Heist {{heist}}",
@@ -99,6 +103,12 @@
     "activeGameMode": "Current mode: {{mode}}",
     "activeExitChipMode": "Exit chips: {{mode}}",
     "rulesLocked": "This heist has started; expansion settings are locked",
+    "toastStartBeforeChip": "The host must start the heist before chips can be taken.",
+    "toastRulesLocked": "This heist has started; expansion settings can no longer be changed.",
+    "toastHostOnlySetup": "Only the host can change setup rules.",
+    "toastHostOnlyStart": "Only the host can start the heist.",
+    "toastToolsHostOnly": "Only the host can deal or reset tool cards.",
+    "toastToolsAlreadyDealt": "Tool cards have already been dealt for this heist.",
     "noChallenges": "Base rules",
     "gameMode": "Game mode",
     "gameModeDescriptions": {

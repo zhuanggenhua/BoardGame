@@ -96,6 +96,7 @@ export type TriggerTiming =
     | 'onBaseRevealed'
     | 'onMinionDestroyed'
     | 'onMinionMoved'
+    | 'onCardTransferred'
     | 'onCardReturnedToHand'
     | 'onCardDestroyed'
     | 'onDeckInspected'
@@ -176,6 +177,15 @@ export interface TriggerContext {
     triggerCardOwnerId?: PlayerId;
     /** 触发相关场上行动牌类型 */
     triggerCardKind?: 'ongoing' | 'attached_action';
+    /** onCardTransferred 时：被转移卡牌 */
+    transferredCardUid?: string;
+    transferredCardDefId?: string;
+    transferredCardOwnerId?: PlayerId;
+    transferredFromPlayerId?: PlayerId;
+    transferredToPlayerId?: PlayerId;
+    /** onCardsDiscarded 时：弃置/磨掉的卡牌快照 */
+    discardedCards?: Array<{ uid: string; defId: string; ownerId: PlayerId }>;
+    discardedFromZone?: 'hand' | 'deck';
     /** 收集 trigger 时应排除的来源实例 UID（例如 onPlay 才被移动进来的“晚到见证者”）。 */
     suppressedSourceCardUids?: string[];
     /** 消灭者（仅 onMinionDestroyed） */
@@ -623,6 +633,13 @@ function createTriggerInstance(
         triggerCardDefId: ctx.triggerCardDefId,
         triggerCardOwnerId: ctx.triggerCardOwnerId,
         triggerCardKind: ctx.triggerCardKind,
+        transferredCardUid: ctx.transferredCardUid,
+        transferredCardDefId: ctx.transferredCardDefId,
+        transferredCardOwnerId: ctx.transferredCardOwnerId,
+        transferredFromPlayerId: ctx.transferredFromPlayerId,
+        transferredToPlayerId: ctx.transferredToPlayerId,
+        discardedCards: ctx.discardedCards ? structuredClone(ctx.discardedCards) : undefined,
+        discardedFromZone: ctx.discardedFromZone,
         destroyerId: ctx.destroyerId,
         controllerId: ctx.controllerId,
         reason: ctx.reason,

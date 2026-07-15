@@ -359,6 +359,13 @@ export interface TutorialStepSnapshot {
     advanceOnEvents?: TutorialEventMatcher[];
     randomPolicy?: TutorialRandomPolicy;
     aiActions?: TutorialAiAction[];
+    /**
+     * AI actions 执行完成后是否自动推进。
+     *
+     * 默认保持旧行为：没有 advanceOnEvents 的 AI 步骤会自动推进。
+     * 某些教程步骤需要 AI 先补齐桌面状态，但仍停留在当前说明页等待玩家阅读。
+     */
+    autoAdvanceAfterAi?: boolean;
     allowManualSkip?: boolean;
     /** 是否等待动画完成后才推进到下一步 */
     waitForAnimation?: boolean;

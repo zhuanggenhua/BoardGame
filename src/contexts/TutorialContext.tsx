@@ -73,6 +73,7 @@ const buildTutorialController = (dispatch: DispatchFn): TutorialController => {
 };
 
 const shouldAutoAdvance = (step: TutorialStepSnapshot): boolean => {
+    if (step.autoAdvanceAfterAi === false) return false;
     if (!step.advanceOnEvents) return true;
     return step.advanceOnEvents.length === 0;
 };

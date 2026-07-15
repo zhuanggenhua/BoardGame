@@ -608,7 +608,7 @@ export function validate(
                     return { valid: false, error: '该卡牌只能在计分前打出' };
                 }
 
-                const restrictionError = getActionPlayRestrictionError(core, command.playerId);
+                const restrictionError = getActionPlayRestrictionError(core, command.playerId, rCard.defId);
                 if (restrictionError) {
                     return { valid: false, error: restrictionError };
                 }

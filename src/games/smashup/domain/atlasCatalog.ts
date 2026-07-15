@@ -30,6 +30,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.CARDS12, kind: 'card', image: 'smashup/cards/longzu', grid: { rows: 5, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.CARDS13, kind: 'card', image: 'smashup/cards/zhongguo', grid: { rows: 7, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.MARVEL_VILLAINS_CARDS, kind: 'card', image: 'smashup/cards/marvel_villains', grid: { rows: 6, cols: 9 } },
+    { id: SMASHUP_ATLAS_IDS.CULTURE_SHOCK_CARDS, kind: 'card', image: 'smashup/cards/culture_shock/atlas', grid: { rows: 6, cols: 10 } },
     { id: SMASHUP_ATLAS_IDS.ITTY_CRITTERS_POD_CARDS, kind: 'card', image: 'smashup/cards/itty_critters_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.TIME_TRAVELERS_POD_CARDS, kind: 'card', image: 'smashup/cards/time_travelers_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.MARVEL_WAVE_ONE_CARDS, kind: 'card', image: 'smashup/cards/marvel_wave_one', grid: { rows: 6, cols: 9 } },
@@ -56,6 +57,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.TITANS, kind: 'card', image: 'smashup/taitan/taitan1', grid: { rows: 7, cols: 3 } },
     { id: SMASHUP_ATLAS_IDS.SHARKS_POD_CARDS, kind: 'card', image: 'smashup/cards/sharks_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.ALL_STARS_POD_CARDS, kind: 'card', image: 'smashup/cards/all_stars_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.PROMOS_SHEEP_ALL_STARS_CARDS, kind: 'card', image: 'smashup/cards/promos_sheep_all_stars', grid: { rows: 6, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.TORNADOS_POD_CARDS, kind: 'card', image: 'smashup/cards/tornados_pod', grid: { rows: 4, cols: 5 } },
 
     { id: SMASHUP_ATLAS_IDS.BASE1, kind: 'base', image: 'smashup/base/base1', grid: { rows: 4, cols: 4 } },
@@ -69,10 +71,10 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.BASE9, kind: 'base', image: 'smashup/base/yuanhou', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE10, kind: 'base', image: 'smashup/base/zhongguo', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.CEASE_AND_DESIST_BASES, kind: 'base', image: 'smashup/base/cease_and_desist', grid: { rows: 4, cols: 2 } },
-    { id: SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES, kind: 'base', image: 'smashup/base/polynesian_voyagers', grid: { rows: 3, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.PENGUINS_BASES, kind: 'base', image: 'smashup/base/penguins', grid: { rows: 3, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.WHAT_WERE_WE_THINKING_BASES, kind: 'base', image: 'smashup/base/what_were_we_thinking_bases', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, kind: 'base', image: 'smashup/base/pretty_pretty_pod', grid: { rows: 2, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES, kind: 'base', image: 'smashup/base/polynesian_voyagers/atlas', grid: { rows: 3, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, kind: 'base', image: 'smashup/base/huluwawa_bases', grid: { rows: 1, cols: 2 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_BASES, kind: 'base', image: 'smashup/base/paladin_bases', grid: { rows: 1, cols: 2 } },
 ];

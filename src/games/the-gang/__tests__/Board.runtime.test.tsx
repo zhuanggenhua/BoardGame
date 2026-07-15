@@ -4,6 +4,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { useUndo } from '../../../contexts/UndoContext';
+import { ToastProvider } from '../../../contexts/ToastContext';
+import { ToastViewport } from '../../../components/system/ToastViewport';
 import Board from '../Board';
 import { TheGangDomain, buildShowdownResults } from '../domain';
 import { THE_GANG_COMMANDS, type ShowdownPlayerResult, type TheGangCore } from '../domain/types';
@@ -42,6 +44,13 @@ const finalRoundChipsFor = (core: TheGangCore) => [...buildShowdownResults(core)
 
 const fixedRandom = { random: () => 0 };
 
+const renderWithToast = (ui: React.ReactElement) => render(
+    <ToastProvider>
+        {ui}
+        <ToastViewport />
+    </ToastProvider>,
+);
+
 function UndoProbe() {
     const undo = useUndo();
     return (
@@ -74,7 +83,7 @@ function HarnessBoard() {
     }, [playerID]);
 
     return (
-        <>
+        <ToastProvider>
             <div aria-label="测试座位切换">
                 {['0', '1', '2'].map((id) => (
                     <button key={id} type="button" onClick={() => setPlayerID(id)}>
@@ -93,8 +102,9 @@ function HarnessBoard() {
                 ]}
                 isConnected
             />
+            <ToastViewport />
             <UndoProbe />
-        </>
+        </ToastProvider>
     );
 }
 
@@ -103,6 +113,13 @@ const reduceCommand = (
     command: Parameters<typeof TheGangDomain.execute>[1],
 ) => TheGangDomain.execute(stateOf(core), command, fixedRandom)
     .reduce((nextCore, event) => TheGangDomain.reduce(nextCore, event), core);
+
+const startHeistCore = (core: TheGangCore, playerId = '0', timestamp = 1) => reduceCommand(core, {
+    type: THE_GANG_COMMANDS.START_HEIST,
+    playerId,
+    payload: {},
+    timestamp,
+} as Parameters<typeof TheGangDomain.execute>[1]);
 
 const confirmProgressForAllPlayers = (
     core: TheGangCore,
@@ -123,6 +140,7 @@ const confirmProgressForAllPlayers = (
 
 const buildCoreReadyForShowdown = () => {
     let core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+    core = startHeistCore(core);
 
     for (const round of [1, 2, 3]) {
         for (const [index, playerId] of core.playerIds.entries()) {
@@ -156,7 +174,7 @@ const defaultMatchData = [
     { id: 2, name: 'AI 3 号位', isConnected: true },
 ];
 
-const renderBoardForCore = (core: TheGangCore) => render(
+const renderBoardForCore = (core: TheGangCore) => renderWithToast(
     <Board
         G={stateOf(core)}
         dispatch={vi.fn() as never}
@@ -183,6 +201,71 @@ const expectBggTableAnchors = () => {
 };
 
 describe('The Gang Board 运行入口', () => {
+    test('初始抢劫必须由房主点击开始才派发正式开始命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        renderWithToast(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-start-heist')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'board.nextRound' })).not.toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('the-gang-start-heist'));
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.START_HEIST, {
+            __internalPlayerId: '0',
+        });
+    });
+
+    test('非房主点击开始抢劫会 toast 提示且不派发命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        renderWithToast(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="1"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('the-gang-start-heist'));
+
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(screen.getByText(/只有房主可以开始抢劫|board\.toastHostOnlyStart/u)).toBeInTheDocument();
+    });
+
+    test('开始前点击筹码会 toast 提示且不派发拿筹码命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        renderWithToast(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        const firstChipButton = document.querySelector('[data-bgg-zone="token-pile"] button');
+        expect(firstChipButton).toBeInTheDocument();
+        fireEvent.click(firstChipButton!);
+
+        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, expect.anything());
+        expect(screen.getByText(/房主开始抢劫后才能拿筹码|board\.toastStartBeforeChip/u)).toBeInTheDocument();
+    });
+
     test('接入 The Gang 音效和 BGM 运行时配置', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
@@ -268,11 +351,12 @@ describe('The Gang Board 运行入口', () => {
 
         unmount();
 
-        const withOpponentChip = reduceCommand(initial, {
+        const started = startHeistCore(initial);
+        const withOpponentChip = reduceCommand(started, {
             type: THE_GANG_COMMANDS.TAKE_CHIP,
             playerId: '1',
             payload: { chip: 2 },
-            timestamp: 1,
+            timestamp: 2,
         } as Parameters<typeof TheGangDomain.execute>[1]);
         renderBoardForCore(withOpponentChip);
 
@@ -284,14 +368,15 @@ describe('The Gang Board 运行入口', () => {
     test('选筹阶段可以直接点击对手当前轮筹码拿走', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
-        const withOpponentChip = reduceCommand(initial, {
+        const started = startHeistCore(initial);
+        const withOpponentChip = reduceCommand(started, {
             type: THE_GANG_COMMANDS.TAKE_CHIP,
             playerId: '1',
             payload: { chip: 2 },
-            timestamp: 1,
+            timestamp: 2,
         } as Parameters<typeof TheGangDomain.execute>[1]);
 
-        render(
+        renderWithToast(
             <Board
                 G={stateOf(withOpponentChip)}
                 dispatch={dispatch as never}
@@ -319,7 +404,7 @@ describe('The Gang Board 运行入口', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
-        render(
+        renderWithToast(
             <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
@@ -391,7 +476,7 @@ describe('The Gang Board 运行入口', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
-        render(
+        renderWithToast(
             <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
@@ -417,12 +502,9 @@ describe('The Gang Board 运行入口', () => {
     test('房主开局后规则设置会明确显示锁定而不是权限失效', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
-        const lockedCore: TheGangCore = {
-            ...initial,
-            currentRoundChips: { '0': 1 },
-        };
+        const lockedCore = startHeistCore(initial);
 
-        render(
+        renderWithToast(
             <Board
                 G={stateOf(lockedCore)}
                 dispatch={dispatch as never}
@@ -436,9 +518,10 @@ describe('The Gang Board 运行入口', () => {
 
         expect(screen.getByText('board.rulesDialogLockedHostHint')).toBeInTheDocument();
         expect(screen.getByText('board.rulesLocked')).toBeInTheDocument();
-        expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toBeDisabled();
+        expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toHaveAttribute('aria-disabled', 'true');
         fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
         expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+        expect(screen.getByText(/扩展设置不能再修改|board\.toastRulesLocked/u)).toBeInTheDocument();
     });
 
     test('工具面板可以发放工具牌并通过已实现工具派发使用命令', () => {
@@ -456,7 +539,7 @@ describe('The Gang Board 运行入口', () => {
             },
         };
 
-        const { unmount } = render(
+        const { unmount } = renderWithToast(
             <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
@@ -483,7 +566,7 @@ describe('The Gang Board 运行入口', () => {
         });
         unmount();
 
-        render(
+        renderWithToast(
             <Board
                 G={stateOf(localToolCore)}
                 dispatch={dispatch as never}

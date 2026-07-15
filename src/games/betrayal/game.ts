@@ -169,7 +169,7 @@ interface BetrayalRoomEnterEffectResult {
 
 export interface BetrayalRecentRollState {
     id: string;
-    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
+    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
     playerId: string;
     sourceTitle: string;
     trait?: BetrayalTraitKey;
@@ -442,6 +442,7 @@ type BetrayalEvent =
         };
         discovery: BetrayalDiscoverySummary;
         logText: string;
+        hauntRoll?: BetrayalHauntRollResult;
         hauntTriggered?: boolean;
     }>
     | GameEvent<typeof EVENTS.EVENT_CHOICE_RESOLVED, {
@@ -452,6 +453,7 @@ type BetrayalEvent =
         hauntTraitorPlayerId?: string;
         hauntCardNumber?: number;
         hauntTriggerLabel?: string;
+        nextPendingEventChoice?: BetrayalPendingEventChoiceState;
         eventEffect?: UseEffectProfile;
         eventRoll?: {
             kind?: 'trait' | 'dice';
@@ -573,6 +575,14 @@ type RoomTemplate = BetrayalRoomDiscoveryTemplate;
 
 type EventTemplate = BetrayalEventSeed;
 type EventEffectSnapshot = NonNullable<BetrayalRecentRollState['eventEffectSnapshot']>;
+
+interface BetrayalHauntRollResult {
+    dice: number[];
+    total: number;
+    threshold: number;
+    triggered: boolean;
+    automatic: boolean;
+}
 
 const DRAW_ORDER: BetrayalDeckKind[] = [...BETRAYAL_DISCOVERY_POOLS.drawOrder];
 
@@ -1947,6 +1957,7 @@ export function canUseRabbitFootForRecentRoll(core: BetrayalCore, playerId: stri
         card
         && core.recentRoll
         && core.recentRoll.kind !== 'monsterMoveRoll'
+        && core.recentRoll.kind !== 'hauntRoll'
         && core.recentRoll.playerId === playerId
         && !core.recentRoll.consumedRabbitFootCardIds.includes(card.id)
         && existedAtRollWindowStart
@@ -2968,23 +2979,55 @@ function moveMysticElevatorRoom(
     }));
 }
 
-function shouldTriggerHaunt(
+function resolveHauntRoll(
     core: BetrayalCore,
-    event: Extract<BetrayalEvent, { type: typeof EVENTS.ROOM_EXPLORED }>,
+    deckKind: BetrayalDeckKind,
     random: RandomFn,
-): boolean {
-    if (core.phase !== 'preHaunt' || core.scenarioRuntime.hauntTriggered || event.payload.deckKind !== 'omen') {
-        return false;
+): BetrayalHauntRollResult | null {
+    if (core.phase !== 'preHaunt' || core.scenarioRuntime.hauntTriggered || deckKind !== 'omen') {
+        return null;
     }
+    const threshold = core.scenarioRuntime.hauntRollThreshold;
     if (core.deckCounts.omen <= 1) {
-        return true;
+        return {
+            dice: [],
+            total: threshold,
+            threshold,
+            triggered: true,
+            automatic: true,
+        };
     }
-    const omenCountAfterDraw = resolveHauntRollTotal(core) + 1;
-    let hauntRollTotal = 0;
-    for (let index = 0; index < omenCountAfterDraw; index += 1) {
-        hauntRollTotal += rollBetrayalPip(random);
+    const dice = rollDicePips(random, resolveHauntRollTotal(core) + 1);
+    const total = dice.reduce((sum, pip) => sum + pip, 0);
+    return {
+        dice,
+        total,
+        threshold,
+        triggered: total >= threshold,
+        automatic: false,
+    };
+}
+
+function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): string {
+    if (hauntRoll.automatic) {
+        return '最后一张预兆自动触发作祟';
     }
-    return hauntRollTotal >= core.scenarioRuntime.hauntRollThreshold;
+    return `作祟检定 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '作祟开始' : `未达到 ${hauntRoll.threshold}+`}）`;
+}
+
+function buildHauntRollThresholds(hauntRoll: BetrayalHauntRollResult): { min: number; label: string; effect: UseEffectProfile }[] {
+    return [
+        {
+            min: hauntRoll.threshold,
+            label: '作祟开始',
+            effect: { mode: 'none', recommendedAction: 'endTurn' },
+        },
+        {
+            min: 0,
+            label: '未触发作祟',
+            effect: { mode: 'none', recommendedAction: 'endTurn' },
+        },
+    ];
 }
 
 export function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
@@ -3013,6 +3056,9 @@ function resolveMoveCost(core: BetrayalCore): number {
 }
 
 export function resolveNextExplorableRoomSlot(core: BetrayalCore): BetrayalRoomNode | null {
+    if (core.phase !== 'preHaunt') {
+        return null;
+    }
     const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
     if (!activeRoom) {
         return null;
@@ -3022,6 +3068,9 @@ export function resolveNextExplorableRoomSlot(core: BetrayalCore): BetrayalRoomN
 }
 
 export function resolveExplorableRoomSlots(core: BetrayalCore): BetrayalRoomNode[] {
+    if (core.phase !== 'preHaunt') {
+        return [];
+    }
     const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);
     if (!activeRoom) {
         return [];
@@ -3108,12 +3157,14 @@ function resolveRoomTemplateAtOffset(core: BetrayalCore, floor: BetrayalRoomNode
 }
 
 export function canUseHolySymbolForDiscovery(core: BetrayalCore): boolean {
-    return core.currentExplorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'holy-symbol')
+    return core.phase === 'preHaunt'
+        && core.currentExplorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'holy-symbol')
         && core.turnStartInventoryCardIds.some((cardId) => resolveInventoryEffectId(cardId) === 'holy-symbol');
 }
 
 export function canUseIdolToSkipEvent(core: BetrayalCore): boolean {
-    return core.currentExplorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'idol')
+    return core.phase === 'preHaunt'
+        && core.currentExplorer.inventory.some((card) => resolveInventoryEffectId(card.id) === 'idol')
         && core.turnStartInventoryCardIds.some((cardId) => resolveInventoryEffectId(cardId) === 'idol');
 }
 
@@ -3475,17 +3526,6 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                 return { valid: false, error: '该事件必须选择一个有效属性。' };
             }
             return { valid: true };
-        }
-        if (command.payload.accept && pending.effect.mode === 'optionalEventRoll') {
-            const chosenTraitEffect = pending.effect.roll.branches
-                .flatMap((branch) => branch.effect.mode === 'chosenTrait' ? [branch.effect] : [])
-                .at(0);
-            if (
-                chosenTraitEffect
-                && (!command.payload.trait || !chosenTraitEffect.allowedTraits.includes(command.payload.trait))
-            ) {
-                return { valid: false, error: '该事件必须选择一个有效属性。' };
-            }
         }
         return { valid: true };
     }
@@ -3874,9 +3914,6 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
 }
 
 function validateCommand(state: MatchState<BetrayalCore>, command: BetrayalCommand): ValidationResult {
-    if (command.skipValidation) {
-        return { valid: true };
-    }
     const core = state.core;
     if (core.phase === 'haunt') {
         return validateHauntAction(state, command);
@@ -4106,7 +4143,11 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const drawnCard = roomDiscoveryDrawnCard ?? createDrawnCard(core, deckKind);
             const regularDrawnCard = roomDiscoveryDrawnCard ? undefined : drawnCard;
             const drawnCardEffect = resolveUseEffect(drawnCard);
-            const drawnCardDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
+            const hauntRoll = resolveHauntRoll(core, deckKind, random);
+            const drawnCardBaseDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
+            const drawnCardDetail = hauntRoll
+                ? `${drawnCardBaseDetail}；${formatHauntRollDiscoveryDetail(hauntRoll)}`
+                : drawnCardBaseDetail;
             return [nowEvent(EVENTS.ROOM_EXPLORED, {
                 playerId: command.playerId,
                 roomId: nextSlot.id,
@@ -4136,41 +4177,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     tone: 'accent',
                 },
                 logText: `${holySymbolLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，拿到了${drawnCard.name}`,
-                hauntTriggered: deckKind === 'omen' ? shouldTriggerHaunt(core, {
-                    type: EVENTS.ROOM_EXPLORED,
-                    payload: {
-                        playerId: command.playerId,
-                        roomId: nextSlot.id,
-                        room: {
-                            name: roomTemplate.name,
-                            hint: roomTemplate.hint,
-                            tags: roomTemplate.tags,
-                            discoveryReward: deckKind,
-                            visualId: roomTemplate.visualId,
-                            doorways: orientedRoom.doorways,
-                            backVisualId: nextSlot.backVisualId,
-                            discoveryEffect: roomTemplate.discoveryEffect,
-                            endTurnEffect: roomTemplate.endTurnEffect,
-                            enterEffect: roomTemplate.enterEffect,
-                        },
-                        deckKind,
-                        ...roomDiscoveryCards,
-                        drawnCard: regularDrawnCard,
-                        skippedRoomWithHolySymbol: skippedRoomTemplate
-                            ? { name: skippedRoomTemplate.name }
-                            : undefined,
-                        discovery: {
-                            kind: deckKind,
-                            title: drawnCard.name,
-                            summary: '已加入持有区',
-                            detail: drawnCardDetail,
-                            tone: 'accent',
-                        },
-                        logText: `${core.currentExplorer.displayName}探索到${roomTemplate.name}，拿到了${drawnCard.name}`,
-                        hauntTriggered: false,
-                    },
-                    timestamp,
-                }, random) : false,
+                hauntRoll: hauntRoll ?? undefined,
+                hauntTriggered: hauntRoll?.triggered ?? false,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
@@ -4436,6 +4444,43 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const damageSelectedEffect = applyGeneralDamageTraitsToEffect(selectedTraitEffect, command.payload.traits);
             const adjacentSelectedEffect = applyAdjacentRoomChoiceToEffect(core, damageSelectedEffect, command.payload.targetRoomId);
             const selectedEffect = applyRoomTargetChoiceToEffect(core, adjacentSelectedEffect, command.payload.targetRoomId);
+            const unresolvedSelectedEffect = effectHasUnresolvedTraitChoice(selectedEffect)
+                || effectNeedsAdjacentRoomChoice(selectedEffect)
+                || effectNeedsRoomTargetChoice(selectedEffect);
+            const eventRoll = {
+                kind: 'dice' as const,
+                total: rollTotal,
+                label: eventBranch.label,
+                rollLabel: pending.effect.roll.label,
+                dice: rollResult.dice,
+                passiveBonus: rollResult.passiveBonus,
+                branchThresholds: pending.effect.roll.branches.map((branch) => ({
+                    ...branch,
+                    effect: cloneUseEffect(branch.label === eventBranch.label ? selectedEffect : branch.effect),
+                })),
+            };
+            if (unresolvedSelectedEffect) {
+                return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
+                    playerId: command.playerId,
+                    sourceTitle: pending.sourceTitle,
+                    accepted: true,
+                    nextPendingEventChoice: {
+                        id: `${pending.id}-rolled-${timestamp}`,
+                        playerId: command.playerId,
+                        sourceTitle: pending.sourceTitle,
+                        effect: cloneUseEffect(selectedEffect),
+                    },
+                    eventRoll,
+                    discovery: {
+                        kind: 'event',
+                        title: pending.sourceTitle,
+                        summary: pending.acceptLabel,
+                        detail: `${pending.effect.roll.label} ${rollTotal}：${eventBranch.label}`,
+                        tone: 'accent',
+                    },
+                    logText: `${actor.displayName}选择${pending.acceptLabel}：${pending.sourceTitle}（${pending.effect.roll.label} ${rollTotal}，等待选择事件效果）`,
+                }, timestamp)];
+            }
             const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer);
             const effectLabel = formatEffectLabel(eventEffect);
             return [nowEvent(EVENTS.EVENT_CHOICE_RESOLVED, {
@@ -4443,23 +4488,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 sourceTitle: pending.sourceTitle,
                 accepted: true,
                 eventEffect,
-                eventRoll: {
-                    kind: 'dice',
-                    total: rollTotal,
-                    label: eventBranch.label,
-                    rollLabel: pending.effect.roll.label,
-                    dice: rollResult.dice,
-                    passiveBonus: rollResult.passiveBonus,
-                    branchThresholds: pending.effect.roll.branches.map((branch) => {
-                        const branchSnapshotEffect = branch.label === eventBranch.label
-                            ? selectedEffect
-                            : branch.effect;
-                        return {
-                            ...branch,
-                            effect: cloneUseEffect(branchSnapshotEffect),
-                        };
-                    }),
-                },
+                eventRoll,
                 discovery: {
                     kind: 'event',
                     title: pending.sourceTitle,
@@ -4971,8 +5000,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.latestDiscovery = { ...event.payload.discovery };
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
             core.pendingEventChoice = null;
-            core.recentRoll = event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds
-                ? {
+            if (event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds) {
+                core.recentRoll = {
                     id: `${event.payload.playerId}-${event.payload.roomId}-${event.timestamp}`,
                     kind: event.payload.eventRoll.kind === 'dice' ? 'eventDiceRoll' : 'eventTraitCheck',
                     playerId: event.payload.playerId,
@@ -4987,8 +5016,23 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     })),
                     latestLabel: event.payload.eventRoll.label,
                     consumedRabbitFootCardIds: [],
-                }
-                : null;
+                };
+            } else if (event.payload.hauntRoll?.dice.length) {
+                core.recentRoll = {
+                    id: `${event.payload.playerId}-${event.payload.roomId}-haunt-${event.timestamp}`,
+                    kind: 'hauntRoll',
+                    playerId: event.payload.playerId,
+                    sourceTitle: event.payload.discovery.title,
+                    rollLabel: '作祟检定',
+                    dice: [...event.payload.hauntRoll.dice],
+                    passiveBonus: 0,
+                    branchThresholds: buildHauntRollThresholds(event.payload.hauntRoll),
+                    latestLabel: event.payload.hauntRoll.triggered ? '作祟开始' : '未触发作祟',
+                    consumedRabbitFootCardIds: [],
+                };
+            } else {
+                core.recentRoll = null;
+            }
             if (event.payload.deckKind === 'omen') {
                 core.scenarioRuntime.omensDiscovered += 1;
             }
@@ -5083,9 +5127,33 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return nextCore;
         }
         case EVENTS.EVENT_CHOICE_RESOLVED: {
-            core.pendingEventChoice = null;
+            const previousRecentRoll = core.recentRoll;
+            core.pendingEventChoice = event.payload.nextPendingEventChoice
+                ? {
+                    ...event.payload.nextPendingEventChoice,
+                    effect: cloneUseEffect(event.payload.nextPendingEventChoice.effect),
+                }
+                : null;
             core.latestDiscovery = { ...event.payload.discovery };
             core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+            const carriedRecentRoll = !event.payload.eventRoll?.dice?.length
+                && previousRecentRoll
+                && previousRecentRoll.sourceTitle === event.payload.sourceTitle
+                && (previousRecentRoll.kind === 'eventDiceRoll' || previousRecentRoll.kind === 'eventTraitCheck')
+                ? {
+                    ...previousRecentRoll,
+                    dice: [...previousRecentRoll.dice],
+                    branchThresholds: previousRecentRoll.branchThresholds?.map((branch) => ({
+                        ...branch,
+                        effect: cloneUseEffect(
+                            event.payload.eventEffect && branch.label === previousRecentRoll.latestLabel
+                                ? event.payload.eventEffect
+                                : branch.effect,
+                        ),
+                    })),
+                    consumedRabbitFootCardIds: [...previousRecentRoll.consumedRabbitFootCardIds],
+                }
+                : null;
             core.recentRoll = event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds
                 ? {
                     id: `${event.payload.playerId}-${event.payload.sourceTitle}-${event.timestamp}`,
@@ -5103,7 +5171,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     latestLabel: event.payload.eventRoll.label,
                     consumedRabbitFootCardIds: [],
                 }
-                : null;
+                : carriedRecentRoll;
             if (event.payload.eventEffect) {
                 const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
                 if (core.recentRoll) {
@@ -5154,12 +5222,40 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 if (!recentRoll.branchThresholds || (recentRoll.kind === 'eventTraitCheck' && !recentRoll.trait)) {
                     return core;
                 }
+                const nextBranch = resolveEventBranch(recentRoll.branchThresholds, nextTotal);
+                const nextEffect = event.payload.eventRerollEffect ?? nextBranch.effect;
+                if (core.pendingEventChoice?.sourceTitle === recentRoll.sourceTitle && !recentRoll.eventEffectSnapshot) {
+                    nextRoll.latestLabel = nextBranch.label;
+                    nextRoll.eventEffectSnapshot = undefined;
+                    core.recentRoll = nextRoll;
+                    core.pendingEventChoice = {
+                        ...core.pendingEventChoice,
+                        effect: cloneUseEffect(nextEffect),
+                    };
+                    core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
+                    if (core.latestDiscovery && core.latestDiscovery.title === nextRoll.sourceTitle) {
+                        const effectLabel = formatEffectLabel(nextEffect);
+                        const rerollLabel = recentRoll.rollLabel
+                            ?? (recentRoll.kind === 'eventTraitCheck' && recentRoll.trait
+                                ? `${TRAIT_LABEL[recentRoll.trait]}检定`
+                                : '投骰');
+                        core.latestDiscovery = {
+                            ...core.latestDiscovery,
+                            detail: `${rerollLabel} ${nextTotal}：${nextBranch.label}；${effectLabel}`,
+                            tone: 'accent',
+                        };
+                    }
+                    const synced = syncCurrentExplorerProjection(core);
+                    return {
+                        ...synced,
+                        recommendedAction: resolveRecommendedAction(synced),
+                        activityLog: appendActivity(synced, event.payload.logText, 'accent'),
+                    };
+                }
                 const previousEffect = recentRoll.branchThresholds.find((branch) => branch.label === recentRoll.latestLabel)?.effect;
                 if (previousEffect) {
                     revertEventEffect(core, previousEffect, recentRoll.eventEffectSnapshot);
                 }
-                const nextBranch = resolveEventBranch(recentRoll.branchThresholds, nextTotal);
-                const nextEffect = event.payload.eventRerollEffect ?? nextBranch.effect;
                 const nextSnapshot = applyEventEffect(core, nextEffect);
                 nextRoll.latestLabel = nextBranch.label;
                 nextRoll.eventEffectSnapshot = nextSnapshot;

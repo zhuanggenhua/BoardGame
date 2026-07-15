@@ -90,6 +90,7 @@ export function createInitialHeistCore(
         communityCards,
         round: 1,
         phase: 'chip-selection',
+        heistStarted: false,
         heistNumber,
         successes: previous?.successes ?? 0,
         failures: previous?.failures ?? 0,

@@ -41,7 +41,7 @@
       "pending": "待确认",
       "traitsTitle": "属性",
       "abilityTitle": "特性",
-      "abilityHint": "点击或悬浮查看特性说明",
+      "abilityHint": "特性名与效果已直接显示",
       "random": "随机",
       "start": "开始",
       "chooseScenario": "剧本",
@@ -130,9 +130,14 @@
       "tradeFlowNeedCard": "交易：选一张持有物 -> {{player}}",
       "tradeFlowNeedTarget": "交易：{{card}} -> 选同房间目标",
       "tradeFlowReady": "交易：{{card}} -> {{player}}",
+      "dogTradeFlowStart": "用狗交易：先选要送的持有物，再选 4 格内目标",
+      "dogTradeFlowNeedCard": "用狗交易：选要送的持有物 -> {{player}}",
+      "dogTradeFlowNeedTarget": "用狗交易：{{card}} -> 选 4 格内目标",
+      "dogTradeFlowReady": "用狗交易：{{card}} -> {{player}}",
       "tradeFlowChoose": "先选物品和目标",
       "tradeFlowConfirm": "点交易确认",
       "tradeTargetsAvailable": "同房间可交易对象：{{count}}人",
+      "dogTradeTargetsAvailable": "狗可交易对象：{{count}}人（4格内）",
       "tradeStepItem": "物品",
       "tradeStepTarget": "目标",
       "tradeStepPending": "待选",
@@ -168,7 +173,7 @@
       "actionCueAttackTraitor": "现在：点攻击叛徒",
       "actionCueAttackHero": "现在：点攻击{{player}}",
       "actionCueEndTurn": "现在：点结束回合",
-      "actionCueEndTurnRoomEffect": "现在：结算房间停留效果",
+      "actionCueEndTurnRoomEffect": "现在：结束回合并处理房间效果",
       "usePreview": "使用：{{effect}}",
       "cardUsedThisTurn": "本回合已用",
       "cardUsedTag": "已用",
@@ -248,7 +253,7 @@
       "attack": "攻击",
       "roomEffectMysticElevator": "神秘电梯",
       "endTurn": "结束回合",
-      "endTurnRoomEffect": "结算房间"
+      "endTurnRoomEffect": "结束回合"
     },
     "traits": {
       "might": "力量",
@@ -262,6 +267,7 @@
     "dog": "狗",
     "map": "地图",
     "heal": "治疗",
+    "healWithCard": "{{card}}治疗",
     "weapon": "武器",
     "unarmed": "徒手",
     "rabbitFoot": "选择要重掷的骰子",
@@ -347,7 +353,12 @@
       "diceSubtotal": "骰面合计 {{value}}",
       "passiveBonus": "加值 {{value}}",
       "detail": "骰子合计 {{subtotal}}｜加值 {{bonus}}",
-      "total": "总点数 {{value}}"
+      "total": "总点数 {{value}}",
+      "backToBoard": "返回牌桌",
+      "allTraitCheckTitle": "四项属性检定",
+      "passed": "通过",
+      "failed": "失败",
+      "diceFaces": "骰面 {{value}}"
     },
     "useEffects": {
       "move": "移动 {{value}}",

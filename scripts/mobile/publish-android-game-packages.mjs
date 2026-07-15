@@ -50,6 +50,9 @@ const LEGACY_DICETHRONE_EMOTE_COMPRESSED_PATHS = new Set([
     'i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp',
     'i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp',
 ]);
+const LEGACY_SMASHUP_ATLAS_CONFIG_PATHS = new Set([
+    'atlas-configs/smashup/2833984701.json',
+]);
 const SMASHUP_POD_ATLAS_RELATIVE_PATH_PATTERN = /^i18n\/en\/smashup\/(?:cards|pod-assets)\/compressed\/(tts_atlas_[^/]+)\.webp$/;
 const STABLE_ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 const tempZipRoot = path.join(tmpdir(), 'boardgame-mobile-packages');
@@ -227,6 +230,10 @@ const shouldIncludeInGamePackage = (relativePath, gameId) => {
 
     const extension = path.extname(normalized).toLowerCase();
     if (SOURCE_ASSET_EXTENSIONS.has(extension) || TEMPORARY_ASSET_NAME_PATTERN.test(normalized)) {
+        return false;
+    }
+
+    if (gameId === 'smashup' && LEGACY_SMASHUP_ATLAS_CONFIG_PATHS.has(normalized)) {
         return false;
     }
 
