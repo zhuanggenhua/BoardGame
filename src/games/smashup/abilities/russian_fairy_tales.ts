@@ -851,7 +851,7 @@ function massTransformation(ctx: AbilityContext): AbilityResult {
     for (const playerId of getTurnOrderPlayers(ctx.state)) {
         const player = ctx.state.players[playerId];
         if (!player || player.hand.length === 0) continue;
-        const newDeck = [...player.deck, ...player.hand];
+        const newDeck = ctx.random.shuffle([...player.deck, ...player.hand]);
         events.push(shuffleHandIntoDeck(
             playerId,
             newDeck.map(card => card.uid),
@@ -1266,18 +1266,23 @@ export function registerRussianFairyTalesInteractionHandlers(): void {
 
     registerInteractionHandler('russian_fairy_tales_foolish_magician', (state, playerId, value, _data, _random, timestamp) => {
         const choices = (Array.isArray(value) ? value : [value]) as CardChoice[];
+        const hand = state.core.players[playerId]?.hand ?? [];
+        const requiredCount = Math.min(3, hand.length);
         const seen = new Set<string>();
         const top: CardInstance[] = [];
         const bottom: CardInstance[] = [];
         for (const choice of choices) {
-            if (!choice?.cardUid || !choice.defId || seen.has(choice.cardUid)) continue;
-            const card = state.core.players[playerId]?.hand.find(candidate => candidate.uid === choice.cardUid && candidate.defId === choice.defId);
+            if (!choice?.cardUid || !choice.defId || (choice.placement !== 'top' && choice.placement !== 'bottom')) continue;
+            if (seen.has(choice.cardUid)) {
+                return { state, events: [] };
+            }
+            const card = hand.find(candidate => candidate.uid === choice.cardUid && candidate.defId === choice.defId);
             if (!card) continue;
             seen.add(card.uid);
             if (choice.placement === 'top') top.push(card);
             if (choice.placement === 'bottom') bottom.push(card);
-            if (seen.size >= 3) break;
         }
+        if (seen.size !== requiredCount) return { state, events: [] };
         const events: SmashUpEvent[] = [];
         for (const card of [...top].reverse()) {
             events.push(cardToDeckTop(card, card.owner, 'russian_fairy_tales_foolish_magician', timestamp, playerId));

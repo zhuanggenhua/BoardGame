@@ -6,7 +6,7 @@
 
 import type { DomainCore, GameEvent, GameOverResult, PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import { createEntityId } from '../../../engine/primitives';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import {
     processDestroyMoveCycle,
     processAffectTriggers,
@@ -69,7 +69,6 @@ import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef, isBaseDefAvailableForRuntimeBasePool } from '../data/cards';
 import { drawCards } from './utils';
 import {
-    countMadnessCards,
     countMadnessCardsForPlayer,
     grantExtraAction,
     grantExtraMinion,
@@ -85,9 +84,8 @@ import {
     getSmashUpTeamScores,
     isSmashUpTwoVsTwoMode,
 } from './teamMode';
-import { triggerBaseAbility, triggerExtendedBaseAbility, hasBaseAbility } from './baseAbilities';
 import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
-import { buildBaseTargetOptions, createSkipOption, isSpecialLimitBlocked } from './abilityHelpers';
+import { buildBaseTargetOptions } from './abilityHelpers';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
 import { queueImmediateExtraPlayInteractions } from './extraPlay';
@@ -112,6 +110,29 @@ import { getActiveResolutionFrame } from '../../../engine/systems/resolutionStac
 
 const POST_SCORING_BASE_REVEAL_DELAY_MS = 2000;
 const POST_SCORING_BASE_REVEAL_DELAY_UNTIL_KEY = '_smashupPostScoringBaseRevealDelayUntil';
+
+type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
+    _smashupStartTurnWindowActive?: boolean;
+    _waitForStartTurnInteractionReduce?: boolean;
+    _waitForScoreBasesInteractionReduce?: boolean;
+    _waitForPostScoringReduce?: boolean;
+    _ppseInputEventsReduced?: boolean;
+    _processedTitanPositionEvents?: Set<string>;
+    _processedTitanRemovedEvents?: Set<string>;
+};
+
+function getSmashUpRuntimeSys(state: MatchState<SmashUpCore>): SmashUpRuntimeSystemState {
+    return state.sys as SmashUpRuntimeSystemState;
+}
+
+function createReactionQueueFallbackState(core: SmashUpCore): MatchState<SmashUpCore> {
+    return {
+        core,
+        sys: {
+            interaction: { current: undefined, queue: [] },
+        } as MatchState<SmashUpCore>['sys'],
+    };
+}
 
 function buildActionReturnToHandPromptKey(event: ActionReturnToHandOptionArmedEvent): string {
     return [
@@ -412,19 +433,21 @@ function buildMultiBaseScoringInteraction(
 
     const hintByBaseIndex = new Map(candidates.map(candidate => [candidate.baseIndex, candidate.estimatedSwing]));
 
+    const options: PromptOption<{ baseIndex: number; baseDefId?: string }>[] = buildBaseTargetOptions(candidates, state.core).map((option) => ({
+        ...option,
+        _ai: {
+            targetKind: 'base',
+            relationToActor: 'self',
+            derivedFrom: 'explicit',
+            estimatedSwing: hintByBaseIndex.get(option.value?.baseIndex ?? -1),
+        },
+    }));
+
     return createAbilityRuntimeSimpleChoice(
         `multi_base_scoring_${now}`,
         playerId,
         candidates.length === 1 ? '计分最后一个基地' : '选择先计分的基地',
-        buildBaseTargetOptions(candidates, state.core).map((option) => ({
-            ...option,
-            _ai: {
-                targetKind: 'base',
-                relationToActor: 'self',
-                derivedFrom: 'explicit',
-                estimatedSwing: hintByBaseIndex.get(option.value?.baseIndex ?? -1),
-            },
-        })) as any[],
+        options,
         { sourceId: 'multi_base_scoring', targetType: 'base' },
     );
 }
@@ -629,7 +652,7 @@ export function scoreOneBase(
         }
 
         // Try to resolve reaction queue now so scoreOneBase can halt on interactions.
-        const rq0 = maybeResolveReactionQueue(ms ? { ...ms, core } : ({ core, sys: { interaction: { current: undefined, queue: [] } } } as any), rng, now);
+        const rq0 = maybeResolveReactionQueue(ms ? { ...ms, core } : createReactionQueueFallbackState(core), rng, now);
         if (rq0) {
             events.push(...rq0.events);
             ms = rq0.state;
@@ -829,7 +852,7 @@ export function scoreOneBase(
             events.push(queued);
             updatedCore = reduce(updatedCore, queued as unknown as SmashUpEvent);
             if (ms) ms = { ...ms, core: updatedCore };
-            const rq = maybeResolveReactionQueue(ms ? ms : ({ core: updatedCore, sys: { interaction: { current: undefined, queue: [] } } } as any), rng, now);
+            const rq = maybeResolveReactionQueue(ms ? ms : createReactionQueueFallbackState(updatedCore), rng, now);
             if (rq) {
                 events.push(...rq.events);
                 ms = rq.state;
@@ -1236,7 +1259,7 @@ function getPlayCardsContextForBuriedPlay(
     fromBuried: boolean | undefined,
 ): MatchState<SmashUpCore> {
     if (!fromBuried) return matchState;
-    if (matchState.sys.phase !== 'startTurn' && !(matchState.sys as any)._smashupStartTurnWindowActive) {
+    if (matchState.sys.phase !== 'startTurn' && !getSmashUpRuntimeSys(matchState)._smashupStartTurnWindowActive) {
         return matchState;
     }
     return {
@@ -1831,7 +1854,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 sys: {
                     ...currentMatchState.sys,
                     _smashupStartTurnWindowActive: true,
-                } as any,
+                } as SmashUpRuntimeSystemState,
             };
             hasSysUpdate = true;
             const turnStarted: TurnStartedEvent = {
@@ -1917,7 +1940,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 }
             }
             if (buriedChoices.length > 0) {
-                const options = buriedChoices.map((c, i) => ({
+                const options: PromptOption<{ cardUid: string; baseIndex: number } | { skip: true }>[] = buriedChoices.map((c, i) => ({
                     id: `u-${i}`,
                     label: c.label,
                     value: { cardUid: c.cardUid, baseIndex: c.baseIndex },
@@ -1934,7 +1957,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     `bury_uncover_start_turn_${now}`,
                     nextPlayerId,
                     '你可以揭开一张你控制的埋葬牌，并立刻作为额外牌打出',
-                    options as any[],
+                    options,
                     {
                         sourceId: 'bury_uncover_start_turn',
                         targetType: 'generic',
@@ -2019,7 +2042,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             }
         }
 
-        if (to === 'playCards' && from === 'startTurn' && (state.sys as any)._smashupStartTurnWindowActive) {
+        if (to === 'playCards' && from === 'startTurn' && getSmashUpRuntimeSys(state)._smashupStartTurnWindowActive) {
             return {
                 events: [
                     ...events,
@@ -2031,7 +2054,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                         ...state.sys,
                         _smashupStartTurnWindowActive: undefined,
                         _waitForStartTurnInteractionReduce: undefined,
-                    } as any,
+                    } as SmashUpRuntimeSystemState,
                 },
             } as PhaseEnterResult;
         }
@@ -2088,10 +2111,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if (hasLiveScoringOrReactionFrame) {
                 return undefined;
             }
-            if ((state.sys as any)._waitForStartTurnInteractionReduce) {
+            if (getSmashUpRuntimeSys(state)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
-            if (justResolvedSmashUpReactionChoice && (state.sys as any)._waitForStartTurnInteractionReduce) {
+            if (justResolvedSmashUpReactionChoice && getSmashUpRuntimeSys(state)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
             if (hasPendingPhaseReactionFrame(core, phase, state)) {
@@ -2110,17 +2133,17 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if (getSmashUpReactionWindowContext(state)) {
                 return undefined;
             }
-            if ((state.sys as any)._waitForScoreBasesInteractionReduce) {
+            if (getSmashUpRuntimeSys(state)._waitForScoreBasesInteractionReduce) {
                 return undefined;
             }
 
-            if ((state.sys as any)._waitForPostScoringReduce) {
+            if (getSmashUpRuntimeSys(state)._waitForPostScoringReduce) {
                 return undefined;
             }
 
             const scoringSession = getScoringSession(state);
             if (scoringSession?.currentStep === 'awaiting-post-reduce') {
-                if ((state.sys as any)._waitForPostScoringReduce) {
+                if (getSmashUpRuntimeSys(state)._waitForPostScoringReduce) {
                     return { autoContinue: true, playerId: pid };
                 }
                 return undefined;
@@ -2548,8 +2571,8 @@ function postProcessSystemEvents(
         pid = turnStartedEvent.payload.playerId;
     }
 
-    let ms = matchState ?? { core: state, sys: { interaction: { current: undefined, queue: [] } } } as unknown as MatchState<SmashUpCore>;
-    const inputEventsAlreadyReduced = !!(ms.sys as any)?._ppseInputEventsReduced;
+    let ms = matchState ?? createReactionQueueFallbackState(state);
+    const inputEventsAlreadyReduced = !!getSmashUpRuntimeSys(ms)._ppseInputEventsReduced;
     if (inputEventsAlreadyReduced) {
         ms = {
             ...ms,
@@ -2560,11 +2583,11 @@ function postProcessSystemEvents(
         };
     }
 
-    const destroySysAny = ms.sys as any;
-    if (!destroySysAny._processedDestroyEvents || !(destroySysAny._processedDestroyEvents instanceof Set)) {
-        destroySysAny._processedDestroyEvents = new Set<string>();
+    const destroySys = getSmashUpRuntimeSys(ms);
+    if (!destroySys._processedDestroyEvents || !(destroySys._processedDestroyEvents instanceof Set)) {
+        destroySys._processedDestroyEvents = new Set<string>();
     }
-    const processedDestroyEventKeys = destroySysAny._processedDestroyEvents as Set<string>;
+    const processedDestroyEventKeys = destroySys._processedDestroyEvents;
     const destroyEventKeysInBatch = new Set<string>();
     for (const event of events) {
         if (event.type === SU_EVENTS.MINION_DESTROYED) {
@@ -2609,11 +2632,11 @@ function postProcessSystemEvents(
     // 鍒濆鍖栧凡澶勭悊浜嬩欢闆嗗悎锛堝鏋滀笉瀛樺湪锛?
     // 浣跨敤 any 绫诲瀷鏂█缁曡繃 SystemState 绫诲瀷闄愬埗锛堣繖鏄父鎴忕壒瀹氱殑涓存椂鐘舵€侊級
     // 銆怐45 淇銆戠粺涓€澶勭悊 MINION_PLAYED 鍜?ACTION_PLAYED 鐨勫幓閲?
-    const sysAny = ms.sys as any;
-    if (!sysAny._processedPlayedEvents || !(sysAny._processedPlayedEvents instanceof Set)) {
-        sysAny._processedPlayedEvents = new Set<string>();
+    const sysState = getSmashUpRuntimeSys(ms);
+    if (!sysState._processedPlayedEvents || !(sysState._processedPlayedEvents instanceof Set)) {
+        sysState._processedPlayedEvents = new Set<string>();
     }
-    const processedSet = sysAny._processedPlayedEvents as Set<string>;
+    const processedSet = sysState._processedPlayedEvents;
     
     // 【修复】清理返回手牌的随从的去重标记
     // 当随从返回手牌后再次打出时，应该重新触发 onPlay 能力
@@ -2914,15 +2937,15 @@ function postProcessSystemEvents(
 
     // 泰坦位置事件后处理：标准基地双泰坦自动 clash。
     // 使用 sys 上的去重集合，避免 pipeline 多次调用 postProcessSystemEvents 时重复追加同一批 clash 结果。
-    const titanSysAny = ms.sys as any;
-    if (!titanSysAny._processedTitanPositionEvents || !(titanSysAny._processedTitanPositionEvents instanceof Set)) {
-        titanSysAny._processedTitanPositionEvents = new Set<string>();
+    const titanSys = getSmashUpRuntimeSys(ms);
+    if (!titanSys._processedTitanPositionEvents || !(titanSys._processedTitanPositionEvents instanceof Set)) {
+        titanSys._processedTitanPositionEvents = new Set<string>();
     }
-    const processedTitanPositionEvents = titanSysAny._processedTitanPositionEvents as Set<string>;
-    if (!titanSysAny._processedTitanRemovedEvents || !(titanSysAny._processedTitanRemovedEvents instanceof Set)) {
-        titanSysAny._processedTitanRemovedEvents = new Set<string>();
+    const processedTitanPositionEvents = titanSys._processedTitanPositionEvents;
+    if (!titanSys._processedTitanRemovedEvents || !(titanSys._processedTitanRemovedEvents instanceof Set)) {
+        titanSys._processedTitanRemovedEvents = new Set<string>();
     }
-    const processedTitanRemovedEvents = titanSysAny._processedTitanRemovedEvents as Set<string>;
+    const processedTitanRemovedEvents = titanSys._processedTitanRemovedEvents;
 
     const titanDerived: SmashUpEvent[] = [];
     let titanCore = state;
@@ -3046,7 +3069,7 @@ function postProcessSystemEvents(
         ms = rq.state;
     }
 
-    const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean((ms.sys as any)._smashupStartTurnWindowActive);
+    const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean(getSmashUpRuntimeSys(ms)._smashupStartTurnWindowActive);
     if (!options?.skipImmediateStartTurnMinionTriggers && startTurnWindowActive) {
         const immediate = processImmediateStartTurnMinionTriggers(
             state,
@@ -3068,7 +3091,7 @@ function postProcessSystemEvents(
     const activeResolutionFrame = getActiveResolutionFrame(ms);
     const isActualStartTurnWindow = activeResolutionFrame?.kind === 'smashup:reaction:turn-start'
         || (activeResolutionFrame?.metadata as { smashupReactionSession?: { frameKind?: string } } | undefined)?.smashupReactionSession?.frameKind === 'turn-start';
-    if ((ms.sys as any)._smashupStartTurnWindowActive && hasStartTurnInteraction && ms.sys.phase !== 'startTurn' && isActualStartTurnWindow) {
+    if (getSmashUpRuntimeSys(ms)._smashupStartTurnWindowActive && hasStartTurnInteraction && ms.sys.phase !== 'startTurn' && isActualStartTurnWindow) {
         ms = {
             ...ms,
             sys: {
@@ -3078,14 +3101,14 @@ function postProcessSystemEvents(
         };
     }
 
-    if ((ms.sys as any)._smashupStartTurnWindowActive && !hasStartTurnInteraction) {
+    if (getSmashUpRuntimeSys(ms)._smashupStartTurnWindowActive && !hasStartTurnInteraction) {
         ms = {
             ...ms,
             sys: {
                 ...ms.sys,
                 _smashupStartTurnWindowActive: undefined,
                 _waitForStartTurnInteractionReduce: undefined,
-            } as any,
+            } as SmashUpRuntimeSystemState,
         };
     }
 

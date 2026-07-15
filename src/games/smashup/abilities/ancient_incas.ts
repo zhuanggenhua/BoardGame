@@ -611,7 +611,7 @@ function royalHighway(ctx: AbilityContext): AbilityResult {
 
 function canSamePlayerActionOnSourceBase(ctx: TriggerContext): boolean {
     return ctx.actionTargetBaseIndex === ctx.sourceBaseIndex
-        && ctx.triggerCardOwnerId === ctx.sourceControllerId;
+        && ctx.playerId === ctx.sourceControllerId;
 }
 
 function canSamePlayerOtherActionOnSourceBase(ctx: TriggerContext): boolean {
@@ -661,7 +661,7 @@ function childOfTheSunTrigger(ctx: TriggerContext): SmashUpEvent[] {
 
 function sapaIncaTrigger(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (!ctx.matchState || ctx.actionTargetBaseIndex === undefined) return [];
-    if (ctx.triggerCardOwnerId !== ctx.sourceControllerId) return [];
+    if (ctx.playerId !== ctx.sourceControllerId) return [];
     return queueCounterPrompt({
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -674,14 +674,14 @@ function sapaIncaTrigger(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
 
 function canSapaIncaTrigger(ctx: TriggerContext): boolean {
     if (ctx.actionTargetBaseIndex === undefined) return false;
-    if (ctx.triggerCardOwnerId !== ctx.sourceControllerId) return false;
+    if (ctx.playerId !== ctx.sourceControllerId) return false;
     return ctx.state.bases[ctx.actionTargetBaseIndex]?.minions.some(minion => minion.controller === ctx.playerId) ?? false;
 }
 
 function royalHighwayTrigger(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (!ctx.matchState || ctx.sourceBaseIndex === undefined || ctx.actionTargetBaseIndex === undefined) return [];
     if (ctx.actionTargetBaseIndex === ctx.sourceBaseIndex) return [];
-    if (ctx.triggerCardOwnerId !== ctx.sourceControllerId) return [];
+    if (ctx.playerId !== ctx.sourceControllerId) return [];
     return queueRoyalHighwayMovePrompt(
         ctx.matchState,
         ctx.playerId,
@@ -695,7 +695,7 @@ function royalHighwayTrigger(ctx: TriggerContext): TriggerResult | SmashUpEvent[
 function canRoyalHighwayTrigger(ctx: TriggerContext): boolean {
     if (ctx.sourceBaseIndex === undefined || ctx.actionTargetBaseIndex === undefined) return false;
     if (ctx.actionTargetBaseIndex === ctx.sourceBaseIndex) return false;
-    if (ctx.triggerCardOwnerId !== ctx.sourceControllerId) return false;
+    if (ctx.playerId !== ctx.sourceControllerId) return false;
     return collectRoyalHighwayMoves(ctx.state, ctx.playerId, ctx.sourceBaseIndex, ctx.actionTargetBaseIndex).length > 0;
 }
 

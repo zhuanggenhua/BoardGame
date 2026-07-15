@@ -452,6 +452,10 @@ function playerHasOwnedMinionDef(core: SmashUpCore, playerId: PlayerId, defId: s
     );
 }
 
+function getBaseOngoingActionControllerId(action: { ownerId: PlayerId; metadata?: Record<string, unknown> }): PlayerId {
+    return (action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId;
+}
+
 function activeGrimmsBlessingHasName(core: SmashUpCore, baseIndex: number, playerId: PlayerId, defId: string): boolean {
     const base = core.bases[baseIndex];
     if (!base || !playerHasOwnedMinionDef(core, playerId, defId)) return false;
@@ -459,7 +463,7 @@ function activeGrimmsBlessingHasName(core: SmashUpCore, baseIndex: number, playe
     if (ownMinionsHere < 2) return false;
     return base.ongoingActions.some(action =>
         action.defId === 'grimms_fairy_tales_grimms_blessing'
-        && action.ownerId === playerId);
+        && getBaseOngoingActionControllerId(action) === playerId);
 }
 
 function hasNamedMinionAtBase(core: SmashUpCore, baseIndex: number, controller: PlayerId, namedDefId: string): boolean {

@@ -12484,23 +12484,5 @@
   },
   "id": "i18n",
   "manifestVersion": 1,
-  "scope": "official",
-  "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05": {
-    "variants": {
-      "webp": {
-        "sha256": "f808b22fc9add50b6d4bfa51ba7462315d9671b443c1abf9baa238aa8b608495",
-        "bytes": 2640142,
-        "mime": "image/webp"
-      }
-    }
-  },
-  "zh-CN/qidahen/cards/atlases/ordinary-hand-atlas05": {
-    "variants": {
-      "jpg": {
-        "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
-        "bytes": 4138087,
-        "mime": "image/jpeg"
-      }
-    }
-  }
+  "scope": "official"
 }

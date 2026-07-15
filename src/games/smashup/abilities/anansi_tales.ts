@@ -452,6 +452,9 @@ const giftCardsPromptProgram = createPromptProgram<GiftCardsContext, SmashUpCore
             usedTargets.add(choice.targetPlayerId);
             if (events.length >= context.maxCards) break;
         }
+        if (events.length < context.minCards) {
+            return { events: [] };
+        }
         let projected = state;
         if (events.length > 0) {
             projected = simulateMatchState(state, events);
