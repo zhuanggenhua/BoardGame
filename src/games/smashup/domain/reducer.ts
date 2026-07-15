@@ -1823,6 +1823,34 @@ export function processReturnToHandTriggers(
             const transferredMinionLki = findTransferredMinionLkiFromPlay(coreBeforeReturn, event as CardTransferredEvent);
             const advancedCore = reduce(coreBeforeReturn, event);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
+            const transferFrameId = `card-transferred-frame:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${eventIndex}:${now}`;
+            const transferSourceEventId = `card-transferred:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${eventIndex}:${now}`;
+            const transferDedupKey = `${SU_EVENTS.CARD_TRANSFERRED}:trigger:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${payload.reason ?? ''}:${event.timestamp}`;
+            if (!processedReturnToHandEventKeys.has(transferDedupKey)) {
+                processedReturnToHandEventKeys.add(transferDedupKey);
+                const transferredOwnerId = payload.ownerId
+                    ?? getCardTransferObjectRef(payload)?.provenance.ownerId
+                    ?? payload.fromPlayerId;
+                const queuedTransfer = collectTriggers(advancedCore, 'onCardTransferred', {
+                    state: advancedCore,
+                    matchState: advancedMatchState,
+                    playerId: payload.toPlayerId,
+                    frameId: transferFrameId,
+                    sourceEventId: transferSourceEventId,
+                    transferredCardUid: payload.cardUid,
+                    transferredCardDefId: payload.defId,
+                    transferredCardOwnerId: transferredOwnerId,
+                    transferredFromPlayerId: payload.fromPlayerId,
+                    transferredToPlayerId: payload.toPlayerId,
+                    triggerCardUid: payload.cardUid,
+                    triggerCardDefId: payload.defId,
+                    triggerCardOwnerId: transferredOwnerId,
+                    reason: payload.reason,
+                    random,
+                    now,
+                });
+                if (queuedTransfer) extraEvents.push(queuedTransfer);
+            }
             if (!isCardTransferFromPlayOrDiscard(coreBeforeReturn, event as CardTransferredEvent)) {
                 retainedEvents.push(event);
                 ms = advancedMatchState;
@@ -2111,9 +2139,15 @@ export function processAffectTriggers(
     random: RandomFn,
     now: number
 ): PostProcessResult {
+    const retainedEvents: SmashUpEvent[] = [];
     const extraEvents: SmashUpEvent[] = [];
     let ms: MatchState<SmashUpCore> | undefined;
 
+    const skipEnsignRedirect = (event: SmashUpEvent): boolean => (
+        ((event as { payload?: { skipEnsignRedirect?: boolean } }).payload?.skipEnsignRedirect ?? false) === true
+    );
+
+    eventLoop:
     for (const [eventIndex, event] of events.entries()) {
         const stateBeforeAffect = ms ?? state;
         const coreBeforeAffect = stateBeforeAffect.core;
@@ -2165,6 +2199,39 @@ export function processAffectTriggers(
             const sourceEventId = `minion-affected:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
             const frameId = `minion-affected-frame:${event.type}:${record.triggerMinionUid}:${record.affectType}:${record.baseIndex}:${eventIndex}:${recordIndex}:${now}`;
 
+            if (!skipEnsignRedirect(event)) {
+                const replacement = fireTriggers(coreBeforeAffect, 'onMinionAffected', {
+                    state: coreBeforeAffect,
+                    matchState: stateBeforeAffect,
+                    playerId: record.sourcePlayerId ?? playerId,
+                    baseIndex: record.baseIndex,
+                    frameId,
+                    sourceEventId,
+                    sourceCardUid: record.sourceCardUid,
+                    sourceDefId: record.sourceDefId,
+                    sourceBaseIndex: record.sourceBaseIndex,
+                    sourceControllerId: record.sourceControllerId,
+                    sourceOwnerPlayerId: record.sourceOwnerPlayerId,
+                    triggerMinionUid: record.triggerMinionUid,
+                    triggerMinionDefId: record.triggerMinionDefId,
+                    triggerMinion: record.triggerMinion,
+                    controllerId: record.triggerMinion.controller,
+                    affectType: record.affectType,
+                    counterChangeKind: record.counterChangeKind,
+                    counterDelta: record.counterDelta,
+                    affectEvent: event,
+                    affectBatchTargets,
+                    reason: record.reason,
+                    random,
+                    now,
+                }, { phase: 'replacement' });
+                if (replacement.events.length > 0 || (replacement.matchState && replacement.matchState !== stateBeforeAffect)) {
+                    extraEvents.push(...replacement.events);
+                    if (replacement.matchState) ms = replacement.matchState;
+                    continue eventLoop;
+                }
+            }
+
             const queued = collectTriggers(coreBeforeAffect, 'onMinionAffected', {
                 state: coreBeforeAffect,
                 matchState: stateBeforeAffect,
@@ -2180,6 +2247,7 @@ export function processAffectTriggers(
                 triggerMinionUid: record.triggerMinionUid,
                 triggerMinionDefId: record.triggerMinionDefId,
                 triggerMinion: record.triggerMinion,
+                controllerId: record.triggerMinion.controller,
                 affectType: record.affectType,
                 counterChangeKind: record.counterChangeKind,
                 counterDelta: record.counterDelta,
@@ -2218,10 +2286,11 @@ export function processAffectTriggers(
                 core: advancedCore,
             };
         }
+        retainedEvents.push(event);
     }
 
-    if (extraEvents.length === 0) return ms ? { events, matchState: ms } : { events };
-    return { events: [...events, ...extraEvents], matchState: ms };
+    if (extraEvents.length === 0) return ms ? { events: retainedEvents, matchState: ms } : { events: retainedEvents };
+    return { events: [...retainedEvents, ...extraEvents], matchState: ms };
 }
 
 // ============================================================================

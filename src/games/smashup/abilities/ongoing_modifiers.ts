@@ -12,6 +12,7 @@ import {
     registerBreakpointModifiers,
     registerCustomPowerModifiers,
     registerCustomBasePowerModifiers,
+    registerCustomBreakpointModifiers,
     registerTitanPowerModifier,
     getActionControllerId,
 } from '../domain/ongoingModifiers';
@@ -733,6 +734,46 @@ function registerInternationalIncidentModifiers(): void {
     ]);
 }
 
+function registerWhatWereWeThinkingModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'rock_stars_hot_venue',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.countBaseOngoingsMatchingRuntimeDefId(ctx, 'rock_stars_hot_venue', {
+                    relationToTargetController: 'same',
+                })
+            ),
+        },
+        {
+            sourceDefId: 'teddy_bears_lovey_bear',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'teddy_bears_lovey_bear')) return 0;
+                const highestOpponentPrintedPower = Math.max(
+                    0,
+                    ...ctx.base.minions
+                        .filter(minion => minion.controller !== ctx.minion.controller)
+                        .map(minion => getCardPrintedPower(minion.defId)),
+                );
+                return Math.max(0, highestOpponentPrintedPower - getCardPrintedPower(ctx.minion.defId));
+            },
+        },
+    ]);
+
+    registerCustomBreakpointModifiers([
+        {
+            sourceDefId: 'rock_stars_turn_up_to_11',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                ctx.originalBreakpoint < 21
+                && helpers.countBaseOngoingsMatchingRuntimeDefId(ctx, 'rock_stars_turn_up_to_11') > 0
+                    ? 21 - ctx.originalBreakpoint
+                    : 0
+            ),
+        },
+    ]);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -763,4 +804,5 @@ export function registerAllOngoingModifiers(): void {
     registerYuanhouModifiers();
     registerZhongguoModifiers();
     registerInternationalIncidentModifiers();
+    registerWhatWereWeThinkingModifiers();
 }

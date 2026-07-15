@@ -485,6 +485,7 @@ export function buildValidatedMoveEvents(
         sourceBaseIndex?: number;
         sourceKind?: 'action' | 'nonAction';
         batchId?: string;
+        allowMissingTargetBase?: boolean;
         targetSnapshot?: {
             ownerId?: PlayerId;
             controllerId?: PlayerId;
@@ -499,7 +500,10 @@ export function buildValidatedMoveEvents(
     if (!sourceBase) return [];
     const resolvedToBaseIndex = resolveLiveBaseIndex(core, params.toBaseIndex, params.toBaseDefId) ?? params.toBaseIndex;
     const targetBase = core.bases[resolvedToBaseIndex];
-    if (!targetBase) return [];
+    const hasFutureTargetBase = params.allowMissingTargetBase
+        && resolvedToBaseIndex === core.bases.length
+        && !!params.toBaseDefId;
+    if (!targetBase && !hasFutureTargetBase) return [];
 
     const minion = sourceBase.minions.find(candidate => candidate.uid === params.minionUid)
         ?? buildFallbackMinionOnBase(params.minionUid, params.minionDefId, params.targetSnapshot);

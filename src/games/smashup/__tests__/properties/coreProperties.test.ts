@@ -1955,6 +1955,7 @@ describe('Property 21: 保护机制一致性', () => {
             'base_egg_chamber',
             'base_converted_cave',
             'base_hideout',
+            'base_huluwawa_mountain',
         ]);
         const normalBaseIds = getAllBaseDefIds().filter(id => !protectionBaseIds.has(id));
         fc.assert(

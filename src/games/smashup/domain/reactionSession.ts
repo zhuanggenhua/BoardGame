@@ -939,6 +939,13 @@ function executeQueuedTrigger(
         triggerCardDefId: trigger.triggerCardDefId,
         triggerCardOwnerId: trigger.triggerCardOwnerId,
         triggerCardKind: trigger.triggerCardKind,
+        transferredCardUid: trigger.transferredCardUid,
+        transferredCardDefId: trigger.transferredCardDefId,
+        transferredCardOwnerId: trigger.transferredCardOwnerId,
+        transferredFromPlayerId: trigger.transferredFromPlayerId,
+        transferredToPlayerId: trigger.transferredToPlayerId,
+        discardedCards: trigger.discardedCards ? structuredClone(trigger.discardedCards) : undefined,
+        discardedFromZone: trigger.discardedFromZone,
         destroyerId: trigger.destroyerId,
         controllerId: trigger.controllerId,
         triggerMinion: trigger.lkiMinion

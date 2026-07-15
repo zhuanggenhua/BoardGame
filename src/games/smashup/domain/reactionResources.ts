@@ -624,6 +624,13 @@ function buildTriggerProbeContext(
         triggerCardDefId: trigger.triggerCardDefId,
         triggerCardOwnerId: trigger.triggerCardOwnerId,
         triggerCardKind: trigger.triggerCardKind,
+        transferredCardUid: trigger.transferredCardUid,
+        transferredCardDefId: trigger.transferredCardDefId,
+        transferredCardOwnerId: trigger.transferredCardOwnerId,
+        transferredFromPlayerId: trigger.transferredFromPlayerId,
+        transferredToPlayerId: trigger.transferredToPlayerId,
+        discardedCards: trigger.discardedCards,
+        discardedFromZone: trigger.discardedFromZone,
         triggerMinion: trigger.lkiMinion
             ? {
                 uid: trigger.lkiMinion.uid,

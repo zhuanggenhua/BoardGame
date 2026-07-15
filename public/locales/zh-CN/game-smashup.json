@@ -1209,6 +1209,93 @@
     "astroknights_prepare_for_battle_title": "战斗准备：选择要加入手牌的牌",
     "astroknights_astro_robot_title": "宇航机器人：你可以消灭一个行动",
     "star_roamers_return_replacement_move_option": "改为移动到另一基地",
+    "anansi_tales_feather_gifts_destination_title": "羽毛礼物：选择移动到的基地",
+    "anansi_tales_feather_gifts_title": "羽毛礼物：选择你的一个随从移动到另一个基地",
+    "anansi_tales_collecting_stories_title": "收集故事：选择另一名玩家手中你拥有的一张牌额外打出",
+    "anansi_tales_collecting_stories_base_title": "收集故事：选择额外打出到的基地",
+    "anansi_tales_ear_of_corn_title": "玉米穗：选择至多三张弃牌堆行动洗回牌库",
+    "anansi_tales_mboro_hornet_title": "马布罗大黄蜂：选择打出到的基地",
+    "russian_fairy_tales_tsar_eagle_draw_option": "抽一张牌",
+    "ancient_incas_skip_place_counter_option": "不放置指示物",
+    "ancient_incas_skip_move_minion_option": "不移动随从",
+    "ancient_incas_skip_move_action_option": "不移动行动",
+    "ancient_incas_skip_return_action_option": "不返回行动",
+    "grimms_fairy_tales_skip_shuffle_option": "不洗回牌库",
+    "grimms_fairy_tales_skip_move_minion_option": "不移动随从",
+    "grimms_fairy_tales_skip_power_option": "不加力量",
+    "grimms_fairy_tales_skip_destroy_minion_option": "不消灭随从",
+    "grimms_fairy_tales_skip_frog_prince_option": "不使用青蛙王子",
+    "grimms_fairy_tales_skip_search_minion_option": "不检索随从",
+    "grimms_fairy_tales_fairy_godmothers_blessing_title": "仙女教母的祝福：选择牌库中的一个随从放到牌库顶",
+    "grimms_fairy_tales_basket_of_goodies_title": "一篮子好东西：选择牌库中的一个行动放到牌库顶",
+    "grimms_fairy_tales_rumpelstiltskin_title": "侏儒怪：选择牌库中的一张牌放到牌库顶",
+    "russian_fairy_tales_skip_take_action_option": "不拿行动",
+    "russian_fairy_tales_skip_give_toad_option": "不交出蟾蜍",
+    "sheep_ram_title": "公羊：选择要移动到的基地",
+    "sheep_little_bo_peep_title": "小小牧羊女：选择你的一个随从移动到这里",
+    "sheep_ewe_shall_pass_title": "母羊放行：选择你的一个随从移动",
+    "sheep_on_the_lamb_title": "一块羊肉：选择要带队移动的你的随从",
+    "sheep_to_follow_or_not_title": "是不是要跟着？：选择另一位玩家",
+    "sheep_to_follow_or_not_resolve_title": "是不是要跟着？：选择打出随机行动或返回",
+    "sheep_to_follow_or_not_return_option": "返回该牌",
+    "sheep_wood_for_sheep_title": "木材换羊：选择另一位玩家",
+    "sheep_wood_for_sheep_resolve_title": "木材换羊：选择交给对手的牌，或返回展示牌",
+    "sheep_wood_for_sheep_return_option": "返回展示牌",
+    "all_stars_favor_of_dionysus_title": "狄俄尼索斯的青睐：选择你的一个随从 +1",
+    "all_stars_ensign_redirect_title": "少尉：是否改为影响少尉？",
+    "all_stars_ensign_redirect_option": "改为影响少尉",
+    "all_stars_gelf_title": "基因工程生命体：选择牌库中力量 4 或以下的非基因工程生命体随从",
+    "all_stars_granny_title": "老奶奶：将牌库顶牌留在牌库顶或置底",
+    "all_stars_granny_top_option": "留在牌库顶",
+    "all_stars_granny_bottom_option": "置于牌库底",
+    "all_stars_seeing_stars_title": "看星星：选择力量 3 或以下的随从",
+    "all_stars_friendship_power_title": "友情的力量：选择要移动的随从",
+    "all_stars_non_infinite_loop_title": "非无穷循环：选择手牌中的一个行动",
+    "all_stars_puck_title": "小精灵：选择效果",
+    "all_stars_puck_action_option": "额外打出一个行动",
+    "all_stars_puck_draw_option": "抽 1 张牌",
+    "all_stars_lab_assistant_title": "实验室助理：选择你的另一个随从",
+    "all_stars_prepare_for_battle_title": "准备战斗：选择加入手牌的牌",
+    "what_were_we_thinking_deck_place_top_option": "留在牌库顶",
+    "what_were_we_thinking_deck_place_bottom_option": "置于牌库底",
+    "what_were_we_thinking_draw_to_hand_option": "抓至手牌",
+    "what_were_we_thinking_return_to_deck_top_option": "放回牌库顶",
+    "what_were_we_thinking_play_as_extra_action_option": "作为额外行动打出",
+    "rock_stars_reunion_tour_title": "重聚巡演：选择任意数量的己方弃牌堆随从洗回牌库",
+    "rock_stars_rock_of_luuv_title": "爱之摇滚：选择至多 3 张同名、力量不高于 2 的随从加入手牌",
+    "rock_stars_guest_star_title": "嘉宾明星：选择一张追星族加入手牌，并获得额外打出追星族的机会",
+    "rock_stars_the_monarch_title": "帝王：选择一张追星族加入手牌",
+    "rock_stars_tour_bus_move_title": "巡演巴士：选择至多 3 个低爆破点基地上的己方随从移动到目标基地",
+    "rock_stars_rick_roll_title": "瑞克摇滚：选择至多 3 个低爆破点基地上的己方随从移动到这里",
+    "rock_stars_tour_bus_base_title": "巡演巴士：选择目标基地",
+    "base_palooza_title": "演唱会：你可以移动一个自己的随从到这里",
+    "teddy_bears_group_hug_title": "集体拥抱：选择一个己方随从获得临时力量",
+    "teddy_bears_sir_squeezes_title": "挤挤爵士：选择至多 3 个总力量不超过 5 的低力量随从打到本基地",
+    "grannies_granny_title": "外婆：将牌库顶牌留在牌库顶或置底",
+    "grannies_grandma_title": "祖母：将牌库顶牌留在牌库顶或置底",
+    "grannies_grannys_purse_title": "外婆的钱包：抓取该行动或放回牌库顶",
+    "grannies_nana_title": "奶奶：抓取该行动或作为额外行动打出",
+    "grannies_chicken_soup_title": "鸡汤：选择至多两张弃牌堆牌放到牌库顶或底",
+    "grannies_always_room_at_grannys_title": "外婆家总有地方：选择至多 3 个己方随从放到牌库顶或底",
+    "grannies_attic_treasures_title": "阁楼宝藏：选择 3 张手牌置于牌库底",
+    "grannies_knitting_circle_title": "编织小组：选择至多 3 个场上行动牌消灭",
+    "base_grandmas_house_title": "奶奶家：将牌库顶牌留在牌库顶或置底",
+    "base_retirement_community_title": "退休社区：你可以将这里自己的一个随从放到牌库顶或底",
+    "explorers_idaho_smith_play_new_base_option": "打出新基地",
+    "explorers_idaho_smith_confirm_title": "爱达荷·史密斯：是否打出基地牌库顶基地并移动爱达荷·史密斯？",
+    "explorers_idaho_smith_title": "爱达荷·史密斯：选择任意数量同基地己方其他随从一同移至新基地",
+    "explorers_lost_city_title": "失落之城：选择一张展示的基地替换已计分基地",
+    "explorers_you_call_this_archaeology_title": "你管这叫考古？：选择一个己方随从移动",
+    "explorers_you_call_this_archaeology_base_title": "你管这叫考古？：选择目标基地",
+    "explorers_fortune_and_glory_source_title": "财富与荣耀：选择来源基地",
+    "explorers_fortune_and_glory_destination_title": "财富与荣耀：选择目标基地",
+    "explorers_fortune_and_glory_minions_title": "财富与荣耀：选择至多两个随从移动",
+    "explorers_glory_hound_title": "逐名猎犬：选择留在基地牌库顶的基地",
+    "explorers_it_belongs_in_a_museum_title": "它该进博物馆：选择两个处于不同基地的随从交换基地",
+    "explorers_x_never_marks_the_spot_title": "X 从不标记地点：为每个己方随从选择移动目标",
+    "explorers_i_said_no_camels_title": "我说了不要骆驼！：选择基地与收益",
+    "explorers_dr_livingstone_i_presume_title": "利文斯通医生，想必是你？：选择唯一随从洗回其拥有者牌库",
+    "explorers_forgotten_horrors_title": "被遗忘的恐怖：选择要转移到的另一个基地",
     "international_incident_move_destination_title": "选择目标基地",
     "mounties_northern_mover_mode_title": "北方搬运者：选择效果",
     "mounties_northern_mover_target_title": "北方搬运者：选择另一个己方随从",
@@ -1595,6 +1682,10 @@
       "name": "迷你萌宠",
       "description": "以低力量萌宠的检索、临时上场与回收循环来适应不同基地。"
     },
+    "itty_critters_pod": {
+      "name": "迷你萌宠（POD）",
+      "description": "POD 版迷你萌宠，使用独立基地与专属卡图，同时沿用经典萌宠的检索、临时上场与回收打法。"
+    },
     "kaiju": {
       "name": "怪兽",
       "description": "围绕泰坦、基地行动与破坏点压制，逐步把基地变成怪兽战场。"
@@ -1622,6 +1713,10 @@
     "time_travelers": {
       "name": "时间旅行者",
       "description": "回收弃牌、返回手牌、改写基地补充与计分后去向，反复重做关键回合。"
+    },
+    "time_travelers_pod": {
+      "name": "时间旅行者（POD）",
+      "description": "POD 版时间旅行者，使用独立基地与专属卡图，同时沿用经典时间循环、回收与重打工具箱。"
     },
     "kung_fu_fighters": {
       "name": "功夫斗士",
@@ -1751,13 +1846,45 @@
       "name": "百变机兵",
       "description": "把随从变形、搬运并临时强化，在关键基地组装出爆发力量。"
     },
-    "itty_critters_pod": {
-      "name": "迷你萌宠（POD）",
-      "description": "POD 版迷你萌宠，使用独立基地与专属卡图，同时沿用经典萌宠的检索、临时上场与回收打法。"
+    "anansi_tales": {
+      "name": "阿南西传说",
+      "description": "把故事与手牌送给别人，再借由外来卡牌流转、抽牌和力量指示物获得收益。"
     },
-    "time_travelers_pod": {
-      "name": "时间旅行者（POD）",
-      "description": "POD 版时间旅行者，使用独立基地与专属卡图，同时沿用经典时间循环、回收与重打工具箱。"
+    "grimms_fairy_tales": {
+      "name": "格林童话",
+      "description": "让童话角色成双成对登场，通过名称关联、配对增益和额外打出编织连锁。"
+    },
+    "russian_fairy_tales": {
+      "name": "俄罗斯童话",
+      "description": "把随从送回牌库、翻出新的故事角色，并用变形与检索在关键时机重塑局面。"
+    },
+    "ancient_incas": {
+      "name": "古代印加人",
+      "description": "把行动牌筑在基地上，借道路移动与基地附着行动形成持续抽牌和力量引擎。"
+    },
+    "sheep": {
+      "name": "绵羊",
+      "description": "通过移动、跟随和复制对手行动突然集结到关键基地。"
+    },
+    "all_stars": {
+      "name": "全明星",
+      "description": "从经典派系精选的全明星阵容，专注抽牌、弃牌堆回收和额外出牌。"
+    },
+    "rock_stars": {
+      "name": "摇滚明星",
+      "description": "通过额外打出、检索和基地战力修正制造爆发；玩法仍在实现中。"
+    },
+    "teddy_bears": {
+      "name": "泰迪熊",
+      "description": "以控制、转移、移动和保护围绕小战力仆从展开；玩法仍在实现中。"
+    },
+    "grannies": {
+      "name": "外婆",
+      "description": "围绕牌库顶查看、重排、抽牌和检索积累优势；玩法仍在实现中。"
+    },
+    "explorers": {
+      "name": "探险家",
+      "description": "围绕基地发现、基地替换、额外基地和计分压力探索节奏；玩法仍在实现中。"
     },
     "sumo_wrestlers": {
       "name": "相扑手",
@@ -5267,54 +5394,6 @@
       "name": "骸骨之王",
       "abilityText": "持续：当另一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。天赋：从你手中埋葬 1 张牌到这里，或挖掘这里的 1 张牌。"
     },
-    "skeletons_spooky_scary_pod": {
-      "name": "诡异。可怕。",
-      "effectText": "从你的弃牌堆埋葬 1 个力量 3 或更低的随从。抓 1 张牌。"
-    },
-    "skeletons_grave_goods_pod": {
-      "name": "殉葬品",
-      "effectText": "从你手中埋葬 1 张牌。然后你可以弃 1 张牌来额外埋葬 1 张牌，或挖掘你埋葬的 1 张牌。如果它是随从，你可以在其上放置 2 枚 +1 力量指示物。"
-    },
-    "skeletons_place_em_down_pod": {
-      "name": "往下埋",
-      "effectText": "从你的弃牌堆埋葬至多 3 个力量总和为 6 或更低的随从。"
-    },
-    "skeletons_graveyard_pod": {
-      "name": "墓园",
-      "effectText": "对一个基地打出。天赋：挖掘你埋葬在这里的 1 张牌。如果它是随从，你可以在其上放置 1 枚 +1 力量指示物。"
-    },
-    "skeletons_hearse_fleet_pod": {
-      "name": "灵车队伍",
-      "effectText": "将你埋葬的任意数量牌从一个基地移动到另一个基地。特殊：你可以在一个基地计分前打出此牌，将你埋葬的至多 2 张牌移入或移出该基地。"
-    },
-    "skeletons_gravestones_pod": {
-      "name": "墓碑",
-      "effectText": "对一个基地打出。持续：这里的一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。特殊：本基地计分后，你可以将此牌埋葬到另一个基地。"
-    },
-    "skeletons_burst_forth_pod": {
-      "name": "墓地爆发",
-      "effectText": "特殊：一个基地计分前，挖掘你埋葬在那里的 1 张牌。"
-    },
-    "skeletons_dig_em_up_pod": {
-      "name": "他们出来了",
-      "effectText": "选择一个基地。挖掘你埋葬在那里的至多 3 张牌。"
-    },
-    "skeletons_returned_one_pod": {
-      "name": "轮回者",
-      "abilityText": "你可以将此随从埋葬在这里。特殊：此牌被挖掘后，你可以再挖掘你埋葬在这里的另一张牌。"
-    },
-    "skeletons_revenant_pod": {
-      "name": "复仇者",
-      "abilityText": "特殊：在你的回合中，你可以从弃牌堆埋葬此牌。复仇者的能力每回合只能使用一次。"
-    },
-    "skeletons_gravetender_pod": {
-      "name": "守墓人",
-      "abilityText": "持续：每回合一次，当你的另一张牌被埋葬或挖掘后，抓 1 张牌。"
-    },
-    "skeletons_lord_of_bones_pod": {
-      "name": "骸骨之王",
-      "abilityText": "持续：当另一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。天赋：从你手中埋葬 1 张牌到这里，或挖掘这里的 1 张牌。"
-    },
     "world_champs_sheriff": {
       "name": "警长",
       "abilityText": "特殊：本基地计分前，此随从可以与这里另一位玩家的一个随从决斗。摧毁失败的随从。"
@@ -5883,7 +5962,15 @@
       "name": "我选择你！",
       "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
+    "itty_critters_i_select_you_pod": {
+      "name": "我选择你！",
+      "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
     "itty_critters_recall_critter": {
+      "name": "召回萌宠",
+      "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_recall_critter_pod": {
       "name": "召回萌宠",
       "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -5891,7 +5978,15 @@
       "name": "进化论",
       "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
     },
+    "itty_critters_evolution_pod": {
+      "name": "进化论",
+      "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
+    },
     "itty_critters_gotta_get_em_all": {
+      "name": "我要得到一切",
+      "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
+    },
+    "itty_critters_gotta_get_em_all_pod": {
       "name": "我要得到一切",
       "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
     },
@@ -5899,7 +5994,15 @@
       "name": "生物立方",
       "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
     },
+    "itty_critters_critter_cube_pod": {
+      "name": "生物立方",
+      "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
+    },
     "itty_critters_super_effective": {
+      "name": "超级有效！",
+      "effectText": "摧毁一张打在随从上或基地上的行动牌。"
+    },
+    "itty_critters_super_effective_pod": {
       "name": "超级有效！",
       "effectText": "摧毁一张打在随从上或基地上的行动牌。"
     },
@@ -5907,7 +6010,15 @@
       "name": "小小百科",
       "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
     },
+    "itty_critters_ittypedia_pod": {
+      "name": "小小百科",
+      "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
+    },
     "itty_critters_coach_combat": {
+      "name": "战斗训练",
+      "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
+    },
+    "itty_critters_coach_combat_pod": {
       "name": "战斗训练",
       "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
     },
@@ -5915,7 +6026,15 @@
       "name": "叶袋兽",
       "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
     },
+    "itty_critters_leafaroo_pod": {
+      "name": "叶袋兽",
+      "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
+    },
     "itty_critters_flooffairy": {
+      "name": "芙露仙灵",
+      "abilityText": "你可以抓 1 张牌。"
+    },
+    "itty_critters_flooffairy_pod": {
       "name": "芙露仙灵",
       "abilityText": "你可以抓 1 张牌。"
     },
@@ -5923,7 +6042,15 @@
       "name": "金币猫",
       "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
     },
+    "itty_critters_calicoin_pod": {
+      "name": "金币猫",
+      "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
+    },
     "itty_critters_tadpour": {
+      "name": "塔德波尔",
+      "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
+    },
+    "itty_critters_tadpour_pod": {
       "name": "塔德波尔",
       "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
     },
@@ -5931,7 +6058,15 @@
       "name": "克拉卡蟾",
       "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
     },
+    "itty_critters_krakatoad_pod": {
+      "name": "克拉卡蟾",
+      "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
+    },
     "itty_critters_critter_coach": {
+      "name": "导师",
+      "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_critter_coach_pod": {
       "name": "导师",
       "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -5939,7 +6074,15 @@
       "name": "壳震",
       "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
     },
+    "itty_critters_shellshock_pod": {
+      "name": "壳震",
+      "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
+    },
     "itty_critters_critter_champion": {
+      "name": "宠物冠军",
+      "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
+    },
+    "itty_critters_critter_champion_pod": {
       "name": "宠物冠军",
       "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
     },
@@ -6215,54 +6358,6 @@
       "name": "相似者",
       "abilityText": "特殊：当此牌从基地进入弃牌堆时，从你的牌库搜寻一个随从，并将其作为额外随从打出。然后洗牌。"
     },
-    "shapeshifters_transmogrify_pod": {
-      "name": "变形",
-      "effectText": "摧毁你的一个随从。从你的牌库搜寻一个力量不高于它的随从，并将其作为额外随从打到这里。然后洗牌。"
-    },
-    "shapeshifters_genetic_shift_pod": {
-      "name": "基因转变",
-      "effectText": "选择一项：你的所有随从直到回合结束获得 +1 力量；或你的一个随从直到回合结束获得 +3 力量。"
-    },
-    "shapeshifters_mitosis_pod": {
-      "name": "有丝分裂",
-      "effectText": "选择你场上的一个随从。从你的手牌打出一张同名随从作为一个额外随从。"
-    },
-    "shapeshifters_really_pod": {
-      "name": "...你确定？",
-      "effectText": "摧毁你的一个随从。从你的弃牌堆将一个力量不高于它的随从作为额外随从打出。"
-    },
-    "shapeshifters_shell_game_pod": {
-      "name": "甲壳比赛",
-      "effectText": "对一个随从打出。持续：该随从不能被摧毁。"
-    },
-    "shapeshifters_splice_as_nice_pod": {
-      "name": "拼接很美子",
-      "effectText": "对一个随从打出。持续：该随从获得 +2 力量。"
-    },
-    "shapeshifters_cellular_bonding_pod": {
-      "name": "细胞结合",
-      "effectText": "对一个随从打出。选择打在该随从上的一个行动。持续：此牌拥有所选卡牌的能力。"
-    },
-    "shapeshifters_bacta_the_future_pod": {
-      "name": "巴卡塔维持的未来",
-      "effectText": "摧毁一个随从。该随从的拥有者可以立即打出一个额外的随从。"
-    },
-    "shapeshifters_copycat_pod": {
-      "name": "模仿者",
-      "abilityText": "选择另一位玩家场上的一个随从。此牌获得该随从的能力，直到回合结束。"
-    },
-    "shapeshifters_mimic_pod": {
-      "name": "变形者",
-      "abilityText": "持续：此随从的力量等于场上印刷力量最高的随从。"
-    },
-    "shapeshifters_gelf_pod": {
-      "name": "凝胶精灵",
-      "abilityText": "天赋：从你的牌库搜寻一个非凝胶精灵、力量 4 或更低的随从；将此牌洗入你的牌库，并将该随从作为额外随从打到这里。然后洗牌。"
-    },
-    "shapeshifters_doppelganger_pod": {
-      "name": "相似者",
-      "abilityText": "特殊：当此牌从基地进入弃牌堆时，从你的牌库搜寻一个随从，并将其作为额外随从打出。然后洗牌。"
-    },
     "cyborg_apes_monkey_on_your_back": {
       "name": "猴子在你的背上",
       "effectText": "对一个随从打出。天赋：摧毁这里另一位玩家一个力量 4 或更低的随从。将此牌置于你的牌库底。"
@@ -6363,7 +6458,15 @@
       "name": "令人震惊",
       "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
     },
+    "time_travelers_its_astounding_pod": {
+      "name": "令人震惊",
+      "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
+    },
     "time_travelers_time_is_fleeting": {
+      "name": "时间流逝",
+      "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
+    },
+    "time_travelers_time_is_fleeting_pod": {
       "name": "时间流逝",
       "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
     },
@@ -6371,7 +6474,15 @@
       "name": "时间流动",
       "effectText": "将场上的一张牌返回其拥有者的手牌。"
     },
+    "time_travelers_into_the_time_slip_pod": {
+      "name": "时间流动",
+      "effectText": "将场上的一张牌返回其拥有者的手牌。"
+    },
     "time_travelers_1_21_gigawatts": {
+      "name": "千兆瓦",
+      "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
+    },
+    "time_travelers_1_21_gigawatts_pod": {
       "name": "千兆瓦",
       "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
     },
@@ -6379,7 +6490,15 @@
       "name": "从头来过",
       "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
     },
+    "time_travelers_do_over_pod": {
+      "name": "从头来过",
+      "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    },
     "time_travelers_jumper": {
+      "name": "跳跃者",
+      "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
+    },
+    "time_travelers_jumper_pod": {
       "name": "跳跃者",
       "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
     },
@@ -6387,7 +6506,15 @@
       "name": "静滞立场",
       "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
     },
+    "time_travelers_stasis_field_pod": {
+      "name": "静滞立场",
+      "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
+    },
     "time_travelers_time_raider": {
+      "name": "时间掠夺者",
+      "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
+    },
+    "time_travelers_time_raider_pod": {
       "name": "时间掠夺者",
       "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
     },
@@ -6395,7 +6522,15 @@
       "name": "时间旅行",
       "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
     },
+    "time_travelers_time_walk_pod": {
+      "name": "时间旅行",
+      "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
+    },
     "time_travelers_repeater_perfect": {
+      "name": "重复时间者",
+      "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
+    },
+    "time_travelers_repeater_perfect_pod": {
       "name": "重复时间者",
       "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
     },
@@ -6403,7 +6538,15 @@
       "name": "虫洞",
       "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
     },
+    "time_travelers_wormhole_pod": {
+      "name": "虫洞",
+      "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
+    },
     "time_travelers_doctor_when": {
+      "name": "时间博士",
+      "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    },
+    "time_travelers_doctor_when_pod": {
       "name": "时间博士",
       "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
     },
@@ -7463,6 +7606,102 @@
     "superheroes_awesome_guy_pod": {
       "name": "超赞男"
     },
+    "skeletons_spooky_scary_pod": {
+      "name": "诡异。可怕。",
+      "effectText": "从你的弃牌堆埋葬 1 个力量 3 或更低的随从。抓 1 张牌。"
+    },
+    "skeletons_grave_goods_pod": {
+      "name": "殉葬品",
+      "effectText": "从你手中埋葬 1 张牌。然后你可以弃 1 张牌来额外埋葬 1 张牌，或挖掘你埋葬的 1 张牌。如果它是随从，你可以在其上放置 2 枚 +1 力量指示物。"
+    },
+    "skeletons_place_em_down_pod": {
+      "name": "往下埋",
+      "effectText": "从你的弃牌堆埋葬至多 3 个力量总和为 6 或更低的随从。"
+    },
+    "skeletons_graveyard_pod": {
+      "name": "墓园",
+      "effectText": "对一个基地打出。天赋：挖掘你埋葬在这里的 1 张牌。如果它是随从，你可以在其上放置 1 枚 +1 力量指示物。"
+    },
+    "skeletons_hearse_fleet_pod": {
+      "name": "灵车队伍",
+      "effectText": "将你埋葬的任意数量牌从一个基地移动到另一个基地。特殊：你可以在一个基地计分前打出此牌，将你埋葬的至多 2 张牌移入或移出该基地。"
+    },
+    "skeletons_gravestones_pod": {
+      "name": "墓碑",
+      "effectText": "对一个基地打出。持续：这里的一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。特殊：本基地计分后，你可以将此牌埋葬到另一个基地。"
+    },
+    "skeletons_burst_forth_pod": {
+      "name": "墓地爆发",
+      "effectText": "特殊：一个基地计分前，挖掘你埋葬在那里的 1 张牌。"
+    },
+    "skeletons_dig_em_up_pod": {
+      "name": "他们出来了",
+      "effectText": "选择一个基地。挖掘你埋葬在那里的至多 3 张牌。"
+    },
+    "skeletons_returned_one_pod": {
+      "name": "轮回者",
+      "abilityText": "你可以将此随从埋葬在这里。特殊：此牌被挖掘后，你可以再挖掘你埋葬在这里的另一张牌。"
+    },
+    "skeletons_revenant_pod": {
+      "name": "复仇者",
+      "abilityText": "特殊：在你的回合中，你可以从弃牌堆埋葬此牌。复仇者的能力每回合只能使用一次。"
+    },
+    "skeletons_gravetender_pod": {
+      "name": "守墓人",
+      "abilityText": "持续：每回合一次，当你的另一张牌被埋葬或挖掘后，抓 1 张牌。"
+    },
+    "skeletons_lord_of_bones_pod": {
+      "name": "骸骨之王",
+      "abilityText": "持续：当另一个随从被挖掘后，你可以在其上放置 1 枚 +1 力量指示物。天赋：从你手中埋葬 1 张牌到这里，或挖掘这里的 1 张牌。"
+    },
+    "shapeshifters_transmogrify_pod": {
+      "name": "变形",
+      "effectText": "摧毁你的一个随从。从你的牌库搜寻一个力量不高于它的随从，并将其作为额外随从打到这里。然后洗牌。"
+    },
+    "shapeshifters_genetic_shift_pod": {
+      "name": "基因转变",
+      "effectText": "选择一项：你的所有随从直到回合结束获得 +1 力量；或你的一个随从直到回合结束获得 +3 力量。"
+    },
+    "shapeshifters_mitosis_pod": {
+      "name": "有丝分裂",
+      "effectText": "选择你场上的一个随从。从你的手牌打出一张同名随从作为一个额外随从。"
+    },
+    "shapeshifters_really_pod": {
+      "name": "...你确定？",
+      "effectText": "摧毁你的一个随从。从你的弃牌堆将一个力量不高于它的随从作为额外随从打出。"
+    },
+    "shapeshifters_shell_game_pod": {
+      "name": "甲壳比赛",
+      "effectText": "对一个随从打出。持续：该随从不能被摧毁。"
+    },
+    "shapeshifters_splice_as_nice_pod": {
+      "name": "拼接很美子",
+      "effectText": "对一个随从打出。持续：该随从获得 +2 力量。"
+    },
+    "shapeshifters_cellular_bonding_pod": {
+      "name": "细胞结合",
+      "effectText": "对一个随从打出。选择打在该随从上的一个行动。持续：此牌拥有所选卡牌的能力。"
+    },
+    "shapeshifters_bacta_the_future_pod": {
+      "name": "巴卡塔维持的未来",
+      "effectText": "摧毁一个随从。该随从的拥有者可以立即打出一个额外的随从。"
+    },
+    "shapeshifters_copycat_pod": {
+      "name": "模仿者",
+      "abilityText": "选择另一位玩家场上的一个随从。此牌获得该随从的能力，直到回合结束。"
+    },
+    "shapeshifters_mimic_pod": {
+      "name": "变形者",
+      "abilityText": "持续：此随从的力量等于场上印刷力量最高的随从。"
+    },
+    "shapeshifters_gelf_pod": {
+      "name": "凝胶精灵",
+      "abilityText": "天赋：从你的牌库搜寻一个非凝胶精灵、力量 4 或更低的随从；将此牌洗入你的牌库，并将该随从作为额外随从打到这里。然后洗牌。"
+    },
+    "shapeshifters_doppelganger_pod": {
+      "name": "相似者",
+      "abilityText": "特殊：当此牌从基地进入弃牌堆时，从你的牌库搜寻一个随从，并将其作为额外随从打出。然后洗牌。"
+    },
     "hydra_red_skull": {
       "name": "红骷髅",
       "abilityText": "持续：在你的一个角色被摧毁后，抽一张牌。天赋：摧毁你的一个角色来抽一张牌。"
@@ -7911,117 +8150,632 @@
       "name": "渣渣和坏蛋的老巢",
       "effectText": "每回合第一次你打出一个直接增加这里你的一个随从力量的行动后，抽一张牌。"
     },
-    "itty_critters_i_select_you_pod": {
-      "name": "我选择你！",
-      "effectText": "从你的牌库搜寻一个力量 3 或更低的随从，并将其作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    "anansi_tales_anansi_the_spider": {
+      "name": "蜘蛛阿南西",
+      "abilityText": "天赋：从你的牌库中搜索一张标准行动并作为额外行动打出。然后将其放入另一名玩家手中，而不是放到它通常会去的地方。本回合你不能再次打出任何同名行动。"
     },
-    "itty_critters_recall_critter_pod": {
-      "name": "召回萌宠",
-      "effectText": "从你的弃牌堆将一个力量 2 或更低的随从作为额外随从打出。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    "anansi_tales_osebo_the_leopard": {
+      "name": "奥塞波豹",
+      "abilityText": "持续：你将一张牌放入另一名玩家手中后，在此随从上放置一个 +1 力量指示物。"
     },
-    "itty_critters_evolution_pod": {
-      "name": "进化论",
-      "effectText": "选择一个你的随从并消灭它。然后打出彩虹鸟到那里，或从你的牌库搜寻一个力量最多高1点的随从并将其作为额外随从打到那里。"
+    "anansi_tales_onini_the_python": {
+      "name": "奥尼尼巨蟒",
+      "abilityText": "持续：另一名玩家从手牌或牌库打出或弃置一张不属于他们的牌后，你可以在你的一个随从上放置一个 +1 力量指示物。"
     },
-    "itty_critters_gotta_get_em_all_pod": {
-      "name": "我要得到一切",
-      "effectText": "从你的弃牌堆中选择不同名字的随从各 1 张，并将它们洗回牌库。"
+    "anansi_tales_akye_the_turtle": {
+      "name": "阿克耶海龟",
+      "abilityText": "你可以将你手中的一张牌放入另一名玩家手中，以抽两张牌。"
     },
-    "itty_critters_critter_cube_pod": {
-      "name": "生物立方",
-      "effectText": "选择场上一个任意玩家拥有、力量 3 或更低的随从，将其洗入你的牌库。"
+    "anansi_tales_mboro_hornet": {
+      "name": "马布罗大黄蜂",
+      "abilityText": "特殊：另一名玩家从手牌或牌库打出或弃置一张不属于他们的牌后，你可以将此随从作为额外随从打出。"
     },
-    "itty_critters_super_effective_pod": {
-      "name": "超级有效！",
-      "effectText": "摧毁一张打在随从上或基地上的行动牌。"
+    "anansi_tales_the_perfect_gift": {
+      "name": "完美的礼物",
+      "effectText": "从你的牌库中搜索一张标准行动并作为额外行动打出。然后将其放入另一名玩家手中，而不是放到它通常会去的地方。"
     },
-    "itty_critters_ittypedia_pod": {
-      "name": "小小百科",
-      "effectText": "对一个基地打出。持续：在你于这里打出一个随从后，该随从直到回合结束获得 +1 力量。"
+    "anansi_tales_pot_of_beans": {
+      "name": "一锅豆子",
+      "effectText": "在随从上合计放置两个 +1 力量指示物。将此牌放入另一名玩家手中。"
     },
-    "itty_critters_coach_combat_pod": {
-      "name": "战斗训练",
-      "effectText": "选择你的一个随从。摧毁其所在基地一个力量低于它的随从。"
+    "anansi_tales_collecting_stories": {
+      "name": "收集故事",
+      "effectText": "查看另一名玩家的手牌。你可以从其手牌中将一张你拥有的牌作为额外牌打出。"
     },
-    "itty_critters_leafaroo_pod": {
-      "name": "叶袋兽",
-      "abilityText": "你可以将你弃牌堆中的一张牌洗回牌库。"
+    "anansi_tales_ear_of_corn": {
+      "name": "玉米穗",
+      "effectText": "将你的弃牌堆中至多三张行动洗回你的牌库，并打出一个额外行动。将此牌放入另一名玩家手中。"
     },
-    "itty_critters_flooffairy_pod": {
-      "name": "芙露仙灵",
-      "abilityText": "你可以抓 1 张牌。"
+    "anansi_tales_pot_of_wisdom": {
+      "name": "智慧之锅",
+      "effectText": "每有一名其他玩家便抽一张牌，然后将你手中的一张牌放入每名其他玩家手中。打出一个额外行动。"
     },
-    "itty_critters_calicoin_pod": {
-      "name": "金币猫",
-      "abilityText": "你可以在这里的另一个随从上放置 1 枚 +1 力量指示物。"
+    "anansi_tales_trading_stories": {
+      "name": "交易故事",
+      "effectText": "你可以将你手中的至多三张牌放入其他玩家手中。每放入一张，抽一张牌。"
     },
-    "itty_critters_tadpour_pod": {
-      "name": "塔德波尔",
-      "abilityText": "你可以将这里的另一个随从移动到另一个基地。"
+    "anansi_tales_let_it_be_full_and_eat": {
+      "name": "让它吃饱",
+      "effectText": "抽两张牌。将此牌放入另一名玩家手中。"
     },
-    "itty_critters_krakatoad_pod": {
-      "name": "克拉卡蟾",
-      "abilityText": "你可以选择这里另一个随从，使其直到回合结束获得 +2 力量。"
+    "anansi_tales_feather_gifts": {
+      "name": "羽毛礼物",
+      "effectText": "移动你的一个随从到另一个基地。将此牌放入另一名玩家手中。"
     },
-    "itty_critters_critter_coach_pod": {
-      "name": "导师",
-      "abilityText": "你可以从牌库搜寻一个力量 2 或以下的随从，并将其打到这里。如果你在回合结束时仍控制它，则将其置于牌库底。"
+    "grimms_fairy_tales_fairy_godmothers_blessing": {
+      "name": "仙女教母的祝福",
+      "effectText": "搜索你的牌库寻找一个随从并将其放在你的牌库顶。"
     },
-    "itty_critters_shellshock_pod": {
-      "name": "壳震",
-      "abilityText": "你可以摧毁本基地另一个力量 2 或更低的随从。"
+    "grimms_fairy_tales_the_woodsmans_axe": {
+      "name": "樵夫的斧子",
+      "effectText": "摧毁一个打在基地上的行动以打出一个额外行动；或者摧毁随从大灰狼，从你的牌库中搜索一个随从并作为额外随从打在同一基地上。"
     },
-    "itty_critters_critter_champion_pod": {
-      "name": "宠物冠军",
-      "abilityText": "天赋：从你的牌库搜寻一个力量 2 或更低的随从，并将其作为额外随从打到这里。若你在回合结束时仍控制它，则将其置于牌库底。"
+    "grimms_fairy_tales_another_story": {
+      "name": "另一个故事",
+      "effectText": "将你弃牌堆中的至多三张牌洗回你的牌库。"
     },
-    "time_travelers_its_astounding_pod": {
-      "name": "令人震惊",
-      "effectText": "从你的弃牌堆打出一张行动作为额外行动。"
+    "grimms_fairy_tales_breadcrumbs": {
+      "name": "面包屑",
+      "effectText": "将你的至多两个随从从一个基地移动到另一个基地。"
     },
-    "time_travelers_time_is_fleeting_pod": {
-      "name": "时间流逝",
-      "effectText": "特殊：在一个基地计分后打出。若基地弃牌堆中至少有一张基地牌，则选择其中一张，代替从基地牌库抽新的基地。"
+    "grimms_fairy_tales_mouse_bird_and_sausage": {
+      "name": "老鼠、鸟和香肠",
+      "effectText": "选择一个基地至多两个相同派系的随从，他们各自直到回合结束获得 +2 力量。"
     },
-    "time_travelers_into_the_time_slip_pod": {
-      "name": "时间流动",
-      "effectText": "将场上的一张牌返回其拥有者的手牌。"
+    "grimms_fairy_tales_teamwork": {
+      "name": "团队合作",
+      "effectText": "选择一个场上的随从。搜索你的手牌、牌库和/或弃牌堆，寻找一个名称出现在所选随从能力文字中的随从。将其置入你的手牌或作为额外随从打出。"
     },
-    "time_travelers_1_21_gigawatts_pod": {
-      "name": "千兆瓦",
-      "effectText": "将你弃牌堆里的所有行动或所有随从洗回你的牌库。"
+    "grimms_fairy_tales_grimms_blessing": {
+      "name": "格林兄弟的祝福",
+      "effectText": "打在一个基地上。持续：若你在这里有两个或更多随从，视此牌也具有你拥有的每个随从的名称。使用此能力不算使用任何随从的能力。"
     },
-    "time_travelers_do_over_pod": {
-      "name": "从头来过",
-      "effectText": "将你在一个基地的一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    "grimms_fairy_tales_basket_of_goodies": {
+      "name": "一篮子好东西",
+      "effectText": "搜索你的牌库寻找一张行动并将其放在你的牌库顶。"
     },
-    "time_travelers_jumper_pod": {
-      "name": "跳跃者",
-      "abilityText": "持续：当此随从从场上进入弃牌堆时，你可以将其返回手牌。"
+    "grimms_fairy_tales_hansel": {
+      "name": "汉瑟",
+      "abilityText": "持续：如果格雷特在这里，此随从获得 +2 力量。"
     },
-    "time_travelers_stasis_field_pod": {
-      "name": "静滞立场",
-      "effectText": "对一个基地打出。持续：本基地不能被计分。在你的回合开始时摧毁此行动。"
+    "grimms_fairy_tales_gretel": {
+      "name": "格雷特",
+      "abilityText": "持续：如果汉瑟在这里，此随从获得 +2 力量。"
     },
-    "time_travelers_time_raider_pod": {
-      "name": "时间掠夺者",
-      "abilityText": "天赋：将你弃牌堆中的一张牌放到牌库底。"
+    "grimms_fairy_tales_the_other_snow_white": {
+      "name": "另一个白雪公主",
+      "abilityText": "持续：如果红玫瑰在这里，此随从获得 +2 力量。"
     },
-    "time_travelers_time_walk_pod": {
-      "name": "时间旅行",
-      "effectText": "本回合你可以额外打出 1 张随从和 1 张行动。抓 2 张牌。将此牌置于牌库底，而不是弃牌堆。"
+    "grimms_fairy_tales_rose_red": {
+      "name": "红玫瑰",
+      "abilityText": "持续：如果另一个白雪公主在这里，此随从获得 +2 力量。"
     },
-    "time_travelers_repeater_perfect_pod": {
-      "name": "重复时间者",
-      "abilityText": "将你弃牌堆中的一张行动放到你的牌库顶。"
+    "grimms_fairy_tales_red_riding_hood": {
+      "name": "小红帽",
+      "abilityText": "持续：如果大灰狼不在场上，你在这里的每个随从获得 +1 力量。"
     },
-    "time_travelers_wormhole_pod": {
-      "name": "虫洞",
-      "effectText": "特殊：在一个基地计分后打出。将你在这里的随从洗回牌库，而不是将其置入弃牌堆。"
+    "grimms_fairy_tales_big_bad_wolf": {
+      "name": "大灰狼",
+      "abilityText": "如果小红帽不在场上，你可以摧毁这里一个力量 4 或更低的随从。持续：此随从被摧毁后，从你的弃牌堆将另一个随从作为额外随从打到这里。"
     },
-    "time_travelers_doctor_when_pod": {
-      "name": "时间博士",
-      "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    "grimms_fairy_tales_prince_charming": {
+      "name": "白马王子",
+      "abilityText": "天赋：如果迷人的公主在这里，打出一个额外行动。"
+    },
+    "grimms_fairy_tales_charming_princess": {
+      "name": "迷人的公主",
+      "abilityText": "天赋：如果白马王子在这里，在这里打出一个额外随从。"
+    },
+    "grimms_fairy_tales_the_frog_prince": {
+      "name": "青蛙王子",
+      "abilityText": "持续：你在这里打出另一个随从后，你可以将此随从洗入你的牌库，从你的弃牌堆将一个随从作为额外随从打到这里。"
+    },
+    "grimms_fairy_tales_rumpelstiltskin": {
+      "name": "侏儒怪",
+      "abilityText": "搜索你的牌库寻找一张牌并将其放在你的牌库顶。"
+    },
+    "russian_fairy_tales_the_birch_woman": {
+      "name": "白桦木女神",
+      "abilityText": "持续：此随从从场上进入弃牌堆后，你可以搜索你的手牌、牌库和/或弃牌堆寻找白桦木，并将其加入手牌或作为额外随从打出。"
+    },
+    "russian_fairy_tales_finist_the_falcon": {
+      "name": "芬尼斯特猎鹰",
+      "abilityText": "特殊：基地计分前，你可以将此随从移动到那里，或者将此随从从那里返回你的手牌并作为额外随从打到另一个基地。"
+    },
+    "russian_fairy_tales_baba_yaga": {
+      "name": "芭芭雅嘎",
+      "abilityText": "天赋：将这里另一个随从放到其拥有者的牌库底，让其将其牌库顶的一张随从作为额外随从打到这里，然后洗其牌库。"
+    },
+    "russian_fairy_tales_the_frog_princess": {
+      "name": "青蛙公主",
+      "effectText": "打在你的一个随从上。天赋：将此随从放到其拥有者的牌库底，从你的牌库顶将一个随从作为额外随从打到这里并将此行动转移给它，然后洗你的牌库。"
+    },
+    "russian_fairy_tales_the_water_of_life": {
+      "name": "生命之水",
+      "effectText": "将你弃牌堆中的一个随从放到你的牌库顶。你可以打出一个额外行动。"
+    },
+    "russian_fairy_tales_fetch_i_know_not_what": {
+      "name": "我不知道要拿什么",
+      "effectText": "从你的牌库展示牌，直到展示出两张行动。你可以将其中任意数量的行动加入手牌。将其余牌洗回你的牌库。"
+    },
+    "russian_fairy_tales_go_i_know_not_whither": {
+      "name": "我不知道去何处",
+      "effectText": "选择一个基地。将那里每名其他玩家控制的随机一个随从洗入其拥有者的牌库。"
+    },
+    "russian_fairy_tales_go_see_my_sister": {
+      "name": "去看看我妹妹",
+      "effectText": "打在一个基地上。持续：你将你的一个随从打出或移动到这里后，你可以抽一张牌。"
+    },
+    "russian_fairy_tales_bewitched": {
+      "name": "着魔",
+      "effectText": "打在一个随从上。持续：此随从获得 +2 力量。当此随从离场时，将此行动转移给另一个随从。"
+    },
+    "russian_fairy_tales_transformation": {
+      "name": "变化",
+      "effectText": "将一个随从放到其拥有者的牌库底，让其从其牌库顶将一个随从作为额外随从打到那里，然后洗其牌库。"
+    },
+    "russian_fairy_tales_the_birch": {
+      "name": "白桦木",
+      "abilityText": "持续：在你的回合开始时，你可以摧毁此随从，搜索你的手牌、牌库和/或弃牌堆寻找白桦木女神，并将其加入手牌或作为额外随从打到这里。"
+    },
+    "russian_fairy_tales_tsar_eagle": {
+      "name": "沙皇之鹰",
+      "abilityText": "抽一张牌；或者将另一名玩家弃牌堆中的一个随从放到其牌库顶。"
+    },
+    "russian_fairy_tales_the_gray_wolf": {
+      "name": "灰色之狼",
+      "abilityText": "天赋：将此随从放到其拥有者的牌库顶，以在这里打出一个额外随从并在其上放置一个 +1 力量指示物。"
+    },
+    "russian_fairy_tales_foolish_magician": {
+      "name": "愚蠢的魔术师",
+      "abilityText": "抽三张牌，然后将你手中的三张牌以任意顺序放在你的牌库顶和/或牌库底。"
+    },
+    "russian_fairy_tales_toad": {
+      "name": "蟾蜍",
+      "abilityText": "你可以将此随从的控制权交给另一名玩家，以将他们在这里的另一个随从洗入其拥有者的牌库。"
+    },
+    "russian_fairy_tales_mass_transformation": {
+      "name": "弥撒变化",
+      "effectText": "每名玩家将其手牌放到其牌库底，然后抽同等数量的牌。"
+    },
+    "ancient_incas_ashlar_masonry": {
+      "name": "方石砌体",
+      "effectText": "特殊：你可以在一个基地计分后打出此牌。你可以将该基地上你的一个行动返回手牌，并将其余行动洗入你的牌库，而不是放入弃牌堆。"
+    },
+    "ancient_incas_golden_condor": {
+      "name": "金色秃鹰",
+      "effectText": "将基地上任意数量你的行动返回手牌。你必须将它们逐一作为额外行动打出。"
+    },
+    "ancient_incas_royal_highway": {
+      "name": "皇家公路",
+      "effectText": "打在一个基地上。你可以将你的一个随从移到这里或从这里移走。持续：你在另一个基地上打出行动后，可以将你的一个随从从这里移到那里，或从那里移到这里。"
+    },
+    "ancient_incas_quipu_strings": {
+      "name": "结绳文字",
+      "effectText": "选择你弃牌堆中一张可以打在基地上的行动，并将其作为额外行动打出。"
+    },
+    "ancient_incas_llama": {
+      "name": "美洲驼",
+      "abilityText": "你可以将你打在另一个基地上的一个行动返回手牌，并将其作为额外行动打在这里。"
+    },
+    "ancient_incas_incan_engineer": {
+      "name": "印加工程师",
+      "abilityText": "从你的牌库顶展示牌，直到展示出一张可以打在基地上的行动。将其加入手牌。将其余牌洗回你的牌库。"
+    },
+    "ancient_incas_child_of_the_sun": {
+      "name": "太阳之子",
+      "abilityText": "持续：每回合你第一次在此基地上打出行动后，你可以打出一个额外行动。"
+    },
+    "ancient_incas_armory": {
+      "name": "军械库",
+      "effectText": "打在一个基地上。持续：你在这里每有一个其他行动，就在这里获得 +2 力量。"
+    },
+    "ancient_incas_fortress_walls": {
+      "name": "防护墙",
+      "effectText": "打在一个基地上。在你这里的一个随从上放置一个 +1 力量指示物。持续：你在此基地上打出另一个行动后，可以在你这里的一个随从上放置一个 +1 力量指示物。"
+    },
+    "ancient_incas_temple_of_the_sun": {
+      "name": "太阳神庙",
+      "effectText": "打在一个基地上。抽一张牌。持续：你在此基地上打出另一个行动后，抽一张牌。"
+    },
+    "ancient_incas_signs_in_the_stars": {
+      "name": "星星上的征兆",
+      "effectText": "打在一个基地上。持续：将基地牌库顶牌翻面朝上。只要基地牌库顶牌面朝上，此基地也具有其能力。每名玩家回合开始时，其可以将基地牌库顶牌翻面朝下直到回合结束。天赋：将基地牌库顶牌放到基地牌库底。"
+    },
+    "ancient_incas_sapa_inca": {
+      "name": "萨帕·印加",
+      "abilityText": "搜索你的牌库和/或弃牌堆，寻找一张可以打在基地上的行动并加入手牌。持续：你在基地上打出行动后，在你那里的一个随从上放置一个 +1 力量指示物。"
+    },
+    "base_anansis_web": {
+      "name": "阿南西之网",
+      "abilityText": "若你在这里有随从，每回合第一次你打出标准行动后，你可以将其放入另一名玩家手中而不是弃牌堆，以抽两张牌。"
+    },
+    "base_storytellers_hut": {
+      "name": "故事讲述者小屋",
+      "abilityText": "在你的回合，你可以打出一个额外行动，以在此牌上放置一个指示物。此基地的断点因每个这类指示物降低 2。"
+    },
+    "base_gingerbread_house": {
+      "name": "姜饼屋",
+      "abilityText": "此基地计分前，每名玩家可以选择其在这里两个相同力量的随从，令它们直到回合结束各获得 +2 力量。"
+    },
+    "base_woodland_cottage": {
+      "name": "林中小屋",
+      "abilityText": "每回合一次，你在这里打出随从后，可以搜索你的牌库寻找一个力量 3 或更低的随从并将其加入手牌。"
+    },
+    "base_transformation_spring": {
+      "name": "变形之泉",
+      "abilityText": "在你的回合中一次，你在这里打出随从后，可以将其放到其拥有者的牌库底，以从你的牌库顶将一个随从作为额外随从打到这里。"
+    },
+    "base_giant_turnip": {
+      "name": "巨型芜菁",
+      "abilityText": "此基地上每有一个随从，其断点降低 1。"
+    },
+    "base_machu_picchu": {
+      "name": "马丘比丘",
+      "abilityText": "你在此基地上打出行动后，抽一张牌。"
+    },
+    "base_cuzcu": {
+      "name": "库斯科",
+      "abilityText": "此基地上每有一个行动，其断点降低 3。"
+    },
+    "sheep_counting_sheep": {
+      "name": "数羊",
+      "effectText": "对基地打出。持续：每回合一次，在另一位玩家的随从力量增加后，你在这里的随从直到回合结束各 +1 力量。"
+    },
+    "sheep_hello_dolly": {
+      "name": "你好，多莉！",
+      "effectText": "特殊：在另一位玩家打出一个行动后打出。复制该行动的能力。"
+    },
+    "sheep_flock": {
+      "name": "羊群",
+      "abilityText": "持续：在另一个随从从这里移动到另一个基地后，将此随从也移动到那里。"
+    },
+    "sheep_black_sheep": {
+      "name": "黑色牧羊",
+      "abilityText": "持续：在另一个随从打到这里后，将此随从移动到另一个基地。"
+    },
+    "sheep_ram": {
+      "name": "公羊",
+      "abilityText": "天赋：将此随从移动到另一个基地，然后你可以将该基地一个力量 2 或以下的随从返回其拥有者手牌。"
+    },
+    "sheep_little_bo_peep": {
+      "name": "小小牧羊女",
+      "abilityText": "持续：其他玩家不能将随从移动到这里或从这里移走。天赋：将你的一个随从移动到这里。"
+    },
+    "sheep_to_follow_or_not": {
+      "name": "是不是要跟着？",
+      "effectText": "选择另一位玩家。随机选择其弃牌堆中的一张行动。将其作为额外行动打出，或将其返回。抽 1 张牌。"
+    },
+    "sheep_on_the_lamb": {
+      "name": "一块羊肉",
+      "effectText": "选择一个你有随从的基地，并选择另一位玩家。将你的那个随从和那位玩家在那里的所有随从移动到同一个其它基地。"
+    },
+    "sheep_shearing": {
+      "name": "剪羊毛",
+      "effectText": "对一个随从打出。抽 1 张牌。持续：此随从 -2 力量。在你的回合开始时，将此行动返回你的手牌。"
+    },
+    "sheep_wood_for_sheep": {
+      "name": "木材换羊",
+      "effectText": "选择另一位玩家。随机展示其手牌中的一张牌。你可以将你手牌中的一张牌放入其手牌，以打出被展示的牌。否则将其返回并额外打出一个行动。"
+    },
+    "sheep_ewe_shall_pass": {
+      "name": "母羊放行",
+      "effectText": "将你的一个随从移动到另一个基地。抽 1 张牌。你可以额外打出一个行动。"
+    },
+    "sheep_in_sheeps_clothing": {
+      "name": "绵羊装",
+      "effectText": "对一个随从打出。持续：在另一个随从从这里移动到另一个基地后，你可以将此随从也移动到那里并消灭此行动。"
+    },
+    "all_stars_square_deal": {
+      "name": "公正待遇",
+      "effectText": "抽牌，直到至少一名玩家手牌数量少于你。"
+    },
+    "all_stars_favor_of_dionysus": {
+      "name": "狄俄尼索斯的青睐",
+      "effectText": "你的一个随从直到回合结束 +1 力量。额外打出一个行动。你可以将此牌置于你的牌库顶，而不是弃牌堆。"
+    },
+    "all_stars_gelf": {
+      "name": "基因工程生命体",
+      "abilityText": "天赋：从你的牌库搜寻一个非基因工程生命体且力量 4 或以下的随从。将此随从洗入你的牌库，并将搜到的随从作为额外随从打到这里。"
+    },
+    "all_stars_granny": {
+      "name": "老奶奶",
+      "abilityText": "天赋：查看你牌库顶牌。将其置于你的牌库顶或牌库底。"
+    },
+    "all_stars_king_rex": {
+      "name": "霸王龙国王"
+    },
+    "all_stars_seeing_stars": {
+      "name": "看星星",
+      "effectText": "消灭一个力量 3 或以下的随从。"
+    },
+    "all_stars_begin_the_summoning": {
+      "name": "开始召唤",
+      "effectText": "将你弃牌堆中的一个随从置于你的牌库顶。你本回合可以额外打出一个行动。"
+    },
+    "all_stars_ghostly_arrival": {
+      "name": "幽灵般的到来",
+      "effectText": "你可以额外打出一个随从和/或一个行动。"
+    },
+    "all_stars_friendship_power": {
+      "name": "友情的力量",
+      "effectText": "将你的一个随从移动到一个你有随从的基地。你可以将此行动置入你的手牌，而不是弃牌堆。"
+    },
+    "all_stars_non_infinite_loop": {
+      "name": "非无穷循环",
+      "effectText": "选择你手牌中的一个行动。将其作为额外行动打出，然后你可以将其放回手牌，而不是弃牌堆。"
+    },
+    "all_stars_full_moon": {
+      "name": "满月",
+      "effectText": "对基地打出。持续：你在这里的每个随从 +1 力量。"
+    },
+    "all_stars_its_astounding": {
+      "name": "令人惊叹",
+      "effectText": "从你的弃牌堆中打出一个行动作为额外行动。"
+    },
+    "all_stars_ensign": {
+      "name": "少尉",
+      "abilityText": "持续：当一位对手打出一张直接影响你这里另一个随从的牌时，你可以让它改为影响此随从。"
+    },
+    "all_stars_puck": {
+      "name": "小精灵",
+      "abilityText": "额外打出一个行动，或抽 1 张牌。"
+    },
+    "all_stars_lab_assistant": {
+      "name": "实验室助理",
+      "abilityText": "在你的另一个随从上放置一枚 +1 力量指示物。"
+    },
+    "all_stars_prepare_for_battle": {
+      "name": "准备战斗",
+      "effectText": "展示你牌库顶的两张牌。将其中一张加入手牌，另一张置于你的牌库底。"
+    },
+    "all_stars_imperial_dragon": {
+      "name": "帝国龙",
+      "abilityText": "持续：在另一位玩家将随从打到或移动到这里后，抽 1 张牌。"
+    },
+    "all_stars_sprout": {
+      "name": "幼苗",
+      "abilityText": "持续：在你的回合开始时消灭此牌。你可以从你的牌库搜寻一个力量 3 或以下的随从，并将其作为额外随从打到这里。洗你的牌库。"
+    },
+    "all_stars_fan": {
+      "name": "仰慕者",
+      "abilityText": "特殊：在你的回合中，你可以从手牌弃置此牌以抽 1 张牌。"
+    },
+    "all_stars_servitor_of_cthulhu": {
+      "name": "克苏鲁仆从",
+      "abilityText": "天赋：消灭此随从，并将你弃牌堆中的一张行动置于你的牌库顶。"
+    },
+    "base_locker_room": {
+      "name": "更衣室",
+      "abilityText": "在你的回合开始时，如果你在这里有随从，抽 1 张牌。"
+    },
+    "base_stadium": {
+      "name": "体育场",
+      "abilityText": "在这里的一个随从被消灭后，其控制者抽 1 张牌。"
+    },
+    "rock_stars_turn_up_to_11": {
+      "name": "音量开到 11",
+      "effectText": "对基地打出。持续：若本基地的初始爆破点低于 21，将其增加至 21。"
+    },
+    "rock_stars_reunion_tour": {
+      "name": "重聚巡演",
+      "effectText": "将任意数量你的佣兵从你的弃牌堆洗混回牌库。"
+    },
+    "rock_stars_total_sellout": {
+      "name": "彻底售罄",
+      "effectText": "特殊：在有你佣兵的基地计分后打出。抓两张牌。若该基地爆破点为 21 或更高，额外抓一张牌。"
+    },
+    "rock_stars_rock_of_luuv": {
+      "name": "爱之摇滚",
+      "effectText": "从你的牌库中搜索至多 3 张战力 2 或更低的同名佣兵，展示并加入手牌，然后洗混牌库。"
+    },
+    "rock_stars_guest_star": {
+      "name": "嘉宾明星",
+      "effectText": "从你的牌库和/或弃牌堆搜索一张狂热歌迷并展示。将其加入手牌或额外打出。若搜索了牌库，洗混。"
+    },
+    "rock_stars_tour_bus": {
+      "name": "巡演巴士",
+      "effectText": "选择一个基地。将至多 3 个你的佣兵从爆破点低于该基地的其他基地中移动至所选基地。"
+    },
+    "rock_stars_hot_venue": {
+      "name": "火热场地",
+      "effectText": "对基地打出。持续：本基地你的佣兵 +1 战力。若爆破点为 21 或更高，你打出佣兵至此的回合结束时抓一张牌。"
+    },
+    "rock_stars_power_ballad": {
+      "name": "力量情歌",
+      "effectText": "选择一个基地。该处你的佣兵获得 +1 战力直到回合结束。特殊：若计分基地爆破点为 21 或更高，则可以在计分前打出。"
+    },
+    "rock_stars_the_monarch": {
+      "name": "帝王",
+      "abilityText": "天赋：从你的牌库和/或弃牌堆中搜索一个狂热歌迷，展示并加入手牌。若搜索了牌库，洗混。"
+    },
+    "rock_stars_classic_rocker": {
+      "name": "经典摇滚客",
+      "abilityText": "天赋：若本基地爆破点为 21 或更高，抓一张牌。每回合只能使用一张传统摇滚歌手的能力。"
+    },
+    "rock_stars_rick_roll": {
+      "name": "瑞克摇滚",
+      "abilityText": "将至多 3 个你的佣兵从爆破点低于本基地的其他基地中移动至此。"
+    },
+    "rock_stars_groupie": {
+      "name": "追星族",
+      "abilityText": "额外打出另一个狂热歌迷至本基地。"
+    },
+    "teddy_bears_square_deal": {
+      "name": "公平交易",
+      "effectText": "抓牌直到至少有一位玩家手牌数少于你。"
+    },
+    "teddy_bears_love_overload": {
+      "name": "爱意过载",
+      "effectText": "特殊：基地计分前，消灭该处战力最高的佣兵。若多个佣兵平手，将其全部消灭。"
+    },
+    "teddy_bears_group_hug": {
+      "name": "集体拥抱",
+      "effectText": "你的一个佣兵战力上升直到回合结束，上升数值等于该基地其他佣兵的数量。"
+    },
+    "teddy_bears_care_package": {
+      "name": "爱心包裹",
+      "effectText": "抓一张牌并打出一个额外佣兵。"
+    },
+    "teddy_bears_too_cute": {
+      "name": "太可爱",
+      "effectText": "对基地打出。持续：本基地你的佣兵无法被其他玩家的卡牌消灭。"
+    },
+    "teddy_bears_bear_picnic": {
+      "name": "泰迪熊野餐",
+      "effectText": "对基地打出。持续：其他玩家不能向本基地以外的基地打出自己拥有的战力 2 或更低的佣兵。"
+    },
+    "teddy_bears_cuddle": {
+      "name": "抱抱",
+      "effectText": "对佣兵打出。持续：此佣兵能力被取消。"
+    },
+    "teddy_bears_tea_party": {
+      "name": "茶会",
+      "effectText": "对基地打出。天赋：若本基地有至少两个佣兵，且其中有你的佣兵，抓一张牌。"
+    },
+    "teddy_bears_sir_squeezes": {
+      "name": "挤挤爵士",
+      "abilityText": "额外打出至多 3 个战力 3 或更低，且战力总和为 5 或更低的佣兵至本基地。"
+    },
+    "teddy_bears_lovey_bear": {
+      "name": "爱心熊",
+      "abilityText": "持续：此佣兵的初始战力增加至本基地中对手佣兵初始战力的最高值。"
+    },
+    "teddy_bears_fun_bear": {
+      "name": "欢乐熊",
+      "abilityText": "持续：另一位玩家打出或移动一个佣兵至本基地后，此佣兵获得 +1 战力标记。"
+    },
+    "teddy_bears_snuggly_bear": {
+      "name": "依偎熊",
+      "abilityText": "特殊：某回合中你打出第一个佣兵后，你可以立即额外打出本佣兵至同基地。"
+    },
+    "grannies_chicken_soup": {
+      "name": "鸡汤",
+      "effectText": "将你弃牌堆中至多两张牌置于你的牌库顶和/或牌库底。"
+    },
+    "grannies_grannys_purse": {
+      "name": "外婆的钱包",
+      "effectText": "展示你牌库顶的牌。若是行动，你可以将其抓至手牌或返回。否则将其置于牌库底。打出一个额外行动。"
+    },
+    "grannies_always_room_at_grannys": {
+      "name": "外婆家总有地方",
+      "effectText": "特殊：基地计分后打出。将该基地至多 3 个你的佣兵以任意顺序置于你的牌库顶和/或牌库底。"
+    },
+    "grannies_matriarch": {
+      "name": "女族长",
+      "abilityText": "天赋：展示你牌库底的两张牌。将展示出的佣兵抓至手牌，其余牌弃置。"
+    },
+    "grannies_attic_treasures": {
+      "name": "阁楼宝藏",
+      "effectText": "将你的 3 张手牌以任意顺序置于牌库底。抓 3 张牌。"
+    },
+    "grannies_hush_my_stories_are_on": {
+      "name": "嘘，我的剧开播了",
+      "effectText": "展示并抓你牌库底的牌。若是佣兵，你可以将其额外打出。"
+    },
+    "grannies_family_reunion": {
+      "name": "家庭聚会",
+      "effectText": "对基地打出。持续：你打出佣兵至此后展示你牌库底的牌。若是佣兵则抓至手牌，否则将其置于牌库顶。"
+    },
+    "grannies_dont_mess_with_my_babies": {
+      "name": "别惹我的宝贝！",
+      "effectText": "对基地打出。持续：此处你的佣兵不受其他玩家卡牌影响。"
+    },
+    "grannies_knitting_circle": {
+      "name": "编织小组",
+      "effectText": "消灭至多 3 个对佣兵和/或基地打出的行动。每消灭 1 个，抓 1 张牌。"
+    },
+    "grannies_granny": {
+      "name": "外婆",
+      "abilityText": "天赋：查看你牌库顶的牌。将其置于你的牌库顶或牌库底。"
+    },
+    "grannies_nana": {
+      "name": "奶奶",
+      "abilityText": "展示你牌库顶的牌。若是行动，抓至手牌或额外打出。否则将其置于牌库底。"
+    },
+    "grannies_grandma": {
+      "name": "祖母",
+      "abilityText": "查看你牌库顶的牌。将其置于你的牌库顶或牌库底。"
+    },
+    "explorers_idaho_smith": {
+      "name": "爱达荷·史密斯",
+      "abilityText": "你可以打出基地牌库顶的基地牌，并从本基地移动此佣兵和任意数量你的其他佣兵至该基地。"
+    },
+    "explorers_lost_city": {
+      "name": "失落之城",
+      "effectText": "特殊：基地计分后，展示基地牌库顶的两张牌。选择一张替换已计分的基地，弃掉另一张。额外打出一个佣兵至新基地。"
+    },
+    "explorers_you_call_this_archaeology": {
+      "name": "你管这叫考古？",
+      "effectText": "移动你的一个佣兵。特殊：可以在基地计分前或计分后打出。"
+    },
+    "explorers_fortune_and_glory": {
+      "name": "财富与荣耀",
+      "effectText": "选择一个基地。你可以移动该基地上至多两个佣兵至另一个基地。"
+    },
+    "explorers_guide": {
+      "name": "向导",
+      "abilityText": "持续：你的佣兵于某回合进行了第一次移动后，其获得 +1 战力直到该回合结束。"
+    },
+    "explorers_forgotten_horrors": {
+      "name": "被遗忘的恐怖",
+      "effectText": "对基地打出。持续：在你打出佣兵至本基地或打出卡牌使你的佣兵移动至本基地后，抓一张牌并转移此牌至另一个基地。"
+    },
+    "explorers_crypt_looter": {
+      "name": "古墓掠夺者",
+      "abilityText": "特殊：当有新的基地进场时，你可以额外打出此佣兵至该基地。"
+    },
+    "explorers_glory_hound": {
+      "name": "逐名猎犬",
+      "abilityText": "查看基地牌库顶的两张牌。将其中一张置于牌库底，另一张置于牌库顶。"
+    },
+    "explorers_it_belongs_in_a_museum": {
+      "name": "它该进博物馆",
+      "effectText": "选择两个处于不同基地的佣兵。将它们分别移动至对方的基地。"
+    },
+    "explorers_x_never_marks_the_spot": {
+      "name": "X 从不标记地点",
+      "effectText": "移动你的每一个佣兵。"
+    },
+    "explorers_i_said_no_camels": {
+      "name": "我说了不要骆驼！",
+      "effectText": "选择一个基地。该处你的每个佣兵各获得 +1 战力标记，或抓数量等于该处你的佣兵数的牌。"
+    },
+    "explorers_dr_livingstone_i_presume": {
+      "name": "利文斯通医生，想必是你？",
+      "effectText": "选择一个佣兵。若其是该基地上的唯一佣兵，将其洗回其拥有者的牌库。"
+    },
+    "base_under_the_bed": {
+      "name": "床底下",
+      "abilityText": "在你的回合，在其他基地打出一个或多个仆从后，你可以在本基地打出一张额外的 2 战力或更低战力的仆从。"
+    },
+    "base_out_in_the_woods": {
+      "name": "在森林里",
+      "abilityText": "在这个基地计分前，这里的每个仆从获得 +1 战力直到回合结束。"
+    },
+    "base_lake_minnetonka": {
+      "name": "明尼通卡湖",
+      "abilityText": "当你打出或移动一个仆从到本基地时，该仆从获得 +1 战力直到回合结束。"
+    },
+    "base_palooza": {
+      "name": "演唱会",
+      "abilityText": "在这个基地计分之时，每位玩家都可以将自己的一个仆从移动到这里。"
+    },
+    "base_grandmas_house": {
+      "name": "奶奶家",
+      "abilityText": "在本基地打出一个仆从后，查看你的牌库顶牌。将其放回牌库顶或牌库底。"
+    },
+    "base_retirement_community": {
+      "name": "退休社区",
+      "abilityText": "本基地计分后，每位玩家可以将本基地自己的一个仆从放在牌库顶或牌库底。"
+    },
+    "base_ancient_temple": {
+      "name": "古代神庙",
+      "abilityText": "在你回合开始时，如果你在这里只有一个仆从，该仆从获得 +5 战力直到回合结束。"
+    },
+    "base_city_of_gold": {
+      "name": "黄金城",
+      "abilityText": "在你回合开始时，如果你在这里有一个仆从，获得 1 VP。"
     },
     "sumo_wrestlers_technique_prize": {
       "name": "技术奖",

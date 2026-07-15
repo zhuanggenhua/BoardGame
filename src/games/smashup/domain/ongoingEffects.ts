@@ -96,6 +96,7 @@ export type TriggerTiming =
     | 'onBaseRevealed'
     | 'onMinionDestroyed'
     | 'onMinionMoved'
+    | 'onCardTransferred'
     | 'onCardReturnedToHand'
     | 'onCardDestroyed'
     | 'onDeckInspected'
@@ -176,6 +177,15 @@ export interface TriggerContext {
     triggerCardOwnerId?: PlayerId;
     /** 触发相关场上行动牌类型 */
     triggerCardKind?: 'ongoing' | 'attached_action';
+    /** onCardTransferred 时：被转移卡牌 */
+    transferredCardUid?: string;
+    transferredCardDefId?: string;
+    transferredCardOwnerId?: PlayerId;
+    transferredFromPlayerId?: PlayerId;
+    transferredToPlayerId?: PlayerId;
+    /** onCardsDiscarded 时：弃置/磨掉的卡牌快照 */
+    discardedCards?: Array<{ uid: string; defId: string; ownerId: PlayerId }>;
+    discardedFromZone?: 'hand' | 'deck';
     /** 收集 trigger 时应排除的来源实例 UID（例如 onPlay 才被移动进来的“晚到见证者”）。 */
     suppressedSourceCardUids?: string[];
     /** 消灭者（仅 onMinionDestroyed） */
@@ -254,6 +264,7 @@ interface RestrictionEntry {
     sourceDefId: string;
     restrictionType: RestrictionType;
     checker: RestrictionChecker;
+    global?: boolean;
     generatedPodAlias?: boolean;
 }
 
@@ -378,11 +389,17 @@ export function registerRestriction(
     sourceDefId: string,
     restrictionType: RestrictionType,
     checker: RestrictionChecker,
-    options?: { generatedPodAlias?: boolean },
+    options?: { generatedPodAlias?: boolean; global?: boolean },
 ): void {
 
     if (restrictionRegistry.some(e => e.sourceDefId === sourceDefId && e.restrictionType === restrictionType)) return;
-    restrictionRegistry.push({ sourceDefId, restrictionType, checker, generatedPodAlias: options?.generatedPodAlias });
+    restrictionRegistry.push({
+        sourceDefId,
+        restrictionType,
+        checker,
+        global: options?.global,
+        generatedPodAlias: options?.generatedPodAlias,
+    });
 }
 
 export function registerTrigger(
@@ -616,6 +633,13 @@ function createTriggerInstance(
         triggerCardDefId: ctx.triggerCardDefId,
         triggerCardOwnerId: ctx.triggerCardOwnerId,
         triggerCardKind: ctx.triggerCardKind,
+        transferredCardUid: ctx.transferredCardUid,
+        transferredCardDefId: ctx.transferredCardDefId,
+        transferredCardOwnerId: ctx.transferredCardOwnerId,
+        transferredFromPlayerId: ctx.transferredFromPlayerId,
+        transferredToPlayerId: ctx.transferredToPlayerId,
+        discardedCards: ctx.discardedCards ? structuredClone(ctx.discardedCards) : undefined,
+        discardedFromZone: ctx.discardedFromZone,
         destroyerId: ctx.destroyerId,
         controllerId: ctx.controllerId,
         reason: ctx.reason,
@@ -1822,7 +1846,10 @@ export function isOperationRestricted(
         for (const entry of restrictionRegistry) {
             if (entry.restrictionType !== restrictionType) continue;
             const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
-            if (!isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex)) continue;
+            const sourceActive = entry.global
+                ? isSourceActive(filteredState, entry.sourceDefId)
+                : isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex);
+            if (!sourceActive) continue;
             if (entry.checker({ ...ctx, state: filteredState })) return true;
         }
     }
