@@ -1208,7 +1208,33 @@
     "marvel_villains_deck_own_minions_title": "选择至多两个己方角色洗回牌库",
     "astroknights_prepare_for_battle_title": "战斗准备：选择要加入手牌的牌",
     "astroknights_astro_robot_title": "宇航机器人：你可以消灭一个行动",
-    "star_roamers_return_replacement_move_option": "改为移动到另一基地"
+    "star_roamers_return_replacement_move_option": "改为移动到另一基地",
+    "international_incident_move_destination_title": "选择目标基地",
+    "mounties_northern_mover_mode_title": "北方搬运者：选择效果",
+    "mounties_northern_mover_target_title": "北方搬运者：选择另一个己方随从",
+    "sumo_wrestlers_chikara_mizu_discard_title": "力量满溢：弃 1 张牌，使所选随从直到回合结束 +4 力量",
+    "sumo_wrestlers_chikara_mizu_mode_title": "力量满溢：选择 +2 或弃牌改为 +4",
+    "sumo_wrestlers_chikara_mizu_target_title": "力量满溢：选择你的一个随从",
+    "sumo_wrestlers_bulking_stew_target_title": "炖肉：选择一个己方随从放置力量指示物",
+    "sumo_wrestlers_bulking_stew_discard_title": "炖肉：选择任意数量手牌弃掉",
+    "sumo_wrestlers_yokozuna_mode_title": "横纲：选择天赋效果",
+    "mounties_haich_q_move_title": "H 骑警：选择一个己方随从移到此基地或从此基地移走",
+    "luchadors_tag_team_base_title": "团队标记：选择额外随从要打出的基地",
+    "luchadors_cheap_pop_title": "廉价欢呼：选择你的一个随从",
+    "luchadors_capa_roja_title": "红披风：选择每位其他玩家至多一个印制力量 3 或以下随从",
+    "luchadors_reversal_destroy_actions_title": "逆转：选择任意数量你的布置行动摧毁",
+    "luchadors_senor_muchoslam_vs_the_monsters_title": "穆乔摔先生大战怪物：选择任意数量弃牌堆行动",
+    "base_heya_training_stable_title": "训练馆：可以弃 1 张牌给这里的己方随从放置 +1 指示物",
+    "base_great_white_north_eh_title": "大白北方，嗯？：可以移动你在这里的一个随从并使其 +1",
+    "mounties_northern_mover_move_option": "移动到另一个基地",
+    "mounties_northern_mover_power_option": "直到回合结束 +1 力量",
+    "sumo_wrestlers_chikara_mizu_power2_option": "直到回合结束 +2 力量",
+    "sumo_wrestlers_chikara_mizu_discard_power4_option": "弃 1 张牌，改为 +4 力量",
+    "sumo_wrestlers_yokozuna_draw_option": "抽 1 张牌",
+    "sumo_wrestlers_yokozuna_move_option": "移动这里的其他玩家随从",
+    "international_incident_skip_destroy_minion_option": "跳过（不消灭随从）",
+    "international_incident_skip_discard_option": "跳过（不弃牌）",
+    "international_incident_skip_move_minion_option": "跳过（不移动随从）"
   },
   "mechanics": {
     "madness": {
@@ -1732,6 +1758,22 @@
     "time_travelers_pod": {
       "name": "时间旅行者（POD）",
       "description": "POD 版时间旅行者，使用独立基地与专属卡图，同时沿用经典时间循环、回收与重打工具箱。"
+    },
+    "sumo_wrestlers": {
+      "name": "相扑手",
+      "description": "把对手随从推出你的据点，通过弃牌放置 +1 力量指示物，并用抽牌维持攻势。"
+    },
+    "musketeers": {
+      "name": "火枪手",
+      "description": "连续打出直接影响己方随从的行动，把时机、加力和抽牌串成连招。"
+    },
+    "mounties": {
+      "name": "骑警",
+      "description": "移动到有敌方随从的基地，通过追击、加力和保护压制对手。"
+    },
+    "luchadors": {
+      "name": "摔角手",
+      "description": "把铺垫行动挂到对手随从上，再利用这些铺垫抽牌、控场和改写计分。"
     }
   },
   "tutorial": {
@@ -7980,6 +8022,242 @@
     "time_travelers_doctor_when_pod": {
       "name": "时间博士",
       "abilityText": "你可以将场上你的另一张随从返回手牌。你可以将其再次作为额外随从打出。"
+    },
+    "sumo_wrestlers_technique_prize": {
+      "name": "技术奖",
+      "effectText": "在你的一个随从上放置 3 个 +1 力量指示物。"
+    },
+    "sumo_wrestlers_yokozuna": {
+      "name": "横纲",
+      "abilityText": "持续：你的随从不能被其他玩家的卡牌移动。天赋：抽 1 张牌，或将另一位玩家在这里的一个随从移动到另一个基地。"
+    },
+    "sumo_wrestlers_performance_prize": {
+      "name": "表演奖",
+      "effectText": "抽 3 张牌。"
+    },
+    "sumo_wrestlers_head_butt": {
+      "name": "头槌",
+      "effectText": "选择一个你有随从的基地。摧毁另一位玩家打在该基地或打在该基地随从上的一个行动。"
+    },
+    "sumo_wrestlers_bulking_stew": {
+      "name": "炖肉",
+      "effectText": "弃任意数量的牌。每弃 1 张牌，在你的一个随从上放置 1 个 +1 力量指示物。"
+    },
+    "sumo_wrestlers_body_slam": {
+      "name": "身体猛击",
+      "effectText": "选择另一位玩家和一个你有随从的基地。将其在那里的所有随从移动到另一个基地。"
+    },
+    "sumo_wrestlers_chikara_mizu": {
+      "name": "力量满溢",
+      "effectText": "你的一个随从直到回合结束 +2 力量，或弃 1 张牌改为 +4 力量。"
+    },
+    "sumo_wrestlers_third_tier": {
+      "name": "关胁",
+      "abilityText": "你可以将另一位玩家在这里力量 3 或以下的一个随从移动到另一个基地，以抽 1 张牌。"
+    },
+    "sumo_wrestlers_grasp_the_belt": {
+      "name": "抓住腰带",
+      "effectText": "选择一个你有随从的基地。将那里的一个随从移动到另一个基地。"
+    },
+    "sumo_wrestlers_fighting_spirit_prize": {
+      "name": "斗志奖",
+      "effectText": "抽 2 张牌，并在你的随从上总共放置 2 个 +1 力量指示物。"
+    },
+    "sumo_wrestlers_top_tier": {
+      "name": "大关",
+      "abilityText": "持续：在你从手牌弃掉一张或多张牌后，在此随从上放置 1 个 +1 力量指示物。"
+    },
+    "sumo_wrestlers_rookie_sumo": {
+      "name": "相扑新人",
+      "abilityText": "你可以弃 1 张牌，在你的一个随从上放置 2 个 +1 力量指示物。"
+    },
+    "musketeers_on_a_roll": {
+      "name": "连连获胜",
+      "effectText": "将至多 2 张直接影响同一个随从的行动作为额外行动打出。"
+    },
+    "musketeers_make_way": {
+      "name": "让路",
+      "effectText": "将你的一个随从移动到另一个基地。你可以额外打出一个行动。"
+    },
+    "musketeers_en_garde": {
+      "name": "预备姿势",
+      "effectText": "选择一个随从，其直到回合结束 +1 力量。抽 1 张牌。你可以额外打出一个行动。"
+    },
+    "musketeers_biding_time": {
+      "name": "等待时机",
+      "effectText": "选择一个随从，其直到回合结束 +2 力量。你可以额外打出一个直接影响此随从的行动。"
+    },
+    "musketeers_to_battle": {
+      "name": "投入战斗！",
+      "effectText": "额外打出一个随从。你可以额外打出一个直接影响它的行动。"
+    },
+    "musketeers_porthos": {
+      "name": "波尔托斯",
+      "abilityText": "持续：此随从不受其他玩家行动影响。"
+    },
+    "musketeers_athos": {
+      "name": "阿多斯",
+      "abilityText": "持续：在你打出一个直接影响这里一个或多个你的其他随从的行动后，那些随从直到回合结束各 +1 力量。"
+    },
+    "musketeers_one_for_all": {
+      "name": "一为全",
+      "effectText": "选择一个基地。你在那里的每个随从直到回合结束 +1 力量。你可以额外打出一个行动。"
+    },
+    "musketeers_young_musketeer": {
+      "name": "年轻的火枪手",
+      "abilityText": "持续：每回合第一次你打出一个直接影响此随从的行动后，此随从直到回合结束 +1 力量。"
+    },
+    "musketeers_last_stand": {
+      "name": "最后一搏",
+      "effectText": "特殊：在一个基地计分前，你在那里的一个随从直到回合结束 +2 力量。抽 1 张牌。"
+    },
+    "musketeers_dartagnan": {
+      "name": "达达尼昂",
+      "abilityText": "持续：在你打出一个直接影响此随从的行动后，抽 1 张牌。"
+    },
+    "musketeers_all_for_one": {
+      "name": "全为一",
+      "effectText": "打在一个随从上。你可以额外打出一个行动。持续：在你打出另一个直接影响此随从的行动后，此随从直到回合结束 +1 力量，并在回合结束时摧毁此卡。"
+    },
+    "musketeers_token_of_affection": {
+      "name": "情谊信物",
+      "effectText": "从你的牌库和/或弃牌堆中搜寻一个直接影响随从的行动并置入手牌。你可以将其作为额外行动打出。"
+    },
+    "musketeers_aramis": {
+      "name": "阿拉密斯",
+      "abilityText": "持续：你的回合中一次，在你打出一个直接影响此随从的行动后，你可以额外打出一个直接影响此随从的行动。"
+    },
+    "mounties_eh": {
+      "name": "嗯？",
+      "effectText": "特殊：在你每回合打出第一个行动后，你可以将此卡作为额外行动打出。你的一个随从直到回合结束 +1 力量，且你可以将此卡放回手牌而不是弃牌堆。"
+    },
+    "mounties_bring_em_in": {
+      "name": "带进来",
+      "effectText": "打在一个随从上。持续：在此随从移动到另一个基地后，在其上放置 1 个 +1 力量指示物。"
+    },
+    "mounties_mountie_major": {
+      "name": "骑警少校",
+      "abilityText": "持续：此随从获得 +1 力量，数值等于这里由拥有最多这里随从的另一位玩家控制的随从数量。"
+    },
+    "mounties_northern_mover": {
+      "name": "北方搬运者",
+      "abilityText": "天赋：选择你的另一个随从。将其移动到另一个基地，或使其直到回合结束 +1 力量。"
+    },
+    "mounties_war_canuck": {
+      "name": "战争骑警",
+      "abilityText": "天赋：如果这里有另一位玩家的随从，此随从直到你的下个回合开始 +2 力量。"
+    },
+    "mounties_when_calls_the_badge": {
+      "name": "呼叫警徽",
+      "effectText": "在你一个基地上的每个随从上各放置 1 个 +1 力量指示物。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "mounties_dudlee": {
+      "name": "达德利",
+      "abilityText": "天赋：将此随从移动到一个有另一位玩家随从的基地，使此随从直到回合结束 +1 力量。"
+    },
+    "mounties_always_get_our_man": {
+      "name": "总能抓到目标",
+      "effectText": "将你的一个随从移动到一个有另一位玩家力量更低随从的基地，并在回合结束时摧毁那个随从。"
+    },
+    "mounties_battle_moose": {
+      "name": "战斗麋鹿",
+      "effectText": "打在你的一个随从上。持续：你在这里的随从不能被其他玩家的卡牌摧毁。"
+    },
+    "mounties_power_poutine": {
+      "name": "力量肉汁薯条",
+      "effectText": "选择一个基地。你在那里至多两个随从直到回合结束各 +2 力量。"
+    },
+    "mounties_move_aboot": {
+      "name": "挪过去",
+      "effectText": "选择一个有另一位玩家随从的基地。将你在另一个基地的一个随从移动到那里，并使其直到回合结束 +2 力量。"
+    },
+    "mounties_haich_q": {
+      "name": "H 骑警",
+      "effectText": "打在一个基地上。持续：你在这里的每个随从 +1 力量。天赋：将你的一个随从移到此基地，或从此基地移走。"
+    },
+    "luchadors_quick_set_up": {
+      "name": "快速铺垫",
+      "effectText": "打在另一位玩家的一个随从上。你可以额外打出一个行动。"
+    },
+    "luchadors_smart_set_up": {
+      "name": "聪明铺垫",
+      "effectText": "打在另一位玩家的一个随从上。持续：每回合第一次有随从打到这里后，抽 1 张牌。"
+    },
+    "luchadors_yellow_demon": {
+      "name": "黄色恶魔",
+      "abilityText": "你可以从你的牌库和/或弃牌堆中搜寻一个铺垫行动并置入手牌。"
+    },
+    "luchadors_reversal": {
+      "name": "逆转",
+      "effectText": "特殊：在一个你没有领先的基地计分前，获得那里一个带有铺垫行动的随从控制权直到回合结束。摧毁该随从上任意数量你的行动。"
+    },
+    "luchadors_pin": {
+      "name": "压制",
+      "effectText": "打在一个带有你的行动的随从上。持续：此随从的能力被取消，且其力量不计入其控制者在这里的总力量。"
+    },
+    "luchadors_senor_muchoslam": {
+      "name": "穆乔摔先生",
+      "abilityText": "将你弃牌堆中的一个行动置入手牌。天赋：将一个行动作为额外行动打在另一位玩家的随从上。"
+    },
+    "luchadors_powerful_set_up": {
+      "name": "强力铺垫",
+      "effectText": "打在另一位玩家的一个随从上。持续：你在这里的每个随从 +1 力量。"
+    },
+    "luchadors_tag_team": {
+      "name": "团队标记",
+      "effectText": "在一个你有随从的基地额外打出一个随从。"
+    },
+    "luchadors_capa_roja": {
+      "name": "红披风",
+      "abilityText": "特殊：在此基地计分前，你可以摧毁这里每位其他玩家控制的一个印制力量 3 或以下的随从。"
+    },
+    "luchadors_out_for_the_count": {
+      "name": "点名出局",
+      "effectText": "选择一个其上有一个或多个你的行动的随从。将其中一个行动返回你的手牌。摧毁该随从。"
+    },
+    "luchadors_senor_muchoslam_vs_the_monsters": {
+      "name": "穆乔摔先生大战怪物",
+      "effectText": "从你的弃牌堆中选择任意数量的行动。将其中一个可打在随从上的行动置入手牌，并将其余洗入你的牌库。"
+    },
+    "luchadors_flor_loca": {
+      "name": "疯狂之花",
+      "abilityText": "持续：如果另一位玩家在这里的随从上有你的行动，此随从 +2 力量。"
+    },
+    "luchadors_cheap_pop": {
+      "name": "廉价欢呼",
+      "effectText": "你的一个随从直到回合结束 +2 力量；如果那里有带铺垫行动的随从，改为 +4 力量。"
+    },
+    "base_heya_training_stable": {
+      "name": "训练馆",
+      "abilityText": "在你的回合开始时，你可以弃 1 张牌，在你这里的一个随从上放置 1 个 +1 力量指示物。"
+    },
+    "base_the_dohyo": {
+      "name": "土俵",
+      "abilityText": "你的回合中，第一次你在这里打出随从后，你可以将另一位玩家在这里的一个随从移动到另一个基地。"
+    },
+    "base_bastion_saint_gervais": {
+      "name": "圣热尔韦堡垒",
+      "abilityText": "每回合一次，在你打出一个直接影响你在这里一个随从的行动后，你可以额外打出一个行动。"
+    },
+    "base_the_golden_lily": {
+      "name": "黄金百合",
+      "abilityText": "在你的回合结束时，如果你在这里有随从，抽 1 张牌。"
+    },
+    "base_strategic_syrup_reserve": {
+      "name": "战略枫糖储备",
+      "abilityText": "在你在这里打出一个随从后，你可以将另一位玩家在一个你有随从的基地上的一个随从移动到这里。"
+    },
+    "base_great_white_north_eh": {
+      "name": "大白北方，嗯？",
+      "abilityText": "在此基地计分前，每位玩家可以将其在这里的一个随从移动到另一个基地，并使其直到回合结束 +1 力量。"
+    },
+    "base_ringside": {
+      "name": "擂台边",
+      "abilityText": "在你打出一个直接影响这里另一位玩家随从的行动后，抽 1 张牌。"
+    },
+    "base_the_squared_circle": {
+      "name": "方形擂台",
+      "abilityText": "每回合第一次你在这里打出随从后，你可以随机将你弃牌堆中的一个行动置入手牌。"
     }
   },
   "debug": {

@@ -11,6 +11,7 @@ import type {
     MinionDestroyedEvent,
     MinionMovedEvent,
     MinionControlChangedEvent,
+    BaseMetadataUpdatedEvent,
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
     OngoingDetachedEvent,
@@ -2681,6 +2682,23 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
         }
 
+        case SU_EVENTS.BASE_METADATA_UPDATED: {
+            const { baseIndex, baseInstanceId, metadataUpdate } = (event as BaseMetadataUpdatedEvent).payload;
+            let changed = false;
+            const bases = state.bases.map((base, index) => {
+                if (index !== baseIndex) return base;
+                if (baseInstanceId !== undefined && base.instanceId !== baseInstanceId) return base;
+                changed = true;
+                return {
+                    ...base,
+                    metadata: {
+                        ...(base.metadata ?? {}),
+                        ...metadataUpdate,
+                    },
+                };
+            });
+            return changed ? { ...state, bases } : state;
+        }
         case SU_EVENTS.TITAN_METADATA_UPDATED: {
             const { titanUid, metadataUpdate } = (event as TitanMetadataUpdatedEvent).payload;
             const titans = state.titans ?? [];
@@ -2736,7 +2754,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAY_EFFECT_QUEUED: {
-            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter' | 'addTempPower'; amount: number; reason?: string } }).payload;
+            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter' | 'addTempPower' | 'grantExtraActionForPlayedMinion'; amount: number; reason?: string } }).payload;
             const qPlayer = state.players[qPayload.playerId];
             if (!qPlayer) return state;
             const prev = qPlayer.pendingMinionPlayEffects ?? [];

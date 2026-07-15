@@ -1225,7 +1225,33 @@
     "marvel_villains_deck_own_minions_title": "Choose up to two of your characters to place on the bottom of your deck",
     "astroknights_prepare_for_battle_title": "Prepare for Battle: Choose cards to put into your hand",
     "astroknights_astro_robot_title": "Astro Robot: You may destroy an action",
-    "star_roamers_return_replacement_move_option": "Move it to another base instead"
+    "star_roamers_return_replacement_move_option": "Move it to another base instead",
+    "international_incident_move_destination_title": "Choose a destination base",
+    "mounties_northern_mover_mode_title": "Northern Mover: choose an effect",
+    "mounties_northern_mover_target_title": "Northern Mover: choose another of your minions",
+    "sumo_wrestlers_chikara_mizu_discard_title": "Chikara Mizu: discard 1 card to give the selected minion +4 power until end of turn",
+    "sumo_wrestlers_chikara_mizu_mode_title": "Chikara Mizu: choose +2 or discard for +4",
+    "sumo_wrestlers_chikara_mizu_target_title": "Chikara Mizu: choose one of your minions",
+    "sumo_wrestlers_bulking_stew_target_title": "Bulking Stew: choose one of your minions to place power counters",
+    "sumo_wrestlers_bulking_stew_discard_title": "Bulking Stew: choose any number of hand cards to discard",
+    "sumo_wrestlers_yokozuna_mode_title": "Yokozuna: choose a talent effect",
+    "mounties_haich_q_move_title": "Haich-Q: choose one of your minions to move to or from this base",
+    "luchadors_tag_team_base_title": "Tag Team: choose a base for the extra minion",
+    "luchadors_cheap_pop_title": "Cheap Pop: choose one of your minions",
+    "luchadors_capa_roja_title": "Capa Roja: choose up to one printed-power-3-or-less minion from each other player",
+    "luchadors_reversal_destroy_actions_title": "Reversal: choose any number of your Set-Up actions to destroy",
+    "luchadors_senor_muchoslam_vs_the_monsters_title": "Senor Muchoslam vs the Monsters: choose any number of action cards in your discard pile",
+    "base_heya_training_stable_title": "Heya Training Stable: you may discard 1 card to place a +1 counter on your minion here",
+    "base_great_white_north_eh_title": "The Great White North, Eh?: you may move one of your minions here and give it +1 power",
+    "mounties_northern_mover_move_option": "Move to another base",
+    "mounties_northern_mover_power_option": "+1 power until end of turn",
+    "sumo_wrestlers_chikara_mizu_power2_option": "+2 power until end of turn",
+    "sumo_wrestlers_chikara_mizu_discard_power4_option": "Discard 1 card for +4 power instead",
+    "sumo_wrestlers_yokozuna_draw_option": "Draw 1 card",
+    "sumo_wrestlers_yokozuna_move_option": "Move another player's minion here",
+    "international_incident_skip_destroy_minion_option": "Skip (do not destroy a minion)",
+    "international_incident_skip_discard_option": "Skip (do not discard)",
+    "international_incident_skip_move_minion_option": "Skip (do not move a minion)"
   },
   "mechanics": {
     "madness": {
@@ -1749,6 +1775,22 @@
     "time_travelers_pod": {
       "name": "Time Travelers (POD)",
       "description": "A POD-ready Time Travelers deck with its own bases and card atlas while sharing the classic time-loop toolkit."
+    },
+    "sumo_wrestlers": {
+      "name": "Sumo Wrestlers",
+      "description": "Move enemy minions away from your bases, discard for +1 power counters, and draw to keep the pressure going."
+    },
+    "musketeers": {
+      "name": "Musketeers",
+      "description": "Chain actions that directly affect your minions, turning careful timing into extra power and card draw."
+    },
+    "mounties": {
+      "name": "Mounties",
+      "description": "Move to where opponents have committed minions, then gain power or protection for riding into the fray."
+    },
+    "luchadors": {
+      "name": "Luchadors",
+      "description": "Play Set-Up actions on enemy minions, then cash those setups in for draw, control, and scoring tricks."
     }
   },
   "tutorial": {
@@ -7997,6 +8039,242 @@
     "time_travelers_doctor_when_pod": {
       "name": "Doctor When",
       "abilityText": "You may return another of your minions in play to your hand. You may play it again as an extra minion."
+    },
+    "sumo_wrestlers_technique_prize": {
+      "name": "Technique Prize",
+      "effectText": "Place three +1 power counters on one of your minions."
+    },
+    "sumo_wrestlers_yokozuna": {
+      "name": "Yokozuna",
+      "abilityText": "Ongoing: Your minions cannot be moved by other players' cards. Talent: Draw a card, or move another player's minion from here to another base."
+    },
+    "sumo_wrestlers_performance_prize": {
+      "name": "Performance Prize",
+      "effectText": "Draw three cards."
+    },
+    "sumo_wrestlers_head_butt": {
+      "name": "Head Butt",
+      "effectText": "Choose a base where you have a minion. Destroy another player's action that has been played there or on a minion there."
+    },
+    "sumo_wrestlers_bulking_stew": {
+      "name": "Bulking Stew",
+      "effectText": "Discard any number of cards. For each card discarded, place a +1 power counter on one of your minions."
+    },
+    "sumo_wrestlers_body_slam": {
+      "name": "Body Slam",
+      "effectText": "Choose another player and a base where you have a minion. Move all of their minions there to another base."
+    },
+    "sumo_wrestlers_chikara_mizu": {
+      "name": "Chikara-Mizu",
+      "effectText": "Give one of your minions +2 power until the end of the turn, or discard a card to give it +4 power instead."
+    },
+    "sumo_wrestlers_third_tier": {
+      "name": "Third Tier",
+      "abilityText": "You may move another player's minion of power 3 or less from here to another base to draw a card."
+    },
+    "sumo_wrestlers_grasp_the_belt": {
+      "name": "Grasp the Belt",
+      "effectText": "Choose a base where you have a minion. Move a minion from there to another base."
+    },
+    "sumo_wrestlers_fighting_spirit_prize": {
+      "name": "Fighting Spirit Prize",
+      "effectText": "Draw two cards and place two +1 power counters total on your minions."
+    },
+    "sumo_wrestlers_top_tier": {
+      "name": "Top Tier",
+      "abilityText": "Ongoing: After you discard one or more cards from your hand, place a +1 power counter on this minion."
+    },
+    "sumo_wrestlers_rookie_sumo": {
+      "name": "Rookie Sumo",
+      "abilityText": "You may discard a card to place two +1 power counters on one of your minions."
+    },
+    "musketeers_on_a_roll": {
+      "name": "On a Roll",
+      "effectText": "Play up to two actions that directly affect the same minion as extra actions."
+    },
+    "musketeers_make_way": {
+      "name": "Make Way",
+      "effectText": "Move one of your minions to another base. You may play an extra action."
+    },
+    "musketeers_en_garde": {
+      "name": "En Garde",
+      "effectText": "Choose a minion to gain +1 power until the end of the turn. Draw a card. You may play an extra action."
+    },
+    "musketeers_biding_time": {
+      "name": "Biding Time",
+      "effectText": "Choose a minion to gain +2 power until the end of the turn. You may play an extra action that directly affects this minion."
+    },
+    "musketeers_to_battle": {
+      "name": "To Battle!",
+      "effectText": "Play an extra minion. You may play an action that directly affects it as an extra action."
+    },
+    "musketeers_porthos": {
+      "name": "Porthos",
+      "abilityText": "Ongoing: This minion is not affected by other players' actions."
+    },
+    "musketeers_athos": {
+      "name": "Athos",
+      "abilityText": "Ongoing: After you play an action that directly affects one or more of your other minions here, those minions each gain +1 power until the end of the turn."
+    },
+    "musketeers_one_for_all": {
+      "name": "One for All",
+      "effectText": "Choose a base. Each of your minions there gains +1 power until the end of the turn. You may play an extra action."
+    },
+    "musketeers_young_musketeer": {
+      "name": "Young Musketeer",
+      "abilityText": "Ongoing: After the first time each turn you play an action that directly affects this minion, it gains +1 power until the end of the turn."
+    },
+    "musketeers_last_stand": {
+      "name": "Last Stand",
+      "effectText": "Special: Before a base scores, give one of your minions there +2 power until the end of the turn. Draw a card."
+    },
+    "musketeers_dartagnan": {
+      "name": "D'Artagnan",
+      "abilityText": "Ongoing: After you play an action that directly affects this minion, draw a card."
+    },
+    "musketeers_all_for_one": {
+      "name": "All for One",
+      "effectText": "Play on a minion. You may play an extra action. Ongoing: After you play another action that directly affects this minion, it gains +1 power until the end of the turn, and you destroy this card at the end of the turn."
+    },
+    "musketeers_token_of_affection": {
+      "name": "Token of Affection",
+      "effectText": "Search your deck and/or discard pile for an action that directly affects a minion and place it into your hand. You may play it as an extra action."
+    },
+    "musketeers_aramis": {
+      "name": "Aramis",
+      "abilityText": "Ongoing: Once on your turn, after you play an action that directly affects this minion, you may play an action that directly affects this minion as an extra action."
+    },
+    "mounties_eh": {
+      "name": "Eh?",
+      "effectText": "Special: After you play your first action in a turn, you may play this card as an extra action. One of your minions gains +1 power until the end of the turn, and you may place this card back into your hand instead of the discard pile."
+    },
+    "mounties_bring_em_in": {
+      "name": "Bring 'Em In",
+      "effectText": "Play on a minion. Ongoing: After this minion moves to another base, place a +1 power counter on it."
+    },
+    "mounties_mountie_major": {
+      "name": "Mountie Major",
+      "abilityText": "Ongoing: This minion has +1 power for each minion here controlled by the other player with the most minions here."
+    },
+    "mounties_northern_mover": {
+      "name": "Northern Mover",
+      "abilityText": "Talent: Choose one of your other minions. Move it to another base, or give it +1 power until the end of the turn."
+    },
+    "mounties_war_canuck": {
+      "name": "War Canuck",
+      "abilityText": "Talent: If there is another player's minion here, this minion gains +2 power until the start of your next turn."
+    },
+    "mounties_when_calls_the_badge": {
+      "name": "When Calls the Badge",
+      "effectText": "Place a +1 power counter on each of your minions on one base. Special: Play before a base scores."
+    },
+    "mounties_dudlee": {
+      "name": "Dudlee",
+      "abilityText": "Talent: Move this minion to a base with another player's minion to give this minion +1 power until the end of the turn."
+    },
+    "mounties_always_get_our_man": {
+      "name": "Always Get Our Man",
+      "effectText": "Move one of your minions to a base with another player's minion with less power to destroy that minion at the end of the turn."
+    },
+    "mounties_battle_moose": {
+      "name": "Battle Moose",
+      "effectText": "Play on one of your minions. Ongoing: Your minions here cannot be destroyed by other players' cards."
+    },
+    "mounties_power_poutine": {
+      "name": "Power Poutine",
+      "effectText": "Choose a base. Up to two of your minions there each gain +2 power until the end of the turn."
+    },
+    "mounties_move_aboot": {
+      "name": "Move Aboot",
+      "effectText": "Choose a base with another player's minion. Move one of your minions from another base to there to give it +2 power until the end of the turn."
+    },
+    "mounties_haich_q": {
+      "name": "Haich-Q",
+      "effectText": "Play on a base. Ongoing: Each of your minions here has +1 power. Talent: Move one of your minions to or from this base."
+    },
+    "luchadors_quick_set_up": {
+      "name": "Quick Set-Up",
+      "effectText": "Play on another player's minion. You may play an extra action."
+    },
+    "luchadors_smart_set_up": {
+      "name": "Smart Set-Up",
+      "effectText": "Play on another player's minion. Ongoing: After the first time each turn a minion is played here, draw a card."
+    },
+    "luchadors_yellow_demon": {
+      "name": "Yellow Demon",
+      "abilityText": "You may search your deck and/or discard pile for a Set-Up action and place it into your hand."
+    },
+    "luchadors_reversal": {
+      "name": "Reversal",
+      "effectText": "Special: Before a base scores where you are not winning, take control of a minion there with a Set-Up action on it until the end of the turn. Destroy any number of your actions on that minion."
+    },
+    "luchadors_pin": {
+      "name": "Pin",
+      "effectText": "Play on a minion with one of your actions on it. Ongoing: This minion's abilities are cancelled, and its power is not added to its controller's total power here."
+    },
+    "luchadors_senor_muchoslam": {
+      "name": "Senor Muchoslam",
+      "abilityText": "Place an action from your discard pile into your hand. Talent: Play an action on another player's minion as an extra action."
+    },
+    "luchadors_powerful_set_up": {
+      "name": "Powerful Set-Up",
+      "effectText": "Play on another player's minion. Ongoing: Each of your minions here has +1 power."
+    },
+    "luchadors_tag_team": {
+      "name": "Tag-Team",
+      "effectText": "Play an extra minion at a base where you have a minion."
+    },
+    "luchadors_capa_roja": {
+      "name": "Capa Roja",
+      "abilityText": "Special: Before this base scores, you may destroy a minion here with printed power 3 or less controlled by each other player."
+    },
+    "luchadors_out_for_the_count": {
+      "name": "Out for the Count",
+      "effectText": "Choose a minion with one or more of your actions on it. Return one of those actions to your hand. Destroy that minion."
+    },
+    "luchadors_senor_muchoslam_vs_the_monsters": {
+      "name": "Senor Muchoslam vs the Monsters",
+      "effectText": "Choose any number of actions from your discard pile. Place one that can be played on a minion into your hand and shuffle the rest into your deck."
+    },
+    "luchadors_flor_loca": {
+      "name": "Flor Loca",
+      "abilityText": "Ongoing: If another player's minion here has one of your actions played on it, this minion has +2 power."
+    },
+    "luchadors_cheap_pop": {
+      "name": "Cheap Pop",
+      "effectText": "Give one of your minions +2 power until the end of the turn, or +4 power instead if a minion there has a Set-Up action on it."
+    },
+    "base_heya_training_stable": {
+      "name": "Heya Training Stable",
+      "abilityText": "At the start of your turn, you may discard a card to place a +1 power counter on one of your minions here."
+    },
+    "base_the_dohyo": {
+      "name": "The Dohyo",
+      "abilityText": "After the first time you play a minion here on your turn, you may move another player's minion from here to another base."
+    },
+    "base_bastion_saint_gervais": {
+      "name": "Bastion Saint-Gervais",
+      "abilityText": "Once per turn after you play an action that directly affects one of your minions here, you may play an extra action."
+    },
+    "base_the_golden_lily": {
+      "name": "The Golden Lily",
+      "abilityText": "At the end of your turn, if you have a minion here, draw a card."
+    },
+    "base_strategic_syrup_reserve": {
+      "name": "Strategic Syrup Reserve",
+      "abilityText": "After you play a minion here, you may move another player's minion to here from a base where you have a minion."
+    },
+    "base_great_white_north_eh": {
+      "name": "Great White North, Eh?",
+      "abilityText": "Before this base scores, each player may move one of their minions from here to another base and give it +1 power until the end of turn."
+    },
+    "base_ringside": {
+      "name": "Ringside",
+      "abilityText": "After you play an action that directly affects another player's minion here, draw a card."
+    },
+    "base_the_squared_circle": {
+      "name": "The Squared Circle",
+      "abilityText": "After the first time you play a minion here each turn, you may place a random action from your discard pile into your hand."
     }
   },
   "debug": {

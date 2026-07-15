@@ -141,6 +141,11 @@ public/**/*.webm
 !public/assets/i18n/zh-CN/qidahen/thumbnails/**/*.webp
 !public/assets/i18n/zh-CN/smashup/thumbnails/**/
 !public/assets/i18n/zh-CN/smashup/thumbnails/**/*.webp
+# Smash Up《环游世界：国际事件》资源按当前 PR 目标随仓库交付，R2 发布另行回查。
+!public/assets/i18n/zh-CN/smashup/cards/international_incident.png
+!public/assets/i18n/zh-CN/smashup/cards/compressed/international_incident.webp
+!public/assets/i18n/zh-CN/smashup/base/international_incident_bases.png
+!public/assets/i18n/zh-CN/smashup/base/compressed/international_incident_bases.webp
 !public/assets/i18n/zh-CN/summonerwars/thumbnails/**/
 !public/assets/i18n/zh-CN/summonerwars/thumbnails/**/*.webp
 
