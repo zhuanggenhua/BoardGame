@@ -118,6 +118,43 @@ const UNRESOLVED_COMPLETION_MARKERS = [
   /不能宣称/,
 ];
 
+const SELF_CHECK_HEADING_PATTERN = /^##\s+.*全面审计自检表.*$/m;
+
+const SELF_CHECK_REQUIRED_ITEMS = [
+  {
+    name: '对象全集',
+    patterns: [/对象全集/, /录入对象全集/, /批次矩阵/, /当前范围内每个对象/],
+  },
+  {
+    name: '规则子句表',
+    patterns: [/规则子句表/, /规则子句/, /原子子句/, /C\d+/],
+  },
+  {
+    name: '完整技能流程矩阵',
+    patterns: [/完整技能流程矩阵/, /完整流程/, /触发前条件/, /后续清理/, /执行入口/],
+  },
+  {
+    name: 'L0-L4 证据层级',
+    patterns: [/L0.*L1.*L2.*L3.*L4/s, /L0\/L1\/L2\/L3\/L4/, /L0-L4/],
+  },
+  {
+    name: '命中 D 维度',
+    patterns: [/命中\s*D\s*维度/, /D\s*维度/, /D\d+/],
+  },
+  {
+    name: '真实入口 E2E 与截图核验',
+    patterns: [/真实入口.*E2E/s, /E2E.*真实入口/s, /截图核验/, /真实玩法证据/],
+  },
+  {
+    name: '残余范围声明',
+    patterns: [/残余范围/, /未覆盖范围/, /当前边界/, /生产部署/],
+  },
+  {
+    name: '旧 evidence / 旧结论对账回写',
+    patterns: [/旧\s*evidence/i, /旧结论/, /旧文档/, /失效回写/, /旧结论失效/],
+  },
+];
+
 function printUsage() {
   console.log(`用法:
   node scripts/verify/audit-evidence-completeness.mjs [evidence 文件...]
@@ -235,6 +272,21 @@ function hasAny(content, patterns) {
   return patterns.some(pattern => pattern.test(content));
 }
 
+function extractMarkdownSection(content, headingPattern) {
+  const match = headingPattern.exec(content);
+  if (!match || typeof match.index !== 'number') return '';
+
+  const sectionStart = match.index;
+  const afterHeadingStart = sectionStart + match[0].length;
+  const remainder = content.slice(afterHeadingStart);
+  const nextHeadingIndex = remainder.search(/\n##\s+/);
+  const sectionEnd = nextHeadingIndex === -1
+    ? content.length
+    : afterHeadingStart + nextHeadingIndex;
+
+  return content.slice(sectionStart, sectionEnd);
+}
+
 function missingRequiredSections(content) {
   return REQUIRED_AUDIT_SECTIONS
     .filter(section => !hasAny(content, section.patterns))
@@ -252,6 +304,33 @@ function isInvalidationDoc(content) {
 
 function hasFullAuditClaim(content) {
   return hasAny(content, FULL_AUDIT_CLAIMS);
+}
+
+function checkFullAuditSelfCheck(file, content) {
+  const errors = [];
+  const head = content.slice(0, 8000);
+  if (!SELF_CHECK_HEADING_PATTERN.test(head)) {
+    errors.push(`${file}: 声称全面审计或当前发布口径收口，但前部缺少“全面审计自检表”。`);
+    return errors;
+  }
+
+  const section = extractMarkdownSection(content, SELF_CHECK_HEADING_PATTERN);
+  for (const item of SELF_CHECK_REQUIRED_ITEMS) {
+    if (!hasAny(section, item.patterns)) {
+      errors.push(`${file}: “全面审计自检表”缺少“${item.name}”自检项。`);
+    }
+  }
+
+  if (!/\bpassed\b/.test(section)) {
+    errors.push(`${file}: “全面审计自检表”没有可搜索状态词 passed。`);
+  }
+
+  const incompleteStatus = section.match(/\b(representative_only|blocked|scoped_debt)\b/);
+  if (incompleteStatus) {
+    errors.push(`${file}: 声称已审计/已收口，但“全面审计自检表”仍包含 ${incompleteStatus[1]}，应先降级结论或补齐证据。`);
+  }
+
+  return errors;
 }
 
 function checkInvalidationDoc(file, content) {
@@ -277,10 +356,20 @@ function checkCompletionClaimDoc(file, content) {
   for (const section of missingRequiredSections(content)) {
     errors.push(`${file}: 声称已审计/已收口，但缺少 evidence 必填区块“${section}”。`);
   }
+  errors.push(...checkFullAuditSelfCheck(file, content));
 
   const hasLevelMatrix = /L0/.test(content) && /L1/.test(content) && /L2/.test(content) && /L3/.test(content) && /L4/.test(content);
   if (!hasLevelMatrix) {
     errors.push(`${file}: 声称全面审计或当前发布口径收口，但未同时列出 L0/L1/L2/L3/L4 层级矩阵。`);
+  }
+
+  if (!/C\d+/.test(content)) {
+    errors.push(`${file}: 声称全面审计或当前发布口径收口，但未看到 C1/C2/C3 这类规则子句编号。`);
+  }
+
+  const hasImplementationEntry = /实现入口|执行入口|validator|validate|command|handler|reducer|execute|UI\s*消费|真实入口/i.test(content);
+  if (!hasImplementationEntry) {
+    errors.push(`${file}: 声称全面审计或当前发布口径收口，但没有写清规则子句对应的实现/执行入口。`);
   }
 
   if (!/D\d+/.test(content)) {

@@ -27,6 +27,27 @@
 - 只有“共享链路完全同构，仅配置不同”的对象，才允许复用代表链；
 - 若仍有对象级 L3/L4 缺口，结论只能写 `代表性玩法已验证` 或 `仍有残余范围`，不得写 `当前发布口径已收口`。
 
+### 2.2 全面审计自检表（声称已收口时强制）
+
+若结论或对外汇报要使用 `已审计 / 已收口 / 当前发布口径已收口 / 当前代码验证口径已收口 / 全面审计完成`，必须在 evidence 前部补本表，并让 `npm run audit:evidence -- <本 evidence 文件>` 通过。
+
+| 自检项 | 状态 | 证据 |
+| --- | --- | --- |
+| 对象全集 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 规则子句表 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 完整技能流程矩阵 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| L0-L4 证据层级 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 命中 D 维度 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 真实入口 E2E 与截图核验 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 残余范围声明 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 旧 evidence / 旧结论对账回写 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+
+强制口径：
+
+- 只有所有必需项都是 `passed`，才允许使用已审计/已收口口径。
+- `representative_only` 表示只做了代表链或抽样验证，必须降级为 `代表性玩法已验证`。
+- `blocked` 或 `scoped_debt` 表示仍有残余范围，必须写清剩余对象、缺口与下一步。
+
 ## 3. 结论等级
 
 从以下五项中明确选择一项，禁止写模糊结论：
