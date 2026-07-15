@@ -29,6 +29,7 @@ import {
 
 const EVIDENCE_DIR = "evidence/山屋惊魂-事件牌页面承接E2E";
 const ARMOR_EVIDENCE_DIR = "evidence/山屋惊魂-盔甲物理减伤完整链路";
+const RADIO_EVIDENCE_DIR = "evidence/山屋惊魂-头戴耳机精神减伤完整链路";
 
 type EventChoiceCase = {
   title: string;
@@ -189,6 +190,16 @@ function physicalTraitTotal(core: BetrayalCore, playerId: string): number {
     throw new Error(`山屋 E2E 无法找到玩家 ${playerId} 的探险者`);
   }
   return explorer.traits.might + explorer.traits.speed;
+}
+
+function mentalTraitTotal(core: BetrayalCore, playerId: string): number {
+  const explorer = [core.currentExplorer, ...core.otherExplorers].find(
+    (candidate) => candidate.playerId === playerId,
+  );
+  if (!explorer) {
+    throw new Error(`山屋 E2E 无法找到玩家 ${playerId} 的探险者`);
+  }
+  return explorer.traits.knowledge + explorer.traits.sanity;
 }
 
 async function dismissDiscoveryPanel(page: Page) {
@@ -2397,6 +2408,157 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-event-choice-盔甲物理减伤完整链路", diagnostics },
+    ]);
+  });
+
+  test("头戴耳机真实链路从电话铃声翻牌到精神伤害减伤结算关闭", async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+    const diagnostics = attachPageDiagnostics(
+      page,
+      "betrayal-event-choice-头戴耳机精神减伤完整链路",
+    );
+    const screenshotBase = RADIO_EVIDENCE_DIR;
+    const phoneCall = eventByName("电话铃声");
+    const radioCard = BETRAYAL_DISCOVERY_POOLS.possessions.item.find(
+      (card) => card.id === "radio",
+    );
+    if (!radioCard) {
+      throw new Error("山屋物品池缺少头戴耳机");
+    }
+    const core = createRuntimeCore();
+    core.drawOrder = ["event"];
+    core.eventOrder = [phoneCall];
+    core.currentExplorer = {
+      ...core.currentExplorer,
+      traits: {
+        ...core.currentExplorer.traits,
+        might: 4,
+        speed: 4,
+        knowledge: 4,
+        sanity: 4,
+      },
+      inventory: [{ ...radioCard }],
+    };
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.turnStartInventoryCardIds = ["radio"];
+
+    await injectCore(page, core);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible({
+      timeout: 30000,
+    });
+    const radioShell = page.getByTestId("betrayal-inventory-radio-shell");
+    await expect(radioShell).toBeVisible();
+    await expect(radioShell).toHaveAttribute(
+      "data-rules-summary",
+      /受到精神伤害 -1/,
+    );
+    const beforeCore = await readCurrentCore(page);
+    const mentalBefore = mentalTraitTotal(beforeCore, "0");
+    expect(mentalBefore).toBe(8);
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/01-头戴耳机减伤前牌桌可操作.jpg`,
+    );
+
+    await page.getByTestId("betrayal-action-move").click();
+    await page.getByTestId("betrayal-room-hallway").click();
+    await expect(
+      page.getByTestId("betrayal-room-ground-north"),
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    await page.getByTestId("betrayal-action-explore").click();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-south"),
+    ).toBeVisible();
+    await saveScreenshot(page, `${screenshotBase}/02-选择未知房间前.jpg`);
+
+    await setHarnessRandomQueue(page, [0.5, 0.5, 0.99]);
+    await page.getByTestId("betrayal-room-ground-north").click();
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
+      0,
+    );
+    const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+    await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
+    await expect(discoveryPanel).toHaveAttribute(
+      "aria-label",
+      /事件牌 电话铃声/,
+    );
+    await expect(
+      page.getByTestId("betrayal-discovery-card-front-atlas"),
+    ).toBeVisible();
+    const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
+    await expect(discoveryDetail).toContainText("投 2 颗骰子 2");
+    await expect(discoveryDetail).toContainText("受到一颗骰子的精神伤害");
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/03-电话铃声翻出并显示精神伤害分支.jpg`,
+    );
+
+    const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
+    await expect(rollPanel).toBeVisible();
+    await expect(rollPanel).toContainText("投 2 颗骰子");
+    await expect(rollPanel).toContainText("总点数 2");
+    await expect(
+      page.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-count", "2");
+    await expect(
+      page.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-rule-subtotal", "2");
+    await expectVisiblePhysicalDiceBox(rollPanel);
+    await waitForPhysicalDiceSettled(rollPanel);
+    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 2 });
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/04-精神伤害骰盘停稳.jpg`,
+    );
+
+    const afterSettleCore = await readCurrentCore(page);
+    expect(afterSettleCore.recentRoll?.eventEffectSnapshot?.damageRolls).toEqual(
+      [2],
+    );
+    expect(mentalTraitTotal(afterSettleCore, "0")).toBe(mentalBefore - 1);
+    const protectedExplorer = [
+      afterSettleCore.currentExplorer,
+      ...afterSettleCore.otherExplorers,
+    ].find((explorer) => explorer.playerId === "0");
+    expect(protectedExplorer?.traits.knowledge).toBe(3);
+    expect(protectedExplorer?.traits.sanity).toBe(4);
+    await expect(discoveryDetail).toContainText("受到 1 颗骰子的精神伤害");
+    await expect(radioShell).toHaveAttribute(
+      "data-rules-summary",
+      /受到精神伤害 -1/,
+    );
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/05-头戴耳机减伤结算结果可见.jpg`,
+    );
+
+    await dismissDiscoveryPanel(page);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible();
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
+      0,
+    );
+    const closedCore = await readCurrentCore(page);
+    expect(mentalTraitTotal(closedCore, "0")).toBe(mentalBefore - 1);
+    await expect(
+      page.getByTestId("betrayal-room-occupant-ground-north-0"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
+    await saveScreenshot(
+      page,
+      `${screenshotBase}/06-关闭后回牌桌状态清空.jpg`,
+    );
+
+    assertNoFatalFrontendErrors([
+      { label: "betrayal-event-choice-头戴耳机精神减伤完整链路", diagnostics },
     ]);
   });
 
