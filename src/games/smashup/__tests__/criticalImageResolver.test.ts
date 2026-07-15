@@ -131,6 +131,20 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical.filter(path => path === 'smashup/cards/marvel_wave_one')).toHaveLength(1);
     });
 
+    it('我们到底在想什么四派系会命中新卡图与新基地图集', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['rock_stars', 'teddy_bears'],
+                '1': ['grannies', 'explorers'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/what_were_we_thinking');
+        expect(result.critical).toContain('smashup/base/what_were_we_thinking_bases');
+    });
+
     it('Promo 绵羊与全明星共享预热同一张新卡图并命中 BASE4 基地图集', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

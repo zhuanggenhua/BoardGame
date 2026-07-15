@@ -62,6 +62,7 @@ import { registerZhongguoAbilities } from './zhongguo';
 import { registerAvengersAbilities } from './avengers';
 import { registerMarvelAbilities } from './marvel';
 import { registerMarvelVillainsAbilities } from './marvel_villains';
+import { registerWhatWereWeThinkingAbilities, registerWhatWereWeThinkingInteractionHandlers } from './what_were_we_thinking';
 import { registerAnansiTalesAbilities } from './anansi_tales';
 import { registerGrimmsFairyTalesAbilities, registerGrimmsFairyTalesInteractionHandlers } from './grimms_fairy_tales';
 import { registerRussianFairyTalesAbilities, registerRussianFairyTalesInteractionHandlers } from './russian_fairy_tales';
@@ -198,6 +199,8 @@ export function initAllAbilities(): void {
     registerAvengersAbilities();
     registerMarvelAbilities();
     registerMarvelVillainsAbilities();
+    registerWhatWereWeThinkingAbilities();
+    registerWhatWereWeThinkingInteractionHandlers();
     registerAnansiTalesAbilities();
     registerGrimmsFairyTalesAbilities();
     registerGrimmsFairyTalesInteractionHandlers();

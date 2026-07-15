@@ -1272,7 +1272,47 @@
     "all_stars_puck_action_option": "Play an extra action",
     "all_stars_puck_draw_option": "Draw 1 card",
     "all_stars_lab_assistant_title": "Lab Assistant: choose another of your minions",
-    "all_stars_prepare_for_battle_title": "Prepare for Battle: choose a card to put into your hand"
+    "all_stars_prepare_for_battle_title": "Prepare for Battle: choose a card to put into your hand",
+    "what_were_we_thinking_deck_place_top_option": "Keep on deck top",
+    "what_were_we_thinking_deck_place_bottom_option": "Put on deck bottom",
+    "what_were_we_thinking_draw_to_hand_option": "Draw to hand",
+    "what_were_we_thinking_return_to_deck_top_option": "Return to deck top",
+    "what_were_we_thinking_play_as_extra_action_option": "Play as an extra action",
+    "rock_stars_reunion_tour_title": "Reunion Tour: choose any number of your discard minions to shuffle into your deck",
+    "rock_stars_rock_of_luuv_title": "Rock of Luuv: choose up to 3 same-name power-2-or-less minions to add to your hand",
+    "rock_stars_guest_star_title": "Guest Star: choose a Groupie to add to your hand, then gain an extra Groupie play",
+    "rock_stars_the_monarch_title": "The Monarch: choose a Groupie to add to your hand",
+    "rock_stars_tour_bus_move_title": "Tour Bus: choose up to 3 of your minions on lower-breakpoint bases to move to the target base",
+    "rock_stars_rick_roll_title": "Rick Roll: choose up to 3 of your minions on lower-breakpoint bases to move here",
+    "rock_stars_tour_bus_base_title": "Tour Bus: choose a destination base",
+    "base_palooza_title": "Palooza: you may move one of your minions here",
+    "teddy_bears_group_hug_title": "Group Hug: choose one of your minions to gain temporary power",
+    "teddy_bears_sir_squeezes_title": "Sir Squeezes: choose up to 3 low-power minions with total power 5 or less to play here",
+    "grannies_granny_title": "Granny: keep the deck-top card on top or put it on bottom",
+    "grannies_grandma_title": "Grandma: keep the deck-top card on top or put it on bottom",
+    "grannies_grannys_purse_title": "Granny's Purse: draw this action or return it to deck top",
+    "grannies_nana_title": "Nana: draw this action or play it as an extra action",
+    "grannies_chicken_soup_title": "Chicken Soup: choose up to 2 discard cards to put on deck top or bottom",
+    "grannies_always_room_at_grannys_title": "Always Room at Granny's: choose up to 3 of your minions to put on deck top or bottom",
+    "grannies_attic_treasures_title": "Attic Treasures: choose 3 cards from your hand to put on deck bottom",
+    "grannies_knitting_circle_title": "Knitting Circle: choose up to 3 in-play actions to destroy",
+    "base_grandmas_house_title": "Grandma's House: keep the deck-top card on top or put it on bottom",
+    "base_retirement_community_title": "Retirement Community: you may put one of your minions here on deck top or bottom",
+    "explorers_idaho_smith_play_new_base_option": "Play new base",
+    "explorers_idaho_smith_confirm_title": "Idaho Smith: play the top base and move Idaho Smith?",
+    "explorers_idaho_smith_title": "Idaho Smith: choose any number of your other minions here to move to the new base",
+    "explorers_lost_city_title": "Lost City: choose a revealed base to replace the scored base",
+    "explorers_you_call_this_archaeology_title": "You Call This Archaeology?: choose one of your minions to move",
+    "explorers_you_call_this_archaeology_base_title": "You Call This Archaeology?: choose a destination base",
+    "explorers_fortune_and_glory_source_title": "Fortune and Glory: choose the source base",
+    "explorers_fortune_and_glory_destination_title": "Fortune and Glory: choose the destination base",
+    "explorers_fortune_and_glory_minions_title": "Fortune and Glory: choose up to 2 minions to move",
+    "explorers_glory_hound_title": "Glory Hound: choose the base to keep on top of the base deck",
+    "explorers_it_belongs_in_a_museum_title": "It Belongs in a Museum: choose 2 minions on different bases to swap bases",
+    "explorers_x_never_marks_the_spot_title": "X Never Marks the Spot: choose destinations for each of your minions",
+    "explorers_i_said_no_camels_title": "I Said No Camels!: choose a base and reward",
+    "explorers_dr_livingstone_i_presume_title": "Dr Livingstone, I Presume?: choose a lone minion to shuffle into its owner's deck",
+    "explorers_forgotten_horrors_title": "Forgotten Horrors: choose another base to transfer to"
   },
   "mechanics": {
     "madness": {
@@ -1820,6 +1860,22 @@
     "all_stars": {
       "name": "All-Stars",
       "description": "A classic-card all-star roster focused on card draw, discard recovery, and extra plays."
+    },
+    "rock_stars": {
+      "name": "Rock Stars",
+      "description": "Burst through extra plays, searches, and base power boosts. Gameplay implementation is still in progress."
+    },
+    "teddy_bears": {
+      "name": "Teddy Bears",
+      "description": "Control, transfer, move, and protect around low-power minions. Gameplay implementation is still in progress."
+    },
+    "grannies": {
+      "name": "Grannies",
+      "description": "Gain advantage through top-deck peeking, reordering, drawing, and searching. Gameplay implementation is still in progress."
+    },
+    "explorers": {
+      "name": "Explorers",
+      "description": "Explore through base discovery, base replacement, extra bases, and scoring pressure. Gameplay implementation is still in progress."
     }
   },
   "tutorial": {
@@ -8471,6 +8527,230 @@
     "base_stadium": {
       "name": "Stadium",
       "abilityText": "After a minion here is destroyed, its controller draws a card."
+    },
+    "rock_stars_turn_up_to_11": {
+      "name": "Turn Up to 11",
+      "effectText": "Play on a base. Ongoing: If this base’s starting breakpoint is less than 21, it is increased to 21."
+    },
+    "rock_stars_reunion_tour": {
+      "name": "Reunion Tour",
+      "effectText": "Shuffle any number of your minions from your discard pile into your deck."
+    },
+    "rock_stars_total_sellout": {
+      "name": "Total Sellout",
+      "effectText": "Special: Play after a base scores where you have a minion. Draw two cards. Draw another card if the breakpoint was 21 or higher."
+    },
+    "rock_stars_rock_of_luuv": {
+      "name": "Rock of Luuv",
+      "effectText": "Search your deck for up to three minions with power 2 or less and the same name. Reveal them, place them into your hand and shuffle your deck."
+    },
+    "rock_stars_guest_star": {
+      "name": "Guest Star",
+      "effectText": "Search your deck and/or discard pile for a Groupie and reveal it. Place it in your hand or play it as an extra minion. Shuffle your deck if you searched it."
+    },
+    "rock_stars_tour_bus": {
+      "name": "Tour Bus",
+      "effectText": "Choose a base. Move up to three of your minions from bases with lower breakpoint to there."
+    },
+    "rock_stars_hot_venue": {
+      "name": "Hot Venue",
+      "effectText": "Play on a base. Ongoing: Your minions here have +1 power. If this base has a breakpoint of 21 or higher, draw a card at the end of any turn that you play a minion here."
+    },
+    "rock_stars_power_ballad": {
+      "name": "Power Ballad",
+      "effectText": "Choose a base. Your minions there gain +1 power until the end of the turn. Special: If the base has a breakpoint of 21 or higher, you may play this card before the base scores."
+    },
+    "rock_stars_the_monarch": {
+      "name": "The Monarch",
+      "abilityText": "Talent: Search your deck and/or discard pile for a Groupie, reveal it and place it into your hand. Shuffle your deck if you searched it."
+    },
+    "rock_stars_classic_rocker": {
+      "name": "Classic Rocker",
+      "abilityText": "Talent: If this base has a breakpoint of 21 or higher, draw a card. Use only one Classic Rocker ability per turn."
+    },
+    "rock_stars_rick_roll": {
+      "name": "Rick Roll",
+      "abilityText": "Move up to three of your minions from bases with lower breakpoints to here."
+    },
+    "rock_stars_groupie": {
+      "name": "Groupie",
+      "abilityText": "Play another Groupie here as an extra minion."
+    },
+    "teddy_bears_square_deal": {
+      "name": "Square Deal",
+      "effectText": "Draw cards until at least one player has fewer cards in their hand than you."
+    },
+    "teddy_bears_love_overload": {
+      "name": "Love Overload",
+      "effectText": "Special: Before a base scores, destroy the minion there with the most power. If tied, destroy all tied minions."
+    },
+    "teddy_bears_group_hug": {
+      "name": "Group Hug",
+      "effectText": "Give one of your minions +1 power for each other minion at the same base until the end of the turn."
+    },
+    "teddy_bears_care_package": {
+      "name": "Care Package",
+      "effectText": "Draw a card and play an extra minion."
+    },
+    "teddy_bears_too_cute": {
+      "name": "Too Cute",
+      "effectText": "Play on a base. Ongoing: Your minions here cannot be destroyed by other player’s cards."
+    },
+    "teddy_bears_bear_picnic": {
+      "name": "Bear Picnic",
+      "effectText": "Play on a base. Ongoing: Other players cannot play minions they own of power 2 or less on other bases."
+    },
+    "teddy_bears_cuddle": {
+      "name": "Cuddle",
+      "effectText": "Play on a minion. Ongoing: This minion’s abilities are cancelled."
+    },
+    "teddy_bears_tea_party": {
+      "name": "Tea Party",
+      "effectText": "Play on a base. Talent: If there are two or more minions here and at least one is yours, draw a card."
+    },
+    "teddy_bears_sir_squeezes": {
+      "name": "Sir Squeezes",
+      "abilityText": "Play up to three minions of power 3 or less, whose total power is 5 or less, as extra minions here."
+    },
+    "teddy_bears_lovey_bear": {
+      "name": "Lovey Bear",
+      "abilityText": "Ongoing: This minion’s starting power is increased to the highest starting power of an opponent’s minion here."
+    },
+    "teddy_bears_fun_bear": {
+      "name": "Fun Bear",
+      "abilityText": "Ongoing: After another player plays or moves a minion to here, place a +1 power counter on this minion."
+    },
+    "teddy_bears_snuggly_bear": {
+      "name": "Snuggly Bear",
+      "abilityText": "Special: After you play your first minion in a turn, you may immediately play this minion there as an extra minion."
+    },
+    "grannies_chicken_soup": {
+      "name": "Chicken Soup",
+      "effectText": "Place up to two cards from your discard pile on the top and/or bottom of your deck."
+    },
+    "grannies_grannys_purse": {
+      "name": "Granny's Purse",
+      "effectText": "Reveal the top card of your deck. If it is an action, you may draw it or return it. Otherwise place it on the bottom of your deck. Play an extra action."
+    },
+    "grannies_always_room_at_grannys": {
+      "name": "Always Room at Granny's",
+      "effectText": "Special: Play after a base scores. Place up to three of your minions there on the top and/or bottom of your deck in any order."
+    },
+    "grannies_matriarch": {
+      "name": "Matriarch",
+      "abilityText": "Talent: Reveal the bottom two cards of your deck. Draw any minions revealed, and discard the rest."
+    },
+    "grannies_attic_treasures": {
+      "name": "Attic Treasures",
+      "effectText": "Place three cards from your hand on the bottom of your deck in any order. Draw three cards."
+    },
+    "grannies_hush_my_stories_are_on": {
+      "name": "Hush, My Stories are On",
+      "effectText": "Reveal the bottom card of your deck and draw it. If it is a minion you may play it as an extra minion."
+    },
+    "grannies_family_reunion": {
+      "name": "Family Reunion",
+      "effectText": "Play on a base. Ongoing: After you play a minion here, reveal the bottom card of your deck. If it is a minion, draw it, otherwise place it on top of your deck."
+    },
+    "grannies_dont_mess_with_my_babies": {
+      "name": "Don't Mess With My Babies!",
+      "effectText": "Play on a base. Ongoing: Your minions here cannot be affected by other players’ cards."
+    },
+    "grannies_knitting_circle": {
+      "name": "Knitting Circle",
+      "effectText": "Destroy up to three actions played on minions and/or bases. Draw a card for each one destroyed."
+    },
+    "grannies_granny": {
+      "name": "Granny",
+      "abilityText": "Talent: Look at the top card of your deck. Place it on the top or bottom of your deck."
+    },
+    "grannies_nana": {
+      "name": "Nana",
+      "abilityText": "Reveal the top card of your deck. If it is an action, draw it or play it as an extra action. Otherwise place it on the bottom of your deck."
+    },
+    "grannies_grandma": {
+      "name": "Grandma",
+      "abilityText": "Look at the top card of your deck. Place it on the top or bottom of your deck."
+    },
+    "explorers_idaho_smith": {
+      "name": "Idaho Smith",
+      "abilityText": "You may play the top base of the base deck, and move this minion and any number of your other minions from here to there."
+    },
+    "explorers_lost_city": {
+      "name": "Lost City",
+      "effectText": "Special: After a base scores, reveal the top two cards of the base deck. Choose one to replace the scored base and discard the other. Play a minion on the new base as an extra minion."
+    },
+    "explorers_you_call_this_archaeology": {
+      "name": "You Call This Archaeology?",
+      "effectText": "Move one of your minions. Special: You may play this before or after a base scores."
+    },
+    "explorers_fortune_and_glory": {
+      "name": "Fortune and Glory",
+      "effectText": "Choose a base. You may move up to two minions from there to another base."
+    },
+    "explorers_guide": {
+      "name": "Guide",
+      "abilityText": "Ongoing: After the first time each of your minions moves in a turn it gains +1 power until the end of the turn."
+    },
+    "explorers_forgotten_horrors": {
+      "name": "Forgotten Horrors",
+      "effectText": "Play on a base. Ongoing: After you play a minion here or play a card that moves your minions to here, draw a card and transfer this action to another base."
+    },
+    "explorers_crypt_looter": {
+      "name": "Crypt Looter",
+      "abilityText": "Special: After a new base comes into play, you may play this minion on it as an extra minion."
+    },
+    "explorers_glory_hound": {
+      "name": "Glory Hound",
+      "abilityText": "Look at the top two cards of the base deck. Place one on the bottom of the deck and the other on the top."
+    },
+    "explorers_it_belongs_in_a_museum": {
+      "name": "It Belongs in a Museum",
+      "effectText": "Choose two minions on different bases. Move each one to the other’s base."
+    },
+    "explorers_x_never_marks_the_spot": {
+      "name": "X Never Marks the Spot",
+      "effectText": "Move each of your minions."
+    },
+    "explorers_i_said_no_camels": {
+      "name": "I Said No Camels!",
+      "effectText": "Choose a base. Place a +1 power counter on each of your minions there OR draw a card for each of your minions there."
+    },
+    "explorers_dr_livingstone_i_presume": {
+      "name": "Dr Livingstone, I Presume?",
+      "effectText": "Choose a minion. If it is the only minion on its base, shuffle it into its owner’s deck."
+    },
+    "base_under_the_bed": {
+      "name": "Under the Bed",
+      "abilityText": "On your turn, after one or more minions are played on other bases, you may play an extra minion of power 2 or less here."
+    },
+    "base_out_in_the_woods": {
+      "name": "Out in the Woods",
+      "abilityText": "Before this base scores, each minion here gains +1 power until the end of the turn."
+    },
+    "base_lake_minnetonka": {
+      "name": "Lake Minnetonka",
+      "abilityText": "After you play or move a minion to this base, that minion gains +1 power until the end of the turn."
+    },
+    "base_palooza": {
+      "name": "Palooza",
+      "abilityText": "When this base scores, each player may move one of their minions to here."
+    },
+    "base_grandmas_house": {
+      "name": "Grandma's House",
+      "abilityText": "After you play a minion here, look at the top card of your deck. Put it on the top or bottom of your deck."
+    },
+    "base_retirement_community": {
+      "name": "Retirement Community",
+      "abilityText": "After this base scores, each player may put one of their minions here on the top or bottom of their deck."
+    },
+    "base_ancient_temple": {
+      "name": "Ancient Temple",
+      "abilityText": "At the start of your turn, if you have only one minion here, that minion gains +5 power until the end of the turn."
+    },
+    "base_city_of_gold": {
+      "name": "City of Gold",
+      "abilityText": "At the start of your turn, if you have a minion here, gain 1 VP."
     }
   },
   "debug": {

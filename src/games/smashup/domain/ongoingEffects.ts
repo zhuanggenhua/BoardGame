@@ -264,6 +264,7 @@ interface RestrictionEntry {
     sourceDefId: string;
     restrictionType: RestrictionType;
     checker: RestrictionChecker;
+    global?: boolean;
     generatedPodAlias?: boolean;
 }
 
@@ -388,11 +389,17 @@ export function registerRestriction(
     sourceDefId: string,
     restrictionType: RestrictionType,
     checker: RestrictionChecker,
-    options?: { generatedPodAlias?: boolean },
+    options?: { generatedPodAlias?: boolean; global?: boolean },
 ): void {
 
     if (restrictionRegistry.some(e => e.sourceDefId === sourceDefId && e.restrictionType === restrictionType)) return;
-    restrictionRegistry.push({ sourceDefId, restrictionType, checker, generatedPodAlias: options?.generatedPodAlias });
+    restrictionRegistry.push({
+        sourceDefId,
+        restrictionType,
+        checker,
+        global: options?.global,
+        generatedPodAlias: options?.generatedPodAlias,
+    });
 }
 
 export function registerTrigger(
@@ -1839,7 +1846,10 @@ export function isOperationRestricted(
         for (const entry of restrictionRegistry) {
             if (entry.restrictionType !== restrictionType) continue;
             const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
-            if (!isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex)) continue;
+            const sourceActive = entry.global
+                ? isSourceActive(filteredState, entry.sourceDefId)
+                : isSourceActiveOnBase(filteredState, entry.sourceDefId, baseIndex);
+            if (!sourceActive) continue;
             if (entry.checker({ ...ctx, state: filteredState })) return true;
         }
     }

@@ -1255,7 +1255,47 @@
     "all_stars_puck_action_option": "额外打出一个行动",
     "all_stars_puck_draw_option": "抽 1 张牌",
     "all_stars_lab_assistant_title": "实验室助理：选择你的另一个随从",
-    "all_stars_prepare_for_battle_title": "准备战斗：选择加入手牌的牌"
+    "all_stars_prepare_for_battle_title": "准备战斗：选择加入手牌的牌",
+    "what_were_we_thinking_deck_place_top_option": "留在牌库顶",
+    "what_were_we_thinking_deck_place_bottom_option": "置于牌库底",
+    "what_were_we_thinking_draw_to_hand_option": "抓至手牌",
+    "what_were_we_thinking_return_to_deck_top_option": "放回牌库顶",
+    "what_were_we_thinking_play_as_extra_action_option": "作为额外行动打出",
+    "rock_stars_reunion_tour_title": "重聚巡演：选择任意数量的己方弃牌堆随从洗回牌库",
+    "rock_stars_rock_of_luuv_title": "爱之摇滚：选择至多 3 张同名、力量不高于 2 的随从加入手牌",
+    "rock_stars_guest_star_title": "嘉宾明星：选择一张追星族加入手牌，并获得额外打出追星族的机会",
+    "rock_stars_the_monarch_title": "帝王：选择一张追星族加入手牌",
+    "rock_stars_tour_bus_move_title": "巡演巴士：选择至多 3 个低爆破点基地上的己方随从移动到目标基地",
+    "rock_stars_rick_roll_title": "瑞克摇滚：选择至多 3 个低爆破点基地上的己方随从移动到这里",
+    "rock_stars_tour_bus_base_title": "巡演巴士：选择目标基地",
+    "base_palooza_title": "演唱会：你可以移动一个自己的随从到这里",
+    "teddy_bears_group_hug_title": "集体拥抱：选择一个己方随从获得临时力量",
+    "teddy_bears_sir_squeezes_title": "挤挤爵士：选择至多 3 个总力量不超过 5 的低力量随从打到本基地",
+    "grannies_granny_title": "外婆：将牌库顶牌留在牌库顶或置底",
+    "grannies_grandma_title": "祖母：将牌库顶牌留在牌库顶或置底",
+    "grannies_grannys_purse_title": "外婆的钱包：抓取该行动或放回牌库顶",
+    "grannies_nana_title": "奶奶：抓取该行动或作为额外行动打出",
+    "grannies_chicken_soup_title": "鸡汤：选择至多两张弃牌堆牌放到牌库顶或底",
+    "grannies_always_room_at_grannys_title": "外婆家总有地方：选择至多 3 个己方随从放到牌库顶或底",
+    "grannies_attic_treasures_title": "阁楼宝藏：选择 3 张手牌置于牌库底",
+    "grannies_knitting_circle_title": "编织小组：选择至多 3 个场上行动牌消灭",
+    "base_grandmas_house_title": "奶奶家：将牌库顶牌留在牌库顶或置底",
+    "base_retirement_community_title": "退休社区：你可以将这里自己的一个随从放到牌库顶或底",
+    "explorers_idaho_smith_play_new_base_option": "打出新基地",
+    "explorers_idaho_smith_confirm_title": "爱达荷·史密斯：是否打出基地牌库顶基地并移动爱达荷·史密斯？",
+    "explorers_idaho_smith_title": "爱达荷·史密斯：选择任意数量同基地己方其他随从一同移至新基地",
+    "explorers_lost_city_title": "失落之城：选择一张展示的基地替换已计分基地",
+    "explorers_you_call_this_archaeology_title": "你管这叫考古？：选择一个己方随从移动",
+    "explorers_you_call_this_archaeology_base_title": "你管这叫考古？：选择目标基地",
+    "explorers_fortune_and_glory_source_title": "财富与荣耀：选择来源基地",
+    "explorers_fortune_and_glory_destination_title": "财富与荣耀：选择目标基地",
+    "explorers_fortune_and_glory_minions_title": "财富与荣耀：选择至多两个随从移动",
+    "explorers_glory_hound_title": "逐名猎犬：选择留在基地牌库顶的基地",
+    "explorers_it_belongs_in_a_museum_title": "它该进博物馆：选择两个处于不同基地的随从交换基地",
+    "explorers_x_never_marks_the_spot_title": "X 从不标记地点：为每个己方随从选择移动目标",
+    "explorers_i_said_no_camels_title": "我说了不要骆驼！：选择基地与收益",
+    "explorers_dr_livingstone_i_presume_title": "利文斯通医生，想必是你？：选择唯一随从洗回其拥有者牌库",
+    "explorers_forgotten_horrors_title": "被遗忘的恐怖：选择要转移到的另一个基地"
   },
   "mechanics": {
     "madness": {
@@ -1803,6 +1843,22 @@
     "all_stars": {
       "name": "全明星",
       "description": "从经典派系精选的全明星阵容，专注抽牌、弃牌堆回收和额外出牌。"
+    },
+    "rock_stars": {
+      "name": "摇滚明星",
+      "description": "通过额外打出、检索和基地战力修正制造爆发；玩法仍在实现中。"
+    },
+    "teddy_bears": {
+      "name": "泰迪熊",
+      "description": "以控制、转移、移动和保护围绕小战力仆从展开；玩法仍在实现中。"
+    },
+    "grannies": {
+      "name": "外婆",
+      "description": "围绕牌库顶查看、重排、抽牌和检索积累优势；玩法仍在实现中。"
+    },
+    "explorers": {
+      "name": "探险家",
+      "description": "围绕基地发现、基地替换、额外基地和计分压力探索节奏；玩法仍在实现中。"
     }
   },
   "tutorial": {
@@ -8454,6 +8510,230 @@
     "base_stadium": {
       "name": "体育场",
       "abilityText": "在这里的一个随从被消灭后，其控制者抽 1 张牌。"
+    },
+    "rock_stars_turn_up_to_11": {
+      "name": "音量开到 11",
+      "effectText": "对基地打出。持续：若本基地的初始爆破点低于 21，将其增加至 21。"
+    },
+    "rock_stars_reunion_tour": {
+      "name": "重聚巡演",
+      "effectText": "将任意数量你的佣兵从你的弃牌堆洗混回牌库。"
+    },
+    "rock_stars_total_sellout": {
+      "name": "彻底售罄",
+      "effectText": "特殊：在有你佣兵的基地计分后打出。抓两张牌。若该基地爆破点为 21 或更高，额外抓一张牌。"
+    },
+    "rock_stars_rock_of_luuv": {
+      "name": "爱之摇滚",
+      "effectText": "从你的牌库中搜索至多 3 张战力 2 或更低的同名佣兵，展示并加入手牌，然后洗混牌库。"
+    },
+    "rock_stars_guest_star": {
+      "name": "嘉宾明星",
+      "effectText": "从你的牌库和/或弃牌堆搜索一张狂热歌迷并展示。将其加入手牌或额外打出。若搜索了牌库，洗混。"
+    },
+    "rock_stars_tour_bus": {
+      "name": "巡演巴士",
+      "effectText": "选择一个基地。将至多 3 个你的佣兵从爆破点低于该基地的其他基地中移动至所选基地。"
+    },
+    "rock_stars_hot_venue": {
+      "name": "火热场地",
+      "effectText": "对基地打出。持续：本基地你的佣兵 +1 战力。若爆破点为 21 或更高，你打出佣兵至此的回合结束时抓一张牌。"
+    },
+    "rock_stars_power_ballad": {
+      "name": "力量情歌",
+      "effectText": "选择一个基地。该处你的佣兵获得 +1 战力直到回合结束。特殊：若计分基地爆破点为 21 或更高，则可以在计分前打出。"
+    },
+    "rock_stars_the_monarch": {
+      "name": "帝王",
+      "abilityText": "天赋：从你的牌库和/或弃牌堆中搜索一个狂热歌迷，展示并加入手牌。若搜索了牌库，洗混。"
+    },
+    "rock_stars_classic_rocker": {
+      "name": "经典摇滚客",
+      "abilityText": "天赋：若本基地爆破点为 21 或更高，抓一张牌。每回合只能使用一张传统摇滚歌手的能力。"
+    },
+    "rock_stars_rick_roll": {
+      "name": "瑞克摇滚",
+      "abilityText": "将至多 3 个你的佣兵从爆破点低于本基地的其他基地中移动至此。"
+    },
+    "rock_stars_groupie": {
+      "name": "追星族",
+      "abilityText": "额外打出另一个狂热歌迷至本基地。"
+    },
+    "teddy_bears_square_deal": {
+      "name": "公平交易",
+      "effectText": "抓牌直到至少有一位玩家手牌数少于你。"
+    },
+    "teddy_bears_love_overload": {
+      "name": "爱意过载",
+      "effectText": "特殊：基地计分前，消灭该处战力最高的佣兵。若多个佣兵平手，将其全部消灭。"
+    },
+    "teddy_bears_group_hug": {
+      "name": "集体拥抱",
+      "effectText": "你的一个佣兵战力上升直到回合结束，上升数值等于该基地其他佣兵的数量。"
+    },
+    "teddy_bears_care_package": {
+      "name": "爱心包裹",
+      "effectText": "抓一张牌并打出一个额外佣兵。"
+    },
+    "teddy_bears_too_cute": {
+      "name": "太可爱",
+      "effectText": "对基地打出。持续：本基地你的佣兵无法被其他玩家的卡牌消灭。"
+    },
+    "teddy_bears_bear_picnic": {
+      "name": "泰迪熊野餐",
+      "effectText": "对基地打出。持续：其他玩家不能向本基地以外的基地打出自己拥有的战力 2 或更低的佣兵。"
+    },
+    "teddy_bears_cuddle": {
+      "name": "抱抱",
+      "effectText": "对佣兵打出。持续：此佣兵能力被取消。"
+    },
+    "teddy_bears_tea_party": {
+      "name": "茶会",
+      "effectText": "对基地打出。天赋：若本基地有至少两个佣兵，且其中有你的佣兵，抓一张牌。"
+    },
+    "teddy_bears_sir_squeezes": {
+      "name": "挤挤爵士",
+      "abilityText": "额外打出至多 3 个战力 3 或更低，且战力总和为 5 或更低的佣兵至本基地。"
+    },
+    "teddy_bears_lovey_bear": {
+      "name": "爱心熊",
+      "abilityText": "持续：此佣兵的初始战力增加至本基地中对手佣兵初始战力的最高值。"
+    },
+    "teddy_bears_fun_bear": {
+      "name": "欢乐熊",
+      "abilityText": "持续：另一位玩家打出或移动一个佣兵至本基地后，此佣兵获得 +1 战力标记。"
+    },
+    "teddy_bears_snuggly_bear": {
+      "name": "依偎熊",
+      "abilityText": "特殊：某回合中你打出第一个佣兵后，你可以立即额外打出本佣兵至同基地。"
+    },
+    "grannies_chicken_soup": {
+      "name": "鸡汤",
+      "effectText": "将你弃牌堆中至多两张牌置于你的牌库顶和/或牌库底。"
+    },
+    "grannies_grannys_purse": {
+      "name": "外婆的钱包",
+      "effectText": "展示你牌库顶的牌。若是行动，你可以将其抓至手牌或返回。否则将其置于牌库底。打出一个额外行动。"
+    },
+    "grannies_always_room_at_grannys": {
+      "name": "外婆家总有地方",
+      "effectText": "特殊：基地计分后打出。将该基地至多 3 个你的佣兵以任意顺序置于你的牌库顶和/或牌库底。"
+    },
+    "grannies_matriarch": {
+      "name": "女族长",
+      "abilityText": "天赋：展示你牌库底的两张牌。将展示出的佣兵抓至手牌，其余牌弃置。"
+    },
+    "grannies_attic_treasures": {
+      "name": "阁楼宝藏",
+      "effectText": "将你的 3 张手牌以任意顺序置于牌库底。抓 3 张牌。"
+    },
+    "grannies_hush_my_stories_are_on": {
+      "name": "嘘，我的剧开播了",
+      "effectText": "展示并抓你牌库底的牌。若是佣兵，你可以将其额外打出。"
+    },
+    "grannies_family_reunion": {
+      "name": "家庭聚会",
+      "effectText": "对基地打出。持续：你打出佣兵至此后展示你牌库底的牌。若是佣兵则抓至手牌，否则将其置于牌库顶。"
+    },
+    "grannies_dont_mess_with_my_babies": {
+      "name": "别惹我的宝贝！",
+      "effectText": "对基地打出。持续：此处你的佣兵不受其他玩家卡牌影响。"
+    },
+    "grannies_knitting_circle": {
+      "name": "编织小组",
+      "effectText": "消灭至多 3 个对佣兵和/或基地打出的行动。每消灭 1 个，抓 1 张牌。"
+    },
+    "grannies_granny": {
+      "name": "外婆",
+      "abilityText": "天赋：查看你牌库顶的牌。将其置于你的牌库顶或牌库底。"
+    },
+    "grannies_nana": {
+      "name": "奶奶",
+      "abilityText": "展示你牌库顶的牌。若是行动，抓至手牌或额外打出。否则将其置于牌库底。"
+    },
+    "grannies_grandma": {
+      "name": "祖母",
+      "abilityText": "查看你牌库顶的牌。将其置于你的牌库顶或牌库底。"
+    },
+    "explorers_idaho_smith": {
+      "name": "爱达荷·史密斯",
+      "abilityText": "你可以打出基地牌库顶的基地牌，并从本基地移动此佣兵和任意数量你的其他佣兵至该基地。"
+    },
+    "explorers_lost_city": {
+      "name": "失落之城",
+      "effectText": "特殊：基地计分后，展示基地牌库顶的两张牌。选择一张替换已计分的基地，弃掉另一张。额外打出一个佣兵至新基地。"
+    },
+    "explorers_you_call_this_archaeology": {
+      "name": "你管这叫考古？",
+      "effectText": "移动你的一个佣兵。特殊：可以在基地计分前或计分后打出。"
+    },
+    "explorers_fortune_and_glory": {
+      "name": "财富与荣耀",
+      "effectText": "选择一个基地。你可以移动该基地上至多两个佣兵至另一个基地。"
+    },
+    "explorers_guide": {
+      "name": "向导",
+      "abilityText": "持续：你的佣兵于某回合进行了第一次移动后，其获得 +1 战力直到该回合结束。"
+    },
+    "explorers_forgotten_horrors": {
+      "name": "被遗忘的恐怖",
+      "effectText": "对基地打出。持续：在你打出佣兵至本基地或打出卡牌使你的佣兵移动至本基地后，抓一张牌并转移此牌至另一个基地。"
+    },
+    "explorers_crypt_looter": {
+      "name": "古墓掠夺者",
+      "abilityText": "特殊：当有新的基地进场时，你可以额外打出此佣兵至该基地。"
+    },
+    "explorers_glory_hound": {
+      "name": "逐名猎犬",
+      "abilityText": "查看基地牌库顶的两张牌。将其中一张置于牌库底，另一张置于牌库顶。"
+    },
+    "explorers_it_belongs_in_a_museum": {
+      "name": "它该进博物馆",
+      "effectText": "选择两个处于不同基地的佣兵。将它们分别移动至对方的基地。"
+    },
+    "explorers_x_never_marks_the_spot": {
+      "name": "X 从不标记地点",
+      "effectText": "移动你的每一个佣兵。"
+    },
+    "explorers_i_said_no_camels": {
+      "name": "我说了不要骆驼！",
+      "effectText": "选择一个基地。该处你的每个佣兵各获得 +1 战力标记，或抓数量等于该处你的佣兵数的牌。"
+    },
+    "explorers_dr_livingstone_i_presume": {
+      "name": "利文斯通医生，想必是你？",
+      "effectText": "选择一个佣兵。若其是该基地上的唯一佣兵，将其洗回其拥有者的牌库。"
+    },
+    "base_under_the_bed": {
+      "name": "床底下",
+      "abilityText": "在你的回合，在其他基地打出一个或多个仆从后，你可以在本基地打出一张额外的 2 战力或更低战力的仆从。"
+    },
+    "base_out_in_the_woods": {
+      "name": "在森林里",
+      "abilityText": "在这个基地计分前，这里的每个仆从获得 +1 战力直到回合结束。"
+    },
+    "base_lake_minnetonka": {
+      "name": "明尼通卡湖",
+      "abilityText": "当你打出或移动一个仆从到本基地时，该仆从获得 +1 战力直到回合结束。"
+    },
+    "base_palooza": {
+      "name": "演唱会",
+      "abilityText": "在这个基地计分之时，每位玩家都可以将自己的一个仆从移动到这里。"
+    },
+    "base_grandmas_house": {
+      "name": "奶奶家",
+      "abilityText": "在本基地打出一个仆从后，查看你的牌库顶牌。将其放回牌库顶或牌库底。"
+    },
+    "base_retirement_community": {
+      "name": "退休社区",
+      "abilityText": "本基地计分后，每位玩家可以将本基地自己的一个仆从放在牌库顶或牌库底。"
+    },
+    "base_ancient_temple": {
+      "name": "古代神庙",
+      "abilityText": "在你回合开始时，如果你在这里只有一个仆从，该仆从获得 +5 战力直到回合结束。"
+    },
+    "base_city_of_gold": {
+      "name": "黄金城",
+      "abilityText": "在你回合开始时，如果你在这里有一个仆从，获得 1 VP。"
     }
   },
   "debug": {

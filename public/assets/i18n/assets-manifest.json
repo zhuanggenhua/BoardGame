@@ -12498,9 +12498,63 @@
           "mime": "image/webp"
         }
       }
+    },
+    "zh-CN/smashup/base/compressed/what_were_we_thinking_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "198ca3edc5156809b6b7b61310dc2a0026a2c13589055c0a73f92b9aa3212a15",
+          "bytes": 233822,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/what_were_we_thinking_bases": {
+      "variants": {
+        "png": {
+          "sha256": "cfeda490f5133a6f9a18c01831d4c809630f5171e3dc8c58e4fec741f5f8f548",
+          "bytes": 15998657,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/what_were_we_thinking": {
+      "variants": {
+        "webp": {
+          "sha256": "13a2dda4740716388436e81d3344e127e4eae2028eca65bc3484c5f432f49312",
+          "bytes": 1040202,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/what_were_we_thinking": {
+      "variants": {
+        "png": {
+          "sha256": "a1530f6940431609ce42bfad6908b3ce27f0dd783c507d880914d687feaf76aa",
+          "bytes": 48780520,
+          "mime": "image/png"
+        }
+      }
     }
   },
   "id": "i18n",
   "manifestVersion": 1,
-  "scope": "official"
+  "scope": "official",
+  "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05": {
+    "variants": {
+      "webp": {
+        "sha256": "f808b22fc9add50b6d4bfa51ba7462315d9671b443c1abf9baa238aa8b608495",
+        "bytes": 2640142,
+        "mime": "image/webp"
+      }
+    }
+  },
+  "zh-CN/qidahen/cards/atlases/ordinary-hand-atlas05": {
+    "variants": {
+      "jpg": {
+        "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
+        "bytes": 4138087,
+        "mime": "image/jpeg"
+      }
+    }
+  }
 }
