@@ -5,6 +5,7 @@ import {
     createBetrayalScriptedRandom,
     createCorpseLootReadyCore,
     createFirstScenarioHauntCore,
+    createFirstScenarioReadyToExorciseCore,
     createFirstScenarioReadyToLearnAboutJackCore,
     createFirstScenarioReadyToStudyExorcismCore,
     createJackSpiritReviveReadyCore,
@@ -14,10 +15,50 @@ import {
     playFirstScenarioToSurvivorVictory,
     playFirstScenarioToTraitorVictory,
 } from '../testing/firstScenarioTestUtils';
-import { BETRAYAL_COMMANDS, BetrayalDomain, EXPLORER_CATALOG, resolveMoveTargetRooms, resolveUseEffect } from '../game';
-import { BETRAYAL_DISCOVERY_POOLS, BETRAYAL_SCENARIO_CONFIGS } from '../scenarioConfig';
+import { BETRAYAL_COMMANDS, BetrayalDomain, EXPLORER_CATALOG, resolveMoveTargetRooms, resolveUseEffect, type BetrayalCore } from '../game';
+import { BETRAYAL_DISCOVERY_POOLS, BETRAYAL_SCENARIO_CONFIGS, type BetrayalTraitKey } from '../scenarioConfig';
 import { resolvePossessionAtlasVisual } from '../possessionAtlas';
 import { BETRAYAL_ROOM_TILE_VISUALS } from '../roomAtlas';
+
+function findTestExplorer(core: BetrayalCore, playerId: string) {
+    const explorer = [core.currentExplorer, ...core.otherExplorers].find((candidate) => candidate.playerId === playerId);
+    if (!explorer) {
+        throw new Error(`山屋测试夹具缺少玩家 ${playerId}`);
+    }
+    return explorer;
+}
+
+function setTestExplorerTraits(
+    core: BetrayalCore,
+    playerId: string,
+    traits: Partial<Record<BetrayalTraitKey, number>>,
+): void {
+    if (core.currentExplorer.playerId === playerId) {
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            traits: { ...core.currentExplorer.traits, ...traits },
+            inventory: [],
+        };
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        return;
+    }
+
+    core.otherExplorers = core.otherExplorers.map((explorer) => (
+        explorer.playerId === playerId
+            ? {
+                ...explorer,
+                traits: { ...explorer.traits, ...traits },
+                inventory: [],
+            }
+            : explorer
+    ));
+}
+
+function physicalTraitTotal(core: BetrayalCore, playerId: string): number {
+    const explorer = findTestExplorer(core, playerId);
+    return explorer.traits.might + explorer.traits.speed;
+}
 
 describe('Betrayal first scenario runtime', () => {
     it('正式局内探索会消费 setup 生成的当前局发现池顺序，而不是固定索引序列', () => {
@@ -609,11 +650,11 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.discardCounts.event).toBe(1);
         expect(core.turnEndedByDiscovery).toBe(false);
 
-        const missingTrait = BetrayalDomain.validate(
+        const acceptWithoutTrait = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { accept: true }),
         );
-        expect(missingTrait.valid).toBe(false);
+        expect(acceptWithoutTrait.valid).toBe(true);
 
         const mightBeforeSkip = core.currentExplorer.traits.might;
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { accept: false });
@@ -636,7 +677,7 @@ describe('Betrayal first scenario runtime', () => {
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
             '0',
-            { accept: true, trait: 'knowledge' },
+            { accept: true },
             100,
             createBetrayalScriptedRandom(3, 3),
         );
@@ -644,6 +685,21 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.summary).toBe('大口吸入芳香');
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 4');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点任意属性');
+        expect(core.latestDiscovery?.detail).not.toContain('知识 +1');
+        expect(core.pendingEventChoice?.sourceTitle).toBe('肉质苔癣');
+        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.recentRoll?.kind).toBe('eventDiceRoll');
+        expect(core.recentRoll?.dice).toEqual([2, 2]);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { trait: 'knowledge' },
+        );
+
+        expect(core.pendingEventChoice).toBeNull();
         expect(core.latestDiscovery?.detail).toContain('知识 +1');
         expect(core.currentExplorer.traits.knowledge).toBe(5);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
@@ -662,7 +718,7 @@ describe('Betrayal first scenario runtime', () => {
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
             '0',
-            { accept: true, trait: 'sanity' },
+            { accept: true },
             100,
             createBetrayalScriptedRandom(1, 1, 3),
         );
@@ -674,7 +730,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.turnEndedByDiscovery).toBe(true);
     });
 
-    it('兔脚重掷肉质苔癣成功分支时保留玩家选择的任意属性', () => {
+    it('兔脚重掷肉质苔癣成功分支时保留待选属性而不提前结算', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '肉质苔癣')!];
@@ -693,13 +749,14 @@ describe('Betrayal first scenario runtime', () => {
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
             '0',
-            { accept: true, trait: 'knowledge' },
+            { accept: true },
             100,
             createBetrayalScriptedRandom(3, 3),
         );
 
         expect(core.currentExplorer.traits.might).toBe(4);
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
         expect(core.recentRoll?.latestLabel).toContain('获得 1 点任意属性');
 
         core = applyBetrayalCommand(
@@ -712,6 +769,20 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.recentRoll?.dice).toEqual([2, 2]);
+        expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.currentExplorer.traits.might).toBe(4);
+        expect(core.currentExplorer.traits.knowledge).toBe(4);
+        expect(core.latestDiscovery?.detail).toContain('获得 1 点任意属性');
+        expect(core.latestDiscovery?.detail).not.toContain('知识 +1');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { trait: 'knowledge' },
+        );
+
+        expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.knowledge).toBe(5);
         expect(core.latestDiscovery?.detail).toContain('知识 +1');
@@ -4283,6 +4354,91 @@ describe('Betrayal first scenario runtime', () => {
         );
     });
 
+    it('最终驱魔失败只让每名存活英雄各承受 1 点身体伤害且不会误终局', () => {
+        let core = createFirstScenarioReadyToExorciseCore();
+        const actorId = core.currentExplorer.playerId;
+        const teammateId = core.otherExplorers.find((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)!.playerId;
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+
+        setTestExplorerTraits(core, actorId, { might: 4, speed: 4, knowledge: 4, sanity: 4 });
+        setTestExplorerTraits(core, teammateId, { might: 4, speed: 4, knowledge: 4, sanity: 4 });
+        const actorPhysicalBefore = physicalTraitTotal(core, actorId);
+        const teammatePhysicalBefore = physicalTraitTotal(core, teammateId);
+        const traitorPhysicalBefore = physicalTraitTotal(core, traitorId);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXORCISE_JACK,
+            actorId,
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.latestLabel).toBe('驱魔失败');
+        expect(physicalTraitTotal(core, actorId)).toBe(actorPhysicalBefore - 1);
+        expect(physicalTraitTotal(core, teammateId)).toBe(teammatePhysicalBefore - 1);
+        expect(physicalTraitTotal(core, traitorId)).toBe(traitorPhysicalBefore);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain(actorId);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain(teammateId);
+        expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
+        expect(core.scenarioRuntime.jackSpiritRoomId).toBe('basement-landing');
+    });
+
+    it('最终驱魔失败只会让被 1 点身体伤害打到死亡边界的英雄死亡', () => {
+        let core = createFirstScenarioReadyToExorciseCore();
+        const actorId = core.currentExplorer.playerId;
+        const teammateId = core.otherExplorers.find((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)!.playerId;
+
+        setTestExplorerTraits(core, actorId, { might: 4, speed: 4, knowledge: 4, sanity: 4 });
+        setTestExplorerTraits(core, teammateId, { might: 2, speed: 4, knowledge: 4, sanity: 4 });
+        const actorPhysicalBefore = physicalTraitTotal(core, actorId);
+        const teammatePhysicalBefore = physicalTraitTotal(core, teammateId);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXORCISE_JACK,
+            actorId,
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(physicalTraitTotal(core, actorId)).toBe(actorPhysicalBefore - 1);
+        expect(physicalTraitTotal(core, teammateId)).toBe(teammatePhysicalBefore - 1);
+        expect(findTestExplorer(core, teammateId).traits.might).toBe(1);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain(actorId);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain(teammateId);
+    });
+
+    it('最终驱魔失败导致全部英雄到死亡边界时才进入叛徒终局', () => {
+        let core = createFirstScenarioReadyToExorciseCore();
+        const actorId = core.currentExplorer.playerId;
+        const teammateId = core.otherExplorers.find((explorer) => explorer.playerId !== core.scenarioRuntime.traitorPlayerId)!.playerId;
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+
+        setTestExplorerTraits(core, actorId, { might: 2, speed: 4, knowledge: 4, sanity: 4 });
+        setTestExplorerTraits(core, teammateId, { might: 2, speed: 4, knowledge: 4, sanity: 4 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXORCISE_JACK,
+            actorId,
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.outcome).toBe('traitor');
+        expect(core.endgameResult?.winners).toEqual([traitorId]);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining([actorId, teammateId]));
+    });
+
     it('圣符和指环会让驱魔神志检定结果 +1', () => {
         const sanityBonusOmens = [
             { id: 'holy-symbol', name: '圣符', kind: 'omen' as const },
@@ -4397,6 +4553,42 @@ describe('Betrayal first scenario runtime', () => {
         }
     });
 
+    it('抽到圣符预兆会记录作祟检定骰面', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['omen'];
+        core.possessionOrderByKind.omen = [
+            { id: 'holy-symbol', name: '圣符', kind: 'omen' },
+        ];
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'hallway',
+            inventory: [],
+        };
+        core.activeRoomId = 'hallway';
+        core.currentExplorerInventory = [];
+        const expectedDiceCount = 1 + [core.currentExplorer, ...core.otherExplorers]
+            .reduce((count, explorer) => count + explorer.inventory.filter((card) => card.kind === 'omen').length, 0);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-north' },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2, 2),
+        );
+
+        expect(core.latestDiscovery?.kind).toBe('omen');
+        expect(core.latestDiscovery?.title).toBe('圣符');
+        expect(core.latestDiscovery?.detail).toContain('作祟检定');
+        expect(core.recentRoll?.kind).toBe('hauntRoll');
+        expect(core.recentRoll?.sourceTitle).toBe('圣符');
+        expect(core.recentRoll?.rollLabel).toBe('作祟检定');
+        expect(core.recentRoll?.dice).toEqual(Array.from({ length: expectedDiceCount }, () => 1));
+        expect(core.recentRoll?.latestLabel).toBe('未触发作祟');
+        expect(core.phase).toBe('preHaunt');
+    });
+
     it('最后一张恶兆会自动触发 haunt', () => {
         const core = createStartedFirstScenarioCore();
         core.exploreIndex = 2;
@@ -4410,6 +4602,22 @@ describe('Betrayal first scenario runtime', () => {
         if (roomExplored?.type === 'ROOM_EXPLORED') {
             expect(roomExplored.payload.hauntTriggered).toBe(true);
         }
+    });
+
+    it('haunt 阶段即使走本地测试通道也不能继续探索新房间', () => {
+        const core = createFirstScenarioHauntCore();
+        expect(core.phase).toBe('haunt');
+        expect(core.rooms.some((room) => room.state === 'unexplored')).toBe(true);
+
+        const command = {
+            ...createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {}),
+            skipValidation: true,
+        };
+
+        expect(BetrayalDomain.validate({ core, sys: {} as never }, command)).toMatchObject({
+            valid: false,
+            error: 'haunt 阶段不能继续探索新房间。',
+        });
     });
 
     it('翻开未知房间时会把新房间门位旋转到当前开放门位，不再靠黄色连接补丁伪造门', () => {

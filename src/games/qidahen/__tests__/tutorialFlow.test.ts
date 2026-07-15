@@ -929,6 +929,7 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('defend-city');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-resolve-pending-action-defender-hold-city');
         expect((state.core as any).pendingTargetAction?.battleMode).toBe('field');
         expect((state.core as any).pendingTargetAction?.title).toContain('守城宣告');
         expect((state.sys as any).interaction?.current?.data?.options?.some((option: any) => option.id === 'defender-hold-city')).toBe(true);
@@ -941,6 +942,7 @@ describe('qidahen tutorial flow', () => {
             },
         });
         expect(state.sys.tutorial.step?.id).toBe('city-battle');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-resolve-pending-action');
         expect((state.core as any).pendingTargetAction?.battleMode).toBe('city');
         expect((state.core as any).pendingTargetAction?.title).toContain('城战待结算');
 

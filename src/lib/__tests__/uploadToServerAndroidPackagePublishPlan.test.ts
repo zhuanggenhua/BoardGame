@@ -64,6 +64,9 @@ const legacyDiceThroneEmoteCompressedPaths = new Set([
     'i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp',
     'i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp',
 ]);
+const legacySmashUpAtlasConfigPaths = new Set([
+    'atlas-configs/smashup/2833984701.json',
+]);
 
 const getPackageManagedGameIds = () => {
     const gamesRoot = path.join(process.cwd(), 'src', 'games');
@@ -199,6 +202,10 @@ const isCompressedDeliveryPath = (relativePath: string, gameId?: string) => {
     const normalized = relativePath.replace(/\\/g, '/');
     const extension = path.extname(normalized).toLowerCase();
     if (sourceAssetExtensions.has(extension) || temporaryAssetNamePattern.test(normalized)) {
+        return false;
+    }
+
+    if (gameId === 'smashup' && legacySmashUpAtlasConfigPaths.has(normalized)) {
         return false;
     }
 
@@ -428,6 +435,8 @@ describe('Android 游戏包素材内容', () => {
         expect(smashUpPackageFiles).toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0157978c57.webp');
         expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/cards/compressed/tts_atlas_0157978c57.webp');
         expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0b888d02fd.webp');
+        expect(smashUpPackageFiles).toContain('atlas-configs/smashup/pod-atlas-config.json');
+        expect(smashUpPackageFiles).not.toContain('atlas-configs/smashup/2833984701.json');
     });
 
     it('DiceThrone 游戏包候选资源不应包含未压缩图片源文件', () => {

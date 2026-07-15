@@ -289,14 +289,22 @@ export class DiceBoxThreeEngine {
     private readonly box: InstanceType<typeof DiceBoxModule>;
     private readonly container: HTMLElement;
     private readonly styleProfile: DiceBoxStyleProfile;
+    private readonly debugCanvasTestId?: string;
+    private debugSnapshotReader: (() => unknown) | null = null;
     private dieSkins: Array<DiceBoxDieSkin | null> = [];
     private activePresetSkinId: string | null = null;
     private worldBounds: DiceBoxWorldBounds = { width: 0, height: 0 };
 
-    private constructor(box: InstanceType<typeof DiceBoxModule>, container: HTMLElement, styleProfile: DiceBoxStyleProfile) {
+    private constructor(
+        box: InstanceType<typeof DiceBoxModule>,
+        container: HTMLElement,
+        styleProfile: DiceBoxStyleProfile,
+        debugCanvasTestId?: string,
+    ) {
         this.box = box;
         this.container = container;
         this.styleProfile = styleProfile;
+        this.debugCanvasTestId = debugCanvasTestId;
     }
 
     static async create(container: HTMLElement, config?: DiceBoxEngineConfig): Promise<DiceBoxThreeEngine> {
@@ -327,7 +335,7 @@ export class DiceBoxThreeEngine {
             iterationLimit: styleProfile.iterationLimit ?? DEFAULT_DICE_BOX_STYLE_PROFILE.iterationLimit,
         });
         await box.initialize();
-        const engine = new DiceBoxThreeEngine(box, container, styleProfile);
+        const engine = new DiceBoxThreeEngine(box, container, styleProfile, config?.canvasTestId);
         engine.applyCameraProfile();
         box.renderer.setClearColor?.(0x000000, 0);
         box.renderer.setClearAlpha?.(0);
@@ -348,12 +356,14 @@ export class DiceBoxThreeEngine {
             };
             if (debugWindow.__E2E_TEST_MODE__ || config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
                 debugWindow.__diceBoxThreeDebug = debugWindow.__diceBoxThreeDebug ?? {};
-                debugWindow.__diceBoxThreeDebug[config.canvasTestId] = () => {
+                const debugSnapshotReader = () => {
                     engine.renderFrame();
                     return engine.getDebugSnapshot();
                 };
+                engine.debugSnapshotReader = debugSnapshotReader;
+                debugWindow.__diceBoxThreeDebug[config.canvasTestId] = debugSnapshotReader;
                 if (config.canvasTestId === 'dicethrone-board-dice-box-canvas') {
-                    debugWindow.__dicethroneBoardDiceDebug = debugWindow.__diceBoxThreeDebug[config.canvasTestId];
+                    debugWindow.__dicethroneBoardDiceDebug = debugSnapshotReader;
                 }
             }
         }
@@ -599,6 +609,19 @@ export class DiceBoxThreeEngine {
     }
 
     destroy(): void {
+        if (typeof window !== 'undefined' && this.debugCanvasTestId && this.debugSnapshotReader) {
+            const debugWindow = window as unknown as {
+                __diceBoxThreeDebug?: Record<string, () => unknown>;
+                __dicethroneBoardDiceDebug?: () => unknown;
+            };
+            if (debugWindow.__diceBoxThreeDebug?.[this.debugCanvasTestId] === this.debugSnapshotReader) {
+                delete debugWindow.__diceBoxThreeDebug[this.debugCanvasTestId];
+            }
+            if (debugWindow.__dicethroneBoardDiceDebug === this.debugSnapshotReader) {
+                delete debugWindow.__dicethroneBoardDiceDebug;
+            }
+        }
+        this.debugSnapshotReader = null;
         this.box.clearDice();
         this.disposeSceneResources();
         this.box.renderer?.dispose?.();
@@ -1022,15 +1045,7 @@ export class DiceBoxThreeEngine {
     settleDiceIntoSafeSpread(): boolean {
         if (this.styleProfile.fitWorldToCameraView !== true || this.box.diceList.length < 2) return false;
 
-        const screenSlots = this.box.diceList.length === 5
-            ? [
-                { x: 0.18, y: 0.62, yaw: -0.1 },
-                { x: 0.34, y: 0.20, yaw: 0.04 },
-                { x: 0.56, y: 0.48, yaw: -0.02 },
-                { x: 0.68, y: 0.20, yaw: 0.08 },
-                { x: 0.38, y: 0.68, yaw: -0.06 },
-            ]
-            : null;
+        const screenSlots = SETTLED_SCREEN_SLOTS_BY_COUNT[this.box.diceList.length] ?? null;
         if (!screenSlots) return false;
 
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;

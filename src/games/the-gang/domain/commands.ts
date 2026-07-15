@@ -1,6 +1,6 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import { getChipValues } from './setup';
-import { THE_GANG_COMMANDS, type TheGangCommand, type TheGangCore } from './types';
+import { THE_GANG_COMMANDS, type TakeChipCommand, type TheGangCommand, type TheGangCore } from './types';
 
 const success = (): ValidationResult => ({ valid: true });
 const failure = (error: string): ValidationResult => ({ valid: false, error });
@@ -16,8 +16,10 @@ export function validate(
     }
 
     switch (command.type) {
+        case THE_GANG_COMMANDS.START_HEIST:
+            return validateStartHeist(core, command.playerId);
         case THE_GANG_COMMANDS.TAKE_CHIP:
-            return validateTakeChip(core, command.playerId, command.payload.chip);
+            return validateTakeChip(core, command.playerId, command.payload);
         case THE_GANG_COMMANDS.SET_RULES_CONFIG:
             return validateSetRulesConfig(core, command.playerId);
         case THE_GANG_COMMANDS.DEAL_TOOLS:
@@ -38,10 +40,30 @@ export function validate(
     }
 }
 
-function validateTakeChip(core: TheGangCore, playerId: string, chip: number): ValidationResult {
-    if (core.phase !== 'chip-selection') return failure('notSelectingChips');
+function validateStartHeist(core: TheGangCore, playerId: string): ValidationResult {
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
-    if (!getChipValues(core.playerIds.length, core.rules.config, core.round).includes(chip)) return failure('invalidChip');
+    if (core.phase !== 'chip-selection') return failure('notSelectingChips');
+    if (core.heistStarted) return failure('heistAlreadyStarted');
+    if (core.currentRoundChips[playerId] !== undefined || Object.keys(core.currentRoundChips).length > 0) {
+        return failure('heistAlreadyStarted');
+    }
+    return success();
+}
+
+function validateTakeChip(core: TheGangCore, playerId: string, payload: TakeChipCommand['payload']): ValidationResult {
+    if (core.phase !== 'chip-selection') return failure('notSelectingChips');
+    if (!core.heistStarted) return failure('heistNotStarted');
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
+    const availableChips = getChipValues(core.playerIds.length, core.rules.config, core.round);
+    if (payload.tutorialOnlyIfMissing && core.currentRoundChips[playerId] !== undefined) return success();
+    if (payload.tutorialChipMode === 'lowest-unoccupied') {
+        const occupied = new Set(Object.values(core.currentRoundChips));
+        return availableChips.some((chip) => !occupied.has(chip))
+            ? success()
+            : failure('invalidChip');
+    }
+    const chip = payload.chip;
+    if (!availableChips.includes(chip)) return failure('invalidChip');
     if (core.currentRoundChips[playerId] === chip) return failure('chipAlreadyHeld');
 
     return success();
@@ -50,7 +72,7 @@ function validateTakeChip(core: TheGangCore, playerId: string, chip: number): Va
 function validateSetRulesConfig(core: TheGangCore, playerId: string): ValidationResult {
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
     if (core.heistNumber !== 1 || core.round !== 1 || core.phase !== 'chip-selection') return failure('rulesLocked');
-    if (Object.keys(core.currentRoundChips).length > 0 || core.roundHistory.length > 0) return failure('rulesLocked');
+    if (core.heistStarted || Object.keys(core.currentRoundChips).length > 0 || core.roundHistory.length > 0) return failure('rulesLocked');
     return success();
 }
 
@@ -97,6 +119,7 @@ function validateEndRound(core: TheGangCore, playerId: string): ValidationResult
     const playerValidation = validateProgressPlayer(core, playerId);
     if (!playerValidation.valid) return playerValidation;
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
+    if (!core.heistStarted) return failure('heistNotStarted');
     if (!core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined)) {
         return failure('missingChips');
     }
@@ -108,6 +131,7 @@ function validateRevealShowdown(core: TheGangCore, playerId: string): Validation
     const playerValidation = validateProgressPlayer(core, playerId);
     if (!playerValidation.valid) return playerValidation;
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
+    if (!core.heistStarted) return failure('heistNotStarted');
     if (core.round !== 4) return failure('notFinalRound');
     if (!core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined)) {
         return failure('missingChips');

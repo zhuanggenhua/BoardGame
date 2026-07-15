@@ -13,6 +13,22 @@ const setupState = () => {
     return adapter.setup(['0', '1', '2']);
 };
 
+const startHeist = (
+    adapter: ReturnType<typeof createReplayAdapter>,
+    state: ReturnType<typeof setupState>,
+    timestamp = 0,
+) => adapter.execute(state, {
+    type: THE_GANG_COMMANDS.START_HEIST,
+    playerId: '0',
+    payload: {},
+    timestamp,
+}).state as ReturnType<typeof setupState>;
+
+const setupStartedState = () => {
+    const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-started-test');
+    return startHeist(adapter, adapter.setup(['0', '1', '2']));
+};
+
 const buildContext = (state: ReturnType<typeof setupState>, playerId = '0'): AiDecisionContext =>
     buildAiDecisionContext({
         gameId: 'the-gang',
@@ -44,25 +60,39 @@ const confirmProgressForAllPlayers = (
 };
 
 describe('The Gang local AI', () => {
-    test('初始抢劫阶段每个 AI 座位都有可选筹码动作', () => {
+    test('初始配置窗口所有 AI 都等待房主开始抢劫', () => {
         const state = setupState();
 
-        for (const playerId of state.core.playerIds) {
-            const actions = buildTheGangAiLegalActions({ playerId, state });
+        expect(buildTheGangAiLegalActions({ playerId: '0', state })).toEqual([]);
+        expect(buildTheGangAiLegalActions({ playerId: '1', state })).toEqual([]);
+        expect(buildTheGangAiLegalActions({ playerId: '2', state })).toEqual([]);
+    });
 
-            expect(actions).toHaveLength(3);
-            expect(actions.every((action) => action.kind === 'take-chip')).toBe(true);
-            expect(actions.map((action) => action.commands[0]?.type)).toEqual([
-                THE_GANG_COMMANDS.TAKE_CHIP,
-                THE_GANG_COMMANDS.TAKE_CHIP,
-                THE_GANG_COMMANDS.TAKE_CHIP,
-            ]);
-        }
+    test('房主选筹码后 AI 座位恢复可选筹码动作', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-after-owner-chip-test');
+        let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 1,
+        }).state;
+
+        const actions = buildTheGangAiLegalActions({ playerId: '1', state });
+        expect(actions).toHaveLength(3);
+        expect(actions.every((action) => action.kind === 'take-chip')).toBe(true);
+        expect(actions.map((action) => action.commands[0]?.type)).toEqual([
+            THE_GANG_COMMANDS.TAKE_CHIP,
+            THE_GANG_COMMANDS.TAKE_CHIP,
+            THE_GANG_COMMANDS.TAKE_CHIP,
+        ]);
     });
 
     test('别人面前的筹码仍会进入空手 AI 候选，已拿筹码的 AI 等待空手玩家补齐', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-occupied-chip-test');
         let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
         state = adapter.execute(state, {
             type: THE_GANG_COMMANDS.TAKE_CHIP,
             playerId: '0',
@@ -92,6 +122,7 @@ describe('The Gang local AI', () => {
     test('AI 的筹码被拿走后会重新选筹码并允许全员推进，不会停在缺筹码状态', async () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-chip-stolen-runner-test');
         let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
         const seatControllers = {
             '0': { type: 'human' as const },
             '1': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
@@ -154,6 +185,7 @@ describe('The Gang local AI', () => {
     test('全员选完后 AI 能推进轮次、摊牌并开始下一次抢劫', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-progress-test');
         let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
 
         for (const [index, playerId] of state.core.playerIds.entries()) {
             state = adapter.execute(state, {
@@ -210,7 +242,7 @@ describe('The Gang local AI', () => {
     });
 
     test('baseline policy 只返回当前上下文里的合法 actionId', () => {
-        const state = setupState();
+        const state = setupStartedState();
         const context = buildContext(state, '0');
         const decision = theGangAiRuntime.localPolicies?.baseline.decide(context);
 
@@ -219,7 +251,7 @@ describe('The Gang local AI', () => {
     });
 
     test('baseline policy 会按当前牌力评估选择对应强弱筹码', () => {
-        const state = setupState();
+        const state = setupStartedState();
         const core: TheGangCore = {
             ...state.core,
             communityCards: [
@@ -256,15 +288,23 @@ describe('The Gang local AI', () => {
 
         expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(rankedState, '0'))?.actionId)
             .toBe('take-chip:1');
-        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(rankedState, '1'))?.actionId)
+        const afterOwnerChipState: ReturnType<typeof setupState> = {
+            ...rankedState,
+            core: {
+                ...rankedState.core,
+                currentRoundChips: { '0': 1 },
+            },
+        };
+        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(afterOwnerChipState, '1'))?.actionId)
             .toBe('take-chip:2');
-        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(rankedState, '2'))?.actionId)
+        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(afterOwnerChipState, '2'))?.actionId)
             .toBe('take-chip:3');
     });
 
     test('本地 AI runner 会在真人操作后连续派发 AI 选筹码与推进确认', async () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-runner-test');
         let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
         const seatControllers = {
             '0': { type: 'human' as const },
             '1': { type: 'local-ai' as const, minimumActionDelayMs: 0 },

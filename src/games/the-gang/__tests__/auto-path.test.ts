@@ -42,12 +42,26 @@ const confirmProgressForAllPlayers = (
     return nextState;
 };
 
+const startCurrentHeistIfNeeded = (
+    adapter: ReturnType<typeof createReplayAdapter>,
+    state: ReturnType<ReturnType<typeof createReplayAdapter>['setup']>,
+) => state.core.heistStarted
+    ? state
+    : adapter.execute(state, {
+        type: THE_GANG_COMMANDS.START_HEIST,
+        playerId: state.core.playerIds[0]!,
+        payload: {},
+        timestamp: state.core.heistNumber * 1000 + 1,
+    }).state;
+
 describe('The Gang 最低自动验证路径', () => {
     test('自动座位可以重复完成三次成功抢劫并触发胜利结算', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-auto-path-test');
         let state = adapter.setup(['0', '1', '2']);
 
         while (!state.core.gameResult) {
+            state = startCurrentHeistIfNeeded(adapter, state);
+
             for (const round of [1, 2, 3]) {
                 for (const [index, playerId] of state.core.playerIds.entries()) {
                     state = adapter.execute(state, {

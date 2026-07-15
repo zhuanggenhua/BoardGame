@@ -285,6 +285,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
             tempAbilities: _removed,
             originalOwner: origOwner,
             extraAttacks: _ea,
+            destroyAfterExtraAttackSource: _destroyAfterExtraAttackSource,
             chargeBonusThisTurn: _chargeBonus,
             ...unitWithoutTemp
           } = newCell.unit;
@@ -664,7 +665,11 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
 
     case SW_EVENTS.EXTRA_ATTACK_GRANTED: {
       // 额外攻击：重置目标单位的 hasAttacked 并增加 extraAttacks 计数
-      const { targetPosition: eaPos, targetUnitId: _eaUnitId } = payload as { targetPosition: CellCoord; targetUnitId: string };
+      const { targetPosition: eaPos, targetUnitId: _eaUnitId, destroyAfterExtraAttackSource } = payload as {
+        targetPosition: CellCoord;
+        targetUnitId: string;
+        destroyAfterExtraAttackSource?: string;
+      };
       const eaBoard = core.board.map(row => row.map(cell => ({ ...cell })));
       const eaUnit = eaBoard[eaPos.row]?.[eaPos.col]?.unit;
       if (eaUnit) {
@@ -674,6 +679,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
           ...eaUnit,
           hasAttacked: false,
           extraAttacks: newExtraAttacks,
+          destroyAfterExtraAttackSource: destroyAfterExtraAttackSource ?? eaUnit.destroyAfterExtraAttackSource,
         };
       } else {
         // 单位不存在，忽略

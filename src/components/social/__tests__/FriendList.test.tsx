@@ -72,4 +72,33 @@ describe('FriendList request actions', () => {
 
         window.removeEventListener('unhandledrejection', unhandled);
     });
+
+    it('发送好友请求遇到已发送提示时，不会冒成全局未处理异常，并显示已发送', async () => {
+        const unhandled = vi.fn((event: PromiseRejectionEvent) => event.preventDefault?.());
+        window.addEventListener('unhandledrejection', unhandled);
+        mockSocial.searchUsers = vi.fn().mockResolvedValue([
+            { id: 'user-2', username: '李四', status: 'none' },
+        ]);
+        mockSocial.sendFriendRequest = vi.fn().mockRejectedValue(new Error('好友请求已发送'));
+
+        render(<FriendList onSelectFriend={vi.fn()} />);
+        fireEvent.click(screen.getByTitle('social:tabs.add'));
+        const searchInput = screen.getByPlaceholderText('social:search.placeholder');
+        fireEvent.change(searchInput, {
+            target: { value: '李四' },
+        });
+        fireEvent.submit(searchInput.closest('form')!);
+
+        await screen.findByText('李四');
+        fireEvent.click(screen.getByTitle('social:actions.addFriend'));
+
+        await waitFor(() => expect(mockSocial.sendFriendRequest).toHaveBeenCalledWith('user-2'));
+        await screen.findByText('social:status.sent');
+        await Promise.resolve();
+
+        expect(unhandled).not.toHaveBeenCalled();
+        expect(consoleErrorSpy).toHaveBeenCalledWith('[FriendList] Failed to send friend request:', expect.any(Error));
+
+        window.removeEventListener('unhandledrejection', unhandled);
+    });
 });

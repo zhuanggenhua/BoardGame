@@ -531,7 +531,7 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             id: 'tactic-window',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.tacticWindow',
             highlightTarget: 'qidahen-atlas05-1618-cavalry-charge',
-            position: 'bottom',
+            position: 'left',
             allowedCommands: [QIDAHEN_COMMANDS.PLAY_TACTIC_CARD],
             advanceOnEvents: [{ type: 'TACTIC_CARD_PLAYED' }],
         },
@@ -592,7 +592,7 @@ const QIDAHEN_SIEGE_TUTORIAL: TutorialManifest = {
         {
             id: 'city-battle',
             content: 'game-qidahen:tutorial.siege.steps.cityBattle',
-            highlightTarget: 'qidahen-raid-intent',
+            highlightTarget: 'qidahen-resolve-pending-action',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],

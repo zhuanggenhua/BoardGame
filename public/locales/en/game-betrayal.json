@@ -41,7 +41,7 @@
       "pending": "Pending",
       "traitsTitle": "Traits",
       "abilityTitle": "Ability",
-      "abilityHint": "Tap or hover to read the ability",
+      "abilityHint": "Ability name and effect are shown inline",
       "random": "Random",
       "start": "Start",
       "chooseScenario": "Scenario",
@@ -129,9 +129,14 @@
       "tradeFlowNeedCard": "Trade: choose an item -> {{player}}",
       "tradeFlowNeedTarget": "Trade: {{card}} -> choose a same-room target",
       "tradeFlowReady": "Trade: {{card}} -> {{player}}",
+      "dogTradeFlowStart": "Dog trade: choose items to send, then a target within 4 tiles",
+      "dogTradeFlowNeedCard": "Dog trade: choose items to send -> {{player}}",
+      "dogTradeFlowNeedTarget": "Dog trade: {{card}} -> choose a target within 4 tiles",
+      "dogTradeFlowReady": "Dog trade: {{card}} -> {{player}}",
       "tradeFlowChoose": "Choose item and target first",
       "tradeFlowConfirm": "Tap to confirm trade",
       "tradeTargetsAvailable": "Trade targets in room: {{count}}",
+      "dogTradeTargetsAvailable": "Dog trade targets: {{count}} within 4 tiles",
       "tradeStepItem": "Item",
       "tradeStepTarget": "Target",
       "tradeStepPending": "Pending",
@@ -167,7 +172,7 @@
       "actionCueAttackTraitor": "Now: attack the traitor",
       "actionCueAttackHero": "Now: attack {{player}}",
       "actionCueEndTurn": "Now: tap End Turn",
-      "actionCueEndTurnRoomEffect": "Now: resolve the room stay effect",
+      "actionCueEndTurnRoomEffect": "Now: end the turn and resolve the room effect",
       "usePreview": "Use: {{effect}}",
       "cardUsedThisTurn": "Used this turn",
       "cardUsedTag": "Used",
@@ -247,7 +252,7 @@
       "attack": "Attack",
       "roomEffectMysticElevator": "Mystic Elevator",
       "endTurn": "End Turn",
-      "endTurnRoomEffect": "Resolve Room"
+      "endTurnRoomEffect": "End Turn"
     },
     "traits": {
       "might": "Might",
@@ -261,6 +266,7 @@
     "dog": "Dog",
     "map": "Map",
     "heal": "Heal",
+    "healWithCard": "{{card}} heal",
     "weapon": "Weapon",
     "unarmed": "Unarmed",
     "rabbitFoot": "Choose a die to reroll",
@@ -346,7 +352,12 @@
       "diceSubtotal": "Dice faces {{value}}",
       "passiveBonus": "Bonus {{value}}",
       "detail": "Dice total {{subtotal}} | bonus {{bonus}}",
-      "total": "Total {{value}}"
+      "total": "Total {{value}}",
+      "backToBoard": "Back to Board",
+      "allTraitCheckTitle": "All Trait Checks",
+      "passed": "Passed",
+      "failed": "Failed",
+      "diceFaces": "Dice faces {{value}}"
     },
     "useEffects": {
       "move": "Move {{value}}",

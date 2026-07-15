@@ -1,5 +1,39 @@
-import type { TutorialManifest } from '../../engine/types';
+import type { TutorialAiAction, TutorialManifest } from '../../engine/types';
 import { THE_GANG_COMMANDS, THE_GANG_EVENTS } from './domain/types';
+
+const takeLowestAvailableChipAction = (playerId: string): TutorialAiAction => ({
+    commandType: THE_GANG_COMMANDS.TAKE_CHIP,
+    playerId,
+    payload: {
+        chip: 1,
+        tutorialChipMode: 'lowest-unoccupied',
+        tutorialOnlyIfMissing: true,
+    },
+});
+
+const progressAction = (
+    playerId: string,
+    commandType: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+): TutorialAiAction => ({
+    commandType,
+    playerId,
+    payload: {},
+});
+
+const AI_RESPONSE_CHIP_ACTIONS: TutorialAiAction[] = [
+    takeLowestAvailableChipAction('1'),
+    takeLowestAvailableChipAction('2'),
+];
+
+const AI_END_ROUND_APPROVALS: TutorialAiAction[] = [
+    progressAction('1', THE_GANG_COMMANDS.END_ROUND),
+    progressAction('2', THE_GANG_COMMANDS.END_ROUND),
+];
+
+const AI_REVEAL_SHOWDOWN_APPROVALS: TutorialAiAction[] = [
+    progressAction('1', THE_GANG_COMMANDS.REVEAL_SHOWDOWN),
+    progressAction('2', THE_GANG_COMMANDS.REVEAL_SHOWDOWN),
+];
 
 export const TheGangTutorial: TutorialManifest = {
     id: 'the-gang-basic',
@@ -40,6 +74,16 @@ export const TheGangTutorial: TutorialManifest = {
             viewAs: '0',
         },
         {
+            id: 'start-heist',
+            content: 'game-the-gang:tutorial.steps.startHeist',
+            highlightTarget: 'the-gang-start-heist',
+            position: 'left',
+            requireAction: true,
+            viewAs: '0',
+            allowedCommands: [THE_GANG_COMMANDS.START_HEIST],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.HEIST_STARTED }],
+        },
+        {
             id: 'chip-choice',
             content: 'game-the-gang:tutorial.steps.chipChoice',
             highlightTarget: 'the-gang-chip-row',
@@ -56,6 +100,8 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            aiActions: AI_RESPONSE_CHIP_ACTIONS,
+            autoAdvanceAfterAi: false,
         },
         {
             id: 'take-player-chip',
@@ -75,6 +121,11 @@ export const TheGangTutorial: TutorialManifest = {
             requireAction: true,
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
+            aiActions: [
+                takeLowestAvailableChipAction('1'),
+                takeLowestAvailableChipAction('2'),
+                ...AI_END_ROUND_APPROVALS,
+            ],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         },
         {
@@ -102,6 +153,8 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            aiActions: AI_RESPONSE_CHIP_ACTIONS,
+            autoAdvanceAfterAi: false,
         },
         {
             id: 'turn-round',
@@ -111,6 +164,7 @@ export const TheGangTutorial: TutorialManifest = {
             requireAction: true,
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
+            aiActions: AI_END_ROUND_APPROVALS,
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         },
         {
@@ -138,6 +192,8 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            aiActions: AI_RESPONSE_CHIP_ACTIONS,
+            autoAdvanceAfterAi: false,
         },
         {
             id: 'river-round',
@@ -147,6 +203,7 @@ export const TheGangTutorial: TutorialManifest = {
             requireAction: true,
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
+            aiActions: AI_END_ROUND_APPROVALS,
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         },
         {
@@ -166,6 +223,8 @@ export const TheGangTutorial: TutorialManifest = {
             position: 'left',
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            aiActions: AI_RESPONSE_CHIP_ACTIONS,
+            autoAdvanceAfterAi: false,
         },
         {
             id: 'reveal-showdown',
@@ -175,6 +234,7 @@ export const TheGangTutorial: TutorialManifest = {
             requireAction: true,
             viewAs: '0',
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
+            aiActions: AI_REVEAL_SHOWDOWN_APPROVALS,
             advanceOnEvents: [{ type: THE_GANG_EVENTS.SHOWDOWN_REVEALED }],
         },
         {

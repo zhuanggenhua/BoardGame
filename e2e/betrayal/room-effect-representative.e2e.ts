@@ -116,7 +116,8 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expect(page.getByTestId('betrayal-room-end-turn-effect-status')).toContainText('火炉房');
         await expect(page.getByTestId('betrayal-room-end-turn-effect-status')).toContainText('1 点物理伤害');
         await expect(page.getByTestId('betrayal-room-end-turn-effect-hint')).toContainText('结束回合受伤');
-        await expect(page.getByTestId('betrayal-action-endTurn')).toContainText('结算房间');
+        await expect(page.getByTestId('betrayal-action-endTurn')).toContainText('结束回合');
+        await expect(page.getByTestId('betrayal-action-endTurn')).not.toContainText('结算房间');
         await saveScreenshot(page, FURNACE_HINT_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-endTurn').click();

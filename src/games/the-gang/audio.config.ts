@@ -72,6 +72,8 @@ export const THE_GANG_AUDIO_CONFIG: GameAudioConfig = {
     },
     feedbackResolver: (event) => {
         switch (event.type) {
+            case THE_GANG_EVENTS.HEIST_STARTED:
+                return THE_GANG_NEXT_HEIST_KEY;
             case THE_GANG_EVENTS.CHIP_TAKEN:
                 return THE_GANG_CHIP_TAKEN_KEY;
             case THE_GANG_EVENTS.ROUND_ENDED:

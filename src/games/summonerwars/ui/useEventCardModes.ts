@@ -45,6 +45,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.BARBARIC_CHANT_OF_GROWTH,
   CARD_IDS.BARBARIC_CHANT_OF_WEAVING,
   CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT,
+  CARD_IDS.MOGU_COMMAND,
   CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
   CARD_IDS.MOGU_RELEASE_SPORES,
   CARD_IDS.GOBLIN_SNEAK,
@@ -1053,6 +1054,15 @@ export function useEventCardModes({
           failReason = t('eventCard.entanglementNeedTwoCommons');
           break;
         }
+        activated = true;
+        break;
+      }
+      case CARD_IDS.MOGU_COMMAND: {
+        const summoner = getSummoner(core, myPlayerId as '0' | '1');
+        if (!summoner) { failReason = t('eventCard.noSummoner'); break; }
+        const friendlyCommons = getPlayerUnits(core, myPlayerId as '0' | '1')
+          .filter(u => u.card.unitClass === 'common' && manhattanDistance(summoner.position, u.position) <= 3);
+        if (friendlyCommons.length === 0) break;
         activated = true;
         break;
       }
