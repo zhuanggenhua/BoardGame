@@ -1103,6 +1103,8 @@ const projectSmashUpAction = (args: {
         const swingBefore = getBaseSwingValue(before);
         const swingAfter = getBaseSwingValue(after);
         const swingDelta = swingAfter - swingBefore;
+        const contestMargin = after.ownAward - after.bestOpponentAward;
+        const isHighPressureBase = after.breakNow || before.breakNow || before.gapBefore <= 2 || after.gapBefore <= 2;
         const positionDelta = getProjectedPositionDelta(state, playerId, undefined, projectedState);
         const awardDelta = after.ownAward - before.ownAward;
         const denyDelta = before.bestOpponentAward - after.bestOpponentAward;
@@ -1127,6 +1129,11 @@ const projectSmashUpAction = (args: {
         if (after.breakNow && after.ownAward === 0) {
             tacticalScore -= 54 + after.bestOpponentAward * 10;
         }
+        if (isHighPressureBase && contestMargin > 0) {
+            tacticalScore += 42 + contestMargin * 12;
+        } else if (isHighPressureBase && contestMargin < 0) {
+            tacticalScore -= 42 + Math.abs(contestMargin) * 12;
+        }
         if (after.breakNow && after.ownAward > 0 && after.bestOpponentAward === 0) {
             tacticalScore += 18;
         }
@@ -1144,6 +1151,7 @@ const projectSmashUpAction = (args: {
                 swingDelta,
                 awardDelta,
                 denyDelta,
+                contestMargin,
                 positionDelta,
                 strategyBonus,
                 strategyTags: strategyFit?.tags,
