@@ -30,6 +30,10 @@ import {
 const EVIDENCE_DIR = "evidence/山屋惊魂-事件牌页面承接E2E";
 const ARMOR_EVIDENCE_DIR = "evidence/山屋惊魂-盔甲物理减伤完整链路";
 const RADIO_EVIDENCE_DIR = "evidence/山屋惊魂-头戴耳机精神减伤完整链路";
+const FLASHLIGHT_EVIDENCE_DIR =
+  "evidence/山屋惊魂-手电筒事件检定加骰完整链路";
+const LANTERN_EVIDENCE_DIR =
+  "evidence/山屋惊魂-灯笼事件检定加骰完整链路";
 
 type EventChoiceCase = {
   title: string;
@@ -2560,6 +2564,170 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     assertNoFatalFrontendErrors([
       { label: "betrayal-event-choice-头戴耳机精神减伤完整链路", diagnostics },
     ]);
+  });
+
+  async function runEventTraitCheckExtraDiceFullChain(
+    page: Page,
+    options: {
+      itemId: "flashlight" | "lantern";
+      itemName: "手电筒" | "灯笼";
+      evidenceDir: string;
+    },
+  ) {
+    test.setTimeout(120000);
+    const diagnostics = attachPageDiagnostics(
+      page,
+      `betrayal-event-choice-${options.itemName}事件检定加骰完整链路`,
+    );
+    const alienGeometry = eventByName("外星几何");
+    const core = createRuntimeCore();
+    core.drawOrder = ["event"];
+    core.eventOrder = [alienGeometry];
+    core.currentExplorer = {
+      ...core.currentExplorer,
+      traits: {
+        ...core.currentExplorer.traits,
+        knowledge: 3,
+      },
+      inventory: [
+        { id: options.itemId, name: options.itemName, kind: "item" },
+      ],
+    };
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.turnStartInventoryCardIds = [options.itemId];
+
+    await injectCore(page, core);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible({
+      timeout: 30000,
+    });
+    const itemShell = page.getByTestId(
+      `betrayal-inventory-${options.itemId}-shell`,
+    );
+    await expect(itemShell).toBeVisible();
+    await expect(itemShell).toHaveAttribute(
+      "data-rules-summary",
+      /事件属性检定额外投 2 骰/,
+    );
+    await saveScreenshot(
+      page,
+      `${options.evidenceDir}/01-${options.itemName}加骰前牌桌可操作.jpg`,
+    );
+
+    await page.getByTestId("betrayal-action-move").click();
+    await page.getByTestId("betrayal-room-hallway").click();
+    await expect(
+      page.getByTestId("betrayal-room-ground-north"),
+    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
+    await page.getByTestId("betrayal-action-explore").click();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-south"),
+    ).toBeVisible();
+    await saveScreenshot(
+      page,
+      `${options.evidenceDir}/02-选择未知房间前.jpg`,
+    );
+
+    await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.99]);
+    await page.getByTestId("betrayal-room-ground-north").click();
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
+      0,
+    );
+    const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+    await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
+    await expect(discoveryPanel).toHaveAttribute(
+      "aria-label",
+      /事件牌 外星几何/,
+    );
+    await expect(
+      page.getByTestId("betrayal-discovery-card-front-atlas"),
+    ).toBeVisible();
+    const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
+    await expect(discoveryDetail).toContainText("知识检定 10");
+    await expect(discoveryDetail).toContainText("获得 1 点知识");
+    await saveScreenshot(
+      page,
+      `${options.evidenceDir}/03-外星几何翻出并显示5骰知识检定.jpg`,
+    );
+
+    const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
+    await expect(rollPanel).toBeVisible();
+    await expect(rollPanel).toContainText("知识检定");
+    await expect(rollPanel).toContainText("总点数 10");
+    await expect(
+      page.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-count", "5");
+    await expect(
+      page.getByTestId("betrayal-house-dice-3d-group"),
+    ).toHaveAttribute("data-dice-rule-subtotal", "10");
+    await expectVisiblePhysicalDiceBox(rollPanel);
+    await waitForPhysicalDiceSettled(rollPanel);
+    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 5 });
+    await saveScreenshot(
+      page,
+      `${options.evidenceDir}/04-5骰事件检定骰盘停稳.jpg`,
+    );
+
+    const afterSettleCore = await readCurrentCore(page);
+    expect(afterSettleCore.recentRoll?.dice).toHaveLength(5);
+    expect(afterSettleCore.currentExplorer.traits.knowledge).toBe(4);
+    await expect(itemShell).toHaveAttribute(
+      "data-rules-summary",
+      /事件属性检定额外投 2 骰/,
+    );
+    await saveScreenshot(
+      page,
+      `${options.evidenceDir}/05-加骰结算结果可见.jpg`,
+    );
+
+    await dismissDiscoveryPanel(page);
+    await expect(page.getByTestId("betrayal-board")).toBeVisible();
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
+      0,
+    );
+    const closedCore = await readCurrentCore(page);
+    expect(closedCore.currentExplorer.traits.knowledge).toBe(4);
+    await expect(
+      page.getByTestId("betrayal-room-occupant-ground-north-0"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
+    await saveScreenshot(
+      page,
+      `${options.evidenceDir}/06-关闭后回牌桌状态清空.jpg`,
+    );
+
+    assertNoFatalFrontendErrors([
+      {
+        label: `betrayal-event-choice-${options.itemName}事件检定加骰完整链路`,
+        diagnostics,
+      },
+    ]);
+  }
+
+  test("手电筒真实链路从外星几何翻牌到事件检定额外加骰结算关闭", async ({
+    page,
+  }) => {
+    await runEventTraitCheckExtraDiceFullChain(page, {
+      itemId: "flashlight",
+      itemName: "手电筒",
+      evidenceDir: FLASHLIGHT_EVIDENCE_DIR,
+    });
+  });
+
+  test("灯笼真实链路从外星几何翻牌到事件检定额外加骰结算关闭", async ({
+    page,
+  }) => {
+    await runEventTraitCheckExtraDiceFullChain(page, {
+      itemId: "lantern",
+      itemName: "灯笼",
+      evidenceDir: LANTERN_EVIDENCE_DIR,
+    });
   });
 
   test("一条秘密通道真实链路从探索翻牌到检定后选房间结算关闭", async ({
