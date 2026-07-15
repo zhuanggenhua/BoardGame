@@ -17,6 +17,7 @@ import {
     PawPrint,
     Pyramid,
     Rainbow,
+    Shield,
     Skull,
     Sword,
     Sprout,
@@ -226,6 +227,10 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.DRAGONS_POD, nameKey: 'factions.dragons_pod.name', icon: Bone, color: '#b91c1c', descriptionKey: 'factions.dragons_pod.description' },
     { id: SMASHUP_FACTION_IDS.SUPERHEROES, nameKey: 'factions.superheroes.name', icon: Medal, color: '#2563eb', descriptionKey: 'factions.superheroes.description' },
     { id: SMASHUP_FACTION_IDS.SUPERHEROES_POD, nameKey: 'factions.superheroes_pod.name', icon: Medal, color: '#2563eb', descriptionKey: 'factions.superheroes_pod.description' },
+    { id: SMASHUP_FACTION_IDS.SUMO_WRESTLERS, nameKey: 'factions.sumo_wrestlers.name', icon: Medal, color: '#a16207', descriptionKey: 'factions.sumo_wrestlers.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MUSKETEERS, nameKey: 'factions.musketeers.name', icon: Sword, color: '#2563eb', descriptionKey: 'factions.musketeers.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.MOUNTIES, nameKey: 'factions.mounties.name', icon: Shield, color: '#dc2626', descriptionKey: 'factions.mounties.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
+    { id: SMASHUP_FACTION_IDS.LUCHADORS, nameKey: 'factions.luchadors.name', icon: Theater, color: '#7c3aed', descriptionKey: 'factions.luchadors.description', implementationStatus: 'in_progress', locales: ['zh-CN'] },
     {
         id: SMASHUP_FACTION_IDS.AVENGERS,
         nameKey: 'factions.avengers.name',

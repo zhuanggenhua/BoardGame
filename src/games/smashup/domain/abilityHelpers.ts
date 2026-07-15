@@ -994,7 +994,7 @@ export function addOngoingCardCounter(
 /** 队列化随从打出后效果（如打出后自动+1指示物），在 fireMinionPlayedTriggers 中消费 */
 export function queueMinionPlayEffect(
     playerId: PlayerId,
-    effect: 'addPowerCounter' | 'addTempPower',
+    effect: 'addPowerCounter' | 'addTempPower' | 'grantExtraActionForPlayedMinion',
     amount: number,
     now: number,
     reason?: string,
@@ -1533,6 +1533,11 @@ export function fireMinionPlayedTriggers(params: {
                 sourceControllerId: playerId,
                 sourceBaseIndex: baseIndex,
             }));
+        } else if (effect.effect === 'grantExtraActionForPlayedMinion') {
+            events.push(grantExtraAction(playerId, effect.reason ?? 'pendingMinionPlayEffect', now, {
+                playTiming: 'immediate',
+                restrictToMinionUid: cardUid,
+            }));
         }
         // 生成消费事件（reducer 负责 shift 队列）
         events.push({
@@ -1675,7 +1680,7 @@ export function grantContextualExtraMinion(
     ctx: { playerId: PlayerId; now: number; matchState?: Pick<MatchState<SmashUpCore>, 'sys'> },
     reason: string,
     restrictToBase?: number,
-    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number },
+    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number; specificCardUid?: string },
 ): LimitModifiedEvent {
     return grantExtraMinion(
         ctx.playerId,
@@ -1695,6 +1700,7 @@ export function grantContextualExtraAction(
     options?: {
         playTiming?: 'banked' | 'immediate';
         restrictToBase?: number;
+        restrictToMinionUid?: string;
         restrictToCardUid?: string;
         restrictToCardDefId?: string;
     },
@@ -1702,6 +1708,7 @@ export function grantContextualExtraAction(
     return grantExtraAction(ctx.playerId, reason, ctx.now, {
         playTiming: options?.playTiming ?? resolveExtraPlayTiming(ctx.matchState),
         restrictToBase: options?.restrictToBase,
+        restrictToMinionUid: options?.restrictToMinionUid,
         restrictToCardUid: options?.restrictToCardUid,
         restrictToCardDefId: options?.restrictToCardDefId,
     });

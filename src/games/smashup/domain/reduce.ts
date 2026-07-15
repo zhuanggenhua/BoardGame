@@ -2773,7 +2773,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAY_EFFECT_QUEUED: {
-            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter' | 'addTempPower'; amount: number; reason?: string } }).payload;
+            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter' | 'addTempPower' | 'grantExtraActionForPlayedMinion'; amount: number; reason?: string } }).payload;
             const qPlayer = state.players[qPayload.playerId];
             if (!qPlayer) return state;
             const prev = qPlayer.pendingMinionPlayEffects ?? [];

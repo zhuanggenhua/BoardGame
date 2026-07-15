@@ -72,6 +72,20 @@ function makeState(bases: BaseInPlay[]): SmashUpCore {
     } as SmashUpCore;
 }
 
+function buildMinionAuditOverrides(cardDefId: string, cardUid: string, timing: TriggerTiming, state: SmashUpCore): Partial<MinionOnBase> {
+    if (cardDefId === 'musketeers_all_for_one' && timing === 'onTurnEnd') {
+        return {
+            metadata: {
+                internationalIncidentAllForOneDestroyAtTurnEnd: [
+                    { cardUid, sourcePlayerId: '0', turnNumber: state.turnNumber },
+                ],
+            },
+        };
+    }
+
+    return {};
+}
+
 // ============================================================================
 // 测试
 // ============================================================================
@@ -114,6 +128,9 @@ describe('审计：ongoingTarget=minion 的牌的 trigger 必须从 attachedActi
                     return;
                 }
 
+                const cardUid = `${cardDef.id}-uid`;
+                const state = makeState([makeBase()]);
+
                 // 构造状态：牌在随从的 attachedActions 上（正确位置）
                 const minion = makeMinion({
                     uid: 'target-minion',
@@ -121,11 +138,12 @@ describe('审计：ongoingTarget=minion 的牌的 trigger 必须从 attachedActi
                     controller: '0',
                     owner: '0',
                     attachedActions: [
-                        { uid: `${cardDef.id}-uid`, defId: cardDef.id, ownerId: '0' },
+                        { uid: cardUid, defId: cardDef.id, ownerId: '0' },
                     ],
+                    ...buildMinionAuditOverrides(cardDef.id, cardUid, timing, state),
                 });
                 const base = makeBase({ minions: [minion] });
-                const state = makeState([base]);
+                state.bases = [base];
 
                 // 调用 fireTriggers
                 const result = fireTriggers(state, timing, {

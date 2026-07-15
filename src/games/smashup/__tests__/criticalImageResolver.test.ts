@@ -117,6 +117,20 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical).toContain('smashup/base/aiji_base');
     });
 
+    it('国际事件四派系会命中新卡图与新基地图集', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['sumo_wrestlers', 'musketeers'],
+                '1': ['mounties', 'luchadors'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/international_incident');
+        expect(result.critical).toContain('smashup/base/international_incident_bases');
+    });
+
     it('漫威四派系会共享预热 marvel_wave_one 卡图', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

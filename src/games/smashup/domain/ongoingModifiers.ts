@@ -1170,6 +1170,13 @@ export function getEffectivePower(
     return Math.max(0, minion.basePower + (minion.powerCounters ?? 0) + minion.powerModifier + (minion.tempPowerModifier ?? 0) + getOngoingPowerModifier(state, minion, baseIndex));
 }
 
+function isMinionPowerContributionCancelled(state: SmashUpCore, minion: MinionOnBase): boolean {
+    return minion.attachedActions.some(action => (
+        normalizeDefId(action.defId) === 'luchadors_pin'
+        && !isCardSuppressed(state, action.uid)
+    ));
+}
+
 /**
  * 获取 ongoing 卡上的力量指示物贡献（如 vampire_summon_wolves）
  * 
@@ -1249,7 +1256,7 @@ export function getPlayerEffectivePowerOnBase(
         .filter(m => m.controller === playerId)
         .reduce((sum, m) => {
             const effectivePower = getEffectivePower(state, m, baseIndex);
-            let contribution = effectivePower;
+            let contribution = isMinionPowerContributionCancelled(state, m) ? 0 : effectivePower;
 
             const charmedTurn = Number(m.metadata?.mermaidsCharmedSuppressedTurn ?? -1);
             const charmedActive = charmedTurn === state.turnNumber;
@@ -1277,7 +1284,11 @@ export function getTotalEffectivePowerOnBase(
     baseIndex: number
 ): number {
     const minionPower = base.minions
-        .reduce((sum, m) => sum + getEffectivePower(state, m, baseIndex), 0);
+        .reduce((sum, m) => (
+            isMinionPowerContributionCancelled(state, m)
+                ? sum
+                : sum + getEffectivePower(state, m, baseIndex)
+        ), 0);
     // 累加所有玩家的 ongoing 卡力量贡献（不限于有随从的玩家）
     // 修复 Bug：只有 ongoing 卡但没有随从的玩家，其力量贡献也应该计入总力量
     let ongoingBonus = 0;

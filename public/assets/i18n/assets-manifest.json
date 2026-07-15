@@ -12534,6 +12534,42 @@
           "mime": "image/png"
         }
       }
+    },
+    "zh-CN/smashup/base/compressed/international_incident_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
+          "bytes": 560560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/international_incident_bases": {
+      "variants": {
+        "png": {
+          "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
+          "bytes": 30275972,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/international_incident": {
+      "variants": {
+        "webp": {
+          "sha256": "c106174d2e747c89c7a02b5d3855be7ecd0cd2c7ed8df82bf267b94dad0ce685",
+          "bytes": 969464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/international_incident": {
+      "variants": {
+        "png": {
+          "sha256": "a04e696d6d3ab50a4fa5bdbc31c58c7385657e73ccbc36a3a7fde6ba44d3ca55",
+          "bytes": 37758563,
+          "mime": "image/png"
+        }
+      }
     }
   },
   "id": "i18n",
