@@ -3,15 +3,31 @@
 - 日期：2026-07-12
 - 分支：`main`
 - 真相源：`public/assets/i18n/zh-CN/summonerwars/hero/mogu`
-- 批次状态：`full_audit_e2e_verified / new_event_direct_e2e_verified / catalog_under_construction`
-- 结论等级：莫古对象级审计已按当前发布口径收口；新增玩家交互与事件牌真实入口均已完成 E2E 验收。
+- 批次状态：`superseded_by_2026-07-14_feedback / catalog_under_construction`
+- 结论等级：旧结论失效；本文只能作为 2026-07-12 历史快照，不能继续作为莫古当前“已审计收口”证据。
 - 用户可见标记：继续保留“实施中”，这是用户当轮要求的新批次标记，不作为资源或机制缺口。
 
-## 本轮收口更正
+## 2026-07-14 线上反馈后降级
 
-- 本文档已从旧降级口径更新为本轮最终审计口径：莫古新增玩家交互、事件牌成功路径和空选路径、移动后触发交互均已补齐真实入口 E2E。
-- 当前可对外说明为：莫古本轮新增交互已补齐，并已按审计文档完成对象级审计、真实入口 E2E 验收、截图合图核验；用户可见状态继续标记“实施中”。
-- 自动/被动能力没有独立玩家点击入口，本轮按规则定义、执行器、阶段/死亡/回合系统测试与共享链判等收口；有玩家决策入口的对象均有真实入口 E2E。
+- 旧的“莫古对象级审计已按当前发布口径收口”结论已被线上反馈推翻。
+- 直接命中的旧结论包括：数据录入字段曾用低分辨率 contact sheet 定稿，托恩费用被录成 2 而非 6；共生自愈阶段被录成召唤阶段而非移动阶段；命令、腐坏、爆裂这三条链路的旧测试/旧矩阵没有证明最终权威状态与后续收口。
+- 当前替代入口：`evidence/summonerwars/summonerwars-mogu-reentry-audit-2026-07-14.md`。
+- 当前代码修复入口：`src/games/summonerwars/config/factions/mogu.ts`、`src/games/summonerwars/domain/execute/eventCards.ts`、`src/games/summonerwars/domain/execute.ts`、`src/games/summonerwars/domain/reduce.ts`、`src/games/summonerwars/domain/types.ts`、`src/games/summonerwars/__tests__/abilities-mogu.test.ts`。
+
+| 旧文档内受影响结论 | 失效原因 | 2026-07-14 当前口径 |
+| --- | --- | --- |
+| 批次状态 `full_audit_e2e_verified` | 录入合同和机制行为均被玩家反馈推翻 | 降级为“旧结论失效，需按单卡重核录入 + 行为链补证” |
+| 全面审计自检表中的“数据录入 passed” | 费用、阶段字段未回到完整单卡主裁图逐项锁定 | 重新核录入前不得标 `locked` |
+| 全面审计自检表中的“L2/L3/L4 证据 passed” | 证据覆盖入口和代表链，但漏了命令额外攻击完成后消灭、腐坏加到 3 后爆裂、死亡替换收口等最终状态 | 只能作为历史代表性证据；本轮需补最终状态和负向断言 |
+| 对象全集中托恩、共生自愈、命令、玛硕达、菌袍疫病体 | 分别命中费用、阶段、额外攻击后消灭、移动阶段结束腐坏、魔力阶段结束爆裂/菌化变异问题 | 这些对象必须重新进入 2026-07-14 重核清单 |
+| D 维度命中表中的 D1/D8/D12/D18 passed | D1 语义保真、D8 时序、D12 写入-消耗、D18 否定路径实际未打穿 | 旧 D 维度结论降级为“覆盖不足” |
+| L4 共享链判等矩阵中的自动/被动链路 `system_passed` | 阶段结束和死亡后替换链未证明跨阶段后续消费 | 需重新补 L4：阶段结束 -> 事件写入 -> 后续阶段消费 -> 最终棋盘状态 |
+
+## 2026-07-14 失效警示与历史段落说明
+
+- 以下为 2026-07-12 历史记录，已被 2026-07-14 线上反馈降级；保留仅用于追溯旧审计如何漏出问题。
+- 下方“全面审计自检表”“批次矩阵”“逐对象规则子句表”“真实入口 E2E 与截图核验”“收口口径”等历史段落中的 `passed`、`已收口`、`当前发布口径` 只代表 2026-07-12 当时判断，已经不能作为当前莫古发布或反馈收口证据。
+- 当前替代入口是 `evidence/summonerwars/summonerwars-mogu-reentry-audit-2026-07-14.md`；如需对外说明当前状态，必须引用该新 evidence。
 
 ## 全面审计自检表
 
@@ -329,7 +345,8 @@ src/games/summonerwars/__tests__/abilities.test.ts
 
 ## 收口口径
 
-- 莫古本轮新增玩家交互已补齐：鲜血萨满移动后传输、狂热菌菇持续事件移动后推拉、共生自愈空选、释放菌袍空选均有真实入口 E2E。
-- 自动/被动对象没有独立玩家点击入口，按规则定义、执行器、阶段/死亡/回合系统测试与共享链判等收口。
-- 最终验收截图为 `test-results/evidence-screenshots/summonerwars/summonerwars-mogu.e2e/audit/mogu-full-audit-contact-sheet-2026-07-12.jpg`，合图包含 18 张截图并已完成 AI 图面核验。
-- 当前最准确对外口径是：莫古已按审计文档完成对象级审计和真实入口 E2E 验收；用户可见状态继续标记“实施中”。
+- 本段为 2026-07-12 历史收口口径，已被 2026-07-14 线上反馈推翻，不可作为当前结论引用。
+- 历史当时判断：莫古本轮新增玩家交互已补齐：鲜血萨满移动后传输、狂热菌菇持续事件移动后推拉、共生自愈空选、释放菌袍空选均有真实入口 E2E。
+- 历史当时判断：自动/被动对象没有独立玩家点击入口，按规则定义、执行器、阶段/死亡/回合系统测试与共享链判等收口。
+- 历史当时截图：`test-results/evidence-screenshots/summonerwars/summonerwars-mogu.e2e/audit/mogu-full-audit-contact-sheet-2026-07-12.jpg`，合图包含 18 张截图并已完成 AI 图面核验。
+- 当前可引用口径：只能以 `evidence/summonerwars/summonerwars-mogu-reentry-audit-2026-07-14.md` 为准。

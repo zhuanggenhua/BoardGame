@@ -109,6 +109,7 @@ describe('UserSettings Module (e2e)', () => {
             masterVolume: 0.7,
             sfxVolume: 0.4,
             bgmVolume: 0.2,
+            singleTrackLoop: true,
             bgmSelections: {
                 summonerwars: { normal: 'bgm_key_a', battle: 'bgm_key_b' },
             },
@@ -133,6 +134,7 @@ describe('UserSettings Module (e2e)', () => {
         expect(saved).toBeTruthy();
         expect(saved?.muted).toBe(true);
         expect(saved?.masterVolume).toBe(payload.masterVolume);
+        expect(saved?.singleTrackLoop).toBe(true);
         expect(saved?.bgmSelections).toMatchObject(payload.bgmSelections);
     });
 

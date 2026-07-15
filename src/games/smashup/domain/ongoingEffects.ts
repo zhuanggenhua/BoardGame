@@ -49,6 +49,8 @@ export interface ProtectionCheckContext {
 
     sourceKind?: 'action' | 'nonAction';
 
+    sourceBaseIndex?: number;
+
     protectionType: ProtectionType;
 }
 
@@ -94,6 +96,7 @@ export type TriggerTiming =
     | 'onBaseRevealed'
     | 'onMinionDestroyed'
     | 'onMinionMoved'
+    | 'onCardTransferred'
     | 'onCardReturnedToHand'
     | 'onCardDestroyed'
     | 'onDeckInspected'
@@ -174,6 +177,15 @@ export interface TriggerContext {
     triggerCardOwnerId?: PlayerId;
     /** 触发相关场上行动牌类型 */
     triggerCardKind?: 'ongoing' | 'attached_action';
+    /** onCardTransferred 时：被转移卡牌 */
+    transferredCardUid?: string;
+    transferredCardDefId?: string;
+    transferredCardOwnerId?: PlayerId;
+    transferredFromPlayerId?: PlayerId;
+    transferredToPlayerId?: PlayerId;
+    /** onCardsDiscarded 时：弃置/磨掉的卡牌快照 */
+    discardedCards?: Array<{ uid: string; defId: string; ownerId: PlayerId }>;
+    discardedFromZone?: 'hand' | 'deck';
     /** 收集 trigger 时应排除的来源实例 UID（例如 onPlay 才被移动进来的“晚到见证者”）。 */
     suppressedSourceCardUids?: string[];
     /** 消灭者（仅 onMinionDestroyed） */
@@ -614,6 +626,13 @@ function createTriggerInstance(
         triggerCardDefId: ctx.triggerCardDefId,
         triggerCardOwnerId: ctx.triggerCardOwnerId,
         triggerCardKind: ctx.triggerCardKind,
+        transferredCardUid: ctx.transferredCardUid,
+        transferredCardDefId: ctx.transferredCardDefId,
+        transferredCardOwnerId: ctx.transferredCardOwnerId,
+        transferredFromPlayerId: ctx.transferredFromPlayerId,
+        transferredToPlayerId: ctx.transferredToPlayerId,
+        discardedCards: ctx.discardedCards ? structuredClone(ctx.discardedCards) : undefined,
+        discardedFromZone: ctx.discardedFromZone,
         destroyerId: ctx.destroyerId,
         controllerId: ctx.controllerId,
         reason: ctx.reason,
@@ -1229,7 +1248,6 @@ export function registerPodOngoingAliases(): void {
 
     baseScoringSuppressionRegistry.push(...scoringSuppressionsToAdd);
 
-
     const baseVpModifiersToAdd: BaseVpModifierEntry[] = [];
     for (const entry of baseVpModifierRegistry) {
         const { sourceDefId, checker } = entry;
@@ -1239,13 +1257,16 @@ export function registerPodOngoingAliases(): void {
         if (!shouldGenerateSmashUpPodAlias('ongoing', sourceDefId)) continue;
 
         const podDefId = `${sourceDefId}_pod`;
-
         const alreadyRegistered = baseVpModifierRegistry.some(
-            e => e.sourceDefId === podDefId && e.checker === checker
+            candidate => candidate.sourceDefId === podDefId && candidate.checker === checker,
         );
         if (alreadyRegistered) continue;
 
-        baseVpModifiersToAdd.push({ sourceDefId: podDefId, checker, generatedPodAlias: true });
+        baseVpModifiersToAdd.push({
+            sourceDefId: podDefId,
+            checker,
+            generatedPodAlias: true,
+        });
         _mappedCount++;
     }
 
@@ -1524,7 +1545,7 @@ export function isMinionProtected(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction' },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1535,6 +1556,7 @@ export function isMinionProtected(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
     for (const entry of protectionRegistry) {
@@ -1562,7 +1584,7 @@ export function isMinionProtectedNonConsumable(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction' },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1573,6 +1595,7 @@ export function isMinionProtectedNonConsumable(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
     for (const entry of protectionRegistry) {

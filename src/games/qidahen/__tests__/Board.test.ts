@@ -77,14 +77,20 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-hand-zone"',
     'data-tutorial-id="qidahen-hand-zone"',
     'data-ui-role="qidahen-hand-dock"',
+    'data-testid="qidahen-tactic-card-selection-panel"',
+    'data-testid="qidahen-confirm-tactic-card"',
+    'data-tutorial-id="qidahen-confirm-tactic-card"',
+    'data-testid="qidahen-cancel-tactic-card"',
     'data-testid="qidahen-hand-row"',
     'onExecuteAction',
     'data-testid={`qidahen-hand-card-${card.id}`}',
     'data-testid="qidahen-discard-anchor"',
     'data-testid={getPendingTargetChoiceTestId(choice.id)}',
+    'data-tutorial-id={getPendingTargetChoiceTestId(choice.id)}',
     'data-testid="qidahen-pending-casualty-priority"',
     'data-testid={`qidahen-${group.id}-casualty-priority`}',
     'data-testid={`qidahen-${group.id}-casualty-${option.id}`}',
+    'data-tutorial-id={`qidahen-${group.id}-casualty-${option.id}`}',
     'data-testid="qidahen-upkeep-attrition-priority"',
     'data-testid={`qidahen-upkeep-attrition-${option.id}`}',
     'testId="qidahen-draw-pile"',
@@ -346,12 +352,26 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("import { isQidahenFeignedRetreatCardPlayable } from './domain/feignedRetreatSelection';");
         expect(boardSource).toContain("pendingTargetAction: QidahenCore['pendingTargetAction'];");
         expect(boardSource).toContain('pendingTargetAction={pendingTargetAction}');
+        expect(boardSource).toContain('const [selectedTacticCardId, setSelectedTacticCardId] = React.useState<string | null>(null);');
+        expect(boardSource).toContain('const selectedTacticCard = currentHandCards.find((card) => card.id === selectedTacticCardId) ?? null;');
+        expect(boardSource).toContain('|| selectedTacticCardId === card.id');
+        expect(boardSource).toContain('data-testid="qidahen-tactic-card-selection-panel"');
+        expect(boardSource).toContain('data-testid="qidahen-confirm-tactic-card"');
+        expect(boardSource).toContain('data-tutorial-id="qidahen-confirm-tactic-card"');
+        expect(boardSource).toContain('onClick={() => onPlayTacticCard(selectedTacticCard.id)}');
+        expect(boardSource).toContain('data-testid="qidahen-cancel-tactic-card"');
+        expect(boardSource).toContain('onClick={() => setSelectedTacticCardId(null)}');
+        expect(boardSource).toContain('const card = core.handCards.find((candidate) => candidate.id === cardId);');
+        expect(boardSource).toContain('const tutorialTargetId = card ? getQidahenHandCardTutorialTargetId(card) : cardId;');
+        expect(boardSource).toContain('|| (!isTutorialTargetAllowed(cardId) && !isTutorialTargetAllowed(tutorialTargetId))');
         expect(boardSource).toContain("pendingTargetAction?.attackerFactionId === card.faction");
         expect(boardSource).toContain("pendingTargetAction?.defenderFactionId === card.faction");
         expect(boardSource).toContain("? 'attacker'");
         expect(boardSource).toContain("? 'defender'");
         expect(boardSource).toContain('isQidahenFeignedRetreatCardPlayable(core, card)');
         expect(boardSource).toContain('|| isQidahenTacticCardPlayableForPendingBattle(');
+        expect(boardSource).toContain('? () => setSelectedTacticCardId((current) => (current === card.id ? null : card.id))');
+        expect(boardSource).not.toContain('? () => onPlayTacticCard(card.id)');
         expect(boardSource).not.toContain('const pendingTargetAction = core.pendingTargetAction;');
         expect(boardSource).not.toContain('&& core.pendingTargetAction.attackerFactionId === card.faction');
     });
@@ -920,6 +940,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("return 'qidahen-resolve-pending-action-cavalry-plunder';");
         expect(boardSource).toContain("return 'qidahen-resolve-pending-action-cavalry-plunder-defender';");
         expect(boardSource).toContain("return `qidahen-resolve-pending-action-${choiceId}`;");
+        expect(boardSource).toContain('data-tutorial-id={getPendingTargetChoiceTestId(choice.id)}');
     });
 
     it('步骑联合待选择时必须只显示两个汉字选项并隐藏普通战斗结算入口', () => {

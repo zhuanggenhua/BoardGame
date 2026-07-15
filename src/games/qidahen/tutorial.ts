@@ -35,8 +35,14 @@ const basicOpeningStepValidator = (state: MatchState<unknown>, step: { id: strin
 const attackAndBattleStepValidator = (state: MatchState<unknown>, step: { id: string }): boolean => {
     const core = asCore(state);
     switch (step.id) {
-        case 'move-entry':
-            return core.turnPhase === 'dispatch-targeting';
+        case 'choose-action':
+            return core.turnPhase === 'action-window'
+                && core.factionActionUsed === false;
+        case 'pay-raid':
+            return core.turnPhase === 'action-window'
+                && core.selectedActionId === 'raid'
+                && core.confirmedActionId === 'raid'
+                && core.payment.required === 1;
         case 'border-width':
         case 'battle-open':
         case 'tactic-window':
@@ -489,13 +495,23 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
             showMask: true,
         },
         {
-            id: 'move-entry',
-            content: 'game-qidahen:tutorial.attackAndBattle.steps.moveEntry',
-            highlightTarget: 'qidahen-map-layer',
+            id: 'choose-action',
+            content: 'game-qidahen:tutorial.attackAndBattle.steps.chooseAction',
+            highlightTarget: 'qidahen-action-raid',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION],
+            allowedTargets: ['raid'],
+            advanceOnEvents: [{ type: 'PREVIEW_ACTION_CONFIRMED', match: { actionId: 'raid' } }],
+        },
+        {
+            id: 'pay-raid',
+            content: 'game-qidahen:tutorial.attackAndBattle.steps.payRaid',
+            highlightTarget: 'qidahen-hand-zone',
             position: 'top',
             requireAction: true,
-            allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
-            allowedTargets: ['city-region-14'],
+            allowedCommands: [QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD, QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION],
+            advanceOnEvents: [{ type: 'SELECTED_ACTION_EXECUTED', match: { actionId: 'raid' } }],
         },
         {
             id: 'border-width',
@@ -514,15 +530,15 @@ const QIDAHEN_ATTACK_AND_BATTLE_TUTORIAL: TutorialManifest = {
         {
             id: 'tactic-window',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.tacticWindow',
-            highlightTarget: 'qidahen-hand-zone',
-            position: 'bottom',
+            highlightTarget: 'qidahen-atlas05-1618-cavalry-charge',
+            position: 'left',
             allowedCommands: [QIDAHEN_COMMANDS.PLAY_TACTIC_CARD],
             advanceOnEvents: [{ type: 'TACTIC_CARD_PLAYED' }],
         },
         {
             id: 'battle-damage',
             content: 'game-qidahen:tutorial.attackAndBattle.steps.battleDamage',
-            highlightTarget: 'qidahen-pending-casualty-priority',
+            highlightTarget: 'qidahen-resolve-pending-action',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],
@@ -576,7 +592,7 @@ const QIDAHEN_SIEGE_TUTORIAL: TutorialManifest = {
         {
             id: 'city-battle',
             content: 'game-qidahen:tutorial.siege.steps.cityBattle',
-            highlightTarget: 'qidahen-raid-intent',
+            highlightTarget: 'qidahen-resolve-pending-action',
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_PENDING_ACTION],

@@ -111,6 +111,8 @@ export function buildTheGangAiLegalActions(args: {
     if (state.sys?.gameover || core.gameResult || core.phase === 'game-over') return [];
 
     if (core.phase === 'chip-selection') {
+        if (!core.heistStarted) return [];
+
         const playerHasChip = core.currentRoundChips[args.playerId] !== undefined;
         const actions = playerHasChip
             ? []

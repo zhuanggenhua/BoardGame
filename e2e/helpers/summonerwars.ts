@@ -605,9 +605,7 @@ export const clickBoardElement = async (page: Page, selector: string) => {
       return true;
     }, selector);
     if (!clicked) throw new Error(`无法点击元素: ${selector}`);
-    await locator.evaluate((el) => {
-      if (el instanceof HTMLElement) el.focus?.();
-    }).catch(() => {});
+    await locator.focus({ timeout: 250 }).catch(() => {});
     return;
   } catch {
     await locator.click({ force: true, timeout: 3000 });

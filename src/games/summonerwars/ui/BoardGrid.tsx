@@ -57,6 +57,14 @@ const MAGNIFY_ICON_STYLE: React.CSSProperties = {
   width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
   height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.021)`,
 };
+const UNIT_CHARGE_MARKER_STACK_STYLE: React.CSSProperties = {
+  width: '55%',
+};
+const UNIT_CHARGE_MARKER_DOT_STYLE: React.CSSProperties = {
+  width: '16%',
+  height: 0,
+  paddingTop: '16%',
+};
 
 /** 格子唯一 key */
 const getCellKey = (row: number, col: number) => `${row}-${col}`;
@@ -679,21 +687,17 @@ const UnitCell: React.FC<{
             return (
               <div
                 className="absolute top-[3%] right-[3%] items-end flex flex-col gap-[2%] pointer-events-none"
-                style={{ zIndex: BOARD_GRID_Z.overlay }}
+                style={{ ...UNIT_CHARGE_MARKER_STACK_STYLE, zIndex: BOARD_GRID_Z.overlay }}
               >
                 {rows.map((r, ri) => (
-                  <div key={ri} className="flex gap-[3%]">
+                  <div key={ri} className="flex w-full justify-end gap-[3%]">
                     {r.map(idx => (
                       <div
                         key={idx}
-                        className="relative w-[15%]"
-                        style={{ width: '15%', minWidth: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.008)` }}
-                      >
-                        <div
-                          className="block w-full rounded-full bg-blue-400 border border-blue-200 shadow-[0_0_4px_rgba(96,165,250,0.9)]"
-                          style={{ height: 0, paddingTop: '100%' }}
-                        />
-                      </div>
+                        data-testid={`sw-unit-charge-marker-${row}-${col}-${idx}`}
+                        className="shrink-0 rounded-full bg-blue-400 border border-blue-200 shadow-[0_0_4px_rgba(96,165,250,0.9)]"
+                        style={UNIT_CHARGE_MARKER_DOT_STYLE}
+                      />
                     ))}
                   </div>
                 ))}

@@ -87,6 +87,55 @@ const respondToPrompt = (
     createRespondToPromptCommand(state, { playerId, ...args }) as Command,
 );
 
+const advanceAttackAndBattleTutorialToPendingBattle = (
+    state: MatchState<unknown>,
+): MatchState<unknown> => {
+    state = dispatch(state, {
+        type: TUTORIAL_COMMANDS.NEXT,
+        playerId: '0',
+        payload: { reason: 'manual' },
+    });
+    expect(state.sys.tutorial.step?.id).toBe('choose-action');
+    expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-action-raid');
+    expect(state.sys.tutorial.step?.allowedTargets).toEqual(['raid']);
+    expect((state.core as any).turnPhase).toBe('action-window');
+    expect((state.core as any).factionActionUsed).toBe(false);
+    expect((state.core as any).pendingTargetAction).toBeNull();
+
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION,
+        playerId: '0',
+        payload: { actionId: 'raid' },
+    });
+    expect(state.sys.tutorial.step?.id).toBe('pay-raid');
+    expect((state.core as any).confirmedActionId).toBe('raid');
+    expect((state.core as any).payment.required).toBe(1);
+
+    const paymentCard = (state.core as any).handCards.find((card: any) => (
+        card.faction === 'ming'
+        && card.status !== 'disabled'
+        && card.cardKind !== 'tactic'
+    ));
+    expect(paymentCard).toBeTruthy();
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+        playerId: '0',
+        payload: { cardId: paymentCard.id },
+    });
+    state = dispatch(state, {
+        type: QIDAHEN_COMMANDS.EXECUTE_SELECTED_ACTION,
+        playerId: '0',
+        payload: {},
+    });
+
+    expect(state.sys.tutorial.step?.id).toBe('border-width');
+    expect((state.core as any).turnPhase).toBe('resolve-pending');
+    expect((state.core as any).pendingTargetAction?.actionId).toBe('raid');
+    expect((state.core as any).pendingTargetAction?.sourceRegionId).toBe('city-region-16');
+    expect((state.core as any).pendingTargetAction?.targetRegionId).toBe('city-region-14');
+    return state;
+};
+
 describe('qidahen tutorial flow', () => {
     it('教程目录用 6 个玩家主章节串起隐藏续章，并保留关键步骤合同', () => {
         const tutorials = QIDAHEN_TUTORIALS.tutorials;
@@ -157,7 +206,8 @@ describe('qidahen tutorial flow', () => {
             'pay-cards',
         ]));
         expect(stepIdsOf('attack-and-battle')).toEqual(expect.arrayContaining([
-            'move-entry',
+            'choose-action',
+            'pay-raid',
             'tactic-window',
             'battle-damage',
             'retreat-and-defeat',
@@ -347,7 +397,7 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('finish');
     });
 
-    it('进攻与野战教程在真实点选进攻目标后会先进入边界说明，再进入战斗阶段', () => {
+    it('进攻与野战教程从行动窗口选择突袭作战并支付后，再进入边界说明', () => {
         const manifest = QIDAHEN_TUTORIALS.tutorials['attack-and-battle']?.manifest;
         expect(manifest).toBeTruthy();
 
@@ -360,28 +410,7 @@ describe('qidahen tutorial flow', () => {
         });
         expect(state.sys.tutorial.step?.id).toBe('overview');
 
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        expect(state.sys.tutorial.step?.id).toBe('move-entry');
-        expect(state.sys.tutorial.step?.allowedTargets).toEqual(['city-region-14']);
-        expect((state.core as any).turnPhase).toBe('dispatch-targeting');
-        expect((state.core as any).pendingTargetAction).toBeNull();
-
-        state = dispatch(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: 'qidahen-dispatch-targeting-ming-city-region-16',
-                optionId: 'city-region-14',
-                choiceId: 'city-region-14',
-            },
-        });
-
-        expect((state.core as any).turnPhase).toBe('resolve-pending');
-        expect((state.core as any).pendingTargetAction?.targetRegionId).toBe('city-region-14');
+        state = advanceAttackAndBattleTutorialToPendingBattle(state);
         expect(state.sys.tutorial.step?.id).toBe('border-width');
     });
 
@@ -396,20 +425,7 @@ describe('qidahen tutorial flow', () => {
             playerId: '0',
             payload: { manifest },
         });
-        state = dispatch(state, {
-            type: TUTORIAL_COMMANDS.NEXT,
-            playerId: '0',
-            payload: { reason: 'manual' },
-        });
-        state = dispatch(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: 'qidahen-dispatch-targeting-ming-city-region-16',
-                optionId: 'city-region-14',
-                choiceId: 'city-region-14',
-            },
-        });
+        state = advanceAttackAndBattleTutorialToPendingBattle(state);
         expect(state.sys.tutorial.step?.id).toBe('border-width');
 
         state = dispatch(state, {
@@ -427,8 +443,9 @@ describe('qidahen tutorial flow', () => {
         expect(state.sys.tutorial.step?.id).toBe('tactic-window');
 
         const tacticCard = (state.core as any).handCards.find((card: any) => card.cardDefId === 'qidahen-atlas05-1618-cavalry-charge');
-        expect((state.core as any).pendingTargetAction?.movementProfileId).toBe('dispatch-cavalry');
-        expect((state.core as any).pendingTargetAction?.committedTroops).toBe(2);
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-atlas05-1618-cavalry-charge');
+        expect((state.core as any).pendingTargetAction?.movementProfileId).toBeNull();
+        expect((state.core as any).pendingTargetAction?.committedTroops).toBeGreaterThan(0);
         expect(tacticCard?.cardKind).toBe('tactic');
         expect(tacticCard?.label).toBe('骑兵冲锋');
         state = dispatch(state, {
@@ -437,6 +454,7 @@ describe('qidahen tutorial flow', () => {
             payload: { cardId: tacticCard.id },
         });
         expect(state.sys.tutorial.step?.id).toBe('battle-damage');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-resolve-pending-action');
         expect((state.core as any).handCards.some((card: any) => card.id === tacticCard.id)).toBe(false);
         expect((state.core as any).lastSeasonSummary?.title).toBe('战术牌');
         expect((state.core as any).lastSeasonSummary?.lines.join(' ')).toContain('打出战术牌');
@@ -911,6 +929,7 @@ describe('qidahen tutorial flow', () => {
             payload: { reason: 'manual' },
         });
         expect(state.sys.tutorial.step?.id).toBe('defend-city');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-resolve-pending-action-defender-hold-city');
         expect((state.core as any).pendingTargetAction?.battleMode).toBe('field');
         expect((state.core as any).pendingTargetAction?.title).toContain('守城宣告');
         expect((state.sys as any).interaction?.current?.data?.options?.some((option: any) => option.id === 'defender-hold-city')).toBe(true);
@@ -923,6 +942,7 @@ describe('qidahen tutorial flow', () => {
             },
         });
         expect(state.sys.tutorial.step?.id).toBe('city-battle');
+        expect(state.sys.tutorial.step?.highlightTarget).toBe('qidahen-resolve-pending-action');
         expect((state.core as any).pendingTargetAction?.battleMode).toBe('city');
         expect((state.core as any).pendingTargetAction?.title).toContain('城战待结算');
 

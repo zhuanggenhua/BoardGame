@@ -16,7 +16,7 @@ import {
 
 const EVIDENCE_DIR = 'evidence/betrayal-first-scenario';
 const HAUNT_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-第一剧本-haunt运行时.png`;
-const REFERENCE_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-玩家参考卡-帮助面板.png`;
+const REFERENCE_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-首剧本查阅-帮助面板.png`;
 const RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-第一剧本-haunt牌桌.png`;
 const ENDGAME_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-终局-幸存者胜利.png`;
 
@@ -39,6 +39,9 @@ test.describe('山屋惊魂第一剧本', () => {
 
         await page.getByTestId('betrayal-open-scenario').click();
         await expect(page.getByTestId('betrayal-reference-overlay')).toBeVisible();
+        await expect(page.getByTestId('betrayal-scenario-objective-page')).toBeVisible();
+        await expect(page.getByTestId('betrayal-scenario-objective-page')).toContainText('首剧本查阅');
+        await page.getByTestId('betrayal-reference-toggle').click();
         const referenceImage = page.getByTestId('betrayal-reference-card-image');
         await expect(referenceImage).toHaveAttribute('data-asset-src', 'betrayal/cards/player-reference-zh-front');
         await page.getByTestId('betrayal-reference-toggle').click();

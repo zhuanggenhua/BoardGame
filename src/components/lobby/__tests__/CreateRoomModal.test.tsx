@@ -469,7 +469,7 @@ describe('CreateRoomModal AI default state', () => {
         expect(screen.getByTestId('setup-option-select-expansion-cursed-hoard-suits')).toHaveAttribute('aria-pressed', 'false');
     });
 
-    it('七大恨建房页不再提供剧本预选，而是只提示局内完成剧本介绍、投票与前置项', () => {
+    it('七大恨建房页只保留人数与 AI 配置，剧本投票与前置项进入棋盘后完成', () => {
         const onConfirm = vi.fn();
 
         render(createElement(CreateRoomModal, {
@@ -480,12 +480,13 @@ describe('CreateRoomModal AI default state', () => {
             initialPreferences: null,
         }));
 
-        expect(screen.getByTestId('qidahen-pregame-choice-fields')).toBeInTheDocument();
-        expect(screen.getByTestId('qidahen-pregame-choice-inline-note')).toBeInTheDocument();
+        expect(screen.queryByTestId('qidahen-pregame-choice-fields')).toBeNull();
+        expect(screen.queryByTestId('qidahen-pregame-choice-inline-note')).toBeNull();
         expect(screen.queryByText('开局剧本')).toBeNull();
         expect(screen.queryByTestId('setup-option-select-scenario')).toBeNull();
         expect(screen.queryByTestId('setup-option-select-shanhaiguan-1622')).toBeNull();
         expect(screen.queryByTestId('setup-option-select-post-sarhu-1619')).toBeNull();
+        expect(screen.getByText('加入 AI')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({

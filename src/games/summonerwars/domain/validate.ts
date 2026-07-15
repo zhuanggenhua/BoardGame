@@ -39,7 +39,7 @@ import {
 } from './helpers';
 import { getPhaseDisplayName } from './execute';
 import { validateAbilityActivation } from './abilityValidation';
-import { VALID_FACTION_IDS, getBaseCardId, CARD_IDS } from './ids';
+import { VALID_FACTION_IDS, getBaseCardId, CARD_IDS, isMoguFungalBeastCard } from './ids';
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -54,6 +54,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT,
   CARD_IDS.FROST_GLACIAL_SHIFT,
   CARD_IDS.GOBLIN_SNEAK,
+  CARD_IDS.MOGU_COMMAND,
   CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
   CARD_IDS.MOGU_RELEASE_SPORES,
 ]);
@@ -125,6 +126,11 @@ const hasValidEventInteractionTargets = (
       const commons = friendlyUnits.filter((unit) =>
         unit.card.unitClass === 'common' && manhattanDistance(summoner.position, unit.position) <= 3);
       return commons.length >= 2;
+    }
+    case CARD_IDS.MOGU_COMMAND: {
+      if (!summoner) return false;
+      return friendlyUnits.some((unit) =>
+        unit.card.unitClass === 'common' && manhattanDistance(summoner.position, unit.position) <= 3);
     }
     case CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING: {
       return friendlyUnits.some((unit) => unit.card.unitClass !== 'summoner');
@@ -329,6 +335,26 @@ export function validateCommand(
           return { valid: false, error: '火祀召唤：不能牺牲召唤师' };
         }
         // 牺牲品位置无限制，伊路特-巴尔替换其位置
+        return { valid: true };
+      }
+
+      const hasMoguFinalForm = (unitCard.abilities ?? []).includes('mogu_final_form');
+      if (hasMoguFinalForm) {
+        const sacrificeUnitId = payload.sacrificeUnitId as string | undefined;
+        if (!sacrificeUnitId) {
+          return { valid: false, error: '最终形态：必须选择一个具有5点或更多充能的友方菌化野兽' };
+        }
+        const replacementTarget = getPlayerUnits(core, playerId)
+          .find(unit => unit.instanceId === sacrificeUnitId || unit.cardId === sacrificeUnitId);
+        if (!replacementTarget) {
+          return { valid: false, error: '最终形态：找不到指定的菌化野兽' };
+        }
+        if (!isMoguFungalBeastCard(replacementTarget.card)) {
+          return { valid: false, error: '最终形态：目标必须是菌化野兽' };
+        }
+        if ((replacementTarget.boosts ?? 0) < 5) {
+          return { valid: false, error: '最终形态：菌化野兽必须具有5点或更多充能' };
+        }
         return { valid: true };
       }
 

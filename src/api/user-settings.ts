@@ -11,6 +11,7 @@ export type AudioSettings = {
     sfxVolume: number;
     bgmVolume: number;
     bgmSelections?: BgmSelections;
+    singleTrackLoop?: boolean;
 };
 
 export type AudioSettingsResponse = {

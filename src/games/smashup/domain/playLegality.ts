@@ -33,12 +33,16 @@ export function getMinionPlayRestrictionError(core: SmashUpCore, playerId: strin
     return null;
 }
 
-export function getActionPlayRestrictionError(core: SmashUpCore, playerId: string): string | null {
+export function getActionPlayRestrictionError(core: SmashUpCore, playerId: string, defId?: string): string | null {
     if (
         hasPlayerTurnRestriction(core, playerId, 'play_action')
         || (isCurrentTurnPlayer(core, playerId) && core.sleepMarkedPlayers?.includes(playerId))
     ) {
         return '当前效果禁止你打出战术';
+    }
+    if (defId && core.blockedActionDefIdsThisTurn?.[playerId]?.includes(defId)) {
+        const name = getCardDef(defId)?.name ?? defId;
+        return `本回合不能再打出${name}`;
     }
     return null;
 }
@@ -252,7 +256,7 @@ export function validateActionPlaySemantics(
         effectiveHandSize?: number;
     },
 ): ValidationResult {
-    const restrictionError = getActionPlayRestrictionError(core, playerId);
+    const restrictionError = getActionPlayRestrictionError(core, playerId, params.defId);
     if (restrictionError) {
         return { valid: false, error: restrictionError };
     }
@@ -465,6 +469,12 @@ export function checkPlayConstraint(
     if (constraint === 'requireOwnMinion') {
         const hasOwnMinion = core.bases[baseIndex].minions.some(minion => minion.controller === playerId);
         if (!hasOwnMinion) return '目标基地上必须有你的随从';
+        return null;
+    }
+
+    if (constraint === 'requireNoCharacters') {
+        const hasCharacters = core.bases[baseIndex].minions.length > 0;
+        if (hasCharacters) return '目标基地上不能有任何角色';
         return null;
     }
 

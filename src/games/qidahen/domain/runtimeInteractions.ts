@@ -79,6 +79,14 @@ function syncQidahenSpecificInteraction(
 export function syncQidahenRuntimeInteractionState(
     state: MatchState<QidahenCore>,
 ): MatchState<QidahenCore> {
+    if (
+        state.core.scenarioVote != null
+        || state.core.pendingScenarioCharacterChoices.length > 0
+        || state.core.pendingScenarioArmamentChoices.length > 0
+    ) {
+        return clearQidahenRuntimeInteractionCurrent(state);
+    }
+
     return getRegisteredQidahenRuntimeInteractionSourceIds().reduce(
         (currentState, sourceId) => syncQidahenSpecificInteraction(
             currentState,

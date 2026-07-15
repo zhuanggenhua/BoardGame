@@ -97,6 +97,32 @@ function isStaleOffensiveRollEndChoiceResolved(core: DiceThroneCore, event: Choi
     return (player.tokens[tokenId] ?? 0) <= 0;
 }
 
+function queueDiceThroneInteraction(
+    state: MatchState<DiceThroneCore>,
+    interaction: EngineInteractionDescriptor,
+): MatchState<DiceThroneCore> {
+    const current = state.sys.interaction.current;
+    if (
+        current?.kind === 'dt:token-response'
+        && current.playerId === interaction.playerId
+        && interaction.kind !== 'dt:token-response'
+    ) {
+        return queueInteraction({
+            ...state,
+            sys: {
+                ...state.sys,
+                interaction: {
+                    ...state.sys.interaction,
+                    current: undefined,
+                    queue: [current, ...state.sys.interaction.queue],
+                },
+            },
+        }, interaction);
+    }
+
+    return queueInteraction(state, interaction);
+}
+
 function getCurrentInteractionChoiceSourceId(
     interaction: EngineInteractionDescriptor | undefined,
 ): string | undefined {
@@ -582,7 +608,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             pendingInteraction.playerId,
                             multistepData,
                         );
-                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
+                        newState = syncCurrentChoiceAnchorWithInteraction(queueDiceThroneInteraction(newState, interaction));
                         continue;
                     }
 
@@ -624,7 +650,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             pendingInteraction.playerId,
                             multistepData,
                         );
-                        newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
+                        newState = syncCurrentChoiceAnchorWithInteraction(queueDiceThroneInteraction(newState, interaction));
                         continue;
                     }
 
@@ -668,7 +694,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         playerId: pendingInteraction.playerId,
                         data: { ...pendingInteraction, sourceId: pendingInteraction.sourceCardId },
                     };
-                    newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
+                    newState = syncCurrentChoiceAnchorWithInteraction(queueDiceThroneInteraction(newState, interaction));
                 }
 
                 // ---- 状态/手牌交互自动完成：只在各自权威完成事件出现时 resolve ----

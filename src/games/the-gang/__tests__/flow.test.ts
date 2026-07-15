@@ -40,10 +40,22 @@ const confirmProgressForAllPlayers = (
     return nextState;
 };
 
+const startHeist = (
+    adapter: ReturnType<typeof createReplayAdapter<TheGangCore, TheGangCommand>>,
+    state: ReturnType<ReturnType<typeof createReplayAdapter<TheGangCore, TheGangCommand>>['setup']>,
+    timestamp = 0,
+) => adapter.execute(state, {
+    type: THE_GANG_COMMANDS.START_HEIST,
+    playerId: '0',
+    payload: {},
+    timestamp,
+}).state;
+
 describe('The Gang domain flow', () => {
     test('3 人抢劫可以完成四轮并摊牌', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-flow-test');
         let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
 
         for (const round of [1, 2, 3, 4]) {
             for (const [index, playerId] of state.core.playerIds.entries()) {
@@ -68,6 +80,28 @@ describe('The Gang domain flow', () => {
         expect(state.core.communityCards).toHaveLength(5);
         expect(state.core.lastShowdown?.results).toHaveLength(3);
         expect(state.core.successes + state.core.failures).toBe(1);
+    });
+
+    test('房主开始抢劫前不能拿筹码，开始后才进入正式选筹码', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-start-heist-gate-test');
+        let state = adapter.setup(['0', '1', '2']);
+
+        expect(state.core.heistStarted).toBe(false);
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 1,
+        })).toMatchObject({ valid: false, error: 'heistNotStarted' });
+
+        state = startHeist(adapter, state, 2);
+        expect(state.core.heistStarted).toBe(true);
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 3,
+        })).toMatchObject({ valid: true });
     });
 
     test('非本人 playerView 隐藏其他玩家底牌', () => {
@@ -111,18 +145,27 @@ describe('The Gang domain flow', () => {
         expect(state.core.players['0'].communityCards).toHaveLength(1);
         expect(state.core.communityCards).toHaveLength(0);
 
-        state = adapter.execute(state, {
+        expect(TheGangDomain.validate(state, {
             type: THE_GANG_COMMANDS.TAKE_CHIP,
             playerId: '0',
             payload: { chip: 1 },
             timestamp: 2,
+        })).toMatchObject({ valid: false, error: 'heistNotStarted' });
+
+        state = startHeist(adapter, state, 2);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 3,
         }).state;
 
         expect(TheGangDomain.validate(state, {
             type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
             playerId: '0',
             payload: { config: { gameMode: 'texas-holdem', challenges: {} } },
-            timestamp: 3,
+            timestamp: 4,
         })).toMatchObject({ valid: false, error: 'rulesLocked' });
     });
 
@@ -255,6 +298,7 @@ describe('The Gang domain flow', () => {
     test('当前轮可以拿别人面前的筹码，原持有人失去该筹码，且失去筹码的人还能再拿', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-validation-test');
         let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
 
         state = adapter.execute(state, {
             type: THE_GANG_COMMANDS.TAKE_CHIP,
@@ -324,9 +368,54 @@ describe('The Gang domain flow', () => {
         })).toMatchObject({ valid: false, error: 'chipAlreadyHeld' });
     });
 
+    test('教程 AI 补筹码只拿剩余筹码，不会顶掉真人当前筹码', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-tutorial-chip-fill-test');
+        let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 2 },
+            timestamp: 1,
+            skipValidation: true,
+        }).state;
+
+        for (const [index, playerId] of ['1', '2'].entries()) {
+            state = adapter.execute(state, {
+                type: THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId,
+                payload: {
+                    chip: 1,
+                    tutorialChipMode: 'lowest-unoccupied',
+                    tutorialOnlyIfMissing: true,
+                },
+                timestamp: 2 + index,
+                skipValidation: true,
+            }).state;
+        }
+
+        expect(state.core.currentRoundChips).toEqual({ '0': 2, '1': 1, '2': 3 });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: {
+                chip: 1,
+                tutorialChipMode: 'lowest-unoccupied',
+                tutorialOnlyIfMissing: true,
+            },
+            timestamp: 4,
+            skipValidation: true,
+        }).state;
+
+        expect(state.core.currentRoundChips).toEqual({ '0': 2, '1': 1, '2': 3 });
+    });
+
     test('推进轮次、摊牌和下一次抢劫都必须等待全员确认', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-progress-confirmation-test');
         let state = adapter.setup(['0', '1', '2']);
+        state = startHeist(adapter, state);
 
         for (const [index, playerId] of state.core.playerIds.entries()) {
             state = adapter.execute(state, {
@@ -394,6 +483,7 @@ describe('The Gang domain flow', () => {
         state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.START_NEXT_HEIST, 610);
         expect(state.core.phase).toBe('chip-selection');
         expect(state.core.heistNumber).toBe(2);
+        expect(state.core.heistStarted).toBe(false);
         expect(state.core.pendingProgress).toBeUndefined();
     });
 

@@ -11,9 +11,12 @@ except ImportError as exc:
 DEFAULT_ROOT = Path.cwd() / "public" / "assets"
 SKIP_DIR = "compressed"
 VALID_EXTS = {".png", ".jpg", ".jpeg"}
-MAX_EDGE = int(os.getenv("IMAGE_MAX_EDGE", "2048"))
-WEBP_QUALITY = int(os.getenv("IMAGE_WEBP_QUALITY", "82"))
 CLEAN_OUTPUT = os.getenv("IMAGE_CLEAN", "0") == "1"
+VALID_MODES = {"runtime", "display"}
+MODE_DEFAULTS = {
+    "runtime": {"max_edge": 0, "quality": 95},
+    "display": {"max_edge": 2048, "quality": 82},
+}
 
 WEBP_ENABLED = True
 
@@ -39,20 +42,91 @@ def format_bytes(value: int) -> str:
     return f"{mb:.2f} MB"
 
 
-def parse_args(argv: list[str]) -> tuple[Path, bool]:
+def parse_int(value: str, label: str) -> int:
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise SystemExit(f"{label} 必须是整数: {value}") from exc
+
+
+def parse_mode(value: str) -> str:
+    mode = value.strip().lower()
+    if mode not in VALID_MODES:
+        raise SystemExit(f"图片压缩模式无效: {value}，只能是 runtime 或 display")
+    return mode
+
+
+def parse_args(argv: list[str]) -> tuple[Path, bool, str, int, int, bool]:
     root = None
     clean = CLEAN_OUTPUT
-    for arg in argv:
-        if arg == "--clean":
+    mode = parse_mode(os.getenv("IMAGE_ASSET_MODE", "runtime"))
+    max_edge_override = os.getenv("IMAGE_MAX_EDGE")
+    quality_override = os.getenv("IMAGE_WEBP_QUALITY")
+    allow_runtime_resize = os.getenv("IMAGE_ALLOW_RUNTIME_RESIZE", "0") == "1"
+
+    index = 0
+    while index < len(argv):
+        arg = argv[index]
+        if arg in {"--clean", "--clear"}:
             clean = True
-            continue
-        if arg.startswith("--"):
-            continue
-        if root is None:
+        elif arg == "--allow-runtime-resize":
+            allow_runtime_resize = True
+        elif arg == "--mode":
+            index += 1
+            if index >= len(argv):
+                raise SystemExit("--mode 需要指定 runtime 或 display")
+            mode = parse_mode(argv[index])
+        elif arg.startswith("--mode="):
+            mode = parse_mode(arg.split("=", 1)[1])
+        elif arg == "--max-edge":
+            index += 1
+            if index >= len(argv):
+                raise SystemExit("--max-edge 需要指定整数")
+            max_edge_override = argv[index]
+        elif arg.startswith("--max-edge="):
+            max_edge_override = arg.split("=", 1)[1]
+        elif arg == "--quality":
+            index += 1
+            if index >= len(argv):
+                raise SystemExit("--quality 需要指定整数")
+            quality_override = argv[index]
+        elif arg.startswith("--quality="):
+            quality_override = arg.split("=", 1)[1]
+        elif arg.startswith("--"):
+            raise SystemExit(f"未知参数: {arg}")
+        elif root is None:
             root = Path(arg).resolve()
+        else:
+            raise SystemExit(f"只能指定一个资源根目录，重复参数: {arg}")
+        index += 1
+
     if root is None:
         root = DEFAULT_ROOT
-    return root, clean
+
+    defaults = MODE_DEFAULTS[mode]
+    max_edge = (
+        parse_int(max_edge_override, "IMAGE_MAX_EDGE / --max-edge")
+        if max_edge_override is not None
+        else defaults["max_edge"]
+    )
+    webp_quality = (
+        parse_int(quality_override, "IMAGE_WEBP_QUALITY / --quality")
+        if quality_override is not None
+        else defaults["quality"]
+    )
+
+    if max_edge < 0:
+        raise SystemExit("--max-edge / IMAGE_MAX_EDGE 不能小于 0")
+    if webp_quality < 1 or webp_quality > 100:
+        raise SystemExit("--quality / IMAGE_WEBP_QUALITY 必须在 1-100 之间")
+    if mode == "runtime" and max_edge > 0 and not allow_runtime_resize:
+        raise SystemExit(
+            "runtime 模式用于正式对局素材，禁止降采样。"
+            "如需压缩展示图，请使用 --mode display；"
+            "如确有用户当轮授权降采样正式素材，才可加 --allow-runtime-resize。"
+        )
+
+    return root, clean, mode, max_edge, webp_quality, allow_runtime_resize
 
 
 def clear_compressed_dirs(root: Path) -> int:
@@ -67,15 +141,29 @@ def clear_compressed_dirs(root: Path) -> int:
     return removed
 
 
-def resize_image(img: Image.Image) -> tuple[Image.Image, bool]:
-    if MAX_EDGE <= 0:
+def resize_image(img: Image.Image, max_edge: int) -> tuple[Image.Image, bool]:
+    if max_edge <= 0:
         return img, False
     width, height = img.size
-    if max(width, height) <= MAX_EDGE:
+    if max(width, height) <= max_edge:
         return img, False
     resized = img.copy()
-    resized.thumbnail((MAX_EDGE, MAX_EDGE), Image.LANCZOS)
+    resized.thumbnail((max_edge, max_edge), Image.LANCZOS)
     return resized, True
+
+
+def output_matches_expected(dest: Path, source_mtime: float, expected_size: tuple[int, int]) -> bool:
+    try:
+        dest_stat = dest.stat()
+    except OSError:
+        return False
+    if dest_stat.st_size <= 0 or dest_stat.st_mtime < source_mtime:
+        return False
+    try:
+        with Image.open(dest) as existing:
+            return existing.size == expected_size
+    except Exception:
+        return False
 
 
 def save_variant(
@@ -85,6 +173,7 @@ def save_variant(
     quality: int,
     original_size: int,
     source_mtime: float,
+    expected_size: tuple[int, int],
 ) -> int | None:
     global WEBP_ENABLED
 
@@ -92,15 +181,11 @@ def save_variant(
         return None
 
     if dest.exists():
-        try:
-            dest_stat = dest.stat()
-            if dest_stat.st_size > 0 and dest_stat.st_mtime >= source_mtime:
-                output_size = dest_stat.st_size
-                if output_size >= original_size:
-                    stats["variant_skipped"] += 1
-                return output_size
-        except OSError:
-            pass
+        if output_matches_expected(dest, source_mtime, expected_size):
+            output_size = dest.stat().st_size
+            if output_size >= original_size:
+                stats["variant_skipped"] += 1
+            return output_size
 
     try:
         save_img = img
@@ -127,7 +212,7 @@ def save_variant(
     return output_size
 
 
-def handle_file(src: Path, root: Path) -> None:
+def handle_file(src: Path, root: Path, max_edge: int, webp_quality: int) -> None:
     ext = src.suffix.lower()
     if ext not in VALID_EXTS:
         return
@@ -141,7 +226,7 @@ def handle_file(src: Path, root: Path) -> None:
 
     with Image.open(src) as img:
         img = ImageOps.exif_transpose(img)
-        working, resized = resize_image(img)
+        working, resized = resize_image(img, max_edge)
         if resized:
             stats["resized_count"] += 1
 
@@ -150,9 +235,10 @@ def handle_file(src: Path, root: Path) -> None:
             working,
             variant_base.with_suffix(".webp"),
             "WEBP",
-            WEBP_QUALITY,
+            webp_quality,
             original_size,
             source_mtime,
+            working.size,
         )
 
         output_size = webp_size
@@ -172,15 +258,15 @@ def handle_file(src: Path, root: Path) -> None:
     print(f"已处理: {relative} {format_bytes(original_size)} -> webp {format_bytes(output_size)}{resize_note}")
 
 
-def walk_dir(root: Path) -> None:
+def walk_dir(root: Path, max_edge: int, webp_quality: int) -> None:
     for current, dirnames, filenames in os.walk(root):
         dirnames[:] = [name for name in dirnames if name != SKIP_DIR]
         for filename in filenames:
-            handle_file(Path(current) / filename, root)
+            handle_file(Path(current) / filename, root, max_edge, webp_quality)
 
 
 def main() -> None:
-    root, clean = parse_args(sys.argv[1:])
+    root, clean, mode, max_edge, webp_quality, allow_runtime_resize = parse_args(sys.argv[1:])
     if not root.exists():
         raise SystemExit(f"路径不存在: {root}")
 
@@ -189,8 +275,12 @@ def main() -> None:
         if removed > 0:
             print(f"已清空 {removed} 个 {SKIP_DIR} 目录。")
 
+    resize_policy = "不降采样" if max_edge <= 0 else f"最长边 {max_edge}px"
     print(f"开始压缩与转码: {root}")
-    walk_dir(root)
+    print(f"模式: {mode}；尺寸策略: {resize_policy}；WebP 质量: {webp_quality}")
+    if mode == "runtime" and allow_runtime_resize:
+        print("警告：runtime 模式已显式允许降采样，必须已有用户当轮授权。")
+    walk_dir(root, max_edge, webp_quality)
 
     saved = stats["total_bytes"] - stats["output_bytes"]
     summary = (

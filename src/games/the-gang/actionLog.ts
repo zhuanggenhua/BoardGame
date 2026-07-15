@@ -2,6 +2,7 @@ import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, MatchState }
 import {
     THE_GANG_COMMANDS,
     THE_GANG_EVENTS,
+    type HeistStartedEvent,
     type RoundEndedEvent,
     type ShowdownRevealedEvent,
     type NextHeistStartedEvent,
@@ -10,6 +11,7 @@ import {
 } from './domain/types';
 
 export const THE_GANG_ACTION_ALLOWLIST = [
+    THE_GANG_COMMANDS.START_HEIST,
     THE_GANG_COMMANDS.TAKE_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
@@ -17,6 +19,7 @@ export const THE_GANG_ACTION_ALLOWLIST = [
 ] as const;
 
 export const THE_GANG_UNDO_ALLOWLIST = [
+    THE_GANG_COMMANDS.START_HEIST,
     THE_GANG_COMMANDS.TAKE_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
@@ -67,6 +70,11 @@ const findRoundEndedEvent = (events: GameEvent[]): RoundEndedEvent | undefined =
         event.type === THE_GANG_EVENTS.ROUND_ENDED,
     );
 
+const findHeistStartedEvent = (events: GameEvent[]): HeistStartedEvent | undefined =>
+    events.find((event): event is HeistStartedEvent =>
+        event.type === THE_GANG_EVENTS.HEIST_STARTED,
+    );
+
 const findNextHeistEvent = (events: GameEvent[]): NextHeistStartedEvent | undefined =>
     events.find((event): event is NextHeistStartedEvent =>
         event.type === THE_GANG_EVENTS.NEXT_HEIST_STARTED,
@@ -88,6 +96,14 @@ export function formatTheGangActionEntry({
     const actor = playerNumberOf(core, command.playerId);
 
     switch (command.type) {
+        case THE_GANG_COMMANDS.START_HEIST: {
+            const heistStarted = findHeistStartedEvent(events);
+            if (!heistStarted) return null;
+            return entry(command, [i18nSeg('actionLog.startHeist', {
+                player: actor,
+                heist: heistStarted.payload.heistNumber,
+            })]);
+        }
         case THE_GANG_COMMANDS.TAKE_CHIP: {
             if (!hasEvent(events, THE_GANG_EVENTS.CHIP_TAKEN)) return null;
             const payload = command.payload as { chip: number };

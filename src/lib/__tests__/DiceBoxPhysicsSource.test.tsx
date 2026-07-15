@@ -17,6 +17,133 @@ describe('DiceBoxPhysicsSource', () => {
         createEngineMock.mockReset();
     });
 
+    it('容器从零尺寸变为可见后才初始化物理骰子引擎', async () => {
+        const originalResizeObserver = globalThis.ResizeObserver;
+        const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+        let resizeCallback: ResizeObserverCallback | null = null;
+        let hasLayoutSize = false;
+
+        class MockResizeObserver {
+            constructor(callback: ResizeObserverCallback) {
+                resizeCallback = callback;
+            }
+
+            observe = vi.fn();
+            unobserve = vi.fn();
+            disconnect = vi.fn();
+        }
+
+        Object.defineProperty(globalThis, 'ResizeObserver', {
+            configurable: true,
+            value: MockResizeObserver,
+        });
+        HTMLElement.prototype.getBoundingClientRect = vi.fn(() => ({
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: hasLayoutSize ? 320 : 0,
+            bottom: hasLayoutSize ? 240 : 0,
+            width: hasLayoutSize ? 320 : 0,
+            height: hasLayoutSize ? 240 : 0,
+            toJSON: () => ({}),
+        }));
+
+        try {
+            const engineMock = {
+                resize: vi.fn(),
+                destroy: vi.fn(),
+                setCanvasDiagnostics: vi.fn(),
+                setDieSkins: vi.fn(),
+                recoverOutOfBoundsDice: vi.fn(),
+                freezeSettledDice: vi.fn(),
+                separateOverlappingDice: vi.fn(),
+                getPhysicsState: vi.fn(),
+                hasDice: vi.fn().mockReturnValue(false),
+                rollToValues: vi.fn().mockResolvedValue(undefined),
+                rerollToValues: vi.fn(),
+                syncSettledValues: vi.fn(),
+                previewValues: vi.fn(),
+                clear: vi.fn(),
+                removeDice: vi.fn(),
+                restoreValues: vi.fn(),
+            };
+            createEngineMock.mockResolvedValue(engineMock);
+
+            render(
+                <DiceBoxPhysicsSource
+                    dice={[{ id: 7, value: 6, isKept: false }]}
+                    isRolling={true}
+                />,
+            );
+
+            await act(async () => {});
+            expect(createEngineMock).not.toHaveBeenCalled();
+
+            hasLayoutSize = true;
+            await act(async () => {
+                resizeCallback?.([], {} as ResizeObserver);
+            });
+
+            await waitFor(() => {
+                expect(createEngineMock).toHaveBeenCalledTimes(1);
+            });
+            expect(engineMock.rollToValues).toHaveBeenCalledWith([6]);
+        } finally {
+            HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+            Object.defineProperty(globalThis, 'ResizeObserver', {
+                configurable: true,
+                value: originalResizeObserver,
+            });
+        }
+    });
+
+    it('物理状态回调身份变化时不会重建骰子引擎', async () => {
+        const engineMock = {
+            resize: vi.fn(),
+            destroy: vi.fn(),
+            setCanvasDiagnostics: vi.fn(),
+            setDieSkins: vi.fn(),
+            recoverOutOfBoundsDice: vi.fn(),
+            freezeSettledDice: vi.fn(),
+            separateOverlappingDice: vi.fn(),
+            getPhysicsState: vi.fn(),
+            hasDice: vi.fn().mockReturnValue(false),
+            rollToValues: vi.fn(),
+            rerollToValues: vi.fn(),
+            syncSettledValues: vi.fn(),
+            previewValues: vi.fn(),
+            clear: vi.fn(),
+            removeDice: vi.fn(),
+            restoreValues: vi.fn().mockResolvedValue(undefined),
+        };
+        createEngineMock.mockResolvedValue(engineMock);
+
+        const view = render(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                isRolling={false}
+                onPhysicsStatesChange={vi.fn()}
+            />,
+        );
+
+        await waitFor(() => {
+            expect(createEngineMock).toHaveBeenCalledTimes(1);
+        });
+
+        view.rerender(
+            <DiceBoxPhysicsSource
+                dice={[{ id: 7, value: 6, isKept: false }]}
+                isRolling={false}
+                onPhysicsStatesChange={vi.fn()}
+            />,
+        );
+
+        await act(async () => {});
+        expect(createEngineMock).toHaveBeenCalledTimes(1);
+        expect(engineMock.destroy).not.toHaveBeenCalled();
+    });
+
     it('运行期渲染失败时会清空物理状态并停用 3D 物理源', async () => {
         const onPhysicsStatesChange = vi.fn();
         const engineMock = {

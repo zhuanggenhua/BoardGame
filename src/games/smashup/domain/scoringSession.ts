@@ -442,12 +442,14 @@ export function buildPendingPostScoringActionEvents(
     for (const action of actions) {
         if (action.kind === 'playMinionOnReplacementBase') {
             const player = state.core.players[action.playerId];
-            const cardStillInDeck = player?.deck.find(card =>
+            const fromZone = action.fromZone ?? 'deck';
+            const sourceCards = fromZone === 'hand' ? player?.hand : player?.deck;
+            const sourceCard = sourceCards?.find(card =>
                 card.uid === action.cardUid
                 && card.defId === action.defId
                 && card.type === 'minion',
             );
-            if (!player || !cardStillInDeck) {
+            if (!player || !sourceCard) {
                 continue;
             }
             events.push({
@@ -459,8 +461,8 @@ export function buildPendingPostScoringActionEvents(
                     baseIndex: action.baseIndex,
                     baseDefId: action.targetBaseDefId,
                     power: action.power,
-                    fromDeck: true,
-                    ownerId: action.ownerId ?? cardStillInDeck.owner,
+                    ...(fromZone === 'deck' ? { fromDeck: true } : {}),
+                    ownerId: action.ownerId ?? sourceCard.owner,
                     consumesNormalLimit: false,
                 },
                 timestamp,

@@ -1213,23 +1213,58 @@
     "mega_troopers_lightning_rescue_pod_title": "Lightning Rescue: you may play an extra action",
     "mega_troopers_blitzing_sword_attack_pod_title": "Blitzing Sword Attack: destroy a minion of power 4 or less",
     "mega_troopers_power_pose_pod_after_scoring_title": "Power Pose: you may play a minion on the replacement base",
+    "marvel_villains_destroy_own_title": "Choose one of your characters to destroy",
+    "marvel_villains_destroy_any_title": "Choose a character to destroy",
+    "marvel_villains_buff_title": "Choose one of your characters to gain the power modifier",
+    "marvel_villains_move_own_title": "Choose one of your characters to move",
+    "marvel_villains_destination_title": "Choose a destination base",
+    "marvel_villains_move_modifier_title": "Choose a base modifier to move",
+    "marvel_villains_mysterio_choice_title": "Mysterio: choose an effect",
+    "marvel_villains_mysterio_extra_base_modifier_option": "Play an extra base modifier",
+    "marvel_villains_mysterio_draw_option": "Draw a card",
+    "marvel_villains_deck_own_minions_title": "Choose up to two of your characters to place on the bottom of your deck",
+    "astroknights_prepare_for_battle_title": "Prepare for Battle: Choose cards to put into your hand",
+    "astroknights_astro_robot_title": "Astro Robot: You may destroy an action",
+    "star_roamers_return_replacement_move_option": "Move it to another base instead",
+    "anansi_tales_feather_gifts_destination_title": "Feather Gifts: choose a destination base",
+    "anansi_tales_feather_gifts_title": "Feather Gifts: choose one of your minions to move to another base",
+    "anansi_tales_collecting_stories_title": "Collecting Stories: choose a card you own in another player's hand to play as an extra card",
+    "anansi_tales_collecting_stories_base_title": "Collecting Stories: choose a base for the extra card",
+    "anansi_tales_ear_of_corn_title": "Ear of Corn: choose up to three discard actions to shuffle into your deck",
+    "anansi_tales_mboro_hornet_title": "Mboro Hornet: choose a base to play it to",
+    "russian_fairy_tales_tsar_eagle_draw_option": "Draw 1 card",
+    "ancient_incas_skip_place_counter_option": "Do not place a counter",
+    "ancient_incas_skip_move_minion_option": "Do not move a minion",
+    "ancient_incas_skip_move_action_option": "Do not move an action",
+    "ancient_incas_skip_return_action_option": "Do not return an action",
+    "grimms_fairy_tales_skip_shuffle_option": "Do not shuffle back into the deck",
+    "grimms_fairy_tales_skip_move_minion_option": "Do not move minions",
+    "grimms_fairy_tales_skip_power_option": "Do not add power",
+    "grimms_fairy_tales_skip_destroy_minion_option": "Do not destroy a minion",
+    "grimms_fairy_tales_skip_frog_prince_option": "Do not use The Frog Prince",
+    "grimms_fairy_tales_skip_search_minion_option": "Do not search for a minion",
+    "grimms_fairy_tales_fairy_godmothers_blessing_title": "Fairy Godmother's Blessing: choose a minion in your deck to put on deck top",
+    "grimms_fairy_tales_basket_of_goodies_title": "Basket of Goodies: choose an action in your deck to put on deck top",
+    "grimms_fairy_tales_rumpelstiltskin_title": "Rumpelstiltskin: choose a card in your deck to put on deck top",
+    "russian_fairy_tales_skip_take_action_option": "Do not take an action",
+    "russian_fairy_tales_skip_give_toad_option": "Do not give Toad away",
     "sheep_ram_title": "Ram: choose a base to move to",
     "sheep_little_bo_peep_title": "Little Bo Peep: choose one of your minions to move here",
     "sheep_ewe_shall_pass_title": "Ewe Shall Pass: choose one of your minions to move",
-      "sheep_on_the_lamb_title": "On the Lamb: choose your lead minion to move",
-      "sheep_to_follow_or_not_title": "To Follow, or Not?: choose another player",
-      "sheep_to_follow_or_not_resolve_title": "To Follow, or Not?: choose whether to play the random action or return it",
-      "sheep_to_follow_or_not_return_option": "Return that card",
-      "sheep_wood_for_sheep_title": "Wood for Sheep: choose another player",
-      "sheep_wood_for_sheep_resolve_title": "Wood for Sheep: choose a card to give, or return the revealed card",
-      "sheep_wood_for_sheep_return_option": "Return the revealed card",
-      "all_stars_favor_of_dionysus_title": "Favor of Dionysus: choose one of your minions to gain +1",
-      "all_stars_ensign_redirect_title": "Ensign: redirect the effect to Ensign?",
-      "all_stars_ensign_redirect_option": "Affect Ensign instead",
-      "all_stars_gelf_title": "G.E.L.F.: choose a non-G.E.L.F. minion of power 4 or less from your deck",
-      "all_stars_granny_title": "Granny: keep the top card on top or put it on the bottom",
-      "all_stars_granny_top_option": "Keep on top",
-      "all_stars_granny_bottom_option": "Put on bottom",
+    "sheep_on_the_lamb_title": "On the Lamb: choose your lead minion to move",
+    "sheep_to_follow_or_not_title": "To Follow, or Not?: choose another player",
+    "sheep_to_follow_or_not_resolve_title": "To Follow, or Not?: choose whether to play the random action or return it",
+    "sheep_to_follow_or_not_return_option": "Return that card",
+    "sheep_wood_for_sheep_title": "Wood for Sheep: choose another player",
+    "sheep_wood_for_sheep_resolve_title": "Wood for Sheep: choose a card to give, or return the revealed card",
+    "sheep_wood_for_sheep_return_option": "Return the revealed card",
+    "all_stars_favor_of_dionysus_title": "Favor of Dionysus: choose one of your minions to gain +1",
+    "all_stars_ensign_redirect_title": "Ensign: redirect the effect to Ensign?",
+    "all_stars_ensign_redirect_option": "Affect Ensign instead",
+    "all_stars_gelf_title": "G.E.L.F.: choose a non-G.E.L.F. minion of power 4 or less from your deck",
+    "all_stars_granny_title": "Granny: keep the top card on top or put it on the bottom",
+    "all_stars_granny_top_option": "Keep on top",
+    "all_stars_granny_bottom_option": "Put on bottom",
     "all_stars_seeing_stars_title": "Seeing Stars: choose a minion of power 3 or less",
     "all_stars_friendship_power_title": "Friendship Power: choose a minion to move",
     "all_stars_non_infinite_loop_title": "Non-Infinite Loop: choose an action from your hand",
@@ -1721,6 +1756,62 @@
     "mega_troopers_pod": {
       "name": "Mega Troopers (POD)",
       "description": "POD edition with revised scoring-window actions, trooper specials, Megabot support, and Omega Protocol."
+    },
+    "skeletons_pod": {
+      "name": "Skeletons (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Skeletons."
+    },
+    "shapeshifters_pod": {
+      "name": "Shapeshifters (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Shapeshifters."
+    },
+    "hydra": {
+      "name": "Hydra",
+      "description": "Turn sacrificed characters into card draw, low-power redeployment, and relentless board rebuilding."
+    },
+    "kree": {
+      "name": "Kree",
+      "description": "Chain actions, draw cards, and recycle tactics so characters grow stronger as the plan unfolds."
+    },
+    "masters_of_evil": {
+      "name": "Masters of Evil",
+      "description": "Convert VP thresholds, scoring triggers, and destruction protection into extra victory points."
+    },
+    "sinister_six": {
+      "name": "Sinister Six",
+      "description": "Lower base breakpoints and manipulate base modifiers to shut down opponents at vulnerable scoring windows."
+    },
+    "astroknights": {
+      "name": "Astroknights",
+      "description": "Use special scoring windows, temporary power, and action recycling to defend key bases."
+    },
+    "ignobles": {
+      "name": "Ignobles",
+      "description": "Trade control, extra plays, and betrayal reactions to turn political deals into points."
+    },
+    "star_roamers": {
+      "name": "Star Roamers",
+      "description": "Return, move, and redeploy minions around bases before and after scoring."
+    },
+    "changerbots": {
+      "name": "Changerbots",
+      "description": "Transform, transport, and temporarily boost minions to assemble bursts at decisive bases."
+    },
+    "anansi_tales": {
+      "name": "Anansi Tales",
+      "description": "Give stories and cards away, then profit when those borrowed gifts travel through other players' hands."
+    },
+    "grimms_fairy_tales": {
+      "name": "Grimms' Fairy Tales",
+      "description": "Pair storybook characters, chain names, and turn classic duos into extra plays."
+    },
+    "russian_fairy_tales": {
+      "name": "Russian Fairy Tales",
+      "description": "Transform minions through decks, retrieve story counterparts, and recycle threats at tricky timings."
+    },
+    "ancient_incas": {
+      "name": "Ancient Incas",
+      "description": "Build actions onto bases, move through sacred paths, and convert attached action engines into power."
     },
     "sheep": {
       "name": "Sheep",
@@ -7433,6 +7524,818 @@
     },
     "superheroes_awesome_guy_pod": {
       "name": "Awesome Guy"
+    },
+    "skeletons_spooky_scary_pod": {
+      "name": "Spooky, Scary...",
+      "effectText": "Bury a minion of power 3 or less from your discard pile. Draw a card."
+    },
+    "skeletons_grave_goods_pod": {
+      "name": "Grave Goods",
+      "effectText": "Bury a card from your hand. Then you may discard a card to bury one extra card, or uncover one of your buried cards. If it is a minion, you may place two +1 power counters on it."
+    },
+    "skeletons_place_em_down_pod": {
+      "name": "Place 'em Down",
+      "effectText": "Bury up to three minions from your discard pile with total power 6 or less."
+    },
+    "skeletons_graveyard_pod": {
+      "name": "Graveyard",
+      "effectText": "Play on a base. Talent: Uncover one of your buried cards here. If it is a minion, you may place a +1 power counter on it."
+    },
+    "skeletons_hearse_fleet_pod": {
+      "name": "Hearse Fleet",
+      "effectText": "Move any number of your buried cards from one base to another base. You may play this card before a base scores to move up to two of your buried cards to or from that base."
+    },
+    "skeletons_gravestones_pod": {
+      "name": "Gravestones",
+      "effectText": "Play on a base. Ongoing: After a minion here is uncovered, you may place a +1 power counter on it. Special: After this base scores, bury this card on another base."
+    },
+    "skeletons_burst_forth_pod": {
+      "name": "Burst Forth",
+      "effectText": "Special: Before a base scores, uncover one of your buried cards there."
+    },
+    "skeletons_dig_em_up_pod": {
+      "name": "Dig 'em Up",
+      "effectText": "Choose a base. Uncover up to three of your buried cards there."
+    },
+    "skeletons_returned_one_pod": {
+      "name": "Returned One",
+      "abilityText": "You may bury this minion here. Special: After this card is uncovered, you may uncover another of your buried cards here."
+    },
+    "skeletons_revenant_pod": {
+      "name": "Revenant",
+      "abilityText": "Special: During your turn, you may bury this card from your discard pile. You may only use a Revenant's ability once per turn."
+    },
+    "skeletons_gravetender_pod": {
+      "name": "Gravetender",
+      "abilityText": "Ongoing: Once per turn, after another one of your cards is buried or uncovered, draw a card."
+    },
+    "skeletons_lord_of_bones_pod": {
+      "name": "Lord of Bones",
+      "abilityText": "Ongoing: After another minion is uncovered, you may place a +1 power counter on it. Talent: Bury a card from your hand here or uncover one of your buried cards here."
+    },
+    "shapeshifters_transmogrify_pod": {
+      "name": "Transmogrify",
+      "effectText": "Destroy one of your minions. Search your deck for a minion of equal or lower power and play it here as an extra minion. Shuffle your deck."
+    },
+    "shapeshifters_genetic_shift_pod": {
+      "name": "Genetic Shift",
+      "effectText": "Choose either all of your minions gain +1 power until the end of the turn, or one of your minions gains +3 power until the end of the turn."
+    },
+    "shapeshifters_mitosis_pod": {
+      "name": "Mitosis",
+      "effectText": "Choose one of your minions in play. Play an extra minion with the same name from your hand."
+    },
+    "shapeshifters_really_pod": {
+      "name": "... Really?",
+      "effectText": "Destroy one of your minions. Play an extra minion of equal or lower power from your discard pile."
+    },
+    "shapeshifters_shell_game_pod": {
+      "name": "Shell Game",
+      "effectText": "Play on a minion. Ongoing: This minion cannot be destroyed."
+    },
+    "shapeshifters_splice_as_nice_pod": {
+      "name": "Splice as Nice",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power."
+    },
+    "shapeshifters_cellular_bonding_pod": {
+      "name": "Cellular Bonding",
+      "effectText": "Play on a minion. Choose an action on that minion. Ongoing: This card has the ability of the chosen card."
+    },
+    "shapeshifters_bacta_the_future_pod": {
+      "name": "Bacta the Future",
+      "effectText": "Destroy a minion. Its owner may immediately play an extra minion."
+    },
+    "shapeshifters_copycat_pod": {
+      "name": "Copycat",
+      "abilityText": "Choose another player's minion in play. This card has that minion's ability until the end of the turn."
+    },
+    "shapeshifters_mimic_pod": {
+      "name": "Mimic",
+      "abilityText": "Ongoing: This minion has the power of the minion in play with the highest printed power."
+    },
+    "shapeshifters_gelf_pod": {
+      "name": "G.E.L.F.",
+      "abilityText": "Talent: Search your deck for a non-G.E.L.F. minion of power 4 or less. Shuffle this card into your deck and play that minion here as an extra minion. Shuffle your deck."
+    },
+    "shapeshifters_doppelganger_pod": {
+      "name": "Doppelganger",
+      "abilityText": "Special: When this card goes to the discard pile from a base, search your deck for a minion and play it as an extra minion. Shuffle your deck."
+    },
+    "hydra_red_skull": {
+      "name": "Red Skull",
+      "abilityText": "Ongoing: After one of your characters is destroyed, draw a card. Talent: Destroy one of your characters to draw a card."
+    },
+    "hydra_baron_strucker": {
+      "name": "Baron Strucker",
+      "abilityText": "Talent: Destroy one of your characters. After it is destroyed, move up to two of your characters from other bases to here."
+    },
+    "hydra_madame_hydra": {
+      "name": "Madame Hydra",
+      "abilityText": "Talent: Destroy one of your characters to give this character +2 power until the end of the turn."
+    },
+    "hydra_arnim_zola": {
+      "name": "Arnim Zola",
+      "abilityText": "Ongoing: This character has +1 power for each of your other characters here with a printed power of 2 or less."
+    },
+    "hydra_hydra_agent": {
+      "name": "Hydra Agent",
+      "abilityText": "Ongoing: After this character is destroyed, play up to two extra characters of power 2 or less here."
+    },
+    "hydra_fanatical_devotion": {
+      "name": "Fanatical Devotion",
+      "effectText": "Base modifier. Ongoing: Your characters here each have +2 power if one or more of your characters have been destroyed here this turn."
+    },
+    "hydra_hail_hydra": {
+      "name": "Hail Hydra!",
+      "effectText": "Destroy one of your characters to draw cards equal to its power."
+    },
+    "hydra_hour_of_destiny": {
+      "name": "Hour of Destiny",
+      "effectText": "Search your deck for up to two characters of power 2 or less, reveal them, and draw them. Then shuffle your deck."
+    },
+    "hydra_reactivate_agents": {
+      "name": "Reactivate Agents",
+      "effectText": "Place up to two characters of 2 power or less from your discard pile into your hand."
+    },
+    "hydra_secret_reserves": {
+      "name": "Secret Reserves",
+      "effectText": "Shuffle any number of characters of power 2 or less from your discard pile into your deck."
+    },
+    "hydra_two_more_shall_take_its_place": {
+      "name": "Two More Shall Take Its Place",
+      "effectText": "Destroy one of your characters. After it is destroyed, play up to two characters of power 2 or less as extra characters onto that base."
+    },
+    "kree_supreme_intelligence": {
+      "name": "Supreme Intelligence",
+      "abilityText": "Ongoing: After you play an action, one of your other characters gains +1 power until the end of the turn."
+    },
+    "kree_minn_erva": {
+      "name": "Minn-Erva",
+      "abilityText": "Draw two cards."
+    },
+    "kree_ronan_the_accuser": {
+      "name": "Ronan the Accuser",
+      "abilityText": "You may play an extra action."
+    },
+    "kree_kree_sentry": {
+      "name": "Kree Sentry",
+      "abilityText": "Ongoing: This character has +2 power if you have played two or more actions this turn."
+    },
+    "kree_battle_rage": {
+      "name": "Battle Rage",
+      "effectText": "One of your characters gains +2 power until the end of the turn. Draw a card."
+    },
+    "kree_call_for_backup": {
+      "name": "Call for Backup",
+      "effectText": "Draw two cards."
+    },
+    "kree_it_begins": {
+      "name": "It Begins",
+      "effectText": "One of your characters gains +1 power until the end of the turn. Draw a card. You may play an extra action."
+    },
+    "kree_prepare_to_engage": {
+      "name": "Prepare to Engage",
+      "effectText": "Reveal the top five cards of your deck. Place up to two revealed actions into your hand and shuffle the rest into your deck."
+    },
+    "kree_proven_methods": {
+      "name": "Proven Methods",
+      "effectText": "Place up to two actions from your discard pile on top of your deck in any order."
+    },
+    "kree_relentless_attack": {
+      "name": "Relentless Attack",
+      "effectText": "Character modifier. Talent: Play an extra action."
+    },
+    "kree_righteous_fury": {
+      "name": "Righteous Fury",
+      "effectText": "Character modifier. Ongoing: This character has +3 power."
+    },
+    "kree_speed_up": {
+      "name": "Speed Up",
+      "effectText": "Play up to two extra actions."
+    },
+    "masters_of_evil_baron_zemo": {
+      "name": "Baron Zemo",
+      "abilityText": "Ongoing: After this base scores, gain 1 VP and place this character on the bottom of its owner's deck."
+    },
+    "masters_of_evil_ulysses_klaw": {
+      "name": "Ulysses Klaw",
+      "abilityText": "Draw a card for every 4 VP you have."
+    },
+    "masters_of_evil_black_mamba": {
+      "name": "Black Mamba",
+      "abilityText": "Ongoing: This character has +1 power for every 4 VP you have."
+    },
+    "masters_of_evil_absorbing_man": {
+      "name": "Absorbing Man",
+      "abilityText": "Talent: Destroy this character and another Absorbing Man to gain 1 VP."
+    },
+    "masters_of_evil_a_portent_of_doom": {
+      "name": "A Portent of Doom",
+      "effectText": "Base modifier. Play on a base with no player’s characters. Special: When this base scores, if you have 1 or more power here gain 1 VP."
+    },
+    "masters_of_evil_acceptable_losses": {
+      "name": "Acceptable Losses",
+      "effectText": "Destroy one of your characters of power 4 or more to gain 1 VP."
+    },
+    "masters_of_evil_ball_and_chain": {
+      "name": "Ball and Chain",
+      "effectText": "Character modifier. Ongoing: This character has +2 power and cannot be destroyed by other players’ cards."
+    },
+    "masters_of_evil_convergence": {
+      "name": "Convergence",
+      "effectText": "Move one of your characters to another base. After it is moved, if you have four or more characters at that base, gain 1 VP."
+    },
+    "masters_of_evil_gain_the_upper_hand": {
+      "name": "Gain the Upper Hand",
+      "effectText": "Destroy a character of power 3 or less."
+    },
+    "masters_of_evil_indestructible_form": {
+      "name": "Indestructible Form",
+      "effectText": "Base modifier. Ongoing: Your characters here cannot be destroyed by other players’ cards."
+    },
+    "masters_of_evil_sonic_shockwave": {
+      "name": "Sonic Shockwave",
+      "effectText": "Destroy another player’s character with less power than your total power at its base. After it is destroyed, if that character had 5 or more power, gain 1 VP."
+    },
+    "masters_of_evil_world_domination": {
+      "name": "World Domination",
+      "effectText": "Base modifier. Talent: One of your characters here gains +2 power until the end of the turn. Ongoing: After this base scores, move this action to another base."
+    },
+    "sinister_six_doctor_octopus": {
+      "name": "Doctor Octopus",
+      "abilityText": "Ongoing: At the start of your turn, you may reduce this base’s breakpoint by 4 until the end of the turn."
+    },
+    "sinister_six_mysterio": {
+      "name": "Mysterio",
+      "abilityText": "Talent: Play a base modifier here as an extra action OR draw a card."
+    },
+    "sinister_six_green_goblin": {
+      "name": "Green Goblin",
+      "abilityText": "Talent: Reduce this base’s breakpoint by 3 until the end of the turn."
+    },
+    "sinister_six_vulture": {
+      "name": "Vulture",
+      "abilityText": "You may place a base modifier from your discard pile on top of your deck."
+    },
+    "sinister_six_electro": {
+      "name": "Electro",
+      "abilityText": "Ongoing: This base’s breakpoint is reduced by 2."
+    },
+    "sinister_six_sandman": {
+      "name": "Sandman",
+      "abilityText": "Ongoing: This character has +2 power if the breakpoint here is 19 or less."
+    },
+    "sinister_six_ambush": {
+      "name": "Ambush",
+      "effectText": "Reduce a base’s breakpoint by 4 until the end of the turn."
+    },
+    "sinister_six_cover_the_exits": {
+      "name": "Cover the Exits",
+      "effectText": "Base modifier. Ongoing: Your characters here have +1 power. After this base scores, if its breakpoint was 19 or less, shuffle up to two of your characters here into their owners’ deck."
+    },
+    "sinister_six_incite_panic": {
+      "name": "Incite Panic",
+      "effectText": "Base modifier. Ongoing: Other players’ characters here have -1 power. If the breakpoint here is 19 or less, other players cannot use Special abilities while this base is scoring."
+    },
+    "sinister_six_move_the_goods": {
+      "name": "Move the Goods",
+      "effectText": "Move a base modifier from one base to another. Special: You may play this after a base scores."
+    },
+    "sinister_six_my_master_plan": {
+      "name": "My Master Plan",
+      "effectText": "Base modifier. Talent: If the breakpoint here is 19 or less, draw a card."
+    },
+    "sinister_six_pressure_from_all_sides": {
+      "name": "Pressure from All Sides",
+      "effectText": "Base modifier. Talent: Reduce this base’s breakpoint by 1 for each character on it until the end of the turn."
+    },
+    "sinister_six_reroute_the_power": {
+      "name": "Reroute the Power",
+      "effectText": "Base modifier. Talent: If the breakpoint here is 19 or less, give one of your characters here +3 power until the start of your next turn."
+    },
+    "sinister_six_witness_our_superiority": {
+      "name": "Witness Our Superiority",
+      "effectText": "Base modifier. Ongoing: This base’s abilities are cancelled."
+    },
+    "astroknights_block_the_probe": {
+      "name": "Block the Probe",
+      "effectText": "Choose a minion. It gains +2 power until the end of the turn. Special: You may play this card before a base scores."
+    },
+    "astroknights_hidden_base": {
+      "name": "Hidden Base",
+      "effectText": "Play on a base. Ongoing: At the start of your turn, if you have a minion here, draw a card."
+    },
+    "astroknights_recycle_the_trash": {
+      "name": "Recycle the Trash",
+      "effectText": "Shuffle up to two actions from your discard pile into your deck."
+    },
+    "astroknights_yield_to_rage": {
+      "name": "Yield to Rage",
+      "effectText": "One of your minions gains +2 power until the end of the turn. Play an extra action."
+    },
+    "astroknights_laser_sword": {
+      "name": "Laser Sword",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power and is not affected by other players’ minions."
+    },
+    "astroknights_prepare_for_battle": {
+      "name": "Prepare for Battle",
+      "effectText": "Reveal the top three cards of your deck. Draw two of them and return the other to the top or bottom of your deck."
+    },
+    "astroknights_use_the_fours": {
+      "name": "Use the Fours",
+      "effectText": "One of your minions gains +4 power until the end of the turn."
+    },
+    "astroknights_its_a_trap": {
+      "name": "It's a Trap!",
+      "effectText": "Special: Before a base scores, reveal cards from your deck until you reveal an action. You may draw it or play it immediately. Shuffle the unused cards into your deck."
+    },
+    "astroknights_annoying_alien": {
+      "name": "Annoying Alien",
+      "abilityText": "Talent: Name a minion. All minions here with that name get -2 power until the start of your next turn."
+    },
+    "astroknights_pupoks": {
+      "name": "Pupoks",
+      "abilityText": "Talent: Lose 1 VP to reveal the top three cards of your deck and draw them. You may play one of them as an extra card."
+    },
+    "astroknights_alien_guru": {
+      "name": "Alien Guru",
+      "abilityText": "Ongoing: Once per turn, after you play an action that directly increases a minion’s power, you may also place a +1 power counter on it."
+    },
+    "astroknights_walking_carpet": {
+      "name": "Walking Carpet",
+      "abilityText": "Special: Before this base scores, if you are not winning, you may play an action that directly increases the power of this minion."
+    },
+    "astroknights_scoundrel": {
+      "name": "Scoundrel",
+      "abilityText": "Talent: Move this minion and another one of your minions here to another base."
+    },
+    "astroknights_ghost_knight": {
+      "name": "Ghost Knight",
+      "abilityText": "Ongoing: This minion cannot be destroyed. Your other minions here have +2 power."
+    },
+    "astroknights_mannersbot": {
+      "name": "Mannersbot",
+      "abilityText": "Talent: Reveal the top card of your deck. If it is an action, draw it, otherwise return it."
+    },
+    "astroknights_space_prince": {
+      "name": "Space Prince",
+      "abilityText": "Talent: Play an extra action that directly increases the power of one of your minions."
+    },
+    "astroknights_space_knight": {
+      "name": "Space Knight",
+      "abilityText": "Talent: Reveal the top three cards of your deck. You may draw one action from the revealed cards. Return the rest in any order."
+    },
+    "astroknights_astro_robot": {
+      "name": "Astro Robot",
+      "abilityText": "You may destroy an action played on this base or on a minion here."
+    },
+    "ignobles_repaying_debts": {
+      "name": "Repaying Debts",
+      "effectText": "Give control of one of your minions to another player to draw two cards and play an extra minion."
+    },
+    "ignobles_fate_of_the_favorites": {
+      "name": "Fate of the Favorites",
+      "effectText": "Each player destroys a minion they own."
+    },
+    "ignobles_red_birthday_party": {
+      "name": "Red Birthday Party",
+      "effectText": "Destroy a minion you own and all minions with less power on the same base."
+    },
+    "ignobles_hostage_exchange": {
+      "name": "Hostage Exchange",
+      "effectText": "Give another player control of one of your minions to take control of one of their minions of equal or less power."
+    },
+    "ignobles_inevitable_betrayal": {
+      "name": "Inevitable Betrayal",
+      "effectText": "Special: Before a base scores, take control of a minion you own there."
+    },
+    "ignobles_activate_the_spy": {
+      "name": "Activate the Spy",
+      "effectText": "Take control of a minion you own. Play an extra action."
+    },
+    "ignobles_out_of_sight": {
+      "name": "Out of Sight",
+      "effectText": "Each player returns a minion they own to their hand."
+    },
+    "ignobles_banner_call": {
+      "name": "Banner Call",
+      "effectText": "Take control of any number of minions you own."
+    },
+    "ignobles_sneaky_squire": {
+      "name": "Sneaky Squire",
+      "abilityText": "You may give control of this minion to another player to play an extra minion."
+    },
+    "ignobles_betrothed": {
+      "name": "Betrothed",
+      "abilityText": "You may give control of this minion to another player. Ongoing: The owner of this minion gains 1 VP if another player wins this base and controls this minion."
+    },
+    "ignobles_foot_of_the_king": {
+      "name": "Foot of the King",
+      "abilityText": "Ongoing: At the end of your turn, you may take control of a minion you own."
+    },
+    "ignobles_aunt_of_drakes": {
+      "name": "Aunt of Drakes",
+      "abilityText": "Talent: Give control of one of your minions to another player to draw a card and play an extra action."
+    },
+    "star_roamers_weird_new_worlds": {
+      "name": "Weird New Worlds",
+      "effectText": "Play a new base. You may play an extra minion there."
+    },
+    "star_roamers_whiplash_maneuver": {
+      "name": "Whiplash Maneuver",
+      "effectText": "Play on a base. Ongoing: If any of your minions on other bases would be returned to your hand, you may move them here instead."
+    },
+    "star_roamers_protector_fields": {
+      "name": "Protector Fields",
+      "effectText": "Play on a base where you have a minion. Ongoing: Your minions here are not affected by other players’ cards."
+    },
+    "star_roamers_teleport_overflow": {
+      "name": "Teleport Overflow",
+      "effectText": "Return one of your minions to its owner’s hand. Reveal any number of minions with the same name from your hand, and play them as extra minions."
+    },
+    "star_roamers_teleport_error": {
+      "name": "Teleport Error",
+      "effectText": "Choose a minion. Move it to another random base."
+    },
+    "star_roamers_hyperspeed_10": {
+      "name": "Hyperspeed 10",
+      "effectText": "Choose a base. Move all minions from there to a single other base."
+    },
+    "star_roamers_port_me_up": {
+      "name": "Port Me Up",
+      "effectText": "Return one of your minions to its owner’s hand. Special: You may play this after a base scores; the minion must be on the scoring base."
+    },
+    "star_roamers_mass_teleport": {
+      "name": "Mass Teleport",
+      "effectText": "Each player returns one of their minions to its owner’s hand."
+    },
+    "star_roamers_ships_engineer": {
+      "name": "Ship's Engineer",
+      "abilityText": "Ongoing: If another one of your minions would be returned to your hand, you may move it to another base instead."
+    },
+    "star_roamers_medical_officer": {
+      "name": "Medical Officer",
+      "abilityText": "Ongoing: When one or more of your other minions would be returned to your hand, you may draw a card instead of returning one of them."
+    },
+    "star_roamers_science_officer": {
+      "name": "Science Officer",
+      "abilityText": "Talent: Return one of your minions of power 4 or less to its owner’s hand. Play an extra minion with a different name."
+    },
+    "star_roamers_ensign": {
+      "name": "Ensign",
+      "abilityText": "Ongoing: When an opponent plays a card that directly affects one of your other minions here, you may have it affect this minion instead."
+    },
+    "star_roamers_ships_captain": {
+      "name": "Ship's Captain",
+      "abilityText": "Search your deck for a minion, reveal it, add it to your hand and shuffle your deck. If it has power 3 or less, play it here as an extra minion."
+    },
+    "changerbots_matrix_of_bossiness": {
+      "name": "Matrix of Bossiness",
+      "effectText": "Play on one of your minions. Ongoing: This minion’s printed power is treated as if it were 5."
+    },
+    "changerbots_change_into_a_gun": {
+      "name": "Change Into A Gun",
+      "effectText": "Play on one of your minions to destroy a minion of power 4 or less there. Ongoing: This minion has -2 power. Destroy this card at the start of your turn."
+    },
+    "changerbots_passengers": {
+      "name": "Passengers",
+      "effectText": "Play on a minion. Ongoing: This minion has the ability: “Talent: If this minion moved this turn, move another one of your minions from the previous base to here.”"
+    },
+    "changerbots_the_touch": {
+      "name": "The Touch",
+      "effectText": "Play on one of your minions. Ongoing: This minion has the ability: “Talent: This minion gains +3 power and loses all other abilities until the end of the turn.”"
+    },
+    "changerbots_flighterizer": {
+      "name": "Flighterizer",
+      "effectText": "Play on one of your minions. Ongoing: This minion has the ability: “Talent: Move this minion to another base and give it -1 power until the end of the turn.”"
+    },
+    "changerbots_change_up_and_roll_on": {
+      "name": "Change Up and Roll On",
+      "effectText": "Special: Before a base scores you may move any number of your minions to there. They each get -1 power until the end of the turn."
+    },
+    "changerbots_cesium_armor": {
+      "name": "Cesium Armor",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power and cannot be destroyed."
+    },
+    "changerbots_form_mergacon": {
+      "name": "Form Mergacon",
+      "effectText": "Choose a base. Each of your minions there gains +1 power until the end of the turn."
+    },
+    "changerbots_leader_two": {
+      "name": "Leader Two",
+      "abilityText": "Talent: One of your other minions gains +2 power until the end of the turn."
+    },
+    "changerbots_solarshout": {
+      "name": "Solarshout",
+      "abilityText": "Talent: Play an extra action. Give this minion -2 power until the end of the turn."
+    },
+    "changerbots_huffie": {
+      "name": "Huffie",
+      "abilityText": "Talent: Move this minion to another base and give it -1 power until the end of the turn."
+    },
+    "changerbots_bruiser": {
+      "name": "Bruiser",
+      "abilityText": "Ongoing: This minion cannot be destroyed. Talent: This minion gains +2 power and loses its Ongoing ability and all other abilities until the start of your next turn."
+    },
+    "base_spikey_chair_room": {
+      "name": "Spikey Chair Room",
+      "effectText": "At the end of any turn that a player has played at least one minion here, they may destroy a minion they own to draw a card."
+    },
+    "base_no_moon": {
+      "name": "No-Moon",
+      "effectText": "Before this base scores, destroy a random other base (replace it normally)."
+    },
+    "base_uss_undertaking": {
+      "name": "USS Undertaking",
+      "effectText": "At the start of your turn, you may move one of your minions to here, or from here to another base."
+    },
+    "base_unicrave": {
+      "name": "Unicrave",
+      "effectText": "Before this base scores, replace it with the top card of the base deck. Keep all cards on it, discard this card, and keep scoring."
+    },
+    "base_wintersquashed": {
+      "name": "Wintersquashed",
+      "effectText": "After you play a minion here, you may give control of it to another player."
+    },
+    "base_changing_room": {
+      "name": "Changing Room",
+      "effectText": "After a minion here uses a talent, it gains +1 power until the end of the turn."
+    },
+    "base_neutral_space": {
+      "name": "Neutral Space",
+      "effectText": "Minions here are not affected by other players’ minions here."
+    },
+    "base_hive_of_scum_and_villainy": {
+      "name": "Hive of Scum and Villainy",
+      "effectText": "After the first time each turn that you play an action that directly increases the power of one of your minions here, draw a card."
+    },
+    "anansi_tales_anansi_the_spider": {
+      "name": "Anansi the Spider",
+      "abilityText": "Talent: Search your deck for a standard action and play it as an extra action. Then place it into another player’s hand instead of where it would normally go. You cannot play any copy of that action again this turn."
+    },
+    "anansi_tales_osebo_the_leopard": {
+      "name": "Osebo the Leopard",
+      "abilityText": "Ongoing: After you place a card into another player’s hand, place a +1 power counter on this minion."
+    },
+    "anansi_tales_onini_the_python": {
+      "name": "Onini the Python",
+      "abilityText": "Ongoing: After another player plays or discards a card they don't own from a hand or deck, you may place a +1 power counter on one of your minions."
+    },
+    "anansi_tales_akye_the_turtle": {
+      "name": "Akye the Turtle",
+      "abilityText": "You may place a card from your hand into another player’s hand to draw two cards."
+    },
+    "anansi_tales_mboro_hornet": {
+      "name": "Mboro Hornet",
+      "abilityText": "Special: After another player plays or discards a card they don't own from a hand or deck, you may play this minion as an extra minion."
+    },
+    "anansi_tales_the_perfect_gift": {
+      "name": "The Perfect Gift",
+      "effectText": "Search your deck for a standard action and play it as an extra action. Then place it into another player’s hand instead of where it would normally go."
+    },
+    "anansi_tales_pot_of_beans": {
+      "name": "Pot of Beans",
+      "effectText": "Place two +1 power counters total on minions. Place this card into another player’s hand."
+    },
+    "anansi_tales_collecting_stories": {
+      "name": "Collecting Stories",
+      "effectText": "Look at another player’s hand. You may play a card you own from their hand as an extra card."
+    },
+    "anansi_tales_ear_of_corn": {
+      "name": "Ear of Corn",
+      "effectText": "Shuffle up to three actions from your discard pile into your deck and play an extra action. Place this card into another player’s hand."
+    },
+    "anansi_tales_pot_of_wisdom": {
+      "name": "Pot of Wisdom",
+      "effectText": "Draw a card for each other player, then place a card from your hand into each other player’s hand. Play an extra action."
+    },
+    "anansi_tales_trading_stories": {
+      "name": "Trading Stories",
+      "effectText": "You may place up to three cards from your hand into other players’ hands. For each one placed, draw a card."
+    },
+    "anansi_tales_let_it_be_full_and_eat": {
+      "name": "Let it be Full and Eat",
+      "effectText": "Draw two cards. Place this card into another player’s hand."
+    },
+    "anansi_tales_feather_gifts": {
+      "name": "Feather Gifts",
+      "effectText": "Move one of your minions to another base. Place this card into another player’s hand."
+    },
+    "grimms_fairy_tales_fairy_godmothers_blessing": {
+      "name": "Fairy Godmother's Blessing",
+      "effectText": "Search your deck for a minion and place it on top of your deck."
+    },
+    "grimms_fairy_tales_the_woodsmans_axe": {
+      "name": "The Woodsman's Axe",
+      "effectText": "Destroy an action played on a base to play an extra action, OR destroy the minion Big Bad Wolf to search your deck for a minion and play it at the same base as an extra minion."
+    },
+    "grimms_fairy_tales_another_story": {
+      "name": "Another Story",
+      "effectText": "Shuffle up to three cards from your discard pile into your deck."
+    },
+    "grimms_fairy_tales_breadcrumbs": {
+      "name": "Breadcrumbs",
+      "effectText": "Move up to two of your minions from one base to another."
+    },
+    "grimms_fairy_tales_mouse_bird_and_sausage": {
+      "name": "Mouse, Bird and Sausage",
+      "effectText": "Choose up to two minions of the same faction at a base to gain +2 power each until the end of the turn."
+    },
+    "grimms_fairy_tales_teamwork": {
+      "name": "Teamwork",
+      "effectText": "Choose a minion in play. Search your hand, deck, and/or discard pile for a minion whose name appears in an ability on the chosen minion. Place it into your hand or play it as an extra minion."
+    },
+    "grimms_fairy_tales_grimms_blessing": {
+      "name": "Grimms' Blessing",
+      "effectText": "Play on a base. Ongoing: If you have two or more minions here, treat this card as if it also has the names of every minion you own. Using this ability does not count as using any minion’s ability."
+    },
+    "grimms_fairy_tales_basket_of_goodies": {
+      "name": "Basket of Goodies",
+      "effectText": "Search your deck for an action and place it on top of your deck."
+    },
+    "grimms_fairy_tales_hansel": {
+      "name": "Hansel",
+      "abilityText": "Ongoing: This minion has +2 power if Gretel is here."
+    },
+    "grimms_fairy_tales_gretel": {
+      "name": "Gretel",
+      "abilityText": "Ongoing: This minion has +2 power if Hansel is here."
+    },
+    "grimms_fairy_tales_the_other_snow_white": {
+      "name": "The Other Snow White",
+      "abilityText": "Ongoing: This minion has +2 power if Rose Red is here."
+    },
+    "grimms_fairy_tales_rose_red": {
+      "name": "Rose Red",
+      "abilityText": "Ongoing: This minion has +2 power if The Other Snow White is here."
+    },
+    "grimms_fairy_tales_red_riding_hood": {
+      "name": "Red Riding Hood",
+      "abilityText": "Ongoing: If the minion Big Bad Wolf is not in play, each of your minions here has +1 power."
+    },
+    "grimms_fairy_tales_big_bad_wolf": {
+      "name": "Big Bad Wolf",
+      "abilityText": "If the minion Red Riding Hood isn’t in play, you may destroy a minion here of power 4 or less. Ongoing: After this minion is destroyed, play another minion from your discard pile here as an extra minion."
+    },
+    "grimms_fairy_tales_prince_charming": {
+      "name": "Prince Charming",
+      "abilityText": "Talent: If Charming Princess is here, play an extra action."
+    },
+    "grimms_fairy_tales_charming_princess": {
+      "name": "Charming Princess",
+      "abilityText": "Talent: If Prince Charming is here, play an extra minion here."
+    },
+    "grimms_fairy_tales_the_frog_prince": {
+      "name": "The Frog Prince",
+      "abilityText": "Ongoing: After you play another minion here, you may shuffle this minion into your deck to play a minion from your discard pile here as an extra minion."
+    },
+    "grimms_fairy_tales_rumpelstiltskin": {
+      "name": "Rumpelstiltskin",
+      "abilityText": "Search your deck for a card and place it on top of your deck."
+    },
+    "russian_fairy_tales_the_birch_woman": {
+      "name": "The Birch Woman",
+      "abilityText": "Ongoing: After this minion goes to the discard pile from play, you may search your hand, deck, and/or discard pile for The Birch, and add it to your hand or play it as an extra minion."
+    },
+    "russian_fairy_tales_finist_the_falcon": {
+      "name": "Finist the Falcon",
+      "abilityText": "Special: Before a base scores, you may move this minion to there, or return this minion from there to your hand and play it on another base as an extra minion."
+    },
+    "russian_fairy_tales_baba_yaga": {
+      "name": "Baba Yaga",
+      "abilityText": "Talent: Place another minion here on the bottom of its owner’s deck to have them play a minion off the top of their deck here as an extra minion, then shuffle their deck."
+    },
+    "russian_fairy_tales_the_frog_princess": {
+      "name": "The Frog Princess",
+      "effectText": "Play on one of your minions. Talent: Place this minion on the bottom of its owner’s deck to play a minion off the top of your deck here as an extra minion and transfer this action to it, then shuffle your deck."
+    },
+    "russian_fairy_tales_the_water_of_life": {
+      "name": "The Water of Life",
+      "effectText": "Place a minion from your discard pile on top of your deck. You may play an extra action."
+    },
+    "russian_fairy_tales_fetch_i_know_not_what": {
+      "name": "Fetch I Know Not What",
+      "effectText": "Reveal cards from your deck until you reveal two actions. You may place any number of those actions into your hand. Shuffle the rest into your deck."
+    },
+    "russian_fairy_tales_go_i_know_not_whither": {
+      "name": "Go I Know Not Whither",
+      "effectText": "Choose a base. Shuffle a random minion there controlled by each other player into its owner’s deck."
+    },
+    "russian_fairy_tales_go_see_my_sister": {
+      "name": "Go See My Sister",
+      "effectText": "Play on a base. Ongoing: After you play or move one of your minions to here, you may draw a card."
+    },
+    "russian_fairy_tales_bewitched": {
+      "name": "Bewitched",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power. When this minion leaves play, transfer this action to another minion."
+    },
+    "russian_fairy_tales_transformation": {
+      "name": "Transformation",
+      "effectText": "Place a minion on the bottom of its owner’s deck to have them play a minion off the top of their deck there as an extra minion, then shuffle their deck."
+    },
+    "russian_fairy_tales_the_birch": {
+      "name": "The Birch",
+      "abilityText": "Ongoing: At the start of your turn, you may destroy this minion to search your hand, deck, and/or discard pile for The Birch Woman, and add it to your hand or play it here as an extra minion."
+    },
+    "russian_fairy_tales_tsar_eagle": {
+      "name": "Tsar Eagle",
+      "abilityText": "Draw a card OR place a minion from another player’s discard pile on top of their deck."
+    },
+    "russian_fairy_tales_the_gray_wolf": {
+      "name": "The Gray Wolf",
+      "abilityText": "Talent: Place this minion on top of its owner’s deck to play an extra minion here and place a +1 power counter on it."
+    },
+    "russian_fairy_tales_foolish_magician": {
+      "name": "Foolish Magician",
+      "abilityText": "Draw three cards, then place three cards from your hand on the top and/or bottom of your deck in any order."
+    },
+    "russian_fairy_tales_toad": {
+      "name": "Toad",
+      "abilityText": "You may give control of this minion to another player to shuffle another one of their minions here into its owner’s deck."
+    },
+    "russian_fairy_tales_mass_transformation": {
+      "name": "Mass Transformation",
+      "effectText": "Each player places their hand on the bottom of their deck and draws an equal number of cards."
+    },
+    "ancient_incas_ashlar_masonry": {
+      "name": "Ashlar Masonry",
+      "effectText": "Special: Play after a base scores. You may return one of your actions on that base to your hand and shuffle the rest of them into your deck instead of the discard pile."
+    },
+    "ancient_incas_golden_condor": {
+      "name": "Golden Condor",
+      "effectText": "Return any number of your actions on bases to your hand. You must play each of them as an extra action."
+    },
+    "ancient_incas_royal_highway": {
+      "name": "Royal Highway",
+      "effectText": "Play on a base. You may move one of your minions to or from here. Ongoing: After you play an action on another base, you may move one of your minions from here to there or from there to here."
+    },
+    "ancient_incas_quipu_strings": {
+      "name": "Quipu Strings",
+      "effectText": "Choose an action in your discard pile that can be played on a base and play it as an extra action."
+    },
+    "ancient_incas_llama": {
+      "name": "Llama",
+      "abilityText": "You may return one of your actions played on another base to your hand and play it here as an extra action."
+    },
+    "ancient_incas_incan_engineer": {
+      "name": "Incan Engineer",
+      "abilityText": "Reveal cards from the top of your deck until you reveal an action that can be played on a base. Add it to your hand. Shuffle the rest into your deck."
+    },
+    "ancient_incas_child_of_the_sun": {
+      "name": "Child of the Sun",
+      "abilityText": "Ongoing: After the first time you play an action on this base each turn, you may play an extra action."
+    },
+    "ancient_incas_armory": {
+      "name": "Armory",
+      "effectText": "Play on a base. Ongoing: You have +2 power here for each of your other actions on this base."
+    },
+    "ancient_incas_fortress_walls": {
+      "name": "Fortress Walls",
+      "effectText": "Play on a base. Place a +1 power counter on one of your minions here. Ongoing: After you play another action on this base, you may place a +1 power counter on one of your minions here."
+    },
+    "ancient_incas_temple_of_the_sun": {
+      "name": "Temple of the Sun",
+      "effectText": "Play on a base. Draw a card. Ongoing: After you play another action on this base, draw a card."
+    },
+    "ancient_incas_signs_in_the_stars": {
+      "name": "Signs in the Stars",
+      "effectText": "Play on a base. Ongoing: Turn the top card of the base deck face up. While the top base card is face up this base also has its abilities. At the start of each player’s turn they may turn the top base card down until the end of the turn. Talent: Place the top card of the base deck on the bottom of the deck."
+    },
+    "ancient_incas_sapa_inca": {
+      "name": "Sapa Inca",
+      "abilityText": "Search your deck and/or discard pile for an action that can be played on a base, and add it to your hand. Ongoing: After you play an action on a base, place a +1 power counter on one your minions there."
+    },
+    "base_anansis_web": {
+      "name": "Anansi's Web",
+      "abilityText": "If you have a minion here, after the first time each turn you play a standard action, you may place it into another player’s hand instead of the discard pile to draw two cards."
+    },
+    "base_storytellers_hut": {
+      "name": "Storyteller's Hut",
+      "abilityText": "On your turn, you may play an extra action to place a counter on this card. This base’s breakpoint is reduced by 2 for each of those counters."
+    },
+    "base_gingerbread_house": {
+      "name": "Gingerbread House",
+      "abilityText": "Before this base scores, each player may choose two of their minions here with the same power to gain +2 power until the end of the turn."
+    },
+    "base_woodland_cottage": {
+      "name": "Woodland Cottage",
+      "abilityText": "Once per turn, after you play a minion here, you may search your deck for a minion of power 3 or less and place it into your hand."
+    },
+    "base_transformation_spring": {
+      "name": "Transformation Spring",
+      "abilityText": "Once during your turn, after you play a minion here, you may place it on the bottom of its owner's deck to play a minion off the top of your deck here as an extra minion."
+    },
+    "base_giant_turnip": {
+      "name": "Giant Turnip",
+      "abilityText": "This base’s breakpoint is reduced by 1 for each minion on it."
+    },
+    "base_machu_picchu": {
+      "name": "Machu Picchu",
+      "abilityText": "After you play an action on this base, draw a card."
+    },
+    "base_cuzcu": {
+      "name": "Cuzcu",
+      "abilityText": "This base’s breakpoint is reduced by 3 for each action on it."
     },
     "sheep_counting_sheep": {
       "name": "Counting Sheep",

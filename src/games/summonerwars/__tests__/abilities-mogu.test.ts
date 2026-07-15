@@ -8,6 +8,7 @@ import type { BoardUnit, CellCoord, EventCard, PlayerId, SummonerWarsCore, UnitC
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import { createInitializedCore, generateInstanceId, placeTestUnit } from './test-helpers';
 import { getEffectiveStrengthValue } from '../domain/abilityResolver';
+import { CHAMPION_UNITS_MOGU, COMMON_UNITS_MOGU, EVENT_CARDS_MOGU } from '../config/factions/mogu';
 
 function testRandom(): RandomFn {
   return {
@@ -75,7 +76,7 @@ function eventCard(id: string, name: string): EventCard {
     name,
     faction: 'mogu',
     cost: 0,
-    playPhase: 'event',
+    playPhase: 'any',
     effect: '',
     deckSymbols: [],
   };
@@ -104,6 +105,7 @@ function allUnits(state: SummonerWarsCore): BoardUnit[] {
 describe('莫古 - 血腥绽放与血腥狂怒', () => {
   it('库鞭克在2格内友方死亡后给2格内友方单位充能，且不充能召唤师和死亡单位', () => {
     const state = createState();
+    state.phase = 'move';
     const summoner = place(state, { row: 4, col: 4 }, unitCard('mogu-summoner', '库鞭克', ['mogu_blood_bloom'], {
       unitClass: 'summoner',
       life: 7,
@@ -111,10 +113,22 @@ describe('莫古 - 血腥绽放与血腥狂怒', () => {
     const allyNear = place(state, { row: 4, col: 5 }, unitCard('ally-near', '近处友方'));
     const allyFar = place(state, { row: 0, col: 0 }, unitCard('ally-far', '远处友方'));
     const victim = place(state, { row: 5, col: 4 }, unitCard('victim', '牺牲友方'), '0', { damage: 2 });
+    const mage = place(state, { row: 7, col: 4 }, unitCard('mogu-withering-mage-real', '枯萎法师', ['mogu_blood_infusion']));
+
+    const validation = SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      payload: {
+        abilityId: 'mogu_blood_infusion',
+        sourceUnitId: mage.instanceId,
+        targetPosition: victim.position,
+      },
+      playerId: '0',
+    });
+    expect(validation.valid).toBe(true);
 
     const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'mogu_blood_infusion',
-      sourceUnitId: summoner.instanceId,
+      sourceUnitId: mage.instanceId,
       targetPosition: victim.position,
     });
 
@@ -127,7 +141,7 @@ describe('莫古 - 血腥绽放与血腥狂怒', () => {
 
   it('托恩在自己回合有单位死亡时充能，回合结束移除至多2点充能，力量强化最多+5', () => {
     const state = createState();
-    state.phase = 'draw';
+    state.phase = 'move';
     const tuoEn = place(state, { row: 4, col: 4 }, unitCard('mogu-tuo-en', '托恩', [
       'mogu_blood_rage',
       'power_up',
@@ -138,14 +152,27 @@ describe('莫古 - 血腥绽放与血腥狂怒', () => {
       life: 6,
     }), '0', { boosts: 6 });
     const victim = place(state, { row: 5, col: 4 }, unitCard('victim', '牺牲友方'), '0', { damage: 2 });
+    const mage = place(state, { row: 7, col: 4 }, unitCard('mogu-withering-mage-real', '枯萎法师', ['mogu_blood_infusion']));
+
+    const validation = SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      payload: {
+        abilityId: 'mogu_blood_infusion',
+        sourceUnitId: mage.instanceId,
+        targetPosition: victim.position,
+      },
+      playerId: '0',
+    });
+    expect(validation.valid).toBe(true);
 
     const first = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'mogu_blood_infusion',
-      sourceUnitId: tuoEn.instanceId,
+      sourceUnitId: mage.instanceId,
       targetPosition: victim.position,
     });
     expect(first.newState.board[tuoEn.position.row][tuoEn.position.col].unit?.boosts).toBe(7);
 
+    first.newState.phase = 'draw';
     const second = executeAndReduce(first.newState, SW_COMMANDS.END_PHASE, {});
     expect(second.newState.board[tuoEn.position.row][tuoEn.position.col].unit?.boosts).toBe(5);
     expect(getEffectiveStrengthValue({ ...tuoEn, boosts: 9 }, state)).toBe(7);
@@ -234,6 +261,46 @@ describe('莫古 - 疫病体与菌化野兽', () => {
 });
 
 describe('莫古 - 主动技能与事件牌', () => {
+  it('静态录入字段与完整单卡主裁图一致', () => {
+    expect(CHAMPION_UNITS_MOGU.map(card => ({
+      id: card.id,
+      cost: card.cost,
+      strength: card.strength,
+      life: card.life,
+      attackType: card.attackType,
+    }))).toEqual([
+      { id: 'mogu-tuo-en', cost: 6, strength: 2, life: 7, attackType: 'melee' },
+      { id: 'mogu-malformed-giant', cost: 3, strength: 5, life: 13, attackType: 'melee' },
+      { id: 'mogu-ma-shuo-da', cost: 3, strength: 3, life: 8, attackType: 'melee' },
+    ]);
+
+    expect(COMMON_UNITS_MOGU.map(card => ({
+      id: card.id,
+      cost: card.cost,
+      strength: card.strength,
+      life: card.life,
+      attackType: card.attackType,
+    }))).toEqual([
+      { id: 'mogu-withering-mage', cost: 2, strength: 4, life: 3, attackType: 'ranged' },
+      { id: 'mogu-blood-shaman', cost: 1, strength: 3, life: 2, attackType: 'ranged' },
+      { id: 'mogu-fungal-beast', cost: 3, strength: 3, life: 5, attackType: 'melee' },
+      { id: 'mogu-spore-plague-body', cost: 0, strength: 2, life: 2, attackType: 'melee' },
+    ]);
+
+    expect(EVENT_CARDS_MOGU.map(card => ({
+      id: card.id,
+      eventType: card.eventType,
+      playPhase: card.playPhase,
+      cost: card.cost,
+      isActive: card.isActive,
+    }))).toEqual([
+      { id: 'mogu-command', eventType: 'legendary', playPhase: 'attack', cost: 0, isActive: false },
+      { id: 'mogu-symbiotic-self-healing', eventType: 'common', playPhase: 'move', cost: 0, isActive: false },
+      { id: 'mogu-fanatical-fungus', eventType: 'common', playPhase: 'summon', cost: 0, isActive: true },
+      { id: 'mogu-release-spores', eventType: 'legendary', playPhase: 'magic', cost: 0, isActive: false },
+    ]);
+  });
+
   it('畸形巨怪召唤时消灭5+充能菌化野兽，并在其位置替换登场', () => {
     const state = createState();
     state.phase = 'summon';
@@ -248,14 +315,92 @@ describe('莫古 - 主动技能与事件牌', () => {
     });
     state.players['0'].hand.push(giant);
 
+    const validation = SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.SUMMON_UNIT,
+      payload: {
+        cardId: giant.id,
+        position: beast.position,
+        sacrificeUnitId: beast.instanceId,
+      },
+      playerId: '0',
+    });
+    expect(validation.valid).toBe(true);
+
     const { events, newState } = executeAndReduce(state, SW_COMMANDS.SUMMON_UNIT, {
       cardId: giant.id,
-      position: { row: 3, col: 3 },
+      position: beast.position,
+      sacrificeUnitId: beast.instanceId,
     });
 
     expect(events.find(e => e.type === SW_EVENTS.UNIT_DESTROYED && (e.payload as { reason?: string }).reason === 'mogu_final_form')).toBeDefined();
     expect(newState.board[beast.position.row][beast.position.col].unit?.card.name).toBe('畸形巨怪');
     expect(newState.board[3][3].unit).toBeUndefined();
+  });
+
+  it('畸形巨怪没有指定5+充能菌化野兽时不能按普通召唤格登场', () => {
+    const state = createState();
+    state.phase = 'summon';
+    const beast = place(state, { row: 4, col: 4 }, unitCard('mogu-fungal-beast-low', '菌化野兽', [
+      'mogu_infection',
+      'mogu_parasite',
+    ]), '0', { boosts: 4 });
+    const giant = unitCard('mogu-malformed-giant', '畸形巨怪', ['mogu_final_form'], {
+      unitClass: 'champion',
+      life: 8,
+      cost: 3,
+    });
+    state.players['0'].hand.push(giant);
+
+    const missingTargetValidation = SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.SUMMON_UNIT,
+      payload: { cardId: giant.id, position: { row: 3, col: 3 } },
+      playerId: '0',
+    });
+    const lowChargeValidation = SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.SUMMON_UNIT,
+      payload: { cardId: giant.id, position: beast.position, sacrificeUnitId: beast.instanceId },
+      playerId: '0',
+    });
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.SUMMON_UNIT, {
+      cardId: giant.id,
+      position: { row: 3, col: 3 },
+    });
+
+    expect(missingTargetValidation.valid).toBe(false);
+    expect(lowChargeValidation.valid).toBe(false);
+    expect(events).toHaveLength(0);
+    expect(newState.players['0'].magic).toBe(10);
+    expect(newState.players['0'].hand.find(c => c.id === giant.id)).toBeDefined();
+    expect(newState.board[3][3].unit).toBeUndefined();
+  });
+
+  it('畸形巨怪有多个5+充能菌化野兽时只替换玩家指定的那个', () => {
+    const state = createState();
+    state.phase = 'summon';
+    const beastA = place(state, { row: 4, col: 4 }, unitCard('mogu-fungal-beast-a', '菌化野兽', [
+      'mogu_infection',
+      'mogu_parasite',
+    ]), '0', { boosts: 5 });
+    const beastB = place(state, { row: 5, col: 4 }, unitCard('mogu-fungal-beast-b', '菌化野兽', [
+      'mogu_infection',
+      'mogu_parasite',
+    ]), '0', { boosts: 6 });
+    const giant = unitCard('mogu-malformed-giant', '畸形巨怪', ['mogu_final_form'], {
+      unitClass: 'champion',
+      life: 8,
+      cost: 3,
+    });
+    state.players['0'].hand.push(giant);
+
+    const { newState } = executeAndReduce(state, SW_COMMANDS.SUMMON_UNIT, {
+      cardId: giant.id,
+      position: beastB.position,
+      sacrificeUnitId: beastB.instanceId,
+    });
+
+    expect(newState.board[beastA.position.row][beastA.position.col].unit?.card.id).toBe('mogu-fungal-beast-a');
+    expect(newState.board[beastB.position.row][beastB.position.col].unit?.card.name).toBe('畸形巨怪');
+    expect(newState.players['0'].magic).toBe(7);
   });
 
   it('狂热菌菇可把移动后的友方单位推拉1格，然后充能并造成1伤害', () => {
@@ -365,9 +510,9 @@ describe('莫古 - 主动技能与事件牌', () => {
     expect(newState.board[ally.position.row][ally.position.col].unit?.boosts ?? 0).toBe(0);
   });
 
-  it('命令授予召唤师3格内友方士兵一次额外攻击，然后消灭目标', () => {
+  it('命令授予召唤师3格内友方士兵一次额外攻击，目标不会在打出事件时立刻死亡', () => {
     const state = createState();
-    state.phase = 'summon';
+    state.phase = 'attack';
     const summoner = place(state, { row: 4, col: 3 }, unitCard('mogu-summoner', '库鞭克', [], {
       unitClass: 'summoner',
       life: 7,
@@ -382,7 +527,43 @@ describe('莫古 - 主动技能与事件牌', () => {
 
     expect(summoner).toBeDefined();
     expect(events.some(e => e.type === SW_EVENTS.EXTRA_ATTACK_GRANTED)).toBe(true);
-    expect(newState.board[target.position.row][target.position.col].unit).toBeUndefined();
+    expect(newState.board[target.position.row][target.position.col].unit?.extraAttacks).toBe(1);
+    expect(newState.board[target.position.row][target.position.col].unit?.destroyAfterExtraAttackSource).toBe('mogu_command');
+  });
+
+  it('命令授予的友方士兵可以横向攻击相邻敌人，攻击完成后再被消灭', () => {
+    const state = createState();
+    state.phase = 'attack';
+    place(state, { row: 4, col: 2 }, unitCard('mogu-summoner', '库鞭克', [], {
+      unitClass: 'summoner',
+      life: 7,
+    }));
+    const target = place(state, { row: 4, col: 4 }, unitCard('ally-horizontal', '友方士兵'));
+    const enemy = place(state, { row: 4, col: 5 }, unitCard('enemy-horizontal', '横向相邻敌方单位', [], {
+      faction: 'necromancer',
+      life: 5,
+    }), '1');
+    state.players['0'].hand.push(eventCard('mogu-command', '命令'));
+
+    const commandResult = executeAndReduce(state, SW_COMMANDS.PLAY_EVENT, {
+      cardId: 'mogu-command',
+      targets: [target.position],
+    });
+    const validation = SummonerWarsDomain.validate({ core: commandResult.newState } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      payload: { attacker: target.position, target: enemy.position },
+      playerId: '0',
+    });
+    const attackResult = executeAndReduce(commandResult.newState, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: target.position,
+      target: enemy.position,
+    });
+
+    expect(validation.valid).toBe(true);
+    expect(attackResult.events.some(e => e.type === SW_EVENTS.UNIT_ATTACKED)).toBe(true);
+    expect(attackResult.events.find(e => e.type === SW_EVENTS.UNIT_DESTROYED
+      && (e.payload as { reason?: string }).reason === 'mogu_command')).toBeDefined();
+    expect(attackResult.newState.board[target.position.row][target.position.col].unit).toBeUndefined();
   });
 
   it('共生自愈治疗多个已受伤友方士兵和英雄并充能', () => {
@@ -624,5 +805,32 @@ describe('莫古 - 主动技能与事件牌', () => {
     expect(newState.board[ally.position.row][ally.position.col].unit?.boosts ?? 0).toBe(0);
     expect(decayChargeEvents).toHaveLength(0);
     expect(newState.phase).toBe('build');
+  });
+
+  it('腐坏给菌袍疫病体补到3充能后，后续魔力阶段结束会触发爆裂并菌化变异', () => {
+    const state = createState();
+    state.phase = 'move';
+    place(state, { row: 4, col: 4 }, unitCard('mogu-ma-shuo-da-chain', '玛硕达', ['mogu_decay'], {
+      unitClass: 'champion',
+      life: 6,
+    }));
+    const body = place(state, { row: 4, col: 5 }, unitCard('mogu-spore-plague-body-chain', '菌袍疫病体', [
+      'mogu_burst',
+      'mogu_fungal_mutation',
+    ]), '0', { boosts: 1 });
+    const beast = unitCard('mogu-fungal-beast-chain', '菌化野兽', ['mogu_infection', 'mogu_parasite']);
+    state.players['0'].discard.push(beast);
+
+    const afterMoveEnd = executeAndReduce(state, SW_COMMANDS.END_PHASE, {});
+    expect(afterMoveEnd.newState.board[body.position.row][body.position.col].unit?.boosts).toBe(3);
+
+    afterMoveEnd.newState.phase = 'magic';
+    const afterMagicEnd = executeAndReduce(afterMoveEnd.newState, SW_COMMANDS.END_PHASE, {});
+    const burstDestroy = afterMagicEnd.events.find(e => e.type === SW_EVENTS.UNIT_DESTROYED
+      && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_burst');
+
+    expect(burstDestroy).toBeDefined();
+    expect(afterMagicEnd.newState.board[body.position.row][body.position.col].unit?.card.id).toBe(beast.id);
+    expect(afterMagicEnd.newState.players['0'].discard.find(c => c.id === beast.id)).toBeUndefined();
   });
 });

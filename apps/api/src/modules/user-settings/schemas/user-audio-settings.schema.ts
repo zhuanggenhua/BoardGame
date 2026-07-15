@@ -23,6 +23,9 @@ export class UserAudioSettings {
     @Prop({ type: Object, default: {} })
     bgmSelections!: Record<string, Record<string, string>>;
 
+    @Prop({ type: Boolean, required: true, default: false })
+    singleTrackLoop!: boolean;
+
     createdAt!: Date;
     updatedAt!: Date;
 }

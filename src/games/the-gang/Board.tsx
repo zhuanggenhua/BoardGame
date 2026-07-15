@@ -4,6 +4,7 @@ import { ListOrdered, SlidersHorizontal, Wrench, X } from 'lucide-react';
 import type { GameBoardProps, MatchPlayerInfo } from '../../engine/transport/protocol';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorialBridge } from '../../contexts/TutorialContext';
+import { useToast } from '../../contexts/ToastContext';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { EndgameOverlay, type ContentSlotProps } from '../../components/game/framework/widgets/EndgameOverlay';
 import { buildPlayerDisplayNameMap } from '../../components/game/framework/playerDisplay';
@@ -134,14 +135,14 @@ const BGG_LAYOUT_CONTRACT = {
 const DEFAULT_HAND_RANK_RULES = TEXAS_HOLDEM_HAND_RANK_RULES;
 
 const UTILITY_BUTTON_CLASS = [
-    'flex h-12 min-w-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md border border-amber-200/35',
-    'bg-emerald-950/90 px-3 text-sm font-black text-amber-100 shadow-[0_0.25rem_0.9rem_rgba(0,0,0,0.34)] backdrop-blur-sm',
+    'flex h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-amber-200/35',
+    'bg-emerald-950/90 px-2.5 text-xs font-black text-amber-100 shadow-[0_0.25rem_0.9rem_rgba(0,0,0,0.34)] backdrop-blur-sm',
     'transition-[transform,background-color,border-color,color] hover:-translate-y-0.5 hover:border-amber-100/65 hover:bg-emerald-900 hover:text-amber-50',
     'active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
-    'sm:min-w-[5.75rem] sm:px-4',
+    'min-[901px]:h-12 min-[901px]:min-w-[5.75rem] min-[901px]:gap-2 min-[901px]:px-4 min-[901px]:text-sm',
 ].join(' ');
 
-const UTILITY_ICON_CLASS = 'h-5 w-5 shrink-0';
+const UTILITY_ICON_CLASS = 'h-4 w-4 shrink-0 min-[901px]:h-5 min-[901px]:w-5';
 
 type TFunction = ReturnType<typeof useTranslation>['t'];
 
@@ -335,11 +336,13 @@ function RulesConfigPanel({
     locked,
     canConfigure,
     onChange,
+    onBlockedEdit,
 }: {
     config: TheGangRulesConfig;
     locked: boolean;
     canConfigure: boolean;
     onChange: (config: TheGangRulesConfig) => void;
+    onBlockedEdit: () => void;
 }) {
     const { t } = useTranslation('game-the-gang');
     const [isOpen, setIsOpen] = useState(false);
@@ -347,6 +350,9 @@ function RulesConfigPanel({
     const activeLabels = getActiveChallengeLabels(normalized);
     const challengeIds = Object.keys(THE_GANG_CHALLENGES)
         .filter((challengeId) => THE_GANG_CHALLENGES[challengeId as TheGangChallengeId].runtimeStatus === 'implemented') as TheGangChallengeId[];
+    const rulesDialogHint = !canConfigure
+        ? 'board.rulesDialogGuestHint'
+        : locked ? 'board.rulesDialogLockedHostHint' : 'board.rulesDialogHostHint';
 
     const updateMode = (gameMode: TheGangGameMode) => {
         onChange(normalizeRulesConfig({ ...normalized, gameMode }));
@@ -373,6 +379,14 @@ function RulesConfigPanel({
 
     const canEdit = canConfigure && !locked;
 
+    const tryEdit = (action: () => void) => {
+        if (!canEdit) {
+            onBlockedEdit();
+            return;
+        }
+        action();
+    };
+
     return (
         <div
             className="pointer-events-auto relative z-50 max-w-[22rem] text-xs font-black text-amber-50/94 lg:text-sm"
@@ -391,23 +405,23 @@ function RulesConfigPanel({
             </button>
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-[90] flex items-center justify-center bg-black/62 px-4 py-5 backdrop-blur-sm"
+                    className="fixed inset-0 z-[90] flex items-center justify-center bg-black/62 px-2 py-2 backdrop-blur-sm min-[901px]:px-4 min-[901px]:py-5"
                     data-testid="the-gang-rules-modal"
                     role="dialog"
                     aria-modal="true"
                     aria-label={t('board.rulesDialogTitle')}
                 >
-                    <div className="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-amber-200/30 bg-[#102319] text-amber-50 shadow-[0_1.5rem_4rem_rgba(0,0,0,0.62)]">
-                        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-amber-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(245,214,132,0.16),transparent_32%),linear-gradient(135deg,rgba(16,35,25,0.96),rgba(6,14,10,0.98))] px-5 py-4 lg:px-7">
+                    <div className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-amber-200/30 bg-[#102319] text-amber-50 shadow-[0_1.5rem_4rem_rgba(0,0,0,0.62)] min-[901px]:max-h-[88vh] min-[901px]:rounded-2xl">
+                        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-amber-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(245,214,132,0.16),transparent_32%),linear-gradient(135deg,rgba(16,35,25,0.96),rgba(6,14,10,0.98))] px-3 py-2.5 min-[901px]:gap-4 min-[901px]:px-5 min-[901px]:py-4 lg:px-7">
                             <div className="min-w-0">
                                 <div className="text-[0.68rem] uppercase tracking-[0.24em] text-amber-200/72">
                                     {t('board.rulesDialogEyebrow')}
                                 </div>
-                                <h2 className="mt-1 text-xl font-black tracking-[0.12em] text-amber-100 lg:text-2xl">
+                                <h2 className="mt-0.5 text-base font-black tracking-[0.12em] text-amber-100 min-[901px]:mt-1 min-[901px]:text-xl lg:text-2xl">
                                     {t('board.rulesDialogTitle')}
                                 </h2>
-                                <p className="mt-2 max-w-3xl text-xs font-bold leading-relaxed text-amber-50/72 lg:text-sm">
-                                    {t(canConfigure ? 'board.rulesDialogHostHint' : 'board.rulesDialogGuestHint')}
+                                <p className="mt-1 max-w-3xl text-[0.68rem] font-bold leading-snug text-amber-50/72 min-[901px]:mt-2 min-[901px]:text-xs min-[901px]:leading-relaxed lg:text-sm">
+                                    {t(rulesDialogHint)}
                                 </p>
                             </div>
                             <button
@@ -419,7 +433,7 @@ function RulesConfigPanel({
                                 ×
                             </button>
                         </header>
-                        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 lg:px-7 lg:py-5">
+                        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 min-[901px]:px-5 min-[901px]:py-4 lg:px-7 lg:py-5">
                             <div className="mb-3 flex flex-wrap gap-2">
                                 <span className="inline-flex rounded-full border border-amber-200/30 bg-amber-200/10 px-3 py-1 text-[0.68rem] font-black tracking-[0.08em] text-amber-100">
                                     {t('board.activeGameMode', { mode: THE_GANG_GAME_MODES[normalized.gameMode].label })}
@@ -428,6 +442,11 @@ function RulesConfigPanel({
                                     {t('board.activeExitChipMode', { mode: THE_GANG_EXIT_CHIP_MODES[normalized.exitChipMode].label })}
                                 </span>
                             </div>
+                            {locked && (
+                                <div className="mb-4 rounded-lg border border-amber-200/25 bg-amber-200/10 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100/88">
+                                    {t('board.rulesLocked')}
+                                </div>
+                            )}
                             <section className="grid gap-3 lg:grid-cols-3" aria-label={t('board.gameMode')}>
                                 {(Object.keys(THE_GANG_GAME_MODES) as TheGangGameMode[]).map((modeId) => {
                                     const mode = THE_GANG_GAME_MODES[modeId];
@@ -436,11 +455,12 @@ function RulesConfigPanel({
                                         <button
                                             key={modeId}
                                             type="button"
-                                            disabled={!canEdit}
-                                            onClick={() => updateMode(modeId)}
+                                            aria-disabled={!canEdit}
+                                            onClick={() => tryEdit(() => updateMode(modeId))}
                                             aria-pressed={active}
                                             className={[
-                                                'relative min-h-[7rem] rounded-xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-55',
+                                                'relative min-h-[7rem] rounded-xl border p-4 text-left transition',
+                                                canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-55',
                                                 active
                                                     ? 'border-amber-200 bg-emerald-900/78 text-amber-50 shadow-[0_0_1.5rem_rgba(245,214,132,0.20)] ring-2 ring-amber-200/80'
                                                     : 'border-amber-200/22 bg-black/20 text-amber-50 hover:border-amber-200/55 hover:bg-emerald-900/55',
@@ -474,16 +494,18 @@ function RulesConfigPanel({
                                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                                     {TTS_SETUP_TOGGLE_KEYS.map((option) => {
                                         const active = normalized[option];
-                                        const disabled = !canEdit || (option === 'twoHand' && normalized.gameMode !== 'texas-holdem');
+                                        const disabledByRule = option === 'twoHand' && normalized.gameMode !== 'texas-holdem';
                                         return (
                                             <button
                                                 key={option}
                                                 type="button"
-                                                disabled={disabled}
-                                                onClick={() => toggleSetupOption(option)}
+                                                disabled={disabledByRule}
+                                                aria-disabled={!canEdit || disabledByRule}
+                                                onClick={() => tryEdit(() => toggleSetupOption(option))}
                                                 aria-pressed={active}
                                                 className={[
                                                     'relative min-h-[5.8rem] rounded-xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-55',
+                                                    canEdit && !disabledByRule ? 'cursor-pointer' : 'cursor-not-allowed opacity-55',
                                                     active
                                                         ? 'border-amber-200 bg-emerald-900/78 text-amber-50 shadow-[0_0_1.2rem_rgba(245,214,132,0.18)] ring-2 ring-amber-200/70'
                                                         : 'border-amber-200/22 bg-black/20 text-amber-50 hover:border-amber-200/55 hover:bg-emerald-900/55',
@@ -521,11 +543,12 @@ function RulesConfigPanel({
                                             <button
                                                 key={modeId}
                                                 type="button"
-                                                disabled={!canEdit}
-                                                onClick={() => updateExitChipMode(modeId)}
+                                                aria-disabled={!canEdit}
+                                                onClick={() => tryEdit(() => updateExitChipMode(modeId))}
                                                 aria-pressed={active}
                                                 className={[
-                                                    'relative min-h-[5.8rem] rounded-xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-55',
+                                                    'relative min-h-[5.8rem] rounded-xl border p-3 text-left transition',
+                                                    canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-55',
                                                     active
                                                         ? 'border-amber-200 bg-emerald-900/78 text-amber-50 shadow-[0_0_1.2rem_rgba(245,214,132,0.18)] ring-2 ring-amber-200/70'
                                                         : 'border-amber-200/22 bg-black/20 text-amber-50 hover:border-amber-200/55 hover:bg-emerald-900/55',
@@ -557,11 +580,6 @@ function RulesConfigPanel({
                                         {activeLabels.length > 0 ? activeLabels.join(' / ') : t('board.noChallenges')}
                                     </span>
                                 </div>
-                                {locked && (
-                                    <div className="mb-3 rounded-lg border border-amber-200/25 bg-amber-200/10 px-3 py-2 text-xs text-amber-100/88">
-                                        {t('board.rulesLocked')}
-                                    </div>
-                                )}
                                 <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-4">
                                     {challengeIds.map((challengeId) => {
                                         const challenge = THE_GANG_CHALLENGES[challengeId];
@@ -570,11 +588,12 @@ function RulesConfigPanel({
                                             <button
                                                 key={challengeId}
                                                 type="button"
-                                                disabled={!canEdit}
-                                                onClick={() => toggleChallenge(challengeId)}
+                                                aria-disabled={!canEdit}
+                                                onClick={() => tryEdit(() => toggleChallenge(challengeId))}
                                                 aria-pressed={active}
                                                 className={[
-                                                    'group relative overflow-hidden rounded-xl border bg-black/28 p-1.5 text-left transition disabled:cursor-not-allowed disabled:opacity-55',
+                                                    'group relative overflow-hidden rounded-xl border bg-black/28 p-1.5 text-left transition',
+                                                    canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-55',
                                                     active
                                                         ? 'border-amber-200 shadow-[0_0_0_0.18rem_rgba(251,191,36,0.42),0_0.75rem_1.6rem_rgba(0,0,0,0.36)]'
                                                         : 'border-amber-200/18 hover:border-amber-200/62 hover:shadow-[0_0.55rem_1.25rem_rgba(0,0,0,0.36)]',
@@ -627,19 +646,25 @@ function ToolCardBadge({
     tool,
     active = false,
     onUse,
+    actionLabel,
 }: {
     tool: TheGangToolId;
     active?: boolean;
     onUse?: (tool: TheGangToolId) => void;
+    actionLabel?: string;
 }) {
     const { t } = useTranslation('game-the-gang');
     const rule = THE_GANG_TOOLS[tool];
-    const canUse = rule.runtimeStatus === 'implemented' && !active && !!onUse;
+    const implemented = rule.runtimeStatus === 'implemented';
+    const canUse = implemented && !active && !!onUse;
+    const statusLabel = active
+        ? t('board.toolActiveBadge')
+        : (implemented ? t('board.toolUsableBadge') : t('board.toolDrawOnlyBadge'));
     const className = [
         'group relative block w-full max-w-[9.5rem] rounded-lg border bg-transparent p-0 shadow-[0_0.55rem_1.25rem_rgba(0,0,0,0.34)] transition',
         active
             ? 'border-emerald-200/80 shadow-[0_0_0_0.15rem_rgba(110,231,183,0.3),0_0.55rem_1.25rem_rgba(0,0,0,0.36)]'
-            : 'border-amber-200/34',
+            : implemented ? 'border-amber-200/34' : 'border-stone-400/28 grayscale-[0.25]',
         canUse ? 'hover:border-amber-100 hover:brightness-110' : 'cursor-default',
     ].join(' ');
     const content = (
@@ -652,6 +677,9 @@ function ToolCardBadge({
                 draggable={false}
                 placeholder={false}
             />
+            <span className="absolute bottom-1 left-1 right-1 rounded bg-black/78 px-1.5 py-1 text-center text-[0.58rem] font-black tracking-[0.08em] text-amber-50 ring-1 ring-white/10">
+                {statusLabel}
+            </span>
             <span className="sr-only">{active ? t('board.toolActiveBadge') : t('board.toolBadge')}</span>
             <span className="sr-only">{rule.summary}</span>
         </>
@@ -666,9 +694,66 @@ function ToolCardBadge({
     }
 
     return (
-        <button type="button" className={className} onClick={() => onUse(tool)} title={rule.summary}>
+        <button
+            type="button"
+            className={className}
+            onClick={() => onUse(tool)}
+            title={rule.summary}
+            aria-label={`${rule.label}，${actionLabel ?? t('board.useTool')}`}
+        >
             {content}
         </button>
+    );
+}
+
+function NightVisionCardPicker({
+    cards,
+    onSelect,
+    onCancel,
+}: {
+    cards: PlayingCard[];
+    onSelect: (cardIndex: number) => void;
+    onCancel: () => void;
+}) {
+    const { t } = useTranslation('game-the-gang');
+
+    return (
+        <section
+            className="mb-3 rounded-lg border border-amber-200/28 bg-amber-200/10 p-3"
+            data-testid="the-gang-night-vision-picker"
+            aria-label={t('board.nightVisionPickerTitle')}
+        >
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h3 className="text-sm font-black tracking-[0.12em] text-amber-100">
+                        {t('board.nightVisionPickerTitle')}
+                    </h3>
+                    <p className="mt-1 text-[0.68rem] font-bold leading-relaxed text-amber-50/72">
+                        {t('board.nightVisionPickerHint')}
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="rounded-full border border-amber-100/32 bg-black/24 px-3 py-1.5 text-[0.68rem] font-black text-amber-100 transition hover:border-amber-100/70 hover:bg-emerald-900"
+                >
+                    {t('board.cancelNightVisionPicker')}
+                </button>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+                {cards.map((card, index) => (
+                    <button
+                        key={`${card.rank}-${card.suit}-${index}`}
+                        type="button"
+                        onClick={() => onSelect(index)}
+                        className="rounded-lg border border-amber-200/38 bg-black/18 p-2 transition hover:border-amber-100 hover:bg-emerald-900/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                        aria-label={t('board.chooseNightVisionCard', { card: formatCard(card), index: index + 1 })}
+                    >
+                        <CardFace card={card} emphasis="showdown" t={t} />
+                    </button>
+                ))}
+            </div>
+        </section>
     );
 }
 
@@ -700,6 +785,8 @@ function ToolsPanel({
     onResetTools,
     onResetSpecialists,
     onUseTool,
+    onBlockedHostAction,
+    onToolsAlreadyDealt,
 }: {
     core: TheGangCore;
     localPlayerId: string;
@@ -707,15 +794,55 @@ function ToolsPanel({
     onDealTools: () => void;
     onResetTools: () => void;
     onResetSpecialists: () => void;
-    onUseTool: (tool: TheGangToolId) => void;
+    onUseTool: (tool: TheGangToolId, cardIndex?: number) => void;
+    onBlockedHostAction: () => void;
+    onToolsAlreadyDealt: () => void;
 }) {
     const { t } = useTranslation('game-the-gang');
     const [isOpen, setIsOpen] = useState(false);
+    const [nightVisionPickerOpen, setNightVisionPickerOpen] = useState(false);
     const localPlayer = core.players[localPlayerId];
     const toolsDealt = core.playerIds.some((id) => core.players[id].toolCards.length > 0);
     const activeToolLabels = localPlayer.activeTools.map((tool) => THE_GANG_TOOLS[tool].label);
     const localToolCount = localPlayer.toolCards.length;
     const localSpecialistCount = localPlayer.specialistCards.length;
+    const canDealTools = canConfigure && !toolsDealt && core.toolDeck.length >= core.playerIds.length;
+
+    const handleDealTools = () => {
+        if (!canConfigure) {
+            onBlockedHostAction();
+            return;
+        }
+        if (toolsDealt) {
+            onToolsAlreadyDealt();
+            return;
+        }
+        onDealTools();
+    };
+
+    const handleResetTools = () => {
+        if (!canConfigure) {
+            onBlockedHostAction();
+            return;
+        }
+        onResetTools();
+    };
+
+    const handleResetSpecialists = () => {
+        if (!canConfigure) {
+            onBlockedHostAction();
+            return;
+        }
+        onResetSpecialists();
+    };
+
+    const handleUseTool = (tool: TheGangToolId) => {
+        if (tool === 'night-vision-goggles') {
+            setNightVisionPickerOpen(true);
+            return;
+        }
+        onUseTool(tool);
+    };
 
     return (
         <div
@@ -742,16 +869,16 @@ function ToolsPanel({
             </button>
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-[90] flex items-center justify-center bg-black/62 px-3 py-4 backdrop-blur-sm sm:px-5"
+                    className="fixed inset-0 z-[90] flex items-center justify-center bg-black/62 px-2 py-2 backdrop-blur-sm min-[901px]:px-5 min-[901px]:py-4"
                     data-testid="the-gang-tools-modal"
                     role="dialog"
                     aria-modal="true"
                     aria-label={t('board.toolsPanel')}
                 >
-                    <div className="flex max-h-[90dvh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-amber-200/30 bg-[#102319] shadow-[0_1.5rem_4rem_rgba(0,0,0,0.62)]">
-                        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-amber-200/18 bg-black/18 px-4 py-3 sm:px-5">
+                    <div className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-amber-200/30 bg-[#102319] shadow-[0_1.5rem_4rem_rgba(0,0,0,0.62)] min-[901px]:max-h-[90dvh]">
+                        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-amber-200/18 bg-black/18 px-3 py-2.5 min-[901px]:gap-4 min-[901px]:px-5 min-[901px]:py-3">
                             <div className="min-w-0">
-                                <h2 className="text-lg font-black text-amber-100 sm:text-xl">{t('board.toolsPanel')}</h2>
+                                <h2 className="text-base font-black text-amber-100 min-[901px]:text-xl">{t('board.toolsPanel')}</h2>
                                 <div className="truncate text-[0.68rem] text-amber-100/72">
                                     {t('board.toolPanelSummary', { tools: localToolCount, specialists: localSpecialistCount })}
                                 </div>
@@ -765,7 +892,7 @@ function ToolsPanel({
                                 <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.25} />
                             </button>
                         </header>
-                        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-3 sm:p-4 lg:grid-cols-2 lg:p-5">
+                        <div className="grid min-h-0 flex-1 grid-cols-2 gap-3 overflow-y-auto p-3 min-[901px]:gap-4 min-[901px]:p-4 lg:p-5">
                             <section className="min-w-0 rounded-lg border border-amber-200/16 bg-black/12 p-3">
                     <div className="mb-2 flex items-center justify-between gap-2">
                         <div>
@@ -775,17 +902,27 @@ function ToolsPanel({
                         <div className="flex flex-wrap justify-end gap-1">
                             <button
                                 type="button"
-                                disabled={!canConfigure || toolsDealt || core.toolDeck.length < core.playerIds.length}
-                                onClick={onDealTools}
-                                className="rounded-full border border-amber-200/55 bg-amber-300 px-2.5 py-1 text-[0.62rem] font-black text-emerald-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
+                                aria-disabled={!canDealTools}
+                                onClick={handleDealTools}
+                                className={[
+                                    'rounded-full border px-2.5 py-1 text-[0.62rem] font-black transition',
+                                    canDealTools
+                                        ? 'cursor-pointer border-amber-200/55 bg-amber-300 text-emerald-950 hover:bg-amber-200'
+                                        : 'cursor-not-allowed border-stone-600/70 bg-stone-700/75 text-stone-400',
+                                ].join(' ')}
                             >
-                                {t('board.dealTools')}
+                                {toolsDealt ? t('board.toolsDealt') : t('board.dealTools')}
                             </button>
                             <button
                                 type="button"
-                                disabled={!canConfigure}
-                                onClick={onResetTools}
-                                className="rounded-full border border-amber-100/32 bg-emerald-900/82 px-2.5 py-1 text-[0.62rem] font-black text-amber-100 transition hover:border-amber-100/70 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
+                                aria-disabled={!canConfigure}
+                                onClick={handleResetTools}
+                                className={[
+                                    'rounded-full border px-2.5 py-1 text-[0.62rem] font-black transition',
+                                    canConfigure
+                                        ? 'cursor-pointer border-amber-100/32 bg-emerald-900/82 text-amber-100 hover:border-amber-100/70 hover:bg-emerald-800'
+                                        : 'cursor-not-allowed border-stone-600/70 bg-stone-700/75 text-stone-400',
+                                ].join(' ')}
                             >
                                 {t('board.resetTools')}
                             </button>
@@ -796,6 +933,21 @@ function ToolsPanel({
                             ? t('board.activeTools', { tools: activeToolLabels.join(' / ') })
                             : t('board.noActiveTools')}
                     </div>
+                    <div className="mb-3 rounded-md border border-amber-200/16 bg-black/16 px-2 py-1.5 text-[0.68rem] font-bold leading-relaxed text-amber-50/72" data-testid="the-gang-tools-deal-status">
+                        {toolsDealt
+                            ? t('board.toolsDealtStatus', { players: core.playerIds.length })
+                            : t(canConfigure ? 'board.toolsReadyToDealStatus' : 'board.toolsGuestStatus')}
+                    </div>
+                    {nightVisionPickerOpen && localPlayer.toolCards.includes('night-vision-goggles') && (
+                        <NightVisionCardPicker
+                            cards={localPlayer.pocketCards}
+                            onCancel={() => setNightVisionPickerOpen(false)}
+                            onSelect={(cardIndex) => {
+                                onUseTool('night-vision-goggles', cardIndex);
+                                setNightVisionPickerOpen(false);
+                            }}
+                        />
+                    )}
                         <div
                             className="relative rounded-lg border border-amber-200/18 bg-black/12 p-2"
                             data-testid="the-gang-local-tools"
@@ -827,7 +979,8 @@ function ToolsPanel({
                                                 key={`${tool}-${index}`}
                                                 tool={tool}
                                                 active={localPlayer.activeTools.includes(tool)}
-                                                onUse={onUseTool}
+                                                onUse={handleUseTool}
+                                                actionLabel={tool === 'night-vision-goggles' ? t('board.chooseHandCardForTool') : t('board.useTool')}
                                             />
                                         ))}
                                     </div>
@@ -851,9 +1004,14 @@ function ToolsPanel({
                                 </div>
                                 <button
                                     type="button"
-                                    disabled={!canConfigure}
-                                    onClick={onResetSpecialists}
-                                    className="rounded-full border border-sky-100/32 bg-sky-950/72 px-2.5 py-1 text-[0.62rem] font-black text-sky-100 transition hover:border-sky-100/70 hover:bg-sky-900 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400"
+                                    aria-disabled={!canConfigure}
+                                    onClick={handleResetSpecialists}
+                                    className={[
+                                        'rounded-full border px-2.5 py-1 text-[0.62rem] font-black transition',
+                                        canConfigure
+                                            ? 'cursor-pointer border-sky-100/32 bg-sky-950/72 text-sky-100 hover:border-sky-100/70 hover:bg-sky-900'
+                                            : 'cursor-not-allowed border-stone-600/70 bg-stone-700/75 text-stone-400',
+                                    ].join(' ')}
                                 >
                                     {t('board.resetSpecialists')}
                                 </button>
@@ -1332,6 +1490,7 @@ function TheGangEndgameContent({
 export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, seatControllers, isMultiplayer }: Props) {
     const core = G.core;
     const { t } = useTranslation('game-the-gang');
+    const toast = useToast();
     useTutorialBridge(G.sys.tutorial, dispatch);
     useGameAudio({
         config: THE_GANG_AUDIO_CONFIG,
@@ -1361,6 +1520,8 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         ? (playerID ?? core.playerIds[0])
         : (hasAiSeat ? (playerID ?? localHumanPlayerId) : (playerID ?? core.playerIds[0]));
     const localPlayer = core.players[localPlayerId];
+    const heistStarted = core.heistStarted === true;
+    const setupOpen = core.phase === 'chip-selection' && !heistStarted;
     const allPlayersHaveChip = core.playerIds.every((id) => core.currentRoundChips[id] !== undefined);
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
     const revealShowdownProgress = getProgressButtonState(core, 'reveal-showdown', localPlayerId, t('board.revealShowdown'), t);
@@ -1372,7 +1533,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     const rulesLocked = core.heistNumber !== 1
         || core.round !== 1
         || core.phase !== 'chip-selection'
-        || Object.keys(core.currentRoundChips).length > 0
+        || heistStarted
         || core.roundHistory.length > 0;
     const canConfigureRules = resolveCanConfigureRules(matchData, playerID, core.playerIds[0]);
     const handRankRules = isChallengeActive(core.rules.config, 'grinding-gears') || isChallengeActive(core.rules.config, 'the-joker') || isChallengeActive(core.rules.config, 'master-key')
@@ -1385,6 +1546,18 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         (id) => t('board.playerFallback', { player: Number(id) + 1 }),
     );
     const playerName = (id: string) => playerNames[id] ?? t('board.playerFallback', { player: Number(id) + 1 });
+    const tutorialOpponentTargetId = core.playerIds.find((id) => id !== localPlayerId);
+    const showRulesBlockedToast = () => {
+        if (canConfigureRules) {
+            toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastRulesLocked' }, undefined, {
+                dedupeKey: 'the-gang.rules-locked',
+            });
+            return;
+        }
+        toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastHostOnlySetup' }, undefined, {
+            dedupeKey: 'the-gang.host-only-setup',
+        });
+    };
 
     const dispatchForPlayer = <K extends string & keyof TheGangCommandMap>(
         type: K,
@@ -1403,6 +1576,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     };
 
     const takeChip = (chip: number) => {
+        if (!heistStarted) {
+            showWarning('board.toastStartBeforeChip', 'start-before-chip');
+            return;
+        }
         dispatchForPlayer(THE_GANG_COMMANDS.TAKE_CHIP, { chip });
     };
 
@@ -1422,10 +1599,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         dispatchForPlayer(THE_GANG_COMMANDS.RESET_SPECIALISTS, {});
     };
 
-    const useTool = (tool: TheGangToolId) => {
+    const useTool = (tool: TheGangToolId, cardIndex?: number) => {
         dispatchForPlayer(THE_GANG_COMMANDS.USE_TOOL, {
             tool,
-            ...(tool === 'night-vision-goggles' ? { cardIndex: 0 } : {}),
+            ...(typeof cardIndex === 'number' ? { cardIndex } : {}),
         });
     };
 
@@ -1435,6 +1612,14 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
     const revealShowdown = () => {
         dispatchForPlayer(THE_GANG_COMMANDS.REVEAL_SHOWDOWN, {});
+    };
+
+    const startHeist = () => {
+        if (!canConfigureRules) {
+            showWarning('board.toastHostOnlyStart', 'host-only-start');
+            return;
+        }
+        dispatchForPlayer(THE_GANG_COMMANDS.START_HEIST, {});
     };
 
     const startNextHeist = () => {
@@ -1459,7 +1644,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
                 <HudPortal>
                     <div
-                        className="pointer-events-none fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] z-50 flex flex-col items-start gap-2 sm:flex-row sm:items-end lg:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:left-[max(1rem,env(safe-area-inset-left))]"
+                        className="pointer-events-none fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] z-50 flex flex-col items-start gap-1.5 sm:flex-row sm:items-end min-[901px]:gap-2 lg:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:left-[max(1rem,env(safe-area-inset-left))]"
                         data-bgg-zone="utility-dock"
                         data-testid="the-gang-utility-dock"
                     >
@@ -1469,6 +1654,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             locked={rulesLocked}
                             canConfigure={canConfigureRules}
                             onChange={setRulesConfig}
+                            onBlockedEdit={showRulesBlockedToast}
                         />
                         <ToolsPanel
                             core={core}
@@ -1478,6 +1664,8 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             onResetTools={resetTools}
                             onResetSpecialists={resetSpecialists}
                             onUseTool={useTool}
+                            onBlockedHostAction={() => showWarning('board.toastToolsHostOnly', 'tools-host-only')}
+                            onToolsAlreadyDealt={() => showWarning('board.toastToolsAlreadyDealt', 'tools-already-dealt')}
                         />
                     </div>
                 </HudPortal>
@@ -1494,7 +1682,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                     </div>
                 </header>
 
-                <section className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-1 overflow-visible lg:gap-2 xl:gap-3" data-testid="the-gang-bgg-board">
+                <section className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-1 overflow-visible pb-[clamp(5.5rem,22vh,9rem)] lg:gap-2 lg:pb-[clamp(8.5rem,20vh,13.5rem)] xl:gap-3" data-testid="the-gang-bgg-board">
                     <section
                         className="pointer-events-auto flex shrink-0 justify-evenly gap-3 overflow-visible lg:gap-6"
                         data-bgg-zone="top-zone"
@@ -1509,6 +1697,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     key={id}
                                     className="flex min-w-0 basis-[12rem] flex-col items-center gap-1 lg:basis-[26rem] lg:gap-2"
                                     data-bgg-zone="plboard"
+                                    data-tutorial-id={id === tutorialOpponentTargetId ? 'the-gang-opponent-state' : undefined}
                                 >
                                     <span className={`truncate text-xs font-black tracking-[0.08em] lg:text-sm ${isSelf ? 'text-amber-200' : 'text-stone-100/72'}`}>
                                         {playerName(id)}
@@ -1519,7 +1708,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                         currentChip={core.currentRoundChips[id]}
                                         playerId={id}
                                         localPlayerId={localPlayerId}
-                                        onTakeCurrentChip={core.phase === 'chip-selection' ? takeChip : undefined}
+                                        onTakeCurrentChip={heistStarted && core.phase === 'chip-selection' ? takeChip : undefined}
                                     />
                                     <div className="flex justify-center gap-1 lg:gap-1.5">
                                         {visible && player.pocketCards.map((card, index) => (
@@ -1602,7 +1791,24 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                         </div>
 
                         <div className="pointer-events-auto absolute bottom-0 right-24 flex min-w-[7rem] flex-col items-center gap-1 lg:right-28" data-bgg-zone="action-dock">
-                            {core.phase === 'chip-selection' && core.round < 4 && (
+                            {setupOpen && (
+                                <button
+                                    type="button"
+                                    aria-disabled={!canConfigureRules}
+                                    onClick={startHeist}
+                                    data-testid="the-gang-start-heist"
+                                    data-tutorial-id="the-gang-start-heist"
+                                    className={[
+                                        'min-w-[5.75rem] rounded-full border px-5 py-2.5 text-base font-black tracking-[0.08em] shadow-[0_12px_28px_rgba(245,158,11,0.36)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:min-w-[7rem] lg:px-7 lg:py-3.5 lg:text-lg',
+                                        canConfigureRules
+                                            ? 'cursor-pointer border-amber-200/75 bg-amber-300 text-stone-950 hover:-translate-y-0.5 hover:bg-amber-200'
+                                            : 'cursor-not-allowed border-stone-600/70 bg-stone-700/75 text-stone-400 shadow-none',
+                                    ].join(' ')}
+                                >
+                                    {t(canConfigureRules ? 'board.startHeist' : 'board.setupWaitingHost')}
+                                </button>
+                            )}
+                            {heistStarted && core.phase === 'chip-selection' && core.round < 4 && (
                                 <button
                                     type="button"
                                     disabled={!allPlayersHaveChip || nextRoundProgress.hasApproved}
@@ -1613,7 +1819,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     {nextRoundProgress.label}
                                 </button>
                             )}
-                            {core.phase === 'chip-selection' && core.round === 4 && (
+                            {heistStarted && core.phase === 'chip-selection' && core.round === 4 && (
                                 <button
                                     type="button"
                                     disabled={!allPlayersHaveChip || revealShowdownProgress.hasApproved}
@@ -1624,7 +1830,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     {revealShowdownProgress.label}
                                 </button>
                             )}
-                            {allPlayersHaveChip && core.phase === 'chip-selection' && (
+                            {heistStarted && allPlayersHaveChip && core.phase === 'chip-selection' && (
                                 <ProgressVoteDots
                                     approvals={core.round < 4 ? nextRoundProgress.approvals : revealShowdownProgress.approvals}
                                     label={core.round < 4 ? nextRoundProgress.status : revealShowdownProgress.status}

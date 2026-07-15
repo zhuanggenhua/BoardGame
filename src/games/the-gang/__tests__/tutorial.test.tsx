@@ -3,6 +3,8 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
+import { ToastProvider } from '../../../contexts/ToastContext';
+import { ToastViewport } from '../../../components/system/ToastViewport';
 import Board from '../Board';
 import { TheGangDomain } from '../domain';
 import { execute, reduce } from '../domain/reducer';
@@ -42,6 +44,20 @@ const stableTutorialTargets = () =>
         'the-gang-showdown-hole-cards',
     ].includes(target));
 
+const renderWithToast = (ui: React.ReactElement) =>
+    render(
+        <ToastProvider>
+            {ui}
+            <ToastViewport />
+        </ToastProvider>,
+    );
+
+const tutorialTakeLowestAvailableChipPayload = {
+    chip: 1,
+    tutorialChipMode: 'lowest-unoccupied',
+    tutorialOnlyIfMissing: true,
+} as const;
+
 describe('The Gang tutorial', () => {
     test('基础教程包含真实步骤和命令/事件约束', () => {
         expect(TheGangTutorial.id).toBe('the-gang-basic');
@@ -52,6 +68,7 @@ describe('The Gang tutorial', () => {
             'goal-track',
             'hand',
             'hand-rank-reference',
+            'start-heist',
             'chip-choice',
             'table-response',
             'take-player-chip',
@@ -78,6 +95,14 @@ describe('The Gang tutorial', () => {
             highlightTarget: 'the-gang-hand-rank-reference',
         });
 
+        const startHeistStep = TheGangTutorial.steps.find((step) => step.id === 'start-heist');
+        expect(startHeistStep).toMatchObject({
+            requireAction: true,
+            highlightTarget: 'the-gang-start-heist',
+            allowedCommands: [THE_GANG_COMMANDS.START_HEIST],
+            advanceOnEvents: [{ type: THE_GANG_EVENTS.HEIST_STARTED }],
+        });
+
         const chipStep = TheGangTutorial.steps.find((step) => step.id === 'chip-choice');
         expect(chipStep).toMatchObject({
             requireAction: true,
@@ -88,6 +113,11 @@ describe('The Gang tutorial', () => {
         const tableResponseStep = TheGangTutorial.steps.find((step) => step.id === 'table-response');
         expect(tableResponseStep).toMatchObject({
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            autoAdvanceAfterAi: false,
+            aiActions: [
+                { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '1', payload: tutorialTakeLowestAvailableChipPayload },
+                { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '2', payload: tutorialTakeLowestAvailableChipPayload },
+            ],
         });
         expect(tableResponseStep?.infoStep).not.toBe(true);
 
@@ -103,6 +133,12 @@ describe('The Gang tutorial', () => {
         expect(advanceRoundStep).toMatchObject({
             requireAction: true,
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
+            aiActions: [
+                { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '1', payload: tutorialTakeLowestAvailableChipPayload },
+                { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '2', payload: tutorialTakeLowestAvailableChipPayload },
+                { commandType: THE_GANG_COMMANDS.END_ROUND, playerId: '1', payload: {} },
+                { commandType: THE_GANG_COMMANDS.END_ROUND, playerId: '2', payload: {} },
+            ],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
         });
 
@@ -119,6 +155,11 @@ describe('The Gang tutorial', () => {
             const responseStep = TheGangTutorial.steps.find((step) => step.id === stepId);
             expect(responseStep).toMatchObject({
                 allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+                autoAdvanceAfterAi: false,
+                aiActions: [
+                    { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '1', payload: tutorialTakeLowestAvailableChipPayload },
+                    { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '2', payload: tutorialTakeLowestAvailableChipPayload },
+                ],
             });
             expect(responseStep?.infoStep).not.toBe(true);
         }
@@ -128,6 +169,10 @@ describe('The Gang tutorial', () => {
             expect(roundStep).toMatchObject({
                 requireAction: true,
                 allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.END_ROUND],
+                aiActions: [
+                    { commandType: THE_GANG_COMMANDS.END_ROUND, playerId: '1', payload: {} },
+                    { commandType: THE_GANG_COMMANDS.END_ROUND, playerId: '2', payload: {} },
+                ],
                 advanceOnEvents: [{ type: THE_GANG_EVENTS.ROUND_ENDED }],
             });
         }
@@ -142,6 +187,11 @@ describe('The Gang tutorial', () => {
         const finalResponseStep = TheGangTutorial.steps.find((step) => step.id === 'final-response');
         expect(finalResponseStep).toMatchObject({
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP],
+            autoAdvanceAfterAi: false,
+            aiActions: [
+                { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '1', payload: tutorialTakeLowestAvailableChipPayload },
+                { commandType: THE_GANG_COMMANDS.TAKE_CHIP, playerId: '2', payload: tutorialTakeLowestAvailableChipPayload },
+            ],
         });
         expect(finalResponseStep?.infoStep).not.toBe(true);
 
@@ -149,6 +199,10 @@ describe('The Gang tutorial', () => {
         expect(revealShowdownStep).toMatchObject({
             requireAction: true,
             allowedCommands: [THE_GANG_COMMANDS.TAKE_CHIP, THE_GANG_COMMANDS.REVEAL_SHOWDOWN],
+            aiActions: [
+                { commandType: THE_GANG_COMMANDS.REVEAL_SHOWDOWN, playerId: '1', payload: {} },
+                { commandType: THE_GANG_COMMANDS.REVEAL_SHOWDOWN, playerId: '2', payload: {} },
+            ],
             advanceOnEvents: [{ type: THE_GANG_EVENTS.SHOWDOWN_REVEALED }],
         });
 
@@ -165,7 +219,7 @@ describe('The Gang tutorial', () => {
 
     test('教程高亮目标在 Board 中都有真实锚点', () => {
         const core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
-        render(
+        renderWithToast(
             <Board
                 G={stateOf(core)}
                 dispatch={() => undefined}
@@ -195,7 +249,7 @@ describe('The Gang tutorial', () => {
             { id: 2, name: '玩家 3', isConnected: true },
         ];
         const renderBoard = () =>
-            render(
+            renderWithToast(
                 <Board
                     G={stateOf(core)}
                     dispatch={dispatch}
@@ -204,6 +258,16 @@ describe('The Gang tutorial', () => {
                     isConnected
                 />,
             );
+
+        const startHeist = () => {
+            const events = execute(stateOf(core), {
+                type: THE_GANG_COMMANDS.START_HEIST,
+                playerId: '0',
+                payload: {},
+                timestamp: 0,
+            }, fixedRandom);
+            for (const event of events) core = reduce(core, event);
+        };
 
         const takeChip = (playerId: string, chip: number) => {
             const events = execute(stateOf(core), {
@@ -228,6 +292,7 @@ describe('The Gang tutorial', () => {
             }
         };
 
+        startHeist();
         takeChip('0', 1);
         takeChip('1', 2);
         takeChip('2', 3);

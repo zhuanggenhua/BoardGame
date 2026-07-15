@@ -10,7 +10,6 @@ import { useAutoSkipPhase } from '../../../components/game/framework';
 import { useTranslation } from 'react-i18next';
 import type { SummonerWarsCore, CellCoord, UnitCard, GamePhase, EventCard } from '../domain/types';
 import { SW_COMMANDS } from '../domain/types';
-import { FLOW_COMMANDS } from '../../../engine';
 import {
   getValidSummonPositions, getValidBuildPositions,
   getValidMoveTargetsEnhanced, getValidAttackTargetsEnhanced,
@@ -18,8 +17,9 @@ import {
   getAdjacentCells,
   manhattanDistance, findUnitPositionByInstanceId, getSummoner,
   getUnitAbilities,
+  normalizeUnitBoosts,
 } from '../domain/helpers';
-import { isUndeadCard, getBaseCardId, CARD_IDS } from '../domain/ids';
+import { isUndeadCard, getBaseCardId, CARD_IDS, isMoguFungalBeastCard } from '../domain/ids';
 import { getSummonerWarsUIHints } from '../domain/uiHints';
 import { extractPositions } from '../../../engine/primitives/uiHints';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
@@ -195,6 +195,12 @@ export function useCellInteraction({
     // 火祀召唤模式：先选牺牲品，不显示普通召唤位置
     if (fireSacrificeSummonMode) return [];
     if (!isMyTurn || !selectedHandCard || selectedHandCard.cardType !== 'unit') return [];
+    if ((selectedHandCard.abilities ?? []).includes('mogu_final_form')) {
+      if (currentPhase !== 'summon') return [];
+      return getPlayerUnits(core, myPlayerId as '0' | '1')
+        .filter(unit => isMoguFungalBeastCard(unit.card) && normalizeUnitBoosts(unit.boosts) >= 5)
+        .map(unit => unit.position);
+    }
     const player = core.players[myPlayerId as '0' | '1'];
     // 重燃希望：允许在任意阶段召唤
     const hasRekindleHope = player.activeEvents.some(ev =>
@@ -510,7 +516,17 @@ export function useCellInteraction({
     if (currentPhase === 'summon' && selectedHandCardId) {
       const isValidPosition = validSummonPositions.some(p => p.row === gameRow && p.col === gameCol);
       if (isValidPosition) {
-        dispatch(SW_COMMANDS.SUMMON_UNIT, { cardId: selectedHandCardId, position: { row: gameRow, col: gameCol } });
+        const selectedUnitCard = selectedHandCard?.cardType === 'unit' ? selectedHandCard : null;
+        const replacementTarget = core.board[gameRow]?.[gameCol]?.unit;
+        const isMoguFinalFormSummon = !!selectedUnitCard
+          && (selectedUnitCard.abilities ?? []).includes('mogu_final_form');
+        dispatch(SW_COMMANDS.SUMMON_UNIT, {
+          cardId: selectedHandCardId,
+          position: { row: gameRow, col: gameCol },
+          ...(isMoguFinalFormSummon && replacementTarget
+            ? { sacrificeUnitId: replacementTarget.instanceId }
+            : {}),
+        });
       } else {
         showToast.warning(t('interaction.cannotSummonThere'));
       }
@@ -780,7 +796,7 @@ export function useCellInteraction({
       phaseAdvanceCooldownUntilRef.current = 0;
       phaseAdvanceReleaseTimerRef.current = null;
     }, ADVANCE_PHASE_FALLBACK_RELEASE_MS);
-    dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
+    dispatch(SW_COMMANDS.END_PHASE, {});
     return true;
   }, [dispatch, isPhaseAdvanceLocked]);
 

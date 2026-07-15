@@ -48,6 +48,7 @@ export function DiceBoxPhysicsSource({
 }: DiceBoxPhysicsSourceProps) {
     const containerRef = React.useRef<HTMLDivElement | null>(null);
     const engineRef = React.useRef<DiceBoxThreeEngine | null>(null);
+    const onPhysicsStatesChangeRef = React.useRef(onPhysicsStatesChange);
     const previousDiceIdsRef = React.useRef<number[]>([]);
     const activeMotionRef = React.useRef<{ type: 'roll' | 'reroll'; key: string } | null>(null);
     const pendingRerollMotionRef = React.useRef<{ key: string; indices: number[]; values: number[]; lockedIndices: number[] } | null>(null);
@@ -56,6 +57,11 @@ export function DiceBoxPhysicsSource({
     const [engineVersion, setEngineVersion] = React.useState(0);
     const [engineReady, setEngineReady] = React.useState(false);
     const [settled, setSettled] = React.useState(true);
+    const [containerSizeReady, setContainerSizeReady] = React.useState(() => typeof ResizeObserver !== 'function');
+
+    React.useEffect(() => {
+        onPhysicsStatesChangeRef.current = onPhysicsStatesChange;
+    }, [onPhysicsStatesChange]);
 
     const failEngine = React.useCallback((error: unknown) => {
         console.warn('[DiceBoxPhysicsSource] dice-box-threejs failed; disabling physics source', error);
@@ -68,13 +74,13 @@ export function DiceBoxPhysicsSource({
         lastPhysicsSnapshotRef.current = '';
         setEngineReady(false);
         setSettled(true);
-        onPhysicsStatesChange?.([]);
+        onPhysicsStatesChangeRef.current?.([]);
         try {
             engine?.destroy();
         } catch {
             // Ignore cleanup failures after WebGL errors.
         }
-    }, [onPhysicsStatesChange]);
+    }, []);
 
     const values = React.useMemo(() => dice.map((die) => die.value), [dice]);
     const valuesKey = React.useMemo(() => values.join(','), [values]);
@@ -114,6 +120,33 @@ export function DiceBoxPhysicsSource({
         [dice.length, dieSkins, requireDieSkins],
     );
 
+    React.useLayoutEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        if (typeof ResizeObserver !== 'function') {
+            setContainerSizeReady(true);
+            return;
+        }
+
+        let frameId = 0;
+        const updateContainerSize = () => {
+            const rect = container.getBoundingClientRect();
+            const width = container.offsetWidth || container.clientWidth || rect.width;
+            const height = container.offsetHeight || container.clientHeight || rect.height;
+            setContainerSizeReady(width >= 32 && height >= 32);
+        };
+
+        updateContainerSize();
+        const observer = new ResizeObserver(updateContainerSize);
+        observer.observe(container);
+        frameId = window.requestAnimationFrame(updateContainerSize);
+
+        return () => {
+            observer.disconnect();
+            window.cancelAnimationFrame(frameId);
+        };
+    }, []);
+
     const emitPhysicsStates = React.useCallback((engine: DiceBoxThreeEngine, nextSettled: boolean) => {
         const states = dice
             .map((die, index) => engine.getPhysicsState(index, die.id, nextSettled))
@@ -133,9 +166,9 @@ export function DiceBoxPhysicsSource({
 
         if (snapshot !== lastPhysicsSnapshotRef.current) {
             lastPhysicsSnapshotRef.current = snapshot;
-            onPhysicsStatesChange?.(states);
+            onPhysicsStatesChangeRef.current?.(states);
         }
-    }, [dice, onPhysicsStatesChange]);
+    }, [dice]);
 
     const setSettledState = React.useCallback((nextSettled: boolean) => {
         settledRef.current = nextSettled;
@@ -150,7 +183,7 @@ export function DiceBoxPhysicsSource({
 
         const init = async () => {
             const container = containerRef.current;
-            if (!container || engineRef.current) return;
+            if (!container || engineRef.current || !containerSizeReady) return;
             try {
                 const engine = await DiceBoxThreeEngine.create(container, {
                     styleProfile,
@@ -183,7 +216,7 @@ export function DiceBoxPhysicsSource({
             engineRef.current?.destroy();
             engineRef.current = null;
         };
-    }, [canvasTestId, dice.length, failEngine, rendererMode, requireDieSkins, styleProfile]);
+    }, [canvasTestId, containerSizeReady, dice.length, failEngine, rendererMode, requireDieSkins, styleProfile]);
 
     React.useEffect(() => {
         const engine = engineRef.current;
@@ -282,6 +315,8 @@ export function DiceBoxPhysicsSource({
                         }
                     } finally {
                         engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
+                        engine.separateOverlappingDice({ settleAfter: true });
+                        engine.settleDiceIntoSafeSpread();
                         engine.freezeSettledDice();
                         emitPhysicsStates(engine, true);
                         if (activeMotionRef.current?.type === 'roll' && activeMotionRef.current.key === rollingKey) {
@@ -307,6 +342,8 @@ export function DiceBoxPhysicsSource({
                     await engine.rerollToValues(rerollIndices, targetValues, targetLockedIndices);
                 } finally {
                     engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
+                    engine.separateOverlappingDice({ settleAfter: true });
+                    engine.settleDiceIntoSafeSpread();
                     engine.freezeSettledDice();
                     emitPhysicsStates(engine, true);
                     if (activeMotionRef.current?.type === 'reroll' && activeMotionRef.current.key === key) {
@@ -364,12 +401,14 @@ export function DiceBoxPhysicsSource({
 
                 setSettledState(true);
                 await engine.restoreValues(values);
+                emitPhysicsStates(engine, true);
                 previousDiceIdsRef.current = dice.map((die) => die.id);
                 setSettledState(true);
                 return;
             }
 
             engine.syncSettledValues(values);
+            emitPhysicsStates(engine, true);
             previousDiceIdsRef.current = dice.map((die) => die.id);
             setSettledState(true);
         };
@@ -389,6 +428,7 @@ export function DiceBoxPhysicsSource({
             data-dice-physics-mode={rendererMode}
             data-dice-settled={settled ? 'true' : 'false'}
             data-dice-skins-ready={requiredDieSkinsReady ? 'true' : 'false'}
+            data-dice-container-size-ready={containerSizeReady ? 'true' : 'false'}
             {...dataAttributes}
         />
     );

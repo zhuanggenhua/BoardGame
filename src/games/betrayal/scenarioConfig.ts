@@ -1725,7 +1725,7 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
             ],
             'oliver-swift': [
                 { id: 'map', name: '地图', kind: 'item' },
-                { id: 'lantern', name: '手电筒', kind: 'item' },
+                { id: 'lantern', name: '灯笼', kind: 'item' },
                 { id: 'holy-symbol', name: '圣符', kind: 'omen' },
             ],
             'lia-valencia': [
@@ -1740,7 +1740,7 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
             ],
             'michelle-monroe': [
                 { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
-                { id: 'lantern', name: '手电筒', kind: 'item' },
+                { id: 'lantern', name: '灯笼', kind: 'item' },
                 { id: 'dagger', name: '匕首', kind: 'omen' },
             ],
         },

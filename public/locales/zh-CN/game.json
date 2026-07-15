@@ -275,6 +275,8 @@
     "switchTrack": "切换曲目",
     "prevTrack": "上一首",
     "trackList": "曲目列表（{{count}}首）",
+    "singleTrackLoopOn": "单曲循环：开",
+    "singleTrackLoopOff": "单曲循环：关，自动轮播",
     "tracks": {
       "main_theme": "经典对弈",
       "chill_piano": "轻柔钢琴",

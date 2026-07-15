@@ -6,7 +6,7 @@
  * 2. 交互解决后应该自动推进到 draw 阶段，不需要再次点击"结束回合"
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect } from 'vitest';
 import { registerGameAiRuntime, resolveNextLocalAiAction } from '../../../engine/ai';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
@@ -18,7 +18,7 @@ import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase } from '../type
 import { defaultTestRandom, runCommand } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
-import { initAllAbilities } from '../abilities';
+import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { buildMinionTargetOptions, buildPlayerTargetOptions } from '../domain/abilityHelpers';
 import { registerAbility } from '../domain/abilityRegistry';
 import { buildReactionOptions, getSmashUpReactionSession, resolveSmashUpReactionChoice, startSmashUpReactionSession } from '../domain/reactionSession';
@@ -210,6 +210,10 @@ const smashUpAiEngineConfig = {
 };
 
 describe('scoreBases 阶段自动推进', () => {
+    beforeEach(() => {
+        resetAbilityInit();
+    });
+
     it('startTurn 进入 playCards 时应清掉 _smashupStartTurnWindowActive，避免后续交互误漂回 startTurn', () => {
         const core = makeMinimalCore();
         const state: MatchState<SmashUpCore> = {

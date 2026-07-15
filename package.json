@@ -1,8 +1,8 @@
 {
   "name": "boardgame-platform",
   "private": true,
-  "version": "0.6.5",
-  "androidVersionCode": 568,
+  "version": "0.6.7",
+  "androidVersionCode": 570,
   "type": "module",
   "engines": {
     "node": "24.1.0"
@@ -45,7 +45,9 @@
     "assets:validate:full": "node scripts/assets/generate_asset_manifests.js --validate --full",
     "preview": "node scripts/infra/vite-cli-safe.mjs preview --config vite.config.ts --configLoader bundle",
     "pdf:md": "node scripts/infra/pdf_to_md.js",
-    "compress:images": "node scripts/assets/compress_images.js",
+    "compress:images": "node scripts/assets/compress_images.js --mode runtime",
+    "compress:runtime-images": "node scripts/assets/compress_images.js --mode runtime",
+    "compress:display-images": "node scripts/assets/compress_images.js --mode display",
     "compress:audio": "node scripts/audio/compress_audio.js",
     "audio:catalog": "node scripts/audio/generate_audio_catalog.js",
     "audio:slim": "node scripts/audio/generate-slim-registry.mjs",
@@ -103,6 +105,8 @@
     "init:admin": "npx tsx --tsconfig tsconfig.api.json scripts/db/init_admin.ts",
     "check:arch": "node scripts/infra/check-architecture.cjs",
     "verify:dicethrone:style-contract": "node scripts/games/dicethrone/verify/dicethrone-style-contract.mjs",
+    "audit:evidence": "node scripts/verify/audit-evidence-completeness.mjs",
+    "audit:evidence:all": "node scripts/verify/audit-evidence-completeness.mjs --all",
     "check:prod-deps": "bash scripts/deploy/verify-prod-deps.sh",
     "deploy:runner": "node scripts/deploy/deploy-runner.mjs",
     "release:deploy-and-ota": "node scripts/release/deploy-and-ota.mjs",

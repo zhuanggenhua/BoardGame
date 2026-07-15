@@ -36,6 +36,7 @@ const collectConfiguredAudioKeys = () => {
     Object.values(THE_GANG_AUDIO_CONFIG.bgmGroups ?? {}).forEach((group) => group.forEach((key) => keys.add(key)));
 
     [
+        resolveKey({ type: THE_GANG_EVENTS.HEIST_STARTED }),
         resolveKey({ type: THE_GANG_EVENTS.CHIP_TAKEN }),
         resolveKey({ type: THE_GANG_EVENTS.PROGRESS_APPROVED }),
         resolveKey({ type: THE_GANG_EVENTS.ROUND_ENDED }),
@@ -58,6 +59,7 @@ const collectConfiguredAudioKeys = () => {
 
 describe('The Gang 音频配置', () => {
     it('核心游戏事件映射到对应音效', () => {
+        expect(resolveKey({ type: THE_GANG_EVENTS.HEIST_STARTED })).toBe(THE_GANG_NEXT_HEIST_KEY);
         expect(resolveKey({ type: THE_GANG_EVENTS.CHIP_TAKEN })).toBe(THE_GANG_CHIP_TAKEN_KEY);
         expect(resolveKey({ type: THE_GANG_EVENTS.PROGRESS_APPROVED })).toBe(THE_GANG_PROGRESS_APPROVED_KEY);
         expect(resolveKey({ type: THE_GANG_EVENTS.ROUND_ENDED })).toBe(THE_GANG_ROUND_ENDED_KEY);

@@ -5,6 +5,10 @@ import { SYSTEM_NOTIFICATION_ID } from './constants';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 
+function isAlreadySentFriendRequestError(error: unknown): boolean {
+    return error instanceof Error && error.message.includes('好友请求已发送');
+}
+
 interface FriendListProps {
     onSelectFriend: (userId: string) => void;
     activeFriendId?: string;
@@ -31,8 +35,15 @@ export const FriendList = ({ onSelectFriend, activeFriendId }: FriendListProps) 
     };
 
     const handleSendRequest = async (userId: string) => {
-        await sendFriendRequest(userId);
-        setSearchResults(prev => prev.map(u => u.id === userId ? { ...u, status: 'pending' } : u));
+        try {
+            await sendFriendRequest(userId);
+            setSearchResults(prev => prev.map(u => u.id === userId ? { ...u, status: 'pending' } : u));
+        } catch (error) {
+            console.error('[FriendList] Failed to send friend request:', error);
+            if (isAlreadySentFriendRequestError(error)) {
+                setSearchResults(prev => prev.map(u => u.id === userId ? { ...u, status: 'pending' } : u));
+            }
+        }
     };
 
     const sortedConversations = [...conversations].sort((a, b) => {

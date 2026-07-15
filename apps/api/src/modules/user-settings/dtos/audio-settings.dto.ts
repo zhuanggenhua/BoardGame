@@ -7,6 +7,7 @@ export type AudioSettingsPayload = {
     sfxVolume: number;
     bgmVolume: number;
     bgmSelections?: Record<string, Record<string, string>>;
+    singleTrackLoop?: boolean;
 };
 
 export type SmashUpPreferencePayload = {
@@ -39,6 +40,10 @@ export class UpdateAudioSettingsDto {
     @IsOptional()
     @IsObject()
     bgmSelections?: Record<string, Record<string, string>>;
+
+    @IsOptional()
+    @IsBoolean()
+    singleTrackLoop?: boolean;
 }
 
 export class UpdateSmashUpPreferenceDto {

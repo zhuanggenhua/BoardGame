@@ -16,6 +16,19 @@ function collectProductionSourceFiles(dir: string): string[] {
   });
 }
 
+function sliceFireTriggersCall(text: string, startIndex: number): string {
+  let depth = 0;
+  for (let index = startIndex; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '(') depth += 1;
+    if (char === ')') {
+      depth -= 1;
+      if (depth === 0) return text.slice(startIndex, index + 1);
+    }
+  }
+  return text.slice(startIndex);
+}
+
 describe('fireTriggers direct caller contract', () => {
   it('生产代码只允许已审计的 fireTriggers 直执行入口', () => {
     const callers = collectProductionSourceFiles(SMASHUP_ROOT)
@@ -30,7 +43,7 @@ describe('fireTriggers direct caller contract', () => {
       })
       .filter(({ rel }) => rel !== 'domain/ongoingEffects.ts')
       .map(({ rel, text, index }) => {
-        const localContext = text.slice(index, index + 600);
+        const localContext = sliceFireTriggersCall(text, index);
         const timing = localContext.match(/fireTriggers\s*\([^,]+,\s*'([^']+)'/)?.[1];
         const hasReplacementPhase = localContext.includes("phase: 'replacement'");
         return { rel, timing, hasReplacementPhase };
@@ -40,6 +53,7 @@ describe('fireTriggers direct caller contract', () => {
       { rel: 'domain/duel.ts', timing: 'onDuelResolved', hasReplacementPhase: false },
       { rel: 'domain/duel.ts', timing: 'onDuelStarted', hasReplacementPhase: false },
       { rel: 'domain/reducer.ts', timing: 'onMinionDestroyed', hasReplacementPhase: true },
+      { rel: 'domain/reducer.ts', timing: 'onCardReturnedToHand', hasReplacementPhase: true },
     ]);
   });
 });

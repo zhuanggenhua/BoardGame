@@ -199,6 +199,93 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
     });
 });
 
+describe('伤害响应期间的卡牌后续交互', () => {
+    it('防御方在伤害响应中打出“来个六！”后，应先完成选骰再回到伤害响应', () => {
+        const random = createQueuedRandom([5, 5, 1, 3, 3]);
+        const runner = createRunner(random, true);
+
+        const result1 = runner.run({
+            name: '伤害响应中打出来个六',
+            setup: (playerIds, setupRandom) => {
+                const state = createHeroMatchup('cursed_pirate', 'zhanshujia', (core) => {
+                    core.players['0'].hand = [getCardById('card-play-six')];
+                    core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+                    core.players['1'].hand = [];
+                    core.players['0'].deck = [];
+                    core.players['1'].deck = [];
+                })(playerIds, setupRandom);
+                state.sys.phase = 'defensiveRoll';
+                state.sys.interaction.current = {
+                    id: 'dt-token-response-damage-test',
+                    kind: 'dt:token-response',
+                    playerId: '0',
+                    data: null,
+                };
+                state.core.phase = 'defensiveRoll' as any;
+                state.core.activePlayerId = '1';
+                state.core.rollCount = 1;
+                state.core.rollLimit = 1;
+                state.core.rollConfirmed = true;
+                state.core.rollDiceCount = 5;
+                state.core.dice = state.core.dice.map((die, index) => ({
+                    ...die,
+                    value: [5, 5, 1, 3, 3][index] ?? die.value,
+                    isKept: false,
+                }));
+                state.core.pendingAttack = {
+                    attackerId: '1',
+                    defenderId: '0',
+                    settlementStage: 'preDamage',
+                    isDefendable: true,
+                    sourceAbilityId: 'flanking',
+                    isUltimate: false,
+                    damageResolved: false,
+                    resolvedDamage: 0,
+                    preDefenseResolved: true,
+                    defenseAbilityId: 'still-wet-behind-ears',
+                    defenseResolved: true,
+                } as any;
+                state.core.pendingDamage = {
+                    id: 'damage-test',
+                    sourcePlayerId: '1',
+                    targetPlayerId: '0',
+                    originalDamage: 6,
+                    currentDamage: 6,
+                    sourceAbilityId: 'flanking',
+                    damageScope: 'attack',
+                    responseType: 'beforeDamageReceived',
+                    responderId: '0',
+                    isFullyEvaded: false,
+                };
+                return state;
+            },
+            commands: [
+                cmd('PLAY_CARD', '0', { cardId: 'card-play-six' }),
+            ],
+        });
+
+        expect(result1.assertionErrors).toEqual([]);
+        expect(result1.finalState.sys.interaction.current?.kind).toBe('multistep-choice');
+        expect(result1.finalState.sys.interaction.current?.playerId).toBe('0');
+        expect((result1.finalState.sys.interaction.current?.data as any)?.meta?.dtType).toBe('modifyDie');
+        expect(result1.finalState.sys.interaction.queue[0]?.kind).toBe('dt:token-response');
+
+        const result2 = runner.run({
+            name: '完成来个六选骰后回到伤害响应',
+            setup: () => result1.finalState,
+            commands: [
+                cmd('MODIFY_DIE', '0', { dieId: 2, newValue: 6 }),
+            ],
+        });
+
+        expect(result2.assertionErrors).toEqual([]);
+        expect(result2.finalState.core.dice[2]?.value).toBe(6);
+        expect(result2.finalState.sys.interaction.current?.kind).toBe('dt:token-response');
+        expect(result2.finalState.sys.interaction.current?.playerId).toBe('0');
+        expect(result2.finalState.core.pendingDamage?.id).toBe('damage-test');
+    });
+});
+
 describe('modifyDie 严格超限回归', () => {
     it('咒缚海盗三颗 6 应能用意不意外一次补成五颗 6', () => {
         const random = createQueuedRandom([6, 6, 6, 1, 1]);

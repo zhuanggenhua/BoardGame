@@ -26,6 +26,13 @@ const runCommand = (state: MatchState<TheGangCore>, command: TheGangCommand) => 
 
 const command = <T extends TheGangCommand>(value: T): T => value;
 
+const startHeist = (state: MatchState<TheGangCore>, timestamp: number) => runCommand(state, command({
+    type: THE_GANG_COMMANDS.START_HEIST,
+    playerId: '0',
+    payload: {},
+    timestamp,
+}));
+
 const confirmProgressForAllPlayers = (
     state: MatchState<TheGangCore>,
     type: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN | typeof THE_GANG_COMMANDS.START_NEXT_HEIST,
@@ -47,30 +54,32 @@ const confirmProgressForAllPlayers = (
 describe('The Gang action-log', () => {
     test('记录公开抢劫流程且不暴露隐藏手牌', () => {
         let state = setupState();
+        state = startHeist(state, 1);
 
         state = runCommand(state, command({
             type: THE_GANG_COMMANDS.TAKE_CHIP,
             playerId: '0',
             payload: { chip: 1 },
-            timestamp: 1,
+            timestamp: 2,
         }));
         state = runCommand(state, command({
             type: THE_GANG_COMMANDS.TAKE_CHIP,
             playerId: '1',
             payload: { chip: 2 },
-            timestamp: 2,
+            timestamp: 3,
         }));
         state = runCommand(state, command({
             type: THE_GANG_COMMANDS.TAKE_CHIP,
             playerId: '2',
             payload: { chip: 3 },
-            timestamp: 3,
+            timestamp: 4,
         }));
-        state = confirmProgressForAllPlayers(state, THE_GANG_COMMANDS.END_ROUND, 4);
+        state = confirmProgressForAllPlayers(state, THE_GANG_COMMANDS.END_ROUND, 5);
 
         const entries = state.sys.actionLog.entries;
-        expect(entries).toHaveLength(4);
+        expect(entries).toHaveLength(5);
         expect(entries.map((entry) => entry.kind)).toEqual([
+            THE_GANG_COMMANDS.START_HEIST,
             THE_GANG_COMMANDS.TAKE_CHIP,
             THE_GANG_COMMANDS.TAKE_CHIP,
             THE_GANG_COMMANDS.TAKE_CHIP,
@@ -79,10 +88,16 @@ describe('The Gang action-log', () => {
         expect(entries[0].segments).toEqual([{
             type: 'i18n',
             ns: 'game-the-gang',
+            key: 'actionLog.startHeist',
+            params: { player: 1, heist: 1 },
+        }]);
+        expect(entries[1].segments).toEqual([{
+            type: 'i18n',
+            ns: 'game-the-gang',
             key: 'actionLog.takeChip',
             params: { player: 1, round: 1, chip: 1 },
         }]);
-        expect(entries[3].segments).toEqual([{
+        expect(entries[4].segments).toEqual([{
             type: 'i18n',
             ns: 'game-the-gang',
             key: 'actionLog.endRound',
@@ -103,6 +118,7 @@ describe('The Gang action-log', () => {
 
     test('记录摊牌结果和下一次抢劫', () => {
         let state = setupState();
+        state = startHeist(state, 1);
 
         for (const round of [1, 2, 3, 4]) {
             for (const [index, playerId] of playerIds.entries()) {

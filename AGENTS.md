@@ -770,7 +770,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
 
 - **所有图片必须压缩后使用**：用 `OptimizedImage` / `getOptimizedImageUrls`，路径不含 `compressed/`（自动补全）。
 - **图片压缩规范（强制）**：
-  - **生成与运行时**：未压缩先跑 `npm run assets:compress`；运行时统一走 `OptimizedImage` / `getOptimizedImageUrls`，路径不写 `compressed/`。
+  - **生成与运行时**：未压缩先按 `docs/ai-rules/asset-pipeline.md` 选择压缩入口；正式对局素材默认跑 `npm run compress:images` / `npm run compress:runtime-images` 且禁止降采样。运行时统一走 `OptimizedImage` / `getOptimizedImageUrls`，路径不写 `compressed/`。
   - **统一链路优先**：图片组件、精灵图、3D 骰子、CSS background 精灵图都必须优先复用 `AssetLoader`、`OptimizedImage`、`CardPreview`、`getLocalizedImageUrls`、`getOptimizedImageUrls`；确需特殊渲染，也只能在统一链路上做最小封装。
   - **回归先查接线一致性**：图片从“之前正常”变成空白/错图/偶发失败时，先查是否偏离统一图片链路、是否引入组件内特判、是否绕过语言化/压缩/缓存逻辑，禁止继续叠加特例。
 - **国际化资源架构（强制）**：

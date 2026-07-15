@@ -83,4 +83,41 @@ test.describe('召唤师战争 - 能力指示器', () => {
     await expect(page.locator(`[data-testid="actionable-indicator-${summonerPos.row}-${summonerPos.col}"]`).first()).toBeVisible({ timeout: 5000 });
     await expect(page.locator(`[data-testid="ability-indicator-${summonerPos.row}-${summonerPos.col}"]`).first()).toBeVisible({ timeout: 5000 });
   });
+
+  test('充能标记尺寸跟随单位卡显示比例', async ({ page, game }) => {
+    await game.openTestGame('summonerwars');
+
+    const core = buildIndicatorCore('move');
+    const summonerPos = findSummonerPosition(core, '0');
+    const summoner = core.board[summonerPos.row]?.[summonerPos.col]?.unit;
+    if (!summoner) {
+      throw new Error('未找到用于充能标记尺寸测试的召唤师');
+    }
+    summoner.boosts = 3;
+
+    await setupIndicatorScene(game, core);
+
+    const unit = page.locator(`[data-testid="sw-unit-${summonerPos.row}-${summonerPos.col}"]`).first();
+    const chargeDot = unit.locator('.bg-blue-400.border-blue-200').first();
+    await expect(unit).toBeVisible({ timeout: 10000 });
+    await expect(chargeDot).toBeVisible({ timeout: 5000 });
+
+    const geometry = await chargeDot.evaluate((dot) => {
+      const dotRect = dot.getBoundingClientRect();
+      const unitRoot = dot.closest('[data-testid^="sw-unit-"]');
+      if (!unitRoot) {
+        throw new Error('充能标记未挂在单位卡 DOM 内');
+      }
+      const unitRect = unitRoot.getBoundingClientRect();
+      return {
+        dotWidth: dotRect.width,
+        dotHeight: dotRect.height,
+        unitWidth: unitRect.width,
+        unitHeight: unitRect.height,
+      };
+    });
+
+    expect(geometry.dotWidth).toBeGreaterThanOrEqual(geometry.unitWidth * 0.075);
+    expect(geometry.dotHeight).toBeGreaterThanOrEqual(geometry.unitWidth * 0.075);
+  });
 });

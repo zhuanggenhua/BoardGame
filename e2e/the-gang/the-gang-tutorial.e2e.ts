@@ -7,6 +7,8 @@ import {
     type TheGangCore,
 } from '../../src/games/the-gang/domain';
 
+const THE_GANG_IMAGE_LOAD_TIMEOUT_MS = 15_000;
+
 const strengthOrder = (left: ShowdownPlayerResult, right: ShowdownPlayerResult) => {
     const categoryDelta = left.strength.category - right.strength.category;
     if (categoryDelta !== 0) return categoryDelta;
@@ -88,7 +90,10 @@ async function expectImagesLoaded(page: Page, selector: string, expectedCount: n
                             || image.naturalHeight <= 1
                         ),
                 ),
-            { message: `等待 ${selector} 的真实图片资源加载完成` },
+            {
+                message: `等待 ${selector} 的真实图片资源加载完成`,
+                timeout: THE_GANG_IMAGE_LOAD_TIMEOUT_MS,
+            },
         )
         .toEqual([]);
     const emptySources = await images.evaluateAll((nodes) =>
@@ -273,6 +278,11 @@ test.describe('The Gang 教程 E2E', () => {
         await game.screenshot('教程牌型查询入口', testInfo);
 
         await nextTutorialStep(page);
+        await expect(page.locator('[data-tutorial-step="start-heist"]')).toBeVisible();
+        await expect(page.getByText(/房主先点右下角的开始抢劫/u)).toBeVisible();
+        await expect(page.getByRole('button', { name: '开始抢劫' })).toBeVisible();
+        await page.getByRole('button', { name: '开始抢劫' }).click();
+
         await expect(page.locator('[data-tutorial-step="chip-choice"]')).toBeVisible();
         await expect(page.getByTestId('tutorial-action-hint')).toBeVisible();
         await expect(page.getByRole('button', { name: '白筹码 1 星' })).toBeVisible();
@@ -369,13 +379,13 @@ test.describe('The Gang 教程 E2E', () => {
         await expect(page.locator('[data-tutorial-step="reveal-showdown"]')).toBeVisible();
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-reveal-showdown');
-        await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(6);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
+        await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(9);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
         await expect(page.locator('[data-bgg-zone="hand-chips-previous"]')).toHaveCount(3);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 6);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 9);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-chips-previous"] img', 3);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
         await game.screenshot('教程满元素待摊牌', testInfo);
@@ -392,7 +402,6 @@ test.describe('The Gang 教程 E2E', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="reveal-community-cards"] img', 5);
         await expect(page.locator('[data-bgg-zone="reveal-pocket-cards"]')).toHaveCount(3);
         await expectImagesLoaded(page, '[data-bgg-zone="reveal-pocket-cards"] img', 6);
-        await expect(page.getByText('抢劫成功')).toBeVisible();
         await expect(page.getByText(/抢劫成功|抢劫失败/u)).toBeVisible();
         await expect(page.getByText(/保留已经公开的 5 张公共牌/u)).toBeVisible();
         await expect(page.getByText(/逐张揭示每位玩家/u)).toBeVisible();

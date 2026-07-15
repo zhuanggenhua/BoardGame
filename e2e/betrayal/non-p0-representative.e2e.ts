@@ -11,24 +11,28 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    expectVisiblePhysicalDiceBox,
+    expectPhysicalDiceSeparated,
     initBetrayalContext,
     injectCore,
     saveScreenshot,
+    setHarnessRandomQueue,
     waitForBetrayalPageReady,
+    waitForPhysicalDiceSettled,
 } from './betrayalTestHelpers';
 
 const EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-non-p0-representatives');
-const ORDINARY_ROLL_EVENT_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/01-普通投骰事件-探索目标.png`;
-const ORDINARY_ROLL_EVENT_CARD_FRONT_SCREENSHOT = `${EVIDENCE_DIR}/02-普通投骰事件-卡牌正面.png`;
-const ORDINARY_ROLL_EVENT_DICE_SCREENSHOT = `${EVIDENCE_DIR}/03-普通投骰事件-投掷骰子.png`;
-const ORDINARY_ROLL_EVENT_FULL_SCREENSHOT = `${EVIDENCE_DIR}/04-普通投骰事件-牌面骰盘分支.png`;
-const IDOL_OPTION_BEFORE_SCREENSHOT = `${EVIDENCE_DIR}/05-雕像探索声明-选择前.png`;
-const IDOL_OPTION_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/06-雕像探索声明-已选择.png`;
-const IDOL_SKIP_EVENT_SCREENSHOT = `${EVIDENCE_DIR}/07-雕像探索声明-跳过事件.png`;
-const HUNTING_KNIFE_SELECTOR_SCREENSHOT = `${EVIDENCE_DIR}/08-砍刀攻击武器-选择前.png`;
-const HUNTING_KNIFE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/09-砍刀攻击武器-目标高亮.png`;
-const HUNTING_KNIFE_ATTACK_DICE_SCREENSHOT = `${EVIDENCE_DIR}/10-砍刀攻击武器-攻击投骰.png`;
-const HUNTING_KNIFE_ATTACK_FEEDBACK_SCREENSHOT = `${EVIDENCE_DIR}/11-砍刀攻击武器-攻击反馈.png`;
+const ORDINARY_ROLL_EVENT_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/01-普通投骰事件-探索目标.jpg`;
+const ORDINARY_ROLL_EVENT_CARD_FRONT_SCREENSHOT = `${EVIDENCE_DIR}/02-普通投骰事件-卡牌正面.jpg`;
+const ORDINARY_ROLL_EVENT_DICE_SCREENSHOT = `${EVIDENCE_DIR}/03-普通投骰事件-投掷骰子.jpg`;
+const ORDINARY_ROLL_EVENT_FULL_SCREENSHOT = `${EVIDENCE_DIR}/04-普通投骰事件-牌面骰盘分支.jpg`;
+const IDOL_OPTION_BEFORE_SCREENSHOT = `${EVIDENCE_DIR}/05-雕像探索声明-选择前.jpg`;
+const IDOL_OPTION_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/06-雕像探索声明-已选择.jpg`;
+const IDOL_SKIP_EVENT_SCREENSHOT = `${EVIDENCE_DIR}/07-雕像探索声明-跳过事件.jpg`;
+const HUNTING_KNIFE_SELECTOR_SCREENSHOT = `${EVIDENCE_DIR}/08-砍刀攻击武器-选择前.jpg`;
+const HUNTING_KNIFE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/09-砍刀攻击武器-目标高亮.jpg`;
+const HUNTING_KNIFE_ATTACK_DICE_SCREENSHOT = `${EVIDENCE_DIR}/10-砍刀攻击武器-攻击投骰.jpg`;
+const HUNTING_KNIFE_ATTACK_FEEDBACK_SCREENSHOT = `${EVIDENCE_DIR}/11-砍刀攻击武器-攻击反馈.jpg`;
 
 const openBetrayalPage = async (page: Page, context: Parameters<typeof initBetrayalContext>[0], label: string) => {
     await initBetrayalContext(context);
@@ -113,6 +117,9 @@ const createHuntingKnifeAttackCore = () => {
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
     core.currentExplorerTraits = { ...core.currentExplorer.traits };
     core.turnStartInventoryCardIds = ['hunting-knife'];
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+    core.recentRoll = null;
     return core;
 };
 
@@ -123,6 +130,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
 
         await injectCore(page, createOrdinaryRollEventCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await setHarnessRandomQueue(page, [0.5, 0.01, 0.99, 0.01]);
         await page.getByTestId('betrayal-action-explore').click();
         await expect(page.getByTestId('betrayal-room-explore-target-ground-north')).toBeVisible();
         await saveScreenshot(page, ORDINARY_ROLL_EVENT_TARGET_SCREENSHOT);
@@ -136,9 +144,13 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(/检定|投|骰/);
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('力量检定 3');
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(/受到 1 点物理伤害|放置障碍物/);
+        const eventRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
         await expect(page.getByTestId('betrayal-recent-roll-subtotal')).toBeVisible();
-        await saveLocatorScreenshot(page.getByTestId('betrayal-recent-roll-panel'), ORDINARY_ROLL_EVENT_DICE_SCREENSHOT);
+        await expectVisiblePhysicalDiceBox(eventRollPanel);
+        await waitForPhysicalDiceSettled(eventRollPanel);
+        await expectPhysicalDiceSeparated(eventRollPanel, { minDiceCount: 4 });
+        await saveLocatorScreenshot(eventRollPanel, ORDINARY_ROLL_EVENT_DICE_SCREENSHOT);
         await saveScreenshot(page, ORDINARY_ROLL_EVENT_FULL_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-ordinary-roll-event', diagnostics }]);
@@ -184,9 +196,13 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await page.getByTestId('betrayal-room-occupant-entrance-hall-2').click();
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用砍刀');
+        const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(page.getByTestId('betrayal-house-dice-3d-group')).toBeVisible();
-        await expect(page.getByTestId('betrayal-recent-roll-panel')).toBeVisible();
-        await saveLocatorScreenshot(page.getByTestId('betrayal-recent-roll-panel'), HUNTING_KNIFE_ATTACK_DICE_SCREENSHOT);
+        await expect(attackRollPanel).toBeVisible();
+        await expectVisiblePhysicalDiceBox(attackRollPanel);
+        await waitForPhysicalDiceSettled(attackRollPanel);
+        await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 4 });
+        await saveLocatorScreenshot(attackRollPanel, HUNTING_KNIFE_ATTACK_DICE_SCREENSHOT);
         await saveScreenshot(page, HUNTING_KNIFE_ATTACK_FEEDBACK_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-hunting-knife-attack', diagnostics }]);

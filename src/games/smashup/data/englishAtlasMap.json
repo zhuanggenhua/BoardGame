@@ -2642,5 +2642,45 @@
   "base_portal_room_pod": {
     "atlasId": "smashup:base9",
     "index": 1
+  },
+  "base_boneyard_pod": {
+    "atlasId": "smashup:base6",
+    "index": 2
+  },
+  "base_ossuary_pod": {
+    "atlasId": "smashup:base6",
+    "index": 3
+  },
+  "base_wyrms_desolation_pod": {
+    "atlasId": "smashup:base7",
+    "index": 1
+  },
+  "base_dragons_lair_pod": {
+    "atlasId": "smashup:base7",
+    "index": 4
+  },
+  "base_shark_reef_pod": {
+    "atlasId": "smashup:base7",
+    "index": 2
+  },
+  "base_the_deep_pod": {
+    "atlasId": "smashup:base7",
+    "index": 9
+  },
+  "base_oracle_at_delphi_pod": {
+    "atlasId": "smashup:base7",
+    "index": 5
+  },
+  "base_wooden_horse_pod": {
+    "atlasId": "smashup:base7",
+    "index": 8
+  },
+  "base_the_vats_pod": {
+    "atlasId": "smashup:base9",
+    "index": 4
+  },
+  "base_faceless_city_pod": {
+    "atlasId": "smashup:base9",
+    "index": 5
   }
 }

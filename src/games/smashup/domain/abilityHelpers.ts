@@ -167,18 +167,22 @@ export function canControllerPlayTitan(
     titanUid: string,
     options?: { allowConcurrentOwnTitan?: boolean },
 ): boolean {
-    const activeTitan = getTitanByController(state, controllerId);
-    if (!activeTitan) return true;
-    if (activeTitan.uid === titanUid) return true;
     const core = 'core' in state ? state.core : state;
+    const activeTitans = (core.titans ?? []).filter(
+        titan => titan.controllerId === controllerId && titan.location.zone === 'base',
+    );
+    if (activeTitans.length === 0) return true;
+    if (activeTitans.some(titan => titan.uid === titanUid)) return true;
+    if (options?.allowConcurrentOwnTitan === true) return true;
+
     const redTrooperPodInPlay = core.bases.some(base =>
         base.minions.some(minion =>
             minion.controller === controllerId
             && minion.defId === 'mega_troopers_red_trooper_pod',
         ),
     );
-    if (redTrooperPodInPlay) return true;
-    return options?.allowConcurrentOwnTitan === true;
+    const titanLimit = redTrooperPodInPlay ? 2 : 1;
+    return activeTitans.length < titanLimit;
 }
 
 export function getSpiritOfTheForestByController(
@@ -1071,6 +1075,7 @@ export function addPermanentPower(
     now: number,
     options?: {
         expiresOnTurnNumber?: number;
+        expiresOnPlayerId?: PlayerId;
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
@@ -1086,6 +1091,7 @@ export function addPermanentPower(
             amount,
             reason,
             ...(options?.expiresOnTurnNumber !== undefined ? { expiresOnTurnNumber: options.expiresOnTurnNumber } : {}),
+            ...(options?.expiresOnPlayerId !== undefined ? { expiresOnPlayerId: options.expiresOnPlayerId } : {}),
             ...(options?.sourcePlayerId !== undefined ? { sourcePlayerId: options.sourcePlayerId } : {}),
             ...(options?.sourceCardUid !== undefined ? { sourceCardUid: options.sourceCardUid } : {}),
             ...(options?.sourceDefId !== undefined ? { sourceDefId: options.sourceDefId } : {}),

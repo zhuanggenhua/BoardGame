@@ -544,6 +544,24 @@
         }
       }
     },
+    "cards/compressed/marvel_villains": {
+      "variants": {
+        "webp": {
+          "sha256": "8de4b7142573d115f31507aea90a320c4d4a09c850d0c1e44e2d05b7cc27b098",
+          "bytes": 1046742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/marvel_villains": {
+      "variants": {
+        "png": {
+          "sha256": "44ae80f5629ad1d33a2c438a2955112a38c1ae5d7addaa2d8ae44418ef15a5fb",
+          "bytes": 33423555,
+          "mime": "image/png"
+        }
+      }
+    },
     "cards/compressed/itty_critters_pod": {
       "variants": {
         "webp": {
@@ -577,6 +595,42 @@
           "sha256": "1793e25b548566f6a8973ba8d09d9c824dc94e593fdf5a7e8963cca979dda200",
           "bytes": 4723065,
           "mime": "image/png"
+        }
+      }
+    },
+    "cards/culture_shock/atlas": {
+      "variants": {
+        "png": {
+          "sha256": "5ca8838ed9c57f1a53c2c864837e56d2279ece101e1fe39e74be74828b61f08e",
+          "bytes": 42094823,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/culture_shock/compressed/atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
+          "bytes": 1110284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/polynesian_voyagers/atlas": {
+      "variants": {
+        "png": {
+          "sha256": "253dda49b347392e8657fdb2cda21a7b6ea4cfa667421e44b821d38756c6e0be",
+          "bytes": 4793419,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/polynesian_voyagers/compressed/atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "31f4179b388ed1063b20c65f9cb6c5eeb95474b352321fac756939712fa468b0",
+          "bytes": 442110,
+          "mime": "image/webp"
         }
       }
     },

@@ -599,15 +599,10 @@ export function executePlayEvent(
                 targetPosition: targets[0],
                 targetUnitId: target.instanceId,
                 sourceAbilityId: 'mogu_command',
+                destroyAfterExtraAttackSource: 'mogu_command',
               },
               timestamp,
             });
-            events.push(...emitDestroyWithTriggers(core, target, targets[0], {
-              playerId,
-              timestamp,
-              reason: 'mogu_command',
-              triggerOnDeath: true,
-            }));
           }
         }
         break;

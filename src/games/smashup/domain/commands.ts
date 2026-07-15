@@ -31,7 +31,7 @@ import {
 } from './playLegality';
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
-import { hasCardActivatableAbility } from './activationMetadata';
+import { getCardActivatableAbilities, hasCardActivatableAbility } from './activationMetadata';
 import {
     actionLikeNeedsResponseWindowBase,
     canCardBePlayedInResponseWindowForMatchState,
@@ -130,7 +130,7 @@ export function getManualSpecialScoringBaseIndices(
 function validateManualSpecialScoringBase(
     state: MatchState<SmashUpCore>,
     baseIndex: number,
-    sourceScope?: 'anyBase',
+    defIdOrSourceScope?: string | 'anyBase',
 ): ValidationResult | undefined {
     if (state.sys.phase !== 'scoreBases') {
         return undefined;
@@ -144,8 +144,14 @@ function validateManualSpecialScoringBase(
         return undefined;
     }
 
+    const canSourceFromAnyBase = defIdOrSourceScope === 'anyBase'
+        || (defIdOrSourceScope !== undefined
+            && getCardActivatableAbilities(defIdOrSourceScope).some(ability =>
+                ability.kind === 'special'
+                && ability.window === 'beforeScoring'
+                && ability.sourceScope === 'anyBase'));
     const eligibleIndices = getManualSpecialScoringBaseIndices(state);
-    if (sourceScope !== 'anyBase' && !eligibleIndices.includes(baseIndex)) {
+    if (!canSourceFromAnyBase && !eligibleIndices.includes(baseIndex)) {
         return { valid: false, error: '只能在达到临界点的基地上激活计分前特殊能力' };
     }
 
@@ -602,7 +608,7 @@ export function validate(
                     return { valid: false, error: '该卡牌只能在计分前打出' };
                 }
 
-                const restrictionError = getActionPlayRestrictionError(core, command.playerId);
+                const restrictionError = getActionPlayRestrictionError(core, command.playerId, rCard.defId);
                 if (restrictionError) {
                     return { valid: false, error: restrictionError };
                 }
@@ -1007,7 +1013,7 @@ export function validate(
                 if (!specialAvailability.hasSpecialExecutor) {
                     return { valid: false, error: '该手牌的特殊能力不能手动激活' };
                 }
-                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, handCard.defId);
                 if (scoringBaseValidation) {
                     return scoringBaseValidation;
                 }
@@ -1081,7 +1087,9 @@ export function validate(
                 if (!titanValidation.valid) {
                     return titanValidation;
                 }
-                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex);
+                const titan = getTitanByUid(core, spTitanUid);
+                if (!titan) return { valid: false, error: '该泰坦不存在' };
+                const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, titan.defId);
                 if (scoringBaseValidation) {
                     return scoringBaseValidation;
                 }
@@ -1113,7 +1121,7 @@ export function validate(
             )
                 ? 'anyBase'
                 : undefined;
-            const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, sourceScope);
+            const scoringBaseValidation = validateManualSpecialScoringBase(state, spBaseIndex, sourceScope ?? spMinion.defId);
             if (scoringBaseValidation) {
                 return scoringBaseValidation;
             }
@@ -1169,6 +1177,11 @@ function checkPlayConstraint(
     if (constraint === 'requireOwnMinion') {
         const hasOwnMinion = core.bases[baseIndex].minions.some(m => m.controller === playerId);
         if (!hasOwnMinion) return '目标基地上必须有你的随从';
+        return null;
+    }
+    if (constraint === 'requireNoCharacters') {
+        const hasCharacters = core.bases[baseIndex].minions.length > 0;
+        if (hasCharacters) return '目标基地上不能有任何角色';
         return null;
     }
     if (constraint === 'onlyCardInHand') {
