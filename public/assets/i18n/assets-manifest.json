@@ -12444,27 +12444,45 @@
           "mime": "image/webp"
         }
       }
+    },
+    "zh-CN/smashup/cards/culture_shock/atlas": {
+      "variants": {
+        "png": {
+          "sha256": "5ca8838ed9c57f1a53c2c864837e56d2279ece101e1fe39e74be74828b61f08e",
+          "bytes": 42094823,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/culture_shock/compressed/atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
+          "bytes": 1110284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/polynesian_voyagers/atlas": {
+      "variants": {
+        "png": {
+          "sha256": "253dda49b347392e8657fdb2cda21a7b6ea4cfa667421e44b821d38756c6e0be",
+          "bytes": 4793419,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/polynesian_voyagers/compressed/atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "31f4179b388ed1063b20c65f9cb6c5eeb95474b352321fac756939712fa468b0",
+          "bytes": 442110,
+          "mime": "image/webp"
+        }
+      }
     }
   },
   "id": "i18n",
   "manifestVersion": 1,
-  "scope": "official",
-  "zh-CN/qidahen/cards/atlases/compressed/ordinary-hand-atlas05": {
-    "variants": {
-      "webp": {
-        "sha256": "f808b22fc9add50b6d4bfa51ba7462315d9671b443c1abf9baa238aa8b608495",
-        "bytes": 2640142,
-        "mime": "image/webp"
-      }
-    }
-  },
-  "zh-CN/qidahen/cards/atlases/ordinary-hand-atlas05": {
-    "variants": {
-      "jpg": {
-        "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
-        "bytes": 4138087,
-        "mime": "image/jpeg"
-      }
-    }
-  }
+  "scope": "official"
 }

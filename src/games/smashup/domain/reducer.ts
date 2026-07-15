@@ -1823,6 +1823,34 @@ export function processReturnToHandTriggers(
             const transferredMinionLki = findTransferredMinionLkiFromPlay(coreBeforeReturn, event as CardTransferredEvent);
             const advancedCore = reduce(coreBeforeReturn, event);
             const advancedMatchState = { ...stateBeforeReturn, core: advancedCore };
+            const transferFrameId = `card-transferred-frame:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${eventIndex}:${now}`;
+            const transferSourceEventId = `card-transferred:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${eventIndex}:${now}`;
+            const transferDedupKey = `${SU_EVENTS.CARD_TRANSFERRED}:trigger:${payload.cardUid}:${payload.fromPlayerId}:${payload.toPlayerId}:${payload.reason ?? ''}:${event.timestamp}`;
+            if (!processedReturnToHandEventKeys.has(transferDedupKey)) {
+                processedReturnToHandEventKeys.add(transferDedupKey);
+                const transferredOwnerId = payload.ownerId
+                    ?? getCardTransferObjectRef(payload)?.provenance.ownerId
+                    ?? payload.fromPlayerId;
+                const queuedTransfer = collectTriggers(advancedCore, 'onCardTransferred', {
+                    state: advancedCore,
+                    matchState: advancedMatchState,
+                    playerId: payload.toPlayerId,
+                    frameId: transferFrameId,
+                    sourceEventId: transferSourceEventId,
+                    transferredCardUid: payload.cardUid,
+                    transferredCardDefId: payload.defId,
+                    transferredCardOwnerId: transferredOwnerId,
+                    transferredFromPlayerId: payload.fromPlayerId,
+                    transferredToPlayerId: payload.toPlayerId,
+                    triggerCardUid: payload.cardUid,
+                    triggerCardDefId: payload.defId,
+                    triggerCardOwnerId: transferredOwnerId,
+                    reason: payload.reason,
+                    random,
+                    now,
+                });
+                if (queuedTransfer) extraEvents.push(queuedTransfer);
+            }
             if (!isCardTransferFromPlayOrDiscard(coreBeforeReturn, event as CardTransferredEvent)) {
                 retainedEvents.push(event);
                 ms = advancedMatchState;

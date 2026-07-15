@@ -141,6 +141,10 @@ public/**/*.webm
 !public/assets/i18n/zh-CN/qidahen/thumbnails/**/*.webp
 !public/assets/i18n/zh-CN/smashup/thumbnails/**/
 !public/assets/i18n/zh-CN/smashup/thumbnails/**/*.webp
+!public/assets/i18n/zh-CN/smashup/cards/culture_shock/
+!public/assets/i18n/zh-CN/smashup/cards/culture_shock/**
+!public/assets/i18n/zh-CN/smashup/base/polynesian_voyagers/
+!public/assets/i18n/zh-CN/smashup/base/polynesian_voyagers/**
 !public/assets/i18n/zh-CN/summonerwars/thumbnails/**/
 !public/assets/i18n/zh-CN/summonerwars/thumbnails/**/*.webp
 

@@ -131,6 +131,22 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical.filter(path => path === 'smashup/cards/marvel_wave_one')).toHaveLength(1);
     });
 
+    it('文化冲击四派系会共享预热文化冲击卡图与基地 atlas', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['anansi_tales', 'grimms_fairy_tales'],
+                '1': ['russian_fairy_tales', 'ancient_incas'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/culture_shock/atlas');
+        expect(result.critical).toContain('smashup/base/polynesian_voyagers/atlas');
+        expect(result.critical.filter(path => path === 'smashup/cards/culture_shock/atlas')).toHaveLength(1);
+        expect(result.critical.filter(path => path === 'smashup/base/polynesian_voyagers/atlas')).toHaveLength(1);
+    });
+
     it('fairies 会命中 Pretty Pretty card atlas 与共享 Pretty Pretty base atlas', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

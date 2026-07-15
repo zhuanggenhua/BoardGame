@@ -105,6 +105,10 @@ import { HYDRA_CARDS } from './factions/hydra';
 import { KREE_CARDS } from './factions/kree';
 import { MASTERS_OF_EVIL_CARDS } from './factions/masters_of_evil';
 import { SINISTER_SIX_CARDS } from './factions/sinister_six';
+import { ANANSI_TALES_BASES, ANANSI_TALES_CARDS } from './factions/anansi_tales';
+import { GRIMMS_FAIRY_TALES_BASES, GRIMMS_FAIRY_TALES_CARDS } from './factions/grimms_fairy_tales';
+import { RUSSIAN_FAIRY_TALES_BASES, RUSSIAN_FAIRY_TALES_CARDS } from './factions/russian_fairy_tales';
+import { ANCIENT_INCAS_BASES, ANCIENT_INCAS_CARDS } from './factions/ancient_incas';
 import { GEEKS_CARDS } from './factions/geeks';
 import {
     DISCO_DANCERS_CARDS,
@@ -275,6 +279,10 @@ registerCards(HYDRA_CARDS);
 registerCards(KREE_CARDS);
 registerCards(MASTERS_OF_EVIL_CARDS);
 registerCards(SINISTER_SIX_CARDS);
+registerCards(ANANSI_TALES_CARDS);
+registerCards(GRIMMS_FAIRY_TALES_CARDS);
+registerCards(RUSSIAN_FAIRY_TALES_CARDS);
+registerCards(ANCIENT_INCAS_CARDS);
 registerCards(GEEKS_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
@@ -1341,6 +1349,10 @@ export const BASE_CARDS_ZHONGGUO: BaseCardDef[] = [
 ];
 registerBases(BASE_CARDS_ZHONGGUO);
 registerBases(CEASE_AND_DESIST_BASES);
+registerBases(ANANSI_TALES_BASES);
+registerBases(GRIMMS_FAIRY_TALES_BASES);
+registerBases(RUSSIAN_FAIRY_TALES_BASES);
+registerBases(ANCIENT_INCAS_BASES);
 
 registerPodBaseSkeletons();
 
