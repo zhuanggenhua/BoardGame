@@ -51,6 +51,28 @@ const isInProgressStatus = (status: StoredGamePackageState['status']) =>
     || status === 'downloading'
     || status === 'verifying';
 
+export const resolveManifestForPackageInstallAttempt = (
+    manifest: ResolvedGamePackageManifest,
+    currentState?: Pick<StoredGamePackageState, 'status' | 'errorCode'>,
+): ResolvedGamePackageManifest => {
+    const shouldUseFullPackForChecksumRecovery = currentState?.status === 'failed'
+        && currentState.errorCode === 'checksum-mismatch'
+        && Boolean(manifest.assetPackUrl)
+        && Boolean(manifest.assetPackFileIndexUrl)
+        && manifest.assetPackDiffOnly !== true;
+
+    if (!shouldUseFullPackForChecksumRecovery) {
+        return manifest;
+    }
+
+    return {
+        ...manifest,
+        assetPackFileIndexUrl: undefined,
+        assetPackFileIndexChecksum: undefined,
+        assetPackDiffOnly: undefined,
+    };
+};
+
 const createInstalledPackageFallbackState = (
     installedPackage: {
         gameId: string;
@@ -695,6 +717,16 @@ export const startGamePackageInstall = (
             assetPackBytes: manifest.assetPackBytes,
             updatedAt: Date.now(),
         };
+        const currentState = getCurrentOrStoredState(manifest.gameId, fallbackState);
+        const installManifest = resolveManifestForPackageInstallAttempt(manifest, currentState);
+        if (installManifest !== manifest) {
+            logMobileRuntimeCritical('PackageManagerService', 'checksum-recovery-use-full-asset-pack', {
+                gameId: manifest.gameId,
+                assetPackVersion: manifest.assetPackVersion,
+                previousErrorCode: currentState.errorCode,
+                hasFullAssetPackUrl: Boolean(manifest.assetPackUrl),
+            });
+        }
         const notificationPermission = await ensureNativeDownloadNotificationPermission();
         if (notificationPermission?.granted === false) {
             const failedState = mergeGamePackageState(fallbackState, {
@@ -742,7 +774,7 @@ export const startGamePackageInstall = (
             },
             finished: (async () => {
                 try {
-                    await ensureSharedAudioPackInstalled(manifest, queuedState, (sharedHandle) => {
+                    await ensureSharedAudioPackInstalled(installManifest, queuedState, (sharedHandle) => {
                         dependencyHandle = sharedHandle;
                         if (cancelledBeforeReady) {
                             sharedHandle?.cancel();
@@ -750,12 +782,13 @@ export const startGamePackageInstall = (
                     });
                     dependencyHandle = null;
                     logMobileRuntimeCritical('PackageManagerService', 'install-handle-creating', {
-                        gameId: manifest.gameId,
-                        manifestSource: manifest.source,
-                        assetPackVersion: manifest.assetPackVersion,
+                        gameId: installManifest.gameId,
+                        manifestSource: installManifest.source,
+                        assetPackVersion: installManifest.assetPackVersion,
+                        usingFullPackForChecksumRecovery: installManifest !== manifest,
                     });
                     const nativeHandle = await withTimeout(
-                        createNativeGamePackageInstallHandle(manifest, {
+                        createNativeGamePackageInstallHandle(installManifest, {
                             onStateChange: emitState,
                             onInstalledAssetBaseUrl: applyAssetBaseOverride,
                         }),
@@ -763,17 +796,17 @@ export const startGamePackageInstall = (
                         '创建原生安装器超时，请重新发起。',
                     );
                     logMobileRuntime('PackageManagerService', 'install-handle-resolved', {
-                        gameId: manifest.gameId,
+                        gameId: installManifest.gameId,
                         source: nativeHandle ? 'native' : 'mock',
                     });
                     logMobileRuntimeCritical('PackageManagerService', 'install-handle-resolved', {
-                        gameId: manifest.gameId,
+                        gameId: installManifest.gameId,
                         source: nativeHandle ? 'native' : 'mock',
                     });
                     if (nativeHandle) {
                         resolvedHandle = nativeHandle;
                     } else if (isDevRuntime) {
-                        resolvedHandle = runMockGamePackageInstall(manifest, {
+                        resolvedHandle = runMockGamePackageInstall(installManifest, {
                             failureMessage,
                             onStateChange: emitState,
                         });

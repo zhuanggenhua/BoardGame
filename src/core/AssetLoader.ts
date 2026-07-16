@@ -811,6 +811,16 @@ function rememberPersistentImageReadyHint(src: string, locale?: string): void {
     persistImageReadyHints();
 }
 
+function hasPersistentImageReadyHint(src: string, locale?: string): boolean {
+    const keys = getPersistentImageReadyHintKeys(src, locale);
+    if (keys.length === 0) {
+        return false;
+    }
+
+    const hints = loadPersistentImageReadyHints();
+    return keys.some((key) => hints.has(key));
+}
+
 function getSynchronousImageProbeUrls(src: string, locale?: string): string[] {
     const urls = new Set<string>();
     const exactKey = assetsPath(src);
@@ -842,6 +852,10 @@ function probeSynchronousImageReady(src: string, locale?: string): boolean {
 
 function hasImageReadyEvidence(src: string, locale?: string): boolean {
     if (isImagePreloaded(src, locale)) {
+        return true;
+    }
+
+    if (hasPersistentImageReadyHint(src, locale)) {
         return true;
     }
 
