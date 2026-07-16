@@ -5,7 +5,10 @@ import {
     type GamePackageCardState,
     type GamePackageInstallStatus,
 } from '../../features/mobile-packages/types';
-import { resolveGamePackageFailureMessage } from '../../features/mobile-packages/errorMessages';
+import {
+    resolveGamePackageFailureActionLabel,
+    resolveGamePackageFailureMessage,
+} from '../../features/mobile-packages/errorMessages';
 
 export type GamePackageCardStatus = GamePackageInstallStatus;
 export type { GamePackageCardState };
@@ -117,7 +120,7 @@ const getStatusMeta = (
             return {
                 title: t('packageManager.failedTitle'),
                 description: resolveGamePackageFailureMessage(t, errorCode, errorMessage),
-                actionLabel: failedActionLabel || t('packageManager.retryAction'),
+                actionLabel: failedActionLabel || resolveGamePackageFailureActionLabel(t, errorCode, errorMessage),
                 icon: AlertTriangle,
                 iconClassName: '',
                 iconToneClassName: 'border-amber-800/20 bg-amber-50/70 text-amber-900',

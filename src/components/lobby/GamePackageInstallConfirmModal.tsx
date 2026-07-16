@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { ModalBase } from '../common/overlays/ModalBase';
 import type { GamePackageCardState } from '../../features/mobile-packages/types';
 import { formatPackageBytes } from './packageManagerFormat';
-import { resolveGamePackageFailureMessage } from '../../features/mobile-packages/errorMessages';
+import {
+    resolveGamePackageFailureActionLabel,
+    resolveGamePackageFailureMessage,
+} from '../../features/mobile-packages/errorMessages';
 
 interface GamePackageInstallConfirmModalProps {
     gameName: string;
@@ -106,7 +109,7 @@ export const GamePackageInstallConfirmModal = ({
     const primaryActionLabel = isInProgress
         ? t('packageManager.cancelAction')
         : isFailed
-            ? (failedActionLabel || t('packageManager.retryAction'))
+            ? (failedActionLabel || resolveGamePackageFailureActionLabel(t, state.errorCode, state.errorMessage))
             : t('packageManager.confirmAction');
     const isPrimaryDisabled = !isInProgress && isLoading;
 
