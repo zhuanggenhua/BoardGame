@@ -17,6 +17,7 @@ interface GameDetailsMobilePackageCardProps {
     gameName: string;
     state: GamePackageCardState;
     onInstall: () => void;
+    onUpdateApp?: () => void;
     onRetry?: () => void;
     onUninstall?: () => void;
     failedActionLabel?: string;
@@ -72,7 +73,7 @@ const getStatusMeta = (
             description: requiredAppVersion
                 ? t('packageManager.updateRequiredHintWithVersion', { game: gameName, version: requiredAppVersion })
                 : t('packageManager.updateRequiredHint', { game: gameName }),
-            actionLabel: null,
+            actionLabel: t('packageManager.updateAppAction'),
             icon: AlertTriangle,
             iconClassName: '',
             iconToneClassName: 'border-amber-800/20 bg-amber-50/70 text-amber-900',
@@ -151,6 +152,7 @@ export const GameDetailsMobilePackageCard = ({
     gameName,
     state,
     onInstall,
+    onUpdateApp,
     onRetry,
     onUninstall,
     failedActionLabel,
@@ -173,7 +175,7 @@ export const GameDetailsMobilePackageCard = ({
         requiredAppVersion,
     );
     const StatusIcon = statusMeta.icon;
-    const showLeadingStatusIcon = state.status !== 'not-installed';
+    const showLeadingStatusIcon = presentation === 'update-required' || state.status !== 'not-installed';
     const isInProgress = state.status === 'queued'
         || state.status === 'manifest'
         || state.status === 'downloading'
@@ -188,7 +190,9 @@ export const GameDetailsMobilePackageCard = ({
     const showProgressAction = isInProgress && typeof onCollapse === 'function';
     const actionHandler = showProgressAction
         ? onCollapse
-        : state.status === 'failed'
+        : presentation === 'update-required'
+            ? (onUpdateApp ?? onInstall)
+            : state.status === 'failed'
             ? (onRetry ?? onInstall)
             : state.status === 'installed' && onUninstall
                 ? onUninstall
@@ -337,6 +341,8 @@ export const GameDetailsMobilePackageCard = ({
                             >
                                 {showProgressAction
                                     ? <X size={13} />
+                                    : presentation === 'update-required'
+                                        ? <Download size={13} />
                                     : state.status === 'failed'
                                         ? <RefreshCw size={13} />
                                         : state.status === 'installed'

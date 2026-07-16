@@ -348,8 +348,9 @@
     "updateRequiredEyebrow": "需要更新 App",
     "updateRequiredBadge": "更新后可玩",
     "updateRequiredTitle": "当前版本暂不支持",
-    "updateRequiredHint": "{{game}} 需要更新到新的 App 版本后才能游玩，当前版本先不开放入口。",
-    "updateRequiredHintWithVersion": "{{game}} 需要把 App 更新到 {{version}} 或更高版本后才能游玩，当前版本先不开放入口。",
+    "updateRequiredHint": "{{game}} 需要先安装新的 App 原生版本后才能游玩。你看到的 611 是界面热更新号，不代表 App 安装版本已经更新。",
+    "updateRequiredHintWithVersion": "{{game}} 需要先把 App 原生版本更新到 {{version}} 或更高版本后才能游玩。你看到的 611 是界面热更新号，不代表 App 安装版本已经更新。",
+    "updateAppAction": "更新 App",
     "progress": {
       "label": "当前进度",
       "percent": "{{percent}}%",

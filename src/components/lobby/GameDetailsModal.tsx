@@ -44,6 +44,7 @@ import {
     hasUsableInstalledGamePackageVersion,
 } from '../../features/mobile-packages/types';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
+import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { prefetchOnlineMatchRoute } from '../../lib/prefetchPlayRoute';
 
 
@@ -154,7 +155,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const packageInstallFailedActionLabel = packageInstallCardState.errorCode === 'notification-permission-required'
         && packageNotificationPermissionAction === 'settings'
         ? t('packageManager.notificationSettingsAction')
-        : t('packageManager.retryAction');
+        : undefined;
     const mobilePackageCardDisplayState = (
         (!hasInstalledPackageForMobileGame || hasMobilePackageUpdateAvailable)
         && packageInstallCardState.status === 'installed'
@@ -167,6 +168,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const shouldShowMobilePackageCard = isPackageManagedMobileGame;
     const [isMobilePackageCardExpanded, setIsMobilePackageCardExpanded] = useState(false);
     const shouldAutoExpandMobilePackageCard = hasMobilePackageUpdateAvailable
+        || isAppUpdateRequiredForMobileGame
         || packageInstallCardState.status === 'queued'
         || packageInstallCardState.status === 'manifest'
         || packageInstallCardState.status === 'downloading'
@@ -557,6 +559,19 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         pendingPackageInstall,
         packageInstallCardState.status,
         requestGamePackageInstall,
+    ]);
+
+    const handleRequestAndroidNativeUpdate = useCallback(() => {
+        logMobileRuntimeCritical('GameDetailsModal', 'native-update-clicked', {
+            gameId,
+            gameName: gameDisplayName,
+            requiredAppVersion: gameManifest?.mobileDelivery?.requiredAppVersion,
+        });
+        requestAndroidNativeUpdateCheck({ interactive: true });
+    }, [
+        gameDisplayName,
+        gameId,
+        gameManifest?.mobileDelivery?.requiredAppVersion,
     ]);
 
     const handleDismissPackageInstall = useCallback(() => {
@@ -1984,6 +1999,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                         gameName={gameDisplayName}
                                         state={mobilePackageCardDisplayState}
                                         onInstall={handleOpenMobilePackageInstall}
+                                        onUpdateApp={handleRequestAndroidNativeUpdate}
                                         onRetry={handleRetryPackageInstall}
                                         onUninstall={handleUninstallPackageInstall}
                                         failedActionLabel={packageInstallFailedActionLabel}

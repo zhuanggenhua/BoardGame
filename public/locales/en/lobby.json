@@ -348,8 +348,9 @@
     "updateRequiredEyebrow": "App Update Required",
     "updateRequiredBadge": "Update Needed",
     "updateRequiredTitle": "This version is not supported yet",
-    "updateRequiredHint": "{{game}} requires a newer app build before it can be played. The entry stays hidden on the current build.",
-    "updateRequiredHintWithVersion": "{{game}} requires app version {{version}} or newer before it can be played. The entry stays hidden on the current build.",
+    "updateRequiredHint": "{{game}} requires a newer native app build before it can be played. The 611 you see is the interface OTA number, not proof that the installed app build has been updated.",
+    "updateRequiredHintWithVersion": "{{game}} requires native app version {{version}} or newer before it can be played. The 611 you see is the interface OTA number, not proof that the installed app build has been updated.",
+    "updateAppAction": "Update App",
     "progress": {
       "label": "Progress",
       "percent": "{{percent}}%",

@@ -58,6 +58,7 @@ const {
     prefetchOnlineMatchRouteMock,
     resolveCriticalImagesMock,
     preloadWarmImagesMock,
+    requestAndroidNativeUpdateCheckMock,
 } = vi.hoisted(() => ({
     getGameByIdMock: vi.fn<(gameId: string) => GameManifestEntry | null>((gameId: string) => {
         if (gameId !== 'dicethrone') return null;
@@ -95,6 +96,7 @@ const {
     prefetchOnlineMatchRouteMock: vi.fn(),
     resolveCriticalImagesMock: vi.fn(),
     preloadWarmImagesMock: vi.fn(),
+    requestAndroidNativeUpdateCheckMock: vi.fn(),
 }));
 
 const buildMockGameManifest = (override: Partial<GameManifestEntry> = {}): GameManifestEntry => ({
@@ -191,6 +193,12 @@ const setWebRuntime = () => {
     });
 };
 
+const expandMobilePackageCardIfNeeded = () => {
+    if (!screen.queryByTestId('game-details-mobile-package-card')) {
+        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
+    }
+};
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: Record<string, unknown>) => {
@@ -279,6 +287,10 @@ vi.mock('../../../features/mobile-packages/nativeGamePackagePlugin', () => ({
     listInstalledNativeGamePackages: vi.fn(async () => []),
     openNativeDownloadNotificationSettings: vi.fn(async () => false),
     readNativeGamePackageInstallState: vi.fn(async () => null),
+}));
+
+vi.mock('../../../lib/mobile/androidNativeUpdates', () => ({
+    requestAndroidNativeUpdateCheck: requestAndroidNativeUpdateCheckMock,
 }));
 
 vi.mock('../../../features/mobile-packages/manifestClient', () => ({
@@ -499,6 +511,7 @@ beforeEach(() => {
     toastMock.warning.mockReset();
     toastMock.error.mockReset();
     mockLoggerInfo.mockReset();
+    requestAndroidNativeUpdateCheckMock.mockReset();
     ensureGameCriticalImageResolverLoadedMock.mockReset();
     ensureGameCriticalImageResolverLoadedMock.mockResolvedValue(undefined);
     hasGameTutorialLoaderMock.mockReset();
@@ -959,13 +972,17 @@ describe('GameDetailsMobilePackageCard', () => {
         expect(openSettingsMock).toHaveBeenCalledTimes(1);
     });
 
-    it('更新模式显示更新提示而不是安装按钮', () => {
+    it('更新模式显示更新 App 按钮并触发更新入口', () => {
+        const installMock = vi.fn();
+        const updateAppMock = vi.fn();
+
         render(createElement(GameDetailsMobilePackageCard, {
             gameName: 'Tic-Tac-Toe',
             state: {
                 status: 'not-installed',
             },
-            onInstall: vi.fn(),
+            onInstall: installMock,
+            onUpdateApp: updateAppMock,
             presentation: 'update-required',
             requiredAppVersion: '0.6.0',
         }));
@@ -973,6 +990,10 @@ describe('GameDetailsMobilePackageCard', () => {
         expect(screen.getByText('packageManager.updateRequiredTitle')).toBeInTheDocument();
         expect(screen.getByText('packageManager.updateRequiredHintWithVersion')).toBeInTheDocument();
         expect(screen.queryByText('packageManager.installAction')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'packageManager.updateAppAction' }));
+
+        expect(updateAppMock).toHaveBeenCalledTimes(1);
+        expect(installMock).not.toHaveBeenCalled();
     });
 
     it('未安装状态只保留安装按钮，不再显示下载圆球', () => {
@@ -1611,7 +1632,7 @@ describe('GameDetailsModal create room ai entry', () => {
         render(createElement(GameDetailsModal, baseProps));
 
         expect(screen.getByTestId('game-details-mobile-package-toggle')).toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
+        expandMobilePackageCardIfNeeded();
 
         await waitFor(() => {
             expect(screen.getByRole('button', { name: 'packageManager.retryAction' })).toBeInTheDocument();
@@ -1641,7 +1662,7 @@ describe('GameDetailsModal create room ai entry', () => {
 
         render(createElement(GameDetailsModal, baseProps));
 
-        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
+        expandMobilePackageCardIfNeeded();
 
         await waitFor(() => {
             expect(screen.getByRole('button', { name: 'packageManager.retryAction' })).toBeInTheDocument();
@@ -2202,7 +2223,19 @@ describe('GameDetailsModal create room ai entry', () => {
         expect(screen.getByText('packageManager.retryAction')).toBeInTheDocument();
     });
 
-    it('标记必须更新时，默认渲染悬浮提示按钮，展开后显示更新卡片', () => {
+    it('校验失败状态展开后显示重新下载素材包按钮', () => {
+        markGamePackageFailed('dicethrone', '本地临时文件校验失败');
+        render(createElement(GameDetailsModal, baseProps));
+
+        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
+
+        expect(screen.getByTestId('game-details-mobile-package-card')).toBeInTheDocument();
+        expect(screen.getByText('packageManager.checksumMismatchHint')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'packageManager.retryFullDownloadAction' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'packageManager.retryAction' })).toBeNull();
+    });
+
+    it('标记必须更新时，默认展开更新卡片并可发起原生 App 更新', () => {
         getGameByIdMock.mockImplementation((gameId: string) => {
             if (gameId !== 'dicethrone') return null;
             return buildMockGameManifest({
@@ -2220,13 +2253,13 @@ describe('GameDetailsModal create room ai entry', () => {
         render(createElement(GameDetailsModal, baseProps));
 
         expect(screen.getByTestId('game-details-mobile-package-toggle')).toBeInTheDocument();
-        expect(screen.queryByTestId('game-details-mobile-package-card')).toBeNull();
-
-        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
-
         expect(screen.getByTestId('game-details-mobile-package-card')).toBeInTheDocument();
         expect(screen.getByText('packageManager.updateRequiredTitle')).toBeInTheDocument();
         expect(screen.queryByText('packageManager.installAction')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'packageManager.updateAppAction' }));
+
+        expect(requestAndroidNativeUpdateCheckMock).toHaveBeenCalledTimes(1);
+        expect(requestAndroidNativeUpdateCheckMock).toHaveBeenCalledWith({ interactive: true });
     });
 
     it('未下载 package-managed 游戏时，教程入口会立即跳转并在后台补拉 tutorial', () => {

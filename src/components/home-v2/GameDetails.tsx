@@ -35,6 +35,7 @@ import {
     hasUsableInstalledGamePackageVersion,
 } from '../../features/mobile-packages/types';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
+import { requestAndroidNativeUpdateCheck } from '../../lib/mobile/androidNativeUpdates';
 import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { GameDetailsMobilePackageCard } from '../lobby/GameDetailsMobilePackageCard';
@@ -899,7 +900,7 @@ export const Right = ({ game }: RightProps) => {
     const packageInstallFailedActionLabel = packageInstallCardState.errorCode === 'notification-permission-required'
         && packageNotificationPermissionAction === 'settings'
         ? t('packageManager.notificationSettingsAction')
-        : t('packageManager.retryAction');
+        : undefined;
     const mobilePackageCardDisplayState = (
         (!hasInstalledPackageForMobileGame || hasMobilePackageUpdateAvailable)
         && packageInstallCardState.status === 'installed'
@@ -912,7 +913,8 @@ export const Right = ({ game }: RightProps) => {
     const [isMobilePackageCardExpanded, setIsMobilePackageCardExpanded] = React.useState(false);
     const [mobilePackagePortalTarget, setMobilePackagePortalTarget] = React.useState<HTMLElement | null>(null);
     const shouldShowMobilePackageRegion = isPackageManagedMobileGame;
-    const shouldAutoExpandMobilePackageCard = packageInstallCardState.status === 'queued'
+    const shouldAutoExpandMobilePackageCard = isAppUpdateRequiredForMobileGame
+        || packageInstallCardState.status === 'queued'
         || packageInstallCardState.status === 'manifest'
         || packageInstallCardState.status === 'downloading'
         || packageInstallCardState.status === 'verifying'
@@ -1079,6 +1081,19 @@ export const Right = ({ game }: RightProps) => {
         packageInstallCardState.status,
         pendingPackageInstall,
         requestGamePackageInstall,
+    ]);
+
+    const handleRequestAndroidNativeUpdate = React.useCallback(() => {
+        logMobileRuntimeCritical('HomeV2Detail', 'native-update-clicked', {
+            gameId,
+            gameName: gameDisplayName,
+            requiredAppVersion: game?.mobileDelivery?.requiredAppVersion,
+        });
+        requestAndroidNativeUpdateCheck({ interactive: true });
+    }, [
+        game?.mobileDelivery?.requiredAppVersion,
+        gameDisplayName,
+        gameId,
     ]);
 
     const handleDismissPackageInstall = React.useCallback(() => {
@@ -1730,6 +1745,7 @@ export const Right = ({ game }: RightProps) => {
                         gameName={gameDisplayName}
                         state={mobilePackageCardDisplayState}
                         onInstall={handleOpenMobilePackageInstall}
+                        onUpdateApp={handleRequestAndroidNativeUpdate}
                         onRetry={handleRetryPackageInstall}
                         onUninstall={handleUninstallPackageInstall}
                         failedActionLabel={packageInstallFailedActionLabel}
