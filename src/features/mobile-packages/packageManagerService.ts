@@ -45,6 +45,8 @@ let appliedCommonAudioAssetBaseOverride: string | undefined;
 let installedSharedAudioPackVersion: string | undefined;
 const isDevRuntime = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
 const NATIVE_PROGRESS_POLL_INTERVAL_MS = 1000;
+const CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS = 8;
+const CLEAN_RETRY_NATIVE_STATE_POLL_DELAY_MS = 250;
 
 const hasInstalledVersion = (state: Pick<StoredGamePackageState, 'status' | 'installedVersion' | 'localAssetBaseUrl'>) =>
     hasUsableInstalledGamePackageState(state);
@@ -117,6 +119,36 @@ const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, timeoutMes
             clearTimeout(timeoutId);
         }
     }
+};
+
+const delay = (durationMs: number) => new Promise<void>((resolve) => {
+    setTimeout(resolve, durationMs);
+});
+
+const waitForNativeCleanRetryState = async (gameId: string) => {
+    for (let attempt = 1; attempt <= CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS; attempt += 1) {
+        const nativeSnapshot = await readNativeGamePackageInstallState(gameId);
+        const isCleanSlate = !nativeSnapshot
+            || (nativeSnapshot.exists !== true && nativeSnapshot.taskRunning !== true);
+        logMobileRuntimeCritical('PackageManagerService', 'clean-retry-native-state-poll', {
+            gameId,
+            attempt,
+            isCleanSlate,
+            taskRunning: nativeSnapshot?.taskRunning,
+            snapshotStatus: nativeSnapshot?.state?.status,
+        });
+        if (isCleanSlate) {
+            return;
+        }
+        if (attempt < CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS) {
+            await delay(CLEAN_RETRY_NATIVE_STATE_POLL_DELAY_MS);
+        }
+    }
+
+    logMobileRuntimeCritical('PackageManagerService', 'clean-retry-native-state-still-dirty', {
+        gameId,
+        attempts: CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS,
+    });
 };
 
 const normalizeIncompleteInstalledState = (
@@ -655,6 +687,7 @@ export const resetGamePackageStateForCleanRetry = async (
     stopActiveInstall(gameId, 'resetGamePackageStateForCleanRetry');
     stopNativeProgressPolling(gameId);
     const nativeState = await uninstallNativeGamePackage(gameId);
+    await waitForNativeCleanRetryState(gameId);
     const nextState = mergeGamePackageState(resolvedFallback, {
         ...(nativeState ?? {}),
         status: 'not-installed',

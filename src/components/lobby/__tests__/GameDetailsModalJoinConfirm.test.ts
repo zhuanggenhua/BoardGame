@@ -538,7 +538,36 @@ beforeEach(() => {
     latestConfirmModalProps.current = null;
     latestPasswordEntryModalProps.current = null;
     delete (globalThis as unknown as { __BG_TEST_CREATE_ROOM_CONFIG__?: unknown }).__BG_TEST_CREATE_ROOM_CONFIG__;
+    vi.mocked(nativeGamePackagePlugin.cancelNativeGamePackageInstall).mockResolvedValue(true);
+    vi.mocked(nativeGamePackagePlugin.createNativeGamePackageInstallHandle).mockResolvedValue(null);
     vi.mocked(nativeGamePackagePlugin.ensureNativeDownloadNotificationPermission).mockResolvedValue(null);
+    vi.mocked(nativeGamePackagePlugin.getNativeDownloadNotificationPermissionStatus).mockResolvedValue(null);
+    vi.mocked(nativeGamePackagePlugin.listInstalledNativeGamePackages).mockResolvedValue([]);
+    vi.mocked(nativeGamePackagePlugin.openNativeDownloadNotificationSettings).mockResolvedValue(false);
+    vi.mocked(nativeGamePackagePlugin.readNativeGamePackageInstallState).mockResolvedValue(null);
+    vi.mocked(nativeGamePackagePlugin.uninstallNativeGamePackage).mockImplementation(async (gameId: string) => ({
+        gameId,
+        status: 'not-installed',
+        updatedAt: Date.now(),
+    }));
+    vi.mocked(manifestClient.resolveGamePackageManifest).mockImplementation(async (gameId: string, delivery?: {
+        runtimeChannel?: string;
+        modulePackId?: string;
+        assetPackId?: string;
+        modulePackBytes?: number;
+        assetPackBytes?: number;
+    }) => ({
+        gameId,
+        runtimeChannel: delivery?.runtimeChannel?.trim() || 'stable',
+        modulePackId: delivery?.modulePackId?.trim(),
+        assetPackId: delivery?.assetPackId?.trim(),
+        modulePackVersion: 'test-module-pack-v1',
+        assetPackVersion: 'test-asset-pack-v1',
+        assetPackUrl: `https://example.com/${gameId}.zip`,
+        modulePackBytes: delivery?.modulePackBytes,
+        assetPackBytes: delivery?.assetPackBytes,
+        source: 'remote',
+    }));
     vi.mocked(matchStatus.getOwnerActiveMatch).mockImplementation(() => null);
     vi.mocked(matchStatus.getLatestStoredMatchCredentials).mockImplementation(() => null);
     vi.mocked(matchStatus.listStoredMatchCredentials).mockImplementation(() => []);
@@ -2239,6 +2268,49 @@ describe('GameDetailsModal create room ai entry', () => {
         expect(screen.getByText('packageManager.checksumMismatchHint')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'packageManager.retryFullDownloadAction' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'packageManager.retryAction' })).toBeNull();
+    });
+
+    it('校验失败状态点击重新下载会先清理并直接启动素材包下载', async () => {
+        markGamePackageFailed('dicethrone', '本地临时文件校验失败');
+        vi.mocked(nativeGamePackagePlugin.createNativeGamePackageInstallHandle).mockImplementationOnce(
+            async (manifest, options) => {
+                const installedState = {
+                    gameId: 'dicethrone',
+                    runtimeChannel: 'stable',
+                    status: 'installed' as const,
+                    assetPackId: 'dicethrone',
+                    installedVersion: manifest.assetPackVersion,
+                    localAssetBaseUrl: '/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets',
+                    updatedAt: Date.now(),
+                };
+                options.onStateChange(installedState);
+                return {
+                    cancel: vi.fn(),
+                    finished: Promise.resolve(installedState),
+                };
+            },
+        );
+        render(createElement(GameDetailsModal, baseProps));
+
+        fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
+        fireEvent.click(screen.getByRole('button', { name: 'packageManager.retryFullDownloadAction' }));
+
+        await waitFor(() => {
+            expect(nativeGamePackagePlugin.uninstallNativeGamePackage).toHaveBeenCalledWith('dicethrone');
+        });
+        await waitFor(() => {
+            expect(nativeGamePackagePlugin.createNativeGamePackageInstallHandle).toHaveBeenCalledTimes(1);
+        });
+        expect(vi.mocked(nativeGamePackagePlugin.createNativeGamePackageInstallHandle).mock.calls[0]?.[0])
+            .toEqual(expect.objectContaining({
+                gameId: 'dicethrone',
+                assetPackUrl: 'https://example.com/dicethrone.zip',
+            }));
+        expect(JSON.parse(window.localStorage.getItem('mobile-package-state:dicethrone') ?? '{}'))
+            .toEqual(expect.objectContaining({
+                status: 'installed',
+                installedVersion: 'test-asset-pack-v1',
+            }));
     });
 
     it('标记必须更新时，默认展开更新卡片并可发起原生 App 更新', () => {

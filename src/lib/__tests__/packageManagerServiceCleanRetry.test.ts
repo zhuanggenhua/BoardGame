@@ -108,4 +108,36 @@ describe('packageManagerService clean retry', () => {
             assetPackDiffOnly: undefined,
         }));
     });
+
+    it('清洁重试会等原生任务状态归零，避免立刻复用旧下载任务', async () => {
+        const service = await import('../../features/mobile-packages/packageManagerService');
+        const fallbackState = createFallbackState();
+        service.syncGamePackageState('dicethrone', fallbackState);
+        nativeMocks.readNativeGamePackageInstallState
+            .mockResolvedValueOnce({
+                exists: true,
+                taskRunning: true,
+                state: {
+                    gameId: 'dicethrone',
+                    runtimeChannel: 'stable',
+                    status: 'failed',
+                    updatedAt: 1,
+                },
+            })
+            .mockResolvedValueOnce({
+                exists: false,
+                taskRunning: false,
+                state: {
+                    gameId: 'dicethrone',
+                    runtimeChannel: 'stable',
+                    status: 'not-installed',
+                    updatedAt: 2,
+                },
+            });
+
+        await service.resetGamePackageStateForCleanRetry('dicethrone', fallbackState);
+
+        expect(nativeMocks.uninstallNativeGamePackage).toHaveBeenCalledWith('dicethrone');
+        expect(nativeMocks.readNativeGamePackageInstallState).toHaveBeenCalledTimes(2);
+    });
 });
