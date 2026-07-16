@@ -37,7 +37,9 @@ import {
     getTokenStackLimit,
     getSeatingOrder,
     isTeamMode,
+    getAttackSnapshotDieIndex,
     getPendingBonusSettlementDice,
+    isAttackSnapshotDieId,
 } from './rules';
 import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
 import { applyEvents } from './utils';
@@ -641,13 +643,34 @@ export function execute(
         case 'MODIFY_DIE': {
             const { dieId, newValue } = command.payload as { dieId: number; newValue: number };
             const die = state.dice.find(d => d.id === dieId);
+            const duelAttackerDieActive = state.pendingAttack?.defenseAbilityId === 'duel'
+                && phase === 'defensiveRoll'
+                && dieId === 1
+                && state.pendingAttack.attackerId;
             const pendingBonusDie = state.pendingBonusDiceSettlement?.allowDiceModification === true
                 ? getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).find(d => d.index === dieId)
                 : undefined;
-            if (die || pendingBonusDie) {
+            const attackSnapshotDieIndex = getAttackSnapshotDieIndex(dieId);
+            const attackSnapshotDieValue = isAttackSnapshotDieId(dieId)
+                && state.pendingAttack
+                && attackSnapshotDieIndex >= 0
+                && attackSnapshotDieIndex < (state.pendingAttack.attackDiceValues?.length ?? 0)
+                ? state.pendingAttack.attackDiceValues?.[attackSnapshotDieIndex]
+                : undefined;
+            if (die || pendingBonusDie || attackSnapshotDieValue !== undefined || duelAttackerDieActive) {
                 const event: DieModifiedEvent = {
                     type: 'DIE_MODIFIED',
-                    payload: { dieId, oldValue: die?.value ?? pendingBonusDie?.value ?? newValue, newValue, playerId: command.playerId },
+                    payload: {
+                        dieId,
+                        oldValue: duelAttackerDieActive
+                            ? state.pendingAttack?.duelAttackerDieValue ?? newValue
+                            : die?.value ?? pendingBonusDie?.value ?? attackSnapshotDieValue ?? newValue,
+                        newValue,
+                        playerId: command.playerId,
+                        ownerId: duelAttackerDieActive
+                            ? state.pendingAttack?.attackerId
+                            : die?.ownerId ?? (attackSnapshotDieValue !== undefined ? state.pendingAttack?.attackerId : undefined),
+                    },
                     sourceCommandType: command.type,
                     timestamp,
                 };

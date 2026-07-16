@@ -22,19 +22,6 @@ export const DIST_I18N_JSON_RETAIN_RELATIVE_PATHS = [
   // Android 测试壳/首装场景还没有下载 package-managed 游戏包；
   // 首页书页缩略图必须保留最小压缩产物，不能把 DiceThrone 大图整包塞回内置资源。
   'zh-CN/dicethrone/thumbnails/compressed/fengm.webp',
-  'zh-CN/dicethrone/images/artificial/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/barbarian/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/cursed/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/gunslinger/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/monk/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/moon_elf/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/ninja/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/paladin/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/pyromancer/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/samurai/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/shadow_thief/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/treant/status-icons-atlas.json',
-  'zh-CN/dicethrone/images/zhanshujia/status-icons-atlas.json',
   'zh-CN/qidahen/assets-manifest.json',
   // Android 测试壳/首装场景可能尚未安装七大恨游戏包；
   // 主地图是进入对局后的关键首屏资产，只保留压缩版作为离线兜底。

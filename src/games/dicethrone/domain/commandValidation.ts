@@ -56,8 +56,10 @@ import {
     checkPlayUpgradeCard,
     getAvailableAbilityIds,
     getActiveDice,
+    getAttackSnapshotDieIndex,
     getPendingBonusSettlementDice,
     getSeatingOrder,
+    isAttackSnapshotDieId,
 } from './rules';
 import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
@@ -206,11 +208,23 @@ const validateDieInteraction = (
         && allowedDieIds.includes(1);
     const isPendingBonusDie = state.pendingBonusDiceSettlement?.allowDiceModification === true
         && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).some(die => die.index === dieId);
-    if (isDuelAttackerDie && interaction.diceOwnerId !== state.pendingAttack?.attackerId) {
+    const attackSnapshotDieIndex = getAttackSnapshotDieIndex(dieId);
+    const isAttackSnapshotDie = phase === 'defensiveRoll'
+        && isAttackSnapshotDieId(dieId)
+        && allowedDieIds.includes(dieId)
+        && !!state.pendingAttack?.attackerId
+        && Array.isArray(state.pendingAttack.attackDiceValues)
+        && attackSnapshotDieIndex >= 0
+        && attackSnapshotDieIndex < state.pendingAttack.attackDiceValues.length;
+    if (
+        isDuelAttackerDie
+        && interaction.diceOwnerId !== undefined
+        && interaction.diceOwnerId !== state.pendingAttack?.attackerId
+    ) {
         return fail('invalid_die_selection');
     }
     const die = state.dice.find(entry => entry.id === dieId);
-    if (!die && !isDuelAttackerDie && !isPendingBonusDie) {
+    if (!die && !isDuelAttackerDie && !isPendingBonusDie && !isAttackSnapshotDie) {
         return fail('die_not_found');
     }
     if (!allowedDieIds.includes(dieId)) {
@@ -222,6 +236,7 @@ const validateDieInteraction = (
         && interaction.diceOwnerId !== playerId
         && !isDuelAttackerDie
         && !isPendingBonusDie
+        && !isAttackSnapshotDie
     ) {
         return fail('invalid_die_selection');
     }

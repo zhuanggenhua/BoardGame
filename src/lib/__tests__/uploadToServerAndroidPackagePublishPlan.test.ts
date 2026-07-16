@@ -85,6 +85,13 @@ const getPackageManagedGameIds = () => {
 
 const isGamePackagePath = (relativePath: string, gameId: string) => {
     const normalized = relativePath.replace(/\\/g, '/');
+    if (
+        gameId === 'smashup'
+        && !(normalized.startsWith(`atlas-configs/${gameId}/`)
+            || /^i18n\/[^/]+\/[^/]+\//.test(normalized) && normalized.includes(`/${gameId}/`))
+    ) {
+        return false;
+    }
     return normalized.startsWith(`${gameId}/`)
         || normalized.startsWith(`atlas-configs/${gameId}/`)
         || /^i18n\/[^/]+\/[^/]+\//.test(normalized) && normalized.includes(`/${gameId}/`);
@@ -435,6 +442,9 @@ describe('Android 游戏包素材内容', () => {
         expect(smashUpPackageFiles).toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0157978c57.webp');
         expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/cards/compressed/tts_atlas_0157978c57.webp');
         expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0b888d02fd.webp');
+        expect(smashUpPackageFiles).not.toContain('smashup/cards/compressed/marvel_wave_one.webp');
+        expect(smashUpPackageFiles).not.toContain('smashup/cards/compressed/cease_and_desist.webp');
+        expect(smashUpPackageFiles).not.toContain('smashup/base/compressed/cease_and_desist.webp');
         expect(smashUpPackageFiles).toContain('atlas-configs/smashup/pod-atlas-config.json');
         expect(smashUpPackageFiles).not.toContain('atlas-configs/smashup/2833984701.json');
     });
@@ -460,6 +470,24 @@ describe('Android 游戏包素材内容', () => {
         expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/images/cursed/compressed/player-board.webp');
         expect(diceThronePackageFiles).not.toContain('i18n/zh-CN/dicethrone/images/artificial/compressed/手牌.webp');
         expect(diceThronePackageFiles).toContain('i18n/zh-CN/dicethrone/images/artificial/compressed/ability-cards.webp');
+    });
+
+    it('DiceThrone 状态图集 JSON 和压缩 WebP 必须成对进入 Android 游戏包候选资源', () => {
+        const { allAssetPaths } = getAssetCatalog();
+        const diceThronePackageFiles = new Set(
+            allAssetPaths
+                .filter(isDiceThronePackagePath)
+                .filter((relativePath) => isCompressedDeliveryPath(relativePath, 'dicethrone')),
+        );
+        const statusAtlasJsonPaths = [...diceThronePackageFiles]
+            .filter((relativePath) => /^i18n\/zh-CN\/dicethrone\/images\/[^/]+\/status-icons-atlas\.json$/u.test(relativePath));
+
+        expect(statusAtlasJsonPaths.length).toBeGreaterThan(0);
+
+        for (const jsonPath of statusAtlasJsonPaths) {
+            const atlasImagePath = jsonPath.replace('/status-icons-atlas.json', '/compressed/status-icons-atlas.webp');
+            expect(diceThronePackageFiles.has(atlasImagePath), `${jsonPath} 缺少对应压缩图集`).toBe(true);
+        }
     });
 
     it('DiceThrone 差异索引 dry-run 应输出瘦身后的文件数量', () => {

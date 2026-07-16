@@ -201,11 +201,22 @@ async function readTokenModalMetrics(page: import('@playwright/test').Page) {
 test('DiceThrone UI 收窄修复取证：防御选中态与 Token 面板完整显示', async ({ page, game }, testInfo) => {
     await page.setViewportSize(DESKTOP_REFERENCE_VIEWPORT);
     await setupDefenseSelectedScene(game);
-    const selectedAbility = page.locator('[data-testid^="dt-ability-selected-"]').first();
-    await expect(selectedAbility).toBeVisible({ timeout: 5000 });
-    const selectedMetrics = await selectedAbility.evaluate((selected) => {
+    const selectedDefenseSlot = page.locator(
+        '[data-ability-slot-scope="main-board"][data-resolved-ability-id="shadow-defense"][data-base-ability-id="shadow-defense"][data-is-selected="true"]'
+    );
+    await expect(selectedDefenseSlot).toHaveCount(1, { timeout: 5000 });
+    await expect(selectedDefenseSlot).toHaveAttribute('data-ability-slot', 'lightning');
+    const selectedDefenseOverlay = selectedDefenseSlot.getByTestId('dt-ability-selected-lightning');
+    await expect(selectedDefenseOverlay).toBeVisible({ timeout: 5000 });
+    const selectedMetrics = await selectedDefenseOverlay.evaluate((selected) => {
         const style = window.getComputedStyle(selected);
+        const slot = selected.parentElement;
         return {
+            slotId: slot?.getAttribute('data-ability-slot'),
+            slotScope: slot?.getAttribute('data-ability-slot-scope'),
+            resolvedAbilityId: slot?.getAttribute('data-resolved-ability-id'),
+            baseAbilityId: slot?.getAttribute('data-base-ability-id'),
+            isSelected: slot?.getAttribute('data-is-selected'),
             testId: selected.getAttribute('data-testid'),
             childElementCount: selected.children.length,
             backgroundImage: style.backgroundImage,
@@ -215,7 +226,15 @@ test('DiceThrone UI 收窄修复取证：防御选中态与 Token 面板完整�
     });
     expect(selectedMetrics.childElementCount).toBe(0);
     expect(selectedMetrics.backgroundImage).toContain('linear-gradient');
-    await game.screenshot('防御技能选中态-清晰单层渐变描边', testInfo);
+    expect(selectedMetrics).toMatchObject({
+        slotId: 'lightning',
+        slotScope: 'main-board',
+        resolvedAbilityId: 'shadow-defense',
+        baseAbilityId: 'shadow-defense',
+        isSelected: 'true',
+        testId: 'dt-ability-selected-lightning',
+    });
+    await game.screenshot('防御投掷-暗影守护防御技能已选中高亮', testInfo);
 
     await page.setViewportSize(DESKTOP_REFERENCE_VIEWPORT);
     await setupTokenResponseWindow(game);

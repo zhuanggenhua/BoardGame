@@ -110,6 +110,22 @@ export const getActiveDice = (state: DiceThroneCore): Die[] => {
     return dice.slice(0, rollDiceCount);
 };
 
+export const ATTACK_SNAPSHOT_DIE_ID_OFFSET = 100;
+
+export const isAttackSnapshotDieId = (dieId: number): boolean => (
+    Number.isInteger(dieId) && dieId >= ATTACK_SNAPSHOT_DIE_ID_OFFSET
+);
+
+export const getAttackSnapshotDieIndex = (dieId: number): number => (
+    dieId - ATTACK_SNAPSHOT_DIE_ID_OFFSET
+);
+
+export const getAttackSnapshotDieIds = (state: DiceThroneCore): number[] => {
+    const values = state.pendingAttack?.attackDiceValues;
+    if (!Array.isArray(values)) return [];
+    return values.map((_, index) => ATTACK_SNAPSHOT_DIE_ID_OFFSET + index);
+};
+
 /**
  * 兼容旧/脏快照中的奖励骰 shape。
  * 线上历史反馈里 `pendingBonusDiceSettlement.dice` 可能不是数组，

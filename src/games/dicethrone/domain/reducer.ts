@@ -10,7 +10,15 @@ import type {
     HeroState,
 } from './types';
 import type { RandomFn } from '../../../engine/types';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getDieFaceByDefinition, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from './rules';
+import {
+    buildTeamIdByPlayerIdFromSeatingOrder,
+    getAttackSnapshotDieIndex,
+    getDieFaceByDefinition,
+    getPendingBonusSettlementDice,
+    getPlayerDieFace,
+    getTokenStackLimit,
+    isAttackSnapshotDieId,
+} from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
@@ -822,7 +830,7 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
     state,
     event
 ) => {
-    const { dieId, newValue } = event.payload;
+    const { dieId, newValue, ownerId } = event.payload;
     const pendingBonusDiceSettlement = state.pendingBonusDiceSettlement?.allowDiceModification
         ? {
             ...state.pendingBonusDiceSettlement,
@@ -847,6 +855,44 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
             }),
         }
         : state.pendingBonusDiceSettlement;
+    if (state.pendingAttack?.defenseAbilityId === 'duel'
+        && ownerId === state.pendingAttack.attackerId
+        && dieId === 1) {
+        return {
+            ...state,
+            pendingBonusDiceSettlement,
+            pendingAttack: {
+                ...state.pendingAttack,
+                duelAttackerDieValue: newValue,
+            },
+        };
+    }
+    const attackSnapshotDieIndex = getAttackSnapshotDieIndex(dieId);
+    const pendingAttack = state.pendingAttack
+        && ownerId === state.pendingAttack.attackerId
+        && isAttackSnapshotDieId(dieId)
+        && Array.isArray(state.pendingAttack.attackDiceValues)
+        && attackSnapshotDieIndex >= 0
+        && attackSnapshotDieIndex < state.pendingAttack.attackDiceValues.length
+        ? (() => {
+            const attackDiceValues = state.pendingAttack!.attackDiceValues!.map((value, index) => (
+                index === attackSnapshotDieIndex ? newValue : value
+            ));
+            const baseFaceCounts = Object.fromEntries(
+                Object.keys(state.pendingAttack!.attackDiceFaceCounts ?? {}).map(face => [face, 0])
+            ) as NonNullable<DiceThroneCore['pendingAttack']>['attackDiceFaceCounts'];
+            const attackDiceFaceCounts = attackDiceValues.reduce((counts, value) => {
+                const face = getPlayerDieFace(state, state.pendingAttack!.attackerId, value);
+                if (!face) return counts;
+                return { ...counts, [face]: (counts?.[face] ?? 0) + 1 };
+            }, baseFaceCounts);
+            return {
+                ...state.pendingAttack!,
+                attackDiceValues,
+                attackDiceFaceCounts,
+            };
+        })()
+        : state.pendingAttack;
     const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
     const newDice = state.dice.map(d => {
         if (d.id !== dieId) return d;
@@ -856,7 +902,7 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
 
     const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
 
-    return { ...state, dice: newDice, rollConfirmed, pendingBonusDiceSettlement };
+    return { ...state, dice: newDice, rollConfirmed, pendingBonusDiceSettlement, pendingAttack };
 };
 
 /**

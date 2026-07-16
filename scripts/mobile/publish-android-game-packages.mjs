@@ -222,6 +222,11 @@ const isPublishableSmashUpPodAtlasPath = (relativePath) => {
 
 const shouldIncludeInGamePackage = (relativePath, gameId) => {
     const normalized = relativePath.replace(/\\/g, '/');
+    if (gameId === 'smashup'
+        && !(normalized.startsWith(`atlas-configs/${gameId}/`)
+            || /^i18n\/[^/]+\/[^/]+\//.test(normalized) && normalized.includes(`/${gameId}/`))) {
+        return false;
+    }
     if (!(normalized.startsWith(`${gameId}/`)
         || normalized.startsWith(`atlas-configs/${gameId}/`)
         || /^i18n\/[^/]+\/[^/]+\//.test(normalized) && normalized.includes(`/${gameId}/`))) {

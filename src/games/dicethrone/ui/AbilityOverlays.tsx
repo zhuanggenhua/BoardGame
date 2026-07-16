@@ -309,11 +309,11 @@ const buildAbilityHighlightStyle = (
 ): React.CSSProperties => {
     if (variant === 'selected') {
         return {
-            border: '3px solid transparent',
-            background: [
-                'linear-gradient(rgba(15,23,42,0), rgba(15,23,42,0)) padding-box',
-                `linear-gradient(135deg, ${tone.selectedPulseBorderColor}, ${tone.selectedBorderColor} 45%, ${tone.selectedRimColor}) border-box`,
-            ].join(', '),
+            padding: '3px',
+            background: `linear-gradient(135deg, ${tone.selectedPulseBorderColor}, ${tone.selectedBorderColor} 45%, ${tone.selectedRimColor})`,
+            WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+            WebkitMaskComposite: 'xor',
+            maskComposite: 'exclude',
             boxShadow: `0 0 20px ${tone.selectedGlowColor}, 0 0 34px ${tone.selectedHaloColor}`,
         };
     }
@@ -636,7 +636,7 @@ const buildAbilityHighlightStyle = (
                                     />
                                 </div>
                             )}
-                            {shouldHighlight && (
+                            {shouldHighlight && !isAbilitySelected && (
                                 <div
                                     data-testid={`dt-ability-highlight-${slot.id}`}
                                     className={highlightOverlayClassName}

@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { execute as executeDomainCommand } from '../domain/execute';
 import { RESOURCE_IDS } from '../domain/resources';
-import { getResponderQueue } from '../domain/rules';
+import { ATTACK_SNAPSHOT_DIE_ID_OFFSET, getResponderQueue } from '../domain/rules';
 import { diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands } from '../domain/systems';
 import {
     advanceTo,
@@ -196,6 +196,170 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
         const meta = (result.finalState.sys.interaction?.current?.data as any)?.meta;
         expect(meta?.dtType).toBe('modifyDie');
         expect(meta?.selectCount).toBe(2);
+    });
+
+    it('枪手在防御骰确认后的响应窗口可用惊不惊喜改防御方骰子', () => {
+        const random = createQueuedRandom([1, 1, 1, 4, 5, 1, 2, 3, 4]);
+        const runner = createRunner(random, true);
+
+        const result = runner.run({
+            name: '枪手在防御骰确认后使用惊不惊喜改防御方骰子',
+            setup: createHeroMatchup('gunslinger', 'monk', (core) => {
+                core.players['0'].hand = [getCardById('card-surprise')];
+                core.players['0'].deck = [];
+                core.players['0'].tokens.loaded = 0;
+                core.players['0'].resources[RESOURCE_IDS.CP] = 10;
+                core.players['1'].hand = [];
+                core.players['1'].deck = [];
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('RESPONSE_PASS', '0'),
+                cmd('RESPONSE_PASS', '1'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'revolver-3' }),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('PLAY_CARD', '0', { cardId: 'card-surprise' }),
+            ],
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+        expect(result.finalState.sys.phase).toBe('defensiveRoll');
+        assertWindowLockedWithInteraction(result.finalState, 'multistep-choice', '0');
+        expect(result.finalState.core.players['0'].discard.some((card: any) => card.id === 'card-surprise')).toBe(true);
+
+        const meta = (result.finalState.sys.interaction?.current?.data as any)?.meta;
+        expect(meta).toMatchObject({
+            dtType: 'modifyDie',
+            targetOpponentDice: true,
+            diceOwnerId: '1',
+            selectCount: 1,
+        });
+    });
+
+    it('防御方枪手在防御骰确认后的响应窗口可用惊不惊喜改攻击方骰子', () => {
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 1, 2, 3, 4, 5]);
+        const runner = createRunner(random, true);
+
+        const result = runner.run({
+            name: '防御方枪手在防御骰确认后使用惊不惊喜改攻击方骰子',
+            setup: createHeroMatchup('monk', 'gunslinger', (core) => {
+                core.players['0'].hand = [];
+                core.players['0'].deck = [];
+                core.players['1'].hand = [getCardById('card-surprise')];
+                core.players['1'].deck = [];
+                core.players['1'].tokens.loaded = 0;
+                core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('RESPONSE_PASS', '0'),
+                cmd('RESPONSE_PASS', '1'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
+                cmd('RESPONSE_PASS', '1'),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('RESPONSE_PASS', '0'),
+                cmd('PLAY_CARD', '1', { cardId: 'card-surprise' }),
+            ],
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+        expect(result.finalState.sys.phase).toBe('defensiveRoll');
+        expect(result.finalState.sys.interaction?.current?.kind).toBe('multistep-choice');
+        expect(result.finalState.sys.interaction?.current?.playerId).toBe('1');
+        expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(result.finalState.core.players['1'].discard.some((card: any) => card.id === 'card-surprise')).toBe(true);
+
+        const interactionData = result.finalState.sys.interaction?.current?.data as any;
+        const meta = interactionData?.meta;
+        expect(interactionData?.allowedDieIds).toEqual(expect.arrayContaining([0, 1]));
+        expect(meta).toMatchObject({
+            dtType: 'modifyDie',
+            targetOpponentDice: true,
+            selectCount: 1,
+        });
+        expect(meta?.diceOwnerId).toBeUndefined();
+
+        runner.setState(result.finalState);
+        const modifyAttackDie = runner.dispatch('MODIFY_DIE', {
+            playerId: '1',
+            dieId: 1,
+            newValue: 6,
+        });
+
+        expect(modifyAttackDie.success).toBe(true);
+        expect(modifyAttackDie.finalState.core.dice[0]?.value).toBe(1);
+        expect(modifyAttackDie.finalState.core.dice[1]?.value).not.toBe(6);
+        expect(modifyAttackDie.finalState.core.pendingAttack?.duelAttackerDieValue).toBe(6);
+    });
+
+    it('防御方在普通防御骰确认后的响应窗口可用惊不惊喜改攻击快照骰子', () => {
+        const random = createQueuedRandom([1, 1, 1, 1, 1, 2, 3, 4]);
+        const runner = createRunner(random, true);
+
+        const result = runner.run({
+            name: '防御方普通防御后使用惊不惊喜改攻击快照骰子',
+            setup: createHeroMatchup('monk', 'barbarian', (core) => {
+                core.players['0'].hand = [];
+                core.players['0'].deck = [];
+                core.players['1'].hand = [getCardById('card-surprise')];
+                core.players['1'].deck = [];
+                core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+            }),
+            commands: [
+                ...advanceTo('offensiveRoll'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('RESPONSE_PASS', '0'),
+                cmd('RESPONSE_PASS', '1'),
+                cmd('SELECT_ABILITY', '0', { abilityId: fistAttackAbilityId }),
+                cmd('RESPONSE_PASS', '1'),
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '1'),
+                cmd('CONFIRM_ROLL', '1'),
+                cmd('RESPONSE_PASS', '0'),
+                cmd('PLAY_CARD', '1', { cardId: 'card-surprise' }),
+            ],
+        });
+
+        expect(result.assertionErrors).toEqual([]);
+        expect(result.finalState.sys.phase).toBe('defensiveRoll');
+        expect(result.finalState.core.pendingAttack?.defenseAbilityId).toBe('thick-skin');
+        expect(result.finalState.core.players['1'].discard.some((card: any) => card.id === 'card-surprise')).toBe(true);
+
+        const interactionData = result.finalState.sys.interaction?.current?.data as any;
+        const meta = interactionData?.meta;
+        expect(interactionData?.allowedDieIds).toEqual(expect.arrayContaining([
+            0,
+            1,
+            2,
+            ATTACK_SNAPSHOT_DIE_ID_OFFSET,
+        ]));
+        expect(meta).toMatchObject({
+            dtType: 'modifyDie',
+            targetOpponentDice: true,
+            selectCount: 1,
+        });
+        expect(meta?.diceOwnerId).toBeUndefined();
+
+        runner.setState(result.finalState);
+        const modifyAttackDie = runner.dispatch('MODIFY_DIE', {
+            playerId: '1',
+            dieId: ATTACK_SNAPSHOT_DIE_ID_OFFSET,
+            newValue: 6,
+        });
+
+        expect(modifyAttackDie.success).toBe(true);
+        expect(modifyAttackDie.finalState.core.dice[0]?.value).toBe(2);
+        expect(modifyAttackDie.finalState.core.pendingAttack?.attackDiceValues?.[0]).toBe(6);
+        expect(modifyAttackDie.finalState.core.pendingAttack?.attackDiceFaceCounts).toMatchObject({ fist: 4 });
     });
 });
 

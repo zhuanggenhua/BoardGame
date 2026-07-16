@@ -105,7 +105,8 @@ public/assets/
 - `status-icons-atlas.json` 属于 DiceThrone 运行时本地 JSON 配置，不属于 `atlas-configs/<gameId>/` 那类语言无关图集配置
 - 它的当前落点是 `public/assets/i18n/<locale>/dicethrone/images/<hero>/status-icons-atlas.json`
 - 运行时代码通过本地资源路径读取它，再从其中解析出 `status-icons-atlas.webp` 的图集图片路径
-- 因此，排查 DiceThrone 状态图标问题时，不能把 `status-icons-atlas.json` 是否存在于远程资源域名当成默认真相源；先看本地包、`/assets/i18n/...` 和 dist 保留规则
+- 因此，排查 DiceThrone 状态图标问题时，真相源是移动游戏包、服务器资源主源、file-index 和客户端实际请求链；不要把 `status-icons-atlas.json` 或 `compressed/status-icons-atlas.webp` 加回 `dist/` / Android embedded 白名单来补图
+- 如果手机端只命中本地 `status-icons-atlas.json`，但同包/同源没有对应 `compressed/status-icons-atlas.webp`，结论应写成“游戏包/服务器资源链不完整或请求链选错源”，而不是“dist 缺图”
 
 **当前状态（过渡期）**：
 - 物理文件仍在 `public/assets/<gameId>/`
@@ -343,7 +344,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 2. **OTA 只承载 Web 本体**：允许 H5 代码、样式、`locales/zh-CN/**`、字体、必要的小型公共文件和 `assets-manifest.json`。
 3. **嵌套运行时资源默认不进 OTA**：`assets/atlas-configs/**`、`assets/common/**`、`assets/i18n/**`、`logos/**` 下除资源清单外的图片、音频、图集配置、缩略图、状态图集 JSON 和二维码必须从 OTA 排除。
 4. **Vite 根级产物可以保留**：`dist/assets/` 根目录下由 Vite 生成的 JS、CSS、按代码 import 生成的哈希文件属于 Web 本体；不得因为扩展名是图片就盲目删除。
-5. **资源继续走服务器主源或移动游戏包**：被 OTA 排除的正式运行时资源必须能通过服务器资源主源、移动游戏包或已安装资源读取；不得用“从 OTA 删掉了”替代资源链验收。
+5. **资源继续走服务器主源或移动游戏包**：被 OTA / embedded dist 排除的正式运行时资源必须能通过服务器资源主源、移动游戏包或已安装资源读取；不得用“从 dist/OTA 删掉了”替代资源链验收，也不得把对局图片、状态图集或 token 图集重新加回 dist 当修复。
 6. **发布后必须检查 ZIP 文件清单**：至少确认首页大图、游戏缩略图、`assets/atlas-configs/**`、状态图集 JSON 和支付二维码没有进入 OTA。
 
 ## 服务器资源发布与排查规则（强制）

@@ -6,7 +6,17 @@ import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore, Die } from './domain';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
-import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getPendingBonusSettlementDice, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
+import {
+    ATTACK_SNAPSHOT_DIE_ID_OFFSET,
+    getPlayableCardsInResponseWindow,
+    getAvailableAbilityIds,
+    getPendingBonusSettlementDice,
+    getPlayerDieFace,
+    getSeatingOrder,
+    getOpponents,
+    areTeammates,
+    getUpgradeTargetAbilityId,
+} from './domain/rules';
 import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
@@ -1165,15 +1175,47 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             } as Die;
         });
     }, [G.dice, G.pendingBonusDiceSettlement, diceMultistepInteraction]);
+    const attackSnapshotInteractionDice = React.useMemo(() => {
+        if (!diceMultistepInteraction || currentPhase !== 'defensiveRoll') return null;
+        const data = diceMultistepInteraction.data as { allowedDieIds?: number[] } | undefined;
+        const allowedDieIds = Array.isArray(data?.allowedDieIds) ? data.allowedDieIds : [];
+        if (!allowedDieIds.some(dieId => dieId >= ATTACK_SNAPSHOT_DIE_ID_OFFSET)) return null;
+
+        const pendingAttack = G.pendingAttack;
+        const attackerId = pendingAttack?.attackerId;
+        const attackDiceValues = pendingAttack?.attackDiceValues;
+        const attackerCharacterId = attackerId ? G.players[attackerId]?.characterId : undefined;
+        if (!attackerId || !Array.isArray(attackDiceValues) || !attackerCharacterId || attackerCharacterId === 'unselected') {
+            return null;
+        }
+
+        const definitionId = `${attackerCharacterId}-dice`;
+        return attackDiceValues.map((value, index) => {
+            const symbol = getPlayerDieFace(G, attackerId, value);
+            return {
+                id: ATTACK_SNAPSHOT_DIE_ID_OFFSET + index,
+                definitionId,
+                value,
+                symbol,
+                symbols: symbol ? [symbol] : [],
+                isKept: false,
+                ownerId: attackerId,
+                displayOnly: true,
+            } as Die;
+        });
+    }, [G, currentPhase, diceMultistepInteraction]);
+    const interactionDice = React.useMemo(() => {
+        if (bonusDiceInteractionDice) return bonusDiceInteractionDice;
+        if (attackSnapshotInteractionDice) return [...G.dice, ...attackSnapshotInteractionDice];
+        return G.dice;
+    }, [G.dice, attackSnapshotInteractionDice, bonusDiceInteractionDice]);
     const rightSidebarDice = React.useMemo(() => {
-        const sourceDice = bonusDiceInteractionDice ?? G.dice;
-        const baseDice = getRailDiceForCurrentBoard(sourceDice, useBoardDiceStage);
+        const baseDice = getRailDiceForCurrentBoard(interactionDice, useBoardDiceStage);
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
-    }, [G.dice, bonusDiceInteractionDice, duelAttackerDisplayDie, duelDefenderDisplayDie, useBoardDiceStage]);
+    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie, interactionDice, useBoardDiceStage]);
     const boardStageDice = React.useMemo(() => {
-        const baseDice = bonusDiceInteractionDice ?? G.dice;
-        return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
-    }, [G.dice, bonusDiceInteractionDice, duelAttackerDisplayDie, duelDefenderDisplayDie]);
+        return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? interactionDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : interactionDice;
+    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie, interactionDice]);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||

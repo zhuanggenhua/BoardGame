@@ -15,7 +15,12 @@ import type { PlayerId } from '../../../../engine/types';
 import { registerCustomActionHandler, resolveEffectsToEvents, type CustomActionContext } from '../effects';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
-import { getPendingBonusSettlementDice, getRollerId } from '../rules';
+import {
+    getActiveDice,
+    getAttackSnapshotDieIds,
+    getPendingBonusSettlementDice,
+    getRollerId,
+} from '../rules';
 import { findHeroCard } from '../../heroes';
 
 // ============================================================================
@@ -65,14 +70,27 @@ function handleAddAttackBonus({
 // 骰子目标解析辅助函数
 // ============================================================================
 
+const isDefenderSelectingAnyDiceDuringDefense = (
+    action: CustomActionContext['action'],
+    attackerId?: PlayerId,
+    state?: DiceThroneCore,
+): boolean => (
+    action.target === 'select'
+    && !!attackerId
+    && state?.pendingAttack?.defenderId === attackerId
+    && Array.isArray(state.pendingAttack.attackDiceValues)
+    && state.pendingAttack.attackDiceValues.length > 0
+);
+
 /**
  * 根据 EffectAction.target 解析 targetOpponentDice 标志
  * - 'opponent' → true（明确指定对手骰子）
- * - 'select' → 根据 attackerId 是否为 rollerId 判断（不是 rollerId 则是在修改对手骰子）
+ * - 'select' → 非投掷者是在修改对手骰子；防御方在防御阶段也可选择攻击快照骰
  * - 'self' / 默认 → false（只能选择自己骰子）
  */
 export function resolveTargetOpponentDice(action: CustomActionContext['action'], attackerId?: PlayerId, state?: DiceThroneCore): boolean {
     if (action.target === 'opponent') return true;
+    if (isDefenderSelectingAnyDiceDuringDefense(action, attackerId, state)) return true;
     if (action.target === 'select' && attackerId && state) {
         // select 模式：判断 attackerId 是否是 rollerId
         const rollerId = getRollerId(state);
@@ -81,18 +99,35 @@ export function resolveTargetOpponentDice(action: CustomActionContext['action'],
     return false;
 }
 
-export function resolveDiceOwnerId(state?: DiceThroneCore): PlayerId | undefined {
+export function resolveDiceOwnerId(
+    state?: DiceThroneCore,
+    action?: CustomActionContext['action'],
+    attackerId?: PlayerId,
+): PlayerId | undefined {
     if (!state) return undefined;
+    if (action && isDefenderSelectingAnyDiceDuringDefense(action, attackerId, state)) {
+        return undefined;
+    }
     return getRollerId(state);
 }
 
-function resolveAllowedDieIdsForDiceInteraction(state?: DiceThroneCore): number[] | undefined {
+function resolveAllowedDieIdsForDiceInteraction(
+    state?: DiceThroneCore,
+    action?: CustomActionContext['action'],
+    attackerId?: PlayerId,
+): number[] | undefined {
     if (!state) return undefined;
     if (state.pendingBonusDiceSettlement?.allowDiceModification) {
         return getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(die => die.index);
     }
     if (state.pendingAttack?.defenseAbilityId === 'duel') {
         return [0, 1];
+    }
+    if (action && isDefenderSelectingAnyDiceDuringDefense(action, attackerId, state)) {
+        return [
+            ...getActiveDice(state).map(die => die.id),
+            ...getAttackSnapshotDieIds(state),
+        ];
     }
     return undefined;
 }
@@ -112,9 +147,9 @@ function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action, st
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'set', targetValue: 6 },
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -145,9 +180,9 @@ function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp, action, s
         selectCount: 2,
         selected: [],
         dieModifyConfig: { mode: 'copy' },
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -163,9 +198,9 @@ function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action, s
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'any' },
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -181,9 +216,9 @@ function handleModifyDieAny2({ attackerId, sourceAbilityId, timestamp, action, s
         selectCount: 2,
         selected: [],
         dieModifyConfig: { mode: 'any' },
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -199,9 +234,9 @@ function handleModifyDieAdjust1({ attackerId, sourceAbilityId, timestamp, action
         selectCount: 1,
         selected: [],
         dieModifyConfig: { mode: 'adjust', adjustRange: { min: -1, max: 1 } },
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -220,9 +255,9 @@ function handleRerollOpponentDie1({ attackerId, sourceAbilityId, timestamp, acti
         titleKey: 'interaction.selectOpponentDieToReroll',
         selectCount: 1,
         selected: [],
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -237,9 +272,9 @@ function handleRerollDie2({ attackerId, sourceAbilityId, timestamp, action, stat
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 2,
         selected: [],
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
@@ -254,9 +289,9 @@ function handleRerollDie5({ attackerId, sourceAbilityId, timestamp, action, stat
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 5,
         selected: [],
-        diceOwnerId: resolveDiceOwnerId(state),
+        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
-        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state),
+        allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }

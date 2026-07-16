@@ -28,6 +28,15 @@ describe('Android embedded 资源裁剪', () => {
         ]);
     });
 
+    it('DiceThrone 对局图片和状态图集不进入 Android embedded 保留清单', () => {
+        const diceThroneGameplayAssets = DIST_I18N_JSON_RETAIN_RELATIVE_PATHS
+            .filter((relativePath) => relativePath.startsWith('zh-CN/dicethrone/images/'));
+
+        expect(diceThroneGameplayAssets).toEqual([]);
+        expect(isRetainedDistI18nFile('zh-CN/dicethrone/images/monk/status-icons-atlas.json')).toBe(false);
+        expect(isRetainedDistI18nFile('zh-CN/dicethrone/images/monk/compressed/status-icons-atlas.webp')).toBe(false);
+    });
+
     it('Web 发布产物不允许超过 Cloudflare Pages 单文件上限', () => {
         expect(isCloudflarePagesFileSizeAllowed(CLOUDFLARE_PAGES_MAX_FILE_BYTES)).toBe(true);
         expect(isCloudflarePagesFileSizeAllowed(CLOUDFLARE_PAGES_MAX_FILE_BYTES + 1)).toBe(false);
