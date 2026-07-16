@@ -9,6 +9,22 @@ describe('shouldResetGamePackageStateBeforeRetry', () => {
         })).toBe(false);
     });
 
+    it('只有本地临时文件校验失败文字时，也必须保留失败状态', () => {
+        expect(shouldResetGamePackageStateBeforeRetry({
+            status: 'failed',
+            errorCode: undefined,
+            errorMessage: '本地临时文件校验失败',
+        })).toBe(false);
+    });
+
+    it('只有拒绝增量续传文字时，也必须保留失败状态', () => {
+        expect(shouldResetGamePackageStateBeforeRetry({
+            status: 'failed',
+            errorCode: undefined,
+            errorMessage: '服务端拒绝增量续传，本地临时文件校验失败',
+        })).toBe(false);
+    });
+
     it('非校验失败仍按普通重试清理状态', () => {
         expect(shouldResetGamePackageStateBeforeRetry({
             status: 'failed',

@@ -35,7 +35,7 @@ const normalizeErrorMessage = (errorMessage?: string) => (
     typeof errorMessage === 'string' ? errorMessage.trim() : ''
 );
 
-const resolveGamePackageFailureErrorCode = (
+export const resolveGamePackageFailureErrorCode = (
     errorCode?: GamePackageInstallErrorCode,
     errorMessage?: string,
 ): GamePackageInstallErrorCode | undefined => {

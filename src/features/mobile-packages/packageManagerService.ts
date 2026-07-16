@@ -27,7 +27,10 @@ import {
     hasUsableInstalledGamePackageState,
     mergeGamePackageState,
 } from './types';
-import { resolveMissingAssetPackErrorCode } from './errorMessages';
+import {
+    resolveGamePackageFailureErrorCode,
+    resolveMissingAssetPackErrorCode,
+} from './errorMessages';
 
 type GamePackageStateListener = (state: StoredGamePackageState) => void;
 
@@ -53,15 +56,19 @@ const isInProgressStatus = (status: StoredGamePackageState['status']) =>
 
 export const resolveManifestForPackageInstallAttempt = (
     manifest: ResolvedGamePackageManifest,
-    currentState?: Pick<StoredGamePackageState, 'status' | 'errorCode'>,
+    currentState?: Pick<StoredGamePackageState, 'status' | 'errorCode' | 'errorMessage'>,
 ): ResolvedGamePackageManifest => {
-    const shouldUseFullPackForChecksumRecovery = currentState?.status === 'failed'
-        && currentState.errorCode === 'checksum-mismatch'
+    const resolvedErrorCode = resolveGamePackageFailureErrorCode(currentState?.errorCode, currentState?.errorMessage);
+    const shouldUseFullPackForIncrementalRecovery = currentState?.status === 'failed'
+        && (
+            resolvedErrorCode === 'checksum-mismatch'
+            || resolvedErrorCode === 'resume-not-supported'
+        )
         && Boolean(manifest.assetPackUrl)
         && Boolean(manifest.assetPackFileIndexUrl)
         && manifest.assetPackDiffOnly !== true;
 
-    if (!shouldUseFullPackForChecksumRecovery) {
+    if (!shouldUseFullPackForIncrementalRecovery) {
         return manifest;
     }
 

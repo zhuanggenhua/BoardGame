@@ -76,6 +76,32 @@ describe('resolveManifestForPackageInstallAttempt', () => {
         expect(manifest.assetPackDiffOnly).toBeUndefined();
     });
 
+    it('只有本地临时文件校验失败文字时，下一次安装也改走完整 ZIP', () => {
+        const manifest = resolveManifestForPackageInstallAttempt(createManifest(), {
+            status: 'failed',
+            errorCode: undefined,
+            errorMessage: '本地临时文件校验失败',
+        });
+
+        expect(manifest.assetPackUrl).toContain('/bundles/dicethrone/full.zip');
+        expect(manifest.assetPackFileIndexUrl).toBeUndefined();
+        expect(manifest.assetPackFileIndexChecksum).toBeUndefined();
+        expect(manifest.assetPackDiffOnly).toBeUndefined();
+    });
+
+    it('只有拒绝增量续传文字时，下一次安装也改走完整 ZIP', () => {
+        const manifest = resolveManifestForPackageInstallAttempt(createManifest(), {
+            status: 'failed',
+            errorCode: undefined,
+            errorMessage: '服务端拒绝增量续传，本地临时文件校验失败',
+        });
+
+        expect(manifest.assetPackUrl).toContain('/bundles/dicethrone/full.zip');
+        expect(manifest.assetPackFileIndexUrl).toBeUndefined();
+        expect(manifest.assetPackFileIndexChecksum).toBeUndefined();
+        expect(manifest.assetPackDiffOnly).toBeUndefined();
+    });
+
     it('diff-only 索引包不能降级成旧完整包', () => {
         const original = createManifest({ assetPackDiffOnly: true });
         const manifest = resolveManifestForPackageInstallAttempt(original, {

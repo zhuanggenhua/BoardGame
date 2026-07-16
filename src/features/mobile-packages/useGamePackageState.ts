@@ -30,6 +30,7 @@ import {
     normalizeGamePackageVersion,
     toGamePackageCardState,
 } from './types';
+import { resolveGamePackageFailureErrorCode } from './errorMessages';
 
 interface UseGamePackageStateOptions {
     gameId: string;
@@ -88,8 +89,15 @@ const resolveManifestAvailableVersion = (
 );
 
 export const shouldResetGamePackageStateBeforeRetry = (
-    state: Pick<GamePackageCardState, 'status' | 'errorCode'>,
-) => !(state.status === 'failed' && state.errorCode === 'checksum-mismatch');
+    state: Pick<GamePackageCardState, 'status' | 'errorCode' | 'errorMessage'>,
+) => {
+    const resolvedErrorCode = resolveGamePackageFailureErrorCode(state.errorCode, state.errorMessage);
+    return !(state.status === 'failed'
+        && (
+            resolvedErrorCode === 'checksum-mismatch'
+            || resolvedErrorCode === 'resume-not-supported'
+        ));
+};
 
 const PREVIEW_MANIFEST_RETRY_BASE_DELAY_MS = 3000;
 const PREVIEW_MANIFEST_RETRY_MAX_DELAY_MS = 15000;
@@ -603,6 +611,7 @@ export const useGamePackageState = ({
             fallbackState,
             currentStatus: cardState.status,
             currentErrorCode: cardState.errorCode,
+            currentErrorMessage: cardState.errorMessage,
         });
         if (shouldResetGamePackageStateBeforeRetry(cardState)) {
             resetGamePackageState(gameId, fallbackState);
@@ -611,6 +620,7 @@ export const useGamePackageState = ({
                 gameId,
                 currentStatus: cardState.status,
                 currentErrorCode: cardState.errorCode,
+                currentErrorMessage: cardState.errorMessage,
             });
         }
         if (pendingInstall) {
