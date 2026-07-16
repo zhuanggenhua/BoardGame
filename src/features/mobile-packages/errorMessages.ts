@@ -67,6 +67,15 @@ const shouldUseStructuredFailureMessage = (
         || resolvedErrorCode === 'resume-not-supported';
 };
 
+const shouldExposeRawFailureDetail = (
+    errorCode?: GamePackageInstallErrorCode,
+    errorMessage?: string,
+) => {
+    const resolvedErrorCode = resolveGamePackageFailureErrorCode(errorCode, errorMessage);
+    return resolvedErrorCode !== 'checksum-mismatch'
+        && resolvedErrorCode !== 'resume-not-supported';
+};
+
 const appendGamePackageFailureErrorDetail = (
     t: TFunction<'lobby'>,
     structuredMessage: string,
@@ -99,7 +108,7 @@ export const resolveGamePackageFailureMessage = (
         version: appVersion,
         versionCode: androidVersionCode,
     });
-    return shouldUseStructuredMessage
+    return shouldUseStructuredMessage && shouldExposeRawFailureDetail(errorCode, errorMessage)
         ? appendGamePackageFailureErrorDetail(t, structuredMessage, errorMessage)
         : structuredMessage;
 };

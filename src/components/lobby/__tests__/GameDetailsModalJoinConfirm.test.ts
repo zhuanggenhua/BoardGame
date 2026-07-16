@@ -2262,7 +2262,7 @@ describe('GameDetailsModal create room ai entry', () => {
     });
 
     it('校验失败状态展开后显示重新下载素材包按钮', () => {
-        markGamePackageFailed('dicethrone', '本地临时文件校验失败');
+        markGamePackageFailed('dicethrone', '增量文件校验失败: i18n/zh-CN/dicethrone/assets-manifest.json');
         render(createElement(GameDetailsModal, baseProps));
 
         fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
@@ -2270,7 +2270,9 @@ describe('GameDetailsModal create room ai entry', () => {
         const packageCard = screen.getByTestId('game-details-mobile-package-card');
         expect(packageCard).toBeInTheDocument();
         expect(packageCard).toHaveTextContent('packageManager.checksumMismatchHint');
-        expect(packageCard).toHaveTextContent('packageManager.errorDetail:本地临时文件校验失败');
+        expect(packageCard).not.toHaveTextContent('packageManager.errorDetail');
+        expect(packageCard).not.toHaveTextContent('增量文件校验失败');
+        expect(packageCard).not.toHaveTextContent('i18n/zh-CN/dicethrone/assets-manifest.json');
         expect(screen.getByRole('button', { name: 'packageManager.retryFullDownloadAction' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'packageManager.retryAction' })).toBeNull();
     });

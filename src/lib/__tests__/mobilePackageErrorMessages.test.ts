@@ -19,8 +19,8 @@ describe('game package failure messages', () => {
             '增量文件校验失败: i18n/zh-CN/dicethrone/foo.webp',
         );
         expect(message).toContain('packageManager.checksumMismatchHint');
-        expect(message).toContain('packageManager.errorDetail');
-        expect(message).toContain('增量文件校验失败: i18n/zh-CN/dicethrone/foo.webp');
+        expect(message).not.toContain('packageManager.errorDetail');
+        expect(message).not.toContain('增量文件校验失败: i18n/zh-CN/dicethrone/foo.webp');
         expect(resolveGamePackageFailureActionLabel(t, undefined, '增量文件校验失败: i18n/zh-CN/dicethrone/foo.webp'))
             .toBe('packageManager.retryFullDownloadAction');
     });
@@ -34,8 +34,8 @@ describe('game package failure messages', () => {
             '服务端拒绝增量续传，本地临时文件校验失败',
         );
         expect(message).toContain('packageManager.resumeNotSupportedHint');
-        expect(message).toContain('packageManager.errorDetail');
-        expect(message).toContain('服务端拒绝增量续传，本地临时文件校验失败');
+        expect(message).not.toContain('packageManager.errorDetail');
+        expect(message).not.toContain('服务端拒绝增量续传，本地临时文件校验失败');
         expect(resolveGamePackageFailureActionLabel(t, 'resume-not-supported', '服务端拒绝增量续传，本地临时文件校验失败'))
             .toBe('packageManager.retryFullDownloadAction');
     });
