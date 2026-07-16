@@ -208,6 +208,9 @@ vi.mock('react-i18next', () => ({
             if (key === 'error.createRoomErrorCodeOnly') {
                 return `（错误码：${String(options?.code ?? '')}）`;
             }
+            if (key === 'packageManager.errorDetail') {
+                return `packageManager.errorDetail:${String(options?.message ?? '')}`;
+            }
             return key;
         },
         i18n: {
@@ -2264,8 +2267,10 @@ describe('GameDetailsModal create room ai entry', () => {
 
         fireEvent.click(screen.getByTestId('game-details-mobile-package-toggle'));
 
-        expect(screen.getByTestId('game-details-mobile-package-card')).toBeInTheDocument();
-        expect(screen.getByText('packageManager.checksumMismatchHint')).toBeInTheDocument();
+        const packageCard = screen.getByTestId('game-details-mobile-package-card');
+        expect(packageCard).toBeInTheDocument();
+        expect(packageCard).toHaveTextContent('packageManager.checksumMismatchHint');
+        expect(packageCard).toHaveTextContent('packageManager.errorDetail:本地临时文件校验失败');
         expect(screen.getByRole('button', { name: 'packageManager.retryFullDownloadAction' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'packageManager.retryAction' })).toBeNull();
     });

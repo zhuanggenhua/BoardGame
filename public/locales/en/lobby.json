@@ -336,6 +336,7 @@
     "runtimeUnsupported": "This runtime does not support downloading game packages yet. Please retry inside the Android app.",
     "failedTitle": "Download Failed",
     "failedHint": "Downloading, verifying, or activating the game package failed. Please try again later.",
+    "errorDetail": "Details: {{message}}",
     "checksumMismatchHint": "The asset pack did not pass verification. Choose “Clean and download again” to clear local leftovers and temporary files, then download the full asset pack again.",
     "resumeNotSupportedHint": "The server refused to continue the previous temporary download. Choose “Clean and download again” to clear local leftovers, then switch to a full download.",
     "manifestFetchFailedHint": "Failed to load the download manifest. Check the network and try again. If it keeps failing, ask an administrator to verify the publication state.",

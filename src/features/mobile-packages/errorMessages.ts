@@ -67,22 +67,41 @@ const shouldUseStructuredFailureMessage = (
         || resolvedErrorCode === 'resume-not-supported';
 };
 
+const appendGamePackageFailureErrorDetail = (
+    t: TFunction<'lobby'>,
+    structuredMessage: string,
+    errorMessage?: string,
+) => {
+    const normalizedMessage = normalizeErrorMessage(errorMessage);
+    if (!normalizedMessage || structuredMessage.includes(normalizedMessage)) {
+        return structuredMessage;
+    }
+
+    return `${structuredMessage}\n${t('packageManager.errorDetail', {
+        message: normalizedMessage,
+    })}`;
+};
+
 export const resolveGamePackageFailureMessage = (
     t: TFunction<'lobby'>,
     errorCode?: GamePackageInstallErrorCode,
     errorMessage?: string,
 ) => {
-    if (!shouldUseStructuredFailureMessage(errorCode, errorMessage)) {
+    const shouldUseStructuredMessage = shouldUseStructuredFailureMessage(errorCode, errorMessage);
+    if (!shouldUseStructuredMessage) {
         const normalizedMessage = normalizeErrorMessage(errorMessage);
         if (normalizedMessage) {
             return normalizedMessage;
         }
     }
 
-    return t(getGamePackageFailureMessageKey(errorCode, errorMessage), {
+    const structuredMessage = t(getGamePackageFailureMessageKey(errorCode, errorMessage), {
         version: appVersion,
         versionCode: androidVersionCode,
     });
+    return shouldUseStructuredMessage
+        ? appendGamePackageFailureErrorDetail(t, structuredMessage, errorMessage)
+        : structuredMessage;
 };
 
 export const resolveGamePackageFailureActionLabel = (

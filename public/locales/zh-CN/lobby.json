@@ -336,6 +336,7 @@
     "runtimeUnsupported": "当前运行环境暂不支持下载游戏包，请在 Android App 内重试。",
     "failedTitle": "下载失败",
     "failedHint": "游戏包下载、校验或激活失败，请稍后重试。",
+    "errorDetail": "错误详情：{{message}}",
     "checksumMismatchHint": "素材包校验没通过。点“清理并重新下载”会先清空本地残留和临时文件，再从完整素材包重新下载。",
     "resumeNotSupportedHint": "服务器拒绝继续使用上次的临时下载文件。点“清理并重新下载”会先清掉本地残留，再改为完整下载。",
     "manifestFetchFailedHint": "拉取下载清单失败，请检查网络后重试。若多次失败，请联系管理员确认发布状态。",

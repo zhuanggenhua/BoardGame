@@ -284,8 +284,13 @@ export const GameDetailsMobilePackageCard = ({
                     </div>
 
                     <p className={[
-                        isHomeV2Style ? 'mt-1 line-clamp-2 text-[10px] leading-[1.45]' : 'mt-1 text-[11px] leading-5',
+                        isHomeV2Style
+                            ? state.status === 'failed'
+                                ? 'mt-1 text-[10px] leading-[1.45]'
+                                : 'mt-1 line-clamp-2 text-[10px] leading-[1.45]'
+                            : 'mt-1 text-[11px] leading-5',
                         isHomeV2Style ? 'text-[#7a6248]' : 'text-parchment-light-text',
+                        state.status === 'failed' ? 'whitespace-pre-line' : '',
                     ].join(' ')}>
                         {statusMeta.description}
                     </p>

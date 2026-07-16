@@ -140,7 +140,10 @@ export const GamePackageInstallConfirmModal = ({
                 <h3 className={isHomeV2Style ? 'mt-2 text-[17px] font-bold leading-tight' : 'mt-3 text-lg font-bold leading-tight'}>
                     {modalTitle}
                 </h3>
-                <p className={isHomeV2Style ? 'mt-1.5 text-[11px] leading-[1.55] text-[#7a6248]' : 'mt-2 text-sm leading-6 text-parchment-light-text'}>
+                <p className={[
+                    isHomeV2Style ? 'mt-1.5 text-[11px] leading-[1.55] text-[#7a6248]' : 'mt-2 text-sm leading-6 text-parchment-light-text',
+                    isFailed ? 'whitespace-pre-line' : '',
+                ].join(' ')}>
                     {modalDescription}
                 </p>
 
