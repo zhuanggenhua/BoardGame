@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
     CLOUDFLARE_PAGES_MAX_FILE_BYTES,
     DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
+    getEmbeddedPublicAssetMirrorDirNamesToRemove,
     isCloudflarePagesFileSizeAllowed,
+    isRemovedAndroidEmbeddedPublicAssetDir,
     isRemovedWebLegacyGameAssetDir,
     isRetainedDistI18nFile,
     WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE,
@@ -47,5 +49,19 @@ describe('Android embedded 资源裁剪', () => {
         expect(isRemovedWebLegacyGameAssetDir('smashup')).toBe(true);
         expect(isRemovedWebLegacyGameAssetDir('i18n')).toBe(false);
         expect(isRemovedWebLegacyGameAssetDir('atlas-configs')).toBe(false);
+    });
+
+    it('Android embedded 会移除 public/assets 镜像目录，避免把游戏素材打进 APK', () => {
+        const removedDirs = getEmbeddedPublicAssetMirrorDirNamesToRemove();
+
+        expect(removedDirs).toEqual(expect.arrayContaining([
+            'atlas-configs',
+            'common',
+            'i18n',
+            'smashup',
+        ]));
+        expect(isRemovedAndroidEmbeddedPublicAssetDir('smashup')).toBe(true);
+        expect(isRemovedAndroidEmbeddedPublicAssetDir('atlas-configs')).toBe(true);
+        expect(isRemovedAndroidEmbeddedPublicAssetDir('vendor-react')).toBe(false);
     });
 });

@@ -16,6 +16,7 @@ import {
     DIST_COMMON_JSON_RETAIN_RELATIVE_PATHS,
     DIST_I18N_JSON_RETAIN_RELATIVE_PATHS,
     DIST_LOGOS_RETAIN_RELATIVE_PATHS,
+    getEmbeddedPublicAssetMirrorDirNamesToRemove,
 } from '../deploy/prune-web-dist-assets.mjs';
 
 const rootDir = process.cwd();
@@ -371,11 +372,15 @@ const collectBlockedRelativePaths = (baseDir, blockedPrefixes) => {
 };
 
 const ensureNoBlockedEmbeddedAssets = (baseDir, label) => {
-    const blockedPaths = collectBlockedRelativePaths(baseDir, [
+    const blockedPrefixes = [
         'assets/common/',
         'assets/i18n/',
         'logos/',
-    ]).filter((relativePath) => !allowedEmbeddedRuntimeAssetFiles.has(relativePath));
+        ...getEmbeddedPublicAssetMirrorDirNamesToRemove()
+            .map((dirName) => `assets/${dirName}/`),
+    ];
+    const blockedPaths = collectBlockedRelativePaths(baseDir, blockedPrefixes)
+        .filter((relativePath) => !allowedEmbeddedRuntimeAssetFiles.has(relativePath));
     if (blockedPaths.length === 0) {
         return;
     }

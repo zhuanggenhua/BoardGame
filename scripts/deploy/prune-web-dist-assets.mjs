@@ -53,11 +53,13 @@ const DIST_PRUNE_PROFILES = {
     allowedLocaleDirs: ['zh-CN'],
     maxAssetFileBytes: null,
     assetDirNamesToRemove: [],
+    removePublicAssetMirrorDirs: true,
   },
   'ios-embedded': {
     allowedLocaleDirs: ['zh-CN'],
     maxAssetFileBytes: null,
     assetDirNamesToRemove: [],
+    removePublicAssetMirrorDirs: true,
   },
 };
 
@@ -171,11 +173,25 @@ const pruneLocales = (allowedLocaleDirs, stats) => {
   }
 };
 
+export const getEmbeddedPublicAssetMirrorDirNamesToRemove = () => {
+  if (!fs.existsSync(publicAssetsDir)) {
+    return [];
+  }
+
+  return fs.readdirSync(publicAssetsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort((left, right) => left.localeCompare(right));
+};
+
 export const isRetainedDistI18nFile = (relativePath) => DIST_I18N_JSON_RETAIN_RELATIVE_PATH_SET.has(relativePath);
 export const isRetainedDistCommonFile = (relativePath) => DIST_COMMON_JSON_RETAIN_RELATIVE_PATH_SET.has(relativePath);
 export const isRetainedDistLogoFile = (relativePath) => DIST_LOGOS_RETAIN_RELATIVE_PATH_SET.has(relativePath);
 export const isCloudflarePagesFileSizeAllowed = (bytes) => bytes <= CLOUDFLARE_PAGES_MAX_FILE_BYTES;
 export const isRemovedWebLegacyGameAssetDir = (dirName) => WEB_LEGACY_GAME_ASSET_DIR_NAMES_TO_REMOVE.includes(dirName);
+export const isRemovedAndroidEmbeddedPublicAssetDir = (dirName) => (
+  getEmbeddedPublicAssetMirrorDirNamesToRemove().includes(dirName)
+);
 
 export function pruneDistAssets(target = 'web') {
   const profile = DIST_PRUNE_PROFILES[target];
@@ -213,6 +229,12 @@ export function pruneDistAssets(target = 'web') {
 
   for (const dirName of profile.assetDirNamesToRemove) {
     removeDirectoryIfExists(path.join(distAssetsDir, dirName), stats);
+  }
+
+  if (profile.removePublicAssetMirrorDirs) {
+    for (const dirName of getEmbeddedPublicAssetMirrorDirNamesToRemove()) {
+      removeDirectoryIfExists(path.join(distAssetsDir, dirName), stats);
+    }
   }
 
   for (const relativePath of DIST_I18N_JSON_RETAIN_RELATIVE_PATHS) {
