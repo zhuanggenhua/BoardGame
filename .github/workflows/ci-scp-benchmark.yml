@@ -35,14 +35,14 @@ jobs:
       - name: Configure SSH
         shell: bash
         env:
-          ASSET_SERVER_SSH_PRIVATE_KEY: ${{ secrets.ASSET_SERVER_SSH_PRIVATE_KEY }}
+          CI_SCP_BENCHMARK_SSH_PRIVATE_KEY: ${{ secrets.CI_SCP_BENCHMARK_SSH_PRIVATE_KEY }}
           ASSET_SERVER_SSH_KNOWN_HOSTS: ${{ secrets.ASSET_SERVER_SSH_KNOWN_HOSTS }}
         run: |
-          test -n "${ASSET_SERVER_SSH_PRIVATE_KEY}"
+          test -n "${CI_SCP_BENCHMARK_SSH_PRIVATE_KEY}"
           test -n "${ASSET_SERVER_SSH_KNOWN_HOSTS}"
           install -d -m 700 "${HOME}/.ssh"
-          printf '%s\n' "${ASSET_SERVER_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/asset-publisher"
-          chmod 600 "${HOME}/.ssh/asset-publisher"
+          printf '%s\n' "${CI_SCP_BENCHMARK_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/ci-scp-benchmark"
+          chmod 600 "${HOME}/.ssh/ci-scp-benchmark"
           printf '%s\n' "${ASSET_SERVER_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
           chmod 600 "${HOME}/.ssh/known_hosts"
 
@@ -54,10 +54,8 @@ jobs:
           file="/tmp/boardgame-ci-scp-benchmark-${GITHUB_RUN_ID}.bin"
           dd if=/dev/urandom of="${file}" bs=1M count="${size_mb}" status=none
           bytes=$(wc -c < "${file}")
-          sha=$(sha256sum "${file}" | awk '{print $1}')
           echo "file=${file}" >> "${GITHUB_OUTPUT}"
           echo "bytes=${bytes}" >> "${GITHUB_OUTPUT}"
-          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
 
       - name: SCP to production host and verify
         id: scp
@@ -67,8 +65,8 @@ jobs:
         run: |
           file='${{ steps.payload.outputs.file }}'
           remote="/tmp/boardgame-ci-scp-benchmark-${GITHUB_RUN_ID}.bin"
-          key="${HOME}/.ssh/asset-publisher"
-          ssh_opts=(-i "${key}" -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" -o StrictHostKeyChecking=yes)
+          key="${HOME}/.ssh/ci-scp-benchmark"
+          ssh_opts=(-i "${key}" -o IdentitiesOnly=yes -o UserKnownHostsFile="${HOME}/.ssh/known_hosts" -o StrictHostKeyChecking=yes)
           start=$(date +%s%3N)
           scp "${ssh_opts[@]}" "${file}" "${TARGET}:${remote}"
           end=$(date +%s%3N)
