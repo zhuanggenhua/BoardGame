@@ -60,7 +60,7 @@ const isInProgressStatus = (status: StoredGamePackageState['status']) =>
 export const resolveManifestForPackageInstallAttempt = (
     manifest: ResolvedGamePackageManifest,
     currentState?: Pick<StoredGamePackageState, 'status' | 'errorCode' | 'errorMessage'>,
-    options: { forceFullInstall?: boolean } = {},
+    options: { forceFullInstall?: boolean; preferFullInstall?: boolean } = {},
 ): ResolvedGamePackageManifest => {
     const resolvedErrorCode = resolveGamePackageFailureErrorCode(currentState?.errorCode, currentState?.errorMessage);
     const isRecoverableIncrementalFailure = currentState?.status === 'failed'
@@ -68,15 +68,17 @@ export const resolveManifestForPackageInstallAttempt = (
             resolvedErrorCode === 'checksum-mismatch'
             || resolvedErrorCode === 'resume-not-supported'
         );
+    const canUseFullPackInsteadOfFileIndex = Boolean(manifest.assetPackUrl)
+        && Boolean(manifest.assetPackFileIndexUrl)
+        && manifest.assetPackDiffOnly !== true;
     const shouldUseFullPackForIncrementalRecovery = (
         options.forceFullInstall === true
         || isRecoverableIncrementalFailure
-    )
-        && Boolean(manifest.assetPackUrl)
-        && Boolean(manifest.assetPackFileIndexUrl)
-        && manifest.assetPackDiffOnly !== true;
+    ) && canUseFullPackInsteadOfFileIndex;
+    const shouldPreferFullPackForStability = options.preferFullInstall !== false
+        && canUseFullPackInsteadOfFileIndex;
 
-    if (!shouldUseFullPackForIncrementalRecovery) {
+    if (!shouldUseFullPackForIncrementalRecovery && !shouldPreferFullPackForStability) {
         return manifest;
     }
 
@@ -300,11 +302,12 @@ const ensureSharedAudioPackInstalled = async (
         forceFullInstall: forceFullInstallForCleanRetry,
     });
     if (installManifest !== sharedManifest) {
-        logMobileRuntimeCritical('PackageManagerService', 'clean-retry-shared-audio-use-full-asset-pack', {
+        logMobileRuntimeCritical('PackageManagerService', 'shared-audio-use-full-asset-pack', {
             gameId: manifest.gameId,
             sharedAudioPackVersion: manifest.sharedAudioPackVersion,
             hasSharedAudioFullAssetPackUrl: Boolean(manifest.sharedAudioPackUrl),
             forceFullInstallForCleanRetry,
+            reason: forceFullInstallForCleanRetry ? 'clean-retry' : 'prefer-full-install',
         });
     }
 
@@ -843,12 +846,13 @@ export const startGamePackageInstall = (
             forceFullInstall: forceFullInstallForCleanRetry,
         });
         if (installManifest !== manifest) {
-            logMobileRuntimeCritical('PackageManagerService', 'checksum-recovery-use-full-asset-pack', {
+            logMobileRuntimeCritical('PackageManagerService', 'asset-pack-use-full-zip-install', {
                 gameId: manifest.gameId,
                 assetPackVersion: manifest.assetPackVersion,
                 previousErrorCode: currentState.errorCode,
                 hasFullAssetPackUrl: Boolean(manifest.assetPackUrl),
                 forceFullInstallForCleanRetry,
+                reason: forceFullInstallForCleanRetry ? 'clean-retry' : 'prefer-full-install',
             });
         }
         const notificationPermission = await ensureNativeDownloadNotificationPermission();

@@ -114,13 +114,14 @@ describe('resolveManifestForPackageInstallAttempt', () => {
         expect(manifest.assetPackDiffOnly).toBe(true);
     });
 
-    it('非校验失败不改变增量安装入口', () => {
-        const original = createManifest();
-        const manifest = resolveManifestForPackageInstallAttempt(original, {
-            status: 'failed',
-            errorCode: 'network-timeout',
+    it('完整 ZIP 存在时默认跳过增量索引，避免旧原生安装器卡在单文件校验', () => {
+        const manifest = resolveManifestForPackageInstallAttempt(createManifest(), {
+            status: 'not-installed',
         });
 
-        expect(manifest).toBe(original);
+        expect(manifest.assetPackUrl).toContain('/bundles/dicethrone/full.zip');
+        expect(manifest.assetPackFileIndexUrl).toBeUndefined();
+        expect(manifest.assetPackFileIndexChecksum).toBeUndefined();
+        expect(manifest.assetPackDiffOnly).toBeUndefined();
     });
 });
