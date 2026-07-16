@@ -87,6 +87,10 @@ const resolveManifestAvailableVersion = (
     ?? manifest?.modulePackVersion,
 );
 
+export const shouldResetGamePackageStateBeforeRetry = (
+    state: Pick<GamePackageCardState, 'status' | 'errorCode'>,
+) => !(state.status === 'failed' && state.errorCode === 'checksum-mismatch');
+
 const PREVIEW_MANIFEST_RETRY_BASE_DELAY_MS = 3000;
 const PREVIEW_MANIFEST_RETRY_MAX_DELAY_MS = 15000;
 
@@ -597,15 +601,25 @@ export const useGamePackageState = ({
             gameId,
             pendingInstall,
             fallbackState,
+            currentStatus: cardState.status,
+            currentErrorCode: cardState.errorCode,
         });
-        resetGamePackageState(gameId, fallbackState);
+        if (shouldResetGamePackageStateBeforeRetry(cardState)) {
+            resetGamePackageState(gameId, fallbackState);
+        } else {
+            logMobileRuntimeCritical('UseGamePackageState', 'retry-preserve-checksum-failure-for-full-fallback', {
+                gameId,
+                currentStatus: cardState.status,
+                currentErrorCode: cardState.errorCode,
+            });
+        }
         if (pendingInstall) {
             void confirmInstall();
             return;
         }
 
         requestInstall();
-    }, [confirmInstall, fallbackState, gameId, isPackageManaged, pendingInstall, requestInstall]);
+    }, [cardState, confirmInstall, fallbackState, gameId, isPackageManaged, pendingInstall, requestInstall]);
 
     const openNotificationSettings = useCallback(async () => {
         await openNativeDownloadNotificationSettings();
