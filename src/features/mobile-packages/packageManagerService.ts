@@ -151,6 +151,10 @@ const waitForNativeCleanRetryState = async (gameId: string) => {
     });
 };
 
+const shouldCleanSharedAudioWithGamePackage = (gameId: string) => (
+    !isSharedAudioPackGameId(gameId)
+);
+
 const normalizeIncompleteInstalledState = (
     state: StoredGamePackageState,
     fallbackState: StoredGamePackageState,
@@ -258,8 +262,10 @@ const ensureSharedAudioPackInstalled = async (
     }
 
     const expectedVersion = manifest.sharedAudioPackVersion?.trim();
+    const forceFullInstallForCleanRetry = forceFullInstallRecoveryRegistry.has(SHARED_AUDIO_PACK_GAME_ID);
     if (
-        expectedVersion
+        !forceFullInstallForCleanRetry
+        && expectedVersion
         && installedSharedAudioPackVersion === expectedVersion
         && appliedCommonAudioAssetBaseOverride
     ) {
@@ -268,7 +274,8 @@ const ensureSharedAudioPackInstalled = async (
 
     const installedSharedAudioPack = await refreshInstalledSharedAudioPack();
     if (
-        expectedVersion
+        !forceFullInstallForCleanRetry
+        && expectedVersion
         && installedSharedAudioPack?.installedVersion === expectedVersion
         && installedSharedAudioPack.assetBaseUrl
     ) {
@@ -289,12 +296,24 @@ const ensureSharedAudioPackInstalled = async (
         source: manifest.source,
     };
 
-    const nativeHandle = await createNativeGamePackageInstallHandle(sharedManifest, {
+    const installManifest = resolveManifestForPackageInstallAttempt(sharedManifest, undefined, {
+        forceFullInstall: forceFullInstallForCleanRetry,
+    });
+    if (installManifest !== sharedManifest) {
+        logMobileRuntimeCritical('PackageManagerService', 'clean-retry-shared-audio-use-full-asset-pack', {
+            gameId: manifest.gameId,
+            sharedAudioPackVersion: manifest.sharedAudioPackVersion,
+            hasSharedAudioFullAssetPackUrl: Boolean(manifest.sharedAudioPackUrl),
+            forceFullInstallForCleanRetry,
+        });
+    }
+
+    const nativeHandle = await createNativeGamePackageInstallHandle(installManifest, {
         onStateChange: (sharedState) => {
             emitState(buildSharedAudioDependencyState(baseState, sharedState));
         },
         onInstalledAssetBaseUrl: (_gameId, assetBaseUrl) => {
-            applyCommonAudioOverride(assetBaseUrl, manifest.sharedAudioPackVersion);
+            applyCommonAudioOverride(assetBaseUrl, installManifest.assetPackVersion);
         },
     });
     onHandleReady?.(nativeHandle);
@@ -312,6 +331,7 @@ const ensureSharedAudioPackInstalled = async (
     }
 
     applyCommonAudioOverride(sharedInstallState.localAssetBaseUrl, sharedInstallState.installedVersion);
+    forceFullInstallRecoveryRegistry.delete(SHARED_AUDIO_PACK_GAME_ID);
 };
 
 const normalizeStateBeforeEmit = (
@@ -684,10 +704,25 @@ export const resetGamePackageStateForCleanRetry = async (
 
     fallbackCache.set(gameId, resolvedFallback);
     forceFullInstallRecoveryRegistry.add(gameId);
+    const shouldCleanSharedAudio = shouldCleanSharedAudioWithGamePackage(gameId);
+    if (shouldCleanSharedAudio) {
+        forceFullInstallRecoveryRegistry.add(SHARED_AUDIO_PACK_GAME_ID);
+    }
     stopActiveInstall(gameId, 'resetGamePackageStateForCleanRetry');
     stopNativeProgressPolling(gameId);
+    if (shouldCleanSharedAudio) {
+        stopActiveInstall(SHARED_AUDIO_PACK_GAME_ID, 'resetGamePackageStateForCleanRetry:shared-audio');
+        stopNativeProgressPolling(SHARED_AUDIO_PACK_GAME_ID);
+    }
     const nativeState = await uninstallNativeGamePackage(gameId);
     await waitForNativeCleanRetryState(gameId);
+    if (shouldCleanSharedAudio) {
+        await uninstallNativeGamePackage(SHARED_AUDIO_PACK_GAME_ID);
+        await waitForNativeCleanRetryState(SHARED_AUDIO_PACK_GAME_ID);
+        stateCache.delete(SHARED_AUDIO_PACK_GAME_ID);
+        clearStoredGamePackageState(SHARED_AUDIO_PACK_GAME_ID);
+        applyCommonAudioOverride(undefined, undefined);
+    }
     const nextState = mergeGamePackageState(resolvedFallback, {
         ...(nativeState ?? {}),
         status: 'not-installed',

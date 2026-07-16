@@ -37,6 +37,12 @@ const createManifest = (): ResolvedGamePackageManifest => ({
     assetPackChecksum: 'full-checksum',
     assetPackFileIndexUrl: 'https://assets.example.test/mobile-packages/android/stable/file-index/dicethrone/index.json',
     assetPackFileIndexChecksum: 'index-checksum',
+    sharedAudioPackId: 'common-audio',
+    sharedAudioPackVersion: '0.6.4-shared-audio',
+    sharedAudioPackUrl: 'https://assets.example.test/mobile-packages/android/stable/bundles/shared/common-audio/full.zip',
+    sharedAudioPackChecksum: 'shared-audio-checksum',
+    sharedAudioPackFileIndexUrl: 'https://assets.example.test/mobile-packages/android/stable/file-index/shared/common-audio/index.json',
+    sharedAudioPackFileIndexChecksum: 'shared-index-checksum',
     source: 'remote',
 });
 
@@ -84,6 +90,7 @@ describe('packageManagerService clean retry', () => {
         const cleanedState = JSON.parse(window.localStorage.getItem('mobile-package-state:dicethrone') ?? '{}');
 
         expect(nativeMocks.uninstallNativeGamePackage).toHaveBeenCalledWith('dicethrone');
+        expect(nativeMocks.uninstallNativeGamePackage).toHaveBeenCalledWith('common-audio');
         expect(cleanedState).toEqual(expect.objectContaining({
             status: 'not-installed',
         }));
@@ -100,8 +107,16 @@ describe('packageManagerService clean retry', () => {
             installedVersion: '0.6.4-dicethrone-pkg',
         }));
 
-        expect(nativeMocks.createNativeGamePackageInstallHandle).toHaveBeenCalledTimes(1);
+        expect(nativeMocks.createNativeGamePackageInstallHandle).toHaveBeenCalledTimes(2);
         expect(nativeMocks.createNativeGamePackageInstallHandle.mock.calls[0]?.[0]).toEqual(expect.objectContaining({
+            gameId: 'common-audio',
+            assetPackUrl: 'https://assets.example.test/mobile-packages/android/stable/bundles/shared/common-audio/full.zip',
+            assetPackFileIndexUrl: undefined,
+            assetPackFileIndexChecksum: undefined,
+            assetPackDiffOnly: undefined,
+        }));
+        expect(nativeMocks.createNativeGamePackageInstallHandle.mock.calls[1]?.[0]).toEqual(expect.objectContaining({
+            gameId: 'dicethrone',
             assetPackUrl: 'https://assets.example.test/mobile-packages/android/stable/bundles/dicethrone/full.zip',
             assetPackFileIndexUrl: undefined,
             assetPackFileIndexChecksum: undefined,
@@ -138,6 +153,7 @@ describe('packageManagerService clean retry', () => {
         await service.resetGamePackageStateForCleanRetry('dicethrone', fallbackState);
 
         expect(nativeMocks.uninstallNativeGamePackage).toHaveBeenCalledWith('dicethrone');
-        expect(nativeMocks.readNativeGamePackageInstallState).toHaveBeenCalledTimes(2);
+        expect(nativeMocks.uninstallNativeGamePackage).toHaveBeenCalledWith('common-audio');
+        expect(nativeMocks.readNativeGamePackageInstallState).toHaveBeenCalledTimes(3);
     });
 });
