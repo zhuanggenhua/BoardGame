@@ -16,6 +16,7 @@ import {
     cancelGamePackageInstall as cancelGamePackageInstallTask,
     refreshGamePackageStateFromNativeTask,
     resetGamePackageState,
+    resetGamePackageStateForCleanRetry,
     startGamePackageInstall,
     subscribeGamePackageState,
     syncGamePackageState,
@@ -88,16 +89,20 @@ const resolveManifestAvailableVersion = (
     ?? manifest?.modulePackVersion,
 );
 
-export const shouldResetGamePackageStateBeforeRetry = (
+export const shouldCleanGamePackageStateBeforeRetry = (
     state: Pick<GamePackageCardState, 'status' | 'errorCode' | 'errorMessage'>,
 ) => {
     const resolvedErrorCode = resolveGamePackageFailureErrorCode(state.errorCode, state.errorMessage);
-    return !(state.status === 'failed'
+    return state.status === 'failed'
         && (
             resolvedErrorCode === 'checksum-mismatch'
             || resolvedErrorCode === 'resume-not-supported'
-        ));
+        );
 };
+
+export const shouldResetGamePackageStateBeforeRetry = (
+    state: Pick<GamePackageCardState, 'status' | 'errorCode' | 'errorMessage'>,
+) => !shouldCleanGamePackageStateBeforeRetry(state);
 
 const PREVIEW_MANIFEST_RETRY_BASE_DELAY_MS = 3000;
 const PREVIEW_MANIFEST_RETRY_MAX_DELAY_MS = 15000;
@@ -613,22 +618,33 @@ export const useGamePackageState = ({
             currentErrorCode: cardState.errorCode,
             currentErrorMessage: cardState.errorMessage,
         });
-        if (shouldResetGamePackageStateBeforeRetry(cardState)) {
-            resetGamePackageState(gameId, fallbackState);
-        } else {
-            logMobileRuntimeCritical('UseGamePackageState', 'retry-preserve-checksum-failure-for-full-fallback', {
-                gameId,
-                currentStatus: cardState.status,
-                currentErrorCode: cardState.errorCode,
-                currentErrorMessage: cardState.errorMessage,
-            });
-        }
-        if (pendingInstall) {
-            void confirmInstall();
-            return;
-        }
+        const continueRetry = async () => {
+            if (shouldCleanGamePackageStateBeforeRetry(cardState)) {
+                logMobileRuntimeCritical('UseGamePackageState', 'retry-clean-local-package-before-full-redownload', {
+                    gameId,
+                    currentStatus: cardState.status,
+                    currentErrorCode: cardState.errorCode,
+                    currentErrorMessage: cardState.errorMessage,
+                });
+                await resetGamePackageStateForCleanRetry(gameId, fallbackState);
+            } else if (shouldResetGamePackageStateBeforeRetry(cardState)) {
+                resetGamePackageState(gameId, fallbackState);
+            }
 
-        requestInstall();
+            if (pendingInstall) {
+                await confirmInstall();
+                return;
+            }
+
+            requestInstall();
+        };
+
+        void continueRetry().catch((error) => {
+            logMobileRuntimeCritical('UseGamePackageState', 'retry-clean-or-start-failed', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
     }, [cardState, confirmInstall, fallbackState, gameId, isPackageManaged, pendingInstall, requestInstall]);
 
     const openNotificationSettings = useCallback(async () => {

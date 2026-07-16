@@ -281,12 +281,18 @@ vi.mock('../../../core', async (importOriginal) => {
 });
 
 vi.mock('../../../features/mobile-packages/nativeGamePackagePlugin', () => ({
+    cancelNativeGamePackageInstall: vi.fn(async () => true),
     createNativeGamePackageInstallHandle: vi.fn(async () => null),
     ensureNativeDownloadNotificationPermission: vi.fn(async () => null),
     getNativeDownloadNotificationPermissionStatus: vi.fn(async () => null),
     listInstalledNativeGamePackages: vi.fn(async () => []),
     openNativeDownloadNotificationSettings: vi.fn(async () => false),
     readNativeGamePackageInstallState: vi.fn(async () => null),
+    uninstallNativeGamePackage: vi.fn(async (gameId: string) => ({
+        gameId,
+        status: 'not-installed',
+        updatedAt: Date.now(),
+    })),
 }));
 
 vi.mock('../../../lib/mobile/androidNativeUpdates', () => ({

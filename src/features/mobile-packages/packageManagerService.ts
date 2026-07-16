@@ -40,6 +40,7 @@ const listenerRegistry = new Map<string, Set<GamePackageStateListener>>();
 const activeInstallRegistry = new Map<string, GamePackageInstallHandle>();
 const nativeProgressPollRegistry = new Map<string, ReturnType<typeof setInterval>>();
 const appliedAssetBaseOverrides = new Map<string, string>();
+const forceFullInstallRecoveryRegistry = new Set<string>();
 let appliedCommonAudioAssetBaseOverride: string | undefined;
 let installedSharedAudioPackVersion: string | undefined;
 const isDevRuntime = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
@@ -57,13 +58,18 @@ const isInProgressStatus = (status: StoredGamePackageState['status']) =>
 export const resolveManifestForPackageInstallAttempt = (
     manifest: ResolvedGamePackageManifest,
     currentState?: Pick<StoredGamePackageState, 'status' | 'errorCode' | 'errorMessage'>,
+    options: { forceFullInstall?: boolean } = {},
 ): ResolvedGamePackageManifest => {
     const resolvedErrorCode = resolveGamePackageFailureErrorCode(currentState?.errorCode, currentState?.errorMessage);
-    const shouldUseFullPackForIncrementalRecovery = currentState?.status === 'failed'
+    const isRecoverableIncrementalFailure = currentState?.status === 'failed'
         && (
             resolvedErrorCode === 'checksum-mismatch'
             || resolvedErrorCode === 'resume-not-supported'
-        )
+        );
+    const shouldUseFullPackForIncrementalRecovery = (
+        options.forceFullInstall === true
+        || isRecoverableIncrementalFailure
+    )
         && Boolean(manifest.assetPackUrl)
         && Boolean(manifest.assetPackFileIndexUrl)
         && manifest.assetPackDiffOnly !== true;
@@ -554,6 +560,7 @@ export const resetGamePackageState = (
     }
 
     fallbackCache.set(gameId, resolvedFallback);
+    forceFullInstallRecoveryRegistry.delete(gameId);
     clearStoredGamePackageState(gameId);
     stopNativeProgressPolling(gameId);
     const nextState = mergeGamePackageState(resolvedFallback, {
@@ -607,7 +614,45 @@ export const uninstallGamePackage = async (
     }
 
     fallbackCache.set(gameId, resolvedFallback);
+    forceFullInstallRecoveryRegistry.delete(gameId);
     stopActiveInstall(gameId, 'uninstallGamePackage');
+    stopNativeProgressPolling(gameId);
+    const nativeState = await uninstallNativeGamePackage(gameId);
+    const nextState = mergeGamePackageState(resolvedFallback, {
+        ...(nativeState ?? {}),
+        status: 'not-installed',
+        progressPercent: undefined,
+        progressMode: undefined,
+        installedVersion: undefined,
+        localAssetBaseUrl: undefined,
+        errorCode: undefined,
+        errorMessage: undefined,
+        updatedAt: nativeState?.updatedAt ?? Date.now(),
+    });
+
+    clearStoredGamePackageState(gameId);
+    applyAssetBaseOverride(gameId, undefined);
+    emitState(nextState);
+    return nextState;
+};
+
+export const resetGamePackageStateForCleanRetry = async (
+    gameId: string,
+    fallbackState?: StoredGamePackageState,
+): Promise<StoredGamePackageState> => {
+    logMobileRuntimeCritical('PackageManagerService', 'clean-retry-entered', {
+        gameId,
+        hasExplicitFallbackState: Boolean(fallbackState),
+        currentCachedState: stateCache.get(gameId),
+    });
+    const resolvedFallback = fallbackState ?? fallbackCache.get(gameId);
+    if (!resolvedFallback) {
+        throw new Error(`[MobilePackages] 缺少 ${gameId} 的 fallbackState`);
+    }
+
+    fallbackCache.set(gameId, resolvedFallback);
+    forceFullInstallRecoveryRegistry.add(gameId);
+    stopActiveInstall(gameId, 'resetGamePackageStateForCleanRetry');
     stopNativeProgressPolling(gameId);
     const nativeState = await uninstallNativeGamePackage(gameId);
     const nextState = mergeGamePackageState(resolvedFallback, {
@@ -725,13 +770,17 @@ export const startGamePackageInstall = (
             updatedAt: Date.now(),
         };
         const currentState = getCurrentOrStoredState(manifest.gameId, fallbackState);
-        const installManifest = resolveManifestForPackageInstallAttempt(manifest, currentState);
+        const forceFullInstallForCleanRetry = forceFullInstallRecoveryRegistry.has(manifest.gameId);
+        const installManifest = resolveManifestForPackageInstallAttempt(manifest, currentState, {
+            forceFullInstall: forceFullInstallForCleanRetry,
+        });
         if (installManifest !== manifest) {
             logMobileRuntimeCritical('PackageManagerService', 'checksum-recovery-use-full-asset-pack', {
                 gameId: manifest.gameId,
                 assetPackVersion: manifest.assetPackVersion,
                 previousErrorCode: currentState.errorCode,
                 hasFullAssetPackUrl: Boolean(manifest.assetPackUrl),
+                forceFullInstallForCleanRetry,
             });
         }
         const notificationPermission = await ensureNativeDownloadNotificationPermission();
@@ -768,6 +817,9 @@ export const startGamePackageInstall = (
         };
         emitState(queuedState);
         startNativeProgressPolling(manifest.gameId, queuedState);
+        if (forceFullInstallForCleanRetry) {
+            forceFullInstallRecoveryRegistry.delete(manifest.gameId);
+        }
 
         let resolvedHandle: GamePackageInstallHandle | null = null;
         let dependencyHandle: GamePackageInstallHandle | null = null;
@@ -890,6 +942,7 @@ export const resetGamePackageManagerForTests = () => {
     stateCache.clear();
     fallbackCache.clear();
     listenerRegistry.clear();
+    forceFullInstallRecoveryRegistry.clear();
     appliedAssetBaseOverrides.clear();
     clearGameAssetBaseOverrides();
     applyCommonAudioOverride(undefined, undefined);
