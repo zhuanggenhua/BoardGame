@@ -119,7 +119,7 @@ const readCurrentCore = async (page: Page): Promise<BetrayalCore> => (
     })
 );
 
-const expectRollPanelUsesCentralOpenTable = async (page: Page, rollPanel: Locator, label: string) => {
+const expectRollPanelUsesAdaptiveOpenDock = async (page: Page, rollPanel: Locator, label: string) => {
     await expect(rollPanel).toHaveAttribute('data-roll-panel-style', 'open-table-transparent');
     const resultStage = rollPanel.getByTestId('betrayal-recent-roll-result-stage');
     const total = rollPanel.getByTestId('betrayal-recent-roll-total');
@@ -193,17 +193,21 @@ const expectRollPanelUsesCentralOpenTable = async (page: Page, rollPanel: Locato
         };
     });
     expect(
-        Math.abs(geometry.panel.centerX - geometry.viewportWidth / 2),
-        `${label}骰盘必须走中央开放区，不能回到右上角`,
-    ).toBeLessThanOrEqual(170);
+        geometry.panel.width,
+        `${label}骰盘不能占据整块中央大空间`,
+    ).toBeLessThanOrEqual(geometry.viewportWidth * 0.52);
     expect(
-        Math.abs(geometry.panel.centerY - geometry.viewportHeight / 2),
-        `${label}骰盘必须在主牌桌中段，不能贴顶部状态区`,
-    ).toBeLessThanOrEqual(130);
+        geometry.panel.height,
+        `${label}骰盘必须是结果坞，不应撑成全屏遮挡层`,
+    ).toBeLessThanOrEqual(geometry.viewportHeight * 0.46);
     expect(
         geometry.panel.top,
         `${label}骰盘不能停在右上角顶部状态区`,
     ).toBeGreaterThan(geometry.viewportHeight * 0.22);
+    expect(
+        geometry.panel.bottom,
+        `${label}骰盘应让出上方牌面/事件卡阅读空间，而不是完全居中压住`,
+    ).toBeGreaterThan(geometry.viewportHeight * 0.58);
     expect(
         Math.abs(geometry.resultStage.centerX - geometry.panel.centerX),
         `${label}结果舞台必须仍在投掷面板中央，不能漂到角落`,
@@ -618,7 +622,7 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expectVisiblePhysicalDiceBox(speedRollPanel);
         await waitForPhysicalDiceSettled(speedRollPanel);
         await expectPhysicalDiceSeparated(speedRollPanel, { minDiceCount: 3 });
-        await expectRollPanelUsesCentralOpenTable(page, speedRollPanel, '倒塌房间速度检定');
+        await expectRollPanelUsesAdaptiveOpenDock(page, speedRollPanel, '倒塌房间速度检定');
         await saveScreenshot(page, COLLAPSED_ROOM_DICE_SCREENSHOT);
 
         const afterFallCore = await readCurrentCore(page);
@@ -632,6 +636,8 @@ test.describe('山屋惊魂房间效果代表链', () => {
 
         await switchRoomMapToFloor(page, 'basement');
         await expect(page.getByTestId('betrayal-room-occupant-basement-landing-0')).toBeVisible();
+        await page.getByTestId('betrayal-roll-continue').click();
+        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
@@ -695,7 +701,7 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expectVisiblePhysicalDiceBox(elevatorRollPanel);
         await waitForPhysicalDiceSettled(elevatorRollPanel);
         await expectPhysicalDiceSeparated(elevatorRollPanel, { minDiceCount: 2 });
-        await expectRollPanelUsesCentralOpenTable(page, elevatorRollPanel, '神秘电梯移动');
+        await expectRollPanelUsesAdaptiveOpenDock(page, elevatorRollPanel, '神秘电梯移动');
         await saveScreenshot(page, MYSTIC_ELEVATOR_DICE_SCREENSHOT);
 
         await expect(page.getByTestId('betrayal-room-floor-ground')).toHaveAttribute('aria-pressed', 'true');

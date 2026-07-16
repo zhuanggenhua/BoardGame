@@ -136,7 +136,7 @@ export const SUMMONER_WARS_FACTION_AI_PROFILES: Record<FactionId, SummonerWarsFa
     },
     mogu: {
         factionId: 'mogu',
-        summary: ['先锋军团联动压制', '重视充能与攻击窗口'],
+        summary: ['莫古充能联动', '重视充能与攻击窗口'],
         strategyTagWeights: {
             'ability-tempo': 1.24,
             'summoner-pressure': 1.12,
@@ -145,6 +145,21 @@ export const SUMMONER_WARS_FACTION_AI_PROFILES: Record<FactionId, SummonerWarsFa
         evaluationWeights: {
             tempo: 1.16,
             threatAndKills: 1.1,
+            positionControl: 1.04,
+        },
+    },
+    huijin: {
+        factionId: 'huijin',
+        summary: ['灰烬远程压制', '重视召唤师周边防守'],
+        strategyTagWeights: {
+            'summoner-defense': 1.16,
+            'summoner-pressure': 1.1,
+            'ability-tempo': 1.08,
+            'board-control': 1.04,
+        },
+        evaluationWeights: {
+            summonerSafety: 1.12,
+            threatAndKills: 1.08,
             positionControl: 1.04,
         },
     },

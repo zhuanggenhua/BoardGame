@@ -1,0 +1,332 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "summonerwars",
+  "basePrefix": "official/i18n/zh-CN/summonerwars/",
+  "files": {
+    "common/compressed/cardback": {
+      "variants": {
+        "webp": {
+          "sha256": "5477cd29fc4f5fc31805385e0734927e45816fe5d18240d5c89a3f70cf2e7a9f",
+          "bytes": 128832,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "common/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "53c11f4eda6e0302dea63a581cb37e015a4f9db96c7c4cb474030309893b1a66",
+          "bytes": 14982,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "common/compressed/map": {
+      "variants": {
+        "webp": {
+          "sha256": "9cc47e7d448ed87f129c27242cbbc6ce293c6cb43d87b269d87e10352e432ca5",
+          "bytes": 425064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "common/compressed/Portal": {
+      "variants": {
+        "webp": {
+          "sha256": "9d874b89d81700c16ee1f86e7bc5a2e617fe15beb10e224a8757a9afc04a980f",
+          "bytes": 200920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Barbaric/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "b191eb661e826ca2f08ec84870547b56ff11a071e1834d10660f926c94d47f04",
+          "bytes": 440452,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Barbaric/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "a3a593860f25f05b59953423ea2cb082888666fd051fb66c63cdef2e14a314aa",
+          "bytes": 230856,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Barbaric/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "be85380286e5d22560f0a49afa692df078c7bc175b8d938061f86908e97069d5",
+          "bytes": 119936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Frost/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "de0c75362dedb696b1fc67ceed981d2a493117b92fc18b11089f15fb86b920a1",
+          "bytes": 371828,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Frost/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "3004920cb1268edbd13e4b0a08cec801da98f6baa536c532894b1953bae10bbf",
+          "bytes": 207224,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Frost/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "3e55f40ce473847abef66e7de5fc3aa4136a7b5e4f8e00bd779c629bcc10b604",
+          "bytes": 115966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Goblin/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "26c1334773de45120e2b2e50f8b3987338a8dbc0c113e05cebe87ce2e23e6d73",
+          "bytes": 404010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Goblin/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "c5f914a4c18e18435961db7cc12c88ab278e8f5fa896a280684e5963b25c2ce2",
+          "bytes": 220312,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Goblin/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "90de8414cf7a4061ded62c5ba3c5dac5a9da6a3b144e00f177af6872fec6573b",
+          "bytes": 115780,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/huijin/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "fef7335504b8de3bf0bdeb7983bdd83e434330bb985e96660a3d54e81c04a30a",
+          "bytes": 1385543,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/huijin/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "40460d4dc272cdec534a8bf0bfcbb5911c41745030b5832e0d7cffef7f12d59b",
+          "bytes": 2119116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/huijin/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "0c5e670655e820503d4016ae8e55aa5039040831a82a7d31e32557c18fe695bf",
+          "bytes": 240600,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/huijin/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "4378934aecef2c2cdc03b4b006c7162e369b7000977d2855d21f7cc6593d8434",
+          "bytes": 119044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/huijin/hero": {
+      "variants": {
+        "png": {
+          "sha256": "d52a6c6bab57041d571aefe8a3ab8d4e559605683406306b29a32d7bc023c53b",
+          "bytes": 1166017,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/huijin/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "75b3bca1e69e1ddf08e0261f6b647373dd07fea557dd7bfde1e66e564456590a",
+          "bytes": 109860,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/mogu/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "3492708c7039daafb454e8e1c4a4d3e2917256acdd58f84d73773d3ba0e7a985",
+          "bytes": 1345629,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/mogu/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "afa10cb4567d0fa9b3c1594257ffae86eca52bffe3d11cedf7119ccb9b0e58c3",
+          "bytes": 1960640,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/mogu/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "77aabcbe1509c5251dd9da1f0398e899dc20a6114976c8e7c916f1f7ba84cde4",
+          "bytes": 131218,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/mogu/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "6fa1c6eb1fe5564b7f38bef01c7ba83449fe60cc70f46e1e54cbc31a4703ab10",
+          "bytes": 61882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/mogu/hero": {
+      "variants": {
+        "png": {
+          "sha256": "7ad03743d7b7cbcd767641ba354d6152fc77cfc8db55a044f3004a39d202f11d",
+          "bytes": 2499139,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/mogu/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "c9eca14f42e989fe297404dab7c7574edeefd46991bf047f112eb19a5c697fae",
+          "bytes": 149002,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/Necromancer/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "39fbef2718c88d46541827c7e9401e3e1e6b98705885da2849f9be0ef67fdaf7",
+          "bytes": 370814,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Necromancer/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "39bc90419860f06beb4390776a33221231738c92feb4279cf4434da2e3f7a44f",
+          "bytes": 220704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Necromancer/compressed/Necromancer": {
+      "variants": {
+        "webp": {
+          "sha256": "39bc90419860f06beb4390776a33221231738c92feb4279cf4434da2e3f7a44f",
+          "bytes": 220704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Necromancer/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "f40d8638fd0673acb5ab2d43ae35ca086d07f59b38c77c2f234e1513facf1856",
+          "bytes": 111918,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Paladin/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "1b51146be6fd317371f3852a8aa0a570b06d1ea166ebfa1ead1686c5197c0d0d",
+          "bytes": 382702,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Paladin/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "6d42eec0743581099ada5dcbc3a8d64ec46aff9b2b601175117db99b0e88dfa6",
+          "bytes": 220734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Paladin/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "8a8068f046d456a26a47cffad4826933df2129b2c73e371b5a3509c45540378e",
+          "bytes": 106306,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Trickster/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "90fa96f4f3f94cbee99495291c6bc2b10f0e588ac553d49b7ded8c32f39bd30f",
+          "bytes": 403334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Trickster/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "5f97a4a33fde34315c7262a64729ce6cee0bea7e3e9e62d04499d4f853a8a5bc",
+          "bytes": 207456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/Trickster/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "fdc7fecd22ce6416ca59d67104936c7289b4eb89cfa64c35f82595f652e76b92",
+          "bytes": 108480,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "dd89ffc6d46ee880ea41c51ca64cabaeb903058b79685079873c830ba737aac2",
+          "bytes": 203014,
+          "mime": "image/webp"
+        }
+      }
+    }
+  }
+}

@@ -151,4 +151,37 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
         expect(result.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.CP]).toBe(7);
     });
+
+    it('主阶段 2 不应因上一轮残留骰子继续打出骰子修改牌', () => {
+        const state = createSetupWithHand(['card-play-six', 'card-flick'], {
+            playerId: '1',
+            cp: 4,
+        })(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '1';
+        state.sys.phase = 'main2';
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.dice = [{ id: 0, value: 4, symbol: 'saber', symbols: ['saber'], isKept: false } as any];
+
+        expect(checkPlayCard(state.core, '1', getCardById('card-play-six'), 'main2')).toEqual({
+            ok: false,
+            reason: 'wrongPhaseForRoll',
+        });
+        expect(checkPlayCard(state.core, '1', getCardById('card-flick'), 'main2')).toEqual({
+            ok: false,
+            reason: 'wrongPhaseForRoll',
+        });
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+        const playedCardIds = actions
+            .flatMap(action => action.commands)
+            .filter(command => command.type === 'PLAY_CARD')
+            .map(command => (command.payload as { cardId?: string }).cardId);
+
+        expect(playedCardIds).not.toContain('card-play-six');
+        expect(playedCardIds).not.toContain('card-flick');
+    });
 });

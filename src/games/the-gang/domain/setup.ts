@@ -61,6 +61,7 @@ export function createInitialHeistCore(
             {
                 id,
                 pocketCards: draw(deckRef, dealPlan.handCards),
+                ...(config.twoHand ? { secondaryPocketCards: draw(deckRef, dealPlan.handCards) } : {}),
                 toolCards: [],
                 specialistCards: [],
                 activeTools: [],

@@ -6,11 +6,18 @@ import { describe, it, expect } from 'vitest';
 import { TOKEN_IDS, PALADIN_DICE_FACE_IDS as FACES } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { DiceThroneCore, Die, HeroState, DiceThroneEvent } from '../domain/types';
+import type { AbilityDef } from '../domain/combat';
 import { getCustomActionHandler } from '../domain/effects';
 import type { CustomActionContext } from '../domain/effects';
 import { initializeCustomActions } from '../domain/customActions';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { paladinDiceDefinition } from '../heroes/paladin/diceConfig';
+import { PALADIN_TOKENS } from '../heroes/paladin/tokens';
+import { HOLY_DEFENSE_3 } from '../heroes/paladin/abilities';
+import { resolveAttack } from '../domain/attack';
+import { execute } from '../domain/execute';
+import { reduce } from '../domain/reducer';
+import { applyEvents } from '../domain/utils';
 
 initializeCustomActions();
 registerDiceDefinition(paladinDiceDefinition);
@@ -116,6 +123,26 @@ function eventsOfType(events: DiceThroneEvent[], type: string) {
     return events.filter(e => e.type === type);
 }
 
+const fixedRandom = {
+    random: () => 0,
+    d: () => 1,
+    range: (min: number) => min,
+    shuffle: <T,>(arr: T[]) => [...arr],
+};
+
+const TEST_ATTACK_ABILITY: AbilityDef = {
+    id: 'test-paladin-protect-window-attack',
+    name: '测试攻击',
+    type: 'offensive',
+    effects: [
+        {
+            description: '造成 10 点伤害',
+            timing: 'withDamage',
+            action: { type: 'damage', target: 'opponent', value: 10 },
+        },
+    ],
+};
+
 // ============================================================================
 // 测试套件
 // ============================================================================
@@ -181,6 +208,63 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
             const shield = eventsOfType(events, 'DAMAGE_SHIELD_GRANTED');
             expect(shield).toHaveLength(1);
             expect((shield[0] as any).payload.value).toBe(3);
+        });
+
+        it('已有守护时，先在本次受伤窗口花掉旧守护，再获得神圣防御 III 的新守护', () => {
+            const state = createState({ attackerProtect: 1 });
+            state.players['0'].tokenStackLimits[TOKEN_IDS.PROTECT] = 1;
+            state.players['0'].abilities = [HOLY_DEFENSE_3];
+            state.players['1'].abilities = [TEST_ATTACK_ABILITY];
+            state.tokenDefinitions = PALADIN_TOKENS;
+            state.pendingAttack = {
+                attackerId: '1',
+                defenderId: '0',
+                sourceAbilityId: TEST_ATTACK_ABILITY.id,
+                defenseAbilityId: 'holy-defense',
+                isDefendable: true,
+                damageResolved: false,
+                resolvedDamage: 0,
+            };
+            state.dice = [3, 4, 6, 1].map(v => createPaladinDie(v));
+            state.rollDiceCount = 4;
+
+            const attackEvents = resolveAttack(state, fixedRandom, undefined, 100);
+            expect(eventsOfType(attackEvents, 'TOKEN_GRANTED')).toHaveLength(0);
+
+            const afterAttack = applyEvents(state, attackEvents, reduce);
+            expect(afterAttack.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+            expect(afterAttack.pendingDamage?.deferredTokenGrants).toEqual([
+                expect.objectContaining({
+                    triggerTokenId: TOKEN_IDS.PROTECT,
+                    tokenId: TOKEN_IDS.PROTECT,
+                    targetId: '0',
+                    amount: 1,
+                }),
+            ]);
+
+            const useProtectEvents = execute(
+                { core: afterAttack, sys: { phase: 'defensiveRoll' } },
+                {
+                    type: 'USE_TOKEN',
+                    playerId: '0',
+                    payload: { tokenId: TOKEN_IDS.PROTECT, amount: 1 },
+                } as any,
+                fixedRandom,
+            );
+            expect(eventsOfType(useProtectEvents, 'TOKEN_GRANTED')).toEqual([
+                expect.objectContaining({
+                    payload: expect.objectContaining({
+                        targetId: '0',
+                        tokenId: TOKEN_IDS.PROTECT,
+                        amount: 1,
+                        newTotal: 1,
+                    }),
+                }),
+            ]);
+
+            const afterUseProtect = applyEvents(afterAttack, useProtectEvents, reduce);
+            expect(afterUseProtect.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
+            expect(afterUseProtect.pendingDamage?.currentDamage).toBe(5);
         });
     });
 

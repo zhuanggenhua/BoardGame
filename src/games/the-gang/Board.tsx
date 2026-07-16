@@ -105,8 +105,9 @@ const RULE_SURFACE_ASSETS = {
 
 const TTS_SETUP_TOGGLE_KEYS = ['omaha', 'twoHand', 'automode', 'antiTroll'] as const;
 type TtsSetupToggleKey = typeof TTS_SETUP_TOGGLE_KEYS[number];
+const TABLE_REMINDER_CHALLENGES = ['retina-scan', 'fingerprint-scan', 'blackout'] as const;
 
-const CARD_RANK_ASSET_NAMES: Record<PlayingCard['rank'], string> = {
+const CARD_RANK_ASSET_NAMES: Partial<Record<PlayingCard['rank'], string>> = {
     2: 'two',
     3: 'three',
     4: 'four',
@@ -124,6 +125,11 @@ const CARD_RANK_ASSET_NAMES: Record<PlayingCard['rank'], string> = {
 
 const getCardAssetPath = (card: PlayingCard) =>
     `the-gang/cards/${CARD_RANK_ASSET_NAMES[card.rank]}-${card.suit}`;
+
+const hasStandardCardAsset = (card: PlayingCard) =>
+    card.suit !== 'gear'
+    && card.suit !== 'special'
+    && CARD_RANK_ASSET_NAMES[card.rank] !== undefined;
 
 const BGG_LAYOUT_CONTRACT = {
     source: 'BGG electronic DOM/CSS',
@@ -260,7 +266,13 @@ function CardFace({
         );
     }
 
-    if (card.kind === 'joker' || card.kind === 'wild' || card.kind === 'blank' || card.suit === 'special') {
+    if (
+        card.kind === 'joker'
+        || card.kind === 'wild'
+        || card.kind === 'blank'
+        || card.suit === 'special'
+        || !hasStandardCardAsset(card)
+    ) {
         const label = formatCard(card);
         return (
             <div
@@ -289,6 +301,78 @@ function CardFace({
     );
 }
 
+function HandCardRows({
+    primaryCards,
+    secondaryCards = [],
+    emphasis = 'table',
+    t,
+    testIdPrefix,
+    revealOrderBase,
+    winningHandSlot,
+    showLabels = false,
+}: {
+    primaryCards: PlayingCard[];
+    secondaryCards?: PlayingCard[];
+    emphasis?: CardFaceEmphasis;
+    t: TFunction;
+    testIdPrefix: string;
+    revealOrderBase?: number;
+    winningHandSlot?: 'top' | 'bottom';
+    showLabels?: boolean;
+}) {
+    const rows = [
+        { slot: 'top' as const, cards: primaryCards, label: t('board.topHand') },
+        ...(secondaryCards.length > 0
+            ? [{ slot: 'bottom' as const, cards: secondaryCards, label: t('board.bottomHand') }]
+            : []),
+    ];
+    let revealOffset = 0;
+
+    return (
+        <div className="flex flex-col items-center justify-center gap-1.5 lg:gap-2" data-testid={`${testIdPrefix}-rows`}>
+            {rows.map((row) => {
+                const startOffset = revealOffset;
+                revealOffset += row.cards.length;
+                const isWinning = winningHandSlot === row.slot;
+                return (
+                    <div
+                        key={row.slot}
+                        className="flex items-center justify-center gap-2 overflow-visible lg:gap-3 xl:gap-4"
+                        data-testid={`${testIdPrefix}-${row.slot}`}
+                        data-hand-slot={row.slot}
+                        data-winning-hand={isWinning ? 'true' : undefined}
+                    >
+                        {showLabels ? (
+                            <span className={[
+                                'min-w-10 rounded-full border px-2 py-0.5 text-center text-[0.58rem] font-black tracking-[0.1em]',
+                                isWinning
+                                    ? 'border-amber-200 bg-amber-300 text-emerald-950'
+                                    : 'border-amber-200/24 bg-black/20 text-amber-100/78',
+                            ].join(' ')}
+                            >
+                                {row.label}
+                            </span>
+                        ) : (
+                            <span className="sr-only">{row.label}</span>
+                        )}
+                        <div className="flex items-center justify-center gap-2 overflow-visible md:gap-3">
+                            {row.cards.map((card, index) => (
+                                <CardFace
+                                    key={`${row.slot}-${card.rank}-${card.suit}-${index}`}
+                                    card={card}
+                                    emphasis={emphasis}
+                                    revealOrder={revealOrderBase === undefined ? undefined : revealOrderBase + startOffset + index}
+                                    t={t}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 function LayoutContractBadge() {
     const { t } = useTranslation('game-the-gang');
 
@@ -296,6 +380,25 @@ function LayoutContractBadge() {
         <span className="sr-only" data-testid="the-gang-layout-contract">
             {t('board.layoutContract')}
         </span>
+    );
+}
+
+function TableReminderBadges({ config }: { config: TheGangRulesConfig }) {
+    const reminders = TABLE_REMINDER_CHALLENGES.filter((challengeId) => isChallengeActive(config, challengeId));
+    if (reminders.length === 0) return null;
+
+    return (
+        <div className="flex flex-wrap justify-end gap-1.5" data-testid="the-gang-table-reminders" data-bgg-zone="table-reminders">
+            {reminders.map((challengeId) => (
+                <span
+                    key={challengeId}
+                    className="rounded-full border border-amber-200/28 bg-black/24 px-2 py-0.5 text-[0.62rem] font-black tracking-[0.08em] text-amber-100/88"
+                    title={THE_GANG_CHALLENGES[challengeId].summary}
+                >
+                    {THE_GANG_CHALLENGES[challengeId].label}
+                </span>
+            ))}
+        </div>
     );
 }
 
@@ -335,12 +438,14 @@ function RulesConfigPanel({
     config,
     locked,
     canConfigure,
+    playerCount,
     onChange,
     onBlockedEdit,
 }: {
     config: TheGangRulesConfig;
     locked: boolean;
     canConfigure: boolean;
+    playerCount: number;
     onChange: (config: TheGangRulesConfig) => void;
     onBlockedEdit: () => void;
 }) {
@@ -494,7 +599,10 @@ function RulesConfigPanel({
                                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                                     {TTS_SETUP_TOGGLE_KEYS.map((option) => {
                                         const active = normalized[option];
-                                        const disabledByRule = option === 'twoHand' && normalized.gameMode !== 'texas-holdem';
+                                        const disabledByRule = option === 'twoHand' && (
+                                            normalized.gameMode !== 'texas-holdem'
+                                            || playerCount > 5
+                                        );
                                         return (
                                             <button
                                                 key={option}
@@ -1295,23 +1403,28 @@ function ShowdownResultPanel({
                                 <span className="truncate text-sm font-black text-stone-100 md:text-base">{playerName(result.playerId)}</span>
                                 <div className="flex items-center gap-2">
                                     <ChipDisc round={4} value={result.chip} size="md" zone="plreveal-token" />
-                                    <span className="text-xs font-black tracking-[0.08em] text-amber-100 md:text-sm">{result.strength.label}</span>
+                                    <span className="text-xs font-black tracking-[0.08em] text-amber-100 md:text-sm">
+                                        {result.strength.label}
+                                        {result.winningHandSlot === 'bottom' && ` · ${t('board.winningBottomHand')}`}
+                                        {result.winningHandSlot === 'top' && ` · ${t('board.winningTopHand')}`}
+                                    </span>
                                 </div>
                             </div>
                             <div
-                                className="flex justify-center gap-2 overflow-visible md:gap-3"
+                                className="flex justify-center overflow-visible"
                                 data-bgg-zone="reveal-pocket-cards"
                                 aria-label={`${playerName(result.playerId)} ${result.strength.label}`}
                             >
-                                {result.pocketCards.map((card, index) => (
-                                    <CardFace
-                                key={`${result.playerId}-${card.rank}-${card.suit}-${index}`}
-                                card={card}
-                                emphasis="showdown"
-                                        revealOrder={(playerResultIndex.get(result.playerId) ?? 0) * 2 + index}
-                                t={t}
-                            />
-                        ))}
+                                <HandCardRows
+                                    primaryCards={result.pocketCards}
+                                    secondaryCards={result.secondaryPocketCards}
+                                    emphasis="showdown"
+                                    t={t}
+                                    testIdPrefix={`the-gang-showdown-hand-${result.playerId}`}
+                                    revealOrderBase={(playerResultIndex.get(result.playerId) ?? 0) * 4}
+                                    winningHandSlot={result.winningHandSlot}
+                                    showLabels={!!result.secondaryPocketCards?.length}
+                                />
                             </div>
                         </div>
                     ))}
@@ -1547,6 +1660,11 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     );
     const playerName = (id: string) => playerNames[id] ?? t('board.playerFallback', { player: Number(id) + 1 });
     const tutorialOpponentTargetId = core.playerIds.find((id) => id !== localPlayerId);
+    const showWarning = (key: string, dedupeKey: string) => {
+        toast.warning({ kind: 'i18n', ns: 'game-the-gang', key }, undefined, {
+            dedupeKey: `the-gang.${dedupeKey}`,
+        });
+    };
     const showRulesBlockedToast = () => {
         if (canConfigureRules) {
             toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastRulesLocked' }, undefined, {
@@ -1653,6 +1771,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             config={core.rules.config}
                             locked={rulesLocked}
                             canConfigure={canConfigureRules}
+                            playerCount={core.playerIds.length}
                             onChange={setRulesConfig}
                             onBlockedEdit={showRulesBlockedToast}
                         />
@@ -1679,6 +1798,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                         <span className="text-amber-100">{t('board.heistNumber', { heist: core.heistNumber })}</span>
                         <SuccessTrack successes={core.successes} />
                         <AlarmTrack failures={core.failures} />
+                        <TableReminderBadges config={core.rules.config} />
                     </div>
                 </header>
 
@@ -1710,10 +1830,15 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                         localPlayerId={localPlayerId}
                                         onTakeCurrentChip={heistStarted && core.phase === 'chip-selection' ? takeChip : undefined}
                                     />
-                                    <div className="flex justify-center gap-1 lg:gap-1.5">
-                                        {visible && player.pocketCards.map((card, index) => (
-                                            <CardFace key={index} card={card} t={t} />
-                                        ))}
+                                    <div className="flex justify-center overflow-visible">
+                                        {visible && (
+                                            <HandCardRows
+                                                primaryCards={player.pocketCards}
+                                                secondaryCards={player.secondaryPocketCards}
+                                                t={t}
+                                                testIdPrefix={`the-gang-opponent-hand-${id}`}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -1725,7 +1850,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                         data-tutorial-id="the-gang-round-panel"
                         data-bgg-zone="middle-zone"
                     >
-                        <div className="pointer-events-none relative z-20 flex min-h-0 flex-col items-center gap-3 overflow-visible lg:gap-6" data-bgg-zone="middle-center">
+                        <div className="pointer-events-none relative z-20 flex min-h-0 flex-col items-center gap-3 overflow-visible lg:gap-6 min-[1180px]:flex-row min-[1180px]:gap-8" data-bgg-zone="middle-center">
                             <div
                                 className="pointer-events-auto relative z-30 flex w-full max-w-[29rem] flex-wrap items-center justify-center gap-3 overflow-visible lg:max-w-[44rem] lg:gap-5"
                                 data-tutorial-id="the-gang-chip-row"
@@ -1745,7 +1870,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                 ))}
                             </div>
 
-                            <div className="pointer-events-none flex w-full max-w-[48rem] flex-nowrap justify-center gap-3 lg:max-w-[72rem] lg:gap-5 xl:max-w-[80rem]" data-bgg-zone="card-river" aria-label={t('board.communityCardsSlot')}>
+                            <div className="pointer-events-none flex w-full max-w-[48rem] flex-nowrap justify-center gap-3 lg:max-w-[72rem] lg:gap-5 min-[1180px]:max-w-[40rem] xl:max-w-[80rem]" data-bgg-zone="card-river" aria-label={t('board.communityCardsSlot')}>
                                 {core.communityCards.map((card, index) => (
                                     <div
                                         key={index}
@@ -1773,10 +1898,15 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                 currentChip={core.currentRoundChips[localPlayerId]}
                                 playerId={localPlayerId}
                             />
-                            <div className="flex items-center justify-center gap-3 lg:gap-5 xl:gap-7" data-bgg-zone="hand-cards">
-                                {(localPlayer?.pocketCards ?? []).map((card, index) => (
-                                    <CardFace key={`${card.rank}-${card.suit}-${index}`} card={card} emphasis="hand" t={t} />
-                                ))}
+                            <div className="flex items-center justify-center overflow-visible" data-bgg-zone="hand-cards">
+                                <HandCardRows
+                                    primaryCards={localPlayer?.pocketCards ?? []}
+                                    secondaryCards={localPlayer?.secondaryPocketCards}
+                                    emphasis="hand"
+                                    t={t}
+                                    testIdPrefix="the-gang-local-hand"
+                                    showLabels={(localPlayer?.secondaryPocketCards?.length ?? 0) > 0}
+                                />
                             </div>
                             {(localPlayer?.flashlightCards.length ?? 0) + (localPlayer?.nightVisionCards.length ?? 0) > 0 && (
                                 <div className="flex items-center justify-center gap-2" data-bgg-zone="tool-cards" data-testid="the-gang-tool-cards">

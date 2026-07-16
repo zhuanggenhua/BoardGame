@@ -33,7 +33,8 @@
     "goblin": "洞穴地精",
     "frost": "极地矮人",
     "barbaric": "野蛮部落",
-    "mogu": "莫古"
+    "mogu": "莫古",
+    "huijin": "灰烬"
   },
   "actions": {
     "closePreview": "关闭预览",
@@ -295,7 +296,11 @@
       "inaction": "（怠惰惩罚）",
       "stun": "（眩晕）",
       "stun_passthrough": "（眩晕穿透）",
-      "holy_protection": "（圣灵庇护）"
+      "holy_protection": "（圣灵庇护）",
+      "huijin_scorch": "（灼烧）",
+      "huijin_divine_revenge": "（神族复仇）",
+      "huijin_flame_breath": "（火焰喷吐）",
+      "huijin_quick_shot": "（快速射击）"
     },
     "attackDamage": "→ 造成 {{damage}} 点伤害",
     "attackBonus": "（战力 {{base}}→{{total}}）",
@@ -416,6 +421,7 @@
     "reviveUndead": "复活死灵：选择弃牌堆中的亡灵单位",
     "infection": "感染：选择弃牌堆中的疫病体",
     "fortressPower": "城塞之力：选择弃牌堆中的城塞单位",
+    "huijinCallGuards": "召集护卫：选择手牌中的士兵",
     "default": "选择卡牌",
     "empty": "没有符合条件的卡牌"
   },
@@ -484,7 +490,12 @@
       "mindCapture": "心灵捕获：选择控制或造成伤害",
       "iceShards": "寒冰碎屑：确认是否消耗充能",
       "feedBeast": "喂养巨食兽：选择吞噬目标或自毁",
-      "moguParasite": "寄生：选择消耗充能或受到伤害"
+      "moguParasite": "寄生：选择消耗充能或受到伤害",
+      "huijinCallGuardsCard": "召集护卫：选择要召唤的士兵",
+      "huijinCallGuardsPosition": "召集护卫：选择召唤师相邻空格",
+      "huijinRamTarget": "冲撞：选择相邻敌方士兵或英雄",
+      "huijinRamPosition": "冲撞：选择推拉落点",
+      "huijinQuickShot": "快速射击：选择 3 格直线视野内目标"
     },
     "fireSacrifice": {
       "mustSelectAlly": "请选择一个友方单位作为牺牲品"
@@ -914,7 +925,7 @@
     },
     "ice_shards": {
       "name": "寒冰碎屑",
-      "description": "在你的建造阶段结束时，你可以消耗 1 点充能，以对每个与你所控制建筑相邻的敌方单位造成 1 点伤害。"
+      "description": "在你的攻击阶段开始时，你可以消耗 1 点充能，以对每个与你所控制建筑相邻的敌方单位造成 1 点伤害。"
     },
     "greater_frost_bolt": {
       "name": "高阶冰霜飞弹",
@@ -991,6 +1002,50 @@
     "spirit_bond": {
       "name": "祖灵交流",
       "description": "在本单位移动之后，将其充能，或者消耗 1 点充能，使其 3 个区格以内的一个友方单位充能。"
+    },
+    "huijin_call_guards": {
+      "name": "召集护卫",
+      "description": "在你的攻击阶段结束时，可以从本召唤师上移除 1 点充能，将手牌中的一个友方士兵放置到本召唤师相邻的空区格。"
+    },
+    "huijin_ember_summon": {
+      "name": "怒焰召唤",
+      "description": "本单位可以将灰烬单位召唤到自身相邻的空区格。"
+    },
+    "huijin_ignite": {
+      "name": "点燃",
+      "description": "与本单位相邻的友方灰烬单位获得 +1 战力。"
+    },
+    "huijin_guard_master": {
+      "name": "护主",
+      "description": "召唤本单位时，可以将其放置到你的召唤师相邻的空区格。"
+    },
+    "huijin_flame_breath": {
+      "name": "火焰喷吐",
+      "description": "本单位攻击时，攻击可以穿过单位，并对路径上的单位造成伤害。"
+    },
+    "huijin_counterattack": {
+      "name": "还击",
+      "description": "本单位被相邻敌方单位攻击后，如果仍在战场上，对该敌方单位造成 1 点伤害。"
+    },
+    "huijin_shelter": {
+      "name": "庇护",
+      "description": "每回合第一次攻击本单位时，该攻击最多对本单位造成 1 点伤害。"
+    },
+    "huijin_ram": {
+      "name": "冲撞",
+      "description": "本单位攻击相邻敌方士兵或英雄后，可以将目标推拉 1 个区格。"
+    },
+    "huijin_born_of_flame": {
+      "name": "烈火降生",
+      "description": "召唤本单位时，可以将其放置到友方灰烬单位相邻的空区格。"
+    },
+    "huijin_wildfire": {
+      "name": "野火",
+      "description": "在你的移动阶段开始时，对本单位相邻的每个敌方单位造成 1 点伤害。"
+    },
+    "huijin_quick_shot": {
+      "name": "快速射击",
+      "description": "本单位移动后，可以指定 3 个直线视野区格以内的一个单位，对其造成 1 点伤害。"
     }
   },
   "buffs": {

@@ -3689,7 +3689,7 @@ describe('验证层有效性门控', () => {
     )).toHaveLength(1);
   });
 
-  it('[ice_shards] 建造阶段结束确认后应花费 1 充能并对多建筑相邻敌方只伤一次', () => {
+  it('[ice_shards] 攻击阶段开始确认后应花费 1 充能并对多建筑相邻敌方只伤一次', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'build';
@@ -3721,8 +3721,8 @@ describe('验证层有效性门控', () => {
 
     expect(phaseExit.success).toBe(true);
     state = phaseExit.state;
-    expect(state.core.phase).toBe('build');
-    expect(state.sys.flowHalted).toBe(true);
+    expect(state.core.phase).toBe('attack');
+    expect(state.sys.flowHalted).toBe(false);
     expect(getSwCurrentType(state)).toBe('ice_shards');
     const current = state.sys.interaction.current;
     expect(current?.kind).toBe('simple-choice');
@@ -3748,17 +3748,10 @@ describe('验证层有效性门控', () => {
     );
     expect(damageEvents).toHaveLength(1);
 
-    const continuePhase = runGamePipeline(state, {
-      type: FLOW_COMMANDS.ADVANCE_PHASE,
-      playerId: '0',
-      payload: {},
-    });
-    expect(continuePhase.success).toBe(true);
-    expect(continuePhase.state.core.phase).toBe('attack');
-    expect(continuePhase.state.sys.flowHalted).toBe(false);
+    expect(state.core.phase).toBe('attack');
   });
 
-  it('[ice_shards] 建造阶段结束跳过时不应消耗充能或造成伤害', () => {
+  it('[ice_shards] 攻击阶段开始跳过时不应消耗充能或造成伤害', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'build';
@@ -3805,16 +3798,10 @@ describe('验证层有效性门控', () => {
       && (e.payload as Record<string, unknown>).reason === 'ice_shards'
     )).toBe(false);
 
-    const continuePhase = runGamePipeline(state, {
-      type: FLOW_COMMANDS.ADVANCE_PHASE,
-      playerId: '0',
-      payload: {},
-    });
-    expect(continuePhase.success).toBe(true);
-    expect(continuePhase.state.core.phase).toBe('attack');
+    expect(state.core.phase).toBe('attack');
   });
 
-  it('[ice_shards] 多个贾穆德在同一建造阶段结束时应逐个收口后再推进阶段', () => {
+  it('[ice_shards] 多个贾穆德在同一攻击阶段开始时应逐个收口', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'build';
@@ -3850,8 +3837,8 @@ describe('验证层有效性门控', () => {
 
     expect(phaseExit.success).toBe(true);
     state = phaseExit.state;
-    expect(state.core.phase).toBe('build');
-    expect(state.sys.flowHalted).toBe(true);
+    expect(state.core.phase).toBe('attack');
+    expect(state.sys.flowHalted).toBe(false);
     expect(getSwCurrentType(state)).toBe('ice_shards');
     expect(state.sys.interaction.queue).toHaveLength(1);
 
@@ -3867,26 +3854,12 @@ describe('验证层有效性门控', () => {
     });
     expect(firstConfirmed.success).toBe(true);
     state = firstConfirmed.state;
-    expect(state.core.phase).toBe('build');
-    expect(state.sys.flowHalted).toBe(true);
+    expect(state.core.phase).toBe('attack');
+    expect(state.sys.flowHalted).toBe(false);
     expect(getUnitAt(state.core, enemy.position)?.damage).toBe(1);
     expect([getUnitAt(state.core, first.position)?.boosts, getUnitAt(state.core, second.position)?.boosts].sort()).toEqual([0, 1]);
     expect(getSwCurrentType(state)).toBe('ice_shards');
     expect(state.sys.interaction.queue).toHaveLength(0);
-
-    const prematureAdvance = runGamePipeline(state, {
-      type: FLOW_COMMANDS.ADVANCE_PHASE,
-      playerId: '0',
-      payload: {},
-    });
-    expect(prematureAdvance.success).toBe(false);
-    expect(prematureAdvance.state.core.phase).toBe('build');
-    expect(prematureAdvance.state.sys.flowHalted).toBe(true);
-    expect(getUnitAt(prematureAdvance.state.core, enemy.position)?.damage).toBe(1);
-    expect(prematureAdvance.events.filter(e =>
-      e.type === SW_EVENTS.ABILITY_TRIGGERED
-      && (e.payload as Record<string, unknown>).abilityId === 'ice_shards'
-    )).toHaveLength(0);
 
     const secondInteraction = state.sys.interaction.current!;
     const secondConfirmed = runPipeline(state, {
@@ -3901,15 +3874,6 @@ describe('验证层有效性门控', () => {
     expect(getUnitAt(state.core, second.position)?.boosts).toBe(0);
     expect(state.sys.interaction.current).toBeUndefined();
     expect(state.sys.interaction.queue).toHaveLength(0);
-
-    const continuePhase = runGamePipeline(state, {
-      type: FLOW_COMMANDS.ADVANCE_PHASE,
-      playerId: '0',
-      payload: {},
-    });
-    expect(continuePhase.success).toBe(true);
-    expect(continuePhase.state.core.phase).toBe('attack');
-    expect(continuePhase.state.sys.flowHalted).toBe(false);
   });
 
   it('[feed_beast] 攻击阶段结束吃友方后应收口并继续推进，不重复二次弃置', () => {
@@ -4062,6 +4026,306 @@ describe('验证层有效性门控', () => {
     expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
     expect(getUnitAt(repeatedExit.state.core, beast.position)?.boosts).toBe(0);
     expect(getUnitAt(repeatedExit.state.core, beast.position)?.damage).toBe(0);
+  });
+
+  it('[huijin_call_guards] 真实结束阶段应先选择手牌士兵，再召唤到相邻空格', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+    core.players['0'].hasAttackedEnemy = true;
+
+    const summonPosition = { row: 4, col: 3 };
+    const summoner = putUnit(core, { row: 4, col: 2 }, mkUnit('huijin-summoner-l4', {
+      abilities: ['huijin_call_guards'],
+      faction: 'huijin',
+      unitClass: 'summoner',
+      name: '玛达莉雅女王',
+      life: 7,
+    }), '0', { boosts: 1 });
+    const guardCard = mkUnit('huijin-ash-archer-hand-l4', {
+      abilities: ['huijin_quick_shot'],
+      faction: 'huijin',
+      unitClass: 'common',
+      name: '灰烬弓箭手',
+    });
+    core.players['0'].hand.push(guardCard);
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const phaseExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(phaseExit.success).toBe(true);
+    state = phaseExit.state;
+    expect(state.core.phase).toBe('attack');
+    expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_card');
+    expect(getUnitAt(state.core, summoner.position)?.boosts).toBe(1);
+
+    const cardCurrent = state.sys.interaction.current;
+    expect(cardCurrent?.kind).toBe('simple-choice');
+    const cardOptions = ((cardCurrent?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(cardOptions.some(option => option.id === guardCard.id)).toBe(true);
+    expect(cardOptions.some(option => option.id === 'skip')).toBe(true);
+
+    const pickedCard = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: cardCurrent!.id, optionId: guardCard.id },
+    });
+    expect(pickedCard.success).toBe(true);
+    state = pickedCard.state;
+    expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_position');
+
+    const positionCurrent = state.sys.interaction.current;
+    expect(positionCurrent?.kind).toBe('simple-choice');
+    const positionOptions = ((positionCurrent?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const summonOptionId = positionOptions.find((option) => {
+      const value = option.value as { action?: string; position?: CellCoord } | undefined;
+      return value?.action === 'huijin_call_guards_position'
+        && value.position?.row === summonPosition.row
+        && value.position.col === summonPosition.col;
+    })?.id;
+    expect(summonOptionId).toBeTruthy();
+
+    const pickedPosition = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: positionCurrent!.id, optionId: summonOptionId },
+    });
+    expect(pickedPosition.success).toBe(true);
+    state = pickedPosition.state;
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(state.core, summonPosition)?.card.id).toBe(guardCard.id);
+    expect(getUnitAt(state.core, summoner.position)?.boosts).toBe(0);
+    expect(state.core.players['0'].hand.some(card => card.id === guardCard.id)).toBe(false);
+
+    const repeatedExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(repeatedExit.success).toBe(true);
+    expect(repeatedExit.state.core.phase).toBe('magic');
+    expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
+  });
+
+  it('[huijin_call_guards] 合法手牌存在时跳过不应消耗充能或召唤单位，并可继续阶段', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+    core.players['0'].hasAttackedEnemy = true;
+
+    const summonPosition = { row: 4, col: 3 };
+    const summoner = putUnit(core, { row: 4, col: 2 }, mkUnit('huijin-summoner-skip-l4', {
+      abilities: ['huijin_call_guards'],
+      faction: 'huijin',
+      unitClass: 'summoner',
+      name: '玛达莉雅女王',
+      life: 7,
+    }), '0', { boosts: 1 });
+    const guardCard = mkUnit('huijin-ash-archer-hand-skip-l4', {
+      abilities: ['huijin_quick_shot'],
+      faction: 'huijin',
+      unitClass: 'common',
+      name: '灰烬弓箭手',
+    });
+    core.players['0'].hand.push(guardCard);
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const phaseExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(phaseExit.success).toBe(true);
+    state = phaseExit.state;
+    expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_card');
+
+    const current = state.sys.interaction.current;
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(options.some(option => option.id === guardCard.id)).toBe(true);
+    expect(options.some(option => option.id === 'skip')).toBe(true);
+
+    const skipped = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: 'skip' },
+    });
+    expect(skipped.success).toBe(true);
+    state = skipped.state;
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(state.core, summoner.position)?.boosts).toBe(1);
+    expect(getUnitAt(state.core, summonPosition)).toBeUndefined();
+    expect(state.core.players['0'].hand.some(card => card.id === guardCard.id)).toBe(true);
+
+    const repeatedExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(repeatedExit.success).toBe(true);
+    expect(repeatedExit.state.core.phase).toBe('magic');
+    expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
+  });
+
+  it('[huijin_ram] 合法目标存在时跳过目标选择或落点选择均不应移动目标', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+
+    const guardPosition = { row: 4, col: 2 };
+    const enemyPosition = { row: 4, col: 3 };
+    const pushPosition = { row: 4, col: 4 };
+    putUnit(core, guardPosition, mkUnit('huijin-royal-guard-skip-l4', {
+      abilities: ['huijin_ram'],
+      faction: 'huijin',
+      unitClass: 'common',
+      name: '皇家守卫',
+      strength: 1,
+    }), '0');
+    const enemy = putUnit(core, enemyPosition, mkUnit('huijin-ram-enemy-skip-l4', {
+      faction: 'necromancer',
+      unitClass: 'common',
+      name: '敌方士兵',
+      life: 8,
+    }), '1');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], interactionSystems),
+    };
+
+    const attacked = runPipeline(state, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      playerId: '0',
+      payload: { attacker: guardPosition, target: enemyPosition },
+    });
+    expect(attacked.success).toBe(true);
+    state = attacked.state;
+    expect(getSwCurrentType(state)).toBe('after_attack_huijin_ram_target');
+
+    const targetCurrent = state.sys.interaction.current;
+    const targetOptions = ((targetCurrent?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const targetOptionId = targetOptions.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'after_attack_huijin_ram_target'
+        && value.targetPosition?.row === enemyPosition.row
+        && value.targetPosition?.col === enemyPosition.col;
+    })?.id;
+    expect(targetOptionId).toBeTruthy();
+    expect(targetOptions.some(option => option.id === 'skip')).toBe(true);
+
+    const skippedTarget = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: targetCurrent!.id, optionId: 'skip' },
+    });
+    expect(skippedTarget.success).toBe(true);
+    expect(skippedTarget.state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(skippedTarget.state.core, enemyPosition)?.instanceId).toBe(enemy.instanceId);
+    expect(getUnitAt(skippedTarget.state.core, pushPosition)).toBeUndefined();
+    expect(skippedTarget.events.some(e => e.type === SW_EVENTS.UNIT_PUSHED)).toBe(false);
+
+    const pickedTarget = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: targetCurrent!.id, optionId: targetOptionId },
+    });
+    expect(pickedTarget.success).toBe(true);
+    state = pickedTarget.state;
+    expect(getSwCurrentType(state)).toBe('after_attack_huijin_ram_position');
+
+    const positionCurrent = state.sys.interaction.current;
+    const positionOptions = ((positionCurrent?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(positionOptions.some(option => option.id === 'skip')).toBe(true);
+
+    const skippedPosition = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: positionCurrent!.id, optionId: 'skip' },
+    });
+    expect(skippedPosition.success).toBe(true);
+    expect(skippedPosition.state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(skippedPosition.state.core, enemyPosition)?.instanceId).toBe(enemy.instanceId);
+    expect(getUnitAt(skippedPosition.state.core, pushPosition)).toBeUndefined();
+    expect(skippedPosition.events.some(e => e.type === SW_EVENTS.UNIT_PUSHED)).toBe(false);
+  });
+
+  it('[huijin_quick_shot] 合法目标存在时跳过不应造成伤害，并保留移动结果', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+
+    const start = { row: 4, col: 2 };
+    const movedTo = { row: 4, col: 3 };
+    const enemyPosition = { row: 4, col: 5 };
+    const archer = putUnit(core, start, mkUnit('huijin-ash-archer-skip-l4', {
+      abilities: ['huijin_quick_shot'],
+      faction: 'huijin',
+      unitClass: 'common',
+      name: '灰烬弓箭手',
+      attackType: 'ranged',
+      attackRange: 3,
+    }), '0');
+    const enemy = putUnit(core, enemyPosition, mkUnit('huijin-quick-shot-enemy-skip-l4', {
+      faction: 'necromancer',
+      unitClass: 'common',
+      name: '敌方士兵',
+      life: 8,
+    }), '1');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const moved = runGamePipeline(state, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      playerId: '0',
+      payload: { from: start, to: movedTo, path: [start, movedTo] },
+    });
+    expect(moved.success).toBe(true);
+    state = moved.state;
+    expect(getSwCurrentType(state)).toBe('after_move_huijin_quick_shot');
+
+    const current = state.sys.interaction.current;
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(options.some((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'after_move_huijin_quick_shot'
+        && value.targetPosition?.row === enemyPosition.row
+        && value.targetPosition?.col === enemyPosition.col;
+    })).toBe(true);
+    expect(options.some(option => option.id === 'skip')).toBe(true);
+
+    const skipped = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: 'skip' },
+    });
+    expect(skipped.success).toBe(true);
+    expect(skipped.state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(skipped.state.core, start)).toBeUndefined();
+    expect(getUnitAt(skipped.state.core, movedTo)?.instanceId).toBe(archer.instanceId);
+    expect(getUnitAt(skipped.state.core, enemyPosition)?.instanceId).toBe(enemy.instanceId);
+    expect(getUnitAt(skipped.state.core, enemyPosition)?.damage).toBe(0);
+    expect(skipped.events.some(e =>
+      e.type === SW_EVENTS.UNIT_DAMAGED
+      && (e.payload as Record<string, unknown>).reason === 'huijin_quick_shot'
+    )).toBe(false);
   });
 
   it('[mind_capture] 致命攻击后选择控制应忽略伤害并转移目标控制权', () => {

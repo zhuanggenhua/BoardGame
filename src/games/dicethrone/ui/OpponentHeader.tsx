@@ -250,6 +250,7 @@ export const OpponentHeader = ({
                                         maxPerRow={10}
                                         locale={locale}
                                         atlas={statusIconAtlas}
+                                        testIdPrefix={playerId ? `dt-player-${playerId}-status` : undefined}
                                     />
                                 </div>
                             </div>

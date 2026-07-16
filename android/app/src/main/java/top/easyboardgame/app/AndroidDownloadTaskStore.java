@@ -23,16 +23,20 @@ final class AndroidDownloadTaskStore {
     private static final String TAG = "AndroidDownloadStore";
     private static final String ROOT_DIR = "android-download-runtime";
     private static final String REGISTRY_FILE = "task-registry.json";
+    private static final Object LOCK = new Object();
 
-    private final Context appContext;
-    private final Object lock = new Object();
+    private final File filesDir;
 
     AndroidDownloadTaskStore(Context context) {
-        this.appContext = context.getApplicationContext();
+        this(context.getApplicationContext().getFilesDir());
+    }
+
+    AndroidDownloadTaskStore(File filesDir) {
+        this.filesDir = filesDir;
     }
 
     boolean hasUnfinishedTasks() {
-        synchronized (lock) {
+        synchronized (LOCK) {
             for (AndroidDownloadTaskRecord record : readAllLocked()) {
                 if (!record.isTerminal()) {
                     return true;
@@ -43,7 +47,7 @@ final class AndroidDownloadTaskStore {
     }
 
     List<AndroidDownloadTaskRecord> readAll() {
-        synchronized (lock) {
+        synchronized (LOCK) {
             return readAllLocked();
         }
     }
@@ -65,14 +69,41 @@ final class AndroidDownloadTaskStore {
         String destinationPath,
         String partialPath
     ) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             long now = System.currentTimeMillis();
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             for (AndroidDownloadTaskRecord record : records) {
-                if (record.matchesTarget(kind, logicalId) && !record.isTerminal()) {
+                if (!record.matchesTarget(kind, logicalId) || record.isTerminal()) {
+                    continue;
+                }
+                if (matchesRequest(
+                    record,
+                    displayName,
+                    runtimeChannel,
+                    packageId,
+                    packageVersion,
+                    sourceUrl,
+                    checksum,
+                    installMode,
+                    assetBaseUrl,
+                    fileIndexUrl,
+                    fileIndexChecksum,
+                    allowFullFallback,
+                    destinationPath,
+                    partialPath
+                )) {
                     Log.i(TAG, "enqueueOrReuse reuse taskId=" + record.taskId + " status=" + record.status);
                     return record;
                 }
+                Log.w(
+                    TAG,
+                    "enqueueOrReuse replace-conflicting-task taskId=" + record.taskId
+                        + " status=" + record.status
+                        + " logicalId=" + logicalId
+                        + " oldInstallMode=" + record.installMode
+                        + " newInstallMode=" + installMode
+                );
+                record.markCancelled(now);
             }
 
             AndroidDownloadTaskRecord record = AndroidDownloadTaskRecord.create(
@@ -106,8 +137,39 @@ final class AndroidDownloadTaskStore {
         }
     }
 
+    private boolean matchesRequest(
+        AndroidDownloadTaskRecord record,
+        String displayName,
+        String runtimeChannel,
+        String packageId,
+        String packageVersion,
+        String sourceUrl,
+        String checksum,
+        String installMode,
+        String assetBaseUrl,
+        String fileIndexUrl,
+        String fileIndexChecksum,
+        boolean allowFullFallback,
+        String destinationPath,
+        String partialPath
+    ) {
+        return safeEquals(record.displayName, displayName)
+            && safeEquals(record.runtimeChannel, runtimeChannel)
+            && safeEquals(record.packageId, packageId)
+            && safeEquals(record.packageVersion, packageVersion)
+            && safeEquals(record.sourceUrl, sourceUrl)
+            && safeEquals(record.checksum, checksum)
+            && safeEquals(record.installMode, installMode)
+            && safeEquals(record.assetBaseUrl, assetBaseUrl)
+            && safeEquals(record.fileIndexUrl, fileIndexUrl)
+            && safeEquals(record.fileIndexChecksum, fileIndexChecksum)
+            && record.allowFullFallback == allowFullFallback
+            && safeEquals(record.destinationPath, destinationPath)
+            && safeEquals(record.partialPath, partialPath);
+    }
+
     AndroidDownloadTaskRecord cancelTask(String taskId) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             long now = System.currentTimeMillis();
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             AndroidDownloadTaskRecord cancelled = null;
@@ -115,6 +177,9 @@ final class AndroidDownloadTaskStore {
             for (AndroidDownloadTaskRecord record : records) {
                 if (!safeEquals(record.taskId, taskId)) {
                     continue;
+                }
+                if (record.isTerminal()) {
+                    return null;
                 }
                 wasActive = record.isActive();
                 record.markCancelled(now);
@@ -131,8 +196,34 @@ final class AndroidDownloadTaskStore {
         }
     }
 
+    List<AndroidDownloadTaskRecord> cancelTasksForTarget(String kind, String logicalId, long now) {
+        synchronized (LOCK) {
+            List<AndroidDownloadTaskRecord> records = readAllLocked();
+            List<AndroidDownloadTaskRecord> cancelledRecords = new ArrayList<>();
+            boolean cancelledActiveTask = false;
+
+            for (AndroidDownloadTaskRecord record : records) {
+                if (!record.matchesTarget(kind, logicalId) || record.isTerminal()) {
+                    continue;
+                }
+                cancelledActiveTask = cancelledActiveTask || record.isActive();
+                record.markCancelled(now);
+                cancelledRecords.add(record);
+            }
+
+            if (!cancelledRecords.isEmpty()) {
+                if (cancelledActiveTask) {
+                    promoteNextQueuedLocked(records, now);
+                }
+                writeAllLocked(records);
+            }
+
+            return cancelledRecords;
+        }
+    }
+
     AndroidDownloadTaskRecord getActiveTask() {
-        synchronized (lock) {
+        synchronized (LOCK) {
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             for (AndroidDownloadTaskRecord record : records) {
                 if (record.isActive()) {
@@ -144,7 +235,7 @@ final class AndroidDownloadTaskStore {
     }
 
     AndroidDownloadTaskRecord getByTaskId(String taskId) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             for (AndroidDownloadTaskRecord record : readAllLocked()) {
                 if (safeEquals(record.taskId, taskId)) {
                     return record;
@@ -155,13 +246,13 @@ final class AndroidDownloadTaskStore {
     }
 
     AndroidDownloadTaskRecord getLatestByTarget(String kind, String logicalId) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             AndroidDownloadTaskRecord latest = null;
             for (AndroidDownloadTaskRecord record : readAllLocked()) {
                 if (!record.matchesTarget(kind, logicalId)) {
                     continue;
                 }
-                if (latest == null || record.updatedAt > latest.updatedAt) {
+                if (latest == null || record.updatedAt >= latest.updatedAt) {
                     latest = record;
                 }
             }
@@ -170,7 +261,7 @@ final class AndroidDownloadTaskStore {
     }
 
     boolean hasActiveTaskForTarget(String kind, String logicalId) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             for (AndroidDownloadTaskRecord record : readAllLocked()) {
                 if (record.matchesTarget(kind, logicalId) && record.isActive()) {
                     return true;
@@ -181,7 +272,7 @@ final class AndroidDownloadTaskStore {
     }
 
     int countQueuedTasks() {
-        synchronized (lock) {
+        synchronized (LOCK) {
             int count = 0;
             for (AndroidDownloadTaskRecord record : readAllLocked()) {
                 if (AndroidDownloadTaskRecord.STATUS_QUEUED.equals(record.status)) {
@@ -193,7 +284,7 @@ final class AndroidDownloadTaskStore {
     }
 
     void reconcileTransientTasks() {
-        synchronized (lock) {
+        synchronized (LOCK) {
             long now = System.currentTimeMillis();
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             boolean changed = false;
@@ -219,12 +310,15 @@ final class AndroidDownloadTaskStore {
         String status,
         long now
     ) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             AndroidDownloadTaskRecord updated = null;
             for (AndroidDownloadTaskRecord record : records) {
                 if (!safeEquals(record.taskId, taskId)) {
                     continue;
+                }
+                if (record.isTerminal()) {
+                    return null;
                 }
                 record.status = status;
                 record.downloadedBytes = downloadedBytes;
@@ -239,12 +333,15 @@ final class AndroidDownloadTaskStore {
     }
 
     AndroidDownloadTaskRecord markVerifying(String taskId, long now) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             AndroidDownloadTaskRecord updated = null;
             for (AndroidDownloadTaskRecord record : records) {
                 if (!safeEquals(record.taskId, taskId)) {
                     continue;
+                }
+                if (record.isTerminal()) {
+                    return null;
                 }
                 record.status = AndroidDownloadTaskRecord.STATUS_VERIFYING;
                 record.updatedAt = now;
@@ -257,12 +354,15 @@ final class AndroidDownloadTaskStore {
     }
 
     AndroidDownloadTaskRecord markCompleted(String taskId, long totalBytes, long now) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             AndroidDownloadTaskRecord updated = null;
             for (AndroidDownloadTaskRecord record : records) {
                 if (!safeEquals(record.taskId, taskId)) {
                     continue;
+                }
+                if (record.isTerminal()) {
+                    return null;
                 }
                 record.status = AndroidDownloadTaskRecord.STATUS_COMPLETED;
                 record.downloadedBytes = totalBytes;
@@ -280,12 +380,15 @@ final class AndroidDownloadTaskStore {
     }
 
     AndroidDownloadTaskRecord markFailed(String taskId, String errorCode, String errorMessage, long now) {
-        synchronized (lock) {
+        synchronized (LOCK) {
             List<AndroidDownloadTaskRecord> records = readAllLocked();
             AndroidDownloadTaskRecord updated = null;
             for (AndroidDownloadTaskRecord record : records) {
                 if (!safeEquals(record.taskId, taskId)) {
                     continue;
+                }
+                if (record.isTerminal()) {
+                    return null;
                 }
                 record.status = AndroidDownloadTaskRecord.STATUS_FAILED;
                 record.errorCode = errorCode;
@@ -395,7 +498,7 @@ final class AndroidDownloadTaskStore {
     }
 
     private File resolveRegistryFile() {
-        return new File(new File(appContext.getFilesDir(), ROOT_DIR), REGISTRY_FILE);
+        return new File(new File(filesDir, ROOT_DIR), REGISTRY_FILE);
     }
 
     private String readText(File file) throws IOException {

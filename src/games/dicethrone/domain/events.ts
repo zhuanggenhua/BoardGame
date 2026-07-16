@@ -330,6 +330,8 @@ export interface DamageDealtEvent extends GameEvent<'DAMAGE_DEALT'> {
         damageScope?: 'attack' | 'direct';
         /** 跳过护盾消耗（用于 HP 重置类效果，如神圣祝福将 HP 设为 1） */
         bypassShields?: boolean;
+        /** 等本次伤害响应窗口消耗指定 token 后再授予的 token。 */
+        deferredTokenGrants?: import('./core-types').PendingDamage['deferredTokenGrants'];
         /** 护盾消耗记录（reducer 回填，用于 ActionLog 展示护盾减伤信息） */
         shieldsConsumed?: Array<{
             sourceId: string;

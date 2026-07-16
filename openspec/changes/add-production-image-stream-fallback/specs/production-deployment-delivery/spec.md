@@ -1,4 +1,14 @@
 ## ADDED Requirements
+### Requirement: 默认生产镜像分发必须由 CI 构建后直传生产机
+系统 SHALL 将“CI 构建完成后直接把目标镜像 tar 输送到生产机并执行本地导入”作为默认生产镜像分发路径，避免默认链路依赖本机或生产机从 GHCR 拉取大镜像层。
+
+#### Scenario: 发布 latest 到生产环境
+- **GIVEN** 目标提交已经推送到远端
+- **WHEN** 运维执行默认更新部署入口
+- **THEN** 系统 MUST 触发 CI 构建目标业务镜像
+- **AND** CI MUST 在构建完成后直接把目标镜像输送到生产机本地导入
+- **AND** 默认链路 MUST NOT 要求本机先从 GHCR 拉取同一目标镜像
+
 ### Requirement: 生产部署必须提供不依赖生产机直拉 GHCR 大层的正式镜像分发 fallback
 系统 SHALL 为生产部署提供一条仓库内置的正式 fallback，使目标业务镜像可以在构建机或 CI 上完成拉取后，再输送到生产机本地导入，而不是只能要求生产机自己直拉 GHCR。
 

@@ -205,6 +205,37 @@ function ownMinionOptions(
     });
 }
 
+function destroyOwnMinionTargetOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    context: {
+        sourceDefId: string;
+        sourceCardUid?: string;
+        minPower?: number;
+        powerMax?: number;
+    },
+) {
+    const sourceKind = context.sourceDefId.startsWith('masters_of_evil_')
+        || context.sourceDefId.startsWith('hydra_hail_')
+        || context.sourceDefId.startsWith('hydra_two_')
+        ? 'action'
+        : 'nonAction';
+
+    return ownMinionOptions(state, playerId, {
+        minPower: context.minPower,
+        powerMax: context.powerMax,
+        defId: context.sourceDefId === 'masters_of_evil_absorbing_man'
+            ? 'masters_of_evil_absorbing_man'
+            : undefined,
+        excludeUid: context.sourceDefId === 'masters_of_evil_absorbing_man'
+            ? context.sourceCardUid
+            : undefined,
+        sourceDefId: context.sourceDefId,
+        sourceKind,
+        effectType: 'destroy',
+    });
+}
+
 function anyMinionOptions(
     state: SmashUpCore,
     playerId: PlayerId,
@@ -511,27 +542,12 @@ const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCo
     buildInteraction: (context) => {
         const state = context.matchState.core;
         if (context.mode === 'destroyOwnMinion') {
+            const options = destroyOwnMinionTargetOptions(state, context.playerId, context);
             return createAbilityRuntimeSimpleChoice(
                 `marvel_villains_destroy_own_${context.sourceDefId}_${context.now}`,
                 context.playerId,
                 '选择要消灭的己方角色',
-                ownMinionOptions(state, context.playerId, {
-                    minPower: context.minPower,
-                    powerMax: context.powerMax,
-                    defId: context.sourceDefId === 'masters_of_evil_absorbing_man'
-                        ? 'masters_of_evil_absorbing_man'
-                        : undefined,
-                    excludeUid: context.sourceDefId === 'masters_of_evil_absorbing_man'
-                        ? context.sourceCardUid
-                        : undefined,
-                    sourceDefId: context.sourceDefId,
-                    sourceKind: context.sourceDefId.startsWith('masters_of_evil_')
-                        || context.sourceDefId.startsWith('hydra_hail_')
-                        || context.sourceDefId.startsWith('hydra_two_')
-                        ? 'action'
-                        : 'nonAction',
-                    effectType: 'destroy',
-                }),
+                options,
                 {
                     sourceId: 'marvel_villains_destroy_own_prompt',
                     titleKey: 'ui.marvel_villains_destroy_own_title',
@@ -860,8 +876,17 @@ function destroyOwnMinionAbility(
     ctx: AbilityContext,
     options: { minPower?: number; powerMax?: number } = {},
 ): AbilityResult {
+    const targetOptions = destroyOwnMinionTargetOptions(ctx.state, ctx.playerId, {
+        sourceDefId: ctx.defId,
+        sourceCardUid: ctx.cardUid,
+        ...options,
+    });
     const selected = ctx.targetMinionUid ? findMinion(ctx.state, ctx.targetMinionUid) : undefined;
-    if (selected && selected.minion.controller === ctx.playerId) {
+    if (
+        selected
+        && selected.minion.controller === ctx.playerId
+        && targetOptions.some(option => option.value?.minionUid === selected.minion.uid)
+    ) {
         return runDestroyFollowup({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
@@ -876,6 +901,9 @@ function destroyOwnMinionAbility(
             minionDefId: selected.minion.defId,
             baseIndex: selected.baseIndex,
         }, ctx.random, ctx.now);
+    }
+    if (targetOptions.length === 0) {
+        return { events: [] };
     }
     return prompt({
         matchState: ctx.matchState,

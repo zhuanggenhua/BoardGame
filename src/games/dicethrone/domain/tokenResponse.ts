@@ -269,6 +269,7 @@ export function createPendingDamage(
     initialModifiers?: Array<{ type: 'defense' | 'token' | 'shield' | 'status'; value: number; sourceId?: string; sourceName?: string }>,
     damageScope?: 'attack' | 'direct',
     unblockable?: boolean,
+    deferredTokenGrants?: PendingDamage['deferredTokenGrants'],
 ): PendingDamage {
     const responderId = responseType === 'beforeDamageDealt' ? sourcePlayerId : targetPlayerId;
     const normalizedSource = sourceAbilityId ?? 'none';
@@ -282,6 +283,7 @@ export function createPendingDamage(
         sourceAbilityId,
         damageScope,
         ...(unblockable ? { unblockable: true } : {}),
+        ...(deferredTokenGrants?.length ? { deferredTokenGrants } : {}),
         responseType,
         responderId,
         isFullyEvaded: false,
@@ -426,6 +428,7 @@ export function maybeCreateDamageResponseEvent(params: {
         dmgPayload.modifiers,
         damageScope,
         isUnblockable,
+        dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
     );
     return createTokenResponseRequestedEvent(pendingDamage, timestamp);
 }

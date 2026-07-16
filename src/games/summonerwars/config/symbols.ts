@@ -23,6 +23,7 @@
  * - 极地矮人：SNOWFLAKE（雪花）、DROPLET（水滴）
  * - 炽原精灵：STAR（星形）、RHOMBUS（菱形）
  * - 莫古：SPORE（孢子）、MYCELIUM（菌丝）
+ * - 灰烬：EMBER（灰烬）、PHOENIX（凤凰）
  */
 export const DECK_SYMBOLS = {
   // 通用符号（所有召唤师都有）
@@ -55,6 +56,10 @@ export const DECK_SYMBOLS = {
   // 莫古符号 (Mogu)
   SPORE: 'spore',
   MYCELIUM: 'mycelium',
+
+  // 灰烬符号 (Huijin)
+  EMBER: 'ember',
+  PHOENIX: 'phoenix',
 } as const;
 
 export type DeckSymbol = typeof DECK_SYMBOLS[keyof typeof DECK_SYMBOLS];
@@ -72,4 +77,5 @@ export const FACTION_ICONS = {
   FROST: 'claw',           // 🐾 爪子 - 极地矮人
   BARBARIC: 'totem',       // 🔱 图腾 - 炽原精灵
   MOGU: 'spore',           // 孢子 - 莫古
+  HUIJIN: 'phoenix',        // 凤凰 - 灰烬
 } as const;

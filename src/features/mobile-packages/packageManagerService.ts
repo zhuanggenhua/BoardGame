@@ -44,9 +44,10 @@ const forceFullInstallRecoveryRegistry = new Set<string>();
 let appliedCommonAudioAssetBaseOverride: string | undefined;
 let installedSharedAudioPackVersion: string | undefined;
 const isDevRuntime = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
+const isTestRuntime = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
 const NATIVE_PROGRESS_POLL_INTERVAL_MS = 1000;
-const CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS = 8;
-const CLEAN_RETRY_NATIVE_STATE_POLL_DELAY_MS = 250;
+const CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS = 20;
+const CLEAN_RETRY_NATIVE_STATE_POLL_DELAY_MS = isTestRuntime ? 1 : 500;
 
 const hasInstalledVersion = (state: Pick<StoredGamePackageState, 'status' | 'installedVersion' | 'localAssetBaseUrl'>) =>
     hasUsableInstalledGamePackageState(state);
@@ -128,8 +129,10 @@ const delay = (durationMs: number) => new Promise<void>((resolve) => {
 });
 
 const waitForNativeCleanRetryState = async (gameId: string) => {
+    let lastNativeSnapshot: Awaited<ReturnType<typeof readNativeGamePackageInstallState>> | null = null;
     for (let attempt = 1; attempt <= CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS; attempt += 1) {
         const nativeSnapshot = await readNativeGamePackageInstallState(gameId);
+        lastNativeSnapshot = nativeSnapshot;
         const isCleanSlate = !nativeSnapshot
             || (nativeSnapshot.exists !== true && nativeSnapshot.taskRunning !== true);
         logMobileRuntimeCritical('PackageManagerService', 'clean-retry-native-state-poll', {
@@ -150,12 +153,44 @@ const waitForNativeCleanRetryState = async (gameId: string) => {
     logMobileRuntimeCritical('PackageManagerService', 'clean-retry-native-state-still-dirty', {
         gameId,
         attempts: CLEAN_RETRY_NATIVE_STATE_POLL_ATTEMPTS,
+        taskRunning: lastNativeSnapshot?.taskRunning,
+        snapshotStatus: lastNativeSnapshot?.state?.status,
+        snapshotErrorCode: lastNativeSnapshot?.state?.errorCode,
+        snapshotErrorMessage: lastNativeSnapshot?.state?.errorMessage,
     });
+    const status = lastNativeSnapshot?.state?.status ?? 'unknown';
+    const taskRunning = lastNativeSnapshot?.taskRunning === true ? '任务仍在运行' : '仍有残留状态';
+    const detail = lastNativeSnapshot?.state?.errorMessage
+        ? `，最后错误：${lastNativeSnapshot.state.errorMessage}`
+        : '';
+    throw new Error(`清理后原生素材包状态未归零（${taskRunning}，状态：${status}${detail}）`);
 };
 
-const shouldCleanSharedAudioWithGamePackage = (gameId: string) => (
-    !isSharedAudioPackGameId(gameId)
-);
+const shouldCleanSharedAudioWithGamePackage = (_gameId: string) => false;
+
+const emitCleanRetryFailureState = (
+    fallbackState: StoredGamePackageState,
+    gameId: string,
+    error: unknown,
+) => {
+    const message = error instanceof Error ? error.message : String(error || '未知错误');
+    const failedState = mergeGamePackageState(fallbackState, {
+        status: 'failed',
+        progressPercent: undefined,
+        progressMode: undefined,
+        installedVersion: undefined,
+        localAssetBaseUrl: undefined,
+        errorCode: 'file-io',
+        errorMessage: `清理本地素材包失败：${message}`,
+        updatedAt: Date.now(),
+    });
+    logMobileRuntimeCritical('PackageManagerService', 'clean-retry-failed', {
+        gameId,
+        errorMessage: failedState.errorMessage,
+    });
+    emitState(failedState);
+    return failedState;
+};
 
 const normalizeIncompleteInstalledState = (
     state: StoredGamePackageState,
@@ -717,14 +752,26 @@ export const resetGamePackageStateForCleanRetry = async (
         stopActiveInstall(SHARED_AUDIO_PACK_GAME_ID, 'resetGamePackageStateForCleanRetry:shared-audio');
         stopNativeProgressPolling(SHARED_AUDIO_PACK_GAME_ID);
     }
-    const nativeState = await uninstallNativeGamePackage(gameId);
-    await waitForNativeCleanRetryState(gameId);
-    if (shouldCleanSharedAudio) {
-        await uninstallNativeGamePackage(SHARED_AUDIO_PACK_GAME_ID);
-        await waitForNativeCleanRetryState(SHARED_AUDIO_PACK_GAME_ID);
-        stateCache.delete(SHARED_AUDIO_PACK_GAME_ID);
-        clearStoredGamePackageState(SHARED_AUDIO_PACK_GAME_ID);
-        applyCommonAudioOverride(undefined, undefined);
+    let nativeState: Partial<StoredGamePackageState> | null = null;
+    try {
+        nativeState = await uninstallNativeGamePackage(gameId);
+        if (!nativeState) {
+            throw new Error('原生清理接口没有返回成功状态');
+        }
+        await waitForNativeCleanRetryState(gameId);
+        if (shouldCleanSharedAudio) {
+            const sharedNativeState = await uninstallNativeGamePackage(SHARED_AUDIO_PACK_GAME_ID);
+            if (!sharedNativeState) {
+                throw new Error('公共音频包原生清理接口没有返回成功状态');
+            }
+            await waitForNativeCleanRetryState(SHARED_AUDIO_PACK_GAME_ID);
+            stateCache.delete(SHARED_AUDIO_PACK_GAME_ID);
+            clearStoredGamePackageState(SHARED_AUDIO_PACK_GAME_ID);
+            applyCommonAudioOverride(undefined, undefined);
+        }
+    } catch (error) {
+        emitCleanRetryFailureState(resolvedFallback, gameId, error);
+        throw error;
     }
     const nextState = mergeGamePackageState(resolvedFallback, {
         ...(nativeState ?? {}),

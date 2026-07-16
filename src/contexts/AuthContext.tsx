@@ -238,6 +238,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
         }
         void import('@sentry/react').then((Sentry) => {
+            if (typeof Sentry.setUser !== 'function') {
+                return;
+            }
             if (user) {
                 Sentry.setUser({
                     id: user.id,
@@ -247,6 +250,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 Sentry.setUser(null);
             }
+        }).catch(() => {
+            // 监控 SDK 异步加载失败不能影响用户进入页面。
         });
     }, [user]);
 

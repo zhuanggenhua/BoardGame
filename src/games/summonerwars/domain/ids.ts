@@ -13,7 +13,7 @@ import type { FactionId, UnitCard } from './types';
 
 /** 所有合法阵营 ID（从 FactionId 类型派生） */
 export const VALID_FACTION_IDS: readonly FactionId[] = [
-  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu',
+  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin',
 ] as const;
 
 // ============================================================================
@@ -64,6 +64,12 @@ export const CARD_IDS = {
   MOGU_SYMBIOTIC_SELF_HEALING: 'mogu-symbiotic-self-healing',
   MOGU_FANATICAL_FUNGUS: 'mogu-fanatical-fungus',
   MOGU_RELEASE_SPORES: 'mogu-release-spores',
+
+  // 灰烬事件卡
+  HUIJIN_DAZZLING_LIGHT: 'huijin-dazzling-light',
+  HUIJIN_SCORCH: 'huijin-scorch',
+  HUIJIN_DIVINE_REVENGE: 'huijin-divine-revenge',
+  HUIJIN_PHOENIX_SOUL: 'huijin-phoenix-soul',
 } as const;
 
 // ============================================================================

@@ -16,12 +16,14 @@ import { getUnitAbilities } from './helpers';
 import { getBaseCardId, CARD_IDS } from './ids';
 import { canActivateAbility } from './abilityHelpers';
 import { reduceEvent } from './reduce';
+import { applyHuijinPhoenixSoulBonus } from './execute/helpers';
 
 /**
  * 需要玩家确认的阶段结束技能（"你可以"/"may" 语义）
  * 这些技能在 onPhaseExit 中只产生通知事件，需要玩家确认后通过 ACTIVATE_ABILITY 执行
  */
-const CONFIRMABLE_PHASE_END_ABILITIES = new Set(['ice_shards', 'feed_beast', 'mogu_parasite']);
+const CONFIRMABLE_PHASE_END_ABILITIES = new Set(['feed_beast', 'mogu_parasite', 'huijin_call_guards']);
+const CONFIRMABLE_PHASE_START_ABILITIES = new Set(['ice_shards']);
 
 /**
  * 检查当前玩家是否有可触发的、需要确认的阶段结束技能
@@ -57,9 +59,9 @@ function hasConfirmablePhaseEndAbility(
 export const PHASE_START_ABILITIES: Record<GamePhase, string[]> = {
   factionSelect: [],
   summon: ['guidance'],
-  move: ['illusion'],
+  move: ['illusion', 'huijin_wildfire'],
   build: [],
-  attack: ['blood_rune'],
+  attack: ['blood_rune', 'ice_shards'],
   magic: [],
   draw: [],
 };
@@ -68,8 +70,8 @@ export const PHASE_END_ABILITIES: Record<GamePhase, string[]> = {
   factionSelect: [],
   summon: [],
   move: [],
-  build: ['ice_shards'],
-  attack: ['feed_beast', 'mogu_parasite'],
+  build: [],
+  attack: ['feed_beast', 'mogu_parasite', 'huijin_call_guards'],
   magic: [],
   draw: [],
 };
@@ -91,8 +93,11 @@ function triggerPhaseAbilities(
       const unitAbilityIds = getUnitAbilities(unit, core);
       for (const abilityId of abilityIds) {
         if (!unitAbilityIds.includes(abilityId)) continue;
-        // 阶段结束技能需在触发前做门控（充能不足/条件不满足时不产生通知事件）
-        if (trigger === 'onPhaseEnd' && !canActivateAbility(core, unit, abilityId, playerId)) continue;
+        // 可选阶段确认技能需在触发前做门控（充能不足/条件不满足时不产生通知事件）
+        const requiresAvailabilityCheck =
+          (trigger === 'onPhaseEnd' && CONFIRMABLE_PHASE_END_ABILITIES.has(abilityId))
+          || (trigger === 'onPhaseStart' && CONFIRMABLE_PHASE_START_ABILITIES.has(abilityId));
+        if (requiresAvailabilityCheck && !canActivateAbility(core, unit, abilityId, playerId)) continue;
         const def = abilityRegistry.get(abilityId);
         if (!def || def.trigger !== trigger) continue;
         events.push(...resolveAbilityEffects(def, {
@@ -329,9 +334,11 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
     // 阶段开始技能触发（按阶段筛选）
     const phaseStartAbilities = PHASE_START_ABILITIES[to as GamePhase] ?? [];
     if (phaseStartAbilities.length > 0) {
-      events.push(...triggerPhaseAbilities(core, phaseStartPlayer, 'onPhaseStart', phaseStartAbilities, timestamp));
+      const phaseStartCore = { ...core, phase: to as GamePhase };
+      events.push(...triggerPhaseAbilities(phaseStartCore, phaseStartPlayer, 'onPhaseStart', phaseStartAbilities, timestamp));
     }
 
+    applyHuijinPhoenixSoulBonus(events, core, timestamp);
     return events;
   },
 

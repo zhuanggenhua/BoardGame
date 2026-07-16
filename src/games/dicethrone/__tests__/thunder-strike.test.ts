@@ -16,7 +16,9 @@ import { createInitialSystemState, executePipeline } from '../../../engine/pipel
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { DiceThroneCore, DiceThroneCommand } from '../domain/types';
 import { initHeroState } from '../domain/characters';
-import { TOKEN_IDS, DICE_FACE_IDS } from '../domain/ids';
+import { TOKEN_IDS } from '../domain/ids';
+import { MONK_CARDS } from '../heroes/monk/cards';
+import { RESOURCE_IDS } from '../domain/resources';
 
 const monkSetupCommands = [
     { type: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: 'monk' } },
@@ -104,6 +106,108 @@ describe('雷霆万钧技能', () => {
         expect(rerollRequestedEvents).toHaveLength(1); // 应该有1个重掷请求事件
 
         console.log('✅ 所有验证通过');
+    });
+
+    it('雷霆万钧奖励骰伤害结算前应该允许攻击方使用气增伤', () => {
+        const queuedRandom = createQueuedRandom([3, 3, 3, 1, 1, 4, 5, 6]);
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: diceThroneSystemsForTest,
+            playerIds: ['0', '1'],
+            random: queuedRandom,
+            setup: (playerIds, random) => {
+                const state = createMonkState(playerIds, random);
+                state.core.players['0'].tokens = { [TOKEN_IDS.TAIJI]: 2 };
+                state.core.players['1'].tokens = {};
+                state.core.players['0'].hand = [];
+                state.core.players['1'].hand = [];
+                return state;
+            },
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: '雷霆万钧奖励骰伤害可用气增伤',
+            commands: [
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
+                { type: 'ROLL_DICE', playerId: '0', payload: {} },
+                { type: 'CONFIRM_ROLL', playerId: '0', payload: {} },
+                { type: 'SELECT_ABILITY', playerId: '0', payload: { abilityId: 'thunder-strike' } },
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
+                { type: 'ROLL_DICE', playerId: '1', payload: {} },
+                { type: 'CONFIRM_ROLL', playerId: '1', payload: {} },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+                { type: 'ADVANCE_PHASE', playerId: '1', payload: {} },
+                { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {} },
+                { type: 'USE_TOKEN', playerId: '0', payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1 } },
+            ],
+        });
+
+        expect(result.finalState.core.pendingDamage).toMatchObject({
+            responseType: 'beforeDamageDealt',
+            responderId: '0',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            sourceAbilityId: 'thunder-strike',
+            originalDamage: 18,
+            currentDamage: 19,
+            damageScope: 'attack',
+        });
+        expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(1);
+    });
+
+    it('风暴突袭 II 奖励骰伤害结算前应该允许攻击方使用气增伤', () => {
+        const queuedRandom = createQueuedRandom([3, 3, 3, 1, 1, 4, 5, 6]);
+        const stormAssault = MONK_CARDS.find(card => card.id === 'card-storm-assault-2');
+        expect(stormAssault).toBeDefined();
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: diceThroneSystemsForTest,
+            playerIds: ['0', '1'],
+            random: queuedRandom,
+            setup: (playerIds, random) => {
+                const state = createMonkState(playerIds, random);
+                state.core.players['0'].tokens = { [TOKEN_IDS.TAIJI]: 1 };
+                state.core.players['1'].tokens = {};
+                state.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
+                state.core.players['0'].hand = stormAssault ? [{ ...stormAssault }] : [];
+                state.core.players['1'].hand = [];
+                return state;
+            },
+            silent: true,
+        });
+
+        const result = runner.run({
+            name: '风暴突袭 II 奖励骰伤害可用气增伤',
+            commands: [
+                { type: 'PLAY_UPGRADE_CARD', playerId: '0', payload: { cardId: 'card-storm-assault-2', targetAbilityId: 'thunder-strike' } },
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
+                { type: 'ROLL_DICE', playerId: '0', payload: {} },
+                { type: 'CONFIRM_ROLL', playerId: '0', payload: {} },
+                { type: 'SELECT_ABILITY', playerId: '0', payload: { abilityId: 'thunder-strike' } },
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
+                { type: 'ROLL_DICE', playerId: '1', payload: {} },
+                { type: 'CONFIRM_ROLL', playerId: '1', payload: {} },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+                { type: 'ADVANCE_PHASE', playerId: '1', payload: {} },
+                { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {} },
+                { type: 'USE_TOKEN', playerId: '0', payload: { tokenId: TOKEN_IDS.TAIJI, amount: 1 } },
+            ],
+        });
+
+        expect(result.finalState.core.pendingDamage).toMatchObject({
+            responseType: 'beforeDamageDealt',
+            responderId: '0',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            sourceAbilityId: 'thunder-strike',
+            originalDamage: 18,
+            currentDamage: 19,
+            damageScope: 'attack',
+        });
+        expect(result.finalState.core.players['0'].tokens[TOKEN_IDS.TAIJI]).toBe(0);
     });
 
     it('应该直接结算伤害（没有太极标记时）', () => {

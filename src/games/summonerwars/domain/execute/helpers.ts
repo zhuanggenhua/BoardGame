@@ -94,6 +94,59 @@ export function createAbilityTriggeredEvent(
   };
 }
 
+const HUIJIN_PHOENIX_SOUL_UNIT_DAMAGE_ABILITIES = new Set([
+  'huijin_wildfire',
+  'huijin_counterattack',
+  'huijin_quick_shot',
+]);
+
+export function applyHuijinPhoenixSoulBonus(
+  events: GameEvent[],
+  core: SummonerWarsCore,
+  timestamp: number,
+): void {
+  for (let idx = 0; idx < events.length; idx++) {
+    const event = events[idx];
+    if (event.type !== SW_EVENTS.UNIT_DAMAGED) continue;
+    const payload = event.payload as {
+      position?: CellCoord;
+      damage?: number;
+      sourceAbilityId?: string;
+      sourcePlayerId?: PlayerId;
+      phoenixSoulBonus?: number;
+    };
+    if (!payload.position || typeof payload.damage !== 'number') continue;
+    if (!payload.sourceAbilityId || !payload.sourcePlayerId) continue;
+    if (payload.phoenixSoulBonus) continue;
+    if (!HUIJIN_PHOENIX_SOUL_UNIT_DAMAGE_ABILITIES.has(payload.sourceAbilityId)) continue;
+
+    const sourcePlayer = core.players[payload.sourcePlayerId];
+    const hasPhoenixSoul = sourcePlayer?.activeEvents.some(ev =>
+      getBaseCardId(ev.id) === CARD_IDS.HUIJIN_PHOENIX_SOUL
+    );
+    if (!hasPhoenixSoul) continue;
+
+    const targetUnit = core.board[payload.position.row]?.[payload.position.col]?.unit;
+    if (!targetUnit || targetUnit.owner === payload.sourcePlayerId) continue;
+
+    events.splice(idx, 0, createAbilityTriggeredEvent(
+      'huijin_phoenix_soul',
+      payload.sourceAbilityId,
+      payload.position,
+      timestamp,
+      { boostedSourceAbilityId: payload.sourceAbilityId, bonusDamage: 1 },
+    ));
+    idx++;
+    events[idx] = {
+      ...event,
+      payload: {
+        ...payload,
+        damage: payload.damage + 1,
+        phoenixSoulBonus: 1,
+      },
+    };
+  }
+}
 // ============================================================================
 // 销毁 + 触发链
 // ============================================================================

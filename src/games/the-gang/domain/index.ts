@@ -26,7 +26,7 @@ export const TheGangDomain: DomainCore<TheGangCore, TheGangCommand, TheGangEvent
                     id,
                     id === playerId
                         ? state.players[id]
-                        : { ...state.players[id], pocketCards: [] },
+                        : { ...state.players[id], pocketCards: [], secondaryPocketCards: [] },
                 ]),
             ),
         };

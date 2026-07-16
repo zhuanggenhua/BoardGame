@@ -30,6 +30,8 @@ import {
   findSystemAbilityUnitOptionByPosition,
   listSystemAbilityPositionTargets,
   listActivatedAbilityTargetCardIds,
+  listSystemCardSelectorTargetCardIds,
+  findSystemCardSelectorOptionByCardId,
   resolveBeforeAttackCancellation,
   resolveBeforeAttackCardConfirmation,
   SYSTEM_CARD_SELECTOR_ABILITY_IDS,
@@ -147,8 +149,13 @@ describe('systemInteractionAdapter', () => {
     { label: 'revive_undead/selectCard', route: 'card-selector', step: 'selectCard' },
     { label: 'revive_undead/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
     { label: 'fortress_power/selectCard', route: 'card-selector', step: 'selectCard' },
+    { label: 'huijin_call_guards/selectCard', route: 'card-selector', step: 'selectCard' },
+    { label: 'huijin_call_guards/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
     { label: 'ice_ram/selectUnit', route: 'board-cell-position', step: 'selectUnit' },
     { label: 'ice_ram/selectPushDirection', route: 'board-cell-position', step: 'selectPushDirection' },
+    { label: 'huijin_ram/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
+    { label: 'huijin_ram/selectPushDirection', route: 'board-cell-position', step: 'selectPushDirection' },
+    { label: 'huijin_quick_shot/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
     { label: 'life_drain/selectUnit', route: 'board-cell-unit', step: 'selectUnit', context: 'beforeAttack' },
     { label: 'holy_arrow/selectCards', route: 'hand-card-select', step: 'selectCards', context: 'beforeAttack' },
     { label: 'healing/selectCards', route: 'hand-card-select', step: 'selectCards', context: 'beforeAttack' },
@@ -549,6 +556,57 @@ describe('systemInteractionAdapter', () => {
           structurePosition: { row: 2, col: 2 },
         },
       },
+      {
+        interaction: {
+          id: 'sw-huijin-ram-target-1',
+          type: 'after_attack_huijin_ram_target',
+          meta: {
+            type: 'after_attack_huijin_ram_target',
+            sourceUnitId: 'royal-guard-1',
+            sourcePosition: { row: 4, col: 2 },
+          },
+          options: [],
+        },
+        expected: {
+          abilityId: 'huijin_ram',
+          step: 'selectUnit',
+          sourceUnitId: 'royal-guard-1',
+        },
+      },
+      {
+        interaction: {
+          id: 'sw-huijin-quick-shot-1',
+          type: 'after_move_huijin_quick_shot',
+          meta: {
+            type: 'after_move_huijin_quick_shot',
+            sourceUnitId: 'ash-archer-1',
+            sourcePosition: { row: 4, col: 3 },
+          },
+          options: [],
+        },
+        expected: {
+          abilityId: 'huijin_quick_shot',
+          step: 'selectUnit',
+          sourceUnitId: 'ash-archer-1',
+        },
+      },
+      {
+        interaction: {
+          id: 'sw-huijin-call-guards-card-1',
+          type: 'huijin_call_guards_select_card',
+          meta: {
+            type: 'huijin_call_guards_select_card',
+            sourceUnitId: 'huijin-summoner-1',
+            sourcePosition: { row: 0, col: 3 },
+          },
+          options: [],
+        },
+        expected: {
+          abilityId: 'huijin_call_guards',
+          step: 'selectCard',
+          sourceUnitId: 'huijin-summoner-1',
+        },
+      },
     ];
 
     for (const { interaction, expected } of cases) {
@@ -587,6 +645,40 @@ describe('systemInteractionAdapter', () => {
       sourceUnitId: 'ice_ram',
       structurePosition: { row: 2, col: 2 },
       targetPosition: { row: 2, col: 3 },
+    });
+
+    expect(deriveSystemAbilityMode({
+      id: 'sw-huijin-call-guards-position-1',
+      type: 'huijin_call_guards_select_position',
+      meta: {
+        type: 'huijin_call_guards_select_position',
+        sourceUnitId: 'huijin-summoner-1',
+        sourcePosition: { row: 0, col: 3 },
+        cardId: 'huijin-royal-guard-1',
+      },
+      options: [],
+    }, null)).toEqual({
+      abilityId: 'huijin_call_guards',
+      step: 'selectPosition',
+      sourceUnitId: 'huijin-summoner-1',
+      selectedCardId: 'huijin-royal-guard-1',
+    });
+
+    expect(deriveSystemAbilityMode({
+      id: 'sw-huijin-ram-position-1',
+      type: 'after_attack_huijin_ram_position',
+      meta: {
+        type: 'after_attack_huijin_ram_position',
+        sourceUnitId: 'royal-guard-1',
+        sourcePosition: { row: 4, col: 2 },
+        targetPosition: { row: 4, col: 3 },
+      },
+      options: [],
+    }, null)).toEqual({
+      abilityId: 'huijin_ram',
+      step: 'selectPushDirection',
+      sourceUnitId: 'royal-guard-1',
+      targetPosition: { row: 4, col: 3 },
     });
   });
 
@@ -1024,6 +1116,64 @@ describe('systemInteractionAdapter', () => {
       reviveUndeadMode,
       { row: 6, col: 2 },
     )?.id).toBe('pos:6,2');
+
+    const huijinCallGuardsInteraction: SwSimpleChoiceInteraction = {
+      id: 'sw-huijin-call-guards-position-2',
+      type: 'huijin_call_guards_select_position',
+      meta: {
+        type: 'huijin_call_guards_select_position',
+        sourceUnitId: 'huijin-summoner-1',
+        sourcePosition: { row: 0, col: 3 },
+        cardId: 'huijin-ash-archer-1',
+      },
+      options: [
+        {
+          id: 'pos:1,3',
+          label: '(1,3)',
+          value: {
+            action: 'huijin_call_guards_position',
+            cardId: 'huijin-ash-archer-1',
+            position: { row: 1, col: 3 },
+          },
+        },
+      ],
+    };
+    const huijinCallGuardsMode = deriveSystemAbilityMode(huijinCallGuardsInteraction, null);
+    expect(listSystemAbilityPositionTargets(huijinCallGuardsInteraction, huijinCallGuardsMode)).toEqual([{ row: 1, col: 3 }]);
+    expect(findSystemAbilityPositionOption(
+      huijinCallGuardsInteraction,
+      huijinCallGuardsMode,
+      { row: 1, col: 3 },
+    )?.id).toBe('pos:1,3');
+
+    const huijinRamInteraction: SwSimpleChoiceInteraction = {
+      id: 'sw-huijin-ram-position-2',
+      type: 'after_attack_huijin_ram_position',
+      meta: {
+        type: 'after_attack_huijin_ram_position',
+        sourceUnitId: 'royal-guard-1',
+        sourcePosition: { row: 4, col: 2 },
+        targetPosition: { row: 4, col: 3 },
+      },
+      options: [
+        {
+          id: 'pos:4,4',
+          label: '(4,4)',
+          value: {
+            action: 'after_attack_huijin_ram_position',
+            targetPosition: { row: 4, col: 3 },
+            newPosition: { row: 4, col: 4 },
+          },
+        },
+      ],
+    };
+    const huijinRamMode = deriveSystemAbilityMode(huijinRamInteraction, null);
+    expect(listSystemAbilityPositionTargets(huijinRamInteraction, huijinRamMode)).toEqual([{ row: 4, col: 4 }]);
+    expect(findSystemAbilityPositionOption(
+      huijinRamInteraction,
+      huijinRamMode,
+      { row: 4, col: 4 },
+    )?.id).toBe('pos:4,4');
   });
 
   it('findSystemAbilityUnitOptionByPosition 能命中现役 selectUnit 系统交互', () => {
@@ -1237,6 +1387,42 @@ describe('systemInteractionAdapter', () => {
         abilityMode: { abilityId: 'high_telekinesis_instead', step: 'selectUnit', sourceUnitId: 'kala-2' },
         position: { row: 1, col: 4 },
         expectedOptionId: 'pos:1,4',
+      },
+      {
+        label: 'huijin_ram',
+        interaction: {
+          id: 'sw-huijin-ram-target',
+          type: 'after_attack_huijin_ram_target',
+          meta: { type: 'after_attack_huijin_ram_target', sourceUnitId: 'royal-guard-1' },
+          options: [
+            {
+              id: 'pos:4,3',
+              label: '(4,3)',
+              value: { action: 'after_attack_huijin_ram_target', targetPosition: { row: 4, col: 3 } },
+            },
+          ],
+        } satisfies SwSimpleChoiceInteraction,
+        abilityMode: { abilityId: 'huijin_ram', step: 'selectUnit', sourceUnitId: 'royal-guard-1' },
+        position: { row: 4, col: 3 },
+        expectedOptionId: 'pos:4,3',
+      },
+      {
+        label: 'huijin_quick_shot',
+        interaction: {
+          id: 'sw-huijin-quick-shot-target',
+          type: 'after_move_huijin_quick_shot',
+          meta: { type: 'after_move_huijin_quick_shot', sourceUnitId: 'ash-archer-1' },
+          options: [
+            {
+              id: 'pos:4,5',
+              label: '(4,5)',
+              value: { action: 'after_move_huijin_quick_shot', targetPosition: { row: 4, col: 5 } },
+            },
+          ],
+        } satisfies SwSimpleChoiceInteraction,
+        abilityMode: { abilityId: 'huijin_quick_shot', step: 'selectUnit', sourceUnitId: 'ash-archer-1' },
+        position: { row: 4, col: 5 },
+        expectedOptionId: 'pos:4,5',
       },
     ];
 
@@ -1470,6 +1656,33 @@ describe('systemInteractionAdapter', () => {
     })).toBeNull();
 
     expect(getSystemCardSelectorTitleKey('fortress_power')).toBe('cardSelector.fortressPower');
+    expect(getSystemCardSelectorTitleKey('huijin_call_guards')).toBe('cardSelector.huijinCallGuards');
+  });
+
+  it('系统卡牌选择器同时支持弃牌堆能力和灰烬手牌能力', () => {
+    const huijinInteraction: SwSimpleChoiceInteraction = {
+      id: 'sw-huijin-call-guards-card-2',
+      type: 'huijin_call_guards_select_card',
+      meta: {
+        type: 'huijin_call_guards_select_card',
+        sourceUnitId: 'huijin-summoner-1',
+        sourcePosition: { row: 0, col: 3 },
+      },
+      options: [
+        {
+          id: 'huijin-ash-archer-1',
+          label: '灰烬弓箭手',
+          value: { action: 'huijin_call_guards_card', cardId: 'huijin-ash-archer-1' },
+        },
+      ],
+    };
+
+    expect(listSystemCardSelectorTargetCardIds(huijinInteraction, 'huijin_call_guards')).toEqual(['huijin-ash-archer-1']);
+    expect(findSystemCardSelectorOptionByCardId(
+      huijinInteraction,
+      'huijin_call_guards',
+      'huijin-ash-archer-1',
+    )?.id).toBe('huijin-ash-archer-1');
   });
 
   it('现役 abilityMode 顶部横幅文案回退到已存在的文案源', () => {
@@ -1528,8 +1741,13 @@ describe('systemInteractionAdapter', () => {
       'revive_undead/selectCard',
       'revive_undead/selectPosition',
       'fortress_power/selectCard',
+      'huijin_call_guards/selectCard',
+      'huijin_call_guards/selectPosition',
       'ice_ram/selectUnit',
       'ice_ram/selectPushDirection',
+      'huijin_ram/selectUnit',
+      'huijin_ram/selectPushDirection',
+      'huijin_quick_shot/selectUnit',
       'life_drain/selectUnit',
       'holy_arrow/selectCards',
       'healing/selectCards',
@@ -1557,14 +1775,18 @@ describe('systemInteractionAdapter', () => {
       'vanish/selectUnit',
       'telekinesis_instead/selectUnit',
       'high_telekinesis_instead/selectUnit',
+      'huijin_ram/selectUnit',
+      'huijin_quick_shot/selectUnit',
       'life_drain/selectUnit',
     ]);
     expect(getRouteLabels('board-cell-position')).toEqual([
       'structure_shift/selectUnit',
       'structure_shift/selectNewPosition',
       'revive_undead/selectPosition',
+      'huijin_call_guards/selectPosition',
       'ice_ram/selectUnit',
       'ice_ram/selectPushDirection',
+      'huijin_ram/selectPushDirection',
     ]);
     expect(getRouteLabels('hand-card-select')).toEqual([
       'holy_arrow/selectCards',
@@ -1573,6 +1795,7 @@ describe('systemInteractionAdapter', () => {
     expect(getRouteLabels('card-selector')).toEqual([
       'revive_undead/selectCard',
       'fortress_power/selectCard',
+      'huijin_call_guards/selectCard',
     ]);
     expect(getRouteLabels('status-banner-choice')).toEqual([
       'blood_rune/selectUnit',
@@ -1580,7 +1803,7 @@ describe('systemInteractionAdapter', () => {
   });
 
   it('Board 卡牌选择器能力集合必须与路由矩阵保持一致', () => {
-    expect(SYSTEM_CARD_SELECTOR_ABILITY_IDS).toEqual(['revive_undead', 'fortress_power']);
+    expect(SYSTEM_CARD_SELECTOR_ABILITY_IDS).toEqual(['revive_undead', 'fortress_power', 'huijin_call_guards']);
     expect(
       getRouteLabels('card-selector').map((label) => label.split('/')[0]),
     ).toEqual([...SYSTEM_CARD_SELECTOR_ABILITY_IDS]);

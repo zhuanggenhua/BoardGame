@@ -115,7 +115,9 @@ export interface ShowdownPlayerResult {
     chip: number;
     strength: HandStrength;
     pocketCards: PlayingCard[];
+    secondaryPocketCards?: PlayingCard[];
     bestCards: PlayingCard[];
+    winningHandSlot?: 'top' | 'bottom';
 }
 
 export interface HeistRecord {
@@ -135,6 +137,7 @@ export interface TheGangProgressConfirmation {
 export interface TheGangPlayerState {
     id: PlayerId;
     pocketCards: PlayingCard[];
+    secondaryPocketCards?: PlayingCard[];
     communityCards?: PlayingCard[];
     toolCards: TheGangToolId[];
     specialistCards: TheGangSpecialistId[];
@@ -352,6 +355,7 @@ export interface RoundEndedEvent extends GameEvent<typeof THE_GANG_EVENTS.ROUND_
         revealedCards: PlayingCard[];
         playerRevealedCards?: Record<PlayerId, PlayingCard[]>;
         playerDrawnCards?: Record<PlayerId, PlayingCard[]>;
+        playerDrawnSecondaryCards?: Record<PlayerId, PlayingCard[]>;
         cardsConsumed?: number;
     };
 }

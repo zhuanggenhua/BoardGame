@@ -24,6 +24,26 @@ const runPublishPlan = (...assetPaths: string[]) => {
     };
 };
 
+const runUploadCheck = (...args: string[]) => {
+    const result = spawnSync(
+        process.execPath,
+        [
+            path.join(process.cwd(), 'scripts', 'assets', 'upload-to-server.js'),
+            '--check',
+            ...args,
+        ],
+        {
+            cwd: process.cwd(),
+            encoding: 'utf8',
+        },
+    );
+
+    return {
+        status: result.status,
+        output: `${result.stdout}\n${result.stderr}`,
+    };
+};
+
 const walkFiles = (dirPath: string, entries: string[] = []) => {
     for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
         const fullPath = path.join(dirPath, entry.name);
@@ -311,6 +331,29 @@ describe('upload-to-server 安卓素材包刷新预演', () => {
         expect(result.output).toContain('共享音频变更: 是');
         expect(result.output).toContain('scripts/mobile/publish-android-game-packages.mjs');
         expect(result.output).not.toContain('--game dicethrone --reuse-shared-audio --index-manifest-only');
+    });
+});
+
+describe('upload-to-server 路径过滤', () => {
+    it('文件名前缀不带扩展名时仍应命中同名压缩运行时资源', () => {
+        const result = runUploadCheck(
+            '--asset-prefix',
+            'i18n/zh-CN/smashup/cards/compressed/marvel_villains',
+        );
+
+        expect(result.status).toBe(0);
+        expect(result.output).toContain('待发布: official/i18n/zh-CN/smashup/cards/compressed/marvel_villains.webp');
+        expect(result.output).toContain('检查完成：待发布 1 个对象');
+    });
+
+    it('带路径过滤但没有可发布对象时应失败，避免误以为已经上传', () => {
+        const result = runUploadCheck(
+            '--asset-prefix',
+            'i18n/zh-CN/smashup/cards/compressed/not-a-real-card-atlas',
+        );
+
+        expect(result.status).not.toBe(0);
+        expect(result.output).toContain('路径过滤没有匹配到可发布对象');
     });
 });
 

@@ -1,7 +1,7 @@
 import type { MatchState, PlayerId } from '../../engine/types';
 import { createAiLegalActionId } from '../../engine/ai';
 import type { AiDecisionContext, AiLegalAction, GameAiRuntime, LocalAiPolicy } from '../../engine/ai';
-import { evaluateBestTexasHoldemHand } from './domain';
+import { compareHandStrength, evaluateBestTheGangHand } from './domain';
 import { getChipValues } from './domain/setup';
 import { THE_GANG_COMMANDS, type TheGangCore, type TheGangProgressKind } from './domain/types';
 
@@ -52,29 +52,55 @@ const allPlayersHaveChips = (core: TheGangCore): boolean =>
 const getAvailableChipsForPlayer = (core: TheGangCore, playerId: PlayerId): number[] => {
     const ownChip = core.currentRoundChips[playerId];
 
-    return getChipValues(core.playerIds.length)
+    return getChipValues(core.playerIds.length, core.rules.config, core.round)
         .filter((chip) => chip !== ownChip);
 };
 
 const getUnoccupiedCurrentRoundChips = (core: TheGangCore): number[] => {
     const occupied = new Set(Object.values(core.currentRoundChips));
-    return getChipValues(core.playerIds.length)
+    return getChipValues(core.playerIds.length, core.rules.config, core.round)
         .filter((chip) => !occupied.has(chip));
 };
+
+const scoreFromEvaluation = (evaluation: ReturnType<typeof evaluateBestTheGangHand>) => (
+    evaluation.strength.category * 100
+    + evaluation.strength.ranks.reduce((total, rank, index) => (
+        total + rank / (10 ** (index + 1))
+    ), 0)
+);
 
 const getVisibleStrengthScore = (core: TheGangCore, playerId: PlayerId): number => {
     const player = core.players[playerId];
     if (!player) return 0;
 
-    const visibleCards = [...player.pocketCards, ...core.communityCards];
-    if (visibleCards.length >= 5) {
-        const evaluated = evaluateBestTexasHoldemHand(visibleCards);
-        return evaluated.strength.category * 100 + evaluated.strength.ranks.reduce((total, rank, index) => (
-            total + rank / (10 ** (index + 1))
-        ), 0);
+    const boardCards = [
+        ...(player.communityCards ?? core.communityCards),
+        ...player.flashlightCards,
+    ];
+    const primaryHandCards = [...player.pocketCards, ...player.nightVisionCards];
+    const secondaryHandCards = player.secondaryPocketCards ?? [];
+
+    if (primaryHandCards.length + boardCards.length >= 5) {
+        const primaryEvaluation = evaluateBestTheGangHand(primaryHandCards, boardCards, {
+            rulesConfig: core.rules.config,
+            blankedRank: core.rules.blankedRank,
+        });
+        if (secondaryHandCards.length + boardCards.length < 5) {
+            return scoreFromEvaluation(primaryEvaluation);
+        }
+
+        const secondaryEvaluation = evaluateBestTheGangHand(secondaryHandCards, boardCards, {
+            rulesConfig: core.rules.config,
+            blankedRank: core.rules.blankedRank,
+        });
+        return scoreFromEvaluation(
+            compareHandStrength(secondaryEvaluation.strength, primaryEvaluation.strength) > 0
+                ? secondaryEvaluation
+                : primaryEvaluation,
+        );
     }
 
-    return player.pocketCards
+    return [...primaryHandCards, ...secondaryHandCards]
         .map((card) => card.rank)
         .map((rank) => {
             const order = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];

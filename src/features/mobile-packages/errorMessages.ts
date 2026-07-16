@@ -20,7 +20,7 @@ export const getGamePackageFailureMessageKey = (
         case 'manifest-missing':
             return 'packageManager.manifestMissingHint';
         case 'checksum-mismatch':
-            return 'packageManager.checksumMismatchHint';
+            return getChecksumMismatchMessageKey(errorMessage);
         case 'resume-not-supported':
             return 'packageManager.resumeNotSupportedHint';
         default:
@@ -34,6 +34,32 @@ const androidVersionCode = packageJson.androidVersionCode;
 const normalizeErrorMessage = (errorMessage?: string) => (
     typeof errorMessage === 'string' ? errorMessage.trim() : ''
 );
+
+const isIncrementalChecksumFailureMessage = (errorMessage?: string) => {
+    const normalizedMessage = normalizeErrorMessage(errorMessage);
+    return /增量文件(?:校验失败|大小不符)/u.test(normalizedMessage)
+        || /本地临时文件.*校验/u.test(normalizedMessage);
+};
+
+const isFullPackageChecksumFailureMessage = (errorMessage?: string) => {
+    const normalizedMessage = normalizeErrorMessage(errorMessage);
+    return /下载包校验失败/u.test(normalizedMessage)
+        || /完整(?:素材|资源)?包.*校验/u.test(normalizedMessage)
+        || /(?:素材|资源)包.*校验/u.test(normalizedMessage)
+        || /archive.*checksum/i.test(normalizedMessage);
+};
+
+const getChecksumMismatchMessageKey = (errorMessage?: string) => {
+    if (isIncrementalChecksumFailureMessage(errorMessage)) {
+        return 'packageManager.incrementalChecksumMismatchHint';
+    }
+
+    if (isFullPackageChecksumFailureMessage(errorMessage)) {
+        return 'packageManager.packageChecksumMismatchHint';
+    }
+
+    return 'packageManager.checksumMismatchHint';
+};
 
 export const resolveGamePackageFailureErrorCode = (
     errorCode?: GamePackageInstallErrorCode,
@@ -72,8 +98,7 @@ const shouldExposeRawFailureDetail = (
     errorMessage?: string,
 ) => {
     const resolvedErrorCode = resolveGamePackageFailureErrorCode(errorCode, errorMessage);
-    return resolvedErrorCode !== 'checksum-mismatch'
-        && resolvedErrorCode !== 'resume-not-supported';
+    return Boolean(resolvedErrorCode);
 };
 
 const appendGamePackageFailureErrorDetail = (

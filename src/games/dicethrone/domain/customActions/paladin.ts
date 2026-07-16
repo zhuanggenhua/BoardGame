@@ -89,6 +89,27 @@ function handleHolyDefenseRoll({ targetId, attackerId: _attackerId, sourceAbilit
                 sourceCommandType: 'ABILITY_EFFECT',
                 timestamp: timestamp + 80,
             } as TokenGrantedEvent);
+        } else if (state.pendingAttack?.defenderId === targetId && current > 0) {
+            const deferredTokenGrants = [
+                ...(state.pendingAttack.deferredTokenGrants ?? []),
+                {
+                    triggerTokenId: TOKEN_IDS.PROTECT,
+                    targetId,
+                    tokenId: TOKEN_IDS.PROTECT,
+                    amount: 1,
+                    sourceAbilityId,
+                    sourceCommandType: 'ABILITY_EFFECT',
+                },
+            ];
+            events.push({
+                type: 'PENDING_ATTACK_UPDATED',
+                payload: {
+                    attackerId: state.pendingAttack.attackerId,
+                    patch: { deferredTokenGrants },
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: timestamp + 80,
+            } as DiceThroneEvent);
         }
     }
 

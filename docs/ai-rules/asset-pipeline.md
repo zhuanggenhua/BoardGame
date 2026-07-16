@@ -371,7 +371,10 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 7. **`git ignore` 与服务器发布是两回事**：文件是否被 Git 忽略，只影响它会不会自动进入提交，不影响它是不是运行时资源。只要资源已经放进 `public/assets/**` 且代码/manifest 会引用它，就仍然必须按资源流程重建 manifest、发布到服务器资源主源并做远端回查；**禁止**把“文件被 ignore 了”当成可以不上传、不中断收口的理由。
 8. **上传失败必须显式告知用户**：如果因为 `.env` / `.env.example` 缺失、权限不足、脚本报错、网络失败或用户明确要求暂不上传而没有完成上传，最终汇报必须明确写出“未上传资源列表 + 原因 + 当前运行态风险”，禁止省略。
 9. **`远程有图` 或 `E2E 截图里有图` 不等于本地资源链已闭环**：如果用户问的是“本地为什么看不到素材”“为什么当前实现还在依赖远端”“为什么换机/离线会丢图”，必须回到 `public/assets/i18n/<locale>/<gameId>/`、压缩产物、manifest 和最终请求路径逐项核对；禁止只因为远端 `200` 或截图里最终显示出了图片，就跳过本地正式资源树检查。
-10. **该规则不分游戏**：`dicethrone`、`smashup`、`summonerwars` 以及后续新游戏都按同一口径执行。
+10. **带路径过滤上传时 0 个对象必须视为失败**：`assets:check` / `assets:upload -- --asset-prefix <path>` 只能作为“本地发布计划”检查，不能当远端验证。若指定了 `--asset-prefix`，输出 0 个待发布对象必须立即中断并修正路径；禁止把 0 对象成功退出解释成“已经传过 / 没有变化”。文件级前缀优先写完整相对路径（例如 `i18n/zh-CN/smashup/cards/compressed/foo.webp`），也允许使用已被脚本支持的同名无扩展名前缀，但必须先看到对应 `待发布: official/...` 行。
+11. **发布 manifest 前必须做清单闭合回查**：只要本轮新增、移动或重建了 `assets-manifest.json`，不能只抽查单张图；必须展开该 manifest 的运行时对象引用（`basePrefix + files 键 + variants 扩展名`，源 PNG/JPG/WAV/MP3 除外），对新增或变更涉及的 `compressed/*.webp` / `compressed/*.ogg` / 运行时 JSON/SVG 做远端 `HEAD 200` 或等价服务器活动集合校验。发现任一缺失对象时，先补发缺失对象，再发布 manifest / 刷新 App file-index。
+12. **游戏级 manifest 的 `basePrefix` 必须匹配清单实际目录**：位于 `public/assets/i18n/zh-CN/<gameId>/assets-manifest.json` 的清单必须发布到 `official/i18n/zh-CN/<gameId>/`，不得继续引用旧的 `official/<gameId>/`。上传或刷新 Android file-index 前，必须校验所有本地 `assets-manifest.json` 的 `basePrefix` 与所在目录一致；否则服务器活动清单会递归追到旧路径并在发布阶段失败或线上缺图。
+13. **该规则不分游戏**：`dicethrone`、`smashup`、`summonerwars` 以及后续新游戏都按同一口径执行。
 
 ### 远端对象与 App 素材包的单一内容真相（强制）
 
@@ -392,6 +395,8 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 3. **全量重建必须显式使用 full 模式**：只有确认当前工作树已经下载完整资源镜像时，才允许执行 `npm run assets:manifest:full` 或 `npm run assets:validate:full`。full 模式会把 manifest 当成本地目录快照处理，本地缺失的条目会被删除/判错。
 4. **运行时索引必须吃 manifest**：构建/开发注入的语言化图片索引必须同时读取本地文件与 `assets-manifest.json`；本地缺图但 manifest 已登记的远端资源应进入候选链，并在本地 `/assets` 不可用时使用官方资源域名。
 5. **资源交付仍必须远端回查**：增量 manifest 只解决协作者不必下载全量资源的问题，不替代服务器资源主源发布和 200/hash 回查。
+6. **嵌套语言目录清单必须用对应 root 重建**：如果需要单独重建 `public/assets/i18n/<locale>/<gameId>/assets-manifest.json`，必须使用该语言根作为 `--root`（例如 `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id smashup`），确保 `basePrefix` 指向 `official/i18n/<locale>/<gameId>/`。禁止用旧根或手工编辑留下 `official/<gameId>/` 前缀。
+7. **manifest 前缀漂移必须有测试守住**：修复或新增 manifest 生成/发布链路时，必须有测试覆盖“本地素材清单 `basePrefix` 匹配清单所在目录”和“服务器活动集合能按清单展开到真实对象”。不能只靠当轮人工检查。
 
 ### 故障排查
 

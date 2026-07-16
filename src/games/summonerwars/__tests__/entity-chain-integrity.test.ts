@@ -1317,12 +1317,12 @@ describe('完整流程验证 (Section 9)', () => {
     });
 
     // ================================================================
-    // 14. onPhaseEnd — ice_shards 冰晶碎片（建造阶段结束触发）
-    //     通过 flowHooks.onPhaseExit 测试
+    // 14. onPhaseStart — ice_shards 寒冰碎屑（攻击阶段开始触发）
+    //     通过 flowHooks.onPhaseEnter 测试
     // ================================================================
 
-    it('[onPhaseEnd/ice_shards] 建造阶段结束时冰晶碎片触发（需有充能+建筑相邻敌方）', () => {
-        core.phase = 'build';
+    it('[onPhaseStart/ice_shards] 攻击阶段开始时寒冰碎屑触发（需有充能+建筑相邻敌方）', () => {
+        core.phase = 'attack';
         core.currentPlayer = '0' as PlayerId;
         const iceUnit = mkUnit('frost-shards', { abilities: ['ice_shards'], faction: 'frost' });
         putUnit(core, { row: 4, col: 3 }, iceUnit, '0', { boosts: 1 });
@@ -1332,14 +1332,13 @@ describe('完整流程验证 (Section 9)', () => {
         putUnit(core, { row: 3, col: 4 }, enemyCard, '1' as PlayerId);
 
         const state = { core, sys: { flowHalted: false } } as MatchState<SummonerWarsCore>;
-        const result = summonerWarsFlowHooks.onPhaseExit!({
+        const events = summonerWarsFlowHooks.onPhaseEnter!({
             state,
             from: 'build',
             to: 'attack',
             command: { type: 'END_PHASE', payload: {}, timestamp: 0 },
         });
 
-        const events = result.events ?? [];
         const iceShardsEvent = events.find(e =>
             e.type === SW_EVENTS.ABILITY_TRIGGERED
             && (e.payload as Record<string, unknown>).actionId === 'ice_shards_damage'
@@ -1963,24 +1962,23 @@ describe('边界/异常场景验证 (Section 10)', () => {
     });
 
     // ================================================================
-    // 14. onPhaseEnd/ice_shards — 非建造阶段不触发
+    // 14. onPhaseStart/ice_shards — 非攻击阶段不触发
     // ================================================================
 
-    it('[ice_shards/边界] 非建造阶段结束时不触发', () => {
+    it('[ice_shards/边界] 非攻击阶段开始时不触发', () => {
         core.phase = 'move';
         core.currentPlayer = '0' as PlayerId;
         const iceUnit = mkUnit('frost-shards-b', { abilities: ['ice_shards'], faction: 'frost' });
         putUnit(core, { row: 4, col: 3 }, iceUnit, '0');
 
         const state = { core, sys: { flowHalted: false } } as MatchState<SummonerWarsCore>;
-        const result = summonerWarsFlowHooks.onPhaseExit!({
+        const events = summonerWarsFlowHooks.onPhaseEnter!({
             state,
             from: 'move',
             to: 'build',
             command: { type: 'END_PHASE', payload: {}, timestamp: 0 },
         });
 
-        const events = result.events ?? [];
         const iceShardsEvent = events.find(e =>
             e.type === SW_EVENTS.ABILITY_TRIGGERED
             && (e.payload as Record<string, unknown>).actionId === 'ice_shards_damage'

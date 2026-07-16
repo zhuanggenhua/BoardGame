@@ -7,7 +7,7 @@
 - [x] 2.1 为生产部署脚本增加“本地目标镜像已就绪时跳过 pull”的受控入口
 - [x] 2.2 新增镜像输送脚本：在构建机/CI 拉取目标镜像并通过 SSH 流式导入生产机
 - [x] 2.3 将输送后的服务切换接入现有 `deploy-image.sh` smoke / 自动回退链
-- [ ] 2.4 如采用 GitHub Actions，新增或更新 workflow，形成仓库内正式自动化入口
+- [x] 2.4 如采用 GitHub Actions，新增或更新 workflow，形成仓库内正式自动化入口
 - [x] 2.5 更新 `docs/deploy.md`，写清默认链路、fallback 条件、排障口径
 
 ## 3. Validation

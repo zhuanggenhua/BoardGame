@@ -18,6 +18,8 @@ const helpText = `
   --tag <tag>                目标镜像 tag，默认 latest
   --host <user@host>         SSH 目标，默认 admin@8.148.71.102
   --remote-dir <path>        远端项目目录，默认 /home/admin/BoardGame
+  --ssh-key-path <path>      SSH 私钥路径；默认读取 BOARDGAME_DEPLOY_SSH_KEY_PATH
+  --known-hosts-path <path>  known_hosts 路径；默认读取 BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS_PATH
   --deploy                   输送完成后，远端执行 update-local
   --skip-local-pull          跳过本地 docker pull，要求本地已存在目标镜像
   --dry-run                  只打印命令，不真正执行
@@ -51,8 +53,10 @@ if (hasFlag('help') || rawArgs.includes('-h')) {
 }
 
 const tag = readArgValue('tag', 'latest').trim();
-const host = readArgValue('host', 'admin@8.148.71.102').trim();
+const host = readArgValue('host', process.env.BOARDGAME_DEPLOY_SSH_TARGET || 'admin@8.148.71.102').trim();
 const remoteDir = readArgValue('remote-dir', '/home/admin/BoardGame').trim();
+const sshKeyPath = readArgValue('ssh-key-path', process.env.BOARDGAME_DEPLOY_SSH_KEY_PATH || '').trim();
+const knownHostsPath = readArgValue('known-hosts-path', process.env.BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS_PATH || '').trim();
 const shouldDeploy = hasFlag('deploy');
 const skipLocalPull = hasFlag('skip-local-pull');
 const dryRun = hasFlag('dry-run');
@@ -99,13 +103,13 @@ const exportLocalArchive = async () => {
 };
 
 const uploadArchiveToRemote = async () => {
-  await runCommand('scp', [localArchivePath, `${host}:${remoteArchivePath}`], '上传镜像 tar 到服务器');
+  await runCommand('scp', [...sshClientArgs, localArchivePath, `${host}:${remoteArchivePath}`], '上传镜像 tar 到服务器');
 };
 
 const loadArchiveOnRemote = async () => {
   await runCommand(
     'ssh',
-    [host, `docker image load -i ${shellQuote(remoteArchivePath)}`],
+    [...sshClientArgs, host, `docker image load -i ${shellQuote(remoteArchivePath)}`],
     '服务器本地导入镜像 tar',
   );
 };
@@ -116,7 +120,7 @@ const cleanupLocalArchive = async () => {
 
 const cleanupRemoteArchive = async () => {
   try {
-    await runCommand('ssh', [host, `rm -f ${shellQuote(remoteArchivePath)}`], '清理服务器镜像 tar');
+    await runCommand('ssh', [...sshClientArgs, host, `rm -f ${shellQuote(remoteArchivePath)}`], '清理服务器镜像 tar');
   } catch (error) {
     console.warn(`[stream-images] 清理服务器镜像 tar 失败: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -134,6 +138,22 @@ const ensureLocalImagesReady = async () => {
 
 function shellQuote(value) {
   return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+const sshClientArgs = [
+  '-o', 'BatchMode=yes',
+  '-o', 'ConnectTimeout=20',
+  '-o', 'ServerAliveInterval=20',
+  '-o', 'ServerAliveCountMax=3',
+  '-o', 'StrictHostKeyChecking=yes',
+];
+
+if (sshKeyPath) {
+  sshClientArgs.push('-o', 'IdentitiesOnly=yes', '-i', sshKeyPath);
+}
+
+if (knownHostsPath) {
+  sshClientArgs.push('-o', `UserKnownHostsFile=${knownHostsPath}`);
 }
 
 const main = async () => {
@@ -160,7 +180,7 @@ const main = async () => {
     await loadArchiveOnRemote();
 
     if (shouldDeploy) {
-      await runCommand('ssh', [host, remoteDeployCommand], '远端 update-local 部署');
+      await runCommand('ssh', [...sshClientArgs, host, remoteDeployCommand], '远端 update-local 部署');
     }
   } finally {
     await cleanupRemoteArchive();

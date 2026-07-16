@@ -46,6 +46,7 @@ import {
     getValidBuildPositions,
     getValidMoveTargetsEnhanced,
     getValidSummonPositions,
+    getValidSummonPositionsForCard,
     isCellEmpty,
     manhattanDistance,
 } from './domain/helpers';
@@ -57,6 +58,7 @@ import type {
     GamePhase,
     PlayerId as SummonerWarsPlayerId,
     SummonerWarsCore,
+    UnitCard,
 } from './domain/types';
 import type { AbilityDef } from './domain/abilities';
 import { FACTION_CATALOG } from './config/factions';
@@ -981,43 +983,10 @@ const getSummonRangeExtension = (
 const getAiValidSummonPositions = (
     state: SummonerWarsCore,
     playerId: PlayerId,
+    unitCard?: UnitCard,
 ): CellCoord[] => {
-    const positions = getValidSummonPositions(state, playerId);
-    const positionSet = new Set(positions.map((p) => `${p.row},${p.col}`));
-    const addIfEmpty = (position: CellCoord) => {
-        const key = `${position.row},${position.col}`;
-        if (positionSet.has(key) || !isCellEmpty(state, position)) return;
-        positionSet.add(key);
-        positions.push(position);
-    };
-
-    const player = state.players[playerId];
-    const hasRekindleHope = player.activeEvents.some((eventCard) => (
-        getBaseCardId(eventCard.id) === CARD_IDS.PALADIN_REKINDLE_HOPE
-    ));
-    if (hasRekindleHope) {
-        const summoner = getSummoner(state, playerId);
-        if (summoner) {
-            for (const adjacent of getAdjacentCells(summoner.position)) {
-                addIfEmpty(adjacent);
-            }
-        }
-    }
-
-    const chantOfWeaving = player.activeEvents.find((eventCard) => (
-        getBaseCardId(eventCard.id) === CARD_IDS.BARBARIC_CHANT_OF_WEAVING
-        && !!eventCard.targetUnitId
-    ));
-    if (chantOfWeaving?.targetUnitId) {
-        const targetPosition = findUnitPositionByInstanceId(state, chantOfWeaving.targetUnitId);
-        if (targetPosition) {
-            for (const adjacent of getAdjacentCells(targetPosition)) {
-                addIfEmpty(adjacent);
-            }
-        }
-    }
-
-    return positions;
+    if (unitCard) return getValidSummonPositionsForCard(state, playerId, unitCard);
+    return getValidSummonPositions(state, playerId);
 };
 
 const cloneCoreWithMovedUnit = (
@@ -1715,7 +1684,6 @@ const buildSummonActions = (
 ): AiLegalAction[] => {
     const actions: AiLegalAction[] = [];
     const player = state.core.players[playerId];
-    const summonPositions = getAiValidSummonPositions(state.core, playerId);
     const enemySummoner = getSummoner(state.core, getEnemyPlayerId(playerId));
     const ownSummoner = getSummoner(state.core, playerId);
     const threat = estimateSummonerThreat(state.core, playerId);
@@ -1723,6 +1691,7 @@ const buildSummonActions = (
 
     for (const card of player.hand) {
         if (card.cardType !== 'unit') continue;
+        const summonPositions = getAiValidSummonPositions(state.core, playerId, card);
         for (const position of summonPositions) {
             const distanceToEnemySummoner = enemySummoner ? manhattanDistance(position, enemySummoner.position) : 99;
             const distanceToOwnSummoner = ownSummoner ? manhattanDistance(position, ownSummoner.position) : 99;

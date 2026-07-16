@@ -1,8 +1,8 @@
 param(
   [switch]$CheckCi,
   [string]$Tag = "",
-  [ValidateSet("stream", "remote")]
-  [string]$DeployMode = "stream",
+  [ValidateSet("ci-stream", "stream", "remote")]
+  [string]$DeployMode = "ci-stream",
   [string]$OtaChannel = "stable",
   [string]$OtaExtra = "",
   [switch]$SkipOta,

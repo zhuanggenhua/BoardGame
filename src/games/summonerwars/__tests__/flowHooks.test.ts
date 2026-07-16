@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { summonerWarsFlowHooks } from '../domain/flowHooks';
-import type { SummonerWarsCore, PlayerId, UnitCard, StructureCard, EventCard, BoardUnit, BoardCell, PlayerState, GamePhase } from '../domain/types';
+import type { SummonerWarsCore, PlayerId, UnitCard, EventCard, BoardUnit, BoardCell, PlayerState, GamePhase } from '../domain/types';
 import { SW_EVENTS } from '../domain/types';
 import type { MatchState, GameEvent } from '../../../engine/types';
 import { generateInstanceId } from '../domain/utils';
@@ -243,54 +243,27 @@ describe('FlowHooks - onPhaseExit', () => {
     });
   });
 
-  it('flowHalted=true 时重复结束阶段不应重复发射 ice_shards 提示事件', () => {
-    const core = createMinimalCore({ phase: 'build', currentPlayer: '0' });
+  it('flowHalted=true 时重复结束阶段不应重复发射 feed_beast 提示事件', () => {
+    const core = createMinimalCore({ phase: 'attack', currentPlayer: '0' });
 
-    const jamudCard = makeUnitCard('test-jamud', {
+    const beastCard = makeUnitCard('test-beast', {
       unitClass: 'champion',
-      faction: 'frost',
+      faction: 'goblin',
       strength: 3,
       life: 8,
-      abilities: ['imposing', 'ice_shards'],
+      abilities: ['feed_beast'],
     });
-    const enemyCard = makeUnitCard('test-enemy', {
-      faction: 'necromancer',
-      strength: 2,
-      life: 3,
-    });
-    const wallCard: StructureCard = {
-      id: 'test-wall',
-      cardType: 'structure',
-      name: '测试城墙',
-      faction: 'frost',
-      cost: 0,
-      life: 3,
-      isGate: false,
-      deckSymbols: [],
-    };
 
     placeUnit(core, 3, 2, {
-      card: jamudCard,
+      card: beastCard,
       owner: '0',
-      boosts: 1,
-    });
-    core.board[4][3].structure = {
-      cardId: wallCard.id,
-      card: wallCard,
-      owner: '0',
-      position: { row: 4, col: 3 },
-      damage: 0,
-    };
-    placeUnit(core, 4, 4, {
-      card: enemyCard,
-      owner: '1',
     });
 
     const firstState = wrapState(core);
     const firstResult = summonerWarsFlowHooks.onPhaseExit!({
       state: firstState,
-      from: 'build',
-      to: 'attack',
+      from: 'attack',
+      to: 'magic',
       command: dummyCommand,
       random: createTestRandom(),
     }) as PhaseExitResult;
@@ -299,15 +272,15 @@ describe('FlowHooks - onPhaseExit', () => {
     expect(firstResult.halt).toBe(true);
     expect(firstAbilityEvents.some((event) => {
       const payload = event.payload as { actionId?: string };
-      return payload.actionId === 'ice_shards_damage';
+      return payload.actionId === 'feed_beast_check';
     })).toBe(true);
 
     const repeatedState = wrapState(core);
     repeatedState.sys.flowHalted = true;
     const repeatedResult = summonerWarsFlowHooks.onPhaseExit!({
       state: repeatedState,
-      from: 'build',
-      to: 'attack',
+      from: 'attack',
+      to: 'magic',
       command: dummyCommand,
       random: createTestRandom(),
     }) as PhaseExitResult;

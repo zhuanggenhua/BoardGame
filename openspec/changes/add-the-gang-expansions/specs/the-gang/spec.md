@@ -6,7 +6,9 @@ The Gang SHALL provide a rules configuration for expansion play that can be chan
 - **GIVEN** a The Gang match is in heist 1 round 1
 - **AND** no player has taken a chip
 - **WHEN** a player sets a supported expansion rules configuration
-- **THEN** the system MUST rebuild the current heist using the normalized rules configuration
+- **THEN** the system MUST apply the normalized rules configuration
+- **AND** the system MUST preserve the current dealt cards when the change does not alter the deal signature
+- **AND** the system MUST rebuild the current heist when the change alters hand cards, community cards, game mode, special deck contents, Omaha, or 2Hand dealing
 - **AND** unsupported or incompatible challenge selections MUST be removed from the active configuration
 
 #### Scenario: Rules lock after play starts
@@ -30,6 +32,28 @@ The Gang SHALL support Texas Hold'em, Seven-Card Stud, and Banana Split as selec
 - **WHEN** the heist reaches showdown
 - **THEN** each player MUST be evaluated with their hidden hand cards and the shared community cards
 - **AND** the system MUST NOT replace shared community cards with an empty personal community-card list
+
+### Requirement: The Gang TTS setup toggles
+The Gang SHALL implement the TTS setup toggles for Omaha, 2Hand, and Automode where their runtime behavior is evidence-bounded by the Lua script.
+
+#### Scenario: 2Hand deals and resolves two separate hands
+- **GIVEN** the rules configuration enables 2Hand in Texas Hold'em with no more than five players
+- **WHEN** a new heist is dealt
+- **THEN** each player MUST receive a top hand and a bottom hand
+- **AND** showdown MUST evaluate the two hands separately
+- **AND** the stronger of the two hands MUST be used for chip-order validation
+
+#### Scenario: Omaha changes hand size and evaluation
+- **GIVEN** the rules configuration enables Omaha
+- **WHEN** a new heist is dealt
+- **THEN** each dealt hand MUST receive two additional hand cards
+- **AND** showdown MUST evaluate hands using exactly two hand cards and three board cards when enough cards exist
+
+#### Scenario: Automode advances after chip completion
+- **GIVEN** the rules configuration enables Automode
+- **WHEN** every player has taken a chip for the current round
+- **THEN** the system MUST automatically advance to the next round or reveal showdown for the final round
+- **AND** the system MUST NOT require the normal all-player progress confirmation for that automatic step
 
 ### Requirement: The Gang challenge deal variants
 The Gang SHALL implement TTS-derived challenge variants that change round progression, initial hand size, public card reveals, personal community cards, and special deck contents.
@@ -67,7 +91,8 @@ The Gang SHALL expose extension selection through the current Board UI style wit
 - **WHEN** the user opens the extension controls
 - **THEN** the Board MUST show a compact rules panel using the current visual style
 - **AND** the panel MUST allow selecting supported game modes and implemented challenges before the rules are locked
-- **AND** reminder-only, specialist single-card, or vault rules MUST NOT be presented as completed interactive gameplay unless their runtimeStatus is implemented
+- **AND** reminder-only challenges with implemented runtime status MUST surface as short table status labels instead of rule-changing mechanics
+- **AND** specialist single-card or vault rules MUST NOT be presented as completed interactive gameplay unless their runtimeStatus is implemented
 
 #### Scenario: Extension UI locks during play
 - **GIVEN** the rules are locked by gameplay progress
@@ -103,7 +128,7 @@ The Gang SHALL model TTS-derived tool-card and specialist-card rule state where 
 The Gang SHALL distinguish implemented expansion rules from documented TTS-derived rules that remain future scope.
 
 #### Scenario: Evidence-bounded TTS modules are not claimed complete
-- **GIVEN** TTS Lua contains specialist single-card effects without implementation evidence, vault/safe logic, or reminder-only tabletop UI scripts
+- **GIVEN** TTS Lua contains specialist single-card effects without implementation evidence or vault/safe logic
 - **WHEN** reporting expansion support
 - **THEN** the project MUST identify those modules as documented-only unless corresponding runtime behavior is implemented and tested
 - **AND** insurance/vault 3D assets MUST NOT block this rules-focused change

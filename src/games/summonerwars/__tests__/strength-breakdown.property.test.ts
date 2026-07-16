@@ -389,6 +389,7 @@ describe('Property 7: 召唤师战争 DamageSourceResolver 完整性', () => {
       'curse', 'entangle', 'trample', 'ice_shards', 'ice_ram',
       'blood_rune', 'blood_summon', 'revive_undead', 'inaction',
       'stun', 'stun_passthrough', 'holy_protection',
+      'huijin_scorch', 'huijin_divine_revenge',
     ];
 
     fc.assert(

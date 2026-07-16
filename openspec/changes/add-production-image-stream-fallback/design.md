@@ -5,7 +5,7 @@
 
 ## Goals / Non-Goals
 - Goals:
-  - 提供仓库内正式支持的免费 fallback，让生产部署不再单点依赖“服务器直拉 GHCR 大层”。
+  - 提供仓库内正式支持的免费 CI 直传链路，让生产部署不再单点依赖“服务器直拉 GHCR 大层”或“本机先拉 GHCR”。
   - 复用现有 `deploy-image.sh` 中已经存在的启动、smoke、自动回退能力，而不是另起一套平行门禁。
   - 让 CI 或本地运维机都能执行同一套镜像输送入口，减少手工临时拼命令。
 - Non-Goals:
@@ -14,8 +14,10 @@
   - 不把“本机重建前端产物”保留为未来常态；长期应优先输送完整镜像，而不是每次重新散装组装。
 
 ## Decisions
-- Decision: 正式引入“镜像输送 fallback”，以 Docker 官方镜像导出 / 导入能力为核心。
-  - Why: 它直接绕开了生产机到 GHCR 大层下载不稳的问题，同时仍然保持镜像作为生产交付物。
+- Decision: 默认正式部署改为“CI 构建后直传镜像”，以 Docker 官方镜像导出 / 导入能力为核心。
+  - Why: 它同时绕开生产机到 GHCR 大层下载不稳、以及本机先拉 GHCR 造成的慢点，同时仍然保持镜像作为生产交付物。
+- Decision: 保留本机镜像输送作为 fallback，不再作为默认发布路径。
+  - Why: 已测到本机拉 GHCR 会成为主要耗时，默认路径不能继续依赖它。
 - Decision: fallback 只解决“镜像分发”，服务切换仍统一交给 `deploy-image.sh`。
   - Why: 这样既有 smoke、自动回退、部署状态记录都不用重写，避免产生第二套发布逻辑。
 - Decision: 为 `deploy-image.sh` 增加受控的“跳过 pull”能力，而不是简单粗暴全局环境变量绕过。
@@ -40,10 +42,9 @@
 ## Migration Plan
 1. 增加 spec / proposal，确认 fallback 是正式能力。
 2. 实现镜像输送脚本与 `deploy-image.sh` 的 skip-pull 受控入口。
-3. 接入 CI 或统一命令入口。
+3. 接入 CI 与统一命令入口，默认由 `deploy-and-ota` 触发 CI 直传。
 4. 通过一次受控部署验证“输送 → 启动 → smoke → 验证”完整路径。
 5. 更新文档，把“服务器直拉 GHCR”从唯一正式路径调整为“主路径之一”。
 
 ## Open Questions
-- 默认是否改为“CI 直接输送生产机”，还是保留“服务器直拉”作为主路径、输送作为正式 fallback？
-- fallback 是否只输送 `web`，还是统一输送 `web + game-server` 两个业务镜像以保持版本切换一致？
+- 无。当前裁决：默认改为 CI 直接输送生产机；本机输送和服务器直拉只作为显式 fallback；每次统一输送 `web + game-server` 两个业务镜像以保持版本切换一致。

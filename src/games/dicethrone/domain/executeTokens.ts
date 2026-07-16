@@ -14,7 +14,7 @@ import type {
     DamageDealtEvent,
     StatusAppliedEvent,
 } from './types';
-import { getPendingBonusSettlementDice, getPlayerDieFace } from './rules';
+import { getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from './rules';
 import { reduce } from './reducer';
 import { RESOURCE_IDS } from './resources';
 import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
@@ -25,6 +25,7 @@ import {
     hasBeforeDamageReceivedCard,
     createTokenResponseRequestedEvent,
     getUsableTokenAmountForTiming,
+    maybeCreateDamageResponseEvent,
 } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getCustomActionHandler } from './effects';
@@ -212,6 +213,37 @@ export function executeTokenCommand(
                 }
             }
             events.unshift(...tokenEvents);
+
+            const usedTokenEvent = tokenEvents.find((event) => event.type === 'TOKEN_USED');
+            const usedAmount = usedTokenEvent?.type === 'TOKEN_USED' ? usedTokenEvent.payload.amount : 0;
+            if (usedAmount > 0 && pendingDamage.deferredTokenGrants?.length) {
+                for (const deferredGrant of pendingDamage.deferredTokenGrants) {
+                    if (deferredGrant.triggerTokenId !== tokenId) continue;
+                    const targetPlayer = state.players[deferredGrant.targetId];
+                    if (!targetPlayer) continue;
+                    const currentAmount = targetPlayer.tokens[deferredGrant.tokenId] ?? 0;
+                    const spentSameToken = deferredGrant.targetId === playerId && deferredGrant.tokenId === tokenId
+                        ? usedAmount
+                        : 0;
+                    const amountAfterUse = Math.max(0, currentAmount - spentSameToken);
+                    const limit = getTokenStackLimit(state, deferredGrant.targetId, deferredGrant.tokenId);
+                    const newTotal = Math.min(amountAfterUse + deferredGrant.amount, limit);
+                    const grantedAmount = Math.max(0, newTotal - amountAfterUse);
+                    if (grantedAmount <= 0) continue;
+                    events.push({
+                        type: 'TOKEN_GRANTED',
+                        payload: {
+                            targetId: deferredGrant.targetId,
+                            tokenId: deferredGrant.tokenId,
+                            amount: grantedAmount,
+                            newTotal,
+                            sourceAbilityId: deferredGrant.sourceAbilityId,
+                        },
+                        sourceCommandType: deferredGrant.sourceCommandType ?? command.type,
+                        timestamp: timestamp + 0.001,
+                    } as DiceThroneEvent);
+                }
+            }
             
             // 如果完全闪避，关闭响应窗口
             if (result.fullyEvaded) {
@@ -501,17 +533,28 @@ export function executeTokenCommand(
             const target = state.players[settlement.targetId];
             const targetHp = target?.resources[RESOURCE_IDS.HP] ?? 0;
             const actualDamage = target ? Math.min(totalDamage, targetHp) : 0;
-            events.push({
+            const damageEvent: DamageDealtEvent = {
                 type: 'DAMAGE_DEALT',
                 payload: {
                     targetId: settlement.targetId,
                     amount: totalDamage,
                     actualDamage,
                     sourceAbilityId: settlement.sourceAbilityId,
+                    sourcePlayerId: settlement.attackerId,
+                    damageScope: state.pendingAttack ? 'attack' : 'direct',
                 },
                 sourceCommandType: command.type,
                 timestamp,
-            } as DamageDealtEvent);
+            };
+            const tokenResponseEvent = maybeCreateDamageResponseEvent({
+                state,
+                damageEvent,
+                attackerId: settlement.attackerId,
+                sourceAbilityId: settlement.sourceAbilityId,
+                timestamp,
+                allowAttackerBoost: damageEvent.payload.damageScope === 'attack',
+            });
+            events.push(tokenResponseEvent ?? damageEvent);
             
             // 如果触发阈值效果（倒地）
             if (thresholdTriggered && settlement.thresholdEffect === 'knockdown') {

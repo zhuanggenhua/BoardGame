@@ -75,6 +75,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('极地矮人')).toBe('frost');
         expect(resolveFactionId('炽原精灵')).toBe('barbaric');
         expect(resolveFactionId('莫古')).toBe('mogu');
+        expect(resolveFactionId('灰烬')).toBe('huijin');
     });
 
     it('英文阵营 ID 应原样返回', () => {
@@ -85,6 +86,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('frost')).toBe('frost');
         expect(resolveFactionId('barbaric')).toBe('barbaric');
         expect(resolveFactionId('mogu')).toBe('mogu');
+        expect(resolveFactionId('huijin')).toBe('huijin');
     });
 
     it('未知字符串应原样返回（兜底）', () => {
@@ -136,6 +138,20 @@ describe('召唤师战争卡面数值录入', () => {
 
         const cardsAtlasCard = deck.deck.find(card => card.spriteAtlas === 'cards' && card.spriteIndex === 10);
         expect(cardsAtlasCard?.name).toBe('菌袍疫病体');
+    });
+
+    it('灰烬应作为实施中新派系接入基础牌组与独立召唤师图集', () => {
+        const catalogEntry = FACTION_CATALOG.find(faction => faction.id === 'huijin');
+        expect(catalogEntry?.statusTag).toBe('under_construction');
+        expect(catalogEntry?.heroImagePath).toBe('summonerwars/hero/huijin/hero');
+
+        const deck = createDeckByFactionId('huijin');
+        expect(deck.summoner.name).toBe('玛达莉雅女王');
+        expect(deck.summoner.spriteAtlas).toBe('hero');
+        expect(deck.startingUnits.map(({ unit }) => unit.name)).toEqual(['灰烬弓箭手', '皇家守卫']);
+
+        const phoenixSoul = deck.deck.find(card => card.spriteAtlas === 'cards' && card.spriteIndex === 10);
+        expect(phoenixSoul?.name).toBe('凤凰之魂');
     });
 });
 

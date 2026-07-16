@@ -4,7 +4,7 @@
  * 覆盖阶段开始/结束自动触发的技能：
  * - guidance（指引）：召唤阶段开始抓2张牌（先锋军团 - 瓦伦蒂娜）
  * - blood_rune（鲜血符文）：攻击阶段开始自伤或充能（洞穴地精 - 布拉夫）
- * - ice_shards（寒冰碎屑）：建造阶段结束消耗充能AoE（极地矮人 - 贾穆德）
+ * - ice_shards（寒冰碎屑）：攻击阶段开始消耗充能AoE（极地矮人 - 贾穆德）
  * - feed_beast（喂养巨食兽）：攻击阶段结束吃友方或自毁（洞穴地精 - 巨食兽）
  */
 
@@ -421,7 +421,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
       owner: '1',
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -451,7 +451,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
       boosts: 0,
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     const fullState = { core: state, sys: {} as any };
@@ -467,7 +467,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
   it('abilityResolver 生成 ABILITY_TRIGGERED 事件（供 UI 检测）', () => {
     const def = abilityRegistry.get('ice_shards');
     expect(def).toBeDefined();
-    expect(def!.trigger).toBe('onPhaseEnd');
+    expect(def!.trigger).toBe('onPhaseStart');
 
     const state = createInitializedCore(['0', '1'], createTestRandom(), {
       faction0: 'frost',
@@ -497,7 +497,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
     expect((customEvent!.payload as any).sourcePosition).toBeDefined();
   });
 
-  it('boosts=0 时 onPhaseExit 不产生 ice_shards 事件（回归）', () => {
+  it('boosts=0 时攻击阶段开始不产生 ice_shards 事件（回归）', () => {
     const state = createInitializedCore(['0', '1'], createTestRandom(), {
       faction0: 'frost',
       faction1: 'necromancer',
@@ -523,7 +523,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
     state.currentPlayer = '0';
 
     const matchState = { core: state, sys: {} } as any;
-    const result = summonerWarsFlowHooks.onPhaseExit!({
+    const result = summonerWarsFlowHooks.onPhaseEnter!({
       state: matchState, from: 'build', to: 'attack',
       command: { type: 'END_PHASE', payload: {}, timestamp: fixedTimestamp },
     });
@@ -843,7 +843,7 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
       owner: '1',
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     // 执行 ice_shards
@@ -859,7 +859,7 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
     expect(canActivateAbility(newState, newState.board[3][2].unit!, 'ice_shards', '0')).toBe(false);
 
     // onAutoContinueCheck 应触发自动推进
-    const mockSys = { flowHalted: true, phase: 'build' };
+    const mockSys = { flowHalted: true, phase: 'attack' };
     const checkResult = summonerWarsFlowHooks.onAutoContinueCheck!({
       state: { core: newState, sys: mockSys as any },
       events: [],
@@ -870,21 +870,11 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
   });
 
   /**
-   * 回归测试：ice_shards 第二次使用时阶段已推进不应失败
-   * 
-   * 场景：
-   * 1. 建造阶段结束时 ice_shards 触发，halt 阶段推进
-   * 2. 玩家第一次激活 ice_shards，消耗充能
-   * 3. 玩家再次尝试激活（或阶段推进后再次触发）
-   * 4. 此时阶段可能已经推进到 attack，但 ice_shards 不应因为 requiredPhase 检查失败
-   * 
-   * 修复方案：在 canActivateAbility 中，对 onPhaseEnd 触发的技能跳过 requiredPhase 检查
-   * 原因：onPhaseEnd 触发的技能已经由 PHASE_END_ABILITIES 配置保证在正确阶段触发
-   * 
-   * 注意：requiredPhase 仍然保留在 AbilityDef 中，用于防止玩家在错误阶段手动激活
-   * 但是 canActivateAbility（用于判断是否需要 halt 阶段推进）会跳过这个检查
+   * 回归测试：ice_shards 应在攻击阶段可确认执行。
+   *
+   * 用户口径：寒冰碎屑在攻击阶段开始时触发，而不是建造阶段结束。
    */
-  it('[回归] ice_shards 在阶段推进后仍可正确验证（不受 requiredPhase 影响）', () => {
+  it('[回归] ice_shards 在攻击阶段可正确验证并执行', () => {
     const state = createInitializedCore(['0', '1'], createTestRandom(), {
       faction0: 'frost',
       faction1: 'necromancer',
@@ -905,27 +895,22 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
       owner: '1',
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
-    // 第一次使用 ice_shards（在 build 阶段）
+    // 第一次使用 ice_shards（在 attack 阶段）
     const { newState: state1 } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'ice_shards',
       sourceUnitId: jamud.instanceId,
     });
 
     expect(state1.board[3][2].unit?.boosts).toBe(1); // 消耗1点充能
-    expect(state1.phase).toBe('build'); // 阶段还是 build
-
-    // 模拟阶段推进到 attack（这是可能发生的场景）
-    const state2 = { ...state1, phase: 'attack' as GamePhase };
+    expect(state1.phase).toBe('attack'); // 阶段还是 attack
 
     // 第二次使用 ice_shards（在 attack 阶段）
-    // 修复前：这里会因为 requiredPhase: 'build' 而失败
-    // 修复后：应该成功，因为 onPhaseEnd 触发的技能不应受 requiredPhase 限制
-    const { newState: state3 } = executeAndReduce(state2, SW_COMMANDS.ACTIVATE_ABILITY, {
+    const { newState: state3 } = executeAndReduce(state1, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'ice_shards',
-      sourceUnitId: state2.board[3][2].unit!.instanceId,
+      sourceUnitId: state1.board[3][2].unit!.instanceId,
     });
 
     expect(state3.board[3][2].unit?.boosts).toBe(0); // 再消耗1点充能

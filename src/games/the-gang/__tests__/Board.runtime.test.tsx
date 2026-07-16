@@ -8,7 +8,7 @@ import { ToastProvider } from '../../../contexts/ToastContext';
 import { ToastViewport } from '../../../components/system/ToastViewport';
 import Board from '../Board';
 import { TheGangDomain, buildShowdownResults } from '../domain';
-import { THE_GANG_COMMANDS, type ShowdownPlayerResult, type TheGangCore } from '../domain/types';
+import { THE_GANG_COMMANDS, type PlayingCard, type ShowdownPlayerResult, type TheGangCore } from '../domain/types';
 import { THE_GANG_AUDIO_CONFIG } from '../audio.config';
 import { THE_GANG_MANIFEST } from '../manifest';
 
@@ -43,6 +43,12 @@ const finalRoundChipsFor = (core: TheGangCore) => [...buildShowdownResults(core)
     }), {});
 
 const fixedRandom = { random: () => 0 };
+
+const standardCard = (rank: PlayingCard['rank'], suit: PlayingCard['suit']): PlayingCard => ({
+    rank,
+    suit,
+    kind: 'standard',
+});
 
 const renderWithToast = (ui: React.ReactElement) => render(
     <ToastProvider>
@@ -277,6 +283,37 @@ describe('The Gang Board 运行入口', () => {
             G: initial,
             ctx: { isGameOver: false },
         }));
+    });
+
+    test('两副手牌在本地手牌区显示为上下两排', () => {
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const twoHandCore: TheGangCore = {
+            ...initial,
+            rules: {
+                ...initial.rules,
+                config: {
+                    ...initial.rules.config,
+                    twoHand: true,
+                },
+            },
+            players: {
+                ...initial.players,
+                '0': {
+                    ...initial.players['0'],
+                    pocketCards: [standardCard('A', 'spades'), standardCard('K', 'hearts')],
+                    secondaryPocketCards: [standardCard('Q', 'diamonds'), standardCard('J', 'clubs')],
+                },
+            },
+        };
+
+        renderBoardForCore(twoHandCore);
+
+        expect(screen.getByTestId('the-gang-local-hand-top')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-bottom')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-top').querySelectorAll('img')).toHaveLength(2);
+        expect(screen.getByTestId('the-gang-local-hand-bottom').querySelectorAll('img')).toHaveLength(2);
+        expect(screen.getByText('board.topHand')).toBeInTheDocument();
+        expect(screen.getByText('board.bottomHand')).toBeInTheDocument();
     });
 
     test('真实 Board 可以完成四轮抢劫并显示摊牌结果', () => {

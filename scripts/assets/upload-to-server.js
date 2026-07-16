@@ -61,7 +61,13 @@ const assetPrefixes = readRepeatedArg('asset-prefix').map(normalizeRelativePrefi
 function matchesAssetPrefix(relativePath) {
   if (assetPrefixes.length === 0) return true;
   const normalized = relativePath.replace(/\\/g, '/');
-  return assetPrefixes.some((prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`));
+  const extension = extname(normalized);
+  const normalizedWithoutExtension = extension ? normalized.slice(0, -extension.length) : normalized;
+  return assetPrefixes.some((prefix) => (
+    normalized === prefix
+    || normalizedWithoutExtension === prefix
+    || normalized.startsWith(`${prefix}/`)
+  ));
 }
 
 function chunkArray(items, chunkSize) {
@@ -319,6 +325,10 @@ async function main() {
     if (checkOnly) {
       console.log(`待发布: ${entry.key} (${entry.size} bytes, md5=${entry.md5})`);
     }
+  }
+
+  if (assetPrefixes.length > 0 && uploadPlan.length === 0) {
+    throw new Error(`路径过滤没有匹配到可发布对象: ${assetPrefixes.join(', ')}`);
   }
 
   if (!checkOnly && uploadPlan.length > 0) {

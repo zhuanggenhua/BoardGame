@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import {
     createActiveFingerprint,
@@ -14,6 +16,20 @@ const metadata = (size, modTime = '2026-07-10T00:00:00Z', hash = '') => ({
     hash,
 });
 
+const walkManifestFiles = (root, output = []) => {
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+        const fullPath = path.join(root, entry.name);
+        if (entry.isDirectory()) {
+            walkManifestFiles(fullPath, output);
+            continue;
+        }
+        if (entry.name === 'assets-manifest.json') {
+            output.push(fullPath);
+        }
+    }
+    return output;
+};
+
 test('识别各平台当前发布清单根节点', () => {
     assert.equal(isActiveRootKey('official/app-updates/android/stable/latest.json'), true);
     assert.equal(isActiveRootKey('official/native-app-updates/android/stable/latest.json'), true);
@@ -22,6 +38,22 @@ test('识别各平台当前发布清单根节点', () => {
     assert.equal(isActiveRootKey('official/i18n/assets-manifest.json'), true);
     assert.equal(isActiveRootKey('official/mobile-packages/android/stable/manifests/dicethrone/v1.json'), false);
     assert.equal(isActiveRootKey('official/app-updates/android/stable/manifests/v1.json'), false);
+});
+
+test('本地素材清单 basePrefix 必须匹配清单所在目录', () => {
+    const assetsRoot = path.resolve('public/assets');
+    const manifestFiles = walkManifestFiles(assetsRoot);
+
+    assert.ok(manifestFiles.length > 0);
+    for (const manifestPath of manifestFiles) {
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        const relativeDir = path.relative(assetsRoot, path.dirname(manifestPath)).replace(/\\/g, '/');
+        assert.equal(
+            manifest.basePrefix,
+            `official/${relativeDir}/`,
+            path.relative(process.cwd(), manifestPath),
+        );
+    }
 });
 
 test('递归提取公开资源 URL 和对象 key', () => {

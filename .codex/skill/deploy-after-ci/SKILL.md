@@ -1,6 +1,6 @@
 ---
 name: deploy-after-ci
-description: "BoardGame 生产更新最短路径。用于更新部署、发生产、更新线上；默认镜像输送到服务器并 update-local + Android stable OTA，提 CI 时先查 Actions/Docker。"
+description: "BoardGame 生产更新最短路径。用于更新部署、发生产、更新线上；默认 CI 构建后直传镜像到服务器并 update-local + Android stable OTA，提 CI 时先查 Actions/Docker。"
 ---
 
 # BoardGame CI 后部署
@@ -11,7 +11,7 @@ description: "BoardGame 生产更新最短路径。用于更新部署、发生�
 
 ## 路径选择
 
-- 用户只说“更新部署 / 部署生产 / 更新线上”：直接执行“镜像输送到服务器并 `update-local` + Android stable OTA”，不查 CI。
+- 用户只说“更新部署 / 部署生产 / 更新线上”：直接执行“CI 构建后直传镜像到服务器并 `update-local` + Android stable OTA”，不再让本机先拉 GHCR。
 - 用户明确说“看 CI / CI 好了 / 查 CI / 等 CI”：先查远端 `origin/main` 对应的 Docker 镜像 CI；只有成功才执行服务器更新与 OTA。
 - 用户明确说“只更新服务器 / 不发 OTA”：显式加 `-SkipOta`。
 - 用户指定 tag：默认只建议用于服务器镜像更新；若同时要发 OTA，必须确认本地当前发布基线就是这次要发的版本。
@@ -36,19 +36,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci
 powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci\scripts\deploy-prod.ps1 -Tag v1.2.3 -SkipOta
 ```
 
-脚本默认会先把镜像输送到服务器并执行 `update-local`，再在本地发布 Android `stable` OTA：
+脚本默认会触发 Docker workflow，CI 构建完成后直接把镜像 tar 输送到服务器并执行 `update-local`，再在本地发布 Android `stable` OTA：
 
 ```powershell
 node scripts/release/deploy-and-ota.mjs --skip-wait --ota-channel stable
 ```
 
-其中服务器步骤默认等价于：
+其中服务器步骤默认等价于手动触发：
 
 ```powershell
-node scripts/deploy/stream-images-to-server.mjs --tag latest --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
+gh workflow run docker-publish.yml --ref main -f stream_to_server=true -f deploy_after_stream=true -f deploy_tag=latest -f deploy_host=admin@8.148.71.102 -f remote_dir=/home/admin/BoardGame
 ```
 
-只有用户明确要求“服务器直接拉镜像 / 不走镜像输送”时，才传 `-DeployMode remote`，让底层改用 `deploy-image.sh update` 旧链路。
+只有用户明确要求“本机输送 / 不触发 CI 直传”时，才传 `-DeployMode stream`，让底层改用 `stream-images-to-server.mjs` 本机 fallback。只有用户明确要求“服务器直接拉镜像 / 不走镜像输送”时，才传 `-DeployMode remote`，让底层改用 `deploy-image.sh update` 旧链路。
 
 ## 查 CI 后部署
 
@@ -89,7 +89,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .codex\skill\deploy-after-ci
 
 - 不要因为本地工作区有未提交改动而阻塞 `push` 后的生产更新；生产更新只基于远端镜像。
 - 不要在生产机直接运行 `docker compose up -d`。
-- 不要默认让生产机直拉 GHCR；默认必须走镜像输送到服务器并 `update-local`。
+- 不要默认让生产机或本机从 GHCR 拉镜像；默认必须走 CI 构建后直传到服务器并 `update-local`。
 - “更新部署”默认包含 Android OTA；如果用户只要服务器更新，必须显式 `-SkipOta` 或口头说明“只更新服务器”。
 - 指定 tag 时，不要在未确认本地发布基线与该 tag 对齐的情况下顺手发 OTA。
 - 不要默认执行本地测试、lint、构建或额外审计。

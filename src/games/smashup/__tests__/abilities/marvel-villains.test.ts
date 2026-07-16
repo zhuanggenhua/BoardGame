@@ -325,6 +325,65 @@ describe('漫威反派四派系代表性玩法行为', () => {
         ]));
     });
 
+    it('吸收人没有另一个吸收人时不会创建空选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_juice_bar', [
+                    makeMinion('absorbing-a', 'masters_of_evil_absorbing_man', '0', 2),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('masters_of_evil_absorbing_man', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'absorbing-a',
+            defId: 'masters_of_evil_absorbing_man',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 32,
+        });
+
+        expect(result.events).toEqual([]);
+        expect(result.matchState).toBeUndefined();
+    });
+
+    it('吸收人选择目标时只列出另一个吸收人', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_juice_bar', [
+                    makeMinion('absorbing-a', 'masters_of_evil_absorbing_man', '0', 2),
+                    makeMinion('absorbing-b', 'masters_of_evil_absorbing_man', '0', 2),
+                    makeMinion('zemo', 'masters_of_evil_baron_zemo', '0', 5),
+                ]),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('masters_of_evil_absorbing_man', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'absorbing-a',
+            defId: 'masters_of_evil_absorbing_man',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 33,
+        });
+
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'marvel_villains_destroy_own_prompt');
+        const optionUids = getPromptOptions(prompt).map(option => option.value?.minionUid);
+        expect(optionUids).toEqual(['absorbing-b']);
+    });
+
     it('厄运之兆只能打到没有任何角色的基地', () => {
         const core = makeState({
             players: {

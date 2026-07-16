@@ -2269,10 +2269,10 @@ describe('GameDetailsModal create room ai entry', () => {
 
         const packageCard = screen.getByTestId('game-details-mobile-package-card');
         expect(packageCard).toBeInTheDocument();
-        expect(packageCard).toHaveTextContent('packageManager.checksumMismatchHint');
-        expect(packageCard).not.toHaveTextContent('packageManager.errorDetail');
-        expect(packageCard).not.toHaveTextContent('增量文件校验失败');
-        expect(packageCard).not.toHaveTextContent('i18n/zh-CN/dicethrone/assets-manifest.json');
+        expect(packageCard).toHaveTextContent('packageManager.incrementalChecksumMismatchHint');
+        expect(packageCard).toHaveTextContent('packageManager.errorDetail');
+        expect(packageCard).toHaveTextContent('增量文件校验失败');
+        expect(packageCard).toHaveTextContent('i18n/zh-CN/dicethrone/assets-manifest.json');
         expect(screen.getByRole('button', { name: 'packageManager.retryFullDownloadAction' })).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'packageManager.retryAction' })).toBeNull();
     });

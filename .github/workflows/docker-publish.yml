@@ -9,6 +9,32 @@ on:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      stream_to_server:
+        description: '构建后直接把镜像 tar 输送到生产机'
+        required: false
+        type: boolean
+        default: false
+      deploy_after_stream:
+        description: '输送完成后在生产机执行 update-local'
+        required: false
+        type: boolean
+        default: false
+      deploy_tag:
+        description: '生产部署使用的镜像 tag'
+        required: false
+        type: string
+        default: latest
+      deploy_host:
+        description: '生产 SSH 目标'
+        required: false
+        type: string
+        default: admin@8.148.71.102
+      remote_dir:
+        description: '生产机项目目录'
+        required: false
+        type: string
+        default: /home/admin/BoardGame
 
 env:
   REGISTRY: ghcr.io
@@ -48,6 +74,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push game-server
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.stream_to_server }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -73,6 +100,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push web (monolith)
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.stream_to_server }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -89,6 +117,98 @@ jobs:
           provenance: false
           sbom: false
 
+      - name: Build and load game-server for production stream
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.game
+          load: true
+          tags: ${{ steps.meta-game.outputs.tags }}
+          labels: ${{ steps.meta-game.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # 启用 BuildKit 缓存挂载（加速 npm ci）
+          provenance: false
+          sbom: false
+
+      - name: Build and load web for production stream
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.monolith
+          load: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_SENTRY_DSN=${{ secrets.VITE_SENTRY_DSN }}
+            VITE_ASSETS_BASE_URL=${{ vars.VITE_ASSETS_BASE_URL }}
+          # 启用 BuildKit 缓存挂载（加速 npm ci）
+          provenance: false
+          sbom: false
+
+      - name: Push loaded web tags
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        env:
+          IMAGE_TAGS: ${{ steps.meta-web.outputs.tags }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${IMAGE_TAGS}" | while IFS= read -r tag; do
+            [[ -n "${tag}" ]] || continue
+            docker push "${tag}"
+          done
+
+      - name: Push loaded game-server tags
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        env:
+          IMAGE_TAGS: ${{ steps.meta-game.outputs.tags }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${IMAGE_TAGS}" | while IFS= read -r tag; do
+            [[ -n "${tag}" ]] || continue
+            docker push "${tag}"
+          done
+
+      - name: Prepare production SSH
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        env:
+          BOARDGAME_DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.BOARDGAME_DEPLOY_SSH_PRIVATE_KEY }}
+          BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "${BOARDGAME_DEPLOY_SSH_PRIVATE_KEY}" ]] || missing+=("BOARDGAME_DEPLOY_SSH_PRIVATE_KEY")
+          [[ -n "${BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS}" ]] || missing+=("BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS")
+          if (( ${#missing[@]} > 0 )); then
+            printf 'Missing deployment secret(s): %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+          mkdir -p "${HOME}/.ssh"
+          printf '%s\n' "${BOARDGAME_DEPLOY_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/boardgame-deploy"
+          chmod 600 "${HOME}/.ssh/boardgame-deploy"
+          printf '%s\n' "${BOARDGAME_DEPLOY_SSH_KNOWN_HOSTS}" > "${HOME}/.ssh/known_hosts"
+
+      - name: Stream images to production host
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.stream_to_server }}
+        run: |
+          set -euo pipefail
+          args=(
+            scripts/deploy/stream-images-to-server.mjs
+            --tag "${{ inputs.deploy_tag }}"
+            --host "${{ inputs.deploy_host }}"
+            --remote-dir "${{ inputs.remote_dir }}"
+            --ssh-key-path "${HOME}/.ssh/boardgame-deploy"
+            --known-hosts-path "${HOME}/.ssh/known_hosts"
+            --skip-local-pull
+          )
+          if [[ "${{ inputs.deploy_after_stream }}" == "true" ]]; then
+            args+=(--deploy)
+          fi
+          node "${args[@]}"
+
       - name: Summary
         run: |
           echo "### 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
@@ -97,3 +217,9 @@ jobs:
           echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
           echo "| game-server | ${{ steps.meta-game.outputs.tags }} |" >> $GITHUB_STEP_SUMMARY
           echo "| web | ${{ steps.meta-web.outputs.tags }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.stream_to_server }}" == "true" ]]; then
+            echo "Production stream: completed for tag \`${{ inputs.deploy_tag }}\`." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Production stream: not requested." >> $GITHUB_STEP_SUMMARY
+          fi

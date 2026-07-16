@@ -1,0 +1,283 @@
+{
+  "outPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\the-gang-twohand-expansions-current\\the-gang-twohand-middle-layout.png",
+  "metrics": {
+    "bodyText": "合作抢劫\n\n纸牌帮\n抢劫 1\n成功\n金库 0/3\n失败\n警报 0/3\n视网膜扫描\n指纹扫描\n断电\n玩家 1\n玩家 2\n玩家 3\n玩家 4\nBGG 电子版结构：顶部玩家板，中部筹码池和牌河，底部警报金库和手牌。\n金库 0/3，警报 0/3\n我的手牌\n上手\n下手\n下一轮\n牌型\n扩展\n工具\n0/0\n工具 0 / 专家 0",
+    "viewportHeight": 900,
+    "ready": true,
+    "rootRect": {
+      "x": 0,
+      "y": 0,
+      "width": 1600,
+      "height": 900,
+      "top": 0,
+      "bottom": 900
+    },
+    "viewportRect": {
+      "x": 0,
+      "y": 0,
+      "width": 1600,
+      "height": 900,
+      "top": 0,
+      "bottom": 900
+    },
+    "shellRect": {
+      "x": 0,
+      "y": 0,
+      "width": 1600,
+      "height": 900,
+      "top": 0,
+      "bottom": 900
+    },
+    "tableRect": {
+      "x": 0,
+      "y": 0,
+      "width": 1600,
+      "height": 900,
+      "top": 0,
+      "bottom": 900
+    },
+    "tableBackground": "rgb(32, 59, 35)",
+    "middleDirection": "row",
+    "middleRect": {
+      "x": 530,
+      "y": 361,
+      "width": 540,
+      "height": 168,
+      "top": 361,
+      "bottom": 529
+    },
+    "tokenPileRect": {
+      "x": 530,
+      "y": 418,
+      "width": 116,
+      "height": 54,
+      "top": 418,
+      "bottom": 472
+    },
+    "riverRect": {
+      "x": 670,
+      "y": 361,
+      "width": 400,
+      "height": 168,
+      "top": 361,
+      "bottom": 529
+    },
+    "topHandRect": {
+      "x": 654,
+      "y": 572,
+      "width": 292,
+      "height": 160,
+      "top": 572,
+      "bottom": 732
+    },
+    "bottomHandRect": {
+      "x": 654,
+      "y": 740,
+      "width": 292,
+      "height": 160,
+      "top": 740,
+      "bottom": 900
+    },
+    "bottomZoneRect": {
+      "x": 48,
+      "y": 500,
+      "width": 1504,
+      "height": 400,
+      "top": 500,
+      "bottom": 900
+    },
+    "handGroupRect": {
+      "x": 654,
+      "y": 500,
+      "width": 292,
+      "height": 400,
+      "top": 500,
+      "bottom": 900
+    },
+    "utilityDockRect": {
+      "x": 16,
+      "y": 836,
+      "width": 322,
+      "height": 48,
+      "top": 836,
+      "bottom": 884
+    },
+    "lowerDeadGap": 0,
+    "topCards": 2,
+    "bottomCards": 2,
+    "riverCards": 3,
+    "centralChipButtons": 2,
+    "centralChipImages": 2,
+    "reminders": "视网膜扫描指纹扫描断电",
+    "imageSummary": [
+      {
+        "alt": "黄筹码 2 星",
+        "src": "blob:http://127.0.0.1:4274/95ebbefd-2640-4e78-9b13-8203577165e9",
+        "complete": true,
+        "naturalWidth": 500,
+        "naturalHeight": 500,
+        "opacity": "1"
+      },
+      {
+        "alt": "黄筹码 3 星",
+        "src": "blob:http://127.0.0.1:4274/8e30fa8b-08d3-46a2-955c-0e99a80e54ee",
+        "complete": true,
+        "naturalWidth": 360,
+        "naturalHeight": 360,
+        "opacity": "1"
+      },
+      {
+        "alt": "黄筹码 1 星",
+        "src": "blob:http://127.0.0.1:4274/c0e2cca2-5444-4b02-9300-f7f891e27108",
+        "complete": true,
+        "naturalWidth": 500,
+        "naturalHeight": 500,
+        "opacity": "1"
+      },
+      {
+        "alt": "黄筹码 4 星",
+        "src": "blob:http://127.0.0.1:4274/31b616b1-a4bb-4930-94d8-21fbe000e776",
+        "complete": true,
+        "naturalWidth": 360,
+        "naturalHeight": 360,
+        "opacity": "1"
+      },
+      {
+        "alt": "A♦",
+        "src": "blob:http://127.0.0.1:4274/09d691d5-b36f-4bd5-a8f5-09e19d116bef",
+        "complete": true,
+        "naturalWidth": 925,
+        "naturalHeight": 1280,
+        "opacity": "1"
+      },
+      {
+        "alt": "K♣",
+        "src": "blob:http://127.0.0.1:4274/af5d71e3-d0e9-4508-bf6f-53215d2497f2",
+        "complete": true,
+        "naturalWidth": 925,
+        "naturalHeight": 1280,
+        "opacity": "1"
+      },
+      {
+        "alt": "9♠",
+        "src": "https://assets.easyboardgame.top/official/i18n/zh-CN/the-gang/cards/compressed/nine-spades.webp",
+        "complete": true,
+        "naturalWidth": 925,
+        "naturalHeight": 1280,
+        "opacity": "1"
+      },
+      {
+        "alt": "黄筹码 2 星",
+        "src": "blob:http://127.0.0.1:4274/46470c1d-5a78-4b08-8413-d25343be63e4",
+        "complete": true,
+        "naturalWidth": 500,
+        "naturalHeight": 500,
+        "opacity": "1"
+      },
+      {
+        "alt": "A♠",
+        "src": "https://assets.easyboardgame.top/official/i18n/zh-CN/the-gang/cards/compressed/ace-spades.webp",
+        "complete": true,
+        "naturalWidth": 925,
+        "naturalHeight": 1280,
+        "opacity": "1"
+      },
+      {
+        "alt": "K♥",
+        "src": "https://assets.easyboardgame.top/official/i18n/zh-CN/the-gang/cards/compressed/king-hearts.webp",
+        "complete": true,
+        "naturalWidth": 925,
+        "naturalHeight": 1280,
+        "opacity": "1"
+      },
+      {
+        "alt": "Q♦",
+        "src": "https://assets.easyboardgame.top/official/i18n/zh-CN/the-gang/cards/compressed/queen-diamonds.webp",
+        "complete": true,
+        "naturalWidth": 925,
+        "naturalHeight": 1280,
+        "opacity": "1"
+      },
+      {
+        "alt": "J♣",
+        "src": "https://assets.easyboardgame.top/official/i18n/zh-CN/the-gang/cards/compressed/jack-clubs.webp",
+        "complete": true,
+        "naturalWidth": 925,
+        "naturalHeight": 1280,
+        "opacity": "1"
+      }
+    ]
+  },
+  "events": [
+    {
+      "type": "console",
+      "level": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "console",
+      "level": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "console",
+      "level": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "console",
+      "level": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "console",
+      "level": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): the-gang/cards/nine-spades"
+    },
+    {
+      "type": "console",
+      "level": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): the-gang/cards/ace-spades"
+    },
+    {
+      "type": "console",
+      "level": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): the-gang/cards/king-hearts"
+    },
+    {
+      "type": "console",
+      "level": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): the-gang/cards/queen-diamonds"
+    },
+    {
+      "type": "console",
+      "level": "warning",
+      "text": "[OptimizedImage] 当前候选加载超时，切换到 fallback level 1 (remote-fallback): the-gang/cards/jack-clubs"
+    },
+    {
+      "type": "requestfailed",
+      "url": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/cards/compressed/ace-spades.webp",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "url": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/cards/compressed/nine-spades.webp",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "url": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/cards/compressed/king-hearts.webp",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "url": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/cards/compressed/queen-diamonds.webp",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "type": "requestfailed",
+      "url": "http://127.0.0.1:4274/assets/i18n/zh-CN/the-gang/cards/compressed/jack-clubs.webp",
+      "failure": "net::ERR_ABORTED"
+    }
+  ]
+}

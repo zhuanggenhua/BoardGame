@@ -836,36 +836,47 @@ export function execute(
                 }
                 
                 if (fromStacks > 0) {
-                    // 移除源玩家的状态
+                    const transferStacks = 1;
+                    const statusAppliedEvents = buildStatusAppliedOrChoiceEvents({
+                        state,
+                        targetId: toPlayerId,
+                        statusId,
+                        stacks: transferStacks,
+                        sourceCommandType: command.type,
+                        timestamp,
+                    });
+                    if (statusAppliedEvents.length === 0) {
+                        break;
+                    }
+                    // 转移 1 个状态效果只移动一层；“移除全部”仍由 REMOVE_STATUS 空 statusId 分支处理。
                     events.push({
                         type: 'STATUS_REMOVED',
-                        payload: { targetId: fromPlayerId, statusId, stacks: fromStacks },
+                        payload: { targetId: fromPlayerId, statusId, stacks: transferStacks },
                         sourceCommandType: command.type,
                         timestamp,
                     } as StatusRemovedEvent);
                     // 给目标玩家添加状态
-                    events.push(...buildStatusAppliedOrChoiceEvents({
-                        state,
-                        targetId: toPlayerId,
-                        statusId,
-                        stacks: fromStacks,
-                        sourceCommandType: command.type,
-                        timestamp,
-                    }));
+                    events.push(...statusAppliedEvents);
                 } else if (fromTokens > 0) {
+                    const transferAmount = 1;
+                    const toTokens = toPlayer.tokens[statusId] ?? 0;
+                    const maxTokens = getTokenStackLimit(state, toPlayerId, statusId);
+                    const newTotal = Math.min(toTokens + transferAmount, maxTokens);
+                    const grantedAmount = Math.max(0, newTotal - toTokens);
+                    if (grantedAmount <= 0) {
+                        break;
+                    }
                     // 移除源玩家的 token
                     events.push({
                         type: 'TOKEN_CONSUMED',
-                        payload: { playerId: fromPlayerId, tokenId: statusId, amount: fromTokens, newTotal: 0 },
+                        payload: { playerId: fromPlayerId, tokenId: statusId, amount: transferAmount, newTotal: Math.max(0, fromTokens - transferAmount) },
                         sourceCommandType: command.type,
                         timestamp,
                     } as DiceThroneEvent);
                     // 给目标玩家添加 token
-                    const toTokens = toPlayer.tokens[statusId] ?? 0;
-                    const newTotal = toTokens + fromTokens;
                     events.push({
                         type: 'TOKEN_GRANTED',
-                        payload: { targetId: toPlayerId, tokenId: statusId, amount: Math.max(0, newTotal - toTokens), newTotal },
+                        payload: { targetId: toPlayerId, tokenId: statusId, amount: grantedAmount, newTotal },
                         sourceCommandType: command.type,
                         timestamp,
                     } as DiceThroneEvent);

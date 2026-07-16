@@ -34,6 +34,7 @@ import {
   getForceDestinations,
   isValidCoord,
   normalizeUnitBoosts,
+  isRangedPathClear,
   BOARD_ROWS,
   BOARD_COLS,
 } from './helpers';
@@ -254,6 +255,17 @@ type SwInteractionMeta =
       sourcePosition: CellCoord;
     }
   | {
+      type: 'after_attack_huijin_ram_target';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'after_attack_huijin_ram_position';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetPosition: CellCoord;
+    }
+  | {
       type: 'after_attack_rapid_fire';
       sourceUnitId: string;
       sourcePosition: CellCoord;
@@ -319,6 +331,22 @@ type SwInteractionMeta =
       sourceUnitId: string;
       sourcePosition: CellCoord;
       targetPosition: CellCoord;
+    }
+  | {
+      type: 'after_move_huijin_quick_shot';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'huijin_call_guards_select_card';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'huijin_call_guards_select_position';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      cardId: string;
     }
   | {
       type: 'activated_ability_target';
@@ -391,6 +419,8 @@ type SwInteractionValue =
   | { action: 'after_attack_telekinesis_target'; targetPosition: CellCoord }
   | { action: 'after_attack_telekinesis_direction'; targetPosition: CellCoord; moveRow: number; moveCol: number }
   | { action: 'after_attack_mind_transmission'; targetPosition: CellCoord }
+  | { action: 'after_attack_huijin_ram_target'; targetPosition: CellCoord }
+  | { action: 'after_attack_huijin_ram_position'; targetPosition: CellCoord; newPosition: CellCoord }
   | { action: 'after_attack_rapid_fire'; confirm?: boolean }
   | { action: 'after_attack_withdraw_cost'; costType: 'charge' | 'magic' }
   | { action: 'after_attack_withdraw_position'; targetPosition: CellCoord; costType: 'charge' | 'magic' }
@@ -406,6 +436,9 @@ type SwInteractionValue =
   | { action: 'after_move_mogu_transmission_target'; targetPosition: CellCoord }
   | { action: 'after_move_mogu_transmission_amount'; amount: number }
   | { action: 'after_move_mogu_fanatical_fungus_target'; targetPosition: CellCoord; newPosition?: CellCoord }
+  | { action: 'after_move_huijin_quick_shot'; targetPosition: CellCoord }
+  | { action: 'huijin_call_guards_card'; cardId: string }
+  | { action: 'huijin_call_guards_position'; cardId: string; position: CellCoord }
   | { action: 'activated_ability_target'; abilityId: string; targetPosition?: CellCoord; targetCardId?: string }
   | { action: 'fire_sacrifice_summon'; sacrificeUnitId: string }
   | { action: 'ice_ram_target'; targetPosition: CellCoord }
@@ -463,6 +496,58 @@ function buildGrabFollowOptions(
       value: { skip: true },
     },
   ];
+}
+
+function getHuijinCallGuardCards(core: SummonerWarsCore, owner: PlayerId): UnitCard[] {
+  return core.players[owner].hand.filter((card): card is UnitCard =>
+    card.cardType === 'unit' && (card as UnitCard).unitClass === 'common'
+  );
+}
+
+function getHuijinCallGuardPositions(core: SummonerWarsCore, sourcePosition: CellCoord): CellCoord[] {
+  return getAdjacentCells(sourcePosition).filter((pos) => isCellEmpty(core, pos));
+}
+
+function getHuijinRamTargets(
+  core: SummonerWarsCore,
+  sourceUnit: { owner: PlayerId },
+  sourcePosition: CellCoord,
+  preferredTarget?: CellCoord,
+): CellCoord[] {
+  const candidates = preferredTarget ? [preferredTarget] : getAdjacentCells(sourcePosition);
+  return candidates.filter((pos) => {
+    if (manhattanDistance(sourcePosition, pos) !== 1) return false;
+    const unit = getUnitAt(core, pos);
+    return !!unit
+      && unit.owner !== sourceUnit.owner
+      && (unit.card.unitClass === 'common' || unit.card.unitClass === 'champion');
+  });
+}
+
+function getHuijinRamDestinations(core: SummonerWarsCore, targetPosition: CellCoord): CellCoord[] {
+  return getAdjacentCells(targetPosition).filter((pos) => isCellEmpty(core, pos));
+}
+
+function getHuijinQuickShotTargets(
+  core: SummonerWarsCore,
+  sourceUnitId: string,
+  owner: PlayerId,
+  sourcePosition: CellCoord,
+): CellCoord[] {
+  const targets: CellCoord[] = [];
+  for (let row = 0; row < BOARD_ROWS; row++) {
+    for (let col = 0; col < BOARD_COLS; col++) {
+      const pos = { row, col };
+      const unit = getUnitAt(core, pos);
+      if (!unit || unit.instanceId === sourceUnitId) continue;
+      const dist = manhattanDistance(sourcePosition, pos);
+      if (dist <= 0 || dist > 3) continue;
+      if (!isInStraightLine(sourcePosition, pos)) continue;
+      if (!isRangedPathClear(core, sourcePosition, pos, owner)) continue;
+      targets.push(pos);
+    }
+  }
+  return targets;
 }
 
 function buildMoguTransmissionModeInteraction(
@@ -1656,6 +1741,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             abilityId?: string;
             sourceUnitId?: string;
             sourcePosition?: CellCoord;
+            targetPosition?: CellCoord;
             interactionResolved?: boolean;
             iceRamOwner?: PlayerId;
             structurePosition?: CellCoord;
@@ -1709,6 +1795,47 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
 
           const sourceUnit = getUnitAt(newState.core, sourcePosition);
           if (!sourceUnit) continue;
+
+          if (actionId === 'huijin_call_guards') {
+            if (!getUnitAbilities(sourceUnit, newState.core).includes('huijin_call_guards')) continue;
+            if (!canActivateAbility(newState.core, sourceUnit, 'huijin_call_guards', sourceUnit.owner)) continue;
+            const handCards = getHuijinCallGuardCards(newState.core, sourceUnit.owner);
+            const positions = getHuijinCallGuardPositions(newState.core, sourcePosition);
+            if (handCards.length === 0 || positions.length === 0) continue;
+            const interactionId = `sw-huijin-call-guards-card-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...handCards.map((card) => ({
+                id: card.id,
+                label: card.name,
+                value: { action: 'huijin_call_guards_card' as const, cardId: card.id },
+                displayMode: 'card' as const,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.huijinCallGuardsCard',
+              options,
+              { sourceId: 'huijin_call_guards', targetType: 'hand', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'huijin_call_guards_select_card',
+                sourceUnitId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
 
           if (actionId === 'fortress_power_retrieve') {
             const player = newState.core.players[sourceUnit.owner];
@@ -2092,6 +2219,48 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             newState = queueInteraction(newState, interaction);
           }
 
+          if (actionId === 'huijin_ram') {
+            if (!getUnitAbilities(sourceUnit, newState.core).includes('huijin_ram')) continue;
+            const targets = getHuijinRamTargets(
+              newState.core,
+              sourceUnit,
+              sourcePosition,
+              payload.targetPosition,
+            );
+            if (targets.length === 0) continue;
+            const interactionId = `sw-huijin-ram-target-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildPositionOptions(targets, (pos) => ({
+                action: 'after_attack_huijin_ram_target',
+                targetPosition: pos,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.huijinRamTarget',
+              options,
+              { sourceId: 'huijin_ram', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'after_attack_huijin_ram_target',
+                sourceUnitId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
           if (actionId.startsWith('afterMove:')) {
             const abilityId = actionId.split(':')[1] ?? '';
             if (abilityId === 'spirit_bond') {
@@ -2270,6 +2439,43 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 sourceUnitId,
                 sourcePosition,
               ));
+            }
+
+            if (abilityId === 'huijin_quick_shot') {
+              if (!getUnitAbilities(sourceUnit, newState.core).includes('huijin_quick_shot')) continue;
+              const targets = getHuijinQuickShotTargets(newState.core, sourceUnitId, sourceUnit.owner, sourcePosition);
+              if (targets.length === 0) continue;
+              const interactionId = `sw-huijin-quick-shot-${event.timestamp ?? 0}-${sourceUnitId}`;
+              if (hasQueuedInteraction(newState, interactionId)) continue;
+              const options: PromptOption<SwInteractionValue>[] = [
+                ...buildPositionOptions(targets, (pos) => ({
+                  action: 'after_move_huijin_quick_shot',
+                  targetPosition: pos,
+                })),
+                {
+                  id: 'skip',
+                  label: '跳过',
+                  labelKey: 'actions.skip',
+                  value: { skip: true },
+                },
+              ];
+              const interaction = createSimpleChoice(
+                interactionId,
+                sourceUnit.owner,
+                'interaction.sw.huijinQuickShot',
+                options,
+                { sourceId: 'huijin_quick_shot', targetType: 'minion', autoResolveIfSingle: false },
+              );
+              const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+              interaction.data = {
+                ...interactionData,
+                sw: {
+                  type: 'after_move_huijin_quick_shot',
+                  sourceUnitId,
+                  sourcePosition,
+                } satisfies SwInteractionMeta,
+              };
+              newState = queueInteraction(newState, interaction);
             }
 
             if (abilityId === 'mogu_fanatical_fungus') {
@@ -3085,7 +3291,6 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           }
 
           if (sw.type === 'ice_shards') {
-            newState = applyPhaseEndResolution(newState, 'ice_shards', sw.sourceUnitId);
             if (!isSkipValue(value)) {
               nextEvents.push(...executeSwCommand(newState, random, {
                 type: SW_COMMANDS.ACTIVATE_ABILITY,
@@ -3127,6 +3332,62 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 },
               }));
             }
+          }
+
+          if (sw.type === 'huijin_call_guards_select_card') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'huijin_call_guards_card') as
+              { action: 'huijin_call_guards_card'; cardId: string } | undefined;
+            if (!picked || hasSkip) {
+              newState = applyPhaseEndResolution(newState, 'huijin_call_guards', sw.sourceUnitId);
+              continue;
+            }
+            const positions = getHuijinCallGuardPositions(newState.core, sw.sourcePosition);
+            if (positions.length === 0) {
+              newState = applyPhaseEndResolution(newState, 'huijin_call_guards', sw.sourceUnitId);
+              continue;
+            }
+            const options: PromptOption<SwInteractionValue>[] = buildPositionOptions(positions, (pos) => ({
+              action: 'huijin_call_guards_position',
+              cardId: picked.cardId,
+              position: pos,
+            }));
+            const interaction = createSimpleChoice(
+              `sw-huijin-call-guards-position-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.huijinCallGuardsPosition',
+              options,
+              { sourceId: 'huijin_call_guards', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'huijin_call_guards_select_position',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                cardId: picked.cardId,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction, { urgent: true });
+          }
+
+          if (sw.type === 'huijin_call_guards_select_position') {
+            newState = applyPhaseEndResolution(newState, 'huijin_call_guards', sw.sourceUnitId);
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'huijin_call_guards_position') as
+              { action: 'huijin_call_guards_position'; cardId: string; position: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'huijin_call_guards',
+                sourceUnitId: sw.sourceUnitId,
+                cardId: picked.cardId,
+                position: picked.position,
+                _noSnapshot: true,
+              },
+            }));
           }
 
           if (sw.type === 'before_attack_life_drain') {
@@ -3291,6 +3552,63 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 abilityId: 'mind_transmission',
                 sourceUnitId: sw.sourceUnitId,
                 targetPosition: picked.targetPosition,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'after_attack_huijin_ram_target') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_attack_huijin_ram_target') as
+              { action: 'after_attack_huijin_ram_target'; targetPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            const destinations = getHuijinRamDestinations(newState.core, picked.targetPosition);
+            if (destinations.length === 0) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildPositionOptions(destinations, (pos) => ({
+                action: 'after_attack_huijin_ram_position',
+                targetPosition: picked.targetPosition,
+                newPosition: pos,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-huijin-ram-position-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.huijinRamPosition',
+              options,
+              { sourceId: 'huijin_ram', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'after_attack_huijin_ram_position',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetPosition: picked.targetPosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'after_attack_huijin_ram_position') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_attack_huijin_ram_position') as
+              { action: 'after_attack_huijin_ram_position'; targetPosition: CellCoord; newPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'huijin_ram',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
+                newPosition: picked.newPosition,
                 _noSnapshot: true,
               },
             }));
@@ -3640,6 +3958,22 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 sourceUnitId: sw.sourceUnitId,
                 targetPosition: picked.targetPosition,
                 newPosition: picked.newPosition,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'after_move_huijin_quick_shot') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_move_huijin_quick_shot') as
+              { action: 'after_move_huijin_quick_shot'; targetPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'huijin_quick_shot',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
                 _noSnapshot: true,
               },
             }));

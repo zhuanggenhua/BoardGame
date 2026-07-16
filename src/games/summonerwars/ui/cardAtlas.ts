@@ -9,8 +9,8 @@
  * PORTAL_ATLAS 用 webp 压缩后尺寸（Portal.webp 非等比缩放，必须匹配实际 webp 尺寸）。
  *
  * @atlas-contract 召唤战争图集裁剪依据：旧版 hero/cards/Portal/dice 沿用既有源图尺寸注释；
- * mogu/cards.jpg 已用本地源图尺寸探测确认 8088x1454，按 8列 x 2行均分为 1011x727；
- * mogu/hero.png 已用本地源图尺寸探测确认 1267x908，全图单帧；mogu 卡图 slot 11-15 为空白占位。
+ * mogu/cards.jpg 与 huijin/cards.jpg 均为 8088x1454，按 8列 x 2行均分为 1011x727；
+ * mogu/hero.png 为 1267x908，huijin/hero.png 为 1038x722，均为全图单帧；新格式卡图 slot 11-15 为空白占位。
  */
 
 import type { CSSProperties } from 'react';
@@ -147,6 +147,22 @@ export const MOGU_HERO_ATLAS: SpriteAtlasConfig = {
 };
 
 /**
+ * huijin/hero.png 配置（新一批单张召唤师图）
+ */
+export const HUIJIN_HERO_ATLAS: SpriteAtlasConfig = {
+  imageW: 1038,
+  imageH: 722,
+  cols: 1,
+  rows: 1,
+  colStarts: [0],
+  colWidths: [1038],
+  rowStarts: [0],
+  rowHeights: [722],
+};
+
+export const HUIJIN_CARDS_ATLAS = MOGU_CARDS_ATLAS;
+
+/**
  * dice.png 配置（骰子面精灵图）
  * 3x3 布局，约 1024x1024
  */
@@ -182,10 +198,11 @@ const FACTION_DIR_MAP: Record<FactionId, string> = {
   frost: 'Frost',
   barbaric: 'Barbaric',
   mogu: 'mogu',
+  huijin: 'huijin',
 };
 
 /** 所有阵营目录名列表 */
-const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu'] as const;
+const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin'] as const;
 
 /**
  * 根据阵营名获取精灵图 atlas ID
@@ -207,7 +224,21 @@ const CARD_ID_PREFIX_MAP: Record<string, FactionId> = {
   frost: 'frost',
   barb: 'barbaric',
   mogu: 'mogu',
+  huijin: 'huijin',
 };
+
+function getHeroAtlasConfig(dir: string): SpriteAtlasConfig {
+  if (dir === 'mogu') return MOGU_HERO_ATLAS;
+  if (dir === 'huijin') return HUIJIN_HERO_ATLAS;
+  return HERO_ATLAS;
+}
+
+function getCardsAtlasConfig(dir: string): SpriteAtlasConfig {
+  if (dir === 'Necromancer') return NECROMANCER_CARDS_ATLAS;
+  if (dir === 'mogu') return MOGU_CARDS_ATLAS;
+  if (dir === 'huijin') return HUIJIN_CARDS_ATLAS;
+  return CARDS_ATLAS;
+}
 
 /**
  * 根据卡牌数据解析精灵图 atlas ID
@@ -233,7 +264,7 @@ export function initSpriteAtlases(locale?: string): void {
     const heroBase = `summonerwars/hero/${dir}/hero`;
     const localizedHeroBase = getLocalizedAssetPath(heroBase, effectiveLocale);
     const heroUrls = getOptimizedImageUrls(localizedHeroBase);
-    const heroConfig = dir === 'mogu' ? MOGU_HERO_ATLAS : HERO_ATLAS;
+    const heroConfig = getHeroAtlasConfig(dir);
     registerSpriteAtlas(`sw:${dir.toLowerCase()}:hero`, {
       image: heroUrls.webp,
       config: heroConfig,
@@ -246,11 +277,7 @@ export function initSpriteAtlases(locale?: string): void {
     const cardsBase = `summonerwars/hero/${dir}/cards`;
     const localizedCardsBase = getLocalizedAssetPath(cardsBase, effectiveLocale);
     const cardsUrls = getOptimizedImageUrls(localizedCardsBase);
-    const cardsConfig = dir === 'Necromancer'
-      ? NECROMANCER_CARDS_ATLAS
-      : dir === 'mogu'
-        ? MOGU_CARDS_ATLAS
-        : CARDS_ATLAS;
+    const cardsConfig = getCardsAtlasConfig(dir);
     registerSpriteAtlas(`sw:${dir.toLowerCase()}:cards`, {
       image: cardsUrls.webp,
       config: cardsConfig,

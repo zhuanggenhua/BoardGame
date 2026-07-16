@@ -170,8 +170,8 @@ export const THE_GANG_CHALLENGES: Record<TheGangChallengeId, TheGangChallengeRul
         ttsId: '4',
         label: '视网膜扫描',
         module: 'core',
-        runtimeStatus: 'documented',
-        summary: 'TTS 中是桌面提醒 UI，本实现先记录为提醒类扩展。',
+        runtimeStatus: 'implemented',
+        summary: 'TTS 中是点数提醒 UI；本实现将其作为牌桌短状态提示接入。',
     },
     'hasty-getaway': {
         id: 'hasty-getaway',
@@ -202,16 +202,16 @@ export const THE_GANG_CHALLENGES: Record<TheGangChallengeId, TheGangChallengeRul
         ttsId: '8',
         label: '断电',
         module: 'core',
-        runtimeStatus: 'documented',
-        summary: 'TTS 中影响桌面提示与可见信息，本实现先记录配置。',
+        runtimeStatus: 'implemented',
+        summary: 'TTS 中影响桌面提示与可见信息；本实现将其作为牌桌短状态提示接入。',
     },
     'fingerprint-scan': {
         id: 'fingerprint-scan',
         ttsId: '9',
         label: '指纹扫描',
         module: 'core',
-        runtimeStatus: 'documented',
-        summary: 'TTS 中是牌型提醒 UI，本实现先记录为提醒类扩展。',
+        runtimeStatus: 'implemented',
+        summary: 'TTS 中是牌型提醒 UI；本实现将其作为牌桌短状态提示接入。',
     },
     'security-camera': {
         id: 'security-camera',
@@ -570,6 +570,25 @@ export interface TheGangDealPlan {
     perGap: boolean;
 }
 
+const DEAL_AFFECTING_CHALLENGES: readonly TheGangChallengeId[] = [
+    'noise-sensor',
+    'motion-detector',
+    'ventilation-shaft',
+    'laser-tripwires',
+    'security-camera',
+    'the-joker',
+    'uninvited-guest',
+    'reverse-run',
+    'master-key',
+    'balance',
+    'lengthy-finish',
+    'rough-kickoff',
+    'cluttered-toolbox',
+    'foot-door',
+    'extra-hours',
+    'grinding-gears',
+];
+
 export function buildDealPlan(config: TheGangRulesConfig): TheGangDealPlan {
     const normalized = normalizeRulesConfig(config);
     const mode = THE_GANG_GAME_MODES[normalized.gameMode];
@@ -586,7 +605,8 @@ export function buildDealPlan(config: TheGangRulesConfig): TheGangDealPlan {
         1,
         mode.handCards
             - getChallengeCount(normalized, 'balance')
-            + getChallengeCount(normalized, 'security-camera'),
+            + getChallengeCount(normalized, 'security-camera')
+            + (normalized.omaha ? 2 : 0),
     );
     const flopCards = (reverseRun ? 1 : mode.flopCards)
         + getChallengeCount(normalized, 'rough-kickoff');
@@ -607,6 +627,27 @@ export function buildDealPlan(config: TheGangRulesConfig): TheGangDealPlan {
         perPlayerCommunity: mode.perPlayer === true,
         perGap: mode.perGap === true,
     };
+}
+
+export function getRulesDealSignature(config: TheGangRulesConfig): string {
+    const normalized = normalizeRulesConfig(config);
+    const activeDealChallenges = DEAL_AFFECTING_CHALLENGES
+        .map((challengeId) => [challengeId, getChallengeCount(normalized, challengeId)] as const)
+        .filter(([, count]) => count > 0);
+
+    return JSON.stringify({
+        gameMode: normalized.gameMode,
+        omaha: normalized.omaha,
+        twoHand: normalized.twoHand,
+        challenges: activeDealChallenges,
+    });
+}
+
+export function rulesConfigRequiresRedeal(
+    previous: TheGangRulesConfig,
+    next: TheGangRulesConfig,
+): boolean {
+    return getRulesDealSignature(previous) !== getRulesDealSignature(next);
 }
 
 export function selectDeterministicRank(seed: string): Rank {

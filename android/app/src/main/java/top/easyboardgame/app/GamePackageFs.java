@@ -36,8 +36,13 @@ final class GamePackageFs {
     static final String METADATA_FILE = "metadata.json";
     static final String STATE_FILE = "install-state.json";
     static final String INSTALLED_FILES_INDEX_FILE = "installed-files-index.json";
+    private static final Object PACKAGE_MUTATION_LOCK = new Object();
 
     private GamePackageFs() {}
+
+    static Object packageMutationLock() {
+        return PACKAGE_MUTATION_LOCK;
+    }
 
     static final class FileHashEntry {
         final String path;

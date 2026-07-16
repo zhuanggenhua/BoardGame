@@ -1,4 +1,5 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
+import { normalizeRulesConfig } from './expansions';
 import { getChipValues } from './setup';
 import { THE_GANG_COMMANDS, type TakeChipCommand, type TheGangCommand, type TheGangCore } from './types';
 
@@ -21,7 +22,7 @@ export function validate(
         case THE_GANG_COMMANDS.TAKE_CHIP:
             return validateTakeChip(core, command.playerId, command.payload);
         case THE_GANG_COMMANDS.SET_RULES_CONFIG:
-            return validateSetRulesConfig(core, command.playerId);
+            return validateSetRulesConfig(core, command.playerId, command.payload.config);
         case THE_GANG_COMMANDS.DEAL_TOOLS:
             return validateDealTools(core, command.playerId);
         case THE_GANG_COMMANDS.RESET_TOOLS:
@@ -69,10 +70,15 @@ function validateTakeChip(core: TheGangCore, playerId: string, payload: TakeChip
     return success();
 }
 
-function validateSetRulesConfig(core: TheGangCore, playerId: string): ValidationResult {
+function validateSetRulesConfig(
+    core: TheGangCore,
+    playerId: string,
+    config: Partial<TheGangCore['rules']['config']>,
+): ValidationResult {
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
     if (core.heistNumber !== 1 || core.round !== 1 || core.phase !== 'chip-selection') return failure('rulesLocked');
     if (core.heistStarted || Object.keys(core.currentRoundChips).length > 0 || core.roundHistory.length > 0) return failure('rulesLocked');
+    if (normalizeRulesConfig(config).twoHand && core.playerIds.length > 5) return failure('twoHandPlayerLimit');
     return success();
 }
 

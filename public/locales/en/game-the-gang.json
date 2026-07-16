@@ -75,6 +75,10 @@
     "communityCardsSlot": "Community card slots",
     "communityCards": "Community cards",
     "myHand": "My hand",
+    "topHand": "Top",
+    "bottomHand": "Bottom",
+    "winningTopHand": "Top used",
+    "winningBottomHand": "Bottom used",
     "currentHandRank": "Current hand",
     "currentHandRankAria": "Current best hand: {{rank}}, {{detail}}, best five: {{cards}}",
     "currentHandRankPending": "Waiting for cards",
@@ -127,9 +131,9 @@
       "antiTroll": "AntiTroll"
     },
     "ttsSetupOptionDescriptions": {
-      "omaha": "At showdown, hands must use exactly 2 hand cards and 3 board cards.",
-      "twoHand": "Records the TTS 2Hand setup option; full independent two-hand betting still needs separate expansion.",
-      "automode": "Records the TTS automode option; the Web flow still keeps explicit all-player confirmation.",
+      "omaha": "Each hand gets 2 extra cards; showdown must use exactly 2 hand cards and 3 board cards.",
+      "twoHand": "Each player receives top and bottom hands. Showdown evaluates both and uses the stronger hand for ranking. Up to 5 players.",
+      "automode": "Automatically advances after all players take chips; the final chip round automatically reveals showdown.",
       "antiTroll": "Matches the TTS anti-misclick/host-clearance toggle; Web setup remains host-gated."
     },
     "exitChipMode": "Exit chip mode",

@@ -114,6 +114,7 @@ export const LeftSidebar = ({
                         className="flex-wrap-reverse justify-start gap-[0.3vw]"
                         locale={locale}
                         atlas={statusIconAtlas}
+                        testIdPrefix={playerId ? `dt-player-${playerId}-status` : undefined}
                         onEffectClick={(effectId) => {
                             if (effectId === STATUS_IDS.KNOCKDOWN && onKnockdownClick) {
                                 onKnockdownClick();

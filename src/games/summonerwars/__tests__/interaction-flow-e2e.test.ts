@@ -1230,7 +1230,7 @@ describe('交缠颂歌 + 连续射击共享 E2E', () => {
 });
 
 // ============================================================================
-// 10. 寒冰碎屑 E2E：建造阶段结束 → 消耗充能 → 建筑相邻敌方受伤
+// 10. 寒冰碎屑 E2E：攻击阶段开始 → 消耗充能 → 建筑相邻敌方受伤
 // ============================================================================
 
 describe('寒冰碎屑 E2E 流程', () => {
@@ -1243,7 +1243,7 @@ describe('寒冰碎屑 E2E 流程', () => {
   });
 
   it('寒冰碎屑消耗充能后对建筑相邻敌方造成1伤', () => {
-    core.phase = 'build';
+    core.phase = 'attack';
     core.currentPlayer = '0' as PlayerId;
 
     // 放置贾穆德（真实：STR 3, HP 7, ranged(3)，有 ice_shards + imposing）
@@ -1295,7 +1295,7 @@ describe('寒冰碎屑 E2E 流程', () => {
   });
 
   it('寒冰碎屑对多个建筑相邻的不同敌方都造成伤害', () => {
-    core.phase = 'build';
+    core.phase = 'attack';
     core.currentPlayer = '0' as PlayerId;
 
     const jarmundCard = mkUnit('frost-jarmund', {
@@ -1333,7 +1333,7 @@ describe('寒冰碎屑 E2E 流程', () => {
   });
 
   it('无充能时寒冰碎屑不可激活', () => {
-    core.phase = 'build';
+    core.phase = 'attack';
     core.currentPlayer = '0' as PlayerId;
 
     const jarmundCard = mkUnit('frost-jarmund', {
@@ -1356,7 +1356,7 @@ describe('寒冰碎屑 E2E 流程', () => {
   });
 
   it('无充能时执行器也不产生任何事件（防御性）', () => {
-    core.phase = 'build';
+    core.phase = 'attack';
     core.currentPlayer = '0' as PlayerId;
 
     const jarmundCard = mkUnit('frost-jarmund', {

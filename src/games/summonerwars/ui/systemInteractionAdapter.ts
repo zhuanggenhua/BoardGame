@@ -45,16 +45,19 @@ type ActivatedAbilityId = typeof ACTIVATED_ABILITY_IDS[number];
 export const SYSTEM_CARD_SELECTOR_ABILITY_IDS = [
   'revive_undead',
   'fortress_power',
+  'huijin_call_guards',
 ] as const;
 
 type SystemCardSelectorAbilityId = typeof SYSTEM_CARD_SELECTOR_ABILITY_IDS[number];
 type SystemCardSelectorTitleKey =
   | 'cardSelector.reviveUndead'
-  | 'cardSelector.fortressPower';
+  | 'cardSelector.fortressPower'
+  | 'cardSelector.huijinCallGuards';
 
 const SYSTEM_CARD_SELECTOR_TITLE_KEYS: Record<SystemCardSelectorAbilityId, SystemCardSelectorTitleKey> = {
   revive_undead: 'cardSelector.reviveUndead',
   fortress_power: 'cardSelector.fortressPower',
+  huijin_call_guards: 'cardSelector.huijinCallGuards',
 };
 
 const isCellCoord = (value: unknown): value is CellCoord => {
@@ -341,6 +344,39 @@ export function listActivatedAbilityTargetCardIds(
     .filter((targetCardId): targetCardId is string => !!targetCardId);
 }
 
+export function listSystemCardSelectorTargetCardIds(
+  swInteraction: SwSimpleChoiceInteraction | null | undefined,
+  abilityId: SystemCardSelectorAbilityId,
+): string[] {
+  if (!swInteraction) return [];
+  if (abilityId === 'huijin_call_guards' && swInteraction.type === 'huijin_call_guards_select_card') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as { action?: string; cardId?: string } | undefined;
+        return value?.action === 'huijin_call_guards_card' && typeof value.cardId === 'string'
+          ? value.cardId
+          : null;
+      })
+      .filter((cardId): cardId is string => !!cardId);
+  }
+  return listActivatedAbilityTargetCardIds(swInteraction, abilityId, 'selectCard');
+}
+
+export function findSystemCardSelectorOptionByCardId(
+  swInteraction: SwSimpleChoiceInteraction | null | undefined,
+  abilityId: SystemCardSelectorAbilityId,
+  targetCardId: string,
+): PromptOption | null {
+  if (abilityId === 'huijin_call_guards') {
+    if (swInteraction?.type !== 'huijin_call_guards_select_card') return null;
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; cardId?: string } | undefined;
+      return value?.action === 'huijin_call_guards_card' && value.cardId === targetCardId;
+    }) ?? null;
+  }
+  return findActivatedAbilityTargetOptionByCardId(swInteraction, abilityId, targetCardId, 'selectCard');
+}
+
 export function resolveBeforeAttackCardConfirmation(
   swInteraction: SwSimpleChoiceInteraction | null | undefined,
   abilityMode: AbilityModeState | null | undefined,
@@ -512,6 +548,28 @@ export function listSystemAbilityPositionTargets(
       .filter((position): position is CellCoord => !!position);
   }
 
+  if (abilityMode.abilityId === 'huijin_call_guards' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as { action?: string; position?: CellCoord } | undefined;
+        return value?.action === 'huijin_call_guards_position' && isCellCoord(value.position)
+          ? value.position
+          : null;
+      })
+      .filter((position): position is CellCoord => !!position);
+  }
+
+  if (abilityMode.abilityId === 'huijin_ram' && abilityMode.step === 'selectPushDirection') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+        return value?.action === 'after_attack_huijin_ram_position' && isCellCoord(value.newPosition)
+          ? value.newPosition
+          : null;
+      })
+      .filter((position): position is CellCoord => !!position);
+  }
+
   return [];
 }
 
@@ -546,6 +604,24 @@ export function findSystemAbilityPositionOption(
       if (value?.action !== 'after_move_mogu_fanatical_fungus_target') return false;
       const target = isCellCoord(value.newPosition) ? value.newPosition : value.targetPosition;
       return target?.row === position.row && target.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'huijin_call_guards' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; position?: CellCoord } | undefined;
+      return value?.action === 'huijin_call_guards_position'
+        && value.position?.row === position.row
+        && value.position?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'huijin_ram' && abilityMode.step === 'selectPushDirection') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+      return value?.action === 'after_attack_huijin_ram_position'
+        && value.newPosition?.row === position.row
+        && value.newPosition?.col === position.col;
     }) ?? null;
   }
 
@@ -690,6 +766,24 @@ export function findSystemAbilityUnitOptionByPosition(
     );
   }
 
+  if (abilityMode.abilityId === 'huijin_ram' && swInteraction.type === 'after_attack_huijin_ram_target') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'after_attack_huijin_ram_target'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'huijin_quick_shot' && swInteraction.type === 'after_move_huijin_quick_shot') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'after_move_huijin_quick_shot'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
   return null;
 }
 
@@ -723,8 +817,10 @@ export function getSystemAbilityUiRoute(
     || (abilityMode.abilityId === 'structure_shift' && abilityMode.step === 'selectNewPosition')
     || (abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectPosition')
     || (abilityMode.abilityId === 'mogu_fanatical_fungus' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'huijin_call_guards' && abilityMode.step === 'selectPosition')
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit')
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection')
+    || (abilityMode.abilityId === 'huijin_ram' && abilityMode.step === 'selectPushDirection')
   ) {
     return 'board-cell-position';
   }
@@ -741,6 +837,8 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'telekinesis_instead'
       || abilityMode.abilityId === 'high_telekinesis_instead'
       || abilityMode.abilityId === 'mogu_blood_infusion'
+      || abilityMode.abilityId === 'huijin_ram'
+      || abilityMode.abilityId === 'huijin_quick_shot'
     )
   ) {
     return 'board-cell-unit';
@@ -767,6 +865,7 @@ export function deriveSystemAbilityMode(
     sourcePosition?: CellCoord;
     structurePosition?: CellCoord;
     targetPosition?: CellCoord;
+    cardId?: string;
     targetCardId?: string;
     abilityId?: string;
     step?: string;
@@ -868,6 +967,48 @@ export function deriveSystemAbilityMode(
     return {
       abilityId: 'mogu_fanatical_fungus',
       step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'after_move_huijin_quick_shot') {
+    return {
+      abilityId: 'huijin_quick_shot',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'huijin_call_guards_select_card') {
+    return {
+      abilityId: 'huijin_call_guards',
+      step: 'selectCard',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'huijin_call_guards_select_position') {
+    return {
+      abilityId: 'huijin_call_guards',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+      selectedCardId: typeof meta.cardId === 'string' ? meta.cardId : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'after_attack_huijin_ram_target') {
+    return {
+      abilityId: 'huijin_ram',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'after_attack_huijin_ram_position') {
+    return {
+      abilityId: 'huijin_ram',
+      step: 'selectPushDirection',
       sourceUnitId: meta.sourceUnitId,
       targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
     };

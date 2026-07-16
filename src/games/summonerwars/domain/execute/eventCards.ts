@@ -680,6 +680,34 @@ export function executePlayEvent(
         }
         break;
       }
+
+      case CARD_IDS.HUIJIN_SCORCH: {
+        if (!summoner || !targets || targets.length === 0) break;
+        const targetPos = targets[0];
+        const target = getUnitAt(core, targetPos);
+        if (!target) break;
+        if (target.card.unitClass === 'summoner') break;
+        if (manhattanDistance(summoner.position, targetPos) > 2) break;
+        events.push({
+          type: SW_EVENTS.UNIT_DAMAGED,
+          payload: {
+            position: targetPos,
+            damage: 2,
+            reason: 'huijin_scorch',
+            sourceAbilityId: 'huijin_scorch',
+            sourcePlayerId: playerId,
+          },
+          timestamp,
+        });
+        break;
+      }
+
+      case CARD_IDS.HUIJIN_DAZZLING_LIGHT:
+      case CARD_IDS.HUIJIN_DIVINE_REVENGE:
+      case CARD_IDS.HUIJIN_PHOENIX_SOUL: {
+        // 持续事件：EVENT_PLAYED 已写入 activeEvents；具体消费点在攻击/技能结算中处理。
+        break;
+      }
     }
   }
 }

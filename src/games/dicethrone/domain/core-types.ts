@@ -277,6 +277,8 @@ export interface PendingAttack {
     followUpChoiceBySourceAbilityId?: Record<string, string>;
     /** 树精神圣防止即将受到的负面状态的可选响应决定。 */
     treantDivinePreventDebuffChoice?: 'prevent' | 'skip';
+    /** 等本次伤害响应窗口消耗指定 token 后再授予的 token。 */
+    deferredTokenGrants?: PendingDamage['deferredTokenGrants'];
     /**
      * Loaded 奖励骰的临时加成（由攻击修正卡在本次攻击内挂载）
      * 例：Wild West 在你花费 Loaded 时允许重掷一次，并在奖励骰收口后追加 +1。
@@ -465,6 +467,15 @@ export interface PendingDamage {
         sourcePlayerId?: PlayerId;
         damageScope?: 'attack' | 'direct';
         unblockable?: boolean;
+        sourceCommandType?: string;
+    }>;
+    /** 需要等本响应窗口消耗指定 token 后再授予的 token。 */
+    deferredTokenGrants?: Array<{
+        triggerTokenId: string;
+        targetId: PlayerId;
+        tokenId: string;
+        amount: number;
+        sourceAbilityId?: string;
         sourceCommandType?: string;
     }>;
 }

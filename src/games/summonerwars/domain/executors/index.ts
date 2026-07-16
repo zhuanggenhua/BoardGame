@@ -17,3 +17,4 @@ import './paladin';
 import './frost';
 import './barbaric';
 import './mogu';
+import './huijin';

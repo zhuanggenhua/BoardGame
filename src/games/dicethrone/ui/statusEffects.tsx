@@ -5,9 +5,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import {
-    getLocalizedImageCandidateUrls,
+    getAssetsBaseUrl,
     getLocalizedLocalAssetPath,
     getPreloadedImageElement,
+    getRuntimeImageCandidateUrls,
+    markImageCandidateFailed,
     markImageLoaded,
     onImageReady,
 } from '../../../core';
@@ -61,6 +63,7 @@ const isStatusIconAtlasResponse = (value: unknown): value is StatusIconAtlasResp
 
 // Map of Atlas ID -> Config
 export type StatusAtlases = Record<string, StatusIconAtlasConfig>;
+const DEFAULT_STATUS_ATLAS_REMOTE_BASE_URL = 'https://assets.easyboardgame.top/official';
 
 const getAtlasFallbackLocale = (locale: string) => {
     if (locale === 'zh-CN') return 'en';
@@ -93,13 +96,33 @@ const appendCapacitorFileQuerylessFallback = (url: string | undefined) => {
     return candidates;
 };
 
+const stripStatusAtlasAssetPrefix = (path: string) => (
+    path
+        .replace(/^\/+/, '')
+        .replace(/^assets\//, '')
+        .replace(/^i18n\/[^/]+\//, '')
+);
+
+const getStatusAtlasRemoteJsonCandidates = (path: string, locale: string) => {
+    const relative = stripStatusAtlasAssetPrefix(path);
+    const remoteRelativePath = `i18n/${locale}/${relative}`;
+    const remoteBaseUrls = [
+        /^https?:\/\//i.test(getAssetsBaseUrl()) ? getAssetsBaseUrl() : '',
+        DEFAULT_STATUS_ATLAS_REMOTE_BASE_URL,
+    ].filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index);
+
+    return remoteBaseUrls.map((baseUrl) => `${baseUrl}/${remoteRelativePath}`);
+};
+
 const getStatusAtlasJsonCandidates = (path: string, locale?: string) => {
     const effectiveLocale = locale || 'zh-CN';
     const fallbackLocale = getAtlasFallbackLocale(effectiveLocale);
 
     return dedupeUrls([
         ...appendCapacitorFileQuerylessFallback(getLocalizedLocalAssetPath(path, effectiveLocale)),
+        ...getStatusAtlasRemoteJsonCandidates(path, effectiveLocale),
         ...appendCapacitorFileQuerylessFallback(getLocalizedLocalAssetPath(path, fallbackLocale)),
+        ...getStatusAtlasRemoteJsonCandidates(path, fallbackLocale),
     ]);
 };
 
@@ -165,6 +188,62 @@ const normalizeComparableUrl = (url: string): string => {
     }
 };
 
+const isCrossOriginStatusImageUrl = (url: string): boolean => {
+    if (!/^https?:\/\//i.test(url) || /\/_capacitor_file_\//i.test(url)) {
+        return false;
+    }
+    if (typeof window === 'undefined') {
+        return true;
+    }
+    try {
+        return new URL(url, window.location.href).origin !== window.location.origin;
+    } catch {
+        return false;
+    }
+};
+
+const isOfficialStatusAtlasImageUrl = (url: string): boolean => (
+    normalizeComparableUrl(url).startsWith(`${DEFAULT_STATUS_ATLAS_REMOTE_BASE_URL}/`)
+);
+
+const isLocalPublicStatusAtlasImageUrl = (url: string): boolean => {
+    if (!url || /\/_capacitor_file_\//i.test(url)) {
+        return false;
+    }
+
+    if (typeof window === 'undefined') {
+        return url.startsWith('/assets/');
+    }
+
+    try {
+        const parsed = new URL(url, window.location.href);
+        return parsed.origin === window.location.origin && parsed.pathname.startsWith('/assets/');
+    } catch {
+        return url.startsWith('/assets/');
+    }
+};
+
+const orderStatusAtlasImageCandidates = (candidateUrls: string[]): string[] => {
+    const customOrPackageCandidates = candidateUrls.filter((url) =>
+        !isOfficialStatusAtlasImageUrl(url) && !isLocalPublicStatusAtlasImageUrl(url)
+    );
+    const officialCandidates = candidateUrls.filter(isOfficialStatusAtlasImageUrl);
+    const localPublicCandidates = candidateUrls.filter(isLocalPublicStatusAtlasImageUrl);
+
+    return dedupeUrls([
+        ...customOrPackageCandidates,
+        ...officialCandidates,
+        ...(officialCandidates.length > 0 ? [] : localPublicCandidates),
+    ]);
+};
+
+const OFFICIAL_STATUS_ATLAS_RETRY_LIMIT = 2;
+
+const appendStatusAtlasRetryFragment = (url: string, attempt: number): string => {
+    const [baseUrl] = url.split('#');
+    return `${baseUrl}#status-atlas-retry-${attempt}-${Date.now()}`;
+};
+
 const findCandidateIndex = (candidateUrls: string[], url: string) => {
     if (!url) return -1;
     const normalizedUrl = normalizeComparableUrl(url);
@@ -178,6 +257,11 @@ const resolveLoadedStatusCandidateUrl = (candidateUrls: string[]) => {
     }));
 
     for (const candidateUrl of candidateUrls) {
+        const loadedStatusImage = statusImageLoadedResults.get(candidateUrl);
+        if (loadedStatusImage?.renderUrl) {
+            return candidateUrl;
+        }
+
         const img = getPreloadedImageElement(candidateUrl);
         if (!hasUsableStatusImage(img)) {
             continue;
@@ -196,8 +280,80 @@ const resolveLoadedStatusCandidateUrl = (candidateUrls: string[]) => {
     return '';
 };
 
-type StatusImageLoadResult = { url: string; img: HTMLImageElement } | null;
+type LoadedStatusImage = { url: string; renderUrl: string; img?: HTMLImageElement; objectUrl?: string };
+type StatusImageLoadResult = LoadedStatusImage | null;
 const statusImageInFlightLoads = new Map<string, Promise<StatusImageLoadResult>>();
+const statusImageLoadedResults = new Map<string, LoadedStatusImage>();
+
+export const __resetStatusEffectImageCachesForTests = () => {
+    for (const result of statusImageLoadedResults.values()) {
+        if (result.objectUrl && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+            URL.revokeObjectURL(result.objectUrl);
+        }
+    }
+    statusImageInFlightLoads.clear();
+    statusImageLoadedResults.clear();
+};
+
+const loadStatusImageElement = (url: string, crossOrigin: boolean): Promise<HTMLImageElement | null> => new Promise((resolve) => {
+    const img = new Image();
+    if (crossOrigin) {
+        img.crossOrigin = 'anonymous';
+    }
+    img.onload = () => {
+        resolve(hasUsableStatusImage(img) ? img : null);
+    };
+    img.onerror = () => {
+        resolve(null);
+    };
+    img.src = url;
+});
+
+const shouldFetchStatusImageCandidate = (url: string): boolean => {
+    if (!url || url.startsWith('data:') || url.startsWith('blob:')) {
+        return false;
+    }
+    if (/\/_capacitor_file_\//i.test(url)) {
+        return false;
+    }
+    return typeof fetch === 'function';
+};
+
+const loadSingleStatusImageCandidate = async (url: string): Promise<LoadedStatusImage | null> => {
+    const cached = statusImageLoadedResults.get(url);
+    if (cached?.renderUrl) {
+        return cached;
+    }
+
+    if (shouldFetchStatusImageCandidate(url)) {
+        try {
+            const response = await fetch(url, { mode: 'cors', credentials: 'omit' });
+            if (response.ok) {
+                const blob = await response.blob();
+                if (!blob.type.toLowerCase().startsWith('image/')) {
+                    return null;
+                }
+                const result = {
+                    url,
+                    renderUrl: url,
+                };
+                statusImageLoadedResults.set(url, result);
+                return result;
+            }
+        } catch {
+            // Fall through to normal Image loading. Some environments do not support CORS fetch.
+        }
+    }
+
+    const img = await loadStatusImageElement(url, false);
+    if (!img) {
+        return null;
+    }
+    const result = { url, renderUrl: url, img };
+    statusImageLoadedResults.set(url, result);
+    markImageLoaded(url, undefined, img, url);
+    return result;
+};
 
 const loadStatusImageCandidatesShared = (candidateUrls: string[]): Promise<StatusImageLoadResult> => {
     if (candidateUrls.length === 0) {
@@ -218,19 +374,13 @@ const loadStatusImageCandidatesShared = (candidateUrls: string[]): Promise<Statu
             }
 
             const url = candidateUrls[index];
-            const img = new Image();
-            img.onload = () => {
-                if (!hasUsableStatusImage(img)) {
+            void loadSingleStatusImageCandidate(url).then((result) => {
+                if (!result) {
                     tryLoad(index + 1);
                     return;
                 }
-                markImageLoaded(url, undefined, img, url);
-                resolve({ url, img });
-            };
-            img.onerror = () => {
-                tryLoad(index + 1);
-            };
-            img.src = url;
+                resolve(result);
+            });
         };
 
         tryLoad(0);
@@ -244,20 +394,31 @@ const loadStatusImageCandidatesShared = (candidateUrls: string[]): Promise<Statu
 
 const getAtlasFrameImageStyle = (atlas: StatusIconAtlasConfig, frame: StatusIconAtlasFrame): CSSProperties => ({
     position: 'absolute',
-    top: `${-(frame.y / frame.h) * 100}%`,
-    left: `${-(frame.x / frame.w) * 100}%`,
+    top: 0,
+    left: 0,
     width: `${(atlas.imageW / frame.w) * 100}%`,
     height: `${(atlas.imageH / frame.h) * 100}%`,
     maxWidth: 'none',
     maxHeight: 'none',
     pointerEvents: 'none',
     userSelect: 'none',
+    transform: `translate(${-(frame.x / atlas.imageW) * 100}%, ${-(frame.y / atlas.imageH) * 100}%)`,
+    transformOrigin: 'top left',
 });
 
 const useResolvedStatusImage = (sourcePath: string | undefined, locale: string | undefined) => {
     const effectiveLocale = locale || 'zh-CN';
     const candidateUrls = React.useMemo(
-        () => (sourcePath ? getLocalizedImageCandidateUrls(sourcePath, effectiveLocale) : []),
+        () => {
+            if (!sourcePath) {
+                return [];
+            }
+
+            const urls = getRuntimeImageCandidateUrls(sourcePath, effectiveLocale);
+            return /status-icons-atlas/i.test(sourcePath)
+                ? orderStatusAtlasImageCandidates(urls)
+                : urls;
+        },
         [effectiveLocale, sourcePath],
     );
     const loadedCandidateUrl = React.useMemo(
@@ -272,11 +433,24 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
         return preloadedIndex >= 0 ? preloadedIndex : 0;
     }, [candidateUrls, loadedCandidateUrl]);
     const [candidateIndex, setCandidateIndex] = React.useState(initialCandidateIndex);
-    const activeUrl = candidateIndex >= 0 ? candidateUrls[candidateIndex] ?? '' : '';
+    const activeSourceUrl = candidateIndex >= 0 ? candidateUrls[candidateIndex] ?? '' : '';
+    const [resolvedImage, setResolvedImage] = React.useState<LoadedStatusImage | null>(() => (
+        activeSourceUrl ? statusImageLoadedResults.get(activeSourceUrl) ?? null : null
+    ));
+    const activeUrl = resolvedImage?.url === activeSourceUrl ? resolvedImage.renderUrl : activeSourceUrl;
+    const rescueLoadRef = React.useRef<Promise<StatusImageLoadResult> | null>(null);
+    const officialStatusAtlasRetryCountsRef = React.useRef(new Map<string, number>());
 
     React.useEffect(() => {
         setCandidateIndex(initialCandidateIndex);
     }, [initialCandidateIndex, loadedCandidateUrl, sourcePath, effectiveLocale]);
+
+    React.useEffect(() => {
+        const cached = activeSourceUrl ? statusImageLoadedResults.get(activeSourceUrl) : null;
+        if (cached?.renderUrl) {
+            setResolvedImage(cached);
+        }
+    }, [activeSourceUrl]);
 
     React.useEffect(() => {
         if (!sourcePath || candidateUrls.length === 0 || loadedCandidateUrl) {
@@ -284,12 +458,17 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
         }
 
         let cancelled = false;
-        void loadStatusImageCandidatesShared(candidateUrls).then((result) => {
+        const load = loadStatusImageCandidatesShared(candidateUrls);
+        rescueLoadRef.current = load;
+        void load.then((result) => {
             if (cancelled || !result) {
                 return;
             }
 
-            markImageLoaded(sourcePath, effectiveLocale, result.img, result.url);
+            if (result.img) {
+                markImageLoaded(sourcePath, effectiveLocale, result.img, result.url);
+            }
+            setResolvedImage(result);
             const nextIndex = findCandidateIndex(candidateUrls, result.url);
             if (nextIndex >= 0) {
                 setCandidateIndex(nextIndex);
@@ -326,11 +505,59 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
         if (!hasUsableStatusImage(img)) {
             return;
         }
-        markImageLoaded(activeUrl, undefined, img, activeUrl);
-        markImageLoaded(sourcePath, effectiveLocale, img, activeUrl);
+        markImageLoaded(activeSourceUrl, undefined, img, activeSourceUrl);
+        markImageLoaded(sourcePath, effectiveLocale, img, activeSourceUrl);
     };
 
     const handleError = () => {
+        if (
+            sourcePath
+            && /status-icons-atlas/i.test(sourcePath)
+            && activeSourceUrl
+            && isOfficialStatusAtlasImageUrl(activeSourceUrl)
+        ) {
+            const retryCount = officialStatusAtlasRetryCountsRef.current.get(activeSourceUrl) ?? 0;
+            if (retryCount < OFFICIAL_STATUS_ATLAS_RETRY_LIMIT) {
+                const nextRetryCount = retryCount + 1;
+                officialStatusAtlasRetryCountsRef.current.set(activeSourceUrl, nextRetryCount);
+                setResolvedImage({
+                    url: activeSourceUrl,
+                    renderUrl: appendStatusAtlasRetryFragment(activeSourceUrl, nextRetryCount),
+                });
+                return;
+            }
+        }
+
+        if (sourcePath && activeSourceUrl) {
+            markImageCandidateFailed(sourcePath, effectiveLocale, activeSourceUrl);
+        }
+
+        if (sourcePath && candidateUrls.length > 0 && isCrossOriginStatusImageUrl(activeSourceUrl)) {
+            const load = loadStatusImageCandidatesShared(candidateUrls);
+            rescueLoadRef.current = load;
+            void load.then((result) => {
+                if (rescueLoadRef.current !== load) {
+                    return;
+                }
+                if (result) {
+                    if (result.img) {
+                        markImageLoaded(sourcePath, effectiveLocale, result.img, result.url);
+                    }
+                    setResolvedImage(result);
+                    const nextIndex = findCandidateIndex(candidateUrls, result.url);
+                    if (nextIndex >= 0) {
+                        setCandidateIndex(nextIndex);
+                    }
+                    return;
+                }
+                setCandidateIndex((currentIndex) => {
+                    const nextIndex = currentIndex + 1;
+                    return nextIndex < candidateUrls.length ? nextIndex : -1;
+                });
+            });
+            return;
+        }
+
         setCandidateIndex((currentIndex) => {
             const nextIndex = currentIndex + 1;
             return nextIndex < candidateUrls.length ? nextIndex : -1;
@@ -341,6 +568,7 @@ const useResolvedStatusImage = (sourcePath: string | undefined, locale: string |
         activeUrl,
         handleError,
         handleLoad,
+        sourceUrl: activeSourceUrl,
     };
 };
 
@@ -355,7 +583,7 @@ const ResolvedStatusIconImage = ({
     sourcePath?: string;
     style?: CSSProperties;
 }) => {
-    const { activeUrl, handleError, handleLoad } = useResolvedStatusImage(sourcePath, locale);
+    const { activeUrl, handleError, handleLoad, sourceUrl } = useResolvedStatusImage(sourcePath, locale);
     if (!activeUrl) {
         return <span className={className} />;
     }
@@ -365,6 +593,7 @@ const ResolvedStatusIconImage = ({
             alt=""
             aria-hidden="true"
             className={className}
+            data-status-source-url={sourceUrl}
             draggable={false}
             onError={handleError}
             onLoad={handleLoad}
@@ -436,6 +665,7 @@ export const StatusEffectBadge = ({
     atlas,
     onClick,
     clickable = false,
+    dataTestId,
 }: {
     effectId: string;
     stacks: number;
@@ -444,8 +674,9 @@ export const StatusEffectBadge = ({
     atlas?: StatusAtlases | null;
     onClick?: () => void;
     clickable?: boolean;
+    dataTestId?: string;
 }) => {
-    const { t, i18n } = useTranslation('game-dicethrone');
+    const { t } = useTranslation('game-dicethrone');
     const meta = STATUS_EFFECT_META[effectId] || { color: 'from-gray-500 to-gray-600' };
 
     // Check if sprite exists in the resolved atlas
@@ -478,6 +709,9 @@ export const StatusEffectBadge = ({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={isClickable ? onClick : undefined}
+            data-testid={dataTestId}
+            data-status-id={effectId}
+            data-status-stacks={stacks}
         >
             <div
                 className={`
@@ -523,6 +757,7 @@ export const StatusEffectsContainer = ({
     atlas,
     onEffectClick,
     clickableEffects,
+    testIdPrefix,
 }: {
     effects: Record<string, number>;
     maxPerRow?: number;
@@ -534,6 +769,8 @@ export const StatusEffectsContainer = ({
     onEffectClick?: (effectId: string) => void;
     /** 可点击的状态效果 ID 列表 */
     clickableEffects?: string[];
+    /** E2E 可见性断言前缀，例如 dt-player-0-status */
+    testIdPrefix?: string;
 }) => {
     const activeEffects = Object.entries(effects).filter(([, stacks]) => stacks > 0);
     if (activeEffects.length === 0) return null;
@@ -555,6 +792,7 @@ export const StatusEffectsContainer = ({
                         atlas={atlas}
                         onClick={isClickable ? () => onEffectClick?.(effectId) : undefined}
                         clickable={isClickable}
+                        dataTestId={testIdPrefix ? `${testIdPrefix}-${effectId}` : undefined}
                     />
                 );
             })}

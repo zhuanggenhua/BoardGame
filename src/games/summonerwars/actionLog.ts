@@ -98,7 +98,7 @@ export const swDamageSourceResolver: DamageSourceResolver = {
             'blood_rune', 'blood_summon', 'revive_undead', 'inaction',
             'stun', 'stun_passthrough',
             // 事件卡效果（不在 abilityRegistry 里）
-            'holy_protection',
+            'holy_protection', 'huijin_scorch', 'huijin_divine_revenge', 'huijin_flame_breath', 'huijin_quick_shot',
         ]);
         if (knownReasons.has(sourceId)) {
             return { label: reasonKey, isI18n: true, ns: SW_NS };

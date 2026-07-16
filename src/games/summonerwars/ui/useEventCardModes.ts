@@ -16,7 +16,7 @@ import {
   hasStableAbility, getUnitAt, getUnitAbilities,
 } from '../domain/helpers';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
-import { getBaseCardId, CARD_IDS } from '../domain/ids';
+import { getBaseCardId, CARD_IDS, isMoguSporePlagueBodyCard } from '../domain/ids';
 import { useToast } from '../../../contexts/ToastContext';
 import { playDeniedSound } from '../../../lib/audio/useGameAudio';
 import type { SoulTransferModeState, MindCaptureModeState, AfterAttackAbilityModeState } from './useGameEvents';
@@ -1076,6 +1076,9 @@ export function useEventCardModes({
       case CARD_IDS.MOGU_RELEASE_SPORES: {
         const summoner = getSummoner(core, myPlayerId as '0' | '1');
         if (!summoner) { failReason = t('eventCard.noSummoner'); break; }
+        const player = core.players[myPlayerId as '0' | '1'];
+        const hasDiscardBody = player.discard.some((card) => card.cardType === 'unit' && isMoguSporePlagueBodyCard(card));
+        if (!hasDiscardBody) break;
         const hasOpenSpace = getAdjacentCells(summoner.position).some(adj => isValidCoord(adj) && isCellEmpty(core, adj));
         if (!hasOpenSpace) break;
         activated = true;

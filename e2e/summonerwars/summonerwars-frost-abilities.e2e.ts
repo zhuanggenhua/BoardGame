@@ -3,7 +3,7 @@
  * 
  * 覆盖范围：
  * - 威势（imposing）：攻击敌方单位后给自己充能一次
- * - 寒冰碎屑（ice_shards）：建造阶段结束消耗充能对建筑相邻敌方造成伤害
+ * - 寒冰碎屑（ice_shards）：攻击阶段开始消耗充能对建筑相邻敌方造成伤害
  * - 冰霜战斧（frost_axe）：移动后充能自身
  * - 结构变换（structure_shift）：移动后推拉友方建筑
  */
@@ -167,7 +167,7 @@ const prepareIceShardsState = (coreState: any) => {
   next.currentPlayer = '0';
   next.selectedUnit = undefined;
   next.abilityUsageCount = {};
-  // 确保阶段为 build（ice_shards 在 build 阶段结束触发）
+  // 确保阶段为 build，随后结束阶段进入 attack 并触发 ice_shards
   next.phase = 'build';
 
   const board = next.board;
@@ -344,7 +344,7 @@ test.describe('极地矮人阵营特色交互', () => {
     }
   });
 
-  test('寒冰碎屑：建造阶段结束消耗充能对建筑相邻敌方造成伤害', async ({ browser }, testInfo) => {
+  test('寒冰碎屑：攻击阶段开始消耗充能对建筑相邻敌方造成伤害', async ({ browser }, testInfo) => {
     test.setTimeout(180000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     const match = await setupSWOnlineMatch(browser, baseURL, 'frost', 'necromancer');
@@ -373,16 +373,15 @@ test.describe('极地矮人阵营特色交互', () => {
       // 记录敌方单位初始伤害
       const initialDamage = enemyUnit?.damage ?? 0;
 
-      // 点击"结束阶段"退出 build 阶段，触发 ice_shards onPhaseEnd
+      // 点击"结束阶段"退出 build 阶段，进入 attack 时触发 ice_shards
       const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
       await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
       
       await endPhaseBtn.click();
+      await waitForPhase(hostPage, 'attack');
       
-      // ice_shards 是 CONFIRMABLE_PHASE_END_ABILITIES，会 halt 阶段推进
       // 按钮文本来自 i18n: actions.confirm = "确认"/"Confirm", actions.skip = "跳过"/"Skip"
       const confirmBtn = hostPage.locator('button').filter({ hasText: /^Confirm$|^确认$/i }).first();
-      const skipBtn = hostPage.locator('button').filter({ hasText: /^Skip$|^跳过$/i }).first();
       
       // 等待按钮出现（5秒超时）
       await expect(confirmBtn).toBeVisible({ timeout: 5000 });
@@ -437,10 +436,11 @@ test.describe('极地矮人阵营特色交互', () => {
       const initialBoosts = jamudBefore?.boosts ?? 0;
       expect(initialBoosts).toBeGreaterThanOrEqual(1);
 
-      // 结束 build 阶段触发 ice_shards
+      // 结束 build 阶段，进入 attack 时触发 ice_shards
       const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
       await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
       await endPhaseBtn.click();
+      await waitForPhase(hostPage, 'attack');
 
       // 等待横幅出现
       const skipButton = hostPage.locator('button').filter({ hasText: /^Skip$|^跳过$/i }).first();

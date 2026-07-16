@@ -70,12 +70,12 @@ import {
   deriveRapidFireMode,
   deriveSoulTransferMode,
   deriveSystemAbilityMode,
+  findSystemCardSelectorOptionByCardId,
   getSystemAbilityUiRoute,
   getSystemCardSelectorAbilityId,
   getSystemCardSelectorTitleKey,
   isSwSimpleChoiceType,
-  listActivatedAbilityTargetCardIds,
-  findActivatedAbilityTargetOptionByCardId,
+  listSystemCardSelectorTargetCardIds,
   type SwSimpleChoiceInteraction,
 } from './ui/systemInteractionAdapter';
 import { useMovementTrails } from './ui/useMovementTrails';
@@ -501,10 +501,17 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isSystemCardSelectorActive = systemCardSelectorAbilityId !== null && abilityUiRoute === 'card-selector';
   const systemAbilitySelectableCardIds = systemCardSelectorAbilityId
     ? (() => {
-      const ids = listActivatedAbilityTargetCardIds(swInteraction, systemCardSelectorAbilityId, 'selectCard');
+      const ids = listSystemCardSelectorTargetCardIds(swInteraction, systemCardSelectorAbilityId);
       return ids.length > 0 ? new Set(ids) : null;
     })()
     : null;
+  const systemCardSelectorCards = useMemo(() => {
+    if (!systemCardSelectorAbilityId || !systemAbilitySelectableCardIds) return [];
+    const sourceCards = systemCardSelectorAbilityId === 'huijin_call_guards'
+      ? myHand
+      : (core.players[myPlayerId]?.discard ?? []);
+    return sourceCards.filter((card) => systemAbilitySelectableCardIds.has(card.id));
+  }, [core.players, myHand, myPlayerId, systemAbilitySelectableCardIds, systemCardSelectorAbilityId]);
   useEffect(() => {
     if (abilityMode?.step === 'selectCard' && abilityUiRoute !== 'card-selector') {
       console.warn('[SummonerWars] 未处理的系统能力卡牌选择器分支', {
@@ -1525,27 +1532,22 @@ export const SummonerWarsBoard: React.FC<Props> = ({
               {isSystemCardSelectorActive && (
                 <CardSelectorOverlay
                   title={t(getSystemCardSelectorTitleKey(systemCardSelectorAbilityId))}
-                  cards={core.players[myPlayerId]?.discard.filter(c => {
-                    if (!systemAbilitySelectableCardIds) {
-                      return false;
-                    }
-                    return systemAbilitySelectableCardIds.has(c.id);
-                  }) ?? []}
+                  cards={systemCardSelectorCards}
                   onSelect={(card) => {
                     if (!isSystemCardSelectorActive || !swInteraction) return;
-                    const option = findActivatedAbilityTargetOptionByCardId(
+                    const option = findSystemCardSelectorOptionByCardId(
                       swInteraction,
                       systemCardSelectorAbilityId,
                       card.id,
-                      'selectCard',
                     );
                     if (!option) return;
                     respondInteractionOption(option.id);
                   }}
                   onCancel={() => {
                     if (!isSystemCardSelectorActive || !swInteraction) return;
-                    dispatch(INTERACTION_COMMANDS.CANCEL, { interactionId: swInteraction.id });
+                    cancelSwInteraction(true);
                   }}
+                  cancelLabelKey={systemCardSelectorAbilityId === 'huijin_call_guards' ? 'actions.skip' : undefined}
                 />
               )}
 

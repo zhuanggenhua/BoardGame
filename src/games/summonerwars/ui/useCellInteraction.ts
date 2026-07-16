@@ -11,11 +11,10 @@ import { useTranslation } from 'react-i18next';
 import type { SummonerWarsCore, CellCoord, UnitCard, GamePhase, EventCard } from '../domain/types';
 import { SW_COMMANDS } from '../domain/types';
 import {
-  getValidSummonPositions, getValidBuildPositions,
+  getValidSummonPositionsForCard, getValidBuildPositions,
   getValidMoveTargetsEnhanced, getValidAttackTargetsEnhanced,
-  getPlayerUnits, hasAvailableActions, isCellEmpty,
-  getAdjacentCells,
-  manhattanDistance, findUnitPositionByInstanceId, getSummoner,
+  getPlayerUnits, hasAvailableActions,
+  manhattanDistance,
   getUnitAbilities,
   normalizeUnitBoosts,
 } from '../domain/helpers';
@@ -207,37 +206,7 @@ export function useCellInteraction({
       getBaseCardId(ev.id) === CARD_IDS.PALADIN_REKINDLE_HOPE
     );
     if (currentPhase !== 'summon' && !hasRekindleHope) return [];
-
-    const positions = getValidSummonPositions(core, myPlayerId as '0' | '1');
-    const posSet = new Set(positions.map(p => `${p.row},${p.col}`));
-    const addIfEmpty = (pos: CellCoord) => {
-      const key = `${pos.row},${pos.col}`;
-      if (!posSet.has(key) && isCellEmpty(core, pos)) {
-        posSet.add(key);
-        positions.push(pos);
-      }
-    };
-
-    // 重燃希望：召唤师相邻位置
-    if (hasRekindleHope) {
-      const summoner = getSummoner(core, myPlayerId as '0' | '1');
-      if (summoner) {
-        for (const adj of getAdjacentCells(summoner.position)) addIfEmpty(adj);
-      }
-    }
-
-    // 编织颂歌：目标单位相邻位置
-    const cwEvent = player.activeEvents.find(ev =>
-      getBaseCardId(ev.id) === CARD_IDS.BARBARIC_CHANT_OF_WEAVING && ev.targetUnitId
-    );
-    if (cwEvent) {
-      const targetPos = findUnitPositionByInstanceId(core, cwEvent.targetUnitId!);
-      if (targetPos) {
-        for (const adj of getAdjacentCells(targetPos)) addIfEmpty(adj);
-      }
-    }
-
-    return positions;
+    return getValidSummonPositionsForCard(core, myPlayerId as '0' | '1', selectedHandCard);
   }, [core, currentPhase, isMyTurn, myPlayerId, selectedHandCard, fireSacrificeSummonMode]);
 
   const validBuildPositions = useMemo(() => {

@@ -504,6 +504,8 @@ export function resolveEffect(
           abilityName: parentAbility?.name,
           actionId: effect.actionId,
           params: effect.params,
+          targetPosition: ctx.targetPosition,
+          targetUnitId: ctx.targetUnit?.instanceId,
           sourceUnitId: ctx.sourceUnit.instanceId,
           sourcePosition: ctx.sourcePosition,
           skipUsageCount: true,
@@ -820,6 +822,26 @@ export function calculateEffectiveStrength(
         strength += 1;
         modifiers.push({ source: CARD_IDS.TRICKSTER_HYPNOTIC_LURE, sourceName: '催眠引诱', value: 1 });
       }
+    }
+  }
+
+  // 点燃：赫丽丝相邻友方灰烬单位 +1 战力；赫丽丝自身不享受该加成。
+  if (unit.card.faction === 'huijin' && !abilityIds.has('huijin_ignite')) {
+    const dirs = [
+      { row: -1, col: 0 }, { row: 1, col: 0 },
+      { row: 0, col: -1 }, { row: 0, col: 1 },
+    ];
+    const hasAdjacentIgniter = dirs.some((dir) => {
+      const pos = { row: unit.position.row + dir.row, col: unit.position.col + dir.col };
+      if (pos.row < 0 || pos.row >= BOARD_ROWS || pos.col < 0 || pos.col >= BOARD_COLS) return false;
+      const adjacentUnit = state.board[pos.row]?.[pos.col]?.unit;
+      return !!adjacentUnit
+        && adjacentUnit.owner === unit.owner
+        && getUnitAbilities(adjacentUnit, state).some(ability => ability.id === 'huijin_ignite');
+    });
+    if (hasAdjacentIgniter) {
+      strength += 1;
+      modifiers.push({ source: 'huijin_ignite', sourceName: '点燃', value: 1 });
     }
   }
 

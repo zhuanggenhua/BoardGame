@@ -16,7 +16,13 @@ import {
     getDiceSpriteUrls,
     resolveSpriteAssetUrls,
 } from '../ui/assets';
-import { TokenBadge, getStatusEffectIconNode, loadStatusAtlases, type StatusIconAtlasConfig } from '../ui/statusEffects';
+import {
+    TokenBadge,
+    __resetStatusEffectImageCachesForTests,
+    getStatusEffectIconNode,
+    loadStatusAtlases,
+    type StatusIconAtlasConfig,
+} from '../ui/statusEffects';
 import {
     clearGameAssetBaseOverrides,
     getAssetsBaseUrl,
@@ -33,13 +39,14 @@ describe('StatusEffectsIcons', () => {
         setAssetsBaseUrl('/assets');
         setAssetHashesForTesting({});
         clearGameAssetBaseOverrides();
+        __resetStatusEffectImageCachesForTests();
     });
 
     afterEach(() => {
         vi.unstubAllGlobals();
     });
 
-    it('渲染状态图集时应指向压缩后的 atlas 资源', () => {
+    it('网页默认状态图集应指向服务器压缩 atlas 资源', () => {
         const atlas: StatusIconAtlasConfig = {
             imageW: 1314,
             imageH: 400,
@@ -58,8 +65,224 @@ describe('StatusEffectsIcons', () => {
             )
         );
 
-        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/monk/compressed/status-icons-atlas.webp');
+        expect(html).toContain('https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/monk/compressed/status-icons-atlas.webp');
         expect(html).toContain('<img');
+    });
+
+    it('状态图集裁片应按图像自身比例定位，避免只露出数量角标', () => {
+        const atlas: StatusIconAtlasConfig = {
+            imageW: 800,
+            imageH: 400,
+            frames: {
+                bounty: { x: 402, y: 0, w: 400, h: 400 },
+            },
+            imagePath: 'dicethrone/images/gunslinger/status-icons-atlas.png',
+        };
+
+        const html = renderToStaticMarkup(
+            getStatusEffectIconNode(
+                { frameId: TOKEN_IDS.BOUNTY, atlasId: DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER },
+                'zh-CN',
+                'normal',
+                { [DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]: atlas }
+            )
+        );
+
+        expect(html).toContain('width:200%');
+        expect(html).toContain('left:0');
+        expect(html).toMatch(/translate\(-50\.2\d+%, 0%\)/);
+        expect(html).toContain('transform-origin:top left');
+    });
+
+    it('官方远端状态图集首帧应保留官方来源且不强制 crossorigin', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        const atlas: StatusIconAtlasConfig = {
+            imageW: 800,
+            imageH: 400,
+            frames: {
+                loaded: { x: 0, y: 0, w: 400, h: 400 },
+                bounty: { x: 402, y: 0, w: 400, h: 400 },
+            },
+            imagePath: 'dicethrone/images/gunslinger/status-icons-atlas.png',
+        };
+
+        const html = renderToStaticMarkup(
+            getStatusEffectIconNode(
+                { frameId: TOKEN_IDS.LOADED, atlasId: DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER },
+                'zh-CN',
+                'normal',
+                { [DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]: atlas }
+            )
+        );
+
+        expect(html).toContain('https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp');
+        expect(html).not.toContain('crossorigin="anonymous"');
+    });
+
+    it('官方远端状态图集应保留官方直链渲染并复用探测结果', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        const atlas: StatusIconAtlasConfig = {
+            imageW: 800,
+            imageH: 400,
+            frames: {
+                loaded: { x: 0, y: 0, w: 400, h: 400 },
+                bounty: { x: 402, y: 0, w: 400, h: 400 },
+            },
+            imagePath: 'dicethrone/images/gunslinger/status-icons-atlas.png',
+        };
+        const sourceUrl = 'https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp';
+        const fetchMock = vi.fn(async () => ({
+            ok: true,
+            blob: async () => new Blob(['webp'], { type: 'image/webp' }),
+        }));
+        const RealURL = URL;
+        class MockURL extends RealURL {
+            static createObjectURL = vi.fn(() => 'blob:status-atlas');
+            static revokeObjectURL = vi.fn();
+        }
+        class MockImage {
+            onload: null | (() => void) = null;
+            onerror: null | (() => void) = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            currentSrc = '';
+            crossOrigin: string | null = null;
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                this.currentSrc = value;
+                if (value === 'blob:status-atlas') {
+                    this.naturalWidth = 800;
+                    this.naturalHeight = 400;
+                    queueMicrotask(() => this.onload?.());
+                    return;
+                }
+                queueMicrotask(() => this.onerror?.());
+            }
+        }
+        vi.stubGlobal('URL', MockURL as unknown as typeof URL);
+        vi.stubGlobal('Image', MockImage as unknown as typeof Image);
+        vi.stubGlobal('fetch', fetchMock);
+
+        const first = render(
+            getStatusEffectIconNode(
+                { frameId: TOKEN_IDS.LOADED, atlasId: DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER },
+                'zh-CN',
+                'normal',
+                { [DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]: atlas },
+            ),
+        );
+
+        await waitFor(() => {
+            const img = first.container.querySelector('img');
+            expect(img?.getAttribute('src')).toBe(sourceUrl);
+            expect(img?.getAttribute('data-status-source-url')).toBe(sourceUrl);
+            expect(fetchMock).toHaveBeenCalledWith(sourceUrl, { mode: 'cors', credentials: 'omit' });
+        });
+
+        const second = render(
+            getStatusEffectIconNode(
+                { frameId: TOKEN_IDS.BOUNTY, atlasId: DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER },
+                'zh-CN',
+                'normal',
+                { [DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]: atlas },
+            ),
+        );
+
+        await waitFor(() => {
+            const img = second.container.querySelector('img');
+            expect(img?.getAttribute('src')).toBe(sourceUrl);
+            expect(img?.getAttribute('data-status-source-url')).toBe(sourceUrl);
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('普通 /assets 可能返回 HTML 时状态图集应优先渲染官方 WebP', async () => {
+        const atlasId = 'test-status-atlas';
+        const sourcePath = 'dicethrone/images/test_status/status-icons-atlas.png';
+        const localUrl = '/assets/i18n/zh-CN/dicethrone/images/test_status/compressed/status-icons-atlas.webp';
+        const remoteUrl = 'https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/test_status/compressed/status-icons-atlas.webp';
+        const atlas: StatusIconAtlasConfig = {
+            imageW: 800,
+            imageH: 400,
+            frames: {
+                loaded: { x: 0, y: 0, w: 400, h: 400 },
+            },
+            imagePath: sourcePath,
+        };
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url === localUrl) {
+                return {
+                    ok: true,
+                    blob: async () => new Blob(['<!doctype html>'], { type: 'text/html' }),
+                };
+            }
+            if (url === remoteUrl) {
+                return {
+                    ok: true,
+                    blob: async () => new Blob(['webp'], { type: 'image/webp' }),
+                };
+            }
+            return {
+                ok: false,
+                blob: async () => new Blob([]),
+            };
+        });
+        const RealURL = URL;
+        class MockURL extends RealURL {
+            static createObjectURL = vi.fn(() => 'blob:remote-status-atlas');
+            static revokeObjectURL = vi.fn();
+        }
+        class MockImage {
+            onload: null | (() => void) = null;
+            onerror: null | (() => void) = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            currentSrc = '';
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                this.currentSrc = value;
+                if (value === 'blob:remote-status-atlas') {
+                    this.naturalWidth = 800;
+                    this.naturalHeight = 400;
+                    queueMicrotask(() => this.onload?.());
+                    return;
+                }
+                queueMicrotask(() => this.onerror?.());
+            }
+        }
+        vi.stubGlobal('URL', MockURL as unknown as typeof URL);
+        vi.stubGlobal('Image', MockImage as unknown as typeof Image);
+        vi.stubGlobal('fetch', fetchMock);
+
+        const { container } = render(
+            getStatusEffectIconNode(
+                { frameId: TOKEN_IDS.LOADED, atlasId },
+                'zh-CN',
+                'normal',
+                { [atlasId]: atlas },
+            ),
+        );
+
+        await waitFor(() => {
+            const img = container.querySelector('img');
+            expect(img?.getAttribute('src')).toBe(remoteUrl);
+            expect(img?.getAttribute('data-status-source-url')).toBe(remoteUrl);
+            expect(fetchMock).toHaveBeenCalledWith(remoteUrl, { mode: 'cors', credentials: 'omit' });
+        });
+        expect(fetchMock).not.toHaveBeenCalledWith(localUrl, { mode: 'cors', credentials: 'omit' });
     });
 
     it('token 展示查询 debuff token 时应回退到对应视觉元数据', () => {
@@ -114,7 +337,7 @@ describe('StatusEffectsIcons', () => {
             />
         );
 
-        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp');
+        expect(html).toContain('https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp');
         expect(html).not.toContain('atlas-shimmer');
     });
 
@@ -319,26 +542,81 @@ describe('StatusEffectsIcons', () => {
         expect(html).toContain('https://old-cdn.example.com/i18n/zh-CN/dicethrone/images/moon_elf/compressed/dice.webp');
     });
 
-    it('状态图集 JSON 在远程资源模式下仍应只走本地 /assets', async () => {
+    it('状态图集 JSON 在本地缺失时应回退服务器资源主源', async () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
-        const fetchMock = vi.fn(async (_input: RequestInfo | URL) => ({
-            ok: true,
-            json: async () => ({
-                meta: { image: 'status-icons-atlas.png', size: { w: 1314, h: 400 } },
-                frames: {
-                    purify: { frame: { x: 0, y: 0, w: 400, h: 400 } },
-                },
-            }),
-        }));
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url.startsWith('/assets/')) {
+                return {
+                    ok: false,
+                    json: async () => null,
+                };
+            }
+
+            return {
+                ok: true,
+                json: async () => ({
+                    meta: { image: 'status-icons-atlas.png', size: { w: 1314, h: 400 } },
+                    frames: {
+                        purify: { frame: { x: 0, y: 0, w: 400, h: 400 } },
+                    },
+                }),
+            };
+        });
         vi.stubGlobal('fetch', fetchMock);
 
         const atlases = await loadStatusAtlases('zh-CN');
 
         expect(Object.keys(atlases).length).toBeGreaterThan(0);
         expect(fetchMock).toHaveBeenCalled();
-        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
-        expect(fetchMock.mock.calls.some(([input]) => String(input).includes('/i18n/zh-CN/'))).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('https://assets.easyboardgame.top/official/i18n/zh-CN/'))).toBe(true);
+    });
+
+    it('网页 /assets 返回首页 HTML 时状态图集 JSON 应继续回退服务器资源主源', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url.startsWith('/assets/')) {
+                return {
+                    ok: true,
+                    json: async () => {
+                        throw new SyntaxError('Unexpected token < in JSON at position 0');
+                    },
+                };
+            }
+
+            return {
+                ok: true,
+                json: async () => ({
+                    meta: { image: 'status-icons-atlas.png', size: { w: 800, h: 400 } },
+                    frames: {
+                        loaded: { frame: { x: 0, y: 0, w: 400, h: 400 } },
+                        bounty: { frame: { x: 402, y: 0, w: 400, h: 400 } },
+                    },
+                }),
+            };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const atlases = await loadStatusAtlases('zh-CN');
+
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]?.frames.loaded).toEqual({
+            x: 0,
+            y: 0,
+            w: 400,
+            h: 400,
+        });
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]?.frames.bounty).toEqual({
+            x: 402,
+            y: 0,
+            w: 400,
+            h: 400,
+        });
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('https://assets.easyboardgame.top/official/i18n/zh-CN/'))).toBe(true);
     });
 
     it('状态图集 JSON 应按当前语言和备用语言查找本地路径', async () => {
@@ -429,7 +707,8 @@ describe('StatusEffectsIcons', () => {
             w: 256,
             h: 256,
         });
-        expect(fetchMock.mock.calls.every(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('https://assets.easyboardgame.top/official/'))).toBe(true);
     });
 
     it('新英雄 atlas 不可用时应回退到单图 iconPath，避免手机端整组空白', () => {
@@ -540,6 +819,56 @@ describe('StatusEffectsIcons', () => {
         expect(fetchMock.mock.calls.some(([input]) => String(input) === hashedUrl)).toBe(true);
         expect(fetchMock.mock.calls.some(([input]) => String(input) === plainUrl)).toBe(true);
         expect(fetchMock.mock.calls.some(([input]) => String(input).startsWith('/assets/'))).toBe(false);
+    });
+
+    it('游戏包 override 下本地状态图集 JSON 不可用时应回退服务器资源主源', async () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setGameAssetBaseOverride('dicethrone', 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets');
+        setAssetHashesForTesting({
+            'i18n/zh-CN/dicethrone/images/monk/status-icons-atlas.json': 'atlas1234',
+        });
+
+        const localHashedUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/monk/status-icons-atlas.json?v=atlas1234';
+        const localPlainUrl = 'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/dicethrone/current/assets/i18n/zh-CN/dicethrone/images/monk/status-icons-atlas.json';
+        const remoteUrl = 'https://assets.easyboardgame.top/official/i18n/zh-CN/dicethrone/images/monk/status-icons-atlas.json';
+
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url === localHashedUrl || url === localPlainUrl) {
+                return {
+                    ok: false,
+                    json: async () => null,
+                };
+            }
+            if (url === remoteUrl) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        meta: { image: 'status-icons-atlas.png', size: { w: 1314, h: 400 } },
+                        frames: {
+                            purify: { frame: { x: 0, y: 0, w: 400, h: 400 } },
+                        },
+                    }),
+                };
+            }
+            return {
+                ok: false,
+                json: async () => null,
+            };
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        const atlases = await loadStatusAtlases('zh-CN');
+
+        expect(atlases[DICETHRONE_STATUS_ATLAS_IDS.MONK]?.frames.purify).toEqual({
+            x: 0,
+            y: 0,
+            w: 400,
+            h: 400,
+        });
+        expect(fetchMock.mock.calls.some(([input]) => String(input) === localHashedUrl)).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input) === localPlainUrl)).toBe(true);
+        expect(fetchMock.mock.calls.some(([input]) => String(input) === remoteUrl)).toBe(true);
     });
 
     it('骰图切片坐标应匹配 3x3 atlas（使用下两行）', () => {

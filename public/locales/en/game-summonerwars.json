@@ -33,7 +33,8 @@
     "goblin": "Cave Goblins",
     "frost": "Frost Dwarves",
     "barbaric": "Barbarian Horde",
-    "mogu": "Mogu"
+    "mogu": "Mogu",
+    "huijin": "Ashen Phoenix"
   },
   "actions": {
     "closePreview": "Close Preview",
@@ -295,7 +296,11 @@
       "inaction": "(inaction penalty)",
       "stun": "(stun)",
       "stun_passthrough": "(stun passthrough)",
-      "holy_protection": "(holy protection)"
+      "holy_protection": "(holy protection)",
+      "huijin_scorch": "(scorch)",
+      "huijin_divine_revenge": "(divine revenge)",
+      "huijin_flame_breath": "(flame breath)",
+      "huijin_quick_shot": "(quick shot)"
     },
     "attackDamage": "→ dealt {{damage}} damage",
     "attackBonus": "(power {{base}}→{{total}})",
@@ -416,6 +421,7 @@
     "reviveUndead": "Revive Undead: Select an undead unit from the discard pile",
     "infection": "Infection: Select a plague zombie from the discard pile",
     "fortressPower": "Fortress Power: Select a fortress unit from the discard pile",
+    "huijinCallGuards": "Call Guards: Select a common unit from your hand",
     "default": "Select a card",
     "empty": "No eligible cards"
   },
@@ -655,7 +661,12 @@
       "mindCapture": "Mind Capture: choose control or damage",
       "iceShards": "Ice Shards: confirm charge spending",
       "feedBeast": "Feed Beast: choose a victim or self-destruct",
-      "moguParasite": "Parasite: choose charge spending or damage"
+      "moguParasite": "Parasite: choose charge spending or damage",
+      "huijinCallGuardsCard": "Call Guards: choose a common unit to summon",
+      "huijinCallGuardsPosition": "Call Guards: choose an adjacent space",
+      "huijinRamTarget": "Ram: choose an adjacent enemy common or champion",
+      "huijinRamPosition": "Ram: choose a push or pull destination",
+      "huijinQuickShot": "Quick Shot: choose a target within 3 clear spaces"
     },
     "fireSacrifice": {
       "mustSelectAlly": "Please select an ally unit to sacrifice"
@@ -914,7 +925,7 @@
     },
     "ice_shards": {
       "name": "Ice Shards",
-      "description": "At the end of your Build phase, you may spend 1 charge to deal 1 damage to each enemy unit adjacent to a structure you control."
+      "description": "At the start of your Attack phase, you may spend 1 charge to deal 1 damage to each enemy unit adjacent to a structure you control."
     },
     "greater_frost_bolt": {
       "name": "Greater Frost Bolt",
@@ -991,6 +1002,50 @@
     "spirit_bond": {
       "name": "Spirit Bond",
       "description": "After this unit moves, charge it, or spend 1 charge to charge a friendly unit within 3 spaces."
+    },
+    "huijin_call_guards": {
+      "name": "Call Guards",
+      "description": "At the end of your Attack phase, you may remove 1 charge from this summoner to place a friendly common unit from your hand in an empty space adjacent to this summoner."
+    },
+    "huijin_ember_summon": {
+      "name": "Ember Summon",
+      "description": "This unit may summon Ashen units into empty spaces adjacent to itself."
+    },
+    "huijin_ignite": {
+      "name": "Ignite",
+      "description": "Friendly Ashen units adjacent to this unit gain +1 strength."
+    },
+    "huijin_guard_master": {
+      "name": "Guard Master",
+      "description": "When summoning this unit, you may place it in an empty space adjacent to your summoner."
+    },
+    "huijin_flame_breath": {
+      "name": "Flame Breath",
+      "description": "When this unit attacks, its attack may pass through units and damage units along the path."
+    },
+    "huijin_counterattack": {
+      "name": "Counterattack",
+      "description": "After this unit is attacked by an adjacent enemy unit, if it remains on the battlefield, deal 1 damage to that enemy unit."
+    },
+    "huijin_shelter": {
+      "name": "Shelter",
+      "description": "The first attack against this unit each turn deals at most 1 damage to it."
+    },
+    "huijin_ram": {
+      "name": "Ram",
+      "description": "After this unit attacks an adjacent enemy common or champion, you may push or pull that target 1 space."
+    },
+    "huijin_born_of_flame": {
+      "name": "Born of Flame",
+      "description": "When summoning this unit, you may place it in an empty space adjacent to a friendly Ashen unit."
+    },
+    "huijin_wildfire": {
+      "name": "Wildfire",
+      "description": "At the start of your Move phase, deal 1 damage to each enemy unit adjacent to this unit."
+    },
+    "huijin_quick_shot": {
+      "name": "Quick Shot",
+      "description": "After this unit moves, you may target a unit within 3 spaces in a straight line of sight and deal 1 damage to it."
     }
   },
   "buffs": {

@@ -19,6 +19,7 @@ import {
   BOARD_ROWS,
   BOARD_COLS,
   getUnitAt,
+  isCellEmpty,
   isValidCoord,
   manhattanDistance,
   canAttackEnhanced,
@@ -33,11 +34,12 @@ import {
   getUnitMoveEnhancements,
   getPassedThroughUnitPositions,
   getMovePath,
+  getStraightLinePath,
   findUnitPositionByInstanceId,
   normalizeUnitBoosts,
   HAND_SIZE,
 } from './helpers';
-import { rollDice, countHits } from '../config/dice';
+import { rollDice, countHits, countSpecials } from '../config/dice';
 import { createDeckByFactionId } from '../config/factions';
 import { buildGameDeckFromCustom } from '../config/deckBuilder';
 import {
@@ -57,6 +59,7 @@ import {
   emitDestroyWithTriggers,
   postProcessDeathChecks,
   getFuneralPyreChargeEvents,
+  applyHuijinPhoenixSoulBonus,
 } from './execute/helpers';
 import { executeActivateAbility } from './execute/abilities';
 import { executePlayEvent } from './execute/eventCards';
@@ -78,6 +81,39 @@ function isPhaseEndAbilityResolved(
   return resolved?.[`${state.core.turnNumber}:${state.core.phase}:${abilityId}:${sourceUnitId}`] === true;
 }
 
+function canTriggerHuijinCallGuards(
+  core: SummonerWarsCore,
+  unit: BoardUnit,
+  playerId: PlayerId,
+): boolean {
+  if (unit.card.unitClass !== 'summoner') return false;
+  if (normalizeUnitBoosts(unit.boosts) < 1) return false;
+  const hasCommonInHand = core.players[playerId].hand.some(card =>
+    card.cardType === 'unit' && (card as UnitCard).unitClass === 'common'
+  );
+  if (!hasCommonInHand) return false;
+  return [
+    { row: unit.position.row - 1, col: unit.position.col },
+    { row: unit.position.row + 1, col: unit.position.col },
+    { row: unit.position.row, col: unit.position.col - 1 },
+    { row: unit.position.row, col: unit.position.col + 1 },
+  ].some(pos => isCellEmpty(core, pos));
+}
+
+function isHuijinDazzlingLightProtected(
+  core: SummonerWarsCore,
+  target: CellCoord,
+  targetUnit: BoardUnit,
+): boolean {
+  const owner = targetUnit.owner;
+  const hasDazzlingLight = core.players[owner]?.activeEvents.some(ev =>
+    getBaseCardId(ev.id) === CARD_IDS.HUIJIN_DAZZLING_LIGHT
+  );
+  if (!hasDazzlingLight) return false;
+  if (targetUnit.card.unitClass === 'summoner') return true;
+  const summoner = getSummoner(core, owner);
+  return !!summoner && manhattanDistance(summoner.position, target) === 1;
+}
 // ============================================================================
 // 命令执行
 // ============================================================================
@@ -336,6 +372,7 @@ export function executeCommand(
             'structure_shift',   // 结构变换：推拉3格内友方建筑
             'frost_axe',         // 冰霜战斧：充能 / 消耗充能附加
             'mogu_transmission', // 鲜血萨满：移动后传输充能
+            'huijin_quick_shot',  // 灰烬弓箭手：移动后快速射击
           ];
           for (const abilityId of afterMoveChoiceAbilities) {
             if (unitAbilities.includes(abilityId)) {
@@ -512,6 +549,7 @@ export function executeCommand(
         const effectiveStrengthBase = getEffectiveStrengthValue(attackerUnit, workingCore, targetCell?.unit ?? undefined);
         let effectiveStrength = applyBeforeAttackStrength(effectiveStrengthBase);
         const attackType = getAttackType(workingCore, attacker, target);
+        const attackerAbilities = getUnitAbilities(attackerUnit, workingCore);
 
         // 神圣护盾：科琳3格内友方城塞单位被攻击时，投2骰减少攻击方骰子数（战力-1）
         if (targetCell?.unit && isFortressUnit(targetCell.unit.card)) {
@@ -599,6 +637,30 @@ export function executeCommand(
             }
           }
         }
+        if (targetCell?.unit && isHuijinDazzlingLightProtected(workingCore, target, targetCell.unit)) {
+          const dazzlingHits = countSpecials(diceResults);
+          events.push(createAbilityTriggeredEvent(
+            'huijin_dazzling_light',
+            targetCell.unit.instanceId,
+            target,
+            timestamp,
+            { originalHits: hits, replacementHits: dazzlingHits },
+          ));
+          if (dazzlingHits < hits) {
+            events.push({
+              type: SW_EVENTS.DAMAGE_REDUCED,
+              payload: {
+                sourceUnitId: targetCell.unit.instanceId,
+                sourcePosition: target,
+                value: hits - dazzlingHits,
+                condition: 'huijin_dazzling_light',
+                sourceAbilityId: 'huijin_dazzling_light',
+              },
+              timestamp,
+            });
+          }
+          hits = dazzlingHits;
+        }
 
 
         events.push({
@@ -614,7 +676,6 @@ export function executeCommand(
         });
 
         // 心灵捕获检查：攻击者有 mind_capture 且伤害足以消灭目标
-        const attackerAbilities = getUnitAbilities(attackerUnit, core);
         const hasMindCapture = attackerAbilities.includes('mind_capture');
         
         if (hasMindCapture && hits > 0 && targetCell?.unit) {
@@ -668,8 +729,31 @@ export function executeCommand(
             }
           }
 
+          // 庇护：灰烬法师本回合首次被攻击时，受到的攻击伤害最多为 1。
+          if (targetCell?.unit
+            && !targetCell.unit.wasAttackedThisTurn
+            && getUnitAbilities(targetCell.unit, workingCore).includes('huijin_shelter')
+            && hits > 1) {
+            events.push({
+              type: SW_EVENTS.DAMAGE_REDUCED,
+              payload: {
+                sourceUnitId: targetCell.unit.instanceId,
+                sourcePosition: target,
+                value: hits - 1,
+                condition: 'huijin_shelter',
+                sourceAbilityId: 'huijin_shelter',
+              },
+              timestamp,
+            });
+            hits = 1;
+          }
+
           // 伤害逻辑（治疗模式已在前面独立路径处理，此处一定是正常攻击）
           const attackerHasSoulless = attackerAbilities.includes('soulless');
+          const targetUnitBeforeAttack = targetCell?.unit;
+          const targetSurvivesAttack = targetUnitBeforeAttack
+            ? targetUnitBeforeAttack.damage + hits < getEffectiveLife(targetUnitBeforeAttack, workingCore)
+            : false;
           events.push({
             type: SW_EVENTS.UNIT_DAMAGED,
             payload: {
@@ -709,6 +793,83 @@ export function executeCommand(
                 timestamp,
               });
             }
+          }
+          if (attackerAbilities.includes('huijin_flame_breath')) {
+            const pathUnitPositions = getStraightLinePath(attacker, target)
+              .slice(0, -1)
+              .filter(pos => !!getUnitAt(workingCore, pos));
+            if (pathUnitPositions.length > 0) {
+              events.push(createAbilityTriggeredEvent(
+                'huijin_flame_breath',
+                attackerUnit.instanceId,
+                attacker,
+                timestamp,
+                { targetPosition: target, pathUnitCount: pathUnitPositions.length },
+              ));
+              for (const pathPos of pathUnitPositions) {
+                events.push({
+                  type: SW_EVENTS.UNIT_DAMAGED,
+                  payload: {
+                    position: pathPos,
+                    damage: hits,
+                    reason: 'huijin_flame_breath',
+                    sourceAbilityId: 'huijin_flame_breath',
+                    sourcePlayerId: playerId,
+                  },
+                  timestamp,
+                });
+              }
+            }
+          }
+
+          if (targetUnitBeforeAttack
+            && targetUnitBeforeAttack.owner !== attackerUnit.owner
+            && targetSurvivesAttack
+            && manhattanDistance(attacker, target) === 1
+            && getUnitAbilities(targetUnitBeforeAttack, workingCore).includes('huijin_counterattack')) {
+            events.push(createAbilityTriggeredEvent(
+              'huijin_counterattack',
+              targetUnitBeforeAttack.instanceId,
+              target,
+              timestamp,
+            ));
+            events.push({
+              type: SW_EVENTS.UNIT_DAMAGED,
+              payload: {
+                position: attacker,
+                damage: 1,
+                reason: 'huijin_counterattack',
+                sourceAbilityId: 'huijin_counterattack',
+                sourcePlayerId: targetUnitBeforeAttack.owner,
+              },
+              timestamp,
+            });
+          }
+
+          if (targetUnitBeforeAttack
+            && targetUnitBeforeAttack.owner !== attackerUnit.owner
+            && targetSurvivesAttack
+            && targetUnitBeforeAttack.card.unitClass === 'summoner'
+            && workingCore.players[targetUnitBeforeAttack.owner].activeEvents.some(ev =>
+              getBaseCardId(ev.id) === CARD_IDS.HUIJIN_DIVINE_REVENGE
+            )) {
+            events.push(createAbilityTriggeredEvent(
+              'huijin_divine_revenge',
+              targetUnitBeforeAttack.instanceId,
+              target,
+              timestamp,
+            ));
+            events.push({
+              type: SW_EVENTS.UNIT_DAMAGED,
+              payload: {
+                position: attacker,
+                damage: 1,
+                reason: 'huijin_divine_revenge',
+                sourceAbilityId: 'huijin_divine_revenge',
+                sourcePlayerId: targetUnitBeforeAttack.owner,
+              },
+              timestamp,
+            });
           }
         }
         
@@ -857,6 +1018,23 @@ export function executeCommand(
           'mogu_parasite',
           unresolvedChargedParasite.instanceId,
           unresolvedChargedParasite.position,
+          timestamp,
+        ));
+        break;
+      }
+
+      const unresolvedCallGuardsUnit = currentPhase === 'attack'
+        ? getPlayerUnits(core, playerId as PlayerId).find(unit =>
+          getUnitAbilities(unit, core).includes('huijin_call_guards')
+          && !isPhaseEndAbilityResolved(state, 'huijin_call_guards', unit.instanceId)
+          && canTriggerHuijinCallGuards(core, unit, playerId as PlayerId),
+        )
+        : undefined;
+      if (unresolvedCallGuardsUnit) {
+        events.push(createAbilityTriggeredEvent(
+          'huijin_call_guards',
+          unresolvedCallGuardsUnit.instanceId,
+          unresolvedCallGuardsUnit.position,
           timestamp,
         ));
         break;
@@ -1138,7 +1316,10 @@ export function executeCommand(
     }
   }
 
-  // 后处理1：自动补全死亡检测（UNIT_DAMAGED → UNIT_DESTROYED）
+  // 后处理1：凤凰之魂 — 友方单位的非攻击技能伤害额外 +1
+  applyHuijinPhoenixSoulBonus(events, core, timestamp);
+
+  // 后处理2：自动补全死亡检测（UNIT_DAMAGED → UNIT_DESTROYED）
   const processedEvents = postProcessDeathChecks(events, core);
 
   // 后处理2：扫描所有 UNIT_DESTROYED 事件，为殉葬火堆生成充能事件

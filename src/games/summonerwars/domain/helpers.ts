@@ -10,6 +10,7 @@ import type {
   BoardStructure,
   BoardCell,
   GamePhase,
+  UnitCard,
 } from './types';
 
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
@@ -406,6 +407,7 @@ export function isRangedPathClear(
   attacker: CellCoord,
   target: CellCoord,
   attackerOwner: PlayerId,
+  allowUnits = false,
 ): boolean {
   const path = getStraightLinePath(attacker, target);
   // path 包含终点，中间格子是 path 去掉最后一个
@@ -413,7 +415,7 @@ export function isRangedPathClear(
     const pos = path[i];
     const unit = getUnitAt(state, pos);
     const structure = getStructureAt(state, pos);
-    if (unit) return false; // 任何单位都遮挡
+    if (unit && !allowUnits) return false; // 火焰喷吐允许远程攻击穿过单位
     if (structure) {
       // 友方护城墙允许穿过
       const isOwnParapet = structure.owner === attackerOwner
@@ -505,6 +507,72 @@ export function getValidSummonPositions(state: SummonerWarsCore, playerId: Playe
     const [row, col] = s.split(',').map(Number);
     return { row, col };
   });
+}
+
+/** 获取指定单位卡牌可召唤的位置（基础城门 + 事件/单位能力扩展）。 */
+export function getValidSummonPositionsForCard(
+  state: SummonerWarsCore,
+  playerId: PlayerId,
+  unitCard: UnitCard
+): CellCoord[] {
+  const positions = getValidSummonPositions(state, playerId);
+  const positionSet = new Set(positions.map(p => `${p.row},${p.col}`));
+  const addIfEmpty = (pos: CellCoord) => {
+    const key = `${pos.row},${pos.col}`;
+    if (!positionSet.has(key) && isCellEmpty(state, pos)) {
+      positionSet.add(key);
+      positions.push(pos);
+    }
+  };
+  const addAdjacentEmpty = (pos: CellCoord) => {
+    for (const adj of getAdjacentCells(pos)) addIfEmpty(adj);
+  };
+
+  const player = state.players[playerId];
+
+  // 重燃希望：允许召唤到召唤师相邻位置。
+  const hasRekindleHope = player.activeEvents.some(ev =>
+    getBaseCardId(ev.id) === CARD_IDS.PALADIN_REKINDLE_HOPE
+  );
+  if (hasRekindleHope) {
+    const summoner = getSummoner(state, playerId);
+    if (summoner) addAdjacentEmpty(summoner.position);
+  }
+
+  // 编织颂歌：允许召唤到目标单位相邻位置。
+  const chantOfWeaving = player.activeEvents.find(ev =>
+    getBaseCardId(ev.id) === CARD_IDS.BARBARIC_CHANT_OF_WEAVING && ev.targetUnitId
+  );
+  if (chantOfWeaving?.targetUnitId) {
+    const targetPos = findUnitPositionByInstanceId(state, chantOfWeaving.targetUnitId);
+    if (targetPos) addAdjacentEmpty(targetPos);
+  }
+
+  // 赫丽丝 - 怒焰召唤：友方灰烬单位可召唤到赫丽丝相邻位置。
+  if (unitCard.faction === 'huijin') {
+    for (const unit of getPlayerUnits(state, playerId)) {
+      if (getUnitAbilities(unit, state).includes('huijin_ember_summon')) {
+        addAdjacentEmpty(unit.position);
+      }
+    }
+  }
+
+  // 火焰龙兽 - 护主：火焰龙兽可召唤到召唤师相邻位置。
+  if ((unitCard.abilities ?? []).includes('huijin_guard_master')) {
+    const summoner = getSummoner(state, playerId);
+    if (summoner) addAdjacentEmpty(summoner.position);
+  }
+
+  // 灰烬野兽 - 烈火降生：灰烬野兽可召唤到友方灰烬单位相邻位置。
+  if ((unitCard.abilities ?? []).includes('huijin_born_of_flame')) {
+    for (const unit of getPlayerUnits(state, playerId)) {
+      if (unit.card.faction === 'huijin') {
+        addAdjacentEmpty(unit.position);
+      }
+    }
+  }
+
+  return positions;
 }
 
 // ============================================================================
@@ -612,10 +680,12 @@ export function hasAvailableActions(state: SummonerWarsCore, playerId: PlayerId)
   switch (phase) {
     case 'summon': {
       const unitCards = player.hand.filter(c => c.cardType === 'unit');
-      const positions = getValidSummonPositions(state, playerId);
       const canSummonUnit = unitCards.length > 0 && 
-        positions.length > 0 && 
-        unitCards.some(c => (c as import('./types').UnitCard).cost <= player.magic);
+        unitCards.some(c => {
+          const unitCard = c as import('./types').UnitCard;
+          return unitCard.cost <= player.magic
+            && getValidSummonPositionsForCard(state, playerId, unitCard).length > 0;
+        });
       return canSummonUnit || hasPlayableEvents(player, phase);
     }
     case 'move': {
@@ -1076,7 +1146,8 @@ export function canAttackEnhanced(
     const range = getEffectiveAttackRange(attackerUnit, state);
     if (distance > range || distance === 0) return false;
     if (!isInStraightLine(attacker, target)) return false;
-    return isRangedPathClear(state, attacker, target, attackerUnit.owner);
+    const canFlameBreathThroughUnits = getUnitAbilities(attackerUnit, state).includes('huijin_flame_breath');
+    return isRangedPathClear(state, attacker, target, attackerUnit.owner, canFlameBreathThroughUnits);
   }
 }
 

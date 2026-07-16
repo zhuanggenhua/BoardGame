@@ -792,17 +792,14 @@ const canPlayRollCardOutsideRollPhaseWithDiceResult = (
     (card.timing === 'roll' || card.timing === 'instant')
     && hasAnyDiceEffect(card)
     && (phase === 'upkeep' || phase === 'income' || phase === 'main1' || phase === 'main2')
-    && (
-        (
-            state.dice.length > 0
-            && state.rollCount > 0
-            && state.rollConfirmed
-        )
-        || (
-            state.pendingBonusDiceSettlement?.allowDiceModification === true
-            && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
-        )
-    )
+    && state.pendingBonusDiceSettlement?.allowDiceModification === true
+    && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
+);
+
+const isDiceRollPhase = (phase: TurnPhase): boolean => (
+    phase === 'offensiveRoll'
+    || phase === 'targetingRoll'
+    || phase === 'defensiveRoll'
 );
 
 const getDiceResultCountForCardPlay = (state: DiceThroneCore): number => {
@@ -950,6 +947,16 @@ const checkStandardCardPlay = (
         }
     } else if (card.timing !== 'instant') {
         return { ok: false, reason: 'unknownCardTiming' };
+    }
+
+    if (
+        !responseWindowType
+        && (card.timing === 'roll' || card.timing === 'instant')
+        && hasAnyDiceEffect(card)
+        && !isDiceRollPhase(phase)
+        && !canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)
+    ) {
+        return { ok: false, reason: 'wrongPhaseForRoll' };
     }
 
     if (card.cpCost > 0 && playerCp < card.cpCost) {

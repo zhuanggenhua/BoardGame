@@ -7,7 +7,7 @@
  * - structure_shift: 结构变换（召唤师 - 移动后推拉3格内友方建筑1格）
  * - cold_snap: 寒流（奥莱格 - 3格内友方建筑+1生命，被动光环）
  * - imposing: 威势（贾穆德 - 攻击后充能，每回合一次）
- * - ice_shards: 寒冰碎屑（贾穆德 - 建造阶段结束消耗充能对建筑相邻敌方造成1伤）
+ * - ice_shards: 寒冰碎屑（贾穆德 - 攻击阶段开始消耗充能对建筑相邻敌方造成1伤）
  * - frost_bolt: 冰霜飞弹（冰霜法师 - 相邻每有一个友方建筑+1战力）
  * - greater_frost_bolt: 高阶冰霜飞弹（纳蒂亚娜 - 2格内每有一个友方建筑+1战力）
  * - trample: 践踏（熊骑兵 - 穿过士兵并造成1伤）
@@ -155,7 +155,7 @@ export const FROST_ABILITIES: AbilityDef[] = [
     name: abilityText('ice_shards', 'name'),
     description: abilityText('ice_shards', 'description'),
     sfxKey: 'fantasy.elemental_sword_iceattack_v3',
-    trigger: 'onPhaseEnd',
+    trigger: 'onPhaseStart',
     effects: [
       { type: 'custom', actionId: 'ice_shards_damage' },
     ],
@@ -163,7 +163,7 @@ export const FROST_ABILITIES: AbilityDef[] = [
       magic: 0,
     },
     validation: {
-      requiredPhase: 'build',
+      requiredPhase: 'attack',
       customValidator: (ctx) => {
         if (normalizeUnitBoosts(ctx.sourceUnit.boosts) < 1) {
           return { valid: false, error: '没有充能可消耗' };
@@ -177,7 +177,7 @@ export const FROST_ABILITIES: AbilityDef[] = [
     },
     ui: {
       requiresButton: false,
-      buttonPhase: 'build',
+      buttonPhase: 'attack',
       buttonLabel: 'abilityButtons.iceShards',
       buttonVariant: 'secondary',
       activationType: 'directExecute',

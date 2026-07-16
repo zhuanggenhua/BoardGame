@@ -31,7 +31,7 @@ import {
     advanceTo,
     getCurrentInteractionId,
 } from './test-utils';
-import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore } from '../domain/types';
+import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type TransferStatusCommand } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { executePipeline } from '../../../engine/pipeline';
 import { createInitializedState, injectPendingInteraction } from './test-utils';
@@ -1161,6 +1161,63 @@ describe('AI legal actions', () => {
             type: 'TRANSFER_STATUS',
             payload: { fromPlayerId: '0', toPlayerId: '1', statusId: STATUS_IDS.POISON },
         });
+    });
+
+    it('TRANSFER_STATUS 只转移状态效果的一层，而不是整组层数', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.players['0'].statusEffects[STATUS_IDS.POISON] = 3;
+
+        const command: TransferStatusCommand = {
+            type: 'TRANSFER_STATUS',
+            playerId: '0',
+            payload: { fromPlayerId: '0', toPlayerId: '1', statusId: STATUS_IDS.POISON },
+            timestamp: Date.now(),
+        };
+        const events = DiceThroneDomain.execute(state, command, fixedRandom);
+        const nextCore = events.reduce((core, event) => DiceThroneDomain.reduce(core, event), state.core);
+
+        expect(events.find(event => event.type === 'STATUS_REMOVED')?.payload).toMatchObject({
+            targetId: '0',
+            statusId: STATUS_IDS.POISON,
+            stacks: 1,
+        });
+        expect(events.find(event => event.type === 'STATUS_APPLIED')?.payload).toMatchObject({
+            targetId: '1',
+            statusId: STATUS_IDS.POISON,
+            stacks: 1,
+        });
+        expect(nextCore.players['0'].statusEffects[STATUS_IDS.POISON]).toBe(2);
+        expect(nextCore.players['1'].statusEffects[STATUS_IDS.POISON]).toBe(1);
+    });
+
+    it('TRANSFER_STATUS 只转移标记的一层，两个闪避只会转走一个', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.EVASIVE] = 2;
+        state.core.players['1'].tokens[TOKEN_IDS.EVASIVE] = 0;
+
+        const command: TransferStatusCommand = {
+            type: 'TRANSFER_STATUS',
+            playerId: '0',
+            payload: { fromPlayerId: '0', toPlayerId: '1', statusId: TOKEN_IDS.EVASIVE },
+            timestamp: Date.now(),
+        };
+        const events = DiceThroneDomain.execute(state, command, fixedRandom);
+        const nextCore = events.reduce((core, event) => DiceThroneDomain.reduce(core, event), state.core);
+
+        expect(events.find(event => event.type === 'TOKEN_CONSUMED')?.payload).toMatchObject({
+            playerId: '0',
+            tokenId: TOKEN_IDS.EVASIVE,
+            amount: 1,
+            newTotal: 1,
+        });
+        expect(events.find(event => event.type === 'TOKEN_GRANTED')?.payload).toMatchObject({
+            targetId: '1',
+            tokenId: TOKEN_IDS.EVASIVE,
+            amount: 1,
+            newTotal: 1,
+        });
+        expect(nextCore.players['0'].tokens[TOKEN_IDS.EVASIVE]).toBe(1);
+        expect(nextCore.players['1'].tokens[TOKEN_IDS.EVASIVE]).toBe(1);
     });
 
     it('selectDie 多骰交互应枚举 1..selectCount 的合法骰子组合，而不是只生成单骰动作', () => {

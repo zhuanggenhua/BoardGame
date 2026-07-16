@@ -25,6 +25,7 @@ export const SUMMONERWARS_FACTION_INDEX: Record<string, number> = {
   frost: 4,
   barbaric: 5,
   mogu: 6,
+  huijin: 7,
 };
 
 // ============================================================================

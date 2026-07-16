@@ -28,7 +28,7 @@ description: "BoardGame Android 打包、上传、发布和验包流程。用于
 
 如果用户在本项目里说“更新部署 / 部署最新 / 发线上”，默认不是只部署网页/服务器，而是：
 
-1. 先按生产部署入口输送服务器 `latest` 镜像并执行 `update-local`
+1. 先按生产部署入口触发 CI 构建后直传服务器 `latest` 镜像并执行 `update-local`
 2. 再发布 Android `stable` OTA
 3. 最后同时回查服务器健康状态与 Android OTA `latest.json`
 
@@ -103,7 +103,7 @@ description: "BoardGame Android 打包、上传、发布和验包流程。用于
 ### 2.8 用户说“更新部署 / 部署最新 / 发线上”时默认包含 OTA
 
 - 在本项目语境里，“更新部署 / 部署最新 / 发线上”默认表示**网页/服务端生产部署 + Android stable OTA 发布**，不是二选一。
-- 服务器部署默认不是生产机直拉 GHCR；必须走 `deploy-and-ota` 的镜像输送 + `update-local`，只有用户明确要求“服务器直接拉镜像”时才用 `--deploy-mode remote` / `deploy-image.sh update`。
+- 服务器部署默认不是生产机直拉 GHCR，也不是本机先拉 GHCR；必须走 `deploy-and-ota` 的 CI 直传 + `update-local`。只有用户明确要求“本机输送”时才用 `--deploy-mode stream`，只有用户明确要求“服务器直接拉镜像”时才用 `--deploy-mode remote` / `deploy-image.sh update`。
 - 服务器部署完成但 Android OTA 没发，不能汇报为“更新部署已完成”；只能说“服务器已部署，OTA 尚未发布”。
 - 发布 OTA 的真相源必须是已推送的 git ref。若本地存在无关未提交改动，按 `4.1.1` 处理，不得把它们混进 OTA，也不得因此漏发 OTA。
 - OTA 发布后必须回查 `https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json`，确认 `version / url / checksum / size / notes` 指向本次已推送 ref，并确认浏览器跨域预检 `OPTIONS` 可通过。
@@ -206,7 +206,7 @@ npm run mobile:android:build:release
 
 1. 确认目标提交已推送到远端，例如 `origin/main` 的最新提交或用户指定 ref。
 2. 等待 Docker 镜像流水线完成，确认 `web` 与 `game-server` 镜像已可用。
-3. 执行统一发布入口，把镜像输送到生产机并触发服务器本地更新：`BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait`（若本节后续单独触发 OTA，则加 `--skip-ota`）。
+3. 执行统一发布入口，触发 CI 构建并把镜像 tar 直传到生产机后触发服务器本地更新：`BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait`（若本节后续单独触发 OTA，则加 `--skip-ota`）。
 4. 验证生产容器与健康接口，例如 `bash scripts/deploy/deploy-image.sh status` 和 `curl http://127.0.0.1/health`。
 5. 触发 Android OTA workflow：`.github/workflows/android-ota-publish.yml`，`channel=stable`，`git_ref=<本次已推送提交>`，`expected_base_version=<package.json.version>`。
 6. 等待 OTA workflow 成功。
@@ -325,7 +325,7 @@ https://assets.easyboardgame.top/official/native-app-updates/android/stable/late
 
 只要对外说“更新部署已完成 / 发线上已完成”，必须同时给出：
 
-- 服务器部署提交或镜像来源（默认镜像输送 + `update-local`；若是 remote 直拉必须明确标注）
+- 服务器部署提交或镜像来源（默认 CI 直传 + `update-local`；若是本机输送或 remote 直拉必须明确标注）
 - 生产容器状态与健康接口结果
 - Android OTA workflow 结果
 - Android OTA `latest.json` 的 `version / url / checksum / size / notes`

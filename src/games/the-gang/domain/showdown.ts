@@ -3,25 +3,40 @@ import type { HeistRecord, ShowdownPlayerResult, TheGangCore } from './types';
 
 export function buildShowdownResults(core: TheGangCore): ShowdownPlayerResult[] {
     return core.playerIds.map((playerId) => {
-        const playerCommunity = core.players[playerId].communityCards ?? core.communityCards;
+        const player = core.players[playerId];
+        const playerCommunity = player.communityCards ?? core.communityCards;
         const handCards = [
-            ...core.players[playerId].pocketCards,
-            ...core.players[playerId].nightVisionCards,
+            ...player.pocketCards,
+            ...player.nightVisionCards,
         ];
+        const secondaryHandCards = player.secondaryPocketCards ?? [];
         const boardCards = [
             ...playerCommunity,
-            ...core.players[playerId].flashlightCards,
+            ...player.flashlightCards,
         ];
         const evaluated = evaluateBestTheGangHand(handCards, boardCards, {
             rulesConfig: core.rules.config,
             blankedRank: core.rules.blankedRank,
         });
+        const secondaryEvaluated = secondaryHandCards.length > 0
+            ? evaluateBestTheGangHand(secondaryHandCards, boardCards, {
+                rulesConfig: core.rules.config,
+                blankedRank: core.rules.blankedRank,
+            })
+            : undefined;
+        const secondaryWins = secondaryEvaluated
+            ? compareHandStrength(secondaryEvaluated.strength, evaluated.strength) > 0
+            : false;
+        const winningEvaluation = secondaryWins && secondaryEvaluated ? secondaryEvaluated : evaluated;
+
         return {
             playerId,
             chip: core.currentRoundChips[playerId],
-            strength: evaluated.strength,
+            strength: winningEvaluation.strength,
             pocketCards: handCards,
-            bestCards: evaluated.cards,
+            secondaryPocketCards: secondaryHandCards.length > 0 ? secondaryHandCards : undefined,
+            bestCards: winningEvaluation.cards,
+            winningHandSlot: secondaryHandCards.length > 0 ? (secondaryWins ? 'bottom' : 'top') : undefined,
         };
     });
 }

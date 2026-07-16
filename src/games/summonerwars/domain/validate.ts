@@ -27,19 +27,18 @@ import {
   isCellEmpty,
   canMoveToEnhanced,
   canAttackEnhanced,
-  getValidSummonPositions,
+  getValidSummonPositionsForCard,
   getValidBuildPositions,
   hasEnoughMagic,
   manhattanDistance,
   getSummoner,
   getUnitAbilities,
-  findUnitPositionByInstanceId,
   isValidCoord,
   isInStraightLine,
 } from './helpers';
 import { getPhaseDisplayName } from './execute';
 import { validateAbilityActivation } from './abilityValidation';
-import { VALID_FACTION_IDS, getBaseCardId, CARD_IDS, isMoguFungalBeastCard } from './ids';
+import { VALID_FACTION_IDS, getBaseCardId, CARD_IDS, isMoguFungalBeastCard, isMoguSporePlagueBodyCard } from './ids';
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -137,7 +136,9 @@ const hasValidEventInteractionTargets = (
     }
     case CARD_IDS.MOGU_RELEASE_SPORES: {
       if (!summoner) return false;
-      return hasAdjacentEmptyCell(core, summoner.position);
+      const hasDiscardBody = core.players[playerId].discard
+        .some((card) => card.cardType === 'unit' && isMoguSporePlagueBodyCard(card));
+      return hasDiscardBody && hasAdjacentEmptyCell(core, summoner.position);
     }
     case CARD_IDS.FROST_GLACIAL_SHIFT: {
       if (!summoner) return false;
@@ -267,46 +268,7 @@ export function validateCommand(
       if (!card || card.cardType !== 'unit') return { valid: false, error: '无效的单位卡牌' };
       const unitCard = card as UnitCard;
       if (!hasEnoughMagic(core, playerId, unitCard.cost)) return { valid: false, error: '魔力不足' };
-      // 重燃希望：额外允许召唤到召唤师相邻位置
-      let validPositions = getValidSummonPositions(core, playerId);
-      if (hasRekindleHope) {
-        const summoner = getSummoner(core, playerId);
-        if (summoner) {
-          const dirs = [
-            { row: -1, col: 0 }, { row: 1, col: 0 },
-            { row: 0, col: -1 }, { row: 0, col: 1 },
-          ];
-          for (const d of dirs) {
-            const adjPos = { row: summoner.position.row + d.row, col: summoner.position.col + d.col };
-            if (adjPos.row >= 0 && adjPos.row < BOARD_ROWS && adjPos.col >= 0 && adjPos.col < BOARD_COLS
-              && isCellEmpty(core, adjPos)
-              && !validPositions.some(p => p.row === adjPos.row && p.col === adjPos.col)) {
-              validPositions = [...validPositions, adjPos];
-            }
-          }
-        }
-      }
-      // 编织颂歌：允许在目标单位相邻位置召唤
-      const chantOfWeaving = player.activeEvents.find(ev =>
-        getBaseCardId(ev.id) === CARD_IDS.BARBARIC_CHANT_OF_WEAVING && ev.targetUnitId
-      );
-      if (chantOfWeaving) {
-        const targetPos = findUnitPositionByInstanceId(core, chantOfWeaving.targetUnitId!);
-        if (targetPos) {
-          const dirs = [
-            { row: -1, col: 0 }, { row: 1, col: 0 },
-            { row: 0, col: -1 }, { row: 0, col: 1 },
-          ];
-          for (const d of dirs) {
-            const adjPos = { row: targetPos.row + d.row, col: targetPos.col + d.col };
-            if (adjPos.row >= 0 && adjPos.row < BOARD_ROWS && adjPos.col >= 0 && adjPos.col < BOARD_COLS
-              && isCellEmpty(core, adjPos)
-              && !validPositions.some(p => p.row === adjPos.row && p.col === adjPos.col)) {
-              validPositions = [...validPositions, adjPos];
-            }
-          }
-        }
-      }
+      const validPositions = getValidSummonPositionsForCard(core, playerId, unitCard);
       // 火祀召唤：必须额外消灭一个友方单位，伊路特-巴尔替换其位置
       const hasFireSacrifice = (unitCard.abilities ?? []).includes('fire_sacrifice_summon');
       if (hasFireSacrifice) {
@@ -359,7 +321,7 @@ export function validateCommand(
       }
 
       if (!validPositions.some(p => p.row === position.row && p.col === position.col)) {
-        return { valid: false, error: '无效的召唤位置（必须在城门相邻的空格）' };
+        return { valid: false, error: '无效的召唤位置' };
       }
 
       return { valid: true };
@@ -551,6 +513,10 @@ export function validateCommand(
       if (!hasEnoughMagic(core, playerId, eventCard.cost)) return { valid: false, error: '魔力不足' };
       if (eventCard.playPhase !== 'any' && eventCard.playPhase !== core.phase) {
         return { valid: false, error: `该事件只能在${getPhaseDisplayName(eventCard.playPhase)}施放` };
+      }
+      const baseId = getBaseCardId(eventCard.id);
+      if (INTERACTIVE_EVENT_BASE_IDS.has(baseId) && !hasValidEventInteractionTargets(core, playerId, eventCard)) {
+        return { valid: false, error: '没有可用目标' };
       }
       
       // 建筑类事件卡验证

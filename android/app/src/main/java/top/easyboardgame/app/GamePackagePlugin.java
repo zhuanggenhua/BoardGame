@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -319,9 +320,13 @@ public class GamePackagePlugin extends Plugin {
             return;
         }
 
-        AndroidDownloadTaskRecord record = taskStore.getLatestByTarget(AndroidDownloadTaskRecord.KIND_GAME_PACKAGE, gameId);
-        if (record != null && !record.isTerminal()) {
-            Log.w(TAG, "uninstallGamePackage cancel-active-task gameId=" + gameId + " taskId=" + record.taskId);
+        List<AndroidDownloadTaskRecord> cancelledRecords = taskStore.cancelTasksForTarget(
+            AndroidDownloadTaskRecord.KIND_GAME_PACKAGE,
+            gameId,
+            System.currentTimeMillis()
+        );
+        for (AndroidDownloadTaskRecord record : cancelledRecords) {
+            Log.w(TAG, "uninstallGamePackage cancel-task gameId=" + gameId + " taskId=" + record.taskId);
             AndroidDownloadForegroundService.startManagedIntent(
                 getContext(),
                 AndroidDownloadForegroundService.buildCancelIntent(getContext(), record.taskId)
@@ -330,14 +335,10 @@ public class GamePackagePlugin extends Plugin {
 
         executor.execute(() -> {
             try {
-                File currentDir = GamePackageFs.resolveCurrentDir(getContext(), gameId);
-                File stateFile = resolveStateFile(gameId);
-                File stagingRootDir = GamePackageFs.resolveStagingRootDir(getContext(), gameId);
-                deleteRecursively(currentDir);
-                if (stateFile.exists() && !stateFile.delete()) {
-                    Log.w(TAG, "uninstallGamePackage delete-state-failed gameId=" + gameId + " path=" + stateFile.getAbsolutePath());
+                File gameDir = GamePackageFs.resolveGameDir(getContext(), gameId);
+                synchronized (GamePackageFs.packageMutationLock()) {
+                    deleteRecursively(gameDir);
                 }
-                deleteRecursively(stagingRootDir);
 
                 JSONObject payload = new JSONObject();
                 long updatedAt = System.currentTimeMillis();
@@ -600,6 +601,23 @@ public class GamePackagePlugin extends Plugin {
         File stagingDir = GamePackageFs.resolveVersionedStagingDir(getContext(), gameId, resolvedAssetPackVersion);
         File archiveFile = new File(stagingDir, GamePackageFs.ARCHIVE_FILE);
         File archivePartFile = new File(stagingDir, GamePackageFs.ARCHIVE_PART_FILE);
+        AndroidDownloadTaskRecord record = taskStore.enqueueOrReuse(
+            AndroidDownloadTaskRecord.KIND_GAME_PACKAGE,
+            gameId,
+            gameId,
+            resolvedRuntimeChannel,
+            resolvedAssetPackId,
+            resolvedAssetPackVersion,
+            assetPackUrl,
+            assetPackChecksum,
+            installMode,
+            assetBaseUrl,
+            fileIndexUrl,
+            fileIndexChecksum,
+            allowFullFallback,
+            archiveFile.getAbsolutePath(),
+            archivePartFile.getAbsolutePath()
+        );
         AndroidDownloadForegroundService.startManagedIntent(
             getContext(),
             AndroidDownloadForegroundService.buildEnqueueIntent(
@@ -620,23 +638,6 @@ public class GamePackagePlugin extends Plugin {
                 archiveFile.getAbsolutePath(),
                 archivePartFile.getAbsolutePath()
             )
-        );
-        AndroidDownloadTaskRecord record = taskStore.enqueueOrReuse(
-            AndroidDownloadTaskRecord.KIND_GAME_PACKAGE,
-            gameId,
-            gameId,
-            resolvedRuntimeChannel,
-            resolvedAssetPackId,
-            resolvedAssetPackVersion,
-            assetPackUrl,
-            assetPackChecksum,
-            installMode,
-            assetBaseUrl,
-            fileIndexUrl,
-            fileIndexChecksum,
-            allowFullFallback,
-            archiveFile.getAbsolutePath(),
-            archivePartFile.getAbsolutePath()
         );
         JSObject result = new JSObject();
         result.put("accepted", true);

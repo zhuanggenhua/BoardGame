@@ -2,8 +2,8 @@ param(
   [string]$HostName = "admin@8.148.71.102",
   [string]$ProjectDir = "/home/admin/BoardGame",
   [string]$Tag = "",
-  [ValidateSet("stream", "remote")]
-  [string]$DeployMode = "stream",
+  [ValidateSet("ci-stream", "stream", "remote")]
+  [string]$DeployMode = "ci-stream",
   [string]$OtaChannel = "stable",
   [string]$OtaExtra = "",
   [switch]$SkipOta,

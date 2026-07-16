@@ -9,6 +9,7 @@ export * from './goblin';
 export * from './frost';
 export * from './barbaric';
 export * from './mogu';
+export * from './huijin';
 export { DECK_SYMBOLS } from '../symbols';
 
 import { createNecromancerDeck } from './necromancer';
@@ -18,6 +19,7 @@ import { createGoblinDeck } from './goblin';
 import { createFrostDeck } from './frost';
 import { createBarbaricDeck } from './barbaric';
 import { createMoguDeck } from './mogu';
+import { createHuijinDeck } from './huijin';
 import type { FactionId } from '../../domain/types';
 
 // 派系 ID 常量
@@ -29,6 +31,7 @@ export const FACTION_IDS = {
   FROST: 'frost',
   GOBLIN: 'goblin',
   MOGU: 'mogu',
+  HUIJIN: 'huijin',
 } as const;
 
 /** 中文阵营名 → 阵营 ID 映射 */
@@ -40,6 +43,7 @@ export const FACTION_NAME_TO_ID: Record<string, FactionId> = {
   '极地矮人': 'frost',
   '炽原精灵': 'barbaric',
   '莫古': 'mogu',
+  '灰烬': 'huijin',
 };
 
 /** 将中文阵营名或阵营 ID 统一解析为 FactionId */
@@ -112,6 +116,14 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = [
     selectable: true,
     statusTag: 'under_construction',
   },
+  {
+    id: 'huijin',
+    nameKey: 'factions.huijin',
+    heroImagePath: 'summonerwars/hero/huijin/hero',
+    tipImagePath: 'summonerwars/hero/huijin/tip',
+    selectable: true,
+    statusTag: 'under_construction',
+  },
 ];
 
 /** 根据阵营 ID 创建牌组 */
@@ -124,6 +136,7 @@ export function createDeckByFactionId(factionId: FactionId) {
     case 'frost': return createFrostDeck();
     case 'barbaric': return createBarbaricDeck();
     case 'mogu': return createMoguDeck();
+    case 'huijin': return createHuijinDeck();
     default: return createNecromancerDeck();
   }
 }

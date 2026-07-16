@@ -75,6 +75,10 @@
     "communityCardsSlot": "公共牌牌槽",
     "communityCards": "公共牌",
     "myHand": "我的手牌",
+    "topHand": "上手",
+    "bottomHand": "下手",
+    "winningTopHand": "上手结算",
+    "winningBottomHand": "下手结算",
     "currentHandRank": "当前牌型",
     "currentHandRankAria": "当前最佳牌型：{{rank}}，{{detail}}，最佳五张：{{cards}}",
     "currentHandRankPending": "等待公共牌",
@@ -127,9 +131,9 @@
       "antiTroll": "防手欠"
     },
     "ttsSetupOptionDescriptions": {
-      "omaha": "摊牌时强制用 2 张手牌 + 3 张公共牌评估牌型。",
-      "twoHand": "记录 TTS 的两副手牌配置；完整双手独立下注结算另需单独扩展。",
-      "automode": "记录 TTS 自动推进配置；当前 Web 仍保留全员确认按钮。",
+      "omaha": "每手多发 2 张，摊牌时强制用 2 张手牌 + 3 张公共牌评估牌型。",
+      "twoHand": "每名玩家获得上、下两幅手牌；摊牌时分别评估，取更强的一手参与排序。最多 5 人。",
+      "automode": "所有人拿完当前轮筹码后自动推进；最后一轮自动进入摊牌。",
       "antiTroll": "对应 TTS 防误触/房主权限开关，当前 Web 继续按房主规则设置权限限制。"
     },
     "exitChipMode": "撤离筹码模式",

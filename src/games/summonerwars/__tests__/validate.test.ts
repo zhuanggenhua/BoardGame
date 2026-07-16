@@ -12,6 +12,7 @@ import type { RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { createInitializedCore, generateInstanceId } from './test-helpers';
 import { BOARD_ROWS, BOARD_COLS } from '../domain/helpers';
+import { CARD_IDS } from '../domain/ids';
 
 // ============================================================================
 // 辅助
@@ -436,6 +437,56 @@ describe('PLAY_EVENT 验证', () => {
     core.players['0'].hand.push(card);
     const r = validate(core, SW_COMMANDS.PLAY_EVENT, { cardId: 'any-phase' });
     expect(r.valid).toBe(true);
+  });
+
+  it('释放菌袍在弃牌堆没有菌袍疫病体时拒绝打出和进入交互', () => {
+    const core = createInitializedCore(['0', '1'], createTestRandom());
+    core.phase = 'magic';
+    clearArea(core, [3, 4, 5], [2, 3, 4]);
+    placeUnit(core, { row: 4, col: 3 }, {
+      card: makeUnitCard('mogu-summoner', { name: '库鞭克', faction: 'mogu', unitClass: 'summoner' }),
+      owner: '0',
+    });
+    const card = makeEventCard(CARD_IDS.MOGU_RELEASE_SPORES, {
+      name: '释放菌袍',
+      faction: 'mogu',
+      playPhase: 'magic',
+    });
+    core.players['0'].hand.push(card);
+
+    const play = validate(core, SW_COMMANDS.PLAY_EVENT, {
+      cardId: CARD_IDS.MOGU_RELEASE_SPORES,
+      targets: [{ row: 3, col: 3 }],
+    });
+    const request = validate(core, SW_COMMANDS.REQUEST_EVENT_INTERACTION, { cardId: CARD_IDS.MOGU_RELEASE_SPORES });
+
+    expect(play.valid).toBe(false);
+    expect(request.valid).toBe(false);
+    expect(play.error).toContain('没有可用目标');
+    expect(request.error).toContain('没有可用目标');
+  });
+
+  it('释放菌袍在弃牌堆有菌袍疫病体且召唤师旁有空格时允许进入交互', () => {
+    const core = createInitializedCore(['0', '1'], createTestRandom());
+    core.phase = 'magic';
+    clearArea(core, [3, 4, 5], [2, 3, 4]);
+    placeUnit(core, { row: 4, col: 3 }, {
+      card: makeUnitCard('mogu-summoner', { name: '库鞭克', faction: 'mogu', unitClass: 'summoner' }),
+      owner: '0',
+    });
+    core.players['0'].hand.push(makeEventCard(CARD_IDS.MOGU_RELEASE_SPORES, {
+      name: '释放菌袍',
+      faction: 'mogu',
+      playPhase: 'magic',
+    }));
+    core.players['0'].discard.push(makeUnitCard('mogu-spore-plague-body', {
+      name: '菌袍疫病体',
+      faction: 'mogu',
+    }));
+
+    const request = validate(core, SW_COMMANDS.REQUEST_EVENT_INTERACTION, { cardId: CARD_IDS.MOGU_RELEASE_SPORES });
+
+    expect(request.valid).toBe(true);
   });
 });
 

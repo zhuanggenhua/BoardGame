@@ -1,0 +1,13 @@
+## 1. Implementation
+- [ ] 1.1 盘点当前公开素材、manifest、file-index、OTA、原生更新包和移动素材包的保留集合。
+- [ ] 1.2 盘点 R2 历史对象和服务器素材目录，输出 dry-run 清理清单，不删除未确认对象。
+- [ ] 1.3 选择并记录 R2 接入方式：Cloudflare Worker 读 R2 或 R2 自定义域。
+- [ ] 1.4 恢复或重建 R2 上传/发布脚本，覆盖普通素材、manifest、file-index、OTA、原生更新包和移动素材包。
+- [ ] 1.5 更新环境变量模板和 CI/运维文档，只引用密钥名称，不写入真实密钥。
+- [ ] 1.6 将 `assert-no-r2-runtime` 类审计替换为 R2 主源审计，确保服务器素材源不是默认玩家下载路径。
+- [ ] 1.7 将当前保留集合补齐到 R2，并对本次对象执行大小和 SHA-256 校验。
+- [ ] 1.8 切换 `assets.easyboardgame.top/official` 公开链路到 R2 主源。
+- [ ] 1.9 用真实公开域名验证代表性普通素材、manifest、OTA、原生更新包和移动素材包均来自 R2 主源。
+- [ ] 1.10 完成服务器和 R2 历史对象清理，只删除 dry-run 已证明安全的候选。
+- [ ] 1.11 更新 `docs/ai-rules/asset-pipeline.md`、`docs/deploy.md` 和相关移动发布文档。
+- [ ] 1.12 跑 OpenSpec 校验、资源审计和发布脚本定向测试。

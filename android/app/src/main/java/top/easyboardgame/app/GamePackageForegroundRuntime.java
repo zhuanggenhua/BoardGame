@@ -72,7 +72,7 @@ final class GamePackageForegroundRuntime {
     }
 
     private interface IncrementalFileProgressListener {
-        void onProgress(long fileDownloadedBytes);
+        void onProgress(long fileDownloadedBytes) throws Exception;
     }
 
     static void runTask(
@@ -86,7 +86,11 @@ final class GamePackageForegroundRuntime {
             executeGamePackageTask(context, taskStore, task, cancelFlag, onProgress);
         } catch (Exception error) {
             logError("runTask failed taskId=" + task.taskId + " logicalId=" + task.logicalId, error);
-            taskStore.markFailed(task.taskId, classifyInstallErrorCode(error), error.getMessage(), System.currentTimeMillis());
+            AndroidDownloadTaskRecord failedRecord = taskStore.markFailed(task.taskId, classifyInstallErrorCode(error), error.getMessage(), System.currentTimeMillis());
+            if (failedRecord == null) {
+                logWarn("runTask ignored failure for terminal task taskId=" + task.taskId + " logicalId=" + task.logicalId, error);
+                return;
+            }
             emitInstallState(context, task.logicalId, "failed", null, null, classifyInstallErrorCode(error), error.getMessage(), task.packageVersion, null, null);
         }
     }
@@ -140,6 +144,9 @@ final class GamePackageForegroundRuntime {
         try {
             executeIncrementalGamePackageTask(context, taskStore, task, cancelFlag, onProgress);
         } catch (IncrementalFallbackException error) {
+            if (cancelFlag.get() || isCancellationError(error)) {
+                throw error;
+            }
             if (!task.allowFullFallback) {
                 logWarn("incremental install failed without full fallback taskId=" + task.taskId + " reason=" + error.getMessage());
                 throw error;
@@ -166,6 +173,7 @@ final class GamePackageForegroundRuntime {
         File currentAssetsDir = GamePackageFs.resolveCurrentAssetsDir(context, gameId);
         long installedAt = System.currentTimeMillis();
 
+        ensureTaskStillAccepted(taskStore.getByTaskId(task.taskId));
         GamePackageFs.cleanupBrokenCurrentInstall(context, gameId);
         GamePackageFs.cleanupStagingDirectories(context, gameId, resolvedPackageVersion);
         if (!stagingDir.exists() && !stagingDir.mkdirs()) throw new IOException("创建临时目录失败");
@@ -173,7 +181,7 @@ final class GamePackageForegroundRuntime {
 
         emitInstallState(context, gameId, "manifest", null, "indeterminate", null, null, task.packageVersion, null, null);
         downloadArchive(context, taskStore, task, archiveFile, archivePartFile, cancelFlag, onProgress);
-        taskStore.markVerifying(task.taskId, System.currentTimeMillis());
+        ensureTaskStillAccepted(taskStore.markVerifying(task.taskId, System.currentTimeMillis()));
         emitInstallState(context, gameId, "verifying", 100, "indeterminate", null, null, task.packageVersion, null, null);
 
         GamePackageFs.deleteRecursively(stagingAssetsDir);
@@ -182,11 +190,14 @@ final class GamePackageForegroundRuntime {
         if (cancelFlag.get()) throw new IOException("安装已取消");
 
         JSONObject installedFilesIndex = GamePackageFs.buildInstalledFilesIndex(stagingAssetsDir, resolvedPackageVersion);
-        GamePackageFs.writeJsonFile(GamePackageFs.resolveStagingInstalledFilesIndexFile(context, gameId, resolvedPackageVersion), installedFilesIndex);
-        GamePackageFs.writeMetadata(GamePackageFs.resolveStagingMetadataFile(context, gameId, resolvedPackageVersion), gameId, safe(task.runtimeChannel, "stable"), safe(task.packageId, gameId), resolvedPackageVersion, installedAt);
-        switchStagingToCurrent(context, gameId, resolvedPackageVersion, currentDir, currentAssetsDir);
+        synchronized (GamePackageFs.packageMutationLock()) {
+            ensureTaskStillAccepted(taskStore.getByTaskId(task.taskId));
+            GamePackageFs.writeJsonFile(GamePackageFs.resolveStagingInstalledFilesIndexFile(context, gameId, resolvedPackageVersion), installedFilesIndex);
+            GamePackageFs.writeMetadata(GamePackageFs.resolveStagingMetadataFile(context, gameId, resolvedPackageVersion), gameId, safe(task.runtimeChannel, "stable"), safe(task.packageId, gameId), resolvedPackageVersion, installedAt);
+            switchStagingToCurrent(context, gameId, resolvedPackageVersion, currentDir, currentAssetsDir);
+        }
 
-        taskStore.markCompleted(task.taskId, archiveFile.length(), System.currentTimeMillis());
+        ensureTaskMutationAccepted(taskStore.markCompleted(task.taskId, archiveFile.length(), System.currentTimeMillis()));
         emitInstallState(context, gameId, "installed", null, null, null, null, task.packageVersion, currentAssetsDir.getAbsolutePath(), installedAt);
         GamePackageFs.cleanupStagingDirectories(context, gameId, null);
         onProgress.run();
@@ -210,6 +221,7 @@ final class GamePackageForegroundRuntime {
 
         if (assetBaseUrl == null || fileIndexUrl == null) throw new IncrementalFallbackException("增量安装缺少索引或资源根地址");
 
+        ensureTaskStillAccepted(taskStore.getByTaskId(task.taskId));
         boolean hasReusableLocalInstall = currentAssetsDir.isDirectory() && currentMetadataFile.exists();
         JSONObject localFiles = new JSONObject();
         if (hasReusableLocalInstall) {
@@ -246,6 +258,7 @@ final class GamePackageForegroundRuntime {
         File stagingDir = GamePackageFs.resolveVersionedStagingDir(context, gameId, resolvedPackageVersion);
         File stagingAssetsDir = GamePackageFs.resolveStagingAssetsDir(context, gameId, resolvedPackageVersion);
         try {
+            ensureTaskStillAccepted(taskStore.getByTaskId(task.taskId));
             GamePackageFs.cleanupStagingDirectories(context, gameId, resolvedPackageVersion);
             if (!stagingAssetsDir.mkdirs() && !stagingAssetsDir.exists()) throw new IOException("创建增量暂存目录失败");
 
@@ -261,7 +274,7 @@ final class GamePackageForegroundRuntime {
                     + " totalBytes=" + totalBytes
             );
             long downloadedBytes = estimateExistingIncrementalBytes(stagingAssetsDir, changedEntries);
-            taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+            ensureTaskStillAccepted(taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis()));
             emitIncrementalDownloadProgress(context, gameId, task.packageVersion, downloadedBytes, totalBytes);
             final long progressTotalBytes = totalBytes;
 
@@ -273,26 +286,29 @@ final class GamePackageForegroundRuntime {
                 final long completedBeforeEntry = downloadedBytes;
                 downloadIncrementalFile(cancelFlag, assetBaseUrl, entry, targetFile, fileDownloadedBytes -> {
                     long currentDownloadedBytes = completedBeforeEntry + clampIncrementalEntryBytes(fileDownloadedBytes, entry);
-                    taskStore.updateRunningProgress(task.taskId, currentDownloadedBytes, progressTotalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+                    ensureTaskStillAccepted(taskStore.updateRunningProgress(task.taskId, currentDownloadedBytes, progressTotalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis()));
                     emitIncrementalDownloadProgress(context, gameId, task.packageVersion, currentDownloadedBytes, progressTotalBytes);
                     onProgress.run();
                 });
                 downloadedBytes = completedBeforeEntry + clampIncrementalEntryBytes(targetFile.length(), entry);
-                taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+                ensureTaskStillAccepted(taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis()));
                 emitIncrementalDownloadProgress(context, gameId, task.packageVersion, downloadedBytes, totalBytes);
                 onProgress.run();
             }
 
-            taskStore.markVerifying(task.taskId, System.currentTimeMillis());
+            ensureTaskStillAccepted(taskStore.markVerifying(task.taskId, System.currentTimeMillis()));
             emitInstallState(context, gameId, "verifying", 100, "indeterminate", null, null, task.packageVersion, null, null);
             verifyMergedFiles(stagingAssetsDir, remoteEntries);
 
             JSONObject installedFilesIndex = buildInstalledFilesIndexFromRemote(remoteEntries, resolvedPackageVersion);
-            GamePackageFs.writeJsonFile(GamePackageFs.resolveStagingInstalledFilesIndexFile(context, gameId, resolvedPackageVersion), installedFilesIndex);
-            GamePackageFs.writeMetadata(GamePackageFs.resolveStagingMetadataFile(context, gameId, resolvedPackageVersion), gameId, safe(task.runtimeChannel, "stable"), safe(task.packageId, gameId), resolvedPackageVersion, installedAt);
-            switchStagingToCurrent(context, gameId, resolvedPackageVersion, GamePackageFs.resolveCurrentDir(context, gameId), currentAssetsDir);
+            synchronized (GamePackageFs.packageMutationLock()) {
+                ensureTaskStillAccepted(taskStore.getByTaskId(task.taskId));
+                GamePackageFs.writeJsonFile(GamePackageFs.resolveStagingInstalledFilesIndexFile(context, gameId, resolvedPackageVersion), installedFilesIndex);
+                GamePackageFs.writeMetadata(GamePackageFs.resolveStagingMetadataFile(context, gameId, resolvedPackageVersion), gameId, safe(task.runtimeChannel, "stable"), safe(task.packageId, gameId), resolvedPackageVersion, installedAt);
+                switchStagingToCurrent(context, gameId, resolvedPackageVersion, GamePackageFs.resolveCurrentDir(context, gameId), currentAssetsDir);
+            }
 
-            taskStore.markCompleted(task.taskId, totalBytes, System.currentTimeMillis());
+            ensureTaskMutationAccepted(taskStore.markCompleted(task.taskId, totalBytes, System.currentTimeMillis()));
             logInfo("incremental-install-finished gameId=" + gameId
                     + " version=" + resolvedPackageVersion
                     + " downloadedBytes=" + totalBytes
@@ -724,7 +740,7 @@ final class GamePackageForegroundRuntime {
         Runnable onProgress
     ) throws Exception {
         if (targetFile.exists() && isChecksumMatch(targetFile, task.checksum)) {
-            taskStore.updateRunningProgress(task.taskId, targetFile.length(), targetFile.length(), AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+            ensureTaskStillAccepted(taskStore.updateRunningProgress(task.taskId, targetFile.length(), targetFile.length(), AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis()));
             emitInstallState(context, task.logicalId, "downloading", 100, "determinate", null, null, task.packageVersion, null, null);
             return;
         }
@@ -792,7 +808,7 @@ final class GamePackageForegroundRuntime {
             cancelFlag,
             attempt,
             (downloadedBytes, totalBytes, shouldEmitState) -> {
-                taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+                ensureTaskStillAccepted(taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis()));
                 if (!shouldEmitState) {
                     return;
                 }
@@ -925,6 +941,22 @@ final class GamePackageForegroundRuntime {
         } finally {
             connection.disconnect();
         }
+    }
+
+    private static void ensureTaskStillAccepted(AndroidDownloadTaskRecord record) throws IOException {
+        if (record == null || record.isTerminal()) {
+            throw new IOException("安装已取消");
+        }
+    }
+
+    private static void ensureTaskMutationAccepted(AndroidDownloadTaskRecord record) throws IOException {
+        if (record == null) {
+            throw new IOException("安装已取消");
+        }
+    }
+
+    private static boolean isCancellationError(Throwable error) {
+        return collectThrowableMessages(error).contains("取消");
     }
 
     private static void discardInvalidArchivePart(File partFile, String reason) throws IOException {
