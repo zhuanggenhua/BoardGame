@@ -9466,6 +9466,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/promos_sheep_all_stars": {
+      "variants": {
+        "webp": {
+          "sha256": "c052ca0f5e79ff77be9de8d9bcb4a7974cc5ce11f7f9e8c2f03dc6f7168dc23a",
+          "bytes": 704114,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/huluwawa_cards": {
       "variants": {
         "png": {
@@ -9525,6 +9534,15 @@
         "png": {
           "sha256": "d2580992fa5dfd33082de91c1b1ba91917185bdd91a22649b84419b782f0176e",
           "bytes": 37611409,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/promos_sheep_all_stars": {
+      "variants": {
+        "png": {
+          "sha256": "f01d0ab000a18f0e167045f1279372c9a54b13d16d9794cf02bc1640e4fbc7c3",
+          "bytes": 34483656,
           "mime": "image/png"
         }
       }
@@ -12442,6 +12460,114 @@
           "sha256": "bfe451c3b838c03a31b73bf650a93b911882d89ecec3be458dc9d3de3985ca1b",
           "bytes": 740164,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/culture_shock/atlas": {
+      "variants": {
+        "png": {
+          "sha256": "5ca8838ed9c57f1a53c2c864837e56d2279ece101e1fe39e74be74828b61f08e",
+          "bytes": 42094823,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/culture_shock/compressed/atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
+          "bytes": 1110284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/polynesian_voyagers/atlas": {
+      "variants": {
+        "png": {
+          "sha256": "253dda49b347392e8657fdb2cda21a7b6ea4cfa667421e44b821d38756c6e0be",
+          "bytes": 4793419,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/polynesian_voyagers/compressed/atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "31f4179b388ed1063b20c65f9cb6c5eeb95474b352321fac756939712fa468b0",
+          "bytes": 442110,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/what_were_we_thinking_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "198ca3edc5156809b6b7b61310dc2a0026a2c13589055c0a73f92b9aa3212a15",
+          "bytes": 233822,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/what_were_we_thinking_bases": {
+      "variants": {
+        "png": {
+          "sha256": "cfeda490f5133a6f9a18c01831d4c809630f5171e3dc8c58e4fec741f5f8f548",
+          "bytes": 15998657,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/what_were_we_thinking": {
+      "variants": {
+        "webp": {
+          "sha256": "13a2dda4740716388436e81d3344e127e4eae2028eca65bc3484c5f432f49312",
+          "bytes": 1040202,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/what_were_we_thinking": {
+      "variants": {
+        "png": {
+          "sha256": "a1530f6940431609ce42bfad6908b3ce27f0dd783c507d880914d687feaf76aa",
+          "bytes": 48780520,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/international_incident_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
+          "bytes": 560560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/international_incident_bases": {
+      "variants": {
+        "png": {
+          "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
+          "bytes": 30275972,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/international_incident": {
+      "variants": {
+        "webp": {
+          "sha256": "c106174d2e747c89c7a02b5d3855be7ecd0cd2c7ed8df82bf267b94dad0ce685",
+          "bytes": 969464,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/international_incident": {
+      "variants": {
+        "png": {
+          "sha256": "a04e696d6d3ab50a4fa5bdbc31c58c7385657e73ccbc36a3a7fde6ba44d3ca55",
+          "bytes": 37758563,
+          "mime": "image/png"
         }
       }
     }

@@ -12,6 +12,7 @@ import {
     registerBreakpointModifiers,
     registerCustomPowerModifiers,
     registerCustomBasePowerModifiers,
+    registerCustomBreakpointModifiers,
     registerTitanPowerModifier,
     getActionControllerId,
 } from '../domain/ongoingModifiers';
@@ -20,7 +21,7 @@ import type { SmashUpCore } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { isMicrobot } from '../domain/utils';
 import { registerKillerPlantModifiers as registerKillerPlantAbilitiesModifiers } from './killer_plants';
-import { isBaseAbilitySuppressed } from '../domain/ongoingEffects';
+import { isBaseAbilitySuppressed, isCardSuppressed } from '../domain/ongoingEffects';
 
 export const COPYCAT_EXPLICIT_COPIED_POWER_DEF_IDS = [
     'shapeshifters_mimic',
@@ -65,6 +66,7 @@ const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinitio
     { defId: 'dragons_intimidating_presence', location: 'base', target: 'opponentMinions', delta: -1 },
     { defId: 'superheroes_expanded_power', location: 'minion', target: 'self', delta: 1 },
     { defId: 'vigilantes_tough_it_out', location: 'minion', target: 'self', delta: 2 },
+    { defId: 'mounties_haich_q', location: 'base', target: 'ownerMinions', delta: 1 },
 ];
 
 function registerStructuredOngoingPowerModifiers(): void {
@@ -686,6 +688,92 @@ function registerZhongguoModifiers(): void {
     ]);
 }
 
+function registerInternationalIncidentModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'mounties_mountie_major',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'mounties_mountie_major')) return 0;
+                const countsByOtherPlayer = new Map<string, number>();
+                for (const minion of ctx.base.minions) {
+                    if (minion.controller === ctx.minion.controller) continue;
+                    countsByOtherPlayer.set(minion.controller, (countsByOtherPlayer.get(minion.controller) ?? 0) + 1);
+                }
+                return Math.max(0, ...countsByOtherPlayer.values());
+            },
+        },
+        {
+            sourceDefId: 'luchadors_powerful_set_up',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => {
+                let total = 0;
+                for (const minion of ctx.base.minions) {
+                    for (const action of minion.attachedActions) {
+                        if (!helpers.matchesRuntimeDefId(action.defId, 'luchadors_powerful_set_up')) continue;
+                        if (isCardSuppressed(ctx.state, action.uid)) continue;
+                        if (getActionControllerId(action) === ctx.minion.controller) total += 1;
+                    }
+                }
+                return total;
+            },
+        },
+        {
+            sourceDefId: 'luchadors_flor_loca',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'luchadors_flor_loca')) return 0;
+                const hasOwnActionOnOtherPlayerMinion = ctx.base.minions.some(minion => (
+                    minion.controller !== ctx.minion.controller
+                    && minion.attachedActions.some(action => (
+                        !isCardSuppressed(ctx.state, action.uid)
+                        && getActionControllerId(action) === ctx.minion.controller
+                    ))
+                ));
+                return hasOwnActionOnOtherPlayerMinion ? 2 : 0;
+            },
+        },
+    ]);
+}
+
+function registerWhatWereWeThinkingModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'rock_stars_hot_venue',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                helpers.countBaseOngoingsMatchingRuntimeDefId(ctx, 'rock_stars_hot_venue', {
+                    relationToTargetController: 'same',
+                })
+            ),
+        },
+        {
+            sourceDefId: 'teddy_bears_lovey_bear',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'teddy_bears_lovey_bear')) return 0;
+                const highestOpponentPrintedPower = Math.max(
+                    0,
+                    ...ctx.base.minions
+                        .filter(minion => minion.controller !== ctx.minion.controller)
+                        .map(minion => getCardPrintedPower(minion.defId)),
+                );
+                return Math.max(0, highestOpponentPrintedPower - getCardPrintedPower(ctx.minion.defId));
+            },
+        },
+    ]);
+
+    registerCustomBreakpointModifiers([
+        {
+            sourceDefId: 'rock_stars_turn_up_to_11',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => (
+                ctx.originalBreakpoint < 21
+                && helpers.countBaseOngoingsMatchingRuntimeDefId(ctx, 'rock_stars_turn_up_to_11') > 0
+                    ? 21 - ctx.originalBreakpoint
+                    : 0
+            ),
+        },
+    ]);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -715,4 +803,6 @@ export function registerAllOngoingModifiers(): void {
     registerMarvelWaveOneModifiers();
     registerYuanhouModifiers();
     registerZhongguoModifiers();
+    registerInternationalIncidentModifiers();
+    registerWhatWereWeThinkingModifiers();
 }

@@ -47,7 +47,8 @@ import { registerTornadosAbilities } from './tornados';
 import { registerMythicGreeksAbilities } from './mythic_greeks';
 import { registerDragonAbilities } from './dragons';
 import { registerGeekAbilities } from './geeks';
-import { registerAllStarsAbilities } from './all_stars';
+import { registerAllStarsAbilities, registerAllStarsInteractionHandlers } from './all_stars';
+import { registerSheepAbilities, registerSheepInteractionHandlers } from './sheep';
 import { registerSuperheroesAbilities, registerSuperheroesInteractionHandlers } from './superheroes';
 import { registerYuanhouAbilities } from './yuanhou';
 import { registerIttyCrittersAbilities } from './itty_critters';
@@ -61,6 +62,12 @@ import { registerZhongguoAbilities } from './zhongguo';
 import { registerAvengersAbilities } from './avengers';
 import { registerMarvelAbilities } from './marvel';
 import { registerMarvelVillainsAbilities } from './marvel_villains';
+import { registerInternationalIncidentAbilities } from './international_incident';
+import { registerWhatWereWeThinkingAbilities, registerWhatWereWeThinkingInteractionHandlers } from './what_were_we_thinking';
+import { registerAnansiTalesAbilities } from './anansi_tales';
+import { registerGrimmsFairyTalesAbilities, registerGrimmsFairyTalesInteractionHandlers } from './grimms_fairy_tales';
+import { registerRussianFairyTalesAbilities, registerRussianFairyTalesInteractionHandlers } from './russian_fairy_tales';
+import { registerAncientIncasAbilities, registerAncientIncasInteractionHandlers } from './ancient_incas';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -175,7 +182,10 @@ export function initAllAbilities(): void {
     registerSuperheroesAbilities();
     registerSuperheroesInteractionHandlers();
     registerYuanhouAbilities();
+    registerSheepAbilities();
+    registerSheepInteractionHandlers();
     registerAllStarsAbilities();
+    registerAllStarsInteractionHandlers();
     registerIttyCrittersAbilities();
     registerKaijuAbilities();
     registerKaijuInteractionHandlers();
@@ -190,6 +200,16 @@ export function initAllAbilities(): void {
     registerAvengersAbilities();
     registerMarvelAbilities();
     registerMarvelVillainsAbilities();
+    registerInternationalIncidentAbilities();
+    registerWhatWereWeThinkingAbilities();
+    registerWhatWereWeThinkingInteractionHandlers();
+    registerAnansiTalesAbilities();
+    registerGrimmsFairyTalesAbilities();
+    registerGrimmsFairyTalesInteractionHandlers();
+    registerRussianFairyTalesAbilities();
+    registerRussianFairyTalesInteractionHandlers();
+    registerAncientIncasAbilities();
+    registerAncientIncasInteractionHandlers();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

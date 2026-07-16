@@ -1,8 +1,8 @@
 {
   "name": "boardgame-platform",
   "private": true,
-  "version": "0.6.7",
-  "androidVersionCode": 570,
+  "version": "0.6.8",
+  "androidVersionCode": 571,
   "type": "module",
   "engines": {
     "node": "24.1.0"
@@ -106,8 +106,8 @@
     "check:arch": "node scripts/infra/check-architecture.cjs",
     "verify:dicethrone:style-contract": "node scripts/games/dicethrone/verify/dicethrone-style-contract.mjs",
     "audit:evidence": "node scripts/verify/audit-evidence-completeness.mjs",
-    "audit:evidence:selfcheck": "node scripts/verify/audit-evidence-completeness.mjs",
     "audit:evidence:all": "node scripts/verify/audit-evidence-completeness.mjs --all",
+    "audit:evidence:selfcheck": "node scripts/verify/audit-evidence-completeness.mjs",
     "check:prod-deps": "bash scripts/deploy/verify-prod-deps.sh",
     "deploy:runner": "node scripts/deploy/deploy-runner.mjs",
     "release:deploy-and-ota": "node scripts/release/deploy-and-ota.mjs",

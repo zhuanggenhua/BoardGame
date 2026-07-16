@@ -11,6 +11,8 @@ import type {
     MinionDestroyedEvent,
     MinionMovedEvent,
     MinionControlChangedEvent,
+    BaseMetadataUpdatedEvent,
+    ActionDefBlockedThisTurnEvent,
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
     OngoingDetachedEvent,
@@ -1832,6 +1834,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 minionsMovedToBaseThisTurn: undefined,
                 minionMoveEventsByBaseThisTurn: undefined,
                 minionMovesThisTurnByPlayer: undefined,
+                blockedActionDefIdsThisTurn: undefined,
                 movedToBasesThisTurn: undefined,
                 // 清空海盗 POD：私掠者每回合一次追踪
                 buccaneerPodUsedUids: undefined,
@@ -2681,6 +2684,40 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
         }
 
+        case SU_EVENTS.BASE_METADATA_UPDATED: {
+            const { baseIndex, baseInstanceId, metadataUpdate } = (event as BaseMetadataUpdatedEvent).payload;
+            const matchesBase = (base: BaseInPlay, index: number) => (
+                index === baseIndex
+                && (baseInstanceId === undefined || base.instanceId === baseInstanceId)
+            );
+            let changed = false;
+            const bases = state.bases.map((base, index) => {
+                if (!matchesBase(base, index)) return base;
+                changed = true;
+                return {
+                    ...base,
+                    metadata: {
+                        ...(base.metadata ?? {}),
+                        ...metadataUpdate,
+                    },
+                };
+            });
+            return changed ? { ...state, bases } : state;
+        }
+
+        case SU_EVENTS.ACTION_DEF_BLOCKED_THIS_TURN: {
+            const { playerId, defId } = (event as ActionDefBlockedThisTurnEvent).payload;
+            const existing = state.blockedActionDefIdsThisTurn?.[playerId] ?? [];
+            if (existing.includes(defId)) return state;
+            return {
+                ...state,
+                blockedActionDefIdsThisTurn: {
+                    ...(state.blockedActionDefIdsThisTurn ?? {}),
+                    [playerId]: [...existing, defId],
+                },
+            };
+        }
+
         case SU_EVENTS.TITAN_METADATA_UPDATED: {
             const { titanUid, metadataUpdate } = (event as TitanMetadataUpdatedEvent).payload;
             const titans = state.titans ?? [];
@@ -2736,7 +2773,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAY_EFFECT_QUEUED: {
-            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter' | 'addTempPower'; amount: number; reason?: string } }).payload;
+            const qPayload = (event as unknown as { payload: { playerId: string; effect: 'addPowerCounter' | 'addTempPower' | 'grantExtraActionForPlayedMinion'; amount: number; reason?: string } }).payload;
             const qPlayer = state.players[qPayload.playerId];
             if (!qPlayer) return state;
             const prev = qPlayer.pendingMinionPlayEffects ?? [];

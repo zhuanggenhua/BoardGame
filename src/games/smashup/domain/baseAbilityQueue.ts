@@ -272,6 +272,9 @@ export function registerExtendedBaseAbilityAsQueuedTrigger(
       actionTargetBaseIndex: ctx.actionTargetBaseIndex,
       actionTargetType: ctx.actionTargetType,
       actionTargetMinionUid: ctx.actionTargetMinionUid,
+      triggerCardUid: ctx.triggerCardUid,
+      triggerCardDefId: ctx.triggerCardDefId,
+      triggerCardOwnerId: ctx.triggerCardOwnerId,
       frameId: ctx.frameId,
       sourceEventId: ctx.sourceEventId,
       now: ctx.now };
@@ -306,6 +309,9 @@ export function collectExtendedBaseAbilityTriggers(params: {
   actionTargetBaseIndex?: number;
   actionTargetType?: 'base' | 'minion';
   actionTargetMinionUid?: string;
+  triggerCardUid?: string;
+  triggerCardDefId?: string;
+  triggerCardOwnerId?: PlayerId;
   frameId?: string;
   sourceEventId?: string;
   now: number;
@@ -324,6 +330,9 @@ export function collectExtendedBaseAbilityTriggers(params: {
     actionTargetBaseIndex,
     actionTargetType,
     actionTargetMinionUid,
+    triggerCardUid,
+    triggerCardDefId,
+    triggerCardOwnerId,
     frameId,
     sourceEventId,
     now,
@@ -346,6 +355,9 @@ export function collectExtendedBaseAbilityTriggers(params: {
     actionTargetBaseIndex,
     actionTargetType,
     actionTargetMinionUid,
+    triggerCardUid,
+    triggerCardDefId,
+    triggerCardOwnerId,
     frameId,
     sourceEventId,
     now,
@@ -391,6 +403,9 @@ export function collectExtendedBaseAbilityTriggers(params: {
     actionTargetBaseIndex,
     actionTargetType,
     actionTargetMinionUid,
+    triggerCardUid,
+    triggerCardDefId,
+    triggerCardOwnerId,
     ...(explicitDerivedFootprint
       ? {
           derivedFootprint: explicitDerivedFootprint,

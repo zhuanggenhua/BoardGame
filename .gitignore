@@ -141,6 +141,20 @@ public/**/*.webm
 !public/assets/i18n/zh-CN/qidahen/thumbnails/**/*.webp
 !public/assets/i18n/zh-CN/smashup/thumbnails/**/
 !public/assets/i18n/zh-CN/smashup/thumbnails/**/*.webp
+# Smash Up《环游世界：国际事件》资源按当前 PR 目标随仓库交付；正式发布走服务器素材主源回查。
+!public/assets/i18n/zh-CN/smashup/cards/international_incident.png
+!public/assets/i18n/zh-CN/smashup/cards/compressed/international_incident.webp
+!public/assets/i18n/zh-CN/smashup/base/international_incident_bases.png
+!public/assets/i18n/zh-CN/smashup/base/compressed/international_incident_bases.webp
+# Smash Up《我们到底在想什么？》本批卡图/基地图随 PR 交付，不走 R2
+!public/assets/i18n/zh-CN/smashup/cards/what_were_we_thinking.png
+!public/assets/i18n/zh-CN/smashup/cards/compressed/what_were_we_thinking.webp
+!public/assets/i18n/zh-CN/smashup/base/what_were_we_thinking_bases.png
+!public/assets/i18n/zh-CN/smashup/base/compressed/what_were_we_thinking_bases.webp
+!public/assets/i18n/zh-CN/smashup/cards/culture_shock/
+!public/assets/i18n/zh-CN/smashup/cards/culture_shock/**
+!public/assets/i18n/zh-CN/smashup/base/polynesian_voyagers/
+!public/assets/i18n/zh-CN/smashup/base/polynesian_voyagers/**
 !public/assets/i18n/zh-CN/summonerwars/thumbnails/**/
 !public/assets/i18n/zh-CN/summonerwars/thumbnails/**/*.webp
 

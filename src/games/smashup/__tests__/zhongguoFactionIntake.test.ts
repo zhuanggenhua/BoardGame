@@ -188,9 +188,13 @@ describe('SmashUp zhongguo 四派系 intake 静态合同', () => {
     });
 
     it('后 8 格其它派系基地暂不污染四个新增派系基地池', () => {
-        expect(getBaseDef('base_the_golden_lily')).toBeUndefined();
-        expect(getBaseDef('base_the_squared_circle')).toBeUndefined();
-        expect(getBaseDef('base_the_dohyo')).toBeUndefined();
+        expect(getBaseDefIdsForFactions(SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS)).not.toContain('base_the_golden_lily');
+        expect(getBaseDefIdsForFactions(SMASHUP_FACTION_IDS.VIGILANTES)).not.toContain('base_the_squared_circle');
+        expect(getBaseDefIdsForFactions(SMASHUP_FACTION_IDS.TRUCKERS)).not.toContain('base_the_dohyo');
+
+        expect(getBaseDef('base_the_golden_lily')?.faction).toBe(SMASHUP_FACTION_IDS.MUSKETEERS);
+        expect(getBaseDef('base_the_squared_circle')?.faction).toBe(SMASHUP_FACTION_IDS.LUCHADORS);
+        expect(getBaseDef('base_the_dohyo')?.faction).toBe(SMASHUP_FACTION_IDS.SUMO_WRESTLERS);
     });
 
     it('四个 zhongguo 派系当前标记为实施中', () => {
