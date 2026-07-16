@@ -87,6 +87,7 @@ interface StatusBannersProps {
   systemGrabFollowMode: boolean;
   systemIceShardsMode: { sourceBoosts: number } | null;
   systemFeedBeastMode: boolean;
+  systemMoguParasiteMode: boolean;
   // 回调
   onCancelAbility: () => void;
   onConfirmBeforeAttackCards: () => void;
@@ -94,6 +95,7 @@ interface StatusBannersProps {
   onSkipGrabFollow: () => void;
   onConfirmIceShards: () => void;
   onConfirmFeedBeastSelfDestroy: () => void;
+  onConfirmMoguParasite: (choice: 'consume_charge' | 'take_damage') => void;
   onCancelBeforeAttack: () => void;
   onCancelBloodSummon: () => void;
   onContinueBloodSummon: () => void;
@@ -172,8 +174,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   mindControlMode, chantEntanglementMode, moguSymbioticSelfHealingMode, moguReleaseSporesMode, sneakMode, glacialShiftMode, withdrawMode, stunMode, hypnoticLureMode,
   mindCaptureMode, afterAttackAbilityMode, rapidFireMode, telekinesisTargetMode, magicEventChoiceMode,
   eventTargetMode,
-  systemGrabFollowMode, systemIceShardsMode, systemFeedBeastMode,
-  onCancelAbility, onConfirmBeforeAttackCards, onConfirmBloodRune, onSkipGrabFollow, onConfirmIceShards, onConfirmFeedBeastSelfDestroy,
+  systemGrabFollowMode, systemIceShardsMode, systemFeedBeastMode, systemMoguParasiteMode,
+  onCancelAbility, onConfirmBeforeAttackCards, onConfirmBloodRune, onSkipGrabFollow, onConfirmIceShards, onConfirmFeedBeastSelfDestroy, onConfirmMoguParasite,
   onCancelBeforeAttack, onCancelBloodSummon, onContinueBloodSummon,
   onCancelAnnihilate, onConfirmAnnihilateTargets, onSkipAnnihilateDamage,
   onConfirmSoulTransfer, onSkipSoulTransfer, onSkipFuneralPyre,
@@ -395,6 +397,18 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
           {t('statusBanners.ability.feedBeast')}
         </span>
         <GameButton onClick={onConfirmFeedBeastSelfDestroy} variant="secondary" size="sm">{t('actions.feedBeastSelfDestroy')}</GameButton>
+      </div>
+    );
+  }
+
+  if (systemMoguParasiteMode) {
+    return (
+      <div data-testid="sw-ability-prompt" className="bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex items-center gap-3 shadow-lg">
+        <span className="text-amber-200 text-sm font-bold">
+          {t('statusBanners.ability.moguParasite')}
+        </span>
+        <GameButton onClick={() => onConfirmMoguParasite('consume_charge')} variant="primary" size="sm">{t('actions.moguParasiteConsumeCharge')}</GameButton>
+        <GameButton onClick={() => onConfirmMoguParasite('take_damage')} variant="secondary" size="sm">{t('actions.moguParasiteTakeDamage')}</GameButton>
       </div>
     );
   }

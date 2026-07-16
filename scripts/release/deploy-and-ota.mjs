@@ -12,7 +12,7 @@ const helpText = `
 默认行为:
   1. 先检查 package.json 版本已随本次发布自增
   2. 等待 10 分钟
-  3. ssh 到生产机执行: bash scripts/deploy/deploy-image.sh update
+  3. 将 GHCR 镜像输送到生产机并执行: bash scripts/deploy/deploy-image.sh update-local
   4. 本地执行强制更新 OTA: node scripts/mobile/release-android.mjs ota --channel stable --force-update
   5. OTA 发布脚本必须等 bundle/latest.json 线上可读，并校验 latest.json 的 CORS 预检
 
@@ -35,7 +35,10 @@ const helpText = `
   --dry-run                  只打印将执行的命令，不真正执行
   --host <user@host>         覆盖 SSH 目标，默认 admin@8.148.71.102
   --remote-dir <path>        覆盖远端项目目录，默认 /home/admin/BoardGame
-  --deploy-tag <tag>         远端执行 update <tag>；不传则执行 update latest
+  --deploy-tag <tag>         部署镜像 tag；不传则部署 latest
+  --deploy-mode <mode>       部署模式：stream|remote，默认 stream
+                             stream: 本机/CI 拉镜像后传到服务器，再执行 update-local
+                             remote: 服务器直接拉 GHCR 镜像并执行 update
   --ota-channel <name>       OTA channel，默认 stable
   --skip-ota                 只更新服务器，不执行本地 Android OTA 发布
   --ota-extra "<args>"       追加给 release-android ota 的额外参数；禁止传 --no-force-update
@@ -68,6 +71,7 @@ const skipWait = hasFlag('skip-wait');
 const sshTarget = readArgValue('host', 'admin@8.148.71.102');
 const remoteDir = readArgValue('remote-dir', '/home/admin/BoardGame');
 const deployTag = readArgValue('deploy-tag', '');
+const deployMode = readArgValue('deploy-mode', 'stream');
 const otaChannel = readArgValue('ota-channel', 'stable');
 const skipOta = hasFlag('skip-ota');
 const otaExtraRaw = readArgValue('ota-extra', '').trim();
@@ -84,6 +88,10 @@ if (hasFlag('help') || rawArgs.includes('-h')) {
 
 if (!new Set(['patch', 'minor', 'major']).has(bumpType)) {
     throw new Error(`--bump 只支持 patch | minor | major，当前值: ${bumpType}`);
+}
+
+if (!new Set(['stream', 'remote']).has(deployMode)) {
+    throw new Error(`--deploy-mode 只支持 stream | remote，当前值: ${deployMode}`);
 }
 
 if (!skipWait && (!Number.isFinite(waitMinutes) || waitMinutes < 0)) {
@@ -129,6 +137,16 @@ const readPackageVersion = async () => {
 const remoteDeployCommand = deployTag
     ? `cd ${remoteDir} && bash scripts/deploy/deploy-image.sh update ${deployTag}`
     : `cd ${remoteDir} && bash scripts/deploy/deploy-image.sh update`;
+const streamDeployArgs = [
+    'scripts/deploy/stream-images-to-server.mjs',
+    '--tag',
+    deployTag || 'latest',
+    '--host',
+    sshTarget,
+    '--remote-dir',
+    remoteDir,
+    '--deploy',
+];
 
 const otaCommandArgs = [
     'scripts/mobile/release-android.mjs',
@@ -175,7 +193,13 @@ const main = async () => {
         console.log('[deploy-and-ota] 已跳过等待，立即开始');
     }
 
-    console.log(`[deploy-and-ota] 远端部署命令: ssh ${sshTarget} "${remoteDeployCommand}"`);
+    if (deployMode === 'stream') {
+        console.log('[deploy-and-ota] 部署模式: stream（本机/CI 输送镜像到服务器后 update-local）');
+        console.log(`[deploy-and-ota] 镜像输送命令: ${process.execPath} ${streamDeployArgs.join(' ')}`);
+    } else {
+        console.log('[deploy-and-ota] 部署模式: remote（服务器直拉 GHCR 镜像）');
+        console.log(`[deploy-and-ota] 远端部署命令: ssh ${sshTarget} "${remoteDeployCommand}"`);
+    }
     if (skipOta) {
         console.log('[deploy-and-ota] OTA 命令: 已跳过');
     } else {
@@ -186,7 +210,11 @@ const main = async () => {
         return;
     }
 
-    await runCommand('ssh', [sshTarget, remoteDeployCommand], '生产部署');
+    if (deployMode === 'stream') {
+        await runCommand(process.execPath, streamDeployArgs, '生产部署（镜像输送）');
+    } else {
+        await runCommand('ssh', [sshTarget, remoteDeployCommand], '生产部署（服务器直拉）');
+    }
     if (!skipOta) {
         await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
     }

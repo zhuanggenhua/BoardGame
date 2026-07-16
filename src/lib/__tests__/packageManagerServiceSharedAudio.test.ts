@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildSharedAudioDependencyState } from '../../features/mobile-packages/packageManagerService';
-import type { StoredGamePackageState } from '../../features/mobile-packages/types';
+import {
+    buildSharedAudioDependencyState,
+    resolveManifestForPackageInstallAttempt,
+} from '../../features/mobile-packages/packageManagerService';
+import type { ResolvedGamePackageManifest, StoredGamePackageState } from '../../features/mobile-packages/types';
 
 const createBaseState = (): StoredGamePackageState => ({
     gameId: 'dicethrone',
@@ -44,5 +47,54 @@ describe('buildSharedAudioDependencyState', () => {
         expect(merged.progressPercent).toBe(42);
         expect(merged.errorCode).toBe('network-timeout');
         expect(merged.errorMessage).toContain('公共音频包安装失败');
+    });
+});
+
+describe('resolveManifestForPackageInstallAttempt', () => {
+    const createManifest = (override: Partial<ResolvedGamePackageManifest> = {}): ResolvedGamePackageManifest => ({
+        gameId: 'dicethrone',
+        runtimeChannel: 'stable',
+        assetPackId: 'dicethrone',
+        assetPackVersion: '0.6.4-dicethrone-pkg',
+        assetPackUrl: 'https://assets.example.test/mobile-packages/android/stable/bundles/dicethrone/full.zip',
+        assetPackChecksum: 'full-checksum',
+        assetPackFileIndexUrl: 'https://assets.example.test/mobile-packages/android/stable/file-index/dicethrone/index.json',
+        assetPackFileIndexChecksum: 'index-checksum',
+        source: 'remote',
+        ...override,
+    });
+
+    it('上次增量校验失败且完整包存在时，下一次安装改走完整 ZIP', () => {
+        const manifest = resolveManifestForPackageInstallAttempt(createManifest(), {
+            status: 'failed',
+            errorCode: 'checksum-mismatch',
+        });
+
+        expect(manifest.assetPackUrl).toContain('/bundles/dicethrone/full.zip');
+        expect(manifest.assetPackFileIndexUrl).toBeUndefined();
+        expect(manifest.assetPackFileIndexChecksum).toBeUndefined();
+        expect(manifest.assetPackDiffOnly).toBeUndefined();
+    });
+
+    it('diff-only 索引包不能降级成旧完整包', () => {
+        const original = createManifest({ assetPackDiffOnly: true });
+        const manifest = resolveManifestForPackageInstallAttempt(original, {
+            status: 'failed',
+            errorCode: 'checksum-mismatch',
+        });
+
+        expect(manifest).toBe(original);
+        expect(manifest.assetPackFileIndexUrl).toContain('/file-index/dicethrone/index.json');
+        expect(manifest.assetPackDiffOnly).toBe(true);
+    });
+
+    it('非校验失败不改变增量安装入口', () => {
+        const original = createManifest();
+        const manifest = resolveManifestForPackageInstallAttempt(original, {
+            status: 'failed',
+            errorCode: 'network-timeout',
+        });
+
+        expect(manifest).toBe(original);
     });
 });

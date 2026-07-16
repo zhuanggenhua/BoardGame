@@ -44,7 +44,8 @@ export const GameModal = ({
                         className={clsx(
                             "relative bg-slate-950 border-2 border-amber-500/40 pointer-events-auto",
                             "shadow-[0_0_50px_rgba(0,0,0,0.8)]",
-                            "rounded-2xl overflow-visible flex flex-col w-full mx-4",
+                            "rounded-2xl overflow-hidden flex flex-col w-full mx-4",
+                            "max-h-[calc(var(--runtime-viewport-height,100vh)-1rem)] sm:max-h-[calc(var(--runtime-viewport-height,100vh)-2rem)]",
                             // Dynamic background pattern
                             "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] before:from-slate-800/50 before:to-transparent before:pointer-events-none",
                             widthClass,
@@ -54,8 +55,8 @@ export const GameModal = ({
                     >
                         {/* Header */}
                         {title && (
-                            <div className="relative px-6 py-5 bg-black/20 border-b border-white/5 flex items-center justify-center shrink-0">
-                                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-600 drop-shadow-md text-center">
+                            <div className="relative px-6 py-5 max-[1023px]:px-4 max-[1023px]:py-3 bg-black/20 border-b border-white/5 flex items-center justify-center shrink-0">
+                                <h2 className="text-xl sm:text-2xl max-[1023px]:text-lg font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-600 drop-shadow-md text-center">
                                     {title}
                                 </h2>
                                 {/* Decorative elements */}
@@ -65,7 +66,7 @@ export const GameModal = ({
                         )}
 
                         {/* Content — z-20 高于 Footer z-10，确保内部 tooltip 不被 Footer 遮挡 */}
-                        <div className="p-6 sm:p-8 text-slate-300 leading-relaxed text-center relative z-20 flex flex-col items-center">
+                        <div className="min-h-0 overflow-y-auto p-6 sm:p-8 max-[1023px]:p-4 max-[1023px]:py-3 text-slate-300 leading-relaxed text-center relative z-20 flex flex-col items-center">
                             {children}
                         </div>
 

@@ -105,6 +105,117 @@ const IMAGE_CONTRACT_EVIDENCE = [
   /图片合同表/,
 ];
 
+const ONCE_PER_TURN_TERMS = [
+  /每回合一次/,
+  /once[- ]per[- ]turn/i,
+  /usesPerTurn/,
+];
+
+const BUTTON_INTERACTION_TERMS = [
+  /按钮/,
+  /button/i,
+  /真实棋盘能力按钮/,
+  /真实入口/,
+];
+
+const POST_USE_BUTTON_EVIDENCE = [
+  /使用后.*(按钮|button).*(隐藏|消失|不可见|禁用|disabled|hidden)/s,
+  /(二次|再次|重复).*(按钮|使用|发动|ACTIVATE_ABILITY).*(拒绝|不能|不可|失败|每回合只能使用一次)/s,
+  /abilityUsageCount/,
+  /每回合只能使用一次/,
+];
+
+const ALTERNATIVE_CHOICE_TERMS = [
+  /或者/,
+  /二选一/,
+  /\bor\b/i,
+];
+
+const ALTERNATIVE_CHOICE_EVIDENCE = [
+  /二选一/,
+  /两个?选项/,
+  /分支/,
+  /选择前/,
+  /确认后/,
+  /consume_charge|take_damage/,
+  /simple[- ]choice/i,
+  /choice/i,
+];
+
+const OPTIONAL_OR_QUANTITY_TERMS = [
+  /可以/,
+  /至多/,
+  /任意数量/,
+  /可选/,
+  /\bmay\b/i,
+  /up to/i,
+  /any number/i,
+];
+
+const OPTIONAL_OR_QUANTITY_EVIDENCE = [
+  /空选/,
+  /少选/,
+  /跳过/,
+  /拒绝/,
+  /负向/,
+  /不应/,
+  /不得/,
+  /无效/,
+  /重复/,
+  /边界/,
+  /multi/i,
+  /skip/i,
+];
+
+const PHASE_LIFECYCLE_TERMS = [
+  /阶段结束/,
+  /攻击阶段结束/,
+  /移动阶段结束/,
+  /魔力阶段结束/,
+  /sys\.interaction\.current/,
+  /simple[- ]choice/i,
+  /prompt/i,
+];
+
+const PHASE_LIFECYCLE_EVIDENCE = [
+  /阶段可继续/,
+  /推进/,
+  /进入.*阶段/,
+  /流程收口/,
+  /无残留/,
+  /清空/,
+  /确认后/,
+  /选择前/,
+  /triggerQueue/i,
+  /finalState/i,
+  /sys\.interaction\.current/,
+];
+
+const VISIBLE_INTERACTION_TERMS = [
+  /sys\.interaction\.current/,
+  /simple[- ]choice/i,
+  /prompt/i,
+  /状态横幅/,
+  /横幅/,
+  /StatusBanners/,
+  /PromptOverlay/,
+];
+
+const VISIBLE_INTERACTION_EVIDENCE = [
+  /真实入口/,
+  /E2E/,
+  /按钮/,
+  /可见/,
+  /隐藏/,
+  /禁用/,
+  /点击/,
+  /optionId|option/i,
+  /data-testid/,
+  /Board\.tsx/,
+  /StatusBanners/,
+  /PromptOverlay/,
+];
+
 const UNRESOLVED_COMPLETION_MARKERS = [
   /待补/,
   /pending/i,
@@ -144,6 +255,14 @@ const SELF_CHECK_REQUIRED_ITEMS = [
   {
     name: '真实入口 E2E 与截图核验',
     patterns: [/真实入口.*E2E/s, /E2E.*真实入口/s, /截图核验/, /真实玩法证据/],
+  },
+  {
+    name: '分支/可选/数量边界',
+    patterns: [/分支/, /可选/, /或者/, /二选一/, /空选/, /少选/, /至多/, /任意数量/, /边界/],
+  },
+  {
+    name: '阶段/生命周期收口',
+    patterns: [/阶段.*(收口|推进|可继续)/s, /生命周期/, /无残留/, /sys\.interaction\.current/, /triggerQueue/i, /finalState/i],
   },
   {
     name: '残余范围声明',
@@ -395,6 +514,26 @@ function checkCompletionClaimDoc(file, content) {
 
   if (hasAny(content, IMAGE_CONTRACT_TERMS) && !hasAny(content, IMAGE_CONTRACT_EVIDENCE)) {
     errors.push(`${file}: 使用图片/图集/卡图作为真相源，但没有完整单卡主裁图、裁图清单、crop manifest、SHA256 或图片合同表。`);
+  }
+
+  if (hasAny(content, ONCE_PER_TURN_TERMS) && hasAny(content, BUTTON_INTERACTION_TERMS) && !hasAny(content, POST_USE_BUTTON_EVIDENCE)) {
+    errors.push(`${file}: 命中“每回合一次/usesPerTurn + 真实按钮入口”，但缺少使用后按钮隐藏/禁用、二次使用拒绝或 abilityUsageCount 证据。`);
+  }
+
+  if (hasAny(content, ALTERNATIVE_CHOICE_TERMS) && !hasAny(content, ALTERNATIVE_CHOICE_EVIDENCE)) {
+    errors.push(`${file}: 命中“或者/or/二选一”语义，但缺少分支选择、两个选项、选择前后状态或 simple-choice/choice 证据。`);
+  }
+
+  if (hasAny(content, OPTIONAL_OR_QUANTITY_TERMS) && !hasAny(content, OPTIONAL_OR_QUANTITY_EVIDENCE)) {
+    errors.push(`${file}: 命中“可以/至多/任意数量/可选”语义，但缺少空选、少选、跳过、无效输入、重复输入或边界负向证据。`);
+  }
+
+  if (hasAny(content, PHASE_LIFECYCLE_TERMS) && !hasAny(content, PHASE_LIFECYCLE_EVIDENCE)) {
+    errors.push(`${file}: 命中阶段结束、prompt 或 simple-choice 语义，但缺少阶段推进、流程收口、无残留、选择前后状态或最终状态证据。`);
+  }
+
+  if (hasAny(content, VISIBLE_INTERACTION_TERMS) && !hasAny(content, VISIBLE_INTERACTION_EVIDENCE)) {
+    errors.push(`${file}: 命中系统交互/prompt/横幅语义，但缺少真实 UI 可见按钮、点击、optionId、E2E 或对应组件证据。`);
   }
 
   if (/代表链/.test(content) && !/判等依据|仅配置不同|共享链路 ID|代表对象/.test(content)) {

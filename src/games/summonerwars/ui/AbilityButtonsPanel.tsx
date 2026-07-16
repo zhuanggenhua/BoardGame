@@ -13,6 +13,7 @@ import type { PlayerId } from '../domain/types';
 import { abilityRegistry } from '../domain/abilities';
 import type { AbilityUIContext } from '../domain/abilities';
 import { getUnitAbilities } from '../domain/helpers';
+import { canActivateAbility } from '../domain/abilityHelpers';
 import { GameButton } from './GameButton';
 import type { AbilityModeState } from './useGameEvents';
 import { BOARD_SHELL_REFERENCE_WIDTH } from './layoutConstants';
@@ -67,6 +68,9 @@ export const AbilityButtonsPanel: React.FC<Props> = ({
 
     // 快速可用性检查
     if (ui.quickCheck && !ui.quickCheck(uiCtx)) continue;
+
+    const canActivate = canActivateAbility(core, unit, abilityId, playerId);
+    if (!canActivate && !ui.useValidateForDisabled) continue;
 
     // 按钮点击处理
     const handleClick = () => {

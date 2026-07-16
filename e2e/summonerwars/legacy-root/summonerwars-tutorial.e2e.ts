@@ -168,7 +168,13 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await expect(page.locator('[data-tutorial-id="sw-map-area"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 3: summoner-intro — 高亮己方召唤师
+    // Step 3: life-toggle-intro — 高亮左上角眼睛按钮
+    await waitForTutorialStep(page, 'life-toggle-intro', 10000);
+    await expect(page.locator('[data-tutorial-id="sw-life-toggle"]')).toBeVisible();
+    await expect(page.getByText(/眼睛按钮/)).toBeVisible();
+    await clickNext(page);
+
+    // Step 4: summoner-intro — 高亮己方召唤师
     await waitForTutorialStep(page, 'summoner-intro', 10000);
     await expect(page.locator('[data-tutorial-id="sw-my-summoner"]')).toBeVisible();
     await clickNext(page);
@@ -459,7 +465,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
 
     // 验证所有概览步骤都有"下一步"按钮且可点击
     const overviewSteps = [
-      'welcome', 'map-controls', 'summoner-intro', 'enemy-summoner', 'gate-intro',
+      'welcome', 'map-controls', 'life-toggle-intro', 'summoner-intro', 'enemy-summoner', 'gate-intro',
       'hand-intro', 'card-anatomy', 'magic-intro', 'phase-intro',
       'summon-explain',
     ];
@@ -494,6 +500,12 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     // map-controls: 高亮 sw-map-area
     await waitForTutorialStep(page, 'map-controls', 10000);
     await expect(page.locator('[data-tutorial-id="sw-map-area"]')).toBeVisible();
+    await clickNext(page);
+
+    // life-toggle-intro: 高亮 sw-life-toggle
+    await waitForTutorialStep(page, 'life-toggle-intro', 10000);
+    await expect(page.locator('[data-tutorial-id="sw-life-toggle"]')).toBeVisible();
+    await expect(page.getByText(/眼睛按钮/)).toBeVisible();
     await clickNext(page);
 
     // summoner-intro: 高亮 sw-my-summoner
@@ -543,6 +555,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     const steps: Array<{ stepId: string; targetId: string }> = [
       { stepId: 'welcome', targetId: 'sw-map-area' },
       { stepId: 'map-controls', targetId: 'sw-map-area' },
+      { stepId: 'life-toggle-intro', targetId: 'sw-life-toggle' },
       { stepId: 'summoner-intro', targetId: 'sw-my-summoner' },
       { stepId: 'enemy-summoner', targetId: 'sw-enemy-summoner' },
       { stepId: 'gate-intro', targetId: 'sw-my-gate' },
@@ -587,6 +600,9 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await clickNext(page);
     await waitForTutorialStep(page, 'map-controls', 10000);
     await clickNext(page);
+    await waitForTutorialStep(page, 'life-toggle-intro', 10000);
+    await expect(page.locator('[data-tutorial-id="sw-life-toggle"]')).toBeVisible({ timeout: 5000 });
+    await clickNext(page);
     await waitForTutorialStep(page, 'summoner-intro', 10000);
 
     // 验证关键 UI 组件都已渲染
@@ -603,6 +619,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await expect(page.locator('[data-tutorial-id="sw-enemy-summoner"]')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('[data-tutorial-id="sw-my-gate"]')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('[data-tutorial-id="sw-first-hand-card"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-tutorial-id="sw-life-toggle"]')).toBeVisible({ timeout: 5000 });
 
     // 验证棋盘上有单位
     const units = page.locator('[data-testid^="sw-unit-"]');

@@ -306,7 +306,7 @@ describe('preloadCriticalImages', () => {
         );
     });
 
-    it('runtime 内存缓存丢失后，不能仅凭持久化 ready hint 判定关键图已就绪', () => {
+    it('runtime 内存缓存丢失后，可凭持久化 ready hint 跳过关键图阻塞门禁', () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
         setAssetHashesForTesting({
             'i18n/en/smashup/cards/compressed/cards1.webp': 'hash1234',
@@ -323,7 +323,7 @@ describe('preloadCriticalImages', () => {
 
         __resetAssetLoaderCachesForTests({ keepPersistentHints: true });
 
-        expect(areAllCriticalImagesCached('test-persistent-hint', undefined, 'en')).toBe(false);
+        expect(areAllCriticalImagesCached('test-persistent-hint', undefined, 'en')).toBe(true);
     });
 
     it('runtime 内存缓存丢失后，同步磁盘缓存探测命中仍可判定关键图已就绪', () => {

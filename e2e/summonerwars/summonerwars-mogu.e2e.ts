@@ -183,7 +183,7 @@ function prepareMoguReleaseSporesUiState(core: SummonerWarsCore) {
     moguUnitCard('mogu-spore-plague-body-e2e-a', '菌袍疫病体'),
     moguUnitCard('mogu-spore-plague-body-e2e-b', '菌袍疫病体'),
   ];
-  return { core, firstTargetPosition, secondTargetPosition };
+  return { core, summonerPosition, firstTargetPosition, secondTargetPosition };
 }
 
 async function choosePlayMagicEvent(page: Page, matchId: string) {
@@ -198,6 +198,30 @@ async function choosePlayMagicEvent(page: Page, matchId: string) {
   const playButton = page.getByRole('button', { name: /^打出$|^Play$/i });
   await expect(playButton).toBeVisible({ timeout: 8000 });
   await playButton.click();
+}
+
+function prepareMoguParasiteUiState(core: SummonerWarsCore) {
+  clearMoguBoard(core);
+  core.phase = 'attack';
+  core.players['0'].hasAttackedEnemy = true;
+  placeUnit(core, { row: 6, col: 1 }, moguUnitCard('mogu-kubenk-e2e-parasite', '库鞭克', [], {
+    unitClass: 'summoner',
+    strength: 4,
+    life: 7,
+    cost: 0,
+  }));
+  const beastPosition = { row: 4, col: 4 };
+  const beast = placeUnit(core, beastPosition, moguUnitCard('mogu-fungal-beast-e2e-parasite', '菌化野兽', [
+    'mogu_parasite',
+  ], {
+    unitClass: 'common',
+    strength: 3,
+    life: 5,
+    cost: 3,
+  }), '0', {
+    boosts: 1,
+  });
+  return { core, beast, beastPosition };
 }
 
 const setHarnessDiceValues = async (page: Page, values: number[]) => {
@@ -565,6 +589,14 @@ test.describe('SummonerWars Mogu faction entry', () => {
         };
       }, { timeout: 8000 }).toEqual({ boosts: 1, damage: 1 });
 
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        return state.abilityUsageCount?.[`${prepared.mage.instanceId}:mogu_blood_infusion`] ?? 0;
+      }, { timeout: 8000 }).toBe(1);
+
+      await clickBoardElement(hostPage, mageSelector);
+      await expect(abilityButton).toBeHidden({ timeout: 8000 });
+
       await hostGame.screenshot('mogu-blood-infusion-resolved', testInfo);
     } finally {
       await hostContext.close().catch(() => {});
@@ -863,6 +895,84 @@ test.describe('SummonerWars Mogu faction entry', () => {
     }
   });
 
+  test('opens Mogu Parasite choice at real attack phase end and resolves after player choice', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const match = await setupSWOnlineMatch(browser, baseURL, 'mogu', 'necromancer');
+
+    if (!match) {
+      test.skip(true, 'Game server unavailable or room creation failed');
+      return;
+    }
+
+    const { hostPage, hostContext, guestContext, matchId } = match;
+    const hostGame = new GameTestContext(hostPage);
+
+    try {
+      const prepared = prepareMoguParasiteUiState(await readCoreState(hostPage) as SummonerWarsCore);
+      await applyCoreState(hostPage, prepared.core);
+      await closeDebugPanelIfOpen(hostPage);
+      await waitForPhase(hostPage, 'attack');
+      await hostGame.screenshot('mogu-parasite-before-attack-end', testInfo);
+
+      const endPhaseButton = hostPage.getByTestId('sw-end-phase');
+      await expect(endPhaseButton).toBeVisible({ timeout: 8000 });
+      await expect(endPhaseButton).toBeEnabled({ timeout: 8000 });
+      await endPhaseButton.click();
+
+      await expect.poll(async () => {
+        const state = await getMatchState(matchId, hostPage) as {
+          core?: SummonerWarsCore;
+          sys?: { interaction?: { current?: { data?: { sw?: { type?: string } } } } };
+        };
+        const beast = state.core?.board[prepared.beastPosition.row]?.[prepared.beastPosition.col]?.unit;
+        return {
+          phase: state.core?.phase ?? null,
+          interactionType: state.sys?.interaction?.current?.data?.sw?.type ?? null,
+          boosts: beast?.boosts ?? null,
+          damage: beast?.damage ?? null,
+        };
+      }, { timeout: 10000 }).toEqual({
+        phase: 'attack',
+        interactionType: 'mogu_parasite',
+        boosts: 1,
+        damage: 0,
+      });
+
+      await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/寄生|Parasite/i);
+      const consumeChargeButton = hostPage.getByRole('button', { name: /消耗 1 点充能|Spend 1 Charge/i });
+      await expect(consumeChargeButton).toBeVisible({ timeout: 8000 });
+      await expect(hostPage.getByRole('button', { name: /受到 1 点伤害|Take 1 Damage/i })).toBeVisible({ timeout: 8000 });
+      await hostGame.screenshot('mogu-parasite-choice-open', testInfo);
+      await consumeChargeButton.click();
+
+      await expect.poll(async () => {
+        const state = await getMatchState(matchId, hostPage) as {
+          core?: SummonerWarsCore;
+          sys?: { interaction?: { current?: unknown } };
+        };
+        const beast = state.core?.board[prepared.beastPosition.row]?.[prepared.beastPosition.col]?.unit;
+        return {
+          phase: state.core?.phase ?? null,
+          interactionOpen: state.sys?.interaction?.current != null,
+          boosts: beast?.boosts ?? null,
+          damage: beast?.damage ?? null,
+        };
+      }, { timeout: 10000 }).toEqual({
+        phase: 'attack',
+        interactionOpen: false,
+        boosts: 0,
+        damage: 0,
+      });
+
+      await endPhaseAndWaitFor(hostPage, 'magic');
+      await hostGame.screenshot('mogu-parasite-resolved-to-magic', testInfo);
+    } finally {
+      await hostContext.close().catch(() => {});
+      await guestContext.close().catch(() => {});
+    }
+  });
+
   test('replaces a destroyed enemy with Spore Plague Body after a real Fungal Beast attack', async ({ browser }, testInfo) => {
     test.setTimeout(240000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -982,7 +1092,7 @@ test.describe('SummonerWars Mogu faction entry', () => {
     }
   });
 
-  test('plays Mogu Release Spores from hand and summons discard bodies to selected cells', async ({ browser }, testInfo) => {
+  test('plays Mogu Release Spores from hand and ignores summoner-cell misclick before summoning two bodies', async ({ browser }, testInfo) => {
     test.setTimeout(180000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     const match = await setupSWOnlineMatch(browser, baseURL, 'mogu', 'necromancer');
@@ -1015,10 +1125,11 @@ test.describe('SummonerWars Mogu faction entry', () => {
       }, { timeout: 8000 }).toBe('mogu_release_spores_select_positions');
 
       await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/释放菌袍|Release/i);
+      await clickBoardElement(hostPage, `[data-testid="sw-cell-${prepared.summonerPosition.row}-${prepared.summonerPosition.col}"]`);
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${prepared.firstTargetPosition.row}-${prepared.firstTargetPosition.col}"]`);
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${prepared.secondTargetPosition.row}-${prepared.secondTargetPosition.col}"]`);
       await expect(hostPage.getByRole('button', { name: /确认选择|Confirm Selection/i })).toBeVisible({ timeout: 8000 });
-      await hostGame.screenshot('mogu-release-spores-selected', testInfo);
+      await hostGame.screenshot('mogu-release-spores-selected-after-summoner-misclick', testInfo);
       await hostPage.getByRole('button', { name: /确认选择|Confirm Selection/i }).click();
 
       await expect.poll(async () => {

@@ -101,6 +101,7 @@ export interface ZoomPanViewportProps {
     contentStyle?: React.CSSProperties;
     scaleBadgeClassName?: string;
     formatScaleBadge?: (zoomLevel: number) => ReactNode;
+    scaleBadgeAddon?: ReactNode;
     ariaLabel?: string;
 }
 
@@ -132,6 +133,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     contentStyle,
     scaleBadgeClassName = '',
     formatScaleBadge,
+    scaleBadgeAddon,
     ariaLabel,
 }, forwardedRef) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -192,7 +194,7 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         : 1;
     const scale = baseScale * activeZoomLevel;
     const isAtDefaultZoom = Math.abs(activeZoomLevel - initialScale) <= SCALE_EPSILON;
-    const shouldShowScaleBadge = isScaleBadgeVisible || !isAtDefaultZoom;
+    const shouldShowScaleBadge = isScaleBadgeVisible || !isAtDefaultZoom || scaleBadgeAddon != null;
 
     const clearScaleBadgeTimer = useCallback(() => {
         if (scaleBadgeTimerRef.current !== null) {
@@ -737,13 +739,28 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 touchAction: interactionDisabled ? 'auto' : 'none',
             }}
         >
-            <div
-                className={`absolute top-3 left-3 z-20 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-sm font-bold text-white shadow-lg pointer-events-none transition-opacity duration-200 ${scaleBadgeClassName} ${shouldShowScaleBadge ? 'opacity-100' : 'opacity-0'}`}
-                data-testid={scaleTestId}
-                aria-hidden={!shouldShowScaleBadge}
-            >
-                {formatScaleBadge ? formatScaleBadge(activeZoomLevel) : `${Math.round(activeZoomLevel * 100)}%`}
-            </div>
+            {scaleBadgeAddon ? (
+                <div className="absolute top-3 left-3 z-40 flex items-center gap-2 pointer-events-none">
+                    <div
+                        className={`rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-sm font-bold text-white shadow-lg pointer-events-none transition-opacity duration-200 ${scaleBadgeClassName} ${shouldShowScaleBadge ? 'opacity-100' : 'opacity-0'}`}
+                        data-testid={scaleTestId}
+                        aria-hidden={!shouldShowScaleBadge}
+                    >
+                        {formatScaleBadge ? formatScaleBadge(activeZoomLevel) : `${Math.round(activeZoomLevel * 100)}%`}
+                    </div>
+                    <div className="pointer-events-auto">
+                        {scaleBadgeAddon}
+                    </div>
+                </div>
+            ) : (
+                <div
+                    className={`absolute top-3 left-3 z-20 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-sm font-bold text-white shadow-lg pointer-events-none transition-opacity duration-200 ${scaleBadgeClassName} ${shouldShowScaleBadge ? 'opacity-100' : 'opacity-0'}`}
+                    data-testid={scaleTestId}
+                    aria-hidden={!shouldShowScaleBadge}
+                >
+                    {formatScaleBadge ? formatScaleBadge(activeZoomLevel) : `${Math.round(activeZoomLevel * 100)}%`}
+                </div>
+            )}
 
             <div
                 ref={contentRef}

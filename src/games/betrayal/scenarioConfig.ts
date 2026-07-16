@@ -654,8 +654,8 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             { id: 'rope', name: '兔脚', kind: 'item' },
             { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
             { id: 'hunting-knife', name: '砍刀', kind: 'item' },
-            { id: 'notebook', name: '地图', kind: 'item' },
-            { id: 'manuscript', name: '地图', kind: 'item' },
+            { id: 'notebook', name: '笔记本', kind: 'item' },
+            { id: 'manuscript', name: '手稿', kind: 'item' },
         ],
         omen: [
             { id: 'omen-book', name: '书本', kind: 'omen' },
@@ -1715,7 +1715,7 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
             ],
             'rebecca-allen': [
                 { id: 'rope', name: '兔脚', kind: 'item' },
-                { id: 'notebook', name: '地图', kind: 'item' },
+                { id: 'notebook', name: '笔记本', kind: 'item' },
                 { id: 'ring', name: '指环', kind: 'omen' },
             ],
             'darryl-highla': [
@@ -1729,7 +1729,7 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
                 { id: 'holy-symbol', name: '圣符', kind: 'omen' },
             ],
             'lia-valencia': [
-                { id: 'journal', name: '地图', kind: 'item' },
+                { id: 'journal', name: '日记', kind: 'item' },
                 { id: 'radio', name: '头戴耳机', kind: 'item' },
                 { id: 'skull', name: '头骨', kind: 'omen' },
             ],

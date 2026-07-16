@@ -62,6 +62,8 @@
     "bloodRuneDamage": "自伤 1 点",
     "bloodRuneCharge": "花 1 魔力充能",
     "feedBeastSelfDestroy": "自毁",
+    "moguParasiteConsumeCharge": "消耗 1 点充能",
+    "moguParasiteTakeDamage": "受到 1 点伤害",
     "chargeSelf": "充能自身",
     "playEvent": "打出",
     "discardForMagic": "弃牌",
@@ -87,7 +89,9 @@
     "opponentActiveEvents": "对方持续效果",
     "activeEvents": "持续效果",
     "attached": "附加",
-    "click_to_magnify": "点击放大"
+    "click_to_magnify": "点击放大",
+    "showAllLifeTotals": "显示全部单位血量",
+    "hideAllLifeTotals": "隐藏全部单位血量"
   },
   "hud": {
     "combatEffects": {
@@ -196,6 +200,7 @@
       "setup": "正在为你准备教学对局…",
       "welcome": "欢迎来到召唤师战争！\n\n这是战场，一个 8×6 的网格。你的单位在下方，对手在上方。\n\n击败对方召唤师即可获胜！",
       "mapControls": "🖱️ 地图操作提示：\n\n拖拽：按住鼠标左键拖动地图\n缩放：滚动鼠标滚轮调整缩放\n\n左上角显示当前缩放比例。",
+      "lifeToggleIntro": "点击左上角的眼睛按钮，可以临时显示战场上所有单位和建筑的生命数字。\n\n移动和攻击前先看一眼生命值，能更快判断谁快被摧毁、谁还扛得住。",
       "summonerIntro": "这是你的召唤师「瑞特-塔鲁斯」。\n\n他拥有 12 点生命、2 点战力，是远程攻击单位（射程 3 格）。\n\n他是你最重要的单位——被摧毁就输了！",
       "enemySummoner": "这是对方的召唤师。\n\n摧毁他就能赢得胜利！",
       "gateIntro": "这是你的城门。\n\n城门是召唤单位的入口——你只能在城门旁的空格上召唤新单位。\n\n保护好城门，也可以建造新的传送门来扩展召唤范围。",
@@ -478,7 +483,8 @@
       "soulTransfer": "灵魂转移：确认是否移动",
       "mindCapture": "心灵捕获：选择控制或造成伤害",
       "iceShards": "寒冰碎屑：确认是否消耗充能",
-      "feedBeast": "喂养巨食兽：选择吞噬目标或自毁"
+      "feedBeast": "喂养巨食兽：选择吞噬目标或自毁",
+      "moguParasite": "寄生：选择消耗充能或受到伤害"
     },
     "fireSacrifice": {
       "mustSelectAlly": "请选择一个友方单位作为牺牲品"
@@ -530,6 +536,7 @@
       "fortressPower": "城塞之力：从弃牌堆选择一个城塞单位",
       "iceShards": "寒冰碎屑：消耗 1 充能，对与建筑相邻的敌方单位造成 1 点伤害",
       "feedBeast": "喂养巨食兽：选择相邻友方单位移除，或自毁",
+      "moguParasite": "寄生：选择消耗 1 点充能，或受到 1 点伤害",
       "spiritBond": "祖灵交流：选择 3 格内目标转移充能，或为自身充能",
       "spiritBondChargeOnly": "祖灵交流：充能不足，只能充能自身",
       "ancestralBond": "祖灵羁绊：选择 3 格内友方单位转移充能",

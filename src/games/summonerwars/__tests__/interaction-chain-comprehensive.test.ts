@@ -2928,6 +2928,61 @@ describe('先锋军团交互链', () => {
     expect(secondUse.valid).toBe(false);
   });
 
+  it('[mogu_blood_infusion] 结算后同回合按钮命令不应再次打开目标选择', () => {
+    core.phase = 'move';
+    core.currentPlayer = '0' as PlayerId;
+    const magePos = { row: 4, col: 3 };
+    const allyPos = { row: 4, col: 5 };
+    const mage = putUnit(core, magePos, mkUnit('mogu-withering-mage-l4', {
+      abilities: ['mogu_blood_infusion'],
+      faction: 'mogu',
+      unitClass: 'common',
+    }), '0');
+    const ally = putUnit(core, allyPos, mkUnit('mogu-ally-l4', {
+      faction: 'mogu',
+      unitClass: 'common',
+    }), '0');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const requested = runGamePipeline(state, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      playerId: '0',
+      payload: { abilityId: 'mogu_blood_infusion', sourceUnitId: mage.instanceId },
+    });
+    expect(requested.success).toBe(true);
+    state = requested.state;
+
+    expect(getSwCurrentType(state)).toBe('activated_ability_target');
+    const current = state.sys.interaction.current;
+    const optionId = `pos:${allyPos.row},${allyPos.col}`;
+
+    const resolved = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId },
+    });
+    expect(resolved.success).toBe(true);
+    state = resolved.state;
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    expect(getUnitAt(state.core, ally.position)?.boosts).toBe(1);
+    expect(getUnitAt(state.core, ally.position)?.damage).toBe(1);
+
+    const secondButtonCommand = runGamePipeline(state, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      playerId: '0',
+      payload: { abilityId: 'mogu_blood_infusion', sourceUnitId: mage.instanceId },
+    });
+    expect(secondButtonCommand.success).toBe(false);
+    expect(secondButtonCommand.error).toBe('每回合只能使用一次');
+    expect(secondButtonCommand.state.sys.interaction.current).toBeUndefined();
+    expect(secondButtonCommand.state.sys.interaction.queue).toHaveLength(0);
+  });
+
   // --- vanish: 目标费用不为0 ---
   it('[vanish] 目标费用不为0时验证失败', () => {
     core.phase = 'attack';
@@ -3939,6 +3994,74 @@ describe('验证层有效性门控', () => {
     expect(repeatedExit.state.core.phase).toBe('magic');
     expect(repeatedExit.state.sys.flowHalted).toBe(false);
     expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
+  });
+
+  it('[mogu_parasite] 攻击阶段结束有充能时应出现消耗充能/自伤选择，确认后再收口推进', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'mogu', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+    core.players['0'].hasAttackedEnemy = true;
+
+    const beast = putUnit(core, { row: 4, col: 2 }, mkUnit('mogu-parasite-l4', {
+      abilities: ['mogu_parasite'],
+      faction: 'mogu',
+      unitClass: 'common',
+      life: 5,
+    }), '0', { boosts: 1 });
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const phaseExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(phaseExit.success).toBe(true);
+    state = phaseExit.state;
+    expect(state.core.phase).toBe('attack');
+    expect(getSwCurrentType(state)).toBe('mogu_parasite');
+    expect(getUnitAt(state.core, beast.position)?.boosts).toBe(1);
+    expect(getUnitAt(state.core, beast.position)?.damage).toBe(0);
+
+    const current = state.sys.interaction.current;
+    expect(current?.kind).toBe('simple-choice');
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const consumeOptionId = options.find((option) => {
+      const value = option.value as { action?: string; choice?: string } | undefined;
+      return value?.action === 'mogu_parasite' && value.choice === 'consume_charge';
+    })?.id;
+    const damageOptionId = options.find((option) => {
+      const value = option.value as { action?: string; choice?: string } | undefined;
+      return value?.action === 'mogu_parasite' && value.choice === 'take_damage';
+    })?.id;
+    expect(consumeOptionId).toBeTruthy();
+    expect(damageOptionId).toBeTruthy();
+
+    const picked = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: consumeOptionId },
+    });
+    expect(picked.success).toBe(true);
+    state = picked.state;
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(state.core, beast.position)?.boosts).toBe(0);
+    expect(getUnitAt(state.core, beast.position)?.damage).toBe(0);
+
+    const repeatedExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(repeatedExit.success).toBe(true);
+    expect(repeatedExit.state.core.phase).toBe('magic');
+    expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(repeatedExit.state.core, beast.position)?.boosts).toBe(0);
+    expect(getUnitAt(repeatedExit.state.core, beast.position)?.damage).toBe(0);
   });
 
   it('[mind_capture] 致命攻击后选择控制应忽略伤害并转移目标控制权', () => {

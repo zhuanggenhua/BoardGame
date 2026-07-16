@@ -126,6 +126,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   }, [viewport.safeArea.left, viewport.safeArea.right, viewport.width]);
   const isMobileViewport = viewport.width <= 1023;
   const isLandscapeMobileViewport = isMobileViewport && viewport.width > viewport.height;
+  const shouldShowLifeToggle = true;
   const shouldReduceCombatEffects = reducedCombatEffects && isMobileViewport;
   const desktopReferenceWidth = Math.min(
     SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
@@ -342,6 +343,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   // 卡牌放大预览状态
   const [magnifiedCard, setMagnifiedCard] = useState<{ atlasId: string; frameIndex: number } | null>(null);
   const [showDiscardOverlay, setShowDiscardOverlay] = useState(false);
+  const [showBoardLifeTotals, setShowBoardLifeTotals] = useState(false);
 
   // 摧毁效果
   const { effects: destroyEffects, pushEffect: pushDestroyEffect, removeEffect: removeDestroyEffect } = useDestroyEffects();
@@ -532,6 +534,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
   const systemGrabFollowMode = isSwSimpleChoiceType(swInteraction, 'grab_follow');
   const systemFeedBeastMode = isSwSimpleChoiceType(swInteraction, 'feed_beast');
+  const systemMoguParasiteMode = isSwSimpleChoiceType(swInteraction, 'mogu_parasite');
 
   // 格子交互 Hook
   const interaction = useCellInteraction({
@@ -983,6 +986,14 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     });
     respondInteractionOption(optionId);
   }, [findInteractionOptionId, respondInteractionOption, systemFeedBeastMode]);
+  const handleConfirmMoguParasite = useCallback((choice: 'consume_charge' | 'take_damage') => {
+    if (!systemMoguParasiteMode) return;
+    const optionId = findInteractionOptionId((option) => {
+      const value = option.value as { action?: string; choice?: string } | undefined;
+      return value?.action === 'mogu_parasite' && value.choice === choice;
+    });
+    respondInteractionOption(optionId);
+  }, [findInteractionOptionId, respondInteractionOption, systemMoguParasiteMode]);
   const handleSelectInfectionCard = useCallback((card: Card) => {
     if (!systemInfectionCards) return;
     respondInteractionOption(card.id);
@@ -1139,6 +1150,45 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   containerTestId="sw-map-container"
                   contentTestId="sw-map-content"
                   scaleTestId="sw-map-scale"
+                  scaleBadgeAddon={shouldShowLifeToggle ? (
+                    <button
+                      type="button"
+                      data-testid="sw-life-toggle"
+                      data-tutorial-id="sw-life-toggle"
+                      aria-label={t(showBoardLifeTotals ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals')}
+                      aria-pressed={showBoardLifeTotals}
+                      title={t(showBoardLifeTotals ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals')}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onTouchStart={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setShowBoardLifeTotals((value) => !value);
+                      }}
+                      className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border text-white shadow-lg transition-[background-color,border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-amber-200/80 ${
+                        showBoardLifeTotals
+                          ? 'border-amber-300/70 bg-amber-500/80 shadow-[0_0_14px_rgba(245,158,11,0.45)]'
+                          : 'border-white/20 bg-black/70 hover:border-amber-300/60 hover:bg-slate-800/90'
+                      }`}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <path
+                          d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                    </button>
+                  ) : undefined}
                 >
                   <div className="relative inline-block">
                     <div className="relative">
@@ -1187,6 +1237,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         destroyingCells={destroyingCells}
                         dyingEntities={dyingEntities}
                         damageBuffer={damageBuffer}
+                        showLifeTotals={shouldShowLifeToggle && showBoardLifeTotals}
                         onCellClick={interaction.handleCellClick}
                         onAttackHit={handleAttackHit}
                         onAttackReturn={handleAttackReturn}
@@ -1351,88 +1402,92 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
                 {/* 顶部中央：提示横幅 */}
                 <div
-                  className={`absolute top-3 z-30 pointer-events-auto ${isLandscapeMobileViewport ? '' : 'left-0 right-0 flex justify-center'}`}
+                  className={`absolute top-3 z-30 pointer-events-none ${isLandscapeMobileViewport ? '' : 'left-0 right-0 flex justify-center'}`}
                   style={statusBannersWrapperStyle}
                   data-tutorial-id="sw-action-banner"
                 >
-                  <StatusBanners
-                    currentPhase={currentPhase}
-                    isMyTurn={isMyTurn}
-                    core={core}
-                    abilityMode={abilityMode}
-                    fireSacrificeSummonMode={interaction.fireSacrificeSummonMode}
-                    onCancelFireSacrifice={() => {
-                      if (swInteraction?.type === 'fire_sacrifice_summon') {
-                        cancelSwInteraction(true);
-                        return;
-                      }
-                      interaction.handleCardSelect(null);
-                    }}
-                    bloodSummonMode={interaction.bloodSummonMode}
-                    annihilateMode={interaction.annihilateMode}
-                    soulTransferMode={soulTransferMode}
-                    funeralPyreMode={interaction.funeralPyreMode}
-                    mindControlMode={interaction.mindControlMode}
-                    chantEntanglementMode={interaction.chantEntanglementMode}
-                    moguSymbioticSelfHealingMode={interaction.moguSymbioticSelfHealingMode}
-                    moguReleaseSporesMode={interaction.moguReleaseSporesMode}
-                    sneakMode={interaction.sneakMode}
-                    glacialShiftMode={interaction.glacialShiftMode}
-                    withdrawMode={interaction.withdrawMode}
-                    stunMode={interaction.stunMode}
-                    hypnoticLureMode={interaction.hypnoticLureMode}
-                    mindCaptureMode={mindCaptureMode}
-                    afterAttackAbilityMode={afterAttackAbilityMode}
-                    telekinesisTargetMode={interaction.telekinesisTargetMode}
-                    magicEventChoiceMode={interaction.magicEventChoiceMode}
-                    eventTargetMode={interaction.eventTargetMode}
-                    systemGrabFollowMode={systemGrabFollowMode}
-                    systemIceShardsMode={systemIceShardsMode}
-                    systemFeedBeastMode={systemFeedBeastMode}
-                    onCancelAbility={handleCancelAbility}
-                    onConfirmBeforeAttackCards={interaction.handleConfirmBeforeAttackCards}
-                    onConfirmBloodRune={handleConfirmBloodRune}
-                    onSkipGrabFollow={handleSkipGrabFollow}
-                    onConfirmIceShards={handleConfirmIceShards}
-                    onConfirmFeedBeastSelfDestroy={handleConfirmFeedBeastSelfDestroy}
-                    onCancelBeforeAttack={handleCancelBeforeAttack}
-                    onCancelBloodSummon={handleCancelBloodSummon}
-                    onContinueBloodSummon={handleContinueBloodSummon}
-                    onCancelAnnihilate={handleCancelAnnihilate}
-                    onConfirmAnnihilateTargets={handleConfirmAnnihilateTargets}
-                    onSkipAnnihilateDamage={handleSkipAnnihilateDamage}
-                    onConfirmSoulTransfer={handleConfirmSoulTransfer}
-                    onSkipSoulTransfer={handleSkipSoulTransfer}
-                    onSkipFuneralPyre={handleSkipFuneralPyre}
-                    onConfirmMindControl={handleConfirmMindControl}
-                    onCancelMindControl={handleCancelMindControl}
-                    onConfirmEntanglement={handleConfirmEntanglement}
-                    onCancelEntanglement={handleCancelEntanglement}
-                    onConfirmMoguSymbioticSelfHealing={interaction.handleConfirmMoguSymbioticSelfHealing}
-                    onSkipMoguSymbioticSelfHealing={interaction.handleSkipMoguSymbioticSelfHealing}
-                    onConfirmMoguReleaseSpores={interaction.handleConfirmMoguReleaseSpores}
-                    onSkipMoguReleaseSpores={interaction.handleSkipMoguReleaseSpores}
-                    onConfirmSneak={handleConfirmSneak}
-                    onCancelSneak={handleCancelSneak}
-                    onConfirmGlacialShift={handleConfirmGlacialShift}
-                    onCancelGlacialShift={handleCancelGlacialShift}
-                    onWithdrawCostSelect={handleWithdrawCostSelect}
-                    onCancelWithdraw={handleCancelWithdraw}
-                    onCancelStun={handleCancelStun}
-                    onCancelHypnoticLure={handleCancelHypnoticLure}
-                    onConfirmMindCapture={handleConfirmMindCapture}
-                    onCancelAfterAttackAbility={handleCancelAfterAttackAbility}
-                    rapidFireMode={effectiveRapidFireMode}
-                    onConfirmRapidFire={handleConfirmRapidFire}
-                    onCancelRapidFire={handleCancelRapidFire}
-                    onCancelTelekinesis={handleCancelTelekinesis}
-                    onAfterMoveSelfCharge={handleAfterMoveSelfCharge}
-                    onSystemAbilityChoice={interaction.handleSystemAbilityChoice}
-                    onPlayMagicEvent={interaction.handlePlayMagicEvent}
-                    onDiscardMagicEvent={interaction.handleDiscardMagicEvent}
-                    onCancelMagicEventChoice={interaction.handleCancelMagicEventChoice}
-                    onCancelEventTargetInteraction={interaction.handleCancelEventTargetInteraction}
-                  />
+                  <div className="pointer-events-auto">
+                    <StatusBanners
+                      currentPhase={currentPhase}
+                      isMyTurn={isMyTurn}
+                      core={core}
+                      abilityMode={abilityMode}
+                      fireSacrificeSummonMode={interaction.fireSacrificeSummonMode}
+                      onCancelFireSacrifice={() => {
+                        if (swInteraction?.type === 'fire_sacrifice_summon') {
+                          cancelSwInteraction(true);
+                          return;
+                        }
+                        interaction.handleCardSelect(null);
+                      }}
+                      bloodSummonMode={interaction.bloodSummonMode}
+                      annihilateMode={interaction.annihilateMode}
+                      soulTransferMode={soulTransferMode}
+                      funeralPyreMode={interaction.funeralPyreMode}
+                      mindControlMode={interaction.mindControlMode}
+                      chantEntanglementMode={interaction.chantEntanglementMode}
+                      moguSymbioticSelfHealingMode={interaction.moguSymbioticSelfHealingMode}
+                      moguReleaseSporesMode={interaction.moguReleaseSporesMode}
+                      sneakMode={interaction.sneakMode}
+                      glacialShiftMode={interaction.glacialShiftMode}
+                      withdrawMode={interaction.withdrawMode}
+                      stunMode={interaction.stunMode}
+                      hypnoticLureMode={interaction.hypnoticLureMode}
+                      mindCaptureMode={mindCaptureMode}
+                      afterAttackAbilityMode={afterAttackAbilityMode}
+                      telekinesisTargetMode={interaction.telekinesisTargetMode}
+                      magicEventChoiceMode={interaction.magicEventChoiceMode}
+                      eventTargetMode={interaction.eventTargetMode}
+                      systemGrabFollowMode={systemGrabFollowMode}
+                      systemIceShardsMode={systemIceShardsMode}
+                      systemFeedBeastMode={systemFeedBeastMode}
+                      systemMoguParasiteMode={systemMoguParasiteMode}
+                      onCancelAbility={handleCancelAbility}
+                      onConfirmBeforeAttackCards={interaction.handleConfirmBeforeAttackCards}
+                      onConfirmBloodRune={handleConfirmBloodRune}
+                      onSkipGrabFollow={handleSkipGrabFollow}
+                      onConfirmIceShards={handleConfirmIceShards}
+                      onConfirmFeedBeastSelfDestroy={handleConfirmFeedBeastSelfDestroy}
+                      onConfirmMoguParasite={handleConfirmMoguParasite}
+                      onCancelBeforeAttack={handleCancelBeforeAttack}
+                      onCancelBloodSummon={handleCancelBloodSummon}
+                      onContinueBloodSummon={handleContinueBloodSummon}
+                      onCancelAnnihilate={handleCancelAnnihilate}
+                      onConfirmAnnihilateTargets={handleConfirmAnnihilateTargets}
+                      onSkipAnnihilateDamage={handleSkipAnnihilateDamage}
+                      onConfirmSoulTransfer={handleConfirmSoulTransfer}
+                      onSkipSoulTransfer={handleSkipSoulTransfer}
+                      onSkipFuneralPyre={handleSkipFuneralPyre}
+                      onConfirmMindControl={handleConfirmMindControl}
+                      onCancelMindControl={handleCancelMindControl}
+                      onConfirmEntanglement={handleConfirmEntanglement}
+                      onCancelEntanglement={handleCancelEntanglement}
+                      onConfirmMoguSymbioticSelfHealing={interaction.handleConfirmMoguSymbioticSelfHealing}
+                      onSkipMoguSymbioticSelfHealing={interaction.handleSkipMoguSymbioticSelfHealing}
+                      onConfirmMoguReleaseSpores={interaction.handleConfirmMoguReleaseSpores}
+                      onSkipMoguReleaseSpores={interaction.handleSkipMoguReleaseSpores}
+                      onConfirmSneak={handleConfirmSneak}
+                      onCancelSneak={handleCancelSneak}
+                      onConfirmGlacialShift={handleConfirmGlacialShift}
+                      onCancelGlacialShift={handleCancelGlacialShift}
+                      onWithdrawCostSelect={handleWithdrawCostSelect}
+                      onCancelWithdraw={handleCancelWithdraw}
+                      onCancelStun={handleCancelStun}
+                      onCancelHypnoticLure={handleCancelHypnoticLure}
+                      onConfirmMindCapture={handleConfirmMindCapture}
+                      onCancelAfterAttackAbility={handleCancelAfterAttackAbility}
+                      rapidFireMode={effectiveRapidFireMode}
+                      onConfirmRapidFire={handleConfirmRapidFire}
+                      onCancelRapidFire={handleCancelRapidFire}
+                      onCancelTelekinesis={handleCancelTelekinesis}
+                      onAfterMoveSelfCharge={handleAfterMoveSelfCharge}
+                      onSystemAbilityChoice={interaction.handleSystemAbilityChoice}
+                      onPlayMagicEvent={interaction.handlePlayMagicEvent}
+                      onDiscardMagicEvent={interaction.handleDiscardMagicEvent}
+                      onCancelMagicEventChoice={interaction.handleCancelMagicEventChoice}
+                      onCancelEventTargetInteraction={interaction.handleCancelEventTargetInteraction}
+                    />
+                  </div>
                 </div>
 
                   {/* 底部：手牌区（中心对齐到左右 HUD 留出的“安全走廊”，避免侵入右侧 controls） */}

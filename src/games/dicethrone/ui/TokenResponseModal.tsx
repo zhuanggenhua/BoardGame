@@ -223,28 +223,28 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
             <div
                 key={tokenDef.id}
                 className={clsx(
-                    'bg-slate-800/40 rounded-xl p-4 border',
+                    'bg-slate-800/40 rounded-xl p-4 max-[1023px]:p-3 border',
                     borderColor,
                     isDisabled && 'opacity-50',
                 )}
             >
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-3 max-[1023px]:mb-2">
+                    <div className="flex min-w-0 items-center gap-2">
                         {renderTokenIcon(tokenDef.id)}
-                        <span className="font-bold text-white">
+                        <span className="truncate font-bold text-white">
                             {t(`tokens.${tokenDef.id}.name`)}
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="shrink-0 text-xs text-slate-400">
                             ({actualTokenCount} {t('tokenResponse.available')})
                         </span>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
                         <span
                             className={clsx(
-                                'text-sm',
+                                'text-sm max-[1023px]:text-xs',
                                 category === 'boost' && 'text-red-300',
                                 category === 'reduce' && 'text-blue-300',
                                 category === 'reflect' && 'text-purple-300',
@@ -285,27 +285,27 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
             width="lg"
             closeOnBackdrop={false}
         >
-            <div className="flex flex-col gap-6 w-full" data-testid="token-response-modal">
-                <p className="text-sm sm:text-base text-slate-400 text-center">
+            <div className="flex w-full flex-col gap-6 max-[1023px]:gap-3" data-testid="token-response-modal">
+                <p className="text-sm sm:text-base max-[1023px]:text-xs text-slate-400 text-center">
                     {isAttackerPhase ? t('tokenResponse.attackerDesc') : t('tokenResponse.defenderDesc')}
                 </p>
 
-                <div className="flex justify-center items-center gap-8 py-4 bg-slate-950/40 rounded-xl border border-white/5">
+                <div className="flex justify-center items-center gap-8 max-[1023px]:gap-5 py-4 max-[1023px]:py-2 bg-slate-950/40 rounded-xl border border-white/5">
                     <div className="text-center">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">
+                        <div className="text-xs max-[1023px]:text-[10px] text-slate-500 uppercase tracking-wider mb-1">
                             {t('tokenResponse.originalDamage')}
                         </div>
-                        <div className="text-3xl font-black text-slate-400">
+                        <div className="text-3xl max-[1023px]:text-2xl font-black text-slate-400">
                             {pendingDamage.originalDamage}
                         </div>
                     </div>
-                    <div className="text-2xl text-slate-600" aria-hidden="true">→</div>
+                    <div className="text-2xl max-[1023px]:text-xl text-slate-600" aria-hidden="true">→</div>
                     <div className="text-center">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">
+                        <div className="text-xs max-[1023px]:text-[10px] text-slate-500 uppercase tracking-wider mb-1">
                             {t('tokenResponse.currentDamage')}
                         </div>
                         <div
-                            className={clsx('text-3xl font-black', {
+                            className={clsx('text-3xl max-[1023px]:text-2xl font-black', {
                                 'text-green-400': pendingDamage.isFullyEvaded,
                                 'text-blue-400':
                                     !pendingDamage.isFullyEvaded && pendingDamage.currentDamage < pendingDamage.originalDamage,
@@ -323,7 +323,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
                 {lastEvasionRoll && (
                     <div
                         className={clsx(
-                            'text-center py-2 rounded-lg border',
+                            'text-center py-2 max-[1023px]:py-1 rounded-lg border',
                             lastEvasionRoll.success
                                 ? 'bg-green-900/30 border-green-500/30'
                                 : 'bg-red-900/30 border-red-500/30',
@@ -341,7 +341,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
                     </div>
                 )}
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 max-[1023px]:gap-2">
                     {isAttackerPhase && boostTokens.map(tokenDef => renderTokenCard(tokenDef, 'border-red-500/20'))}
 
                     {isDefenderPhase &&
@@ -369,7 +369,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
                     onClick={onSkip}
                     variant="secondary"
                     fullWidth
-                    className="mt-2"
+                    className="mt-2 max-[1023px]:mt-0"
                 >
                     {pendingDamage.isFullyEvaded ? t('tokenResponse.confirm') : t('tokenResponse.skip')}
                 </GameButton>

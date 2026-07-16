@@ -16,12 +16,12 @@
 ### 结论 1：watchdog 的“强制推进/跳过”**默认不会影响真人玩家**（有硬门禁）
 
 **硬门禁位置：**
-- 服务端 watchdog（`server.ts`）在每个 tick 内只在 `setupData.seatControllers` 里发现 AI seat 时才进入候选；并且候选 playerId 必须是非 human seat。
+- 服务端 watchdog（`server.ts`）在每个 tick 内只在可信 seatControllers 里发现 AI seat 时才进入候选；并且候选 playerId 必须是非 human seat。
 - 前端 MatchRoom 的强制跳过/强制结束也只会对 `seatControllers[playerId] !== human` 的 seat 提交指令。
 
 **风险边界（必须明确）：**
 - 唯一可能“误伤真人”的路径是：`setupData.seatControllers` **错误把真人 seat 标成 AI**。  
-  因此项目引入了 `onlineAiSeats.ts` 的信任门禁：只有 `setupData.enableAi === true`（或已存在 `match_ai_creds_`）时，前端才信任 `seatControllers`。
+  因此项目引入了双层信任门禁：前端 `onlineAiSeats.ts` 只有 `setupData.enableAi === true`（或已存在 `match_ai_creds_`）时才信任 `seatControllers`；服务端 watchdog 兼容缺失 `enableAi` 的旧 AI 房，但 `setupData.enableAi === false` 时必须忽略 setupData 与 state.core 中残留的 AI seatControllers。
 
 ### 结论 2：系统性“卡死”根因不是单点 bug，而是**交互可解性/响应窗口闭环/循环动作**三类结构问题
 

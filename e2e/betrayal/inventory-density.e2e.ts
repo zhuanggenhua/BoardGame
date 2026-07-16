@@ -28,6 +28,19 @@ const MAP_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-地图物品-房�
 const MAP_TARGET_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/09-山屋惊魂-地图物品-房间目标已选中.png`;
 const MAP_USED_SCREENSHOT = `${EVIDENCE_DIR}/10-山屋惊魂-地图物品-使用后探索者落位.png`;
 const MAP_RETURNED_SCREENSHOT = `${EVIDENCE_DIR}/11-山屋惊魂-地图物品-收口后回牌桌.png`;
+const SHARED_PLACE_EXPLORER_EVIDENCE_DIR =
+  "evidence/山屋惊魂-共享放置物品完整链路";
+
+type PlaceExplorerInventoryCard = BetrayalInventoryCard & {
+  id: "map" | "notebook" | "journal" | "manuscript";
+  name: "地图" | "笔记本" | "日记" | "手稿";
+};
+
+const SHARED_PLACE_EXPLORER_ITEMS: PlaceExplorerInventoryCard[] = [
+  { id: "notebook", name: "笔记本", kind: "item" },
+  { id: "journal", name: "日记", kind: "item" },
+  { id: "manuscript", name: "手稿", kind: "item" },
+];
 
 function createDenseInventoryCore(): BetrayalCore {
   const core = createRuntimeCore();
@@ -75,19 +88,29 @@ function createExtremeInventoryCore(): BetrayalCore {
   return core;
 }
 
-function createMapInventoryCore(): BetrayalCore {
+function createPlaceExplorerInventoryCore(
+  card: PlaceExplorerInventoryCard,
+): BetrayalCore {
   const core = createRuntimeCore();
   const mapInventory: BetrayalInventoryCard[] = [
-    { id: "map", name: "地图", kind: "item" },
+    { ...card },
   ];
 
   core.currentExplorer.inventory = mapInventory.map((card) => ({ ...card }));
   core.currentExplorerInventory = mapInventory.map((card) => ({ ...card }));
-  core.turnStartInventoryCardIds = ["map"];
+  core.turnStartInventoryCardIds = [card.id];
   core.usedCardIdsThisTurn = [];
   core.recommendedAction = "use";
 
   return core;
+}
+
+function createMapInventoryCore(): BetrayalCore {
+  return createPlaceExplorerInventoryCore({
+    id: "map",
+    name: "地图",
+    kind: "item",
+  });
 }
 
 test.describe("山屋惊魂持有区高密度证据", () => {
@@ -405,4 +428,110 @@ test.describe("山屋惊魂持有区高密度证据", () => {
       { label: "betrayal-map-card-room-target-flow", diagnostics },
     ]);
   });
+
+  for (const item of SHARED_PLACE_EXPLORER_ITEMS) {
+    test(`${item.name}共享放置物品链路会选择房间、结算并回牌桌`, async ({
+      page,
+      context,
+    }) => {
+      test.setTimeout(120000);
+      await initBetrayalContext(context);
+      const diagnostics = attachPageDiagnostics(
+        page,
+        `betrayal-${item.id}-shared-place-explorer-flow`,
+      );
+      const screenshotBase = `${SHARED_PLACE_EXPLORER_EVIDENCE_DIR}/${item.name}-放置链路`;
+
+      await page.setViewportSize({ width: 1600, height: 900 });
+      await warmBetrayalFrontend(context);
+      await page.goto("/play/betrayal", { waitUntil: "domcontentloaded" });
+      await waitForBetrayalPageReady(page);
+
+      await injectCore(page, createPlaceExplorerInventoryCore(item));
+      await expect(page.getByTestId("betrayal-board")).toBeVisible({
+        timeout: 30000,
+      });
+      await expect(
+        page.getByTestId(`betrayal-inventory-${item.id}`),
+        `使用前必须看得到${item.name}本体`,
+      ).toBeVisible();
+      await expect(
+        page.getByTestId("betrayal-action-use"),
+        "未选物品前使用按钮应禁用",
+      ).toBeDisabled();
+      await saveScreenshot(page, `${screenshotBase}-01-使用前牌桌可操作.jpg`);
+
+      await page.getByTestId(`betrayal-inventory-${item.id}`).click();
+      await expect(
+        page.getByTestId("betrayal-selected-inventory-card-name"),
+      ).toHaveText(item.name);
+      await expect(
+        page.getByTestId("betrayal-inventory-target-room-selector"),
+      ).toBeVisible();
+      await expect(
+        page.getByTestId("betrayal-action-use"),
+        `已选${item.name}但未选目标房间前不能直接使用`,
+      ).toBeDisabled();
+      await saveScreenshot(page, `${screenshotBase}-02-物品本体已选中.jpg`);
+
+      await page.getByTestId("betrayal-room-floor-up").click();
+      await expect(
+        page.getByTestId(
+          "betrayal-room-inventory-target-card-highlight-upper-landing",
+        ),
+      ).toBeVisible();
+      await expect(
+        page.getByTestId("betrayal-room-upper-landing"),
+        `${item.name}目标必须走房间牌本体点击路径`,
+      ).toBeVisible();
+      await saveScreenshot(page, `${screenshotBase}-03-房间牌目标可选.jpg`);
+
+      await page.getByTestId("betrayal-room-upper-landing").click();
+      await expect(
+        page.getByTestId("betrayal-inventory-target-room-upper-landing"),
+      ).toHaveClass(/text-\[#eef4a8\]/);
+      await expect(
+        page.getByTestId("betrayal-action-use"),
+        `${item.name}和目标房间都选中后使用按钮必须可点击`,
+      ).toBeEnabled();
+      await saveScreenshot(page, `${screenshotBase}-04-房间目标已选中.jpg`);
+
+      await page.getByTestId("betrayal-action-use").click();
+      await expect(
+        page.getByTestId("betrayal-room-latest-feedback"),
+      ).toContainText(item.name);
+      await expect(
+        page.getByTestId("betrayal-room-latest-feedback"),
+      ).toContainText("上层起始点");
+      await expect(
+        page.getByTestId("betrayal-room-occupant-upper-landing-0"),
+      ).toBeVisible();
+      await saveScreenshot(page, `${screenshotBase}-05-使用后探索者落位.jpg`);
+
+      await expect(
+        page.getByTestId("betrayal-selected-inventory-card-name"),
+        `${item.name}结算后不能残留已选物品`,
+      ).toHaveCount(0);
+      await expect(
+        page.getByTestId("betrayal-inventory-target-room-selector"),
+        `${item.name}结算后目标选择器必须清空`,
+      ).toHaveCount(0);
+      await expect(
+        page.getByTestId(`betrayal-inventory-${item.id}`),
+        `${item.name}使用后必须从当前持有区消失`,
+      ).toHaveCount(0);
+      await expect(
+        page.getByTestId("betrayal-board"),
+        `${item.name}使用后必须回到可操作牌桌`,
+      ).toBeVisible();
+      await saveScreenshot(page, `${screenshotBase}-06-收口后回牌桌.jpg`);
+
+      assertNoFatalFrontendErrors([
+        {
+          label: `betrayal-${item.id}-shared-place-explorer-flow`,
+          diagnostics,
+        },
+      ]);
+    });
+  }
 });

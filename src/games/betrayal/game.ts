@@ -1897,28 +1897,42 @@ function rollEventTraitCheck(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
     trait: BetrayalTraitKey,
+    core?: BetrayalCore,
 ): number {
-    return rollTraitCheck(random, {
-        ...explorer,
-        traits: {
-            ...explorer.traits,
-            [trait]: explorer.traits[trait] + resolveEventTraitCheckExtraDice(explorer),
-        },
-    }, trait);
+    return rollEventTraitCheckWithDice(random, explorer, trait, core).total;
 }
 
 function rollEventTraitCheckWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
     trait: BetrayalTraitKey,
+    core?: BetrayalCore,
 ): { total: number; dice: number[]; passiveBonus: number } {
-    return rollTraitCheckWithDice(random, {
-        ...explorer,
-        traits: {
-            ...explorer.traits,
-            [trait]: explorer.traits[trait] + resolveEventTraitCheckExtraDice(explorer),
-        },
-    }, trait);
+    const diceCount = (core
+        ? resolveNonCombatTraitCheckValue(core, explorer, trait)
+        : resolveTraitCheckValue(explorer, trait)) + resolveEventTraitCheckExtraDice(explorer);
+    const dice = rollDicePips(random, diceCount);
+    const passiveBonus = resolveTraitRollPassiveBonus(explorer, trait);
+    return {
+        total: dice.reduce((sum, pip) => sum + pip, 0) + passiveBonus,
+        dice,
+        passiveBonus,
+    };
+}
+
+function consumeNextNonCombatTraitReplacementAfterTraitRoll(
+    core: BetrayalCore,
+    playerId: string,
+    eventRoll?: { kind?: 'trait' | 'dice'; trait?: BetrayalTraitKey },
+): void {
+    if (
+        eventRoll
+        && eventRoll.kind !== 'dice'
+        && eventRoll.trait
+        && core.nextNonCombatTraitReplacement?.playerId === playerId
+    ) {
+        core.nextNonCombatTraitReplacement = null;
+    }
 }
 
 function rollEventFixedDice(random: RandomFn, diceCount: number): { total: number; dice: number[]; passiveBonus: number } {
@@ -3612,7 +3626,9 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             if (effect.mode === 'placeExplorer') {
                 const targetRoomId = command.payload.targetRoomId;
                 if (!targetRoomId || !core.rooms.some((room) => room.id === targetRoomId && room.state === 'discovered')) {
-                    return { valid: false, error: '地图只能把探索者放置到已发现板块。' };
+                    const card = core.currentExplorer.inventory.find((item) => item.id === cardId);
+                    const cardName = card?.name ?? '该持有物';
+                    return { valid: false, error: `${cardName}只能把探索者放置到已发现板块。` };
                 }
             }
             if (effect.mode === 'moveOthersInRoom') {
@@ -4067,7 +4083,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 const eventRollResult = eventCard.roll
                     ? eventRollKind === 'dice'
                         ? rollEventFixedDice(random, eventCard.roll.dice)
-                        : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait)
+                        : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait, core)
                     : null;
                 const eventRollTotal = eventRollResult?.total ?? null;
                 const eventBranch = eventCard.roll && eventRollTotal !== null
@@ -4321,7 +4337,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             }
             if (pending.effect.mode === 'chooseTraitRoll') {
                 const selectedTrait = command.payload.trait!;
-                const rollResult = rollEventTraitCheckWithDice(random, core.currentExplorer, selectedTrait);
+                const rollResult = rollEventTraitCheckWithDice(random, core.currentExplorer, selectedTrait, core);
                 const rollTotal = rollResult.total;
                 const eventBranch = resolveEventBranch(pending.effect.branches, rollTotal);
                 const branchEffect = cloneUseEffect(eventBranch.effect);
@@ -5033,6 +5049,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             } else {
                 core.recentRoll = null;
             }
+            consumeNextNonCombatTraitReplacementAfterTraitRoll(core, event.payload.playerId, event.payload.eventRoll);
             if (event.payload.deckKind === 'omen') {
                 core.scenarioRuntime.omensDiscovered += 1;
             }
@@ -5172,6 +5189,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     consumedRabbitFootCardIds: [],
                 }
                 : carriedRecentRoll;
+            consumeNextNonCombatTraitReplacementAfterTraitRoll(core, event.payload.playerId, event.payload.eventRoll);
             if (event.payload.eventEffect) {
                 const eventEffectSnapshot = applyEventEffect(core, event.payload.eventEffect);
                 if (core.recentRoll) {

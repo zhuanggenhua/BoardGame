@@ -62,6 +62,8 @@
     "bloodRuneDamage": "Take 1 Damage",
     "bloodRuneCharge": "Spend 1 Magic to Charge",
     "feedBeastSelfDestroy": "Self-destruct",
+    "moguParasiteConsumeCharge": "Spend 1 Charge",
+    "moguParasiteTakeDamage": "Take 1 Damage",
     "chargeSelf": "Charge Self",
     "playEvent": "Play",
     "discardForMagic": "Discard",
@@ -87,7 +89,9 @@
     "opponentActiveEvents": "Opponent Active Effects",
     "activeEvents": "Active Effects",
     "attached": "Attached",
-    "click_to_magnify": "Click to Magnify"
+    "click_to_magnify": "Click to Magnify",
+    "showAllLifeTotals": "Show all unit life",
+    "hideAllLifeTotals": "Hide all unit life"
   },
   "hud": {
     "combatEffects": {
@@ -196,6 +200,7 @@
       "setup": "Preparing the tutorial match...",
       "welcome": "Welcome to Summoner Wars!\n\nThis is the battlefield, an 8\u00d76 grid. Your units are at the bottom, your opponent at the top.\n\nDefeat the enemy Summoner to win!",
       "mapControls": "🖱️ Map Controls:\n\nDrag: Hold left mouse button to pan\nZoom: Scroll mouse wheel to zoom in/out\n\nCurrent zoom level is shown in the top-left corner.",
+      "lifeToggleIntro": "Click the eye button in the top-left to temporarily show life totals for every unit and structure on the battlefield.\n\nCheck life before moving or attacking so you can see which cards are close to being destroyed and which can still hold the line.",
       "summonerIntro": "This is your Summoner \"Ret-Talus\".\n\nHe has 12 Life, 2 Strength, and is a ranged attacker (range 3).\n\nHe's your most important unit — lose him and you lose the game!",
       "enemySummoner": "This is the enemy Summoner.\n\nDestroy them to win the game!",
       "gateIntro": "This is your Gate.\n\nGates are where you summon new units — you can only place units on empty spaces adjacent to your gates.\n\nProtect your gates, and build new portals to expand your summoning range.",
@@ -492,6 +497,7 @@
       "fortressPower": "Fortress Power: Select a fortress unit from the discard pile",
       "iceShards": "Ice Shards: Spend 1 charge to deal 1 damage to enemies adjacent to buildings?",
       "feedBeast": "Feed the Beast: Remove an adjacent ally, or self-destruct",
+      "moguParasite": "Parasite: spend 1 charge, or take 1 damage",
       "spiritBond": "Spirit Bond: Select target within 3 to transfer charge, or charge self",
       "spiritBondChargeOnly": "Spirit Bond: No charges, can only charge self",
       "ancestralBond": "Ancestral Bond: Select friendly unit within 3 to transfer charge",
@@ -648,7 +654,8 @@
       "soulTransfer": "Soul Transfer: confirm movement",
       "mindCapture": "Mind Capture: choose control or damage",
       "iceShards": "Ice Shards: confirm charge spending",
-      "feedBeast": "Feed Beast: choose a victim or self-destruct"
+      "feedBeast": "Feed Beast: choose a victim or self-destruct",
+      "moguParasite": "Parasite: choose charge spending or damage"
     },
     "fireSacrifice": {
       "mustSelectAlly": "Please select an ally unit to sacrifice"

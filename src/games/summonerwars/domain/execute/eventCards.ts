@@ -637,19 +637,34 @@ export function executePlayEvent(
         if (!summoner) break;
         const selectedCards = payload.cardIds as string[] | undefined;
         const selectedPositions = targets ?? [];
+        const seenPositions = new Set<string>();
+        const validSelectedPositions = selectedPositions.filter((targetPos) => {
+          if (!targetPos || !isValidCoord(targetPos)) return false;
+          const key = `${targetPos.row},${targetPos.col}`;
+          if (seenPositions.has(key)) return false;
+          if (!isCellEmpty(core, targetPos)) return false;
+          if (manhattanDistance(summoner.position, targetPos) !== 1) return false;
+          seenPositions.add(key);
+          return true;
+        }).slice(0, 2);
         const discardBodies = player.discard
           .filter(c => c.cardType === 'unit' && isMoguSporePlagueBodyCard(c))
           .slice(0, 2);
-        const cardsToSummon = selectedCards
-          ? selectedCards
+        const seenCardIds = new Set<string>();
+        const selectedUniqueCardIds = selectedCards?.filter((id) => {
+          if (seenCardIds.has(id)) return false;
+          seenCardIds.add(id);
+          return true;
+        });
+        const cardsToSummon = selectedUniqueCardIds
+          ? selectedUniqueCardIds
             .map(id => player.discard.find(c => c.id === id))
             .filter((c): c is typeof discardBodies[number] => !!c && c.cardType === 'unit' && isMoguSporePlagueBodyCard(c))
             .slice(0, 2)
           : discardBodies;
-        for (let i = 0; i < cardsToSummon.length; i++) {
-          const targetPos = selectedPositions[i];
-          if (!targetPos || !isCellEmpty(core, targetPos)) continue;
-          if (manhattanDistance(summoner.position, targetPos) !== 1) continue;
+        const summonCount = Math.min(cardsToSummon.length, validSelectedPositions.length);
+        for (let i = 0; i < summonCount; i++) {
+          const targetPos = validSelectedPositions[i];
           events.push({
             type: SW_EVENTS.UNIT_SUMMONED,
             payload: {

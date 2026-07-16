@@ -106,6 +106,7 @@
     "check:arch": "node scripts/infra/check-architecture.cjs",
     "verify:dicethrone:style-contract": "node scripts/games/dicethrone/verify/dicethrone-style-contract.mjs",
     "audit:evidence": "node scripts/verify/audit-evidence-completeness.mjs",
+    "audit:evidence:selfcheck": "node scripts/verify/audit-evidence-completeness.mjs",
     "audit:evidence:all": "node scripts/verify/audit-evidence-completeness.mjs --all",
     "check:prod-deps": "bash scripts/deploy/verify-prod-deps.sh",
     "deploy:runner": "node scripts/deploy/deploy-runner.mjs",

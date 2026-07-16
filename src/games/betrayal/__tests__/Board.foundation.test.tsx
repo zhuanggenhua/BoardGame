@@ -273,6 +273,14 @@ describe('Betrayal Board foundation', () => {
         expect(within(currentTraits).getByText('速度').parentElement).toHaveClass('text-[#ebdca1]');
         expect(within(currentTraits).getByText('知识').parentElement).toHaveClass('text-[#cbe4ea]');
         expect(within(currentTraits).getByText('神志').parentElement).toHaveClass('text-[#d9c4ef]');
+        const currentBoardToken = screen.getByTestId('betrayal-explorer-figure-token-0');
+        const currentPanelToken = screen.getByTestId('betrayal-current-panel-token-0');
+        expect(currentPanelToken).toHaveAttribute('data-player-id', currentBoardToken.getAttribute('data-player-id')!);
+        expect(currentPanelToken).toHaveAttribute('data-explorer-id', currentBoardToken.getAttribute('data-explorer-id')!);
+        expect(currentPanelToken).toHaveAttribute('data-token-asset', currentBoardToken.getAttribute('data-token-asset')!);
+        expect(currentTraits).toHaveAttribute('data-player-id', currentBoardToken.getAttribute('data-player-id')!);
+        expect(currentTraits).toHaveAttribute('data-explorer-id', currentBoardToken.getAttribute('data-explorer-id')!);
+        expect(currentTraits).toHaveAttribute('data-token-asset', currentBoardToken.getAttribute('data-token-asset')!);
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('等待第一步');
         expect(screen.queryByRole('region', { name: '阶段提示' })).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-mobile-selected-card')).toHaveTextContent('未选卡牌');
@@ -282,6 +290,19 @@ describe('Betrayal Board foundation', () => {
         expect(document.querySelector('[data-resource-count-shape="square"]')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-bottom-teammate-1')).toHaveTextContent('队友一');
         expect(screen.getByTestId('betrayal-bottom-teammate-1').querySelector('[data-trait-value-shape="square"]')).toBeInTheDocument();
+        const teammatePanel = screen.getByTestId('betrayal-bottom-teammate-1');
+        const teammatePanelToken = screen.getByTestId('betrayal-bottom-teammate-token-1');
+        expect(teammatePanelToken).toHaveAttribute('data-player-id', teammatePanel.getAttribute('data-player-id')!);
+        expect(teammatePanelToken).toHaveAttribute('data-explorer-id', teammatePanel.getAttribute('data-explorer-id')!);
+        expect(teammatePanelToken).toHaveAttribute('data-token-asset', teammatePanel.getAttribute('data-token-asset')!);
+        const desktopTeammatePanel = screen.getByTestId('betrayal-teammate-panel-1');
+        const desktopTeammatePanelToken = screen.getByTestId('betrayal-teammate-panel-token-1');
+        expect(desktopTeammatePanelToken).toHaveAttribute('data-player-id', desktopTeammatePanel.getAttribute('data-player-id')!);
+        expect(desktopTeammatePanelToken).toHaveAttribute('data-explorer-id', desktopTeammatePanel.getAttribute('data-explorer-id')!);
+        expect(desktopTeammatePanelToken).toHaveAttribute('data-token-asset', desktopTeammatePanel.getAttribute('data-token-asset')!);
+        expect(desktopTeammatePanel).toHaveAttribute('data-player-id', teammatePanel.getAttribute('data-player-id')!);
+        expect(desktopTeammatePanel).toHaveAttribute('data-explorer-id', teammatePanel.getAttribute('data-explorer-id')!);
+        expect(desktopTeammatePanel).toHaveAttribute('data-token-asset', teammatePanel.getAttribute('data-token-asset')!);
     });
 
     it('第一剧本真实图书馆不在 upper-west 时也能显示调查杰克入口', async () => {
@@ -467,16 +488,21 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-inventory-preview-card')).toHaveTextContent('兔脚');
     });
 
-    it('地图会在真实页面选择已发现板块并放置当前探索者', () => {
+    it.each([
+        ['map', '地图'],
+        ['notebook', '笔记本'],
+        ['journal', '日记'],
+        ['manuscript', '手稿'],
+    ] as const)('%s 会在真实页面选择已发现板块并放置当前探索者', (cardId, cardName) => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.currentExplorer = {
             ...core.currentExplorer,
             roomId: 'entrance-hall',
-            inventory: [{ id: 'map', name: '地图', kind: 'item' }],
+            inventory: [{ id: cardId, name: cardName, kind: 'item' }],
         };
         core.activeRoomId = 'entrance-hall';
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.turnStartInventoryCardIds = ['map'];
+        core.turnStartInventoryCardIds = [cardId];
 
         render(
             <HarnessBoardWithRandom
@@ -485,7 +511,8 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        fireEvent.click(screen.getByTestId('betrayal-inventory-map'));
+        fireEvent.click(screen.getByTestId(`betrayal-inventory-${cardId}`));
+        expect(screen.getByTestId('betrayal-selected-inventory-card-name')).toHaveTextContent(cardName);
         expect(screen.getByTestId('betrayal-inventory-target-room-selector')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-floor-up')).toBeEnabled();
         fireEvent.click(screen.getByTestId('betrayal-room-floor-up'));
@@ -493,7 +520,7 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-room-upper-landing'));
         fireEvent.click(screen.getByTestId('betrayal-action-use'));
 
-        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('埋葬地图');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent(`埋葬${cardName}`);
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('上层起始点');
         expect(screen.getByTestId('betrayal-room-occupant-upper-landing-0')).toBeInTheDocument();
     });
@@ -865,6 +892,20 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
             'data-dice-rule-subtotal',
             String(expectedHauntDiceCount),
+        );
+        expect(screen.getByTestId('betrayal-recent-roll-result-stage')).toHaveAttribute(
+            'data-result-layout',
+            'split-primary-total',
+        );
+        expect(screen.getByTestId('betrayal-recent-roll-total')).toHaveAttribute(
+            'data-result-emphasis',
+            'primary-total',
+        );
+        expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toContainElement(
+            screen.getByTestId('betrayal-recent-roll-subtotal'),
+        );
+        expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toContainElement(
+            screen.getByTestId('betrayal-recent-roll-passive-bonus'),
         );
         expect(screen.getByTestId('betrayal-recent-roll-subtotal')).toBeInTheDocument();
     });
@@ -1475,6 +1516,13 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
                 'data-dice-count',
                 String(eventCard!.roll!.kind === 'dice' ? eventCard!.roll!.dice : 4),
+            );
+            expect(screen.getByTestId('betrayal-recent-roll-result-stage')).toHaveAttribute(
+                'data-result-layout',
+                'split-primary-total',
+            );
+            expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toContainElement(
+                screen.getByTestId('betrayal-recent-roll-subtotal'),
             );
             expect(screen.getByTestId('betrayal-recent-roll-subtotal')).toBeInTheDocument();
 

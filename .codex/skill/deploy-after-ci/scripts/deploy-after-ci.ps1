@@ -1,6 +1,8 @@
 param(
   [switch]$CheckCi,
   [string]$Tag = "",
+  [ValidateSet("stream", "remote")]
+  [string]$DeployMode = "stream",
   [string]$OtaChannel = "stable",
   [string]$OtaExtra = "",
   [switch]$SkipOta,
@@ -20,6 +22,9 @@ if ($CheckCi) {
 $deployArgs = @{}
 if ($Tag) {
   $deployArgs["Tag"] = $Tag
+}
+if ($DeployMode) {
+  $deployArgs["DeployMode"] = $DeployMode
 }
 if ($OtaChannel) {
   $deployArgs["OtaChannel"] = $OtaChannel

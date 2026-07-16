@@ -37,6 +37,7 @@ import {
   BOARD_ROWS,
   BOARD_COLS,
 } from './helpers';
+import { canActivateAbility } from './abilityHelpers';
 import { getBaseCardId, CARD_IDS, isPlagueZombieCard, isFortressUnit, isUndeadCard, isMoguSporePlagueBodyCard } from './ids';
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
@@ -213,6 +214,10 @@ type SwInteractionMeta =
       sourceUnitId: string;
     }
   | {
+      type: 'mogu_parasite';
+      sourceUnitId: string;
+    }
+  | {
       type: 'before_attack_life_drain';
       sourceUnitId: string;
       attackerPosition: CellCoord;
@@ -378,6 +383,7 @@ type SwInteractionValue =
   | { action: 'mind_capture'; sourceUnitId: string; targetPosition: CellCoord; hits: number; choice: 'control' | 'damage' }
   | { action: 'ice_shards'; sourceUnitId: string; skip?: boolean }
   | { action: 'feed_beast'; sourceUnitId: string; choice: 'destroy_adjacent' | 'self_destroy'; targetPosition?: CellCoord }
+  | { action: 'mogu_parasite'; sourceUnitId: string; choice: 'consume_charge' | 'take_damage' }
   | { action: 'before_attack_life_drain'; targetUnitId: string; targetPosition?: CellCoord }
   | { action: 'before_attack_holy_arrow'; cardId: string }
   | { action: 'before_attack_healing'; cardId: string }
@@ -805,6 +811,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
         const sourcePosition = findUnitPositionByInstanceId(state.core, sourceUnitId);
         const sourceUnit = sourcePosition ? getUnitAt(state.core, sourcePosition) : undefined;
         if (!sourcePosition || !sourceUnit || sourceUnit.owner !== playerId) return;
+        if (!canActivateAbility(state.core, sourceUnit, abilityId, playerId)) return;
 
         if (abilityId === 'revive_undead') {
           const targetCardId = payload.targetCardId as string | undefined;
@@ -1805,6 +1812,42 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               ...interactionData,
               sw: {
                 type: 'feed_beast',
+                sourceUnitId,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (actionId === 'mogu_parasite') {
+            if (normalizeUnitBoosts(sourceUnit.boosts) <= 0) continue;
+            const interactionId = `sw-mogu-parasite-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              {
+                id: 'consume_charge',
+                label: '消耗1点充能',
+                labelKey: 'actions.moguParasiteConsumeCharge',
+                value: { action: 'mogu_parasite', sourceUnitId, choice: 'consume_charge' },
+              },
+              {
+                id: 'take_damage',
+                label: '受到1点伤害',
+                labelKey: 'actions.moguParasiteTakeDamage',
+                value: { action: 'mogu_parasite', sourceUnitId, choice: 'take_damage' },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.moguParasite',
+              options,
+              { sourceId: 'mogu_parasite', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'mogu_parasite',
                 sourceUnitId,
               } satisfies SwInteractionMeta,
             };
@@ -3065,6 +3108,21 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                   sourceUnitId: value.sourceUnitId,
                   choice: value.choice,
                   targetPosition: value.targetPosition,
+                  _noSnapshot: true,
+                },
+              }));
+            }
+          }
+
+          if (sw.type === 'mogu_parasite') {
+            newState = applyPhaseEndResolution(newState, 'mogu_parasite', sw.sourceUnitId);
+            if (value && value.action === 'mogu_parasite') {
+              nextEvents.push(...executeSwCommand(newState, random, {
+                type: SW_COMMANDS.ACTIVATE_ABILITY,
+                payload: {
+                  abilityId: 'mogu_parasite',
+                  sourceUnitId: value.sourceUnitId,
+                  choice: value.choice,
                   _noSnapshot: true,
                 },
               }));

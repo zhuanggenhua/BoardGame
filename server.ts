@@ -662,9 +662,9 @@ const cleanupMatchRoom = async (
     matchID: string,
     metadata?: MatchMetadata | null,
     emitRemoval = false,
-): Promise<void> => {
+): Promise<boolean> => {
+    const unloaded = gameTransport.unloadMatch(matchID, { disconnectSockets: true });
     await storage.wipe(matchID);
-    gameTransport.unloadMatch(matchID, { disconnectSockets: true });
 
     const game = normalizeGameName(metadata?.gameName);
     if (emitRemoval && game && isSupportedGame(game)) {
@@ -676,6 +676,8 @@ const cleanupMatchRoom = async (
     matchSubscribers.delete(matchID);
     rematchStateByMatch.delete(matchID);
     chatHistoryByMatch.delete(matchID);
+
+    return unloaded || Boolean(metadata);
 };
 
 const cleanupMissingOwnerRoom = async (
@@ -732,7 +734,8 @@ router.delete('/internal/rooms/:matchID', async (ctx) => {
         ctx.throw(400, 'Missing matchID');
     }
 
-    const deleted = await lobbyCoordinator.destroyLobbyRoom(matchID);
+    const { metadata } = await storage.fetch(matchID, { metadata: true });
+    const deleted = await cleanupMatchRoom(matchID, metadata, true);
     ctx.body = { deleted, matchID };
 });
 
@@ -748,7 +751,8 @@ router.post('/internal/rooms/bulk-delete', async (ctx) => {
 
     let deleted = 0;
     for (const matchID of uniqueIds) {
-        const ok = await lobbyCoordinator.destroyLobbyRoom(matchID);
+        const { metadata } = await storage.fetch(matchID, { metadata: true });
+        const ok = await cleanupMatchRoom(matchID, metadata, true);
         if (ok) {
             deleted++;
         }

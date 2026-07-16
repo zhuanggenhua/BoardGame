@@ -74,6 +74,15 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       infoStep: true,
     },
 
+    // 3: 生命值按钮 — 高亮左上角眼睛按钮
+    {
+      id: 'life-toggle-intro',
+      content: 'game-summonerwars:tutorial.steps.lifeToggleIntro',
+      highlightTarget: 'sw-life-toggle',
+      position: 'right',
+      infoStep: true,
+    },
+
     // 3: 你的召唤师 — 高亮己方召唤师
     {
       id: 'summoner-intro',

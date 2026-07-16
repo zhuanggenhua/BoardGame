@@ -309,10 +309,12 @@ const buildAbilityHighlightStyle = (
 ): React.CSSProperties => {
     if (variant === 'selected') {
         return {
-            borderStyle: 'solid',
-            borderWidth: '2.5px',
-            borderColor: tone.selectedBorderColor,
-            boxShadow: `0 0 0 1px ${tone.selectedRimColor}, 0 0 18px ${tone.selectedGlowColor}, 0 0 30px ${tone.selectedHaloColor}`,
+            border: '3px solid transparent',
+            background: [
+                'linear-gradient(rgba(15,23,42,0), rgba(15,23,42,0)) padding-box',
+                `linear-gradient(135deg, ${tone.selectedPulseBorderColor}, ${tone.selectedBorderColor} 45%, ${tone.selectedRimColor}) border-box`,
+            ].join(', '),
+            boxShadow: `0 0 20px ${tone.selectedGlowColor}, 0 0 34px ${tone.selectedHaloColor}`,
         };
     }
     return {
@@ -323,12 +325,6 @@ const buildAbilityHighlightStyle = (
     };
 };
 
-const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSProperties => ({
-    borderStyle: 'solid',
-    borderWidth: '1px',
-    borderColor: tone.selectedPulseBorderColor,
-    boxShadow: `inset 0 0 0 1px ${tone.selectedPulseBorderColor}`,
-});
     /** AbilityOverlays 通过 ref 暴露的方法 */
     export interface AbilityOverlaysHandle {
         /** 保存当前布局到服务端 */
@@ -399,7 +395,7 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
         const activeEditingGuideClassName = 'absolute inset-0 rounded-lg border-[2.5px] border-emerald-300 bg-emerald-400/12 shadow-[0_0_0_1px_rgba(6,95,70,0.95),0_0_18px_rgba(52,211,153,0.55)] pointer-events-none';
         const activeEditingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-emerald-950/80 pointer-events-none';
         const highlightOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10 animate-pulse';
-        const selectedOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10';
+        const selectedOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-20';
         const inspectButtonClassName = 'absolute right-[0.2vw] top-[0.2vw] z-20 flex h-[1.15vw] w-[1.15vw] min-h-[14px] min-w-[14px] items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_0.18vw_0.42vw_rgba(0,0,0,0.45)] transition-[background-color,border-color,opacity] duration-200 hover:border-amber-300/45 hover:bg-amber-500/78';
         const abilityHighlightTone = React.useMemo(
             () => getAbilityHighlightTone(characterId),
@@ -413,11 +409,6 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
             () => buildAbilityHighlightStyle(abilityHighlightTone, 'selected'),
             [abilityHighlightTone],
         );
-        const selectedPulseStyle = React.useMemo(
-            () => buildAbilitySelectedPulseStyle(abilityHighlightTone),
-            [abilityHighlightTone],
-        );
-
         // 通过 ref 暴露保存方法，供调试面板调用
         React.useImperativeHandle(ref, () => ({
             saveLayout: async () => {
@@ -657,9 +648,7 @@ const buildAbilitySelectedPulseStyle = (tone: AbilityHighlightTone): React.CSSPr
                                     data-testid={`dt-ability-selected-${slot.id}`}
                                     className={selectedOverlayClassName}
                                     style={selectedOverlayStyle}
-                                >
-                                    <div className="absolute inset-[1px] rounded-lg animate-pulse" style={selectedPulseStyle} />
-                                </div>
+                                />
                             )}
                             {upgradeCard && hasPrimarySlotClick && showDesktopInspectButton && !isEditing && (
                                 <button

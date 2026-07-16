@@ -10,7 +10,7 @@
 - Android OTA 内部游标永久下限为 `6.0.0`；默认发布会自动取 `max(package.json.version, 6.0.0)`，禁止再次降回 `0.6.x` 导致历史客户端无法更新
 - 客户端发现新 OTA 后必须阻塞下载并立即切换；`--no-force-update` 已禁用
 - 已上线问题默认走“修代码 -> 提交 push -> stable OTA -> 回查线上”；除非用户明确要求，不操作连接设备、不走 ADB 安装
-- 更新部署：默认必须走 `node scripts/release/deploy-and-ota.mjs --prepare-version` → 提交 push → 等 CI 镜像完成 → `node scripts/release/deploy-and-ota.mjs`，它包含服务器部署和 Android stable OTA；禁止只跑服务器 `deploy-image.sh update` 后汇报完成
+- 更新部署：默认必须走 `node scripts/release/deploy-and-ota.mjs --prepare-version` → 提交 push → 等 CI 镜像完成 → `node scripts/release/deploy-and-ota.mjs`；脚本默认把镜像输送到服务器后走 `update-local`，并发布 Android stable OTA；禁止只跑服务器 `deploy-image.sh update` 后汇报完成
 - 原生 APK：发版时用 `--bump patch|minor|major` 自动更新版本
 - 游戏包：继续走 `package.json.version + gameId + 时间戳` 的派生版本
 - 日常入口统一走新的包装脚本，避免再手打多条命令和 npm 参数透传坑
@@ -50,8 +50,8 @@ node scripts/release/deploy-and-ota.mjs
 
 说明：
 - “更新部署 / 发线上 / 部署最新”默认指完整更新部署，不是单独服务器更新。
-- 完整更新部署必须包含服务器 `latest` 镜像更新和 Android `stable` OTA 成功发布；任一步没执行或失败，都只能汇报“完整上线未完成”。
-- 如果用户明确说“不发 OTA / 只更新服务器 / 本次不改版本”，才允许加 `--skip-ota` 或 `--allow-current-version`；汇报时必须说明这是用户缩小后的发布范围。
+- 完整更新部署必须包含服务器 `latest` 镜像本地导入并 `update-local`、Android `stable` OTA 成功发布；任一步没执行或失败，都只能汇报“完整上线未完成”。
+- 如果用户明确说“不发 OTA / 只更新服务器 / 本次不改版本”，才允许加 `--skip-ota` 或 `--allow-current-version`；汇报时必须说明这是用户缩小后的发布范围。只有用户明确要求“服务器直接拉镜像”时，才加 `--deploy-mode remote` 使用旧的 GHCR 直拉链路。
 
 预演 OTA，不上传：
 

@@ -36,6 +36,34 @@ abilityExecutorRegistry.register('mogu_blood_infusion', (ctx: SWAbilityContext) 
   return { events };
 });
 
+/** 菌化野兽 - 寄生 */
+abilityExecutorRegistry.register('mogu_parasite', (ctx: SWAbilityContext) => {
+  const events: GameEvent[] = [];
+  const { payload, timestamp } = ctx;
+  const choice = payload.choice as 'consume_charge' | 'take_damage' | undefined;
+  if (choice === 'consume_charge') {
+    if (normalizeUnitBoosts(ctx.sourceUnit.boosts) <= 0) return { events };
+    events.push({
+      type: SW_EVENTS.UNIT_CHARGED,
+      payload: { position: ctx.sourcePosition, delta: -1, sourceAbilityId: 'mogu_parasite' },
+      timestamp,
+    });
+  } else if (choice === 'take_damage') {
+    events.push({
+      type: SW_EVENTS.UNIT_DAMAGED,
+      payload: {
+        position: ctx.sourcePosition,
+        damage: 1,
+        reason: 'mogu_parasite',
+        sourceAbilityId: 'mogu_parasite',
+        sourcePlayerId: ctx.ownerId,
+      },
+      timestamp,
+    });
+  }
+  return { events };
+}, { payloadContract: { required: ['choice'] } });
+
 /** 鲜血萨满 - 传输 */
 abilityExecutorRegistry.register('mogu_transmission', (ctx: SWAbilityContext) => {
   const events: GameEvent[] = [];

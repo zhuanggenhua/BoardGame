@@ -47,7 +47,20 @@ export function extractStateSeatControllers(
     return rawSeatControllers as Record<string, SetupSeatController>;
 }
 
+function isOnlineAiExplicitlyDisabled(setupData: unknown): boolean {
+    return Boolean(
+        setupData
+        && typeof setupData === 'object'
+        && !Array.isArray(setupData)
+        && (setupData as { enableAi?: unknown }).enableAi === false,
+    );
+}
+
 function shouldTrustOnlineAiSeatControllersForWatchdog(setupData: unknown): boolean {
+    if (isOnlineAiExplicitlyDisabled(setupData)) {
+        return false;
+    }
+
     const rawSeatControllers = extractSetupSeatControllers(setupData);
     if (!rawSeatControllers) {
         return false;
@@ -62,6 +75,10 @@ export function resolveRawOnlineAiWatchdogSeatControllers(args: {
     state?: MatchState<unknown>;
     setupData: unknown;
 }): Record<string, SetupSeatController> | undefined {
+    if (isOnlineAiExplicitlyDisabled(args.setupData)) {
+        return undefined;
+    }
+
     const setupSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(args.setupData)
         ? extractSetupSeatControllers(args.setupData)
         : undefined;

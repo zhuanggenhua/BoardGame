@@ -63,6 +63,15 @@ import type {
     PendingDamage,
     TurnPhase,
 } from './domain/types';
+import { evaluateDiceThroneBoardState } from './ai/evaluation';
+import {
+    assessDiceThroneDiceInterferenceResponseGate,
+    type DiceInterferenceResponseGate,
+} from './ai/responseValueGate';
+import {
+    getDiceThroneHeroStrategyProfile,
+    type DiceThroneHeroStrategyProfile,
+} from './ai/profiles';
 
 type DiceThroneState = MatchState<DiceThroneCore>;
 type DiceThroneStrategyTag =
@@ -131,71 +140,6 @@ type DiceChaseContext = {
 type DiceChaseCandidate = {
     plan: DiceTargetPlan;
     chaseScore: number;
-};
-
-type DiceThroneHeroStrategyProfile = {
-    chaseAmbition: number;
-    protectFallback: number;
-    resourceLeverage: number;
-    summary: string;
-};
-
-const DEFAULT_DICETHRONE_HERO_STRATEGY_PROFILE: DiceThroneHeroStrategyProfile = {
-    chaseAmbition: 1,
-    protectFallback: 1,
-    resourceLeverage: 1,
-    summary: '平衡打法',
-};
-
-const DICETHRONE_HERO_STRATEGY_PROFILES: Partial<Record<SelectableCharacterId, DiceThroneHeroStrategyProfile>> = {
-    barbarian: {
-        chaseAmbition: 1.18,
-        protectFallback: 0.88,
-        resourceLeverage: 0.95,
-        summary: '爆发压血',
-    },
-    pyromancer: {
-        chaseAmbition: 1.16,
-        protectFallback: 0.9,
-        resourceLeverage: 1,
-        summary: '高伤压制',
-    },
-    gunslinger: {
-        chaseAmbition: 1.12,
-        protectFallback: 0.95,
-        resourceLeverage: 1.08,
-        summary: '资源转爆发',
-    },
-    samurai: {
-        chaseAmbition: 1.12,
-        protectFallback: 0.96,
-        resourceLeverage: 1.02,
-        summary: '稳定输出',
-    },
-    monk: {
-        chaseAmbition: 0.96,
-        protectFallback: 1.12,
-        resourceLeverage: 1.08,
-        summary: '稳健控场',
-    },
-    paladin: {
-        chaseAmbition: 0.92,
-        protectFallback: 1.18,
-        resourceLeverage: 1.04,
-        summary: '保底防守',
-    },
-    treant: {
-        chaseAmbition: 0.9,
-        protectFallback: 1.2,
-        resourceLeverage: 1.05,
-        summary: '续航防守',
-    },
-    shadow_thief: {
-        chaseAmbition: 1.02,
-        protectFallback: 1,
-        resourceLeverage: 1.18,
-        summary: '资源偷取',
-    },
 };
 
 type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
@@ -618,18 +562,6 @@ const getAbilityProfileFitScore = (
     return fit?.score ?? 0;
 };
 
-const getDiceThroneHeroStrategyProfile = (
-    state: DiceThroneState,
-    playerId: PlayerId,
-): DiceThroneHeroStrategyProfile => {
-    const characterId = state.core.players[playerId]?.characterId;
-    if (!characterId || characterId === 'unselected') {
-        return DEFAULT_DICETHRONE_HERO_STRATEGY_PROFILE;
-    }
-    return DICETHRONE_HERO_STRATEGY_PROFILES[characterId as SelectableCharacterId]
-        ?? DEFAULT_DICETHRONE_HERO_STRATEGY_PROFILE;
-};
-
 const DICE_TOOL_CUSTOM_ACTION_IDS = new Set([
     'modify-die-to-6',
     'modify-die-copy',
@@ -781,8 +713,9 @@ const getBestAvailableDiceTargetPlan = (
     state: DiceThroneState,
     playerId: PlayerId,
     phase: TurnPhase,
+    diceOverride?: DiceThroneCore['dice'],
 ): DiceTargetPlan | null => {
-    const plans = buildDiceTargetPlans(state, playerId, phase).filter((plan) => plan.available);
+    const plans = buildDiceTargetPlans(state, playerId, phase, diceOverride).filter((plan) => plan.available);
     if (plans.length === 0) return null;
 
     return [...plans].sort((left, right) => {
@@ -875,7 +808,7 @@ const buildDiceChaseContext = (
         availableAmbition: availablePlan?.ambitionScore ?? 0,
         remainingRolls,
         diceToolCardCount: countAffordableDiceToolCards(state, playerId, phase),
-        heroStrategy: getDiceThroneHeroStrategyProfile(state, playerId),
+        heroStrategy: getDiceThroneHeroStrategyProfile(state.core, playerId),
     };
 };
 
@@ -2193,9 +2126,20 @@ const scoreResponseDefenseAction = (
 const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLegalAction[] => {
     const actions: AiLegalAction[] = [];
     const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
-    // displayOnly 结算只用于向其他人展示结果，不应给 AI 生成任何可执行动作，
-    // 否则会把纯展示特写误当成真实 blocker，导致 watchdog / 本地 AI 继续围绕它“决策”。
-    if (!settlement || settlement.attackerId !== playerId || settlement.displayOnly === true) return actions;
+    if (!settlement || settlement.attackerId !== playerId) return actions;
+
+    if (settlement.displayOnly === true) {
+        if (settlement.allowDiceModification !== true) return actions;
+
+        appendAction(actions, state, playerId, {
+            actionId: createAiLegalActionId('bonus-die', 'skip'),
+            kind: 'skip-bonus-dice-reroll',
+            label: '确认奖励骰',
+            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+            metadata: withAiActionStrategyTags({}, ['dice-setup']),
+        });
+        return actions;
+    }
 
     for (const die of getPendingBonusSettlementDice(settlement)) {
         appendAction(actions, state, playerId, {
@@ -3680,14 +3624,6 @@ const getOpponentIds = (state: DiceThroneState, playerId: PlayerId): PlayerId[] 
     return getOpponents(state.core, playerId);
 };
 
-const countStatusStacks = (player: DiceThroneState['core']['players'][PlayerId]): number => {
-    return Object.values(player.statusEffects ?? {}).reduce((sum, value) => sum + value, 0);
-};
-
-const countTokenStacks = (player: DiceThroneState['core']['players'][PlayerId]): number => {
-    return Object.values(player.tokens ?? {}).reduce((sum, value) => sum + value, 0);
-};
-
 const getPreferredOpponentTargetId = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -4154,8 +4090,15 @@ const evaluateDiceProjection = (
 ): DiceProjectionSummary => {
     const currentDice = getActiveDice(state.core);
     const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice);
-    const currentPlan = getBestDiceTargetPlan(state, anchorPlayerId, phase);
-    const projectedPlan = getBestDiceTargetPlan(state, anchorPlayerId, phase, projectedDice);
+    const useConfirmedOpponentThreat = targetOpponentDice
+        && state.core.rollConfirmed
+        && state.sys.responseWindow?.current?.windowType === 'afterRollConfirmed';
+    const currentPlan = useConfirmedOpponentThreat
+        ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase)
+        : getBestDiceTargetPlan(state, anchorPlayerId, phase);
+    const projectedPlan = useConfirmedOpponentThreat
+        ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase, projectedDice)
+        : getBestDiceTargetPlan(state, anchorPlayerId, phase, projectedDice);
     const currentPlanScore = currentPlan ? scoreDiceTargetPlan(state, phase, currentPlan) : 0;
     const projectedPlanScore = projectedPlan ? scoreDiceTargetPlan(state, phase, projectedPlan) : 0;
     const rawDelta = getDiceProjectionRawDelta(currentDice, projectedDice, targetOpponentDice);
@@ -4398,6 +4341,31 @@ const estimateDiceRerollDelta = (
     }, 0);
 };
 
+const mergeDiceInterferenceResponseGate = (
+    baseScore: number,
+    baseReason: string,
+    gate: DiceInterferenceResponseGate | null,
+): { score: number; reason: string } => {
+    if (!gate) {
+        return {
+            score: Math.round(baseScore),
+            reason: baseReason,
+        };
+    }
+
+    if (!gate.shouldSpend) {
+        return {
+            score: Math.min(Math.round(baseScore + gate.score), -240),
+            reason: `${gate.reason}；${baseReason}`,
+        };
+    }
+
+    return {
+        score: Math.round(baseScore + gate.score),
+        reason: `${gate.reason}；${baseReason}`,
+    };
+};
+
 const estimateDiceInterferenceCardValue = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -4443,16 +4411,25 @@ const estimateDiceInterferenceCardValue = (
                         reason: '当前没有可产生实际变化的改骰收益，不该白白浪费这张牌',
                     };
                 }
-                return {
-                    score: Math.round(Math.max(delta * 32 + (targetOpponentDice ? 24 : 18), modifyProjection?.score ?? 0)),
-                    reason: modifyProjection && modifyProjection.planDelta > 0
+                return mergeDiceInterferenceResponseGate(
+                    Math.max(delta * 32 + (targetOpponentDice ? 24 : 18), modifyProjection?.score ?? 0),
+                    modifyProjection && modifyProjection.planDelta > 0
                         ? (targetOpponentDice
                             ? `这张改骰牌能把对手从 ${modifyProjection.currentPlanId ?? '当前技能线'} 拉开`
                             : `这张改骰牌能把己方骰面推向 ${modifyProjection.projectedPlanId ?? '更优技能线'}`)
                         : (targetOpponentDice
                             ? `这张改骰牌当前能实际压低对手骰面 ${delta} 点`
                             : `这张改骰牌当前能实际提升己方骰面 ${delta} 点`),
-                };
+                    assessDiceThroneDiceInterferenceResponseGate({
+                        state,
+                        responderId: playerId,
+                        phase,
+                        targetOpponentDice,
+                        projection: modifyProjection,
+                        fallbackDelta: delta,
+                        cardCpCost: card.cpCost,
+                    }),
+                );
             case 'reroll-opponent-die-1':
             case 'reroll-die-2':
             case 'reroll-die-5':
@@ -4462,16 +4439,25 @@ const estimateDiceInterferenceCardValue = (
                         reason: '当前重掷预期没有正收益，不该为了出牌而出牌',
                     };
                 }
-                return {
-                    score: Math.round(Math.max(rerollDelta * 28 + (targetOpponentDice ? 20 : 12), rerollProjection?.score ?? 0)),
-                    reason: rerollProjection && rerollProjection.planDelta > 0
+                return mergeDiceInterferenceResponseGate(
+                    Math.max(rerollDelta * 28 + (targetOpponentDice ? 20 : 12), rerollProjection?.score ?? 0),
+                    rerollProjection && rerollProjection.planDelta > 0
                         ? (targetOpponentDice
                             ? `这张重掷牌有机会打断对手的 ${rerollProjection.currentPlanId ?? '当前技能线'}`
                             : `这张重掷牌更有机会把己方骰面转进 ${rerollProjection.projectedPlanId ?? '更优技能线'}`)
                         : (targetOpponentDice
                             ? `这张重掷牌当前能实际逼对手重掷高点骰，预期收益 ${rerollDelta.toFixed(1)}`
                             : `这张重掷牌当前能实际优化己方低点骰，预期收益 ${rerollDelta.toFixed(1)}`),
-                };
+                    assessDiceThroneDiceInterferenceResponseGate({
+                        state,
+                        responderId: playerId,
+                        phase,
+                        targetOpponentDice,
+                        projection: rerollProjection,
+                        fallbackDelta: rerollDelta,
+                        cardCpCost: card.cpCost,
+                    }),
+                );
             default:
                 break;
         }
@@ -4515,41 +4501,7 @@ const evaluateDiceThronePosition = (
     state: DiceThroneState,
     playerId: PlayerId,
 ): number => {
-    const self = state.core.players[playerId];
-    if (!self) return 0;
-
-    const opponentIds = getOpponentIds(state, playerId);
-    const opponentHealth = opponentIds.reduce((sum, opponentId) => {
-        return sum + (state.core.players[opponentId]?.resources[RESOURCE_IDS.HP] ?? 0);
-    }, 0);
-    const opponentCp = opponentIds.reduce((sum, opponentId) => {
-        return sum + (state.core.players[opponentId]?.resources[RESOURCE_IDS.CP] ?? 0);
-    }, 0);
-    const divisor = Math.max(1, opponentIds.length);
-
-    const ownHp = self.resources[RESOURCE_IDS.HP] ?? 0;
-    const ownCp = self.resources[RESOURCE_IDS.CP] ?? 0;
-    const ownUpgradeCount = Object.keys(self.upgradeCardByAbilityId ?? {}).length;
-    const pendingDamage = state.core.pendingDamage;
-    const pendingAttack = state.core.pendingAttack;
-    const pendingPressure = pendingAttack?.attackerId === playerId
-        ? (pendingAttack.damage ?? 0) + (pendingAttack.attackModifierBonusDamage ?? 0)
-        : 0;
-    const incomingDamage = pendingDamage?.targetPlayerId === playerId
-        ? pendingDamage.currentDamage
-        : 0;
-
-    return (
-        (ownHp - opponentHealth / divisor) * 6
-        + (ownCp - opponentCp / divisor) * 3
-        + self.hand.length * 7
-        + ownUpgradeCount * 18
-        + self.damageShields.length * 12
-        + countTokenStacks(self) * 3
-        - countStatusStacks(self) * 8
-        + pendingPressure * 5
-        - incomingDamage * 6
-    );
+    return evaluateDiceThroneBoardState(state, playerId).total;
 };
 
 const projectDiceThroneAction = (args: {
@@ -4770,10 +4722,8 @@ const defaultLocalPolicy = createLookaheadLocalAiPolicy({
 });
 
 const REMOTE_VISIBLE_MAJOR_ACTION_KINDS = new Set<AiLegalAction['kind']>([
-    'setup-select-character',
     'play-card',
     'play-upgrade-card',
-    'response-play-card',
     'select-ability',
 ]);
 
@@ -4850,7 +4800,6 @@ export const diceThroneAiRuntime: GameAiRuntime = {
         actionKinds: [
             'play-card',
             'play-upgrade-card',
-            'response-play-card',
             'use-passive-ability',
             'select-ability',
             'roll-dice',

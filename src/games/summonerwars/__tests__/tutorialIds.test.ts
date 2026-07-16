@@ -22,6 +22,7 @@ const STATIC_IDS = [
     'sw-end-phase-btn',
     'sw-discard-pile',
     'sw-deck-draw',
+    'sw-life-toggle',
 ];
 
 // 动态生成的 ID（通过正则匹配源码中的条件表达式）

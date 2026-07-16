@@ -14,6 +14,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 > **指定参考未命中必须阻塞**：用户点名 DOM、截图、电子版、规则书、BGG 页面、TTS 存档或某个素材文件时，必须先证明该参考已读取且可用；若文件缺失、为空、不可解析或内容不覆盖目标，必须停在 `blocked/in_progress` 并汇报缺口，不能改用相邻来源继续实施或标完成。若某个参考为空，只能说明“这个参考为空”，还必须继续查同批目录、用户 URL、缓存和可爬取页面；只有全部候选来源都实际查过且失败，才可把素材/布局标为 `blocked`。
 > **素材来源不等于 UI 风格**：TTS/Workshop/BGG/DOM/HTML 只能作为素材、结构、位置或交互参考；视觉风格必须按 `docs/ai-rules/ui-ux.md`、`design-system/styles/` 和每个游戏自己的风格裁定执行。禁止因为使用 TTS 素材或坐标，就把主 UI 做成 TTS 桌面风格。
 > **每个游戏必须有自己的风格**：新增游戏不是把通用牌桌、其它游戏壳层或 Tailwind 面板换名。进入 Board/UI 实现前，必须先写 `design-system/games/<gameId>.md`，并落成可截图验收的独立风格合同：主题气质、主视觉素材、桌面关系、色彩材质、按钮/HUD 语气、框体数量来源、与同仓其它游戏的差异。首屏看不出该游戏自己的主题和素材语法时，UI 必须保持 `in_progress`。
+> **Board/UI 前先走 Design I/O（强制）**：阶段 0 已锁定规则对象、素材和布局真相源后，进入新游戏主 UI、设计稿、布局收敛或 Board 实现前，必须先读 `D:\codex-home\skills\ui-design-pipeline\SKILL.md`，产出本游戏的设计声明、执行契约和 evaluator；它只补“为什么这样设计、按什么验收”，不替代素材 intake、OpenSpec、位图生图批准或真实页面验收。
 > **桌面先闭环，手机后降级**：固定牌桌/棋盘/桌面区位类新游戏默认先完成桌面真实页面和 AI 复看；桌面截图未过，不得切到手机适配宣称推进。手机只能在已通过桌面合同上做响应式降级，不能反向污染桌面构图、增加多层框体或压缩主对象来凑屏幕。用户未验收桌面时，手机阶段只能记录为后续缺口，不能继续实施。
 > **主桌面少框优先**：用户反馈“框多/像框/这么多框”时，默认指半透明面板、黑色矩形容器、重复胶囊壳、占位边框、按钮壳、分区壳、冗余状态框和全局悬浮黑圆等 UI 容器感；不指扑克牌、筹码、棋子等实体素材边界。桌面未过验收前，必须先消除这些框感来源，让游戏实体和桌面素材成为视觉主体，不得转去手机或用 E2E 绿灯收口。
 > **满元素截图是桌面验收基线**：桌面 UI 验收不能只截空桌、开场或结算面板；至少要有一张“玩家已经拿过历史标记/筹码、正在拿新标记/筹码、中央主对象和公共资源同屏”的过程态满元素截图。若游戏没有筹码，替换成该游戏的历史选择、当前选择和中央主对象。用户要求看图时必须实际打开当前截图。
@@ -37,6 +38,7 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 - 总则：`AGENTS.md`
 - 引擎/系统/move/command：`docs/ai-rules/engine-systems.md`
+- UI 设计生成链路：`D:\codex-home\skills\ui-design-pipeline\SKILL.md`
 - UI/布局/组件：`docs/ai-rules/ui-ux.md`
 - React 白屏/渲染错误/Hook 规则：`docs/ai-rules/golden-rules.md`
 - 动画/特效：`docs/ai-rules/animation-effects.md`
@@ -605,6 +607,7 @@ npm run dev                  # 游戏可从大厅创建对局，基础回合可�
 
 最小执行口径：
 - 新 UI 必须先过端到端完成门禁，不能只交局部页面或静态壳。
+- 新游戏主 UI、设计稿或布局收敛进入本阶段前，必须先走 `D:\codex-home\skills\ui-design-pipeline\SKILL.md`，产出 `spec/domain/design/components/craft/template/evaluator` 这组最小设计声明与回流契约；若用户要位图设计稿，再继续走 `boardgame-ui-imagegen`。
 - 设计稿、架构审查、需求对齐三者缺一时，不得进入正式 Board 实现。
 - 设计批准 → 骨架 → 前端实现的顺序不能打乱。
 - Board 组件按已有游戏模式接入状态、教学、音频、事件和选择阶段。

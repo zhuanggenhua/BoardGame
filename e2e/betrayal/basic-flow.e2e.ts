@@ -5,10 +5,12 @@ import {
 } from '../helpers/common';
 import {
     initBetrayalContext,
+    injectCore,
     saveScreenshot,
     waitForBetrayalPageReady,
     warmBetrayalFrontend,
 } from './betrayalTestHelpers';
+import { createStartedFirstScenarioCore } from '../../src/games/betrayal/testing/firstScenarioTestUtils';
 
 const EVIDENCE_DIR = 'evidence/betrayal-basic-flow';
 const CHARACTER_CONFIRM_SCREENSHOT = `${EVIDENCE_DIR}/01-山屋惊魂-基本流程-角色确认前.png`;
@@ -21,6 +23,10 @@ const INVENTORY_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-基本流�
 const USE_ITEM_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-基本流程-使用物品.png`;
 const MOVE_MODE_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-基本流程-移动选目标.png`;
 const MOVE_RESULT_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-基本流程-移动后.png`;
+const MOVE_CONTINUED_SCREENSHOT = `${EVIDENCE_DIR}/07b-山屋惊魂-基本流程-不取消连续移动到大阶梯.png`;
+const DIRECT_MOVE_MODE_SCREENSHOT = `${EVIDENCE_DIR}/07c-山屋惊魂-运行时-移动模式选择门厅.png`;
+const DIRECT_MOVE_AFTER_FIRST_ROOM_SCREENSHOT = `${EVIDENCE_DIR}/07d-山屋惊魂-运行时-移动后仍可继续选择大阶梯.png`;
+const DIRECT_MOVE_CHAIN_SCREENSHOT = `${EVIDENCE_DIR}/07e-山屋惊魂-运行时-不取消连续移动完成.png`;
 const MOBILE_CHARACTER_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-移动端横屏-角色竖向滚动选中与能力提示.jpg`;
 const MOBILE_SCENARIO_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/09a-山屋惊魂-移动端横屏-剧本弹窗入口.png`;
 const MOBILE_SCENARIO_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/09b-山屋惊魂-移动端横屏-书本式剧本阅读首页.png`;
@@ -157,8 +163,47 @@ test.describe('山屋惊魂基本流程', () => {
         await page.getByTestId('betrayal-room-hallway').click();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('移动到门厅');
         await saveScreenshot(page, MOVE_RESULT_SCREENSHOT);
+        await expect(page.getByTestId('betrayal-action-move')).toContainText('取消移动');
+        await expect(page.getByTestId('betrayal-room-grand-staircase')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-grand-staircase')).toBeEnabled();
+        await page.getByTestId('betrayal-room-grand-staircase').click();
+        await expect(page.getByTestId('betrayal-room-occupant-grand-staircase-0')).toBeVisible();
+        await saveScreenshot(page, MOVE_CONTINUED_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-basic-flow', diagnostics }]);
+    });
+
+    test('运行时移动后不点取消也能连续移动到第二个房间', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-continuous-move-without-cancel');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal?seat1=human&seat2=human&seat3=human', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+        await injectCore(page, createStartedFirstScenarioCore(['0', '1', '2']));
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-room-occupant-entrance-hall-0')).toBeVisible();
+
+        await page.getByTestId('betrayal-action-move').click();
+        await expect(page.getByTestId('betrayal-action-move')).toContainText('取消移动');
+        await expect(page.getByTestId('betrayal-room-hallway')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-hallway')).toBeEnabled();
+        await saveScreenshot(page, DIRECT_MOVE_MODE_SCREENSHOT);
+
+        await page.getByTestId('betrayal-room-hallway').click();
+        await expect(page.getByTestId('betrayal-room-occupant-hallway-0')).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-move')).toContainText('取消移动');
+        await expect(page.getByTestId('betrayal-room-grand-staircase')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-grand-staircase')).toBeEnabled();
+        await saveScreenshot(page, DIRECT_MOVE_AFTER_FIRST_ROOM_SCREENSHOT);
+
+        await page.getByTestId('betrayal-room-grand-staircase').click();
+        await expect(page.getByTestId('betrayal-room-occupant-grand-staircase-0')).toBeVisible();
+        await saveScreenshot(page, DIRECT_MOVE_CHAIN_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-continuous-move-without-cancel', diagnostics }]);
     });
 
     test('移动端横屏角色选择包含竖向滚动、选中态和能力提示', async ({ page, context }) => {

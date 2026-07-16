@@ -21,7 +21,7 @@ import { reduceEvent } from './reduce';
  * 需要玩家确认的阶段结束技能（"你可以"/"may" 语义）
  * 这些技能在 onPhaseExit 中只产生通知事件，需要玩家确认后通过 ACTIVATE_ABILITY 执行
  */
-const CONFIRMABLE_PHASE_END_ABILITIES = new Set(['ice_shards', 'feed_beast']);
+const CONFIRMABLE_PHASE_END_ABILITIES = new Set(['ice_shards', 'feed_beast', 'mogu_parasite']);
 
 /**
  * 检查当前玩家是否有可触发的、需要确认的阶段结束技能
@@ -69,7 +69,7 @@ export const PHASE_END_ABILITIES: Record<GamePhase, string[]> = {
   summon: [],
   move: [],
   build: ['ice_shards'],
-  attack: ['feed_beast'],
+  attack: ['feed_beast', 'mogu_parasite'],
   magic: [],
   draw: [],
 };

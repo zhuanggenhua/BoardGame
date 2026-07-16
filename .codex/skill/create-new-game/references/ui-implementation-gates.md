@@ -92,8 +92,11 @@
 ### 5.0 UI 设计规范生成（强制前置）
 
 **强制先读（权威单一来源）**：
+- `D:\codex-home\skills\ui-design-pipeline\SKILL.md`
 - `docs/ai-rules/ui-ux.md`
 - 若要生成 UI 概念图或 imagegen prompt：`.codex/skill/boardgame-ui-imagegen/SKILL.md`
+
+先用 `ui-design-pipeline` 把本游戏 UI 拆成 `spec/domain/design/components/craft/template/evaluator`：它回答设计对象、业务语义、骨架、组件职责、视觉工艺和验收回流。随后再用 `ui-ux-pro-max` / `docs/ai-rules/ui-ux.md` 补具体规则库与项目 overlay；若本轮交付物是位图设计稿，再进入 `boardgame-ui-imagegen` 的四步出图流程。不得跳过这层设计声明，直接用生图 prompt、Tailwind 页面或旧游戏样式顶替新游戏 UI 合同。
 - 若涉及动画/特效：`docs/ai-rules/animation-effects.md`
 - 若出现白屏/渲染错误/函数未定义：`docs/ai-rules/golden-rules.md`
 
@@ -119,7 +122,7 @@
    - 若用户点名 BGG/DOM/运行时截图/结算界面，必须把这些资料拆成两层：`结构合同`（区块位置、对象承载、交互顺序）和 `视觉裁定`（哪些原样继承、哪些按本项目风格重绘、哪些只作参考）。禁止把来源样式整体照搬，也禁止完全忽略来源后做成通用面板。
 2. **执行 ui-ux-pro-max `--design-system`**：根据新游戏的类型、题材、美术风格生成专属设计系统：
    ```bash
-   python3 .codex/skill/ui-ux-pro-max/scripts/search.py "<游戏类型> <题材> <风格关键词>" --design-system --persist -p "<游戏名>" --page "game-board"
+   python D:\codex-home\skills\ui-ux-pro-max\scripts\search.py "<游戏类型> <题材> <风格关键词>" --design-system --persist -p "<游戏名>" --page "game-board"
    ```
 3. **产出保存到 `design-system/games/<gameId>.md`**：作为该游戏的 UI 复刻约束参考，后续 Board/组件开发以此为准。
 4. **移动端适配写入同一份规范（强制）**

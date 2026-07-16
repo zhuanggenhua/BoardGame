@@ -5679,7 +5679,7 @@ test.describe('SummonerWars', () => {
     await hostContext.close();
   });
 
-  test('平板无悬浮能力时点按单位和建筑查看血量', async ({ browser }, testInfo) => {
+  test('全端：眼睛按钮显示全部血量且点单位仍直接选中', async ({ browser }, testInfo) => {
     test.setTimeout(120000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     await clearEvidenceScreenshotsForTest(testInfo);
@@ -5764,27 +5764,13 @@ test.describe('SummonerWars', () => {
     const unitLife = unit.locator('[data-testid^="sw-unit-life-"]');
     const unitCoord = await unit.getAttribute('data-cell-coord');
     if (!unitCoord) {
-      throw new Error('目标单位缺少 data-cell-coord，无法验证首次点按不执行选择');
+      throw new Error('目标单位缺少 data-cell-coord，无法验证点按直接执行选择');
     }
     const unitCell = tabletPage.getByTestId(`sw-cell-${unitCoord}`);
     await expect(unit).toBeVisible({ timeout: 5000 });
     await expect(unitCell).toHaveAttribute('data-selected', 'false');
-    await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
-    await unit.tap();
-    await expect(unitLife).toHaveAttribute('data-tap-visible', 'true');
-    await expect(unitLife).toHaveCSS('opacity', '1');
-    await expect(unitCell).toHaveAttribute('data-selected', 'false');
-
-    await tabletPage.screenshot({
-      path: getEvidenceScreenshotPath(testInfo, '20-平板点按单位-显示血量', {
-        filename: '20-平板点按单位-显示血量.png',
-      }),
-      fullPage: false,
-    });
-
-    await unit.tap();
-    await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
-    await expect(unitCell).toHaveAttribute('data-selected', 'true');
+    await expect(unitLife).toHaveAttribute('data-life-visible', 'false');
+    await expect(unitLife).toHaveCSS('opacity', '0');
 
     const structureTestId = await tabletPage
       .locator('[data-testid^="sw-structure-"][data-cell-coord]:visible')
@@ -5810,41 +5796,91 @@ test.describe('SummonerWars', () => {
     const structure = tabletPage.getByTestId(structureTestId);
     const structureLife = structure.locator('[data-testid^="sw-structure-life-"]');
     await expect(structure).toBeVisible({ timeout: 5000 });
-    await expect(structureLife).toHaveAttribute('data-tap-visible', 'false');
-    await structure.tap();
-    await expect(unitLife).toHaveAttribute('data-tap-visible', 'false');
-    await expect(structureLife).toHaveAttribute('data-tap-visible', 'true');
+    await expect(structureLife).toHaveAttribute('data-life-visible', 'false');
+
+    const lifeToggle = tabletPage.getByTestId('sw-life-toggle');
+    await expect(lifeToggle).toBeVisible({ timeout: 5000 });
+    await expect(lifeToggle).toHaveAttribute('aria-pressed', 'false');
+    const lifeToggleLayout = await tabletPage.evaluate(() => {
+      const scaleBadge = document.querySelector('[data-testid="sw-map-scale"]') as HTMLElement | null;
+      const toggle = document.querySelector('[data-testid="sw-life-toggle"]') as HTMLElement | null;
+      const toRect = (node: HTMLElement | null) => {
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        };
+      };
+      return {
+        scaleRect: toRect(scaleBadge),
+        toggleRect: toRect(toggle),
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+      };
+    });
+    expect(lifeToggleLayout.scaleRect).not.toBeNull();
+    expect(lifeToggleLayout.toggleRect).not.toBeNull();
+    expect(lifeToggleLayout.toggleRect?.left ?? 0).toBeGreaterThanOrEqual((lifeToggleLayout.scaleRect?.right ?? 0) - 1);
+    expect(lifeToggleLayout.toggleRect?.top ?? -1).toBeGreaterThanOrEqual(0);
+    expect(lifeToggleLayout.toggleRect?.right ?? 99999).toBeLessThanOrEqual(lifeToggleLayout.innerWidth + 1);
+    expect(lifeToggleLayout.toggleRect?.bottom ?? 99999).toBeLessThanOrEqual(lifeToggleLayout.innerHeight + 1);
+    expect(lifeToggleLayout.toggleRect?.width ?? 0).toBeGreaterThanOrEqual(44);
+    expect(lifeToggleLayout.toggleRect?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+    await lifeToggle.tap();
+    await expect(lifeToggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(unitLife).toHaveAttribute('data-life-visible', 'true');
+    await expect(unitLife).toHaveCSS('opacity', '1');
+    await expect(structureLife).toHaveAttribute('data-life-visible', 'true');
     await expect(structureLife).toHaveCSS('opacity', '1');
+    const unitLifeMetrics = await unit.evaluate((element) => {
+      const lifeLayer = element.querySelector('[data-testid^="sw-unit-life-"]') as HTMLElement | null;
+      const badge = lifeLayer?.querySelector('span') as HTMLElement | null;
+      const card = lifeLayer?.parentElement as HTMLElement | null;
+      const cardRect = card?.getBoundingClientRect();
+      return {
+        fontSize: badge ? Number.parseFloat(window.getComputedStyle(badge).fontSize) : 0,
+        cardWidth: cardRect?.width ?? 0,
+      };
+    });
+    const structureLifeMetrics = await structure.evaluate((element) => {
+      const lifeLayer = element.querySelector('[data-testid^="sw-structure-life-"]') as HTMLElement | null;
+      const badge = lifeLayer?.querySelector('span') as HTMLElement | null;
+      const card = lifeLayer?.parentElement as HTMLElement | null;
+      const cardRect = card?.getBoundingClientRect();
+      return {
+        fontSize: badge ? Number.parseFloat(window.getComputedStyle(badge).fontSize) : 0,
+        cardWidth: cardRect?.width ?? 0,
+      };
+    });
+    expect(unitLifeMetrics.cardWidth).toBeGreaterThan(0);
+    expect(structureLifeMetrics.cardWidth).toBeGreaterThan(0);
+    expect(unitLifeMetrics.fontSize).toBeGreaterThanOrEqual(14);
+    expect(structureLifeMetrics.fontSize).toBeGreaterThanOrEqual(14);
+    expect(unitLifeMetrics.fontSize).toBeLessThanOrEqual(unitLifeMetrics.cardWidth * 0.36);
+    expect(structureLifeMetrics.fontSize).toBeLessThanOrEqual(structureLifeMetrics.cardWidth * 0.36);
 
     await tabletPage.screenshot({
-      path: getEvidenceScreenshotPath(testInfo, '21-平板点按建筑-显示血量', {
-        filename: '21-平板点按建筑-显示血量.png',
+      path: getEvidenceScreenshotPath(testInfo, '20-平板眼睛按钮-显示全部血量', {
+        filename: '20-平板眼睛按钮-显示全部血量.png',
       }),
       fullPage: false,
     });
 
-    const occupiedCoords = await tabletPage
-      .locator('[data-testid^="sw-unit-"][data-cell-coord], [data-testid^="sw-structure-"][data-cell-coord]')
-      .evaluateAll((elements) => elements
-        .map((element) => element.getAttribute('data-cell-coord'))
-        .filter((coord): coord is string => Boolean(coord)));
-    const emptyCellTestId = await tabletPage
-      .locator('[data-testid^="sw-cell-"][data-cell-coord]')
-      .evaluateAll((elements, occupied) => {
-        const occupiedSet = new Set(occupied);
-        const emptyCell = elements.find((element) => {
-          const coord = element.getAttribute('data-cell-coord');
-          return coord !== null && !occupiedSet.has(coord);
-        });
-        return emptyCell?.getAttribute('data-testid') ?? null;
-      }, occupiedCoords);
-    if (!emptyCellTestId) {
-      throw new Error('默认平板证据场景没有可用于关闭血量提示的空格');
-    }
-    const emptyCell = tabletPage.getByTestId(emptyCellTestId);
-    await expect(emptyCell).toBeVisible({ timeout: 5000 });
-    await emptyCell.tap();
-    await expect(structureLife).toHaveAttribute('data-tap-visible', 'false');
+    await unit.tap();
+    await expect(unitCell).toHaveAttribute('data-selected', 'true');
+    await expect(unitLife).toHaveAttribute('data-life-visible', 'true');
+    await expect(unitLife).toHaveCSS('opacity', '1');
+
+    await lifeToggle.tap();
+    await expect(lifeToggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(unitLife).toHaveAttribute('data-life-visible', 'false');
+    await expect(structureLife).toHaveAttribute('data-life-visible', 'false');
 
     await tabletContext.close();
 
@@ -5864,6 +5900,9 @@ test.describe('SummonerWars', () => {
     const desktopPage = await desktopContext.newPage();
     await openSummonerWarsMobileEvidencePage(desktopPage);
     await waitForSummonerWarsVisualStable(desktopPage);
+    const desktopLifeToggle = desktopPage.getByTestId('sw-life-toggle');
+    await expect(desktopLifeToggle).toBeVisible({ timeout: 5000 });
+    await expect(desktopLifeToggle).toHaveAttribute('aria-pressed', 'false');
 
     const desktopUnit = desktopPage
       .locator('[data-testid^="sw-unit-"][data-cell-coord][data-owner="0"]:visible')
@@ -5875,12 +5914,23 @@ test.describe('SummonerWars', () => {
     }
     const desktopUnitCell = desktopPage.getByTestId(`sw-cell-${desktopUnitCoord}`);
     await expect(desktopUnitCell).toHaveAttribute('data-selected', 'false');
-    await expect(desktopUnitLife).toHaveAttribute('data-tap-visible', 'false');
+    await expect(desktopUnitLife).toHaveAttribute('data-life-visible', 'false');
+    await expect(desktopUnitLife).toHaveCSS('opacity', '0');
+    await desktopLifeToggle.click();
+    await expect(desktopLifeToggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(desktopUnitLife).toHaveAttribute('data-life-visible', 'true');
+    await expect(desktopUnitLife).toHaveCSS('opacity', '1');
+    await desktopUnit.click();
+    await expect(desktopUnitLife).toHaveAttribute('data-life-visible', 'true');
+    await expect(desktopUnitCell).toHaveAttribute('data-selected', 'true');
+    await desktopLifeToggle.click();
+    await expect(desktopLifeToggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(desktopUnitLife).toHaveAttribute('data-life-visible', 'false');
     await expect(desktopUnitLife).toHaveCSS('opacity', '0');
     await desktopUnit.hover();
     await expect(desktopUnitLife).toHaveCSS('opacity', '1');
     await desktopUnit.click();
-    await expect(desktopUnitLife).toHaveAttribute('data-tap-visible', 'false');
+    await expect(desktopUnitLife).toHaveAttribute('data-life-visible', 'false');
     await expect(desktopUnitCell).toHaveAttribute('data-selected', 'true');
     await desktopPage.mouse.move(0, 0);
     await expect(desktopUnitLife).toHaveCSS('opacity', '0');

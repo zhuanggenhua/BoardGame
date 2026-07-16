@@ -67,6 +67,17 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 // 保留 getPhaseDisplayName 的导出以保持向后兼容
 export { getPhaseDisplayName } from './execute/helpers';
 
+function isPhaseEndAbilityResolved(
+  state: MatchState<SummonerWarsCore>,
+  abilityId: string,
+  sourceUnitId: string,
+): boolean {
+  const resolved = (state.sys as {
+    summonerWars?: { phaseEndAbilityResolved?: Record<string, true> };
+  } | undefined)?.summonerWars?.phaseEndAbilityResolved;
+  return resolved?.[`${state.core.turnNumber}:${state.core.phase}:${abilityId}:${sourceUnitId}`] === true;
+}
+
 // ============================================================================
 // 命令执行
 // ============================================================================
@@ -832,6 +843,24 @@ export function executeCommand(
     case SW_COMMANDS.END_PHASE: {
       const currentPhase = core.phase;
       const nextPhase = getNextPhase(currentPhase);
+
+      const attackPhaseParasiteUnits = currentPhase === 'attack'
+        ? getPlayerUnits(core, playerId as PlayerId)
+          .filter(unit => getUnitAbilities(unit, core).includes('mogu_parasite'))
+        : [];
+      const unresolvedChargedParasite = attackPhaseParasiteUnits.find(unit =>
+        normalizeUnitBoosts(unit.boosts) > 0
+        && !isPhaseEndAbilityResolved(state, 'mogu_parasite', unit.instanceId),
+      );
+      if (unresolvedChargedParasite) {
+        events.push(createAbilityTriggeredEvent(
+          'mogu_parasite',
+          unresolvedChargedParasite.instanceId,
+          unresolvedChargedParasite.position,
+          timestamp,
+        ));
+        break;
+      }
       
       if (currentPhase === 'attack' && !core.players[playerId].hasAttackedEnemy) {
         const summoner = getSummoner(core, playerId);
@@ -898,27 +927,19 @@ export function executeCommand(
       }
 
       if (currentPhase === 'attack') {
-        for (const unit of getPlayerUnits(core, playerId as PlayerId)) {
-          if (!getUnitAbilities(unit, core).includes('mogu_parasite')) continue;
-          if (normalizeUnitBoosts(unit.boosts) > 0) {
-            events.push({
-              type: SW_EVENTS.UNIT_CHARGED,
-              payload: { position: unit.position, delta: -1, sourceAbilityId: 'mogu_parasite' },
-              timestamp,
-            });
-          } else {
-            events.push({
-              type: SW_EVENTS.UNIT_DAMAGED,
-              payload: {
-                position: unit.position,
-                damage: 1,
-                reason: 'mogu_parasite',
-                sourceAbilityId: 'mogu_parasite',
-                sourcePlayerId: playerId,
-              },
-              timestamp,
-            });
-          }
+        for (const unit of attackPhaseParasiteUnits) {
+          if (isPhaseEndAbilityResolved(state, 'mogu_parasite', unit.instanceId)) continue;
+          events.push({
+            type: SW_EVENTS.UNIT_DAMAGED,
+            payload: {
+              position: unit.position,
+              damage: 1,
+              reason: 'mogu_parasite',
+              sourceAbilityId: 'mogu_parasite',
+              sourcePlayerId: playerId,
+            },
+            timestamp,
+          });
         }
       }
 

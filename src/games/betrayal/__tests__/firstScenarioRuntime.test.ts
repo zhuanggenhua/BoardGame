@@ -370,6 +370,51 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.knowledge + core.currentExplorer.traits.sanity).toBe(6);
     });
 
+    it('书本使用后会让事件非战斗检定用知识骰数并消费状态', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '小丑房间')!];
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            traits: {
+                ...core.currentExplorer.traits,
+                knowledge: 5,
+                sanity: 2,
+            },
+            inventory: [
+                { id: 'omen-book', name: '书本', kind: 'omen' },
+            ],
+        };
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['omen-book'];
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: 'omen-book' });
+        expect(core.currentExplorer.traits.sanity).toBe(1);
+        expect(core.nextNonCombatTraitReplacement).toMatchObject({
+            playerId: '0',
+            sourceCardId: 'omen-book',
+            replacementTrait: 'knowledge',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-north' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3),
+        );
+
+        expect(core.latestDiscovery?.title).toBe('小丑房间');
+        expect(core.latestDiscovery?.detail).toContain('神志检定 10');
+        expect(core.latestDiscovery?.detail).toContain('无事发生');
+        expect(core.recentRoll?.dice).toHaveLength(5);
+        expect(core.currentExplorer.traits.sanity).toBe(1);
+        expect(core.nextNonCombatTraitReplacement).toBeNull();
+    });
+
     it('一种怪异的感觉按固定 2 骰执行成功和失败分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2954,12 +2999,17 @@ describe('Betrayal first scenario runtime', () => {
             target: 'anyDiscoveredRoom',
             consumeOnUse: true,
         });
-        expect(resolveUseEffect({ id: 'notebook', name: '地图', kind: 'item' })).toMatchObject({
+        expect(resolveUseEffect({ id: 'notebook', name: '笔记本', kind: 'item' })).toMatchObject({
             mode: 'placeExplorer',
             target: 'anyDiscoveredRoom',
             consumeOnUse: true,
         });
-        expect(resolveUseEffect({ id: 'manuscript', name: '地图', kind: 'item' })).toMatchObject({
+        expect(resolveUseEffect({ id: 'journal', name: '日记', kind: 'item' })).toMatchObject({
+            mode: 'placeExplorer',
+            target: 'anyDiscoveredRoom',
+            consumeOnUse: true,
+        });
+        expect(resolveUseEffect({ id: 'manuscript', name: '手稿', kind: 'item' })).toMatchObject({
             mode: 'placeExplorer',
             target: 'anyDiscoveredRoom',
             consumeOnUse: true,
@@ -3734,21 +3784,26 @@ describe('Betrayal first scenario runtime', () => {
         }
     });
 
-    it('地图会埋葬并把当前探索者放置到任一已发现板块', () => {
+    it.each([
+        ['map', '地图'],
+        ['notebook', '笔记本'],
+        ['journal', '日记'],
+        ['manuscript', '手稿'],
+    ] as const)('%s 会埋葬并把当前探索者放置到任一已发现板块', (cardId, cardName) => {
         let core = createStartedFirstScenarioCore();
         core.currentExplorer = {
             ...core.currentExplorer,
             roomId: 'entrance-hall',
             inventory: [
-                { id: 'map', name: '地图', kind: 'item' },
+                { id: cardId, name: cardName, kind: 'item' },
             ],
         };
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.turnStartInventoryCardIds = ['map'];
+        core.turnStartInventoryCardIds = [cardId];
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '0', {
-            cardId: 'map',
+            cardId,
             targetRoomId: 'upper-landing',
         });
 
@@ -3756,29 +3811,34 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.activeRoomId).toBe('upper-landing');
         expect(core.currentExplorer.inventory).toEqual([]);
         expect(core.currentExplorerInventory).toEqual([]);
-        expect(core.usedCardIdsThisTurn).toContain('map');
-        expect(core.activityLog[0]?.text).toContain('埋葬地图');
+        expect(core.usedCardIdsThisTurn).toContain(cardId);
+        expect(core.activityLog[0]?.text).toContain(`埋葬${cardName}`);
     });
 
-    it('地图不能把当前探索者放置到未发现板块', () => {
+    it.each([
+        ['map', '地图'],
+        ['notebook', '笔记本'],
+        ['journal', '日记'],
+        ['manuscript', '手稿'],
+    ] as const)('%s 不能把当前探索者放置到未发现板块', (cardId, cardName) => {
         const core = createStartedFirstScenarioCore();
         core.currentExplorer.inventory = [
-            { id: 'map', name: '地图', kind: 'item' },
+            { id: cardId, name: cardName, kind: 'item' },
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.turnStartInventoryCardIds = ['map'];
+        core.turnStartInventoryCardIds = [cardId];
 
         const validation = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '0', {
-                cardId: 'map',
+                cardId,
                 targetRoomId: 'upper-north',
             }),
         );
 
         expect(validation.valid).toBe(false);
         if (!validation.valid) {
-            expect(validation.error).toContain('地图只能把探索者放置到已发现板块');
+            expect(validation.error).toContain(`${cardName}只能把探索者放置到已发现板块`);
         }
     });
 
@@ -4553,11 +4613,13 @@ describe('Betrayal first scenario runtime', () => {
         }
     });
 
-    it('抽到圣符预兆会记录作祟检定骰面', () => {
+    it.each(BETRAYAL_DISCOVERY_POOLS.possessions.omen.map((omen) => [omen.name, omen] as const))(
+        '抽到预兆「%s」会记录对应作祟检定骰面',
+        (_omenName, omen) => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['omen'];
         core.possessionOrderByKind.omen = [
-            { id: 'holy-symbol', name: '圣符', kind: 'omen' },
+            omen,
         ];
         core.currentExplorer = {
             ...core.currentExplorer,
@@ -4579,15 +4641,16 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.kind).toBe('omen');
-        expect(core.latestDiscovery?.title).toBe('圣符');
+        expect(core.latestDiscovery?.title).toBe(omen.name);
         expect(core.latestDiscovery?.detail).toContain('作祟检定');
         expect(core.recentRoll?.kind).toBe('hauntRoll');
-        expect(core.recentRoll?.sourceTitle).toBe('圣符');
+        expect(core.recentRoll?.sourceTitle).toBe(omen.name);
         expect(core.recentRoll?.rollLabel).toBe('作祟检定');
         expect(core.recentRoll?.dice).toEqual(Array.from({ length: expectedDiceCount }, () => 1));
         expect(core.recentRoll?.latestLabel).toBe('未触发作祟');
         expect(core.phase).toBe('preHaunt');
-    });
+        },
+    );
 
     it('最后一张恶兆会自动触发 haunt', () => {
         const core = createStartedFirstScenarioCore();

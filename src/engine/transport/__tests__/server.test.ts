@@ -3140,6 +3140,50 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(socket.disconnected).toBe(true);
     });
 
+    it('已卸载房间的在途后台命令不应继续写回状态', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-unloaded-inflight', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+        const setStateSpy = vi.spyOn(storage, 'setState');
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-unloaded-inflight');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-unloaded-inflight', '0', 'cred-0');
+
+        const activeMatch = (server as unknown as {
+            activeMatches: Map<string, unknown>;
+        }).activeMatches.get('match-unloaded-inflight');
+        expect(activeMatch).toBeTruthy();
+        expect(server.unloadMatch('match-unloaded-inflight')).toBe(true);
+
+        const success = await (server as unknown as {
+            executeCommandInternal: (
+                match: unknown,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        }).executeCommandInternal(activeMatch, '0', 'TEST_CMD', {});
+
+        expect(success).toBe(false);
+        expect(setStateSpy).not.toHaveBeenCalled();
+    });
+
     it('不应通过 /game socket 暴露 test:injectState', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -5009,6 +5053,130 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.trackerKey).toBe('advance-guard-test');
     });
 
+    it('online AI watchdog 执行多命令 legal-action 时，第一条命令若已交回 human，应停止后续命令', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-watchdog-legal-action-owner-changed', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'main2',
+            }),
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+            ) => Promise<{
+                applied: boolean;
+                resolved: boolean;
+                executedCommandTypes: string[];
+            }>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-legal-action-owner-changed');
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'watchdog-multi-command-owner-changed',
+                source: 'local-ai',
+                action: {
+                    actionId: 'multi-command-owner-changed',
+                    kind: 'advance-phase',
+                    label: '模拟 AI 连续推进',
+                    commands: [
+                        { type: 'ADVANCE_PHASE', payload: {} },
+                        { type: 'ADVANCE_PHASE', payload: {} },
+                    ],
+                },
+            },
+        });
+        const executed: string[] = [];
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType) => {
+            expect(playerID).toBe('1');
+            executed.push(commandType);
+            if (executed.length === 1) {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        eventStream: { nextId: 2 },
+                    },
+                };
+            }
+            return true;
+        });
+
+        try {
+            const result = await serverInternal.tryRecoverOnlineAiWithLegalAction(
+                match,
+                {
+                    playerId: '1',
+                    reason: 'active-turn',
+                    legalActionOnly: true,
+                    fingerprintHint: 'active-turn-legal-only:1:main2:multi',
+                    resolution: {
+                        playerId: '1',
+                        attemptKey: 'force-end-turn:1:active-turn-legal-only:1:main2:multi',
+                        source: 'local-ai',
+                        action: {
+                            actionId: 'force-end-turn:active-turn-legal-only:1:main2:multi',
+                            kind: 'force-end-turn',
+                            label: '服务端代 AI 收口',
+                            commands: [],
+                        },
+                    },
+                },
+                {
+                    key: 'legal-action-owner-changed',
+                    firstSeenAt: Date.now(),
+                    autoSubmittedAt: Date.now(),
+                    lastReportedFailureReason: null,
+                    failureCount: 0,
+                },
+                {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai' },
+                },
+            );
+
+            expect(result.applied).toBe(true);
+            expect(result.resolved).toBe(true);
+            expect(result.executedCommandTypes).toEqual(['ADVANCE_PHASE']);
+            expect(executed).toEqual(['ADVANCE_PHASE']);
+            expect(match.state.core.activePlayerId).toBe('0');
+        } finally {
+            resolutionSpy.mockRestore();
+            executeSpy.mockRestore();
+        }
+    });
+
     it('online AI watchdog 不得在当前轮到 human 时误触发恢复', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -5470,6 +5638,61 @@ describe('GameTransportServer（离座与重连）', () => {
         const actionLog = JSON.parse(payload?.actionLog ?? '{}');
         expect(actionLog.blockerFingerprint).toContain('4|main2|1|0');
         expect(actionLog.trackerKey).toBe(payload?.trackerKey);
+    });
+
+    it('online AI watchdog 在 enableAi=false 时不得根据残留 seatControllers 推进真人座位', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-ai-disabled-stale-seat-controllers', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'main2',
+            }),
+            metadata: {
+                ...createOnlineAiRecoveryMetadata(),
+                setupData: {
+                    enableAi: false,
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'local-ai' },
+                    },
+                },
+            },
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-ai-disabled-stale-seat-controllers');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockResolvedValue(true);
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(match.state.core.activePlayerId).toBe('1');
+        expect(match.state.sys.phase).toBe('main2');
+        expect(feedbackReporter).not.toHaveBeenCalled();
     });
 
     it('online AI watchdog 在 human 当前响应窗口中不应误判为 AI 卡死', async () => {
@@ -24733,7 +24956,7 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
-    it('online AI watchdog 默认上报链路不应把成功恢复类事件写入反馈库', async () => {
+    it('online AI watchdog 默认上报链路应把成功恢复类事件写入反馈库', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
 
@@ -24761,25 +24984,61 @@ describe('GameTransportServer（离座与重连）', () => {
                 progressMarker: string;
                 stateSnapshot: string;
                 actionLog?: string;
+                status?: 'open' | 'resolved';
             }) => Promise<void>;
-            defaultOnlineAiFeedbackReporter: (payload: unknown) => Promise<void>;
+            postInternalSystemFeedback: (body: Record<string, unknown>) => Promise<void>;
         };
 
-        const defaultReporterSpy = vi.spyOn(serverInternal, 'defaultOnlineAiFeedbackReporter').mockResolvedValue();
+        const postSpy = vi.spyOn(serverInternal, 'postInternalSystemFeedback').mockResolvedValue();
 
-        await serverInternal.reportOnlineAiRecoveryFeedback({
-            matchId: 'match-watchdog-suppress-success',
-            gameId: 'dicethrone',
-            playerId: '1',
-            incidentKind: 'legal-action-recovered',
-            severity: 'medium',
-            reason: 'active-turn:legal-action:roll-dice:roll:dice',
-            trackerKey: '1:active-turn:0|defensiveRoll|42|0|||||||1',
-            progressMarker: 'marker-before-1',
-            stateSnapshot: '{"matchId":"match-watchdog-suppress-success"}',
-        });
+        const successEvents = [
+            {
+                incidentKind: 'legal-action-recovered' as const,
+                reason: 'active-turn:legal-action:roll-dice:roll:dice',
+                trackerKey: '1:active-turn:0|defensiveRoll|42|0|||||||1',
+                progressMarker: 'marker-before-1',
+            },
+            {
+                incidentKind: 'force-end-turn-success' as const,
+                reason: 'active-turn:follow-up-advance:steps=1',
+                trackerKey: '1:active-turn:0|defensiveRoll|42|0|||||||2',
+                progressMarker: 'marker-before-2',
+            },
+        ];
 
-        expect(defaultReporterSpy).not.toHaveBeenCalled();
+        for (const event of successEvents) {
+            await serverInternal.reportOnlineAiRecoveryFeedback({
+                matchId: 'match-watchdog-report-success',
+                gameId: 'dicethrone',
+                playerId: '1',
+                incidentKind: event.incidentKind,
+                severity: 'medium',
+                status: 'resolved',
+                reason: event.reason,
+                trackerKey: event.trackerKey,
+                progressMarker: event.progressMarker,
+                stateSnapshot: '{"matchId":"match-watchdog-report-success"}',
+            });
+        }
+
+        expect(postSpy).toHaveBeenCalledTimes(2);
+        for (const event of successEvents) {
+            expect(postSpy).toHaveBeenCalledWith(expect.objectContaining({
+                content: `[system][online-ai-watchdog] ${event.incidentKind} ${event.reason}`,
+                source: 'online-ai-watchdog',
+                autoReportKind: event.incidentKind,
+                status: 'resolved',
+                incidentKey: event.trackerKey,
+                gameName: 'dicethrone',
+                clientContext: expect.objectContaining({
+                    route: 'server-watchdog',
+                    mode: 'online',
+                    matchId: 'match-watchdog-report-success',
+                    playerId: '1',
+                    gameId: 'dicethrone',
+                }),
+            }));
+        }
     });
 
     it('online AI watchdog 默认系统反馈应附带版本定位字段', async () => {

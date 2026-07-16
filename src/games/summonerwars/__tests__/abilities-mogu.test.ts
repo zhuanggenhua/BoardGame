@@ -8,6 +8,7 @@ import type { BoardUnit, CellCoord, EventCard, PlayerId, SummonerWarsCore, UnitC
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import { createInitializedCore, generateInstanceId, placeTestUnit } from './test-helpers';
 import { getEffectiveStrengthValue } from '../domain/abilityResolver';
+import { buildUsageKey } from '../domain/utils';
 import { CHAMPION_UNITS_MOGU, COMMON_UNITS_MOGU, EVENT_CARDS_MOGU } from '../config/factions/mogu';
 
 function testRandom(): RandomFn {
@@ -238,7 +239,7 @@ describe('莫古 - 疫病体与菌化野兽', () => {
     expect(newState.players['0'].discard.find(c => c.id === 'mogu-spore-plague-body-discard')).toBeUndefined();
   });
 
-  it('菌化野兽攻击阶段结束时优先消耗1充能，没有充能才自伤', () => {
+  it('菌化野兽攻击阶段结束时没有充能才自动自伤，有充能时不得自动替玩家选择', () => {
     const chargedState = createState();
     chargedState.phase = 'attack';
     chargedState.players['0'].hasAttackedEnemy = true;
@@ -247,8 +248,11 @@ describe('莫古 - 疫病体与菌化野兽', () => {
     });
 
     const chargedResult = executeAndReduce(chargedState, SW_COMMANDS.END_PHASE, {});
-    expect(chargedResult.newState.board[charged.position.row][charged.position.col].unit?.boosts).toBe(0);
+    expect(chargedResult.events.some(e => e.type === SW_EVENTS.ABILITY_TRIGGERED
+      && (e.payload as { abilityId?: string }).abilityId === 'mogu_parasite')).toBe(true);
+    expect(chargedResult.newState.board[charged.position.row][charged.position.col].unit?.boosts).toBe(1);
     expect(chargedResult.newState.board[charged.position.row][charged.position.col].unit?.damage).toBe(0);
+    expect(chargedResult.newState.phase).toBe('attack');
 
     const emptyState = createState();
     emptyState.phase = 'attack';
@@ -467,6 +471,19 @@ describe('莫古 - 主动技能与事件牌', () => {
 
     expect(newState.board[ally.position.row][ally.position.col].unit?.boosts).toBe(1);
     expect(newState.board[ally.position.row][ally.position.col].unit?.damage).toBe(1);
+    expect(newState.abilityUsageCount[buildUsageKey(mage.instanceId, 'mogu_blood_infusion')]).toBe(1);
+
+    const secondUse = SummonerWarsDomain.validate({ core: newState } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      payload: {
+        abilityId: 'mogu_blood_infusion',
+        sourceUnitId: mage.instanceId,
+        targetPosition: ally.position,
+      },
+      playerId: '0',
+    });
+    expect(secondUse.valid).toBe(false);
+    expect(secondUse.error).toBe('每回合只能使用一次');
   });
 
   it('鲜血萨满可以在2格内转移充能', () => {
@@ -716,6 +733,32 @@ describe('莫古 - 主动技能与事件牌', () => {
     expect(first.newState.players['0'].hand.find(c => c.id === 'mogu-release-spores')).toBeUndefined();
     expect(second.events).toHaveLength(0);
     expect(second.newState.board[5][4].unit).toBeUndefined();
+  });
+
+  it('释放菌袍应忽略无效落位与重复卡牌后继续把两张疫病体放到两个合法召唤师相邻空格', () => {
+    const state = createState();
+    const summoner = place(state, { row: 4, col: 4 }, unitCard('mogu-summoner-invalid-target', '库鞭克', [], {
+      unitClass: 'summoner',
+      life: 7,
+    }));
+    const bodyA = unitCard('mogu-spore-plague-body-invalid-a', '菌袍疫病体');
+    const bodyB = unitCard('mogu-spore-plague-body-invalid-b', '菌袍疫病体');
+    state.players['0'].discard.push(bodyA, bodyB);
+    state.players['0'].hand.push(eventCard('mogu-release-spores', '释放菌袍'));
+
+    const { newState } = executeAndReduce(state, SW_COMMANDS.PLAY_EVENT, {
+      cardId: 'mogu-release-spores',
+      cardIds: [bodyA.id, bodyA.id, bodyB.id],
+      targets: [
+        summoner.position,
+        { row: summoner.position.row - 1, col: summoner.position.col },
+        { row: summoner.position.row + 1, col: summoner.position.col },
+      ],
+    });
+
+    expect(newState.board[3][4].unit?.card.id).toBe(bodyA.id);
+    expect(newState.board[5][4].unit?.card.id).toBe(bodyB.id);
+    expect(newState.players['0'].discard.map(c => c.id)).toEqual(['mogu-release-spores']);
   });
 
   it('菌袍疫病体爆裂和菌化变异同一阶段只替换一次，并清理弃牌堆来源', () => {

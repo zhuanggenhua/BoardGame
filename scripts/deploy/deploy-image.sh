@@ -6,8 +6,8 @@ set -euo pipefail
 # 用法：
 #   首次部署：  bash deploy-image.sh
 #   首次部署指定 tag：bash deploy-image.sh deploy v1.2.3
-#   更新版本：  bash deploy-image.sh update [tag]
-#   使用本地已导入镜像更新：bash deploy-image.sh update-local [tag]
+#   更新版本（服务器直拉 GHCR 旧链路）：bash deploy-image.sh update [tag]
+#   使用本地已导入镜像更新（默认发布链路）：bash deploy-image.sh update-local [tag]
 #   回滚版本：  bash deploy-image.sh rollback <tag>
 #   回滚到上次部署：bash deploy-image.sh rollback-last
 #   配置镜像源：bash deploy-image.sh configure-mirror
@@ -15,13 +15,14 @@ set -euo pipefail
 #   查看状态：  bash deploy-image.sh status
 #   查看日志：  bash deploy-image.sh logs [service]
 #
-# 一键远程执行（服务器上无需克隆仓库）：
+# 日常生产更新默认从本机/CI 执行 scripts/deploy/stream-images-to-server.mjs --deploy，
+# 让服务器本地导入镜像后走 update-local。以下远程执行仅用于首次部署或显式直拉 GHCR：
 #   curl -fsSL https://raw.githubusercontent.com/zhuanggenhua/BoardGame/main/scripts/deploy/deploy-image.sh -o deploy-image.sh
 #   bash deploy-image.sh update
 #
 # 环境变量（可选，用于非交互环境）：
 #   JWT_SECRET=xxx bash deploy-image.sh
-#   DEPLOY_TOTAL_TIMEOUT_SECONDS=1800 bash deploy-image.sh update
+#   DEPLOY_TOTAL_TIMEOUT_SECONDS=1800 bash deploy-image.sh update-local
 #   DEPLOY_IMAGE_PULL_TIMEOUT_SECONDS=1800 bash deploy-image.sh update
 #
 # 架构：Cloudflare CDN (HTTPS) → 服务器 80 端口 → Docker web 容器 (NestJS monolith) → 内部 game-server

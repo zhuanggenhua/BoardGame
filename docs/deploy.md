@@ -4,7 +4,7 @@
 
 ## 部署方式
 
-使用 **镜像部署**：CI 预构建镜像 → 推送到镜像仓库 → 服务器拉取启动（< 1 分钟）
+使用 **镜像部署**：CI 预构建镜像 → 推送到镜像仓库 → 本机/CI 输送镜像到服务器 → 服务器本地导入并启动
 
 ## 入口地址
 
@@ -17,7 +17,7 @@
 
 ### 优势
 
-- **部署快**：拉取预构建镜像，无需服务器编译
+- **部署快**：直接使用预构建镜像，无需服务器编译；默认通过镜像输送避开生产机直拉 GHCR 慢的问题
 - **一致性高**：镜像已封装所有依赖，避免环境漂移
 - **回滚简单**：切换镜像 tag 即可
 - **服务器压力小**：无需 npm ci / build
@@ -46,14 +46,17 @@ bash deploy-image.sh
 ### 更新部署
 
 ```bash
-bash deploy-image.sh update
-bash deploy-image.sh update v1.2.3  # 部署指定 tag
+# 完整更新部署（默认 latest + Android stable OTA）
+BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait
+
+# 仅服务器部署指定 tag（明确指定 / 排障）
+node scripts/deploy/stream-images-to-server.mjs --tag v1.2.3 --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
 ```
 
 **强制规则**：生产环境更新必须**等待 CI 镜像构建完成**后再执行（对应 commit/tag 的镜像已推送到仓库）。  
-未确认 CI 构建完成时禁止执行 `update`，避免拉取到旧镜像或半成品镜像。
+未确认 CI 构建完成时禁止执行镜像输送、`update-local` 或 remote `update`，避免部署到旧镜像或半成品镜像。
 
-**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，默认不是单独更新服务器，而是按“版本自增 -> 提交 push -> 等 CI -> 服务器 latest -> Android stable OTA”执行。产品版本号 `package.json.version` 与 Android `androidVersionCode` 必须同步自增；只有用户明确说“本次不改版本”时，才允许跳过。
+**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，默认不是单独更新服务器，也不是让生产机直拉 GHCR，而是按“版本自增 -> 提交 push -> 等 CI -> 镜像输送到服务器并 `update-local` -> Android stable OTA”执行。产品版本号 `package.json.version` 与 Android `androidVersionCode` 必须同步自增；只有用户明确说“本次不改版本”时，才允许跳过。
 
 ```bash
 # 1) 先准备版本，默认 patch；也可显式传 --bump minor / --bump major
@@ -61,7 +64,7 @@ node scripts/release/deploy-and-ota.mjs --prepare-version
 
 # 2) 提交并 push package.json / package-lock.json，等待 CI 镜像构建完成
 
-# 3) 部署 latest 并发布 stable OTA
+# 3) 输送 latest 镜像到服务器、执行 update-local，并发布 stable OTA
 BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait
 ```
 
@@ -71,11 +74,19 @@ PowerShell 下第 3 步写法：
 $env:BG_DEPLOY_VERSION_PREPARED='1'; node scripts/release/deploy-and-ota.mjs --skip-wait
 ```
 
-如果用户明确说“只更新服务器”或“这次不发 OTA”，才允许缩小为只执行 `bash deploy-image.sh update`。如果用户明确说“这次不改版本”，执行统一入口时必须显式加 `--allow-current-version`，避免误把旧产品版本再次发布成最新。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
+如果用户明确说“只更新服务器”或“这次不发 OTA”，优先仍使用统一入口并加 `--skip-ota`，让脚本继续走镜像输送 + `update-local`。如果用户明确说“服务器直接拉镜像 / 不走镜像输送”，才允许加 `--deploy-mode remote` 或在服务器执行 `bash deploy-image.sh update`。如果用户明确说“这次不改版本”，执行统一入口时必须显式加 `--allow-current-version`，避免误把旧产品版本再次发布成最新。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
 
-**镜像拉取等待口径（强制）**：`docker pull` / `deploy-image.sh update` 正在下载镜像层时，只要能看到层进度、已下载字节数或阶段变化，就默认继续等待，不得把“下载慢”直接判定为失败并改走补救链路。只有满足以下任一条件，才允许进入 fallback：连续多次超时且同一层无新增进度；明确报网络/认证/磁盘错误；服务器或本机/CI 对同一镜像均无法完成拉取；或用户明确要求停止等待。切换 fallback 时，必须说明这是“镜像分发补救”，不是正式镜像拉取链路已成功。
+**默认镜像分发口径（强制）**：`deploy-and-ota` 默认调用 `scripts/deploy/stream-images-to-server.mjs --deploy`，在本机或 CI 先拉取 GHCR 镜像、导出 tar、上传到生产机、服务器本地 `docker image load` 后执行 `bash scripts/deploy/deploy-image.sh update-local <tag>`。这样保留镜像构建与部署门禁，同时避开生产机直连 GHCR 大层下载不稳定的问题。
 
-**正式 fallback（当服务器直拉 GHCR 大层失败时）**：先在网络更好的机器或 CI 上执行：
+如需临时恢复旧链路，可显式执行：
+
+```bash
+BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --deploy-mode remote --skip-wait
+```
+
+**服务器直拉等待口径（仅 `--deploy-mode remote` / 手工 `deploy-image.sh update` 适用）**：`docker pull` / `deploy-image.sh update` 正在下载镜像层时，只要能看到层进度、已下载字节数或阶段变化，就默认继续等待，不得把“下载慢”直接判定为失败并改走补救链路。只有满足以下任一条件，才允许进入 fallback：连续多次超时且同一层无新增进度；明确报网络/认证/磁盘错误；服务器或本机/CI 对同一镜像均无法完成拉取；或用户明确要求停止等待。切换 fallback 时，必须说明这是“镜像分发补救”，不是正式镜像拉取链路已成功。
+
+**正式镜像输送命令**：
 
 ```bash
 node scripts/deploy/stream-images-to-server.mjs --tag <tag> --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
@@ -142,8 +153,10 @@ BG_DEPLOY_RUNNER_TOKEN=安装脚本输出的token
 然后按正常部署链路更新 `boardgame-web` 容器，让环境变量进入容器：
 
 ```bash
-bash scripts/deploy/deploy-image.sh update
+node scripts/deploy/stream-images-to-server.mjs --tag latest --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
 ```
+
+只有明确选择服务器直拉 GHCR 的旧链路时，才在生产机执行 `bash scripts/deploy/deploy-image.sh update`。
 
 验证：
 
@@ -163,14 +176,15 @@ curl http://127.0.0.1:18761/health
 ### 固定版本部署（仅明确指定 / 回滚排障）
 
 ```bash
-bash deploy-image.sh deploy v1.2.3  # 首次部署指定 tag
-bash deploy-image.sh update v1.2.3  # 更新到指定 tag
+BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --deploy-tag v1.2.3 --skip-wait --skip-ota
+node scripts/deploy/stream-images-to-server.mjs --tag v1.2.3 --host admin@8.148.71.102 --remote-dir /home/admin/BoardGame --deploy
 ```
 
 - 不传 tag 时默认部署 `latest`
 - 传入 tag 时，脚本会统一把 `game-server` 和 `web` 切到同一版本，便于排障与回滚
 - 这些 tag 来自 GitHub Actions 发布的镜像标签（例如推送 Git tag `v1.2.3` 后生成对应镜像）
 - 固定版本部署只适用于“用户明确指定版本”或“已验证精确 tag 存在”的场景；不得把短 commit、`sha-xxxxxx`、GitHub Actions run number 等推测值当作可部署 tag。
+- 只有明确选择服务器直拉 GHCR 的旧链路时，才在生产机执行 `bash deploy-image.sh update v1.2.3`。
 
 ### CI 配置说明
 
@@ -182,14 +196,13 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
   - `ghcr.io/zhuanggenhua/boardgame-game:latest`
   - `ghcr.io/zhuanggenhua/boardgame-web:latest`
 - **版本标签**：`latest`（main 分支）、`v1.2.3`（tag）、`sha-xxxxxx`（commit）
-- **部署注意**：上面的版本标签以 CI 实际输出和 GHCR 实际存在为准；日常生产“最新”部署不需要也不应指定 commit tag，直接使用 `update` 拉取 `latest`。
+- **部署注意**：上面的版本标签以 CI 实际输出和 GHCR 实际存在为准；日常生产“最新”部署不需要也不应指定 commit tag，默认通过 `deploy-and-ota` 输送 `latest` 镜像并在服务器执行 `update-local`。
 
 > **当前自动部署脚本的真实入口**：`boardgame-web` 是基于 `docker/Dockerfile.monolith` 构建的单体镜像，负责静态资源、`/auth`、`/notifications`、`/social-socket` 等 API / WebSocket 入口；`deploy-image.sh` 不会部署独立的 `auth-server`，也不会使用 `docker/Dockerfile.web` / `docker/nginx.conf` 作为生产主链路。
 >
-> **当服务器直拉 GHCR 不稳定时**：正式 fallback 不是“在服务器本地重建一遍前端”，而是先用 `node scripts/deploy/stream-images-to-server.mjs --tag <tag> --deploy` 把镜像送到生产机，再在服务器上走 `update-local`。
+> **默认镜像分发方式**：正式链路不是“在服务器本地重建一遍前端”，也不是默认让生产机直拉 GHCR，而是先用 `node scripts/deploy/stream-images-to-server.mjs --tag <tag> --deploy` 把镜像送到生产机，再在服务器上走 `update-local`。
 
-> **注意**：镜像构建由 GitHub Actions 自动完成，服务器脚本只负责拉取镜像。
-> 私有镜像需要登录（脚本会提示是否登录 ghcr.io）。
+> **注意**：镜像构建由 GitHub Actions 自动完成；发布编排负责输送镜像，服务器脚本负责本地导入后的容器切换、smoke 与回退。私有镜像登录只适用于显式 remote 直拉链路。
 
 
 
@@ -223,8 +236,10 @@ curl -I http://127.0.0.1/
 JWT_SECRET=your-secret \                                  # JWT 密钥（不填则自动生成）
 WEB_ORIGINS=https://your-domain.com \                    # CORS 白名单
 SKIP_MIRROR=1 \                                          # 跳过镜像源检查提示
-bash deploy-image.sh update
+bash deploy-image.sh update-local
 ```
+
+上例只适用于目标镜像已经在服务器本地导入的场景；显式选择服务器直拉 GHCR 时才改用 `bash deploy-image.sh update`。
 
 ### 镜像源说明（宿主机运维）
 
@@ -385,9 +400,9 @@ GitHub Actions 自动化：
 
 ## 部署后注意事项
 
-> **生产环境更新必须使用部署脚本**：`bash scripts/deploy/deploy-image.sh update [tag]`
+> **生产环境更新必须使用统一发布入口或部署脚本**：默认使用 `node scripts/release/deploy-and-ota.mjs` / `node scripts/deploy/stream-images-to-server.mjs --deploy` 输送镜像，再由服务器执行 `bash scripts/deploy/deploy-image.sh update-local [tag]`。
 >
-> 如果目标镜像已经通过正式 fallback 预先导入到服务器本地，可改用：`bash scripts/deploy/deploy-image.sh update-local [tag]`
+> 只有用户明确要求服务器直拉 GHCR，才使用：`bash scripts/deploy/deploy-image.sh update [tag]` 或 `node scripts/release/deploy-and-ota.mjs --deploy-mode remote`
 >
 > 禁止在生产服务器上直接运行 `docker compose up -d`，因为默认使用 `docker-compose.yml` 而非 `docker-compose.prod.yml`，两者的端口映射和环境变量配置不同。
 >
@@ -407,7 +422,7 @@ GitHub Actions 自动化：
   - 镜像部署：`docker-compose.prod.yml`（服务器不需要源码，推荐生产环境）
   - 本地开发：`docker-compose.yml`（同样使用 ghcr 预构建镜像）
   - 对外仅暴露 `web`（单体），`game-server` 仅容器网络内通信
-  - **注意**：两个 compose 文件都使用 `image:` 拉取 ghcr 镜像，不再本地 build。生产环境必须使用 `deploy-image.sh update [tag]` 或 `deploy-image.sh update-local [tag]`（基于 `docker-compose.prod.yml`），禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
+  - **注意**：两个 compose 文件都使用 `image:` 引用 ghcr 镜像，不再本地 build。生产环境默认通过 `deploy-and-ota` / `stream-images-to-server --deploy` 输送镜像并执行 `deploy-image.sh update-local [tag]`（基于 `docker-compose.prod.yml`）；只有明确选择服务器直拉 GHCR 时才用 `deploy-image.sh update [tag]`。禁止直接 `docker compose up -d`（会使用默认的 `docker-compose.yml`，配置可能不同）
   - `web` 容器通过 `BG_DEPLOY_RUNNER_URL` 访问宿主机上的 `boardgame-deploy-runner`；runner 不属于同一个 compose 项目，避免回滚时把执行器一起重启
 
 ### 训练数据持久化合同
@@ -507,7 +522,7 @@ Android OTA 产物也走同一个服务器资源主源，但前缀独立：
 
 1. 使用 `node scripts/release/deploy-and-ota.mjs --prepare-version` 让产品版本号主动自增；默认 patch，会同步更新 `package.json.version`、`package-lock.json` 和 Android `androidVersionCode`。
 2. 提交并 push 版本改动，等待常规 CI 镜像构建完成，确保 `latest` 镜像已经包含这次版本号。
-3. 执行 `BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait`，服务器部署 `latest`，并发布同一产品版本基线的 Android `stable` OTA。
+3. 执行 `BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait`，把 `latest` 镜像输送到服务器并执行 `update-local`，同时发布同一产品版本基线的 Android `stable` OTA。
 4. 发布脚本生成或接收单调递增的 OTA 内部游标；桥接场景可临时使用 `6.0.0-ota-...`，但本次发布的产品基线仍必须来自已提交的 `package.json.version`。
 
 ## UGC 资源前缀预留（未实现）

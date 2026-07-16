@@ -789,6 +789,13 @@ const canPlayRollCardOutsideRollPhaseWithDiceResult = (
     )
 );
 
+const getDiceResultCountForCardPlay = (state: DiceThroneCore): number => {
+    if (state.pendingBonusDiceSettlement?.allowDiceModification === true) {
+        return getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length;
+    }
+    return state.dice.length;
+};
+
 const matchesPendingDamagePlayCondition = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -984,22 +991,21 @@ const checkStandardCardPlay = (
             }
         }
 
-        if (cond.requireDiceExists && state.dice.length === 0) {
+        const diceResultCount = getDiceResultCountForCardPlay(state);
+
+        if (cond.requireDiceExists && diceResultCount === 0) {
             if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
                 return { ok: false, reason: 'requireDiceExists' };
             }
         }
 
-        if (cond.requireMinDiceCount && state.dice.length < cond.requireMinDiceCount) {
-            const diceResultCount = state.pendingBonusDiceSettlement?.allowDiceModification === true
-                ? getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length
-                : state.dice.length;
+        if (cond.requireMinDiceCount) {
             if (diceResultCount < cond.requireMinDiceCount) {
                 return { ok: false, reason: 'requireMinDiceCount' };
             }
         }
 
-        if (cond.requireOpponentDiceExists && state.dice.length === 0) {
+        if (cond.requireOpponentDiceExists && diceResultCount === 0) {
             if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
                 return { ok: false, reason: 'requireOpponentDiceExists' };
             }

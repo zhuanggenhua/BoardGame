@@ -11,6 +11,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { buildAiDecisionContext, registerRemoteAiProvider, resolveNextLocalAiAction, withAiActionStrategyTags } from '../../../engine/ai';
+import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
 import { DiceThroneDomain } from '../domain';
 import { buildDiceThroneAiLegalActions, diceThroneAiRuntime } from '../ai';
 import { engineConfig } from '../game';
@@ -82,18 +83,27 @@ function tryCmd(
 // ============================================================================
 
 describe('TOGGLE_DIE_LOCK 锁定/解锁骰子', () => {
-    it('本地 AI 可见步骤白名单应保留技能选择与被动发动，但不拖慢锁骰', () => {
+    it('本地 AI 可见步骤白名单应保留技能选择与被动发动，但不拖慢锁骰和响应牌', () => {
         const visibleStepConfig = diceThroneAiRuntime.localVisibleStepDelayConfig;
         expect(visibleStepConfig?.mode).toBe('whitelist');
         expect(visibleStepConfig?.actionKinds).toEqual(expect.arrayContaining([
             'play-card',
-            'response-play-card',
             'use-passive-ability',
             'select-ability',
             'roll-dice',
             'bonus-die-reroll',
         ]));
         expect(visibleStepConfig?.actionKinds).not.toContain('toggle-die-lock');
+        expect(visibleStepConfig?.actionKinds).not.toContain('response-play-card');
+        expect(resolveLocalAiActionVisibility({
+            kind: 'play-card',
+            commands: [{ type: 'PLAY_CARD', payload: { cardId: 'card-samesies' } }],
+        }, diceThroneAiRuntime)).toBe('visible');
+        expect(resolveLocalAiActionVisibility({
+            kind: 'response-play-card',
+            commands: [{ type: 'PLAY_CARD', payload: { cardId: 'card-next-time' } }],
+            metadata: { cardId: 'card-next-time' },
+        }, diceThroneAiRuntime)).toBe('hidden');
     });
 
     it('GTR: 掷骰后锁定骰子，再次掷骰时锁定骰子不变', () => {
@@ -2695,6 +2705,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.metadata).toMatchObject({
             cardId: 'card-next-time',
         });
+        expect(resolveLocalAiActionVisibility(resolution!.action, diceThroneAiRuntime)).toBe('hidden');
 
         for (const command of resolution!.action.commands) {
             state = execCmd(
@@ -3878,6 +3889,94 @@ describe('AI legal actions', () => {
         expect(resolution?.source).toBe('remote-ai');
         expect(resolution?.action.kind).toBe('play-card');
         expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-enlightenment' });
+    });
+
+    it('远程 AI 在开局选角色时应直接走本地 fallback，不发远程请求', async () => {
+        const providerId = 'test-remote-setup-bypass';
+        const decide = vi.fn(async (context) => {
+            const action = context.legalActions[0];
+            return action ? { actionId: action.actionId } : null;
+        });
+        registerRemoteAiProvider({
+            id: providerId,
+            decide,
+        });
+
+        const core = DiceThroneDomain.setup(['0', '1'], fixedRandom);
+        core.selectedCharacters['0'] = 'monk';
+        const state: MatchState<DiceThroneCore> = {
+            core,
+            sys: {
+                phase: 'setup',
+                interaction: { queue: [] },
+            } as MatchState<DiceThroneCore>['sys'],
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'remote-setup-bypass',
+            seatControllers: {
+                '1': { type: 'remote-ai', providerId, fallbackPolicyId: 'baseline' },
+            },
+        });
+
+        expect(decide).not.toHaveBeenCalled();
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.kind).toBe('setup-select-character');
+    });
+
+    it('远程 AI 在响应窗口打响应牌时应直接走本地 fallback，不发远程请求', async () => {
+        const providerId = 'test-remote-response-card-bypass';
+        const decide = vi.fn(async (context) => {
+            const action = context.legalActions[0];
+            return action ? { actionId: action.actionId } : null;
+        });
+        registerRemoteAiProvider({
+            id: providerId,
+            decide,
+        });
+
+        const state = createHeroMatchup('gunslinger', 'monk')(['0', '1'], fixedRandom);
+        state.core.players['0'].hand = [getCardById('card-next-time')];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
+        state.core.pendingDamage = {
+            id: 'dmg-remote-response-card',
+            sourcePlayerId: '1',
+            targetPlayerId: '0',
+            originalDamage: 6,
+            currentDamage: 6,
+            responseType: 'beforeDamageReceived',
+            responderId: '0',
+            isFullyEvaded: false,
+        };
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-remote-response-card',
+                windowType: 'afterAttackResolved',
+                responderQueue: ['0'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'remote-response-card-bypass',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId, fallbackPolicyId: 'baseline' },
+            },
+        });
+
+        expect(decide).not.toHaveBeenCalled();
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({
+            cardId: 'card-next-time',
+        });
     });
 
     it('远程 AI 在微决策响应窗口应直接走本地 fallback，不发远程请求', async () => {

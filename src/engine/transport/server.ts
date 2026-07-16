@@ -118,6 +118,19 @@ const extractSetupSeatControllers = (setupData: unknown): Record<string, { type?
     return rawSeatControllers as Record<string, { type?: unknown } | undefined>;
 };
 
+const isOnlineAiExplicitlyDisabled = (setupData: unknown): boolean => (
+    Boolean(
+        setupData
+        && typeof setupData === 'object'
+        && !Array.isArray(setupData)
+        && (setupData as { enableAi?: unknown }).enableAi === false,
+    )
+);
+
+const extractTrustedSetupSeatControllers = (setupData: unknown): Record<string, { type?: unknown } | undefined> | undefined => (
+    isOnlineAiExplicitlyDisabled(setupData) ? undefined : extractSetupSeatControllers(setupData)
+);
+
 const extractStateSeatControllers = (
     state: MatchState<unknown> | undefined,
 ): Record<string, { type?: unknown } | undefined> | undefined => {
@@ -135,6 +148,10 @@ const extractStateSeatControllers = (
 };
 
 const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): boolean => {
+    if (isOnlineAiExplicitlyDisabled(setupData)) {
+        return false;
+    }
+
     if (!setupData || typeof setupData !== 'object' || Array.isArray(setupData)) {
         return false;
     }
@@ -153,6 +170,10 @@ const resolveRawOnlineAiWatchdogSeatControllers = (
     state: MatchState<unknown> | undefined,
     setupData: unknown,
 ): Record<string, { type?: unknown } | undefined> | undefined => {
+    if (isOnlineAiExplicitlyDisabled(setupData)) {
+        return undefined;
+    }
+
     const setupSeatControllers = shouldTrustOnlineAiSeatControllersForWatchdog(setupData)
         ? extractSetupSeatControllers(setupData)
         : undefined;
@@ -529,10 +550,6 @@ const resolveOnlineAiFeedbackConfig = (): OnlineAiFeedbackConfig => {
 };
 
 const ONLINE_AI_FEEDBACK_CONFIG = resolveOnlineAiFeedbackConfig();
-const ONLINE_AI_FEEDBACK_PERSISTENCE_SUPPRESSED_KINDS = new Set<OnlineAiRecoveryFeedbackPayload['incidentKind']>([
-    'force-end-turn-success',
-    'legal-action-recovered',
-]);
 
 function shouldAutoReportCommandFailure(reason: string): boolean {
     return reason === GENERIC_COMMAND_FAILURE_REASON
@@ -723,6 +740,8 @@ interface ActiveMatch {
     lastCommandPlayerId: string | null;
     /** 命令执行锁（串行执行） */
     executing: boolean;
+    /** 对局已被外部销毁/卸载，后台任务不得继续写回状态。 */
+    unloaded: boolean;
     /** 待执行命令队列（普通命令 + batch 任务共用同一队列保证串行） */
     commandQueue: Array<{
         commandType: string;
@@ -1055,7 +1074,7 @@ export class GameTransportServer {
         const engineConfig = this.gameIndex.get(gameId);
         if (!engineConfig) return null;
 
-        const setupSeatControllers = extractSetupSeatControllers(setupData);
+        const setupSeatControllers = extractTrustedSetupSeatControllers(setupData);
         const setupPlayerIds = resolveSetupPlayerIds({
             playerIds,
             setupData,
@@ -1250,9 +1269,11 @@ export class GameTransportServer {
     }
 
     /** 卸载活跃对局（销毁房间时调用） */
-    unloadMatch(matchID: string, options?: { disconnectSockets?: boolean }): void {
+    unloadMatch(matchID: string, options?: { disconnectSockets?: boolean }): boolean {
         const match = this.activeMatches.get(matchID);
-        if (!match) return;
+        if (!match) return false;
+
+        match.unloaded = true;
 
         for (const timer of match.offlineTimers.values()) {
             clearTimeout(timer);
@@ -1295,6 +1316,8 @@ export class GameTransportServer {
                     logger.warn('[GameTransport] disconnect room sockets failed', { matchID, error });
                 });
         }
+
+        return true;
     }
 
     private async resolveOnlineAiLegalActionOnlyCandidate(
@@ -1701,6 +1724,10 @@ export class GameTransportServer {
         progressMarkerBeforeRecovery: string,
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<void> {
+        if (match.unloaded) {
+            tracker.autoSubmittedAt = null;
+            return;
+        }
         if (match.executing) {
             tracker.autoSubmittedAt = null;
             return;
@@ -2448,7 +2475,9 @@ export class GameTransportServer {
                 ),
             });
         } finally {
-            await this.drainCommandQueue(match);
+            if (!match.unloaded) {
+                await this.drainCommandQueue(match);
+            }
             match.executing = false;
         }
     }
@@ -3074,18 +3103,6 @@ export class GameTransportServer {
         }
         this.onlineAiRecoveryFeedbackCooldown.set(dedupeKey, now + this.onlineAiRecoveryFeedbackCooldownMs);
 
-        if (!this.onlineAiFeedbackReporter && this.shouldSuppressOnlineAiFeedbackPersistence(payload)) {
-            logger.info('[GameTransport] online-ai-watchdog feedback persistence suppressed', {
-                matchID: payload.matchId,
-                gameId: payload.gameId,
-                playerID: payload.playerId,
-                incidentKind: payload.incidentKind,
-                reason: payload.reason,
-                trackerKey: payload.trackerKey,
-            });
-            return;
-        }
-
         const reporter = this.onlineAiFeedbackReporter ?? this.defaultOnlineAiFeedbackReporter.bind(this);
         try {
             await reporter(payload);
@@ -3108,10 +3125,6 @@ export class GameTransportServer {
                 error: error instanceof Error ? error.message : String(error),
             });
         }
-    }
-
-    private shouldSuppressOnlineAiFeedbackPersistence(payload: OnlineAiRecoveryFeedbackPayload): boolean {
-        return ONLINE_AI_FEEDBACK_PERSISTENCE_SUPPRESSED_KINDS.has(payload.incidentKind);
     }
 
     private buildCommandFailureFeedbackPayload(args: {
@@ -3501,7 +3514,94 @@ export class GameTransportServer {
         });
         const recoveryFingerprintBefore = this.buildOnlineAiRecoveryFingerprint(match, candidate, markerBefore);
         const executedCommandTypes: string[] = [];
+        const isStillOwnedByRecoveredAi = (playerId: string): boolean => {
+            if (!playerId || seatControllers[playerId]?.type === 'human') {
+                return false;
+            }
+
+            const interactionState = match.state.sys?.interaction as {
+                current?: { playerId?: unknown } | null;
+                isBlocked?: unknown;
+            } | undefined;
+            const sharedInteractionPlayerId = typeof interactionState?.current?.playerId === 'string'
+                ? interactionState.current.playerId
+                : null;
+            if (sharedInteractionPlayerId) {
+                return sharedInteractionPlayerId === playerId;
+            }
+
+            if (interactionState?.current == null && interactionState?.isBlocked === true) {
+                const seatView = this.applyPlayerView(match, playerId) as MatchState<unknown>;
+                const seatInteraction = seatView.sys?.interaction as {
+                    current?: { playerId?: unknown } | null;
+                } | undefined;
+                const seatInteractionPlayerId = typeof seatInteraction?.current?.playerId === 'string'
+                    ? seatInteraction.current.playerId
+                    : null;
+                return seatInteractionPlayerId === playerId;
+            }
+
+            const responseWindow = match.state.sys?.responseWindow as {
+                current?: {
+                    responderQueue?: unknown;
+                    currentResponderIndex?: unknown;
+                };
+            } | undefined;
+            const responderQueue = Array.isArray(responseWindow?.current?.responderQueue)
+                ? responseWindow.current.responderQueue
+                : [];
+            const responderIndex = typeof responseWindow?.current?.currentResponderIndex === 'number'
+                ? responseWindow.current.currentResponderIndex
+                : 0;
+            const responderId = typeof responderQueue[responderIndex] === 'string'
+                ? responderQueue[responderIndex]
+                : null;
+            if (responderId) {
+                return responderId === playerId && seatControllers[responderId]?.type !== 'human';
+            }
+
+            return resolveOnlineAiCurrentPlayerId(match.state, {
+                engineConfig: match.engineConfig,
+                gameId: match.gameId,
+            }) === playerId;
+        };
         for (const command of resolution.action.commands) {
+            if (executedCommandTypes.length > 0 && !isStillOwnedByRecoveredAi(resolution.playerId)) {
+                this.broadcastState(match);
+                const resolved = await this.hasOnlineAiRecoveryResolved(match, candidate, seatControllers);
+                if (resolved) {
+                    this.onlineAiRecoveryTrackers.delete(match.matchID);
+                } else {
+                    tracker.autoSubmittedAt = null;
+                    tracker.firstSeenAt = Date.now();
+                }
+
+                logger.info('[GameTransport] online-ai-watchdog stopped legal action after ownership changed', {
+                    matchID: match.matchID,
+                    gameId: match.gameId,
+                    playerID: resolution.playerId,
+                    incidentKey: tracker.key,
+                    actionId: resolution.action.actionId,
+                    actionKind: resolution.action.kind,
+                    executedCommandTypes,
+                    resolved,
+                });
+
+                return {
+                    applied: true,
+                    resolved,
+                    blockedReason: null,
+                    executedCommandTypes,
+                    outcome: 'applied',
+                    reportedAction: {
+                        candidateReason: candidate.reason,
+                        playerId: resolution.playerId,
+                        actionKind: resolution.action.kind,
+                        actionId: resolution.action.actionId,
+                    },
+                };
+            }
+
             const success = await this.executeCommandInternal(
                 match,
                 resolution.playerId,
@@ -3631,6 +3731,12 @@ export class GameTransportServer {
 
     private async drainCommandQueue(match: ActiveMatch): Promise<void> {
         while (match.commandQueue.length > 0) {
+            if (match.unloaded) {
+                while (match.commandQueue.length > 0) {
+                    match.commandQueue.shift()?.resolve(false);
+                }
+                return;
+            }
             const next = match.commandQueue.shift()!;
             try {
                 if ('_batch' in next) {
@@ -4187,7 +4293,7 @@ export class GameTransportServer {
             return;
         }
 
-        const seatControllers = extractSetupSeatControllers(args.match.metadata.setupData);
+        const seatControllers = extractTrustedSetupSeatControllers(args.match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(seatControllers, args.playerID);
         const capturePolicy = manifest?.ai?.capturePolicy ?? DEFAULT_TRAINING_CAPTURE_POLICY;
         const shouldCaptureCommand = (
@@ -4310,6 +4416,10 @@ export class GameTransportServer {
         payload: unknown,
         options?: ExecuteCommandInternalOptions,
     ): Promise<boolean> {
+        if (match.unloaded) {
+            return false;
+        }
+
         const startTime = Date.now();
         match.lastCommandFailureReason = null;
         const { engineConfig, state, random, playerIds } = match;
@@ -4319,7 +4429,7 @@ export class GameTransportServer {
             engineConfig: match.engineConfig,
             gameId: match.gameId,
         });
-        const setupSeatControllers = extractSetupSeatControllers(match.metadata.setupData);
+        const setupSeatControllers = extractTrustedSetupSeatControllers(match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(setupSeatControllers, playerID);
 
         let effectiveCommandType = commandType;
@@ -4568,6 +4678,10 @@ export class GameTransportServer {
                     },
                 },
             };
+        }
+
+        if (match.unloaded) {
+            return false;
         }
 
         // 持久化
@@ -4820,7 +4934,7 @@ export class GameTransportServer {
     }
 
     private buildMatchPlayers(match: ActiveMatch): MatchPlayerInfo[] {
-        const seatControllers = extractSetupSeatControllers(match.metadata.setupData);
+        const seatControllers = extractTrustedSetupSeatControllers(match.metadata.setupData);
         const setupData = match.metadata.setupData;
         const ownerKey = setupData && typeof setupData === 'object' && !Array.isArray(setupData)
             ? (setupData as { ownerKey?: string }).ownerKey
@@ -4851,7 +4965,7 @@ export class GameTransportServer {
 
         const state = setUndoAiSeatIds(
             result.state.G as MatchState<unknown>,
-            getAiSeatIds(extractSetupSeatControllers(result.metadata.setupData)),
+            getAiSeatIds(extractTrustedSetupSeatControllers(result.metadata.setupData)),
         );
         const playerIds = Object.keys(result.metadata.players) as PlayerId[];
 
@@ -4876,6 +4990,7 @@ export class GameTransportServer {
             offlineTimers: new Map(),
             lastBroadcastedViews: new Map(),
             executing: false,
+            unloaded: false,
             commandQueue: [],
             lastCommandFailureReason: null,
         };
