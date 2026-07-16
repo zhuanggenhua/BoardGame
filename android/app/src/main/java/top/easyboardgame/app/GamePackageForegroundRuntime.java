@@ -15,6 +15,7 @@ import java.net.ProtocolException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -78,7 +79,7 @@ final class GamePackageForegroundRuntime {
         try {
             executeGamePackageTask(context, taskStore, task, cancelFlag, onProgress);
         } catch (Exception error) {
-            Log.e(TAG, "runTask failed taskId=" + task.taskId + " logicalId=" + task.logicalId, error);
+            logError("runTask failed taskId=" + task.taskId + " logicalId=" + task.logicalId, error);
             taskStore.markFailed(task.taskId, classifyInstallErrorCode(error), error.getMessage(), System.currentTimeMillis());
             emitInstallState(context, task.logicalId, "failed", null, null, classifyInstallErrorCode(error), error.getMessage(), task.packageVersion, null, null);
         }
@@ -134,10 +135,10 @@ final class GamePackageForegroundRuntime {
             executeIncrementalGamePackageTask(context, taskStore, task, cancelFlag, onProgress);
         } catch (IncrementalFallbackException error) {
             if (!task.allowFullFallback) {
-                Log.w(TAG, "incremental install failed without full fallback taskId=" + task.taskId + " reason=" + error.getMessage());
+                logWarn("incremental install failed without full fallback taskId=" + task.taskId + " reason=" + error.getMessage());
                 throw error;
             }
-            Log.w(TAG, "incremental install fallback taskId=" + task.taskId + " reason=" + error.getMessage());
+            logWarn("incremental install fallback taskId=" + task.taskId + " reason=" + error.getMessage());
             executeFullGamePackageTask(context, taskStore, task, cancelFlag, onProgress);
         }
     }
@@ -212,9 +213,7 @@ final class GamePackageForegroundRuntime {
         } else if (task.allowFullFallback) {
             throw new IncrementalFallbackException("本地未安装可复用资源");
         } else {
-            Log.i(
-                TAG,
-                "incremental-bootstrap-without-local gameId=" + gameId
+            logInfo("incremental-bootstrap-without-local gameId=" + gameId
                     + " version=" + resolvedPackageVersion
                     + " mode=file-index-only"
             );
@@ -230,9 +229,7 @@ final class GamePackageForegroundRuntime {
             : new ArrayList<>(remoteEntries);
         Set<String> remotePaths = buildRemotePathSet(remoteEntries);
         addIncrementalPartPaths(remotePaths, changedEntries);
-        Log.i(
-            TAG,
-            "incremental-plan gameId=" + gameId
+        logInfo("incremental-plan gameId=" + gameId
                 + " version=" + resolvedPackageVersion
                 + " totalFiles=" + remoteEntries.size()
                 + " changedFiles=" + changedEntries.size()
@@ -252,9 +249,7 @@ final class GamePackageForegroundRuntime {
             GamePackageFs.pruneDirectoryContents(stagingAssetsDir, remotePaths);
             long totalBytes = 0L;
             for (RemoteFileEntry entry : changedEntries) totalBytes += Math.max(0L, entry.size);
-            Log.i(
-                TAG,
-                "incremental-download-start gameId=" + gameId
+            logInfo("incremental-download-start gameId=" + gameId
                     + " version=" + resolvedPackageVersion
                     + " changedFiles=" + changedEntries.size()
                     + " totalBytes=" + totalBytes
@@ -292,9 +287,7 @@ final class GamePackageForegroundRuntime {
             switchStagingToCurrent(context, gameId, resolvedPackageVersion, GamePackageFs.resolveCurrentDir(context, gameId), currentAssetsDir);
 
             taskStore.markCompleted(task.taskId, totalBytes, System.currentTimeMillis());
-            Log.i(
-                TAG,
-                "incremental-install-finished gameId=" + gameId
+            logInfo("incremental-install-finished gameId=" + gameId
                     + " version=" + resolvedPackageVersion
                     + " downloadedBytes=" + totalBytes
             );
@@ -302,9 +295,7 @@ final class GamePackageForegroundRuntime {
             GamePackageFs.cleanupStagingDirectories(context, gameId, null);
             onProgress.run();
         } catch (Exception error) {
-            Log.w(
-                TAG,
-                "incremental-install failed-keep-staging gameId=" + gameId
+            logWarn("incremental-install failed-keep-staging gameId=" + gameId
                     + " version=" + resolvedPackageVersion
                     + " stagingDir=" + stagingDir.getAbsolutePath()
                     + " errorChain=" + summarizeThrowableChain(error),
@@ -392,7 +383,7 @@ final class GamePackageForegroundRuntime {
         if (parent != null && !parent.exists() && !parent.mkdirs()) throw new IOException("创建目录失败");
 
         if (targetFile.isFile() && targetFile.length() == entry.size && isChecksumMatch(targetFile, entry.hash)) {
-            Log.i(TAG, "incremental-file already-complete path=" + entry.path + " bytes=" + targetFile.length());
+            logInfo("incremental-file already-complete path=" + entry.path + " bytes=" + targetFile.length());
             return;
         }
 
@@ -408,9 +399,7 @@ final class GamePackageForegroundRuntime {
                 lastError = error;
                 boolean recoverable = isRecoverableDownloadError(error);
                 long partBytes = partFile.exists() ? partFile.length() : 0L;
-                Log.w(
-                    TAG,
-                    "incremental-file attempt-failed path=" + entry.path
+                logWarn("incremental-file attempt-failed path=" + entry.path
                         + " attempt=" + attempt
                         + " maxAttempts=" + DOWNLOAD_MAX_ATTEMPTS
                         + " recoverable=" + recoverable
@@ -436,6 +425,15 @@ final class GamePackageForegroundRuntime {
         throw lastError != null ? lastError : new IncrementalFallbackException("增量文件连续下载失败");
     }
 
+    static void downloadIncrementalFileForTesting(
+        AtomicBoolean cancelFlag,
+        String assetBaseUrl,
+        RemoteFileEntry entry,
+        File targetFile
+    ) throws Exception {
+        downloadIncrementalFile(cancelFlag, assetBaseUrl, entry, targetFile, ignored -> {});
+    }
+
     private static void downloadIncrementalFileOnce(
         AtomicBoolean cancelFlag,
         String assetBaseUrl,
@@ -450,9 +448,7 @@ final class GamePackageForegroundRuntime {
         connection.setReadTimeout(30000);
         long resumedBytes = partFile.exists() ? partFile.length() : 0L;
         if (resumedBytes > 0L) connection.setRequestProperty("Range", "bytes=" + resumedBytes + "-");
-        Log.i(
-            TAG,
-            "incremental-file start path=" + entry.path
+        logInfo("incremental-file start path=" + entry.path
                 + " attempt=" + attempt
                 + " resumedBytes=" + resumedBytes
                 + " expectedBytes=" + entry.size
@@ -463,13 +459,13 @@ final class GamePackageForegroundRuntime {
             boolean appendMode = false;
             if (resumedBytes > 0L && responseCode == HttpURLConnection.HTTP_PARTIAL) {
                 appendMode = true;
-                Log.i(TAG, "incremental-file resume-accepted path=" + entry.path + " resumedBytes=" + resumedBytes);
+                logInfo("incremental-file resume-accepted path=" + entry.path + " resumedBytes=" + resumedBytes);
             } else if (resumedBytes > 0L && responseCode == HttpURLConnection.HTTP_OK) {
-                Log.w(TAG, "incremental-file resume-reset path=" + entry.path + " resumedBytes=" + resumedBytes);
+                logWarn("incremental-file resume-reset path=" + entry.path + " resumedBytes=" + resumedBytes);
                 if (!partFile.delete() && partFile.exists()) throw new IOException("重置增量续传文件失败");
                 resumedBytes = 0L;
             } else if (resumedBytes > 0L && responseCode == HTTP_RANGE_NOT_SATISFIABLE) {
-                Log.w(TAG, "incremental-file resume-range-not-satisfiable path=" + entry.path + " resumedBytes=" + resumedBytes);
+                logWarn("incremental-file resume-range-not-satisfiable path=" + entry.path + " resumedBytes=" + resumedBytes);
                 if (handleRangeNotSatisfiablePartialDownload(
                     partFile,
                     targetFile,
@@ -484,9 +480,7 @@ final class GamePackageForegroundRuntime {
                 }
             }
 
-            Log.i(
-                TAG,
-                "incremental-file response path=" + entry.path
+            logInfo("incremental-file response path=" + entry.path
                     + " attempt=" + attempt
                     + " code=" + responseCode
                     + " contentLength=" + connection.getContentLengthLong()
@@ -538,9 +532,7 @@ final class GamePackageForegroundRuntime {
             if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧增量文件失败");
             if (!partFile.renameTo(targetFile)) throw new IOException("写入增量文件失败");
             progressListener.onProgress(targetFile.length());
-            Log.i(
-                TAG,
-                "incremental-file finished path=" + entry.path
+            logInfo("incremental-file finished path=" + entry.path
                     + " attempt=" + attempt
                     + " bytes=" + targetFile.length()
                     + " checksumOk=true"
@@ -665,9 +657,9 @@ final class GamePackageForegroundRuntime {
         StringBuilder builder = new StringBuilder(normalizedBase);
         for (String segment : segments) {
             if (segment == null || segment.isEmpty()) continue;
-            builder.append('/').append(Uri.encode(segment));
+            builder.append('/').append(encodeUriComponent(segment));
         }
-        builder.append("?v=").append(Uri.encode(entry.hash));
+        builder.append("?v=").append(encodeUriComponent(entry.hash));
         return builder.toString();
     }
 
@@ -705,9 +697,7 @@ final class GamePackageForegroundRuntime {
                 lastError = error;
                 boolean recoverable = isRecoverableDownloadError(error);
                 long partBytes = partFile.exists() ? partFile.length() : 0L;
-                Log.w(
-                    TAG,
-                    "downloadArchive attempt-failed gameId=" + task.logicalId
+                logWarn("downloadArchive attempt-failed gameId=" + task.logicalId
                         + " version=" + task.packageVersion
                         + " attempt=" + attempt
                         + " maxAttempts=" + DOWNLOAD_MAX_ATTEMPTS
@@ -721,9 +711,7 @@ final class GamePackageForegroundRuntime {
                 if (cancelFlag.get() || !recoverable || attempt >= DOWNLOAD_MAX_ATTEMPTS) {
                     throw error;
                 }
-                Log.w(
-                    TAG,
-                    "downloadArchive retry gameId=" + task.logicalId
+                logWarn("downloadArchive retry gameId=" + task.logicalId
                         + " version=" + task.packageVersion
                         + " attempt=" + attempt
                         + " nextAttempt=" + (attempt + 1)
@@ -759,9 +747,7 @@ final class GamePackageForegroundRuntime {
         connection.setRequestProperty("Accept", "application/zip,application/octet-stream");
         long resumedBytes = partFile.exists() ? partFile.length() : 0L;
         if (resumedBytes > 0) connection.setRequestProperty("Range", "bytes=" + resumedBytes + "-");
-        Log.i(
-            TAG,
-            "downloadArchive start gameId=" + task.logicalId
+        logInfo("downloadArchive start gameId=" + task.logicalId
                 + " version=" + task.packageVersion
                 + " attempt=" + attempt
                 + " url=" + task.sourceUrl
@@ -774,13 +760,13 @@ final class GamePackageForegroundRuntime {
             boolean appendMode = false;
             if (resumedBytes > 0 && responseCode == HttpURLConnection.HTTP_PARTIAL) {
                 appendMode = true;
-                Log.i(TAG, "downloadArchive resume-accepted gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
+                logInfo("downloadArchive resume-accepted gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
             } else if (resumedBytes > 0 && responseCode == HttpURLConnection.HTTP_OK) {
-                Log.w(TAG, "downloadArchive resume-reset gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
+                logWarn("downloadArchive resume-reset gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
                 if (!partFile.delete() && partFile.exists()) throw new IOException("重置续传文件失败");
                 resumedBytes = 0L;
             } else if (resumedBytes > 0 && responseCode == HTTP_RANGE_NOT_SATISFIABLE) {
-                Log.w(TAG, "downloadArchive resume-range-not-satisfiable gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
+                logWarn("downloadArchive resume-range-not-satisfiable gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
                 if (handleRangeNotSatisfiablePartialDownload(
                     partFile,
                     targetFile,
@@ -796,9 +782,7 @@ final class GamePackageForegroundRuntime {
                     return;
                 }
             }
-            Log.i(
-                TAG,
-                "downloadArchive response gameId=" + task.logicalId
+            logInfo("downloadArchive response gameId=" + task.logicalId
                     + " version=" + task.packageVersion
                     + " attempt=" + attempt
                     + " code=" + responseCode
@@ -850,9 +834,7 @@ final class GamePackageForegroundRuntime {
             if (task.checksum != null && !task.checksum.equalsIgnoreCase(actualChecksum)) throw new IOException("下载包校验失败");
             if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧安装包失败");
             if (!partFile.renameTo(targetFile)) throw new IOException("写入安装包失败");
-            Log.i(
-                TAG,
-                "downloadArchive finished gameId=" + task.logicalId
+            logInfo("downloadArchive finished gameId=" + task.logicalId
                     + " version=" + task.packageVersion
                     + " attempt=" + attempt
                     + " checksumOk=" + (task.checksum == null || task.checksum.equalsIgnoreCase(actualChecksum))
@@ -890,7 +872,7 @@ final class GamePackageForegroundRuntime {
             persistInstallState(context, gameId, payload);
             GamePackageInstallEventHub.dispatch(payload);
         } catch (Exception error) {
-            Log.w(TAG, "emitInstallState failed gameId=" + gameId, error);
+            logWarn("emitInstallState failed gameId=" + gameId, error);
         }
     }
 
@@ -1049,6 +1031,57 @@ final class GamePackageForegroundRuntime {
         }
         if (current != null) builder.append(" <- ...");
         return builder.toString();
+    }
+
+    private static void logInfo(String message) {
+        try {
+            Log.i(TAG, message);
+        } catch (RuntimeException error) {
+            if (!isAndroidLogNotMocked(error)) throw error;
+        }
+    }
+
+    private static void logWarn(String message) {
+        try {
+            Log.w(TAG, message);
+        } catch (RuntimeException error) {
+            if (!isAndroidLogNotMocked(error)) throw error;
+        }
+    }
+
+    private static void logWarn(String message, Throwable error) {
+        try {
+            Log.w(TAG, message, error);
+        } catch (RuntimeException logError) {
+            if (!isAndroidLogNotMocked(logError)) throw logError;
+        }
+    }
+
+    private static void logError(String message, Throwable error) {
+        try {
+            Log.e(TAG, message, error);
+        } catch (RuntimeException logError) {
+            if (!isAndroidLogNotMocked(logError)) throw logError;
+        }
+    }
+
+    private static boolean isAndroidLogNotMocked(RuntimeException error) {
+        String message = error.getMessage();
+        return message != null && message.contains("not mocked");
+    }
+
+    private static String encodeUriComponent(String value) {
+        try {
+            return Uri.encode(value);
+        } catch (RuntimeException error) {
+            if (!isAndroidLogNotMocked(error)) throw error;
+        }
+
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.name()).replace("+", "%20");
+        } catch (Exception error) {
+            throw new IllegalStateException("URL 编码失败", error);
+        }
     }
 
     private static String safe(String value, String fallback) {
