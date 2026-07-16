@@ -46,7 +46,13 @@ final class GamePackageForegroundRuntime {
         }
     }
 
-    private static final class RemoteFileEntry {
+    static final class IncrementalRetryableDownloadException extends IOException {
+        IncrementalRetryableDownloadException(String message) {
+            super(message);
+        }
+    }
+
+    static final class RemoteFileEntry {
         final String path;
         final String hash;
         final long size;
@@ -464,13 +470,18 @@ final class GamePackageForegroundRuntime {
                 resumedBytes = 0L;
             } else if (resumedBytes > 0L && responseCode == HTTP_RANGE_NOT_SATISFIABLE) {
                 Log.w(TAG, "incremental-file resume-range-not-satisfiable path=" + entry.path + " resumedBytes=" + resumedBytes);
-                if (partFile.length() == entry.size && isChecksumMatch(partFile, entry.hash)) {
-                    if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧增量文件失败");
-                    if (!partFile.renameTo(targetFile)) throw new IOException("恢复已完成增量文件失败");
+                if (handleRangeNotSatisfiablePartialDownload(
+                    partFile,
+                    targetFile,
+                    entry.hash,
+                    entry.size,
+                    "清理旧增量文件失败",
+                    "恢复已完成增量文件失败",
+                    "重置不可续传增量文件失败",
+                    "服务端拒绝增量续传，本地临时文件已清理，将从头重试: " + entry.path
+                )) {
                     return;
                 }
-                if (!partFile.delete() && partFile.exists()) throw new IOException("重置不可续传增量文件失败");
-                throw new IOException("服务端拒绝增量续传，且本地临时文件校验失败");
             }
 
             Log.i(
@@ -523,10 +534,7 @@ final class GamePackageForegroundRuntime {
             }
 
             String actualChecksum = bytesToHex(digest.digest());
-            if (!entry.hash.equalsIgnoreCase(actualChecksum)) throw new IOException("增量文件校验失败");
-            if (entry.size > 0L && partFile.length() != entry.size) {
-                throw new IOException("增量文件大小不符");
-            }
+            verifyDownloadedIncrementalPart(partFile, entry, actualChecksum);
             if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧增量文件失败");
             if (!partFile.renameTo(targetFile)) throw new IOException("写入增量文件失败");
             progressListener.onProgress(targetFile.length());
@@ -539,6 +547,44 @@ final class GamePackageForegroundRuntime {
             );
         } finally {
             connection.disconnect();
+        }
+    }
+
+    static void verifyDownloadedIncrementalPart(File partFile, RemoteFileEntry entry, String actualChecksum) throws Exception {
+        if (!entry.hash.equalsIgnoreCase(actualChecksum)) {
+            discardInvalidIncrementalPart(partFile, "增量文件校验失败", entry);
+            throw new IncrementalRetryableDownloadException("增量文件校验失败: " + entry.path);
+        }
+        if (entry.size > 0L && partFile.length() != entry.size) {
+            discardInvalidIncrementalPart(partFile, "增量文件大小不符", entry);
+            throw new IncrementalRetryableDownloadException("增量文件大小不符: " + entry.path);
+        }
+    }
+
+    static boolean handleRangeNotSatisfiablePartialDownload(
+        File partFile,
+        File targetFile,
+        String expectedChecksum,
+        long expectedBytes,
+        String cleanupOldTargetMessage,
+        String restoreMessage,
+        String resetPartialMessage,
+        String retryMessage
+    ) throws Exception {
+        boolean sizeMatches = expectedBytes <= 0L || partFile.length() == expectedBytes;
+        if (sizeMatches && isChecksumMatch(partFile, expectedChecksum)) {
+            if (targetFile.exists() && !targetFile.delete()) throw new IOException(cleanupOldTargetMessage);
+            if (!partFile.renameTo(targetFile)) throw new IOException(restoreMessage);
+            return true;
+        }
+
+        if (!partFile.delete() && partFile.exists()) throw new IOException(resetPartialMessage);
+        throw new IncrementalRetryableDownloadException(retryMessage);
+    }
+
+    private static void discardInvalidIncrementalPart(File partFile, String reason, RemoteFileEntry entry) throws IOException {
+        if (partFile.exists() && !partFile.delete()) {
+            throw new IOException(reason + "，且清理临时文件失败: " + entry.path);
         }
     }
 
@@ -735,15 +781,20 @@ final class GamePackageForegroundRuntime {
                 resumedBytes = 0L;
             } else if (resumedBytes > 0 && responseCode == HTTP_RANGE_NOT_SATISFIABLE) {
                 Log.w(TAG, "downloadArchive resume-range-not-satisfiable gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
-                if (isChecksumMatch(partFile, task.checksum)) {
-                    if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧安装包失败");
-                    if (!partFile.renameTo(targetFile)) throw new IOException("恢复已完成资源包失败");
+                if (handleRangeNotSatisfiablePartialDownload(
+                    partFile,
+                    targetFile,
+                    task.checksum,
+                    0L,
+                    "清理旧安装包失败",
+                    "恢复已完成资源包失败",
+                    "重置不可续传文件失败",
+                    "服务端拒绝续传，本地临时资源包已清理，将从头重试"
+                )) {
                     taskStore.updateRunningProgress(task.taskId, targetFile.length(), targetFile.length(), AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
                     emitInstallState(context, task.logicalId, "downloading", 100, "determinate", null, null, task.packageVersion, null, null);
                     return;
                 }
-                if (!partFile.delete() && partFile.exists()) throw new IOException("重置不可续传文件失败");
-                throw new IOException("服务端拒绝续传，且本地临时资源包校验失败");
             }
             Log.i(
                 TAG,
@@ -924,13 +975,14 @@ final class GamePackageForegroundRuntime {
         return "unknown";
     }
 
-    private static boolean isRecoverableDownloadError(Throwable error) {
+    static boolean isRecoverableDownloadError(Throwable error) {
         Throwable current = error;
         while (current != null) {
             if (
                 current instanceof SocketTimeoutException
                     || current instanceof ProtocolException
                     || current instanceof SocketException
+                    || current instanceof IncrementalRetryableDownloadException
             ) {
                 return true;
             }
