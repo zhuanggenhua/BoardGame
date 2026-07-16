@@ -248,6 +248,73 @@ public class GamePackageForegroundRuntimeTest {
         }
     }
 
+    @Test
+    public void archiveAcceptedRangeChecksumMismatchRetriesFreshDownloadAgainstHttpServer() throws Exception {
+        byte[] expectedBytes = "expected-fresh-zip-after-range".getBytes(StandardCharsets.UTF_8);
+        byte[] corruptPrefix = "bad!".getBytes(StandardCharsets.UTF_8);
+        String expectedHash = sha256(expectedBytes);
+        List<String> observedRanges = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger requestCount = new AtomicInteger(0);
+        AtomicReference<Exception> serverError = new AtomicReference<>(null);
+
+        try (ServerSocket server = new ServerSocket(0, 2, InetAddress.getLoopbackAddress())) {
+            server.setSoTimeout(10_000);
+            Thread serverThread = new Thread(() -> serveAcceptedRangeThenFreshDownload(
+                server,
+                expectedBytes,
+                observedRanges,
+                requestCount,
+                serverError
+            ));
+            serverThread.start();
+
+            File tempDir = Files.createTempDirectory("game-package-archive-checksum-reset-test").toFile();
+            File targetFile = new File(tempDir, "package.zip");
+            File partFile = new File(tempDir, "package.zip.part");
+            try {
+                writeBytes(partFile, corruptPrefix);
+
+                GamePackageForegroundRuntime.downloadArchiveForTesting(
+                    new AtomicBoolean(false),
+                    "http://127.0.0.1:" + server.getLocalPort() + "/package.zip",
+                    expectedHash,
+                    targetFile,
+                    partFile
+                );
+
+                serverThread.join(5_000);
+                if (serverError.get() != null) {
+                    throw serverError.get();
+                }
+
+                assertEquals("Expected checksum-mismatched archive resume followed by fresh retry", 2, requestCount.get());
+                assertEquals("bytes=" + corruptPrefix.length + "-", observedRanges.get(0));
+                assertNull("Fresh archive retry after checksum mismatch should not send Range", observedRanges.get(1));
+                assertFalse("Checksum-mismatched archive part file should be removed before retry", partFile.exists());
+                assertTrue("Fresh retry should write archive file", targetFile.exists());
+                assertEquals(expectedHash, sha256(targetFile));
+            } finally {
+                GamePackageFs.deleteRecursively(tempDir);
+            }
+        }
+    }
+
+    @Test
+    public void retryableChecksumErrorsStayClassifiedAsChecksumMismatch() {
+        assertEquals(
+            "checksum-mismatch",
+            GamePackageForegroundRuntime.classifyInstallErrorCode(
+                new GamePackageForegroundRuntime.RetryableDownloadException("下载包校验失败，本地临时资源包已清理，将从头重试")
+            )
+        );
+        assertEquals(
+            "checksum-mismatch",
+            GamePackageForegroundRuntime.classifyInstallErrorCode(
+                new GamePackageForegroundRuntime.IncrementalRetryableDownloadException("增量文件校验失败: asset.webp")
+            )
+        );
+    }
+
     private static void writeUtf8(File file, String value) throws Exception {
         writeBytes(file, value.getBytes(StandardCharsets.UTF_8));
     }

@@ -47,7 +47,13 @@ final class GamePackageForegroundRuntime {
         }
     }
 
-    static final class IncrementalRetryableDownloadException extends IOException {
+    static class RetryableDownloadException extends IOException {
+        RetryableDownloadException(String message) {
+            super(message);
+        }
+    }
+
+    static final class IncrementalRetryableDownloadException extends RetryableDownloadException {
         IncrementalRetryableDownloadException(String message) {
             super(message);
         }
@@ -434,6 +440,41 @@ final class GamePackageForegroundRuntime {
         downloadIncrementalFile(cancelFlag, assetBaseUrl, entry, targetFile, ignored -> {});
     }
 
+    static void downloadArchiveForTesting(
+        AtomicBoolean cancelFlag,
+        String sourceUrl,
+        String expectedChecksum,
+        File targetFile,
+        File partFile
+    ) throws Exception {
+        Exception lastError = null;
+        for (int attempt = 1; attempt <= DOWNLOAD_MAX_ATTEMPTS; attempt += 1) {
+            try {
+                downloadArchiveFileOnce(
+                    sourceUrl,
+                    expectedChecksum,
+                    "test-game",
+                    "test-version",
+                    targetFile,
+                    partFile,
+                    cancelFlag,
+                    attempt,
+                    (downloadedBytes, totalBytes, shouldEmitState) -> {}
+                );
+                return;
+            } catch (Exception error) {
+                lastError = error;
+                boolean recoverable = isRecoverableDownloadError(error);
+                if (cancelFlag.get() || !recoverable || attempt >= DOWNLOAD_MAX_ATTEMPTS) {
+                    throw error;
+                }
+            }
+        }
+        if (lastError != null) {
+            throw lastError;
+        }
+    }
+
     private static void downloadIncrementalFileOnce(
         AtomicBoolean cancelFlag,
         String assetBaseUrl,
@@ -741,16 +782,56 @@ final class GamePackageForegroundRuntime {
         Runnable onProgress,
         int attempt
     ) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(task.sourceUrl).openConnection();
+        downloadArchiveFileOnce(
+            task.sourceUrl,
+            task.checksum,
+            task.logicalId,
+            task.packageVersion,
+            targetFile,
+            partFile,
+            cancelFlag,
+            attempt,
+            (downloadedBytes, totalBytes, shouldEmitState) -> {
+                taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+                if (!shouldEmitState) {
+                    return;
+                }
+                if (totalBytes > 0) {
+                    int percent = (int) Math.max(0, Math.min(100, Math.round((downloadedBytes * 100f) / totalBytes)));
+                    emitInstallState(context, task.logicalId, "downloading", percent, "determinate", null, null, task.packageVersion, null, null);
+                } else {
+                    emitInstallState(context, task.logicalId, "downloading", null, "indeterminate", null, null, task.packageVersion, null, null);
+                }
+                onProgress.run();
+            }
+        );
+    }
+
+    private interface ArchiveFileProgressListener {
+        void onProgress(long downloadedBytes, long totalBytes, boolean shouldEmitState) throws Exception;
+    }
+
+    private static void downloadArchiveFileOnce(
+        String sourceUrl,
+        String expectedChecksum,
+        String gameId,
+        String packageVersion,
+        File targetFile,
+        File partFile,
+        AtomicBoolean cancelFlag,
+        int attempt,
+        ArchiveFileProgressListener progressListener
+    ) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) new URL(sourceUrl).openConnection();
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(30000);
         connection.setRequestProperty("Accept", "application/zip,application/octet-stream");
         long resumedBytes = partFile.exists() ? partFile.length() : 0L;
         if (resumedBytes > 0) connection.setRequestProperty("Range", "bytes=" + resumedBytes + "-");
-        logInfo("downloadArchive start gameId=" + task.logicalId
-                + " version=" + task.packageVersion
+        logInfo("downloadArchive start gameId=" + gameId
+                + " version=" + packageVersion
                 + " attempt=" + attempt
-                + " url=" + task.sourceUrl
+                + " url=" + sourceUrl
                 + " resumedBytes=" + resumedBytes
                 + " partExists=" + partFile.exists()
         );
@@ -760,30 +841,29 @@ final class GamePackageForegroundRuntime {
             boolean appendMode = false;
             if (resumedBytes > 0 && responseCode == HttpURLConnection.HTTP_PARTIAL) {
                 appendMode = true;
-                logInfo("downloadArchive resume-accepted gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
+                logInfo("downloadArchive resume-accepted gameId=" + gameId + " resumedBytes=" + resumedBytes);
             } else if (resumedBytes > 0 && responseCode == HttpURLConnection.HTTP_OK) {
-                logWarn("downloadArchive resume-reset gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
+                logWarn("downloadArchive resume-reset gameId=" + gameId + " resumedBytes=" + resumedBytes);
                 if (!partFile.delete() && partFile.exists()) throw new IOException("重置续传文件失败");
                 resumedBytes = 0L;
             } else if (resumedBytes > 0 && responseCode == HTTP_RANGE_NOT_SATISFIABLE) {
-                logWarn("downloadArchive resume-range-not-satisfiable gameId=" + task.logicalId + " resumedBytes=" + resumedBytes);
+                logWarn("downloadArchive resume-range-not-satisfiable gameId=" + gameId + " resumedBytes=" + resumedBytes);
                 if (handleRangeNotSatisfiablePartialDownload(
                     partFile,
                     targetFile,
-                    task.checksum,
+                    expectedChecksum,
                     0L,
                     "清理旧安装包失败",
                     "恢复已完成资源包失败",
                     "重置不可续传文件失败",
                     "服务端拒绝续传，本地临时资源包已清理，将从头重试"
                 )) {
-                    taskStore.updateRunningProgress(task.taskId, targetFile.length(), targetFile.length(), AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
-                    emitInstallState(context, task.logicalId, "downloading", 100, "determinate", null, null, task.packageVersion, null, null);
+                    progressListener.onProgress(targetFile.length(), targetFile.length(), true);
                     return;
                 }
             }
-            logInfo("downloadArchive response gameId=" + task.logicalId
-                    + " version=" + task.packageVersion
+            logInfo("downloadArchive response gameId=" + gameId
+                    + " version=" + packageVersion
                     + " attempt=" + attempt
                     + " code=" + responseCode
                     + " contentLength=" + connection.getContentLengthLong()
@@ -816,32 +896,40 @@ final class GamePackageForegroundRuntime {
                     output.write(buffer, 0, read);
                     digest.update(buffer, 0, read);
                     downloadedBytes += read;
-                    taskStore.updateRunningProgress(task.taskId, downloadedBytes, totalBytes, AndroidDownloadTaskRecord.STATUS_RUNNING, System.currentTimeMillis());
+                    boolean shouldEmitState = true;
                     if (totalBytes > 0) {
                         int percent = (int) Math.max(0, Math.min(100, Math.round((downloadedBytes * 100f) / totalBytes)));
-                        if (percent != lastPercent) {
+                        if (percent == lastPercent) {
+                            shouldEmitState = false;
+                        } else {
                             lastPercent = percent;
-                            emitInstallState(context, task.logicalId, "downloading", percent, "determinate", null, null, task.packageVersion, null, null);
-                            onProgress.run();
                         }
-                    } else {
-                        emitInstallState(context, task.logicalId, "downloading", null, "indeterminate", null, null, task.packageVersion, null, null);
                     }
+                    progressListener.onProgress(downloadedBytes, totalBytes, shouldEmitState);
                 }
             }
 
             String actualChecksum = bytesToHex(digest.digest());
-            if (task.checksum != null && !task.checksum.equalsIgnoreCase(actualChecksum)) throw new IOException("下载包校验失败");
+            if (expectedChecksum != null && !expectedChecksum.equalsIgnoreCase(actualChecksum)) {
+                discardInvalidArchivePart(partFile, "下载包校验失败");
+                throw new RetryableDownloadException("下载包校验失败，本地临时资源包已清理，将从头重试");
+            }
             if (targetFile.exists() && !targetFile.delete()) throw new IOException("清理旧安装包失败");
             if (!partFile.renameTo(targetFile)) throw new IOException("写入安装包失败");
-            logInfo("downloadArchive finished gameId=" + task.logicalId
-                    + " version=" + task.packageVersion
+            logInfo("downloadArchive finished gameId=" + gameId
+                    + " version=" + packageVersion
                     + " attempt=" + attempt
-                    + " checksumOk=" + (task.checksum == null || task.checksum.equalsIgnoreCase(actualChecksum))
+                    + " checksumOk=" + (expectedChecksum == null || expectedChecksum.equalsIgnoreCase(actualChecksum))
                     + " actualChecksum=" + actualChecksum
             );
         } finally {
             connection.disconnect();
+        }
+    }
+
+    private static void discardInvalidArchivePart(File partFile, String reason) throws IOException {
+        if (partFile.exists() && !partFile.delete()) {
+            throw new IOException(reason + "，且清理临时资源包失败");
         }
     }
 
@@ -941,9 +1029,8 @@ final class GamePackageForegroundRuntime {
         return builder.toString();
     }
 
-    private static String classifyInstallErrorCode(Exception error) {
+    static String classifyInstallErrorCode(Exception error) {
         if (error == null) return "unknown";
-        if (isRecoverableDownloadError(error)) return "network-timeout";
         if (hasCause(error, ZipException.class)) return "archive-invalid";
         String message = collectThrowableMessages(error);
         String lower = message.toLowerCase(Locale.ROOT);
@@ -953,6 +1040,7 @@ final class GamePackageForegroundRuntime {
         if (lower.contains("enospc") || lower.contains("no space left") || message.contains("空间不足")) return "insufficient-storage";
         if (message.contains("取消")) return "cancelled";
         if (message.contains("压缩包") || message.contains("路径非法")) return "archive-invalid";
+        if (isRecoverableDownloadError(error)) return "network-timeout";
         if (error instanceof IOException) return "file-io";
         return "unknown";
     }
@@ -964,6 +1052,7 @@ final class GamePackageForegroundRuntime {
                 current instanceof SocketTimeoutException
                     || current instanceof ProtocolException
                     || current instanceof SocketException
+                    || current instanceof RetryableDownloadException
                     || current instanceof IncrementalRetryableDownloadException
             ) {
                 return true;
