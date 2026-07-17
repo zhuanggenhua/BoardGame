@@ -153,6 +153,7 @@ OTA：
 - 若线上 APK 内的 `assets/game-orientation-map.json` 缺少目标游戏，或线上壳仍使用旧的缺省方向策略，必须发布新 stable native APK；只发 OTA 不能宣称方向问题已修复。
 - 发布成功只证明产物已交付。最终必须回到用户原始失败位点验收；例如纸牌帮横屏问题要以更新后的真实 App 页面为准，不能用 workflow、manifest 或 APK 文件存在替代。
 - 真机验收前必须读取已安装 App 的 `versionCode / versionName`。线上 native manifest 已更新但设备仍是旧版本时，应明确结论为“设备没有完成原生升级”，不能把 OTA 更新误认成原生壳更新。
+- 移动端游戏素材包下载/清理/校验类修复，发布 OTA 后不能只看 `latest.json`、显示更新号或发布说明。必须直接下载线上 OTA zip，反查 bundle 内包含本次修复的关键日志点或代码特征；然后回到原始失败入口点“清理并重新下载”，用 logcat 证明原生调用已走预期分支。例如清理重下修复必须同时看到：H5 清理重下日志、服务层改走完整包日志、原生桥 `install-native-call-dispatch` 里 `fileIndexUrl` 为空，并且不再出现 `incrementalMode=true` / `incremental-file ...`。缺任一项时只能说“发布/验收未闭合”，不得说素材包修好了。
 - `adb install -r` 出现 `INSTALL_FAILED_ABORTED: User rejected permissions` 后禁止原样反复重试；应把已验签、已校验 checksum 的正式 APK 放入设备下载目录并打开系统安装器，等待用户解锁和确认。用户未确认前只能标记为真机验收阻塞，不得修改安全设置或绕过锁屏。
 - 横竖屏验收必须同时证明目标游戏页面、目标原生 `versionCode` 和系统实际 rotation/orientation；缺少任一项都不能宣称原始问题已修复。
 - Docker 镜像构建、Android stable OTA 与 native workflow 总运行时间最多 30 分钟；服务器主源传播验证和镜像部署整步保护同样最多 30 分钟。部署脚本必须限制整次变更操作的总耗时，不能把 game-server 与 web 两个串行镜像各自等待 30 分钟后仍称为“整步 30 分钟”。URL、目标结构、预期大小或摘要等确定性参数错误必须首轮失败，禁止伪装成传播慢持续重试。

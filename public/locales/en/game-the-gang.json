@@ -7,6 +7,7 @@
   "players": "3-6 players",
   "status": {
     "chipSelection": "Choose chips",
+    "handSwap": "Swap hands",
     "showdown": "Showdown",
     "gameOver": "Game over"
   },
@@ -15,6 +16,7 @@
     "takeChip": "Player {{player}} chooses the {{chip}}★ chip in round {{round}}",
     "endRound": "Player {{player}} ends round {{round}} and advances to round {{nextRound}}",
     "revealShowdown": "Player {{player}} reveals showdown: heist {{heist}} {{outcome}} (successes {{successes}} / failures {{failures}})",
+    "confirmHandSwap": "Player {{player}} confirms the hand-swap stage",
     "startNextHeist": "Player {{player}} starts heist {{heist}}"
   },
   "tutorial": {
@@ -127,12 +129,14 @@
     "ttsSetupOptionLabels": {
       "omaha": "Omaha",
       "twoHand": "2Hand",
+      "handSwap": "Hand swap",
       "automode": "Automode",
       "antiTroll": "AntiTroll"
     },
     "ttsSetupOptionDescriptions": {
       "omaha": "Each hand gets 2 extra cards; showdown must use exactly 2 hand cards and 3 board cards.",
       "twoHand": "Each player receives top and bottom hands. Showdown evaluates both and uses the stronger hand for ranking. Up to 5 players.",
+      "handSwap": "After 2Hand is enabled, each completed chip vote opens a swap stage where top and bottom hands may exchange 1 card each.",
       "automode": "Automatically advances after all players take chips; the final chip round automatically reveals showdown.",
       "antiTroll": "Matches the TTS anti-misclick/host-clearance toggle; Web setup remains host-gated."
     },
@@ -181,6 +185,13 @@
     "noSpecialists": "No specialists",
     "nextRound": "Next round",
     "revealShowdown": "Reveal showdown",
+    "handSwapStage": "Swap hands",
+    "handSwapWaiting": "Waiting swap",
+    "handSwapConfirmed": "Swap confirmed",
+    "handSwapSelectedCount": "Top/bottom selected {{selected}}/2",
+    "chooseHandSwapCard": "Choose {{slot}} card {{index}} {{card}}",
+    "confirmHandSwap": "Confirm swap",
+    "skipHandSwap": "No swap",
     "progressWaiting": "Waiting",
     "progressNeedsAll": "All players must confirm",
     "progressApprovedCount": "{{approved}}/{{total}} confirmed",

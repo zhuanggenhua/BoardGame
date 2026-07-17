@@ -38,7 +38,7 @@ const findEnemyUnitCard = (): UnitCard => {
   return card;
 };
 
-const buildIceShardsSmokeCore = (): { core: SummonerWarsCore; enemyPos: CellCoord } => {
+const buildIceShardsSmokeCore = (): { core: SummonerWarsCore; enemyPos: CellCoord; jarmundPos: CellCoord } => {
   resetInstanceCounter();
   const core = createInitializedCore(['0', '1'], deterministicRandom, {
     faction0: 'frost',
@@ -82,7 +82,8 @@ const buildIceShardsSmokeCore = (): { core: SummonerWarsCore; enemyPos: CellCoor
     throw new Error('未找到可放置敌方单位的相邻格');
   }
 
-  placeTestUnit(core, { row: 4, col: 2 }, {
+  const jarmundPos = { row: 4, col: 2 };
+  placeTestUnit(core, jarmundPos, {
     card: findIceShardsCard(),
     owner: '0',
     boosts: 2,
@@ -93,14 +94,17 @@ const buildIceShardsSmokeCore = (): { core: SummonerWarsCore; enemyPos: CellCoor
     owner: '1',
   });
 
-  return { core, enemyPos };
+  return { core, enemyPos, jarmundPos };
 };
 
 test.describe('召唤师战争 - ice_shards 最小化链路', () => {
-    test('build 结束时出现 confirm/skip 选择', async ({ page, game }, testInfo) => {
+    test('寒冰碎屑：攻击阶段开始自动结算伤害且不出现确认跳过', async ({ page, game }, testInfo) => {
         await game.openTestGame('summonerwars');
+        await page.evaluate(() => {
+          (window as Window & { __SW_DISABLE_AUTO_SKIP__?: boolean }).__SW_DISABLE_AUTO_SKIP__ = true;
+        });
 
-        const { core, enemyPos } = buildIceShardsSmokeCore();
+        const { core, enemyPos, jarmundPos } = buildIceShardsSmokeCore();
         await game.setupScene({
             gameId: 'summonerwars',
             phase: core.phase,
@@ -121,16 +125,45 @@ test.describe('召唤师战争 - ice_shards 最小化链路', () => {
         });
 
     await expect(page.getByTestId('sw-map-container')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('sw-end-phase')).toBeVisible({ timeout: 5000 });
+    const endPhaseButton = page.getByTestId('sw-end-phase');
+    await expect(endPhaseButton).toBeVisible({ timeout: 5000 });
+    await expect(endPhaseButton).toBeEnabled({ timeout: 5000 });
 
     const injectedState = await game.getState();
+    expect(injectedState?.core?.phase).toBe('build');
+    expect(injectedState?.sys?.phase).toBe('build');
     expect(injectedState?.core?.board?.[enemyPos.row]?.[enemyPos.col]?.unit?.owner).toBe('1');
+    expect(injectedState?.core?.board?.[enemyPos.row]?.[enemyPos.col]?.unit?.damage ?? 0).toBe(0);
+    const jarmundBefore = injectedState?.core?.board?.[jarmundPos.row]?.[jarmundPos.col]?.unit;
+    expect(jarmundBefore?.owner).toBe('0');
+    expect(jarmundBefore?.boosts).toBe(2);
+    await game.screenshot('01-寒冰碎屑-建造阶段触发前', testInfo);
 
-    await page.getByTestId('sw-end-phase').click();
+    await endPhaseButton.click();
 
-    await expect(page.getByRole('button', { name: /^(确认|Confirm)$/i })).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole('button', { name: /^(跳过|Skip)$/i })).toBeVisible({ timeout: 5000 });
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const enemy = state?.core?.board?.[enemyPos.row]?.[enemyPos.col]?.unit;
+      const jarmund = state?.core?.board?.[jarmundPos.row]?.[jarmundPos.col]?.unit;
+      return {
+        corePhase: state?.core?.phase,
+        sysPhase: state?.sys?.phase,
+        interactionType: state?.sys?.interaction?.current?.data?.sw?.type ?? null,
+        queueLength: state?.sys?.interaction?.queue?.length ?? 0,
+        enemyDamage: enemy?.damage ?? 0,
+        jarmundBoosts: jarmund?.boosts ?? null,
+      };
+    }, { timeout: 5000 }).toEqual({
+      corePhase: 'attack',
+      sysPhase: 'attack',
+      interactionType: null,
+      queueLength: 0,
+      enemyDamage: 1,
+      jarmundBoosts: 1,
+    });
 
-    await game.screenshot('ice-shards-phase-end-choice', testInfo);
+    const prompt = page.getByTestId('sw-ability-prompt');
+    await expect(prompt).toHaveCount(0);
+    await game.screenshot('02-寒冰碎屑-攻击阶段开始自动伤害结果', testInfo);
   });
 });

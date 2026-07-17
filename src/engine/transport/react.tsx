@@ -160,6 +160,8 @@ export interface LocalGameProviderProps {
     followCurrentTurnPlayer?: boolean;
     /** 是否持久化本地对局，以便刷新后恢复进度 */
     persistSession?: boolean;
+    /** 持久化用的游戏 ID；默认使用 config.gameId */
+    persistGameId?: string;
 }
 
 export function LocalGameProvider({
@@ -174,6 +176,7 @@ export function LocalGameProvider({
     playerId: localPlayerId,
     followCurrentTurnPlayer = false,
     persistSession = false,
+    persistGameId,
 }: LocalGameProviderProps) {
     const value = useLocalGameProviderRuntime({
         config,
@@ -186,6 +189,7 @@ export function LocalGameProvider({
         localPlayerId: localPlayerId ?? null,
         followCurrentTurnPlayer,
         persistSession,
+        persistGameId,
     });
 
     return (

@@ -136,7 +136,9 @@ test.describe('山屋惊魂驱魔失败伤害完整链路', () => {
 
         await expect(page.getByTestId('betrayal-exorcise-roll-continue')).toContainText('返回牌桌');
         await saveScreenshot(page, CLOSE_READY_SCREENSHOT);
-        await page.getByTestId('betrayal-exorcise-roll-continue').click();
+        const exorciseRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
+        await expect(exorciseRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        await exorciseRollBackdrop.click({ position: { x: 16, y: 16 } });
 
         await expect(page.getByTestId('betrayal-exorcise-roll-review')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);

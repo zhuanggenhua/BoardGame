@@ -39,6 +39,9 @@ const COLLAPSED_ROOM_HINT_SCREENSHOT = `${COLLAPSED_ROOM_FULL_CHAIN_EVIDENCE_DIR
 const COLLAPSED_ROOM_END_TURN_READY_SCREENSHOT = `${COLLAPSED_ROOM_FULL_CHAIN_EVIDENCE_DIR}/04-结束回合触发速度检定前.jpg`;
 const COLLAPSED_ROOM_DICE_SCREENSHOT = `${COLLAPSED_ROOM_FULL_CHAIN_EVIDENCE_DIR}/05-速度检定骰盘停稳.jpg`;
 const COLLAPSED_ROOM_SETTLED_SCREENSHOT = `${COLLAPSED_ROOM_FULL_CHAIN_EVIDENCE_DIR}/06-坠落后地下室起始点回牌桌可操作.jpg`;
+const COLLAPSED_ROOM_MOBILE_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-移动端结束回合投骰阻塞完整链路');
+const COLLAPSED_ROOM_MOBILE_DICE_SCREENSHOT = `${COLLAPSED_ROOM_MOBILE_EVIDENCE_DIR}/01-移动端横屏-速度检定骰盘阻塞.jpg`;
+const COLLAPSED_ROOM_MOBILE_SETTLED_SCREENSHOT = `${COLLAPSED_ROOM_MOBILE_EVIDENCE_DIR}/02-移动端横屏-确认后下一位行动.jpg`;
 const MYSTIC_ELEVATOR_FULL_CHAIN_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-神秘电梯移动骰盘完整链路');
 const MYSTIC_ELEVATOR_READY_SCREENSHOT = `${MYSTIC_ELEVATOR_FULL_CHAIN_EVIDENCE_DIR}/01-神秘电梯已翻出牌桌可操作.jpg`;
 const MYSTIC_ELEVATOR_BUTTON_SCREENSHOT = `${MYSTIC_ELEVATOR_FULL_CHAIN_EVIDENCE_DIR}/02-神秘电梯房间效果按钮可见.jpg`;
@@ -66,12 +69,25 @@ type HarnessWindow = Window & {
     };
 };
 
-const openBetrayalPage = async (page: Page, context: Parameters<typeof initBetrayalContext>[0], label: string) => {
+type OpenBetrayalPageOptions = {
+    viewportSize?: { width: number; height: number };
+    forceCoarsePointer?: boolean;
+};
+
+const openBetrayalPage = async (
+    page: Page,
+    context: Parameters<typeof initBetrayalContext>[0],
+    label: string,
+    options: OpenBetrayalPageOptions = {},
+) => {
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(page, label);
-    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.setViewportSize(options.viewportSize ?? { width: 1600, height: 900 });
     await warmBetrayalFrontend(context);
-    await page.goto('/play/betrayal?seat1=human&seat2=human&seat3=human', { waitUntil: 'domcontentloaded' });
+    await page.goto(
+        `/play/betrayal?seat1=human&seat2=human&seat3=human${options.forceCoarsePointer ? '&bgForceCoarsePointer=1' : ''}`,
+        { waitUntil: 'domcontentloaded' },
+    );
     await waitForBetrayalPageReady(page);
     return diagnostics;
 };
@@ -600,14 +616,18 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expect.poll(async () => {
             const core = await readCurrentCore(page);
             return {
+                currentPlayer: core.currentPlayer,
                 recentRollKind: core.recentRoll?.kind,
+                recentRollPlayer: core.recentRoll?.playerId,
                 recentRollSource: core.recentRoll?.sourceTitle,
                 recentRollTrait: core.recentRoll?.trait,
                 recentRollLabel: core.recentRoll?.latestLabel,
                 recentRollDiceCount: core.recentRoll?.dice.length,
             };
         }, { timeout: 30000 }).toEqual({
+            currentPlayer: '0',
             recentRollKind: 'roomEndTurnTraitCheck',
+            recentRollPlayer: '0',
             recentRollSource: '倒塌房间',
             recentRollTrait: 'speed',
             recentRollLabel: '坠落到地下室起始点',
@@ -630,13 +650,29 @@ test.describe('山屋惊魂房间效果代表链', () => {
             .find((explorer) => explorer.playerId === beforeFallExplorer.playerId);
         expect(fallenExplorer?.roomId).toBe('basement-landing');
         expect(fallenExplorer?.traits.might).toBe(beforeFallExplorer.traits.might - 1);
+        expect(afterFallCore.currentPlayer).toBe(beforeFallExplorer.playerId);
         expect(afterFallCore.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
+        expect(afterFallCore.recentRoll?.playerId).toBe(beforeFallExplorer.playerId);
+        expect(afterFallCore.currentPlayer).toBe(afterFallCore.recentRoll?.playerId);
+        expect(afterFallCore.recentRoll?.roomEndTurn?.nextPlayerId).toBe('1');
         expect(afterFallCore.recentRoll?.dice).toHaveLength(3);
         expect(afterFallCore.recentRoll?.latestLabel).toContain('坠落到地下室起始点');
+        await expect(page.getByTestId('betrayal-action-endTurn')).toBeVisible();
+        await page.getByTestId('betrayal-roll-continue').click();
+
+        await expect.poll(async () => {
+            const core = await readCurrentCore(page);
+            return {
+                currentPlayer: core.currentPlayer,
+                recentRoll: core.recentRoll,
+            };
+        }, { timeout: 30000 }).toEqual({
+            currentPlayer: '1',
+            recentRoll: null,
+        });
 
         await switchRoomMapToFloor(page, 'basement');
         await expect(page.getByTestId('betrayal-room-occupant-basement-landing-0')).toBeVisible();
-        await page.getByTestId('betrayal-roll-continue').click();
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
@@ -644,6 +680,75 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await saveScreenshot(page, COLLAPSED_ROOM_SETTLED_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-room-effect-collapsed-room-speed-check', diagnostics }]);
+    });
+
+    test('移动端横屏：结束回合投骰未确认前阻塞，确认后才切到下一位', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openBetrayalPage(
+            page,
+            context,
+            'betrayal-mobile-collapsed-room-roll-blocks-until-acknowledged',
+            {
+                viewportSize: { width: 896, height: 414 },
+                forceCoarsePointer: true,
+            },
+        );
+
+        await injectCore(page, createCollapsedRoomSpeedCheckCore());
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-mobile-action-rail')).toBeVisible();
+        await dismissDiscoveryPanelIfVisible(page);
+
+        const beforeFallCore = await readCurrentCore(page);
+        await setHarnessRandomQueue(page, [0.01, 0.01, 0.01, 0.5]);
+        await page.getByTestId('betrayal-mobile-dock-endTurn').click();
+
+        await expect.poll(async () => {
+            const core = await readCurrentCore(page);
+            return {
+                currentPlayer: core.currentPlayer,
+                recentRollKind: core.recentRoll?.kind,
+                recentRollPlayer: core.recentRoll?.playerId,
+                recentRollSource: core.recentRoll?.sourceTitle,
+                recentRollLabel: core.recentRoll?.latestLabel,
+            };
+        }, { timeout: 30000 }).toEqual({
+            currentPlayer: beforeFallCore.currentExplorer.playerId,
+            recentRollKind: 'roomEndTurnTraitCheck',
+            recentRollPlayer: beforeFallCore.currentExplorer.playerId,
+            recentRollSource: '倒塌房间',
+            recentRollLabel: '坠落到地下室起始点',
+        });
+
+        const mobileRollPanel = page.getByTestId('betrayal-recent-roll-panel');
+        await expect(mobileRollPanel).toBeVisible({ timeout: 30000 });
+        await expect(mobileRollPanel).toContainText('倒塌房间');
+        await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '3');
+        await waitForPhysicalDiceSettled(mobileRollPanel);
+        await expectPhysicalDiceSeparated(mobileRollPanel, {
+            minDiceCount: 3,
+            minDieVisualSize: 48,
+            minCanvasEdgeMargin: 12,
+        });
+        await saveScreenshot(page, COLLAPSED_ROOM_MOBILE_DICE_SCREENSHOT);
+
+        await page.getByTestId('betrayal-roll-continue').click();
+        await expect.poll(async () => {
+            const core = await readCurrentCore(page);
+            return {
+                currentPlayer: core.currentPlayer,
+                recentRoll: core.recentRoll,
+            };
+        }, { timeout: 30000 }).toEqual({
+            currentPlayer: '1',
+            recentRoll: null,
+        });
+
+        await expect(page.getByTestId('betrayal-mobile-action-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-mobile-dock-endTurn')).toBeVisible();
+        await saveScreenshot(page, COLLAPSED_ROOM_MOBILE_SETTLED_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-mobile-collapsed-room-roll-blocks-until-acknowledged', diagnostics }]);
     });
 
     test('神秘电梯移动骰盘真实链路：已翻出房间、启动房间效果、投骰移动并回牌桌', async ({ page, context }) => {

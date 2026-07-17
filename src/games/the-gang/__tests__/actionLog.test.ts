@@ -116,6 +116,54 @@ describe('The Gang action-log', () => {
         }
     });
 
+    test('记录手牌调换确认但不公开调换的隐藏牌', () => {
+        let state = setupState();
+
+        state = runCommand(state, command({
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    handSwap: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }));
+        state = startHeist(state, 2);
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                phase: 'hand-swap',
+            },
+        };
+
+        state = runCommand(state, command({
+            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+            playerId: '0',
+            payload: { topIndex: 0, bottomIndex: 1 },
+            timestamp: 3,
+        }));
+
+        const latestEntry = state.sys.actionLog.entries.at(-1);
+        expect(latestEntry?.kind).toBe(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP);
+        expect(latestEntry?.segments).toEqual([{
+            type: 'i18n',
+            ns: 'game-the-gang',
+            key: 'actionLog.confirmHandSwap',
+            params: { player: 1 },
+        }]);
+
+        const serializedLog = JSON.stringify(latestEntry);
+        expect(serializedLog).not.toContain('"rank"');
+        expect(serializedLog).not.toContain('"suit"');
+        expect(serializedLog).not.toContain('"topIndex"');
+        expect(serializedLog).not.toContain('"bottomIndex"');
+    });
+
     test('记录摊牌结果和下一次抢劫', () => {
         let state = setupState();
         state = startHeist(state, 1);

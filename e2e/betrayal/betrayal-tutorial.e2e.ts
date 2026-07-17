@@ -345,6 +345,10 @@ test.describe('山屋惊魂教程最小真实链路', () => {
 
         await clickNext(page);
         await waitForStep(page, 'exorcise-jack');
+        const readyRollBackdrop = page.getByTestId('betrayal-roll-result-backdrop');
+        await expect(readyRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        await readyRollBackdrop.click({ position: { x: 16, y: 16 } });
+        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
         await page.getByTestId('betrayal-room-basement-landing').click();
 
@@ -487,7 +491,9 @@ test.describe('山屋惊魂教程最小真实链路', () => {
         await expectVisiblePhysicalDiceBox(exorciseRollPanel);
         await waitForPhysicalDiceSettled(exorciseRollPanel);
         await saveScreenshot(page, STEP_20);
-        await page.getByTestId('betrayal-exorcise-roll-continue').click();
+        const exorciseRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
+        await expect(exorciseRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        await exorciseRollBackdrop.click({ position: { x: 16, y: 16 } });
 
         await waitForStep(page, 'endgame-review', 30000);
         const endgameScreen = page.getByTestId('betrayal-endgame-screen');

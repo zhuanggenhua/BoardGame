@@ -2983,6 +2983,184 @@ describe('先锋军团交互链', () => {
     expect(secondButtonCommand.state.sys.interaction.queue).toHaveLength(0);
   });
 
+  it('[mogu_fanatical_fungus] 真实移动后选择不推拉仍应充能并自伤', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'mogu', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+    core.players['0'].activeEvents.push({
+      id: CARD_IDS.MOGU_FANATICAL_FUNGUS,
+      cardType: 'event',
+      name: '狂热菌菇',
+      faction: 'mogu',
+      eventType: 'common',
+      cost: 0,
+      playPhase: 'summon',
+      effect: '持续。在你移动一个单位之后，可以将其充能。如果你这样做，首先可以将其推拉1个区格，然后必须对其造成1点伤害。',
+      isActive: true,
+      deckSymbols: [],
+    });
+
+    const from = { row: 4, col: 2 };
+    const to = { row: 4, col: 3 };
+    const mover = putUnit(core, from, mkUnit('mogu-fungus-stay-target', {
+      faction: 'mogu',
+      unitClass: 'common',
+      life: 3,
+    }), '0');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const moved = runGamePipeline(state, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      playerId: '0',
+      payload: { from, to, path: [from, to] },
+    });
+    expect(moved.success).toBe(true);
+    state = moved.state;
+    expect(getSwCurrentType(state)).toBe('after_move_mogu_fanatical_fungus');
+
+    const current = state.sys.interaction.current;
+    expect(current?.kind).toBe('simple-choice');
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const stayOptionId = options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord; newPosition?: CellCoord } | undefined;
+      return value?.action === 'after_move_mogu_fanatical_fungus_target'
+        && value.targetPosition?.row === to.row
+        && value.targetPosition.col === to.col
+        && value.newPosition === undefined;
+    })?.id;
+    expect(stayOptionId).toBe('stay');
+
+    const picked = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: stayOptionId },
+    });
+    expect(picked.success).toBe(true);
+    state = picked.state;
+
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    expect(picked.events.some(e => e.type === SW_EVENTS.UNIT_PUSHED)).toBe(false);
+    expect(picked.events.filter(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && e.payload?.sourceAbilityId === 'mogu_fanatical_fungus'
+    )).toHaveLength(1);
+    expect(picked.events.filter(e =>
+      e.type === SW_EVENTS.UNIT_DAMAGED
+      && e.payload?.reason === 'mogu_fanatical_fungus'
+    )).toHaveLength(1);
+    expect(getUnitAt(state.core, to)?.instanceId).toBe(mover.instanceId);
+    expect(getUnitAt(state.core, to)?.boosts).toBe(1);
+    expect(getUnitAt(state.core, to)?.damage).toBe(1);
+  });
+
+  it('[mogu_fanatical_fungus] 自伤致死应触发库鞭克血腥绽放给周围友方充能', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'mogu', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+    core.players['0'].activeEvents.push({
+      id: CARD_IDS.MOGU_FANATICAL_FUNGUS,
+      cardType: 'event',
+      name: '狂热菌菇',
+      faction: 'mogu',
+      eventType: 'common',
+      cost: 0,
+      playPhase: 'summon',
+      effect: '持续。在你移动一个单位之后，可以将其充能。如果你这样做，首先可以将其推拉1个区格，然后必须对其造成1点伤害。',
+      isActive: true,
+      deckSymbols: [],
+    });
+
+    const summonerPos = { row: 4, col: 2 };
+    const from = { row: 4, col: 3 };
+    const to = { row: 4, col: 4 };
+    const allyNearPos = { row: 3, col: 2 };
+    const allyFarPos = { row: 1, col: 1 };
+    const enemyNearPos = { row: 3, col: 3 };
+    const summoner = putUnit(core, summonerPos, mkUnit('mogu-summoner-bloom-l4', {
+      abilities: ['mogu_blood_bloom'],
+      faction: 'mogu',
+      unitClass: 'summoner',
+      name: '库鞭克',
+      life: 7,
+    }), '0');
+    const victim = putUnit(core, from, mkUnit('mogu-fungus-lethal-target', {
+      faction: 'mogu',
+      unitClass: 'common',
+      life: 1,
+    }), '0');
+    const allyNear = putUnit(core, allyNearPos, mkUnit('mogu-bloom-near-ally', {
+      faction: 'mogu',
+      unitClass: 'common',
+      life: 3,
+    }), '0');
+    const allyFar = putUnit(core, allyFarPos, mkUnit('mogu-bloom-far-ally', {
+      faction: 'mogu',
+      unitClass: 'common',
+      life: 3,
+    }), '0');
+    const enemyNear = putUnit(core, enemyNearPos, mkUnit('mogu-bloom-near-enemy', {
+      faction: 'necromancer',
+      unitClass: 'common',
+      life: 3,
+    }), '1');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const moved = runGamePipeline(state, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      playerId: '0',
+      payload: { from, to, path: [from, to] },
+    });
+    expect(moved.success).toBe(true);
+    state = moved.state;
+
+    const current = state.sys.interaction.current;
+    expect(current?.kind).toBe('simple-choice');
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const stayOptionId = options.find((option) => option.id === 'stay')?.id;
+    expect(stayOptionId).toBe('stay');
+
+    const picked = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: stayOptionId },
+    });
+    expect(picked.success).toBe(true);
+    state = picked.state;
+
+    expect(picked.events.filter(e => e.type === SW_EVENTS.UNIT_DESTROYED)).toHaveLength(1);
+    expect(picked.events.filter(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && e.payload?.sourceAbilityId === 'mogu_blood_bloom'
+    )).toHaveLength(1);
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(state.core, to)).toBeUndefined();
+    expect(getUnitAt(state.core, summoner.position)?.boosts).toBe(0);
+    expect(getUnitAt(state.core, allyNear.position)?.instanceId).toBe(allyNear.instanceId);
+    expect(getUnitAt(state.core, allyNear.position)?.boosts).toBe(1);
+    expect(getUnitAt(state.core, allyFar.position)?.boosts).toBe(0);
+    expect(getUnitAt(state.core, enemyNear.position)?.boosts).toBe(0);
+    expect(picked.events.some(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && e.payload?.sourceAbilityId === 'mogu_blood_bloom'
+      && e.payload?.position?.row === to.row
+      && e.payload.position.col === to.col
+    )).toBe(false);
+    expect(victim.instanceId).toBeTruthy();
+  });
+
   // --- vanish: 目标费用不为0 ---
   it('[vanish] 目标费用不为0时验证失败', () => {
     core.phase = 'attack';
@@ -3689,7 +3867,7 @@ describe('验证层有效性门控', () => {
     )).toHaveLength(1);
   });
 
-  it('[ice_shards] 攻击阶段开始确认后应花费 1 充能并对多建筑相邻敌方只伤一次', () => {
+  it('[ice_shards] 攻击阶段开始应自动花费 1 充能并对多建筑相邻敌方只伤一次', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'build';
@@ -3723,26 +3901,11 @@ describe('验证层有效性门控', () => {
     state = phaseExit.state;
     expect(state.core.phase).toBe('attack');
     expect(state.sys.flowHalted).toBe(false);
-    expect(getSwCurrentType(state)).toBe('ice_shards');
-    const current = state.sys.interaction.current;
-    expect(current?.kind).toBe('simple-choice');
-    const options = ((current?.data as { options?: Array<{ id: string; disabled?: boolean }> } | undefined)?.options ?? []);
-    expect(options.find((option) => option.id === 'confirm')?.disabled).toBe(false);
-    expect(options.some((option) => option.id === 'skip')).toBe(true);
-
-    const confirmed = runPipeline(state, {
-      type: INTERACTION_COMMANDS.RESPOND,
-      playerId: '0',
-      payload: { interactionId: current!.id, optionId: 'confirm' },
-    });
-
-    expect(confirmed.success).toBe(true);
-    state = confirmed.state;
     expect(state.sys.interaction.current).toBeUndefined();
     expect(state.sys.interaction.queue).toHaveLength(0);
     expect(getUnitAt(state.core, jarmund.position)?.boosts).toBe(0);
     expect(getUnitAt(state.core, enemy.position)?.damage).toBe(1);
-    const damageEvents = confirmed.events.filter(e =>
+    const damageEvents = phaseExit.events.filter(e =>
       e.type === SW_EVENTS.UNIT_DAMAGED
       && (e.payload as Record<string, unknown>).reason === 'ice_shards'
     );
@@ -3751,7 +3914,7 @@ describe('验证层有效性门控', () => {
     expect(state.core.phase).toBe('attack');
   });
 
-  it('[ice_shards] 攻击阶段开始跳过时不应消耗充能或造成伤害', () => {
+  it('[ice_shards] 充能不足时攻击阶段开始不应创建选择或造成伤害', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'build';
@@ -3761,7 +3924,7 @@ describe('验证层有效性门控', () => {
       abilities: ['ice_shards'],
       faction: 'frost',
       unitClass: 'champion',
-    }), '0', { boosts: 1 });
+    }), '0', { boosts: 0 });
     putStructure(core, { row: 4, col: 3 }, '0');
     const enemy = putUnit(core, { row: 4, col: 4 }, mkUnit('ice-shards-skip-enemy', {
       faction: 'barbaric',
@@ -3781,19 +3944,13 @@ describe('验证层有效性门控', () => {
     });
     expect(phaseExit.success).toBe(true);
     state = phaseExit.state;
-    expect(getSwCurrentType(state)).toBe('ice_shards');
-
-    const skipped = runPipeline(state, {
-      type: INTERACTION_COMMANDS.RESPOND,
-      playerId: '0',
-      payload: { interactionId: state.sys.interaction.current!.id, optionId: 'skip' },
-    });
-
-    expect(skipped.success).toBe(true);
-    state = skipped.state;
-    expect(getUnitAt(state.core, jarmund.position)?.boosts).toBe(1);
+    expect(state.core.phase).toBe('attack');
+    expect(state.sys.flowHalted).toBe(false);
+    expect(getSwCurrentType(state)).toBeUndefined();
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    expect(getUnitAt(state.core, jarmund.position)?.boosts).toBe(0);
     expect(getUnitAt(state.core, enemy.position)?.damage).toBe(0);
-    expect(skipped.events.some(e =>
+    expect(phaseExit.events.some(e =>
       e.type === SW_EVENTS.UNIT_DAMAGED
       && (e.payload as Record<string, unknown>).reason === 'ice_shards'
     )).toBe(false);
@@ -3801,7 +3958,45 @@ describe('验证层有效性门控', () => {
     expect(state.core.phase).toBe('attack');
   });
 
-  it('[ice_shards] 多个贾穆德在同一攻击阶段开始时应逐个收口', () => {
+  it('[ice_shards] 建造阶段结束进入攻击阶段时应立刻结算，不得停在提示或越过到魔力阶段', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'build';
+    core.currentPlayer = '0';
+
+    const jarmund = putUnit(core, { row: 5, col: 3 }, mkUnit('jarmund-block-legacy', {
+      abilities: ['ice_shards'],
+      faction: 'frost',
+      unitClass: 'champion',
+    }), '0', { boosts: 1 });
+    putStructure(core, { row: 4, col: 3 }, '0');
+    const enemy = putUnit(core, { row: 4, col: 4 }, mkUnit('ice-shards-block-enemy', {
+      faction: 'barbaric',
+      unitClass: 'common',
+      life: 5,
+    }), '1');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: { ...createInitialSystemState(['0', '1'], engineConfig.systems as any), phase: 'build' },
+    };
+
+    const enteredAttack = runGamePipeline(state, {
+      type: FLOW_COMMANDS.ADVANCE_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(enteredAttack.success).toBe(true);
+    state = enteredAttack.state;
+    expect(state.core.phase).toBe('attack');
+    expect(state.sys.phase).toBe('attack');
+    expect(getSwCurrentType(state)).toBeUndefined();
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    expect(getUnitAt(state.core, jarmund.position)?.boosts).toBe(0);
+    expect(getUnitAt(state.core, enemy.position)?.damage).toBe(1);
+  });
+
+  it('[ice_shards] 多个贾穆德在同一攻击阶段开始时应全部自动结算', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'build';
@@ -3839,36 +4034,6 @@ describe('验证层有效性门控', () => {
     state = phaseExit.state;
     expect(state.core.phase).toBe('attack');
     expect(state.sys.flowHalted).toBe(false);
-    expect(getSwCurrentType(state)).toBe('ice_shards');
-    expect(state.sys.interaction.queue).toHaveLength(1);
-
-    const firstInteraction = state.sys.interaction.current!;
-    const firstSource = (firstInteraction.data as { sw?: { sourceUnitId?: string } }).sw?.sourceUnitId;
-    const secondSource = ((state.sys.interaction.queue[0]?.data as { sw?: { sourceUnitId?: string } } | undefined)?.sw?.sourceUnitId);
-    expect(new Set([firstSource, secondSource])).toEqual(new Set([first.instanceId, second.instanceId]));
-
-    const firstConfirmed = runPipeline(state, {
-      type: INTERACTION_COMMANDS.RESPOND,
-      playerId: '0',
-      payload: { interactionId: firstInteraction.id, optionId: 'confirm' },
-    });
-    expect(firstConfirmed.success).toBe(true);
-    state = firstConfirmed.state;
-    expect(state.core.phase).toBe('attack');
-    expect(state.sys.flowHalted).toBe(false);
-    expect(getUnitAt(state.core, enemy.position)?.damage).toBe(1);
-    expect([getUnitAt(state.core, first.position)?.boosts, getUnitAt(state.core, second.position)?.boosts].sort()).toEqual([0, 1]);
-    expect(getSwCurrentType(state)).toBe('ice_shards');
-    expect(state.sys.interaction.queue).toHaveLength(0);
-
-    const secondInteraction = state.sys.interaction.current!;
-    const secondConfirmed = runPipeline(state, {
-      type: INTERACTION_COMMANDS.RESPOND,
-      playerId: '0',
-      payload: { interactionId: secondInteraction.id, optionId: 'confirm' },
-    });
-    expect(secondConfirmed.success).toBe(true);
-    state = secondConfirmed.state;
     expect(getUnitAt(state.core, enemy.position)?.damage).toBe(2);
     expect(getUnitAt(state.core, first.position)?.boosts).toBe(0);
     expect(getUnitAt(state.core, second.position)?.boosts).toBe(0);

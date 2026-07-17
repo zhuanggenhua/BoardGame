@@ -10,6 +10,7 @@ import { useAutoSkipPhase } from '../../../components/game/framework';
 import { useTranslation } from 'react-i18next';
 import type { SummonerWarsCore, CellCoord, UnitCard, GamePhase, EventCard } from '../domain/types';
 import { SW_COMMANDS } from '../domain/types';
+import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import {
   getValidSummonPositionsForCard, getValidBuildPositions,
   getValidMoveTargetsEnhanced, getValidAttackTargetsEnhanced,
@@ -765,7 +766,7 @@ export function useCellInteraction({
       phaseAdvanceCooldownUntilRef.current = 0;
       phaseAdvanceReleaseTimerRef.current = null;
     }, ADVANCE_PHASE_FALLBACK_RELEASE_MS);
-    dispatch(SW_COMMANDS.END_PHASE, {});
+    dispatch(FLOW_COMMANDS.ADVANCE_PHASE, {});
     return true;
   }, [dispatch, isPhaseAdvanceLocked]);
 

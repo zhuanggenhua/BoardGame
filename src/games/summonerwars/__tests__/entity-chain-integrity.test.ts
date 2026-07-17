@@ -60,7 +60,7 @@ const HANDLED_BY_UI_EVENTS = new Set([
  * 修改后必须同步更新 domain/systems.ts 中的交互映射逻辑
  */
 const HANDLED_BY_INTERACTION_SYSTEM = new Set([
-    'ice_shards_damage',      // InteractionSystem → 交互确认 → ACTIVATE_ABILITY(ice_shards)
+    'ice_shards_damage',      // InteractionSystem → 自动 ACTIVATE_ABILITY(ice_shards)
     'feed_beast_check',       // InteractionSystem → 交互确认 → ACTIVATE_ABILITY(feed_beast)
 ]);
 

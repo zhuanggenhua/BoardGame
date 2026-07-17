@@ -85,7 +85,6 @@ interface StatusBannersProps {
   magicEventChoiceMode: { cardId: string } | null;
   eventTargetMode: { cardId: string } | null;
   systemGrabFollowMode: boolean;
-  systemIceShardsMode: { sourceBoosts: number } | null;
   systemFeedBeastMode: boolean;
   systemMoguParasiteMode: boolean;
   // 回调
@@ -93,7 +92,6 @@ interface StatusBannersProps {
   onConfirmBeforeAttackCards: () => void;
   onConfirmBloodRune: (choice: 'damage' | 'charge') => void;
   onSkipGrabFollow: () => void;
-  onConfirmIceShards: () => void;
   onConfirmFeedBeastSelfDestroy: () => void;
   onConfirmMoguParasite: (choice: 'consume_charge' | 'take_damage') => void;
   onCancelBeforeAttack: () => void;
@@ -174,8 +172,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   mindControlMode, chantEntanglementMode, moguSymbioticSelfHealingMode, moguReleaseSporesMode, sneakMode, glacialShiftMode, withdrawMode, stunMode, hypnoticLureMode,
   mindCaptureMode, afterAttackAbilityMode, rapidFireMode, telekinesisTargetMode, magicEventChoiceMode,
   eventTargetMode,
-  systemGrabFollowMode, systemIceShardsMode, systemFeedBeastMode, systemMoguParasiteMode,
-  onCancelAbility, onConfirmBeforeAttackCards, onConfirmBloodRune, onSkipGrabFollow, onConfirmIceShards, onConfirmFeedBeastSelfDestroy, onConfirmMoguParasite,
+  systemGrabFollowMode, systemFeedBeastMode, systemMoguParasiteMode,
+  onCancelAbility, onConfirmBeforeAttackCards, onConfirmBloodRune, onSkipGrabFollow, onConfirmFeedBeastSelfDestroy, onConfirmMoguParasite,
   onCancelBeforeAttack, onCancelBloodSummon, onContinueBloodSummon,
   onCancelAnnihilate, onConfirmAnnihilateTargets, onSkipAnnihilateDamage,
   onConfirmSoulTransfer, onSkipSoulTransfer, onSkipFuneralPyre,
@@ -346,6 +344,17 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
             ))}
           </>
         )}
+        {abilityMode.abilityId === 'mogu_fanatical_fungus' && (
+          <>
+            {(abilityMode.systemChoiceOptions ?? [])
+              .filter((option) => option.id === 'stay')
+              .map((option) => (
+                <GameButton key={option.id} onClick={() => onSystemAbilityChoice(option.id)} variant="primary" size="sm">
+                  {option.labelKey ? t(option.labelKey) : option.label ?? option.id}
+                </GameButton>
+              ))}
+          </>
+        )}
         {['spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'mogu_transmission', 'mogu_fanatical_fungus', 'huijin_call_guards', 'huijin_ram', 'huijin_quick_shot'].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
@@ -366,26 +375,6 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         {abilityMode.abilityId === 'life_drain' && abilityMode.context !== 'beforeAttack' && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
         )}
-      </div>
-    );
-  }
-
-  if (systemIceShardsMode) {
-    return (
-      <div data-testid="sw-ability-prompt" className="bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex items-center gap-3 shadow-lg">
-        <span className="text-amber-200 text-sm font-bold">
-          {t('statusBanners.ability.iceShards')}
-        </span>
-        <GameButton
-          onClick={onConfirmIceShards}
-          variant="primary"
-          size="sm"
-          disabled={systemIceShardsMode.sourceBoosts < 1}
-          title={systemIceShardsMode.sourceBoosts < 1 ? t('statusBanners.insufficientCharge') : undefined}
-        >
-          {t('actions.confirm')}
-        </GameButton>
-        <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
       </div>
     );
   }

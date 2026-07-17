@@ -1030,6 +1030,12 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
+        const discoveryPanel = screen.getByTestId('betrayal-discovery-panel');
+        expect(discoveryPanel).toHaveAttribute('data-backdrop-dismiss', 'disabled');
+        fireEvent.click(discoveryPanel);
+        expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
+
         fireEvent.click(screen.getByTestId('betrayal-inventory-rope'));
         expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveTextContent('选择要重掷的骰子');
         expect(Number(screen.getByTestId('betrayal-rabbit-foot-dice').getAttribute('data-reroll-target-count'))).toBeGreaterThan(0);
@@ -1039,6 +1045,237 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用兔脚重掷第 2 颗骰子');
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-rerolling-die-index', '1');
         expect(screen.queryByTestId('betrayal-rabbit-foot-dice')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        fireEvent.click(screen.getByTestId('betrayal-discovery-panel'));
+        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+    });
+
+    it('普通投骰结果没有可改骰时点击空白关闭，点击骰盘内容不关闭', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            inventory: [],
+        };
+        core.currentExplorerInventory = [];
+        core.turnStartInventoryCardIds = [];
+        core.usedCardIdsThisTurn = [];
+        core.latestDiscovery = null;
+        core.latestDiscoveryOwnerPlayerId = null;
+        core.recentRoll = {
+            id: 'board-open-roll-backdrop-close',
+            kind: 'mysticElevator',
+            playerId: '0',
+            sourceTitle: '神秘电梯',
+            rollLabel: '房间移动',
+            dice: [1, 1],
+            passiveBonus: 0,
+            latestLabel: '移动到未探索',
+            consumedRabbitFootCardIds: [],
+        };
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        const backdrop = screen.getByTestId('betrayal-roll-result-backdrop');
+        expect(backdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        fireEvent.click(screen.getByTestId('betrayal-roll-result-dock'));
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
+        fireEvent.click(backdrop);
+        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+    });
+
+    it('普通投骰结果仍可改骰时点击空白不关闭，只能用明确按钮关闭', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            inventory: [{ id: 'rope', name: '兔脚', kind: 'item' }],
+        };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['rope'];
+        core.usedCardIdsThisTurn = [];
+        core.latestDiscovery = null;
+        core.latestDiscoveryOwnerPlayerId = null;
+        core.recentRoll = {
+            id: 'board-roll-modifier-requires-button-close',
+            kind: 'roomEndTurnTraitCheck',
+            playerId: '0',
+            sourceTitle: '倒塌房间',
+            trait: 'speed',
+            rollLabel: '速度检定',
+            dice: [0, 0, 0],
+            passiveBonus: 0,
+            latestLabel: '坠落到地下室起始点',
+            consumedRabbitFootCardIds: [],
+        };
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        const backdrop = screen.getByTestId('betrayal-roll-result-backdrop');
+        expect(backdrop).toHaveAttribute('data-backdrop-dismiss', 'disabled');
+        fireEvent.click(backdrop);
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+    });
+
+    it('结束回合投骰未确认前阻塞行动链，点击继续后才切到下一位玩家', async () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'basement-landing',
+            inventory: [],
+        };
+        core.currentPlayer = '0';
+        core.activeRoomId = core.currentExplorer.roomId;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        core.turnStartInventoryCardIds = [];
+        core.usedCardIdsThisTurn = [];
+        core.latestDiscovery = null;
+        core.latestDiscoveryOwnerPlayerId = null;
+        core.recommendedAction = 'endTurn';
+        core.recentRoll = {
+            id: 'pending-room-end-turn-roll',
+            kind: 'roomEndTurnTraitCheck',
+            playerId: '0',
+            sourceTitle: '倒塌房间',
+            trait: 'speed',
+            rollLabel: '速度检定',
+            dice: [0, 0, 0],
+            passiveBonus: 0,
+            latestLabel: '坠落到地下室起始点',
+            roomEndTurn: {
+                kind: 'speedCheckFallToBasement',
+                roomName: '倒塌房间',
+                roomId: 'upper-north',
+                originalRoomId: 'upper-north',
+                traitsBeforeEffect: { ...core.currentExplorer.traits },
+                previousPhysicalDamage: 1,
+                previousDestinationRoomId: 'basement-landing',
+                nextPlayerId: '1',
+                monsterMovementRoll: null,
+                turnLogText: '轮到玩家 2',
+            },
+            consumedRabbitFootCardIds: [],
+        };
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                playerID="0"
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-roll-result-backdrop')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('倒塌房间');
+        expect(screen.getByTestId('betrayal-current-panel-token-0')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('betrayal-roll-continue'));
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+        });
+
+        expect(screen.getByTestId('betrayal-current-panel-token-1')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-action-endTurn')).toBeInTheDocument();
+    });
+
+    it('攻击投骰结果没有可改骰时点击空白关闭', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        const defender = core.otherExplorers[0]!;
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            inventory: [],
+        };
+        core.currentExplorerInventory = [];
+        core.turnStartInventoryCardIds = [];
+        core.usedCardIdsThisTurn = [];
+        core.latestDiscovery = null;
+        core.latestDiscoveryOwnerPlayerId = null;
+        core.recentRoll = {
+            id: 'board-attack-roll-backdrop-close',
+            kind: 'attackRoll',
+            playerId: '0',
+            sourceTitle: '攻击投骰',
+            rollLabel: '攻击投骰',
+            dice: [2, 2, 0, 0],
+            passiveBonus: 0,
+            latestLabel: '造成 2 点伤害',
+            consumedRabbitFootCardIds: [],
+            attack: {
+                target: 'hero',
+                defenderPlayerId: defender.playerId,
+                damageKind: 'physical',
+                previousDamageToAttacker: 0,
+                previousDamageToDefender: 2,
+                defenderRoll: 2,
+                attackerTraitsBeforeDamage: { ...core.currentExplorer.traits },
+                defenderTraitsBeforeDamage: { ...defender.traits },
+            },
+        };
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        const backdrop = screen.getByTestId('betrayal-roll-review-backdrop');
+        expect(backdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        fireEvent.click(screen.getByTestId('betrayal-attack-roll-review'));
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
+        fireEvent.click(backdrop);
+        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+    });
+
+    it('驱魔投骰结果没有可改骰时点击空白关闭', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            inventory: [],
+        };
+        core.currentExplorerInventory = [];
+        core.turnStartInventoryCardIds = [];
+        core.usedCardIdsThisTurn = [];
+        core.latestDiscovery = null;
+        core.latestDiscoveryOwnerPlayerId = null;
+        core.recentRoll = {
+            id: 'board-exorcise-roll-backdrop-close',
+            kind: 'hauntActionTraitCheck',
+            playerId: '0',
+            sourceTitle: '驱魔',
+            trait: 'sanity',
+            rollLabel: '神志检定',
+            dice: [0, 0, 0],
+            passiveBonus: 0,
+            latestLabel: '驱魔失败',
+            consumedRabbitFootCardIds: [],
+        };
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        const backdrop = screen.getByTestId('betrayal-roll-review-backdrop');
+        expect(backdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        fireEvent.click(screen.getByTestId('betrayal-exorcise-roll-review'));
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toBeInTheDocument();
+        fireEvent.click(backdrop);
+        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
     });
 
     it('运行时房间会读取正式空间规则字段', () => {

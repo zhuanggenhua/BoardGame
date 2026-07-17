@@ -103,7 +103,7 @@ const RULE_SURFACE_ASSETS = {
     specialistsDiscardZone: 'the-gang/rule-assets/surfaces/specialists-discard-zone',
 } as const;
 
-const TTS_SETUP_TOGGLE_KEYS = ['omaha', 'twoHand', 'automode', 'antiTroll'] as const;
+const TTS_SETUP_TOGGLE_KEYS = ['omaha', 'twoHand', 'handSwap', 'automode', 'antiTroll'] as const;
 type TtsSetupToggleKey = typeof TTS_SETUP_TOGGLE_KEYS[number];
 const TABLE_REMINDER_CHALLENGES = ['retina-scan', 'fingerprint-scan', 'blackout'] as const;
 
@@ -152,7 +152,7 @@ const UTILITY_ICON_CLASS = 'h-4 w-4 shrink-0 min-[901px]:h-5 min-[901px]:w-5';
 
 type TFunction = ReturnType<typeof useTranslation>['t'];
 
-type CardFaceEmphasis = 'table' | 'river' | 'hand' | 'showdown';
+type CardFaceEmphasis = 'table' | 'river' | 'riverCompact' | 'hand' | 'handCompact' | 'showdown';
 
 interface ProgressButtonState {
     approvals: string[];
@@ -231,7 +231,9 @@ function CardFace({
     const sizeClassByEmphasis: Record<CardFaceEmphasis, string> = {
         table: 'h-14 w-10 md:h-16 md:w-11 lg:h-24 lg:w-[4.25rem] xl:h-28 xl:w-20',
         river: 'h-20 w-14 md:h-24 md:w-16 lg:h-32 lg:w-[5.5rem] xl:h-40 xl:w-28',
+        riverCompact: 'h-14 w-10 md:h-16 md:w-11 lg:h-20 lg:w-14 xl:h-20 xl:w-14',
         hand: 'h-20 w-14 md:h-24 md:w-16 lg:h-32 lg:w-[5.5rem] xl:h-40 xl:w-28',
+        handCompact: 'h-14 w-10 md:h-16 md:w-11 lg:h-20 lg:w-14 xl:h-20 xl:w-14',
         showdown: 'h-16 w-11 md:h-20 md:w-14 lg:h-24 lg:w-[4.25rem] xl:h-28 xl:w-20',
     };
     const sizeClass = sizeClassByEmphasis[emphasis];
@@ -310,6 +312,10 @@ function HandCardRows({
     revealOrderBase,
     winningHandSlot,
     showLabels = false,
+    selectable = false,
+    selectedTopIndex,
+    selectedBottomIndex,
+    onCardSelect,
 }: {
     primaryCards: PlayingCard[];
     secondaryCards?: PlayingCard[];
@@ -319,6 +325,10 @@ function HandCardRows({
     revealOrderBase?: number;
     winningHandSlot?: 'top' | 'bottom';
     showLabels?: boolean;
+    selectable?: boolean;
+    selectedTopIndex?: number;
+    selectedBottomIndex?: number;
+    onCardSelect?: (slot: 'top' | 'bottom', index: number) => void;
 }) {
     const rows = [
         { slot: 'top' as const, cards: primaryCards, label: t('board.topHand') },
@@ -356,15 +366,49 @@ function HandCardRows({
                             <span className="sr-only">{row.label}</span>
                         )}
                         <div className="flex items-center justify-center gap-2 overflow-visible md:gap-3">
-                            {row.cards.map((card, index) => (
-                                <CardFace
-                                    key={`${row.slot}-${card.rank}-${card.suit}-${index}`}
-                                    card={card}
-                                    emphasis={emphasis}
-                                    revealOrder={revealOrderBase === undefined ? undefined : revealOrderBase + startOffset + index}
-                                    t={t}
-                                />
-                            ))}
+                            {row.cards.map((card, index) => {
+                                const selected = row.slot === 'top'
+                                    ? selectedTopIndex === index
+                                    : selectedBottomIndex === index;
+                                const cardFace = (
+                                    <CardFace
+                                        card={card}
+                                        emphasis={emphasis}
+                                        revealOrder={revealOrderBase === undefined ? undefined : revealOrderBase + startOffset + index}
+                                        t={t}
+                                    />
+                                );
+                                if (!selectable || !onCardSelect) {
+                                    return (
+                                        <div key={`${row.slot}-${card.rank}-${card.suit}-${index}`}>
+                                            {cardFace}
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        key={`${row.slot}-${card.rank}-${card.suit}-${index}`}
+                                        type="button"
+                                        aria-pressed={selected}
+                                        aria-label={t('board.chooseHandSwapCard', {
+                                            slot: row.label,
+                                            index: index + 1,
+                                            card: formatCard(card),
+                                        })}
+                                        onClick={() => onCardSelect(row.slot, index)}
+                                        className={[
+                                            'rounded-lg p-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                                            selected
+                                                ? 'bg-amber-300/18 ring-4 ring-amber-200 shadow-[0_0_1.4rem_rgba(245,214,132,0.82)]'
+                                                : 'ring-2 ring-emerald-200/45 hover:-translate-y-1 hover:bg-emerald-300/10 hover:ring-emerald-200',
+                                        ].join(' ')}
+                                        data-testid={`${testIdPrefix}-${row.slot}-card-${index}`}
+                                        data-selected={selected ? 'true' : 'false'}
+                                    >
+                                        {cardFace}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 );
@@ -596,12 +640,13 @@ function RulesConfigPanel({
                                         {t('board.ttsSetupOptionsSource')}
                                     </span>
                                 </div>
-                                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                                     {TTS_SETUP_TOGGLE_KEYS.map((option) => {
                                         const active = normalized[option];
-                                        const disabledByRule = option === 'twoHand' && (
-                                            normalized.gameMode !== 'texas-holdem'
-                                            || playerCount > 5
+                                        const twoHandUnavailable = normalized.gameMode !== 'texas-holdem' || playerCount > 5;
+                                        const disabledByRule = (
+                                            (option === 'twoHand' && twoHandUnavailable)
+                                            || (option === 'handSwap' && (twoHandUnavailable || !normalized.twoHand))
                                         );
                                         return (
                                             <button
@@ -1520,14 +1565,22 @@ function HandChipStrip({
     currentRound,
     currentChip,
     playerId,
+    compact = false,
 }: {
     roundHistory: TheGangCore['roundHistory'];
     currentRound: number;
     currentChip?: number;
     playerId: string;
+    compact?: boolean;
 }) {
     return (
-        <div className="flex min-h-8 items-center justify-center gap-1.5 lg:min-h-11 lg:gap-2" data-bgg-zone="hand-chips">
+        <div
+            className={[
+                'flex items-center justify-center',
+                compact ? 'min-h-6 gap-1 lg:min-h-8 lg:gap-1.5' : 'min-h-8 gap-1.5 lg:min-h-11 lg:gap-2',
+            ].join(' ')}
+            data-bgg-zone="hand-chips"
+        >
             {roundHistory.map((entry) => {
                 const chip = entry.chipsByPlayer[playerId];
                 if (chip === undefined) return null;
@@ -1536,7 +1589,7 @@ function HandChipStrip({
                         key={`${entry.round}-${chip}`}
                         round={entry.round}
                         value={chip}
-                        size="sm"
+                        size={compact ? 'xs' : 'sm'}
                         zone="hand-chips-previous"
                     />
                 );
@@ -1545,8 +1598,8 @@ function HandChipStrip({
                 <ChipDisc
                     round={currentRound}
                     value={currentChip}
-                    size="lg"
-                    className="drop-shadow-[0_0_18px_rgba(252,211,77,0.55)]"
+                    size={compact ? 'sm' : 'lg'}
+                    className={compact ? 'drop-shadow-[0_0_12px_rgba(252,211,77,0.48)]' : 'drop-shadow-[0_0_18px_rgba(252,211,77,0.55)]'}
                     zone="hand-current-chip"
                 />
             )}
@@ -1633,12 +1686,21 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         ? (playerID ?? core.playerIds[0])
         : (hasAiSeat ? (playerID ?? localHumanPlayerId) : (playerID ?? core.playerIds[0]));
     const localPlayer = core.players[localPlayerId];
+    const hasSecondaryHand = (localPlayer?.secondaryPocketCards?.length ?? 0) > 0;
+    const [handSwapSelection, setHandSwapSelection] = useState<{ topIndex?: number; bottomIndex?: number }>({});
     const heistStarted = core.heistStarted === true;
     const setupOpen = core.phase === 'chip-selection' && !heistStarted;
     const allPlayersHaveChip = core.playerIds.every((id) => core.currentRoundChips[id] !== undefined);
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
     const revealShowdownProgress = getProgressButtonState(core, 'reveal-showdown', localPlayerId, t('board.revealShowdown'), t);
+    const handSwapProgress = getProgressButtonState(core, 'hand-swap', localPlayerId, t('board.confirmHandSwap'), t);
     const nextHeistProgress = getProgressButtonState(core, 'start-next-heist', localPlayerId, t('board.nextHeist'), t);
+    const handSwapSelectedCount = Number(handSwapSelection.topIndex !== undefined) + Number(handSwapSelection.bottomIndex !== undefined);
+    const canSelectHandSwap = core.phase === 'hand-swap' && !handSwapProgress.hasApproved;
+    const canConfirmHandSwap = canSelectHandSwap
+        && handSwapSelection.topIndex !== undefined
+        && handSwapSelection.bottomIndex !== undefined;
+    const handSwapLayout = core.phase === 'hand-swap' && hasSecondaryHand;
     const chipValues = getChipValues(core.playerIds.length, core.rules.config, core.round);
     const ownerByChip = Object.fromEntries(
         Object.entries(core.currentRoundChips).map(([owner, chip]) => [chip, owner]),
@@ -1732,6 +1794,30 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         dispatchForPlayer(THE_GANG_COMMANDS.REVEAL_SHOWDOWN, {});
     };
 
+    const selectHandSwapCard = (slot: 'top' | 'bottom', index: number) => {
+        setHandSwapSelection((current) => {
+            const key = slot === 'top' ? 'topIndex' : 'bottomIndex';
+            return {
+                ...current,
+                [key]: current[key] === index ? undefined : index,
+            };
+        });
+    };
+
+    const confirmHandSwap = () => {
+        if (!canConfirmHandSwap) return;
+        dispatchForPlayer(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {
+            topIndex: handSwapSelection.topIndex,
+            bottomIndex: handSwapSelection.bottomIndex,
+        });
+        setHandSwapSelection({});
+    };
+
+    const skipHandSwap = () => {
+        dispatchForPlayer(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {});
+        setHandSwapSelection({});
+    };
+
     const startHeist = () => {
         if (!canConfigureRules) {
             showWarning('board.toastHostOnlyStart', 'host-only-start');
@@ -1802,16 +1888,22 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                     </div>
                 </header>
 
-                <section className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-1 overflow-visible pb-[clamp(5.5rem,22vh,9rem)] lg:gap-2 lg:pb-[clamp(8.5rem,20vh,13.5rem)] xl:gap-3" data-testid="the-gang-bgg-board">
+                <section
+                    className={[
+                        'pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col gap-1 overflow-visible lg:gap-2 xl:gap-3',
+                        handSwapLayout
+                            ? 'pb-[clamp(11rem,30vh,14rem)] lg:pb-[clamp(15rem,35vh,18rem)]'
+                            : 'pb-[clamp(5.5rem,22vh,9rem)] lg:pb-[clamp(8.5rem,20vh,13.5rem)]',
+                    ].join(' ')}
+                    data-testid="the-gang-bgg-board"
+                >
                     <section
                         className="pointer-events-auto flex shrink-0 justify-evenly gap-3 overflow-visible lg:gap-6"
                         data-bgg-zone="top-zone"
                         data-tutorial-id="the-gang-player-list"
                     >
                         {core.playerIds.map((id) => {
-                            const player = core.players[id];
                             const isSelf = id === localPlayerId;
-                            const visible = core.phase !== 'chip-selection' && !isSelf;
                             return (
                                 <div
                                     key={id}
@@ -1830,29 +1922,35 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                         localPlayerId={localPlayerId}
                                         onTakeCurrentChip={heistStarted && core.phase === 'chip-selection' ? takeChip : undefined}
                                     />
-                                    <div className="flex justify-center overflow-visible">
-                                        {visible && (
-                                            <HandCardRows
-                                                primaryCards={player.pocketCards}
-                                                secondaryCards={player.secondaryPocketCards}
-                                                t={t}
-                                                testIdPrefix={`the-gang-opponent-hand-${id}`}
-                                            />
-                                        )}
-                                    </div>
                                 </div>
                             );
                         })}
                     </section>
 
                     <section
-                        className="pointer-events-none relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible"
+                        className={[
+                            'pointer-events-none relative z-20 flex min-h-0 flex-1 justify-center overflow-visible',
+                            handSwapLayout ? 'items-start pt-1 lg:pt-2' : 'items-center',
+                        ].join(' ')}
                         data-tutorial-id="the-gang-round-panel"
                         data-bgg-zone="middle-zone"
                     >
-                        <div className="pointer-events-none relative z-20 flex min-h-0 flex-col items-center gap-3 overflow-visible lg:gap-6 min-[1180px]:flex-row min-[1180px]:gap-8" data-bgg-zone="middle-center">
+                        <div
+                            className={[
+                                'pointer-events-none relative z-20 flex min-h-0 items-center justify-center overflow-visible',
+                                handSwapLayout
+                                    ? 'flex-row flex-wrap gap-3 lg:gap-5'
+                                    : 'flex-col gap-3 lg:gap-6 min-[1180px]:flex-row min-[1180px]:gap-8',
+                            ].join(' ')}
+                            data-bgg-zone="middle-center"
+                        >
                             <div
-                                className="pointer-events-auto relative z-30 flex w-full max-w-[29rem] flex-wrap items-center justify-center gap-3 overflow-visible lg:max-w-[44rem] lg:gap-5"
+                                className={[
+                                    'pointer-events-auto relative z-30 flex flex-wrap items-center justify-center overflow-visible',
+                                    handSwapLayout
+                                        ? 'w-auto max-w-[22rem] gap-2 lg:max-w-[28rem] lg:gap-3'
+                                        : 'w-full max-w-[29rem] gap-3 lg:max-w-[44rem] lg:gap-5',
+                                ].join(' ')}
                                 data-tutorial-id="the-gang-chip-row"
                                 data-bgg-zone="token-pile"
                             >
@@ -1870,17 +1968,28 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                 ))}
                             </div>
 
-                            <div className="pointer-events-none flex w-full max-w-[48rem] flex-nowrap justify-center gap-3 lg:max-w-[72rem] lg:gap-5 min-[1180px]:max-w-[40rem] xl:max-w-[80rem]" data-bgg-zone="card-river" aria-label={t('board.communityCardsSlot')}>
+                            <div
+                                className={[
+                                    'pointer-events-none flex flex-nowrap justify-center',
+                                    handSwapLayout
+                                        ? 'w-auto max-w-[24rem] gap-2 lg:max-w-[30rem] lg:gap-3 xl:max-w-[34rem]'
+                                        : 'w-full max-w-[48rem] gap-3 lg:max-w-[72rem] lg:gap-5 min-[1180px]:max-w-[40rem] xl:max-w-[80rem]',
+                                ].join(' ')}
+                                data-bgg-zone="card-river"
+                                aria-label={t('board.communityCardsSlot')}
+                            >
                                 {core.communityCards.map((card, index) => (
                                     <div
                                         key={index}
                                         className={[
-                                            'rounded-xl border-[0.35rem] p-1 ring-2 transition-colors',
+                                            handSwapLayout
+                                                ? 'rounded-lg border-[0.25rem] p-0.5 ring-2 transition-colors'
+                                                : 'rounded-xl border-[0.35rem] p-1 ring-2 transition-colors',
                                             COMMUNITY_CARD_FRAME_CLASSES[index] ?? COMMUNITY_CARD_FRAME_CLASSES[4],
                                         ].join(' ')}
                                         data-community-card-frame={index < 3 ? 'yellow' : index === 3 ? 'orange' : 'red'}
                                     >
-                                        <CardFace card={card} emphasis="river" t={t} />
+                                        <CardFace card={card} emphasis={handSwapLayout ? 'riverCompact' : 'river'} t={t} />
                                     </div>
                                 ))}
                             </div>
@@ -1890,24 +1999,48 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                     <section className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-end justify-center overflow-visible pb-0" data-bgg-zone="bottom-zone">
                         <VaultsAlarmsZone successes={core.successes} failures={core.failures} />
 
-                        <div className="pointer-events-auto flex flex-col items-center gap-1.5 lg:gap-2" data-bgg-zone="hand-groupzone" data-tutorial-id="the-gang-hand">
+                        <div
+                            className={[
+                                'pointer-events-auto relative flex flex-col items-center',
+                                handSwapLayout ? 'gap-1 lg:gap-1.5' : 'gap-1.5 lg:gap-2',
+                            ].join(' ')}
+                            data-bgg-zone="hand-groupzone"
+                            data-tutorial-id="the-gang-hand"
+                        >
                             <span className="sr-only">{t('board.myHand')}</span>
-                            <HandChipStrip
-                                roundHistory={core.roundHistory}
-                                currentRound={core.round}
-                                currentChip={core.currentRoundChips[localPlayerId]}
-                                playerId={localPlayerId}
-                            />
+                            {!handSwapLayout && (
+                                <HandChipStrip
+                                    roundHistory={core.roundHistory}
+                                    currentRound={core.round}
+                                    currentChip={core.currentRoundChips[localPlayerId]}
+                                    playerId={localPlayerId}
+                                />
+                            )}
                             <div className="flex items-center justify-center overflow-visible" data-bgg-zone="hand-cards">
                                 <HandCardRows
                                     primaryCards={localPlayer?.pocketCards ?? []}
                                     secondaryCards={localPlayer?.secondaryPocketCards}
-                                    emphasis="hand"
+                                    emphasis={handSwapLayout ? 'handCompact' : 'hand'}
                                     t={t}
                                     testIdPrefix="the-gang-local-hand"
-                                    showLabels={(localPlayer?.secondaryPocketCards?.length ?? 0) > 0}
+                                    showLabels={hasSecondaryHand}
+                                    selectable={canSelectHandSwap}
+                                    selectedTopIndex={handSwapSelection.topIndex}
+                                    selectedBottomIndex={handSwapSelection.bottomIndex}
+                                    onCardSelect={selectHandSwapCard}
                                 />
                             </div>
+                            {core.phase === 'hand-swap' && (
+                                <div
+                                    className="rounded-full border border-amber-200/35 bg-emerald-950/86 px-3 py-1 text-[0.64rem] font-black tracking-[0.1em] text-amber-100 shadow-[0_0.25rem_1rem_rgba(0,0,0,0.35)] lg:text-xs"
+                                    data-testid="the-gang-hand-swap-strip"
+                                    data-bgg-zone="hand-swap-strip"
+                                >
+                                    {handSwapProgress.hasApproved
+                                        ? t('board.handSwapConfirmed')
+                                        : t('board.handSwapSelectedCount', { selected: handSwapSelectedCount })}
+                                </div>
+                            )}
                             {(localPlayer?.flashlightCards.length ?? 0) + (localPlayer?.nightVisionCards.length ?? 0) > 0 && (
                                 <div className="flex items-center justify-center gap-2" data-bgg-zone="tool-cards" data-testid="the-gang-tool-cards">
                                     {localPlayer?.flashlightCards.map((card, index) => (
@@ -1959,6 +2092,42 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                 >
                                     {revealShowdownProgress.label}
                                 </button>
+                            )}
+                            {heistStarted && core.phase === 'hand-swap' && (
+                                <>
+                                    <span
+                                        className="rounded-full border border-amber-200/30 bg-emerald-950/88 px-3 py-1 text-center text-[0.62rem] font-black tracking-[0.1em] text-amber-100 shadow-[0_0.25rem_1rem_rgba(0,0,0,0.34)] lg:text-xs"
+                                        data-testid="the-gang-hand-swap-stage"
+                                    >
+                                        {t(handSwapProgress.hasApproved ? 'board.handSwapWaiting' : 'board.handSwapStage')}
+                                    </span>
+                                    {!handSwapProgress.hasApproved && (
+                                        <div className="flex flex-col items-center gap-1">
+                                            <button
+                                                type="button"
+                                                disabled={!canConfirmHandSwap}
+                                                onClick={confirmHandSwap}
+                                                data-testid="the-gang-confirm-hand-swap"
+                                                className="min-w-[5.75rem] rounded-full border border-amber-200/75 bg-amber-300 px-5 py-2.5 text-base font-black tracking-[0.08em] text-stone-950 shadow-[0_12px_28px_rgba(245,158,11,0.36)] transition hover:-translate-y-0.5 hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400 disabled:shadow-none disabled:hover:translate-y-0 lg:min-w-[7rem] lg:px-7 lg:py-3 lg:text-lg"
+                                            >
+                                                {t('board.confirmHandSwap')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={skipHandSwap}
+                                                data-testid="the-gang-skip-hand-swap"
+                                                className="min-w-[5.75rem] rounded-full border border-amber-100/35 bg-emerald-950/92 px-4 py-1.5 text-xs font-black tracking-[0.08em] text-amber-100 shadow-[0_0.25rem_1rem_rgba(0,0,0,0.34)] transition hover:-translate-y-0.5 hover:border-amber-100 hover:bg-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:min-w-[7rem] lg:px-5 lg:py-2 lg:text-sm"
+                                            >
+                                                {t('board.skipHandSwap')}
+                                            </button>
+                                        </div>
+                                    )}
+                                    <ProgressVoteDots
+                                        approvals={handSwapProgress.approvals}
+                                        label={handSwapProgress.status}
+                                        playerIds={core.playerIds}
+                                    />
+                                </>
                             )}
                             {heistStarted && allPlayersHaveChip && core.phase === 'chip-selection' && (
                                 <ProgressVoteDots

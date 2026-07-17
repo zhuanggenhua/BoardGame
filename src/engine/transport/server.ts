@@ -68,6 +68,7 @@ import {
     resolveOnlineAiCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
     resolveForceEndTurnForStalledAi,
+    resolveForceAdvancePhaseAfterRecovery,
     shouldInspectSeatStatesForHiddenAiInteraction,
     shouldUseOnlineAiEmergencyOverlayFallback,
     type AiAutoRecoveryAttemptTracker,
@@ -213,6 +214,7 @@ const DEFAULT_ONLINE_AI_RECOVERY_TIMEOUT_MS = 8000;
 const DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS = 16;
 const DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS = 60_000;
 const DEFAULT_ONLINE_AI_RECOVERY_FAILURE_REPORT_THRESHOLD = 2;
+const DEFAULT_ONLINE_AI_RECOVERY_REPEATED_ATTEMPT_LIMIT = 3;
 const DEFAULT_ONLINE_AI_OVERLAY_RESYNC_COOLDOWN_MS = 1_500;
 const DEFAULT_COMMAND_FAILURE_FEEDBACK_COOLDOWN_MS = 60_000;
 const MAX_ONLINE_AI_RECOVERY_LEGAL_ACTIONS = 8;
@@ -237,6 +239,8 @@ type OnlineAiRecoveryFeedbackPayload = {
     incidentKind:
         | 'force-end-turn-success'
         | 'force-end-turn-failed'
+        | 'repeated-recovery-force-unblocked'
+        | 'repeated-recovery-suppressed'
         | 'unsatisfiable-interaction-auto-skipped'
         | 'legal-action-recovered';
     severity: 'medium' | 'high';
@@ -308,6 +312,12 @@ type OnlineAiRecoveryEventTailEntry = {
     type?: string;
     timestamp?: unknown;
     payload?: unknown;
+};
+
+type OnlineAiRepeatedRecoveryAttempt = {
+    count: number;
+    lastAttemptAt: number;
+    reported: boolean;
 };
 
 const isEmergencySkipOnlySelectability = (
@@ -913,6 +923,7 @@ export interface GameTransportServerConfig {
     onlineAiRecoveryMaxAdvanceSteps?: number;
     onlineAiRecoveryFeedbackCooldownMs?: number;
     onlineAiRecoveryFailureReportThreshold?: number;
+    onlineAiRecoveryRepeatedAttemptLimit?: number;
     onlineAiFeedbackReporter?: (payload: OnlineAiRecoveryFeedbackPayload) => Promise<void>;
     commandFailureFeedbackCooldownMs?: number;
     commandFailureFeedbackReporter?: (payload: CommandFailureFeedbackPayload) => Promise<void>;
@@ -937,10 +948,12 @@ export class GameTransportServer {
     private readonly onlineAiRecoveryMaxAdvanceSteps: number;
     private readonly onlineAiRecoveryFeedbackCooldownMs: number;
     private readonly onlineAiRecoveryFailureReportThreshold: number;
+    private readonly onlineAiRecoveryRepeatedAttemptLimit: number;
     private readonly onlineAiFeedbackReporter?: GameTransportServerConfig['onlineAiFeedbackReporter'];
     private readonly commandFailureFeedbackCooldownMs: number;
     private readonly commandFailureFeedbackReporter?: GameTransportServerConfig['commandFailureFeedbackReporter'];
     private readonly onlineAiRecoveryTrackers = new Map<string, OnlineAiRecoveryTracker>();
+    private readonly onlineAiRepeatedRecoveryAttempts = new Map<string, OnlineAiRepeatedRecoveryAttempt>();
     private readonly onlineAiRecoveryFeedbackCooldown = new Map<string, number>();
     private readonly commandFailureFeedbackCooldown = new Map<string, number>();
     private readonly onlineAiOverlayResyncCooldown = new Map<string, number>();
@@ -971,6 +984,12 @@ export class GameTransportServer {
         this.onlineAiRecoveryMaxAdvanceSteps = config.onlineAiRecoveryMaxAdvanceSteps ?? DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS;
         this.onlineAiRecoveryFeedbackCooldownMs = config.onlineAiRecoveryFeedbackCooldownMs ?? DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS;
         this.onlineAiRecoveryFailureReportThreshold = config.onlineAiRecoveryFailureReportThreshold ?? DEFAULT_ONLINE_AI_RECOVERY_FAILURE_REPORT_THRESHOLD;
+        this.onlineAiRecoveryRepeatedAttemptLimit = (
+            Number.isFinite(config.onlineAiRecoveryRepeatedAttemptLimit)
+            && (config.onlineAiRecoveryRepeatedAttemptLimit ?? 0) > 0
+        )
+            ? Math.floor(config.onlineAiRecoveryRepeatedAttemptLimit!)
+            : DEFAULT_ONLINE_AI_RECOVERY_REPEATED_ATTEMPT_LIMIT;
         this.onlineAiFeedbackReporter = config.onlineAiFeedbackReporter;
         this.commandFailureFeedbackCooldownMs = config.commandFailureFeedbackCooldownMs ?? DEFAULT_COMMAND_FAILURE_FEEDBACK_COOLDOWN_MS;
         this.commandFailureFeedbackReporter = config.commandFailureFeedbackReporter;
@@ -1297,6 +1316,7 @@ export class GameTransportServer {
         this.activeMatches.delete(matchID);
         this.onlineAiRecoveryTrackers.delete(matchID);
         this.onlineAiRecoveryInFlight.delete(matchID);
+        this.clearOnlineAiRepeatedRecoveryAttemptsForMatch(matchID);
         for (const key of this.onlineAiOverlayResyncCooldown.keys()) {
             if (key.startsWith(`${matchID}:`)) {
                 this.onlineAiOverlayResyncCooldown.delete(key);
@@ -1318,6 +1338,15 @@ export class GameTransportServer {
         }
 
         return true;
+    }
+
+    private clearOnlineAiRepeatedRecoveryAttemptsForMatch(matchID: string): void {
+        const prefix = `${matchID}:`;
+        for (const key of this.onlineAiRepeatedRecoveryAttempts.keys()) {
+            if (key.startsWith(prefix)) {
+                this.onlineAiRepeatedRecoveryAttempts.delete(key);
+            }
+        }
     }
 
     private async resolveOnlineAiLegalActionOnlyCandidate(
@@ -1664,12 +1693,14 @@ export class GameTransportServer {
             const hasAiSeat = Object.values(seatControllers).some((controller) => controller.type !== 'human');
             if (!hasAiSeat) {
                 this.onlineAiRecoveryTrackers.delete(match.matchID);
+                this.clearOnlineAiRepeatedRecoveryAttemptsForMatch(match.matchID);
                 continue;
             }
 
             const candidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
             if (!candidate) {
                 this.onlineAiRecoveryTrackers.delete(match.matchID);
+                this.clearOnlineAiRepeatedRecoveryAttemptsForMatch(match.matchID);
                 continue;
             }
 
@@ -1679,6 +1710,33 @@ export class GameTransportServer {
             });
             const recoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(match, candidate, progressMarker);
             const trackerKey = `${candidate.playerId}:${candidate.reason}:${recoveryFingerprint}`;
+            const repeatedAttemptKey = this.buildOnlineAiRepeatedRecoveryAttemptKey(match.matchID, trackerKey);
+            const repeatedAttempt = this.onlineAiRepeatedRecoveryAttempts.get(repeatedAttemptKey);
+            if ((repeatedAttempt?.count ?? 0) >= this.onlineAiRecoveryRepeatedAttemptLimit) {
+                this.onlineAiRecoveryTrackers.delete(match.matchID);
+                const forceUnblockResult = await this.tryForceUnblockRepeatedOnlineAiRecovery({
+                    match,
+                    candidate,
+                    trackerKey,
+                    progressMarker,
+                    repeatedAttemptKey,
+                    repeatedAttempt,
+                    seatControllers,
+                });
+                if (forceUnblockResult.handled) {
+                    continue;
+                }
+                await this.reportOnlineAiRepeatedRecoverySuppressed({
+                    match,
+                    candidate,
+                    trackerKey,
+                    progressMarker,
+                    repeatedAttemptKey,
+                    repeatedAttempt,
+                    suppressionReason: forceUnblockResult.suppressionReason,
+                });
+                continue;
+            }
             const recoveryTimeoutMs = this.resolveOnlineAiRecoveryTimeoutMs(match, candidate);
             if (candidate.reason === 'active-turn'
                 && this.hasRecentOnlineAiOverlayResync({
@@ -2409,12 +2467,14 @@ export class GameTransportServer {
                 return;
             }
 
+            const repeatedAttempt = this.recordOnlineAiRepeatedRecoveryAttempt(match.matchID, tracker.key);
             logger.warn('[GameTransport] online-ai-watchdog recovered stalled AI', {
                 matchID: match.matchID,
                 gameId: match.gameId,
                 playerID: candidate.playerId,
                 reason: candidate.reason,
                 advanceSteps: totalAdvanceSteps,
+                repeatedAttemptCount: repeatedAttempt.count,
                 markerBefore: progressMarkerBeforeRecovery,
                 markerAfter: markerAfterRecovery,
             });
@@ -2539,6 +2599,320 @@ export class GameTransportServer {
                 ),
             });
         }
+    }
+
+    private buildOnlineAiRepeatedRecoveryAttemptKey(matchID: string, trackerKey: string): string {
+        return `${matchID}:${trackerKey}`;
+    }
+
+    private recordOnlineAiRepeatedRecoveryAttempt(
+        matchID: string,
+        trackerKey: string,
+    ): OnlineAiRepeatedRecoveryAttempt {
+        const key = this.buildOnlineAiRepeatedRecoveryAttemptKey(matchID, trackerKey);
+        const previous = this.onlineAiRepeatedRecoveryAttempts.get(key);
+        const next: OnlineAiRepeatedRecoveryAttempt = {
+            count: (previous?.count ?? 0) + 1,
+            lastAttemptAt: Date.now(),
+            reported: previous?.reported ?? false,
+        };
+        this.onlineAiRepeatedRecoveryAttempts.set(key, next);
+        return next;
+    }
+
+    private markOnlineAiRepeatedRecoveryAttemptReported(
+        repeatedAttemptKey: string,
+        repeatedAttempt: OnlineAiRepeatedRecoveryAttempt | undefined,
+    ): OnlineAiRepeatedRecoveryAttempt {
+        const next: OnlineAiRepeatedRecoveryAttempt = {
+            count: repeatedAttempt?.count ?? this.onlineAiRecoveryRepeatedAttemptLimit,
+            lastAttemptAt: Date.now(),
+            reported: true,
+        };
+        this.onlineAiRepeatedRecoveryAttempts.set(repeatedAttemptKey, next);
+        return next;
+    }
+
+    private resolveRepeatLimitCurrentAiInteraction(args: {
+        match: ActiveMatch;
+        candidate: ForceEndTurnStalledAiResolution;
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>;
+    }): { id?: string; kind?: string } | null {
+        if (args.candidate.reason !== 'visible-interaction' && args.candidate.reason !== 'hidden-interaction') {
+            return null;
+        }
+        if (!args.candidate.playerId || args.seatControllers[args.candidate.playerId]?.type === 'human') {
+            return null;
+        }
+
+        const responseWindow = (args.match.state.sys?.responseWindow as { current?: unknown } | undefined)?.current;
+        if (responseWindow) {
+            return null;
+        }
+
+        const currentInteraction = (args.match.state.sys?.interaction as {
+            current?: {
+                id?: unknown;
+                kind?: unknown;
+                playerId?: unknown;
+            };
+        } | undefined)?.current;
+        if (!currentInteraction || String(currentInteraction.playerId ?? '') !== args.candidate.playerId) {
+            return null;
+        }
+
+        const kind = typeof currentInteraction.kind === 'string' ? currentInteraction.kind : undefined;
+        if (kind === 'compare-roll-choice') {
+            return null;
+        }
+
+        return {
+            id: typeof currentInteraction.id === 'string' ? currentInteraction.id : undefined,
+            kind,
+        };
+    }
+
+    private async tryForceUnblockRepeatedOnlineAiRecovery(args: {
+        match: ActiveMatch;
+        candidate: ForceEndTurnStalledAiResolution;
+        trackerKey: string;
+        progressMarker: string;
+        repeatedAttemptKey: string;
+        repeatedAttempt: OnlineAiRepeatedRecoveryAttempt | undefined;
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>;
+    }): Promise<{ handled: boolean; suppressionReason?: string }> {
+        if (args.repeatedAttempt?.reported) {
+            return { handled: true };
+        }
+        if (args.match.unloaded) {
+            return { handled: false, suppressionReason: 'match_unloaded' };
+        }
+        if (args.match.executing) {
+            return { handled: false, suppressionReason: 'match_executing' };
+        }
+
+        args.match.executing = true;
+        const forcedCommands: string[] = [];
+        try {
+            const isInteractionCandidate =
+                args.candidate.reason === 'visible-interaction'
+                || args.candidate.reason === 'hidden-interaction';
+            const currentInteraction = this.resolveRepeatLimitCurrentAiInteraction({
+                match: args.match,
+                candidate: args.candidate,
+                seatControllers: args.seatControllers,
+            });
+            if (isInteractionCandidate && !currentInteraction) {
+                return { handled: false, suppressionReason: 'interaction_not_force_cancel_safe' };
+            }
+            if (currentInteraction) {
+                const cancelSuccess = await this.executeCommandInternal(
+                    args.match,
+                    args.candidate.playerId,
+                    INTERACTION_COMMANDS.CANCEL,
+                    {
+                        interactionId: currentInteraction.id,
+                        reason: 'repeated-recovery-limit',
+                    },
+                );
+                if (!cancelSuccess) {
+                    await this.reportOnlineAiRepeatedRecoverySuppressed({
+                        match: args.match,
+                        candidate: args.candidate,
+                        trackerKey: args.trackerKey,
+                        progressMarker: args.progressMarker,
+                        repeatedAttemptKey: args.repeatedAttemptKey,
+                        repeatedAttempt: args.repeatedAttempt,
+                        suppressionReason: formatOnlineAiCommandFailureReason(
+                            'force_cancel_failed',
+                            INTERACTION_COMMANDS.CANCEL,
+                            args.match.lastCommandFailureReason,
+                        ),
+                    });
+                    return { handled: true };
+                }
+                forcedCommands.push(INTERACTION_COMMANDS.CANCEL);
+            }
+
+            const advanceResolution = resolveForceAdvancePhaseAfterRecovery({
+                authoritativeState: args.match.state,
+                seatControllers: args.seatControllers,
+                playerId: args.candidate.playerId,
+                engineConfig: args.match.engineConfig,
+                gameId: args.match.gameId,
+            });
+            const advanceCommand = advanceResolution?.action.commands[0];
+            if (advanceCommand) {
+                const advanceSuccess = await this.executeCommandInternal(
+                    args.match,
+                    args.candidate.playerId,
+                    advanceCommand.type,
+                    advanceCommand.payload ?? {},
+                );
+                if (!advanceSuccess) {
+                    await this.reportOnlineAiRepeatedRecoverySuppressed({
+                        match: args.match,
+                        candidate: args.candidate,
+                        trackerKey: args.trackerKey,
+                        progressMarker: args.progressMarker,
+                        repeatedAttemptKey: args.repeatedAttemptKey,
+                        repeatedAttempt: args.repeatedAttempt,
+                        suppressionReason: formatOnlineAiCommandFailureReason(
+                            'force_advance_failed',
+                            advanceCommand.type,
+                            args.match.lastCommandFailureReason,
+                        ),
+                    });
+                    return { handled: true };
+                }
+                forcedCommands.push(advanceCommand.type);
+            }
+
+            if (forcedCommands.length === 0) {
+                return { handled: false, suppressionReason: 'no_safe_force_unblock' };
+            }
+
+            const markerAfter = buildAiProgressMarker(args.match.state, {
+                engineConfig: args.match.engineConfig,
+                gameId: args.match.gameId,
+            });
+            if (markerAfter === args.progressMarker) {
+                await this.reportOnlineAiRepeatedRecoverySuppressed({
+                    match: args.match,
+                    candidate: args.candidate,
+                    trackerKey: args.trackerKey,
+                    progressMarker: args.progressMarker,
+                    repeatedAttemptKey: args.repeatedAttemptKey,
+                    repeatedAttempt: args.repeatedAttempt,
+                    suppressionReason: 'force_unblock_no_progress',
+                });
+                return { handled: true };
+            }
+
+            const reportedAttempt = this.markOnlineAiRepeatedRecoveryAttemptReported(
+                args.repeatedAttemptKey,
+                args.repeatedAttempt,
+            );
+            const reason = [
+                args.candidate.reason,
+                `repeat-limit-force-unblock:${reportedAttempt.count}/${this.onlineAiRecoveryRepeatedAttemptLimit}`,
+                `commands=${forcedCommands.join('+')}`,
+            ].join(':');
+
+            logger.warn('[GameTransport] online-ai-watchdog force-unblocked repeated recovery', {
+                matchID: args.match.matchID,
+                gameId: args.match.gameId,
+                playerID: args.candidate.playerId,
+                incidentKey: args.trackerKey,
+                reason,
+                repeatedAttemptCount: reportedAttempt.count,
+                repeatedAttemptLimit: this.onlineAiRecoveryRepeatedAttemptLimit,
+                markerBefore: args.progressMarker,
+                markerAfter,
+                commands: forcedCommands,
+            });
+
+            this.onlineAiRecoveryTrackers.delete(args.match.matchID);
+            await this.reportOnlineAiRecoveryFeedback({
+                matchId: args.match.matchID,
+                gameId: args.match.gameId,
+                playerId: args.candidate.playerId,
+                incidentKind: 'repeated-recovery-force-unblocked',
+                severity: 'high',
+                status: 'open',
+                reason,
+                trackerKey: args.trackerKey,
+                progressMarker: args.progressMarker,
+                stateSnapshot: await this.buildOnlineAiRecoveryStateSnapshot(
+                    args.match,
+                    args.candidate,
+                    args.trackerKey,
+                    args.progressMarker,
+                    'repeated_recovery_force_unblocked',
+                ),
+                actionLog: this.buildOnlineAiRecoveryActionLog(
+                    args.match,
+                    args.candidate,
+                    args.trackerKey,
+                    args.progressMarker,
+                    'repeated_recovery_force_unblocked',
+                ),
+            });
+            return { handled: true };
+        } finally {
+            if (!args.match.unloaded) {
+                await this.drainCommandQueue(args.match);
+            }
+            args.match.executing = false;
+        }
+    }
+
+    private async reportOnlineAiRepeatedRecoverySuppressed(args: {
+        match: ActiveMatch;
+        candidate: ForceEndTurnStalledAiResolution;
+        trackerKey: string;
+        progressMarker: string;
+        repeatedAttemptKey: string;
+        repeatedAttempt: OnlineAiRepeatedRecoveryAttempt | undefined;
+        suppressionReason?: string;
+    }): Promise<void> {
+        const repeatedAttempt = args.repeatedAttempt ?? {
+            count: this.onlineAiRecoveryRepeatedAttemptLimit,
+            lastAttemptAt: Date.now(),
+            reported: false,
+        };
+        if (repeatedAttempt.reported) {
+            return;
+        }
+
+        const nextRepeatedAttempt: OnlineAiRepeatedRecoveryAttempt = {
+            ...repeatedAttempt,
+            reported: true,
+            lastAttemptAt: Date.now(),
+        };
+        this.onlineAiRepeatedRecoveryAttempts.set(args.repeatedAttemptKey, nextRepeatedAttempt);
+        const reason = [
+            args.candidate.reason,
+            `repeat-limit:${repeatedAttempt.count}/${this.onlineAiRecoveryRepeatedAttemptLimit}`,
+            args.suppressionReason,
+        ].filter(Boolean).join(':');
+
+        logger.warn('[GameTransport] online-ai-watchdog suppressed repeated recovery', {
+            matchID: args.match.matchID,
+            gameId: args.match.gameId,
+            playerID: args.candidate.playerId,
+            incidentKey: args.trackerKey,
+            reason,
+            repeatedAttemptCount: repeatedAttempt.count,
+            repeatedAttemptLimit: this.onlineAiRecoveryRepeatedAttemptLimit,
+            marker: args.progressMarker,
+        });
+
+        await this.reportOnlineAiRecoveryFeedback({
+            matchId: args.match.matchID,
+            gameId: args.match.gameId,
+            playerId: args.candidate.playerId,
+            incidentKind: 'repeated-recovery-suppressed',
+            severity: 'high',
+            status: 'open',
+            reason,
+            trackerKey: args.trackerKey,
+            progressMarker: args.progressMarker,
+            stateSnapshot: await this.buildOnlineAiRecoveryStateSnapshot(
+                args.match,
+                args.candidate,
+                args.trackerKey,
+                args.progressMarker,
+                args.suppressionReason ?? 'repeated_recovery_suppressed',
+            ),
+            actionLog: this.buildOnlineAiRecoveryActionLog(
+                args.match,
+                args.candidate,
+                args.trackerKey,
+                args.progressMarker,
+                args.suppressionReason ?? 'repeated_recovery_suppressed',
+            ),
+        });
     }
 
     private async buildOnlineAiRecoveryStateSnapshot(
@@ -4612,9 +4986,9 @@ export class GameTransportServer {
                         playerId: playerID,
                         incidentKind: 'unsatisfiable-interaction-auto-skipped',
                         severity: 'medium',
-                        // 该事件表示 watchdog 已经执行了应急跳过并解除卡死，默认按“已恢复”入库，
-                        // 避免把可恢复交互噪音持续堆积为 open 反馈。
-                        status: 'resolved',
+                        // 应急跳过只表示房间脱困；空选项/全 disabled 的真实交互缺陷仍要保持 open，
+                        // 方便后续按反馈里的 sourceId、选项诊断和状态快照修根因。
+                        status: 'open',
                         reason,
                         trackerKey,
                         progressMarker: progressMarkerBeforeCommand,

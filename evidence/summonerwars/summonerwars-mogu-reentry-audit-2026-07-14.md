@@ -141,6 +141,33 @@
 | 释放菌袍 | 用户反馈“释放菌袍本身会召唤两个单位，但现在只能召唤出 1 个，好像打在召唤师上”。旧审计覆盖了成功路径和空选，但没有覆盖无效格点击、重复卡牌 id 或非法 payload 不应污染“卡牌 ↔ 合法落位”配对。 | 执行层/交互容错漏审，不是录入字段错误；合同原文仍是“从弃牌堆拿取至多两张疫病体，放置到召唤师相邻区格” | `eventCards.ts` 先过滤合法召唤师相邻空格并去重，再去重弃牌 id，按合法落位数量配对疫病体；`abilities-mogu.test.ts` 增加误点召唤师格、重复 cardId 后仍召两张不同疫病体；`summonerwars-mogu.e2e.ts` 将真实入口成功链升级为先误点召唤师格再点两个合法格，最终仍召两张并从弃牌堆移除 |
 | 菌化野兽・寄生 | 合同原文是“消耗1点充能，或者对本单位造成1点伤害”，旧 evidence 子句误写成“优先消耗 1 充能”，实现也没有给玩家选择 UI，攻击阶段结束时直接自动扣充能或自伤。 | 审计方法漏掉“或者/选择”维度与真实 UI 横幅链路；属于实现消费错误 + 旧 evidence 子句错误，不是图片录入字段错误 | `execute.ts` 在攻击阶段结束先触发寄生选择并暂停阶段推进；`systems.ts` 创建 `mogu_parasite` 二选一 simple-choice；`executors/mogu.ts` 按选择扣 1 充能或造成 1 伤害；`Board.tsx`/`StatusBanners.tsx` 增加寄生横幅和两个按钮；领域 pipeline 测试和真实 E2E 覆盖选择 UI、确认后状态落地、交互清空并进入魔力阶段 |
 
+## 2026-07-17 追加漏审复盘：狂热菌菇 / 血腥绽放
+
+| 对象 | 用户原始症状 | 本轮结论 | 修复与证据 |
+| --- | --- | --- | --- |
+| 狂热菌菇 | “移动一个单位后，可以将其充能；如果这样做，可以先推拉 1 格，然后必须造成 1 伤害”，当前像是必须推拉才触发。 | 合同仍是 locked：发动整个效果可选；发动后“推拉 1 格”是可选子动作；之后充能和自伤必须发生。旧审计只覆盖了推拉路径和执行器不推拉能力，没有证明真实移动后 UI 能选择“不推拉但继续结算”。 | `systems.ts` 已有 `stay` 选项；本轮将 `systemInteractionAdapter.ts` 透传 `systemChoiceOptions`，`StatusBanners.tsx` 增加“不推拉”按钮并保留“跳过”作为跳过整个效果；中英文横幅改为“选择不推拉或推拉落点”。新增 `StatusBanners.render.test.tsx` 和 `useGameEvents.test.ts` 断言 UI/adapter 可提交 `stay`。 |
+| 狂热菌菇 → 血腥绽放 | 狂热菌菇自伤致死后，没有触发库鞭克“血腥绽放”给周围友方单位充能。 | 真实领域链路命中实现 bug：血腥绽放死亡后处理基于批次入口旧棋盘扫描，既可能漏掉推拉后位置，也会把已死亡单位当成可充能对象。 | `execute.ts` 在血腥绽放后处理前先把本批移动/伤害/死亡事件归约成 `postDeathCore`，再用最新棋盘找库鞭克和周围友方单位。新增 `interaction-chain-comprehensive.test.ts` 两条真实移动后系统交互测试：不推拉仍充能自伤；自伤致死触发血腥绽放且不再给死亡单位充能。 |
+
+**旧结论失效点**
+
+- 旧“狂热菌菇移动后推拉”真实入口证据只能证明“选择推拉落点”路径，不覆盖“发动主效果但不推拉”的 UI 可达性。
+- 旧执行器级“不推拉”证据只能证明 `mogu_fanatical_fungus` 执行器收到无 `newPosition` payload 时能结算，不能证明真实移动后的系统交互和横幅会把 `stay` 暴露给玩家。
+- 旧血腥绽放代表链只证明有死亡后处理，不覆盖“同一批事件中先移动/自伤/死亡，再由死亡被动扫描最新棋盘”的 D40 批内副作用串行状态推进。
+
+**本轮追加验证**
+
+| 命令 | 覆盖范围 | 结果 |
+| --- | --- | --- |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts src/games/summonerwars/__tests__/useGameEvents.test.ts src/games/summonerwars/__tests__/StatusBanners.render.test.tsx --configLoader native -t "mogu_fanatical_fungus\|狂热菌菇\|血腥绽放\|StatusBanners\|system ability\|board-cell-position\|现役 abilityMode"` | 狂热菌菇真实移动后不推拉路径、自伤致死后的血腥绽放、adapter 路由、横幅按钮 | 3 files passed；6 tests passed；177 skipped |
+| `node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/useGameEvents.test.ts --configLoader native` | 完整 UI adapter 辅助测试，覆盖本轮新增 `systemChoiceOptions` 与 route matrix | 1 file passed；36 tests passed |
+| `npx eslint src/games/summonerwars/domain/execute.ts src/games/summonerwars/ui/systemInteractionAdapter.ts src/games/summonerwars/ui/StatusBanners.tsx src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts src/games/summonerwars/__tests__/useGameEvents.test.ts src/games/summonerwars/__tests__/StatusBanners.render.test.tsx` | 本轮 TS/TSX 静态检查 | 0 errors；7 warnings，均为 `interaction-chain-comprehensive.test.ts` 既有 unused warning |
+| `npm run audit:evidence:selfcheck -- evidence/summonerwars/summonerwars-mogu-reentry-audit-2026-07-14.md` | evidence 留档结构与旧结论失效回写门禁 | checked files: 1；audit docs: 1；OK |
+
+**流程更新**
+
+- 已更新 `docs/ai-rules/testing-audit-dimensions.md`：D5 明确“可选主效果与可选子动作”必须拆审；D6 明确自伤/代价伤害/消灭等副作用必须传播到死亡后处理和后续被动；D18 明确“跳过整个效果”“不做子动作但继续主效果”“已死亡对象不再被后续效果作用”要分开覆盖。
+- 已更新 `docs/ai-rules/testing-audit-dimensions-semantics-interaction.md`：新增 D5 子项“可选主效果与可选子动作拆分”和 D6 子项“副作用死亡后的连锁传播”。
+
 ## 逐项结论：莫古重核录入批次清单
 
 > 状态含义：`s0_locked` 表示完整单卡主裁图合同已锁；`s1_static_fixed` 表示静态配置已按合同修正并有聚焦单测；`l3_l4_verified` 表示已有真实入口或最终状态/时序链证据。本文档的“收口”只指当前代码验证口径，不代表生产已部署或反馈状态已回写。

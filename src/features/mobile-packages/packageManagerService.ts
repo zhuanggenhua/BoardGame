@@ -69,17 +69,18 @@ export const resolveManifestForPackageInstallAttempt = (
             resolvedErrorCode === 'checksum-mismatch'
             || resolvedErrorCode === 'resume-not-supported'
         );
-    const canUseFullPackInsteadOfFileIndex = Boolean(manifest.assetPackUrl)
-        && Boolean(manifest.assetPackFileIndexUrl)
+    const hasFullPackAndFileIndex = Boolean(manifest.assetPackUrl)
+        && Boolean(manifest.assetPackFileIndexUrl);
+    const canPreferFullPackInsteadOfFileIndex = hasFullPackAndFileIndex
         && manifest.assetPackDiffOnly !== true;
-    const shouldUseFullPackForIncrementalRecovery = (
-        options.forceFullInstall === true
-        || isRecoverableIncrementalFailure
-    ) && canUseFullPackInsteadOfFileIndex;
+    const shouldUseFullPackForCleanRetry = options.forceFullInstall === true
+        && hasFullPackAndFileIndex;
+    const shouldUseFullPackForIncrementalRecovery = isRecoverableIncrementalFailure
+        && canPreferFullPackInsteadOfFileIndex;
     const shouldPreferFullPackForStability = options.preferFullInstall !== false
-        && canUseFullPackInsteadOfFileIndex;
+        && canPreferFullPackInsteadOfFileIndex;
 
-    if (!shouldUseFullPackForIncrementalRecovery && !shouldPreferFullPackForStability) {
+    if (!shouldUseFullPackForCleanRetry && !shouldUseFullPackForIncrementalRecovery && !shouldPreferFullPackForStability) {
         return manifest;
     }
 

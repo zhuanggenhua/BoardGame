@@ -241,6 +241,36 @@ describe('The Gang local AI', () => {
             .some((action) => action.kind === 'start-next-heist')).toBe(true);
     });
 
+    test('AI 在手牌调换阶段默认确认不调换', () => {
+        const state = setupStartedState();
+        const handSwapState: ReturnType<typeof setupState> = {
+            ...state,
+            core: {
+                ...state.core,
+                phase: 'hand-swap',
+                rules: {
+                    ...state.core.rules,
+                    config: {
+                        ...state.core.rules.config,
+                        twoHand: true,
+                        handSwap: true,
+                    },
+                },
+            },
+        };
+
+        const actions = buildTheGangAiLegalActions({ playerId: '1', state: handSwapState });
+
+        expect(actions).toHaveLength(1);
+        expect(actions[0]).toMatchObject({
+            kind: 'confirm-hand-swap',
+            commands: [{
+                type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+                payload: {},
+            }],
+        });
+    });
+
     test('baseline policy 只返回当前上下文里的合法 actionId', () => {
         const state = setupStartedState();
         const context = buildContext(state, '0');

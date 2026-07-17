@@ -104,6 +104,13 @@ export const shouldResetGamePackageStateBeforeRetry = (
     state: Pick<GamePackageCardState, 'status' | 'errorCode' | 'errorMessage'>,
 ) => !shouldCleanGamePackageStateBeforeRetry(state);
 
+const stripAssetPackIncrementalFields = <T extends ResolvedGamePackageManifest>(manifest: T): T => ({
+    ...manifest,
+    assetPackFileIndexUrl: undefined,
+    assetPackFileIndexChecksum: undefined,
+    assetPackDiffOnly: undefined,
+});
+
 const PREVIEW_MANIFEST_RETRY_BASE_DELAY_MS = 3000;
 const PREVIEW_MANIFEST_RETRY_MAX_DELAY_MS = 15000;
 
@@ -620,34 +627,53 @@ export const useGamePackageState = ({
 
         confirmInFlightRef.current = true;
         setIsConfirmingInstall(true);
-        let installManifest: PendingGamePackageInstall = initialInstallManifest ?? {
-            gameName,
-            ...(previewManifest ?? fallbackManifest),
-        };
 
         try {
-            if (!initialInstallManifest && hasRemoteGamePackageManifestEndpoint) {
+            if (initialInstallManifest) {
+                logMobileRuntimeCritical('UseGamePackageState', 'retry-full-download-discard-stale-initial-manifest', {
+                    gameId,
+                    initialRuntimeChannel: initialInstallManifest.runtimeChannel,
+                    initialAssetPackVersion: initialInstallManifest.assetPackVersion,
+                    initialHasAssetPackFileIndexUrl: Boolean(initialInstallManifest.assetPackFileIndexUrl),
+                    initialAssetPackDiffOnly: initialInstallManifest.assetPackDiffOnly === true,
+                });
+            }
+
+            let resolvedManifest: ResolvedGamePackageManifest | null = null;
+            if (hasRemoteGamePackageManifestEndpoint) {
                 logMobileRuntimeCritical('UseGamePackageState', 'retry-full-download-resolve-manifest', {
                     gameId,
                 });
-                const resolved = await resolveGamePackageManifest(gameId, normalizedDelivery);
-                installManifest = {
-                    gameName,
-                    ...resolved,
-                };
-            } else if (!canInstallResolvedAssetPack(installManifest) && hasRemoteGamePackageManifestEndpoint) {
-                logMobileRuntimeCritical('UseGamePackageState', 'retry-full-download-re-resolve-missing-url', {
-                    gameId,
-                    manifestSource: installManifest.source,
-                });
-                const resolved = await resolveGamePackageManifest(gameId, normalizedDelivery);
-                installManifest = {
-                    ...installManifest,
-                    ...resolved,
-                    gameName,
-                };
+                resolvedManifest = await resolveGamePackageManifest(gameId, normalizedDelivery);
             }
 
+            const isCurrentRuntimeManifest = (manifest?: ResolvedGamePackageManifest | null) =>
+                manifest?.gameId === gameId
+                && manifest.runtimeChannel === fallbackManifest.runtimeChannel;
+            const selectedManifest = (
+                resolvedManifest?.source === 'remote' && isCurrentRuntimeManifest(resolvedManifest)
+                    ? resolvedManifest
+                    : previewManifest?.source === 'remote' && isCurrentRuntimeManifest(previewManifest)
+                        ? previewManifest
+                        : isCurrentRuntimeManifest(resolvedManifest)
+                            ? resolvedManifest
+                            : fallbackManifest
+            );
+            if (resolvedManifest && !isCurrentRuntimeManifest(resolvedManifest)) {
+                logMobileRuntimeCritical('UseGamePackageState', 'retry-full-download-ignore-runtime-mismatch-manifest', {
+                    gameId,
+                    expectedRuntimeChannel: fallbackManifest.runtimeChannel,
+                    resolvedRuntimeChannel: resolvedManifest.runtimeChannel,
+                    resolvedAssetPackVersion: resolvedManifest.assetPackVersion,
+                    resolvedHasAssetPackFileIndexUrl: Boolean(resolvedManifest.assetPackFileIndexUrl),
+                    resolvedAssetPackDiffOnly: resolvedManifest.assetPackDiffOnly === true,
+                });
+            }
+
+            const installManifest: PendingGamePackageInstall = {
+                gameName,
+                ...stripAssetPackIncrementalFields(selectedManifest),
+            };
             setPendingInstall(installManifest);
             logMobileRuntimeCritical('UseGamePackageState', 'retry-full-download-start-install', {
                 gameId,
@@ -709,6 +735,8 @@ export const useGamePackageState = ({
                     currentErrorCode: cardState.errorCode,
                     currentErrorMessage: cardState.errorMessage,
                 });
+                requestSerialRef.current += 1;
+                setPendingInstall(null);
                 await resetGamePackageStateForCleanRetry(gameId, fallbackState);
                 await startInstallAfterCleanRetry(pendingInstall);
                 return;

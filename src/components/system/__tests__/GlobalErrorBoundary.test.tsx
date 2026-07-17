@@ -370,6 +370,17 @@ describe('AndroidBackNavigation helpers', () => {
         })).toEqual({ type: 'blocked' });
     });
 
+    it('教程这类允许系统返回的不可关闭弹窗，不阻断对局页返回大厅', () => {
+        expect(resolveAndroidBackNavigationAction({
+            pathname: '/play/smashup/tutorial',
+            historyState: { idx: 2 },
+            historyLength: 3,
+            modalStackDepth: 1,
+            isTopModalClosable: false,
+            isTopModalBackNavigationAllowed: true,
+        })).toEqual({ type: 'fallback-route', path: '/?game=smashup' });
+    });
+
     it('输入法激活时优先收起文本输入，而不是继续退路由', () => {
         expect(resolveAndroidBackNavigationAction({
             pathname: '/play/smashup/match/room-1',

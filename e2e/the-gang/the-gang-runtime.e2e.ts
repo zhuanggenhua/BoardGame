@@ -5,6 +5,14 @@ import { dirname, join } from 'node:path';
 
 const THE_GANG_GAME_ID = 'the-gang';
 const THE_GANG_IMAGE_LOAD_TIMEOUT_MS = 15_000;
+const THE_GANG_HAND_SWAP_SCREENSHOT_PATH = join(
+    process.cwd(),
+    'test-results',
+    'evidence-screenshots',
+    'the-gang',
+    'twohand-hand-swap-current',
+    'the-gang-hand-swap-stage.png',
+);
 
 async function chooseVisibleChip(page: Page, chipLabel: string) {
     await page.getByRole('button', { name: chipLabel }).click();
@@ -78,6 +86,12 @@ async function confirmProgressForSeats(page: Page, buttonName: string, playerCou
     }
     for (let seatIndex = 1; seatIndex < playerCount; seatIndex += 1) {
         await dispatchTheGangCommand(page, String(seatIndex), commandType);
+    }
+}
+
+async function confirmHandSwapForSeats(page: Page, playerCount: number) {
+    for (let seatIndex = 0; seatIndex < playerCount; seatIndex += 1) {
+        await dispatchTheGangCommand(page, String(seatIndex), 'CONFIRM_HAND_SWAP');
     }
 }
 
@@ -160,6 +174,7 @@ type TheGangHarnessState = {
                 twoHand?: boolean;
                 automode?: boolean;
                 antiTroll?: boolean;
+                handSwap?: boolean;
                 challenges?: Record<string, number>;
             };
         };
@@ -720,6 +735,130 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await toolsModal.getByRole('button', { name: '关闭工具与专家牌' }).click();
         await expect(page.getByTestId('the-gang-tool-cards')).toBeVisible();
         await game.screenshot('桌面夜视眼镜选牌后回到牌桌', testInfo);
+    });
+
+    test('桌面端两副手牌投票后进入手牌调换阶段并可交换上下手牌', async ({ game, page }, testInfo) => {
+        test.setTimeout(150000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: 3,
+            seed: 'the-gang-twohand-hand-swap-e2e',
+            seat1: 'human',
+            seat2: 'human',
+            seat3: 'human',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        const rulesPanel = page.getByTestId('the-gang-rules-config');
+        await rulesPanel.getByRole('button', { name: '扩展' }).click();
+        await page.getByTestId('the-gang-rule-toggle-twoHand').click();
+        await expect(page.getByTestId('the-gang-rule-toggle-twoHand')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByTestId('the-gang-rule-toggle-handSwap').click();
+        await expect(page.getByTestId('the-gang-rule-toggle-handSwap')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByRole('button', { name: '确认设置' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                    handSwap: state?.core?.rules?.config?.handSwap,
+                    topCards: state?.core?.players?.['0']?.pocketCards?.length ?? 0,
+                    bottomCards: state?.core?.players?.['0']?.secondaryPocketCards?.length ?? 0,
+                };
+            }, { message: '等待两副手牌与手牌调换开关通过真实入口生效' })
+            .toEqual({
+                twoHand: true,
+                handSwap: true,
+                topCards: 2,
+                bottomCards: 2,
+            });
+
+        await startHeistFromSetup(page);
+        await chooseAllPlayerChips(page, '白筹码');
+        await confirmProgressForAllPlayers(page, '下一轮');
+        await expect(page.getByTestId('the-gang-hand-swap-stage')).toBeVisible();
+        await confirmHandSwapForSeats(page, 3);
+        await expectChipRound(page, '黄筹码');
+
+        await chooseAllPlayerChips(page, '黄筹码');
+        await confirmProgressForAllPlayers(page, '下一轮');
+        await expect(page.getByTestId('the-gang-hand-swap-stage')).toBeVisible();
+        await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeDisabled();
+        await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 3);
+        await expect(page.getByTestId('the-gang-local-hand-top')).toBeVisible();
+        await expect(page.getByTestId('the-gang-local-hand-bottom')).toBeVisible();
+        await expect(page.getByTestId('the-gang-local-hand-top').locator('img')).toHaveCount(2);
+        await expect(page.getByTestId('the-gang-local-hand-bottom').locator('img')).toHaveCount(2);
+        const opponentHandImageCount = await page
+            .locator('[data-testid^="the-gang-opponent-hand-"][data-testid$="-rows"] img')
+            .count();
+        expect(opponentHandImageCount).toBe(0);
+
+        await page.getByTestId('the-gang-local-hand-top-card-0').click();
+        await page.getByTestId('the-gang-local-hand-bottom-card-1').click();
+        await expect(page.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
+        await expect(page.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
+        await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeEnabled();
+
+        const handSwapMetrics = await page.evaluate(() => {
+            const readRect = (selector: string) => {
+                const node = document.querySelector(selector);
+                if (!node) return null;
+                const rect = node.getBoundingClientRect();
+                return {
+                    top: rect.top,
+                    bottom: rect.bottom,
+                    left: rect.left,
+                    right: rect.right,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            };
+            const intersects = (a: ReturnType<typeof readRect>, b: ReturnType<typeof readRect>) => (
+                !!a && !!b
+                && a.left < b.right
+                && a.right > b.left
+                && a.top < b.bottom
+                && a.bottom > b.top
+            );
+            const tokenPile = readRect('[data-bgg-zone="token-pile"]');
+            const cardRiver = readRect('[data-bgg-zone="card-river"]');
+            const handGroup = readRect('[data-bgg-zone="hand-groupzone"]');
+            const actionDock = readRect('[data-bgg-zone="action-dock"]');
+            return {
+                viewport: { width: window.innerWidth, height: window.innerHeight },
+                tokenPile,
+                cardRiver,
+                handGroup,
+                actionDock,
+                cardRiverCount: document.querySelectorAll('[data-bgg-zone="card-river"] img').length,
+                handTopCount: document.querySelectorAll('[data-testid="the-gang-local-hand-top"] img').length,
+                handBottomCount: document.querySelectorAll('[data-testid="the-gang-local-hand-bottom"] img').length,
+                tokenOverlapsHand: intersects(tokenPile, handGroup),
+                cardRiverOverlapsHand: intersects(cardRiver, handGroup),
+                actionDockOverlapsCardRiver: intersects(actionDock, cardRiver),
+            };
+        });
+        expect(handSwapMetrics.cardRiverCount).toBe(3);
+        expect(handSwapMetrics.handTopCount).toBe(2);
+        expect(handSwapMetrics.handBottomCount).toBe(2);
+        expect(handSwapMetrics.tokenOverlapsHand).toBe(false);
+        expect(handSwapMetrics.cardRiverOverlapsHand).toBe(false);
+        expect(handSwapMetrics.actionDockOverlapsCardRiver).toBe(false);
+
+        await mkdir(dirname(THE_GANG_HAND_SWAP_SCREENSHOT_PATH), { recursive: true });
+        await writeFile(
+            join(dirname(THE_GANG_HAND_SWAP_SCREENSHOT_PATH), 'the-gang-hand-swap-stage.metrics.json'),
+            JSON.stringify({ ...handSwapMetrics, opponentHandImageCount }, null, 2),
+            'utf8',
+        );
+        await page.screenshot({ path: THE_GANG_HAND_SWAP_SCREENSHOT_PATH, fullPage: false });
+        await game.screenshot('桌面两副手牌手牌调换阶段已选择上下牌', testInfo);
+
+        await page.getByTestId('the-gang-confirm-hand-swap').click();
+        await dispatchTheGangCommand(page, '1', 'CONFIRM_HAND_SWAP');
+        await dispatchTheGangCommand(page, '2', 'CONFIRM_HAND_SWAP');
+        await expectChipRound(page, '橙筹码');
     });
 
     test('移动横屏从大厅创建 AI 房间后扩展选择不会被 AI 抢先锁定', async ({ game, page }, testInfo) => {

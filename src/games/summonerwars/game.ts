@@ -17,6 +17,7 @@ import {
     createTutorialSystem,
     createUndoSystem,
     CharacterSelectionSystem,
+    FLOW_COMMANDS,
     type CheatResourceModifier,
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
@@ -435,7 +436,7 @@ const shouldSuppressSummonerWarsOnlineAiActiveTurnCandidate = (args: {
 export const engineConfig = {
     ...createGameEngine(adapterConfig),
     onlineAiRecovery: {
-        advancePhaseCommandType: 'sw:end_phase',
+        advancePhaseCommandType: FLOW_COMMANDS.ADVANCE_PHASE,
         publicPregameLegalActionPhases: ['factionSelect', 'summon'],
         shouldSuppressActiveTurnCandidate: shouldSuppressSummonerWarsOnlineAiActiveTurnCandidate,
     },

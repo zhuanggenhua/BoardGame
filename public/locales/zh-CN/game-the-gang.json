@@ -7,6 +7,7 @@
   "players": "3-6 人",
   "status": {
     "chipSelection": "选筹码",
+    "handSwap": "调换手牌",
     "showdown": "摊牌",
     "gameOver": "结束"
   },
@@ -15,6 +16,7 @@
     "takeChip": "玩家 {{player}} 在第 {{round}} 轮选择 {{chip}}★ 筹码",
     "endRound": "玩家 {{player}} 结束第 {{round}} 轮，进入第 {{nextRound}} 轮",
     "revealShowdown": "玩家 {{player}} 摊牌：第 {{heist}} 次抢劫{{outcome}}（成功 {{successes}} / 失败 {{failures}}）",
+    "confirmHandSwap": "玩家 {{player}} 确认手牌调换阶段",
     "startNextHeist": "玩家 {{player}} 开始第 {{heist}} 次抢劫"
   },
   "tutorial": {
@@ -127,12 +129,14 @@
     "ttsSetupOptionLabels": {
       "omaha": "奥马哈",
       "twoHand": "两副手牌",
+      "handSwap": "手牌调换",
       "automode": "自动模式",
       "antiTroll": "防手欠"
     },
     "ttsSetupOptionDescriptions": {
       "omaha": "每手多发 2 张，摊牌时强制用 2 张手牌 + 3 张公共牌评估牌型。",
       "twoHand": "每名玩家获得上、下两幅手牌；摊牌时分别评估，取更强的一手参与排序。最多 5 人。",
+      "handSwap": "两副手牌启用后，每轮投票完成先进入调换阶段；可交换上、下各 1 张手牌。",
       "automode": "所有人拿完当前轮筹码后自动推进；最后一轮自动进入摊牌。",
       "antiTroll": "对应 TTS 防误触/房主权限开关，当前 Web 继续按房主规则设置权限限制。"
     },
@@ -181,6 +185,13 @@
     "noSpecialists": "暂无专家牌",
     "nextRound": "下一轮",
     "revealShowdown": "摊牌",
+    "handSwapStage": "调换手牌",
+    "handSwapWaiting": "等待调换",
+    "handSwapConfirmed": "已确认调换",
+    "handSwapSelectedCount": "选上/下各一张 {{selected}}/2",
+    "chooseHandSwapCard": "选择{{slot}}第 {{index}} 张 {{card}}",
+    "confirmHandSwap": "确认调换",
+    "skipHandSwap": "不调换",
     "progressWaiting": "等待确认",
     "progressNeedsAll": "需要全员确认",
     "progressApprovedCount": "已确认 {{approved}}/{{total}}",

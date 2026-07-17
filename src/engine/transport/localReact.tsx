@@ -23,6 +23,7 @@ export interface LocalGameProviderProps {
     playerId?: string;
     followCurrentTurnPlayer?: boolean;
     persistSession?: boolean;
+    persistGameId?: string;
 }
 
 export function LocalGameProvider({
@@ -37,6 +38,7 @@ export function LocalGameProvider({
     playerId: localPlayerId,
     followCurrentTurnPlayer = false,
     persistSession = false,
+    persistGameId,
 }: LocalGameProviderProps) {
     const value = useLocalGameProviderRuntime({
         config,
@@ -49,6 +51,7 @@ export function LocalGameProvider({
         localPlayerId: localPlayerId ?? null,
         followCurrentTurnPlayer,
         persistSession,
+        persistGameId,
     });
 
     return (

@@ -53,6 +53,9 @@ interface BetrayalAiRecentRoll {
     deathPrevention?: {
         minTotal: number;
     };
+    roomEndTurn?: {
+        nextPlayerId?: string;
+    };
     consumedRabbitFootCardIds: string[];
 }
 
@@ -134,6 +137,7 @@ const ACTION_KINDS = {
     USE_RABBIT_FOOT: 'use-rabbit-foot',
     USE_ROOM_EFFECT: 'use-room-effect',
     END_TURN: 'end-turn',
+    ACKNOWLEDGE_TURN_END_ROLL: 'acknowledge-turn-end-roll',
 } as const;
 
 function createValidatedAction(args: {
@@ -883,6 +887,35 @@ function buildTurnActions(
     return actions;
 }
 
+function buildTurnEndRollAcknowledgementActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const recentRoll = state.core.recentRoll;
+    if (
+        recentRoll?.kind !== 'roomEndTurnTraitCheck'
+        || recentRoll.playerId !== playerId
+        || !recentRoll.roomEndTurn?.nextPlayerId
+    ) {
+        return [];
+    }
+    const action = createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL,
+        payload: {},
+        kind: ACTION_KINDS.ACKNOWLEDGE_TURN_END_ROLL,
+        label: '确认回合结束检定结果',
+        metadata: {
+            strategicScore: 900,
+            visibleStepDelayPolicy: 'visible',
+        },
+    });
+    return action ? [action] : [];
+}
+
 function buildBetrayalAiLegalActions(
     validate: BetrayalAiValidator,
     args: {
@@ -907,6 +940,11 @@ function buildBetrayalAiLegalActions(
     const rabbitFootActions = buildRabbitFootActions(validate, state, args.playerId);
     if (rabbitFootActions.length > 0) {
         return rabbitFootActions;
+    }
+
+    const turnEndRollAcknowledgementActions = buildTurnEndRollAcknowledgementActions(validate, state, args.playerId);
+    if (turnEndRollAcknowledgementActions.length > 0) {
+        return turnEndRollAcknowledgementActions;
     }
 
     return buildTurnActions(validate, state, args.playerId);

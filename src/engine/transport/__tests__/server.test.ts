@@ -24388,6 +24388,319 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.trackerKey).toContain('active-turn:4|main2|1|0');
     });
 
+    it('online AI watchdog 同一卡点重复恢复三次后应强制取消 AI 交互并安全推进阶段', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        const createRepeatedChoice = (id: string) => createSimpleChoice(
+            id,
+            '1',
+            '重复卡点测试',
+            [{ id: 'pass', label: '跳过', value: { kind: 'pass' } }],
+            { sourceId: 'repeat-source' },
+        );
+
+        await storage.createMatch('match-watchdog-repeated-recovery-limit', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'scoreBases',
+                interaction: {
+                    current: createRepeatedChoice('repeat-choice-1'),
+                    queue: [],
+                    isBlocked: false,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('smashup')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryRepeatedAttemptLimit: 3,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<{
+                applied: boolean;
+                resolved: boolean;
+                blockedReason: null;
+                executedCommandTypes: string[];
+                outcome: 'no-legal-action';
+                reportedAction: null;
+            }>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-repeated-recovery-limit');
+        vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockResolvedValue({
+            applied: false,
+            resolved: false,
+            blockedReason: null,
+            executedCommandTypes: [],
+            outcome: 'no-legal-action',
+            reportedAction: null,
+        });
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
+            expect(playerID).toBe('1');
+            if (commandType === INTERACTION_COMMANDS.RESPOND) {
+                expect(payload).toMatchObject({ optionId: 'pass' });
+                const eventStreamNextId = (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1;
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        eventStream: { nextId: eventStreamNextId },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                    },
+                };
+                return true;
+            }
+            if (commandType === INTERACTION_COMMANDS.CANCEL) {
+                expect(payload).toMatchObject({
+                    interactionId: 'repeat-choice-4',
+                    reason: 'repeated-recovery-limit',
+                });
+                const eventStreamNextId = (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1;
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        eventStream: { nextId: eventStreamNextId },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                    },
+                };
+                return true;
+            }
+            if (commandType === 'ADVANCE_PHASE') {
+                const eventStreamNextId = (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1;
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        phase: 'draw',
+                        eventStream: { nextId: eventStreamNextId },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                };
+                return true;
+            }
+            throw new Error(`Unexpected command: ${commandType}`);
+        });
+
+        const resetSameStuckPoint = (attempt: number): void => {
+            match.state = {
+                ...match.state,
+                core: {
+                    ...match.state.core,
+                    activePlayerId: '1',
+                    currentPlayerIndex: 1,
+                },
+                sys: {
+                    ...match.state.sys,
+                    phase: 'scoreBases',
+                    eventStream: { nextId: 100 + attempt },
+                    interaction: {
+                        current: createRepeatedChoice(`repeat-choice-${attempt}`),
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    gameover: undefined,
+                },
+            };
+        };
+        const runRecoveryCycle = async (): Promise<void> => {
+            await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            for (let i = 0; i < 5; i++) {
+                await nextTick();
+            }
+        };
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            resetSameStuckPoint(attempt);
+            await runRecoveryCycle();
+            expect(executeSpy).toHaveBeenCalledTimes(attempt);
+        }
+
+        resetSameStuckPoint(4);
+        await runRecoveryCycle();
+
+        expect(executeSpy.mock.calls.map(call => call[2])).toEqual([
+            INTERACTION_COMMANDS.RESPOND,
+            INTERACTION_COMMANDS.RESPOND,
+            INTERACTION_COMMANDS.RESPOND,
+            INTERACTION_COMMANDS.CANCEL,
+            'ADVANCE_PHASE',
+        ]);
+        expect(match.state.sys.gameover).toBeUndefined();
+        expect(match.state.sys.interaction?.current).toBeUndefined();
+        expect(match.state.sys.phase).toBe('draw');
+        expect(match.state.core.activePlayerId).toBe('0');
+        expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-watchdog-repeated-recovery-limit',
+            playerId: '1',
+            incidentKind: 'repeated-recovery-force-unblocked',
+            severity: 'high',
+            status: 'open',
+            reason: expect.stringContaining('visible-interaction:repeat-limit-force-unblock:3/3:commands=SYS_INTERACTION_CANCEL+ADVANCE_PHASE'),
+        }));
+    });
+
+    it('online AI watchdog 同一卡点重复恢复三次后若仍有响应窗口，不应裸 ADVANCE_PHASE 跳过窗口', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        const createRepeatedResponseWindow = () => ({
+            current: {
+                id: 'repeat-response-window',
+                windowType: 'afterCardPlayed',
+                sourceId: 'repeat-response-source',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+            },
+        });
+
+        await storage.createMatch('match-watchdog-repeated-response-window-limit', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '0',
+                phase: 'scoreBases',
+                responseWindow: createRepeatedResponseWindow(),
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('smashup')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryRepeatedAttemptLimit: 3,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-repeated-response-window-limit');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType) => {
+            expect(playerID).toBe('1');
+            expect(commandType).toBe('RESPONSE_PASS');
+            const eventStreamNextId = (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1;
+            activeMatch.state = {
+                ...activeMatch.state,
+                sys: {
+                    ...activeMatch.state.sys,
+                    eventStream: { nextId: eventStreamNextId },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                },
+            };
+            return true;
+        });
+
+        const resetSameStuckPoint = (attempt: number): void => {
+            match.state = {
+                ...match.state,
+                sys: {
+                    ...match.state.sys,
+                    phase: 'scoreBases',
+                    eventStream: { nextId: 200 + attempt },
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    responseWindow: createRepeatedResponseWindow(),
+                    gameover: undefined,
+                },
+            };
+        };
+        const runRecoveryCycle = async (): Promise<void> => {
+            await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            for (let i = 0; i < 5; i++) {
+                await nextTick();
+            }
+        };
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            resetSameStuckPoint(attempt);
+            await runRecoveryCycle();
+            expect(executeSpy).toHaveBeenCalledTimes(attempt);
+        }
+
+        resetSameStuckPoint(4);
+        await runRecoveryCycle();
+
+        expect(executeSpy).toHaveBeenCalledTimes(3);
+        expect(match.state.sys.gameover).toBeUndefined();
+        expect(match.state.sys.responseWindow?.current?.id).toBe('repeat-response-window');
+        expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-watchdog-repeated-response-window-limit',
+            playerId: '1',
+            incidentKind: 'repeated-recovery-suppressed',
+            severity: 'high',
+            status: 'open',
+            reason: 'response-window:repeat-limit:3/3:no_safe_force_unblock',
+        }));
+    });
+
     it('smashup 持久化 stale reaction choice 走 watchdog 恢复时，不应落成 blocker_persisted', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -26770,7 +27083,7 @@ describe('GameTransportServer（离座与重连）', () => {
             matchId: 'match-unsat-auto-feedback',
             playerId: '1',
             incidentKind: 'unsatisfiable-interaction-auto-skipped',
-            status: 'resolved',
+            status: 'open',
             reason: 'all-options-disabled',
         }));
 
@@ -26979,7 +27292,7 @@ describe('GameTransportServer（离座与重连）', () => {
             matchId: 'match-ai-emergency-skip-authoritative-drift',
             playerId: '1',
             incidentKind: 'unsatisfiable-interaction-auto-skipped',
-            status: 'resolved',
+            status: 'open',
             reason: 'empty-options',
         }));
 

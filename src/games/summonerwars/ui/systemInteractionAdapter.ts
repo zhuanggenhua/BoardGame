@@ -969,6 +969,11 @@ export function deriveSystemAbilityMode(
       step: 'selectPosition',
       sourceUnitId: meta.sourceUnitId,
       targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+      systemChoiceOptions: swInteraction.options.map((option) => ({
+        id: option.id,
+        label: typeof option.label === 'string' ? option.label : undefined,
+        labelKey: typeof option.labelKey === 'string' ? option.labelKey : undefined,
+      })),
     };
   }
 

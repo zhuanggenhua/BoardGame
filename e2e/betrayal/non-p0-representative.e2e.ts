@@ -550,6 +550,10 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         expect(afterAttack.attackerTraits).toEqual(beforeAttack.attackerTraits);
         await saveScreenshot(page, UNARMED_ATTACK_RESULT_SCREENSHOT);
 
+        const attackRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
+        await expect(attackRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        await attackRollBackdrop.click({ position: { x: 16, y: 16 } });
+        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await expect(page.getByTestId('betrayal-board')).toBeVisible();

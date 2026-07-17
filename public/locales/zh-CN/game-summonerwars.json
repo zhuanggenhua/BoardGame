@@ -488,7 +488,7 @@
       "grabFollowWithSource": "抓附：{{unit}}（{{position}}）选择跟随位置",
       "soulTransfer": "灵魂转移：确认是否移动",
       "mindCapture": "心灵捕获：选择控制或造成伤害",
-      "iceShards": "寒冰碎屑：确认是否消耗充能",
+      "iceShards": "寒冰碎屑：攻击阶段开始自动结算",
       "feedBeast": "喂养巨食兽：选择吞噬目标或自毁",
       "moguParasite": "寄生：选择消耗充能或受到伤害",
       "huijinCallGuardsCard": "召集护卫：选择要召唤的士兵",
@@ -562,7 +562,7 @@
       "vanish": "神出鬼没：选择一个 0 费友方单位交换位置",
       "moguBloodInfusion": "鲜血灌注：选择 2 格内一个友方单位",
       "moguTransmission": "菌落传导：选择充能传输方式",
-      "moguFanaticalFungus": "狂热菌菇：选择推拉落点"
+      "moguFanaticalFungus": "狂热菌菇：选择不推拉或推拉落点"
     },
     "beforeAttack": {
       "lifeDrain": "攻击前技能：吸取生命已就绪，选择攻击目标",
@@ -925,7 +925,7 @@
     },
     "ice_shards": {
       "name": "寒冰碎屑",
-      "description": "在你的攻击阶段开始时，你可以消耗 1 点充能，以对每个与你所控制建筑相邻的敌方单位造成 1 点伤害。"
+      "description": "在你的攻击阶段开始时，消耗 1 点充能，对每个与你所控制建筑相邻的敌方单位造成 1 点伤害。"
     },
     "greater_frost_bolt": {
       "name": "高阶冰霜飞弹",

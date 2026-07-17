@@ -29,6 +29,7 @@ export function useLocalProviderSession(args: {
     setupPlayerIds: string[];
     aiSeatIds: string[];
     persistSession: boolean;
+    persistGameId?: string;
 }) {
     const {
         config,
@@ -38,15 +39,17 @@ export function useLocalProviderSession(args: {
         setupPlayerIds,
         aiSeatIds,
         persistSession,
+        persistGameId,
     } = args;
+    const storageGameId = persistGameId ?? config.gameId;
 
     const persistedSnapshot = useMemo(
         () => (
             persistSession
-                ? readLocalMatchSnapshot({ gameId: config.gameId, seed, numPlayers })
+                ? readLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers })
                 : null
         ),
-        [config.gameId, numPlayers, persistSession, seed],
+        [numPlayers, persistSession, seed, storageGameId],
     );
 
     const [initialRandom] = useState<LocalProviderRandom>(() =>
@@ -73,13 +76,13 @@ export function useLocalProviderSession(args: {
     useEffect(() => {
         if (!persistSession) return;
         persistLocalMatchSnapshot({
-            gameId: config.gameId,
+            gameId: storageGameId,
             seed,
             numPlayers,
             state,
             randomCursor: randomRef.current.getCursor(),
         });
-    }, [config.gameId, numPlayers, persistSession, seed, state]);
+    }, [numPlayers, persistSession, seed, state, storageGameId]);
 
     const reset = useCallback(() => {
         randomRef.current = createLocalProviderRandom(seed);

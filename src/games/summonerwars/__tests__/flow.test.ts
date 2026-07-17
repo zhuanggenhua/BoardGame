@@ -1768,7 +1768,7 @@ describe('召唤师战争本地 AI', () => {
             faction0: 'frost',
             faction1: 'necromancer',
         });
-        core.phase = 'build';
+        core.phase = 'attack';
         core.currentPlayer = '0';
 
         for (let row = 0; row < BOARD_ROWS; row += 1) {
@@ -1778,82 +1778,64 @@ describe('召唤师战争本地 AI', () => {
             }
         }
 
-        const jamudCard: UnitCard = {
-            id: 'test-jamud',
+        const beastCard: UnitCard = {
+            id: 'test-feed-beast',
             cardType: 'unit',
-            name: '测试贾穆德',
+            name: '测试巨食兽',
             unitClass: 'champion',
-            faction: 'frost',
+            faction: 'goblin',
             strength: 3,
             life: 8,
             cost: 6,
             attackType: 'melee',
             attackRange: 1,
-            abilities: ['imposing', 'ice_shards'],
+            abilities: ['feed_beast'],
             deckSymbols: [],
         };
 
-        const jamud = placeTestUnit(core, { row: 3, col: 2 }, {
-            card: jamudCard,
+        const beast = placeTestUnit(core, { row: 3, col: 2 }, {
+            card: beastCard,
             owner: '0',
-            boosts: 1,
         });
 
-        core.board[4][3].structure = {
-            cardId: 'test-wall',
+        placeTestUnit(core, { row: 3, col: 3 }, {
             card: {
-                id: 'test-wall',
-                cardType: 'structure',
-                name: '测试城墙',
-                faction: 'frost',
-                cost: 0,
-                life: 3,
-                isGate: false,
-                deckSymbols: [],
-            },
-            owner: '0',
-            position: { row: 4, col: 3 },
-            damage: 0,
-        };
-
-        placeTestUnit(core, { row: 4, col: 4 }, {
-            card: {
-                id: 'test-enemy',
+                id: 'test-feed-beast-ally',
                 cardType: 'unit',
-                name: '测试敌兵',
+                name: '测试友军',
                 unitClass: 'common',
-                faction: 'necromancer',
-                strength: 2,
-                life: 3,
+                faction: 'goblin',
+                strength: 1,
+                life: 2,
                 cost: 1,
                 attackType: 'melee',
                 attackRange: 1,
                 deckSymbols: [],
             },
-            owner: '1',
+            owner: '0',
         });
 
         const sys = createInitialSystemState(['0', '1'], []);
         sys.flowHalted = true;
         const interaction = createSimpleChoice(
-            'sw-ai-ice-shards-choice',
+            'sw-ai-feed-beast-choice',
             '0',
-            'interaction.sw.iceShards',
+            'interaction.sw.feedBeast',
             [
                 {
-                    id: 'confirm',
-                    label: '确认',
-                    value: { action: 'ice_shards', sourceUnitId: jamud.instanceId },
+                    id: 'self_destroy',
+                    label: '自毁',
+                    value: { action: 'feed_beast', sourceUnitId: beast.instanceId, choice: 'self_destroy' },
                 },
                 {
                     id: 'skip',
                     label: '跳过',
-                    value: { action: 'ice_shards', sourceUnitId: jamud.instanceId, skip: true },
+                    value: { action: 'feed_beast', sourceUnitId: beast.instanceId, skip: true },
                 },
             ],
-            { sourceId: 'ice_shards' },
+            { sourceId: 'feed_beast' },
         );
-        (interaction.data as { sw?: unknown }).sw = { type: 'ice_shards', sourceUnitId: jamud.instanceId };
+        (interaction.data as { sw?: unknown }).sw = { type: 'feed_beast', sourceUnitId: beast.instanceId };
         sys.interaction = { ...sys.interaction, current: interaction };
 
         const actions = buildSummonerWarsAiLegalActions({
@@ -1867,8 +1849,8 @@ describe('召唤师战争本地 AI', () => {
         expect(actions.map((action) => action.commands[0])).toContainEqual({
             type: 'SYS_INTERACTION_RESPOND',
             payload: {
-                interactionId: 'sw-ai-ice-shards-choice',
-                optionId: 'confirm',
+                interactionId: 'sw-ai-feed-beast-choice',
+                optionId: 'self_destroy',
             },
         });
     });

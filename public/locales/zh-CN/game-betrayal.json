@@ -18,6 +18,7 @@
     "tradePossession": "玩家 {{player}} 与玩家 {{target}} 完成交易",
     "lootCorpse": "玩家 {{player}} 搜刮了探索者尸体",
     "endTurn": "玩家 {{player}} 结束回合",
+    "acknowledgeTurnEndRoll": "玩家 {{player}} 确认了回合结束检定结果",
     "attackTraitor": "玩家 {{player}} 攻击叛徒",
     "attackHero": "玩家 {{player}} 攻击英雄",
     "attackJackSpirit": "玩家 {{player}} 攻击杰克之灵",

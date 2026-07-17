@@ -17,6 +17,8 @@ export interface ModalEntry {
     zIndex?: number;
     /** 允许指针事件穿透到背景（用于教程等不应拦截交互的弹层） */
     allowPointerThrough?: boolean;
+    /** 不关闭弹窗，但允许系统返回/侧滑继续执行页面级返回（用于教程退出） */
+    allowSystemBackNavigation?: boolean;
     // 由栈触发的关闭回调（例如 ESC/编程关闭）
     onClose?: () => void;
 }
@@ -80,6 +82,7 @@ const areModalEntriesEquivalent = (
         && left.lockScroll === right.lockScroll
         && left.zIndex === right.zIndex
         && left.allowPointerThrough === right.allowPointerThrough
+        && left.allowSystemBackNavigation === right.allowSystemBackNavigation
         && areOwnerRefsEquivalent(left.owner, right.owner);
 };
 

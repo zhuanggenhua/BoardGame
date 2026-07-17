@@ -1333,14 +1333,15 @@ export function executeCommand(
   // 后处理2b：莫古召唤师“血腥绽放” — 2格内友方单位被消灭后，2格内所有友方单位充能
   const moguBloomDestroyed = processedEvents.filter(e => e.type === SW_EVENTS.UNIT_DESTROYED);
   if (moguBloomDestroyed.length > 0) {
+    const postDeathCore = processedEvents.reduce((nextCore, event) => reduceEvent(nextCore, event), core);
     for (const destroyEvent of moguBloomDestroyed) {
       const destroyPayload = destroyEvent.payload as { position: CellCoord; owner?: PlayerId };
       const owner = destroyPayload.owner;
       if (!owner) continue;
-      const summoner = getSummoner(core, owner);
-      if (!summoner || !getUnitAbilities(summoner, core).includes('mogu_blood_bloom')) continue;
+      const summoner = getSummoner(postDeathCore, owner);
+      if (!summoner || !getUnitAbilities(summoner, postDeathCore).includes('mogu_blood_bloom')) continue;
       if (manhattanDistance(summoner.position, destroyPayload.position) > 2) continue;
-      for (const unit of getPlayerUnits(core, owner)) {
+      for (const unit of getPlayerUnits(postDeathCore, owner)) {
         if (unit.instanceId === summoner.instanceId) continue;
         if (manhattanDistance(summoner.position, unit.position) <= 2) {
           processedEvents.push({

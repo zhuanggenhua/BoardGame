@@ -2,6 +2,8 @@
 
 > 当前状态（2026-07-03 / C86）：本文件已从“待执行残余队列”转为“已完成残余补证索引 + 条件性专项入口”。C85 已纠正 C80/C84 的来源越权口径；C86 进一步纠正“审计要回卡图/回录入层”的误读。普通续跑不得再按本文件旧的“下一步”字样寻找常规残余任务，也不得为 `ferocity` / `entangle` 自动启动卡图、OCR、Wiki、网页文本或在线文本包复核；这两个对象只是不允许继续宣称已证实修复，若要裁定归属，必须单独进入数据录入/对象归属复核任务。
 
+> 2026-07-17 更新：贾穆德「寒冰碎屑」（`ice_shards`）旧的“建造阶段结束确认/跳过”补证已被当前用户故事覆盖。现行证据入口为 `evidence/summonerwars/summonerwars-ice-shards-e2e-test.md`，验收口径为攻击阶段开始自动结算、无确认/跳过 UI、伤害与充能结果落位。
+
 ## 续跑口径
 
 - 本文件只消费已 `locked` 的数据录入合同和已完成的首轮实现对照矩阵，不重新读图片/OCR，不重新录入规则。
@@ -39,7 +41,7 @@
 | L4-13 | `high_telekinesis_instead` | 卡拉「高阶念力」代替攻击 | 共享二段选择系统由 `telekinesis_instead` 代表链覆盖；高阶范围/行动经济已有直接断言 | `interaction-chain-comprehensive.test.ts` 目标测试通过 |
 | L4-14 | `telekinesis_instead` | 清风法师「念力」代替攻击 | 真实 UI 二段选择先选目标再选方向；成功后推拉落位并只消耗一次攻击行动；重复响应不二次消耗 | `interaction-chain-comprehensive.test.ts` 目标测试通过 |
 | L4-03 | `feed_beast` | 巨食兽「喂养野兽」 | 攻击阶段结束真实 halt；吞噬相邻友方后收口；重复响应被拒绝且不二次弃置；再次推进进入 magic 且不残留交互 | `interaction-chain-comprehensive.test.ts` 目标测试通过 |
-| L4-15 | `ice_shards` | 贾穆德「冰片」 | 建造阶段结束确认/跳过收口；多个贾穆德同阶段结束时逐个处理；未处理完前提前推进被拒绝且不重放能力；全部收口后推进到 attack | `interaction-chain-comprehensive.test.ts` 目标测试通过 |
+| L4-15 | `ice_shards` | 贾穆德「寒冰碎屑」 | 2026-07-17 已改为攻击阶段开始自动结算；无确认/跳过 UI；多个贾穆德同阶段开始全部自动结算；伤害与充能结果落位 | `interaction-chain-comprehensive.test.ts` 与 `summonerwars-ice-shards-minimal.e2e.ts` 目标测试通过 |
 | L4-19 | `magic_addiction` | 史米革「魔力成瘾」 | 回合结束真实入口自动扣魔力或弃置；多个史米革同回合结束时按顺序消费共享魔力，前一来源事件先进入临时状态，后一个来源不共享旧魔力快照；相邻阶段自动能力回归通过 | `interaction-chain-comprehensive.test.ts` 与 `abilities-goblin.test.ts` 目标测试通过 |
 | L4-20 | `guidance` | 瓦伦蒂娜「指引」 | 召唤阶段真实入口自动抽 2 张；牌库不足时只抽实际剩余牌数，不越界、不重复抽 | `interaction-chain-comprehensive.test.ts` 目标测试通过 |
 | L4-21 | `blood_rune` | 布拉夫「血符文」 | 攻击阶段开始真实入口按最新魔力生成二选一；多个布拉夫顺序处理时，第一个花唯一魔力充能后，第二个不沿用旧 charge 选项并自动自伤收口 | `interaction-chain-comprehensive.test.ts` 与 `abilities-goblin.test.ts` 目标测试通过 |
@@ -90,7 +92,7 @@
 | L4-12 | `soul_transfer` | 亡灵弓箭手「灵魂转移」 | 交互层确认/跳过与刷新不重复移动 | `b4-p2-implementation-diff-matrix` | 已完成确认移动与重复响应补证；跳过路径可并入可选交互代表链 |
 | L4-13 | `high_telekinesis_instead` | 卡拉「高阶念力」代替攻击 | 真实 UI 二段选择和刷新不重复消耗攻击行动 | `b4-p2-implementation-diff-matrix` | 已由共享二段系统代表链覆盖，保留高阶范围/目标类型直接断言 |
 | L4-14 | `telekinesis_instead` | 清风法师「念力」代替攻击 | 真实 UI 二段选择和刷新不重复消耗攻击行动 | `b4-p2-implementation-diff-matrix` | 已完成真实 UI 二段选择与重复响应补证 |
-| L4-15 | `ice_shards` | 贾穆德「冰片」 | 多个贾穆德同时触发时的顺序边界与阶段收口 | `b5-p2-implementation-diff-matrix` | 已完成多来源顺序、阶段收口和提前推进门禁补证 |
+| L4-15 | `ice_shards` | 贾穆德「寒冰碎屑」 | 攻击阶段开始自动触发时的多来源边界与无选择 UI 收口 | `summonerwars-ice-shards-e2e-test` | 已完成多来源自动结算、充能不足不触发、无确认/跳过 UI 与真实页面结果补证 |
 | L4-16 | `mind_capture` / `mind_capture_resolve` | 泰珂露「心灵捕获」 | 伤害路径真实交互闭环，控制/伤害二选一后不重复伤害 | `b5-p2-implementation-diff-matrix` | 已完成 damage 选择真实入口、伤害摧毁、决策后攻击后触发和重复响应不二次伤害补证；若后续扩大，只补 UI eventStream 回放不重复打开二选一 |
 | L4-17 | `sacrifice` | 地狱火教徒「献祭」 | 连锁死亡回放/重连不重复触发 | `b8-p3-p4-static-summon-and-death-implementation-diff-matrix` | 已完成连锁死亡重复消费断言；若后续扩大，只补 UI eventStream 重连不重复展示死亡链 |
 | L4-18 | `cold_snap` | 奥莱格「寒流」 | 建筑进出场/控制权变化后的动态重算 | `b8-p3-p4-static-summon-and-death-implementation-diff-matrix` | 已完成动态重算断言；若后续扩大，只补 UI 展示层有效生命即时刷新 |

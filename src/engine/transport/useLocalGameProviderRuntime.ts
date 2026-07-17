@@ -28,6 +28,7 @@ export function useLocalGameProviderRuntime(args: {
     localPlayerId: string | null;
     followCurrentTurnPlayer: boolean;
     persistSession: boolean;
+    persistGameId?: string;
 }): GameClientContextValue {
     const playerIds = useMemo(
         () => Array.from({ length: args.numPlayers }, (_, i) => String(i)),
@@ -62,6 +63,7 @@ export function useLocalGameProviderRuntime(args: {
         setupPlayerIds,
         aiSeatIds,
         persistSession: args.persistSession,
+        persistGameId: args.persistGameId,
     });
     const runtimeSeatControllers = useMemo(
         () => resolveRuntimeSeatControllers({

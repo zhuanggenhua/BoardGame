@@ -619,6 +619,24 @@ WEB_ORIGINS=https://your-domain.com
   - `game-server` 多实例需要谨慎：GameTransportServer 的 match 状态（内存缓存）与 WebSocket 连接需要一致性，通常需要 sticky session + 共享存储/协调（或拆分“大厅/匹配”层）。
 - **状态服务单点处理**：MongoDB/Redis 建议走托管或主从/集群，避免单机磁盘与内存成为瓶颈。
 
+### game-server 资源保护
+
+- 生产 `docker-compose.prod.yml` 对 `boardgame-game-server` 设置 CPU 配额与内存上限，用于隔离游戏服务异常空转对整机的影响。
+- CPU 配额只会让容器被限速，不会自动重启；如果需要“CPU 持续高水位后重启”，必须由宿主机监控按持续窗口触发，并先保留日志与现场。
+- 内存超出 `mem_limit` 时容器可能被 OOM 杀掉，现有 `restart: unless-stopped` 会把容器重新拉起；这属于止血兜底，不代表原始卡点已修复。
+- 在线 AI 卡死应优先由服务端 watchdog 的安全跳过、重复恢复上限和自动反馈定位根因；不得把反复重启当成业务修复。
+- 仓库提供 `scripts/deploy/watch-game-server-cpu.sh` 作为宿主机 CPU 高水位止血脚本：默认采样 5 次、每次间隔 30 秒，只有全部样本超过 `BG_GAME_SERVER_CPU_RESTART_THRESHOLD`（默认 140%）才触发；触发前会保存 `docker stats`、`docker inspect` 和最近日志。
+- 脚本默认只记录证据，不会重启；生产定时器或 systemd service 需要显式设置 `BG_GAME_SERVER_CPU_WATCH_RESTART=1`。建议同时设置 `BG_GAME_SERVER_CPU_RESTART_COOLDOWN_SECONDS=600` 或更高，避免重启风暴。
+- 每次运行都会追加一行历史记录到 `BG_GAME_SERVER_CPU_HISTORY_LOG`（默认 `./logs/game-server-cpu-watch/restart-history.log`），包含 `decision`、`restarted`、`reason`、平均 CPU、触发样本数和证据文件路径；事后用 `tail -n 50 ./logs/game-server-cpu-watch/restart-history.log` 就能看是否重启以及原因。
+
+```bash
+BG_GAME_SERVER_CPU_WATCH_RESTART=1 \
+BG_GAME_SERVER_CPU_RESTART_THRESHOLD=140 \
+BG_GAME_SERVER_CPU_SAMPLE_COUNT=5 \
+BG_GAME_SERVER_CPU_SAMPLE_INTERVAL_SECONDS=30 \
+bash scripts/deploy/watch-game-server-cpu.sh
+```
+
 ## 常见问题
 
 ### 部署后验收

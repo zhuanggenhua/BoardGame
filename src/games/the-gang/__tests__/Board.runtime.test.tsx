@@ -303,6 +303,16 @@ describe('The Gang Board 运行入口', () => {
                     pocketCards: [standardCard('A', 'spades'), standardCard('K', 'hearts')],
                     secondaryPocketCards: [standardCard('Q', 'diamonds'), standardCard('J', 'clubs')],
                 },
+                '1': {
+                    ...initial.players['1'],
+                    pocketCards: [standardCard('7', 'spades'), standardCard('6', 'spades')],
+                    secondaryPocketCards: [standardCard('5', 'spades'), standardCard('9', 'hearts')],
+                },
+                '2': {
+                    ...initial.players['2'],
+                    pocketCards: [standardCard('7', 'diamonds'), standardCard('J', 'hearts')],
+                    secondaryPocketCards: [standardCard('8', 'spades'), standardCard('5', 'clubs')],
+                },
             },
         };
 
@@ -314,6 +324,93 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByTestId('the-gang-local-hand-bottom').querySelectorAll('img')).toHaveLength(2);
         expect(screen.getByText('board.topHand')).toBeInTheDocument();
         expect(screen.getByText('board.bottomHand')).toBeInTheDocument();
+    });
+
+    test('手牌调换阶段点击上下真实手牌后才能确认，也可以跳过', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const handSwapCore: TheGangCore = {
+            ...initial,
+            heistStarted: true,
+            phase: 'hand-swap',
+            rules: {
+                ...initial.rules,
+                config: {
+                    ...initial.rules.config,
+                    twoHand: true,
+                    handSwap: true,
+                },
+            },
+            players: {
+                ...initial.players,
+                '0': {
+                    ...initial.players['0'],
+                    pocketCards: [standardCard('A', 'spades'), standardCard('K', 'hearts')],
+                    secondaryPocketCards: [standardCard('Q', 'diamonds'), standardCard('J', 'clubs')],
+                },
+                '1': {
+                    ...initial.players['1'],
+                    pocketCards: [standardCard('7', 'spades'), standardCard('6', 'spades')],
+                    secondaryPocketCards: [standardCard('5', 'spades'), standardCard('9', 'hearts')],
+                },
+                '2': {
+                    ...initial.players['2'],
+                    pocketCards: [standardCard('7', 'diamonds'), standardCard('J', 'hearts')],
+                    secondaryPocketCards: [standardCard('8', 'spades'), standardCard('5', 'clubs')],
+                },
+            },
+        };
+
+        const { unmount } = renderWithToast(
+            <Board
+                G={stateOf(handSwapCore)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-hand-swap-stage')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-hand-swap-strip')).toHaveTextContent('board.handSwapSelectedCount');
+        expect(screen.getByTestId('the-gang-confirm-hand-swap')).toBeDisabled();
+        expect(screen.getByRole('img', { name: 'A♠' })).toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-opponent-hand-1-rows')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-opponent-hand-2-rows')).not.toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] img[alt="board.cardBackAlt"]')).toHaveLength(0);
+        for (const exposedCard of ['7♠', '6♠', '5♠', '9♥', '7♦', 'J♥', '8♠', '5♣']) {
+            expect(screen.queryByRole('img', { name: exposedCard })).not.toBeInTheDocument();
+        }
+
+        fireEvent.click(screen.getByTestId('the-gang-local-hand-top-card-0'));
+        fireEvent.click(screen.getByTestId('the-gang-local-hand-bottom-card-1'));
+
+        expect(screen.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
+        expect(screen.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
+        expect(screen.getByTestId('the-gang-confirm-hand-swap')).not.toBeDisabled();
+
+        fireEvent.click(screen.getByTestId('the-gang-confirm-hand-swap'));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {
+            __internalPlayerId: '0',
+            topIndex: 0,
+            bottomIndex: 1,
+        });
+        unmount();
+
+        dispatch.mockClear();
+        renderWithToast(
+            <Board
+                G={stateOf(handSwapCore)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+        fireEvent.click(screen.getByTestId('the-gang-skip-hand-swap'));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {
+            __internalPlayerId: '0',
+        });
     });
 
     test('真实 Board 可以完成四轮抢劫并显示摊牌结果', () => {
@@ -458,6 +555,7 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByRole('img', { name: '万能钥匙' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/challenges/compressed/master-key.webp'));
         expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-rule-toggle-twoHand')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-rule-toggle-handSwap')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-rule-toggle-automode')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-rule-toggle-antiTroll')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-exit-mode-mastermind')).toBeInTheDocument();
@@ -470,6 +568,7 @@ describe('The Gang Board 运行入口', () => {
                 exitChipMode: 'default',
                 omaha: true,
                 twoHand: false,
+                handSwap: false,
                 automode: false,
                 antiTroll: false,
                 challenges: {},
@@ -485,6 +584,7 @@ describe('The Gang Board 运行入口', () => {
                 exitChipMode: 'mastermind',
                 omaha: false,
                 twoHand: false,
+                handSwap: false,
                 automode: false,
                 antiTroll: false,
                 challenges: {},
@@ -501,6 +601,7 @@ describe('The Gang Board 运行入口', () => {
                 exitChipMode: 'default',
                 omaha: false,
                 twoHand: false,
+                handSwap: false,
                 automode: false,
                 antiTroll: false,
                 challenges: {},

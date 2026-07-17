@@ -21,6 +21,7 @@
 - 项目级：`project/mobile-ota-mandatory-update-policy-2026-07-10.md`
 - 纸牌帮：`docs/games/the-gang/user-stories/online-viewer-and-landscape-contract-2026-07-10.md`
 - DiceThrone：`docs/games/dicethrone/user-stories/pyromancer-burn-image-standard-2026-05-12.md`
+- 召唤师战争：`docs/games/summonerwars/user-stories/ice-shards-attack-start-auto-2026-07-17.md`
 - 七大恨：`docs/games/qidahen/user-stories/population-token-no-material-exception-2026-07-07.md`
 - SmashUp：`docs/games/smashup/user-stories/body-shop-sentence-boundary-2026-05-23.md`
 - SmashUp：`docs/games/smashup/user-stories/controller-does-not-transfer-ownership-2026-06-06.md`

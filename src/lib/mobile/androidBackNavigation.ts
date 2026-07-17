@@ -18,6 +18,7 @@ interface ResolveAndroidBackNavigationActionOptions extends ReadAndroidBackNavig
     search?: string;
     modalStackDepth?: number;
     isTopModalClosable?: boolean;
+    isTopModalBackNavigationAllowed?: boolean;
     hasFocusedTextEntry?: boolean;
 }
 
@@ -44,6 +45,7 @@ export const resolveAndroidBackNavigationAction = ({
     historyLength,
     modalStackDepth = 0,
     isTopModalClosable = true,
+    isTopModalBackNavigationAllowed = false,
     hasFocusedTextEntry = false,
 }: ResolveAndroidBackNavigationActionOptions): AndroidBackNavigationAction => {
     if (hasFocusedTextEntry) {
@@ -51,9 +53,12 @@ export const resolveAndroidBackNavigationAction = ({
     }
 
     if (modalStackDepth > 0) {
-        return isTopModalClosable
-            ? { type: 'close-modal' }
-            : { type: 'blocked' };
+        if (isTopModalClosable) {
+            return { type: 'close-modal' };
+        }
+        if (!isTopModalBackNavigationAllowed) {
+            return { type: 'blocked' };
+        }
     }
 
     // App 壳内的对局页返回手势统一落到“返回大厅”语义，

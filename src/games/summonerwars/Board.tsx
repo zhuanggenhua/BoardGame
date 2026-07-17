@@ -51,7 +51,7 @@ import { DiscardPileOverlay } from './ui/DiscardPileOverlay';
 import { FactionSelection } from './ui/FactionSelectionAdapter';
 import type { FactionId } from './domain/types';
 import { BOARD_ROWS, BOARD_COLS } from './config/board';
-import { MAX_MOVES_PER_TURN, MAX_ATTACKS_PER_TURN, findUnitPositionByInstanceId } from './domain/helpers';
+import { MAX_MOVES_PER_TURN, MAX_ATTACKS_PER_TURN } from './domain/helpers';
 // 提取的子模块
 import { CardSprite } from './ui/CardSprite';
 import { getUnitSpriteConfig, getStructureSpriteConfig, getEventSpriteConfig } from './ui/spriteHelpers';
@@ -524,17 +524,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     }
   }, [abilityMode, abilityUiRoute, swInteraction]);
 
-  const systemIceShardsMode = useMemo(() => {
-    if (!swInteraction || swInteraction.type !== 'ice_shards') return null;
-    const meta = swInteraction.meta as { sourceUnitId?: string };
-    if (!meta.sourceUnitId) return null;
-    const pos = findUnitPositionByInstanceId(core, meta.sourceUnitId);
-    const unit = pos ? core.board[pos.row]?.[pos.col]?.unit : null;
-    return {
-      sourceBoosts: unit?.boosts ?? 0,
-    };
-  }, [core, swInteraction]);
-
   const systemInfectionCards = useMemo(() => {
     return deriveInteractionCardsByOptionIds(swInteraction, 'infection', core.players[myPlayerId]?.discard ?? []);
   }, [core.players, myPlayerId, swInteraction]);
@@ -782,7 +771,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       cancelSwInteraction(true);
       return;
     }
-    if (swInteraction && ['ice_shards', 'after_attack_mind_transmission', 'fire_sacrifice_summon'].includes(swInteraction.type)) {
+    if (swInteraction && ['after_attack_mind_transmission', 'fire_sacrifice_summon'].includes(swInteraction.type)) {
       cancelSwInteraction(true);
       return;
     }
@@ -967,15 +956,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     respondInteractionOption(optionId);
     setAbilityMode(null);
   }, [abilityMode?.abilityId, findInteractionOptionId, respondInteractionOption, setAbilityMode]);
-  // 寒冰碎屑确认回调
-  const handleConfirmIceShards = useCallback(() => {
-    if (!swInteraction || swInteraction.type !== 'ice_shards') return;
-    const optionId = findInteractionOptionId((option) => {
-      const value = option.value as { action?: string; skip?: boolean } | undefined;
-      return value?.action === 'ice_shards' && value.skip !== true;
-    });
-    respondInteractionOption(optionId);
-  }, [findInteractionOptionId, respondInteractionOption, swInteraction]);
   const handleSkipGrabFollow = useCallback(() => {
     if (!systemGrabFollowMode) return;
     const optionId = findInteractionOptionId((option) => {
@@ -1446,14 +1426,12 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                       magicEventChoiceMode={interaction.magicEventChoiceMode}
                       eventTargetMode={interaction.eventTargetMode}
                       systemGrabFollowMode={systemGrabFollowMode}
-                      systemIceShardsMode={systemIceShardsMode}
                       systemFeedBeastMode={systemFeedBeastMode}
                       systemMoguParasiteMode={systemMoguParasiteMode}
                       onCancelAbility={handleCancelAbility}
                       onConfirmBeforeAttackCards={interaction.handleConfirmBeforeAttackCards}
                       onConfirmBloodRune={handleConfirmBloodRune}
                       onSkipGrabFollow={handleSkipGrabFollow}
-                      onConfirmIceShards={handleConfirmIceShards}
                       onConfirmFeedBeastSelfDestroy={handleConfirmFeedBeastSelfDestroy}
                       onConfirmMoguParasite={handleConfirmMoguParasite}
                       onCancelBeforeAttack={handleCancelBeforeAttack}

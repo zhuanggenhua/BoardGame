@@ -108,6 +108,7 @@
     "audit:evidence": "node scripts/verify/audit-evidence-completeness.mjs",
     "audit:evidence:all": "node scripts/verify/audit-evidence-completeness.mjs --all",
     "audit:evidence:selfcheck": "node scripts/verify/audit-evidence-completeness.mjs",
+    "audit:interactions": "node scripts/verify/interaction-empty-options-audit.mjs",
     "check:prod-deps": "bash scripts/deploy/verify-prod-deps.sh",
     "deploy:runner": "node scripts/deploy/deploy-runner.mjs",
     "release:deploy-and-ota": "node scripts/release/deploy-and-ota.mjs",

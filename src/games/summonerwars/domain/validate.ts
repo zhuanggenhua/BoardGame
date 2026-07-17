@@ -610,6 +610,9 @@ export function validateCommand(
     }
 
     case SW_COMMANDS.END_PHASE: {
+      if (state.sys?.interaction?.current) {
+        return { valid: false, error: '请先完成当前交互' };
+      }
       return { valid: true };
     }
 

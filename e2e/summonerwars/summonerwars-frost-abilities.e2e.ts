@@ -370,8 +370,9 @@ test.describe('极地矮人阵营特色交互', () => {
       expect(enemyUnit).toBeTruthy();
       expect(enemyUnit.owner).toBe('1');
 
-      // 记录敌方单位初始伤害
+      // 记录敌方单位初始伤害和贾穆德初始充能
       const initialDamage = enemyUnit?.damage ?? 0;
+      const initialBoosts = jamudUnit?.boosts ?? 0;
 
       // 点击"结束阶段"退出 build 阶段，进入 attack 时触发 ice_shards
       const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
@@ -379,19 +380,23 @@ test.describe('极地矮人阵营特色交互', () => {
       
       await endPhaseBtn.click();
       await waitForPhase(hostPage, 'attack');
-      
-      // 按钮文本来自 i18n: actions.confirm = "确认"/"Confirm", actions.skip = "跳过"/"Skip"
-      const confirmBtn = hostPage.locator('button').filter({ hasText: /^Confirm$|^确认$/i }).first();
-      
-      // 等待按钮出现（5秒超时）
-      await expect(confirmBtn).toBeVisible({ timeout: 5000 });
-      await expect(confirmBtn).toBeEnabled({ timeout: 1000 });
-
-      // 点击"确认"执行寒冰碎屑
-      await confirmBtn.click();
-      await hostPage.waitForTimeout(500);
 
       // 验证敌方单位受到伤害
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage);
+        const enemyAfter = state.board[enemyPos.row][enemyPos.col]?.unit;
+        const jamudAfter = state.board[jamudPos.row][jamudPos.col]?.unit;
+        return {
+          phase: state.phase,
+          enemyDamage: enemyAfter?.damage ?? initialDamage,
+          jamudBoosts: jamudAfter?.boosts ?? null,
+        };
+      }, { timeout: 5000 }).toEqual({
+        phase: 'attack',
+        enemyDamage: initialDamage + 1,
+        jamudBoosts: initialBoosts - 1,
+      });
+
       const afterState = await readCoreState(hostPage);
       const enemyAfter = afterState.board[enemyPos.row][enemyPos.col]?.unit;
 
@@ -406,13 +411,14 @@ test.describe('极地矮人阵营特色交互', () => {
       const jamudAfter = afterState.board[jamudPos.row][jamudPos.col]?.unit;
       expect(jamudAfter).toBeTruthy();
       expect(jamudAfter.boosts).toBeLessThan(2);
+      await expect(hostPage.getByTestId('sw-ability-prompt')).toHaveCount(0);
     } finally {
       await hostContext.close();
       await guestContext.close();
     }
   });
 
-  test('寒冰碎屑：跳过不执行', async ({ browser }, testInfo) => {
+  test('寒冰碎屑：充能不足时不触发伤害也不出现选择', async ({ browser }, testInfo) => {
     test.setTimeout(180000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     const match = await setupSWOnlineMatch(browser, baseURL, 'frost', 'necromancer');
@@ -424,6 +430,7 @@ test.describe('极地矮人阵营特色交互', () => {
 
       const coreState = await readCoreState(hostPage);
       const { state: iceShardsCore, jamudPos, enemyPos } = prepareIceShardsState(coreState);
+      iceShardsCore.board[jamudPos.row][jamudPos.col].unit.boosts = 0;
       await applyCoreState(hostPage, iceShardsCore);
       await closeDebugPanelIfOpen(hostPage);
       await waitForPhase(hostPage, 'build');
@@ -434,20 +441,13 @@ test.describe('极地矮人阵营特色交互', () => {
       const jamudBefore = verifyState.board[jamudPos.row]?.[jamudPos.col]?.unit;
       expect(jamudBefore).toBeTruthy();
       const initialBoosts = jamudBefore?.boosts ?? 0;
-      expect(initialBoosts).toBeGreaterThanOrEqual(1);
+      expect(initialBoosts).toBe(0);
 
       // 结束 build 阶段，进入 attack 时触发 ice_shards
       const endPhaseBtn = hostPage.getByTestId('sw-end-phase');
       await expect(endPhaseBtn).toBeVisible({ timeout: 5000 });
       await endPhaseBtn.click();
       await waitForPhase(hostPage, 'attack');
-
-      // 等待横幅出现
-      const skipButton = hostPage.locator('button').filter({ hasText: /^Skip$|^跳过$/i }).first();
-      await expect(skipButton).toBeVisible({ timeout: 5000 });
-
-      // 点击"跳过"
-      await skipButton.click();
       await hostPage.waitForTimeout(500);
 
       // 验证充能未消耗
@@ -460,6 +460,7 @@ test.describe('极地矮人阵营特色交互', () => {
       const enemyAfter = afterState.board[enemyPos.row][enemyPos.col]?.unit;
       expect(enemyAfter).toBeTruthy();
       expect(enemyAfter.damage).toBe(0);
+      await expect(hostPage.getByTestId('sw-ability-prompt')).toHaveCount(0);
     } finally {
       await hostContext.close();
       await guestContext.close();

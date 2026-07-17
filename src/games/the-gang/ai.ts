@@ -10,6 +10,7 @@ type TheGangState = MatchState<TheGangCore>;
 const ACTION_KIND_TAKE_CHIP = 'take-chip';
 const ACTION_KIND_END_ROUND = 'end-round';
 const ACTION_KIND_REVEAL_SHOWDOWN = 'reveal-showdown';
+const ACTION_KIND_CONFIRM_HAND_SWAP = 'confirm-hand-swap';
 const ACTION_KIND_START_NEXT_HEIST = 'start-next-heist';
 
 const createTakeChipAction = (chip: number): AiLegalAction => ({
@@ -24,7 +25,11 @@ const createTakeChipAction = (chip: number): AiLegalAction => ({
 });
 
 const createProgressAction = (
-    kind: typeof ACTION_KIND_END_ROUND | typeof ACTION_KIND_REVEAL_SHOWDOWN | typeof ACTION_KIND_START_NEXT_HEIST,
+    kind:
+        | typeof ACTION_KIND_END_ROUND
+        | typeof ACTION_KIND_REVEAL_SHOWDOWN
+        | typeof ACTION_KIND_CONFIRM_HAND_SWAP
+        | typeof ACTION_KIND_START_NEXT_HEIST,
     label: string,
     commandType: string,
 ): AiLegalAction => ({
@@ -167,6 +172,17 @@ export function buildTheGangAiLegalActions(args: {
     }
 
     if (
+        core.phase === 'hand-swap'
+        && !isProgressAlreadyApprovedByPlayer(core, args.playerId, 'hand-swap')
+    ) {
+        return [createProgressAction(
+            ACTION_KIND_CONFIRM_HAND_SWAP,
+            '确认不调换手牌',
+            THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+        )];
+    }
+
+    if (
         core.phase === 'showdown'
         && core.lastShowdown
         && !core.gameResult
@@ -207,6 +223,7 @@ const baselineLocalPolicy: LocalAiPolicy = {
         const firstProgressAction = context.legalActions.find((action) => (
             action.kind === ACTION_KIND_END_ROUND
             || action.kind === ACTION_KIND_REVEAL_SHOWDOWN
+            || action.kind === ACTION_KIND_CONFIRM_HAND_SWAP
             || action.kind === ACTION_KIND_START_NEXT_HEIST
         ));
         return firstProgressAction ? { actionId: firstProgressAction.actionId } : null;

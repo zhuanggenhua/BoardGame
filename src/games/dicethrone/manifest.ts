@@ -23,7 +23,7 @@ const entry: GameManifestEntry = {
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {
         mode: 'package-managed',
-        runtimeChannel: 'edge',
+        runtimeChannel: 'stable',
         modulePackId: 'dicethrone',
         assetPackId: 'dicethrone',
     },

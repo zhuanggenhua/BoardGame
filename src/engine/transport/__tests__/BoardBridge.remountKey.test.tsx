@@ -249,6 +249,64 @@ describe('BoardBridge remountKey', () => {
         });
     });
 
+    it('LocalGameProvider 指定 persistGameId 时，应按教程进度保存键恢复旧步骤', () => {
+        const seed = 'tutorial-progress-seed';
+        window.localStorage.setItem(`local_match_snapshot_v1:tutorial-route-id:${seed}`, JSON.stringify({
+            version: 1,
+            gameId: 'tutorial-route-id',
+            seed,
+            numPlayers: 2,
+            randomCursor: 0,
+            savedAt: Date.now(),
+            state: {
+                core: {
+                    players: {
+                        '0': { id: '0' },
+                        '1': { id: '1' },
+                    },
+                    playerIds: ['0', '1'],
+                    currentPlayer: '0',
+                },
+                sys: {
+                    turnOrder: ['0', '1'],
+                    currentPlayerIndex: 0,
+                    tutorial: {
+                        active: true,
+                        manifestId: 'basic-opening',
+                        stepIndex: 2,
+                        steps: [
+                            { id: 'intro', content: 'intro' },
+                            { id: 'middle', content: 'middle' },
+                            { id: 'resume-here', content: 'resume-here' },
+                        ],
+                        step: { id: 'resume-here', content: 'resume-here' },
+                    },
+                },
+            },
+        }));
+
+        const Board = () => {
+            const { state } = useGameClient();
+            return <pre data-testid="tutorial-step-index">{String((state as any)?.sys?.tutorial?.stepIndex)}</pre>;
+        };
+
+        render(
+            <LocalGameProvider
+                config={{ ...testConfig, gameId: 'engine-config-id' }}
+                numPlayers={2}
+                seed={seed}
+                persistSession
+                persistGameId="tutorial-route-id"
+            >
+                <Board />
+            </LocalGameProvider>,
+        );
+
+        return waitFor(() => {
+            expect(screen.getByTestId('tutorial-step-index').textContent).toBe('2');
+        });
+    });
+
     it('LocalGameProvider 恢复到与当前 2 人对局不兼容的旧快照时，应丢弃多余玩家并重建当前局面', () => {
         const key = 'local_match_snapshot_v1:board-bridge-test:board-bridge-invalid-player-snapshot';
         window.localStorage.setItem(key, JSON.stringify({

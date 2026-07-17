@@ -545,6 +545,7 @@ export function useMatchRoomTutorialLifecycle(args: UseMatchRoomTutorialLifecycl
                 closeOnEsc: false,
                 lockScroll: true,
                 allowPointerThrough: true,
+                allowSystemBackNavigation: true,
                 onClose: () => {
                     tutorialModalIdRef.current = null;
                 },

@@ -95,7 +95,7 @@ export interface PlayingCard {
 }
 
 export type TheGangRound = 1 | 2 | 3 | 4;
-export type TheGangPhase = 'chip-selection' | 'showdown' | 'game-over';
+export type TheGangPhase = 'chip-selection' | 'hand-swap' | 'showdown' | 'game-over';
 export type HeistOutcome = 'success' | 'failure';
 
 export interface RoundChipState {
@@ -126,7 +126,7 @@ export interface HeistRecord {
     results: ShowdownPlayerResult[];
 }
 
-export type TheGangProgressKind = 'end-round' | 'reveal-showdown' | 'start-next-heist';
+export type TheGangProgressKind = 'end-round' | 'reveal-showdown' | 'hand-swap' | 'start-next-heist';
 export type TheGangTutorialChipMode = 'lowest-unoccupied';
 
 export interface TheGangProgressConfirmation {
@@ -151,6 +151,7 @@ export interface TheGangRulesConfig {
     exitChipMode: TheGangExitChipMode;
     omaha: boolean;
     twoHand: boolean;
+    handSwap: boolean;
     automode: boolean;
     antiTroll: boolean;
     challenges: Partial<Record<TheGangChallengeId, number>>;
@@ -197,6 +198,7 @@ export const THE_GANG_COMMANDS = {
     USE_TOOL: 'USE_TOOL',
     END_ROUND: 'END_ROUND',
     REVEAL_SHOWDOWN: 'REVEAL_SHOWDOWN',
+    CONFIRM_HAND_SWAP: 'CONFIRM_HAND_SWAP',
     START_NEXT_HEIST: 'START_NEXT_HEIST',
 } as const;
 
@@ -243,6 +245,13 @@ export interface RevealShowdownCommand extends Command<typeof THE_GANG_COMMANDS.
     payload: Record<string, never>;
 }
 
+export interface ConfirmHandSwapCommand extends Command<typeof THE_GANG_COMMANDS.CONFIRM_HAND_SWAP> {
+    payload: {
+        topIndex?: number;
+        bottomIndex?: number;
+    };
+}
+
 export interface StartNextHeistCommand extends Command<typeof THE_GANG_COMMANDS.START_NEXT_HEIST> {
     payload: Record<string, never>;
 }
@@ -257,6 +266,7 @@ export type TheGangCommand =
     | UseToolCommand
     | EndRoundCommand
     | RevealShowdownCommand
+    | ConfirmHandSwapCommand
     | StartNextHeistCommand;
 
 export type TheGangCommandMap = {
@@ -273,6 +283,7 @@ export type TheGangCommandMap = {
     [THE_GANG_COMMANDS.USE_TOOL]: { tool: TheGangToolId; cardIndex?: number };
     [THE_GANG_COMMANDS.END_ROUND]: Record<string, never>;
     [THE_GANG_COMMANDS.REVEAL_SHOWDOWN]: Record<string, never>;
+    [THE_GANG_COMMANDS.CONFIRM_HAND_SWAP]: { topIndex?: number; bottomIndex?: number };
     [THE_GANG_COMMANDS.START_NEXT_HEIST]: Record<string, never>;
 };
 
@@ -285,6 +296,8 @@ export const THE_GANG_EVENTS = {
     SPECIALISTS_RESET: 'SPECIALISTS_RESET',
     TOOL_USED: 'TOOL_USED',
     PROGRESS_APPROVED: 'PROGRESS_APPROVED',
+    HAND_SWAP_STARTED: 'HAND_SWAP_STARTED',
+    HAND_SWAP_CONFIRMED: 'HAND_SWAP_CONFIRMED',
     ROUND_ENDED: 'ROUND_ENDED',
     SHOWDOWN_REVEALED: 'SHOWDOWN_REVEALED',
     NEXT_HEIST_STARTED: 'NEXT_HEIST_STARTED',
@@ -348,6 +361,21 @@ export interface ProgressApprovedEvent extends GameEvent<typeof THE_GANG_EVENTS.
     payload: TheGangProgressConfirmation;
 }
 
+export interface HandSwapStartedEvent extends GameEvent<typeof THE_GANG_EVENTS.HAND_SWAP_STARTED> {
+    payload: {
+        round: TheGangRound;
+    };
+}
+
+export interface HandSwapConfirmedEvent extends GameEvent<typeof THE_GANG_EVENTS.HAND_SWAP_CONFIRMED> {
+    payload: {
+        playerId: PlayerId;
+        approvals: PlayerId[];
+        topIndex?: number;
+        bottomIndex?: number;
+    };
+}
+
 export interface RoundEndedEvent extends GameEvent<typeof THE_GANG_EVENTS.ROUND_ENDED> {
     payload: {
         round: TheGangRound;
@@ -387,6 +415,8 @@ export type TheGangEvent =
     | SpecialistsResetEvent
     | ToolUsedEvent
     | ProgressApprovedEvent
+    | HandSwapStartedEvent
+    | HandSwapConfirmedEvent
     | RoundEndedEvent
     | ShowdownRevealedEvent
     | NextHeistStartedEvent

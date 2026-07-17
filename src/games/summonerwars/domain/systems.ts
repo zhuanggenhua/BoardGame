@@ -1872,39 +1872,16 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           }
 
           if (actionId === 'ice_shards_damage') {
-            const hasCharge = normalizeUnitBoosts(sourceUnit.boosts) >= 1;
-            const options: PromptOption<SwInteractionValue>[] = [
-              {
-                id: 'confirm',
-                label: '确认',
-                labelKey: 'actions.confirm',
-                value: { action: 'ice_shards', sourceUnitId },
-                disabled: !hasCharge,
-                disabledReasonKey: !hasCharge ? 'statusBanners.insufficientCharge' : undefined,
-              },
-              {
-                id: 'skip',
-                label: '跳过',
-                labelKey: 'actions.skip',
-                value: { action: 'ice_shards', sourceUnitId, skip: true },
-              },
-            ];
-            const interaction = createSimpleChoice(
-              `sw-ice-shards-${event.timestamp ?? 0}-${sourceUnitId}`,
-              sourceUnit.owner,
-              'interaction.sw.iceShards',
-              options,
-              { sourceId: 'ice_shards', autoResolveIfSingle: false },
-            );
-            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
-            interaction.data = {
-              ...interactionData,
-              sw: {
-                type: 'ice_shards',
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              playerId: sourceUnit.owner,
+              payload: {
+                abilityId: 'ice_shards',
                 sourceUnitId,
-              } satisfies SwInteractionMeta,
-            };
-            newState = queueInteraction(newState, interaction);
+                _noSnapshot: true,
+              },
+            }));
+            continue;
           }
 
           if (actionId === 'feed_beast_check') {

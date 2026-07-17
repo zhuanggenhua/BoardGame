@@ -738,7 +738,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
       cardId: 'enemy-2', card: makeEnemy('enemy-2'), owner: '1',
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     const { newState, events } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -764,7 +764,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
       boosts: 0,
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     const fullState = { core: state, sys: {} as any };
@@ -796,7 +796,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
       cardId: 'ally-1', card: makeFrostMage('ally-1'), owner: '0',
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     const { newState, events } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -829,7 +829,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
       cardId: 'enemy-1', card: makeEnemy('enemy-1'), owner: '1',
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     const { newState, events } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -864,7 +864,7 @@ describe('贾穆德 - 寒冰碎屑 (ice_shards)', () => {
       cardId: 'enemy-1', card: makeEnemy('enemy-1'), owner: '1',
     });
 
-    state.phase = 'build';
+    state.phase = 'attack';
     state.currentPlayer = '0';
 
     const { newState, events } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {

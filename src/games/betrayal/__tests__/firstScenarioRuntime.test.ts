@@ -2461,10 +2461,25 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(1, 1, 1, 2),
         );
 
-        const fallenExplorer = core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        const fallenExplorer = core.currentExplorer;
         expect(fallenExplorer.roomId).toBe('basement-landing');
         expect(fallenExplorer.traits.might).toBe(mightBefore - 1);
+        expect(core.currentPlayer).toBe('0');
+        expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
+        expect(core.recentRoll?.roomEndTurn?.nextPlayerId).toBe('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'hallway' }),
+        ).valid).toBe(false);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '0', {}),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '0', {});
         expect(core.currentPlayer).toBe('1');
+        expect(core.recentRoll).toBeNull();
+        expect(core.otherExplorers.find((explorer) => explorer.playerId === '0')?.roomId).toBe('basement-landing');
     });
 
     it('兔脚可以重掷倒塌房间结束回合速度检定，并按新结果回算坠落', () => {
@@ -2503,11 +2518,13 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(1, 2, 2, 2, 2),
         );
 
-        const fallenExplorer = core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        const fallenExplorer = core.currentExplorer;
         expect(fallenExplorer.roomId).toBe('basement-landing');
         expect(fallenExplorer.traits.might).toBe(traitsBeforeFall.might - 1);
+        expect(core.currentPlayer).toBe('0');
         expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
         expect(core.recentRoll?.playerId).toBe('0');
+        expect(core.recentRoll?.roomEndTurn?.nextPlayerId).toBe('1');
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 0 }),
@@ -2522,7 +2539,7 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(3),
         );
 
-        const safeExplorer = core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        const safeExplorer = core.currentExplorer;
         expect(safeExplorer.roomId).toBe('upper-north');
         expect(safeExplorer.traits).toEqual(traitsBeforeFall);
         expect(core.recentRoll?.latestLabel).toContain('没有坠落');
@@ -2531,6 +2548,11 @@ describe('Betrayal first scenario runtime', () => {
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 1 }),
         ).valid).toBe(false);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '0', {});
+        expect(core.currentPlayer).toBe('1');
+        expect(core.recentRoll).toBeNull();
+        expect(core.otherExplorers.find((explorer) => explorer.playerId === '0')?.roomId).toBe('upper-north');
     });
 
     it('倒塌房间结束回合速度检定成功时不会坠落或受伤', () => {
@@ -2558,12 +2580,17 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(3, 3, 3),
         );
 
-        const safeExplorer = core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        const safeExplorer = core.currentExplorer;
         expect(safeExplorer.roomId).toBe(explorerBefore.roomId);
         expect(safeExplorer.traits.might).toBe(mightBefore);
         expect(safeExplorer.traits.speed).toBe(speedBefore);
         expect(core.activityLog[0]?.text).toContain('没有坠落');
+        expect(core.currentPlayer).toBe('0');
+        expect(core.recentRoll?.roomEndTurn?.nextPlayerId).toBe('1');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '0', {});
         expect(core.currentPlayer).toBe('1');
+        expect(core.recentRoll).toBeNull();
     });
 
     it('狗和面具会让倒塌房间速度检定结果 +1', () => {
@@ -2605,10 +2632,12 @@ describe('Betrayal first scenario runtime', () => {
                 createBetrayalScriptedRandom(2, 2, 2, 2),
             );
 
-            const explorerAfter = core.otherExplorers.find((explorer) => explorer.playerId === '0');
-            expect(explorerAfter?.roomId).toBe('upper-north');
-            expect(explorerAfter?.traits.might).toBe(mightBefore);
-            expect(explorerAfter?.traits.speed).toBe(speedBefore);
+            const explorerAfter = core.currentExplorer;
+            expect(explorerAfter.roomId).toBe('upper-north');
+            expect(explorerAfter.traits.might).toBe(mightBefore);
+            expect(explorerAfter.traits.speed).toBe(speedBefore);
+            expect(core.currentPlayer).toBe('0');
+            expect(core.recentRoll?.roomEndTurn?.nextPlayerId).toBe('1');
         }
     });
 

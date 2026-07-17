@@ -62,6 +62,10 @@ test.describe('山屋惊魂第一剧本', () => {
         await page.getByTestId('betrayal-action-use').click();
         const exorciseRollReview = page.getByTestId('betrayal-exorcise-roll-review');
         await expect(exorciseRollReview).toBeVisible({ timeout: 30000 });
+        const exorciseRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
+        await expect(exorciseRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'disabled');
+        await page.mouse.click(16, 16);
+        await expect(exorciseRollReview).toBeVisible();
         await page.getByTestId('betrayal-exorcise-roll-continue').click();
         const endgameScreen = page.getByTestId('betrayal-endgame-screen');
         await expect(endgameScreen).toBeVisible({ timeout: 30000 });

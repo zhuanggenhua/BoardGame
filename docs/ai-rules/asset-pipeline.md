@@ -387,6 +387,7 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 7. **Android 游戏包只发布压缩运行时交付物**：`mobile-packages/android` 的游戏包媒体文件只能来自 `compressed/` 目录下的 `.webp` / `.ogg`；运行时 JSON/SVG 配置可入包，但不得携带源图片、源音频、设计源文件或临时文件。`.png/.jpg/.jpeg/.mp3/.wav/.psd/.ai/.aseprite/.kra/.xcf/.tmp/.bak` 以及路径中含 `temp/tmp/bak/backup/old/copy/副本/临时/测试/test` 的文件一律不得进入 file-index 或 ZIP。源文件可以留在本地资源树用于再压缩，但不能随 App 素材包发布。
 8. **共享音频包只发布压缩 OGG**：Android 共享音频包 `common-audio` 只允许 `common/audio/**/compressed/*.ogg` 进入 file-index 或 ZIP。`public/assets/common/audio/registry.json`、`phrase-mappings.zh-CN.json` 等构建/开发用配置不进入共享音频包；运行时音频映射由 App 内置的精简注册表提供。若未来确需把某个配置随包下发，必须先明确它是运行时配置而非素材源文件，并补四层路径合同与回归测试。
 9. **重复素材必须收口到路径合同，不能只在发布层盲删**：发现同哈希重复文件时，先判断每条路径是否仍被运行时代码、manifest、图集配置或历史客户端引用；只有确认某条路径是旧别名/废弃路径，且运行时不再请求它，才允许从发布候选中排除或迁移。禁止单纯按哈希去重导致客户端按旧路径请求时缺图。
+10. **清理并重新下载必须证明真实下载模式已切换**：处理移动端素材包“增量文件校验失败 / 本地临时文件校验失败 / 清理后仍提示旧错误”时，不能只改提示文案或只清 H5 状态。修复必须闭合到三层证据：① 清理动作清空本地包目录、状态文件和活动任务；② 下一次安装即使拿到旧 `diffOnly` / file-index manifest，也强制以完整 ZIP 进入原生安装；③ 真机或等价原生日志证明 `fileIndexUrl` 为空、`incrementalMode` 为 false，且不再出现 `incremental-file` 单文件校验。没有第③层证据时，只能说“代码层已加保护，真机原始位点未验收”，不得宣称问题已彻底修复。
 
 ### assets-manifest 生成模式（强制）
 

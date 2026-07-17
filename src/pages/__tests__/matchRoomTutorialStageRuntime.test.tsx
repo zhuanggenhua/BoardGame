@@ -15,6 +15,7 @@ let latestModalEntry: null | {
 let latestLocalProviderProps: null | {
     seed: string;
     persistSession?: boolean;
+    persistGameId?: string;
     seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
     followCurrentTurnPlayer?: boolean;
 } = null;
@@ -36,7 +37,7 @@ vi.mock('react-i18next', async (importOriginal) => {
             t: (key: string, options?: Record<string, unknown>) => {
                 if (key === 'matchRoom.tutorialProgress.title') return '继续上次教程？';
                 if (key === 'matchRoom.tutorialProgress.description') return `第 ${options?.current} / ${options?.total} 步`;
-                if (key === 'matchRoom.tutorialProgress.continue') return '继续学习';
+                if (key === 'matchRoom.tutorialProgress.continue') return '从上次继续';
                 if (key === 'matchRoom.tutorialProgress.restart') return '重头开始';
                 if (key === 'matchRoom.tutorialProgress.waitingChoice') return '等待选择教程进度';
                 return key;
@@ -102,6 +103,7 @@ vi.mock('../../engine/transport/react', () => ({
     LocalGameProvider: (props: {
         seed: string;
         persistSession?: boolean;
+        persistGameId?: string;
         seatControllers?: MatchRoomTutorialBoardRuntimeModel['seatControllers'];
         followCurrentTurnPlayer?: boolean;
         children?: React.ReactNode;
@@ -116,6 +118,7 @@ vi.mock('../../engine/transport/react', () => ({
         latestLocalProviderProps = {
             seed: props.seed,
             persistSession: props.persistSession,
+            persistGameId: props.persistGameId,
             seatControllers: props.seatControllers,
             followCurrentTurnPlayer: props.followCurrentTurnPlayer,
         };
@@ -224,10 +227,11 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         render(<>{latestModalEntry.render({ close: modalClose, closeOnBackdrop: false })}</>);
 
         expect(screen.getByTestId('tutorial-progress-modal')).toHaveTextContent('第 2 / 2 步');
-        fireEvent.click(screen.getByText('继续学习'));
+        fireEvent.click(screen.getByText('从上次继续'));
 
         await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(seed));
         expect(latestLocalProviderProps?.persistSession).toBe(true);
+        expect(latestLocalProviderProps?.persistGameId).toBe(runtime.gameId);
         expect(latestLocalProviderProps?.seatControllers).toEqual(runtime.seatControllers);
         expect(latestLocalProviderProps?.followCurrentTurnPlayer).toBe(false);
         expect(window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed))).not.toBeNull();

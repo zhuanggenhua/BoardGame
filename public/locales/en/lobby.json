@@ -576,7 +576,7 @@
     "tutorialProgress": {
       "title": "Continue the tutorial?",
       "description": "You reached step {{current}} / {{total}}. Continue from there or restart this chapter?",
-      "continue": "Continue",
+      "continue": "Resume progress",
       "restart": "Restart",
       "waitingChoice": "Waiting for tutorial progress choice..."
     },

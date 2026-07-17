@@ -194,6 +194,9 @@ export interface BetrayalRecentRollState {
         traitsBeforeEffect: BetrayalExplorerSummary['traits'];
         previousPhysicalDamage: number;
         previousDestinationRoomId?: string;
+        nextPlayerId?: string;
+        monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
+        turnLogText?: string;
     };
     attack?: {
         target: 'traitor' | 'hero' | 'jack-spirit';
@@ -363,6 +366,7 @@ export type BetrayalCommandMap = {
     [BETRAYAL_COMMANDS.TRADE_POSSESSION]: { cardId?: string; cardIds?: string[]; targetPlayerId?: string; useDog?: boolean };
     [BETRAYAL_COMMANDS.LOOT_CORPSE]: { sourcePlayerId?: string; cardId?: string };
     [BETRAYAL_COMMANDS.END_TURN]: Record<string, never>;
+    [BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL]: Record<string, never>;
     [BETRAYAL_COMMANDS.HAUNT_ATTACK]: {
         target: 'traitor' | 'hero' | 'jack-spirit';
         targetPlayerId?: string;
@@ -391,6 +395,7 @@ const EVENTS = {
     POSSESSION_TRADED: 'POSSESSION_TRADED',
     CORPSE_LOOTED: 'CORPSE_LOOTED',
     TURN_ENDED: 'TURN_ENDED',
+    TURN_END_ROLL_ACKNOWLEDGED: 'TURN_END_ROLL_ACKNOWLEDGED',
     HAUNT_TRIGGERED: 'HAUNT_TRIGGERED',
     HAUNT_ATTACK_RESOLVED: 'HAUNT_ATTACK_RESOLVED',
     JACK_LEARNED: 'JACK_LEARNED',
@@ -493,6 +498,14 @@ type BetrayalEvent =
         nextPlayerId: string;
         logText: string;
         roomEndTurnEffect?: BetrayalRoomEndTurnEffectResult | null;
+        monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
+        deferAdvanceUntilRollAcknowledged?: boolean;
+        turnLogText?: string;
+    }>
+    | GameEvent<typeof EVENTS.TURN_END_ROLL_ACKNOWLEDGED, {
+        previousPlayerId: string;
+        nextPlayerId: string;
+        logText: string;
         monsterMovementRoll?: BetrayalMonsterMovementRollResult | null;
     }>
     | GameEvent<typeof EVENTS.HAUNT_TRIGGERED, {
@@ -3448,6 +3461,33 @@ function isPlayersTurn(core: BetrayalCore, playerId: string): boolean {
     return core.currentPlayer === playerId;
 }
 
+function resolvePendingTurnEndRoll(core: BetrayalCore): BetrayalRecentRollState | null {
+    const recentRoll = core.recentRoll;
+    if (
+        recentRoll?.kind !== 'roomEndTurnTraitCheck'
+        || recentRoll.playerId !== core.currentPlayer
+        || !recentRoll.roomEndTurn?.nextPlayerId
+    ) {
+        return null;
+    }
+    return recentRoll;
+}
+
+function validateTurnEndRollAcknowledgement(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
+    const pendingRoll = resolvePendingTurnEndRoll(core);
+    if (!pendingRoll) {
+        return command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL
+            ? { valid: false, error: '当前没有待确认的回合结束投骰。' }
+            : null;
+    }
+    if (command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL) {
+        return command.playerId === pendingRoll.playerId
+            ? { valid: true }
+            : { valid: false, error: '必须由刚刚投骰的玩家确认结果。' };
+    }
+    return { valid: false, error: '请先确认回合结束投骰结果。' };
+}
+
 function validatePreHauntAction(state: MatchState<BetrayalCore>, command: BetrayalCommand): ValidationResult {
     const core = state.core;
     if (core.phase !== 'preHaunt') {
@@ -3556,6 +3596,10 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             return { valid: false, error: '兔脚必须选择刚刚投过的一颗骰子。' };
         }
         return { valid: true };
+    }
+    const pendingTurnEndRollValidation = validateTurnEndRollAcknowledgement(core, command);
+    if (pendingTurnEndRollValidation) {
+        return pendingTurnEndRollValidation;
     }
     if (!isPlayersTurn(core, command.playerId)) {
         return { valid: false, error: '还没有轮到该玩家。' };
@@ -3743,6 +3787,8 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
+            return { valid: false, error: '当前没有待确认的回合结束投骰。' };
         case BETRAYAL_COMMANDS.HAUNT_ATTACK:
         case BETRAYAL_COMMANDS.LEARN_ABOUT_JACK:
         case BETRAYAL_COMMANDS.STUDY_EXORCISM:
@@ -3773,6 +3819,10 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return { valid: false, error: '兔脚必须选择刚刚投过的一颗骰子。' };
         }
         return { valid: true };
+    }
+    const pendingTurnEndRollValidation = validateTurnEndRollAcknowledgement(core, command);
+    if (pendingTurnEndRollValidation) {
+        return pendingTurnEndRollValidation;
     }
     if (!isPlayersTurn(core, command.playerId)) {
         return { valid: false, error: '还没有轮到该玩家。' };
@@ -3824,6 +3874,8 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return validatePreHauntAction({ ...state, core: { ...core, phase: 'preHaunt' } }, command);
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
+            return { valid: false, error: '当前没有待确认的回合结束投骰。' };
         case BETRAYAL_COMMANDS.HAUNT_ATTACK:
             if (command.payload.weaponCardId) {
                 const weaponEffect = resolveAttackWeaponEffect(actor, command.payload.weaponCardId);
@@ -4581,8 +4633,14 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const turnLogText = monsterMovementRoll
                 ? `${baseLogText}；${monsterMovementRoll.monsterName}速度 ${monsterMovementRoll.speed} 投出 ${monsterMovementRoll.total}，本回合可移动 ${monsterMovementRoll.moveAllowance} 间`
                 : baseLogText;
+            const shouldDeferAdvanceUntilRollAcknowledged = Boolean(
+                roomEndTurnEffect?.kind === 'speedCheckFallToBasement'
+                && roomEndTurnEffect.speedRollDice?.length,
+            );
             const logText = roomEndTurnEffect
-                ? `${formatEndTurnRoomEffectLog(roomEndTurnEffect, core.currentExplorer.displayName)}；${turnLogText}`
+                ? shouldDeferAdvanceUntilRollAcknowledged
+                    ? formatEndTurnRoomEffectLog(roomEndTurnEffect, core.currentExplorer.displayName)
+                    : `${formatEndTurnRoomEffectLog(roomEndTurnEffect, core.currentExplorer.displayName)}；${turnLogText}`
                 : turnLogText;
             return [nowEvent(EVENTS.TURN_ENDED, {
                 previousPlayerId: core.currentPlayer,
@@ -4590,6 +4648,23 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 logText,
                 roomEndTurnEffect,
                 monsterMovementRoll,
+                deferAdvanceUntilRollAcknowledged: shouldDeferAdvanceUntilRollAcknowledged,
+                turnLogText,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL: {
+            const pendingRoll = resolvePendingTurnEndRoll(core);
+            const roomEndTurn = pendingRoll?.roomEndTurn;
+            if (!pendingRoll || !roomEndTurn?.nextPlayerId) {
+                return [];
+            }
+            const nextExplorer = findExplorerByPlayerId(core, roomEndTurn.nextPlayerId);
+            return [nowEvent(EVENTS.TURN_END_ROLL_ACKNOWLEDGED, {
+                previousPlayerId: pendingRoll.playerId,
+                nextPlayerId: roomEndTurn.nextPlayerId,
+                monsterMovementRoll: roomEndTurn.monsterMovementRoll ?? null,
+                logText: roomEndTurn.turnLogText
+                    ?? (nextExplorer ? `轮到${nextExplorer.displayName}` : '进入下一位玩家回合'),
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
@@ -5558,6 +5633,49 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 }
                 roomEffectCore = syncCurrentExplorerProjection(roomEffectCore);
             }
+            if (
+                event.payload.deferAdvanceUntilRollAcknowledged
+                && event.payload.roomEndTurnEffect?.kind === 'speedCheckFallToBasement'
+                && event.payload.roomEndTurnEffect.speedRollDice
+            ) {
+                const recentRoll: BetrayalRecentRollState = {
+                    id: `room-end-turn-${event.payload.roomEndTurnEffect.playerId}-${event.timestamp}`,
+                    kind: 'roomEndTurnTraitCheck',
+                    playerId: event.payload.roomEndTurnEffect.playerId,
+                    sourceTitle: event.payload.roomEndTurnEffect.roomName,
+                    trait: 'speed',
+                    dice: [...event.payload.roomEndTurnEffect.speedRollDice],
+                    passiveBonus: event.payload.roomEndTurnEffect.speedRollPassiveBonus ?? 0,
+                    latestLabel: event.payload.roomEndTurnEffect.destinationRoomId
+                        ? '坠落到地下室起始点'
+                        : '没有坠落',
+                    roomId: event.payload.roomEndTurnEffect.roomId,
+                    roomEndTurn: {
+                        kind: event.payload.roomEndTurnEffect.kind,
+                        roomName: event.payload.roomEndTurnEffect.roomName,
+                        roomId: event.payload.roomEndTurnEffect.roomId,
+                        originalRoomId: roomEndTurnOriginalRoomId,
+                        traitsBeforeEffect: roomEndTurnTraitsBeforeEffect,
+                        previousPhysicalDamage: event.payload.roomEndTurnEffect.physicalDamage ?? 0,
+                        previousDestinationRoomId: event.payload.roomEndTurnEffect.destinationRoomId,
+                        nextPlayerId: event.payload.nextPlayerId,
+                        monsterMovementRoll: event.payload.monsterMovementRoll ?? null,
+                        turnLogText: event.payload.turnLogText,
+                    },
+                    consumedRabbitFootCardIds: [],
+                };
+                const synced = syncCurrentExplorerProjection(roomEffectCore);
+                return {
+                    ...synced,
+                    recommendedAction: 'endTurn',
+                    turnEndedByDiscovery: false,
+                    latestDiscovery: null,
+                    latestDiscoveryOwnerPlayerId: null,
+                    highlightedDeckKind: null,
+                    recentRoll,
+                    activityLog: appendActivity(synced, event.payload.logText, 'accent'),
+                };
+            }
             const explorers = getAllExplorers(roomEffectCore);
             const next = replaceExplorers(roomEffectCore, explorers, event.payload.nextPlayerId);
             const revived = tryReviveTraitorAtMonsterTurnStart(next, event.payload.nextPlayerId);
@@ -5642,6 +5760,54 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         'warning',
                     )
                     : appendActivity(nextCore, event.payload.logText, 'accent'),
+            };
+        }
+        case EVENTS.TURN_END_ROLL_ACKNOWLEDGED: {
+            const explorers = getAllExplorers(core);
+            const next = replaceExplorers(core, explorers, event.payload.nextPlayerId);
+            const revived = tryReviveTraitorAtMonsterTurnStart(next, event.payload.nextPlayerId);
+            const nextCore = revived.core;
+            const monsterMovementRoll = !revived.revived
+                && shouldDeadTraitorControlJackSpirit(nextCore, event.payload.nextPlayerId)
+                ? event.payload.monsterMovementRoll ?? null
+                : null;
+            const nextMovesRemaining = monsterMovementRoll?.moveAllowance ?? 4;
+            const resetScenarioRuntime = {
+                ...nextCore.scenarioRuntime,
+                corpseLootedByPlayerIdsThisTurn: [],
+                usedRoomEffectIdsThisTurn: [],
+            };
+            const activityCore = {
+                ...nextCore,
+                scenarioRuntime: resetScenarioRuntime,
+            };
+            return {
+                ...nextCore,
+                movesRemaining: nextMovesRemaining,
+                recommendedAction: resolveRecommendedAction({ ...nextCore, movesRemaining: nextMovesRemaining, recentRoll: null }),
+                usedCardIdsThisTurn: [],
+                receivedCardIdsThisTurnByPlayerId: {
+                    ...nextCore.receivedCardIdsThisTurnByPlayerId,
+                    [event.payload.previousPlayerId]: [],
+                },
+                nextNonCombatTraitReplacement: null,
+                turnEndedByDiscovery: false,
+                turnStartInventoryCardIds: resolveTurnStartInventoryCardIds(nextCore, event.payload.nextPlayerId),
+                scenarioRuntime: resetScenarioRuntime,
+                latestDiscovery: null,
+                latestDiscoveryOwnerPlayerId: null,
+                highlightedDeckKind: null,
+                recentRoll: null,
+                activityLog: revived.revived
+                    ? appendActivity(
+                        {
+                            ...activityCore,
+                            activityLog: appendActivity(activityCore, event.payload.logText, 'accent'),
+                        },
+                        '杰克之灵回到了尸体所在房间，叛徒恢复肉身并重新回到宅邸中。',
+                        'warning',
+                    )
+                    : appendActivity(activityCore, event.payload.logText, 'accent'),
             };
         }
         case EVENTS.HAUNT_TRIGGERED: {

@@ -375,6 +375,8 @@ export const expectPhysicalDiceSeparated = async (
     minNormalizedCenterDistance?: number;
     maxOverlapRatio?: number;
     minNormalizedCenterSpan?: number;
+    minDieVisualSize?: number;
+    minCanvasEdgeMargin?: number;
   } = {},
 ) => {
   const minDiceCount = options.minDiceCount ?? 2;
@@ -425,6 +427,17 @@ export const expectPhysicalDiceSeparated = async (
     const snapshot = activeCanvasTestId
       ? (debugRegistry[activeCanvasTestId]?.() ?? null)
       : (debugRegistry["betrayal-house-dice-box-canvas"]?.() ?? null);
+    const canvasClientWidth = snapshot?.canvas?.clientWidth ?? 0;
+    const canvasClientHeight = snapshot?.canvas?.clientHeight ?? 0;
+    const canvasRect = activeCanvas?.getBoundingClientRect();
+    const displayScaleX =
+      canvasRect && canvasClientWidth > 0
+        ? canvasRect.width / canvasClientWidth
+        : 1;
+    const displayScaleY =
+      canvasRect && canvasClientHeight > 0
+        ? canvasRect.height / canvasClientHeight
+        : 1;
     const layouts = (snapshot?.dice ?? [])
       .map((die) => die.layout)
       .filter(
@@ -440,6 +453,12 @@ export const expectPhysicalDiceSeparated = async (
       Math.min(
         layout.visualWidth ?? layout.width,
         layout.visualHeight ?? layout.height,
+      ),
+    );
+    const displayedMinDimensions = layouts.map((layout) =>
+      Math.min(
+        (layout.visualWidth ?? layout.width) * displayScaleX,
+        (layout.visualHeight ?? layout.height) * displayScaleY,
       ),
     );
     const averageMinDimension = minDimensions.length
@@ -462,6 +481,19 @@ export const expectPhysicalDiceSeparated = async (
     let minPairDistance = Number.POSITIVE_INFINITY;
     let minPairNormalizedCenterDistance = Number.POSITIVE_INFINITY;
     let maxPairOverlapRatio = 0;
+    let minCanvasEdgeMargin = Number.POSITIVE_INFINITY;
+
+    for (const layout of layouts) {
+      const width = layout.visualWidth ?? layout.width;
+      const height = layout.visualHeight ?? layout.height;
+      minCanvasEdgeMargin = Math.min(
+        minCanvasEdgeMargin,
+        (layout.x - width / 2) * displayScaleX,
+        (canvasClientWidth - (layout.x + width / 2)) * displayScaleX,
+        (layout.y - height / 2) * displayScaleY,
+        (canvasClientHeight - (layout.y + height / 2)) * displayScaleY,
+      );
+    }
 
     for (let leftIndex = 0; leftIndex < layouts.length; leftIndex += 1) {
       const left = layouts[leftIndex];
@@ -513,8 +545,17 @@ export const expectPhysicalDiceSeparated = async (
       hasSnapshot: Boolean(snapshot),
       activeCanvasTestId,
       diceCount: layouts.length,
-      canvasClientWidth: snapshot?.canvas?.clientWidth ?? 0,
-      canvasClientHeight: snapshot?.canvas?.clientHeight ?? 0,
+      canvasClientWidth,
+      canvasClientHeight,
+      displayScaleX,
+      displayScaleY,
+      minDieVisualSize: displayedMinDimensions.length
+        ? Math.min(...displayedMinDimensions)
+        : 0,
+      averageDieVisualSize: averageMinDimension,
+      minCanvasEdgeMargin: Number.isFinite(minCanvasEdgeMargin)
+        ? minCanvasEdgeMargin
+        : 0,
       minPairDistance: Number.isFinite(minPairDistance) ? minPairDistance : 0,
       minNormalizedCenterDistance: Number.isFinite(
         minPairNormalizedCenterDistance,
@@ -548,6 +589,18 @@ export const expectPhysicalDiceSeparated = async (
     metrics.canvasClientHeight,
     `山屋骰盘 canvas 必须有可见高度：${JSON.stringify(metrics)}`,
   ).toBeGreaterThanOrEqual(210);
+  if (typeof options.minDieVisualSize === "number") {
+    expect(
+      metrics.minDieVisualSize,
+      `山屋骰子本体不能小到不可读：${JSON.stringify(metrics)}`,
+    ).toBeGreaterThanOrEqual(options.minDieVisualSize);
+  }
+  if (typeof options.minCanvasEdgeMargin === "number") {
+    expect(
+      metrics.minCanvasEdgeMargin,
+      `山屋骰子不能贴边或被裁切：${JSON.stringify(metrics)}`,
+    ).toBeGreaterThanOrEqual(options.minCanvasEdgeMargin);
+  }
   expect(
     metrics.minNormalizedCenterDistance,
     `山屋多骰不能中心塌缩或明显重叠：${JSON.stringify(metrics)}`,

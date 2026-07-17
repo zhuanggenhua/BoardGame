@@ -71,6 +71,10 @@ test.describe('山屋惊魂驱魔成功终局完整链路', () => {
         await saveScreenshot(page, READY_SCREENSHOT);
 
         await saveScreenshot(page, TARGET_SCREENSHOT);
+        const readyRollBackdrop = page.getByTestId('betrayal-roll-result-backdrop');
+        await expect(readyRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        await readyRollBackdrop.click({ position: { x: 16, y: 16 } });
+        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
         await page.getByTestId('betrayal-room-basement-landing').click();
 
@@ -96,6 +100,10 @@ test.describe('山屋惊魂驱魔成功终局完整链路', () => {
 
         await expect(page.getByTestId('betrayal-exorcise-roll-continue')).toContainText(/进入终局|查看终局|继续/);
         await saveScreenshot(page, CONTINUE_SCREENSHOT);
+        const exorciseRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
+        await expect(exorciseRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'disabled');
+        await page.mouse.click(16, 16);
+        await expect(exorciseRollReview).toBeVisible();
         await page.getByTestId('betrayal-exorcise-roll-continue').click();
 
         const endgameScreen = page.getByTestId('betrayal-endgame-screen');

@@ -83,6 +83,7 @@ const TutorialLocalGameRuntime = ({
             closeOnBackdrop: false,
             closeOnEsc: false,
             lockScroll: true,
+            allowSystemBackNavigation: true,
             onClose: () => {
                 resumeModalIdRef.current = null;
             },
@@ -163,6 +164,7 @@ const TutorialLocalGameRuntime = ({
             seatControllers={runtime.seatControllers}
             followCurrentTurnPlayer={false}
             persistSession={Boolean(runtime.gameId)}
+            persistGameId={runtime.gameId}
         >
             <TutorialDispatchBridge>
                 <BoardBridge

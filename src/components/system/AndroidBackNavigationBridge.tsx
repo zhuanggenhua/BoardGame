@@ -114,6 +114,8 @@ export const AndroidBackNavigationBridge = () => {
             historyLength: window.history.length,
             modalStackDepth: stack.length,
             isTopModalClosable: topEntry?.closeOnEsc !== false,
+            isTopModalBackNavigationAllowed: topEntry?.allowSystemBackNavigation === true
+                || topEntry?.allowPointerThrough === true,
             hasFocusedTextEntry: isTextEntrySessionElement(document.activeElement),
         });
 

@@ -115,6 +115,8 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.lootCorpse', { player: actor })]);
         case BETRAYAL_COMMANDS.END_TURN:
             return entry(command, state, [i18nSeg('actionLog.endTurn', { player: actor })]);
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
+            return entry(command, state, [i18nSeg('actionLog.acknowledgeTurnEndRoll', { player: actor })]);
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
             const key = payload.target === 'traitor'
                 ? 'actionLog.attackTraitor'

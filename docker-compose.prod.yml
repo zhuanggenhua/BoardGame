@@ -37,6 +37,10 @@ services:
     image: ghcr.io/zhuanggenhua/boardgame-game:latest
     container_name: boardgame-game-server
     restart: unless-stopped
+    # game-server 承载在线对局状态，CPU 高水位只能限速；内存超限会被 OOM 后按 restart 策略拉起。
+    # 重启是止血兜底，业务侧仍必须用 watchdog 恢复上限避免重复空转。
+    cpus: "1.50"
+    mem_limit: 1024m
     depends_on:
       mongodb:
         condition: service_healthy

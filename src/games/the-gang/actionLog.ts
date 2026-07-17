@@ -15,6 +15,7 @@ export const THE_GANG_ACTION_ALLOWLIST = [
     THE_GANG_COMMANDS.TAKE_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+    THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
     THE_GANG_COMMANDS.START_NEXT_HEIST,
 ] as const;
 
@@ -23,6 +24,7 @@ export const THE_GANG_UNDO_ALLOWLIST = [
     THE_GANG_COMMANDS.TAKE_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+    THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
     THE_GANG_COMMANDS.START_NEXT_HEIST,
 ] as const;
 
@@ -133,6 +135,12 @@ export function formatTheGangActionEntry({
                     : '失败',
                 successes: showdown.payload.successes,
                 failures: showdown.payload.failures,
+            })]);
+        }
+        case THE_GANG_COMMANDS.CONFIRM_HAND_SWAP: {
+            if (!hasEvent(events, THE_GANG_EVENTS.HAND_SWAP_CONFIRMED)) return null;
+            return entry(command, [i18nSeg('actionLog.confirmHandSwap', {
+                player: actor,
             })]);
         }
         case THE_GANG_COMMANDS.START_NEXT_HEIST: {

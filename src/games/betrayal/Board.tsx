@@ -2404,6 +2404,12 @@ const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
   },
 } satisfies DiceBoxStyleProfile;
 
+const BETRAYAL_HOUSE_DICE_MOBILE_STYLE_PROFILE = {
+  ...BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
+  id: "betrayal-house-dice-mobile-landscape",
+  cameraZoom: 1.22,
+} satisfies DiceBoxStyleProfile;
+
 const BETRAYAL_HOUSE_DICE_FACE_SYSTEM = "betrayal-house-0-1-2-per-die-skin";
 
 const BETRAYAL_HOUSE_RULE_VALUE_TO_D6_FACE: Record<0 | 1 | 2, number> = {
@@ -2426,6 +2432,12 @@ const resolveBetrayalHouseD6Face = (pip: number): number => {
     return BETRAYAL_HOUSE_RULE_VALUE_TO_D6_FACE[pip];
   }
   return Math.max(1, Math.min(6, pip));
+};
+
+type RecentRollRerollSelection = {
+  promptLabel: string;
+  getDieActionLabel: (dieIndex: number) => string;
+  onSelectDie: (dieIndex: number) => void;
 };
 
 function paintBetrayalHouseDieFaceBase(ctx: CanvasRenderingContext2D): void {
@@ -2517,17 +2529,17 @@ function BetrayalHouseDice3DGroup({
   canvasTestId,
   animateInitialRoll = true,
   rerollSelection,
+  styleProfile = BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
+  visualScale = 1,
 }: {
   roll: BetrayalRecentRollState;
   className?: string;
   locale: string;
   canvasTestId: string;
   animateInitialRoll?: boolean;
-  rerollSelection?: {
-    promptLabel: string;
-    getDieActionLabel: (dieIndex: number) => string;
-    onSelectDie: (dieIndex: number) => void;
-  } | null;
+  styleProfile?: DiceBoxStyleProfile;
+  visualScale?: number;
+  rerollSelection?: RecentRollRerollSelection | null;
 }) {
   const diceInputs = React.useMemo(
     () =>
@@ -2632,12 +2644,20 @@ function BetrayalHouseDice3DGroup({
       data-dice-rerolling-die-index={rerollingDieIndex ?? undefined}
       data-dice-debug-key={canvasTestId}
       className={`relative min-h-0 overflow-visible rounded-[14px] bg-transparent ${className}`}
+      style={
+        visualScale !== 1
+          ? {
+              transform: `scale(${visualScale})`,
+              transformOrigin: "center center",
+            }
+          : undefined
+      }
     >
       <DiceBoxPhysicsSource
         dice={diceInputs}
         isRolling={animateInitialRoll && rerollingDieIndex === null}
         rerollingDiceIds={rerollingDiceIds}
-        styleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
+        styleProfile={styleProfile}
         dieSkins={dieSkins}
         testId="betrayal-house-dice-physics-source"
         canvasTestId={canvasTestId}
@@ -2778,21 +2798,23 @@ function RecentRollPanel({
   showOutcome = true,
   openTable = false,
   compactResult = false,
+  denseResult = false,
+  diceStyleProfile = BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
+  diceVisualScale = 1,
 }: {
   roll: BetrayalRecentRollState;
   className?: string;
   diceClassName?: string;
   animateInitialRoll?: boolean;
-  rerollSelection?: {
-    promptLabel: string;
-    getDieActionLabel: (dieIndex: number) => string;
-    onSelectDie: (dieIndex: number) => void;
-  } | null;
+  rerollSelection?: RecentRollRerollSelection | null;
   effectiveLocale?: string;
   showSource?: boolean;
   showOutcome?: boolean;
   openTable?: boolean;
   compactResult?: boolean;
+  denseResult?: boolean;
+  diceStyleProfile?: DiceBoxStyleProfile;
+  diceVisualScale?: number;
 }) {
   const { t } = useTranslation("game-betrayal");
   const bonusLabel =
@@ -2836,7 +2858,9 @@ function RecentRollPanel({
     >
       <div
         className={`grid h-full min-h-[260px] ${
-          compactResult
+          denseResult
+            ? "grid-rows-[minmax(210px,1fr)_auto]"
+            : compactResult
             ? "grid-rows-[minmax(174px,1fr)_auto]"
             : "grid-rows-[minmax(154px,1fr)_auto]"
         } gap-2`}
@@ -2847,13 +2871,19 @@ function RecentRollPanel({
           canvasTestId={canvasTestId}
           animateInitialRoll={animateInitialRoll}
           rerollSelection={rerollSelection}
+          styleProfile={diceStyleProfile}
+          visualScale={diceVisualScale}
           className={`h-full w-full min-w-0 ${diceClassName ?? ""}`}
         />
         <div
           data-testid="betrayal-recent-roll-result-stage"
           data-result-layout="split-primary-total"
           className={`relative grid ${
-            compactResult ? "min-h-[92px] px-3 py-2" : "min-h-[112px] px-4 py-3"
+            denseResult
+              ? "min-h-[72px] px-2.5 py-1.5"
+              : compactResult
+              ? "min-h-[92px] px-3 py-2"
+              : "min-h-[112px] px-4 py-3"
           } grid-cols-[minmax(0,1fr)_auto] items-center gap-4 overflow-visible text-left ${
             openTable
               ? "bg-transparent shadow-none"
@@ -2873,7 +2903,11 @@ function RecentRollPanel({
               <div
                 data-testid="betrayal-recent-roll-outcome"
                 data-result-role="outcome-primary"
-                className="mt-2 max-w-full truncate text-[16px] font-bold tracking-[0.03em] text-[#fff7c8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.62)] md:text-[18px]"
+                className={`max-w-full truncate font-bold tracking-[0.03em] text-[#fff7c8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.62)] ${
+                  denseResult
+                    ? "mt-1 text-[14px]"
+                    : "mt-2 text-[16px] md:text-[18px]"
+                }`}
               >
                 {roll.latestLabel}
               </div>
@@ -2914,7 +2948,9 @@ function RecentRollPanel({
           <div
             data-testid="betrayal-recent-roll-total"
             data-result-emphasis="primary-total"
-            className="whitespace-nowrap border-l border-[rgba(211,179,109,0.20)] pl-4 text-right text-[24px] font-black leading-none tracking-[0.02em] text-[#fff0a3] drop-shadow-[0_3px_10px_rgba(0,0,0,0.72)] md:text-[30px]"
+            className={`whitespace-nowrap border-l border-[rgba(211,179,109,0.20)] text-right font-black leading-none tracking-[0.02em] text-[#fff0a3] drop-shadow-[0_3px_10px_rgba(0,0,0,0.72)] ${
+              denseResult ? "pl-3 text-[19px]" : "pl-4 text-[24px] md:text-[30px]"
+            }`}
           >
             {totalLabel}
           </div>
@@ -2929,6 +2965,81 @@ function RecentRollPanel({
       </div>
     </div>
   );
+}
+
+function StandardRecentRollOverlay({
+  roll,
+  isPhoneLandscapeLayout,
+  canDismissByBackdrop,
+  onDismiss,
+  effectiveLocale,
+  rerollSelection,
+}: {
+  roll: BetrayalRecentRollState;
+  isPhoneLandscapeLayout: boolean;
+  canDismissByBackdrop: boolean;
+  onDismiss: () => void;
+  effectiveLocale: string;
+  rerollSelection?: RecentRollRerollSelection | null;
+}) {
+  const { t } = useTranslation("game-betrayal");
+  const overlay = (
+    <div
+      data-testid="betrayal-roll-result-backdrop"
+      data-backdrop-dismiss={canDismissByBackdrop ? "enabled" : "disabled"}
+      data-render-layer={isPhoneLandscapeLayout ? "hud-portal" : "board-stage"}
+      className={`${isPhoneLandscapeLayout ? "fixed inset-0" : "absolute inset-0 z-40"} ${
+        canDismissByBackdrop ? "pointer-events-auto" : "pointer-events-none"
+      }`}
+      style={
+        isPhoneLandscapeLayout
+          ? { zIndex: UI_Z_INDEX.overlayRaised + 30 }
+          : undefined
+      }
+      onClick={canDismissByBackdrop ? onDismiss : undefined}
+    >
+      <div
+        data-testid="betrayal-roll-result-dock"
+        className={
+          isPhoneLandscapeLayout
+            ? "pointer-events-auto absolute bottom-[max(12px,env(safe-area-inset-bottom))] left-1/2 flex w-[min(640px,calc(100vw-1rem))] -translate-x-1/2 flex-col items-center gap-2"
+            : "pointer-events-auto absolute bottom-[106px] left-[392px] right-[240px] z-40 flex flex-col items-center gap-2"
+        }
+        onClick={(event) => event.stopPropagation()}
+      >
+        <RecentRollPanel
+          roll={roll}
+          className={
+            isPhoneLandscapeLayout
+              ? "h-[min(62vh,300px)] min-h-[296px] w-full"
+              : "h-[min(38vh,330px)] min-h-[300px] w-[min(620px,100%)]"
+          }
+          diceClassName="min-h-[214px]"
+          rerollSelection={rerollSelection}
+          openTable
+          compactResult
+          denseResult={isPhoneLandscapeLayout}
+          diceStyleProfile={
+            isPhoneLandscapeLayout
+              ? BETRAYAL_HOUSE_DICE_MOBILE_STYLE_PROFILE
+              : BETRAYAL_HOUSE_DICE_STYLE_PROFILE
+          }
+          diceVisualScale={isPhoneLandscapeLayout ? 1.25 : 1}
+          effectiveLocale={effectiveLocale}
+        />
+        <button
+          type="button"
+          data-testid="betrayal-roll-continue"
+          className="pointer-events-auto inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+          onClick={onDismiss}
+        >
+          {t("board.roll.backToBoard")}
+        </button>
+      </div>
+    </div>
+  );
+
+  return isPhoneLandscapeLayout ? <HudPortal>{overlay}</HudPortal> : overlay;
 }
 
 function EndgameScreen({
@@ -4769,12 +4880,18 @@ export default function BetrayalBoard({
     if (!core.recentRoll?.id) {
       return;
     }
+    if (
+      core.recentRoll.kind === "roomEndTurnTraitCheck" &&
+      core.recentRoll.roomEndTurn?.nextPlayerId
+    ) {
+      dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, {});
+    }
     setPreviewState((previousState) => ({
       ...previousState,
       dismissedRecentRollId:
         core.recentRoll?.id ?? previousState.dismissedRecentRollId,
     }));
-  }, [core.recentRoll?.id]);
+  }, [core.recentRoll, dispatchCommand]);
   const handleConfirmExorciseRollReview = React.useCallback(() => {
     setConfirmedExorciseRollId(core.recentRoll?.id ?? null);
   }, [core.recentRoll?.id]);
@@ -6706,57 +6823,14 @@ export default function BetrayalBoard({
                     </div>
                   </div>
                 ) : (
-                  <div
-                    data-testid="betrayal-roll-result-backdrop"
-                    data-backdrop-dismiss={
-                      canDismissRecentRollByBackdrop ? "enabled" : "disabled"
-                    }
-                    className={`absolute inset-0 z-40 ${
-                      canDismissRecentRollByBackdrop
-                        ? "pointer-events-auto"
-                        : "pointer-events-none"
-                    }`}
-                    onClick={
-                      canDismissRecentRollByBackdrop
-                        ? handleDismissRecentRoll
-                        : undefined
-                    }
-                  >
-                    <div
-                      data-testid="betrayal-roll-result-dock"
-                      className={
-                        isPhoneLandscapeLayout
-                          ? "pointer-events-auto absolute bottom-[76px] left-1/2 z-40 flex w-[min(620px,calc(100vw-1rem))] -translate-x-1/2 flex-col items-center gap-2"
-                          : "pointer-events-auto absolute bottom-[106px] left-[392px] right-[240px] z-40 flex flex-col items-center gap-2"
-                      }
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <RecentRollPanel
-                        roll={core.recentRoll}
-                        className={
-                          isPhoneLandscapeLayout
-                            ? "h-[min(54vh,278px)] min-h-[270px] w-full"
-                            : "h-[min(38vh,330px)] min-h-[300px] w-[min(620px,100%)]"
-                        }
-                        diceClassName={
-                          isPhoneLandscapeLayout
-                            ? "min-h-[178px]"
-                            : "min-h-[214px]"
-                        }
-                        openTable
-                        compactResult
-                        effectiveLocale={effectiveLocale}
-                      />
-                      <button
-                        type="button"
-                        data-testid="betrayal-roll-continue"
-                        className="pointer-events-auto inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
-                        onClick={handleDismissRecentRoll}
-                      >
-                        {t("board.roll.backToBoard")}
-                      </button>
-                    </div>
-                  </div>
+                  <StandardRecentRollOverlay
+                    roll={core.recentRoll}
+                    isPhoneLandscapeLayout={isPhoneLandscapeLayout}
+                    canDismissByBackdrop={canDismissRecentRollByBackdrop}
+                    onDismiss={handleDismissRecentRoll}
+                    effectiveLocale={effectiveLocale}
+                    rerollSelection={rabbitFootRerollSelection}
+                  />
                 )
               ) : null}
 

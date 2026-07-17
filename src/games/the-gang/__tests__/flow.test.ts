@@ -30,7 +30,11 @@ const standardCard = (rank: PlayingCard['rank'], suit: PlayingCard['suit']): Pla
 const confirmProgressForAllPlayers = (
     adapter: ReturnType<typeof createReplayAdapter<TheGangCore, TheGangCommand>>,
     state: ReturnType<ReturnType<typeof createReplayAdapter<TheGangCore, TheGangCommand>>['setup']>,
-    type: typeof THE_GANG_COMMANDS.END_ROUND | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN | typeof THE_GANG_COMMANDS.START_NEXT_HEIST,
+    type:
+        | typeof THE_GANG_COMMANDS.END_ROUND
+        | typeof THE_GANG_COMMANDS.REVEAL_SHOWDOWN
+        | typeof THE_GANG_COMMANDS.CONFIRM_HAND_SWAP
+        | typeof THE_GANG_COMMANDS.START_NEXT_HEIST,
     timestamp: number,
 ) => {
     let nextState = state;
@@ -169,6 +173,44 @@ describe('The Gang domain flow', () => {
         expect(state.core.rules.config.challenges['retina-scan']).toBe(1);
         expect(state.core.players).toBe(initialPlayers);
         expect(state.core.deck).toBe(initialDeck);
+    });
+
+    test('手牌调换开关不会重新发牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-hand-swap-no-redeal-test');
+        let state = adapter.setup(['0', '1', '2']);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }).state;
+
+        const twoHandPlayers = state.core.players;
+        const twoHandDeck = state.core.deck;
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    ...state.core.rules.config,
+                    handSwap: true,
+                },
+            },
+            timestamp: 2,
+        }).state;
+
+        expect(state.core.rules.config.twoHand).toBe(true);
+        expect(state.core.rules.config.handSwap).toBe(true);
+        expect(state.core.players).toBe(twoHandPlayers);
+        expect(state.core.deck).toBe(twoHandDeck);
     });
 
     test('改变牌结构的扩展配置才重新发牌', () => {
@@ -473,6 +515,126 @@ describe('The Gang domain flow', () => {
         expect(result?.secondaryPocketCards).toHaveLength(2);
         expect(result?.strength.code).toBe('1p');
         expect(result?.strength.ranks[0]).toBe(14);
+    });
+
+    test('两副手牌投票完先进入调换阶段，确认后才推进下一轮', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-hand-swap-round-test');
+        let state = adapter.setup(['0', '1', '2']);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    handSwap: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }).state;
+        state = startHeist(adapter, state, 2);
+
+        const topCard = state.core.players['0'].pocketCards[0];
+        const bottomCard = state.core.players['0'].secondaryPocketCards?.[1];
+        expect(bottomCard).toBeDefined();
+
+        for (const [index, playerId] of state.core.playerIds.entries()) {
+            state = adapter.execute(state, {
+                type: THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId,
+                payload: { chip: index + 1 },
+                timestamp: 10 + index,
+            }).state;
+        }
+
+        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, 20);
+
+        expect(state.core.phase).toBe('hand-swap');
+        expect(state.core.round).toBe(1);
+        expect(state.core.communityCards).toHaveLength(0);
+        expect(state.core.pendingProgress).toBeUndefined();
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+            playerId: '0',
+            payload: { topIndex: 0, bottomIndex: 1 },
+            timestamp: 30,
+        }).state;
+
+        expect(state.core.players['0'].pocketCards[0]).toEqual(bottomCard);
+        expect(state.core.players['0'].secondaryPocketCards?.[1]).toEqual(topCard);
+        expect(state.core.pendingProgress).toEqual({ kind: 'hand-swap', approvals: ['0'] });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+            playerId: '1',
+            payload: {},
+            timestamp: 31,
+        }).state;
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+            playerId: '2',
+            payload: {},
+            timestamp: 32,
+        }).state;
+
+        expect(state.core.phase).toBe('chip-selection');
+        expect(state.core.round).toBe(2);
+        expect(state.core.communityCards).toHaveLength(3);
+        expect(state.core.currentRoundChips).toEqual({});
+        expect(state.core.pendingProgress).toBeUndefined();
+    });
+
+    test('两副手牌最终轮调换确认后才摊牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-hand-swap-showdown-test');
+        let state = adapter.setup(['0', '1', '2']);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    handSwap: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }).state;
+        state = startHeist(adapter, state, 2);
+
+        for (const round of [1, 2, 3, 4]) {
+            for (const [index, playerId] of state.core.playerIds.entries()) {
+                state = adapter.execute(state, {
+                    type: THE_GANG_COMMANDS.TAKE_CHIP,
+                    playerId,
+                    payload: { chip: index + 1 },
+                    timestamp: round * 10 + index,
+                    skipValidation: true,
+                }).state;
+            }
+
+            if (round < 4) {
+                state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, round * 100);
+                expect(state.core.phase).toBe('hand-swap');
+                state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, round * 100 + 10);
+                expect(state.core.phase).toBe('chip-selection');
+            }
+        }
+
+        expect(state.core.round).toBe(4);
+        expect(state.core.communityCards).toHaveLength(5);
+
+        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.REVEAL_SHOWDOWN, 500);
+        expect(state.core.phase).toBe('hand-swap');
+        expect(state.core.lastShowdown).toBeUndefined();
+
+        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, 510);
+        expect(state.core.phase).toBe('showdown');
+        expect(state.core.lastShowdown).toBeDefined();
     });
 
     test('当前轮可以拿别人面前的筹码，原持有人失去该筹码，且失去筹码的人还能再拿', () => {

@@ -12,6 +12,7 @@
 - 本地缓存：`temp/summonerwars-audit/official-cache/main.610e76c5.chunk.js`。
 - 图源入口沿用 `data-entry-crop-manifest-2026-07-02.md` 中的完整单卡裁图和文字区裁图。
 - 本轮只使用官方静态包 `|TEXT` 锁规则原文；本地 i18n、AbilityDef、旧测试和 OCR 只作为对象归属线索。
+- 2026-07-17 更新：贾穆德「寒冰碎屑」（`ice_shards`）已被当前用户故事覆盖，现行实现和验收口径见 `docs/games/summonerwars/user-stories/ice-shards-attack-start-auto-2026-07-17.md` 与 `evidence/summonerwars/summonerwars-ice-shards-e2e-test.md`；本文件中该对象旧的“建造阶段结束 / 可选择”口径只保留为历史来源记录，不再作为当前实现真相。
 
 ## 命名映射裁定
 
@@ -46,7 +47,7 @@
 | `guardian` | 城塞骑士 | Protect | When an adjacent enemy attacks, the target of that attack must be a unit with the Protect ability. | C1 相邻敌方单位攻击时触发；C2 该攻击的目标必须是有 Protect 能力的单位；C3 限制的是攻击目标选择；C4 只要求敌方攻击者相邻 | `locked-规则原文已锁` | 进入实现对照：确认相邻敌方攻击窗口、强制目标筛选、多个 Protect 目标、无合法目标负向场景 |
 | `guidance` | 瓦伦蒂娜·斯托哈特 | Guidance | At the start of your Summon Phase, draw 2 cards. | C1 你的召唤阶段开始时触发；C2 抽 2 张牌；C3 未写 may，按强制自动效果登记 | `locked-规则原文已锁` | 进入实现对照：确认召唤阶段开始窗口、抽牌数、牌库不足负向场景 |
 | `ice_ram` | 寒冰冲撞 | Ice Ram | After moving or forcing a friendly structure, you may target a common or champion adjacent to that structure. Add 1 damage to the target. You may force the target 1 space. | C1 在移动或强制移动一个友方建筑后结算；C2 可目标该建筑相邻的一个士兵或英雄；C3 对目标加 1 伤害；C4 可强制移动目标 1 格；C5 目标类型不包括召唤师或建筑 | `locked-规则原文已锁` | 进入实现对照：确认友方建筑移动/被强制移动窗口、相邻目标、士兵/英雄限制、1 伤害、可选 Force 1 格 |
-| `ice_shards` | 贾穆德 | Ice Shards | At the end of your Build Phase, you may spend 1 boost to add 1 damage to each enemy unit adjacent to 1 or more structures you control. | C1 你的建造阶段结束时结算；C2 可花费 1 充能；C3 对每个与你控制的一个或多个建筑相邻的敌方单位各加 1 伤害；C4 目标集合是敌方单位；C5 与多个建筑相邻也只满足“1 or more” | `locked-规则原文已锁` | 进入实现对照：确认建造阶段结束窗口、充能成本、敌方单位集合、多个建筑不重复伤害 |
+| `ice_shards` | 贾穆德 | Ice Shards | At the end of your Build Phase, you may spend 1 boost to add 1 damage to each enemy unit adjacent to 1 or more structures you control. | 2026-07-17 被当前用户故事覆盖：现行口径为攻击阶段开始自动消耗 1 充能，并对每个与己方建筑相邻的敌方单位造成 1 伤害；不出现确认/跳过选择；多建筑相邻不重复伤害。 | `superseded-用户故事覆盖旧口径` | 当前实现对照和 E2E 证据见 `docs/games/summonerwars/user-stories/ice-shards-attack-start-auto-2026-07-17.md` 与 `evidence/summonerwars/summonerwars-ice-shards-e2e-test.md` |
 | `immobile` | 部落抓附手 | Immobile | This unit cannot move. | C1 本单位不能移动；C2 这是移动权限限制；C3 与被放置、被强制移动是否等同移动需在实现对照中引用通用规则裁定 | `locked-规则原文已锁` | 进入实现对照：确认普通移动禁用、强制移动/放置是否受限的规则来源 |
 | `magic_addiction` | 史米革 | Magic Junkie | At the end of your turn, either spend 1 magic or discard this unit. | C1 你的回合结束时结算；C2 二选一：花费 1 魔力或弃置本单位；C3 未写 may，按强制二选一登记；C4 无魔力时必须走弃置路径 | `locked-规则原文已锁` | 进入实现对照：确认回合结束窗口、魔力花费、无魔力弃置、可选路径 UI 或自动路径 |
 | `mind_capture` | 泰珂露 | Mind Capture | When this unit attacks an enemy unit, if the damage added would be enough to destroy the target, you may instead ignore that damage and take control of the target. | C1 本单位攻击敌方单位时结算；C2 条件是本次将加入的伤害足以摧毁目标；C3 可改为忽略该伤害；C4 若选择忽略伤害，则获得目标控制权；C5 目标是敌方单位 | `locked-规则原文已锁` | 进入实现对照：确认致死伤害判定、忽略伤害、控制权转移、可选确认和取消路径 |

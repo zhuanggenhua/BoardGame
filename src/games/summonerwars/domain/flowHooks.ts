@@ -23,7 +23,7 @@ import { applyHuijinPhoenixSoulBonus } from './execute/helpers';
  * 这些技能在 onPhaseExit 中只产生通知事件，需要玩家确认后通过 ACTIVATE_ABILITY 执行
  */
 const CONFIRMABLE_PHASE_END_ABILITIES = new Set(['feed_beast', 'mogu_parasite', 'huijin_call_guards']);
-const CONFIRMABLE_PHASE_START_ABILITIES = new Set(['ice_shards']);
+const PHASE_START_ABILITIES_REQUIRING_AVAILABILITY_CHECK = new Set(['ice_shards']);
 
 /**
  * 检查当前玩家是否有可触发的、需要确认的阶段结束技能
@@ -93,10 +93,10 @@ function triggerPhaseAbilities(
       const unitAbilityIds = getUnitAbilities(unit, core);
       for (const abilityId of abilityIds) {
         if (!unitAbilityIds.includes(abilityId)) continue;
-        // 可选阶段确认技能需在触发前做门控（充能不足/条件不满足时不产生通知事件）
+        // 阶段触发技能需在触发前做可用性门控（充能不足/条件不满足时不产生通知事件）
         const requiresAvailabilityCheck =
           (trigger === 'onPhaseEnd' && CONFIRMABLE_PHASE_END_ABILITIES.has(abilityId))
-          || (trigger === 'onPhaseStart' && CONFIRMABLE_PHASE_START_ABILITIES.has(abilityId));
+          || (trigger === 'onPhaseStart' && PHASE_START_ABILITIES_REQUIRING_AVAILABILITY_CHECK.has(abilityId));
         if (requiresAvailabilityCheck && !canActivateAbility(core, unit, abilityId, playerId)) continue;
         const def = abilityRegistry.get(abilityId);
         if (!def || def.trigger !== trigger) continue;

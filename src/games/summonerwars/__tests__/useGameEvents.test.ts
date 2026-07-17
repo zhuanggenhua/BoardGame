@@ -151,6 +151,7 @@ describe('systemInteractionAdapter', () => {
     { label: 'fortress_power/selectCard', route: 'card-selector', step: 'selectCard' },
     { label: 'huijin_call_guards/selectCard', route: 'card-selector', step: 'selectCard' },
     { label: 'huijin_call_guards/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
+    { label: 'mogu_fanatical_fungus/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
     { label: 'ice_ram/selectUnit', route: 'board-cell-position', step: 'selectUnit' },
     { label: 'ice_ram/selectPushDirection', route: 'board-cell-position', step: 'selectPushDirection' },
     { label: 'huijin_ram/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
@@ -631,6 +632,53 @@ describe('systemInteractionAdapter', () => {
     });
 
     expect(deriveSystemAbilityMode({
+      id: 'sw-mogu-fungus-1',
+      type: 'after_move_mogu_fanatical_fungus',
+      meta: {
+        type: 'after_move_mogu_fanatical_fungus',
+        sourceUnitId: 'mogu-fungus-target-1',
+        sourcePosition: { row: 4, col: 3 },
+        targetPosition: { row: 4, col: 3 },
+      },
+      options: [
+        {
+          id: 'stay',
+          label: '不推拉',
+          labelKey: 'actions.moguFanaticalFungusStay',
+          value: {
+            action: 'after_move_mogu_fanatical_fungus_target',
+            targetPosition: { row: 4, col: 3 },
+          },
+        },
+        {
+          id: 'pos:4,4',
+          label: '(4,4)',
+          value: {
+            action: 'after_move_mogu_fanatical_fungus_target',
+            targetPosition: { row: 4, col: 3 },
+            newPosition: { row: 4, col: 4 },
+          },
+        },
+        {
+          id: 'skip',
+          label: '跳过',
+          labelKey: 'actions.skip',
+          value: { skip: true },
+        },
+      ],
+    }, null)).toEqual({
+      abilityId: 'mogu_fanatical_fungus',
+      step: 'selectPosition',
+      sourceUnitId: 'mogu-fungus-target-1',
+      targetPosition: { row: 4, col: 3 },
+      systemChoiceOptions: [
+        { id: 'stay', label: '不推拉', labelKey: 'actions.moguFanaticalFungusStay' },
+        { id: 'pos:4,4', label: '(4,4)', labelKey: undefined },
+        { id: 'skip', label: '跳过', labelKey: 'actions.skip' },
+      ],
+    });
+
+    expect(deriveSystemAbilityMode({
       id: 'sw-ice-ram-2',
       type: 'ice_ram_push',
       meta: {
@@ -682,7 +730,7 @@ describe('systemInteractionAdapter', () => {
     });
   });
 
-  it('infection / ice_shards / feed_beast 不再派生 abilityMode，而是走各自系统专用态', () => {
+  it('infection / feed_beast 不再派生 abilityMode，而是走各自系统专用态', () => {
     expect(deriveSystemAbilityMode({
       id: 'sw-infection-1',
       type: 'infection',
@@ -690,16 +738,6 @@ describe('systemInteractionAdapter', () => {
         type: 'infection',
         sourceUnitId: 'plague-1',
         targetPosition: { row: 5, col: 3 },
-      },
-      options: [],
-    }, null)).toBeNull();
-
-    expect(deriveSystemAbilityMode({
-      id: 'sw-ice-shards-1',
-      type: 'ice_shards',
-      meta: {
-        type: 'ice_shards',
-        sourceUnitId: 'jarmund-1',
       },
       options: [],
     }, null)).toBeNull();
@@ -1743,6 +1781,7 @@ describe('systemInteractionAdapter', () => {
       'fortress_power/selectCard',
       'huijin_call_guards/selectCard',
       'huijin_call_guards/selectPosition',
+      'mogu_fanatical_fungus/selectPosition',
       'ice_ram/selectUnit',
       'ice_ram/selectPushDirection',
       'huijin_ram/selectUnit',
@@ -1784,6 +1823,7 @@ describe('systemInteractionAdapter', () => {
       'structure_shift/selectNewPosition',
       'revive_undead/selectPosition',
       'huijin_call_guards/selectPosition',
+      'mogu_fanatical_fungus/selectPosition',
       'ice_ram/selectUnit',
       'ice_ram/selectPushDirection',
       'huijin_ram/selectPushDirection',

@@ -34,6 +34,13 @@ export function validate(
             return validateEndRound(core, command.playerId);
         case THE_GANG_COMMANDS.REVEAL_SHOWDOWN:
             return validateRevealShowdown(core, command.playerId);
+        case THE_GANG_COMMANDS.CONFIRM_HAND_SWAP:
+            return validateConfirmHandSwap(
+                core,
+                command.playerId,
+                command.payload.topIndex,
+                command.payload.bottomIndex,
+            );
         case THE_GANG_COMMANDS.START_NEXT_HEIST:
             return validateStartNextHeist(core, command.playerId);
         default:
@@ -143,6 +150,31 @@ function validateRevealShowdown(core: TheGangCore, playerId: string): Validation
         return failure('missingChips');
     }
     if (core.communityCards.length < 5) return failure('missingCommunityCards');
+    return success();
+}
+
+function validateConfirmHandSwap(
+    core: TheGangCore,
+    playerId: string,
+    topIndex?: number,
+    bottomIndex?: number,
+): ValidationResult {
+    const playerValidation = validateProgressPlayer(core, playerId);
+    if (!playerValidation.valid) return playerValidation;
+    if (core.phase !== 'hand-swap') return failure('notHandSwap');
+    if (!core.rules.config.twoHand || !core.rules.config.handSwap) return failure('handSwapDisabled');
+    if (core.pendingProgress?.kind === 'hand-swap' && core.pendingProgress.approvals.includes(playerId)) {
+        return failure('handSwapAlreadyConfirmed');
+    }
+    const selectedNeither = topIndex === undefined && bottomIndex === undefined;
+    const selectedBoth = typeof topIndex === 'number' && typeof bottomIndex === 'number';
+    if (!selectedNeither && !selectedBoth) return failure('invalidHandSwapSelection');
+    if (selectedNeither) return success();
+
+    const player = core.players[playerId];
+    const secondaryCards = player.secondaryPocketCards ?? [];
+    if (topIndex < 0 || topIndex >= player.pocketCards.length) return failure('invalidHandSwapSelection');
+    if (bottomIndex < 0 || bottomIndex >= secondaryCards.length) return failure('invalidHandSwapSelection');
     return success();
 }
 

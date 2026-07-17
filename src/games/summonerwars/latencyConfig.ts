@@ -35,6 +35,7 @@ const DETERMINISTIC_COMMANDS = [
     SW_COMMANDS.REQUEST_MAGIC_EVENT_CHOICE,
     // 结束阶段
     SW_COMMANDS.END_PHASE,
+    FLOW_COMMANDS.ADVANCE_PHASE,
     // 施放事件卡（确定性效果部分）
     SW_COMMANDS.PLAY_EVENT,
     // 血契召唤步骤
@@ -114,6 +115,7 @@ export const summonerWarsLatencyConfig: LatencyOptimizationConfig = {
             SW_COMMANDS.ACTIVATE_ABILITY,
             // 结束阶段需要即时反馈
             SW_COMMANDS.END_PHASE,
+            FLOW_COMMANDS.ADVANCE_PHASE,
         ],
     },
 };

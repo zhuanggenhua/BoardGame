@@ -60,6 +60,7 @@ export const DEFAULT_THE_GANG_RULES_CONFIG: TheGangRulesConfig = {
     exitChipMode: 'default',
     omaha: false,
     twoHand: false,
+    handSwap: false,
     automode: false,
     antiTroll: false,
     challenges: {},
@@ -529,11 +530,14 @@ export function normalizeRulesConfig(config?: Partial<TheGangRulesConfig>): TheG
         }
     }
 
+    const twoHand = gameMode === 'texas-holdem' && config?.twoHand === true;
+
     return {
         gameMode,
         exitChipMode,
         omaha: config?.omaha === true,
-        twoHand: gameMode === 'texas-holdem' && config?.twoHand === true,
+        twoHand,
+        handSwap: twoHand && config?.handSwap === true,
         automode: config?.automode === true,
         antiTroll: config?.antiTroll === true,
         challenges,

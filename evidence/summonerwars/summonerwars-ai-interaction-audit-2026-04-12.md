@@ -54,7 +54,7 @@
 ### 本轮修订补充（Phase A/B）
 - infection：系统交互增加 skip 选项，UI 改为使用 InteractionSystem 的 `CardSelectorOverlay`（不再走本地 abilityMode 选卡路径）。
 - soul_transfer / mind_capture：补齐 `interaction.data.sw` 的 `sourcePosition` 元信息，修复 banner 派生缺失。
-- ice_shards：确认选项带 `disabledReasonKey`（充能不足可解释），保留 skip。
+- ice_shards：2026-07-17 已被当前用户故事覆盖为攻击阶段开始自动结算；不再生成确认/跳过交互，不再保留 skip。当前证据见 `evidence/summonerwars/summonerwars-ice-shards-e2e-test.md`。
 - HandArea busy 判定统一：引入 `useIsInteractionBusy` 与本地 mode 合并，避免系统交互时手牌仍可点。
 - 事件卡终点合同统一：`stun` / `goblin_sneak` / `glacial_shift` 终点坐标统一写入 `sys.interaction.options[].value.targetPosition`，UI 不再解析 `pos:r,c` 或本地重算。
 - 血契召唤：高亮/候选读取 `sys.interaction.options`，入口仍保留本地预检 + 服务端 validate 双轨；补齐收口 E2E 断言与证据。

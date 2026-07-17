@@ -124,6 +124,33 @@ describe('packageManagerService clean retry', () => {
         }));
     });
 
+    it('清洁重试即使收到旧 diffOnly 增量 manifest，只要有完整 ZIP 也会强制改走完整包', async () => {
+        const service = await import('../../features/mobile-packages/packageManagerService');
+        const fallbackState = createFallbackState();
+        service.syncGamePackageState('dicethrone', fallbackState);
+
+        await service.resetGamePackageStateForCleanRetry('dicethrone', fallbackState);
+        await service.startGamePackageInstall({
+            ...createManifest(),
+            runtimeChannel: 'edge',
+            assetPackVersion: '0.6.1-dicethrone-idx-e4e24d7fcacf',
+            assetPackUrl: 'https://assets.example.test/mobile-packages/android/edge/bundles/dicethrone/0.6.1.zip',
+            assetPackFileIndexUrl: 'https://assets.example.test/mobile-packages/android/edge/file-index/dicethrone/0.6.1.json',
+            assetPackFileIndexChecksum: 'edge-index-checksum',
+            assetPackDiffOnly: true,
+        }, 'packageManager.runtimeUnsupported');
+
+        expect(nativeMocks.createNativeGamePackageInstallHandle).toHaveBeenCalledTimes(1);
+        expect(nativeMocks.createNativeGamePackageInstallHandle.mock.calls[0]?.[0]).toEqual(expect.objectContaining({
+            runtimeChannel: 'edge',
+            assetPackVersion: '0.6.1-dicethrone-idx-e4e24d7fcacf',
+            assetPackUrl: 'https://assets.example.test/mobile-packages/android/edge/bundles/dicethrone/0.6.1.zip',
+            assetPackFileIndexUrl: undefined,
+            assetPackFileIndexChecksum: undefined,
+            assetPackDiffOnly: undefined,
+        }));
+    });
+
     it('清洁重试会等原生任务状态归零，避免立刻复用旧下载任务', async () => {
         const service = await import('../../features/mobile-packages/packageManagerService');
         const fallbackState = createFallbackState();

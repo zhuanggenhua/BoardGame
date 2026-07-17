@@ -145,6 +145,11 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       "data-roll-modifier-available",
       "true",
     );
+    const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+    await expect(discoveryPanel).toHaveAttribute("data-backdrop-dismiss", "disabled");
+    await discoveryPanel.click({ position: { x: 12, y: 12 } });
+    await expect(discoveryPanel).toBeVisible();
+    await expect(rollPanel).toBeVisible();
     await saveScreenshot(page, BEFORE_REROLL_SCREENSHOT);
 
     await rabbitFootCard.click();
@@ -231,6 +236,10 @@ test.describe("山屋惊魂兔脚重掷完整链路", () => {
       page.getByTestId("betrayal-board"),
       "兔脚重掷后必须回到可操作牌桌",
     ).toBeVisible();
+    await expect(discoveryPanel).toHaveAttribute("data-backdrop-dismiss", "enabled");
+    await discoveryPanel.click({ position: { x: 12, y: 12 } });
+    await expect(discoveryPanel).toHaveCount(0);
+    await expect(rollPanel).toHaveCount(0);
     await saveScreenshot(page, REROLL_CLOSED_SCREENSHOT);
 
     assertNoFatalFrontendErrors([

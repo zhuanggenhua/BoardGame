@@ -2138,16 +2138,15 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts --configLoader native -t "ice_ram|寒冰冲撞"` 先红后绿，修复后 1 个测试文件通过，3 passed / 104 skipped。
 - B5 矩阵状态：`ice_ram` 从 `proof-needed` 回写为 `fixed-with-proof`；B5 剩余 `proof-needed` 为贾穆德「冰片」（`ice_shards`）、泰珂露「心灵捕获」（`mind_capture` / `mind_capture_resolve`）和清风弓箭手「远程」（`ranged`）。
 
-## 95. 贾穆德「冰片」建造阶段结束入口补证（2026-07-02）
+## 95. 贾穆德「寒冰碎屑」攻击阶段自动结算覆盖（2026-07-17 更新）
 
-本轮继续消费 B5 已 locked 合同，没有重新读图片/OCR，也没有修改机制实现。这里补的是“建造阶段结束可花 1 充能”的真实阶段入口和跳过路径证据。
+本节原 2026-07-02 结论写的是“建造阶段结束可花 1 充能”和“确认/跳过路径证据”。该结论已被 2026-07-17 当前用户故事覆盖，不再作为当前实现真相。
 
-- 已锁官方合同：贾穆德「冰片」（`ice_shards`）要求在建造阶段结束时可花 1 充能；每个与己方建筑相邻的敌方单位受 1 伤；同一个敌方单位即使同时与多个己方建筑相邻，也只能受 1 次伤害。
-- 实现链路：`src/games/summonerwars/domain/flowHooks.ts` 在 build 阶段结束触发 `ice_shards` 并 halt 阶段推进；`src/games/summonerwars/domain/systems.ts` 生成确认/跳过交互，响应后登记该阶段结束能力已处理；`src/games/summonerwars/domain/executors/frost.ts` 花 1 充能，并用 `damagedSet` 对建筑相邻敌方单位去重伤害。
-- 先红信号：新增测试第一次失败，是测试夹具只设置了 `core.phase='build'`，但系统阶段仍是初始 summon，导致流程直接从 summon 推进到 attack，没有命中 build 退出钩子；这不是录入问题，也不是机制实现冲突。
-- 测试补证：`src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts` 新增两个真实阶段入口断言：确认路径覆盖 build 退出生成确认/跳过交互、确认后花 1 充能、同一敌方与两个友方建筑相邻只受 1 伤、随后可继续推进到 attack；跳过路径覆盖不消耗充能、不造成伤害、随后可继续推进到 attack。
-- 验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts src/games/summonerwars/__tests__/interaction-flow-e2e.test.ts --configLoader native -t "ice_shards|冰片|寒冰碎屑"` 通过，2 个测试文件通过，6 passed / 120 skipped。
-- B5 矩阵状态：`ice_shards` 从 `proof-needed` 回写为 `match-with-proof`；B5 剩余 `proof-needed` 为泰珂露「心灵捕获」（`mind_capture` / `mind_capture_resolve`）和清风弓箭手「远程」（`ranged`）。
+- 当前用户故事：`docs/games/summonerwars/user-stories/ice-shards-attack-start-auto-2026-07-17.md`。
+- 当前规则口径：贾穆德「寒冰碎屑」（`ice_shards`）在攻击阶段开始时自动触发；消耗 1 充能；对每个与己方建筑相邻的敌方单位造成 1 伤害；多建筑相邻不重复；不出现确认/跳过选择。
+- 当前实现链路：`src/games/summonerwars/domain/flowHooks.ts` 在 attack 阶段开始触发；`src/games/summonerwars/domain/systems.ts` 收到 `ice_shards_damage` 后直接执行 `ACTIVATE_ABILITY(ice_shards)`；`src/games/summonerwars/domain/executors/frost.ts` 负责扣充能和去重伤害；`Board.tsx` / `StatusBanners.tsx` 不再展示寒冰碎屑确认/跳过 UI。
+- 当前测试补证：`interaction-chain-comprehensive.test.ts` 覆盖自动结算、无交互、充能不足不创建选择、多贾穆德同阶段自动结算；`summonerwars-ice-shards-minimal.e2e.ts` 覆盖真实页面无选择 UI、敌方伤害 1、贾穆德充能 2→1。
+- 当前证据入口：`evidence/summonerwars/summonerwars-ice-shards-e2e-test.md`。
 
 ## 96. 泰珂露「心灵捕获」真实交互桥接补证（2026-07-02）
 
@@ -2246,7 +2245,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 卡拉「高阶念力」代替攻击（`high_telekinesis_instead`）：与清风法师「念力」代替攻击共用二段选择系统；高阶 3 格范围与行动经济已有直接断言，本轮按共享二段系统代表链补证，不单独回录入层。
 - 矩阵回写：`evidence/summonerwars/b4-p2-implementation-diff-matrix-2026-07-02.md` 已将 B4 五个对象回写为 L4 proof 状态；`evidence/summonerwars/l3-l4-residual-proof-queue-2026-07-02.md` 已把 L4-10 至 L4-14 移入已完成补证。
 - 验证：`node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts --configLoader native -t "infection|soul_transfer|life_drain|telekinesis_instead|感染|灵魂转移|吸取生命|念力"` 通过，1 个测试文件通过，6 passed / 110 skipped。
-- 后续边界：本轮补的是系统真实交互链和重复响应不二次结算；若后续发现 UI eventStream 刷新/回放会重复打开选择或确认，再追加 UI 层专项。下一步继续阶段推进类 `feed_beast`、`ice_shards`、`magic_addiction`、`guidance`、`blood_rune`，仍不回录入层。
+- 后续边界：本轮补的是系统真实交互链和重复响应不二次结算；若后续发现 UI eventStream 刷新/回放会重复打开选择或确认，再追加 UI 层专项。2026-07-17 后，`ice_shards` 已从此类可确认/跳过阶段交互中移除，当前按攻击阶段开始自动结算证据入口收口；下一步继续阶段推进类 `feed_beast`、`magic_addiction`、`guidance`、`blood_rune`，仍不回录入层。
 
 ## 105. 巨食兽「喂养野兽」阶段结束 L4 补证（2026-07-02）
 

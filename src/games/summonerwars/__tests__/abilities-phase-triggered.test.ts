@@ -870,7 +870,7 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
   });
 
   /**
-   * 回归测试：ice_shards 应在攻击阶段可确认执行。
+   * 回归测试：ice_shards 应在攻击阶段可执行。
    *
    * 用户口径：寒冰碎屑在攻击阶段开始时触发，而不是建造阶段结束。
    */

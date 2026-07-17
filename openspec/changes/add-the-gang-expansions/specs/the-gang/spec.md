@@ -34,7 +34,7 @@ The Gang SHALL support Texas Hold'em, Seven-Card Stud, and Banana Split as selec
 - **AND** the system MUST NOT replace shared community cards with an empty personal community-card list
 
 ### Requirement: The Gang TTS setup toggles
-The Gang SHALL implement the TTS setup toggles for Omaha, 2Hand, and Automode where their runtime behavior is evidence-bounded by the Lua script.
+The Gang SHALL implement the TTS setup toggles for Omaha, 2Hand, 2Hand hand swap, and Automode where their runtime behavior is evidence-bounded by the Lua script.
 
 #### Scenario: 2Hand deals and resolves two separate hands
 - **GIVEN** the rules configuration enables 2Hand in Texas Hold'em with no more than five players
@@ -54,6 +54,14 @@ The Gang SHALL implement the TTS setup toggles for Omaha, 2Hand, and Automode wh
 - **WHEN** every player has taken a chip for the current round
 - **THEN** the system MUST automatically advance to the next round or reveal showdown for the final round
 - **AND** the system MUST NOT require the normal all-player progress confirmation for that automatic step
+
+#### Scenario: 2Hand hand swap resolves after chip voting
+- **GIVEN** the rules configuration enables 2Hand hand swap in Texas Hold'em with no more than five players
+- **WHEN** all players have completed the normal chip-vote progress for a round or final showdown
+- **THEN** the system MUST enter a hand-swap stage before drawing next-round cards or revealing showdown
+- **AND** each player MUST be able to either exchange exactly one top-hand card with exactly one bottom-hand card or confirm no swap
+- **AND** the system MUST advance to the next round or reveal showdown only after every player confirms the hand-swap stage
+- **AND** enabling or disabling hand swap MUST NOT redeal cards unless another changed option alters the deal signature
 
 ### Requirement: The Gang challenge deal variants
 The Gang SHALL implement TTS-derived challenge variants that change round progression, initial hand size, public card reveals, personal community cards, and special deck contents.

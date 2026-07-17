@@ -18,6 +18,7 @@
     "tradePossession": "Player {{player}} traded with player {{target}}",
     "lootCorpse": "Player {{player}} looted an explorer's corpse",
     "endTurn": "Player {{player}} ended the turn",
+    "acknowledgeTurnEndRoll": "Player {{player}} acknowledged the end-of-turn check",
     "attackTraitor": "Player {{player}} attacked the traitor",
     "attackHero": "Player {{player}} attacked a hero",
     "attackJackSpirit": "Player {{player}} attacked Jack's Spirit",

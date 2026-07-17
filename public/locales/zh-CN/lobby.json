@@ -576,7 +576,7 @@
     "tutorialProgress": {
       "title": "继续上次教程？",
       "description": "检测到你已学到第 {{current}} / {{total}} 步。要从这里继续，还是重新开始这一章？",
-      "continue": "继续学习",
+      "continue": "从上次继续",
       "restart": "重头开始",
       "waitingChoice": "正在等待选择教程进度…"
     },

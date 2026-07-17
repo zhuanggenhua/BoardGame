@@ -501,7 +501,7 @@
       "illusion": "Illusion: Select a common unit within 3 spaces to copy abilities",
       "bloodRune": "Blood Rune: Take 1 damage or spend 1 magic to charge",
       "fortressPower": "Fortress Power: Select a fortress unit from the discard pile",
-      "iceShards": "Ice Shards: Spend 1 charge to deal 1 damage to enemies adjacent to buildings?",
+      "iceShards": "Ice Shards: Automatically spend 1 charge to deal 1 damage to enemies adjacent to buildings",
       "feedBeast": "Feed the Beast: Remove an adjacent ally, or self-destruct",
       "moguParasite": "Parasite: spend 1 charge, or take 1 damage",
       "spiritBond": "Spirit Bond: Select target within 3 to transfer charge, or charge self",
@@ -518,7 +518,7 @@
       "vanish": "Vanish: Select a 0-cost friendly unit to swap positions",
       "moguBloodInfusion": "Blood Infusion: Select a friendly unit within 2 spaces",
       "moguTransmission": "Fungal Transmission: Choose charge transfer mode",
-      "moguFanaticalFungus": "Fanatical Fungus: Choose push or pull destination"
+      "moguFanaticalFungus": "Fanatical Fungus: choose no push/pull or a destination"
     },
     "beforeAttack": {
       "lifeDrain": "Pre-attack: Life Drain ready, select an attack target",
@@ -659,7 +659,7 @@
       "grabFollowWithSource": "Grab: {{unit}} ({{position}}) choose a follow-up position",
       "soulTransfer": "Soul Transfer: confirm movement",
       "mindCapture": "Mind Capture: choose control or damage",
-      "iceShards": "Ice Shards: confirm charge spending",
+      "iceShards": "Ice Shards: resolves automatically at Attack phase start",
       "feedBeast": "Feed Beast: choose a victim or self-destruct",
       "moguParasite": "Parasite: choose charge spending or damage",
       "huijinCallGuardsCard": "Call Guards: choose a common unit to summon",
@@ -925,7 +925,7 @@
     },
     "ice_shards": {
       "name": "Ice Shards",
-      "description": "At the start of your Attack phase, you may spend 1 charge to deal 1 damage to each enemy unit adjacent to a structure you control."
+      "description": "At the start of your Attack phase, spend 1 charge to deal 1 damage to each enemy unit adjacent to a structure you control."
     },
     "greater_frost_bolt": {
       "name": "Greater Frost Bolt",
