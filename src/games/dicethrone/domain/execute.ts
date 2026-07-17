@@ -480,27 +480,23 @@ export function execute(
             // 确认骰面后，打开响应窗口
             // - 排除 rollerId（当前投掷方），因为他们可以主动出牌
             // - triggerId 是对手（优先响应）
-            // 例如：防御阶段防御方确认骰面，攻击方可以响应（强制重投等）
-            // 进攻投掷阶段需要等攻击技能选定后再给对手改骰响应时机。
+            // 例如：进攻方或防御方确认骰面后，对手都可以响应（强制重投等）
             // 
             // 关键：必须用 ROLL_CONFIRMED 事件应用后的状态来检查响应窗口
             // 否则 rollConfirmed 仍为 false，requireRollConfirmed 的卡牌（如抬一手）会被过滤掉
             const stateAfterConfirm = applyEvents(state, [event] as DiceThroneEvent[], reduce);
-            if (phase !== 'offensiveRoll') {
-                const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
-                    stateAfterConfirm,
-                    rollerId,
-                    phase,
-                    timestamp,
-                    command.type,
-                );
-                if (!responseWindowEvent) {
-                    break;
-                }
-                events.push(responseWindowEvent);
-                return events; // 等待响应窗口关闭
+            const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
+                stateAfterConfirm,
+                rollerId,
+                phase,
+                timestamp,
+                command.type,
+            );
+            if (!responseWindowEvent) {
+                break;
             }
-            break;
+            events.push(responseWindowEvent);
+            return events; // 等待响应窗口关闭
         }
 
         case 'SELECT_ABILITY': {

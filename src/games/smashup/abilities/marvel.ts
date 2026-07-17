@@ -134,6 +134,11 @@ type SpiderVerseDeckOrderContext = MarvelPromptContext & {
     remaining: Array<{ uid: string; defId: string }>;
 };
 
+type SpiderVerseGreatPowerContext = MarvelPromptContext & {
+    amount: number;
+    sourceBaseIndex?: number;
+};
+
 function runtimeToAbilityResult(result: {
     events: SmashUpEvent[];
     matchState?: MatchState<SmashUpCore>;
@@ -902,6 +907,54 @@ const spiderVerseDeckSelectionPromptProgram = createPromptProgram<SpiderVerseDec
     },
 });
 
+const spiderVerseGreatPowerPromptProgram = createPromptProgram<SpiderVerseGreatPowerContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'spider_verse_with_great_power',
+    buildInteraction: (context) => {
+        const candidates = context.matchState.core.bases.flatMap((base, baseIndex) => {
+            if (context.sourceBaseIndex !== undefined && baseIndex !== context.sourceBaseIndex) return [];
+            return base.minions.map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            }));
+        });
+        return createAbilityRuntimeSimpleChoice(
+            `spider_verse_with_great_power_${context.now}`,
+            context.playerId,
+            '能力越大…：选择获得力量的角色',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'spider_verse_with_great_power',
+                sourceKind: 'action',
+                effectType: 'buff',
+            }),
+            {
+                sourceId: 'spider_verse_with_great_power',
+                titleKey: 'ui.spider_verse_with_great_power_title',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = value as MinionChoice | undefined;
+        if (!choice?.minionUid || choice.baseIndex === undefined) return { events: [] };
+        if (context.sourceBaseIndex !== undefined && choice.baseIndex !== context.sourceBaseIndex) return { events: [] };
+        const live = state.core.bases[choice.baseIndex]?.minions.find(minion => minion.uid === choice.minionUid);
+        if (!live) return { events: [] };
+        return {
+            events: [addTempPower(live.uid, choice.baseIndex, context.amount, 'spider_verse_with_great_power', timestamp, {
+                sourcePlayerId: playerId,
+                sourceDefId: 'spider_verse_with_great_power',
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.sourceBaseIndex ?? choice.baseIndex,
+            })],
+        };
+    },
+});
+
 function buildViewFromAboveEvents(
     state: SmashUpCore,
     playerId: PlayerId,
@@ -1191,8 +1244,18 @@ function ultimatesScramble(ctx: AbilityContext): AbilityResult {
 
 function spiderVerseWithGreatPower(ctx: AbilityContext, special = false): AbilityResult {
     const found = ctx.targetMinionUid ? findMinion(ctx.state, ctx.targetMinionUid) : undefined;
-    if (!found) return { events: [] };
     const amount = special ? 2 : 3;
+    if (!found) {
+        if (!ctx.matchState) return { events: [] };
+        return runtimeToAbilityResult(executeAbilityProgram(spiderVerseGreatPowerPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            amount,
+            ...(special ? { sourceBaseIndex: ctx.baseIndex } : {}),
+        }));
+    }
+    if (special && ctx.baseIndex !== undefined && found.baseIndex !== ctx.baseIndex) return { events: [] };
     return {
         events: [addTempPower(found.minion.uid, found.baseIndex, amount, 'spider_verse_with_great_power', ctx.now, {
             sourcePlayerId: ctx.playerId,

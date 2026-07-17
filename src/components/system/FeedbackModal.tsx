@@ -171,7 +171,7 @@ const clearFeedbackDraft = (storageKey: string) => {
 
 export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeContext }: FeedbackModalProps) => {
     const { t } = useTranslation(['game', 'common']);
-    const { token, addFeedbackPoints } = useAuth();
+    const { user, token, addFeedbackPoints } = useAuth();
     const { success, error } = useToast();
     const location = useLocation();
     const backdropRef = useRef<HTMLDivElement>(null);
@@ -336,15 +336,6 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                 finalContent += `\n\n![Screenshot](${pastedImage})`;
             }
 
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
-            };
-            
-            // 如果用户已登录，附带 Authorization header
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
             const lastErrorContext = getLastErrorContext();
             const fallbackMode = (typeof window !== 'undefined'
                 ? ((window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__)
@@ -367,21 +358,36 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                 }
                 : undefined;
 
-            const res = await fetch(`${API_URL}`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    content: finalContent,
-                    type,
-                    severity,
-                    gameName: gameName || undefined,
-                    contactInfo: contactInfo || undefined,
-                    actionLog: (attachLog && actionLogText) ? actionLogText : undefined,
-                    stateSnapshot: (attachState && stateSnapshot) ? stateSnapshot : undefined,
-                    clientContext,
-                    errorContext,
-                })
+            const requestBody = JSON.stringify({
+                content: finalContent,
+                type,
+                severity,
+                gameName: gameName || undefined,
+                contactInfo: contactInfo || undefined,
+                actionLog: (attachLog && actionLogText) ? actionLogText : undefined,
+                stateSnapshot: (attachState && stateSnapshot) ? stateSnapshot : undefined,
+                clientContext,
+                errorContext,
             });
+
+            const buildHeaders = (includeAuth: boolean): Record<string, string> => ({
+                'Content-Type': 'application/json',
+                ...(includeAuth && token ? { Authorization: `Bearer ${token}` } : {}),
+            });
+            const shouldAttachAuth = Boolean(user && token);
+
+            let res = await fetch(`${API_URL}`, {
+                method: 'POST',
+                headers: buildHeaders(shouldAttachAuth),
+                body: requestBody,
+            });
+            if (res.status === 401 && shouldAttachAuth) {
+                res = await fetch(`${API_URL}`, {
+                    method: 'POST',
+                    headers: buildHeaders(false),
+                    body: requestBody,
+                });
+            }
 
             if (!res.ok) {
                 const payload = await res.json().catch(() => null) as { error?: string; message?: string } | null;

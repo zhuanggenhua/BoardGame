@@ -66,7 +66,8 @@ type VillainPromptMode =
     | 'baseModifierDestination'
     | 'mysterioChoice'
     | 'supremeIntelligenceBuff'
-    | 'deckOwnMinions';
+    | 'deckOwnMinions'
+    | 'vultureDiscardBaseModifier';
 
 type VillainPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -703,6 +704,35 @@ const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCo
             );
         }
 
+        if (context.mode === 'vultureDiscardBaseModifier') {
+            const options = state.players[context.playerId]?.discard
+                .filter(card => {
+                    const def = getCardDef(card.defId);
+                    return def?.type === 'action' && def.subtype === 'ongoing' && def.ongoingTarget === 'base';
+                })
+                .map(card => ({
+                    id: card.uid,
+                    label: getCardDef(card.defId)?.name ?? card.defId,
+                    value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+                    displayMode: 'card' as const,
+                    displayCard: { defId: card.defId, cardUid: card.uid },
+                })) ?? [];
+            return createAbilityRuntimeSimpleChoice(
+                `sinister_six_vulture_${context.now}`,
+                context.playerId,
+                '秃鹫：选择弃牌堆中的基地修正',
+                [createSkipOption(), ...options],
+                {
+                    sourceId: 'sinister_six_vulture',
+                    titleKey: 'ui.sinister_six_vulture_title',
+                    targetType: 'discard',
+                    autoRefresh: 'discard',
+                    responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
+                },
+            );
+        }
+
         return createAbilityRuntimeSimpleChoice(
             `marvel_villains_deck_own_${context.sourceDefId}_${context.now}`,
             context.playerId,
@@ -850,6 +880,18 @@ const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCo
                 return { events: [grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, context.sourceDefId, { restrictToBase: context.sourceBaseIndex })] };
             }
             return { events: [] };
+        }
+
+        if (context.mode === 'vultureDiscardBaseModifier') {
+            const choice = value as OngoingChoice | undefined;
+            if (choice?.skip || !choice?.cardUid || !choice.defId || !choice.ownerId) return { events: [] };
+            const selected = state.core.players[playerId]?.discard.find(card => card.uid === choice.cardUid);
+            if (!selected) return { events: [] };
+            const def = getCardDef(selected.defId);
+            if (def?.type !== 'action' || def.subtype !== 'ongoing' || def.ongoingTarget !== 'base') return { events: [] };
+            return {
+                events: [cardToDeckTop({ uid: selected.uid, defId: selected.defId, ownerId: selected.owner }, playerId, context.sourceDefId, timestamp)],
+            };
         }
 
         const choices = (Array.isArray(value) ? value : [value]) as MinionChoice[];
@@ -1078,13 +1120,28 @@ function mastersConvergence(ctx: AbilityContext): AbilityResult {
 function sinisterVulture(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
-    const selected = player.discard.find(card => {
+    const candidates = player.discard.filter(card => {
         const def = getCardDef(card.defId);
         return def?.type === 'action' && def.subtype === 'ongoing' && def.ongoingTarget === 'base';
     });
-    return selected
-        ? { events: [cardToDeckTop({ uid: selected.uid, defId: selected.defId, ownerId: selected.owner }, ctx.playerId, ctx.defId, ctx.now)] }
-        : { events: [] };
+    if (candidates.length === 0) return { events: [] };
+    if (candidates.length === 1) {
+        const selected = candidates[0];
+        return { events: [cardToDeckTop({ uid: selected.uid, defId: selected.defId, ownerId: selected.owner }, ctx.playerId, ctx.defId, ctx.now)] };
+    }
+    if (!ctx.matchState) {
+        const selected = candidates[0];
+        return { events: [cardToDeckTop({ uid: selected.uid, defId: selected.defId, ownerId: selected.owner }, ctx.playerId, ctx.defId, ctx.now)] };
+    }
+    return prompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        mode: 'vultureDiscardBaseModifier',
+        sourceDefId: ctx.defId,
+        sourceCardUid: ctx.cardUid,
+        sourceBaseIndex: ctx.baseIndex,
+    });
 }
 
 function sinisterMoveTheGoods(ctx: AbilityContext): AbilityResult {

@@ -168,6 +168,18 @@ describe('Feedback Module (e2e)', () => {
         expect(res.body.userId).toBeUndefined();
     });
 
+    it('失效登录态不会阻断匿名反馈提交', async () => {
+        const res = await request(app.getHttpServer())
+            .post('/feedback')
+            .set('Authorization', 'Bearer expired-or-invalid-token')
+            .send({ content: '失效登录态下仍可反馈' })
+            .expect(201);
+
+        expect(res.body.content).toBe('失效登录态下仍可反馈');
+        expect(res.body.userId).toBeUndefined();
+        expect(res.body.rewardPoints).toBe(0);
+    });
+
     it('运行时守卫自动反馈允许保留受控 source 与 autoReportKind', async () => {
         const res = await request(app.getHttpServer())
             .post('/feedback')

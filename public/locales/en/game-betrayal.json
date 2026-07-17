@@ -327,7 +327,14 @@
       "sameRoom": "Same room",
       "tradeTarget": "Trade target",
       "knowledgeOfJack": "Knows Jack",
-      "corpse": "Corpse"
+      "corpse": "Corpse",
+      "detailsTitle": "Explorer Details",
+      "detailsAria": "{{player}} details",
+      "closeDetails": "Close details",
+      "ability": "Ability",
+      "inventory": "Inventory",
+      "emptyInventory": "No possessions",
+      "detailSeparator": ": "
     },
     "summary": {
       "objective": "Current Objective",

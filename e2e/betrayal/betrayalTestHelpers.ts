@@ -319,6 +319,36 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
     "data-dice-face-system",
     "betrayal-house-0-1-2-per-die-skin",
   );
+  const readableFaceOverlay = rollPanel.getByTestId(
+    "betrayal-house-dice-readable-faces",
+  );
+  await expect(readableFaceOverlay).toHaveAttribute(
+    "data-visual-layer",
+    "diagnostic-only",
+  );
+  await expect(readableFaceOverlay).toHaveClass(/sr-only/);
+  await expect
+    .poll(
+      async () =>
+        readableFaceOverlay.evaluate((node) => {
+          const element = node as HTMLElement;
+          const rect = element.getBoundingClientRect();
+          const style = window.getComputedStyle(element);
+          return {
+            position: style.position,
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            overflow: style.overflow,
+          };
+        }),
+      { timeout: 5000 },
+    )
+    .toEqual({
+      position: "absolute",
+      width: 1,
+      height: 1,
+      overflow: "hidden",
+    });
   await expect
     .poll(
       async () =>

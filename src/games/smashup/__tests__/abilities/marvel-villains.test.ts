@@ -518,6 +518,46 @@ describe('漫威反派四派系代表性玩法行为', () => {
             payload: { cardUid: 'modifier', defId: 'sinister_six_my_master_plan', ownerId: '0' },
         });
 
+        const multiDiscardCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [
+                        makeCard('cover', 'sinister_six_cover_the_exits', 'action', '0'),
+                        makeCard('panic', 'sinister_six_incite_panic', 'action', '0'),
+                        makeCard('ambush', 'sinister_six_ambush', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar')],
+        });
+        const selectableVulture = invokeRegisteredAbilityContract('sinister_six_vulture', 'onPlay', {
+            state: multiDiscardCore,
+            matchState: makeMatchState(multiDiscardCore),
+            playerId: '0',
+            cardUid: 'vulture-select',
+            defId: 'sinister_six_vulture',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 43,
+        });
+        const vulturePrompt = getSimpleChoicePrompt(selectableVulture.matchState!, 'sinister_six_vulture');
+        expect(getPromptOptions(vulturePrompt).some(option => option.value?.cardUid === 'cover')).toBe(true);
+        expect(getPromptOptions(vulturePrompt).some(option => option.value?.cardUid === 'panic')).toBe(true);
+        expect(getPromptOptions(vulturePrompt).some(option => option.value?.cardUid === 'ambush')).toBe(false);
+
+        const selectedVulture = respondToPromptOption(
+            selectableVulture.matchState!,
+            option => option.value?.cardUid === 'panic',
+            '秃鹫弃牌堆基地修正',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedVulture.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TO_DECK_TOP,
+            payload: expect.objectContaining({ cardUid: 'panic', defId: 'sinister_six_incite_panic', ownerId: '0' }),
+        }));
+
         const mysterio = invokeRegisteredAbilityContract('sinister_six_mysterio', 'talent', {
             state: core,
             matchState: makeMatchState(core),

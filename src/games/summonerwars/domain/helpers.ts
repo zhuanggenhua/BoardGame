@@ -439,10 +439,6 @@ export function canAttack(
   const targetStructure = getStructureAt(state, target);
   if (!targetUnit && !targetStructure) return false;
   
-  // 不能攻击自己的单位/建筑
-  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
-  if (targetOwner === attackerUnit.owner) return false;
-  
   const distance = manhattanDistance(attacker, target);
   
   if (attackerUnit.card.attackType === 'melee') {
@@ -1126,13 +1122,10 @@ export function canAttackEnhanced(
   const targetStructure = getStructureAt(state, target);
   if (!targetUnit && !targetStructure) return false;
 
-  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
-  
-  // ✅ 治疗模式允许攻击友军（圣殿牧师）
-  const isHealingMode = attackerUnit.healingMode || getUnitAbilities(attackerUnit, state).includes('healing');
-  if (targetOwner === attackerUnit.owner) {
-    if (!isHealingMode) return false;
-    // 治疗模式：只能攻击友方士兵/英雄，且必须相邻
+  if (attackerUnit.healingMode) {
+    // 治疗模式：已支付治疗代价后，只能选择相邻友方士兵/英雄并改为治疗结算。
+    const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
+    if (targetOwner !== attackerUnit.owner) return false;
     if (!targetUnit) return false;
     if (targetUnit.card.unitClass !== 'common' && targetUnit.card.unitClass !== 'champion') return false;
     return manhattanDistance(attacker, target) === 1;

@@ -368,6 +368,8 @@ interface SummonerWarsExpectation extends StateExpectation {
     player1MoveCount?: number;
     /** 预期玩家0的攻击次数 */
     player0AttackCount?: number;
+    /** 预期玩家0是否攻击过敌方卡牌 */
+    player0HasAttackedEnemy?: boolean;
     /** 预期获胜者 */
     winner?: string;
     /** 预期某位置有单位 */
@@ -414,6 +416,10 @@ function assertSummonerWars(
 
     if (expectation.player0AttackCount !== undefined && state.players['0'].attackCount !== expectation.player0AttackCount) {
         errors.push(`玩家0攻击次数不匹配: 预期 ${expectation.player0AttackCount}, 实际 ${state.players['0'].attackCount}`);
+    }
+
+    if (expectation.player0HasAttackedEnemy !== undefined && state.players['0'].hasAttackedEnemy !== expectation.player0HasAttackedEnemy) {
+        errors.push(`玩家0攻击敌方标记不匹配: 预期 ${expectation.player0HasAttackedEnemy}, 实际 ${state.players['0'].hasAttackedEnemy}`);
     }
 
     if (expectation.unitAt !== undefined) {
@@ -728,7 +734,7 @@ const testCases: TestCase<SummonerWarsExpectation>[] = [
         },
     },
     {
-        name: '攻击错误 - 攻击自己的单位',
+        name: '攻击 - 可攻击自己的卡牌但不算攻击敌方',
         setup: (playerIds, random) => {
             const core = createInitializedCore(playerIds, random);
             core.phase = 'attack';
@@ -743,7 +749,8 @@ const testCases: TestCase<SummonerWarsExpectation>[] = [
             },
         ],
         expect: {
-            errorAtStep: { step: 1, error: '无法攻击该目标' },
+            player0AttackCount: 1,
+            player0HasAttackedEnemy: false,
         },
     },
 
@@ -1342,6 +1349,48 @@ describe('召唤师战争本地 AI', () => {
         expect(threatAttack?.metadata?.strategyTags).toContain('board-control');
         expect(championAttack?.metadata?.strategyTags).toContain('board-control');
         expect(championAttack?.metadata?.strategyTags).not.toContain('summoner-defense');
+    });
+
+    it('普通攻击友方卡牌合法，但 AI 不应主动生成攻击友方的动作', () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom);
+        core.phase = 'attack';
+        core.currentPlayer = '0';
+        for (const row of [3, 4, 5]) {
+            for (const col of [2, 3, 4]) {
+                core.board[row][col].unit = undefined;
+                core.board[row][col].structure = undefined;
+            }
+        }
+
+        const attackerCard: UnitCard = {
+            id: 'ai-attacker',
+            cardType: 'unit',
+            name: 'AI 攻击者',
+            unitClass: 'common',
+            faction: 'necromancer',
+            strength: 2,
+            life: 3,
+            cost: 1,
+            attackType: 'melee',
+            attackRange: 1,
+            deckSymbols: [],
+        };
+        const friendlyCard: UnitCard = { ...attackerCard, id: 'ai-friendly', name: '友方目标' };
+        const enemyCard: UnitCard = { ...attackerCard, id: 'ai-enemy', name: '敌方目标' };
+        const attacker = placeTestUnit(core, { row: 4, col: 3 }, { card: attackerCard, owner: '0' });
+        placeTestUnit(core, { row: 4, col: 2 }, { card: friendlyCard, owner: '0' });
+        placeTestUnit(core, { row: 4, col: 4 }, { card: enemyCard, owner: '1' });
+
+        const actions = buildSummonerWarsAiLegalActions({
+            playerId: '0',
+            state: { core, sys: createInitialSystemState(['0', '1'], []) },
+        });
+        const attackTargets = actions
+            .filter((action) => action.kind === 'declare-attack' && action.metadata?.sourceUnitId === attacker.instanceId)
+            .map((action) => action.metadata?.target);
+
+        expect(attackTargets).toContainEqual({ row: 4, col: 4 });
+        expect(attackTargets).not.toContainEqual({ row: 4, col: 2 });
     });
 
     it('通用 strategy profile scorer 会在中度承压时抬高回防标签动作的评分', async () => {

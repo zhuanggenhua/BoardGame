@@ -1742,6 +1742,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             sourceUnitId?: string;
             sourcePosition?: CellCoord;
             targetPosition?: CellCoord;
+            targetOwner?: PlayerId;
             interactionResolved?: boolean;
             iceRamOwner?: PlayerId;
             structurePosition?: CellCoord;
@@ -2152,6 +2153,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           }
 
           if (actionId === 'mind_transmission') {
+            if (!payload.targetOwner || payload.targetOwner === sourceUnit.owner) continue;
             const targets: CellCoord[] = [];
             for (let row = 0; row < BOARD_ROWS; row++) {
               for (let col = 0; col < BOARD_COLS; col++) {

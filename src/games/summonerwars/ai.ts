@@ -1952,6 +1952,8 @@ const buildAttackActions = (
         for (const target of targets) {
             const targetUnit = getUnitAt(state.core, target);
             const targetStructure = getStructureAt(state.core, target);
+            const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
+            if (targetOwner === playerId) continue;
             const targetType = targetUnit
                 ? targetUnit.card.unitClass
                 : targetStructure
@@ -1991,7 +1993,7 @@ const buildAttackActions = (
                     targetType,
                     targetLifeRemaining,
                     lethalLikely: unit.card.strength >= targetLifeRemaining,
-                    targetOwner: targetUnit?.owner ?? targetStructure?.owner,
+                    targetOwner,
                     targetIsThreateningSummoner,
                     targetIsGate,
                     remainingLife: threat.remainingLife,

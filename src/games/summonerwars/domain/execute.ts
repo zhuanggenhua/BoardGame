@@ -505,7 +505,7 @@ export function executeCommand(
       const applyBeforeAttackStrength = (strength: number) =>
         Math.max(0, Math.floor((strength + beforeAttackBonus) * beforeAttackMultiplier));
 
-      // 治疗模式独立路径：绕过 canAttackEnhanced（它会拒绝友方目标）
+      // 治疗模式独立路径：友方攻击改为治疗，而不是走普通伤害结算。
       if (attackerUnit?.healingMode) {
         const healTargetCell = workingCore.board[target.row]?.[target.col];
         const healTargetUnit = healTargetCell?.unit;
@@ -896,6 +896,7 @@ export function executeCommand(
           ownerId: playerId,
           targetUnit: targetCell?.unit,
           targetPosition: target,
+          targetOwner: targetCell?.unit?.owner ?? targetCell?.structure?.owner,
           diceResults,
           timestamp,
         };

@@ -129,3 +129,33 @@
 - 路径：`D:\gongzuo\webgame\BoardGame\evidence\betrayal-basic-flow\zz-书本式剧本阅读最终核验拼图.jpg`
 - 实际看到：PC 与移动横屏的入口、首页、末页 6 张图同时对读，均为真实页面截图产物；书本样式、翻页按钮、末页内容和当前剧本入口都能对应起来。
 - 验收结论：本轮“完整剧本需要沉浸式书本阅读”的 UI 目标已通过截图核验。
+
+## 2026-07-18 队友详情、token 对应与换行动者视角补验收
+
+### 命令
+
+- `npm run test:e2e:ci:file -- e2e/betrayal/basic-flow.e2e.ts "真实页面队友详情与地图token图像一致，换行动者不自动跟踪视角"`
+  - 结果：`1 passed`
+- `npx eslint src/pages/TestMatchRoom.tsx src/pages/LocalMatchRoom.tsx src/games/betrayal/Board.tsx e2e/betrayal/basic-flow.e2e.ts e2e/betrayal/event-choice-coverage.e2e.ts`
+  - 结果：`0 errors`；仍有既有 warning，未阻断。
+
+### 队友面板详情不切视角
+
+- 路径：`D:\gongzuo\webgame\BoardGame\evidence\betrayal-basic-flow\10-山屋惊魂-队友面板详情不切视角.jpg`
+- 实际看到：点击右侧队友面板后打开探索者详情，背景仍停在当前玩家所在的一层牌桌，没有自动跳到地下室。
+- 实际看到：详情里的探索者头像和详情下方小 token 为同一探索者素材；测试同时断言面板 token 的 `data-token-asset` 与详情 token 一致。
+- 验收结论：队友面板点击现在是“查看详情”，不是“强制切视角/跟踪队友位置”。
+
+### 地图 token 详情图像一致
+
+- 路径：`D:\gongzuo\webgame\BoardGame\evidence\betrayal-basic-flow\11-山屋惊魂-地图token详情图像一致.jpg`
+- 实际看到：手动切到上层后，点击房间里的队友 token 打开详情；背景仍停在上层，没有被详情弹窗重置回当前行动者楼层。
+- 实际看到：地图 token、详情头像和详情小 token 指向同一探索者，角色面板与地图 token 的对应关系可直接核对。
+- 验收结论：地图 token 与角色详情承接一致，且详情打开不改变玩家正在查看的楼层。
+
+### 换行动者不自动跟踪视角
+
+- 路径：`D:\gongzuo\webgame\BoardGame\evidence\betrayal-basic-flow\12-山屋惊魂-换行动者不自动跟踪视角.jpg`
+- 实际看到：点击“结束回合”后当前回合切到丽贝卡·艾伦博士，但地图仍显示上层起始点，没有自动跳到她所在的地下室起始点。
+- 实际看到：右侧队友列表里地下室队友仍可见，但主地图没有被另一位行动者强行接管；玩家保留自己刚刚查看的上层上下文。
+- 验收结论：其他玩家行动时不再提前跟踪/抢走当前视角；这次修复直接覆盖用户指出的“别人行动不需要跟踪视角”问题。

@@ -2681,6 +2681,38 @@ function postProcessSystemEvents(
                 ms = queued.matchState ?? ms;
             }
             prePlayEvents.push(event);
+        } else if (event.type === SU_EVENTS.BASE_SCORED) {
+            const scoreEvt = event as BaseScoredEvent;
+            let tempCore = state;
+            for (const preEvt of prePlayEvents) {
+                tempCore = reduce(tempCore, preEvt);
+            }
+            if (!inputEventsAlreadyReduced) {
+                tempCore = reduce(tempCore, event);
+            }
+            for (const ranking of scoreEvt.payload.rankings) {
+                if (ranking.vp <= 0) continue;
+                const sourceEventId = `base-scored-vp:${scoreEvt.payload.baseIndex}:${ranking.playerId}:${event.timestamp}`;
+                const frameId = `base-scored-vp-frame:${scoreEvt.payload.baseIndex}:${ranking.playerId}:${event.timestamp}`;
+                const queued = collectTriggers(tempCore, 'onVpAwarded', {
+                    state: tempCore,
+                    matchState: tempCore === ms.core ? ms : { ...ms, core: tempCore },
+                    playerId: ranking.playerId,
+                    vpAmount: ranking.vp,
+                    reason: 'base_scored',
+                    baseIndex: scoreEvt.payload.baseIndex,
+                    frameId,
+                    sourceEventId,
+                    random,
+                    now: event.timestamp,
+                });
+                if (queued) {
+                    derivedEvents.push(queued);
+                    ms = queued.matchState ?? ms;
+                    tempCore = queued.matchState?.core ?? tempCore;
+                }
+            }
+            prePlayEvents.push(event);
         } else if (event.type === SU_EVENTS.CARDS_DISCARDED || event.type === SU_EVENTS.CARDS_MILLED) {
             const discardEvt = event as { type: string; payload: { playerId: PlayerId; cardUids: string[] }; timestamp: number };
             const tempCore = prePlayEvents.reduce((acc, preEvt) => reduce(acc, preEvt), state);

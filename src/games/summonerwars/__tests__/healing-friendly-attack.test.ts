@@ -1,6 +1,6 @@
 /**
- * 治疗技能 - 友军攻击测试
- * 验证牧师治疗技能可以正确攻击友军单位
+ * 友方攻击测试
+ * 验证普通攻击可以攻击友方卡牌；牧师治疗技能会把友方攻击改为治疗
  */
 
 import { describe, it, expect } from 'vitest';
@@ -8,7 +8,7 @@ import { GameTestRunner, type TestCase } from '../../../engine/testing/GameTestR
 import { SummonerWarsDomain } from '../domain';
 import type { SummonerWarsCore, SummonerWarsCommand, SummonerWarsEvent } from '../domain/types';
 import { SW_COMMANDS } from '../domain/types';
-import { canAttackEnhanced } from '../domain/helpers';
+import { canAttack, canAttackEnhanced } from '../domain/helpers';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState } from '../../../engine/types';
 
@@ -123,14 +123,16 @@ function createHealingTestState(): MatchState<SummonerWarsCore> {
 describe('治疗技能 - 友军攻击', () => {
   it('canAttackEnhanced 应该允许治疗模式攻击友军', () => {
     const state = createHealingTestState();
-    
-    // 验证 canAttackEnhanced 允许攻击友军
+    state.core.board[3][3].unit!.healingMode = true;
+
+    // 验证 canAttackEnhanced 允许治疗目标
     const canAttack = canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 3, col: 4 });
     expect(canAttack).toBe(true);
   });
 
   it('治疗模式只能攻击相邻的友方士兵/英雄', () => {
     const state = createHealingTestState();
+    state.core.board[3][3].unit!.healingMode = true;
     
     // 放置友方士兵（不相邻）
     state.core.board[3][5] = {
@@ -182,17 +184,17 @@ describe('治疗技能 - 友军攻击', () => {
       },
     };
     
-    // ✅ 相邻士兵可以攻击
+    // ✅ 相邻士兵可以作为治疗目标
     expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(true);
     
-    // ❌ 不相邻士兵不能攻击
+    // ❌ 不相邻士兵不能作为治疗目标
     expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 3, col: 5 })).toBe(false);
     
-    // ❌ 建筑不能攻击
+    // ❌ 建筑不能作为治疗目标
     expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 4, col: 3 })).toBe(false);
   });
 
-  it('非治疗模式不能攻击友军', () => {
+  it('普通攻击可以攻击满足距离的友方卡牌，但不算攻击过敌方', () => {
     const state = createHealingTestState();
     
     // 替换为普通士兵（无 healing 技能）
@@ -251,8 +253,29 @@ describe('治疗技能 - 友军攻击', () => {
       structure: undefined,
     };
     
-    // ❌ 普通单位不能攻击友军
-    expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(false);
+    expect(canAttack(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(true);
+    expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(true);
+
+    const magicBefore = state.core.players['0'].magic;
+    const result = runner.run({
+      name: '普通攻击友方卡牌',
+      setup: () => state,
+      commands: [
+        {
+          type: SW_COMMANDS.DECLARE_ATTACK,
+          playerId: '0',
+          payload: {
+            attacker: { row: 3, col: 3 },
+            target: { row: 3, col: 4 },
+          },
+        },
+      ],
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.steps[0].success).toBe(true);
+    expect(result.finalState.core.players['0'].hasAttackedEnemy).toBe(false);
+    expect(result.finalState.core.players['0'].magic).toBe(magicBefore);
   });
 
   it('治疗攻击命令验证应该通过', () => {

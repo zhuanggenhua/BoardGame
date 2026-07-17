@@ -55,6 +55,7 @@ export const LocalMatchRoom = () => {
     } = useGameImplementationReady(gameId);
 
     const gameConfig = gameId ? getGameById(gameId) : undefined;
+    const shouldKeepBoardMountedOnTurnFollow = gameId === 'betrayal';
     const gamePageDataAttributes = useMemo(
         () => getGamePageDataAttributes(gameId, gameConfig),
         [gameConfig, gameId],
@@ -262,6 +263,7 @@ export const LocalMatchRoom = () => {
                                                         >
                                                             <BoardBridge
                                                                 board={WrappedBoard}
+                                                                remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
                                                                 loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
                                                             />
                                                         </LocalGameProvider>
@@ -292,6 +294,7 @@ export const LocalMatchRoom = () => {
                                         >
                                             <BoardBridge
                                                 board={WrappedBoard}
+                                                remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
                                                 loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.preparingMatch')} progressText={t('matchRoom.loadingProgress.preparingRoom')} />}
                                             />
                                         </LocalGameProvider>

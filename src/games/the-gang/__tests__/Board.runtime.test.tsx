@@ -341,6 +341,11 @@ describe('The Gang Board 运行入口', () => {
                     handSwap: true,
                 },
             },
+            currentRoundChips: {
+                0: 1,
+                1: 2,
+                2: 3,
+            },
             players: {
                 ...initial.players,
                 '0': {
@@ -378,6 +383,7 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.queryByTestId('the-gang-opponent-hand-1-rows')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-opponent-hand-2-rows')).not.toBeInTheDocument();
         expect(document.querySelectorAll('[data-bgg-zone="top-zone"] img[alt="board.cardBackAlt"]')).toHaveLength(0);
+        expect(document.querySelectorAll('[data-bgg-zone="token-pile-current-chip"]')).toHaveLength(3);
         for (const exposedCard of ['7♠', '6♠', '5♠', '9♥', '7♦', 'J♥', '8♠', '5♣']) {
             expect(screen.queryByRole('img', { name: exposedCard })).not.toBeInTheDocument();
         }

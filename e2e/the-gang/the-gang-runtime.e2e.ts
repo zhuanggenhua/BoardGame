@@ -395,7 +395,11 @@ async function writeMiddleLayoutMetrics(label: string, metrics: unknown) {
     return path;
 }
 
-async function expectMiddleCenterVerticallyCentered(page: Page, label: string) {
+async function expectMiddleCenterVerticallyCentered(
+    page: Page,
+    label: string,
+    options: { allowSideBySideTokenPile?: boolean; requireTokenPile?: boolean } = {},
+) {
     const metrics = await page.evaluate(() => {
         const readRect = (selector: string) => {
             const node = document.querySelector(selector);
@@ -425,7 +429,12 @@ async function expectMiddleCenterVerticallyCentered(page: Page, label: string) {
         const tokenCenter = (tokenPile.top + tokenPile.bottom) / 2;
         const riverCenter = (cardRiver.top + cardRiver.bottom) / 2;
         const tokenRiverGap = cardRiver.top - tokenPile.bottom;
+        const tokenPileBesideRiver = tokenPile.right <= cardRiver.left + 1 || cardRiver.right <= tokenPile.left + 1;
+        const tokenRiverHorizontalGap = tokenPile.right <= cardRiver.left
+            ? cardRiver.left - tokenPile.right
+            : tokenPile.left - cardRiver.right;
         const cardCount = document.querySelectorAll('[data-bgg-zone="card-river"] img').length;
+        const tokenPileImageCount = document.querySelectorAll('[data-bgg-zone="token-pile"] img').length;
         return {
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
@@ -436,6 +445,7 @@ async function expectMiddleCenterVerticallyCentered(page: Page, label: string) {
             tokenPile,
             cardRiver,
             cardCount,
+            tokenPileImageCount,
             availableHeight: availableBottom - availableTop,
             availableTop,
             availableBottom,
@@ -449,6 +459,8 @@ async function expectMiddleCenterVerticallyCentered(page: Page, label: string) {
             tokenCenterDelta: tokenCenter - targetCenter,
             riverCenterDelta: riverCenter - targetCenter,
             tokenRiverGap,
+            tokenPileBesideRiver,
+            tokenRiverHorizontalGap,
             tokenAboveRiver: tokenPile.bottom <= cardRiver.top + 1,
         };
     });
@@ -462,7 +474,24 @@ async function expectMiddleCenterVerticallyCentered(page: Page, label: string) {
     const allowedDelta = Math.max(36, metrics!.availableHeight * 0.12);
     expect(Math.abs(metrics!.contentCenterDelta), `${label}：中央排应围绕玩家区与手牌区之间的可视中线垂直居中；几何数据 ${metricsPath} ${metricsDetail}`).toBeLessThanOrEqual(allowedDelta);
 
+    if (options.requireTokenPile) {
+        expect(metrics!.tokenPileImageCount, `${label}：满载验收必须包含中央筹码，不能用空筹码区截图收口；几何数据 ${metricsPath} ${metricsDetail}`).toBeGreaterThan(0);
+        expect(metrics!.tokenPile.width, `${label}：中央筹码区必须有真实可见宽度；几何数据 ${metricsPath} ${metricsDetail}`).toBeGreaterThan(4);
+        expect(metrics!.tokenPile.height, `${label}：中央筹码区必须有真实可见高度；几何数据 ${metricsPath} ${metricsDetail}`).toBeGreaterThan(4);
+    }
+
     if (metrics!.cardCount > 0 && metrics!.cardRiver.height > 4 && metrics!.tokenPile.height > 4) {
+        if (options.allowSideBySideTokenPile && metrics!.tokenPileBesideRiver) {
+            const maxSideBySideCenterDelta = Math.max(24, metrics!.cardRiver.height * 0.35);
+            const maxSideBySideSingleRowDelta = Math.max(56, metrics!.availableHeight * 0.34);
+            expect(Math.abs(metrics!.tokenCenter - metrics!.riverCenter), `${label}：并排时筹码排和公共牌排必须垂直对齐，不能一上一下漂移；几何数据 ${metricsPath} ${metricsDetail}`).toBeLessThanOrEqual(maxSideBySideCenterDelta);
+            expect(Math.abs(metrics!.tokenCenterDelta), `${label}：并排筹码排不能被挤到上方玩家区或下方手牌区；几何数据 ${metricsPath} ${metricsDetail}`).toBeLessThanOrEqual(maxSideBySideSingleRowDelta);
+            expect(Math.abs(metrics!.riverCenterDelta), `${label}：并排公共牌排不能被吸到上方玩家区或下方手牌区；几何数据 ${metricsPath} ${metricsDetail}`).toBeLessThanOrEqual(maxSideBySideSingleRowDelta);
+            expect(metrics!.tokenRiverHorizontalGap, `${label}：并排筹码和公共牌之间必须有清晰间距；几何数据 ${metricsPath} ${metricsDetail}`).toBeGreaterThanOrEqual(8);
+            expect(metrics!.tokenRiverHorizontalGap, `${label}：并排筹码和公共牌不能被拉成两个互不相关的区域；几何数据 ${metricsPath} ${metricsDetail}`).toBeLessThanOrEqual(96);
+            return;
+        }
+
         const minStackGap = metrics!.viewportHeight < 500 ? 8 : 12;
         const maxStackGap = Math.min(88, Math.max(32, metrics!.availableHeight * (metrics!.viewportHeight < 500 ? 0.22 : 0.28)));
         const maxSingleRowDelta = Math.max(56, metrics!.availableHeight * 0.34);
@@ -740,12 +769,15 @@ test.describe('The Gang 测试入口与代表态截图', () => {
     test('桌面端两副手牌投票后进入手牌调换阶段并可交换上下手牌', async ({ game, page }, testInfo) => {
         test.setTimeout(150000);
         await page.setViewportSize({ width: 1366, height: 768 });
+        const playerCount = 5;
         await game.openTestGame(THE_GANG_GAME_ID, {
-            players: 3,
+            players: playerCount,
             seed: 'the-gang-twohand-hand-swap-e2e',
             seat1: 'human',
             seat2: 'human',
             seat3: 'human',
+            seat4: 'human',
+            seat5: 'human',
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
@@ -774,17 +806,20 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             });
 
         await startHeistFromSetup(page);
-        await chooseAllPlayerChips(page, '白筹码');
-        await confirmProgressForAllPlayers(page, '下一轮');
+        await chooseChipsForSeats(page, playerCount);
+        await confirmProgressForSeats(page, '下一轮', playerCount);
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toBeVisible();
-        await confirmHandSwapForSeats(page, 3);
-        await expectChipRound(page, '黄筹码');
+        await confirmHandSwapForSeats(page, playerCount);
+        await expectChipRoundForPlayerCount(page, '黄筹码', playerCount);
 
-        await chooseAllPlayerChips(page, '黄筹码');
-        await confirmProgressForAllPlayers(page, '下一轮');
+        await chooseChipsForSeats(page, playerCount);
+        await confirmProgressForSeats(page, '下一轮', playerCount);
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toBeVisible();
         await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeDisabled();
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 3);
+        await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', playerCount);
+        await expect(page.locator('[data-bgg-zone="token-pile-current-chip"]')).toHaveCount(playerCount);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(playerCount);
         await expect(page.getByTestId('the-gang-local-hand-top')).toBeVisible();
         await expect(page.getByTestId('the-gang-local-hand-bottom')).toBeVisible();
         await expect(page.getByTestId('the-gang-local-hand-top').locator('img')).toHaveCount(2);
@@ -799,6 +834,10 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
         await expect(page.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
         await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeEnabled();
+        await expectMiddleCenterVerticallyCentered(page, '桌面两副手牌调换阶段中央筹码与公共牌满载', {
+            allowSideBySideTokenPile: true,
+            requireTokenPile: true,
+        });
 
         const handSwapMetrics = await page.evaluate(() => {
             const readRect = (selector: string) => {
@@ -832,6 +871,8 @@ test.describe('The Gang 测试入口与代表态截图', () => {
                 handGroup,
                 actionDock,
                 cardRiverCount: document.querySelectorAll('[data-bgg-zone="card-river"] img').length,
+                tokenPileCurrentChipCount: document.querySelectorAll('[data-bgg-zone="token-pile-current-chip"]').length,
+                playerCurrentTokenCount: document.querySelectorAll('[data-bgg-zone="player-current-token"]').length,
                 handTopCount: document.querySelectorAll('[data-testid="the-gang-local-hand-top"] img').length,
                 handBottomCount: document.querySelectorAll('[data-testid="the-gang-local-hand-bottom"] img').length,
                 tokenOverlapsHand: intersects(tokenPile, handGroup),
@@ -840,6 +881,8 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             };
         });
         expect(handSwapMetrics.cardRiverCount).toBe(3);
+        expect(handSwapMetrics.tokenPileCurrentChipCount).toBe(playerCount);
+        expect(handSwapMetrics.playerCurrentTokenCount).toBe(playerCount);
         expect(handSwapMetrics.handTopCount).toBe(2);
         expect(handSwapMetrics.handBottomCount).toBe(2);
         expect(handSwapMetrics.tokenOverlapsHand).toBe(false);
@@ -856,9 +899,10 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await game.screenshot('桌面两副手牌手牌调换阶段已选择上下牌', testInfo);
 
         await page.getByTestId('the-gang-confirm-hand-swap').click();
-        await dispatchTheGangCommand(page, '1', 'CONFIRM_HAND_SWAP');
-        await dispatchTheGangCommand(page, '2', 'CONFIRM_HAND_SWAP');
-        await expectChipRound(page, '橙筹码');
+        for (let seatIndex = 1; seatIndex < playerCount; seatIndex += 1) {
+            await dispatchTheGangCommand(page, String(seatIndex), 'CONFIRM_HAND_SWAP');
+        }
+        await expectChipRoundForPlayerCount(page, '橙筹码', playerCount);
     });
 
     test('移动横屏从大厅创建 AI 房间后扩展选择不会被 AI 抢先锁定', async ({ game, page }, testInfo) => {

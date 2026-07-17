@@ -13,16 +13,28 @@ export class OptionalJwtAuthGuard extends JwtAuthGuard {
     }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest<{ headers?: { authorization?: string } }>();
+        const request = context.switchToHttp().getRequest<{
+            headers?: { authorization?: string };
+            user?: unknown;
+        }>();
         const authHeader = request.headers?.authorization;
 
         if (!authHeader) {
             return true;
         }
         if (!authHeader.startsWith('Bearer ')) {
-            throw new UnauthorizedException('登录凭证格式无效');
+            delete request.user;
+            return true;
         }
 
-        return super.canActivate(context);
+        try {
+            return await super.canActivate(context);
+        } catch (error) {
+            if (error instanceof UnauthorizedException) {
+                delete request.user;
+                return true;
+            }
+            throw error;
+        }
     }
 }

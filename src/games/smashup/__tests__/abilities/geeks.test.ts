@@ -12,6 +12,7 @@ import { SU_COMMANDS } from '../../domain/types';
 import {
     applyEvents,
     getPromptOptionsGenerator,
+    getPromptOptions,
     getPromptsBySourceId,
     getReactionPrompt,
     getReactionPromptOptionBySourceDefId,
@@ -922,6 +923,41 @@ describe('极客派系隐藏实现批', () => {
         expect(resolved.finalState.core.players['0'].vp).toBe(3);
         expect(resolved.finalState.core.players['0'].hand).toHaveLength(0);
         expect(resolved.finalState.core.players['0'].discard.map((card) => card.uid)).toContain('cosplay-1');
+    });
+
+    it('角色扮演会响应基地计分获得的 VP', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('cosplay-1', 'geeks_cosplay', 'action', '0')],
+                    vp: 0,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_a', [])],
+        });
+        const matchState = makeMatchState(core);
+        const result = postProcessSystemEvents(core, [{
+            type: SU_EVENTS.BASE_SCORED,
+            payload: {
+                baseIndex: 0,
+                baseDefId: 'base_a',
+                rankings: [{ playerId: '0', power: 5, vp: 2 }],
+            },
+            timestamp: 1000,
+        } as any], fixedRandom as any, matchState);
+
+        const reactionPrompt = getReactionPrompt(result.matchState!);
+        const reactionOption = getReactionPromptOptionBySourceDefId(result.matchState!, reactionPrompt, 'geeks_cosplay');
+        const reactionResolved = respondToPrompt(result.matchState!, reactionOption.id, '0', fixedRandom as any);
+        const prompt = getSimpleChoicePrompt(reactionResolved.finalState, 'geeks_cosplay');
+        const resolved = respondToPrompt(reactionResolved.finalState, getPromptOptions(prompt)[0].id, '0', fixedRandom as any);
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.VP_AWARDED,
+            payload: expect.objectContaining({ playerId: '0', amount: 1, reason: 'geeks_cosplay' }),
+        }));
+        expect(resolved.finalState.core.players['0'].vp).toBe(3);
     });
 
     it('角色扮演在你获得 VP 后可以选择跳过，跳过后不会额外加分且仍留在手里', () => {

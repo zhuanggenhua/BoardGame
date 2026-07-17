@@ -82,6 +82,7 @@ export const TestMatchRoom: React.FC = () => {
     const gameConfig = gameId ? getGameById(gameId) : null;
     const fixedTestPlayerId = searchParams.get('playerID');
     const shouldFollowCurrentTurnPlayer = !fixedTestPlayerId;
+    const shouldKeepBoardMountedOnTurnFollow = gameId === 'betrayal' && shouldFollowCurrentTurnPlayer;
     const gamePageDataAttributes = useMemo(
         () => getGamePageDataAttributes(gameId, gameConfig),
         [gameConfig, gameId],
@@ -337,6 +338,7 @@ export const TestMatchRoom: React.FC = () => {
                                         <GameHUD gameId={gameId} mode="test" />
                                         <BoardBridge
                                             board={WrappedBoard}
+                                            remountKey={shouldKeepBoardMountedOnTurnFollow ? false : undefined}
                                             loading={(
                                                 <LoadingScreen
                                                     anchor="container"

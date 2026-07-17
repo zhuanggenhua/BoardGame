@@ -788,13 +788,29 @@ const canPlayRollCardOutsideRollPhaseWithDiceResult = (
     state: DiceThroneCore,
     card: AbilityCard,
     phase: TurnPhase,
-): boolean => (
-    (card.timing === 'roll' || card.timing === 'instant')
-    && hasAnyDiceEffect(card)
-    && (phase === 'upkeep' || phase === 'income' || phase === 'main1' || phase === 'main2')
-    && state.pendingBonusDiceSettlement?.allowDiceModification === true
-    && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
-);
+): boolean => {
+    if (
+        (card.timing !== 'roll' && card.timing !== 'instant')
+        || !hasAnyDiceEffect(card)
+        || (phase !== 'upkeep' && phase !== 'income' && phase !== 'main1' && phase !== 'main2')
+    ) {
+        return false;
+    }
+
+    if (
+        state.pendingBonusDiceSettlement?.allowDiceModification === true
+        && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
+    ) {
+        return true;
+    }
+
+    return card.playCondition?.requireIsNotRoller === true
+        && card.playCondition.requireOpponentDiceExists === true
+        && card.playCondition.requireRollConfirmed === true
+        && state.rollConfirmed === true
+        && state.rollCount > 0
+        && state.dice.length > 0;
+};
 
 const isDiceRollPhase = (phase: TurnPhase): boolean => (
     phase === 'offensiveRoll'
@@ -951,8 +967,10 @@ const checkStandardCardPlay = (
 
     if (
         !responseWindowType
-        && (card.timing === 'roll' || card.timing === 'instant')
-        && hasAnyDiceEffect(card)
+        && (
+            (card.timing === 'roll' && hasAnyDiceEffect(card))
+            || (card.timing === 'instant' && hasExistingDiceToolEffect(card))
+        )
         && !isDiceRollPhase(phase)
         && !canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)
     ) {
@@ -983,6 +1001,16 @@ const checkStandardCardPlay = (
     const attackModifierFailureReason = getAttackModifierPlayFailureReason(state, playerId, card, phase);
     if (attackModifierFailureReason) {
         return { ok: false, reason: attackModifierFailureReason };
+    }
+
+    if (
+        !responseWindowType
+        && phase === 'offensiveRoll'
+        && card.id === 'card-flick'
+        && playerId !== getRollerId(state, phase)
+        && !state.pendingAttack?.sourceAbilityId
+    ) {
+        return { ok: false, reason: 'attackModifierRequiresSelectedAttack' };
     }
 
     if (card.playCondition) {
@@ -1110,6 +1138,13 @@ const checkResponseWindowCardPlay = (
             }
             const diceEffectTarget = getDiceEffectTarget(card);
             if (diceEffectTarget !== 'opponent' && diceEffectTarget !== 'any') {
+                return failResponseWindow();
+            }
+            if (
+                phase === 'offensiveRoll'
+                && card.id === 'card-flick'
+                && !state.pendingAttack?.sourceAbilityId
+            ) {
                 return failResponseWindow();
             }
             if (playerId === getRollerId(state, phase)) {
@@ -1395,6 +1430,28 @@ const hasAnyDiceEffect = (card: AbilityCard): boolean => {
         }
         
         return false;
+    });
+};
+
+const EXISTING_DICE_TOOL_CUSTOM_ACTION_IDS = new Set([
+    'modify-die-to-6',
+    'modify-die-copy',
+    'modify-die-any-1',
+    'modify-die-any-2',
+    'modify-die-adjust-1',
+    'reroll-opponent-die-1',
+    'reroll-die-2',
+    'reroll-die-5',
+]);
+
+const hasExistingDiceToolEffect = (card: AbilityCard): boolean => {
+    if (!card.effects || card.effects.length === 0) return false;
+
+    return card.effects.some(effect => {
+        const action = effect.action;
+        return action?.type === 'custom'
+            && !!action.customActionId
+            && EXISTING_DICE_TOOL_CUSTOM_ACTION_IDS.has(action.customActionId);
     });
 };
 

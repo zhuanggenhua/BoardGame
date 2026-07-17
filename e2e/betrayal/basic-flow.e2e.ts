@@ -31,6 +31,9 @@ const MOBILE_CHARACTER_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-移动端�
 const MOBILE_SCENARIO_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/09a-山屋惊魂-移动端横屏-剧本弹窗入口.png`;
 const MOBILE_SCENARIO_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/09b-山屋惊魂-移动端横屏-书本式剧本阅读首页.png`;
 const MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/09c-山屋惊魂-移动端横屏-书本式剧本阅读末页.png`;
+const TOKEN_DETAIL_PANEL_SCREENSHOT = `${EVIDENCE_DIR}/10-山屋惊魂-队友面板详情不切视角.png`;
+const TOKEN_DETAIL_MAP_SCREENSHOT = `${EVIDENCE_DIR}/11-山屋惊魂-地图token详情图像一致.png`;
+const TURN_HANDOFF_NO_FOLLOW_SCREENSHOT = `${EVIDENCE_DIR}/12-山屋惊魂-换行动者不自动跟踪视角.png`;
 
 test.describe('山屋惊魂基本流程', () => {
     test('桌面低高视口角色详情必须能滚动到特性', async ({ page, context }) => {
@@ -274,5 +277,84 @@ test.describe('山屋惊魂基本流程', () => {
         await saveScreenshot(page, MOBILE_SCENARIO_DETAIL_BOTTOM_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-basic-flow-mobile-character-select', diagnostics }]);
+    });
+
+    test('真实页面队友详情与地图token图像一致，换行动者不自动跟踪视角', async ({ page, context }) => {
+        test.setTimeout(120000);
+        await initBetrayalContext(context);
+        const diagnostics = attachPageDiagnostics(page, 'betrayal-token-detail-no-camera-follow');
+
+        await page.setViewportSize({ width: 1600, height: 900 });
+        await warmBetrayalFrontend(context);
+        await page.goto('/play/betrayal?players=3&seat0=human&seat1=human&seat2=human', { waitUntil: 'domcontentloaded' });
+        await waitForBetrayalPageReady(page);
+
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        const teammateOne = core.otherExplorers.find((explorer) => explorer.playerId === '1');
+        const teammateTwo = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+        if (!teammateOne || !teammateTwo) {
+            throw new Error('山屋队友详情 E2E 缺少 1/2 号玩家');
+        }
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'entrance-hall',
+        };
+        core.otherExplorers = [
+            { ...teammateOne, roomId: 'basement-landing' },
+            { ...teammateTwo, roomId: 'upper-landing' },
+        ];
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.movesRemaining = 0;
+        core.recommendedAction = 'endTurn';
+
+        await injectCore(page, core);
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-room-floor-ground')).toHaveAttribute('aria-pressed', 'true');
+
+        const teammatePanel = page.getByTestId('betrayal-bottom-teammate-1');
+        const teammatePanelToken = page.getByTestId('betrayal-bottom-teammate-token-1');
+        await expect(teammatePanel).toBeVisible();
+        await expect(teammatePanelToken).toBeVisible();
+        const panelAsset = await teammatePanel.getAttribute('data-token-asset');
+        await expect(teammatePanelToken).toHaveAttribute('data-token-asset', panelAsset ?? '');
+
+        await teammatePanel.click();
+        const panelDetail = page.getByTestId('betrayal-explorer-detail-dialog-1');
+        await expect(panelDetail).toBeVisible();
+        await expect(panelDetail).toHaveAttribute('data-token-asset', panelAsset ?? '');
+        await expect(page.getByTestId('betrayal-explorer-detail-token-1')).toHaveAttribute('data-token-asset', panelAsset ?? '');
+        await expect(page.getByTestId('betrayal-room-floor-ground')).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.getByTestId('betrayal-room-shell-basement-landing')).toHaveCount(0);
+        await saveScreenshot(page, TOKEN_DETAIL_PANEL_SCREENSHOT);
+        await page.getByTestId('betrayal-explorer-detail-close').click();
+        await expect(panelDetail).toBeHidden();
+
+        await page.getByTestId('betrayal-room-floor-up').click();
+        await expect(page.getByTestId('betrayal-room-floor-upper')).toHaveAttribute('aria-pressed', 'true');
+        const mapToken = page.getByTestId('betrayal-room-occupant-upper-landing-2');
+        const mapFigureToken = page.getByTestId('betrayal-explorer-figure-token-2');
+        await expect(mapToken).toBeVisible();
+        await expect(mapFigureToken).toBeVisible();
+        const mapAsset = await mapFigureToken.getAttribute('data-token-asset');
+        await mapToken.click();
+        const mapDetail = page.getByTestId('betrayal-explorer-detail-dialog-2');
+        await expect(mapDetail).toBeVisible();
+        await expect(mapDetail).toHaveAttribute('data-token-asset', mapAsset ?? '');
+        await expect(page.getByTestId('betrayal-explorer-detail-token-2')).toHaveAttribute('data-token-asset', mapAsset ?? '');
+        await expect(page.getByTestId('betrayal-room-floor-upper')).toHaveAttribute('aria-pressed', 'true');
+        await saveScreenshot(page, TOKEN_DETAIL_MAP_SCREENSHOT);
+        await page.getByTestId('betrayal-explorer-detail-close').click();
+        await expect(mapDetail).toBeHidden();
+
+        await page.getByTestId('betrayal-action-endTurn').click();
+        await expect(page.getByText('当前回合')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-floor-upper')).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.getByTestId('betrayal-room-shell-upper-landing')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-shell-basement-landing')).toHaveCount(0);
+        await saveScreenshot(page, TURN_HANDOFF_NO_FOLLOW_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-token-detail-no-camera-follow', diagnostics }]);
     });
 });

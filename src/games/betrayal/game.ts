@@ -3336,6 +3336,9 @@ function formatEffectLabel(effect: PossessionUseEffectProfile): string {
 }
 
 function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boolean; cardId?: string } = {}): BetrayalRecommendedAction {
+    if (core.turnEndedByDiscovery) {
+        return 'endTurn';
+    }
     if (core.phase === 'haunt') {
         if (core.scenarioRuntime.jackSpiritReleased && core.scenarioRuntime.jackSpiritRoomId === core.activeRoomId) {
             return core.scenarioRuntime.exorcismCircleRoomIds.length >= 2 ? 'use' : 'move';

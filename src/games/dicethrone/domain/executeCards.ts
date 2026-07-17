@@ -194,8 +194,6 @@ export function executeCardCommand(
                 sourceCommandType: command.type,
                 timestamp,
             };
-            events.push(event);
-            
             // 通过效果系统执行卡牌效果（数据驱动）
             const selectedOpponentId = getSelectedCombatOpponentId(state, actingPlayerId, phase);
             const opponentId = selectedOpponentId
@@ -214,10 +212,11 @@ export function executeCardCommand(
                 && needsSelectedOpponent
                 && hasPendingUnresolvedTarget
                 && (phase === 'targetingRoll' || phase === 'offensiveRoll');
+            const effectEvents: DiceThroneEvent[] = [];
             if (card.effects && card.effects.length > 0) {
                 if (deferAttackModifierUntilTargetResolved) {
                     const queuedIds = state.pendingAttack?.deferredAttackModifierCardIds ?? [];
-                    events.push({
+                    effectEvents.push({
                         type: 'PENDING_ATTACK_UPDATED',
                         payload: {
                             attackerId: actingPlayerId,
@@ -247,7 +246,7 @@ export function executeCardCommand(
                         sourceCommandType: command.type,
                         timestamp,
                     };
-                    events.push(interactionEvent);
+                    effectEvents.push(interactionEvent);
                 } else {
                     const effectCtx: EffectContext = {
                         attackerId: actingPlayerId,
@@ -257,9 +256,16 @@ export function executeCardCommand(
                         damageDealt: 0,
                         timestamp,
                     };
-                    const effectEvents = resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random });
-                    events.push(...effectEvents);
+                    effectEvents.push(...resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random }));
                 }
+            }
+            if (
+                matchState.sys?.responseWindow?.current
+                && effectEvents.some((effectEvent) => effectEvent.type === 'INTERACTION_REQUESTED')
+            ) {
+                events.push(...effectEvents, event);
+            } else {
+                events.push(event, ...effectEvents);
             }
             break;
         }

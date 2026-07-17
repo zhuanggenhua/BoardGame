@@ -83,6 +83,8 @@ export interface AbilityContext {
   targetUnit?: UnitInstance;
   /** 攻击目标位置 */
   targetPosition?: CellCoord;
+  /** 攻击目标在攻击声明时的归属（单位或建筑均可） */
+  targetOwner?: PlayerId;
   /** 被消灭的单位（如果是死亡相关触发） */
   victimUnit?: UnitInstance;
   /** 被消灭单位的位置 */
@@ -630,6 +632,9 @@ export function resolveAbilityEffects(
     abilityName: ability.name,
     sourceUnitId: ctx.sourceUnit.instanceId,
     sourcePosition: ctx.sourcePosition,
+    targetPosition: ctx.targetPosition,
+    targetUnitId: ctx.targetUnit?.instanceId,
+    targetOwner: ctx.targetOwner,
     skipUsageCount: !consumeAutomaticUsage,
   }, ctx.timestamp));
 

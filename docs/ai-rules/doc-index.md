@@ -19,6 +19,7 @@
 | **本地联机测试** (单人同步调试) | `docs/test-mode.md` | 测试模式开关及其对视角的影响 |
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
 | **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `.codex/skill/feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
+| **修改反馈提交入口 / 登录态 / 匿名提交** (`POST /feedback`、反馈弹窗、可选 JWT、失效 token) | `docs/ai-rules/feedback-system.md` | 玩家提交反馈是公共通道；登录只用于绑定用户和反馈积分，缺失/失效登录态必须按匿名提交继续，不得卡住反馈 |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
 | **修规则 bug / 规则回归 / 等级效果不一致** (卡牌、技能、Token、状态、阶段、伤害、资源、升级版/基础版差异) | `.codex/skill/rule-bug-fix-workflow/SKILL.md` + `docs/ai-rules/rule-contract-audit.md` + `docs/ai-rules/regression-closeout.md` | 第一门禁是判断已有录入合同是否被实现正确消费；只有合同缺失、未锁或与反馈冲突才回图面/规则源；修复必须同步回写中文/英文描述、静态定义、测试和 evidence；回归收口必须说明同类扩审与漏审原因 |
 | **从 TTS / 外部脚本 / 旧平台实现还原规则或 UI** (Lua、Workshop JSON、解包资产、旧脚本、配置按钮、自动提示、规则变体) | `docs/ai-rules/rule-contract-audit.md` § 外部脚本 / TTS 还原零猜测门禁 + `docs/ai-rules/ui-change-gates.md` | 先建脚本锚点、资产/UI锚点、当前实现、差异结论、状态矩阵；没有可定位证据只能标 `blocked/disputed`，不得凭“应该/看起来像/肯定有”实装成正式规则或 UI；涉及用户可见 UI 时仍必须真实入口 E2E 和截图 |

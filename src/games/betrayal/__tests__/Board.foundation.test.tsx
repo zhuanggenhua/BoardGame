@@ -10,6 +10,7 @@ import Board from '../Board';
 import {
     BETRAYAL_COMMANDS,
     BetrayalDomain,
+    EXPLORER_CATALOG,
     createBetrayalCharacterSelectCore,
     createBetrayalFoundationCore,
 } from '../game';
@@ -304,6 +305,36 @@ describe('Betrayal Board foundation', () => {
         expect(desktopTeammatePanel).toHaveAttribute('data-player-id', teammatePanel.getAttribute('data-player-id')!);
         expect(desktopTeammatePanel).toHaveAttribute('data-explorer-id', teammatePanel.getAttribute('data-explorer-id')!);
         expect(desktopTeammatePanel).toHaveAttribute('data-token-asset', teammatePanel.getAttribute('data-token-asset')!);
+    });
+
+    it('探索者棋子素材不使用眩晕或化猫这类错误 token，并支持查看详情', () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? { ...explorer, roomId: core.currentExplorer.roomId }
+                : explorer
+        ));
+
+        renderBoard(core, {
+            playerID: '0',
+            matchData: defaultMatchData,
+        });
+
+        const rebecca = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === 'rebecca-allen')!;
+        const darryl = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === 'darryl-highla')!;
+        expect(rebecca.tokenAsset).toBeUndefined();
+        expect(darryl.tokenAsset).toBeUndefined();
+        expect(screen.getByTestId('betrayal-bottom-teammate-1')).toHaveAttribute('data-token-asset', rebecca.portraitAsset);
+        expect(screen.getByTestId('betrayal-bottom-teammate-2')).toHaveAttribute('data-token-asset', darryl.portraitAsset);
+
+        fireEvent.click(screen.getByTestId('betrayal-bottom-teammate-1'));
+        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveTextContent('队友一');
+        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveAttribute('data-token-asset', rebecca.portraitAsset);
+        fireEvent.click(screen.getByTestId('betrayal-explorer-detail-close'));
+
+        fireEvent.click(screen.getByTestId(`betrayal-room-occupant-${core.currentExplorer.roomId}-1`));
+        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveTextContent('丽贝卡·艾伦博士');
+        expect(screen.getByTestId('betrayal-explorer-detail-token-1')).toHaveAttribute('data-token-asset', rebecca.portraitAsset);
     });
 
     it('局内首剧本查阅打开当前剧本书页并支持翻页', () => {
@@ -832,6 +863,45 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('没有抽取或结算事件卡');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('圣符埋葬');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用雕像跳过了事件：阴影扑面');
+    });
+
+    it('探索只在进入选择态后高亮未知房间，并在发现结束回合后置灰', async () => {
+        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core.drawOrder = ['item'];
+        core.roomDiscoveryOrderByFloor.ground = [
+            BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'armory')!,
+        ];
+        core.possessionOrderByKind.item = [
+            BETRAYAL_DISCOVERY_POOLS.possessions.item.find((card) => card.id === 'hunting-knife')!,
+        ];
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: 'hallway',
+            inventory: [],
+        };
+        core.activeRoomId = 'hallway';
+        core.currentExplorerInventory = [];
+
+        render(
+            <HarnessBoard
+                initialCore={core}
+                matchData={defaultMatchData}
+            />,
+        );
+
+        expect(screen.queryByTestId('betrayal-room-explore-target-ground-north')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-action-explore')).not.toBeDisabled();
+
+        fireEvent.click(screen.getByTestId('betrayal-action-explore'));
+        expect(screen.getByTestId('betrayal-room-explore-target-ground-north')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-action-explore')).toBeDisabled();
+        });
+        expect(screen.queryByTestId('betrayal-room-explore-target-ground-north')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('探索到器械库');
     });
 
     it('器械库会在真实页面展示发现结果并把武器放入持有区', () => {

@@ -10,6 +10,7 @@ import {
 import { THE_GANG_MANIFEST } from '../manifest';
 import { audioConfig, engineConfig } from '../game';
 import { THE_GANG_AUDIO_CONFIG } from '../audio.config';
+import { THE_GANG_CHALLENGES } from '../domain/expansions';
 
 const readAssetManifest = (path: string) => JSON.parse(readFileSync(path, 'utf8')) as {
     files?: Record<string, unknown>;
@@ -60,14 +61,17 @@ describe('The Gang manifest', () => {
         const gameAssetManifest = readAssetManifest('public/assets/i18n/zh-CN/the-gang/assets-manifest.json');
         const rootAssetManifest = readAssetManifest('public/assets/i18n/assets-manifest.json');
 
-        expect(gameAssetManifest.files?.['rule-assets/challenges/compressed/quick-access']).toBeDefined();
-        expect(gameAssetManifest.files?.['rule-assets/challenges/compressed/master-key']).toBeDefined();
+        for (const challengeId of Object.keys(THE_GANG_CHALLENGES)) {
+            expect(gameAssetManifest.files?.[`rule-assets/challenges/compressed/${challengeId}`]).toBeDefined();
+        }
         expect(gameAssetManifest.files?.['rule-assets/tools/compressed/burner-phone']).toBeDefined();
         expect(gameAssetManifest.files?.['rule-assets/tools/compressed/flashlight']).toBeDefined();
         expect(gameAssetManifest.files?.['rule-assets/specialists/compressed/mastermind']).toBeDefined();
         expect(gameAssetManifest.files?.['rule-assets/surfaces/compressed/challenge-zone']).toBeDefined();
 
-        expect(rootAssetManifest.files?.['zh-CN/the-gang/rule-assets/challenges/compressed/quick-access']).toBeDefined();
+        for (const challengeId of Object.keys(THE_GANG_CHALLENGES)) {
+            expect(rootAssetManifest.files?.[`zh-CN/the-gang/rule-assets/challenges/compressed/${challengeId}`]).toBeDefined();
+        }
         expect(rootAssetManifest.files?.['zh-CN/the-gang/rule-assets/tools/compressed/burner-phone']).toBeDefined();
         expect(rootAssetManifest.files?.['zh-CN/the-gang/rule-assets/specialists/compressed/mastermind']).toBeDefined();
     });

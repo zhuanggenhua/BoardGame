@@ -779,6 +779,10 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     html[data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"] [data-testid="fab-menu"] {
         display: none !important;
     }
+
+    html[data-game-id="betrayal"][data-betrayal-blocking-roll="true"] [data-testid="fab-menu"] {
+        display: none !important;
+    }
 }
 /* 绉诲姩绔Е鎽镐紭鍖?*/
 @media (max-width: 1023px) {

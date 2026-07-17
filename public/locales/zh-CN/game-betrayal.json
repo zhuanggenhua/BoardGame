@@ -328,7 +328,14 @@
       "sameRoom": "同房间",
       "tradeTarget": "交易对象",
       "knowledgeOfJack": "掌握杰克线索",
-      "corpse": "尸体"
+      "corpse": "尸体",
+      "detailsTitle": "探索者详情",
+      "detailsAria": "{{player}} 详情",
+      "closeDetails": "关闭详情",
+      "ability": "特性",
+      "inventory": "持有物",
+      "emptyInventory": "暂无持有物",
+      "detailSeparator": "："
     },
     "summary": {
       "objective": "当前目标",

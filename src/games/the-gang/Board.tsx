@@ -762,7 +762,6 @@ function RulesConfigPanel({
                                                         active ? 'brightness-110' : 'group-hover:brightness-110',
                                                     ].join(' ')}
                                                     draggable={false}
-                                                    placeholder={false}
                                                 />
                                                 {active && (
                                                     <span className="absolute right-3 top-3 rounded-full bg-emerald-950/92 px-2 py-0.5 text-[0.55rem] font-black tracking-[0.1em] text-amber-100 shadow-[0_0.35rem_0.8rem_rgba(0,0,0,0.35)]">
@@ -1930,7 +1929,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                     <section
                         className={[
                             'pointer-events-none relative z-20 flex min-h-0 flex-1 justify-center overflow-visible',
-                            handSwapLayout ? 'items-start pt-1 lg:pt-2' : 'items-center',
+                            'items-center',
                         ].join(' ')}
                         data-tutorial-id="the-gang-round-panel"
                         data-bgg-zone="middle-zone"
@@ -1955,17 +1954,31 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                 data-bgg-zone="token-pile"
                             >
                                 <LayoutContractBadge />
-                                {[1, 2, 3, 4].map((round) => (
-                                    <RoundChipColumn
-                                        key={round}
-                                        round={round}
-                                        chipValues={chipValues}
-                                        ownerByChip={ownerByChip}
-                                        selectedChip={core.currentRoundChips[localPlayerId]}
-                                        onTakeChip={takeChip}
-                                        active={core.phase === 'chip-selection' && core.round === round}
-                                    />
-                                ))}
+                                {handSwapLayout
+                                    ? core.playerIds.map((chipOwnerId) => {
+                                            const chip = core.currentRoundChips[chipOwnerId];
+                                            if (chip === undefined) return null;
+                                            return (
+                                                <ChipDisc
+                                                    key={`hand-swap-current-chip-${chipOwnerId}-${chip}`}
+                                                    round={core.round}
+                                                    value={chip}
+                                                    size="md"
+                                                    zone="token-pile-current-chip"
+                                                />
+                                            );
+                                        })
+                                    : [1, 2, 3, 4].map((round) => (
+                                            <RoundChipColumn
+                                                key={round}
+                                                round={round}
+                                                chipValues={chipValues}
+                                                ownerByChip={ownerByChip}
+                                                selectedChip={core.currentRoundChips[localPlayerId]}
+                                                onTakeChip={takeChip}
+                                                active={core.phase === 'chip-selection' && core.round === round}
+                                            />
+                                        ))}
                             </div>
 
                             <div

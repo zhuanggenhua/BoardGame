@@ -305,9 +305,7 @@ export function registerCthulhuAbilities(): void {
         playerContext: 'sourceController',
     });
     // 深化目标：回合结束时条件获VP
-    registerTrigger('cthulhu_furthering_the_cause', 'onTurnEnd', cthulhuFurtheringTheCauseTrigger, {
-        playerContext: 'sourceController',
-    });
+    registerTrigger('cthulhu_furthering_the_cause', 'onTurnEnd', cthulhuFurtheringTheCauseTrigger);
     // 天选之人：基地计分前抽疑狂卡?2力量
     registerTrigger('cthulhu_chosen', 'beforeScoring', cthulhuChosenBeforeScoringPerInstance, {
         perInstance: true,

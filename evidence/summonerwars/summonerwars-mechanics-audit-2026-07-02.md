@@ -1606,7 +1606,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 
 | 对象 | 中文承载卡 | 原疑点 | 最小验证结果 | 回写状态 |
 | --- | --- | --- | --- | --- |
-| `mind_transmission` | 古尔壮 | “攻击敌方卡牌后”缺显式实现证据，需确认敌方建筑与非敌方目标 | 攻击敌方建筑后生成心灵传念选择；普通非治疗单位攻击友方目标被攻击合法性拦截且无入口 | `match-with-trigger-proof` |
+| `mind_transmission` | 古尔壮 | “攻击敌方卡牌后”缺显式实现证据，需确认敌方建筑与非敌方目标 | 攻击敌方建筑后生成心灵传念选择；普通攻击友方目标可结算，但因不属于“敌方卡牌”不生成传念入口 | `match-with-trigger-proof` |
 | `high_telekinesis` | 卡拉 | 目标过滤只显式排除召唤师，需确认是否会纳入建筑/非士兵英雄 | 建筑目标验证失败；系统候选只遍历 `cell.unit`，建筑是 `BoardStructure`；`UnitClass` 只有召唤师/英雄/士兵 | `match-with-type-proof` |
 | `telekinesis` | 清风法师 | 同上 | 建筑目标验证失败；系统候选只遍历 `cell.unit`，建筑是 `BoardStructure`；`UnitClass` 只有召唤师/英雄/士兵 | `match-with-type-proof` |
 
@@ -2763,7 +2763,7 @@ node scripts/infra/run-e2e-single.mjs default e2e/summonerwars/summonerwars-pala
 - 当前矩阵状态：8 个正式 `implementation-diff` 矩阵共 68 行正式实现对象，非 L4 行为 0；P0 四个专项对象已由 `p0-l4-special-audit-matrix-2026-07-02.md` 和本文件第 143-148 节覆盖。
 - 验证命令：`NODE_OPTIONS=--max-old-space-size=4096 node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/abilities-barbaric.test.ts src/games/summonerwars/__tests__/abilities-goblin.test.ts src/games/summonerwars/__tests__/abilities-necromancer-execute.test.ts src/games/summonerwars/__tests__/abilities-paladin.test.ts src/games/summonerwars/__tests__/abilities-trickster.test.ts src/games/summonerwars/__tests__/entity-chain-integrity.test.ts src/games/summonerwars/__tests__/interaction-chain-comprehensive.test.ts src/games/summonerwars/__tests__/useGameEvents.test.ts --configLoader native`。
 - 验证结果：8 个测试文件通过，496 passed。
-- 运行时提示：测试输出中出现的 “无法攻击该目标” 和 “该单位本回合已移动” 是负向断言用例预期触发的验证失败日志，对应友方目标不可攻击、准备后不能再移动，不是测试失败。
+- 运行时提示：测试输出中出现的 “无法攻击该目标” 和 “该单位本回合已移动” 是负向断言用例预期触发的验证失败日志；2026-07-17 起“友方目标不可攻击”旧口径已失效，友方攻击合法性需按当前规则合同单独判断。
 - 当前续跑结论：现有召唤师战争实现矩阵和本轮相关测试已经对齐；普通继续不再从已清零的 implementation 矩阵、P0 乐观/重连缺口、B2 `prepare/inspire` 或 B4 `high_telekinesis_instead` 续跑。后续只有出现具体真实页面症状、事件回放症状、UI 展示分叉、官方规则来源冲突或新的合同字段缺口时，才按对象降级或另开专项。
 
 ## 150. C84 残余队列续跑入口收口（2026-07-03）

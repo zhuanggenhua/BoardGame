@@ -44,6 +44,7 @@ export interface DiceBoxStyleProfile {
     settledLayout?: Array<{ x: number; y: number; yaw: number }>;
     compactSettledDice?: boolean;
     settledFaceForwardAnimationMs?: number;
+    settledScreenZScale?: number;
 }
 
 export interface DiceBoxDieSkin {
@@ -1049,6 +1050,7 @@ export class DiceBoxThreeEngine {
         if (!screenSlots) return false;
 
         const baseScale = this.styleProfile.baseScale ?? DEFAULT_DICE_BOX_STYLE_PROFILE.baseScale ?? 90;
+        const settledScreenZScale = this.styleProfile.settledScreenZScale ?? 1.56;
         const sortedEntries = this.box.diceList
             .map((die, index) => {
                 const dieWithBody = die as DiceBoxDieWithBody;
@@ -1069,7 +1071,7 @@ export class DiceBoxThreeEngine {
 
         sortedEntries.forEach((entry, sortedIndex) => {
             const slot = screenSlots[sortedIndex] ?? { x: 0.5, y: 0.5, yaw: 0 };
-            const z = baseScale * 1.56;
+            const z = baseScale * settledScreenZScale;
             const target = this.getWorldPointAtScreenFraction(slot.x, slot.y, z);
             const settledQuaternion = new Quaternion()
                 .setFromAxisAngle(WORLD_UP, slot.yaw)

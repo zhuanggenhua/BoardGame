@@ -784,7 +784,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
     expect(archerAfterDuplicate?.extraAttacks).toBe(1);
   });
 
-  it('[mind_transmission] 非治疗单位不能攻击友方目标，因此不会生成传念入口', () => {
+  it('[mind_transmission] 普通攻击友方目标可结算，但不满足攻击敌方卡牌触发前提', () => {
     resetInstanceCounter();
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'trickster', faction1: 'necromancer' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
@@ -815,8 +815,9 @@ describe('SummonerWars 系统交互桥接回归', () => {
       payload: { attacker: gurzhuangPos, target: friendlyTargetPos },
     });
 
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
     expect(getSwCurrentType(result.state)).toBeUndefined();
+    expect(result.state.core.players['0'].hasAttackedEnemy).toBe(false);
   });
 
   it('[withdraw] DECLARE_ATTACK 后应排出费用交互，并可完成两步撤退链', () => {

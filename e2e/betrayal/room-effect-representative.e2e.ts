@@ -722,7 +722,12 @@ test.describe('山屋惊魂房间效果代表链', () => {
 
         const mobileRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(mobileRollPanel).toBeVisible({ timeout: 30000 });
+        await expect(mobileRollPanel).toHaveAttribute('data-roll-panel-style', 'mobile-landscape-open-dock');
         await expect(mobileRollPanel).toContainText('倒塌房间');
+        await expect(page.getByTestId('betrayal-mobile-action-rail')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-room-floor-switcher')).toBeHidden();
+        await expect(page.locator('html')).toHaveAttribute('data-betrayal-blocking-roll', 'true');
+        await expect(page.getByTestId('fab-menu')).toBeHidden();
         await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '3');
         await waitForPhysicalDiceSettled(mobileRollPanel);
         await expectPhysicalDiceSeparated(mobileRollPanel, {
@@ -730,6 +735,166 @@ test.describe('山屋惊魂房间效果代表链', () => {
             minDieVisualSize: 48,
             minCanvasEdgeMargin: 12,
         });
+        await expect(
+            mobileRollPanel.locator('[data-testid^="betrayal-house-dice-readable-face-"]'),
+        ).toHaveText(['0', '0', '0']);
+        const mobileRollGeometry = await mobileRollPanel.evaluate((panel) => {
+            const rectOf = (selector: string) => {
+                const element = panel.querySelector(selector);
+                if (!element) {
+                    throw new Error(`${selector} is missing`);
+                }
+                const rect = element.getBoundingClientRect();
+                return {
+                    left: rect.left,
+                    right: rect.right,
+                    top: rect.top,
+                    bottom: rect.bottom,
+                    width: rect.width,
+                    height: rect.height,
+                    centerX: rect.left + rect.width / 2,
+                    centerY: rect.top + rect.height / 2,
+                };
+            };
+            type DiceLayout = {
+                x: number;
+                y: number;
+                width: number;
+                height: number;
+                visualWidth?: number;
+                visualHeight?: number;
+            };
+            type DiceDebugSnapshot = {
+                dice?: Array<{ layout?: DiceLayout | null }>;
+                canvas?: { clientWidth?: number; clientHeight?: number } | null;
+            };
+            const diceVisualUnionOf = () => {
+                const debugRegistry =
+                    (
+                        window as typeof window & {
+                            __diceBoxThreeDebug?: Record<string, () => DiceDebugSnapshot | null>;
+                        }
+                    ).__diceBoxThreeDebug ?? {};
+                const canvases = Array.from(panel.querySelectorAll('canvas')).filter(
+                    (canvas): canvas is HTMLCanvasElement => canvas instanceof HTMLCanvasElement,
+                );
+                const group = panel.querySelector(
+                    '[data-testid="betrayal-house-dice-3d-group"]',
+                ) as HTMLElement | null;
+                const activeCanvas =
+                    canvases.find((canvas) => {
+                        const testId = canvas.dataset.testid;
+                        return Boolean(testId && typeof debugRegistry[testId] === 'function');
+                    }) ??
+                    canvases[0] ??
+                    null;
+                const activeCanvasTestId = activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+                const snapshot = activeCanvasTestId
+                    ? (debugRegistry[activeCanvasTestId]?.() ?? null)
+                    : null;
+                if (!activeCanvas || !snapshot) {
+                    throw new Error('山屋骰盘缺少真实 Three.js 投影快照，不能判断视觉间距');
+                }
+                const canvasRect = activeCanvas.getBoundingClientRect();
+                const canvasClientWidth = snapshot.canvas?.clientWidth ?? activeCanvas.clientWidth;
+                const canvasClientHeight = snapshot.canvas?.clientHeight ?? activeCanvas.clientHeight;
+                const displayScaleX = canvasClientWidth > 0 ? canvasRect.width / canvasClientWidth : 1;
+                const displayScaleY = canvasClientHeight > 0 ? canvasRect.height / canvasClientHeight : 1;
+                const layouts = (snapshot.dice ?? [])
+                    .map((die) => die.layout)
+                    .filter(
+                        (layout): layout is DiceLayout =>
+                            Boolean(layout) &&
+                            Number.isFinite(layout.x) &&
+                            Number.isFinite(layout.y) &&
+                            Number.isFinite(layout.width) &&
+                            Number.isFinite(layout.height),
+                    );
+                if (layouts.length === 0) {
+                    throw new Error('山屋骰盘没有可见骰子的真实投影，不能判断视觉间距');
+                }
+                const bounds = layouts.reduce(
+                    (acc, layout) => {
+                        const width = layout.visualWidth ?? layout.width;
+                        const height = layout.visualHeight ?? layout.height;
+                        const left = canvasRect.left + (layout.x - width / 2) * displayScaleX;
+                        const right = canvasRect.left + (layout.x + width / 2) * displayScaleX;
+                        const top = canvasRect.top + (layout.y - height / 2) * displayScaleY;
+                        const bottom = canvasRect.top + (layout.y + height / 2) * displayScaleY;
+                        return {
+                            left: Math.min(acc.left, left),
+                            right: Math.max(acc.right, right),
+                            top: Math.min(acc.top, top),
+                            bottom: Math.max(acc.bottom, bottom),
+                        };
+                    },
+                    {
+                        left: Number.POSITIVE_INFINITY,
+                        right: Number.NEGATIVE_INFINITY,
+                        top: Number.POSITIVE_INFINITY,
+                        bottom: Number.NEGATIVE_INFINITY,
+                    },
+                );
+                return {
+                    ...bounds,
+                    width: bounds.right - bounds.left,
+                    height: bounds.bottom - bounds.top,
+                    centerX: (bounds.left + bounds.right) / 2,
+                    centerY: (bounds.top + bounds.bottom) / 2,
+                };
+            };
+            const panelRect = panel.getBoundingClientRect();
+            const dice = rectOf('[data-testid="betrayal-house-dice-3d-group"]');
+            const diceVisualUnion = diceVisualUnionOf();
+            const result = rectOf('[data-testid="betrayal-recent-roll-result-stage"]');
+            const button = rectOf('[data-testid="betrayal-roll-continue"]');
+            return {
+                panel: {
+                    left: panelRect.left,
+                    right: panelRect.right,
+                    top: panelRect.top,
+                    bottom: panelRect.bottom,
+                    width: panelRect.width,
+                    height: panelRect.height,
+                    centerX: panelRect.left + panelRect.width / 2,
+                    centerY: panelRect.top + panelRect.height / 2,
+                },
+                dice,
+                diceVisualUnion,
+                result,
+                button,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+            };
+        });
+        expect(
+            mobileRollGeometry.panel.width,
+            '移动端投骰主承接不应撑满整屏宽度',
+        ).toBeLessThanOrEqual(mobileRollGeometry.viewportWidth * 0.9);
+        expect(
+            mobileRollGeometry.panel.height,
+            '移动端投骰主承接不应占据整屏高度',
+        ).toBeLessThanOrEqual(mobileRollGeometry.viewportHeight * 0.62);
+        expect(
+            mobileRollGeometry.result.left,
+            '移动端结算信息应在骰盘右侧同组承接，而不是掉到底部远处',
+        ).toBeGreaterThan(mobileRollGeometry.diceVisualUnion.centerX);
+        expect(
+            Math.abs(mobileRollGeometry.result.left - mobileRollGeometry.diceVisualUnion.right),
+            '移动端真实骰子和结算信息距离不能脱节',
+        ).toBeLessThanOrEqual(56);
+        expect(
+            Math.abs(mobileRollGeometry.result.centerY - mobileRollGeometry.diceVisualUnion.centerY),
+            '移动端真实骰子和结算信息应在同一个视觉带内',
+        ).toBeLessThanOrEqual(72);
+        expect(
+            mobileRollGeometry.button.left,
+            '移动端关闭按钮应跟随结算信息同栏，而不是漂到右下角',
+        ).toBeGreaterThanOrEqual(mobileRollGeometry.result.left - 1);
+        expect(
+            mobileRollGeometry.button.right,
+            '移动端关闭按钮不应越出结算信息栏',
+        ).toBeLessThanOrEqual(mobileRollGeometry.result.right + 1);
         await saveScreenshot(page, COLLAPSED_ROOM_MOBILE_DICE_SCREENSHOT);
 
         await page.getByTestId('betrayal-roll-continue').click();
@@ -745,6 +910,9 @@ test.describe('山屋惊魂房间效果代表链', () => {
         });
 
         await expect(page.getByTestId('betrayal-mobile-action-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-floor-switcher')).toBeVisible();
+        await expect(page.locator('html')).not.toHaveAttribute('data-betrayal-blocking-roll');
+        await expect(page.getByTestId('fab-menu')).toBeVisible();
         await expect(page.getByTestId('betrayal-mobile-dock-endTurn')).toBeVisible();
         await saveScreenshot(page, COLLAPSED_ROOM_MOBILE_SETTLED_SCREENSHOT);
 

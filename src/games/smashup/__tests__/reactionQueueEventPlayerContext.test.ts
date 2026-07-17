@@ -7899,7 +7899,7 @@ describe('reaction queue: preserves event player context', () => {
         expect(prompt?.data?.sourceId).toBe('trickster_flame_trap_pod_bp');
     });
 
-    it('sourceController queued onTurnEnd trigger 仍应只在拥有者回合结束让 Furthering the Cause 给拥有者 1 VP', () => {
+    it('深化目标应在任意玩家回合结束检查本回合被消灭的其他玩家随从，并给控制者 1 VP', () => {
         const baseCore = makeState({
             turnOrder: ['0', '1'],
             players: {
@@ -7927,7 +7927,29 @@ describe('reaction queue: preserves event player context', () => {
             random: defaultTestRandom,
             now: 46,
         }) as any;
-        expect(opponentQueued).toBeUndefined();
+        expect(opponentQueued?.payload?.triggers?.[0]?.sourceDefId).toBe('cthulhu_furthering_the_cause');
+        expect(opponentQueued?.payload?.triggers?.[0]?.ownerPlayerId).toBe('1');
+        expect(opponentQueued?.payload?.triggers?.[0]?.sourceControllerId).toBe('0');
+        expect(opponentQueued?.payload?.triggers?.[0]?.sourceCardUid).toBe('cause-a');
+
+        const opponentResolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...opponentTurnCore,
+                triggerQueue: opponentQueued.payload.triggers,
+            }),
+            defaultTestRandom,
+            46,
+        );
+
+        expect(opponentResolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.VP_AWARDED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                amount: 1,
+                reason: 'cthulhu_furthering_the_cause',
+            }),
+        }));
+        expect(opponentResolved?.state.core.players['0']?.vp).toBe(1);
 
         const ownerTurnCore = {
             ...baseCore,

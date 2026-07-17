@@ -413,6 +413,69 @@ function prepareMoguInfectionReplacementUiState(core: SummonerWarsCore) {
   return { core, beastPosition, enemyPosition, body };
 }
 
+function prepareMoguFriendlySelfKillBloodBloomUiState(core: SummonerWarsCore) {
+  clearMoguBoard(core);
+  core.phase = 'attack';
+  core.players['0'].attackCount = 0;
+  core.players['0'].hasAttackedEnemy = false;
+
+  const summonerPosition = { row: 4, col: 3 };
+  const attackerPosition = { row: 4, col: 4 };
+  const targetPosition = { row: 4, col: 5 };
+  const beneficiaryPosition = { row: 5, col: 3 };
+
+  const summoner = placeUnit(core, summonerPosition, moguUnitCard('mogu-kubenk-e2e-friendly-self-kill', '库鞭克', [
+    'mogu_blood_bloom',
+  ], {
+    unitClass: 'summoner',
+    strength: 4,
+    life: 7,
+    cost: 0,
+  }));
+  const attacker = placeUnit(core, attackerPosition, moguUnitCard('mogu-friendly-self-kill-attacker', '菌化野兽', [], {
+    unitClass: 'common',
+    strength: 3,
+    life: 5,
+    cost: 3,
+    attackType: 'melee',
+    attackRange: 1,
+  }));
+  const target = placeUnit(core, targetPosition, moguUnitCard('mogu-friendly-self-kill-target', '献祭菌袍', [], {
+    unitClass: 'common',
+    strength: 1,
+    life: 2,
+    cost: 0,
+    attackType: 'melee',
+    attackRange: 1,
+  }));
+  const beneficiary = placeUnit(core, beneficiaryPosition, moguUnitCard('mogu-friendly-self-kill-beneficiary', '受益友军', [], {
+    unitClass: 'common',
+    strength: 2,
+    life: 3,
+    cost: 1,
+  }));
+
+  placeUnit(core, { row: 1, col: 1 }, moguUnitCard('necro-summoner-e2e-friendly-self-kill', '敌方召唤师', [], {
+    faction: 'necromancer',
+    unitClass: 'summoner',
+    strength: 4,
+    life: 7,
+    cost: 0,
+  }), '1');
+
+  return {
+    core,
+    summoner,
+    attacker,
+    target,
+    beneficiary,
+    summonerPosition,
+    attackerPosition,
+    targetPosition,
+    beneficiaryPosition,
+  };
+}
+
 function prepareMoguFinalFormUiState(core: SummonerWarsCore) {
   clearMoguBoard(core);
   core.phase = 'summon';
@@ -1028,6 +1091,91 @@ test.describe('SummonerWars Mogu faction entry', () => {
 
       await hostPage.waitForTimeout(1500);
       await hostGame.screenshot('mogu-infection-replacement-resolved', testInfo);
+    } finally {
+      await hostContext.close().catch(() => {});
+      await guestContext.close().catch(() => {});
+    }
+  });
+
+  test('attacks its own unit and gains Blood Bloom charge from the self-kill', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const match = await setupSWOnlineMatch(browser, baseURL, 'mogu', 'necromancer');
+
+    if (!match) {
+      test.skip(true, 'Game server unavailable or room creation failed');
+      return;
+    }
+
+    const { hostPage, hostContext, guestContext, matchId } = match;
+    const hostGame = new GameTestContext(hostPage);
+
+    try {
+      const prepared = prepareMoguFriendlySelfKillBloodBloomUiState(await readCoreState(hostPage) as SummonerWarsCore);
+      await applyCoreState(hostPage, prepared.core);
+      await closeDebugPanelIfOpen(hostPage);
+      await waitForPhase(hostPage, 'attack');
+      await setHarnessDiceValues(hostPage, [1, 1, 1]);
+
+      const attackerSelector = `[data-testid="sw-unit-${prepared.attackerPosition.row}-${prepared.attackerPosition.col}"][data-owner="0"][data-unit-name="${prepared.attacker.card.name}"]`;
+      const targetSelector = `[data-testid="sw-unit-${prepared.targetPosition.row}-${prepared.targetPosition.col}"][data-owner="0"][data-unit-name="${prepared.target.card.name}"]`;
+      const beneficiarySelector = `[data-testid="sw-unit-${prepared.beneficiaryPosition.row}-${prepared.beneficiaryPosition.col}"][data-owner="0"][data-unit-name="${prepared.beneficiary.card.name}"]`;
+
+      await expect(hostPage.locator(attackerSelector).first()).toBeVisible({ timeout: 8000 });
+      await expect(hostPage.locator(targetSelector).first()).toBeVisible({ timeout: 8000 });
+      await expect(hostPage.locator(beneficiarySelector).first()).toBeVisible({ timeout: 8000 });
+      await expect(hostPage.locator(`[data-testid="sw-unit-${prepared.summonerPosition.row}-${prepared.summonerPosition.col}"][data-unit-name="${prepared.summoner.card.name}"]`).first()).toBeVisible({ timeout: 8000 });
+
+      await hostGame.screenshot('mogu-friendly-self-kill-before-attack', testInfo);
+
+      await clickBoardElement(hostPage, attackerSelector);
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        return state.selectedUnit ?? null;
+      }, { timeout: 8000 }).toEqual(prepared.attackerPosition);
+
+      await hostGame.screenshot('mogu-friendly-self-kill-target-selectable', testInfo);
+      await clickBoardElement(hostPage, targetSelector);
+
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        const attacker = state.board[prepared.attackerPosition.row]?.[prepared.attackerPosition.col]?.unit;
+        const target = state.board[prepared.targetPosition.row]?.[prepared.targetPosition.col]?.unit;
+        const beneficiary = state.board[prepared.beneficiaryPosition.row]?.[prepared.beneficiaryPosition.col]?.unit;
+        return {
+          attackerName: attacker?.card.name ?? null,
+          attackerBoosts: attacker?.boosts ?? null,
+          targetRemoved: target == null,
+          targetInOwnDiscard: state.players['0'].discard.some((card) => card.id === prepared.target.card.id),
+          beneficiaryName: beneficiary?.card.name ?? null,
+          beneficiaryBoosts: beneficiary?.boosts ?? null,
+          attackCount: state.players['0'].attackCount,
+          hasAttackedEnemy: state.players['0'].hasAttackedEnemy,
+        };
+      }, { timeout: 10000 }).toEqual({
+        attackerName: '菌化野兽',
+        attackerBoosts: 1,
+        targetRemoved: true,
+        targetInOwnDiscard: true,
+        beneficiaryName: '受益友军',
+        beneficiaryBoosts: 1,
+        attackCount: 1,
+        hasAttackedEnemy: false,
+      });
+
+      await expect(hostPage.locator(targetSelector).first()).toBeHidden({ timeout: 8000 });
+      await expect(hostPage.getByTestId(`sw-unit-charge-marker-${prepared.beneficiaryPosition.row}-${prepared.beneficiaryPosition.col}-0`)).toBeVisible({ timeout: 8000 });
+      await expect(hostPage.getByTestId(`sw-unit-charge-marker-${prepared.attackerPosition.row}-${prepared.attackerPosition.col}-0`)).toBeVisible({ timeout: 8000 });
+
+      await expect.poll(async () => {
+        const state = await getMatchState(matchId, hostPage) as {
+          sys?: { interaction?: { current?: unknown } };
+        };
+        return state.sys?.interaction?.current ?? null;
+      }, { timeout: 8000 }).toBeNull();
+
+      await hostPage.waitForTimeout(1500);
+      await hostGame.screenshot('mogu-friendly-self-kill-blood-bloom-resolved', testInfo);
     } finally {
       await hostContext.close().catch(() => {});
       await guestContext.close().catch(() => {});

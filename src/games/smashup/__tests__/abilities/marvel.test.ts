@@ -8,6 +8,7 @@ import { SPIDER_VERSE_CARDS } from '../../data/factions/spider_verse';
 import { ULTIMATES_CARDS } from '../../data/factions/ultimates';
 import {
     expectRegisteredAbilityContract,
+    getPromptOptions,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -457,6 +458,56 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
             type: SU_EVENTS.TEMP_POWER_ADDED,
             payload: { minionUid: 'spider-2099', amount: 2 },
         });
+
+        const promptedGreatPower = invokeRegisteredAbilityContract('spider_verse_with_great_power', 'special', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'great-power-prompt',
+            defId: 'spider_verse_with_great_power',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 52,
+        });
+        const prompt = getSimpleChoicePrompt(promptedGreatPower.matchState!, 'spider_verse_with_great_power');
+        expect(getPromptOptions(prompt).some(option => option.value?.minionUid === 'spider-2099')).toBe(true);
+        expect(getPromptOptions(prompt).some(option => option.value?.minionUid === 'enemy')).toBe(true);
+
+        const promptedOtherBaseCore = makeState({
+            bases: [
+                makeBase('base_juice_bar', [
+                    makeMinion('here', 'spider_verse_spider_man_2099', '0', 2),
+                ]),
+                makeBase('base_moon_dumpster', [
+                    makeMinion('there', 'shield_agent', '1', 2),
+                ]),
+            ],
+        });
+        const specialPrompt = invokeRegisteredAbilityContract('spider_verse_with_great_power', 'special', {
+            state: promptedOtherBaseCore,
+            matchState: makeMatchState(promptedOtherBaseCore),
+            playerId: '0',
+            cardUid: 'great-power-special',
+            defId: 'spider_verse_with_great_power',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 53,
+        });
+        const specialOptions = getPromptOptions(getSimpleChoicePrompt(specialPrompt.matchState!, 'spider_verse_with_great_power'));
+        expect(specialOptions.some(option => option.value?.minionUid === 'here')).toBe(true);
+        expect(specialOptions.some(option => option.value?.minionUid === 'there')).toBe(false);
+
+        const specialResolved = respondToPromptOption(
+            specialPrompt.matchState!,
+            option => option.value?.minionUid === 'here',
+            '能力越大特殊目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(specialResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'here', amount: 2 }),
+        }));
 
         expect(getEffectivePower(core, core.bases[0].minions[0], 0)).toBe(3);
         expect(getEffectivePower(core, core.bases[0].minions[2], 0)).toBe(0);

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FeedbackModal } from '../FeedbackModal';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../../contexts/AuthContext';
+import * as AuthContextModule from '../../../contexts/AuthContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
 
 // Mock fetch
@@ -331,5 +332,58 @@ describe('FeedbackModal', () => {
         );
 
         expect(screen.getByPlaceholderText(/描述/i)).toHaveValue('');
+    });
+
+    it('登录态失效时应匿名重试提交', async () => {
+        const addFeedbackPoints = vi.fn();
+        const useAuthSpy = vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+            user: {
+                id: 'stale-user',
+                username: 'stale-user',
+                role: 'user',
+                banned: false,
+                feedbackPoints: 0,
+            },
+            token: 'stale-token',
+            addFeedbackPoints,
+        } as unknown as ReturnType<typeof AuthContextModule.useAuth>);
+
+        (global.fetch as any)
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                json: async () => ({ message: '登录凭证无效' }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 201,
+                json: async () => ({ rewardPoints: 0 }),
+            });
+
+        try {
+            render(
+                <BrowserRouter>
+                    <ToastProvider>
+                        <FeedbackModal onClose={mockOnClose} />
+                    </ToastProvider>
+                </BrowserRouter>
+            );
+
+            fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '失效登录态下的反馈' } });
+            fireEvent.click(screen.getByRole('button', { name: /提交/i }));
+
+            await waitFor(() => {
+                expect(global.fetch).toHaveBeenCalledTimes(2);
+            });
+
+            const firstCall = (global.fetch as any).mock.calls[0][1];
+            const retryCall = (global.fetch as any).mock.calls[1][1];
+            expect(firstCall.headers.Authorization).toBe('Bearer stale-token');
+            expect(retryCall.headers.Authorization).toBeUndefined();
+            expect(addFeedbackPoints).not.toHaveBeenCalled();
+            expect(mockOnClose).toHaveBeenCalled();
+        } finally {
+            useAuthSpy.mockRestore();
+        }
     });
 });

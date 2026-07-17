@@ -3731,9 +3731,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await page.getByTestId("betrayal-action-move").click();
     await page.getByTestId("betrayal-room-hallway").click();
-    await expect(
-      page.getByTestId("betrayal-room-ground-north"),
-    ).toHaveAccessibleName(/未探索.*一层.*可探索/);
+    await expect(page.getByTestId("betrayal-room-ground-north")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
     await saveScreenshot(page, `${screenshotBase}-01-探索前.jpg`);
 

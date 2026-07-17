@@ -249,6 +249,11 @@ const loadTutorial12 = async () => {
     return tutorialModule.default;
 };
 
+const loadCriticalImageResolver12 = async () => {
+    const resolverModule = await import('./the-gang/criticalImageResolver');
+    return resolverModule.default ?? resolverModule.theGangCriticalImageResolver;
+};
+
 const loadRuntime13 = async (): Promise<GameClientRuntimeModule> => {
     const [gameModule, boardModule, latencyModule] = await Promise.all([
         import('./tictactoe/game'),
@@ -357,6 +362,7 @@ const entry12: GameClientManifestEntry = {
     thumbnail: <Thumbnail12 />,
     loadRuntime: loadRuntime12,
     loadTutorial: loadTutorial12,
+    loadCriticalImageResolver: loadCriticalImageResolver12,
 };
 
 const entry13: GameClientManifestEntry = {

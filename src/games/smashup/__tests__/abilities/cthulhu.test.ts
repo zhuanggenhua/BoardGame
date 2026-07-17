@@ -131,6 +131,52 @@ describe('cthulhu_altar 触发', () => {
 });
 
 describe('cthulhu_furthering_the_cause 触发', () => {
+    it('深化目标在其他玩家回合结束时也会检查本回合这里被消灭的其他玩家随从', () => {
+        const state = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    ongoingActions: [{ uid: 'ftc-1', defId: 'cthulhu_furthering_the_cause', ownerId: '0' }],
+                }),
+            ],
+            turnDestroyedMinions: [{ uid: 'destroyed-1', defId: 'test_minion', baseIndex: 0, owner: '1' }],
+        });
+
+        const queued = collectTriggers(state, 'onTurnEnd', {
+            state,
+            matchState: makeMatchState(state),
+            playerId: '1',
+            random: dummyRandom,
+            now: 10,
+        }) as any;
+
+        expect(queued?.payload?.triggers?.[0]?.sourceDefId).toBe('cthulhu_furthering_the_cause');
+
+        const resolved = maybeResolveReactionQueue(
+            makeMatchState({
+                ...state,
+                triggerQueue: queued.payload.triggers,
+            }),
+            dummyRandom,
+            10,
+        );
+
+        expect(resolved?.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.VP_AWARDED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                amount: 1,
+                reason: 'cthulhu_furthering_the_cause',
+            }),
+        }));
+        expect(resolved?.state.core.players['0'].vp).toBe(1);
+    });
+
     it('本回合该基地有对手随从被消灭时获得 1 VP', () => {
         const state = makeState({
             bases: [

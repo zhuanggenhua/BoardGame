@@ -459,7 +459,7 @@ export function validateCommand(
         }
       }
       const isHealingAttack = attacker.healingMode || hasHealingBeforeAttack;
-      // 治疗模式允许攻击友方单位（圣殿牧师）
+      // 治疗模式：已支付治疗代价后，只能选择友方士兵/英雄并改为治疗结算。
       if (isHealingAttack) {
         const healTarget = getUnitAt(core, targetPos);
         if (!healTarget || healTarget.owner !== playerId) {

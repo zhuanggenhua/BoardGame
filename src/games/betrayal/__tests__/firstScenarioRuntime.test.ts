@@ -4760,6 +4760,7 @@ describe('Betrayal first scenario runtime', () => {
         ))).toBe(true);
         expect(core.movesRemaining).toBe(0);
         expect(core.turnEndedByDiscovery).toBe(true);
+        expect(core.recommendedAction).toBe('endTurn');
 
         const moveAfterDiscovery = BetrayalDomain.validate(
             { core, sys: {} as never },

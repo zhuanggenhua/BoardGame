@@ -16,6 +16,7 @@ import { INITIAL_HEALTH, INITIAL_CP } from '../domain/types';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { GameTestRunner } from '../../../engine/testing';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import {
     fixedRandom,
     createQueuedRandom,
@@ -1436,7 +1437,7 @@ describe('cross hero battles', () => {
             expect(finalState.core.players['2'].tokens.shame ?? 0).toBe(0);
         });
 
-        it('upgrade-fan-the-hammer-2 后选择枪托击打变体，不可防御伤害不应触发 protect', () => {
+        it('2026-07-18 普通不可防御枪托击打会打开守护响应，跳过后结算伤害', () => {
             const upgradeCard = GUNSLINGER_CARDS.find(card => card.id === 'upgrade-fan-the-hammer-2');
             expect(upgradeCard).toBeDefined();
 
@@ -1461,8 +1462,8 @@ describe('cross hero battles', () => {
                 silent: true,
             });
 
-            const result = runner.run({
-                name: 'gunslinger upgraded fan-the-hammer pistol-whip skips protect',
+            const responseResult = runner.run({
+                name: 'gunslinger upgraded fan-the-hammer pistol-whip opens protect response',
                 commands: [
                     cmd('PLAY_CARD', '0', { cardId: 'upgrade-fan-the-hammer-2' }),
                     cmd('ADVANCE_PHASE', '0'),
@@ -1476,12 +1477,39 @@ describe('cross hero battles', () => {
                 ],
             });
 
-            expect(result.assertionErrors).toEqual([]);
-            expect(result.finalState.core.players['0'].tokens.evasive).toBe(1);
-            expect(result.finalState.core.players['1'].statusEffects.knockdown).toBe(1);
-            expect(result.finalState.core.players['1'].tokens.protect).toBe(1);
-            expect(result.finalState.sys.interaction.current).toBeFalsy();
-            expect(result.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(49);
+            expect(responseResult.assertionErrors).toEqual([]);
+            expect(responseResult.finalState.core.players['0'].tokens.evasive).toBe(1);
+            expect(responseResult.finalState.core.players['1'].statusEffects.knockdown).toBe(1);
+            expect(responseResult.finalState.core.players['1'].tokens.protect).toBe(1);
+            expect(responseResult.finalState.core.pendingDamage).toMatchObject({
+                targetPlayerId: '1',
+                responseType: 'beforeDamageReceived',
+                currentDamage: 1,
+                unblockable: true,
+            });
+            expect(getCurrentInteractionSummary(responseResult.finalState)).toMatchObject({
+                kind: 'dt:token-response',
+                playerId: '1',
+            });
+            expect(responseResult.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
+
+            const settledResult = runner.run({
+                name: 'gunslinger upgraded fan-the-hammer pistol-whip skips protect response',
+                setup: () => responseResult.finalState,
+                commands: [
+                    cmd('SKIP_TOKEN_RESPONSE', '1'),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    pendingInteraction: null,
+                    players: {
+                        '1': { hp: 49 },
+                    },
+                },
+            });
+
+            expect(settledResult.assertionErrors).toEqual([]);
+            expect(settledResult.finalState.core.players['1'].tokens.protect).toBe(1);
         });
 
         it('upgrade-take-cover-2 后选择标记目标变体，应获得 2 闪避并施加 1 赏金', () => {
@@ -1706,7 +1734,7 @@ describe('cross hero battles', () => {
             expect(result.finalState.core.players['1'].tokens.bounty ?? 0).toBe(0);
         });
 
-        it('high noon bullet branch deals 2 undefendable damage without protect', () => {
+        it('2026-07-18 普通不可防御 high noon bullet 会打开守护响应，跳过后结算伤害', () => {
             const highNoonCard = GUNSLINGER_CARDS.find(card => card.id === 'card-high-noon');
             expect(highNoonCard).toBeDefined();
 
@@ -1731,10 +1759,34 @@ describe('cross hero battles', () => {
                 silent: true,
             });
 
-            const result = runner.run({
-                name: 'gunslinger high-noon bullet branch',
+            const responseResult = runner.run({
+                name: 'gunslinger high-noon bullet branch opens protect response',
                 commands: [
                     cmd('PLAY_CARD', '0', { cardId: 'card-high-noon' }),
+                ],
+            });
+
+            expect(responseResult.assertionErrors).toEqual([]);
+            expect(responseResult.finalState.core.players['0'].resources.cp).toBe(0);
+            expect(responseResult.finalState.core.players['0'].discard).toHaveLength(1);
+            expect(responseResult.finalState.core.players['1'].tokens.protect).toBe(1);
+            expect(responseResult.finalState.core.pendingDamage).toMatchObject({
+                targetPlayerId: '1',
+                responseType: 'beforeDamageReceived',
+                currentDamage: 2,
+                unblockable: true,
+            });
+            expect(getCurrentInteractionSummary(responseResult.finalState)).toMatchObject({
+                kind: 'dt:token-response',
+                playerId: '1',
+            });
+            expect(responseResult.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
+
+            const settledResult = runner.run({
+                name: 'gunslinger high-noon bullet branch skips protect response',
+                setup: () => responseResult.finalState,
+                commands: [
+                    cmd('SKIP_TOKEN_RESPONSE', '1'),
                 ],
                 expect: {
                     turnPhase: 'main1',
@@ -1746,10 +1798,10 @@ describe('cross hero battles', () => {
                 },
             });
 
-            expect(result.assertionErrors).toEqual([]);
-            expect(result.finalState.core.players['1'].tokens.protect).toBe(1);
-            expect(result.finalState.core.players['1'].statusEffects.knockdown ?? 0).toBe(0);
-            expect(result.finalState.core.players['1'].tokens.bounty ?? 0).toBe(0);
+            expect(settledResult.assertionErrors).toEqual([]);
+            expect(settledResult.finalState.core.players['1'].tokens.protect).toBe(1);
+            expect(settledResult.finalState.core.players['1'].statusEffects.knockdown ?? 0).toBe(0);
+            expect(settledResult.finalState.core.players['1'].tokens.bounty ?? 0).toBe(0);
         });
 
         it('pistol-whip 的非攻击伤害不会触发目标身上的赏金', () => {

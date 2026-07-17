@@ -309,6 +309,9 @@ const buildAbilityHighlightStyle = (
 ): React.CSSProperties => {
     if (variant === 'selected') {
         return {
+            borderStyle: 'solid',
+            borderWidth: '2.5px',
+            borderColor: tone.selectedBorderColor,
             padding: '3px',
             background: `linear-gradient(135deg, ${tone.selectedPulseBorderColor}, ${tone.selectedBorderColor} 45%, ${tone.selectedRimColor})`,
             WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',

@@ -415,7 +415,8 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 > 完整规范已拆到 `docs/ai-rules/critical-image-preload.md`。本文档只保留入口，避免资源总览继续承载首屏预加载百科。
 
 - 新增游戏、新增角色/派系、修改游戏 Board 中使用的图片资源时必读。
-- Board 中使用的所有图片必须出现在 `criticalImageResolver` 中；首屏可见资源放 `critical`，按需资源放 `warm`。
+- Board 中使用的所有图片必须出现在 `criticalImageResolver` 中；首屏可见资源放 `critical`，按需资源放 `warm`。素材存在、已压缩、已进 manifest 不等于已接好加载链。
+- 按需弹窗、规则卡网格、工具/专家牌列表、帮助页图片默认保留 `OptimizedImage` 的加载占位；只有进入 `critical` 或已有稳定骨架/明确空态时，才允许关闭占位。
 - 教程模式、warm 取消恢复、图集初始化、`locale` 路径和新增角色/派系检查清单见专项文档。
 
 ## 音频资源入口
