@@ -237,8 +237,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('qidahen-inmatch-setup-character-confirm-${group.id}');
         expect(boardSource).toContain('qidahen-inmatch-setup-armament-confirm-${group.id}');
         expect(boardSource).toContain('disabled={completed || selectedIds.length !== group.count}');
-        expect(boardSource).toContain("{completed ? '人物已确认' : '确认人物'}");
-        expect(boardSource).toContain("{completed ? '军备已确认' : '确认军备'}");
+        expect(boardSource).toContain("t('board.setup.characterButtonConfirmed', { defaultValue: '人物已确认' })");
+        expect(boardSource).toContain("t('board.setup.confirmCharacter', { defaultValue: '确认人物' })");
+        expect(boardSource).toContain("t('board.setup.armamentButtonConfirmed', { defaultValue: '军备已确认' })");
+        expect(boardSource).toContain("t('board.setup.confirmArmament', { defaultValue: '确认军备' })");
         expect(boardSource).toContain('getQidahenScenarioCardPreview(option.scenarioId)');
         expect(boardSource).toContain('getQidahenSetupCharacterPreview(group.factionId, characterId)');
         expect(boardSource).toContain('getQidahenSetupArmamentPreview(armamentId)');
@@ -610,7 +612,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-testid="qidahen-post-battle-dice-summary"');
         expect(boardSource).not.toContain('Dice3D');
         expect(boardSource).not.toContain('data-testid="dice-3d"');
-        expect(boardSource).toContain('{postBattleSelection.battleRolls ? (');
+        expect(boardSource).toContain('{postBattleSelection.battleRolls && postBattleMode == null ? (');
         expect(boardSource).toContain('<QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />');
         expect(boardSource).toContain("defaultValue: '{{summary}} · 幸存 {{survivingTroops}}'");
     });
@@ -729,7 +731,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('className="mt-3 shrink-0"');
         expect(boardSource).toContain('className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot"');
         expect(boardSource).toContain('left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,');
-        expect(boardSource).toContain('width: ACTIONS_DOCK_WIDTH,');
+        expect(boardSource).toContain('width: suppressPassiveActionContext ? ACTIONS_DOCK_WIDTH + 12 : ACTIONS_DOCK_WIDTH,');
         expect(boardSource).toContain('height: ACTIONS_DOCK_HEIGHT,');
     });
 
@@ -979,7 +981,8 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('地图进攻指引箭头必须停在目标边缘而不是扎进区域中心', () => {
-        expect(boardSource).toContain(': mapSelectionGuide?.candidates[0]?.targetRegionId ?? null;');
+        expect(boardSource).toContain(': pendingTargetAction?.targetRuntimeRegionId ?? null;');
+        expect(boardSource).not.toContain(': mapSelectionGuide?.candidates[0]?.targetRegionId ?? null;');
         expect(boardSource).toContain('const activeGuideTargetCandidate = mapSelectionGuide?.candidates.find');
         expect(boardSource).toContain('tutorialGuideTargetRegionId && mapSelectionCandidateRegionIds.has(tutorialGuideTargetRegionId)');
         expect(boardSource).toContain('tutorialGuideTargetRegionId && wheelDispatchTargetRegionIds.has(tutorialGuideTargetRegionId)');
