@@ -475,7 +475,7 @@
       "cancelMove": "Cancel Move",
       "explore": "Explore",
       "trade": "Trade",
-      "sendTradeRequest": "Send Trade Request",
+      "sendTradeRequest": "Propose Trade",
       "cancelSicknessExchange": "Cancel Exchange",
       "exchangeSickness": "Exchange Sickness",
       "loot": "Loot",
@@ -668,13 +668,13 @@
       "title": "Trade: Request, Then Agreement",
       "description": "In the same room, choose possessions and a teammate, send a trade request, then let the other player accept or decline.",
       "steps": {
-        "setupTrade": "Trading happens on the same tile. You may give any number of Items or Omens and may take possessions back, but both explorers must agree.",
+        "setupTrade": "Trading happens on the same tile. You may choose Items or Omens you give, and you may choose possessions the other explorer gives; both explorers must agree.",
         "chooseTradeItem": "Select Rabbit's Foot in your inventory first. This only marks the possession you want to give; it does not move yet.",
-        "chooseTradeTarget": "Now select the teammate token in the same room. After the teammate is selected, that player's returnable possessions appear beside the bottom trade flow; if you do not click one, the trade takes nothing back.",
-        "chooseTradeReturn": "Taking something back is an optional add-on. For this exchange demo, click that player's Map; if you do not click Map, sending the request simply gives Rabbit's Foot.",
-        "sendTradeRequest": "The summary states what you give and whether anything comes back. When it is correct, click Send Trade Request; the receiver must respond before anything moves.",
+        "chooseTradeTarget": "Now select the teammate token in the same room. After the teammate is selected, that player's possessions appear beside the bottom trade flow; click any card you want that player to give.",
+        "chooseTradeReturn": "For this two-sided trade demo, click that player's Map. You can also leave their possessions unselected and propose a trade where only Rabbit's Foot moves.",
+        "sendTradeRequest": "The summary states what you give and what the other explorer gives. When it is correct, click Propose Trade; the receiver must respond before anything moves.",
         "requestWaiting": "The request has been sent. The requester now only sees the waiting state; they cannot swap Rabbit's Foot and Map by themselves.",
-        "acceptTradeRequest": "Now view the request as the receiver. The panel lists Give Rabbit's Foot / Take Map; Accept Trade resolves it, while Decline keeps both inventories unchanged.",
+        "acceptTradeRequest": "Now view the request as the receiver. The panel lists requester gives Rabbit's Foot and receiver gives Map; Accept Trade resolves it, while Decline keeps both inventories unchanged.",
         "tradeReview": "The trade has resolved. Map enters the requester inventory, Rabbit's Foot enters the teammate inventory, and the request panel clears back to the board."
       }
     },

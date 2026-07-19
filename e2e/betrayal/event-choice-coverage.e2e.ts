@@ -548,7 +548,10 @@ async function expectEventChoiceKeepsTurnBlocked(page: Page, label: string) {
     core.pendingEventChoice?.playerId,
     `${label}事件必须仍归 0 号处理`,
   ).toBe("0");
-  await expectBlockingTableChromeHidden(page, label);
+  await expect(
+    page.getByTestId("betrayal-action-rail"),
+    `${label}事件待选态应保留 PC 同构行动栏，不应把其它桌面 UI 整体隐藏`,
+  ).toBeVisible();
 }
 
 async function expectDiscoveryResultKeepsTurnBlocked(
