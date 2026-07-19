@@ -416,7 +416,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
     );
     await expect(page.getByText("请选择交易目标")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-trade-flow-banner")).toContainText(
-      "交易：先选持有物，再选同房间目标",
+      "交易：选择持有物和同房间玩家",
     );
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),

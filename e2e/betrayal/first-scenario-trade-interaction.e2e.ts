@@ -23,23 +23,23 @@ const TRADE_REQUEST_SENT_SCREENSHOT = `${EVIDENCE_DIR}/05-发送交易请求等�
 const TRADE_AGREEMENT_INCOMING_SCREENSHOT = `${EVIDENCE_DIR}/06-接收方同意交易前.jpg`;
 const TRADE_SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/07-交易结算结果可见.jpg`;
 const TRADE_RETURNED_SCREENSHOT = `${EVIDENCE_DIR}/08-交易后回牌桌状态清空.jpg`;
-const NO_RETURN_EVIDENCE_DIR = 'evidence/山屋惊魂-交易不换回完整链路';
-const NO_RETURN_TARGET_SELECTED_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/01-选择队友后未选择换回.jpg`;
-const NO_RETURN_REQUEST_SENT_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/02-不换回请求等待同意.jpg`;
-const NO_RETURN_SETTLED_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/03-不换回交易结算结果可见.jpg`;
-const REQUEST_ONLY_EVIDENCE_DIR = 'evidence/山屋惊魂-索要物品完整链路';
-const REQUEST_ONLY_TARGET_SELECTED_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/01-选择队友后准备索要.jpg`;
-const REQUEST_ONLY_CARD_SELECTED_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/02-已选择索要地图.jpg`;
-const REQUEST_ONLY_REQUEST_SENT_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/03-索要请求等待同意.jpg`;
-const REQUEST_ONLY_SETTLED_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/04-索要交易结算结果可见.jpg`;
-const EXCHANGE_EVIDENCE_DIR = 'evidence/山屋惊魂-交换完整链路';
-const EXCHANGE_INITIAL_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/01-交换前牌桌可操作.jpg`;
-const EXCHANGE_TARGET_SELECTED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/02-选择队友后显示换回区.jpg`;
-const EXCHANGE_RETURN_SELECTED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/03-已选择换回地图.jpg`;
-const EXCHANGE_REQUEST_SENT_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/04-发送交换请求等待同意.jpg`;
-const EXCHANGE_AGREEMENT_INCOMING_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/05-接收方同意交换前.jpg`;
-const EXCHANGE_SETTLED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/06-交换结算结果可见.jpg`;
-const EXCHANGE_RETURNED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/07-交换后回牌桌状态清空.jpg`;
+const NO_RETURN_EVIDENCE_DIR = 'evidence/山屋惊魂-交易只给出完整链路';
+const NO_RETURN_TARGET_SELECTED_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/01-选择队友后只给出兔脚.jpg`;
+const NO_RETURN_REQUEST_SENT_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/02-提出交易等待同意.jpg`;
+const NO_RETURN_SETTLED_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/03-交易结算结果可见.jpg`;
+const REQUEST_ONLY_EVIDENCE_DIR = 'evidence/山屋惊魂-交易只选择对方物品完整链路';
+const REQUEST_ONLY_TARGET_SELECTED_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/01-选择队友后查看对方持有物.jpg`;
+const REQUEST_ONLY_CARD_SELECTED_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/02-选择对方地图.jpg`;
+const REQUEST_ONLY_REQUEST_SENT_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/03-提出交易等待同意.jpg`;
+const REQUEST_ONLY_SETTLED_SCREENSHOT = `${REQUEST_ONLY_EVIDENCE_DIR}/04-交易结算结果可见.jpg`;
+const EXCHANGE_EVIDENCE_DIR = 'evidence/山屋惊魂-交易双方物品完整链路';
+const EXCHANGE_INITIAL_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/01-交易前牌桌可操作.jpg`;
+const EXCHANGE_TARGET_SELECTED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/02-选择队友后显示对方持有物.jpg`;
+const EXCHANGE_RETURN_SELECTED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/03-选择对方地图.jpg`;
+const EXCHANGE_REQUEST_SENT_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/04-提出交易等待同意.jpg`;
+const EXCHANGE_AGREEMENT_INCOMING_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/05-接收方同意交易前.jpg`;
+const EXCHANGE_SETTLED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/06-交易结算结果可见.jpg`;
+const EXCHANGE_RETURNED_SCREENSHOT = `${EXCHANGE_EVIDENCE_DIR}/07-交易后回牌桌状态清空.jpg`;
 const DOG_TRADE_EVIDENCE_DIR = 'evidence/山屋惊魂-狗远距交易完整链路';
 const DOG_TRADE_INITIAL_SCREENSHOT = `${DOG_TRADE_EVIDENCE_DIR}/01-狗交易前牌桌可操作.jpg`;
 const DOG_TRADE_CARD_SELECTED_SCREENSHOT = `${DOG_TRADE_EVIDENCE_DIR}/02-用狗选择要送的持有物.jpg`;
@@ -542,7 +542,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
 
         const tradeButton = page.getByTestId('betrayal-action-trade');
         await expect(tradeButton, '确认交易按钮必须已经可点击').toBeEnabled();
-        await expect(page.getByTestId('betrayal-trade-flow-target-step'), '确认前必须明确进入发送请求阶段').toContainText('发送交易请求');
+        await expect(page.getByTestId('betrayal-trade-flow-target-step'), '确认前必须明确进入提出交易阶段').toContainText('提出交易');
         await saveScreenshot(page, TRADE_CONFIRM_READY_SCREENSHOT);
 
         await tradeButton.click();
@@ -627,10 +627,10 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             teammateInventory: expect.arrayContaining(['兔脚']),
             activePlayerId: null,
             pendingTradeAgreement: null,
-            latestLog: expect.stringMatching(/同意交易|交给|兔脚/),
+            latestLog: expect.stringMatching(/同意交易|给出.*兔脚/),
             rejected: null,
         });
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/同意交易|交给|兔脚/);
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/同意交易|给出.*兔脚/);
         await saveScreenshot(page, TRADE_SETTLED_SCREENSHOT);
         await assertTradeSelectionClearedAfterSettlement(page);
         await expect(page.getByTestId('betrayal-board'), '交易结算后必须回到可操作牌桌').toBeVisible();
