@@ -20,6 +20,7 @@ import { FROST_ABILITIES } from './abilities-frost';
 import { BARBARIC_ABILITIES } from './abilities-barbaric';
 import { MOGU_ABILITIES } from './abilities-mogu';
 import { HUIJIN_ABILITIES } from './abilities-huijin';
+import { SHOUREN_ABILITIES } from './abilities-shouren';
 import { abilityText } from './abilityTextHelper';
 import type { InteractionChain } from '../../../engine/primitives/ability';
 
@@ -679,3 +680,6 @@ abilityRegistry.registerAll(MOGU_ABILITIES);
 
 // 注册灰烬技能
 abilityRegistry.registerAll(HUIJIN_ABILITIES);
+
+// 注册冰苔兽人技能
+abilityRegistry.registerAll(SHOUREN_ABILITIES);

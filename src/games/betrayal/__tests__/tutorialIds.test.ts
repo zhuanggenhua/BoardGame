@@ -35,12 +35,14 @@ describe('Betrayal Board data-tutorial-id 属性', () => {
     });
 
     it('房间移动目标用整张房间牌暴露对应教程锚点', () => {
-        expect(boardSource).toContain("target.startsWith('betrayal-room-')");
-        expect(boardSource).toContain("data-tutorial-id={tutorialMapTargetRoomId === room.id ? tutorialStep?.highlightTarget : undefined}");
+        expect(boardSource).toMatch(/target\.startsWith\(["']betrayal-room-["']\)/);
+        expect(boardSource).toMatch(
+            /data-tutorial-id=\{\s*tutorialMapTargetRoomId === room\.id\s*\?\s*tutorialStep\?\.highlightTarget\s*:\s*undefined\s*\}/,
+        );
     });
 
     it('Board 已接入教程桥，而不是只留 tutorial manifest', () => {
-        expect(boardSource).toContain("import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';");
-        expect(boardSource).toContain('useTutorialBridge(G?.sys?.tutorial, dispatch as (type: string, payload?: unknown) => void);');
+        expect(boardSource).toMatch(/import \{ useTutorial, useTutorialBridge \} from ["']\.\.\/\.\.\/contexts\/TutorialContext["'];/);
+        expect(boardSource).toMatch(/useTutorialBridge\(\s*G\?\.sys\?\.tutorial,\s*dispatch as \(type: string, payload\?: unknown\) => void,?\s*\);/);
     });
 });

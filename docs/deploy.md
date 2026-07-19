@@ -54,7 +54,7 @@ BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --deploy-ta
 ```
 
 **强制规则**：生产环境更新必须由 CI 完成目标镜像构建后再切换服务。
-默认入口会触发 `.github/workflows/docker-publish.yml` 的手动构建，并让同一个 CI job 在构建完成后直接 `docker save`、SCP 到生产机、`docker load`，再执行 `update-local`。禁止回到“本机先从 GHCR 拉镜像，再打 tar 上传”的默认链路。
+默认入口会触发 `.github/workflows/docker-publish.yml` 的手动构建，并让同一个 CI job 在构建完成后直接 `docker save`、SCP 到生产机、`docker load`，再执行 `update-local`；服务器更新成功后继续触发 `.github/workflows/android-ota-publish.yml` 发布同一 git ref 的 Android `stable` OTA。禁止回到“本机先从 GHCR 拉镜像，再打 tar 上传”的默认链路，也禁止把普通 `push main` 自动 Docker workflow 当作完整更新部署。
 
 **默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，默认不是单独更新服务器，也不是让生产机或本机从 GHCR 拉镜像，而是按“版本自增 -> 提交 push -> 触发 CI 构建并直传服务器 -> 服务器 `update-local` -> Android stable OTA”执行。产品版本号 `package.json.version` 与 Android `androidVersionCode` 必须同步自增；只有用户明确说“本次不改版本”时，才允许跳过。
 
@@ -64,7 +64,7 @@ node scripts/release/deploy-and-ota.mjs --prepare-version
 
 # 2) 提交并 push package.json / package-lock.json
 
-# 3) 触发 CI 构建并直传 latest 镜像到服务器、执行 update-local，并发布 stable OTA
+# 3) 触发 CI 构建并直传 latest 镜像到服务器、执行 update-local，并触发 stable OTA workflow
 BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait
 ```
 
@@ -77,6 +77,8 @@ $env:BG_DEPLOY_VERSION_PREPARED='1'; node scripts/release/deploy-and-ota.mjs --s
 如果用户明确说“只更新服务器”或“这次不发 OTA”，优先仍使用统一入口并加 `--skip-ota`，让脚本继续触发 CI 直传 + `update-local`。如果用户明确说“本机输送 / 不触发 CI 直传”，才允许加 `--deploy-mode stream` 使用本机拉 GHCR 后上传的 fallback；如果用户明确说“服务器直接拉镜像 / 不走镜像输送”，才允许加 `--deploy-mode remote` 或在服务器执行 `bash deploy-image.sh update`。如果用户明确说“这次不改版本”，执行统一入口时必须显式加 `--allow-current-version`，避免误把旧产品版本再次发布成最新。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
 
 **默认镜像分发口径（强制）**：`deploy-and-ota` 默认使用 `--deploy-mode ci-stream`，触发 Docker publish workflow 手动运行。CI runner 在同一个 job 内构建并推送镜像，同时把构建出的本地镜像导出为 tar、上传到生产机、服务器本地 `docker image load` 后执行 `bash scripts/deploy/deploy-image.sh update-local <tag>`。这样避开 GHCR 慢点：不让生产机直拉，也不让本机先拉一遍再打 tar。
+
+**发布 workflow 等待口径（强制）**：`deploy-and-ota` 等待 Docker 直传部署 workflow 与 Android OTA workflow 的默认上限为 30 分钟，可用 `--workflow-timeout-minutes <分钟>` 或 `BG_DEPLOY_WORKFLOW_TIMEOUT_MINUTES` 提高。若本地等待超时但 GitHub run 仍在执行，禁止重新触发同一发布；必须先用脚本报错中的 `--resume-ci-run-id <id>` / `--resume-ota-run-id <id>` 续等已有 run，避免重复构建、重复上传或重复发 OTA。
 
 如需临时恢复服务器直拉旧链路，可显式执行：
 
@@ -544,7 +546,7 @@ Android OTA 产物也走同一个服务器资源主源，但前缀独立：
 
 1. 使用 `node scripts/release/deploy-and-ota.mjs --prepare-version` 让产品版本号主动自增；默认 patch，会同步更新 `package.json.version`、`package-lock.json` 和 Android `androidVersionCode`。
 2. 提交并 push 版本改动。
-3. 执行 `BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait`，触发 CI 构建并直传 `latest` 镜像到服务器后执行 `update-local`，同时发布同一产品版本基线的 Android `stable` OTA。
+3. 执行 `BG_DEPLOY_VERSION_PREPARED=1 node scripts/release/deploy-and-ota.mjs --skip-wait`，触发 CI 构建并直传 `latest` 镜像到服务器后执行 `update-local`，同时触发 `Android OTA Publish` workflow 发布同一产品版本基线的 Android `stable` OTA。
 4. 发布脚本生成或接收单调递增的 OTA 内部游标；桥接场景可临时使用 `6.0.0-ota-...`，但本次发布的产品基线仍必须来自已提交的 `package.json.version`。
 
 ## UGC 资源前缀预留（未实现）

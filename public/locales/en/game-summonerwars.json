@@ -34,7 +34,8 @@
     "frost": "Frost Dwarves",
     "barbaric": "Barbarian Horde",
     "mogu": "Mogu",
-    "huijin": "Ashen Phoenix"
+    "huijin": "Ashen Phoenix",
+    "shouren": "Tundra Orcs"
   },
   "actions": {
     "closePreview": "Close Preview",
@@ -43,6 +44,8 @@
     "moguTransmissionSelf": "Transfer from self",
     "moguTransmissionAlly": "Transfer from ally",
     "moguFanaticalFungusStay": "Do not push or pull",
+    "shourenRerollAll": "Reroll all dice",
+    "shourenKeepRoll": "Keep current result",
     "magnify": "Magnify",
     "confirm": "Confirm",
     "confirmDiscard": "Confirm Discard",
@@ -300,7 +303,9 @@
       "huijin_scorch": "(scorch)",
       "huijin_divine_revenge": "(divine revenge)",
       "huijin_flame_breath": "(flame breath)",
-      "huijin_quick_shot": "(quick shot)"
+      "huijin_quick_shot": "(quick shot)",
+      "shouren_slow": "(slow)",
+      "shouren_reckless_strike": "(reckless strike)"
     },
     "attackDamage": "→ dealt {{damage}} damage",
     "attackBonus": "(power {{base}}→{{total}})",
@@ -442,7 +447,8 @@
     "rangedAttack": "Ranged Attack",
     "damage": "{{count}} Damage!",
     "miss": "Miss",
-    "evasionReduced": "Evasion -{{count}}"
+    "evasionReduced": "Evasion -{{count}}",
+    "encourage": "Encourage: spend 1 charge to reroll all dice?"
   },
   "handArea": {
     "bloodSummonOnlyLowCost": "Blood Summon only allows unit cards with cost ≤ {{maxCost}}",
@@ -666,7 +672,14 @@
       "huijinCallGuardsPosition": "Call Guards: choose an adjacent space",
       "huijinRamTarget": "Ram: choose an adjacent enemy common or champion",
       "huijinRamPosition": "Ram: choose a push or pull destination",
-      "huijinQuickShot": "Quick Shot: choose a target within 3 clear spaces"
+      "huijinQuickShot": "Quick Shot: choose a target within 3 clear spaces",
+      "shourenEncourage": "Encourage: reroll all dice or keep the result",
+      "shourenBloodyRush": "Bloody Rush: move and take 1 damage, or skip to stay put",
+      "shourenBloodyRushPosition": "Bloody Rush: click a highlighted board space to move this unit and take 1 damage; skip to stay put",
+      "shourenBerserkPosition": "Berserk: click a highlighted board space to push or pull the Tundra Fighter; skip to keep it in place",
+      "shourenBruteImpact": "Brute Impact: click a highlighted board space to push the target away from the attacker; skip to avoid pushing",
+      "shourenPrimalFuryPosition": "Primal Fury: click a highlighted board space to move Grognack; skip to keep him in place",
+      "shourenExtraAttack": "Choose an adjacent target for the extra attack"
     },
     "fireSacrifice": {
       "mustSelectAlly": "Please select an ally unit to sacrifice"
@@ -1046,6 +1059,54 @@
     "huijin_quick_shot": {
       "name": "Quick Shot",
       "description": "After this unit moves, you may target a unit within 3 spaces in a straight line of sight and deal 1 damage to it."
+    },
+    "shouren_recover": {
+      "name": "Recover",
+      "description": "After this unit moves, if it is uncharged, charge it."
+    },
+    "shouren_encourage": {
+      "name": "Encourage",
+      "description": "During your turn, when a friendly unit within 3 spaces rolls dice for an attack or ability, you may spend 1 charge from this unit to reroll all dice."
+    },
+    "shouren_blood_bond": {
+      "name": "Blood Bond",
+      "description": "After this unit attacks an enemy unit, charge your summoner once for each special mark rolled."
+    },
+    "shouren_biting_frost": {
+      "name": "Biting Frost",
+      "description": "Adjacent friendly Frost units gain +1 strength."
+    },
+    "shouren_frenzy_strike": {
+      "name": "Frenzy Strike",
+      "description": "When this unit attacks, use the number of special marks rolled as damage instead of melee marks."
+    },
+    "shouren_northern_magic": {
+      "name": "Northern Magic",
+      "description": "When this unit attacks, if it rolls no special marks, it deals no damage to the target."
+    },
+    "shouren_slow": {
+      "name": "Slow",
+      "description": "When this unit is attacked, each special mark deals 1 additional damage to it."
+    },
+    "shouren_bloody_rush": {
+      "name": "Bloody Rush",
+      "description": "After this unit is summoned, you may deal 1 damage to it to push or pull it 1 space."
+    },
+    "shouren_berserk": {
+      "name": "Berserk",
+      "description": "After each attack against an adjacent enemy card, roll 1 die. On a special mark, you may push or pull this unit 1 space; if you do, it may make one extra attack against an adjacent enemy card."
+    },
+    "shouren_primal_fury": {
+      "name": "Primal Fury",
+      "description": "After the Summoner attacks an adjacent enemy card, you may push or pull it 1 or 2 spaces; if you do, it may make one extra attack against an adjacent enemy card."
+    },
+    "shouren_brute_impact": {
+      "name": "Brute Impact",
+      "description": "After this unit attacks and damages a unit, you may push that unit 1 space away from this unit."
+    },
+    "shouren_reckless_strike": {
+      "name": "Reckless Strike",
+      "description": "This unit gains +2 strength. When it attacks with 0 or 1 special marks and damages the target, it also takes the same amount of damage."
     }
   },
   "buffs": {

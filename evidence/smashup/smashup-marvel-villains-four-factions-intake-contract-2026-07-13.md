@@ -97,7 +97,7 @@
 | 35 | 邪恶六人组 | 随从 | 1 | 4 | `sinister_six_doctor_octopus` | 章鱼博士 | Doctor Octopus | Ongoing: At the start of your turn, you may reduce this base's breakpoint by 4 until the end of the turn. | L0 locked / L1 pending / 中文正文待逐字复核 |
 | 36 | 邪恶六人组 | 随从 | 1 | 4 | `sinister_six_mysterio` | 神秘客 | Mysterio | Talent: Play a base modifier here as an extra action OR draw a card. | L0 locked / L1 pending / 中文正文待逐字复核 |
 | 37 | 邪恶六人组 | 随从 | 2 | 3 | `sinister_six_green_goblin` | 绿魔 | Green Goblin | Talent: Reduce this base's breakpoint by 3 until the end of the turn. | L0 locked / L1 pending / 中文正文待逐字复核 |
-| 38 | 邪恶六人组 | 随从 | 2 | 3 | `sinister_six_vulture` | 秃鹫 | Vulture | You may place a base modifier from your discard pile on top of your deck. | L0 locked / L1 pending / 中文正文待逐字复核 |
+| 38 | 邪恶六人组 | 随从 | 2 | 3 | `sinister_six_vulture` | 秃鹫 | Vulture | You may place a base modifier from your discard pile on top of your deck. | 2026-07-18 修订：L0 locked / L1+L2 passed；已补单候选也必须弹选择、可跳过、选择后才回牌库顶的行为测试。L3 真实入口仍未覆盖；中文正文待逐字复核 |
 | 39 | 邪恶六人组 | 随从 | 2 | 2 | `sinister_six_electro` | 电王 | Electro | Ongoing: This base's breakpoint is reduced by 2. | L0 locked / L1 pending / 中文正文待逐字复核 |
 | 40 | 邪恶六人组 | 随从 | 2 | 2 | `sinister_six_sandman` | 沙人 | Sandman | Ongoing: This character has +2 power if the breakpoint here is 19 or less. | L0 locked / L1 pending / 中文正文待逐字复核 |
 | 41 | 邪恶六人组 | 战术 | 2 |  | `sinister_six_ambush` | 伏击 | Ambush | Reduce a base's breakpoint by 4 until the end of the turn. | L0 locked / L1 pending / 中文正文待逐字复核 |

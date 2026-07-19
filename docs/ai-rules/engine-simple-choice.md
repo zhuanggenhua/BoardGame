@@ -44,7 +44,7 @@ interface SimpleChoiceConfig {
     timeout?: number;
     multi?: PromptMultiConfig;        // { min?: number; max?: number }
     targetType?: 'base' | 'minion' | 'hand' | 'discard_minion' | 'generic';
-    autoResolveIfSingle?: boolean;    // 显式传 true 时，单候选由引擎自动解决
+    autoResolveIfSingle?: boolean;    // 兼容字段；玩家要选择对象/可放弃时禁止传 true
     autoCancelOption?: boolean;       // 自动添加取消选项
 }
 ```
@@ -52,6 +52,8 @@ interface SimpleChoiceConfig {
 ### 强制规则
 
 - `autoResolveIfSingle` 只在**显式传 `true`** 时生效；不传值时会保留交互，不会自动代替玩家点击。
+- **玩家选择语义禁止自动完成（强制）**：只要这一步的现实含义是让玩家选择卡牌、基地、随从、角色、目标、支付对象、来源、目的地、顺序、数量或是否执行，即使合法候选只有 1 个，也不得传 `autoResolveIfSingle: true`，不得在 handler 中直接取第一项代替玩家选择。必须保留交互，让玩家看到候选并点击对象或选择跳过/确认。
+- **唯一允许自动收口的场景**：只有当该步骤已经没有玩家选择、没有可见对象、没有放弃/跳过语义，只剩固定机械结果时，才允许自动收口；此时应优先不创建 `simple-choice`。如果出于兼容必须使用 `autoResolveIfSingle: true`，代码附近必须说明“为什么这不是玩家选择”。
 
 1. **"任意数量"/"any number" → 必须传 `multi: { min: 0, max: N }`**，N 为候选项总数。不传 `multi` 会导致单选模式。
 2. **"恰好 N 个" → `multi: { min: N, max: N }`**。
@@ -119,6 +121,17 @@ createSimpleChoice(id, pid, title, opts, {
     targetType: 'minion',
 })
 
+// ❌ 玩家需要选择一个可见对象时，把唯一候选自动结算掉
+createSimpleChoice(id, pid, '选择一个随从', minionOptions, {
+    sourceId: 'ability_id',
+    targetType: 'minion',
+    autoResolveIfSingle: true,
+})
+
+// ❌ 可选效果只有一个合法候选时，直接取第一项执行，玩家看不到“跳过/不做”
+const selected = candidates[0];
+return selected ? applyEffect(selected) : noOp();
+
 // ❌ simple-choice 与 responseWindow 并存时，由 SimpleChoiceSystem 直接拦截所有普通命令
 if (state.sys.interaction.current?.kind === 'simple-choice') {
     return { valid: false, error: '请先完成当前选择' };
@@ -150,6 +163,13 @@ createSimpleChoice(id, pid, '选择一个基地', baseOptions, { sourceId: 'abil
 
 // ✅ 随从选择：显式声明 targetType
 createSimpleChoice(id, pid, '选择一个随从', minionOptions, { sourceId: 'ability_id', targetType: 'minion' })
+
+// ✅ 即使只有一个随从候选，也保留选择交互，必要时显式提供跳过选项
+createSimpleChoice(id, pid, '选择一个随从', [createSkipOption(), ...minionOptions], {
+    sourceId: 'ability_id',
+    targetType: 'minion',
+    autoResolveIfSingle: false,
+})
 
 // ✅ 卡牌选项：displayMode + defId
 options.map(c => ({ id: c.uid, label: c.name, value: { cardUid: c.uid, defId: c.defId }, displayMode: 'card' as const }))

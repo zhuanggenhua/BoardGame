@@ -93,7 +93,13 @@ async function enterQidahenBoard(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
     await page.getByTestId('qidahen-scenario-vote-option-post-sarhu-1619').click();
+    await page.getByTestId('qidahen-scenario-vote-confirm').click();
     await expect(page.getByTestId('qidahen-scenario-vote-screen')).toHaveCount(0, { timeout: 30000 });
+    const factionScreen = page.getByTestId('qidahen-faction-selection-screen');
+    if (await factionScreen.isVisible().catch(() => false)) {
+        await page.getByTestId('qidahen-faction-option-ming').click();
+        await page.getByTestId('qidahen-faction-selection-confirm').click();
+    }
     await expect(page.getByTestId('qidahen-turn-banner')).toContainText('大明', { timeout: 15000 });
 }
 

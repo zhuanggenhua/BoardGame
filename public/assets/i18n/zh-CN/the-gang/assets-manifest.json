@@ -958,6 +958,15 @@
         }
       }
     },
+    "chips/compressed/round-1-white-0": {
+      "variants": {
+        "webp": {
+          "sha256": "d5c01abcca10c345eca706a3ecc7c20ed6e35ca9ccbe763f24b797049e8683f5",
+          "bytes": 67766,
+          "mime": "image/webp"
+        }
+      }
+    },
     "chips/compressed/round-1-white-1": {
       "variants": {
         "webp": {
@@ -1008,6 +1017,33 @@
         "webp": {
           "sha256": "26121b8f65f29d9c422ba588fa753c214ad81bfc858d66f2440a3dff8ad0eb8b",
           "bytes": 29874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-7": {
+      "variants": {
+        "webp": {
+          "sha256": "5ccf974604d5cfa4e839865704a85b59acddf475870917d746741a18cca656bc",
+          "bytes": 69074,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-1-white-8": {
+      "variants": {
+        "webp": {
+          "sha256": "466b19d2be81aba7f5774ae6a9db5e6bb8a5672822744024e318450cd2f8fc83",
+          "bytes": 68166,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-0": {
+      "variants": {
+        "webp": {
+          "sha256": "4760ce40287db59955c7f1338d972d0dcfeae132df887a745703a6d9e516cce0",
+          "bytes": 86318,
           "mime": "image/webp"
         }
       }
@@ -1066,6 +1102,33 @@
         }
       }
     },
+    "chips/compressed/round-2-yellow-7": {
+      "variants": {
+        "webp": {
+          "sha256": "f2f346b8c2786e7272670f5cf55b89ba6c5289dc70bc788afc8207cdeb89b03f",
+          "bytes": 87754,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-2-yellow-8": {
+      "variants": {
+        "webp": {
+          "sha256": "a260eb374fcffaf476f611da858caa327f1f20c17c2c3da2591aa20f851ac493",
+          "bytes": 85454,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-0": {
+      "variants": {
+        "webp": {
+          "sha256": "e71a68ee4ade05bff9e6d81f18916f6f2e6591f740ded9b97a668949461eac66",
+          "bytes": 86412,
+          "mime": "image/webp"
+        }
+      }
+    },
     "chips/compressed/round-3-orange-1": {
       "variants": {
         "webp": {
@@ -1116,6 +1179,33 @@
         "webp": {
           "sha256": "17f23ad55602e210c12e58259dce5609e5bdc337c074d92a1208e152f6a27d7a",
           "bytes": 35630,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-7": {
+      "variants": {
+        "webp": {
+          "sha256": "6dea3dd6eec6f987a0bfc72aef196d0a1c777a60804ec7cf1161914818f6d984",
+          "bytes": 87508,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-3-orange-8": {
+      "variants": {
+        "webp": {
+          "sha256": "2e21a481c0e1a0575514bcd4dd37c129a79d39726deae827b215c2ae5e8ab82c",
+          "bytes": 86920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-0": {
+      "variants": {
+        "webp": {
+          "sha256": "a7a01b70096be612fc1e6f68338e854c6eabda879ae5976b487fa66f21827e72",
+          "bytes": 82790,
           "mime": "image/webp"
         }
       }
@@ -1174,6 +1264,33 @@
         }
       }
     },
+    "chips/compressed/round-4-red-7": {
+      "variants": {
+        "webp": {
+          "sha256": "634567cfa706e3225460b779c720d4169bfe87d9adc051b8f3b6a15276293294",
+          "bytes": 83692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/round-4-red-8": {
+      "variants": {
+        "webp": {
+          "sha256": "b1453cb31856fc16bfde36225f13e8ad65d706518707939339ec6ccab5fdb4b3",
+          "bytes": 83188,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/round-1-white-0": {
+      "variants": {
+        "png": {
+          "sha256": "e79f31914d50166fd9d3a8bd7a3f85c4ebb167f0062e06c4d2f4ebed9407aafd",
+          "bytes": 154784,
+          "mime": "image/png"
+        }
+      }
+    },
     "chips/round-1-white-1": {
       "variants": {
         "png": {
@@ -1224,6 +1341,33 @@
         "png": {
           "sha256": "895317d00c6c89c34f52b28bd35716e7619a49d0284fce9070f980f1d1b077d6",
           "bytes": 94879,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-1-white-7": {
+      "variants": {
+        "png": {
+          "sha256": "558eabf4142e53d5ce3861e793bf8f7ee4585df24c76849818d1900c5d478695",
+          "bytes": 153900,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-1-white-8": {
+      "variants": {
+        "png": {
+          "sha256": "f9dddaff94f35a5ea7b5c47cdc46299d9188b522531eb8fc81ec95c1f413507b",
+          "bytes": 153364,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-0": {
+      "variants": {
+        "png": {
+          "sha256": "440fea20695e2f364cfb368b43a795236ce748abfdeae3f538bfa7b6d6084295",
+          "bytes": 290050,
           "mime": "image/png"
         }
       }
@@ -1282,6 +1426,33 @@
         }
       }
     },
+    "chips/round-2-yellow-7": {
+      "variants": {
+        "png": {
+          "sha256": "0fd430cf67b1e4769a520a232cdbedc401289b221e78619b34fd2c0d44e3f3ad",
+          "bytes": 294979,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-2-yellow-8": {
+      "variants": {
+        "png": {
+          "sha256": "e5eb6357c74308cd54a1919d5c54003195560484c7df1314ae4e1f1b5309c234",
+          "bytes": 291737,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-0": {
+      "variants": {
+        "png": {
+          "sha256": "87563ada36dc6c646ea7778859611bf0fb77a3f53a9d52550be941da8f9bfbfa",
+          "bytes": 304898,
+          "mime": "image/png"
+        }
+      }
+    },
     "chips/round-3-orange-1": {
       "variants": {
         "png": {
@@ -1336,6 +1507,33 @@
         }
       }
     },
+    "chips/round-3-orange-7": {
+      "variants": {
+        "png": {
+          "sha256": "53fd6e9f2f1979170e80b05c25650b94471802b7270e56c775e97f910ff2b10c",
+          "bytes": 309811,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-3-orange-8": {
+      "variants": {
+        "png": {
+          "sha256": "dc18d6aff7d3cf498875d8a655610b3409ede319d47f86775923dc5061c3bd3e",
+          "bytes": 306574,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-0": {
+      "variants": {
+        "png": {
+          "sha256": "ec8a592ed25acff19ba9e0a031c037cd6781f7ff435cd40364f351d1243f2f39",
+          "bytes": 313511,
+          "mime": "image/png"
+        }
+      }
+    },
     "chips/round-4-red-1": {
       "variants": {
         "png": {
@@ -1386,6 +1584,24 @@
         "png": {
           "sha256": "63f36075881b23a128c8e48ade13983a3db7ce6d779a284b9ddf89452b3cf1ae",
           "bytes": 199584,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-7": {
+      "variants": {
+        "png": {
+          "sha256": "17724c1c334f05ba6dc21bd2768a97dd536ba107621fa293c5b471e706dee960",
+          "bytes": 318130,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/round-4-red-8": {
+      "variants": {
+        "png": {
+          "sha256": "00252b3fcac4365b72d74d4e4fb9af7ab0fc8bbe40376b7cc1bd9c6e720d6711",
+          "bytes": 314849,
           "mime": "image/png"
         }
       }

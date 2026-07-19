@@ -558,6 +558,7 @@ export function createTradeReadyCore(): BetrayalCore {
     {
       ...teammate,
       roomId: "hallway",
+      inventory: [],
     },
     {
       ...traitor,
@@ -569,10 +570,40 @@ export function createTradeReadyCore(): BetrayalCore {
   core.currentExplorerTraits = { ...core.currentExplorer.traits };
   core.recommendedAction = "trade";
   core.usedCardIdsThisTurn = [];
+  core.pendingEventChoice = null;
+  core.recentRoll = null;
   core.latestDiscovery = null;
   core.latestDiscoveryOwnerPlayerId = null;
 
   return core;
+}
+
+export function createTradeReadyTutorialCore(): BetrayalCore {
+  return applyTutorialDiscoveryOrder(createTradeReadyCore());
+}
+
+export function createExchangeReadyCore(): BetrayalCore {
+  const core = createTradeReadyCore();
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === "1"
+      ? {
+          ...explorer,
+          inventory: [
+            { id: "map", name: "地图", kind: "item" },
+            { id: "skull", name: "头骨", kind: "omen" },
+          ],
+        }
+      : explorer,
+  );
+  core.currentExplorerInventory = [...core.currentExplorer.inventory];
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map(
+    (card) => card.id,
+  );
+  return core;
+}
+
+export function createExchangeReadyTutorialCore(): BetrayalCore {
+  return applyTutorialDiscoveryOrder(createExchangeReadyCore());
 }
 
 export function createDogTradeReadyCore(): BetrayalCore {
@@ -783,6 +814,10 @@ export function createHeroAttackTraitorReadyCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  core.pendingEventChoice = null;
+  core.recentRoll = null;
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
   return core;
 }
 
@@ -979,6 +1014,8 @@ export function createCorpseLootReadyCore(): BetrayalCore {
   core.movesRemaining = 4;
   core.recommendedAction = "trade";
   core.usedCardIdsThisTurn = [];
+  core.pendingEventChoice = null;
+  core.recentRoll = null;
   core.latestDiscovery = null;
   core.latestDiscoveryOwnerPlayerId = null;
 

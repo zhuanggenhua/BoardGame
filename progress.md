@@ -1,6 +1,8 @@
 ## Session: 2026-07-14 山屋惊魂可玩性全面重审计
 
 - **Status:** in-progress-with-btr01-btr02-btr04-btr06-btr07-e2e-passed
+- 2026-07-18 +08：独立剧本阅读器改造后，《灰尘》完整真实 E2E `一瓶微尘成功进入灰尘后可寻找解药并完成疾病交换同意` 通过，覆盖独立剧本首页、翻页、关闭及后续疾病交换链。《大宅饿了》首次重跑未进入测试本体，被项目重任务守卫拦截：已有 `e2e/qidahen/mobile-layout.e2e.ts` 正在运行；未设置并发绕过，等待守卫释放后继续同一正式命令。
+- 2026-07-18 +08：按用户要求恢复“全部流程是否明确且用户友好”的全量 UI 审计，当前状态保持 `in-progress`，不发布截图站。已撤回额外剧本阅读体验的通过判断：剧本 3/12/33 当前仍复用参考卡浮层，底部页码错误且末页空白；下一步先统一独立剧本阅读器，再按完整流程矩阵逐条复跑、核图、返工。
 - 2026-07-15 +08：事件牌完整链当前已从 15/23 推进到当前数据合同 23/23。新增补齐《标本剥制》《小丑房间》《咬一口！》《最深的壁橱》《磁带播放器》《在你背后！》《一种怪异的感觉》《葬礼》8 张“投骰后直接结算”事件牌的真实六段链，均从真实探索翻牌、选择未知房间、事件牌翻出、投骰/检定停稳、结算结果到关闭回牌桌；截图在 `evidence/山屋惊魂-事件牌页面承接E2E/` 下对应 `*-完整链路-01-探索前.jpg` 到 `*-完整链路-06-关闭后.jpg`。验证：`npx eslint e2e/betrayal/event-choice-coverage.e2e.ts` 通过；《标本剥制》定向 E2E 为 `1 passed`；其余 7 条顺序定向均 `1 passed`，脚本输出 `ALL_TARGETED_E2E_PASSED=7`。边界：这只把事件牌当前数据合同收口到 23/23，不代表预兆、物品全家族、骰盘全家族或山屋整体完成。
 - 2026-07-15 +08：补齐《说“茄子”！》《一抹鲜红》《吊死鬼》的真实六段链。《说“茄子”！》从真实探索翻牌、选择作祟检定、作祟骰盘停稳、失败抽取《魔法相机》到关闭回牌桌；《一抹鲜红》从真实探索翻牌、选择作祟检定、作祟骰盘停稳、失败速度 +1 到关闭回牌桌；《吊死鬼》从真实探索翻牌、四项属性检定全过、选择知识奖励、知识 +1 结算到关闭回牌桌。定向 E2E 三条均为 `1 passed`；`npx eslint src/games/betrayal/Board.tsx src/games/betrayal/__tests__/Board.foundation.test.tsx e2e/betrayal/event-choice-coverage.e2e.ts` 通过；`node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/Board.foundation.test.tsx --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "吊死鬼待选事件能在真实页面选择奖励属性"` 为 `1 passed`，结束后有 socket 噪声但测试结果通过；当前整文件 `event-choice-coverage.e2e.ts` 为 `27 passed`。截图在 `evidence/山屋惊魂-事件牌页面承接E2E/说茄子-完整链路-01-探索前.jpg` 到 `06-关闭后回牌桌.jpg`、`一抹鲜红-完整链路-01-探索前.jpg` 到 `06-关闭后回牌桌.jpg`、`吊死鬼-完整链路-01-探索前.jpg` 到 `06-关闭后回牌桌.jpg`。边界：事件牌完整链从 12 条推进到 15 条，但仍不能宣称山屋全面完成或事件牌全量逐张完成。
 - 2026-07-15 +08：补齐《大宅饿了》“真实探索翻牌 -> 选择知识奖励 -> 跳过作祟 -> 知识 +1 结算 -> 关闭回牌桌”的完整链。定向 `npx vitest run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts -t "大宅饿了" --configLoader native --pool threads --no-file-parallelism --maxWorkers 1` 为 2 passed；真实页面 E2E `npm run test:e2e:ci:file -- e2e/betrayal/event-choice-coverage.e2e.ts "大宅饿了真实链路从探索翻牌到跳过作祟选择属性结算关闭"` 为 1 passed；整文件 `event-choice-coverage.e2e.ts` 为 24 passed。截图在 `evidence/山屋惊魂-事件牌页面承接E2E/大宅饿了-完整链路-01-探索前.jpg` 到 `06-关闭后回牌桌.jpg`。边界：这只收口大宅饿了的跳过作祟代表链，不代表说“茄子”！、一抹鲜红、吊死鬼或山屋整体完成。
@@ -11310,3 +11312,19 @@
 - 当前结论：
   - BTR-06 物品使用代表链已从 L0 待复现推进到 L3 真实六段 E2E。
   - 这只证明急救包物品使用链，不证明骰盘全家族或山屋整体完成；下一步继续 BTR-05 砍刀攻击骰盘代表链。
+
+## 2026-07-18 冰苔兽人续跑
+
+- 已读取并执行新增派系、数据录入、TDD、任务完成门禁和文件式计划工作流。
+- 已核对当前工作区只将冰苔兽人相关文件作为本任务范围；其它游戏改动不纳入。
+- 已把 `temp/summonerwars-shouren-task.json` 的 C3 更新为 pass，C4 更新为 in_progress，并记录静态接入与激励定向测试证据。
+- 后续已完成冰苔兽人规则、资源、Android 索引、真实入口 E2E、截图审计和对象级 evidence 收口：
+  - `abilities-shouren.test.ts`：34/34 passed。
+  - 定向回归：7 files / 70 tests passed。
+  - 完整 E2E：`e2e/summonerwars/summonerwars-shouren.e2e.ts` 8/8 passed；血腥急袭补拍 1/1 passed。
+  - 11 张最终截图人工核验 PASS，分数 93-94/100。
+  - `npm run typecheck`、`npm run assets:validate`、定向 ESLint、`audit:evidence:selfcheck` 均通过。
+  - 全局 `npm run i18n:check` 已执行但被范围外七大恨/山屋惊魂/德州扑克帮派 55 条新增 warning 阻塞，未命中召唤师战争/冰苔兽人。
+- 已同步 OpenSpec 5.7，并复跑最终门禁：
+  - `openspec validate add-summonerwars-shouren-faction --strict --no-interactive`：通过。
+  - `python D:\codex-home\skills\task-completion-guard\scripts\check_completion.py --state temp\summonerwars-shouren-task.json`：`COMPLETE`。

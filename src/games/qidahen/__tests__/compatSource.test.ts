@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const readBoardSource = () => readFileSync(resolve(TEST_DIR, '..', 'Board.tsx'), 'utf8');
+const readBoardShellSource = () => readFileSync(resolve(TEST_DIR, '..', 'QidahenBoardShell.tsx'), 'utf8');
 const readQidahenBasicFlowE2eSource = () => readFileSync(resolve(TEST_DIR, '..', '..', '..', '..', 'e2e', 'qidahen-basic-flow.e2e.ts'), 'utf8');
 const readCommandsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'commands.ts'), 'utf8');
 const readCharacterActionWindowSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterActionWindow.ts'), 'utf8');
@@ -368,38 +369,43 @@ describe('Qidahen compatibility source guards', () => {
         expect(e2eSource).toContain("await expectMapArmyFace(page, { faction: 'jin', regionId: 'city-region-13', face: 'hidden-back' });");
     });
 
-    it('桌面舞台应保留显式宽高与缩放锚点，避免宿主缩放后压扁主战区', () => {
+    it('地图 Scene 与 HUD 应使用独立缩放，设计尺寸不能继续充当页面外框', () => {
         const board = readBoardSource();
+        const shell = readBoardShellSource();
 
         expect(board).toContain('const STAGE_WIDTH = 1920;');
         expect(board).toContain('const STAGE_HEIGHT = 1080;');
-        expect(board).toContain('data-testid="qidahen-desktop-stage"');
-        expect(board).toContain('width: STAGE_WIDTH,');
-        expect(board).toContain('height: STAGE_HEIGHT,');
-        expect(board).toContain("transformOrigin: 'top left',");
+        expect(shell).toContain('data-testid="qidahen-scene-stage"');
+        expect(shell).toContain('data-testid="qidahen-desktop-stage"');
+        expect(shell).toContain('const sceneScale = Math.max(width / layout.width, height / layout.height);');
+        expect(shell).toContain(': Math.min(width / layout.width, height / layout.height);');
+        expect(shell).toContain("transformOrigin: 'top left',");
     });
 
-    it('地图视口容器应保持裁切与绝对舞台定位，避免缩放后出现越界或错位', () => {
-        const board = readBoardSource();
+    it('地图 Scene 应铺满真实容器，HUD 应在独立层保持完整', () => {
+        const shell = readBoardShellSource();
 
-        expect(board).toContain('className="relative h-full min-h-0 overflow-hidden"');
-        expect(board).toContain('className="absolute overflow-hidden"');
-        expect(board).toContain('data-testid="qidahen-board"');
-        expect(board).toContain('data-testid="qidahen-desktop-stage"');
-        expect(board).toContain('left: stageMetrics.left,');
-        expect(board).toContain('top: stageMetrics.top,');
+        expect(shell).toContain('className="relative h-full min-h-0 w-full overflow-hidden"');
+        expect(shell).toContain('data-testid="qidahen-board"');
+        expect(shell).toContain('data-testid="qidahen-scene-layer"');
+        expect(shell).toContain('data-testid="qidahen-hud-layer"');
+        expect(shell).toContain('left: metrics.scene.left,');
+        expect(shell).toContain('top: metrics.scene.top,');
     });
 
-    it('底部手牌坞应锚到底边并支持移动横屏抬升，同时限制宽度避免牌堆被挤出主视口', () => {
+    it('底部手牌坞应锚到底边，手机横屏使用真实视口 CSS px 并限制宽度避免牌堆挤出主视口', () => {
         const board = readBoardSource();
+        const shell = readBoardShellSource();
 
         expect(board).toContain('data-testid="qidahen-bottom-dock"');
         expect(board).toContain('className="pointer-events-none absolute inset-x-0 bottom-0 z-[80]"');
-        expect(board).toContain('mobileBottomInset: BOTTOM_DOCK_INSET,');
-        expect(board).toContain('mobileBottomInset: nextLandscapeMobileViewport && scale > 0');
-        expect(board).toContain("'--qidahen-mobile-bottom-inset': `${stageMetrics.mobileBottomInset}px`,");
+        expect(shell).toContain('const hudScale = isMobileLandscape ? 1 : Math.min(width / layout.width, height / layout.height);');
+        expect(shell).toContain('mobileBottomInset: isMobileLandscape ? layout.mobileLandscapeBottomDockInset : layout.bottomDockInset');
+        expect(shell).toContain('width: metrics.isMobileLandscape ? metrics.viewportWidth : layout.width');
+        expect(shell).toContain('height: metrics.isMobileLandscape ? metrics.viewportHeight : layout.height');
+        expect(shell).toContain("'--qidahen-mobile-bottom-inset': `${metrics.mobileBottomInset}px`,");
         expect(board).toContain("const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';");
-        expect(board).toContain('height: BOTTOM_DOCK_HEIGHT,');
+        expect(board).toContain('height: bottomDockHeight,');
         expect(board).toContain('bottom: dockBottomInset,');
         expect(board).toContain('data-testid="qidahen-hand-zone"');
         expect(board).toContain('data-ui-role="qidahen-hand-dock"');

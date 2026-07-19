@@ -1125,10 +1125,6 @@ function sinisterVulture(ctx: AbilityContext): AbilityResult {
         return def?.type === 'action' && def.subtype === 'ongoing' && def.ongoingTarget === 'base';
     });
     if (candidates.length === 0) return { events: [] };
-    if (candidates.length === 1) {
-        const selected = candidates[0];
-        return { events: [cardToDeckTop({ uid: selected.uid, defId: selected.defId, ownerId: selected.owner }, ctx.playerId, ctx.defId, ctx.now)] };
-    }
     if (!ctx.matchState) {
         const selected = candidates[0];
         return { events: [cardToDeckTop({ uid: selected.uid, defId: selected.defId, ownerId: selected.owner }, ctx.playerId, ctx.defId, ctx.now)] };

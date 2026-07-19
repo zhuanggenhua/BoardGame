@@ -2,6 +2,8 @@
 // 区域命中蒙版需要直接读静态 png 像素生成运行时命中表，不走玩家可见贴图渲染链路。
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Maximize2 } from 'lucide-react';
+import './qidahen-board.css';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import {
     SelectableGameObject,
@@ -115,6 +117,7 @@ import {
 import {
     buildPendingTargetChoiceOptions,
 } from './domain/pendingTargetChoiceOptions';
+import { buildPendingTargetAction } from './domain/pendingTargetActionBuilder';
 import type { QidahenPendingTargetChoiceValue } from './domain/interactionContracts';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from './ui/mapRegions';
 import {
@@ -135,6 +138,7 @@ import {
 import qidahenRegionMaskUrl from './data/region-mask.png?url';
 import { QIDAHEN_AUDIO_CONFIG } from './audio.config';
 import { QIDAHEN_MANIFEST } from './manifest';
+import { QidahenBoardShell, type QidahenBoardLayoutConfig } from './QidahenBoardShell';
 
 type Props = GameBoardProps<QidahenCore, QidahenCommandMap>;
 
@@ -422,10 +426,18 @@ const BOTTOM_DOCK_INSET = 0;
 const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 0;
 const MOBILE_LANDSCAPE_TOP_SAFE_INSET = 18;
 const MOBILE_LANDSCAPE_CHRONOLOGY_TOP = 670;
+const QIDAHEN_BOARD_LAYOUT: QidahenBoardLayoutConfig = {
+    width: STAGE_WIDTH,
+    height: STAGE_HEIGHT,
+    mobileMaxViewportWidth: MOBILE_MAX_VIEWPORT_WIDTH,
+    bottomDockInset: BOTTOM_DOCK_INSET,
+    mobileLandscapeTopSafeInset: MOBILE_LANDSCAPE_TOP_SAFE_INSET,
+    mobileLandscapeBottomDockInset: MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET,
+    mobileLandscapeChronologyTop: MOBILE_LANDSCAPE_CHRONOLOGY_TOP,
+};
 const HAND_DOCK_WIDTH = 1310;
-const MOBILE_LANDSCAPE_HAND_DOCK_WIDTH = 1460;
-const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 168;
-const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 206;
+const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 92;
+const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 118;
 const HAND_ROW_HORIZONTAL_PADDING = 16;
 const MOBILE_LANDSCAPE_VISIBLE_HAND_LIMIT = 6;
 const HAND_CARD_SELECTED_LIFT = 46;
@@ -559,7 +571,7 @@ const renderQidahenWheelVerticalText = (
 };
 
 const getQidahenMobileLandscapeHandLayout = (dockWidth: number) => {
-    const availableWidth = Math.max(720, dockWidth - HAND_ROW_HORIZONTAL_PADDING * 2);
+    const availableWidth = Math.max(240, dockWidth - HAND_ROW_HORIZONTAL_PADDING * 2);
     const fourCardWidth = Math.floor((availableWidth - HAND_ROW_HORIZONTAL_PADDING) / 4);
     const width = Math.max(
         MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH,
@@ -595,7 +607,9 @@ const resolveViewerFactionId = (
     core: QidahenCore,
     playerID: string | null,
 ): QidahenFactionId | null => (
-    (playerID
+    core.factionSelection
+        ? null
+        : (playerID
         ? (Object.entries(core.factions).find(([, faction]) => faction.playerId === playerID)?.[0] as QidahenFactionId | undefined)
         : undefined)
     ?? null
@@ -620,10 +634,16 @@ const clampNumber = (value: number, min: number, max: number): number => (
 
 const clampQidahenMapViewport = (viewport: QidahenMapViewport): QidahenMapViewport => {
     const zoom = clampNumber(viewport.zoom, QIDAHEN_MAP_MIN_ZOOM, QIDAHEN_MAP_MAX_ZOOM);
+    const scaledMapWidth = QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE * zoom;
+    const scaledMapHeight = QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE * zoom;
+    const minPanX = STAGE_WIDTH - MAP_COVER_LEFT - scaledMapWidth;
+    const maxPanX = -MAP_COVER_LEFT;
+    const minPanY = STAGE_HEIGHT - MAP_COVER_TOP - scaledMapHeight;
+    const maxPanY = -MAP_COVER_TOP;
     return {
         zoom,
-        panX: viewport.panX,
-        panY: viewport.panY,
+        panX: clampNumber(viewport.panX, minPanX, maxPanX),
+        panY: clampNumber(viewport.panY, minPanY, maxPanY),
     };
 };
 
@@ -1073,6 +1093,17 @@ const HandInteractionTray: React.FC<{
             .find((action) => action?.id === core.selectedActionId && action.cost > 0) ?? null
         : null;
     const sunYuanhuaSelection = core.sunYuanhuaTechSelection;
+    const selectedPaymentRegionId = core.explicitRegionId ?? core.selectedRegionId;
+    const selectedPaymentRegion = core.regions.find((region) => region.id === selectedPaymentRegionId);
+    const raidPaymentPreview = selectedAction?.id === 'raid' && selectedPaymentRegion
+        ? buildPendingTargetAction(
+            core,
+            getCurrentFactionId(core),
+            'raid',
+            selectedPaymentRegion,
+            selectedPaymentRegionId,
+        )
+        : null;
 
     if (!selectedAction && !handLimitDiscardSelection && !sunYuanhuaSelection) {
         return null;
@@ -1114,7 +1145,17 @@ const HandInteractionTray: React.FC<{
                                 })}
                         </div>
                         <div className="mt-1 text-[11px]" data-testid="qidahen-action-payment-hint" style={{ color: '#f3d1a5' }}>
-                            {selectedAction.id === 'upgrade-armament'
+                            {selectedAction.id === 'raid'
+                                ? raidPaymentPreview
+                                    ? t('board.handInteraction.raidPaymentTarget', {
+                                        targetRegionName: raidPaymentPreview.targetRegionName,
+                                        resolutionHint: raidPaymentPreview.resolutionHint,
+                                        defaultValue: '目标：{{targetRegionName}} · {{resolutionHint}}',
+                                    })
+                                    : t('board.handInteraction.raidPaymentInvalidTarget', {
+                                        defaultValue: '当前地区不能发动突袭，请在地图上选择高亮的合法目标',
+                                    })
+                                : selectedAction.id === 'upgrade-armament'
                                 ? t('board.handInteraction.armamentPaymentHint', {
                                     defaultValue: '点选要使用的军备牌；先作为升级军备打出，结算后才进入弃牌堆。',
                                 })
@@ -1127,8 +1168,8 @@ const HandInteractionTray: React.FC<{
                         <button
                             type="button"
                             data-testid="qidahen-action-payment-confirm"
-                            disabled={confirmTutorialLocked || core.selectedPaymentCardIds.length < selectedAction.cost}
-                            className="inline-flex min-h-[40px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
+                            disabled={confirmTutorialLocked || core.selectedPaymentCardIds.length < selectedAction.cost || (selectedAction.id === 'raid' && !raidPaymentPreview)}
+                            className="inline-flex min-h-[44px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
                             onClick={onConfirmSelectedAction}
                             style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                         >
@@ -1140,7 +1181,7 @@ const HandInteractionTray: React.FC<{
                             type="button"
                             data-testid="qidahen-action-payment-cancel"
                             disabled={cancelTutorialLocked}
-                            className="inline-flex min-h-[40px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                            className="inline-flex min-h-[44px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                             onClick={onCancelSelectedActionPreview}
                             style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
                         >
@@ -1409,17 +1450,18 @@ const QidahenCardMagnifyOverlay: React.FC<{
     <MagnifyOverlay
         isOpen={target != null}
         onClose={onClose}
-        containerClassName="max-h-[86vh] max-w-[92vw]"
+        containerClassName="max-h-[82vh] max-w-[92vw]"
         overlayClassName="bg-black/46"
         overlayTestId="qidahen-card-magnify-overlay"
         closeLabel="关闭查看"
+        closeButtonClassName="!-top-11 min-h-11 !border !border-white/60 !bg-black/80 px-5 !text-white !shadow-lg hover:!bg-black/95"
     >
         {target ? (
             <div
                 data-testid="qidahen-card-magnify-content"
                 className="relative overflow-hidden rounded-[10px] border-[3px]"
                 style={{
-                    width: `min(92vw, calc(82vh * (${target.rawWidth} / ${target.rawHeight})))`,
+                    width: `min(92vw, calc(78vh * (${target.rawWidth} / ${target.rawHeight})))`,
                     aspectRatio: `${target.rawWidth} / ${target.rawHeight}`,
                     borderColor: UI_STYLE.mapInk,
                     background: UI_STYLE.cardField,
@@ -1437,101 +1479,18 @@ const QidahenCardMagnifyOverlay: React.FC<{
     </MagnifyOverlay>
 );
 
-const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const containerRef = React.useRef<HTMLDivElement>(null);
-    const [stageMetrics, setStageMetrics] = React.useState({
-        scale: 1,
-        left: 0,
-        top: 0,
-        mobileEdgePull: 0,
-        mobileTopInset: 0,
-        mobileBottomInset: BOTTOM_DOCK_INSET,
-        mobileChronologyTop: 542,
-        isMobileLandscape: false,
-    });
-
-    React.useEffect(() => {
-        const element = containerRef.current;
-        if (!element) return undefined;
-
-        const update = () => {
-            const rect = element.getBoundingClientRect();
-            const nextLandscapeMobileViewport = window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH && window.innerWidth > window.innerHeight;
-            const visibleWidth = nextLandscapeMobileViewport ? Math.min(rect.width, window.innerWidth) : rect.width;
-            const visibleHeight = nextLandscapeMobileViewport ? Math.min(rect.height, window.innerHeight) : rect.height;
-            const scale = nextLandscapeMobileViewport
-                ? visibleWidth / STAGE_WIDTH
-                : Math.min(visibleWidth / STAGE_WIDTH, visibleHeight / STAGE_HEIGHT);
-            const left = nextLandscapeMobileViewport
-                ? 0
-                : Math.max(0, (visibleWidth - STAGE_WIDTH * scale) / 2);
-            const top = nextLandscapeMobileViewport
-                ? Math.min(0, visibleHeight - STAGE_HEIGHT * scale)
-                : Math.max(0, (visibleHeight - STAGE_HEIGHT * scale) / 2);
-            setStageMetrics({
-                scale,
-                left,
-                top,
-                mobileEdgePull: nextLandscapeMobileViewport && scale > 0 ? left / scale : 0,
-                mobileTopInset: nextLandscapeMobileViewport && scale > 0
-                    ? Math.max(0, (-top + MOBILE_LANDSCAPE_TOP_SAFE_INSET) / scale)
-                    : 0,
-                mobileBottomInset: nextLandscapeMobileViewport && scale > 0
-                    ? MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET / scale
-                    : BOTTOM_DOCK_INSET,
-                mobileChronologyTop: nextLandscapeMobileViewport ? MOBILE_LANDSCAPE_CHRONOLOGY_TOP : 542,
-                isMobileLandscape: nextLandscapeMobileViewport,
-            });
-        };
-
-        update();
-        const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
-        observer?.observe(element);
-        window.addEventListener('resize', update);
-        return () => {
-            observer?.disconnect();
-            window.removeEventListener('resize', update);
-        };
-    }, []);
-
-    return (
-        <div
-            ref={containerRef}
-            className="relative h-full min-h-0 overflow-hidden"
-            data-testid="qidahen-board"
-            style={{
-                backgroundColor: QIDAHEN_STAGE_BG,
-            }}
-        >
-            <div
-                className="absolute overflow-hidden"
-                data-testid="qidahen-desktop-stage"
-                style={{
-                    width: STAGE_WIDTH,
-                    height: STAGE_HEIGHT,
-                    left: stageMetrics.left,
-                    top: stageMetrics.top,
-                    background: QIDAHEN_STAGE_BG,
-                    color: UI_STYLE.ink,
-                    transform: `scale(${stageMetrics.scale})`,
-                    transformOrigin: 'top left',
-                    overflow: stageMetrics.isMobileLandscape ? 'visible' : 'hidden',
-                    '--qidahen-mobile-edge-pull': `${stageMetrics.mobileEdgePull}px`,
-                    '--qidahen-mobile-top-inset': `${stageMetrics.mobileTopInset}px`,
-                    '--qidahen-mobile-bottom-inset': `${stageMetrics.mobileBottomInset}px`,
-                    '--qidahen-mobile-chronology-top': `${stageMetrics.mobileChronologyTop}px`,
-                } as React.CSSProperties & {
-                    '--qidahen-mobile-edge-pull': string;
-                    '--qidahen-mobile-top-inset': string;
-                    '--qidahen-mobile-bottom-inset': string;
-                    '--qidahen-mobile-chronology-top': string;
-                }}
-            >
-                {children}
-            </div>
-        </div>
-    );
-};
+const StaticMapScene: React.FC<{ locale?: string }> = ({ locale }) => (
+    <OptimizedImage
+        src={ASSETS.mainMap}
+        locale={locale}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
+        data-testid="qidahen-static-map-scene"
+        draggable={false}
+        placeholder={false}
+    />
+);
 
 const PlayerChip: React.FC<{
     faction: QidahenCore['factions'][QidahenFactionId];
@@ -2578,11 +2537,13 @@ const MapSceneLayer: React.FC<{
             ? tutorialGuideTargetRegionId
             : core.explicitRegionId && mapSelectionCandidateRegionIds.has(core.explicitRegionId)
                 ? core.explicitRegionId
-                : mapSelectionGuide?.candidates[0]?.targetRegionId ?? null;
+                : pendingTargetAction?.targetRuntimeRegionId ?? null;
     const activeGuideTargetCandidate = mapSelectionGuide?.candidates.find((candidate) => candidate.targetRegionId === activeGuideTargetRegionId) ?? null;
     const mapSelectionBannerHint = activeGuideTargetCandidate
         ? `${mapSelectionGuide?.hint ?? ''} · 当前目标：${activeGuideTargetCandidate.targetRegionName}`
-        : mapSelectionGuide?.hint ?? '';
+        : mapSelectionGuide?.candidateSummary
+            ? `${mapSelectionGuide.hint} · 可选：${mapSelectionGuide.candidateSummary}`
+            : mapSelectionGuide?.hint ?? '';
     const mapSelectionBannerLeft = (STAGE_WIDTH - MAP_SELECTION_BANNER_WIDTH) / 2;
     const mapSelectionBannerInteractive = mapSelectionGuide != null
         && (pendingTargetAction == null || defeatInDetailSelectableSourceRegionIds.length > 0)
@@ -2967,7 +2928,10 @@ const MapSceneLayer: React.FC<{
                     </button>
                 </div>
             </div>
-            {mapSelectionGuide && (pendingTargetAction == null || defeatInDetailSelectableSourceRegionIds.length > 0) ? (
+            {mapSelectionGuide
+                && core.gaoDiDispatchSelection == null
+                && internalDispatchSelection == null
+                && (pendingTargetAction == null || defeatInDetailSelectableSourceRegionIds.length > 0) ? (
                 <div
                     className="pointer-events-none absolute z-50 border-[3px] px-4 py-3"
                     data-testid="qidahen-map-selection-banner"
@@ -3711,7 +3675,11 @@ const ActionsZone: React.FC<{
     onSelectRegion: (regionId: string) => void;
     onResolveRecruitChoice: (choiceId: QidahenRecruitChoice['id']) => void;
     onResolveGrantPardonChoice: (choiceId: QidahenGrantPardonChoice['id']) => void;
+    selectedGaoDiChoiceId: string | null;
     onResolveGaoDiDispatch: (choiceId: string) => void;
+    selectedInternalDispatchChoiceId: string | null;
+    onResolveInternalDispatch: (choiceId: string) => void;
+    onClearInternalDispatchChoice: () => void;
     onResolveMaShiTradeChoice: (troopCount: 1 | 2 | 3) => void;
     onResolveKhanEdictChoice: (choiceId: 'recruit-train' | 'hire-dispatch') => void;
     onResolveDiplomacyChoice: (choiceId: 'hire-only' | 'place-friendly' | 'flip-vassal' | 'remove-marker') => void;
@@ -3735,7 +3703,7 @@ const ActionsZone: React.FC<{
     onResolvePostBattleDecision: (choiceId: string) => void;
     isTutorialCommandAllowed?: (commandType: string) => boolean;
     isTutorialTargetAllowed?: (targetId: string | null | undefined) => boolean;
-}> = ({ core, primaryStageMode, isTutorialActive, tutorialInfoStepActive, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, grantPardonSelection, grantPardonMapChoices, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGrantPardonChoice, onResolveGaoDiDispatch, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePincerAdvance, onCancelPincerAdvance, onResolveInfantryCavalryCombined, onCancelInstigateDefection, onSetWuzhenChaohaArtilleryTechCount, onCancelWuzhenChaoha, onResolvePostBattleDecision, isTutorialCommandAllowed, isTutorialTargetAllowed }) => {
+}> = ({ core, primaryStageMode, isTutorialActive, tutorialInfoStepActive, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, grantPardonSelection, grantPardonMapChoices, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection, fortificationMaintenanceSelection, wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGrantPardonChoice, selectedGaoDiChoiceId, onResolveGaoDiDispatch, selectedInternalDispatchChoiceId, onResolveInternalDispatch, onClearInternalDispatchChoice, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent, onResolveFortificationMaintenance, upkeepAttritionPriority, onSelectUpkeepAttritionPriority, pendingCommittedTroops, onSelectPendingCommittedTroops, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, onSelectPendingAttackerCasualtyPriority, onSelectPendingDefenderCasualtyPriority, onResolvePendingAction, onResolvePincerAdvance, onCancelPincerAdvance, onResolveInfantryCavalryCombined, onCancelInstigateDefection, onSetWuzhenChaohaArtilleryTechCount, onCancelWuzhenChaoha, onResolvePostBattleDecision, isTutorialCommandAllowed, isTutorialTargetAllowed }) => {
     const { t } = useTranslation('game-qidahen');
     const actionSlotRef = React.useRef<HTMLDivElement>(null);
     const grantPardonHasMapTargets = Boolean(grantPardonSelection?.choices.length);
@@ -3751,6 +3719,24 @@ const ActionsZone: React.FC<{
         khanEdictSelection,
         driveTigerConsentSelection,
     });
+    const selectedGaoDiCandidate = core.gaoDiDispatchSelection?.candidates.find((candidate) => candidate.id === selectedGaoDiChoiceId) ?? null;
+    const selectedInternalDispatchCandidate = internalDispatchSelection?.candidates.find(
+        (candidate) => candidate.id === selectedInternalDispatchChoiceId,
+    ) ?? null;
+    const postBattleSelectionKey = postBattleSelection
+        ? `${postBattleSelection.actionId}:${postBattleSelection.targetRuntimeRegionId}`
+        : null;
+    const [postBattleMode, setPostBattleMode] = React.useState<NonNullable<QidahenCore['postBattleSelection']>['choices'][number]['mode'] | null>(null);
+    const [draftPostBattleChoiceId, setDraftPostBattleChoiceId] = React.useState<string | null>(null);
+    const postBattleModeChoices = postBattleMode
+        ? postBattleSelection?.choices.filter((choice) => choice.mode === postBattleMode) ?? []
+        : [];
+    const draftPostBattleChoice = postBattleSelection?.choices.find((choice) => choice.id === draftPostBattleChoiceId) ?? null;
+
+    React.useEffect(() => {
+        setPostBattleMode(null);
+        setDraftPostBattleChoiceId(null);
+    }, [postBattleSelectionKey]);
     const factionStageActiveSelection = core.gaoDiDispatchSelection != null
         || internalDispatchSelection != null
         || recruitSelection != null
@@ -3772,7 +3758,8 @@ const ActionsZone: React.FC<{
         && !factionStageActiveSelection
         && !wheelStageActiveSelection
         && core.wheelMoveChoices.length > 0;
-    const suppressPassiveActionContext = showWheelNextStepBanner
+    const suppressPassiveActionContext = actionPaymentPreviewVisible
+        || showWheelNextStepBanner
         || factionStageActiveSelection
         || wheelStageActiveSelection
         || wheelDispatchSelection != null
@@ -3828,7 +3815,7 @@ const ActionsZone: React.FC<{
             style={{
                 left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,
                 top: ACTIONS_DOCK_TOP,
-                width: ACTIONS_DOCK_WIDTH,
+                width: suppressPassiveActionContext ? ACTIONS_DOCK_WIDTH + 12 : ACTIONS_DOCK_WIDTH,
                 height: ACTIONS_DOCK_HEIGHT,
             }}
         >
@@ -4012,20 +3999,60 @@ const ActionsZone: React.FC<{
                     <div className="mt-1 text-[11px]" style={{ color: UI_STYLE.mapGold }}>
                         {core.gaoDiDispatchSelection.summary}
                     </div>
-                    <button
-                        type="button"
-                        data-testid="qidahen-gao-di-dispatch-skip"
-                        className="mt-2 inline-flex min-h-[40px] w-full items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                        onClick={() => onResolveGaoDiDispatch('skip')}
-                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                    >
-                        {t('board.actions.gaoDi.skip', { defaultValue: '跳过高第调度' })}
-                    </button>
+                    {isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection) ? (
+                        <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(210,183,117,0.28)' }}>
+                            <div className="text-[12px]" data-testid="qidahen-gao-di-dispatch-target" style={{ color: selectedGaoDiCandidate ? UI_STYLE.mapIvory : UI_STYLE.mapGold }}>
+                                {selectedGaoDiCandidate
+                                    ? t('board.actions.gaoDi.currentTarget', {
+                                        targetRegionName: selectedGaoDiCandidate.targetRegionName,
+                                        defaultValue: '当前目标：{{targetRegionName}}',
+                                    })
+                                    : t('board.actions.gaoDi.selectMapTarget', {
+                                        defaultValue: '在地图上选择目标地区',
+                                    })}
+                            </div>
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    data-testid="qidahen-gao-di-dispatch-confirm"
+                                    disabled={!selectedGaoDiCandidate}
+                                    className="inline-flex min-h-[44px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition disabled:cursor-not-allowed disabled:opacity-45"
+                                    onClick={() => {
+                                        if (selectedGaoDiCandidate) {
+                                            onResolveGaoDiDispatch(selectedGaoDiCandidate.id);
+                                        }
+                                }}
+                                style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                            >
+                                    {t('board.actions.gaoDi.confirmDispatch', { defaultValue: '确认调度' })}
+                                </button>
+                                <button
+                                    type="button"
+                                    data-testid="qidahen-gao-di-dispatch-skip"
+                                    className="inline-flex min-h-[44px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                    onClick={() => onResolveGaoDiDispatch('skip')}
+                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                                >
+                                    {t('board.actions.gaoDi.skip', { defaultValue: '跳过调度' })}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            data-testid="qidahen-gao-di-dispatch-skip"
+                            className="mt-2 inline-flex min-h-[44px] w-full items-center justify-center border-[3px] px-3 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                            onClick={() => onResolveGaoDiDispatch('skip')}
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                        >
+                            {t('board.actions.gaoDi.skip', { defaultValue: '跳过高第调度' })}
+                        </button>
+                    )}
                 </div>
             ) : null}
             {internalDispatchSelection ? (
                 <div
-                    className="mt-3 flex max-h-[calc(100vh-360px)] max-w-[420px] flex-col overflow-hidden border-[3px] px-3 py-2 text-[13px] font-black leading-5"
+                    className="mt-3 max-w-[420px] border-[3px] px-3 py-2 text-[13px] font-black leading-5"
                     data-testid="qidahen-internal-dispatch-selection"
                     style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanel, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
@@ -4036,6 +4063,58 @@ const ActionsZone: React.FC<{
                             maxTroops: internalDispatchSelection.maxTroops,
                             defaultValue: '选择调度目标 · 最多调 {{maxTroops}} 个部队',
                         })}
+                    </div>
+                    <div className="mt-2 border-t pt-2" style={{ borderColor: 'rgba(210,183,117,0.28)' }}>
+                        <div
+                            className="text-[12px]"
+                            data-testid="qidahen-internal-dispatch-target"
+                            aria-live="polite"
+                            style={{ color: selectedInternalDispatchCandidate ? UI_STYLE.mapIvory : UI_STYLE.mapGold }}
+                        >
+                            {selectedInternalDispatchCandidate
+                                ? t('board.actions.internalDispatch.currentTarget', {
+                                    targetRegionName: selectedInternalDispatchCandidate.targetRegionName,
+                                    defaultValue: '当前目标：{{targetRegionName}}',
+                                })
+                                : t('board.actions.internalDispatch.selectMapTarget', {
+                                    defaultValue: '在地图上选择目标地区',
+                                })}
+                        </div>
+                        {selectedInternalDispatchCandidate ? (
+                            <div
+                                className="mt-1 text-[11px] font-bold"
+                                data-testid="qidahen-internal-dispatch-consequence"
+                                style={{ color: UI_STYLE.mapGold }}
+                            >
+                                {selectedInternalDispatchCandidate.resolutionHint}
+                            </div>
+                        ) : null}
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                data-testid="qidahen-internal-dispatch-confirm"
+                                disabled={!selectedInternalDispatchCandidate}
+                                className="inline-flex min-h-[44px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition disabled:cursor-not-allowed disabled:opacity-45"
+                                onClick={() => {
+                                    if (selectedInternalDispatchCandidate) {
+                                        onResolveInternalDispatch(selectedInternalDispatchCandidate.id);
+                                    }
+                            }}
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                        >
+                                {t('board.actions.internalDispatch.confirmDispatch', { defaultValue: '确认调度' })}
+                            </button>
+                            <button
+                                type="button"
+                                data-testid="qidahen-internal-dispatch-cancel"
+                            disabled={!selectedInternalDispatchCandidate}
+                            className="inline-flex min-h-[44px] items-center justify-center border-[3px] px-3 text-[13px] font-black transition disabled:cursor-not-allowed disabled:opacity-45"
+                            onClick={onClearInternalDispatchChoice}
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                        >
+                                {t('board.actions.internalDispatch.cancelSelection', { defaultValue: '取消选择' })}
+                            </button>
+                        </div>
                     </div>
                 </div>
             ) : null}
@@ -4569,19 +4648,35 @@ const ActionsZone: React.FC<{
                         </div>
                     ) : (
                         <div className="mt-2 flex flex-wrap gap-2">
-                            {pendingTargetChoiceOptions.map((choice) => (
-                                <button
-                                    key={choice.id}
-                                    type="button"
-                                    data-testid={getPendingTargetChoiceTestId(choice.id)}
-                                    data-tutorial-id={getPendingTargetChoiceTestId(choice.id)}
-                                    className="inline-flex h-[38px] items-center justify-center border-[3px] px-3 text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                                    onClick={() => onResolvePendingAction(choice.value, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, pendingCommittedTroops)}
-                                    style={{ minWidth: getPendingTargetChoiceMinWidth(choice.id), borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                                >
-                                    {getQidahenFriendlyPendingChoiceLabel(choice)}
-                                </button>
-                            ))}
+                            {pendingTargetChoiceOptions.map((choice) => {
+                                const consequence = choice.id === 'rear-guard'
+                                    ? '撤退时最多损失 1 个幸存部队'
+                                    : choice.id === 'rout'
+                                        ? '撤退时损失全部幸存部队'
+                                        : choice.id.startsWith('cavalry-evasion:')
+                                            ? '骑兵退出本次战斗并撤往所选地区'
+                                            : choice.id.startsWith('cavalry-plunder-')
+                                                ? '骑兵改为劫掠，不进入常规交战'
+                                                : choice.id === 'defender-hold-city'
+                                                    ? '守军收入城内，直接进入城战'
+                                                    : choice.id === 'defender-sortie'
+                                                        ? '守军出城进行野战'
+                                                        : null;
+                                return (
+                                    <button
+                                        key={choice.id}
+                                        type="button"
+                                        data-testid={getPendingTargetChoiceTestId(choice.id)}
+                                        data-tutorial-id={getPendingTargetChoiceTestId(choice.id)}
+                                        className="inline-flex min-h-[52px] flex-col items-start justify-center border-[3px] px-3 py-1.5 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                        onClick={() => onResolvePendingAction(choice.value, pendingAttackerCasualtyPriority, pendingDefenderCasualtyPriority, pendingCommittedTroops)}
+                                        style={{ minWidth: getPendingTargetChoiceMinWidth(choice.id), borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                                    >
+                                        <span>{getQidahenFriendlyPendingChoiceLabel(choice)}</span>
+                                        {consequence ? <span className="mt-0.5 text-[10px]" style={{ color: UI_STYLE.mutedInk }}>{consequence}</span> : null}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -4601,7 +4696,7 @@ const ActionsZone: React.FC<{
                             {normalizeQidahenBattleRollSummary(postBattleSelection.battleRollSummary)}
                         </div>
                     ) : null}
-                    {postBattleSelection.battleRolls ? (
+                    {postBattleSelection.battleRolls && postBattleMode == null ? (
                         <QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />
                     ) : null}
                     <div className="mt-1 text-[11px]" style={{ color: '#f3d1a5' }}>
@@ -4611,25 +4706,99 @@ const ActionsZone: React.FC<{
                             defaultValue: '{{summary}} · 幸存 {{survivingTroops}}',
                         })}
                     </div>
-                    <div className="mt-2 flex flex-col gap-2">
-                        {postBattleSelection.choices.map((choice) => (
+                    {postBattleMode == null ? (
+                        <div className="mt-3 grid grid-cols-3 gap-2" data-testid="qidahen-post-battle-mode-selection">
+                            {(['occupy', 'besiege', 'withdraw'] as const).map((mode) => {
+                                const choiceCount = postBattleSelection.choices.filter((choice) => choice.mode === mode).length;
+                                if (choiceCount === 0) {
+                                    return null;
+                                }
+                                const label = mode === 'occupy'
+                                    ? t('board.actions.postBattle.modeOccupy', { defaultValue: '占领' })
+                                    : mode === 'besiege'
+                                        ? t('board.actions.postBattle.modeBesiege', { defaultValue: '围城' })
+                                        : t('board.actions.postBattle.modeWithdraw', { defaultValue: '撤回' });
+                                return (
+                                    <button
+                                        key={mode}
+                                        type="button"
+                                        data-testid={`qidahen-post-battle-mode-${mode}`}
+                                        className="min-h-[52px] border-[3px] px-3 py-2 text-[13px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                        onClick={() => setPostBattleMode(mode)}
+                                        style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                                        >
+                                        <span className="block">{label}</span>
+                                        <span className="mt-1 block text-[10px]" style={{ color: UI_STYLE.mutedInk }}>
+                                            {t('board.actions.postBattle.choiceCount', {
+                                                count: choiceCount,
+                                                defaultValue: '{{count}} 种结果',
+                                            })}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="mt-3" data-testid={`qidahen-post-battle-mode-options-${postBattleMode}`}>
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                                <div className="text-[12px]" style={{ color: UI_STYLE.mapGold }}>
+                                    {postBattleMode === 'occupy'
+                                        ? t('board.actions.postBattle.occupyTitle', { defaultValue: '占领方式' })
+                                        : postBattleMode === 'besiege'
+                                            ? t('board.actions.postBattle.besiegeTitle', { defaultValue: '围城方式' })
+                                            : t('board.actions.postBattle.withdrawTitle', { defaultValue: '撤回路线' })}
+                                </div>
+                                <button
+                                    type="button"
+                                    className="min-h-[44px] border-[2px] px-3 text-[12px] font-black"
+                                    onClick={() => {
+                                        setPostBattleMode(null);
+                                        setDraftPostBattleChoiceId(null);
+                                    }}
+                                    style={{ borderColor: UI_STYLE.mapGold, color: UI_STYLE.mapIvory, borderRadius: 3 }}
+                                >
+                                    {t('board.actions.postBattle.back', { defaultValue: '返回' })}
+                                </button>
+                            </div>
+                            <div className="flex max-h-[360px] flex-col gap-2 overflow-y-auto pr-1">
+                                {postBattleModeChoices.map((choice) => {
+                                    const selected = choice.id === draftPostBattleChoiceId;
+                                    return (
+                                        <button
+                                            key={choice.id}
+                                            type="button"
+                                            aria-pressed={selected}
+                                            data-testid={`qidahen-post-battle-choice-${choice.id}`}
+                                            className="inline-flex min-h-[52px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
+                                            onClick={() => setDraftPostBattleChoiceId(choice.id)}
+                                            style={{ borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.mapInk, background: selected ? UI_SURFACE.paperPressed : UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                                        >
+                                            <span className="min-w-0">
+                                                <span className="block text-[13px]">{choice.label}</span>
+                                                <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
+                                                    {choice.detail}
+                                                </span>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                             <button
-                                key={choice.id}
                                 type="button"
-                                data-testid={`qidahen-post-battle-choice-${choice.id}`}
-                                className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[12px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
-                                onClick={() => onResolvePostBattleDecision(choice.id)}
-                                style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
-                            >
-                                <span className="min-w-0">
-                                    <span className="block text-[13px]">{choice.label}</span>
-                                    <span className="mt-1 block text-[11px]" style={{ color: UI_STYLE.mutedInk }}>
-                                        {choice.detail}
-                                    </span>
-                                </span>
+                                data-testid="qidahen-post-battle-confirm"
+                                disabled={!draftPostBattleChoice}
+                                className="mt-3 min-h-[44px] w-full border-[3px] px-4 text-[13px] font-black disabled:cursor-not-allowed disabled:opacity-45"
+                                onClick={() => {
+                                    if (draftPostBattleChoice) {
+                                        onResolvePostBattleDecision(draftPostBattleChoice.id);
+                                    }
+                            }}
+                            style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                        >
+                                {t('board.actions.postBattle.confirm', { defaultValue: '确认战后处理' })}
                             </button>
-                        ))}
-                    </div>
+                        </div>
+                    )}
                 </div>
             ) : null}
             </div>
@@ -4799,10 +4968,14 @@ const HandZone: React.FC<{
         && window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH
         && window.innerWidth > window.innerHeight
     ));
+    const [mobileViewportWidth, setMobileViewportWidth] = React.useState(() => (
+        typeof window !== 'undefined' ? window.innerWidth : STAGE_WIDTH
+    ));
     const [selectedTacticCardId, setSelectedTacticCardId] = React.useState<string | null>(null);
     React.useEffect(() => {
         const updateViewportMode = () => {
             setIsMobileLandscapeViewport(window.innerWidth <= MOBILE_MAX_VIEWPORT_WIDTH && window.innerWidth > window.innerHeight);
+            setMobileViewportWidth(window.innerWidth);
         };
         updateViewportMode();
         window.addEventListener('resize', updateViewportMode);
@@ -4818,7 +4991,7 @@ const HandZone: React.FC<{
     const currentFaction = core.factions[currentFactionId];
     const currentHandCards = core.handCards.filter((card) => card.faction === currentFactionId);
     const selectedTacticCard = currentHandCards.find((card) => card.id === selectedTacticCardId) ?? null;
-    const handDockWidth = isMobileLandscapeViewport ? MOBILE_LANDSCAPE_HAND_DOCK_WIDTH : HAND_DOCK_WIDTH;
+    const handDockWidth = isMobileLandscapeViewport ? Math.max(360, mobileViewportWidth - 190) : HAND_DOCK_WIDTH;
     const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : 'calc(100vw - 320px)';
     const mobileHandLayout = getQidahenMobileLandscapeHandLayout(handDockWidth);
     const handCardWidth = isMobileLandscapeViewport
@@ -4827,6 +5000,8 @@ const HandZone: React.FC<{
     const handCardHeight = isMobileLandscapeViewport
         ? mobileHandLayout.height
         : CARD_DIMENSIONS.hand.height;
+    const handCardSelectedLift = isMobileLandscapeViewport ? 18 : HAND_CARD_SELECTED_LIFT;
+    const bottomDockHeight = handCardHeight + handCardSelectedLift + 4;
     const handCardOverlapPx = getQidahenHandCardOverlapPx(
         currentHandCards.length,
         handCardWidth,
@@ -4846,7 +5021,7 @@ const HandZone: React.FC<{
             className="pointer-events-none absolute inset-x-0 bottom-0 z-[80]"
             data-testid="qidahen-bottom-dock"
             style={{
-                height: BOTTOM_DOCK_HEIGHT,
+                height: bottomDockHeight,
                 bottom: dockBottomInset,
             }}
         >
@@ -4856,7 +5031,7 @@ const HandZone: React.FC<{
                     data-testid="qidahen-tactic-card-selection-panel"
                     data-ui-anchor="bottom-hand"
                     style={{
-                        bottom: handCardHeight + HAND_CARD_SELECTED_LIFT + 12,
+                        bottom: handCardHeight + handCardSelectedLift + 12,
                         transform: 'translateX(-50%)',
                         width: Math.min(620, handDockWidth - 48),
                         borderColor: UI_STYLE.oldGold,
@@ -4923,7 +5098,7 @@ const HandZone: React.FC<{
                 style={{
                     bottom: BOTTOM_DOCK_INSET,
                     transform: 'translateX(-50%)',
-                    height: BOTTOM_DOCK_HEIGHT,
+                    height: bottomDockHeight,
                     width: handDockWidth,
                     maxWidth: handDockMaxWidth,
                 }}
@@ -5010,7 +5185,7 @@ const HandZone: React.FC<{
                 style={{
                     bottom: BOTTOM_DOCK_INSET,
                     transform: 'translateX(-50%)',
-                    height: BOTTOM_DOCK_HEIGHT,
+                    height: bottomDockHeight,
                     width: handDockWidth,
                     maxWidth: handDockMaxWidth,
                 }}
@@ -5028,7 +5203,7 @@ const HandZone: React.FC<{
                                     zIndex: selected ? currentHandCards.length + 48 : currentHandCards.length + index + 24,
                                     marginLeft: index === 0 ? 0 : handCardOverlapPx,
                                     transform: selected
-                                        ? `translateY(-${HAND_CARD_SELECTED_LIFT}px) scale(${HAND_CARD_SELECTED_SCALE})`
+                                        ? `translateY(-${handCardSelectedLift}px) scale(${HAND_CARD_SELECTED_SCALE})`
                                         : undefined,
                                     transformOrigin: 'bottom center',
                                     transition: 'transform 180ms ease-out',
@@ -5038,7 +5213,7 @@ const HandZone: React.FC<{
                                     type="button"
                                     data-testid={`qidahen-hand-card-magnify-${card.id}`}
                                     aria-label={t('board.magnifyCardAria', { card: card.label })}
-                                    className={`${mapTargetSelectionActive || handLimitDiscardSelection != null ? 'pointer-events-none' : 'pointer-events-auto'} absolute right-2 top-2 inline-flex h-[26px] min-w-[26px] items-center justify-center rounded-full border-[2px] text-[11px] font-black transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30`}
+                                    className={`${mapTargetSelectionActive || handLimitDiscardSelection != null ? 'pointer-events-none' : 'pointer-events-auto'} absolute right-1 top-1 inline-flex items-center justify-center rounded-full border-[2px] text-[11px] font-black transition hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 ${isMobileLandscapeViewport ? 'h-11 min-w-11' : 'h-[26px] min-w-[26px]'}`}
                                     onClick={(event) => {
                                         event.stopPropagation();
                                         onMagnifyCard?.({
@@ -5085,36 +5260,53 @@ const QidahenSetupObjectChoice: React.FC<{
     selected: boolean;
     testId: string;
     onClick: () => void;
-}> = ({ label, previewRef, selected, testId, onClick }) => {
+    onMagnify?: () => void;
+    disabled?: boolean;
+}> = ({ label, previewRef, selected, testId, onClick, onMagnify, disabled = false }) => {
     const { t } = useTranslation('game-qidahen');
     return (
-    <SelectableGameObject
-        aria-label={label}
-        selected={selected}
-        available
-        data-testid={testId}
-        data-qidahen-choice-selected={selected ? 'true' : undefined}
-        className={`group h-[196px] w-[142px] shrink-0 rounded-[9px] bg-transparent hover:-translate-y-2 active:translate-y-0 ${selected ? '-translate-y-2' : ''}`}
-        onClick={onClick}
-    >
-        {previewRef ? (
-            <span className="pointer-events-none relative block h-full w-full overflow-hidden rounded-[9px] bg-[#efe3c4] shadow-[0_8px_18px_rgba(56,35,15,0.24)]">
-                <CardPreviewFit
-                    previewRef={previewRef}
-                    title={label}
-                    width={142}
-                    height={196}
-                    rawWidth={CARD_DIMENSIONS.hand.rawWidth}
-                    rawHeight={CARD_DIMENSIONS.hand.rawHeight}
-                />
-            </span>
-        ) : (
-            <span className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[9px] border-[2px] border-dashed px-3 text-center" style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.paperQuiet, color: UI_STYLE.ink }}>
-                <span className="text-[15px] font-black">{label}</span>
-                <span className="text-[11px]" style={{ color: UI_STYLE.mutedInk }}>{t('board.setup.missingOfficialCardArt', { defaultValue: '缺少正式卡图' })}</span>
-            </span>
-        )}
-    </SelectableGameObject>
+        <div className="relative h-[226px] w-[164px] shrink-0" data-qidahen-setup-choice-shell>
+            <SelectableGameObject
+                aria-label={`选择${label}`}
+                selected={selected}
+                available={!disabled}
+                disabled={disabled}
+                data-testid={testId}
+                data-qidahen-choice-selected={selected ? 'true' : undefined}
+                className={`group h-[226px] w-[164px] rounded-[9px] bg-transparent active:translate-y-0 ${disabled ? 'cursor-default opacity-65' : 'hover:-translate-y-2'} ${selected ? '-translate-y-2 opacity-100' : ''}`}
+                onClick={onClick}
+            >
+                {previewRef ? (
+                    <span className="pointer-events-none relative block h-full w-full overflow-hidden rounded-[9px] bg-[#efe3c4] shadow-[0_8px_18px_rgba(56,35,15,0.24)]">
+                        <CardPreviewFit
+                            previewRef={previewRef}
+                            title={label}
+                            width={164}
+                            height={226}
+                            rawWidth={CARD_DIMENSIONS.hand.rawWidth}
+                            rawHeight={CARD_DIMENSIONS.hand.rawHeight}
+                        />
+                    </span>
+                ) : (
+                    <span className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-[9px] border-[2px] border-dashed px-3 text-center" style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.paperQuiet, color: UI_STYLE.ink }}>
+                        <span className="text-[15px] font-black">{label}</span>
+                        <span className="text-[11px]" style={{ color: UI_STYLE.mutedInk }}>{t('board.setup.missingOfficialCardArt', { defaultValue: '缺少正式卡图' })}</span>
+                    </span>
+                )}
+            </SelectableGameObject>
+            {previewRef && onMagnify ? (
+                <button
+                    type="button"
+                    className="absolute right-2 top-2 z-20 inline-flex h-11 w-11 items-center justify-center border-[2px] transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30"
+                    aria-label={`放大查看${label}`}
+                    title={`放大查看${label}`}
+                    onClick={onMagnify}
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.paperLight, color: UI_STYLE.ink, borderRadius: 4 }}
+                >
+                    <Maximize2 aria-hidden="true" className="h-5 w-5" />
+                </button>
+            ) : null}
+        </div>
     );
 };
 
@@ -5124,20 +5316,24 @@ const QidahenInMatchSetupOverlay: React.FC<{
     playerID: string | null;
     onResolveScenarioCharacterChoice: (groupId: string, characterIds: string[]) => void;
     onResolveScenarioArmamentChoice: (groupId: string, armamentIds: QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds']) => void;
+    onMagnifyCard: (target: QidahenMagnifyTarget) => void;
 }> = ({
     core,
     viewerFactionId,
     playerID,
     onResolveScenarioCharacterChoice,
     onResolveScenarioArmamentChoice,
+    onMagnifyCard,
 }) => {
     const { t } = useTranslation('game-qidahen');
     const pendingCharacterChoices = core.pendingScenarioCharacterChoices;
     const pendingArmamentChoices = core.pendingScenarioArmamentChoices;
+    const [setupCharacterChoices] = React.useState(() => pendingCharacterChoices);
+    const [setupArmamentChoices] = React.useState(() => pendingArmamentChoices);
     const isViewerScoped = playerID != null && viewerFactionId != null;
-    const interactiveCharacterChoices = pendingCharacterChoices.filter((group) => !isViewerScoped || group.factionId === viewerFactionId);
+    const interactiveCharacterChoices = setupCharacterChoices.filter((group) => !isViewerScoped || group.factionId === viewerFactionId);
     const waitingCharacterChoices = pendingCharacterChoices.filter((group) => isViewerScoped && group.factionId !== viewerFactionId);
-    const interactiveArmamentChoices = pendingArmamentChoices.filter((group) => !isViewerScoped || group.factionId === viewerFactionId);
+    const interactiveArmamentChoices = setupArmamentChoices.filter((group) => !isViewerScoped || group.factionId === viewerFactionId);
     const waitingArmamentChoices = pendingArmamentChoices.filter((group) => isViewerScoped && group.factionId !== viewerFactionId);
     const [selectedCharacterIdsByGroup, setSelectedCharacterIdsByGroup] = React.useState<Record<string, string[]>>({});
     const [selectedArmamentIdsByGroup, setSelectedArmamentIdsByGroup] = React.useState<Record<string, string[]>>({});
@@ -5147,7 +5343,6 @@ const QidahenInMatchSetupOverlay: React.FC<{
         maxCount: number,
         currentSelections: Record<string, string[]>,
         setSelections: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
-        resolveChoice: (groupId: string, selectedIds: string[]) => void,
     ) => {
         const selectedIds = currentSelections[groupId] ?? [];
         const alreadySelected = selectedIds.includes(optionId);
@@ -5160,9 +5355,6 @@ const QidahenInMatchSetupOverlay: React.FC<{
             ...current,
             [groupId]: nextSelectedIds,
         }));
-        if (nextSelectedIds.length === maxCount) {
-            resolveChoice(groupId, nextSelectedIds);
-        }
     }, []);
     const waitingSummaryLines = React.useMemo(() => {
         const waitingSummaries = new Map<string, {
@@ -5203,20 +5395,11 @@ const QidahenInMatchSetupOverlay: React.FC<{
         });
     }, [waitingArmamentChoices, waitingCharacterChoices]);
 
-    React.useEffect(() => {
-        setSelectedCharacterIdsByGroup((current) => Object.fromEntries(
-            Object.entries(current).filter(([groupId]) => pendingCharacterChoices.some((group) => group.id === groupId)),
-        ));
-        setSelectedArmamentIdsByGroup((current) => Object.fromEntries(
-            Object.entries(current).filter(([groupId]) => pendingArmamentChoices.some((group) => group.id === groupId)),
-        ));
-    }, [pendingArmamentChoices, pendingCharacterChoices]);
-
     const currentSeatLabel = t('board.setup.currentSeat', { defaultValue: '本席' });
 
     return (
         <div
-            className="absolute inset-0 z-[140] flex items-center justify-center bg-[rgba(14,10,7,0.78)] px-6 py-8 backdrop-blur-[2px]"
+            className="pointer-events-auto absolute inset-0 z-[140] flex items-center justify-center bg-[rgba(14,10,7,0.78)] px-6 py-8 backdrop-blur-[2px]"
             data-testid="qidahen-inmatch-setup-overlay"
         >
             <div
@@ -5231,10 +5414,10 @@ const QidahenInMatchSetupOverlay: React.FC<{
                             {t('board.setup.eyebrow', { defaultValue: '局内开局设置' })}
                         </div>
                         <div className="mt-2 text-[28px] font-black" data-testid="qidahen-inmatch-setup-title">
-                            {t('board.setup.title', { defaultValue: '先完成剧本人物、军备与阵营前置项' })}
+                            {t('board.setup.title', { defaultValue: '确认本阵营人物与军备' })}
                         </div>
                         <div className="mt-2 text-[13px] leading-6" style={{ color: UI_STYLE.mutedInk }}>
-                            {t('board.setup.description', { defaultValue: '对局内先完成本阵营前置项，完成后进入正式棋盘操作。' })}
+                            {t('board.setup.description', { defaultValue: '选择候选后确认；确认前可以随时改选。' })}
                         </div>
                     </div>
                     <div
@@ -5262,12 +5445,14 @@ const QidahenInMatchSetupOverlay: React.FC<{
                         </div>
                     {interactiveCharacterChoices.map((group) => {
                         const selectedIds = selectedCharacterIdsByGroup[group.id] ?? [];
+                        const completed = !pendingCharacterChoices.some((pendingGroup) => pendingGroup.id === group.id);
                         return (
                             <div
                                 key={group.id}
                                 className="mb-4 border-b-[2px] pb-4 last:mb-0 last:border-b-0 last:pb-0"
                                 data-testid={`qidahen-inmatch-setup-character-${group.id}`}
                                 data-qidahen-inline-choice="character"
+                                data-completed={completed ? 'true' : 'false'}
                                 style={{ borderColor: UI_STYLE.bronzeFaint }}
                             >
                                 <div className="flex items-baseline justify-between gap-3">
@@ -5275,7 +5460,13 @@ const QidahenInMatchSetupOverlay: React.FC<{
                                         {group.factionName} · {t('board.setup.characterLabel', { defaultValue: '人物' })}
                                     </div>
                                     <div className="text-[11px] font-black" style={{ color: UI_STYLE.mutedInk }}>
-                                        {t('board.setup.pickCountAuto', { count: group.count, defaultValue: '点选 {{count}} 项即生效' })}
+                                        {completed
+                                            ? t('board.setup.completed', { defaultValue: '已完成' })
+                                            : t('board.setup.selectedCount', {
+                                                selected: selectedIds.length,
+                                                count: group.count,
+                                                defaultValue: '已选 {{selected}} / {{count}}',
+                                            })}
                                     </div>
                                 </div>
                                 <div className="mt-3 flex flex-wrap items-end gap-4">
@@ -5288,18 +5479,53 @@ const QidahenInMatchSetupOverlay: React.FC<{
                                                 label={label}
                                                 previewRef={getQidahenSetupCharacterPreview(group.factionId, characterId)}
                                                 selected={selected}
+                                                disabled={completed}
                                                 testId={`qidahen-inmatch-setup-character-option-${group.id}-${characterId}`}
+                                                onMagnify={() => {
+                                                    const previewRef = getQidahenSetupCharacterPreview(group.factionId, characterId);
+                                                    if (previewRef) {
+                                                        onMagnifyCard({
+                                                            previewRef,
+                                                            title: label,
+                                                            rawWidth: CARD_DIMENSIONS.hand.rawWidth,
+                                                            rawHeight: CARD_DIMENSIONS.hand.rawHeight,
+                                                        });
+                                                    }
+                                                }}
                                                 onClick={() => applyInlineChoice(
                                                     group.id,
                                                     characterId,
                                                     group.count,
                                                     selectedCharacterIdsByGroup,
                                                     setSelectedCharacterIdsByGroup,
-                                                    onResolveScenarioCharacterChoice,
                                                 )}
                                             />
                                         );
                                     })}
+                                </div>
+                                <div className="mt-4 flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                                    <span className="text-[12px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                        {completed
+                                            ? t('board.setup.characterConfirmed', { defaultValue: '人物选择已确认' })
+                                            : selectedIds.length === group.count
+                                                ? t('board.setup.readyToConfirm', { defaultValue: '候选已齐，可以确认' })
+                                                : t('board.setup.remainingChoices', {
+                                                    count: group.count - selectedIds.length,
+                                                    defaultValue: '还需选择 {{count}} 项',
+                                                })}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        data-testid={`qidahen-inmatch-setup-character-confirm-${group.id}`}
+                                        disabled={completed || selectedIds.length !== group.count}
+                                        className="min-h-11 border-[2px] px-5 text-[13px] font-black disabled:cursor-not-allowed disabled:opacity-45"
+                                        onClick={() => onResolveScenarioCharacterChoice(group.id, selectedIds)}
+                                        style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, borderRadius: 4 }}
+                                    >
+                                        {completed
+                                            ? t('board.setup.characterButtonConfirmed', { defaultValue: '人物已确认' })
+                                            : t('board.setup.confirmCharacter', { defaultValue: '确认人物' })}
+                                    </button>
                                 </div>
                             </div>
                         );
@@ -5307,12 +5533,14 @@ const QidahenInMatchSetupOverlay: React.FC<{
 
                     {interactiveArmamentChoices.map((group) => {
                         const selectedIds = selectedArmamentIdsByGroup[group.id] ?? [];
+                        const completed = !pendingArmamentChoices.some((pendingGroup) => pendingGroup.id === group.id);
                         return (
                             <div
                                 key={group.id}
                                 className="mb-4 border-b-[2px] pb-4 last:mb-0 last:border-b-0 last:pb-0"
                                 data-testid={`qidahen-inmatch-setup-armament-${group.id}`}
                                 data-qidahen-inline-choice="armament"
+                                data-completed={completed ? 'true' : 'false'}
                                 style={{ borderColor: UI_STYLE.bronzeFaint }}
                             >
                                 <div className="flex items-baseline justify-between gap-3">
@@ -5320,8 +5548,20 @@ const QidahenInMatchSetupOverlay: React.FC<{
                                         {group.factionName} · {t('board.setup.armamentLabel', { defaultValue: '军备' })}
                                     </div>
                                     <div className="text-[11px] font-black" style={{ color: UI_STYLE.mutedInk }}>
-                                        {t('board.setup.pickCountAuto', { count: group.count, defaultValue: '点选 {{count}} 项即生效' })}
+                                        {completed
+                                            ? t('board.setup.completed', { defaultValue: '已完成' })
+                                            : t('board.setup.selectedCount', {
+                                                selected: selectedIds.length,
+                                                count: group.count,
+                                                defaultValue: '已选 {{selected}} / {{count}}',
+                                            })}
                                     </div>
+                                </div>
+                                <div className="mt-2 text-[12px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                    {t('board.setup.armamentEligible', {
+                                        factionName: group.factionName,
+                                        defaultValue: '通用军备卡 · 本剧本允许{{factionName}}选择',
+                                    })}
                                 </div>
                                 <div className="mt-3 flex flex-wrap items-end gap-4">
                                     {group.armamentIds.map((armamentId, index) => {
@@ -5333,25 +5573,69 @@ const QidahenInMatchSetupOverlay: React.FC<{
                                                 label={label}
                                                 previewRef={getQidahenSetupArmamentPreview(armamentId)}
                                                 selected={selected}
+                                                disabled={completed}
                                                 testId={`qidahen-inmatch-setup-armament-option-${group.id}-${armamentId}`}
+                                                onMagnify={() => {
+                                                    const previewRef = getQidahenSetupArmamentPreview(armamentId);
+                                                    if (previewRef) {
+                                                        onMagnifyCard({
+                                                            previewRef,
+                                                            title: label,
+                                                            rawWidth: CARD_DIMENSIONS.hand.rawWidth,
+                                                            rawHeight: CARD_DIMENSIONS.hand.rawHeight,
+                                                        });
+                                                    }
+                                                }}
                                                 onClick={() => applyInlineChoice(
                                                     group.id,
                                                     armamentId,
                                                     group.count,
                                                     selectedArmamentIdsByGroup,
                                                     setSelectedArmamentIdsByGroup,
-                                                    (resolvedGroupId, selectedIds) => onResolveScenarioArmamentChoice(
-                                                        resolvedGroupId,
-                                                        selectedIds as QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds'],
-                                                    ),
                                                 )}
                                             />
                                         );
                                     })}
                                 </div>
+                                <div className="mt-4 flex items-center justify-between gap-4 border-t pt-3" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                                    <span className="text-[12px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                        {completed
+                                            ? t('board.setup.armamentConfirmed', { defaultValue: '军备选择已确认' })
+                                            : selectedIds.length === group.count
+                                                ? t('board.setup.readyToConfirm', { defaultValue: '候选已齐，可以确认' })
+                                                : t('board.setup.remainingChoices', {
+                                                    count: group.count - selectedIds.length,
+                                                    defaultValue: '还需选择 {{count}} 项',
+                                                })}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        data-testid={`qidahen-inmatch-setup-armament-confirm-${group.id}`}
+                                        disabled={completed || selectedIds.length !== group.count}
+                                        className="min-h-11 border-[2px] px-5 text-[13px] font-black disabled:cursor-not-allowed disabled:opacity-45"
+                                        onClick={() => onResolveScenarioArmamentChoice(
+                                            group.id,
+                                            selectedIds as QidahenCore['pendingScenarioArmamentChoices'][number]['armamentIds'],
+                                        )}
+                                        style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, borderRadius: 4 }}
+                                    >
+                                        {completed
+                                            ? t('board.setup.armamentButtonConfirmed', { defaultValue: '军备已确认' })
+                                            : t('board.setup.confirmArmament', { defaultValue: '确认军备' })}
+                                    </button>
+                                </div>
                             </div>
                         );
                     })}
+                    {interactiveCharacterChoices.length === 0 && interactiveArmamentChoices.length === 0 ? (
+                        <div
+                            className="flex min-h-[260px] items-center justify-center border-[2px] px-8 text-center text-[15px] font-black"
+                            data-testid="qidahen-inmatch-setup-no-private-choice"
+                            style={{ borderColor: UI_STYLE.bronzeFaint, color: UI_STYLE.mutedInk, background: 'rgba(255,255,255,0.32)', borderRadius: 4 }}
+                        >
+                            {t('board.setup.noPrivateChoice', { defaultValue: '本阵营没有需要选择的前置项，等待其他玩家完成。' })}
+                        </div>
+                    ) : null}
                     </section>
 
                     <section
@@ -5407,21 +5691,23 @@ const QidahenInMatchSetupOverlay: React.FC<{
 const QidahenScenarioVoteScreen: React.FC<{
     core: QidahenCore;
     playerID: string | null;
+    playerNamesById: Record<string, string>;
     onCastScenarioVote: (scenarioId: QidahenScenarioId | null) => void;
 }> = ({
     core,
     playerID,
+    playerNamesById,
     onCastScenarioVote,
 }) => {
     const { t } = useTranslation('game-qidahen');
     const [inspectedScenarioId, setInspectedScenarioId] = React.useState<QidahenScenarioId | null>(null);
+    const [draftScenarioId, setDraftScenarioId] = React.useState<QidahenScenarioId | null>(null);
     const scenarioVote = core.scenarioVote;
 
     if (!scenarioVote) {
         return null;
     }
 
-    const hostSelection = scenarioVote.votes[scenarioVote.hostPlayerId] ?? null;
     const isHostViewer = playerID === scenarioVote.hostPlayerId;
     const playableScenarioIds = new Set(scenarioVote.options.map((option) => option.scenarioId));
     const scenarioOptions = QIDAHEN_SCENARIO_SETUP_OPTIONS.map((setupOption) => {
@@ -5431,28 +5717,24 @@ const QidahenScenarioVoteScreen: React.FC<{
             isPlayable: playableScenarioIds.has(scenarioId),
         };
     });
-    const factionRows = core.currentFactionOrder
-        .map((factionId) => {
-            const faction = core.factions[factionId];
-            if (!Object.prototype.hasOwnProperty.call(scenarioVote.votes, faction.playerId)) {
+    const seatRows = core.playerIds
+        .map((seatPlayerId, index) => {
+            if (!Object.prototype.hasOwnProperty.call(scenarioVote.votes, seatPlayerId)) {
                 return null;
             }
             return {
-                factionId,
-                factionName: faction.name,
-                playerId: faction.playerId,
-                confirmedVote: faction.playerId === scenarioVote.hostPlayerId ? hostSelection : null,
+                playerId: seatPlayerId,
+                seatNumber: index + 1,
             };
         })
         .filter((row): row is NonNullable<typeof row> => row != null);
-    const selectedScenarioLabel = hostSelection
-        ? scenarioOptions.find((option) => option.scenarioId === hostSelection)?.label ?? null
+    const selectedScenarioLabel = draftScenarioId
+        ? scenarioOptions.find((option) => option.scenarioId === draftScenarioId)?.label ?? null
         : null;
-    const firstPlayableScenario = scenarioOptions.find((option) => option.isPlayable) ?? scenarioOptions[0] ?? null;
-    const previewScenarioId = inspectedScenarioId ?? hostSelection ?? firstPlayableScenario?.scenarioId ?? null;
+    const previewScenarioId = inspectedScenarioId ?? draftScenarioId;
     const previewScenario = previewScenarioId
-        ? scenarioOptions.find((option) => option.scenarioId === previewScenarioId) ?? firstPlayableScenario
-        : firstPlayableScenario;
+        ? scenarioOptions.find((option) => option.scenarioId === previewScenarioId) ?? null
+        : null;
     const previewDisabledReason = previewScenario
         ? t('board.scenarioVote.unavailableForPlayerCount', {
             count: scenarioVote.playerCount,
@@ -5463,7 +5745,7 @@ const QidahenScenarioVoteScreen: React.FC<{
 
     return (
         <div
-            className="absolute inset-0 overflow-hidden px-[52px] py-[34px]"
+            className="pointer-events-auto absolute inset-0 overflow-hidden px-[52px] py-[34px]"
             data-testid="qidahen-scenario-vote-screen"
             style={{
                 background: [
@@ -5528,10 +5810,10 @@ const QidahenScenarioVoteScreen: React.FC<{
                         </div>
                     </div>
 
-                    <div className="mt-5 flex min-h-0 flex-1 items-center">
-                        <div className="grid w-full grid-cols-3 gap-5" data-testid="qidahen-scenario-vote-card-rail">
+                    <div className="mt-5 flex min-h-0 flex-1 items-start">
+                        <div className="grid w-full grid-cols-3 gap-5 pt-8" data-testid="qidahen-scenario-vote-card-rail">
                         {scenarioOptions.map((option) => {
-                            const isDraft = hostSelection === option.scenarioId;
+                            const isDraft = draftScenarioId === option.scenarioId;
                             const isPreview = previewScenario?.scenarioId === option.scenarioId;
                             const disabledReason = t('board.scenarioVote.unavailableForPlayerCount', {
                                 count: scenarioVote.playerCount,
@@ -5544,15 +5826,16 @@ const QidahenScenarioVoteScreen: React.FC<{
                                     data-testid={`qidahen-scenario-vote-option-${option.scenarioId}`}
                                     disabled={!isHostViewer || !option.isPlayable}
                                     selected={isDraft}
-                                    available={isHostViewer && option.isPlayable}
+                                    available={false}
                                     aria-label={option.isPlayable ? option.label : `${option.label}，${disabledReason}`}
-                                    className={`group h-[350px] w-full rounded-[12px] bg-transparent cursor-pointer active:translate-y-0 ${isDraft ? '-translate-y-2' : ''}`}
+                                    className={`group h-[350px] w-full rounded-[12px] bg-transparent cursor-pointer transition hover:-translate-y-1 active:translate-y-0 ${isDraft ? '-translate-y-2 ring-[#9f3426] shadow-[0_0_20px_rgba(159,52,38,0.36)]' : ''}`}
                                     onFocus={() => setInspectedScenarioId(option.scenarioId)}
                                     onMouseEnter={() => setInspectedScenarioId(option.scenarioId)}
                                     onMouseLeave={() => setInspectedScenarioId(null)}
                                     onClick={() => {
                                         if (isHostViewer && option.isPlayable) {
-                                            onCastScenarioVote(option.scenarioId);
+                                            setDraftScenarioId(option.scenarioId);
+                                            setInspectedScenarioId(option.scenarioId);
                                         }
                                     }}
                                 >
@@ -5580,10 +5863,10 @@ const QidahenScenarioVoteScreen: React.FC<{
                                     {isDraft ? (
                                         <span
                                             className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap border-[2px] px-3 py-1 text-[11px] font-black"
-                                            data-testid={`qidahen-scenario-host-selected-${option.scenarioId}`}
-                                            style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow }}
-                                        >
-                                            {t('board.scenarioVote.myVote', { defaultValue: '本局采用' })}
+                                        data-testid={`qidahen-scenario-host-selected-${option.scenarioId}`}
+                                        style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow }}
+                                    >
+                                            {t('board.scenarioVote.pendingConfirm', { defaultValue: '待确认' })}
                                         </span>
                                     ) : null}
                                     {!option.isPlayable ? (
@@ -5613,7 +5896,7 @@ const QidahenScenarioVoteScreen: React.FC<{
                         data-testid="qidahen-scenario-vote-seat-status"
                         data-ui-page="qidahen-scenario-vote-book-page-status"
                     >
-                        {factionRows.map((row) => (
+                        {seatRows.map((row) => (
                             <div
                                 key={row.playerId}
                                 className="min-w-0 border px-3 py-2"
@@ -5621,16 +5904,14 @@ const QidahenScenarioVoteScreen: React.FC<{
                                 style={{ borderColor: UI_STYLE.bronzeFaint, background: 'rgba(255,249,225,0.56)', color: UI_STYLE.mutedInk, boxShadow: UI_SURFACE.inkInset, borderRadius: 4 }}
                             >
                                 <div className="truncate" style={{ color: UI_STYLE.ink }}>
-                                    {row.factionName}
+                                    {playerNamesById[row.playerId] ?? `席位 ${row.seatNumber}`}
                                     {row.playerId === playerID ? ` · ${t('board.scenarioVote.you', { defaultValue: '你' })}` : ''}
                                     {row.playerId === scenarioVote.hostPlayerId ? ` · ${t('board.scenarioVote.host', { defaultValue: '房主' })}` : ''}
                                 </div>
                                 <div className="mt-1 truncate">
-                                    {row.confirmedVote
-                                        ? scenarioOptions.find((option) => option.scenarioId === row.confirmedVote)?.label ?? row.confirmedVote
-                                        : row.playerId === scenarioVote.hostPlayerId
-                                            ? t('board.scenarioVote.pendingVote', { defaultValue: '等待房主选择' })
-                                            : t('board.scenarioVote.waitingHost', { defaultValue: '等待剧本结果' })}
+                                    {row.playerId === scenarioVote.hostPlayerId
+                                        ? t('board.scenarioVote.pendingVote', { defaultValue: '正在选择剧本' })
+                                        : t('board.scenarioVote.waitingHost', { defaultValue: '等待剧本结果' })}
                                 </div>
                             </div>
                         ))}
@@ -5650,13 +5931,13 @@ const QidahenScenarioVoteScreen: React.FC<{
                                     rawWidth={CARD_DIMENSIONS.hand.rawWidth}
                                     rawHeight={CARD_DIMENSIONS.hand.rawHeight}
                                 />
-                                {hostSelection === previewScenario.scenarioId ? (
+                                {draftScenarioId === previewScenario.scenarioId ? (
                                     <span
                                         className="pointer-events-none absolute -bottom-4 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap border-[2px] px-4 py-1 text-[12px] font-black"
                                         data-testid={`qidahen-scenario-feature-selected-${previewScenario.scenarioId}`}
                                         style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, boxShadow: UI_SURFACE.hardShadow }}
                                     >
-                                        {t('board.scenarioVote.myVote', { defaultValue: '本局采用' })}
+                                        {t('board.scenarioVote.pendingConfirm', { defaultValue: '待确认' })}
                                     </span>
                                 ) : null}
                                 {!previewScenario.isPlayable && previewDisabledReason ? (
@@ -5668,7 +5949,15 @@ const QidahenScenarioVoteScreen: React.FC<{
                                     </span>
                                 ) : null}
                             </div>
-                        ) : null}
+                        ) : (
+                            <div
+                                className="flex h-[360px] w-[520px] items-center justify-center border-[3px] px-12 text-center text-[16px] font-black"
+                                data-testid="qidahen-scenario-vote-empty-preview"
+                                style={{ borderColor: UI_STYLE.paperEdge, color: UI_STYLE.mutedInk, background: UI_SURFACE.paperQuiet, borderRadius: 6 }}
+                            >
+                                {t('board.scenarioVote.emptyPreview', { defaultValue: '选择左侧剧本卡查看详情' })}
+                            </div>
+                        )}
                     </div>
 
                     <div
@@ -5682,18 +5971,197 @@ const QidahenScenarioVoteScreen: React.FC<{
                             </div>
                             <div className="mt-1 text-[15px] font-black leading-6" style={{ color: UI_STYLE.mapIvory }}>
                                 {isHostViewer
-                                    ? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
+                                    ? selectedScenarioLabel ?? t('board.scenarioVote.selectCard', { defaultValue: '选择一张剧本卡' })
                                     : t('board.scenarioVote.waitingHost', { defaultValue: '等待房主选择' })}
                             </div>
                         </div>
-                        <div
-                            className="min-w-[180px] border px-3 py-2 text-center text-[13px] font-black"
-                            style={{ borderColor: 'rgba(210,183,117,0.34)', background: 'rgba(32,21,13,0.42)', color: UI_STYLE.mapGold, clipPath: UI_SURFACE.smallCutCorner }}
-                        >
-                            {selectedScenarioLabel ?? t('board.scenarioVote.noDraft', { defaultValue: '尚未选择剧本' })}
-                        </div>
+                        {isHostViewer ? (
+                            <button
+                                type="button"
+                                data-testid="qidahen-scenario-vote-confirm"
+                                disabled={!draftScenarioId}
+                                className="min-h-11 min-w-[190px] border-[2px] px-5 text-[14px] font-black disabled:cursor-not-allowed disabled:opacity-45"
+                                onClick={() => onCastScenarioVote(draftScenarioId)}
+                                style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, borderRadius: 4 }}
+                            >
+                                {t('board.scenarioVote.confirmScenario', { defaultValue: '确认采用' })}
+                            </button>
+                        ) : (
+                            <div
+                                className="min-w-[180px] border px-3 py-2 text-center text-[13px] font-black"
+                                style={{ borderColor: 'rgba(210,183,117,0.34)', background: 'rgba(32,21,13,0.42)', color: UI_STYLE.mapGold, clipPath: UI_SURFACE.smallCutCorner }}
+                            >
+                                {t('board.scenarioVote.waitingHostShort', { defaultValue: '等待房主' })}
+                            </div>
+                        )}
                     </div>
                 </section>
+            </div>
+        </div>
+    );
+};
+
+const FACTION_MARKER_ASSET: Record<QidahenFactionId, string> = {
+    ming: ASSETS.mingMarker,
+    mongol: ASSETS.mongolMarker,
+    jin: ASSETS.jinMarker,
+};
+
+const QIDAHEN_FACTION_SELECTION_SUMMARY: Record<QidahenFactionId, string> = {
+    ming: '资源紧张 · 守势经营',
+    mongol: '机动灵活 · 牵制突袭',
+    jin: '手牌充足 · 正面扩张',
+};
+
+const QidahenFactionSelectionScreen: React.FC<{
+    core: QidahenCore;
+    playerID: string | null;
+    playerNamesById: Record<string, string>;
+    locale?: string;
+    onSelectFaction: (factionId: QidahenFactionId) => void;
+}> = ({ core, playerID, playerNamesById, locale, onSelectFaction }) => {
+    const { t } = useTranslation('game-qidahen');
+    const selectionState = core.factionSelection;
+    const ownSelection = playerID ? selectionState?.selections[playerID] ?? null : null;
+    const [draftFactionId, setDraftFactionId] = React.useState<QidahenFactionId | null>(ownSelection);
+
+    React.useEffect(() => {
+        if (!selectionState || !draftFactionId) {
+            return;
+        }
+        const ownerPlayerId = Object.entries(selectionState.selections).find(([, selectedFactionId]) => selectedFactionId === draftFactionId)?.[0] ?? null;
+        if (ownerPlayerId && ownerPlayerId !== playerID) {
+            setDraftFactionId(ownSelection);
+        }
+    }, [draftFactionId, ownSelection, playerID, selectionState]);
+
+    if (!selectionState) {
+        return null;
+    }
+
+    return (
+        <div
+            className="pointer-events-auto absolute inset-0 flex items-center justify-center bg-[rgba(18,12,8,0.78)] px-10 py-9 backdrop-blur-[2px]"
+            data-testid="qidahen-faction-selection-screen"
+        >
+            <div
+                className="w-full max-w-[1240px] border-[4px] p-7"
+                style={{
+                    borderColor: UI_STYLE.mapInk,
+                    background: UI_SURFACE.bookPaper,
+                    color: UI_STYLE.ink,
+                    boxShadow: '0 8px 0 rgba(58,37,17,0.26), 0 28px 46px rgba(13,8,4,0.42)',
+                    borderRadius: 8,
+                }}
+            >
+                <div className="flex items-end justify-between gap-6 border-b-[2px] pb-5" style={{ borderColor: UI_STYLE.bronzeFaint }}>
+                    <div>
+                        <div className="text-[12px] font-black" style={{ color: UI_STYLE.cinnabar }}>
+                            {t('board.factionSelection.eyebrow', { defaultValue: '局内开局设置' })}
+                        </div>
+                        <h2 className="mt-2 text-[30px] font-black" data-testid="qidahen-faction-selection-title">
+                            {t('board.factionSelection.title', { defaultValue: '选择你的阵营' })}
+                        </h2>
+                    </div>
+                    <div className="border-[2px] px-4 py-2 text-[13px] font-black" style={{ borderColor: UI_STYLE.paperEdge, background: UI_STYLE.paperLight, borderRadius: 4 }}>
+                        {core.scenarioLabel}
+                    </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-3 gap-5" data-testid="qidahen-faction-selection-options">
+                    {selectionState.availableFactionIds.map((factionId) => {
+                        const faction = core.factions[factionId];
+                        const ownerPlayerId = Object.entries(selectionState.selections).find(([, selectedFactionId]) => selectedFactionId === factionId)?.[0] ?? null;
+                        const ownerSeatNumber = ownerPlayerId ? core.playerIds.indexOf(ownerPlayerId) + 1 : null;
+                        const selectedByViewer = draftFactionId === factionId;
+                        const confirmedByViewer = ownerPlayerId != null && ownerPlayerId === playerID;
+                        const occupiedByOther = ownerPlayerId != null && ownerPlayerId !== playerID;
+                        return (
+                            <button
+                                key={factionId}
+                                type="button"
+                                data-testid={`qidahen-faction-option-${factionId}`}
+                                data-selected={selectedByViewer ? 'true' : 'false'}
+                                disabled={!playerID || occupiedByOther}
+                                className="group relative flex min-h-[290px] flex-col items-center justify-center border-[4px] px-5 py-6 text-center transition duration-150 enabled:hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-50"
+                                style={{
+                                    borderColor: selectedByViewer ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
+                                    background: selectedByViewer ? UI_SURFACE.mapOpenPanelSelected : UI_SURFACE.bookPage,
+                                    boxShadow: selectedByViewer ? UI_SURFACE.mapOpenPanelShadow : UI_SURFACE.mapPanelShadow,
+                                    borderRadius: 6,
+                                }}
+                                aria-pressed={selectedByViewer}
+                                onClick={() => setDraftFactionId(factionId)}
+                            >
+                                <OptimizedImage
+                                    src={FACTION_MARKER_ASSET[factionId]}
+                                    locale={locale}
+                                    alt=""
+                                    aria-hidden="true"
+                                    className="h-[118px] w-[118px] object-contain drop-shadow-[0_10px_12px_rgba(50,31,14,0.28)]"
+                                    draggable={false}
+                                    placeholder={false}
+                                />
+                                <span className="mt-5 text-[25px] font-black">{faction.name}</span>
+                                <span className="mt-2 text-[13px] font-black" style={{ color: UI_STYLE.mutedInk }}>
+                                    {QIDAHEN_FACTION_SELECTION_SUMMARY[factionId]}
+                                </span>
+                                <span className="mt-3 text-[12px] font-black" style={{ color: selectedByViewer ? UI_STYLE.cinnabar : UI_STYLE.mutedInk }}>
+                                    {confirmedByViewer && selectedByViewer
+                                        ? t('board.factionSelection.youConfirmed', { defaultValue: '你已确认' })
+                                        : selectedByViewer
+                                            ? t('board.factionSelection.pendingConfirm', { defaultValue: '待确认' })
+                                        : occupiedByOther
+                                            ? t('board.factionSelection.occupiedBy', {
+                                                playerName: playerNamesById[ownerPlayerId] ?? t('board.factionSelection.seatFallback', {
+                                                    seatNumber: ownerSeatNumber,
+                                                    defaultValue: '席位 {{seatNumber}}',
+                                                }),
+                                                defaultValue: '{{playerName}} 已确认',
+                                            })
+                                            : t('board.factionSelection.available', { defaultValue: '可选择' })}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="mt-6 flex items-center justify-between gap-6 border-t-[2px] pt-4 text-[13px] font-black" style={{ borderColor: UI_STYLE.bronzeFaint, color: UI_STYLE.mutedInk }}>
+                    <div className="min-w-0">
+                        <span data-testid="qidahen-faction-selection-status">
+                            {draftFactionId
+                                ? t('board.factionSelection.draftStatus', {
+                                    status: ownSelection === draftFactionId
+                                        ? t('board.factionSelection.confirmedStatus', { defaultValue: '已确认' })
+                                        : t('board.factionSelection.pendingStatus', { defaultValue: '待确认' }),
+                                    factionName: core.factions[draftFactionId].name,
+                                    defaultValue: '{{status}} {{factionName}}',
+                                })
+                                : t('board.factionSelection.chooseAvailable', { defaultValue: '请选择一个未被占用的阵营' })}
+                        </span>
+                        <span className="ml-4">
+                            {t('board.factionSelection.confirmedCount', {
+                                confirmed: Object.keys(selectionState.selections).length,
+                                total: core.playerIds.length,
+                                defaultValue: '已确认 {{confirmed}} / {{total}}',
+                            })}
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        data-testid="qidahen-faction-selection-confirm"
+                        disabled={!draftFactionId || draftFactionId === ownSelection}
+                        className="min-h-11 min-w-[156px] border-[2px] px-5 text-[14px] font-black disabled:cursor-not-allowed disabled:opacity-45"
+                        onClick={() => {
+                            if (draftFactionId) {
+                                onSelectFaction(draftFactionId);
+                            }
+                        }}
+                        style={{ borderColor: UI_STYLE.mapInk, background: UI_STYLE.cinnabar, color: UI_STYLE.mapIvory, borderRadius: 4 }}
+                    >
+                        {t('board.factionSelection.confirmFaction', { defaultValue: '确认阵营' })}
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -5726,6 +6194,9 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         eventEntries: G.sys.eventStream?.entries,
     });
     const viewerFactionId = React.useMemo(() => resolveViewerFactionId(core, playerID), [core, playerID]);
+    const playerNamesById = React.useMemo(() => Object.fromEntries(
+        (matchData ?? []).map((player) => [String(player.id), player.name?.trim() || `席位 ${player.id + 1}`]),
+    ), [matchData]);
     const isTutorialCommandAllowed = React.useCallback((commandType: string): boolean => {
         if (!isTutorialActive || !tutorialStep) {
             return true;
@@ -5742,8 +6213,9 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         return !!targetId && tutorialStep.allowedTargets.includes(targetId);
     }, [isTutorialActive, tutorialStep]);
     const scenarioVotePending = core.scenarioVote != null;
+    const factionSelectionPending = core.factionSelection != null;
     const scenarioChoicesPending = core.pendingScenarioCharacterChoices.length > 0 || core.pendingScenarioArmamentChoices.length > 0;
-    const setupStagePending = scenarioVotePending || scenarioChoicesPending;
+    const setupStagePending = scenarioVotePending || factionSelectionPending || scenarioChoicesPending;
     const activeInteraction = G.sys.interaction?.current;
     const handLimitDiscardSelectionFromInteraction = getQidahenHandLimitDiscardSelectionFromInteraction(activeInteraction);
     const recruitSelectionFromInteraction = getQidahenRecruitSelectionFromInteraction(activeInteraction);
@@ -5780,8 +6252,20 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     const fortificationMaintenanceSelection = getQidahenFortificationMaintenanceSelectionForCore(core, activeInteraction);
     const pendingTargetAction = getQidahenPendingTargetActionForCore(core, activeInteraction);
     const postBattleSelection = getQidahenPostBattleSelectionForCore(core, activeInteraction);
+    const [draftGaoDiChoiceId, setDraftGaoDiChoiceId] = React.useState<string | null>(null);
+    const [draftInternalDispatchChoiceId, setDraftInternalDispatchChoiceId] = React.useState<string | null>(null);
+    const draftGaoDiCandidate = core.gaoDiDispatchSelection?.candidates.find((candidate) => candidate.id === draftGaoDiChoiceId) ?? null;
+    const draftInternalDispatchCandidate = internalDispatchSelection?.candidates.find(
+        (candidate) => candidate.id === draftInternalDispatchChoiceId,
+    ) ?? null;
+    const draftMapCandidate = draftGaoDiCandidate ?? draftInternalDispatchCandidate;
+    const draftMapSelectionActive = core.gaoDiDispatchSelection != null || internalDispatchSelection != null;
     const displayCore = React.useMemo(() => ({
         ...core,
+        ...(draftMapSelectionActive ? {
+            ...(draftMapCandidate ? { selectedRegionId: draftMapCandidate.targetRegionId } : {}),
+            explicitRegionId: draftMapCandidate?.targetRegionId ?? null,
+        } : {}),
         internalDispatchSelection,
         grantPardonSelection,
         maShiTradeSelection,
@@ -5790,6 +6274,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         pendingTargetAction,
     }), [
         core,
+        draftMapCandidate,
+        draftMapSelectionActive,
         driveTigerConsentSelection,
         grantPardonSelection,
         internalDispatchSelection,
@@ -5806,8 +6292,16 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         && core.confirmedActionId != null
         && core.payment.required > 0;
     const [mapViewport, setMapViewport] = React.useState<QidahenMapViewport>(DEFAULT_QIDAHEN_MAP_VIEWPORT);
+    const mapViewportBeforeAutoFocusRef = React.useRef<QidahenMapViewport | null>(null);
+    const activeAutoFocusKeyRef = React.useRef<string | null>(null);
     const [magnifyTarget, setMagnifyTarget] = React.useState<QidahenMagnifyTarget | null>(null);
     const [selectedHandLimitCardIds, setSelectedHandLimitCardIds] = React.useState<string[]>(handLimitDiscardSelection?.selectedCardIds ?? []);
+    const gaoDiSelectionKey = core.gaoDiDispatchSelection
+        ? `${core.gaoDiDispatchSelection.sourceRegionId}:${core.gaoDiDispatchSelection.selectedCardId ?? ''}`
+        : null;
+    const internalDispatchSelectionKey = internalDispatchSelection
+        ? `${internalDispatchSelection.sourceRegionId}:${internalDispatchSelection.candidates.map((candidate) => candidate.id).join('|')}`
+        : null;
     const factionStageSelectionActive = core.gaoDiDispatchSelection != null
         || internalDispatchSelection != null
         || recruitSelection != null
@@ -5873,6 +6367,14 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         setSelectedHandLimitCardIds(handLimitDiscardSelection?.selectedCardIds ?? []);
     }, [activeHandLimitInteractionId, handLimitDiscardSelection]);
 
+    React.useEffect(() => {
+        setDraftGaoDiChoiceId(null);
+    }, [gaoDiSelectionKey]);
+
+    React.useEffect(() => {
+        setDraftInternalDispatchChoiceId(null);
+    }, [internalDispatchSelectionKey]);
+
     const selectWheelMove = React.useCallback((moveId: string) => {
         if (!isTutorialCommandAllowed(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE) || !isTutorialTargetAllowed(moveId)) {
             return;
@@ -5889,6 +6391,10 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
 
     const castScenarioVote = React.useCallback((scenarioId: QidahenScenarioId | null) => {
         dispatch(QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE, { scenarioId });
+    }, [dispatch]);
+
+    const selectFaction = React.useCallback((factionId: QidahenFactionId) => {
+        dispatch(QIDAHEN_COMMANDS.SELECT_FACTION, { factionId });
     }, [dispatch]);
 
     const previewAction = React.useCallback((actionId: string, tutorialTargetId = actionId, sourceHandCardId?: string) => {
@@ -6271,7 +6777,12 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     const defeatInDetailOrderSelectionActive = isQidahenDefeatInDetailOrderSelectionActive(
         pendingTargetAction,
     );
-    const mapRegionSelectionDecisionActive = isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection)
+    const actionPaymentMapRegionSelectionActive = actionPaymentPreviewVisible
+        && core.confirmedActionId === 'raid';
+    const gaoDiMapRegionSelectionActive = isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection);
+    const directMapRegionSelectionActive = actionPaymentMapRegionSelectionActive || gaoDiMapRegionSelectionActive;
+    const mapRegionSelectionDecisionActive = gaoDiMapRegionSelectionActive
+        || actionPaymentMapRegionSelectionActive
         || defeatInDetailOrderSelectionActive
         || internalDispatchSelection != null
         || recruitSelection != null
@@ -6296,6 +6807,26 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         if (!mapRegionSelectionDecisionActive) {
             return;
         }
+        if (isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection)) {
+            const runtimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionId);
+            const candidate = core.gaoDiDispatchSelection?.candidates.find((item) => (
+                item.targetRegionId === regionId || item.targetRegionId === runtimeRegionId
+            ));
+            if (candidate) {
+                setDraftGaoDiChoiceId(candidate.id);
+            }
+            return;
+        }
+        if (internalDispatchSelection) {
+            const runtimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionId);
+            const candidate = internalDispatchSelection.candidates.find((item) => (
+                item.targetRegionId === regionId || item.targetRegionId === runtimeRegionId
+            ));
+            if (candidate) {
+                setDraftInternalDispatchChoiceId(candidate.id);
+            }
+            return;
+        }
         if (grantPardonSelection != null) {
             const choice = grantPardonMapChoices.find((item) => item.targetRegionId === regionId);
             if (choice && isTutorialTargetAllowed(choice.id)) {
@@ -6307,7 +6838,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             return;
         }
         dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId });
-    }, [setupStagePending, pendingTargetAction, defeatInDetailOrderSelectionActive, postBattleSelection, driveTigerConsentSelection, fortificationMaintenanceSelection, handLimitDiscardSelection, core.sunYuanhuaTechSelection, mapRegionSelectionDecisionActive, grantPardonSelection, grantPardonMapChoices, isTutorialTargetAllowed, isTutorialCommandAllowed, dispatch, resolveGrantPardonChoice]);
+    }, [setupStagePending, pendingTargetAction, defeatInDetailOrderSelectionActive, postBattleSelection, driveTigerConsentSelection, fortificationMaintenanceSelection, handLimitDiscardSelection, core.sunYuanhuaTechSelection, core.gaoDiDispatchSelection, internalDispatchSelection, mapRegionSelectionDecisionActive, grantPardonSelection, grantPardonMapChoices, isTutorialTargetAllowed, isTutorialCommandAllowed, dispatch, resolveGrantPardonChoice, setDraftGaoDiChoiceId, setDraftInternalDispatchChoiceId]);
 
     const activateTopLevelGuideTarget = React.useCallback((candidate: {
         action: 'wheel-dispatch' | 'gao-di' | 'internal-dispatch' | 'grant-pardon' | 'select-region';
@@ -6319,11 +6850,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             return;
         }
         if (candidate.action === 'gao-di') {
-            resolveGaoDiDispatch(candidate.resolutionChoiceId);
+            setDraftGaoDiChoiceId(candidate.resolutionChoiceId);
             return;
         }
         if (candidate.action === 'internal-dispatch') {
-            resolveInternalDispatch(candidate.resolutionChoiceId);
+            setDraftInternalDispatchChoiceId(candidate.resolutionChoiceId);
             return;
         }
         if (candidate.action === 'grant-pardon') {
@@ -6331,7 +6862,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             return;
         }
         selectRegion(candidate.targetRegionId);
-    }, [resolveWheelDispatchChoice, resolveGaoDiDispatch, resolveInternalDispatch, resolveGrantPardonChoice, selectRegion]);
+    }, [resolveWheelDispatchChoice, resolveGrantPardonChoice, selectRegion, setDraftGaoDiChoiceId, setDraftInternalDispatchChoiceId]);
 
     const buildRegularTroopPlacementCandidates = React.useCallback((factionId: QidahenFactionId) => (
         displayCore.regions
@@ -6500,6 +7031,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             ? autoFocusMapTargetRegionIdsKey.split('|')
             : [];
         if (!autoFocusMapTargetKey || autoFocusMapTargetRegionIds.length <= 0) {
+            if (activeAutoFocusKeyRef.current && mapViewportBeforeAutoFocusRef.current) {
+                setMapViewport(mapViewportBeforeAutoFocusRef.current);
+            }
+            activeAutoFocusKeyRef.current = null;
+            mapViewportBeforeAutoFocusRef.current = null;
             return;
         }
         const activeTargetRegionId = tutorialMapFocusCandidateRegionId
@@ -6522,13 +7058,17 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         if (!viewport) {
             return;
         }
-        setMapViewport((currentViewport) => (
-            currentViewport.zoom === viewport.zoom
-            && currentViewport.panX === viewport.panX
-            && currentViewport.panY === viewport.panY
-                ? currentViewport
-                : viewport
-        ));
+        setMapViewport((currentViewport) => {
+            if (!activeAutoFocusKeyRef.current) {
+                mapViewportBeforeAutoFocusRef.current = currentViewport;
+            }
+            activeAutoFocusKeyRef.current = autoFocusMapTargetKey;
+            return currentViewport.zoom === viewport.zoom
+                && currentViewport.panX === viewport.panX
+                && currentViewport.panY === viewport.panY
+                    ? currentViewport
+                    : viewport;
+        });
     }, [
         autoFocusMapTargetKey,
         autoFocusMapTargetRegionIdsKey,
@@ -6540,36 +7080,17 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
         wheelDispatchSelection?.sourceRegionId,
     ]);
 
-    if (scenarioVotePending) {
-        return (
-            <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
-                <StageRoot>
-                    <QidahenScenarioVoteScreen
-                        core={core}
-                        playerID={playerID}
-                        onCastScenarioVote={castScenarioVote}
-                    />
-                </StageRoot>
-            </UndoProvider>
-        );
-    }
-
-    return (
-        <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
-            <StageRoot>
-            {!scenarioVotePending && scenarioChoicesPending ? (
-                <QidahenInMatchSetupOverlay
-                    core={core}
-                    viewerFactionId={viewerFactionId}
-                    playerID={playerID}
-                    onResolveScenarioCharacterChoice={resolveScenarioCharacterChoice}
-                    onResolveScenarioArmamentChoice={resolveScenarioArmamentChoice}
-                />
-            ) : null}
+    const boardScene = (
+        <>
             <MapSceneLayer
                 core={displayCore}
                 perspectiveFactionId={viewerFactionId}
-                mapHitTestingDisabled={actionPaymentPreviewVisible || handLimitDiscardSelection != null || core.sunYuanhuaTechSelection != null || core.gaoDiDispatchSelection != null}
+                mapHitTestingDisabled={!directMapRegionSelectionActive && (
+                    actionPaymentPreviewVisible
+                    || handLimitDiscardSelection != null
+                    || core.sunYuanhuaTechSelection != null
+                    || core.gaoDiDispatchSelection != null
+                )}
                 wheelDispatchSelection={wheelDispatchSelection}
                 grantPardonSelection={grantPardonSelection}
                 grantPardonMapChoices={grantPardonMapChoices}
@@ -6588,6 +7109,132 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 locale={locale}
                 onSelectRegion={selectRegion}
             />
+            {topLevelMapSelectionGuide && tutorialStep?.id === 'choose-grant-pardon-target' ? (
+                <div className="pointer-events-none absolute inset-0 z-40" aria-hidden="true">
+                    {topLevelMapSelectionGuide.candidates.map((candidate) => {
+                        const targetPoint = getTopLevelGuideRegionPoint(candidate.targetRegionId);
+                        if (!targetPoint) {
+                            return null;
+                        }
+                        return (
+                            <div
+                                key={`top-level-guide-anchor-${candidate.id}`}
+                                data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
+                                data-tutorial-id={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
+                                data-choice-id={candidate.resolutionChoiceId}
+                                data-action={candidate.action}
+                                data-grant-pardon-map-choice={candidate.action === 'grant-pardon' ? candidate.resolutionChoiceId : undefined}
+                                style={{
+                                    position: 'absolute',
+                                    left: targetPoint.x - 1,
+                                    top: targetPoint.y - 1,
+                                    width: 2,
+                                    height: 2,
+                                    opacity: 0,
+                                }}
+                            />
+                        );
+                    })}
+                </div>
+            ) : null}
+            {topLevelMapSelectionGuide && tutorialStep?.id !== 'choose-grant-pardon-target' ? (
+                <div className="pointer-events-none absolute inset-0 z-40">
+                    {topLevelMapSelectionGuide.candidates.map((candidate) => {
+                        const targetPoint = getTopLevelGuideRegionPoint(candidate.targetRegionId);
+                        if (!targetPoint) {
+                            return null;
+                        }
+                        return (
+                            <button
+                                key={`top-level-guide-hit-${candidate.id}`}
+                                type="button"
+                                data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
+                                data-choice-id={candidate.resolutionChoiceId}
+                                data-action={candidate.action}
+                                data-grant-pardon-map-choice={candidate.action === 'grant-pardon' ? candidate.resolutionChoiceId : undefined}
+                                aria-label={`${topLevelMapSelectionGuide.title}：${candidate.targetRegionName}`}
+                                aria-pressed={candidate.action === 'gao-di'
+                                    ? draftGaoDiChoiceId === candidate.resolutionChoiceId
+                                    : candidate.action === 'internal-dispatch'
+                                        ? draftInternalDispatchChoiceId === candidate.resolutionChoiceId
+                                        : resolveQidahenPrimaryRuntimeRegionId(displayCore.explicitRegionId) === resolveQidahenPrimaryRuntimeRegionId(candidate.targetRegionId)}
+                                className="qidahen-map-guide-hit-target pointer-events-auto absolute cursor-pointer border-0 bg-transparent p-0"
+                                style={{
+                                    left: targetPoint.x - 34,
+                                    top: targetPoint.y - 34,
+                                    width: 68,
+                                    height: 68,
+                                    background: 'transparent',
+                                    boxShadow: 'none',
+                                }}
+                                onClick={() => activateTopLevelGuideTarget(candidate)}
+                            />
+                        );
+                    })}
+                </div>
+            ) : null}
+        </>
+    );
+
+    if (scenarioVotePending) {
+        return (
+            <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
+                <QidahenBoardShell
+                    layout={QIDAHEN_BOARD_LAYOUT}
+                    backgroundColor={QIDAHEN_STAGE_BG}
+                    scene={<StaticMapScene locale={locale} />}
+                    hud={(
+                        <QidahenScenarioVoteScreen
+                            core={core}
+                            playerID={playerID}
+                            playerNamesById={playerNamesById}
+                            onCastScenarioVote={castScenarioVote}
+                        />
+                    )}
+                />
+            </UndoProvider>
+        );
+    }
+
+    if (factionSelectionPending) {
+        return (
+            <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
+                <QidahenBoardShell
+                    layout={QIDAHEN_BOARD_LAYOUT}
+                    backgroundColor={QIDAHEN_STAGE_BG}
+                    scene={<StaticMapScene locale={locale} />}
+                    hud={(
+                        <QidahenFactionSelectionScreen
+                            core={core}
+                            playerID={playerID}
+                            playerNamesById={playerNamesById}
+                            locale={locale}
+                            onSelectFaction={selectFaction}
+                        />
+                    )}
+                />
+            </UndoProvider>
+        );
+    }
+
+    return (
+        <UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode: !isMultiplayer }}>
+            <QidahenBoardShell
+                layout={QIDAHEN_BOARD_LAYOUT}
+                backgroundColor={QIDAHEN_STAGE_BG}
+                scene={boardScene}
+                hud={(
+                    <>
+            {!scenarioVotePending && scenarioChoicesPending ? (
+                <QidahenInMatchSetupOverlay
+                    core={core}
+                    viewerFactionId={viewerFactionId}
+                    playerID={playerID}
+                    onResolveScenarioCharacterChoice={resolveScenarioCharacterChoice}
+                    onResolveScenarioArmamentChoice={resolveScenarioArmamentChoice}
+                    onMagnifyCard={setMagnifyTarget}
+                />
+            ) : null}
             {showTopWheelPrompt ? (
                 <TopPromptBanner
                     testId="qidahen-wheel-next-step-banner"
@@ -6646,7 +7293,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onSelectRegion={selectRegion}
                 onResolveRecruitChoice={resolveRecruitChoice}
                 onResolveGrantPardonChoice={resolveGrantPardonChoice}
+                selectedGaoDiChoiceId={draftGaoDiChoiceId}
                 onResolveGaoDiDispatch={resolveGaoDiDispatch}
+                selectedInternalDispatchChoiceId={draftInternalDispatchChoiceId}
+                onResolveInternalDispatch={resolveInternalDispatch}
+                onClearInternalDispatchChoice={() => setDraftInternalDispatchChoiceId(null)}
                 onResolveMaShiTradeChoice={resolveMaShiTradeChoice}
                 onResolveKhanEdictChoice={resolveKhanEdictChoice}
                 onResolveDiplomacyChoice={resolveDiplomacyChoice}
@@ -6700,69 +7351,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onPreviewActionFromHandCard={previewActionFromHandCard}
                 onMagnifyCard={setMagnifyTarget}
             />
-            {topLevelMapSelectionGuide && tutorialStep?.id === 'choose-grant-pardon-target' ? (
-                <div className="pointer-events-none absolute inset-0 z-40" aria-hidden="true">
-                    {topLevelMapSelectionGuide.candidates.map((candidate) => {
-                        const targetPoint = getTopLevelGuideRegionPoint(candidate.targetRegionId);
-                        if (!targetPoint) {
-                            return null;
-                        }
-                        return (
-                            <div
-                                key={`top-level-guide-anchor-${candidate.id}`}
-                                data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
-                                data-tutorial-id={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
-                                data-choice-id={candidate.resolutionChoiceId}
-                                data-action={candidate.action}
-                                data-grant-pardon-map-choice={candidate.action === 'grant-pardon' ? candidate.resolutionChoiceId : undefined}
-                                style={{
-                                    position: 'absolute',
-                                    left: targetPoint.x - 1,
-                                    top: targetPoint.y - 1,
-                                    width: 2,
-                                    height: 2,
-                                    opacity: 0,
-                                }}
-                            />
-                        );
-                    })}
-                </div>
-            ) : null}
-            {topLevelMapSelectionGuide && tutorialStep?.id !== 'choose-grant-pardon-target' ? (
-                <div className="pointer-events-none absolute inset-0 z-40">
-                    {topLevelMapSelectionGuide.candidates.map((candidate) => {
-                        const targetPoint = getTopLevelGuideRegionPoint(candidate.targetRegionId);
-                        if (!targetPoint) {
-                            return null;
-                        }
-                        return (
-                            <button
-                                key={`top-level-guide-hit-${candidate.id}`}
-                                type="button"
-                                data-testid={`qidahen-map-guide-hit-target-${candidate.targetRegionId}`}
-                                data-choice-id={candidate.resolutionChoiceId}
-                                data-action={candidate.action}
-                                data-grant-pardon-map-choice={candidate.action === 'grant-pardon' ? candidate.resolutionChoiceId : undefined}
-                                aria-label={`${topLevelMapSelectionGuide.title}：${candidate.targetRegionName}`}
-                                className="pointer-events-auto absolute cursor-pointer border-0 bg-transparent p-0"
-                                style={{
-                                    left: targetPoint.x - 34,
-                                    top: targetPoint.y - 34,
-                                    width: 68,
-                                    height: 68,
-                                    outline: 'none',
-                                    background: 'transparent',
-                                    boxShadow: 'none',
-                                }}
-                                onClick={() => activateTopLevelGuideTarget(candidate)}
-                            />
-                        );
-                    })}
-                </div>
-            ) : null}
             <EndgameOverlay {...endgameProps} />
             <QidahenCardMagnifyOverlay target={magnifyTarget} locale={locale} onClose={() => setMagnifyTarget(null)} />
-            </StageRoot>
+                    </>
+                )}
+            />
         </UndoProvider>
     );
 };

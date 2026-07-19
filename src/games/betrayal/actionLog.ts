@@ -105,12 +105,19 @@ export function formatBetrayalActionEntry({
             )]);
         }
         case BETRAYAL_COMMANDS.TRADE_POSSESSION:
-            return entry(command, state, [i18nSeg('actionLog.tradePossession', {
+            return entry(command, state, [i18nSeg('actionLog.tradeRequest', {
                 player: actor,
                 target: typeof payload.targetPlayerId === 'string'
                     ? playerNumberOf(core, payload.targetPlayerId)
                     : '?',
             })]);
+        case BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT:
+            return entry(command, state, [i18nSeg(
+                payload.accept === false
+                    ? 'actionLog.declineTrade'
+                    : 'actionLog.acceptTrade',
+                { player: actor },
+            )]);
         case BETRAYAL_COMMANDS.LOOT_CORPSE:
             return entry(command, state, [i18nSeg('actionLog.lootCorpse', { player: actor })]);
         case BETRAYAL_COMMANDS.END_TURN:
@@ -131,6 +138,31 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.studyExorcism', { player: actor })]);
         case BETRAYAL_COMMANDS.EXORCISE_JACK:
             return entry(command, state, [i18nSeg('actionLog.exorciseJack', { player: actor })]);
+        case BETRAYAL_COMMANDS.SEARCH_FOR_CURE:
+            return entry(command, state, [i18nSeg('actionLog.searchForCure', { player: actor })]);
+        case BETRAYAL_COMMANDS.CURE_THE_DUST:
+            return entry(command, state, [i18nSeg('actionLog.cureTheDust', { player: actor })]);
+        case BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE:
+            return entry(command, state, [i18nSeg('actionLog.requestSicknessExchange', { player: actor })]);
+        case BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE:
+            return entry(command, state, [i18nSeg(
+                payload.accept === false
+                    ? 'actionLog.declineSicknessExchange'
+                    : 'actionLog.acceptSicknessExchange',
+                { player: actor },
+            )]);
+        case BETRAYAL_COMMANDS.TAKE_PHOTO:
+            return entry(command, state, [i18nSeg('actionLog.takePhoto', { player: actor })]);
+        case BETRAYAL_COMMANDS.SMASH_MAGIC_CAMERA:
+            return entry(command, state, [i18nSeg('actionLog.smashMagicCamera', { player: actor })]);
+        case BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK:
+            return entry(command, state, [i18nSeg('actionLog.phantomPhotographerAttack', { player: actor })]);
+        case BETRAYAL_COMMANDS.PICK_UP_CORPSE:
+            return entry(command, state, [i18nSeg('actionLog.pickUpCorpse', { player: actor })]);
+        case BETRAYAL_COMMANDS.FEED_HER:
+            return entry(command, state, [i18nSeg('actionLog.feedHer', { player: actor })]);
+        case BETRAYAL_COMMANDS.CULTIST_ATTACK:
+            return entry(command, state, [i18nSeg('actionLog.cultistAttack', { player: actor })]);
         case BETRAYAL_COMMANDS.COMPLETE_SCENARIO:
             return entry(command, state, [i18nSeg('actionLog.completeScenario', { player: actor })]);
         default:

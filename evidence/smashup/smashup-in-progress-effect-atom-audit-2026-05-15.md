@@ -2,6 +2,14 @@
 
 > 状态提示（2026-06-05）：这是 Smash Up effect atom 长期审计台账，不是当前对话的默认任务入口。只有当用户当轮明确要求继续该专项时，才可据此继续补 gate / seam / current-tree 对账；否则只能当历史证据读取，不能自动接管当前任务。
 
+## 2026-07-18 旧结论失效提示
+
+- 结论等级：`旧结论失效 / 仍有残余范围`。
+- 旧结论：本文 2026-05-22 小节曾把`克苏鲁仆从（cthulhu_furthering_the_cause）`归入 owner-only turn-boundary，并记录为给 `onTurnEnd` 注册补 `playerContext:'sourceController'` 后收口。
+- 失效原因：该牌文现实含义是任意玩家回合结束检查该基地本回合是否有其他玩家角色被消灭；不是只在拥有者回合结束触发。旧 owner-only 分类是误审计。
+- 替代证据或替代入口：当前替代证据是 `src/games/smashup/abilities/cthulhu.ts` 的无 `playerContext` `onTurnEnd` 注册，以及 `src/games/smashup/__tests__/abilities/cthulhu.test.ts` / `src/games/smashup/__tests__/reactionQueueEventPlayerContext.test.ts` 中对手回合结束也会触发、无本回合他人角色被消灭则不触发的对象级回归。
+- 降级后当前状态：本文仍可作为长期风险台账读取，但不能把 2026-05-22 owner-only 小节当作`克苏鲁仆从`已收口证据；引用该对象时必须以本节修订为准。
+
 ## 本轮结论边界
 
 本文件是 2026-05-15 对“实施中派系审计工作流”的升级落地文档。旧的“最长描述对象全链路审计”和“逐对象/逐卡全链路矩阵”只能作为风险发现和对象汇总，不能再作为全面审计完成证据。
@@ -10504,6 +10512,8 @@
   - 下一格继续沿这条 seam 顺扫其它 owner-only `onTurnStart/onTurnEnd` sibling 的注册侧是否仍默认 `eventPlayer`，不要回头复读旧 `The Spy Who Ditched Me / waiting overlay` symptom。
 
 ## 2026-05-22 `cthulhu_furthering_the_cause / explorers_very_large_boulder / tricksters_big_funny_giant / ninjas_invisible_ninja` owner-only turn-boundary registration 纠偏
+
+> 2026-07-18 修订：本节对`克苏鲁仆从（cthulhu_furthering_the_cause）`的 owner-only 结论已经失效。该牌文现实含义不是“只在拥有者回合结束触发”，而是“任意玩家回合结束时，检查该基地本回合是否有其他玩家的角色被消灭；若有，你得 1 分”。因此旧修订里给 `cthulhu_furthering_the_cause` 加 `playerContext:'sourceController'` 的方向是误审计；当前代码已回到不限制事件玩家的 `onTurnEnd` 注册，并通过对象级测试覆盖对手回合结束也会入队、同回合无其他玩家角色被消灭则不加分。该旧 evidence 只能保留为历史误判记录，不能继续作为克苏鲁仆从已按 owner-only 收口的证据。
 
 - 审计范围：
   - [`src/games/smashup/abilities/cthulhu.ts`](</D:/gongzuo/webgame/BoardGame/.worktrees/smashup-yuanhou-factions/src/games/smashup/abilities/cthulhu.ts>)

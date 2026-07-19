@@ -2,6 +2,8 @@
  * 召唤师战争 - 领域类型定义
  */
 
+import type { DiceFaceResult } from '../config/dice';
+
 
 // ============================================================================
 // 基础类型
@@ -46,7 +48,7 @@ export type GamePhase =
 export const PHASE_ORDER: GamePhase[] = ['summon', 'move', 'build', 'attack', 'magic', 'draw'];
 
 /** 阵营 ID */
-export type FactionId = 'necromancer' | 'trickster' | 'paladin' | 'goblin' | 'frost' | 'barbaric' | 'mogu' | 'huijin';
+export type FactionId = 'necromancer' | 'trickster' | 'paladin' | 'goblin' | 'frost' | 'barbaric' | 'mogu' | 'huijin' | 'shouren';
 
 /**
  * 阵营目录的唯一权威来源：config/factions/index.ts 的 FACTION_CATALOG
@@ -134,6 +136,7 @@ export interface BoardUnit {
   hasAttacked: boolean;  // 本回合是否已攻击
   chargeBonusThisTurn?: number; // 冲锋本回合临时战力加成，回合切换清除
   extraAttacks?: number; // 额外攻击次数（连续射击/群情激愤等授予，不计入3次限制）
+  extraAttackSources?: string[]; // 按授予顺序记录额外攻击来源，用于阻止能力递归触发自身
   destroyAfterExtraAttackSource?: string; // 指定来源的额外攻击完成后消灭本单位（如莫古“命令”）
   attachedCards?: EventCard[]; // 附加的事件卡（如狱火铸剑）
   healingMode?: boolean; // 治疗模式（圣殿牧师：本次攻击转为治疗）
@@ -221,6 +224,22 @@ export interface SummonerWarsCore {
   abilityUsageCount: Record<string, number>;
   /** 单位本回合击杀计数（key: killerUnitInstanceId，回合切换清空） */
   unitKillCountThisTurn?: Record<string, number>;
+  /** 已掷骰但尚未结算伤害的攻击；用于激励重掷选择。 */
+  pendingAttackRoll?: PendingAttackRoll;
+}
+
+export interface PendingAttackRoll {
+  kind?: 'attack' | 'ability';
+  abilityId?: string;
+  playerId: PlayerId;
+  attacker: CellCoord;
+  target: CellCoord;
+  attackerId: string;
+  attackType: AttackType;
+  diceCount: number;
+  baseStrength: number;
+  diceResults: DiceFaceResult[];
+  beforeAttackSpecialCountsAsMelee: boolean;
 }
 
 // ============================================================================
@@ -245,6 +264,7 @@ export const SW_COMMANDS = {
   BUILD_STRUCTURE: 'sw:build_structure',
   // 攻击阶段
   DECLARE_ATTACK: 'sw:declare_attack',
+  RESOLVE_PENDING_ATTACK: 'sw:resolve_pending_attack',
   CONFIRM_ATTACK: 'sw:confirm_attack',
   // 魔力阶段
   DISCARD_FOR_MAGIC: 'sw:discard_for_magic',
@@ -374,6 +394,11 @@ export interface SelectCustomDeckCommand {
   deckData: SerializedCustomDeck;
 }
 
+export interface ResolvePendingAttackCommand {
+  type: typeof SW_COMMANDS.RESOLVE_PENDING_ATTACK;
+  choice: 'reroll' | 'keep';
+}
+
 /** 阵营选择阶段换位命令 */
 export interface SwapSeatCommand {
   type: typeof SW_COMMANDS.SWAP_SEAT;
@@ -416,6 +441,8 @@ export const SW_EVENTS = {
   UNIT_SUMMONED: 'sw:unit_summoned',
   UNIT_MOVED: 'sw:unit_moved',
   UNIT_ATTACKED: 'sw:unit_attacked',
+  ATTACK_ROLL_PENDING: 'sw:attack_roll_pending',
+  ABILITY_ROLL_RESOLVED: 'sw:ability_roll_resolved',
   UNIT_DAMAGED: 'sw:unit_damaged',
   UNIT_HEALED: 'sw:unit_healed',
   UNIT_DESTROYED: 'sw:unit_destroyed',

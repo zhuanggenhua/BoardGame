@@ -1242,9 +1242,16 @@ function ultimatesScramble(ctx: AbilityContext): AbilityResult {
     }));
 }
 
+function getSpiderVerseGreatPowerResponseBaseIndex(ctx: AbilityContext): number | undefined {
+    const reactionWindow = getSmashUpReactionWindowContext(ctx.matchState);
+    if (reactionWindow?.windowType !== 'meFirst') return undefined;
+    return ctx.targetBaseIndex ?? reactionWindow.sourceBaseIndex;
+}
+
 function spiderVerseWithGreatPower(ctx: AbilityContext, special = false): AbilityResult {
     const found = ctx.targetMinionUid ? findMinion(ctx.state, ctx.targetMinionUid) : undefined;
-    const amount = special ? 2 : 3;
+    const sourceBaseIndex = special ? ctx.baseIndex : getSpiderVerseGreatPowerResponseBaseIndex(ctx);
+    const amount = special || sourceBaseIndex !== undefined ? 2 : 3;
     if (!found) {
         if (!ctx.matchState) return { events: [] };
         return runtimeToAbilityResult(executeAbilityProgram(spiderVerseGreatPowerPromptProgram, {
@@ -1252,16 +1259,16 @@ function spiderVerseWithGreatPower(ctx: AbilityContext, special = false): Abilit
             playerId: ctx.playerId,
             now: ctx.now,
             amount,
-            ...(special ? { sourceBaseIndex: ctx.baseIndex } : {}),
+            ...(sourceBaseIndex !== undefined ? { sourceBaseIndex } : {}),
         }));
     }
-    if (special && ctx.baseIndex !== undefined && found.baseIndex !== ctx.baseIndex) return { events: [] };
+    if (sourceBaseIndex !== undefined && found.baseIndex !== sourceBaseIndex) return { events: [] };
     return {
         events: [addTempPower(found.minion.uid, found.baseIndex, amount, 'spider_verse_with_great_power', ctx.now, {
             sourcePlayerId: ctx.playerId,
             sourceDefId: 'spider_verse_with_great_power',
             sourceControllerId: ctx.playerId,
-            sourceBaseIndex: found.baseIndex,
+            sourceBaseIndex: sourceBaseIndex ?? found.baseIndex,
         })],
     };
 }

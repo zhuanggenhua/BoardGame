@@ -1,4 +1,10 @@
 import type { MatchState, RandomFn } from '../../../engine/types';
+import {
+    allRequiredChipOwnersHaveChips,
+    getUnoccupiedChipValues,
+    removeConflictingChipOwners,
+    resolveChipOwnerKey,
+} from './chips';
 import { createHeistRecord } from './showdown';
 import { createInitialHeistCore, discardHighestCard, discardLowestCard, getChipValues } from './setup';
 import {
@@ -120,7 +126,7 @@ const nextPlayableRound = (core: TheGangCore) => {
 };
 
 const isHandSwapEnabled = (core: TheGangCore) =>
-    core.rules.config.twoHand && core.rules.config.handSwap;
+    core.rules.config.twoHand;
 
 const createHandSwapStartedEvent = (
     core: TheGangCore,
@@ -198,7 +204,7 @@ const buildAutoProgressEventsAfterChip = (
     timestamp: number,
 ): TheGangEvent[] => {
     if (!core.rules.config.automode) return [];
-    if (!core.playerIds.every((playerId) => nextRoundChips[playerId] !== undefined)) return [];
+    if (!allRequiredChipOwnersHaveChips({ ...core, currentRoundChips: nextRoundChips })) return [];
 
     if (isHandSwapEnabled(core)) {
         if (core.round < 4 || core.communityCards.length >= 5) {
@@ -409,13 +415,16 @@ const buildToolUsedPayload = (core: TheGangCore, playerId: string, tool: TheGang
 };
 
 const resolveTakeChipValue = (core: TheGangCore, command: Extract<TheGangCommand, { type: typeof THE_GANG_COMMANDS.TAKE_CHIP }>): number | null => {
-    if (command.payload.tutorialOnlyIfMissing && core.currentRoundChips[command.playerId] !== undefined) {
+    const ownerKey = resolveChipOwnerKey(core, command.playerId, command.payload.handSlot);
+    if (command.payload.tutorialOnlyIfMissing && core.currentRoundChips[ownerKey] !== undefined) {
         return null;
     }
     if (command.payload.tutorialChipMode === 'lowest-unoccupied') {
-        const occupied = new Set(Object.values(core.currentRoundChips));
-        return getChipValues(core.playerIds.length, core.rules.config, core.round)
-            .find((chip) => !occupied.has(chip))
+        return getUnoccupiedChipValues(
+            getChipValues(core.playerIds.length, core.rules.config, core.round),
+            core.currentRoundChips,
+        )
+            .at(0)
             ?? null;
     }
     return command.payload.chip;
@@ -443,15 +452,20 @@ export function execute(
         case THE_GANG_COMMANDS.TAKE_CHIP: {
             const chip = resolveTakeChipValue(core, command);
             if (chip === null) return [];
-            const nextRoundChips = Object.fromEntries(
-                Object.entries(core.currentRoundChips)
-                    .filter(([owner, occupiedChip]) => owner === command.playerId || occupiedChip !== chip),
-            ) as Record<string, number>;
-            nextRoundChips[command.playerId] = chip;
+            const ownerKey = resolveChipOwnerKey(core, command.playerId, command.payload.handSlot);
+            const nextRoundChips = removeConflictingChipOwners(
+                core.currentRoundChips,
+                ownerKey,
+                chip,
+                getChipValues(core.playerIds.length, core.rules.config, core.round),
+            );
+            nextRoundChips[ownerKey] = chip;
             const chipTakenEvent: TheGangEvent = {
                 type: THE_GANG_EVENTS.CHIP_TAKEN,
                 payload: {
                     playerId: command.playerId,
+                    ownerKey,
+                    handSlot: command.payload.handSlot,
                     round: core.round,
                     chip,
                 },
@@ -588,15 +602,17 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                 pendingProgress: undefined,
             };
         case THE_GANG_EVENTS.CHIP_TAKEN: {
-            const nextRoundChips = Object.fromEntries(
-                Object.entries(core.currentRoundChips)
-                    .filter(([owner, chip]) => owner === event.payload.playerId || chip !== event.payload.chip),
+            const nextRoundChips = removeConflictingChipOwners(
+                core.currentRoundChips,
+                event.payload.ownerKey,
+                event.payload.chip,
+                getChipValues(core.playerIds.length, core.rules.config, core.round),
             );
             return {
                 ...core,
                 currentRoundChips: {
                     ...nextRoundChips,
-                    [event.payload.playerId]: event.payload.chip,
+                    [event.payload.ownerKey]: event.payload.chip,
                 },
                 pendingProgress: undefined,
             };

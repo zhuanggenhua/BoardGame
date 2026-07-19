@@ -108,12 +108,14 @@ export function formatTheGangActionEntry({
         }
         case THE_GANG_COMMANDS.TAKE_CHIP: {
             if (!hasEvent(events, THE_GANG_EVENTS.CHIP_TAKEN)) return null;
-            const payload = command.payload as { chip: number };
-            return entry(command, [i18nSeg('actionLog.takeChip', {
+            const payload = command.payload as { chip: number; handSlot?: 'top' | 'bottom' };
+            const params = {
                 player: actor,
                 round: core.round,
                 chip: payload.chip,
-            })]);
+                ...(payload.handSlot ? { hand: payload.handSlot === 'bottom' ? '下手' : '上手' } : {}),
+            };
+            return entry(command, [i18nSeg(payload.handSlot ? 'actionLog.takeChipHand' : 'actionLog.takeChip', params)]);
         }
         case THE_GANG_COMMANDS.END_ROUND: {
             const roundEnded = findRoundEndedEvent(events);

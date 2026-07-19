@@ -8,12 +8,13 @@ import { useToast } from '../../contexts/ToastContext';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { EndgameOverlay, type ContentSlotProps } from '../../components/game/framework/widgets/EndgameOverlay';
 import { buildPlayerDisplayNameMap } from '../../components/game/framework/playerDisplay';
-import { HudPortal } from '../../core';
+import { HudPortal, UI_Z_INDEX } from '../../core';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { useGameAudio } from '../../lib/audio/useGameAudio';
 import { THE_GANG_AUDIO_CONFIG } from './audio.config';
 import { formatCard } from './domain/cards';
 import {
+    evaluateBestTheGangHand,
     THE_GANG_EXPANDED_HAND_RANK_RULES,
     TEXAS_HOLDEM_HAND_RANK_RULES,
     type PokerHandRankRule,
@@ -29,6 +30,15 @@ import {
     normalizeRulesConfig,
 } from './domain/expansions';
 import { getChipValues } from './domain/setup';
+import {
+    allRequiredChipOwnersHaveChips,
+    getChipForHandSlot,
+    getUnoccupiedChipValues,
+    parseChipOwnerKey,
+    resolveChipOwnerKey,
+    THE_GANG_HAND_SLOTS,
+    type TheGangHandSlot,
+} from './domain/chips';
 import {
     THE_GANG_COMMANDS,
     type PlayingCard,
@@ -103,8 +113,9 @@ const RULE_SURFACE_ASSETS = {
     specialistsDiscardZone: 'the-gang/rule-assets/surfaces/specialists-discard-zone',
 } as const;
 
-const TTS_SETUP_TOGGLE_KEYS = ['omaha', 'twoHand', 'handSwap', 'automode', 'antiTroll'] as const;
+const TTS_SETUP_TOGGLE_KEYS = ['omaha', 'twoHand', 'automode', 'antiTroll'] as const;
 type TtsSetupToggleKey = typeof TTS_SETUP_TOGGLE_KEYS[number];
+const THE_GANG_RULES_DIALOG_Z_INDEX = UI_Z_INDEX.emergencyHud + 10;
 const TABLE_REMINDER_CHALLENGES = ['retina-scan', 'fingerprint-scan', 'blackout'] as const;
 
 const CARD_RANK_ASSET_NAMES: Partial<Record<PlayingCard['rank'], string>> = {
@@ -131,6 +142,32 @@ const hasStandardCardAsset = (card: PlayingCard) =>
     && card.suit !== 'special'
     && CARD_RANK_ASSET_NAMES[card.rank] !== undefined;
 
+const canEvaluateVisibleHand = (
+    handCards: PlayingCard[],
+    boardCards: PlayingCard[],
+    rulesConfig: TheGangRulesConfig,
+) => {
+    if (rulesConfig.omaha) {
+        return handCards.length >= 2 && boardCards.length >= 3;
+    }
+    return handCards.length + boardCards.length >= 5;
+};
+
+const evaluateVisibleHandRankLabel = (
+    handCards: PlayingCard[],
+    boardCards: PlayingCard[],
+    core: TheGangCore,
+) => {
+    if (!canEvaluateVisibleHand(handCards, boardCards, core.rules.config)) {
+        return undefined;
+    }
+
+    return evaluateBestTheGangHand(handCards, boardCards, {
+        rulesConfig: core.rules.config,
+        blankedRank: core.rules.blankedRank,
+    }).strength.label;
+};
+
 const BGG_LAYOUT_CONTRACT = {
     source: 'BGG electronic DOM/CSS',
     topZone: 'top_zone / plboard',
@@ -153,6 +190,14 @@ const UTILITY_ICON_CLASS = 'h-4 w-4 shrink-0 min-[901px]:h-5 min-[901px]:w-5';
 type TFunction = ReturnType<typeof useTranslation>['t'];
 
 type CardFaceEmphasis = 'table' | 'river' | 'riverCompact' | 'hand' | 'handCompact' | 'showdown';
+type HandSlot = TheGangHandSlot;
+type HandRankHints = Partial<Record<HandSlot, string>>;
+
+interface CurrentChipDisplay {
+    key: string;
+    chip?: number;
+    handSlot?: HandSlot;
+}
 
 interface ProgressButtonState {
     approvals: string[];
@@ -312,6 +357,9 @@ function HandCardRows({
     revealOrderBase,
     winningHandSlot,
     showLabels = false,
+    singleRowSlot,
+    singleRowLabel,
+    rankHints,
     selectable = false,
     selectedTopIndex,
     selectedBottomIndex,
@@ -323,16 +371,24 @@ function HandCardRows({
     t: TFunction;
     testIdPrefix: string;
     revealOrderBase?: number;
-    winningHandSlot?: 'top' | 'bottom';
+    winningHandSlot?: HandSlot;
     showLabels?: boolean;
+    singleRowSlot?: HandSlot;
+    singleRowLabel?: string;
+    rankHints?: HandRankHints;
     selectable?: boolean;
     selectedTopIndex?: number;
     selectedBottomIndex?: number;
-    onCardSelect?: (slot: 'top' | 'bottom', index: number) => void;
+    onCardSelect?: (slot: HandSlot, index: number) => void;
 }) {
+    const hasSecondaryRows = secondaryCards.length > 0;
     const rows = [
-        { slot: 'top' as const, cards: primaryCards, label: t('board.topHand') },
-        ...(secondaryCards.length > 0
+        {
+            slot: hasSecondaryRows ? 'top' as const : singleRowSlot ?? 'top' as const,
+            cards: primaryCards,
+            label: hasSecondaryRows ? t('board.topHand') : singleRowLabel ?? t('board.singleHand'),
+        },
+        ...(hasSecondaryRows
             ? [{ slot: 'bottom' as const, cards: secondaryCards, label: t('board.bottomHand') }]
             : []),
     ];
@@ -344,6 +400,13 @@ function HandCardRows({
                 const startOffset = revealOffset;
                 revealOffset += row.cards.length;
                 const isWinning = winningHandSlot === row.slot;
+                const rankHint = rankHints?.[row.slot];
+                const translatedRankHint = rankHint
+                    ? t('board.handRankForSlot', { slot: row.label, rank: rankHint })
+                    : '';
+                const visibleRankHint = translatedRankHint === 'board.handRankForSlot'
+                    ? `${row.label}：${rankHint}`
+                    : translatedRankHint;
                 return (
                     <div
                         key={row.slot}
@@ -365,6 +428,15 @@ function HandCardRows({
                         ) : (
                             <span className="sr-only">{row.label}</span>
                         )}
+                        {rankHint ? (
+                            <span
+                                className="min-w-14 rounded-full border border-emerald-100/35 bg-emerald-950/82 px-2 py-0.5 text-center text-[0.58rem] font-black tracking-[0.06em] text-amber-100 shadow-[0_0.35rem_0.9rem_rgba(0,0,0,0.28)] lg:text-[0.68rem]"
+                                data-rank-label={rankHint}
+                                data-testid={`${testIdPrefix}-${row.slot}-rank`}
+                            >
+                                {visibleRankHint}
+                            </span>
+                        ) : null}
                         <div className="flex items-center justify-center gap-2 overflow-visible md:gap-3">
                             {row.cards.map((card, index) => {
                                 const selected = row.slot === 'top'
@@ -553,15 +625,23 @@ function RulesConfigPanel({
                 <span className="hidden sm:inline">{t('board.rulesConfig')}</span>
             </button>
             {isOpen && (
-                <div
-                    className="fixed inset-0 z-[90] flex items-center justify-center bg-black/62 px-2 py-2 backdrop-blur-sm min-[901px]:px-4 min-[901px]:py-5"
-                    data-testid="the-gang-rules-modal"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label={t('board.rulesDialogTitle')}
-                >
-                    <div className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-amber-200/30 bg-[#102319] text-amber-50 shadow-[0_1.5rem_4rem_rgba(0,0,0,0.62)] min-[901px]:max-h-[88vh] min-[901px]:rounded-2xl">
-                        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-amber-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(245,214,132,0.16),transparent_32%),linear-gradient(135deg,rgba(16,35,25,0.96),rgba(6,14,10,0.98))] px-3 py-2.5 min-[901px]:gap-4 min-[901px]:px-5 min-[901px]:py-4 lg:px-7">
+                <HudPortal>
+                    <div
+                        className="fixed inset-0 flex items-center justify-center bg-black/62 px-2 py-2 backdrop-blur-sm min-[901px]:px-4 min-[901px]:py-5"
+                        data-testid="the-gang-rules-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label={t('board.rulesDialogTitle')}
+                        style={{ zIndex: THE_GANG_RULES_DIALOG_Z_INDEX }}
+                    >
+                    <div
+                        className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-lg border border-amber-200/30 bg-[#102319] text-amber-50 shadow-[0_1.5rem_4rem_rgba(0,0,0,0.62)] min-[901px]:max-h-[88vh] min-[901px]:rounded-2xl"
+                        data-testid="the-gang-rules-modal-panel"
+                    >
+                        <header
+                            className="flex shrink-0 items-start justify-between gap-3 border-b border-amber-200/18 bg-[radial-gradient(circle_at_18%_0%,rgba(245,214,132,0.16),transparent_32%),linear-gradient(135deg,rgba(16,35,25,0.96),rgba(6,14,10,0.98))] px-3 py-2.5 min-[901px]:gap-4 min-[901px]:px-5 min-[901px]:py-4 lg:px-7"
+                            data-testid="the-gang-rules-modal-header"
+                        >
                             <div className="min-w-0">
                                 <div className="text-[0.68rem] uppercase tracking-[0.24em] text-amber-200/72">
                                     {t('board.rulesDialogEyebrow')}
@@ -576,13 +656,17 @@ function RulesConfigPanel({
                             <button
                                 type="button"
                                 onClick={() => setIsOpen(false)}
-                                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-amber-200/30 bg-black/24 text-lg text-amber-100 transition hover:bg-amber-200 hover:text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                                className="inline-flex h-11 min-h-11 w-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-amber-200/30 bg-black/24 text-2xl leading-none text-amber-100 transition hover:bg-amber-200 hover:text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
                                 aria-label={t('board.closeRulesDialog')}
+                                data-testid="the-gang-rules-modal-close"
                             >
                                 ×
                             </button>
                         </header>
-                        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 min-[901px]:px-5 min-[901px]:py-4 lg:px-7 lg:py-5">
+                        <div
+                            className="min-h-0 flex-1 overflow-y-auto px-3 py-3 min-[901px]:px-5 min-[901px]:py-4 lg:px-7 lg:py-5"
+                            data-testid="the-gang-rules-modal-scroll"
+                        >
                             <div className="mb-3 flex flex-wrap gap-2">
                                 <span className="inline-flex rounded-full border border-amber-200/30 bg-amber-200/10 px-3 py-1 text-[0.68rem] font-black tracking-[0.08em] text-amber-100">
                                     {t('board.activeGameMode', { mode: THE_GANG_GAME_MODES[normalized.gameMode].label })}
@@ -644,10 +728,7 @@ function RulesConfigPanel({
                                     {TTS_SETUP_TOGGLE_KEYS.map((option) => {
                                         const active = normalized[option];
                                         const twoHandUnavailable = normalized.gameMode !== 'texas-holdem' || playerCount > 5;
-                                        const disabledByRule = (
-                                            (option === 'twoHand' && twoHandUnavailable)
-                                            || (option === 'handSwap' && (twoHandUnavailable || !normalized.twoHand))
-                                        );
+                                        const disabledByRule = option === 'twoHand' && twoHandUnavailable;
                                         return (
                                             <button
                                                 key={option}
@@ -745,28 +826,49 @@ function RulesConfigPanel({
                                                 onClick={() => tryEdit(() => toggleChallenge(challengeId))}
                                                 aria-pressed={active}
                                                 className={[
-                                                    'group relative overflow-hidden rounded-xl border bg-black/28 p-1.5 text-left transition',
+                                                    'group relative overflow-hidden rounded-xl border bg-black/28 p-1.5 text-left transition-[transform,background-color,border-color,box-shadow,filter,opacity]',
                                                     canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-55',
                                                     active
-                                                        ? 'border-amber-200 shadow-[0_0_0_0.18rem_rgba(251,191,36,0.42),0_0.75rem_1.6rem_rgba(0,0,0,0.36)]'
-                                                        : 'border-amber-200/18 hover:border-amber-200/62 hover:shadow-[0_0.55rem_1.25rem_rgba(0,0,0,0.36)]',
+                                                        ? 'z-10 scale-[1.015] border-amber-100 shadow-[0_0_0_0.16rem_rgba(6,14,10,0.96),0_0_0_0.42rem_rgba(251,191,36,0.88),0_0_1.6rem_rgba(251,191,36,0.72)]'
+                                                        : 'border-amber-200/14 opacity-78 saturate-[0.78] hover:border-amber-200/70 hover:opacity-100 hover:saturate-100 hover:shadow-[0_0.55rem_1.25rem_rgba(0,0,0,0.36)]',
                                                 ].join(' ')}
                                                 data-state={active ? 'selected' : 'idle'}
                                                 data-testid={`the-gang-challenge-${challengeId}`}
+                                                style={active
+                                                    ? {
+                                                        backgroundColor: 'rgba(252, 211, 77, 0.16)',
+                                                        borderColor: 'rgb(254, 243, 199)',
+                                                    }
+                                                    : undefined}
                                             >
                                                 <OptimizedImage
                                                     src={getChallengeAssetPath(challengeId)}
                                                     alt={challenge.label}
                                                     className={[
                                                         'aspect-[3/4] w-full rounded-lg bg-stone-950 object-contain transition',
-                                                        active ? 'brightness-110' : 'group-hover:brightness-110',
+                                                        active ? 'brightness-[1.15] saturate-[1.25]' : 'group-hover:brightness-110',
                                                     ].join(' ')}
                                                     draggable={false}
                                                 />
                                                 {active && (
-                                                    <span className="absolute right-3 top-3 rounded-full bg-emerald-950/92 px-2 py-0.5 text-[0.55rem] font-black tracking-[0.1em] text-amber-100 shadow-[0_0.35rem_0.8rem_rgba(0,0,0,0.35)]">
-                                                        {t('board.challengeEnabled')}
-                                                    </span>
+                                                    <>
+                                                        <span
+                                                            aria-hidden="true"
+                                                            className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_0_0.12rem_rgba(6,78,59,0.92),0_0_1.4rem_rgba(251,191,36,0.95)]"
+                                                            data-testid={`the-gang-challenge-${challengeId}-selected-frame`}
+                                                            style={{
+                                                                borderColor: 'rgb(254, 243, 199)',
+                                                                borderStyle: 'solid',
+                                                                borderWidth: '4px',
+                                                            }}
+                                                        />
+                                                        <span
+                                                            className="absolute left-2 top-2 rounded-md border border-amber-50/80 bg-amber-300 px-2.5 py-1 text-[0.62rem] font-black tracking-[0.14em] text-emerald-950 shadow-[0_0.45rem_1rem_rgba(0,0,0,0.45)]"
+                                                            data-testid={`the-gang-challenge-${challengeId}-selected-badge`}
+                                                        >
+                                                            {t('board.challengeEnabled')}
+                                                        </span>
+                                                    </>
                                                 )}
                                                 <span className="sr-only">{challenge.summary}</span>
                                             </button>
@@ -788,7 +890,8 @@ function RulesConfigPanel({
                             </button>
                         </footer>
                     </div>
-                </div>
+                    </div>
+                </HudPortal>
             )}
         </div>
     );
@@ -1320,14 +1423,12 @@ function SuccessTrack({ successes }: { successes: number }) {
 function RoundChipColumn({
     round,
     chipValues,
-    ownerByChip,
     selectedChip,
     onTakeChip,
     active,
 }: {
     round: number;
     chipValues: number[];
-    ownerByChip: Record<number, string | undefined>;
     selectedChip?: number;
     onTakeChip: (chip: number) => void;
     active: boolean;
@@ -1338,15 +1439,10 @@ function RoundChipColumn({
 
     return (
         <>
-            {chipValues.map((chip) => {
-                const owner = ownerByChip[chip];
-                if (owner !== undefined) {
-                    return null;
-                }
-
+            {chipValues.map((chip, index) => {
                 return (
                     <ChipButton
-                        key={`${round}-${chip}`}
+                        key={`${round}-${chip}-${index}`}
                         round={round}
                         value={chip}
                         onClick={() => onTakeChip(chip)}
@@ -1390,7 +1486,10 @@ function ShowdownResultPanel({
 }) {
     const success = lastShowdown.outcome === 'success';
     const { t } = useTranslation('game-the-gang');
-    const playerResultIndex = new Map(lastShowdown.results.map((result, index) => [result.playerId, index]));
+    const getResultKey = (result: (typeof lastShowdown.results)[number]) => (
+        result.handSlot ? `${result.playerId}:${result.handSlot}` : result.playerId
+    );
+    const playerResultIndex = new Map(lastShowdown.results.map((result, index) => [getResultKey(result), index]));
 
     return (
         <section
@@ -1438,13 +1537,23 @@ function ShowdownResultPanel({
                     data-bgg-zone="reveal-players"
                     data-tutorial-id="the-gang-showdown-hole-cards"
                 >
-                    {lastShowdown.results.map((result) => (
-                        <div
-                            key={result.playerId}
-                            className="flex min-w-0 flex-col gap-3 overflow-visible rounded-[1.25rem] bg-emerald-950/34 px-3 py-3 outline outline-1 outline-amber-100/10 shadow-[0_0_34px_rgba(251,191,36,0.14),0_14px_34px_rgba(0,0,0,0.28)] md:px-4 md:py-4"
-                        >
+                    {lastShowdown.results.map((result) => {
+                        const resultKey = getResultKey(result);
+                        const handLabel = result.handSlot === 'bottom'
+                            ? t('board.bottomHand')
+                            : result.handSlot === 'top'
+                                ? t('board.topHand')
+                                : undefined;
+                        return (
+                            <div
+                                key={resultKey}
+                                className="flex min-w-0 flex-col gap-3 overflow-visible rounded-[1.25rem] bg-emerald-950/34 px-3 py-3 outline outline-1 outline-amber-100/10 shadow-[0_0_34px_rgba(251,191,36,0.14),0_14px_34px_rgba(0,0,0,0.28)] md:px-4 md:py-4"
+                            >
                             <div className="flex items-center justify-between gap-3">
-                                <span className="truncate text-sm font-black text-stone-100 md:text-base">{playerName(result.playerId)}</span>
+                                <span className="truncate text-sm font-black text-stone-100 md:text-base">
+                                    {playerName(result.playerId)}
+                                    {handLabel && ` · ${handLabel}`}
+                                </span>
                                 <div className="flex items-center gap-2">
                                     <ChipDisc round={4} value={result.chip} size="md" zone="plreveal-token" />
                                     <span className="text-xs font-black tracking-[0.08em] text-amber-100 md:text-sm">
@@ -1464,14 +1573,17 @@ function ShowdownResultPanel({
                                     secondaryCards={result.secondaryPocketCards}
                                     emphasis="showdown"
                                     t={t}
-                                    testIdPrefix={`the-gang-showdown-hand-${result.playerId}`}
-                                    revealOrderBase={(playerResultIndex.get(result.playerId) ?? 0) * 4}
+                                    testIdPrefix={`the-gang-showdown-hand-${resultKey.replace(':', '-')}`}
+                                    revealOrderBase={(playerResultIndex.get(resultKey) ?? 0) * 4}
                                     winningHandSlot={result.winningHandSlot}
-                                    showLabels={!!result.secondaryPocketCards?.length}
+                                    showLabels={!!handLabel || !!result.secondaryPocketCards?.length}
+                                    singleRowSlot={result.handSlot}
+                                    singleRowLabel={handLabel}
                                 />
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <div className="sr-only" data-bgg-zone="safe-zone">
@@ -1499,62 +1611,69 @@ function ShowdownResultPanel({
 function PlayerChipStrip({
     roundHistory,
     currentRound,
-    currentChip,
+    currentChips,
     playerId,
     localPlayerId,
     onTakeCurrentChip,
 }: {
     roundHistory: TheGangCore['roundHistory'];
     currentRound: number;
-    currentChip?: number;
+    currentChips: CurrentChipDisplay[];
     playerId: string;
     localPlayerId: string;
     onTakeCurrentChip?: (chip: number) => void;
 }) {
-    const canTakeCurrentChip = currentChip !== undefined && playerId !== localPlayerId && !!onTakeCurrentChip;
+    const { t } = useTranslation('game-the-gang');
+    const canTakeCurrentChip = playerId !== localPlayerId && !!onTakeCurrentChip;
 
     return (
         <div className="flex min-h-8 items-center justify-center gap-1.5 lg:min-h-12 lg:gap-2" data-bgg-zone="player-tokens">
             {roundHistory.map((entry) => {
-                const chip = entry.chipsByPlayer[playerId];
-                if (chip === undefined) return null;
-                return (
-                    <ChipDisc
-                        key={`${entry.round}-${chip}`}
-                        round={entry.round}
-                        value={chip}
-                        size="sm"
-                        className="transition hover:scale-150"
-                        zone="player-token"
-                    />
-                );
+                return Object.entries(entry.chipsByPlayer)
+                    .filter(([ownerKey]) => parseChipOwnerKey(ownerKey).playerId === playerId)
+                    .map(([ownerKey, chip]) => (
+                        <ChipDisc
+                            key={`${entry.round}-${ownerKey}-${chip}`}
+                            round={entry.round}
+                            value={chip}
+                            size="sm"
+                            className="transition hover:scale-150"
+                            zone="player-token"
+                        />
+                    ));
             })}
-            {currentChip !== undefined && (
-                canTakeCurrentChip ? (
-                    <button
-                        type="button"
-                        className="rounded-full transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
-                        data-testid={`the-gang-take-player-chip-${playerId}`}
-                        onClick={() => onTakeCurrentChip(currentChip)}
-                    >
+            {currentChips.filter((display) => display.chip !== undefined).map((display) => {
+                const label = display.handSlot === 'bottom' ? t('board.bottomHand') : t('board.topHand');
+                const chipDisc = (
+                    <span className="flex flex-col items-center gap-0.5">
+                        {display.handSlot && (
+                            <span className="text-[0.5rem] font-black leading-none tracking-[0.08em] text-amber-100/78 lg:text-[0.58rem]">
+                                {label}
+                            </span>
+                        )}
                         <ChipDisc
                             round={currentRound}
-                            value={currentChip}
+                            value={display.chip!}
                             size="lg"
                             className="scale-110 drop-shadow-[0_0_22px_rgba(252,211,77,0.82)]"
                             zone="player-current-token"
                         />
+                    </span>
+                );
+                return canTakeCurrentChip ? (
+                    <button
+                        key={display.key}
+                        type="button"
+                        className="rounded-full transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                        data-testid={`the-gang-take-player-chip-${playerId}-${display.handSlot ?? 'single'}`}
+                        onClick={() => onTakeCurrentChip(display.chip!)}
+                    >
+                        {chipDisc}
                     </button>
                 ) : (
-                    <ChipDisc
-                        round={currentRound}
-                        value={currentChip}
-                        size="lg"
-                        className="scale-110 drop-shadow-[0_0_22px_rgba(252,211,77,0.82)]"
-                        zone="player-current-token"
-                    />
-                )
-            )}
+                    <span key={display.key}>{chipDisc}</span>
+                );
+            })}
         </div>
     );
 }
@@ -1562,16 +1681,18 @@ function PlayerChipStrip({
 function HandChipStrip({
     roundHistory,
     currentRound,
-    currentChip,
+    currentChips,
     playerId,
     compact = false,
 }: {
     roundHistory: TheGangCore['roundHistory'];
     currentRound: number;
-    currentChip?: number;
+    currentChips: CurrentChipDisplay[];
     playerId: string;
     compact?: boolean;
 }) {
+    const { t } = useTranslation('game-the-gang');
+
     return (
         <div
             className={[
@@ -1581,27 +1702,98 @@ function HandChipStrip({
             data-bgg-zone="hand-chips"
         >
             {roundHistory.map((entry) => {
-                const chip = entry.chipsByPlayer[playerId];
-                if (chip === undefined) return null;
-                return (
+                return Object.entries(entry.chipsByPlayer)
+                    .filter(([ownerKey]) => parseChipOwnerKey(ownerKey).playerId === playerId)
+                    .map(([ownerKey, chip]) => (
+                        <ChipDisc
+                            key={`${entry.round}-${ownerKey}-${chip}`}
+                            round={entry.round}
+                            value={chip}
+                            size={compact ? 'xs' : 'sm'}
+                            zone="hand-chips-previous"
+                        />
+                    ));
+            })}
+            {currentChips.filter((display) => display.chip !== undefined).map((display) => (
+                <span key={display.key} className="flex flex-col items-center gap-0.5">
+                    {display.handSlot && (
+                        <span className="text-[0.5rem] font-black leading-none tracking-[0.08em] text-amber-100/78 lg:text-[0.58rem]">
+                            {display.handSlot === 'bottom' ? t('board.bottomHand') : t('board.topHand')}
+                        </span>
+                    )}
                     <ChipDisc
-                        key={`${entry.round}-${chip}`}
-                        round={entry.round}
-                        value={chip}
-                        size={compact ? 'xs' : 'sm'}
-                        zone="hand-chips-previous"
+                        round={currentRound}
+                        value={display.chip!}
+                        size={compact ? 'sm' : 'lg'}
+                        className={compact ? 'drop-shadow-[0_0_12px_rgba(252,211,77,0.48)]' : 'drop-shadow-[0_0_18px_rgba(252,211,77,0.55)]'}
+                        zone="hand-current-chip"
                     />
+                </span>
+            ))}
+        </div>
+    );
+}
+
+function buildCurrentChipDisplays(core: TheGangCore, playerId: string): CurrentChipDisplay[] {
+    if (!core.rules.config.twoHand) {
+        return [{ key: playerId, chip: core.currentRoundChips[playerId] }];
+    }
+
+    return THE_GANG_HAND_SLOTS.map((handSlot) => ({
+        key: resolveChipOwnerKey(core, playerId, handSlot),
+        handSlot,
+        chip: getChipForHandSlot(core, playerId, handSlot),
+    }));
+}
+
+function ChipHandSelector({
+    activeSlot,
+    currentRound,
+    currentChips,
+    onSelect,
+}: {
+    activeSlot: HandSlot;
+    currentRound: number;
+    currentChips: CurrentChipDisplay[];
+    onSelect: (slot: HandSlot) => void;
+}) {
+    const { t } = useTranslation('game-the-gang');
+    const chipBySlot = Object.fromEntries(
+        currentChips
+            .filter((display) => display.handSlot)
+            .map((display) => [display.handSlot, display.chip]),
+    ) as Partial<Record<HandSlot, number>>;
+
+    return (
+        <div
+            className="flex items-center justify-center gap-1.5 rounded-full border border-amber-200/24 bg-emerald-950/78 p-1 shadow-[0_0.35rem_1.2rem_rgba(0,0,0,0.3)]"
+            data-testid="the-gang-chip-hand-selector"
+            aria-label={t('board.chipHandSelector')}
+        >
+            {THE_GANG_HAND_SLOTS.map((slot) => {
+                const active = activeSlot === slot;
+                const chip = chipBySlot[slot];
+                const label = slot === 'bottom' ? t('board.chipTargetBottomHand') : t('board.chipTargetTopHand');
+                return (
+                    <button
+                        key={slot}
+                        type="button"
+                        aria-pressed={active}
+                        aria-label={label}
+                        data-testid={`the-gang-chip-hand-selector-${slot}`}
+                        onClick={() => onSelect(slot)}
+                        className={[
+                            'flex min-h-10 min-w-20 items-center justify-center gap-1.5 rounded-full border px-3 text-xs font-black tracking-[0.08em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100',
+                            active
+                                ? 'border-amber-100 bg-amber-300 text-emerald-950 shadow-[0_0_0_0.14rem_rgba(251,191,36,0.38),0_0_1.1rem_rgba(251,191,36,0.7)]'
+                                : 'border-amber-100/24 bg-black/18 text-amber-100/82 hover:border-amber-100/62 hover:bg-emerald-900',
+                            ].join(' ')}
+                    >
+                        <span>{label}</span>
+                        {chip !== undefined && <ChipDisc round={currentRound} value={chip} size="xs" />}
+                    </button>
                 );
             })}
-            {currentChip !== undefined && (
-                <ChipDisc
-                    round={currentRound}
-                    value={currentChip}
-                    size={compact ? 'sm' : 'lg'}
-                    className={compact ? 'drop-shadow-[0_0_12px_rgba(252,211,77,0.48)]' : 'drop-shadow-[0_0_18px_rgba(252,211,77,0.55)]'}
-                    zone="hand-current-chip"
-                />
-            )}
         </div>
     );
 }
@@ -1687,9 +1879,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     const localPlayer = core.players[localPlayerId];
     const hasSecondaryHand = (localPlayer?.secondaryPocketCards?.length ?? 0) > 0;
     const [handSwapSelection, setHandSwapSelection] = useState<{ topIndex?: number; bottomIndex?: number }>({});
+    const [activeChipHandSlot, setActiveChipHandSlot] = useState<HandSlot>('top');
     const heistStarted = core.heistStarted === true;
     const setupOpen = core.phase === 'chip-selection' && !heistStarted;
-    const allPlayersHaveChip = core.playerIds.every((id) => core.currentRoundChips[id] !== undefined);
+    const allPlayersHaveChip = allRequiredChipOwnersHaveChips(core);
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
     const revealShowdownProgress = getProgressButtonState(core, 'reveal-showdown', localPlayerId, t('board.revealShowdown'), t);
     const handSwapProgress = getProgressButtonState(core, 'hand-swap', localPlayerId, t('board.confirmHandSwap'), t);
@@ -1701,18 +1894,38 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         && handSwapSelection.bottomIndex !== undefined;
     const handSwapLayout = core.phase === 'hand-swap' && hasSecondaryHand;
     const chipValues = getChipValues(core.playerIds.length, core.rules.config, core.round);
-    const ownerByChip = Object.fromEntries(
-        Object.entries(core.currentRoundChips).map(([owner, chip]) => [chip, owner]),
-    ) as Record<number, string | undefined>;
+    const availableChipValues = getUnoccupiedChipValues(chipValues, core.currentRoundChips);
+    const localCurrentChips = buildCurrentChipDisplays(core, localPlayerId);
+    const localSelectedChip = core.currentRoundChips[resolveChipOwnerKey(core, localPlayerId, activeChipHandSlot)];
     const rulesLocked = core.heistNumber !== 1
         || core.round !== 1
         || core.phase !== 'chip-selection'
         || heistStarted
         || core.roundHistory.length > 0;
     const canConfigureRules = resolveCanConfigureRules(matchData, playerID, core.playerIds[0]);
+    const twoHandChipSelectionLayout = core.phase === 'chip-selection' && core.rules.config.twoHand;
     const handRankRules = isChallengeActive(core.rules.config, 'grinding-gears') || isChallengeActive(core.rules.config, 'the-joker') || isChallengeActive(core.rules.config, 'master-key')
         ? THE_GANG_EXPANDED_HAND_RANK_RULES
         : TEXAS_HOLDEM_HAND_RANK_RULES;
+    const localBoardCards = localPlayer
+        ? [...(localPlayer.communityCards ?? core.communityCards), ...localPlayer.flashlightCards]
+        : [];
+    const localTopHandRankHint = localPlayer
+        ? evaluateVisibleHandRankLabel(
+            [...localPlayer.pocketCards, ...localPlayer.nightVisionCards],
+            localBoardCards,
+            core,
+        )
+        : undefined;
+    const localBottomHandRankHint = hasSecondaryHand && localPlayer
+        ? evaluateVisibleHandRankLabel(localPlayer.secondaryPocketCards ?? [], localBoardCards, core)
+        : undefined;
+    const localHandRankHints: HandRankHints | undefined = localTopHandRankHint || localBottomHandRankHint
+        ? {
+            ...(localTopHandRankHint ? { top: localTopHandRankHint } : {}),
+            ...(localBottomHandRankHint ? { bottom: localBottomHandRankHint } : {}),
+        }
+        : undefined;
 
     const playerNames = buildPlayerDisplayNameMap(
         core.playerIds,
@@ -1721,10 +1934,28 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     );
     const playerName = (id: string) => playerNames[id] ?? t('board.playerFallback', { player: Number(id) + 1 });
     const tutorialOpponentTargetId = core.playerIds.find((id) => id !== localPlayerId);
-    const showWarning = (key: string, dedupeKey: string) => {
-        toast.warning({ kind: 'i18n', ns: 'game-the-gang', key }, undefined, {
-            dedupeKey: `the-gang.${dedupeKey}`,
-        });
+    const showWarning = (
+        key:
+            | 'board.toastStartBeforeChip'
+            | 'board.toastHostOnlyStart'
+            | 'board.toastToolsHostOnly'
+            | 'board.toastToolsAlreadyDealt',
+        dedupeKey: string,
+    ) => {
+        const options = { dedupeKey: `the-gang.${dedupeKey}` };
+        if (key === 'board.toastStartBeforeChip') {
+            toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastStartBeforeChip' }, undefined, options);
+            return;
+        }
+        if (key === 'board.toastHostOnlyStart') {
+            toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastHostOnlyStart' }, undefined, options);
+            return;
+        }
+        if (key === 'board.toastToolsHostOnly') {
+            toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastToolsHostOnly' }, undefined, options);
+            return;
+        }
+        toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastToolsAlreadyDealt' }, undefined, options);
     };
     const showRulesBlockedToast = () => {
         if (canConfigureRules) {
@@ -1759,7 +1990,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
             showWarning('board.toastStartBeforeChip', 'start-before-chip');
             return;
         }
-        dispatchForPlayer(THE_GANG_COMMANDS.TAKE_CHIP, { chip });
+        dispatchForPlayer(THE_GANG_COMMANDS.TAKE_CHIP, {
+            chip,
+            ...(core.rules.config.twoHand ? { handSlot: activeChipHandSlot } : {}),
+        });
     };
 
     const setRulesConfig = (config: TheGangRulesConfig) => {
@@ -1793,7 +2027,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         dispatchForPlayer(THE_GANG_COMMANDS.REVEAL_SHOWDOWN, {});
     };
 
-    const selectHandSwapCard = (slot: 'top' | 'bottom', index: number) => {
+    const selectHandSwapCard = (slot: HandSlot, index: number) => {
         setHandSwapSelection((current) => {
             const key = slot === 'top' ? 'topIndex' : 'bottomIndex';
             return {
@@ -1834,6 +2068,8 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         <main
             className="the-gang-desktop-table h-full min-h-0 overflow-hidden bg-[#203b23] text-stone-50"
             data-game-ui="the-gang"
+            data-the-gang-phase={core.phase}
+            data-the-gang-two-hand={core.rules.config.twoHand ? 'true' : 'false'}
         >
             <section
                 className="relative flex h-full min-h-0 w-full flex-col gap-1 overflow-hidden bg-[#203b23] px-4 pb-0 pt-3 lg:gap-2 lg:px-8 lg:pb-0 lg:pt-5 xl:gap-3 xl:px-12 xl:pb-0 xl:pt-7"
@@ -1916,7 +2152,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     <PlayerChipStrip
                                         roundHistory={core.roundHistory}
                                         currentRound={core.round}
-                                        currentChip={core.currentRoundChips[id]}
+                                        currentChips={buildCurrentChipDisplays(core, id)}
                                         playerId={id}
                                         localPlayerId={localPlayerId}
                                         onTakeCurrentChip={heistStarted && core.phase === 'chip-selection' ? takeChip : undefined}
@@ -1937,8 +2173,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                         <div
                             className={[
                                 'pointer-events-none relative z-20 flex min-h-0 items-center justify-center overflow-visible',
-                                handSwapLayout
-                                    ? 'flex-row flex-wrap gap-3 lg:gap-5'
+                                twoHandChipSelectionLayout
+                                    ? 'flex-col gap-3 lg:gap-5'
+                                    : handSwapLayout
+                                    ? 'flex-row flex-wrap gap-4 lg:gap-5'
                                     : 'flex-col gap-3 lg:gap-6 min-[1180px]:flex-row min-[1180px]:gap-8',
                             ].join(' ')}
                             data-bgg-zone="middle-center"
@@ -1946,7 +2184,9 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             <div
                                 className={[
                                     'pointer-events-auto relative z-30 flex flex-wrap items-center justify-center overflow-visible',
-                                    handSwapLayout
+                                    twoHandChipSelectionLayout
+                                        ? 'w-auto max-w-none flex-nowrap gap-2 lg:gap-3'
+                                        : handSwapLayout
                                         ? 'w-auto max-w-[22rem] gap-2 lg:max-w-[28rem] lg:gap-3'
                                         : 'w-full max-w-[29rem] gap-3 lg:max-w-[44rem] lg:gap-5',
                                 ].join(' ')}
@@ -1955,26 +2195,34 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             >
                                 <LayoutContractBadge />
                                 {handSwapLayout
-                                    ? core.playerIds.map((chipOwnerId) => {
-                                            const chip = core.currentRoundChips[chipOwnerId];
+                                    ? Object.entries(core.currentRoundChips).map(([ownerKey, chip]) => {
                                             if (chip === undefined) return null;
+                                            const owner = parseChipOwnerKey(ownerKey);
                                             return (
-                                                <ChipDisc
-                                                    key={`hand-swap-current-chip-${chipOwnerId}-${chip}`}
-                                                    round={core.round}
-                                                    value={chip}
-                                                    size="md"
-                                                    zone="token-pile-current-chip"
-                                                />
+                                                <span
+                                                    key={`hand-swap-current-chip-${ownerKey}-${chip}`}
+                                                    className="flex flex-col items-center gap-0.5"
+                                                >
+                                                    {owner.handSlot && (
+                                                        <span className="text-[0.5rem] font-black leading-none tracking-[0.08em] text-amber-100/78 lg:text-[0.58rem]">
+                                                            {owner.handSlot === 'bottom' ? t('board.bottomHand') : t('board.topHand')}
+                                                        </span>
+                                                    )}
+                                                    <ChipDisc
+                                                        round={core.round}
+                                                        value={chip}
+                                                        size="md"
+                                                        zone="token-pile-current-chip"
+                                                    />
+                                                </span>
                                             );
                                         })
                                     : [1, 2, 3, 4].map((round) => (
                                             <RoundChipColumn
                                                 key={round}
                                                 round={round}
-                                                chipValues={chipValues}
-                                                ownerByChip={ownerByChip}
-                                                selectedChip={core.currentRoundChips[localPlayerId]}
+                                                chipValues={availableChipValues}
+                                                selectedChip={localSelectedChip}
                                                 onTakeChip={takeChip}
                                                 active={core.phase === 'chip-selection' && core.round === round}
                                             />
@@ -2025,8 +2273,16 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                 <HandChipStrip
                                     roundHistory={core.roundHistory}
                                     currentRound={core.round}
-                                    currentChip={core.currentRoundChips[localPlayerId]}
+                                    currentChips={localCurrentChips}
                                     playerId={localPlayerId}
+                                />
+                            )}
+                            {heistStarted && core.phase === 'chip-selection' && core.rules.config.twoHand && (
+                                <ChipHandSelector
+                                    activeSlot={activeChipHandSlot}
+                                    currentRound={core.round}
+                                    currentChips={localCurrentChips}
+                                    onSelect={setActiveChipHandSlot}
                                 />
                             )}
                             <div className="flex items-center justify-center overflow-visible" data-bgg-zone="hand-cards">
@@ -2037,6 +2293,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     t={t}
                                     testIdPrefix="the-gang-local-hand"
                                     showLabels={hasSecondaryHand}
+                                    rankHints={localHandRankHints}
                                     selectable={canSelectHandSwap}
                                     selectedTopIndex={handSwapSelection.topIndex}
                                     selectedBottomIndex={handSwapSelection.bottomIndex}

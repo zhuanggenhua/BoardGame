@@ -190,7 +190,7 @@
     "kitty_cats_invisible_bicycle_minions_title": "隐形自行车：选择要移动的力量 2 或以下随从",
     "kitty_cats_invisible_bicycle_base_title": "隐形自行车：选择目标基地",
     "mythic_horses_teaching_power_order_title": "教学之力：按顺序选择其余展示牌放回牌库顶",
-    "mythic_horses_super_future_space_armor_power_title": "超未来装甲之力：选择一个随从直到回合结束 +2 且不受其他玩家卡牌影响",
+    "mythic_horses_super_future_space_armor_power_title": "超未来装甲之力：同一基地有另一个己方随从时，该基地每个己方随从直到回合结束 +2",
     "mythic_horses_teaching_power_title": "教学之力：选择一张展示的随从作为额外随从打出",
     "mythic_horses_teaching_power_skip_option": "不打出",
     "mythic_horses_togetherness_power_title": "同行之力：选择一个你已有随从的基地，获得该基地限定额外随从",
@@ -5574,7 +5574,7 @@
     },
     "mythic_horses_super_future_space_armor_power": {
       "name": "超未来装甲之力",
-      "effectText": "选择一个仆从。直到回合结束，其不受其他玩家的牌影响，并具有 +2 力量。"
+      "effectText": "你在有你另一个仆从的基地上的每个仆从，直到回合结束具有 +2 力量。"
     },
     "mythic_horses_togetherness_power": {
       "name": "同行之力",

@@ -15,6 +15,7 @@ import {
 import {
   createCorpseLootReadyCore,
   createDogTradeReadyCore,
+  createExchangeReadyCore,
   createFirstScenarioHauntCore,
   createJackSpiritMovementRollReadyCore,
   createJackSpiritReviveReadyCore,
@@ -407,6 +408,8 @@ export const expectPhysicalDiceSeparated = async (
     minNormalizedCenterSpan?: number;
     minDieVisualSize?: number;
     minCanvasEdgeMargin?: number;
+    minCanvasClientWidth?: number;
+    minCanvasClientHeight?: number;
   } = {},
 ) => {
   const minDiceCount = options.minDiceCount ?? 2;
@@ -614,11 +617,11 @@ export const expectPhysicalDiceSeparated = async (
   expect(
     metrics.canvasClientWidth,
     `山屋骰盘 canvas 必须有可见宽度：${JSON.stringify(metrics)}`,
-  ).toBeGreaterThanOrEqual(300);
+  ).toBeGreaterThanOrEqual(options.minCanvasClientWidth ?? 300);
   expect(
     metrics.canvasClientHeight,
     `山屋骰盘 canvas 必须有可见高度：${JSON.stringify(metrics)}`,
-  ).toBeGreaterThanOrEqual(210);
+  ).toBeGreaterThanOrEqual(options.minCanvasClientHeight ?? 210);
   if (typeof options.minDieVisualSize === "number") {
     expect(
       metrics.minDieVisualSize,
@@ -692,6 +695,10 @@ export function createTradeReadyRuntimeCore(): BetrayalCore {
 
 export function createDogTradeReadyRuntimeCore(): BetrayalCore {
   return createDogTradeReadyCore();
+}
+
+export function createExchangeReadyRuntimeCore(): BetrayalCore {
+  return createExchangeReadyCore();
 }
 
 export function createMedicalKitUseReadyRuntimeCore(): BetrayalCore {

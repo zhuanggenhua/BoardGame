@@ -17,6 +17,7 @@ import { FROST_ABILITIES } from './domain/abilities-frost';
 import { BARBARIC_ABILITIES } from './domain/abilities-barbaric';
 import { MOGU_ABILITIES } from './domain/abilities-mogu';
 import { HUIJIN_ABILITIES } from './domain/abilities-huijin';
+import { SHOUREN_ABILITIES } from './domain/abilities-shouren';
 
 // 召唤师战争 BGM：只引用当前共享音频包中已有压缩 OGG 的曲目，避免 App 已安装包读取缺文件。
 const BGM_EDGE_OF_HONOR_KEY = 'bgm.japanese_music_pack_vol.edge_of_honor_rt_3.japanese_vol3_edge_of_honor_main';
@@ -299,6 +300,7 @@ const FACTION_ABILITY_KEYS: Record<FactionId, string[]> = {
     barbaric: collectAbilityKeys(BARBARIC_ABILITIES),
     mogu: collectAbilityKeys(MOGU_ABILITIES),
     huijin: collectAbilityKeys(HUIJIN_ABILITIES),
+    shouren: collectAbilityKeys(SHOUREN_ABILITIES),
 };
 
 const resolveAbilitySound = (event: AudioEvent): string | null => {

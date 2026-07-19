@@ -176,6 +176,17 @@ const readQidahenCore = async (page: Page) => (
     })
 );
 
+const selectPostBattleChoice = async (page: Page, choiceId: string) => {
+    const mode = choiceId.startsWith('besiege')
+        ? 'besiege'
+        : choiceId.startsWith('withdraw')
+            ? 'withdraw'
+            : 'occupy';
+    await page.getByTestId(`qidahen-post-battle-mode-${mode}`).click();
+    await page.getByTestId(`qidahen-post-battle-choice-${choiceId}`).click();
+    await page.getByTestId('qidahen-post-battle-confirm').click();
+};
+
 const resolvePendingActionByCommand = async (
     page: Page,
     payload: Record<string, unknown>,
@@ -931,7 +942,7 @@ test.describe('七大恨新游戏收口', () => {
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('弃牌支付');
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('处理胜负和撤退');
         await page.locator('[data-testid="tutorial-next-button"]').click();
-        await page.locator('[data-testid="qidahen-post-battle-choice-occupy"]').click();
+        await selectPostBattleChoice(page, 'occupy');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('占领');
         await saveScreenshot(page, FIELD_BATTLE_STEP_06);
     });
@@ -1025,7 +1036,7 @@ test.describe('七大恨新游戏收口', () => {
         expect(beforeBesiegeShanhaiguan?.cityState).not.toBeNull();
         expect(beforeBesiegeShanhaiguan?.cityState?.population).toBeGreaterThan(0);
         await saveScreenshot(page, SIEGE_STEP_02);
-        await page.locator('[data-testid="qidahen-post-battle-choice-besiege"]').click();
+        await selectPostBattleChoice(page, 'besiege');
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('最后选择围城还是占领');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('战后围城');
@@ -1075,7 +1086,7 @@ test.describe('七大恨新游戏收口', () => {
 
         await expect(page.locator('[data-tutorial-step="besiege-choice"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="qidahen-post-battle-choice-occupy"]')).toContainText('占领该区');
-        await page.locator('[data-testid="qidahen-post-battle-choice-occupy"]').click();
+        await selectPostBattleChoice(page, 'occupy');
 
         await expect(page.locator('[data-tutorial-step="finish"]')).toBeVisible({ timeout: 10000 });
         await expect(page.locator('[data-testid="tutorial-overlay-card"]')).toContainText('最后选择围城还是占领');

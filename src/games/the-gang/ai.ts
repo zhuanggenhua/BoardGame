@@ -1,9 +1,15 @@
 import type { MatchState, PlayerId } from '../../engine/types';
 import { createAiLegalActionId } from '../../engine/ai';
 import type { AiDecisionContext, AiLegalAction, GameAiRuntime, LocalAiPolicy } from '../../engine/ai';
-import { compareHandStrength, evaluateBestTheGangHand } from './domain';
+import {
+    allRequiredChipOwnersHaveChips,
+    evaluateBestTheGangHand,
+    getMissingHandSlotsForPlayer,
+    getUnoccupiedChipValues,
+    resolveChipOwnerKey,
+} from './domain';
 import { getChipValues } from './domain/setup';
-import { THE_GANG_COMMANDS, type TheGangCore, type TheGangProgressKind } from './domain/types';
+import { THE_GANG_COMMANDS, type TheGangCore, type TheGangHandSlot, type TheGangProgressKind } from './domain/types';
 
 type TheGangState = MatchState<TheGangCore>;
 
@@ -13,15 +19,15 @@ const ACTION_KIND_REVEAL_SHOWDOWN = 'reveal-showdown';
 const ACTION_KIND_CONFIRM_HAND_SWAP = 'confirm-hand-swap';
 const ACTION_KIND_START_NEXT_HEIST = 'start-next-heist';
 
-const createTakeChipAction = (chip: number): AiLegalAction => ({
-    actionId: createAiLegalActionId(ACTION_KIND_TAKE_CHIP, chip),
+const createTakeChipAction = (chip: number, handSlot?: TheGangHandSlot): AiLegalAction => ({
+    actionId: createAiLegalActionId(ACTION_KIND_TAKE_CHIP, handSlot, chip),
     kind: ACTION_KIND_TAKE_CHIP,
-    label: `选择 ${chip} 星筹码`,
+    label: `${handSlot === 'bottom' ? '下手' : handSlot === 'top' ? '上手' : ''}选择 ${chip} 星筹码`.trim(),
     commands: [{
         type: THE_GANG_COMMANDS.TAKE_CHIP,
-        payload: { chip },
+        payload: { chip, ...(handSlot ? { handSlot } : {}) },
     }],
-    metadata: { chip },
+    metadata: { chip, handSlot },
 });
 
 const createProgressAction = (
@@ -51,20 +57,24 @@ const isProgressAlreadyApprovedByPlayer = (
     && core.pendingProgress.approvals.includes(playerId)
 );
 
-const allPlayersHaveChips = (core: TheGangCore): boolean =>
-    core.playerIds.every((playerId) => core.currentRoundChips[playerId] !== undefined);
+const allPlayersHaveChips = (core: TheGangCore): boolean => allRequiredChipOwnersHaveChips(core);
 
-const getAvailableChipsForPlayer = (core: TheGangCore, playerId: PlayerId): number[] => {
-    const ownChip = core.currentRoundChips[playerId];
+const getAvailableChipsForPlayer = (
+    core: TheGangCore,
+    playerId: PlayerId,
+    handSlot: TheGangHandSlot,
+): number[] => {
+    const ownChip = core.currentRoundChips[resolveChipOwnerKey(core, playerId, handSlot)];
 
     return getChipValues(core.playerIds.length, core.rules.config, core.round)
         .filter((chip) => chip !== ownChip);
 };
 
 const getUnoccupiedCurrentRoundChips = (core: TheGangCore): number[] => {
-    const occupied = new Set(Object.values(core.currentRoundChips));
-    return getChipValues(core.playerIds.length, core.rules.config, core.round)
-        .filter((chip) => !occupied.has(chip));
+    return getUnoccupiedChipValues(
+        getChipValues(core.playerIds.length, core.rules.config, core.round),
+        core.currentRoundChips,
+    );
 };
 
 const scoreFromEvaluation = (evaluation: ReturnType<typeof evaluateBestTheGangHand>) => (
@@ -74,7 +84,11 @@ const scoreFromEvaluation = (evaluation: ReturnType<typeof evaluateBestTheGangHa
     ), 0)
 );
 
-const getVisibleStrengthScore = (core: TheGangCore, playerId: PlayerId): number => {
+const getVisibleStrengthScore = (
+    core: TheGangCore,
+    playerId: PlayerId,
+    handSlot: TheGangHandSlot = 'top',
+): number => {
     const player = core.players[playerId];
     if (!player) return 0;
 
@@ -82,30 +96,19 @@ const getVisibleStrengthScore = (core: TheGangCore, playerId: PlayerId): number 
         ...(player.communityCards ?? core.communityCards),
         ...player.flashlightCards,
     ];
-    const primaryHandCards = [...player.pocketCards, ...player.nightVisionCards];
-    const secondaryHandCards = player.secondaryPocketCards ?? [];
+    const primaryHandCards = handSlot === 'top'
+        ? [...player.pocketCards, ...player.nightVisionCards]
+        : [...(player.secondaryPocketCards ?? [])];
 
     if (primaryHandCards.length + boardCards.length >= 5) {
         const primaryEvaluation = evaluateBestTheGangHand(primaryHandCards, boardCards, {
             rulesConfig: core.rules.config,
             blankedRank: core.rules.blankedRank,
         });
-        if (secondaryHandCards.length + boardCards.length < 5) {
-            return scoreFromEvaluation(primaryEvaluation);
-        }
-
-        const secondaryEvaluation = evaluateBestTheGangHand(secondaryHandCards, boardCards, {
-            rulesConfig: core.rules.config,
-            blankedRank: core.rules.blankedRank,
-        });
-        return scoreFromEvaluation(
-            compareHandStrength(secondaryEvaluation.strength, primaryEvaluation.strength) > 0
-                ? secondaryEvaluation
-                : primaryEvaluation,
-        );
+        return scoreFromEvaluation(primaryEvaluation);
     }
 
-    return [...primaryHandCards, ...secondaryHandCards]
+    return primaryHandCards
         .map((card) => card.rank)
         .map((rank) => {
             const order = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
@@ -114,13 +117,18 @@ const getVisibleStrengthScore = (core: TheGangCore, playerId: PlayerId): number 
         .reduce((total, value) => total + value, 0);
 };
 
-const getPreferredChip = (core: TheGangCore, playerId: PlayerId, availableChips: number[]): number | null => {
+const getPreferredChip = (
+    core: TheGangCore,
+    playerId: PlayerId,
+    handSlot: TheGangHandSlot,
+    availableChips: number[],
+): number | null => {
     if (availableChips.length === 0) return null;
 
     const visibleRankings = core.playerIds
         .map((id) => ({
             playerId: id,
-            score: getVisibleStrengthScore(core, id),
+            score: getVisibleStrengthScore(core, id, handSlot),
         }))
         .sort((left, right) => left.score - right.score || left.playerId.localeCompare(right.playerId));
 
@@ -144,10 +152,11 @@ export function buildTheGangAiLegalActions(args: {
     if (core.phase === 'chip-selection') {
         if (!core.heistStarted) return [];
 
-        const playerHasChip = core.currentRoundChips[args.playerId] !== undefined;
-        const actions = playerHasChip
-            ? []
-            : getAvailableChipsForPlayer(core, args.playerId).map(createTakeChipAction);
+        const missingHandSlots = getMissingHandSlotsForPlayer(core, args.playerId);
+        const actions = missingHandSlots.flatMap((handSlot) => (
+            getAvailableChipsForPlayer(core, args.playerId, handSlot)
+                .map((chip) => createTakeChipAction(chip, core.rules.config.twoHand ? handSlot : undefined))
+        ));
 
         if (!allPlayersHaveChips(core)) return actions;
 
@@ -204,7 +213,11 @@ const baselineLocalPolicy: LocalAiPolicy = {
         const state = context.visibleState as TheGangState;
         const chipActions = context.legalActions.filter((action) => action.kind === ACTION_KIND_TAKE_CHIP);
         if (chipActions.length > 0) {
-            const allAvailableChips = chipActions
+            const targetHandSlot: TheGangHandSlot = chipActions[0].metadata?.handSlot === 'bottom' ? 'bottom' : 'top';
+            const targetChipActions = chipActions.filter((action) => (
+                (action.metadata?.handSlot ?? 'top') === targetHandSlot
+            ));
+            const allAvailableChips = targetChipActions
                 .map((action) => action.metadata?.chip)
                 .filter((chip): chip is number => typeof chip === 'number');
             const unoccupiedChips = getUnoccupiedCurrentRoundChips(state.core);
@@ -214,9 +227,10 @@ const baselineLocalPolicy: LocalAiPolicy = {
             const preferredChip = getPreferredChip(
                 state.core,
                 context.playerId,
+                targetHandSlot,
                 candidateChips.length > 0 ? candidateChips : allAvailableChips,
             );
-            const preferredAction = chipActions.find((action) => action.metadata?.chip === preferredChip);
+            const preferredAction = targetChipActions.find((action) => action.metadata?.chip === preferredChip);
             return preferredAction ? { actionId: preferredAction.actionId } : { actionId: chipActions[0].actionId };
         }
 

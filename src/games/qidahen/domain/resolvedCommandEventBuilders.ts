@@ -102,6 +102,19 @@ const buildQidahenScenarioVoteCastEvent = (
     timestamp,
 });
 
+const buildQidahenFactionSelectedEvent = (
+    command: Extract<QidahenCommand, { type: 'SELECT_FACTION' }>,
+    timestamp: number,
+): QidahenEvent => ({
+    type: 'FACTION_SELECTED',
+    payload: {
+        playerId: command.playerId,
+        factionId: command.payload.factionId,
+    },
+    sourceCommandType: command.type,
+    timestamp,
+});
+
 const buildQidahenSunYuanhuaTechResolvedEvent = (
     command: ResolveSunYuanhuaTechCommand,
     timestamp: number,
@@ -514,6 +527,12 @@ const QIDAHEN_RESOLVED_COMMAND_EVENT_BUILDERS: readonly QidahenResolvedCommandEv
         commandTypes: [QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE],
         buildEvents: buildSingleResolvedCommandEvents<Extract<QidahenCommand, { type: 'CAST_SCENARIO_VOTE' }>>(
             buildQidahenScenarioVoteCastEvent,
+        ),
+    },
+    {
+        commandTypes: [QIDAHEN_COMMANDS.SELECT_FACTION],
+        buildEvents: buildSingleResolvedCommandEvents<Extract<QidahenCommand, { type: 'SELECT_FACTION' }>>(
+            buildQidahenFactionSelectedEvent,
         ),
     },
     {

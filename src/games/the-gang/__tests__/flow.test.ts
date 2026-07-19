@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { createReplayAdapter } from '../../../engine/adapter';
 import { buildShowdownResults, TheGangDomain } from '../domain';
 import { engineConfig } from '../game';
+import { getChipValues } from '../domain/setup';
 import { THE_GANG_COMMANDS, type PlayingCard, type TheGangCommand, type TheGangCore } from '../domain/types';
 
 const stateOf = (core: TheGangCore) => ({
@@ -175,7 +176,7 @@ describe('The Gang domain flow', () => {
         expect(state.core.deck).toBe(initialDeck);
     });
 
-    test('手牌调换开关不会重新发牌', () => {
+    test('两副手牌自带调换流程且不会因兼容字段重新发牌', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-hand-swap-no-redeal-test');
         let state = adapter.setup(['0', '1', '2']);
 
@@ -201,7 +202,7 @@ describe('The Gang domain flow', () => {
             payload: {
                 config: {
                     ...state.core.rules.config,
-                    handSwap: true,
+                    handSwap: false,
                 },
             },
             timestamp: 2,
@@ -280,6 +281,17 @@ describe('The Gang domain flow', () => {
             },
             timestamp: 1,
         })).toMatchObject({ valid: false, error: 'twoHandPlayerLimit' });
+    });
+
+    test('四人两副手牌按八个排名槽生成筹码', () => {
+        const twoHandConfig = {
+            gameMode: 'texas-holdem' as const,
+            twoHand: true,
+            challenges: {},
+        };
+
+        expect(getChipValues(4, twoHandConfig, 1)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+        expect(getChipValues(5, twoHandConfig, 1)).toEqual([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
     });
 
     test('扩展配置开始抢劫后锁定', () => {
@@ -468,7 +480,7 @@ describe('The Gang domain flow', () => {
         expect(result?.pocketCards).toContainEqual(movedCard);
     });
 
-    test('两副手牌摊牌时分别评估并使用更强的一手', () => {
+    test('两副手牌摊牌时上手和下手分别产出排名结果', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-two-hand-showdown-test');
         let state = adapter.setup(['0', '1', '2']);
 
@@ -488,7 +500,14 @@ describe('The Gang domain flow', () => {
                 standardCard('J', 'clubs'),
                 standardCard('K', 'diamonds'),
             ],
-            currentRoundChips: { '0': 3, '1': 2, '2': 1 },
+            currentRoundChips: {
+                '0:top': 3,
+                '0:bottom': 6,
+                '1:top': 5,
+                '1:bottom': 2,
+                '2:top': 1,
+                '2:bottom': 4,
+            },
             players: {
                 ...state.core.players,
                 '0': {
@@ -509,12 +528,18 @@ describe('The Gang domain flow', () => {
             },
         });
 
-        const result = buildShowdownResults(state.core).find((player) => player.playerId === '0');
+        const results = buildShowdownResults(state.core);
+        const topResult = results.find((result) => result.playerId === '0' && result.handSlot === 'top');
+        const bottomResult = results.find((result) => result.playerId === '0' && result.handSlot === 'bottom');
 
-        expect(result?.winningHandSlot).toBe('bottom');
-        expect(result?.secondaryPocketCards).toHaveLength(2);
-        expect(result?.strength.code).toBe('1p');
-        expect(result?.strength.ranks[0]).toBe(14);
+        expect(results).toHaveLength(6);
+        expect(topResult?.chip).toBe(3);
+        expect(topResult?.winningHandSlot).toBe('top');
+        expect(bottomResult?.chip).toBe(6);
+        expect(bottomResult?.winningHandSlot).toBe('bottom');
+        expect(bottomResult?.pocketCards).toEqual([standardCard('A', 'spades'), standardCard('A', 'hearts')]);
+        expect(bottomResult?.strength.code).toBe('1p');
+        expect(bottomResult?.strength.ranks[0]).toBe(14);
     });
 
     test('两副手牌投票完先进入调换阶段，确认后才推进下一轮', () => {
@@ -528,7 +553,6 @@ describe('The Gang domain flow', () => {
                 config: {
                     gameMode: 'texas-holdem',
                     twoHand: true,
-                    handSwap: true,
                     challenges: {},
                 },
             },
@@ -598,7 +622,6 @@ describe('The Gang domain flow', () => {
                 config: {
                     gameMode: 'texas-holdem',
                     twoHand: true,
-                    handSwap: true,
                     challenges: {},
                 },
             },
@@ -607,14 +630,18 @@ describe('The Gang domain flow', () => {
         state = startHeist(adapter, state, 2);
 
         for (const round of [1, 2, 3, 4]) {
-            for (const [index, playerId] of state.core.playerIds.entries()) {
-                state = adapter.execute(state, {
-                    type: THE_GANG_COMMANDS.TAKE_CHIP,
-                    playerId,
-                    payload: { chip: index + 1 },
-                    timestamp: round * 10 + index,
-                    skipValidation: true,
-                }).state;
+            let chip = 1;
+            for (const playerId of state.core.playerIds) {
+                for (const handSlot of ['top', 'bottom'] as const) {
+                    state = adapter.execute(state, {
+                        type: THE_GANG_COMMANDS.TAKE_CHIP,
+                        playerId,
+                        payload: { chip, handSlot },
+                        timestamp: round * 10 + chip,
+                        skipValidation: true,
+                    }).state;
+                    chip += 1;
+                }
             }
 
             if (round < 4) {
@@ -627,6 +654,14 @@ describe('The Gang domain flow', () => {
 
         expect(state.core.round).toBe(4);
         expect(state.core.communityCards).toHaveLength(5);
+        expect(Object.keys(state.core.currentRoundChips).sort()).toEqual([
+            '0:bottom',
+            '0:top',
+            '1:bottom',
+            '1:top',
+            '2:bottom',
+            '2:top',
+        ]);
 
         state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.REVEAL_SHOWDOWN, 500);
         expect(state.core.phase).toBe('hand-swap');

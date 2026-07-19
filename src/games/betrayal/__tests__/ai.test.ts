@@ -15,6 +15,7 @@ import {
     type BetrayalCore,
 } from '../game';
 import { BETRAYAL_MANIFEST } from '../manifest';
+import { BETRAYAL_DISCOVERY_POOLS } from '../scenarioConfig';
 import {
     applyBetrayalCommand,
     createBetrayalScriptedRandom,
@@ -24,6 +25,7 @@ import {
     createFirstScenarioReadyToTraitorVictoryCore,
     createHeroAttackTraitorReadyCore,
     createStartedFirstScenarioCore,
+    createTradeReadyCore,
 } from '../testing/firstScenarioTestUtils';
 
 function stateOf(core: BetrayalCore, seed = 'betrayal-ai-test'): MatchState<BetrayalCore> {
@@ -51,6 +53,153 @@ function buildActions(state: MatchState<BetrayalCore>, playerId: string) {
     return betrayalAiRuntime.buildLegalActions({ playerId, state });
 }
 
+function isMagicCameraTestCard(card: BetrayalCore['currentExplorer']['inventory'][number]): boolean {
+    return card.id === 'camera' || card.name === '魔法相机';
+}
+
+function removeMagicCameraFromTestExplorer(
+    explorer: BetrayalCore['currentExplorer'],
+): BetrayalCore['currentExplorer'] {
+    return {
+        ...explorer,
+        inventory: explorer.inventory.filter((card) => !isMagicCameraTestCard(card)),
+    };
+}
+
+function activateTestExplorer(core: BetrayalCore, playerId: string): void {
+    const explorers = [core.currentExplorer, ...core.otherExplorers].map((explorer) => ({
+        ...explorer,
+        traits: { ...explorer.traits },
+        inventory: explorer.inventory.map((card) => ({ ...card })),
+    }));
+    const active = explorers.find((explorer) => explorer.playerId === playerId);
+    if (!active) {
+        throw new Error(`山屋 AI 测试夹具不能切到缺失玩家 ${playerId}`);
+    }
+    core.currentPlayer = playerId;
+    core.currentExplorer = active;
+    core.otherExplorers = explorers.filter((explorer) => explorer.playerId !== playerId);
+    core.activeRoomId = active.roomId;
+    core.currentExplorerTraits = { ...active.traits };
+    core.currentExplorerInventory = active.inventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = active.inventory.map((card) => card.id);
+    core.usedCardIdsThisTurn = [];
+}
+
+function setExplorerRoom(core: BetrayalCore, playerId: string, roomId: string): void {
+    if (core.currentExplorer.playerId === playerId) {
+        core.currentExplorer.roomId = roomId;
+        core.activeRoomId = roomId;
+        return;
+    }
+    core.otherExplorers = core.otherExplorers.map((explorer) => (
+        explorer.playerId === playerId ? { ...explorer, roomId } : explorer
+    ));
+}
+
+function createMagicCameraAiCore(cameraOwnerPlayerId: string | null = '1'): BetrayalCore {
+    let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core.drawOrder = ['event'];
+    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！')!];
+    core.currentExplorer = removeMagicCameraFromTestExplorer(core.currentExplorer);
+    core.otherExplorers = core.otherExplorers.map(removeMagicCameraFromTestExplorer);
+    core.currentExplorer.inventory = [
+        ...core.currentExplorer.inventory,
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'mask', name: '面具', kind: 'omen' },
+    ];
+    if (cameraOwnerPlayerId === '0') {
+        core.currentExplorer.inventory = [
+            ...core.currentExplorer.inventory,
+            { id: 'camera', name: '魔法相机', kind: 'item' },
+        ];
+    }
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.otherExplorers = core.otherExplorers.map((explorer) => (
+        explorer.playerId === cameraOwnerPlayerId
+            ? { ...explorer, inventory: [...explorer.inventory, { id: 'camera', name: '魔法相机', kind: 'item' }] }
+            : explorer
+    ));
+    if (!cameraOwnerPlayerId) {
+        core.possessionOrderByKind.item = [
+            { id: 'camera', name: '魔法相机', kind: 'item' },
+            ...core.possessionOrderByKind.item.filter((card) => card.id !== 'camera'),
+        ];
+    }
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        '0',
+        { accept: true },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3),
+    );
+}
+
+function createDustAiCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
+    let core = createStartedFirstScenarioCore(playerIds);
+    core.drawOrder = ['event'];
+    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘')!];
+    core.currentExplorer.inventory = [
+        ...core.currentExplorer.inventory,
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'skull', name: '头骨', kind: 'omen' },
+    ];
+    core.currentExplorer.traits = {
+        ...core.currentExplorer.traits,
+        knowledge: 5,
+        sanity: 5,
+    };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        '0',
+        { accept: true },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3),
+    );
+}
+
+function createHungryHouseAiCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
+    let core = createStartedFirstScenarioCore(playerIds);
+    core.drawOrder = ['event'];
+    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
+    core.currentExplorer.inventory = [
+        ...core.currentExplorer.inventory,
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'mask', name: '面具', kind: 'omen' },
+    ];
+    core.currentExplorer.traits = {
+        ...core.currentExplorer.traits,
+        might: 5,
+        sanity: 5,
+    };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        '0',
+        { accept: true },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3),
+    );
+}
 function applyAiResolution(
     state: MatchState<BetrayalCore>,
     resolution: NonNullable<Awaited<ReturnType<typeof resolveNextLocalAiAction>>>,
@@ -195,6 +344,257 @@ describe('小黑屋本地 AI', () => {
         expect(nextState.core.endgameResult?.outcome).toBe('survivors');
     });
 
+    test('魔法相机叛徒 AI 会优先拍摄仍有 Essence 的英雄', () => {
+        const core = createMagicCameraAiCore('1');
+        activateTestExplorer(core, '1');
+        core.currentExplorer.traits = {
+            ...core.currentExplorer.traits,
+            might: 1,
+            speed: 5,
+            knowledge: 5,
+            sanity: 5,
+        };
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        setExplorerRoom(core, '2', core.currentExplorer.roomId);
+
+        const state = stateOf(core, 'betrayal-ai-magic-camera-photo');
+        const photoActions = buildActions(state, '1')
+            .filter((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.TAKE_PHOTO);
+        const preferredPhoto = photoActions.find((action) => (
+            (action.commands[0]?.payload as { targetPlayerId?: string; trait?: string }).targetPlayerId === '2'
+            && (action.commands[0]?.payload as { targetPlayerId?: string; trait?: string }).trait === 'might'
+        ));
+
+        expect(photoActions.length).toBeGreaterThan(0);
+        expect(preferredPhoto).toBeDefined();
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
+            .toBe(preferredPhoto?.actionId);
+    });
+
+    test('魔法相机叛徒 AI 在没有可拍 Essence 时会让幻影摄影师攻击', () => {
+        const core = createMagicCameraAiCore('1');
+        activateTestExplorer(core, '1');
+        core.scenarioRuntime.magicCamera!.heroEssencePlayerIds = [];
+        const monsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        const hero = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === monsterId
+                ? { ...monster, roomId: hero.roomId }
+                : monster
+        ));
+
+        const state = stateOf(core, 'betrayal-ai-magic-camera-photographer');
+        const photographerActions = buildActions(state, '1')
+            .filter((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.PHANTOM_PHOTOGRAPHER_ATTACK);
+
+        expect(photographerActions.some((action) => (
+            (action.commands[0]?.payload as { monsterId?: string; targetPlayerId?: string }).monsterId === monsterId
+            && (action.commands[0]?.payload as { monsterId?: string; targetPlayerId?: string }).targetPlayerId === '2'
+        ))).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
+            .toBe(photographerActions[0]?.actionId);
+    });
+
+    test('魔法相机英雄 AI 与叛徒同房时优先砸毁相机', () => {
+        const core = createMagicCameraAiCore('1');
+        activateTestExplorer(core, '2');
+        setExplorerRoom(core, '1', core.currentExplorer.roomId);
+
+        const state = stateOf(core, 'betrayal-ai-magic-camera-smash');
+        const smashAction = buildActions(state, '2')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.SMASH_MAGIC_CAMERA);
+
+        expect(smashAction).toBeDefined();
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '2'))?.actionId)
+            .toBe(smashAction?.actionId);
+    });
+
+    test('魔法相机英雄 AI 与幻影摄影师同房时会优先攻击摄影师', () => {
+        const core = createMagicCameraAiCore('1');
+        activateTestExplorer(core, '2');
+        setExplorerRoom(core, '2', 'ground-north');
+        setExplorerRoom(core, '1', 'entrance-hall');
+        const monsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === monsterId
+                ? { ...monster, roomId: core.currentExplorer.roomId }
+                : monster
+        ));
+
+        const state = stateOf(core, 'betrayal-ai-magic-camera-attack-photographer');
+        const photographerAttack = buildActions(state, '2')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.ATTACK_PHANTOM_PHOTOGRAPHER);
+
+        expect(photographerAttack).toBeDefined();
+        expect(photographerAttack?.commands[0]?.payload).toMatchObject({
+            target: 'phantom-photographer',
+            targetMonsterId: monsterId,
+        });
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '2'))?.actionId)
+            .toBe(photographerAttack?.actionId);
+    });
+
+    test('灰尘 AI 在恶兆房间会寻找解药', () => {
+        const core = createDustAiCore();
+        activateTestExplorer(core, '1');
+        setExplorerRoom(core, '1', 'hallway');
+        const hallway = core.rooms.find((room) => room.id === 'hallway')!;
+        hallway.discoveryReward = 'omen';
+        core.scenarioRuntime.dust!.researchRoomIds = [];
+
+        const state = stateOf(core, 'betrayal-ai-dust-search');
+        const searchAction = buildActions(state, '1')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.SEARCH_FOR_CURE);
+
+        expect(searchAction?.commands[0]?.payload).toMatchObject({
+            trait: expect.stringMatching(/knowledge|sanity/),
+        });
+        const decision = betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'));
+        expect(buildActions(state, '1').find((action) => action.actionId === decision?.actionId)?.kind)
+            .toBe(BETRAYAL_AI_ACTION_KINDS.SEARCH_FOR_CURE);
+    });
+
+    test('灰尘 AI 在 Research token 房间会尝试治愈灰尘', () => {
+        const core = createDustAiCore();
+        activateTestExplorer(core, '1');
+        setExplorerRoom(core, '1', 'hallway');
+        const hallway = core.rooms.find((room) => room.id === 'hallway')!;
+        hallway.discoveryReward = 'event';
+        core.scenarioRuntime.dust!.researchRoomIds = ['hallway'];
+
+        const state = stateOf(core, 'betrayal-ai-dust-cure');
+        const cureAction = buildActions(state, '1')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.CURE_THE_DUST);
+
+        expect(cureAction?.commands[0]?.payload).toMatchObject({
+            trait: expect.stringMatching(/might|speed|knowledge|sanity/),
+        });
+        const decision = betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'));
+        expect(buildActions(state, '1').find((action) => action.actionId === decision?.actionId)?.kind)
+            .toBe(BETRAYAL_AI_ACTION_KINDS.CURE_THE_DUST);
+    });
+
+    test('灰尘 AI 会请求同房探索者交换 Sickness token', () => {
+        const core = createDustAiCore();
+        activateTestExplorer(core, '1');
+        setExplorerRoom(core, '1', 'hallway');
+        setExplorerRoom(core, '2', 'hallway');
+        const hallway = core.rooms.find((room) => room.id === 'hallway')!;
+        hallway.discoveryReward = 'event';
+        core.scenarioRuntime.dust!.researchRoomIds = [];
+
+        const state = stateOf(core, 'betrayal-ai-dust-exchange');
+        const exchangeAction = buildActions(state, '1')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.REQUEST_SICKNESS_EXCHANGE);
+
+        expect(exchangeAction?.commands[0]?.payload).toMatchObject({
+            targetPlayerId: '2',
+        });
+    });
+
+    test('灰尘 AI 会同意别人发起的 Sickness token 交换', () => {
+        const core = createDustAiCore();
+        core.scenarioRuntime.dust!.pendingSicknessExchange = {
+            requesterPlayerId: '1',
+            targetPlayerId: '2',
+        };
+
+        const state = stateOf(core, 'betrayal-ai-dust-resolve-exchange');
+        const actions = buildActions(state, '2');
+
+        expect(actions).toHaveLength(1);
+        expect(actions[0]?.kind).toBe(BETRAYAL_AI_ACTION_KINDS.RESOLVE_SICKNESS_EXCHANGE);
+        expect(actions[0]?.commands[0]?.payload).toEqual({ accept: true });
+    });
+
+    test('大宅饿了 AI 同房有邪教徒尸体时优先搬起尸体', () => {
+        const core = createHungryHouseAiCore();
+        const hungryHouse = core.scenarioRuntime.hungryHouse!;
+        const cultistId = hungryHouse.cultistIds[0]!;
+        activateTestExplorer(core, '1');
+        setExplorerRoom(core, '1', hungryHouse.ritualRoomId);
+        core.monsters = core.monsters.filter((monster) => monster.id !== cultistId);
+        hungryHouse.cultistCorpseRoomIds = {
+            ...hungryHouse.cultistCorpseRoomIds,
+            [cultistId]: hungryHouse.ritualRoomId,
+        };
+
+        const state = stateOf(core, 'betrayal-ai-hungry-house-pick-up-corpse');
+        const pickUpAction = buildActions(state, '1')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.PICK_UP_CORPSE);
+
+        expect(pickUpAction?.commands[0]?.payload).toMatchObject({
+            corpseKind: 'cultist',
+            corpseId: cultistId,
+        });
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
+            .toBe(pickUpAction?.actionId);
+    });
+
+    test('大宅饿了 AI 携尸在裂隙时优先献给大宅', () => {
+        const core = createHungryHouseAiCore();
+        const hungryHouse = core.scenarioRuntime.hungryHouse!;
+        const cultistId = hungryHouse.cultistIds[0]!;
+        activateTestExplorer(core, '1');
+        setExplorerRoom(core, '1', hungryHouse.chasmRoomId);
+        hungryHouse.carriedCorpseByPlayerId['1'] = {
+            kind: 'cultist',
+            corpseId: cultistId,
+            sourceMonsterId: cultistId,
+            name: '邪教徒尸体',
+        };
+
+        const state = stateOf(core, 'betrayal-ai-hungry-house-feed-her');
+        const feedAction = buildActions(state, '1')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.FEED_HER);
+
+        expect(feedAction?.commands[0]?.payload).toEqual({});
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
+            .toBe(feedAction?.actionId);
+    });
+
+    test('大宅饿了 AI 与邪教徒同房时生成攻击邪教徒动作', () => {
+        const core = createHungryHouseAiCore();
+        const hungryHouse = core.scenarioRuntime.hungryHouse!;
+        const cultistId = hungryHouse.cultistIds[0]!;
+        activateTestExplorer(core, '1');
+        setExplorerRoom(core, '1', hungryHouse.ritualRoomId);
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === cultistId ? { ...monster, roomId: hungryHouse.ritualRoomId } : monster
+        ));
+
+        const state = stateOf(core, 'betrayal-ai-hungry-house-attack-cultist');
+        const attackAction = buildActions(state, '1')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.ATTACK_CULTIST);
+
+        expect(attackAction?.commands[0]?.payload).toMatchObject({
+            target: 'cultist',
+            targetMonsterId: cultistId,
+        });
+    });
+
+    test('大宅饿了 AI 会让同房邪教徒攻击探索者', () => {
+        const core = createHungryHouseAiCore();
+        const hungryHouse = core.scenarioRuntime.hungryHouse!;
+        const cultistId = hungryHouse.cultistIds[0]!;
+        activateTestExplorer(core, '1');
+        setExplorerRoom(core, '1', hungryHouse.chasmRoomId);
+        setExplorerRoom(core, '2', hungryHouse.ritualRoomId);
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === cultistId ? { ...monster, roomId: hungryHouse.ritualRoomId } : monster
+        ));
+
+        const state = stateOf(core, 'betrayal-ai-hungry-house-cultist-attack');
+        const cultistAttack = buildActions(state, '1')
+            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.CULTIST_ATTACK);
+
+        expect(cultistAttack?.commands[0]?.payload).toMatchObject({
+            monsterId: cultistId,
+            targetPlayerId: '2',
+        });
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
+            .toBe(cultistAttack?.actionId);
+    });
     test('AI 会用急救包治疗同房受伤队友，并通过正式领域管线生效', async () => {
         const core = createStartedFirstScenarioCore();
         const teammate = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
@@ -346,6 +746,38 @@ describe('小黑屋本地 AI', () => {
         expect(buildActions(stateOf(noGainCore, 'betrayal-ai-no-trade-gain'), '0')
             .some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.TRADE_POSSESSION))
             .toBe(false);
+    });
+
+    test('AI 接收方会同意待处理的交易请求并完成转移', async () => {
+        let core = createTradeReadyCore();
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            cardId: 'rope',
+            targetPlayerId: '1',
+        });
+        const state = stateOf(core, 'betrayal-ai-accept-trade');
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-accept-trade',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.RESOLVE_TRADE_AGREEMENT);
+        expect(resolution?.action.commands[0]?.payload).toEqual({ accept: true });
+        expect(resolution).not.toBeNull();
+        if (!resolution) return;
+
+        const nextState = applyAiResolution(state, resolution);
+        expect(nextState.core.pendingTradeAgreement).toBeNull();
+        expect(nextState.core.activePlayerId).toBeNull();
+        expect(nextState.core.currentExplorer.inventory.map((card) => card.id)).toEqual(['omen-book']);
+        expect(nextState.core.otherExplorers.find((explorer) => explorer.playerId === '1')?.inventory.map((card) => card.id)).toEqual(['rope']);
     });
 
     test('AI 会选择尸体上的具体持有物并完成搜刮', async () => {

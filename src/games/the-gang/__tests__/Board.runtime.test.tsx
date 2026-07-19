@@ -39,7 +39,7 @@ const finalRoundChipsFor = (core: TheGangCore) => [...buildShowdownResults(core)
     .sort(strengthOrder)
     .reduce<Record<string, number>>((chips, result, index) => ({
         ...chips,
-        [result.playerId]: index + 1,
+        [result.handSlot ? `${result.playerId}:${result.handSlot}` : result.playerId]: index + 1,
     }), {});
 
 const fixedRandom = { random: () => 0 };
@@ -296,6 +296,11 @@ describe('The Gang Board 运行入口', () => {
                     twoHand: true,
                 },
             },
+            communityCards: [
+                standardCard('A', 'diamonds'),
+                standardCard('A', 'clubs'),
+                standardCard('2', 'hearts'),
+            ],
             players: {
                 ...initial.players,
                 '0': {
@@ -324,6 +329,39 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByTestId('the-gang-local-hand-bottom').querySelectorAll('img')).toHaveLength(2);
         expect(screen.getByText('board.topHand')).toBeInTheDocument();
         expect(screen.getByText('board.bottomHand')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveAttribute('data-rank-label', '三条');
+        expect(screen.getByTestId('the-gang-local-hand-bottom-rank')).toHaveAttribute('data-rank-label', '一对');
+        expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveTextContent('三条');
+        expect(screen.getByTestId('the-gang-local-hand-bottom-rank')).toHaveTextContent('一对');
+    });
+
+    test('单副手牌也在本地手牌区显示当前牌型提示', () => {
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const singleHandCore: TheGangCore = {
+            ...initial,
+            communityCards: [
+                standardCard('A', 'diamonds'),
+                standardCard('A', 'clubs'),
+                standardCard('2', 'hearts'),
+            ],
+            players: {
+                ...initial.players,
+                '0': {
+                    ...initial.players['0'],
+                    pocketCards: [standardCard('A', 'spades'), standardCard('K', 'hearts')],
+                    secondaryPocketCards: [],
+                },
+            },
+        };
+
+        renderBoardForCore(singleHandCore);
+
+        expect(screen.getByTestId('the-gang-local-hand-top')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-top').querySelectorAll('img')).toHaveLength(2);
+        expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveAttribute('data-rank-label', '三条');
+        expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveTextContent('board.singleHand');
+        expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveTextContent('三条');
+        expect(screen.queryByTestId('the-gang-local-hand-bottom-rank')).not.toBeInTheDocument();
     });
 
     test('手牌调换阶段点击上下真实手牌后才能确认，也可以跳过', () => {
@@ -338,7 +376,6 @@ describe('The Gang Board 运行入口', () => {
                 config: {
                     ...initial.rules.config,
                     twoHand: true,
-                    handSwap: true,
                 },
             },
             currentRoundChips: {
@@ -526,7 +563,7 @@ describe('The Gang Board 运行入口', () => {
             />,
         );
 
-        screen.getByTestId('the-gang-take-player-chip-1').click();
+        screen.getByTestId('the-gang-take-player-chip-1-single').click();
 
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
             __internalPlayerId: '0',
@@ -561,7 +598,7 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByRole('img', { name: '万能钥匙' })).toHaveAttribute('src', expect.stringContaining('/assets/i18n/zh-CN/the-gang/rule-assets/challenges/compressed/master-key.webp'));
         expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-rule-toggle-twoHand')).toBeInTheDocument();
-        expect(screen.getByTestId('the-gang-rule-toggle-handSwap')).toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-rule-toggle-handSwap')).not.toBeInTheDocument();
         expect(screen.getByTestId('the-gang-rule-toggle-automode')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-rule-toggle-antiTroll')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-exit-mode-mastermind')).toBeInTheDocument();

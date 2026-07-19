@@ -72,6 +72,7 @@ const INSTIGATE_DEFECT_ARTILLERY_CARD_DEF_IDS = new Set([
 
 export const QIDAHEN_COMMANDS = {
     CAST_SCENARIO_VOTE: 'CAST_SCENARIO_VOTE',
+    SELECT_FACTION: 'SELECT_FACTION',
     SELECT_REGION: 'SELECT_REGION',
     CONFIRM_PREVIEW_ACTION: 'CONFIRM_PREVIEW_ACTION',
     CANCEL_PREVIEW_ACTION: 'CANCEL_PREVIEW_ACTION',
@@ -117,6 +118,7 @@ const MOUNTED_INFANTRY_CARD_DEF_ID = 'qidahen-atlas05-1620-mounted-infantry';
 
 const hasPendingScenarioChoices = (state: MatchState<QidahenCore>): boolean => (
     state.core.scenarioVote != null
+    || state.core.factionSelection != null
     || state.core.pendingScenarioCharacterChoices.length > 0
     || state.core.pendingScenarioArmamentChoices.length > 0
 );
@@ -366,6 +368,9 @@ export function validate(
     if (command.type.startsWith('SYS_')) {
         return { valid: true };
     }
+    if (state.core.factionSelection && command.type !== QIDAHEN_COMMANDS.SELECT_FACTION) {
+        return { valid: false, error: 'pendingScenarioChoices' };
+    }
     const currentInteraction = state.sys.interaction?.current;
     switch (command.type) {
         case QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE:
@@ -381,6 +386,21 @@ export function validate(
             return state.core.scenarioVote.options.some((option) => option.scenarioId === command.payload.scenarioId)
                 ? { valid: true }
                 : { valid: false, error: 'unknownAction' };
+        case QIDAHEN_COMMANDS.SELECT_FACTION: {
+            const selectionState = state.core.factionSelection;
+            if (!selectionState || !state.core.playerIds.includes(command.playerId)) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            if (!selectionState.availableFactionIds.includes(command.payload.factionId)) {
+                return { valid: false, error: 'unknownAction' };
+            }
+            const takenByAnotherPlayer = Object.entries(selectionState.selections).some(
+                ([playerId, factionId]) => playerId !== command.playerId && factionId === command.payload.factionId,
+            );
+            return takenByAnotherPlayer
+                ? { valid: false, error: 'unknownAction' }
+                : { valid: true };
+        }
         case QIDAHEN_COMMANDS.SELECT_REGION:
             if (hasPendingScenarioVote(state)) {
                 return { valid: false, error: 'pendingScenarioChoices' };

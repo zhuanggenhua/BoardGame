@@ -5,7 +5,7 @@ import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, fireTriggers, registerPodOngoingAliases } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
-import type { SmashUpCore, SmashUpEvent } from '../../domain/types';
+import type { RevealDeckTopEvent, SmashUpCore, SmashUpEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     applyEvents,
@@ -342,6 +342,37 @@ describe('巫师派系能力', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         getSimpleChoicePrompt(matchState, 'wizard_mass_enchantment');
+    });
+
+    it('wizard_mass_enchantment: 多人局只分别展示每名对手的牌库顶，不展示自己的牌库顶', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_mass_enchantment', 'action', '0')],
+                    deck: [makeCard('self-top', 'test_action', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    deck: [makeCard('opponent-1-top', 'wizard_summon', 'action', '1')],
+                }),
+                '2': makePlayer('2', {
+                    deck: [makeCard('opponent-2-top', 'test_minion', 'minion', '2')],
+                }),
+            },
+            turnOrder: ['0', '1', '2'],
+        });
+
+        const { events } = execPlayAction(state, '0', 'a1');
+        const revealEvents = events.filter((event): event is RevealDeckTopEvent => (
+            event.type === SU_EVENTS.REVEAL_DECK_TOP
+        ));
+
+        expect(revealEvents).toHaveLength(2);
+        expect(revealEvents.map(event => event.payload.targetPlayerId)).toEqual(['1', '2']);
+        expect(revealEvents.map(event => event.payload.cards.map(card => card.uid))).toEqual([
+            ['opponent-1-top'],
+            ['opponent-2-top'],
+        ]);
+        expect(revealEvents.flatMap(event => event.payload.cards.map(card => card.uid))).not.toContain('self-top');
     });
 
     it('wizard_mass_enchantment: 对手牌库顶变化后不应继续保留过期行动卡候选', () => {

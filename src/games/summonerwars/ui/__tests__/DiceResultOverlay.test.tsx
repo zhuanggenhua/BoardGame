@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { DiceResultOverlay } from '../DiceResultOverlay';
@@ -72,5 +72,33 @@ describe('DiceResultOverlay', () => {
     });
     expect(onRevealComplete).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('激励待结算时显示重掷与保留按钮且不自动关闭', () => {
+    vi.useFakeTimers();
+    const onReroll = vi.fn();
+    const onKeep = vi.fn();
+    const onClose = vi.fn();
+
+    render(
+      <DiceResultOverlay
+        results={[{ faceIndex: 3, marks: ['special', 'ranged'] }]}
+        attackType="melee"
+        hits={0}
+        duration={1000}
+        pendingDecision
+        onReroll={onReroll}
+        onKeep={onKeep}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'actions.shourenRerollAll' }));
+    fireEvent.click(screen.getByRole('button', { name: 'actions.shourenKeepRoll' }));
+    expect(onReroll).toHaveBeenCalledTimes(1);
+    expect(onKeep).toHaveBeenCalledTimes(1);
+
+    act(() => vi.advanceTimersByTime(3000));
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

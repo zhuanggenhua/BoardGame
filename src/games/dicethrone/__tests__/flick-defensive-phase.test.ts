@@ -18,6 +18,73 @@ import {
 } from './test-utils';
 
 describe('抬一手（card-give-hand）响应窗口触发', () => {
+    it('伤害结算前的令牌响应中打出抬一手，必须进入选骰交互而不是卡在原响应界面', () => {
+        const random = createQueuedRandom([2]);
+        const runner = createRunner(random, false);
+        const state = createSetupWithHand(['card-give-hand'], {
+            playerId: '1',
+            cp: 1,
+            mutate: (core) => {
+                core.activePlayerId = '1';
+                core.rollCount = 1;
+                core.rollLimit = 1;
+                core.rollConfirmed = true;
+                core.pendingAttack = {
+                    attackerId: '1',
+                    defenderId: '0',
+                    settlementStage: 'preDamage',
+                    sourceAbilityId: 'slash-2-5',
+                    isDefendable: true,
+                    defenseAbilityId: 'holy-defense',
+                    defenseResolved: true,
+                };
+                core.pendingDamage = {
+                    id: 'feedback-damage',
+                    sourcePlayerId: '1',
+                    targetPlayerId: '0',
+                    originalDamage: 8,
+                    currentDamage: 8,
+                    sourceAbilityId: 'slash-2-5',
+                    damageScope: 'attack',
+                    responseType: 'beforeDamageReceived',
+                    responderId: '0',
+                    isFullyEvaded: false,
+                };
+            },
+        })(['0', '1'], random);
+
+        state.sys.phase = 'defensiveRoll';
+        state.sys.interaction.current = {
+            id: 'dt-token-response-feedback-damage',
+            kind: 'dt:token-response',
+            playerId: '0',
+            data: null,
+        };
+        state.sys.interaction.queue = [];
+        state.sys.responseWindow = {};
+
+        const played = runner.run({
+            name: '攻击方在伤害令牌响应期间打出抬一手',
+            setup: () => state,
+            commands: [cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' })],
+        });
+
+        expect(played.assertionErrors).toEqual([]);
+        expect(played.finalState.core.players['1'].hand.map((card) => card.id)).not.toContain('card-give-hand');
+        expect(played.finalState.sys.interaction.current?.kind).toBe('multistep-choice');
+        expect(played.finalState.sys.interaction.current?.playerId).toBe('1');
+
+        const rerolled = runner.run({
+            name: '完成抬一手选骰后回到防守方的伤害令牌响应',
+            setup: () => played.finalState,
+            commands: [cmd('REROLL_DIE', '1', { dieId: 0 })],
+        });
+
+        expect(rerolled.assertionErrors).toEqual([]);
+        expect(rerolled.finalState.sys.interaction.current?.kind).toBe('dt:token-response');
+        expect(rerolled.finalState.sys.interaction.current?.playerId).toBe('0');
+    });
+
     it('防御阶段：防御方自己的防御掷骰阶段可打出“就这？”防御阶段牌', () => {
         const random = createQueuedRandom([
             1, 1, 1, 4, 5, // 进攻方投骰

@@ -3,7 +3,7 @@ export type BetrayalInventoryKind = 'item' | 'omen';
 export type BetrayalDeckKind = 'event' | 'item' | 'omen';
 export type BetrayalRecommendedAction = 'move' | 'explore' | 'trade' | 'use' | 'endTurn';
 export type BetrayalScenarioId = 'first-scenario';
-export type BetrayalScenarioOutcome = 'survivors' | 'traitor';
+export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo';
 export type BetrayalTraitorSelectionPolicy = 'last-explorer' | 'current-explorer';
 export type BetrayalSurvivorSelectionPolicy = 'all-non-traitor' | 'current-explorer-only';
 export type BetrayalRoomFloor = 'ground' | 'upper' | 'basement';
@@ -292,6 +292,21 @@ export interface BetrayalEventSeed {
     );
 }
 
+export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = [1, 3, 12, 33] as const;
+
+export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): boolean {
+    return BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS.includes(
+        hauntCardNumber as typeof BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS[number],
+    );
+}
+
+export function isBetrayalEventRuntimeSupported(event: BetrayalEventSeed): boolean {
+    if (event.effect?.mode !== 'optionalHauntRoll') {
+        return true;
+    }
+    return isImplementedBetrayalHauntCardNumber(event.effect.successHauntId);
+}
+
 export interface BetrayalMonsterSeed {
     id: string;
     name: string;
@@ -413,7 +428,7 @@ export const BETRAYAL_SHARED_PRE_HAUNT_SETUP = {
     initialDeckCounts: {
         omen: 9,
         item: 11,
-        event: 23,
+        event: 20,
     } satisfies Record<BetrayalDeckKind, number>,
     startingRoomLayout: [
         {

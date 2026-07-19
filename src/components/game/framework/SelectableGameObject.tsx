@@ -17,6 +17,7 @@ export const SelectableGameObject = React.forwardRef<HTMLButtonElement, Selectab
         ref={ref}
         type="button"
         disabled={disabled}
+        aria-pressed={selected}
         data-game-object-selected={selected ? 'true' : undefined}
         data-game-object-available={available && !disabled ? 'true' : undefined}
         className={`relative overflow-visible outline-none transition-[transform,filter,box-shadow] duration-200 focus-visible:ring-4 focus-visible:ring-white/90 disabled:cursor-not-allowed disabled:opacity-50 ${selected

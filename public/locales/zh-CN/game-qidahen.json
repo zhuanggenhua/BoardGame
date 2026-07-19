@@ -95,7 +95,9 @@
       "selectedTacticCard": "已选战术牌「{{card}}」",
       "tacticCardHint": "点击“打出战术牌”确认；再次点击这张手牌可取消选中。",
       "confirmTacticCard": "打出战术牌",
-      "cancelTacticCard": "取消"
+      "cancelTacticCard": "取消",
+      "raidPaymentTarget": "目标：{{targetRegionName}} · {{resolutionHint}}",
+      "raidPaymentInvalidTarget": "当前地区不能发动突袭，请在地图上选择高亮的合法目标"
     },
     "player": {
       "armamentsUndeveloped": "未开发",
@@ -215,16 +217,23 @@
       "gaoDi": {
         "summary": "选择调度目标 · 最多调 {{maxTroops}} 个部队或 {{maxPopulation}} 人口",
         "hint": "弃 1 张牌后选择目标。",
+        "currentTarget": "当前目标：{{targetRegionName}}",
+        "selectMapTarget": "在地图上选择目标地区",
         "target": "{{targetRegionName}} · {{type}} {{amount}}",
         "typeTroops": "部队",
         "typePopulation": "人口",
         "amountTroops": "{{amount}} 个部队",
         "amountPopulation": "{{amount}} 个人口",
+        "confirmDispatch": "确认调度",
         "skip": "跳过高第调度"
       },
       "internalDispatch": {
         "summary": "选择调度目标 · 最多调 {{maxTroops}} 个部队",
-        "committedTroops": "调 {{troops}}"
+        "currentTarget": "当前目标：{{targetRegionName}}",
+        "selectMapTarget": "在地图上选择目标地区",
+        "committedTroops": "调 {{troops}}",
+        "confirmDispatch": "确认调度",
+        "cancelSelection": "取消选择"
       },
       "recruit": {
         "title": "征召军队",
@@ -268,7 +277,16 @@
         "defenderCasualtyLabel": "守方承伤"
       },
       "postBattle": {
-        "summary": "{{summary}} · 幸存 {{survivingTroops}}"
+        "summary": "{{summary}} · 幸存 {{survivingTroops}}",
+        "modeOccupy": "占领",
+        "modeBesiege": "围城",
+        "modeWithdraw": "撤回",
+        "choiceCount": "{{count}} 种结果",
+        "occupyTitle": "占领方式",
+        "besiegeTitle": "围城方式",
+        "withdrawTitle": "撤回路线",
+        "back": "返回",
+        "confirm": "确认战后处理"
       }
     },
     "setup": {
@@ -278,11 +296,20 @@
       "characterLabel": "人物",
       "pickCount": "点选 {{count}} 项即生效",
       "pickCountAuto": "点选 {{count}} 项即生效",
+      "selectedCount": "已选 {{selected}} / {{count}}",
       "selectedSeal": "已选",
       "confirmCharacter": "点选人物",
+      "characterConfirmed": "人物选择已确认",
+      "readyToConfirm": "候选已齐，可以确认",
+      "remainingChoices": "还需选择 {{count}} 项",
+      "characterButtonConfirmed": "人物已确认",
       "armamentLabel": "军备",
+      "armamentEligible": "通用军备卡 · 本剧本允许{{factionName}}选择",
       "confirmArmament": "点选军备",
+      "armamentConfirmed": "军备选择已确认",
+      "armamentButtonConfirmed": "军备已确认",
       "waiting": "等待其他玩家完成其所属阵营的前置项。",
+      "noPrivateChoice": "本阵营没有需要选择的前置项，等待其他玩家完成。",
       "playerPage": "人物与军备",
       "tablePage": "席位状态",
       "noWaiting": "本席当前没有等待中的他人前置项。",
@@ -307,18 +334,37 @@
       "you": "你",
       "host": "房主",
       "pendingVote": "等待房主选择",
+      "pendingConfirm": "待确认",
       "tiebreakNote": "{{hostFactionName}}点选剧本后立即进入人物与军备前置。",
       "actionTitle": "本席操作",
       "changeableHint": "房主已选择剧本，等待进入前置项。",
       "selectHint": "点选左侧剧本书页，本局立即采用该剧本。",
       "spectatorHint": "非房主席位只阅读剧本介绍并等待房主选择。",
       "noDraft": "尚未选择剧本",
+      "emptyPreview": "选择左侧剧本卡查看详情",
       "confirm": "采用剧本",
+      "confirmScenario": "确认采用",
       "clear": "清空选择",
       "hostSelected": "房主已选",
       "hostMayPick": "点选采用",
       "waitingHost": "等待房主选择",
+      "waitingHostShort": "等待房主",
       "waitingHint": "等待房主点选剧本。"
+    },
+    "factionSelection": {
+      "eyebrow": "局内开局设置",
+      "title": "选择你的阵营",
+      "youConfirmed": "你已确认",
+      "pendingConfirm": "待确认",
+      "occupiedBy": "{{playerName}} 已确认",
+      "seatFallback": "席位 {{seatNumber}}",
+      "available": "可选择",
+      "draftStatus": "{{status}} {{factionName}}",
+      "confirmedStatus": "已确认",
+      "pendingStatus": "待确认",
+      "chooseAvailable": "请选择一个未被占用的阵营",
+      "confirmedCount": "已确认 {{confirmed}} / {{total}}",
+      "confirmFaction": "确认阵营"
     }
   },
   "battle": {

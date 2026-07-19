@@ -66,6 +66,31 @@ const isCellCoord = (value: unknown): value is CellCoord => {
   return typeof coord.row === 'number' && typeof coord.col === 'number';
 };
 
+const SHOUREN_POSITION_INTERACTIONS = {
+  after_summon_shouren_bloody_rush: {
+    abilityId: 'shouren_bloody_rush',
+    action: 'after_summon_shouren_bloody_rush',
+  },
+  after_attack_shouren_berserk: {
+    abilityId: 'shouren_berserk',
+    action: 'after_attack_shouren_berserk',
+  },
+  after_attack_shouren_brute_impact: {
+    abilityId: 'shouren_brute_impact',
+    action: 'after_attack_shouren_brute_impact',
+  },
+  after_attack_shouren_primal_fury: {
+    abilityId: 'shouren_primal_fury',
+    action: 'after_attack_shouren_primal_fury',
+  },
+} as const;
+
+type ShourenPositionInteractionType = keyof typeof SHOUREN_POSITION_INTERACTIONS;
+
+const getShourenPositionInteraction = (type: string) => (
+  SHOUREN_POSITION_INTERACTIONS[type as ShourenPositionInteractionType]
+);
+
 const isActivatedAbilityId = (value: unknown): value is ActivatedAbilityId => (
   typeof value === 'string' && ACTIVATED_ABILITY_IDS.includes(value as ActivatedAbilityId)
 );
@@ -570,6 +595,18 @@ export function listSystemAbilityPositionTargets(
       .filter((position): position is CellCoord => !!position);
   }
 
+  const shourenInteraction = getShourenPositionInteraction(swInteraction.type);
+  if (shourenInteraction?.abilityId === abilityMode.abilityId && abilityMode.step === 'selectPosition') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+        return value?.action === shourenInteraction.action && isCellCoord(value.newPosition)
+          ? value.newPosition
+          : null;
+      })
+      .filter((position): position is CellCoord => !!position);
+  }
+
   return [];
 }
 
@@ -620,6 +657,16 @@ export function findSystemAbilityPositionOption(
     return swInteraction.options.find((option) => {
       const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
       return value?.action === 'after_attack_huijin_ram_position'
+        && value.newPosition?.row === position.row
+        && value.newPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  const shourenInteraction = getShourenPositionInteraction(swInteraction.type);
+  if (shourenInteraction?.abilityId === abilityMode.abilityId && abilityMode.step === 'selectPosition') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+      return value?.action === shourenInteraction.action
         && value.newPosition?.row === position.row
         && value.newPosition?.col === position.col;
     }) ?? null;
@@ -821,6 +868,10 @@ export function getSystemAbilityUiRoute(
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit')
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection')
     || (abilityMode.abilityId === 'huijin_ram' && abilityMode.step === 'selectPushDirection')
+    || (
+      abilityMode.step === 'selectPosition'
+      && Object.values(SHOUREN_POSITION_INTERACTIONS).some(({ abilityId }) => abilityId === abilityMode.abilityId)
+    )
   ) {
     return 'board-cell-position';
   }
@@ -891,6 +942,15 @@ export function deriveSystemAbilityMode(
   }
 
   if (!meta.sourceUnitId) return null;
+
+  const shourenPositionInteraction = getShourenPositionInteraction(swInteraction.type);
+  if (shourenPositionInteraction) {
+    return {
+      abilityId: shourenPositionInteraction.abilityId,
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
 
   if (swInteraction.type === 'on_phase_start_illusion') {
     return {

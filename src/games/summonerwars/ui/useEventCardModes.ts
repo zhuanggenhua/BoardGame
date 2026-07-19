@@ -13,7 +13,7 @@ import {
   getPlayerUnits, isCellEmpty, getAdjacentCells,
   manhattanDistance, isInStraightLine,
   getStructureAt, isValidCoord, getSummoner, findUnitPositionByInstanceId,
-  hasStableAbility, getUnitAt, getUnitAbilities,
+  getValidShourenFreezeTargets, hasStableAbility, getUnitAt, getUnitAbilities,
 } from '../domain/helpers';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
 import { getBaseCardId, CARD_IDS, isMoguSporePlagueBodyCard } from '../domain/ids';
@@ -50,6 +50,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.MOGU_RELEASE_SPORES,
   CARD_IDS.GOBLIN_SNEAK,
   CARD_IDS.FROST_GLACIAL_SHIFT,
+  CARD_IDS.SHOUREN_FREEZE,
 ]);
 
 export function requiresEventInteraction(cardId: string): boolean {
@@ -903,7 +904,7 @@ export function useEventCardModes({
 
     // 未匹配任何事件模式
     return false;
-  }, [core, dispatch,
+  }, [
     funeralPyreMode, soulTransferMode, mindCaptureMode,
     afterAttackAbilityMode, afterAttackAbilityHighlights,
     telekinesisTargetMode,
@@ -1081,6 +1082,12 @@ export function useEventCardModes({
         if (!hasDiscardBody) break;
         const hasOpenSpace = getAdjacentCells(summoner.position).some(adj => isValidCoord(adj) && isCellEmpty(core, adj));
         if (!hasOpenSpace) break;
+        activated = true;
+        break;
+      }
+      case CARD_IDS.SHOUREN_FREEZE: {
+        const targets = getValidShourenFreezeTargets(core, myPlayerId as '0' | '1');
+        if (targets.length === 0) break;
         activated = true;
         break;
       }

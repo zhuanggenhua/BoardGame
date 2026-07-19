@@ -109,6 +109,7 @@ export const createInitialCore = (
     const baseCore: QidahenCore = {
         playerIds: normalizedPlayerIds,
         scenarioVote: null,
+        factionSelection: null,
         scenarioId,
         scenarioLabel: preset.label,
         pendingScenarioCharacterChoices,

@@ -23,6 +23,10 @@ import {
 import { summonerWarsCheatModifier } from '../game';
 import type { Card, PlayerId, SummonerWarsCore } from '../domain/types';
 import { getBaseCardId } from '../domain/ids';
+import {
+    SHOUREN_CARDS_ATLAS,
+    SHOUREN_HERO_ATLAS,
+} from '../ui/cardAtlas';
 
 const createEmptyBoard = () => Array.from({ length: 6 }, () => Array.from({ length: 8 }, () => ({})));
 
@@ -76,6 +80,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('炽原精灵')).toBe('barbaric');
         expect(resolveFactionId('莫古')).toBe('mogu');
         expect(resolveFactionId('灰烬')).toBe('huijin');
+        expect(resolveFactionId('冰苔兽人')).toBe('shouren');
     });
 
     it('英文阵营 ID 应原样返回', () => {
@@ -87,6 +92,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('barbaric')).toBe('barbaric');
         expect(resolveFactionId('mogu')).toBe('mogu');
         expect(resolveFactionId('huijin')).toBe('huijin');
+        expect(resolveFactionId('shouren')).toBe('shouren');
     });
 
     it('未知字符串应原样返回（兜底）', () => {
@@ -152,6 +158,41 @@ describe('召唤师战争卡面数值录入', () => {
 
         const phoenixSoul = deck.deck.find(card => card.spriteAtlas === 'cards' && card.spriteIndex === 10);
         expect(phoenixSoul?.name).toBe('凤凰之魂');
+    });
+
+    it('冰苔兽人牌组、起始阵型与图集合同应完整接入', () => {
+        const catalogEntry = FACTION_CATALOG.find(faction => faction.id === 'shouren');
+        expect(catalogEntry).toMatchObject({
+            nameKey: 'factions.shouren',
+            heroImagePath: 'summonerwars/hero/shouren/hero',
+            tipImagePath: 'summonerwars/hero/shouren/tip',
+            selectable: true,
+        });
+        expect(catalogEntry?.statusTag).toBeUndefined();
+
+        const deck = createDeckByFactionId('shouren');
+        expect(deck.summoner).toMatchObject({
+            name: '格鲁纳克',
+            strength: 4,
+            life: 14,
+            attackType: 'melee',
+            spriteAtlas: 'hero',
+        });
+        expect(deck.summonerPosition).toEqual({ row: 0, col: 2 });
+        expect(deck.startingGatePosition).toEqual({ row: 2, col: 3 });
+        expect(deck.startingUnits.map(({ unit, position }) => ({ name: unit.name, position }))).toEqual([
+            { name: '冰苔斗士', position: { row: 3, col: 3 } },
+            { name: '冰霜萨满', position: { row: 2, col: 2 } },
+        ]);
+
+        expect(deck.deck).toHaveLength(30);
+        expect(deck.deck.filter(card => card.cardType === 'unit' && card.unitClass === 'champion')).toHaveLength(3);
+        expect(deck.deck.filter(card => card.cardType === 'unit' && card.unitClass === 'common')).toHaveLength(16);
+        expect(deck.deck.filter(card => card.cardType === 'event')).toHaveLength(8);
+        expect(deck.deck.filter(card => card.cardType === 'structure')).toHaveLength(3);
+
+        expect(SHOUREN_HERO_ATLAS).toMatchObject({ imageW: 1005, imageH: 741, cols: 1, rows: 1 });
+        expect(SHOUREN_CARDS_ATLAS).toMatchObject({ imageW: 8088, imageH: 1454, cols: 8, rows: 2 });
     });
 });
 

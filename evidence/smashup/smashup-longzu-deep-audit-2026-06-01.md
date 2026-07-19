@@ -2,14 +2,18 @@
 
 ## 结论等级
 
-- 当前结论：`当前发布口径已收口`
+- 当前结论：`旧结论失效 / 仍有残余范围`
+- 旧结论：本文原写法把 longzu 三派系表述为`当前发布口径已收口`，并把多个对象的 `shared` 代表链当作对象级完成证据。
+- 失效原因：2026-07-18 复盘发现`角色扮演（geeks_cosplay）`旧 `shared:onVpAwarded triggered special` 只证明收到 VP 获得事件后能响应，不证明基地计分这类 VP 来源一定会派发该事件；“shared 已覆盖”口径过宽。
+- 替代证据或替代入口：当前替代证据是 `src/games/smashup/__tests__/abilities/geeks.test.ts` 中角色扮演对基地计分 VP 的定向回归；本文档保留为历史矩阵和失效回写，不再单独作为全面收口凭证。
+- 降级后当前状态：longzu 大部分对象仍有历史 L2/L3/L4 证据，但凡复用代表链的对象必须重新按“共享链名称 / 代表对象 / 六项判等依据 / 剩余差异”补齐；补齐前只能写`仍有残余范围`。
 - 判定依据：
   - 本批对象全集已建表，覆盖龙、超级英雄、极客三派系全部 `38` 张卡与 `6` 个基地。
   - longzu 本轮新增的独立高风险交互 family 已全部补到 direct L3/L4，2026-06-02 复验结果为 `15 passed (4.0m)`。
   - 其余对象均已登记为“合法共享链复用”或“无玩家入口 / 自动结算对象”，并给出对应共享依据。
   - longzu 领域 L2 行为证据、L3/L4 真实入口证据、类型检查与基础接入门禁均已落地，可替代 implementation handoff 作为正式审计凭证。
   - 本次已把每个对象补到独立规则子句 `C1/C2/C3...` 行，并为 shared 对象逐项登记“共享链完全同构，仅配置不同”的复用依据。
-- 本文档是当前批次“审计完毕”的对象级权威证明；统一汇总版见 [smashup-longzu-audit-2026-06-01.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-longzu-audit-2026-06-01.md)。
+- 本文档不再作为当前批次“审计完毕”的对象级权威证明；统一汇总版见 [smashup-longzu-audit-2026-06-01.md](/D:/gongzuo/webgame/BoardGame/evidence/smashup/smashup-longzu-audit-2026-06-01.md)，引用时必须同时带上本节降级说明。
 
 ## 审计范围
 
@@ -155,7 +159,7 @@
 | 维尔（`geeks_wil_wheaton`） | `C1` 当对手打出行动时可从手牌作为 triggered special 打出；`C2` 先选择一个基地把维尔打到那里；`C3` 然后使目标行动无效 | passed | passed | passed | direct | direct | `GK_COUNTER_PLAY_MINION_TO_BASE`；E2E direct |
 | 游戏专家（`geeks_game_guru`） | `C1` 不受其他玩家能力影响；`C2` 不会错误免疫其他玩家的行动牌 | passed | passed | passed | N/A | passed | `GK_ONGOING_PROTECTION`；纯持续保护，已覆盖 `action/nonAction` 边界 |
 | 粉丝（`geeks_fan`） | `C1` 你的回合中可从手牌作为 special 发动；`C2` 结算时弃掉自己；`C3` 摸 1 | passed | passed | passed | shared | shared | `shared:粉丝/hand special discard-for-draw`；同构链已由 L2 覆盖 |
-| 角色扮演（`geeks_cosplay`） | `C1` 当你获得 1+ VP 时进入反应队列；`C2` 你可以从手牌打出或跳过；`C3` 若打出则额外获得 1 VP | passed | passed | passed | shared | shared | `shared:角色扮演/onVpAwarded triggered special`；同构于 hand triggered special，差异仅奖励为 VP |
+| 角色扮演（`geeks_cosplay`） | `C1` 当你获得 1+ VP 时进入反应队列；`C2` 你可以从手牌打出或跳过；`C3` 若打出则额外获得 1 VP | passed | passed | passed | shared 降级 | shared 降级 | 2026-07-18 修订：旧 `shared:角色扮演/onVpAwarded triggered special` 只证明“收到 VP 获得事件后能响应”，不证明所有 VP 来源都会派发该事件；基地计分 VP 来源曾暴露缺口，旧 shared 不能继续当对象级已收口证据 |
 | 维尔的力量（`geeks_force_of_wil`） | `C1` 当对手打出行动时可从手牌反制；`C2` 普通行动不会继续结算；`C3` ongoing 不会附着但仍入原拥有者弃牌堆；`C4` 支持 `Force of Wil -> Force of Wil` 嵌套反制 | passed | passed | passed | direct | direct | `GK_ACTION_COUNTER_STACK`；E2E direct |
 | 规则咬定者（`geeks_rules_lawyer`） | `C1` 选择一个已在场的基地持续行动或随从附着行动；`C2` 若是基地行动则移到另一基地；`C3` 若是随从附着行动则移到另一随从；`C4` 不改变 owner/sourceController 语义 | passed | passed | passed | direct | direct | `GK_MOVE_ONGOING_WITHOUT_OWNER_CHANGE`；E2E direct |
 | 禁卡表（`geeks_banned_list`） | `C1` 对每个其他玩家先命名一张牌；`C2` 然后只向施放者 reveal 该玩家手牌；`C3` 该玩家把所有同名牌放到底牌；`C4` `_pod` 与基础版按同名处理；`C5` 空手对手自动跳过 | passed | passed | passed | shared | shared | `shared:禁卡表/reveal-hand + exact-name + bottom-of-deck`；作为 无限循环 被重放时已走到真实后续 prompt 前 |
@@ -221,7 +225,7 @@
 | 维尔（`geeks_wil_wheaton`） | 有 | direct | `D1/D5/D8/D18/D39` | `GK_COUNTER_PLAY_MINION_TO_BASE`；真实 hand triggered special 打到基地并反制目标行动 | 通过 |
 | 游戏专家（`geeks_game_guru`） | 有 | 无玩家入口 | `D1/D8/D14/D50` | `GK_ONGOING_PROTECTION`；纯持续保护，L2 已覆盖 `action` / `nonAction` 来源区分与 live target filtering | 通过 |
 | 粉丝（`geeks_fan`） | 有 | shared | `D1/D5/D8/D14` | `GK_HAND_SPECIAL_DRAW`；复用“手牌手动 special -> 弃自身 -> 摸牌”链，L2 已覆盖 `ACTIVATE_SPECIAL` from hand 合同 | 共享 |
-| 角色扮演（`geeks_cosplay`） | 有 | shared | `D1/D5/D8/D18/D39` | `GK_VP_TRIGGERED_SPECIAL`；复用全局 `onVpAwarded` 触发 + hand triggered special，差异仅结算结果为额外 `+1 VP` | 共享 |
+| 角色扮演（`geeks_cosplay`） | 有 | shared 降级 | `D1/D5/D8/D18/D39` | 2026-07-18 修订：旧 `GK_VP_TRIGGERED_SPECIAL` 共享链只覆盖收到 `VP_AWARDED` 后的 hand triggered special；不覆盖基地计分 VP 是否正确派生 `VP_AWARDED`。该行不能再作为对象级全链路收口证据 | 仍有残余范围 |
 | 维尔的力量（`geeks_force_of_wil`） | 有 | direct | `D1/D5/D8/D18/D39` | `GK_ACTION_COUNTER_STACK`；真实 reaction 入口反制普通行动 / ongoing / counter-on-counter | 通过 |
 | 规则咬定者（`geeks_rules_lawyer`） | 有 | direct | `D1/D5/D8/D18/D39` | `GK_MOVE_ONGOING_WITHOUT_OWNER_CHANGE`；真实手牌行动移动基地持续行动 | 通过 |
 | 禁卡表（`geeks_banned_list`） | 有 | shared | `D1/D5/D8/D18/D39` | `GK_REVEAL_HAND_AND_BORROW_ACTION` 邻近共享链；复用 reveal-hand + same-name normalization + hand -> deck-bottom，作为 无限循环 被重放行动已走到真实后续 prompt 前 | 共享 |
@@ -254,4 +258,4 @@
 - 旧的 implementation handoff 只能证明“实现已落地”，不能替代正式审计；本文件现在承担 longzu 三派系的对象级审计证明。
 - 目前 longzu 范围内的独立高风险交互 family 已全部具备 direct L3/L4，剩余对象也都登记了合法共享或无玩家入口依据。
 - 本次已补齐逐对象规则子句 `C1/C2/C3...` 与对象级 `L0/L1/L2/L3/L4` 行，并把 shared 对象的“同链仅配置不同”依据显式登记。
-- 因此本批 longzu 三派系现在可以按新增派系默认门禁，对外表述为：`当前发布口径已收口`。
+- 2026-07-18 修订：由于`角色扮演`暴露出 shared 代表链过宽，本批 longzu 三派系不得继续按本文件单独对外表述为`当前发布口径已收口`；当前口径降级为`仍有残余范围`，直到 shared 对象逐项补齐六项判等依据或独立 L3/L4。

@@ -8,10 +8,15 @@ import type {
 const resolveViewingFactionId = (
     state: QidahenCore,
     viewingPlayerId: PlayerId,
-): QidahenFactionId | null => (
-    (Object.entries(state.factions).find(([, faction]) => faction.playerId === viewingPlayerId)?.[0] as QidahenFactionId | undefined)
-    ?? null
-);
+): QidahenFactionId | null => {
+    if (state.factionSelection) {
+        return null;
+    }
+    return (
+        (Object.entries(state.factions).find(([, faction]) => faction.playerId === viewingPlayerId)?.[0] as QidahenFactionId | undefined)
+        ?? null
+    );
+};
 
 const maskHandLimitDiscardSelection = (
     selection: QidahenHandLimitDiscardSelection | null,

@@ -292,6 +292,60 @@
         }
       }
     },
+    "hero/shouren/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "4b945f9a57f0c01a96b6281d250e81f7b0caf3e8e37619b1aac3f83cb5774f14",
+          "bytes": 1400699,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/shouren/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "6c42004c5a7665d2bc601c03d67f8f1f1ada6aaf8623fa6a9e858d9e54b63180",
+          "bytes": 2108970,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/shouren/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "9a3e8e5290dbf0bb66aeffe7e7ce8824f1db5365f9660bd4f4e226491e4d1b5d",
+          "bytes": 236436,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/shouren/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "09363a849071721888434150322205c42d0d5051f1820e1dfa19bec6dd1cc741",
+          "bytes": 117962,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/shouren/hero": {
+      "variants": {
+        "png": {
+          "sha256": "f6adb0108c3a91f8d21ee1b939a31c32af830d65b2eee5ab6dab9450ac5297d7",
+          "bytes": 1200707,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/shouren/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "e27b23d3c4e075cda8e868b7f9b8344170ad87bd90f64e8c3f139e6d76df11b9",
+          "bytes": 108498,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "hero/Trickster/compressed/cards": {
       "variants": {
         "webp": {

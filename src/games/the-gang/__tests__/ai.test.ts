@@ -253,7 +253,6 @@ describe('The Gang local AI', () => {
                     config: {
                         ...state.core.rules.config,
                         twoHand: true,
-                        handSwap: true,
                     },
                 },
             },
@@ -269,6 +268,45 @@ describe('The Gang local AI', () => {
                 payload: {},
             }],
         });
+    });
+
+    test('两副手牌 AI 会为上手和下手分别生成选筹码动作', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-two-hand-chip-test');
+        let state = adapter.setup(['0', '1', '2']);
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }).state;
+        state = startHeist(adapter, state, 2);
+
+        const actions = buildTheGangAiLegalActions({ playerId: '1', state })
+            .filter((action) => action.kind === 'take-chip');
+
+        expect(actions).toHaveLength(12);
+        expect(new Set(actions.map((action) => action.metadata?.handSlot))).toEqual(new Set(['top', 'bottom']));
+        expect(actions.filter((action) => action.metadata?.handSlot === 'top').map((action) => action.metadata?.chip))
+            .toEqual([1, 2, 3, 4, 5, 6]);
+        expect(actions.filter((action) => action.metadata?.handSlot === 'bottom').map((action) => action.metadata?.chip))
+            .toEqual([1, 2, 3, 4, 5, 6]);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '1',
+            payload: { chip: 2, handSlot: 'top' },
+            timestamp: 3,
+        }).state;
+
+        const remainingActions = buildTheGangAiLegalActions({ playerId: '1', state })
+            .filter((action) => action.kind === 'take-chip');
+        expect(new Set(remainingActions.map((action) => action.metadata?.handSlot))).toEqual(new Set(['bottom']));
     });
 
     test('baseline policy 只返回当前上下文里的合法 actionId', () => {

@@ -24,6 +24,7 @@
  * - 炽原精灵：STAR（星形）、RHOMBUS（菱形）
  * - 莫古：SPORE（孢子）、MYCELIUM（菌丝）
  * - 灰烬：EMBER（灰烬）、PHOENIX（凤凰）
+ * - 冰苔兽人：TUNDRA（冰苔）、DROPLET（水滴）
  */
 export const DECK_SYMBOLS = {
   // 通用符号（所有召唤师都有）
@@ -60,6 +61,9 @@ export const DECK_SYMBOLS = {
   // 灰烬符号 (Huijin)
   EMBER: 'ember',
   PHOENIX: 'phoenix',
+
+  // 冰苔兽人符号；另一枚复用 DROPLET
+  TUNDRA: 'tundra',
 } as const;
 
 export type DeckSymbol = typeof DECK_SYMBOLS[keyof typeof DECK_SYMBOLS];
@@ -78,4 +82,5 @@ export const FACTION_ICONS = {
   BARBARIC: 'totem',       // 🔱 图腾 - 炽原精灵
   MOGU: 'spore',           // 孢子 - 莫古
   HUIJIN: 'phoenix',        // 凤凰 - 灰烬
+  SHOUREN: 'tundra',        // 冰苔 - 冰苔兽人
 } as const;

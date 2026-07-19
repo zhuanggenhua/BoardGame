@@ -28,6 +28,7 @@ export interface DiceBoxPhysicsSourceProps {
     testId?: string;
     dataAttributes?: Record<string, string>;
     onPhysicsStatesChange?: (states: DicePhysicsState[]) => void;
+    onSettledChange?: (settled: boolean) => void;
 }
 
 export function DiceBoxPhysicsSource({
@@ -45,10 +46,12 @@ export function DiceBoxPhysicsSource({
     testId = 'dice-box-physics-source',
     dataAttributes,
     onPhysicsStatesChange,
+    onSettledChange,
 }: DiceBoxPhysicsSourceProps) {
     const containerRef = React.useRef<HTMLDivElement | null>(null);
     const engineRef = React.useRef<DiceBoxThreeEngine | null>(null);
     const onPhysicsStatesChangeRef = React.useRef(onPhysicsStatesChange);
+    const onSettledChangeRef = React.useRef(onSettledChange);
     const previousDiceIdsRef = React.useRef<number[]>([]);
     const activeMotionRef = React.useRef<{ type: 'roll' | 'reroll'; key: string } | null>(null);
     const pendingRerollMotionRef = React.useRef<{ key: string; indices: number[]; values: number[]; lockedIndices: number[] } | null>(null);
@@ -62,6 +65,10 @@ export function DiceBoxPhysicsSource({
     React.useEffect(() => {
         onPhysicsStatesChangeRef.current = onPhysicsStatesChange;
     }, [onPhysicsStatesChange]);
+
+    React.useEffect(() => {
+        onSettledChangeRef.current = onSettledChange;
+    }, [onSettledChange]);
 
     const failEngine = React.useCallback((error: unknown) => {
         console.warn('[DiceBoxPhysicsSource] dice-box-threejs failed; disabling physics source', error);
@@ -171,11 +178,15 @@ export function DiceBoxPhysicsSource({
     }, [dice]);
 
     const setSettledState = React.useCallback((nextSettled: boolean) => {
+        const previousSettled = settledRef.current;
         settledRef.current = nextSettled;
         engineRef.current?.setCanvasDiagnostics({
             settled: nextSettled,
         });
         setSettled(nextSettled);
+        if (previousSettled !== nextSettled) {
+            onSettledChangeRef.current?.(nextSettled);
+        }
     }, []);
 
     React.useEffect(() => {

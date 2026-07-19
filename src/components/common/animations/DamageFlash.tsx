@@ -43,6 +43,20 @@ export interface DamageFlashProps {
   showRedPulse?: boolean;
   /** 是否显示伤害数字 */
   showNumber?: boolean;
+  /** 自定义斜切颜色 */
+  slashColor?: string;
+  /** 自定义红脉冲颜色 */
+  pulseColor?: string;
+  /** 斜切 Canvas 时长（ms），默认使用伤害预设 */
+  slashDurationMs?: number;
+  /** 斜切触发保持时间（ms），默认 100 */
+  slashActiveMs?: number;
+  /** 红脉冲动画时长（ms），默认按强度决定 */
+  pulseDurationMs?: number;
+  /** 红脉冲触发保持时间（ms），默认按强度决定 */
+  pulseActiveMs?: number;
+  /** 完成回调延迟（ms），默认 800 */
+  completeMs?: number;
   /** 特效质量档 */
   quality?: FxQuality;
   /** 完成回调 */
@@ -57,6 +71,13 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
   showSlash = true,
   showRedPulse = true,
   showNumber = true,
+  slashColor,
+  pulseColor,
+  slashDurationMs,
+  slashActiveMs = 100,
+  pulseDurationMs,
+  pulseActiveMs,
+  completeMs = 800,
   quality = 'full',
   onComplete,
   className = '',
@@ -80,12 +101,12 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
 
     if (showSlash) {
       setSlashActive(true);
-      timers.push(window.setTimeout(() => setSlashActive(false), 100));
+      timers.push(window.setTimeout(() => setSlashActive(false), slashActiveMs));
     }
 
     if (showRedPulse) {
       setPulseActive(true);
-      timers.push(window.setTimeout(() => setPulseActive(false), isStrong ? 500 : 350));
+      timers.push(window.setTimeout(() => setPulseActive(false), pulseActiveMs ?? (isStrong ? 500 : 350)));
     }
 
     if (showNumber) {
@@ -93,10 +114,10 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
     }
 
     // 完成回调：等最长的效果结束
-    timers.push(window.setTimeout(() => onCompleteRef.current?.(), 800));
+    timers.push(window.setTimeout(() => onCompleteRef.current?.(), completeMs));
 
     return () => timers.forEach(t => window.clearTimeout(t));
-  }, [active, showSlash, showRedPulse, showNumber, isStrong]);
+  }, [active, showSlash, showRedPulse, showNumber, isStrong, slashActiveMs, pulseActiveMs, completeMs]);
 
   if (!active) return null;
 
@@ -106,10 +127,25 @@ export const DamageFlash: React.FC<DamageFlashProps> = ({
       style={{ overflow: 'visible' }}
     >
       {/* 斜切 */}
-      {showSlash && <RiftSlash isActive={slashActive} {...preset} quality={quality} />}
+      {showSlash && (
+        <RiftSlash
+          isActive={slashActive}
+          {...preset}
+          color={slashColor ?? preset.color}
+          duration={slashDurationMs ?? preset.duration}
+          quality={quality}
+        />
+      )}
 
       {/* 红色脉冲 */}
-      {showRedPulse && <RedPulse active={pulseActive} strong={isStrong} />}
+      {showRedPulse && (
+        <RedPulse
+          active={pulseActive}
+          strong={isStrong}
+          color={pulseColor}
+          duration={pulseDurationMs !== undefined ? pulseDurationMs / 1000 : undefined}
+        />
+      )}
 
       {/* 伤害数字 */}
       {showNumber && <DamageNumber triggerKey={dmgKey} damage={damage} strong={isStrong} />}

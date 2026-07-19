@@ -16,9 +16,19 @@ type InteractionOption = {
   value?: unknown;
 };
 
-function optionHasBaseIndex(option: InteractionOption, baseIndex: number): boolean {
+type InteractionOptionValue = {
+  baseIndex?: unknown;
+  cardUid?: string;
+  minionUid?: string;
+};
+
+function getInteractionOptionValue(option: InteractionOption): InteractionOptionValue {
   const value = option.value;
-  return !!value && typeof value === 'object' && (value as { baseIndex?: unknown }).baseIndex === baseIndex;
+  return value && typeof value === 'object' ? value as InteractionOptionValue : {};
+}
+
+function optionHasBaseIndex(option: InteractionOption, baseIndex: number): boolean {
+  return getInteractionOptionValue(option).baseIndex === baseIndex;
 }
 
 async function assertAtlasLoaded(page: Page, atlasId: string, minCardCount: number): Promise<void> {
@@ -365,5 +375,170 @@ test.describe('大杀四方漫威第一波四派系真实入口验证', () => {
     }, { timeout: 5000 }).toEqual({ base0HasTarget: false, base1HasTarget: true });
     await assertNoAtlasShimmer(page);
     await game.screenshot('10-终极战队-力量与速度移动后', testInfo);
+  });
+
+  test('蜘蛛宇宙-能力越大…-真实计分前响应只应选择当前基地角色并提供+2力量', async ({ page, game }, testInfo) => {
+    test.setTimeout(150000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', { skipInitialization: true }, 45000);
+    await game.setupScene({
+      gameId: 'smashup',
+      currentPlayer: '0',
+      phase: 'playCards',
+      extra: {
+        core: {
+          turnOrder: ['0', '1'],
+          currentPlayerIndex: 0,
+          turnNumber: 1,
+          nextUid: 1000,
+          players: {
+            '0': {
+              id: '0',
+              vp: 0,
+              hand: [
+                { uid: 'great-power-hand', defId: 'spider_verse_with_great_power', type: 'action', owner: '0' },
+              ],
+              deck: [],
+              discard: [],
+              factions: ['spider_verse'],
+              minionsPlayed: 1,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+            '1': {
+              id: '1',
+              vp: 0,
+              hand: [],
+              deck: [],
+              discard: [],
+              factions: ['shield'],
+              minionsPlayed: 0,
+              minionLimit: 1,
+              actionsPlayed: 0,
+              actionLimit: 1,
+            },
+          },
+          bases: [
+            {
+              defId: 'base_juice_bar',
+              breakpoint: 20,
+              minions: [
+                {
+                  uid: 'great-power-here',
+                  defId: 'spider_verse_spider_man_2099',
+                  controller: '0',
+                  owner: '0',
+                  basePower: 18,
+                  powerCounters: 0,
+                  powerModifier: 0,
+                  tempPowerModifier: 0,
+                  talentUsed: false,
+                  playedThisTurn: false,
+                  attachedActions: [],
+                },
+                {
+                  uid: 'great-power-enemy-here',
+                  defId: 'shield_agent',
+                  controller: '1',
+                  owner: '1',
+                  basePower: 2,
+                  powerCounters: 0,
+                  powerModifier: 0,
+                  tempPowerModifier: 0,
+                  talentUsed: false,
+                  playedThisTurn: false,
+                  attachedActions: [],
+                },
+              ],
+              ongoingActions: [],
+            },
+            {
+              defId: 'base_moon_dumpster',
+              breakpoint: 20,
+              minions: [{
+                uid: 'great-power-there',
+                defId: 'shield_agent',
+                controller: '1',
+                owner: '1',
+                basePower: 2,
+                powerCounters: 0,
+                powerModifier: 0,
+                tempPowerModifier: 0,
+                talentUsed: false,
+                playedThisTurn: false,
+                attachedActions: [],
+              }],
+              ongoingActions: [],
+            },
+          ],
+        },
+      },
+    });
+
+    await game.waitForPhase('playCards', 10000);
+    await game.advancePhase();
+    await game.waitForPhase('scoreBases', 10000);
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const prompt = state?.sys?.interaction?.current;
+      const options = (prompt?.data?.options ?? []) as InteractionOption[];
+      return {
+        sourceId: prompt?.data?.sourceId ?? null,
+        hasGreatPower: options.some(option => getInteractionOptionValue(option).cardUid === 'great-power-hand'),
+      };
+    }, { timeout: 15000 }).toEqual({
+      sourceId: 'smashup_reaction_choose',
+      hasGreatPower: true,
+    });
+    await game.screenshot('11-能力越大-计分前响应入口', testInfo);
+    await game.playCard('spider_verse_with_great_power', { targetBaseIndex: 0 });
+    await game.waitForInteraction('spider_verse_with_great_power', 10000);
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const prompt = state?.sys?.interaction?.current;
+      const optionValues = ((prompt?.data?.options ?? []) as InteractionOption[])
+        .map(option => getInteractionOptionValue(option));
+      return {
+        sourceId: prompt?.data?.sourceId ?? null,
+        playerId: prompt?.playerId ?? null,
+        optionMinionUids: optionValues.map(option => option.minionUid).filter(Boolean).sort(),
+      };
+    }, {
+      message: '能力越大…作为计分前特殊打出后，只应列当前计分基地上的角色',
+      timeout: 15000,
+    }).toEqual({
+      sourceId: 'spider_verse_with_great_power',
+      playerId: '0',
+      optionMinionUids: ['great-power-enemy-here', 'great-power-here'],
+    });
+
+    await expect(page.locator('[data-minion-uid="great-power-here"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-minion-uid="great-power-there"]')).toBeVisible({ timeout: 15000 });
+    await game.screenshot('12-能力越大-当前基地角色选择窗', testInfo);
+    await game.selectInteractionOptionBy(
+      (option: InteractionOption) => getInteractionOptionValue(option).minionUid === 'great-power-here',
+      '能力越大…选择当前基地己方角色',
+    );
+
+    await game.waitForNoInteraction(10000);
+    await dismissSpotlightIfPresent(page);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      const here = state.core.bases[0]?.minions.find((minion: { uid?: string }) => minion.uid === 'great-power-here');
+      const there = state.core.bases[1]?.minions.find((minion: { uid?: string }) => minion.uid === 'great-power-there');
+      return {
+        hereBonus: (here?.tempPowerModifier ?? 0) + (here?.powerModifier ?? 0),
+        thereBonus: (there?.tempPowerModifier ?? 0) + (there?.powerModifier ?? 0),
+        interactionSource: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+      };
+    }, { timeout: 10000 }).toEqual({
+      hereBonus: 2,
+      thereBonus: 0,
+      interactionSource: null,
+    });
+    await game.screenshot('13-能力越大-选择后当前基地角色加2', testInfo);
   });
 });

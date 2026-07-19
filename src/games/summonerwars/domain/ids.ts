@@ -13,7 +13,7 @@ import type { FactionId, UnitCard } from './types';
 
 /** 所有合法阵营 ID（从 FactionId 类型派生） */
 export const VALID_FACTION_IDS: readonly FactionId[] = [
-  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin',
+  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren',
 ] as const;
 
 // ============================================================================
@@ -70,6 +70,12 @@ export const CARD_IDS = {
   HUIJIN_SCORCH: 'huijin-scorch',
   HUIJIN_DIVINE_REVENGE: 'huijin-divine-revenge',
   HUIJIN_PHOENIX_SOUL: 'huijin-phoenix-soul',
+
+  // 冰苔兽人事件卡
+  SHOUREN_FREEZE: 'shouren-freeze',
+  SHOUREN_BRUTE_FORCE: 'shouren-brute-force',
+  SHOUREN_PRIMAL_FURY: 'shouren-primal-fury',
+  SHOUREN_SUPREME_GLORY: 'shouren-supreme-glory',
 } as const;
 
 // ============================================================================

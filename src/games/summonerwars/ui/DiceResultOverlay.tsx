@@ -7,7 +7,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Swords, Crosshair, Zap } from 'lucide-react';
+import { Check, Crosshair, RotateCcw, Swords, Zap } from 'lucide-react';
 import type { DiceFaceResult, DiceMark } from '../config/dice';
 import { getSpriteAtlasSource, getSpriteAtlasStyle, DICE_FACE_SPRITE_MAP } from './cardAtlas';
 import { swAttackDebugLog } from './attackDebug';
@@ -23,6 +23,9 @@ interface DiceResultOverlayProps {
   /** 是否为对手攻击（用于翻转显示） */
   isOpponentAttack?: boolean;
   duration?: number;
+  pendingDecision?: boolean;
+  onReroll?: () => void;
+  onKeep?: () => void;
   onRevealComplete?: () => void;
   onClose?: () => void;
 }
@@ -162,6 +165,9 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
   damageReduced,
   isOpponentAttack: _isOpponentAttack = false,
   duration = 2500,
+  pendingDecision = false,
+  onReroll,
+  onKeep,
   onRevealComplete,
   onClose,
 }) => {
@@ -211,6 +217,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
 
   useEffect(() => {
     if (visible) {
+      if (pendingDecision) return undefined;
       swAttackDebugLog('dice_overlay_timer_scheduled', {
         resultSignature,
         duration,
@@ -247,7 +254,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
       };
     }
     return undefined;
-  }, [visible, duration, closeNow, resultSignature, results?.length]);
+  }, [visible, duration, closeNow, pendingDecision, resultSignature, results?.length]);
 
   if (!results || results.length === 0) return null;
 
@@ -268,9 +275,9 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 flex items-center justify-center cursor-pointer"
+            className={`fixed inset-0 flex items-center justify-center ${pendingDecision ? 'cursor-default' : 'cursor-pointer'}`}
             style={{ zIndex: UI_Z_INDEX.overlayRaised }}
-            onClick={closeNow}
+            onClick={pendingDecision ? undefined : closeNow}
           >
             <div className="flex flex-col items-center gap-[0.8vw]">
               {/* 标题（无背景框） */}
@@ -319,6 +326,33 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
                   </div>
                 )}
               </motion.div>
+
+              {pendingDecision && (
+                <div className="mt-3 flex min-h-11 items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    className="inline-flex h-11 items-center gap-2 rounded-md bg-red-700 px-4 text-sm font-semibold text-white shadow-lg hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onReroll?.();
+                    }}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    {t('actions.shourenRerollAll')}
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-11 items-center gap-2 rounded-md bg-slate-700 px-4 text-sm font-semibold text-white shadow-lg hover:bg-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onKeep?.();
+                    }}
+                  >
+                    <Check className="h-4 w-4" />
+                    {t('actions.shourenKeepRoll')}
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

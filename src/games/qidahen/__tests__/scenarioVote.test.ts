@@ -62,6 +62,24 @@ const resolveAllPendingScenarioChoices = (state: MatchState<QidahenCore>): Match
     return state;
 };
 
+const resolveFactionSelections = (state: MatchState<QidahenCore>): MatchState<QidahenCore> => {
+    const selections = [
+        { playerId: '0', factionId: 'jin' },
+        { playerId: '1', factionId: 'ming' },
+        { playerId: '2', factionId: 'mongol' },
+    ] as const;
+    for (const selection of selections) {
+        const command = {
+            type: QIDAHEN_COMMANDS.SELECT_FACTION,
+            playerId: selection.playerId,
+            payload: { factionId: selection.factionId },
+        };
+        expect(QidahenDomain.validate(state, command as never)).toEqual({ valid: true });
+        state = applyCommand(state, command);
+    }
+    return state;
+};
+
 describe('七大恨局内剧本选择', () => {
     it('剧本选择阶段会阻断正式行动命令，只允许房主选择剧本', () => {
         const state = createVoteState(['0', '1', '2']);
@@ -85,7 +103,7 @@ describe('七大恨局内剧本选择', () => {
         } as never)).toEqual({ valid: false, error: 'unknownAction' });
     });
 
-    it('房主点选剧本后会立即切到该剧本，并进入对应的人物军备前置', () => {
+    it('房主点选剧本后会先进入阵营确认，再开放对应的人物军备前置', () => {
         let state = createVoteState(['0', '1', '2']);
 
         state = applyCommand(state, {
@@ -96,8 +114,49 @@ describe('七大恨局内剧本选择', () => {
         expect(state.core.scenarioVote).toBeNull();
         expect(state.core.scenarioId).toBe('shanhaiguan-1622');
         expect(state.core.scenarioLabel).toBe('剧本二：山海关之议（1622）');
+        expect(state.core.factionSelection).toEqual({
+            availableFactionIds: ['ming', 'mongol', 'jin'],
+            selections: {},
+        });
         expect(state.core.pendingScenarioCharacterChoices).toHaveLength(3);
         expect(state.core.pendingScenarioArmamentChoices).toHaveLength(2);
+    });
+
+    it('阵营不能被两个玩家重复占用，全部确认后按选择结果绑定席位', () => {
+        let state = createVoteState(['0', '1', '2']);
+        state = applyCommand(state, {
+            type: QIDAHEN_COMMANDS.CAST_SCENARIO_VOTE,
+            playerId: '0',
+            payload: { scenarioId: 'shanhaiguan-1622' },
+        });
+
+        state = applyCommand(state, {
+            type: QIDAHEN_COMMANDS.SELECT_FACTION,
+            playerId: '0',
+            payload: { factionId: 'jin' },
+        });
+        expect(QidahenDomain.validate(state, {
+            type: QIDAHEN_COMMANDS.SELECT_FACTION,
+            playerId: '1',
+            payload: { factionId: 'jin' },
+        } as never)).toEqual({ valid: false, error: 'unknownAction' });
+
+        state = applyCommand(state, {
+            type: QIDAHEN_COMMANDS.SELECT_FACTION,
+            playerId: '1',
+            payload: { factionId: 'ming' },
+        });
+        state = applyCommand(state, {
+            type: QIDAHEN_COMMANDS.SELECT_FACTION,
+            playerId: '2',
+            payload: { factionId: 'mongol' },
+        });
+
+        expect(state.core.factionSelection).toBeNull();
+        expect(state.core.factions.jin.playerId).toBe('0');
+        expect(state.core.factions.ming.playerId).toBe('1');
+        expect(state.core.factions.mongol.playerId).toBe('2');
+        expect(state.core.currentPlayer).toBe('1');
     });
 
     it('局内剧本选择后，各阵营完成前置项才会放行正式行动', () => {
@@ -114,9 +173,11 @@ describe('七大恨局内剧本选择', () => {
             payload: { actionId: 'raid' },
         } as never)).toEqual({ valid: false, error: 'pendingScenarioChoices' });
 
+        state = resolveFactionSelections(state);
         state = resolveAllPendingScenarioChoices(state);
 
         expect(state.core.scenarioVote).toBeNull();
+        expect(state.core.factionSelection).toBeNull();
         expect(state.core.pendingScenarioCharacterChoices).toEqual([]);
         expect(state.core.pendingScenarioArmamentChoices).toEqual([]);
         const interactionData = state.sys.interaction?.current?.data as {

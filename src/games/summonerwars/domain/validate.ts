@@ -33,6 +33,7 @@ import {
   manhattanDistance,
   getSummoner,
   getUnitAbilities,
+  getValidShourenFreezeTargets,
   isValidCoord,
   isInStraightLine,
 } from './helpers';
@@ -56,6 +57,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.MOGU_COMMAND,
   CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
   CARD_IDS.MOGU_RELEASE_SPORES,
+  CARD_IDS.SHOUREN_FREEZE,
 ]);
 
 const hasAdjacentEmptyCell = (core: SummonerWarsCore, position: CellCoord): boolean => {
@@ -164,6 +166,9 @@ const hasValidEventInteractionTargets = (
         && hasAdjacentEmptyCell(core, unit.position),
       );
     }
+    case CARD_IDS.SHOUREN_FREEZE: {
+      return getValidShourenFreezeTargets(core, playerId).length > 0;
+    }
     default:
       return false;
   }
@@ -185,7 +190,25 @@ export function validateCommand(
   const playerId = core.currentPlayer;
   const payload = command.payload as Record<string, unknown>;
 
+  if (core.pendingAttackRoll
+    && command.type !== SW_COMMANDS.RESOLVE_PENDING_ATTACK
+    && Object.values(SW_COMMANDS).includes(command.type as typeof SW_COMMANDS[keyof typeof SW_COMMANDS])) {
+    return { valid: false, error: '必须先完成待结算攻击' };
+  }
+
   switch (command.type) {
+    case SW_COMMANDS.RESOLVE_PENDING_ATTACK: {
+      const pending = core.pendingAttackRoll;
+      const choice = payload.choice;
+      if (!pending || pending.playerId !== playerId) return { valid: false, error: '没有可结算的攻击' };
+      if (choice !== 'reroll' && choice !== 'keep') return { valid: false, error: '无效的激励选择' };
+      if (choice === 'reroll') {
+        const summoner = getSummoner(core, playerId);
+        if (!summoner || summoner.boosts < 1) return { valid: false, error: '召唤师没有充能' };
+      }
+      return { valid: true };
+    }
+
     case SW_COMMANDS.SELECT_FACTION: {
       if (core.hostStarted) return { valid: false, error: '游戏已开始，无法更改阵营' };
       const factionId = payload.factionId as string;
@@ -517,6 +540,15 @@ export function validateCommand(
       const baseId = getBaseCardId(eventCard.id);
       if (INTERACTIVE_EVENT_BASE_IDS.has(baseId) && !hasValidEventInteractionTargets(core, playerId, eventCard)) {
         return { valid: false, error: '没有可用目标' };
+      }
+      if (baseId === CARD_IDS.SHOUREN_FREEZE) {
+        const targetPosition = targets?.[0];
+        const validTargets = getValidShourenFreezeTargets(core, playerId);
+        if (!targetPosition || !validTargets.some(unit => (
+          unit.position.row === targetPosition.row && unit.position.col === targetPosition.col
+        ))) {
+          return { valid: false, error: '冻结目标必须是召唤师3格内未充能的士兵或英雄' };
+        }
       }
       
       // 建筑类事件卡验证

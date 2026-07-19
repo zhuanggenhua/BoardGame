@@ -104,9 +104,10 @@ function queueDiceThroneInteraction(
     const current = state.sys.interaction.current;
     if (
         current?.kind === 'dt:token-response'
-        && current.playerId === interaction.playerId
         && interaction.kind !== 'dt:token-response'
     ) {
+        // 伤害响应期间仍可打出会继续请求输入的牌。新交互可能属于另一位玩家，
+        // 必须先接管界面，完成后再回到原令牌响应，否则新交互只会排队而双方都无法操作。
         return queueInteraction({
             ...state,
             sys: {

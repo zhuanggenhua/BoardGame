@@ -17,7 +17,8 @@
     "endRound": "玩家 {{player}} 结束第 {{round}} 轮，进入第 {{nextRound}} 轮",
     "revealShowdown": "玩家 {{player}} 摊牌：第 {{heist}} 次抢劫{{outcome}}（成功 {{successes}} / 失败 {{failures}}）",
     "confirmHandSwap": "玩家 {{player}} 确认手牌调换阶段",
-    "startNextHeist": "玩家 {{player}} 开始第 {{heist}} 次抢劫"
+    "startNextHeist": "玩家 {{player}} 开始第 {{heist}} 次抢劫",
+    "takeChipHand": "玩家 {{player}} 在第 {{round}} 轮为{{hand}}选择 {{chip}}★ 筹码"
   },
   "tutorial": {
     "steps": {
@@ -77,8 +78,12 @@
     "communityCardsSlot": "公共牌牌槽",
     "communityCards": "公共牌",
     "myHand": "我的手牌",
+    "singleHand": "手牌",
     "topHand": "上手",
     "bottomHand": "下手",
+    "chipTargetTopHand": "给上手",
+    "chipTargetBottomHand": "给下手",
+    "handRankForSlot": "{{slot}}：{{rank}}",
     "winningTopHand": "上手结算",
     "winningBottomHand": "下手结算",
     "currentHandRank": "当前牌型",
@@ -129,14 +134,12 @@
     "ttsSetupOptionLabels": {
       "omaha": "奥马哈",
       "twoHand": "两副手牌",
-      "handSwap": "手牌调换",
       "automode": "自动模式",
       "antiTroll": "防手欠"
     },
     "ttsSetupOptionDescriptions": {
       "omaha": "每手多发 2 张，摊牌时强制用 2 张手牌 + 3 张公共牌评估牌型。",
-      "twoHand": "每名玩家获得上、下两幅手牌；摊牌时分别评估，取更强的一手参与排序。最多 5 人。",
-      "handSwap": "两副手牌启用后，每轮投票完成先进入调换阶段；可交换上、下各 1 张手牌。",
+      "twoHand": "每名玩家获得上、下两幅手牌；上手和下手分别拿筹码、分别参与排序。每轮投票完成后先进入调换阶段，可交换上、下各 1 张手牌。最多 5 人。",
       "automode": "所有人拿完当前轮筹码后自动推进；最后一轮自动进入摊牌。",
       "antiTroll": "对应 TTS 防误触/房主权限开关，当前 Web 继续按房主规则设置权限限制。"
     },
@@ -203,6 +206,7 @@
       "loseSubtitle": "警报累积到三次，纸牌帮这次没能全身而退。",
       "casesClosed": "结案 {{successes}} / 3",
       "alarms": "警报 {{failures}} / 3"
-    }
+    },
+    "chipHandSelector": "选择筹码给哪副手牌"
   }
 }

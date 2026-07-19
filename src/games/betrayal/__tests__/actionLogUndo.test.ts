@@ -99,7 +99,8 @@ describe('小黑屋操作日志与撤回', () => {
             },
         };
 
-        const entries = Object.values(BETRAYAL_COMMANDS).map((type, index) => (
+        const commandTypes = Object.values(BETRAYAL_COMMANDS);
+        const entries = commandTypes.map((type, index) => (
             formatBetrayalActionEntry({
                 command: {
                     type,
@@ -112,7 +113,7 @@ describe('小黑屋操作日志与撤回', () => {
             })
         ));
 
-        expect(entries.every(Boolean)).toBe(true);
+        expect(commandTypes.filter((_, index) => !entries[index])).toEqual([]);
         const serialized = JSON.stringify(entries);
         expect(serialized).not.toContain('secret-');
         expect(serialized).not.toContain('targetRoomIdsByTokenId');

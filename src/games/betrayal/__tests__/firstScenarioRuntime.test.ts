@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
     applyBetrayalCommand,
+    BETRAYAL_FIXED_RANDOM,
     createBetrayalCommand,
     createBetrayalScriptedRandom,
     createCorpseLootReadyCore,
+    createDogTradeReadyCore,
+    createExchangeReadyCore,
     createFirstScenarioHauntCore,
     createFirstScenarioReadyToExorciseCore,
     createFirstScenarioReadyToLearnAboutJackCore,
@@ -12,11 +15,17 @@ import {
     createJackSpiritPostReviveAttackReadyCore,
     createFirstScenarioReadyToTraitorVictoryCore,
     createStartedFirstScenarioCore,
+    createTradeReadyCore,
     playFirstScenarioToSurvivorVictory,
     playFirstScenarioToTraitorVictory,
 } from '../testing/firstScenarioTestUtils';
 import { BETRAYAL_COMMANDS, BetrayalDomain, EXPLORER_CATALOG, resolveMoveTargetRooms, resolveUseEffect, type BetrayalCore } from '../game';
-import { BETRAYAL_DISCOVERY_POOLS, BETRAYAL_SCENARIO_CONFIGS, type BetrayalTraitKey } from '../scenarioConfig';
+import {
+    BETRAYAL_DISCOVERY_POOLS,
+    BETRAYAL_SCENARIO_CONFIGS,
+    isBetrayalEventRuntimeSupported,
+    type BetrayalTraitKey,
+} from '../scenarioConfig';
 import { resolvePossessionAtlasVisual } from '../possessionAtlas';
 import { BETRAYAL_ROOM_TILE_VISUALS } from '../roomAtlas';
 
@@ -26,6 +35,38 @@ function findTestExplorer(core: BetrayalCore, playerId: string) {
         throw new Error(`山屋测试夹具缺少玩家 ${playerId}`);
     }
     return explorer;
+}
+
+function isMagicCameraTestCard(card: BetrayalCore['currentExplorer']['inventory'][number]): boolean {
+    return card.id === 'camera' || card.name === '魔法相机';
+}
+
+function removeMagicCameraFromTestExplorer(
+    explorer: BetrayalCore['currentExplorer'],
+): BetrayalCore['currentExplorer'] {
+    return {
+        ...explorer,
+        inventory: explorer.inventory.filter((card) => !isMagicCameraTestCard(card)),
+    };
+}
+
+function activateTestExplorer(core: BetrayalCore, playerId: string): void {
+    const explorers = [core.currentExplorer, ...core.otherExplorers].map((explorer) => ({
+        ...explorer,
+        traits: { ...explorer.traits },
+        inventory: explorer.inventory.map((card) => ({ ...card })),
+    }));
+    const active = explorers.find((explorer) => explorer.playerId === playerId);
+    if (!active) {
+        throw new Error(`山屋测试夹具不能切到缺失玩家 ${playerId}`);
+    }
+    core.currentPlayer = playerId;
+    core.currentExplorer = active;
+    core.otherExplorers = explorers.filter((explorer) => explorer.playerId !== playerId);
+    core.activeRoomId = active.roomId;
+    core.currentExplorerTraits = { ...active.traits };
+    core.currentExplorerInventory = active.inventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = active.inventory.map((card) => card.id);
 }
 
 function setTestExplorerTraits(
@@ -58,6 +99,125 @@ function setTestExplorerTraits(
 function physicalTraitTotal(core: BetrayalCore, playerId: string): number {
     const explorer = findTestExplorer(core, playerId);
     return explorer.traits.might + explorer.traits.speed;
+}
+
+function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
+    let core = createStartedFirstScenarioCore(playerIds);
+    core.drawOrder = ['event'];
+    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘')!];
+    core.currentExplorer.inventory = [
+        ...core.currentExplorer.inventory,
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'mask', name: '面具', kind: 'omen' },
+    ];
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        '0',
+        { accept: true },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3),
+    );
+}
+
+function createMagicCameraHauntCore(cameraOwnerPlayerId: string | null = '1'): BetrayalCore {
+    let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core.drawOrder = ['event'];
+    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！')!];
+    core.currentExplorer = removeMagicCameraFromTestExplorer(core.currentExplorer);
+    core.otherExplorers = core.otherExplorers.map(removeMagicCameraFromTestExplorer);
+    core.currentExplorer.inventory = [
+        ...core.currentExplorer.inventory,
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'mask', name: '面具', kind: 'omen' },
+    ];
+    if (cameraOwnerPlayerId === '0') {
+        core.currentExplorer.inventory = [
+            ...core.currentExplorer.inventory,
+            { id: 'camera', name: '魔法相机', kind: 'item' },
+        ];
+    }
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.otherExplorers = core.otherExplorers.map((explorer) => {
+        if (explorer.playerId === cameraOwnerPlayerId) {
+            return { ...explorer, inventory: [...explorer.inventory, { id: 'camera', name: '魔法相机', kind: 'item' }] };
+        }
+        return explorer;
+    });
+    if (!cameraOwnerPlayerId) {
+        core.possessionOrderByKind.item = [
+            { id: 'camera', name: '魔法相机', kind: 'item' },
+            ...core.possessionOrderByKind.item.filter((card) => card.id !== 'camera'),
+        ];
+    }
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        '0',
+        { accept: true },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3),
+    );
+}
+
+function createHungryHouseHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
+    let core = createStartedFirstScenarioCore(playerIds);
+    core.drawOrder = ['event'];
+    core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
+    core.currentExplorer.inventory = [
+        ...core.currentExplorer.inventory,
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'mask', name: '面具', kind: 'omen' },
+    ];
+    core.currentExplorer.traits.might = 4;
+    core.currentExplorer.traits.speed = 4;
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        '0',
+        { accept: true },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3),
+    );
+}
+function placeCurrentExplorerInDustResearchRoom(
+    core: BetrayalCore,
+    discoveryReward: BetrayalCore['rooms'][number]['discoveryReward'] = 'omen',
+): BetrayalCore {
+    const roomId = 'ground-north';
+    core.currentExplorer.roomId = roomId;
+    core.activeRoomId = roomId;
+    core.rooms = core.rooms.map((room) => (
+        room.id === roomId
+            ? {
+                ...room,
+                state: 'discovered',
+                name: '实验室',
+                hint: '灰尘剧本测试研究板块',
+                tags: ['研究'],
+                discoveryReward,
+                visualId: 'laboratory',
+            }
+            : room
+    ));
+    return core;
 }
 
 describe('Betrayal first scenario runtime', () => {
@@ -218,6 +378,59 @@ describe('Betrayal first scenario runtime', () => {
         expect(eventNames).not.toContain('冷风指路');
         expect(eventNames).not.toContain('阴影扑面');
         expect(eventNames).not.toContain('残留祝福');
+    });
+
+    it('正式运行事件牌堆不得包含会触发未完整作祟剧本的事件', () => {
+        const supportedEventNames = BETRAYAL_DISCOVERY_POOLS.events
+            .filter(isBetrayalEventRuntimeSupported)
+            .map((event) => event.name);
+        const unsupportedEventNames = BETRAYAL_DISCOVERY_POOLS.events
+            .filter((event) => !isBetrayalEventRuntimeSupported(event))
+            .map((event) => event.name);
+        const core = BetrayalDomain.setup(['0', '1', '2'], BETRAYAL_FIXED_RANDOM);
+
+        expect(unsupportedEventNames).toEqual([]);
+        expect(supportedEventNames).toContain('一抹鲜红');
+        expect(supportedEventNames).toContain('一瓶微尘');
+        expect(supportedEventNames).toContain('说“茄子”！');
+        expect(supportedEventNames).toContain('大宅饿了');
+        expect(core.eventOrder.map((event) => event.name).sort()).toEqual(supportedEventNames.sort());
+    });
+
+    it('剧本3玩家视图只允许本人看到自己的 Sickness token 数字', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.scenarioRuntime.dust = {
+            sicknessTokensByPlayerId: {
+                '0': [
+                    { id: 'sickness-0-a', value: 1 },
+                    { id: 'sickness-0-b', value: 4 },
+                    { id: 'sickness-0-c', value: 8 },
+                ],
+                '1': [
+                    { id: 'sickness-1-a', value: 2 },
+                    { id: 'sickness-1-b', value: 3 },
+                    { id: 'sickness-1-c', value: 5 },
+                ],
+                '2': [
+                    { id: 'sickness-2-a', value: 6 },
+                    { id: 'sickness-2-b', value: 7 },
+                    { id: 'sickness-2-c', value: 9 },
+                ],
+            },
+            permanentTraitorPlayerIds: ['0'],
+            researchRoomIds: [],
+            exchangedSicknessThisTurnPlayerIds: [],
+            feverishPlayerIds: [],
+        };
+
+        const viewForPlayer0 = BetrayalDomain.playerView?.(core, '0') as BetrayalCore;
+        const viewForPlayer1 = BetrayalDomain.playerView?.(core, '1') as BetrayalCore;
+
+        expect(viewForPlayer0.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([1, 4, 8]);
+        expect(viewForPlayer0.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([null, null, null]);
+        expect(viewForPlayer1.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([2, 3, 5]);
+        expect(viewForPlayer1.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([null, null, null]);
+        expect(core.scenarioRuntime.dust.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([2, 3, 5]);
     });
 
     it('标本剥制按官方锁定文本执行力量检定成功和失败分支', () => {
@@ -921,7 +1134,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('治疗所选属性');
         expect(core.latestDiscovery?.detail).toContain('治疗神志');
         expect(core.currentExplorer.traits.sanity).toBe(sanityTemplateValue);
-        expect(core.turnEndedByDiscovery).toBe(false);
+        expect(core.turnEndedByDiscovery).toBe(true);
     });
 
     it('一抹鲜红按官方锁定文本支持可选作祟检定、速度奖励和跳过伤害', () => {
@@ -953,7 +1166,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('作祟检定 0');
         expect(core.latestDiscovery?.detail).toContain('速度 +1');
         expect(core.currentExplorer.traits.speed).toBe(5);
-        expect(core.turnEndedByDiscovery).toBe(false);
+        expect(core.turnEndedByDiscovery).toBe(true);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -1018,7 +1231,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.activityLog[0]?.text).toContain('Crimson Jack Returns');
     });
 
-    it('一瓶微尘按官方锁定文本支持可选作祟检定、神志奖励和跳过属性变化', () => {
+    it('一瓶微尘仍可选择跳过作祟检定并结算原事件效果', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘')!];
@@ -1034,32 +1247,6 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.pendingEventChoice?.sourceTitle).toBe('一瓶微尘');
         expect(core.discardCounts.event).toBe(1);
         expect(core.turnEndedByDiscovery).toBe(false);
-
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-            '0',
-            { accept: true },
-            100,
-            createBetrayalScriptedRandom(1, 1),
-        );
-
-        expect(core.phase).toBe('preHaunt');
-        expect(core.latestDiscovery?.detail).toContain('作祟检定 0');
-        expect(core.latestDiscovery?.detail).toContain('神志 +1');
-        expect(core.currentExplorer.traits.might).toBe(4);
-        expect(core.currentExplorer.traits.sanity).toBe(5);
-        expect(core.turnEndedByDiscovery).toBe(false);
-
-        core = createStartedFirstScenarioCore();
-        core.drawOrder = ['event'];
-        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘')!];
-        core.currentExplorer.traits.might = 4;
-        core.currentExplorer.traits.sanity = 4;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { accept: false });
 
         expect(core.latestDiscovery?.summary).toBe('跳过作祟检定');
@@ -1070,190 +1257,258 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.turnEndedByDiscovery).toBe(true);
     });
 
-    it('一瓶微尘作祟检定成功会记录剧本3并进入作祟状态', () => {
-        let core = createStartedFirstScenarioCore();
-        core.drawOrder = ['event'];
-        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '一瓶微尘')!];
-        const extraOmens = [
-            { id: 'omen-book', name: '书本', kind: 'omen' as const },
-            { id: 'dog', name: '狗', kind: 'omen' as const },
-            { id: 'mask', name: '面具', kind: 'omen' as const },
-        ];
-        core.currentExplorer.inventory = [
-            ...core.currentExplorer.inventory,
-            ...extraOmens,
-        ];
-        core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.otherExplorers = core.otherExplorers.map((explorer) => (
-            explorer.playerId === core.currentExplorer.playerId
-                ? { ...core.currentExplorer, inventory: [...core.currentExplorer.inventory] }
-                : explorer
-        ));
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-            '0',
-            { accept: true },
-            100,
-            createBetrayalScriptedRandom(3, 3, 3),
-        );
+    it('一瓶微尘作祟检定成功会进入灰尘剧本并分发隐藏 Sickness token', () => {
+        const core = createDustHauntCore();
 
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
-        expect(core.scenarioRuntime.traitorPlayerId).toBe('0');
+        expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
         expect(core.scenarioRuntime.hauntCardNumber).toBe(3);
         expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Dusty Vial');
-        expect(core.latestDiscovery?.detail).toContain('作祟检定 6');
-        expect(core.activityLog[0]?.text).toContain('剧本3');
-        expect(core.activityLog[0]?.text).toContain('A Dusty Vial');
-        expect(core.activityLog[0]?.text).not.toContain('Crimson Jack Returns');
+        expect(core.currentPlayer).toBe('1');
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([1, 2, 3]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']).toHaveLength(3);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']).toHaveLength(3);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds).toEqual(['0']);
     });
 
-    it('大宅饿了按官方锁定文本支持可选作祟检定、力量奖励和跳过任选属性', () => {
-        let core = createStartedFirstScenarioCore();
-        core.drawOrder = ['event'];
-        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
-        core.currentExplorer.traits.might = 4;
-        core.currentExplorer.traits.knowledge = 4;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-
-        expect(core.latestDiscovery?.title).toBe('大宅饿了');
-        expect(core.latestDiscovery?.detail).toContain('可选择进行作祟检定');
-        expect(core.pendingEventChoice?.sourceTitle).toBe('大宅饿了');
-        expect(core.discardCounts.event).toBe(1);
-        expect(core.turnEndedByDiscovery).toBe(false);
+    it('灰尘剧本 Search for a Cure 成功会在当前恶兆板块放置 Research token', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        setTestExplorerTraits(core, '1', { knowledge: 3 });
 
         core = applyBetrayalCommand(
             core,
-            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-            '0',
-            { accept: true },
-            100,
-            createBetrayalScriptedRandom(1, 1),
-        );
-
-        expect(core.phase).toBe('preHaunt');
-        expect(core.latestDiscovery?.detail).toContain('作祟检定 0');
-        expect(core.latestDiscovery?.detail).toContain('力量 +1');
-        expect(core.currentExplorer.traits.might).toBe(5);
-        expect(core.currentExplorer.traits.knowledge).toBe(4);
-        expect(core.turnEndedByDiscovery).toBe(false);
-
-        core = createStartedFirstScenarioCore();
-        core.drawOrder = ['event'];
-        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
-        core.currentExplorer.traits.might = 4;
-        core.currentExplorer.traits.knowledge = 4;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-        const missingTrait = BetrayalDomain.validate(
-            { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { accept: false }),
-        );
-        expect(missingTrait.valid).toBe(false);
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { accept: false, trait: 'knowledge' });
-
-        expect(core.latestDiscovery?.summary).toBe('跳过作祟检定');
-        expect(core.latestDiscovery?.detail).toContain('知识 +1');
-        expect(core.currentExplorer.traits.might).toBe(4);
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
-        expect(core.turnEndedByDiscovery).toBe(false);
-    });
-
-    it('大宅饿了作祟检定成功会记录剧本12并进入作祟状态', () => {
-        let core = createStartedFirstScenarioCore();
-        core.drawOrder = ['event'];
-        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
-        const extraOmens = [
-            { id: 'omen-book', name: '书本', kind: 'omen' as const },
-            { id: 'dog', name: '狗', kind: 'omen' as const },
-            { id: 'mask', name: '面具', kind: 'omen' as const },
-        ];
-        core.currentExplorer.inventory = [
-            ...core.currentExplorer.inventory,
-            ...extraOmens,
-        ];
-        core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.otherExplorers = core.otherExplorers.map((explorer) => (
-            explorer.playerId === core.currentExplorer.playerId
-                ? { ...core.currentExplorer, inventory: [...core.currentExplorer.inventory] }
-                : explorer
-        ));
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-            '0',
-            { accept: true },
+            BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+            '1',
+            { trait: 'knowledge' },
             100,
             createBetrayalScriptedRandom(3, 3, 3),
         );
+
+        expect(core.scenarioRuntime.dust?.researchRoomIds).toContain('ground-north');
+        expect(core.usedCardIdsThisTurn).toContain('search-for-cure');
+        expect(core.recentRoll?.latestLabel).toBe('放置 Research token');
+        expect(core.recommendedAction).toBe('endTurn');
+    });
+
+    it('灰尘剧本 Cure the Dust 成功会进入英雄胜利终局', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway'];
+        setTestExplorerTraits(core, '1', { knowledge: 5 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CURE_THE_DUST,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('the-dust');
+        expect(core.endgameResult?.outcome).toBe('survivors');
+        expect(core.endgameResult?.winners).toEqual(['1', '2']);
+    });
+
+    it('灰尘剧本同意交换后若所有存活者都成为叛徒则叛徒胜利', () => {
+        let core = createDustHauntCore();
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'hallway' }
+                : explorer
+        ));
+        core.scenarioRuntime.deadExplorerPlayerIds = ['2'];
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE,
+            '1',
+            { targetPlayerId: '0' },
+        );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE,
+            '0',
+            { accept: true },
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('the-dust');
+        expect(core.endgameResult?.outcome).toBe('traitor');
+        expect(core.endgameResult?.winners.sort()).toEqual(['0', '1']);
+    });
+
+    it('灰尘剧本发出疾病交换请求后不会重新展示上一次投骰结果', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        setTestExplorerTraits(core, '1', { knowledge: 3 });
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: core.currentExplorer.roomId }
+                : explorer
+        ));
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3),
+        );
+        expect(core.recentRoll?.sourceTitle).toBe('寻找解药');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE,
+            '1',
+            { targetPlayerId: '0' },
+        );
+
+        expect(core.scenarioRuntime.dust?.pendingSicknessExchange).toMatchObject({
+            requesterPlayerId: '1',
+            targetPlayerId: '0',
+        });
+        expect(core.recentRoll).toBeNull();
+    });
+
+        it('大宅饿了作祟检定成功会进入剧本12并建立裂隙、仪式房和邪教徒', () => {
+        const core = createHungryHouseHauntCore();
+        const hungryHouse = core.scenarioRuntime.hungryHouse;
 
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
         expect(core.scenarioRuntime.traitorPlayerId).toBe('0');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(12);
-        expect(core.scenarioRuntime.hauntTriggerLabel).toBe('大宅饿了');
-        expect(core.latestDiscovery?.detail).toContain('作祟检定 6');
-        expect(core.activityLog[0]?.text).toContain('剧本12');
-        expect(core.activityLog[0]?.text).toContain('大宅饿了');
-        expect(core.activityLog[0]?.text).not.toContain('Crimson Jack Returns');
+        expect(core.currentPlayer).toBe('1');
+        expect(hungryHouse?.ritualProgress).toBe(3);
+        expect(core.rooms.find((room) => room.id === hungryHouse?.chasmRoomId)?.state).toBe('discovered');
+        expect(core.rooms.find((room) => room.id === hungryHouse?.ritualRoomId)?.state).toBe('discovered');
+        expect(core.monsters.filter((monster) => hungryHouse?.cultistIds.includes(monster.id))).toHaveLength(3);
+        expect(core.monsters.every((monster) => !hungryHouse?.cultistIds.includes(monster.id) || monster.roomId === hungryHouse.ritualRoomId)).toBe(true);
+        expect(findTestExplorer(core, '0').traits.might).toBe(5);
+        expect(findTestExplorer(core, '0').traits.speed).toBe(4);
     });
 
-    it('说“茄子”！按官方锁定文本支持作祟33、魔法相机奸徒和失败抽物品', () => {
-        let core = createStartedFirstScenarioCore();
-        core.drawOrder = ['event'];
-        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！')!];
-        core.currentExplorer.inventory = [
-            ...core.currentExplorer.inventory,
-            { id: 'omen-book', name: '书本', kind: 'omen' },
-            { id: 'dog', name: '狗', kind: 'omen' },
-            { id: 'mask', name: '面具', kind: 'omen' },
-        ];
-        core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.otherExplorers = core.otherExplorers.map((explorer) => {
-            if (explorer.playerId === '0') {
-                return { ...core.currentExplorer, inventory: [...core.currentExplorer.inventory] };
-            }
-            if (explorer.playerId === '1') {
-                return { ...explorer, inventory: [{ id: 'camera', name: '魔法相机', kind: 'item' }] };
-            }
-            return explorer;
-        });
+    it('大宅饿了中探索者可击倒邪教徒、搬尸到裂隙并献祭达成单人胜利', () => {
+        let core = createHungryHouseHauntCore();
+        const hungryHouse = core.scenarioRuntime.hungryHouse!;
+        const cultistId = hungryHouse.cultistIds[0]!;
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = hungryHouse.ritualRoomId;
+        core.activeRoomId = hungryHouse.ritualRoomId;
+        core.currentExplorer.traits.might = 6;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         core = applyBetrayalCommand(
             core,
-            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
-            '0',
-            { accept: true },
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '1',
+            { target: 'cultist', targetMonsterId: cultistId },
             100,
-            createBetrayalScriptedRandom(3, 3, 3),
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0),
         );
+
+        expect(core.monsters.some((monster) => monster.id === cultistId)).toBe(false);
+        expect(core.scenarioRuntime.hungryHouse?.cultistCorpseRoomIds[cultistId]).toBe(hungryHouse.ritualRoomId);
+
+        activateTestExplorer(core, '2');
+        core.currentExplorer.roomId = hungryHouse.ritualRoomId;
+        core.activeRoomId = hungryHouse.ritualRoomId;
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.PICK_UP_CORPSE, '2', { corpseKind: 'cultist', corpseId: cultistId });
+        expect(core.scenarioRuntime.hungryHouse?.carriedCorpseByPlayerId['2']?.corpseId).toBe(cultistId);
+        expect(core.scenarioRuntime.hungryHouse?.cultistCorpseRoomIds[cultistId]).toBeUndefined();
+
+        core.scenarioRuntime.hungryHouse!.ritualProgress = 1;
+        core.currentExplorer.roomId = hungryHouse.chasmRoomId;
+        core.activeRoomId = hungryHouse.chasmRoomId;
+        core.currentExplorer.traits.sanity = 6;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FEED_HER,
+            '2',
+            {},
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('hungry-house');
+        expect(core.endgameResult?.outcome).toBe('solo');
+        expect(core.endgameResult?.winners).toEqual(['2']);
+    });
+
+    it('大宅饿了献祭失败会治疗神志，邪教徒击倒倒数第二名探索者会让最后生还者胜利', () => {
+        let core = createHungryHouseHauntCore();
+        const hungryHouse = core.scenarioRuntime.hungryHouse!;
+        const cultistId = hungryHouse.cultistIds[0]!;
+
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = hungryHouse.chasmRoomId;
+        core.activeRoomId = hungryHouse.chasmRoomId;
+        core.scenarioRuntime.hungryHouse!.carriedCorpseByPlayerId['1'] = {
+            kind: 'explorer',
+            corpseId: 'explorer:2',
+            sourcePlayerId: '2',
+            name: '测试尸体',
+        };
+        core.currentExplorer.traits.sanity = 2;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FEED_HER, '1', {}, 100, createBetrayalScriptedRandom(0, 0));
+        expect(core.phase).toBe('haunt');
+        expect(findTestExplorer(core, '1').traits.sanity).toBe(4);
+        expect(core.scenarioRuntime.hungryHouse?.ritualProgress).toBe(3);
+
+        core.scenarioRuntime.deadExplorerPlayerIds = ['2'];
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = hungryHouse.ritualRoomId;
+        core.currentExplorer.traits = { ...core.currentExplorer.traits, might: 1, speed: 1 };
+        core.currentExplorer.inventory = [];
+        core.activeRoomId = hungryHouse.ritualRoomId;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [];
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === cultistId ? { ...monster, roomId: hungryHouse.ritualRoomId } : monster
+        ));
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CULTIST_ATTACK,
+            '1',
+            { monsterId: cultistId, targetPlayerId: '1' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 0),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('hungry-house');
+        expect(core.endgameResult?.winners).toEqual(['0']);
+    });
+it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机持有者决定叛徒', () => {
+        const core = createMagicCameraHauntCore('1');
 
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(33);
-        expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
         expect(core.scenarioRuntime.traitorPlayerId).toBe('1');
-        expect(core.scenarioRuntime.hauntTriggerLabel).toBe('说“茄子”！');
-        expect(core.latestDiscovery?.detail).toContain('作祟检定 6');
-        expect(core.activityLog[0]?.text).toContain('剧本33');
+        expect(core.currentPlayer).toBe('2');
+        expect(core.scenarioRuntime.magicCamera?.cameraHolderPlayerId).toBe('1');
+        expect(core.scenarioRuntime.magicCamera?.heroEssencePlayerIds.sort()).toEqual(['0', '2']);
+        expect(core.scenarioRuntime.magicCamera?.phantomPhotographerIds).toHaveLength(3);
+        expect(core.monsters.filter((monster) => monster.name === '幻影摄影师')).toHaveLength(3);
+        expect(findTestExplorer(core, '1').inventory.some((card) => card.name === '魔法相机')).toBe(true);
 
-        core = createStartedFirstScenarioCore();
+        const fallbackCore = createMagicCameraHauntCore(null);
+        expect(fallbackCore.scenarioRuntime.traitorPlayerId).toBe('0');
+        expect(fallbackCore.scenarioRuntime.magicCamera?.cameraHolderPlayerId).toBe('0');
+        expect(findTestExplorer(fallbackCore, '0').inventory.some((card) => card.name === '魔法相机')).toBe(true);
+    });
+
+    it('说“茄子”！跳过作祟检定仍按事件失败分支抽物品', () => {
+        let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！')!];
         core.possessionOrderByKind.item = [{ id: 'camera', name: '魔法相机', kind: 'item' }];
@@ -1264,11 +1519,7 @@ describe('Betrayal first scenario runtime', () => {
             { id: 'mask', name: '面具', kind: 'omen' },
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.otherExplorers = core.otherExplorers.map((explorer) => (
-            explorer.playerId === '0'
-                ? { ...core.currentExplorer, inventory: [...core.currentExplorer.inventory] }
-                : explorer
-        ));
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
@@ -1276,7 +1527,7 @@ describe('Betrayal first scenario runtime', () => {
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
             '0',
-            { accept: true },
+            { accept: false },
             100,
             createBetrayalScriptedRandom(1, 1),
         );
@@ -1284,7 +1535,158 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.phase).toBe('preHaunt');
         expect(core.latestDiscovery?.detail).toContain('抽取一张物品卡');
         expect(core.currentExplorer.inventory.at(-1)?.name).toBe('魔法相机');
-        expect(core.turnEndedByDiscovery).toBe(false);
+        expect(core.turnEndedByDiscovery).toBe(true);
+    });
+
+    it('魔法相机剧本 Take a Photo 成功会夺取英雄 Essence 并提升叛徒属性', () => {
+        let core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'hallway' }
+                : explorer
+        ));
+        core.currentExplorer.traits.speed = 6;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const mightBefore = core.currentExplorer.traits.might;
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.TAKE_PHOTO,
+            '1',
+            { targetPlayerId: '0', trait: 'might' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
+        );
+
+        expect(core.scenarioRuntime.magicCamera?.heroEssencePlayerIds).not.toContain('0');
+        expect(core.scenarioRuntime.magicCamera?.capturedEssencePlayerIds).toContain('0');
+        expect(findTestExplorer(core, '1').traits.might).toBe(mightBefore + 1);
+        expect(core.recentRoll?.latestLabel).toBe('夺取 Essence');
+    });
+
+    it('魔法相机剧本 Smash the Magic Camera 成功且摄影师全灭时英雄胜利', () => {
+        let core = createMagicCameraHauntCore('1');
+        const magicCamera = core.scenarioRuntime.magicCamera!;
+        core.scenarioRuntime.magicCamera = {
+            ...magicCamera,
+            killedPhantomPhotographerIds: [...magicCamera.phantomPhotographerIds],
+        };
+        core.monsters = core.monsters.filter((monster) => !magicCamera.phantomPhotographerIds.includes(monster.id));
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? { ...explorer, roomId: 'hallway' }
+                : explorer
+        ));
+        core.currentExplorer.traits.sanity = 6;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.SMASH_MAGIC_CAMERA,
+            '2',
+            {},
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('magic-camera');
+        expect(core.endgameResult?.outcome).toBe('survivors');
+    });
+
+    it('魔法相机剧本区分幻影摄影师被力量击杀和非力量攻击眩晕', () => {
+        let killCore = createMagicCameraHauntCore('1');
+        const killMonsterId = killCore.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        killCore.currentExplorer.traits.might = 6;
+        killCore.currentExplorerTraits = { ...killCore.currentExplorer.traits };
+        killCore.monsters = killCore.monsters.map((monster) => (
+            monster.id === killMonsterId
+                ? { ...monster, roomId: killCore.currentExplorer.roomId, might: 1 }
+                : monster
+        ));
+
+        killCore = applyBetrayalCommand(
+            killCore,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '2',
+            { target: 'phantom-photographer', targetMonsterId: killMonsterId },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1),
+        );
+
+        expect(killCore.scenarioRuntime.magicCamera?.killedPhantomPhotographerIds).toContain(killMonsterId);
+        expect(killCore.monsters.some((monster) => monster.id === killMonsterId)).toBe(false);
+
+        let stunCore = createMagicCameraHauntCore('1');
+        const stunMonsterId = stunCore.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        stunCore.currentExplorer.inventory = [...stunCore.currentExplorer.inventory, { id: 'ring', name: '指环', kind: 'omen' }];
+        stunCore.currentExplorerInventory = [...stunCore.currentExplorer.inventory];
+        stunCore.turnStartInventoryCardIds = [...stunCore.turnStartInventoryCardIds, 'ring'];
+        stunCore.currentExplorer.traits.sanity = 6;
+        stunCore.currentExplorerTraits = { ...stunCore.currentExplorer.traits };
+        stunCore.monsters = stunCore.monsters.map((monster) => (
+            monster.id === stunMonsterId
+                ? { ...monster, roomId: stunCore.currentExplorer.roomId, sanity: 1 }
+                : monster
+        ));
+
+        stunCore = applyBetrayalCommand(
+            stunCore,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '2',
+            { target: 'phantom-photographer', targetMonsterId: stunMonsterId, weaponCardId: 'ring' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1),
+        );
+
+        expect(stunCore.scenarioRuntime.magicCamera?.stunnedPhantomPhotographerIds).toContain(stunMonsterId);
+        expect(stunCore.scenarioRuntime.magicCamera?.killedPhantomPhotographerIds).not.toContain(stunMonsterId);
+        expect(stunCore.monsters.some((monster) => monster.id === stunMonsterId)).toBe(true);
+
+        activateTestExplorer(stunCore, '1');
+        const stunnedAttack = BetrayalDomain.validate(
+            { core: stunCore, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK, '1', {
+                monsterId: stunMonsterId,
+                targetPlayerId: '2',
+            }),
+        );
+        expect(stunnedAttack.valid).toBe(false);
+        expect(stunnedAttack.error).toContain('已被眩晕');
+    });
+
+    it('魔法相机剧本幻影摄影师视线攻击可击倒全部英雄并让叛徒胜利', () => {
+        let core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
+        const monsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        const hero = findTestExplorer(core, '2');
+        hero.traits.sanity = 2;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === monsterId
+                ? { ...monster, roomId: hero.roomId, sanity: 6 }
+                : monster
+        ));
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK,
+            '1',
+            { monsterId, targetPlayerId: '2' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1, 1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('magic-camera');
+        expect(core.endgameResult?.outcome).toBe('traitor');
+        expect(core.endgameResult?.winners).toEqual(['1']);
     });
 
     it('最深的壁橱按官方锁定文本执行抽物品、精神伤害和地下室放置分支', () => {
@@ -1399,7 +1801,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('放置到上层起始板块');
         expect(core.currentExplorer.roomId).toBe('upper-landing');
         expect(core.activeRoomId).toBe('upper-landing');
-        expect(core.turnEndedByDiscovery).toBe(false);
+        expect(core.turnEndedByDiscovery).toBe(true);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -1426,7 +1828,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('放置到地面层起始板块');
         expect(core.currentExplorer.roomId).toBe('grand-staircase');
         expect(core.activeRoomId).toBe('grand-staircase');
-        expect(core.turnEndedByDiscovery).toBe(false);
+        expect(core.turnEndedByDiscovery).toBe(true);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -1489,6 +1891,24 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('获得 1 点力量或速度');
         expect(core.pendingEventChoice?.sourceTitle).toBe('脑状食品');
 
+        const moveBeforeReadingEvent = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' }),
+        );
+        expect(moveBeforeReadingEvent.valid).toBe(false);
+        if (!moveBeforeReadingEvent.valid) {
+            expect(moveBeforeReadingEvent.error).toContain('请先处理当前事件');
+        }
+
+        const endTurnBeforeReadingEvent = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        );
+        expect(endTurnBeforeReadingEvent.valid).toBe(false);
+        if (!endTurnBeforeReadingEvent.valid) {
+            expect(endTurnBeforeReadingEvent.error).toContain('请先处理当前事件');
+        }
+
         const missingTrait = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', {}),
@@ -1499,7 +1919,14 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traits.speed).toBe(5);
+        expect(core.turnEndedByDiscovery).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        expect(core.currentPlayer).toBe('1');
+        expect(core.currentExplorer.playerId).toBe('1');
         expect(core.turnEndedByDiscovery).toBe(false);
+        expect(core.recentRoll).toBeNull();
+        expect(core.recommendedAction).toBe('move');
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -1634,7 +2061,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('放置到任意板块');
         expect(core.latestDiscovery?.detail).toContain('放置到上层起始点');
         expect(core.currentExplorer.roomId).toBe('upper-landing');
-        expect(core.turnEndedByDiscovery).toBe(false);
+        expect(core.turnEndedByDiscovery).toBe(true);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -1889,9 +2316,14 @@ describe('Betrayal first scenario runtime', () => {
         expect(resolveMoveTargetRooms(core).map((room) => room.id)).toContain('basement-landing');
 
         core.movesRemaining = 1;
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
-        expect(core.currentExplorer.roomId).toBe('basement-landing');
-        expect(core.movesRemaining).toBe(0);
+        const sameTurnSecretPassageMove = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' }),
+        );
+        expect(sameTurnSecretPassageMove.valid).toBe(false);
+        if (!sameTurnSecretPassageMove.valid) {
+            expect(sameTurnSecretPassageMove.error).toContain('回合已经结束');
+        }
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2641,25 +3073,153 @@ describe('Betrayal first scenario runtime', () => {
         }
     });
 
-    it('狗每回合一次，可与 4 格内玩家交易任意数量物品或预兆', () => {
-        let core = createFirstScenarioHauntCore();
-        core.currentExplorer = {
-            ...core.currentExplorer,
-            roomId: 'entrance-hall',
-            inventory: [
-                { id: 'dog', name: '狗', kind: 'omen' },
-                { id: 'medical-kit', name: '急救包', kind: 'item' },
-                { id: 'map', name: '地图', kind: 'item' },
-            ],
-        };
-        core.otherExplorers = core.otherExplorers.map((explorer) => (
-            explorer.playerId === '1'
-                ? { ...explorer, roomId: 'upper-landing', inventory: [] }
-                : explorer
-        ));
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.turnStartInventoryCardIds = ['dog', 'medical-kit', 'map'];
+    it('普通交易必须先请求，接收方同意后才转移持有物', () => {
+        let core = createTradeReadyCore();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            targetPlayerId: '1',
+            cardId: 'rope',
+        });
+
+        expect(core.pendingTradeAgreement).toMatchObject({
+            playerId: '0',
+            targetPlayerId: '1',
+            cardIds: ['rope'],
+        });
+        expect(core.activePlayerId).toBe('1');
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual([]);
+        expect(core.activityLog[0]?.text).toContain('同意');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: true,
+        });
+
+        expect(core.pendingTradeAgreement).toBeNull();
+        expect(core.activePlayerId).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['omen-book']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['rope']);
+        expect(core.activityLog[0]?.text).toContain('同意交易');
+    });
+
+    it('普通交易被接收方拒绝后不会转移持有物', () => {
+        let core = createTradeReadyCore();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            targetPlayerId: '1',
+            cardId: 'rope',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: false,
+        });
+
+        expect(core.pendingTradeAgreement).toBeNull();
+        expect(core.activePlayerId).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual([]);
+        expect(core.activityLog[0]?.text).toContain('拒绝');
+    });
+
+    it('同房间交易支持双方交换持有物，且拒绝时双方都不转移', () => {
+        let core = createExchangeReadyCore();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            targetPlayerId: '1',
+            cardId: 'rope',
+            targetCardIds: ['map'],
+        });
+
+        expect(core.pendingTradeAgreement).toMatchObject({
+            playerId: '0',
+            targetPlayerId: '1',
+            cardIds: ['rope'],
+            targetCardIds: ['map'],
+        });
+        expect(core.activePlayerId).toBe('1');
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['map', 'skull']);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: false,
+        });
+
+        expect(core.pendingTradeAgreement).toBeNull();
+        expect(core.activePlayerId).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['map', 'skull']);
+        expect(core.activityLog[0]?.text).toContain('拒绝');
+    });
+
+    it('同房间交易在接收方同意后会双向交换持有物', () => {
+        let core = createExchangeReadyCore();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            targetPlayerId: '1',
+            cardId: 'rope',
+            targetCardIds: ['map'],
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: true,
+        });
+
+        expect(core.pendingTradeAgreement).toBeNull();
+        expect(core.activePlayerId).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['omen-book', 'map']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull', 'rope']);
+        expect(core.receivedCardIdsThisTurnByPlayerId['0']).toContain('map');
+        expect(core.receivedCardIdsThisTurnByPlayerId['1']).toContain('rope');
+        expect(core.activityLog[0]?.text).toContain('给出兔脚，换回地图');
+    });
+
+    it('同房间交易允许只拿对方持有物，接收方同意后才结算', () => {
+        let core = createExchangeReadyCore();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            targetPlayerId: '1',
+            targetCardIds: ['map'],
+        });
+
+        expect(core.pendingTradeAgreement).toMatchObject({
+            playerId: '0',
+            targetPlayerId: '1',
+            cardIds: [],
+            targetCardIds: ['map'],
+        });
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['map', 'skull']);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: true,
+        });
+
+        expect(core.pendingTradeAgreement).toBeNull();
+        expect(core.activePlayerId).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book', 'map']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull']);
+        expect(core.receivedCardIdsThisTurnByPlayerId['0']).toContain('map');
+        expect(core.activityLog[0]?.text).toContain('索要地图');
+    });
+
+    it('同房间交易不允许双方都不选择持有物', () => {
+        const core = createExchangeReadyCore();
+
+        const emptyTrade = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+                targetPlayerId: '1',
+                cardIds: [],
+                targetCardIds: [],
+            }),
+        );
+
+        expect(emptyTrade.valid).toBe(false);
+        if (!emptyTrade.valid) {
+            expect(emptyTrade.error).toContain('缺少交易对象或持有物');
+        }
+    });
+
+    it('狗每回合一次，可请求与 4 格内玩家交易任意数量物品或预兆，同意后才结算', () => {
+        let core = createDogTradeReadyCore();
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
             useDog: true,
@@ -2667,10 +3227,29 @@ describe('Betrayal first scenario runtime', () => {
             cardIds: ['medical-kit', 'map'],
         });
 
-        const teammate = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
-        expect(core.currentExplorer.inventory.map((card) => card.id)).toEqual(['dog']);
-        expect(teammate.inventory.map((card) => card.id)).toEqual(['medical-kit', 'map']);
+        expect(core.pendingTradeAgreement).toMatchObject({
+            playerId: '0',
+            targetPlayerId: '1',
+            cardIds: ['medical-kit', 'map'],
+            useDog: true,
+            sourceCardId: 'dog',
+        });
+        expect(core.activePlayerId).toBe('1');
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['dog', 'medical-kit', 'map']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual([]);
+        expect(core.usedCardIdsThisTurn).not.toContain('dog');
+        expect(core.activityLog[0]?.text).toContain('同意');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: true,
+        });
+
+        expect(core.pendingTradeAgreement).toBeNull();
+        expect(core.activePlayerId).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['dog']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['medical-kit', 'map']);
         expect(core.usedCardIdsThisTurn).toContain('dog');
+        expect(core.activityLog[0]?.text).toContain('同意交易');
         expect(core.activityLog[0]?.text).toContain('使用狗');
 
         const secondDogTrade = BetrayalDomain.validate(
@@ -2722,6 +3301,9 @@ describe('Betrayal first scenario runtime', () => {
             useDog: true,
             targetPlayerId: '1',
             cardIds: ['medical-kit'],
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: true,
         });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 

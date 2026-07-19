@@ -36,10 +36,12 @@ import {
   getMovePath,
   getStraightLinePath,
   findUnitPositionByInstanceId,
+  calculatePushPullPosition,
   normalizeUnitBoosts,
   HAND_SIZE,
 } from './helpers';
 import { rollDice, countHits, countSpecials } from '../config/dice';
+import type { DiceFaceResult } from '../config/dice';
 import { createDeckByFactionId } from '../config/factions';
 import { buildGameDeckFromCustom } from '../config/deckBuilder';
 import {
@@ -132,6 +134,74 @@ export function executeCommand(
   const payload = command.payload as Record<string, unknown>;
   const timestamp = typeof command.timestamp === 'number' ? command.timestamp : 0;
 
+  if (command.type === SW_COMMANDS.RESOLVE_PENDING_ATTACK) {
+    const pending = core.pendingAttackRoll;
+    const choice = payload.choice as 'reroll' | 'keep' | undefined;
+    if (!pending || pending.playerId !== playerId || (choice !== 'reroll' && choice !== 'keep')) {
+      return [];
+    }
+
+    const chargeEvents: GameEvent[] = [];
+    let resumedCore = core;
+    let diceResults = pending.diceResults;
+    if (choice === 'reroll') {
+      const summoner = getSummoner(core, playerId);
+      if (!summoner || normalizeUnitBoosts(summoner.boosts) < 1) return [];
+      const chargeEvent: GameEvent = {
+        type: SW_EVENTS.UNIT_CHARGED,
+        payload: {
+          position: summoner.position,
+          delta: -1,
+          sourceAbilityId: 'shouren_encourage',
+        },
+        timestamp,
+      };
+      chargeEvents.push(chargeEvent);
+      resumedCore = reduceEvent(resumedCore, chargeEvent);
+      diceResults = rollDice(pending.diceCount, () => random.random());
+    }
+
+    if (pending.kind === 'ability' && pending.abilityId) {
+      return [
+        ...chargeEvents,
+        {
+          type: SW_EVENTS.ABILITY_ROLL_RESOLVED,
+          payload: { playerId, abilityId: pending.abilityId },
+          timestamp,
+        },
+        createAbilityTriggeredEvent(
+          `${pending.abilityId}_roll`,
+          pending.attackerId,
+          pending.attacker,
+          timestamp,
+          {
+            targetPosition: pending.target,
+            diceResults,
+            specialCount: countSpecials(diceResults),
+          },
+        ),
+      ];
+    }
+
+    const attackEvents = executeCommand(
+      { ...state, core: resumedCore },
+      {
+        type: SW_COMMANDS.DECLARE_ATTACK,
+        payload: {
+          attacker: pending.attacker,
+          target: pending.target,
+          resolvedDiceResults: diceResults,
+          resolvedBeforeAttackSpecialCountsAsMelee: pending.beforeAttackSpecialCountsAsMelee,
+          skipEncourage: true,
+        },
+        playerId,
+        timestamp,
+      },
+      random,
+    );
+    return [...chargeEvents, ...attackEvents];
+  }
+
   switch (command.type) {
     case SW_COMMANDS.SELECT_UNIT: {
       events.push({
@@ -200,6 +270,15 @@ export function executeCommand(
           payload: { playerId, cardId, position: summonPosition, card: unitCard },
           timestamp,
         });
+
+        if ((unitCard.abilities ?? []).includes('shouren_bloody_rush')) {
+          events.push(createAbilityTriggeredEvent(
+            'shouren_bloody_rush',
+            cardId,
+            summonPosition,
+            timestamp,
+          ));
+        }
 
         // 聚能（gather_power）：召唤后充能
         if ((unitCard.abilities ?? []).includes('gather_power')) {
@@ -346,6 +425,15 @@ export function executeCommand(
         // afterMove 技能自动触发（模式与 afterAttack 相同）
         // ================================================================
         if (unit.owner === playerId) {
+          // 恢复：格鲁纳克移动后若尚未充能，则获得 1 点充能。
+          if (unitAbilities.includes('shouren_recover') && normalizeUnitBoosts(unit.boosts) === 0) {
+            events.push({
+              type: SW_EVENTS.UNIT_CHARGED,
+              payload: { position: to, delta: 1, sourceAbilityId: 'shouren_recover' },
+              timestamp,
+            });
+          }
+
           // 启悟（inspire）：无需选择，自动充能相邻友方
           if (unitAbilities.includes('inspire')) {
             const adjDirs = [
@@ -394,10 +482,12 @@ export function executeCommand(
       const attacker = payload.attacker as CellCoord;
       const target = payload.target as CellCoord;
       let attackerUnit = getUnitAt(core, attacker);
+      const consumedExtraAttackSource = attackerUnit?.extraAttackSources?.[0];
       let workingCore = core;
       let beforeAttackBonus = 0;
       const beforeAttackMultiplier = 1;
-      let beforeAttackSpecialCountsAsMelee = false; // life_drain：special 标记也算近战命中
+      let beforeAttackSpecialCountsAsMelee = payload.resolvedBeforeAttackSpecialCountsAsMelee === true;
+      const resolvedDiceResults = payload.resolvedDiceResults as DiceFaceResult[] | undefined;
       const rawBeforeAttack = payload.beforeAttack as
         | { abilityId: string; targetUnitId?: string; targetCardId?: string; discardCardIds?: string[] }
         | Array<{ abilityId: string; targetUnitId?: string; targetCardId?: string; discardCardIds?: string[] }>
@@ -552,7 +642,7 @@ export function executeCommand(
         const attackerAbilities = getUnitAbilities(attackerUnit, workingCore);
 
         // 神圣护盾：科琳3格内友方城塞单位被攻击时，投2骰减少攻击方骰子数（战力-1）
-        if (targetCell?.unit && isFortressUnit(targetCell.unit.card)) {
+        if (!resolvedDiceResults && targetCell?.unit && isFortressUnit(targetCell.unit.card)) {
           const targetOwner = targetCell.unit.owner;
           for (let row = 0; row < BOARD_ROWS; row++) {
             for (let col = 0; col < BOARD_COLS; col++) {
@@ -593,8 +683,50 @@ export function executeCommand(
           }
         }
 
-        const diceResults = rollDice(effectiveStrength, () => random.random());
+        const diceResults = resolvedDiceResults ?? rollDice(effectiveStrength, () => random.random());
+        if (resolvedDiceResults) effectiveStrength = resolvedDiceResults.length;
+
+        const encourageSummoner = getSummoner(workingCore, playerId);
+        const canEncourage = payload.skipEncourage !== true
+          && !!encourageSummoner
+          && normalizeUnitBoosts(encourageSummoner.boosts) > 0
+          && getUnitAbilities(encourageSummoner, workingCore).includes('shouren_encourage')
+          && manhattanDistance(encourageSummoner.position, attacker) <= 3;
+        if (canEncourage) {
+          events.push({
+            type: SW_EVENTS.ATTACK_ROLL_PENDING,
+            payload: {
+              playerId,
+              attacker,
+              target,
+              attackerId: attackerUnit.instanceId,
+              attackType,
+              diceCount: effectiveStrength,
+              baseStrength: attackerUnit.card.strength,
+              diceResults,
+              beforeAttackSpecialCountsAsMelee,
+            },
+            timestamp,
+          });
+          break;
+        }
+
         let hits = countHits(diceResults, attackType);
+
+        // 狂乱打击：雄科以特殊标记数量替代通常的攻击类型标记数量。
+        if (attackerAbilities.includes('shouren_frenzy_strike')) {
+          hits = countSpecials(diceResults);
+        }
+
+        // 北方魔法：冰霜萨满若没有掷出特殊标记，则本次攻击不造成伤害。
+        if (attackerAbilities.includes('shouren_northern_magic') && countSpecials(diceResults) === 0) {
+          hits = 0;
+        }
+
+        // 迟钝：粉碎者被攻击时，每个特殊标记令其额外受到 1 点伤害。
+        if (targetCell?.unit && getUnitAbilities(targetCell.unit, workingCore).includes('shouren_slow')) {
+          hits += countSpecials(diceResults);
+        }
 
         // 吸取生命：special 标记也算近战命中（1个）
         if (beforeAttackSpecialCountsAsMelee && attackType === 'melee') {
@@ -872,6 +1004,48 @@ export function executeCommand(
             });
           }
         }
+
+        if (attackerAbilities.includes('shouren_brute_impact') && hits > 0 && targetCell?.unit) {
+          const bruteDestination = calculatePushPullPosition(workingCore, target, attacker, 1, 'push');
+          if (bruteDestination) {
+            events.push(createAbilityTriggeredEvent(
+              'shouren_brute_impact',
+              attackerUnit.instanceId,
+              attacker,
+              timestamp,
+              {
+                targetPosition: target,
+                targetUnitId: targetCell.unit.instanceId,
+                newPosition: bruteDestination,
+                damage: hits,
+              },
+            ));
+          }
+        }
+
+        const recklessSpecialCount = countSpecials(diceResults);
+        if (attackerAbilities.includes('shouren_reckless_strike')
+          && hits > 0
+          && recklessSpecialCount <= 1) {
+          events.push(createAbilityTriggeredEvent(
+            'shouren_reckless_strike',
+            attackerUnit.instanceId,
+            attacker,
+            timestamp,
+            { damage: hits, specialCount: recklessSpecialCount },
+          ));
+          events.push({
+            type: SW_EVENTS.UNIT_DAMAGED,
+            payload: {
+              position: attacker,
+              damage: hits,
+              reason: 'shouren_reckless_strike',
+              sourceAbilityId: 'shouren_reckless_strike',
+              sourcePlayerId: playerId,
+            },
+            timestamp,
+          });
+        }
         
         // 狱火铸剑诅咒效果：攻击后对自己造成等于所掷出⚔（斧🪓special）数量的伤害
         if (hasHellfireBlade(attackerUnit)) {
@@ -883,6 +1057,23 @@ export function executeCommand(
             events.push({
               type: SW_EVENTS.UNIT_DAMAGED,
               payload: { position: attacker, damage: specialHits, reason: 'curse', sourcePlayerId: playerId },
+              timestamp,
+            });
+          }
+        }
+
+        // 鲜血羁绊：拉格诺攻击后，按本次最终骰面的特殊标记数量给召唤师充能。
+        if (attackerAbilities.includes('shouren_blood_bond')) {
+          const specialCount = countSpecials(diceResults);
+          const ownerSummoner = getSummoner(workingCore, playerId);
+          if (specialCount > 0 && ownerSummoner) {
+            events.push({
+              type: SW_EVENTS.UNIT_CHARGED,
+              payload: {
+                position: ownerSummoner.position,
+                delta: specialCount,
+                sourceAbilityId: 'shouren_blood_bond',
+              },
               timestamp,
             });
           }
@@ -904,6 +1095,64 @@ export function executeCommand(
         // 这里不能再手动补发 telekinesis / mind_transmission，否则会生成重复交互。
         const afterAttackEvents = triggerAbilities('afterAttack', afterAttackCtx);
         events.push(...afterAttackEvents);
+        const attackedEnemyCard = (targetCell?.unit?.owner !== undefined
+          && targetCell.unit.owner !== attackerUnit.owner)
+          || (targetCell?.structure?.owner !== undefined
+            && targetCell.structure.owner !== attackerUnit.owner);
+        if (attackerAbilities.includes('shouren_berserk')
+          && consumedExtraAttackSource !== 'shouren_berserk'
+          && attackedEnemyCard
+          && manhattanDistance(attacker, target) === 1) {
+          const berserkDice = rollDice(1, () => random.random());
+          const berserkSummoner = getSummoner(workingCore, playerId);
+          const canEncourageBerserk = !!berserkSummoner
+            && normalizeUnitBoosts(berserkSummoner.boosts) > 0
+            && getUnitAbilities(berserkSummoner, workingCore).includes('shouren_encourage')
+            && manhattanDistance(berserkSummoner.position, attacker) <= 3;
+          if (canEncourageBerserk) {
+            events.push({
+              type: SW_EVENTS.ATTACK_ROLL_PENDING,
+              payload: {
+                kind: 'ability',
+                abilityId: 'shouren_berserk',
+                playerId,
+                attacker,
+                target,
+                attackerId: attackerUnit.instanceId,
+                attackType: 'melee',
+                diceCount: 1,
+                baseStrength: 1,
+                diceResults: berserkDice,
+                beforeAttackSpecialCountsAsMelee: false,
+              },
+              timestamp,
+            });
+          } else {
+            events.push(createAbilityTriggeredEvent(
+              'shouren_berserk_roll',
+              attackerUnit.instanceId,
+              attacker,
+              timestamp,
+              {
+                targetPosition: target,
+                diceResults: berserkDice,
+                specialCount: countSpecials(berserkDice),
+              },
+            ));
+          }
+        }
+        if (attackerAbilities.includes('shouren_primal_fury')
+          && consumedExtraAttackSource !== 'shouren_primal_fury'
+          && attackedEnemyCard
+          && manhattanDistance(attacker, target) === 1) {
+          events.push(createAbilityTriggeredEvent(
+            'shouren_primal_fury',
+            attackerUnit.instanceId,
+            attacker,
+            timestamp,
+            { targetPosition: target },
+          ));
+        }
         if (shouldDestroyAfterMoguCommandAttack && attackerUnit) {
           events.push(...emitDestroyWithTriggers(workingCore, attackerUnit, attacker, {
             playerId,

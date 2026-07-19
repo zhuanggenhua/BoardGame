@@ -241,6 +241,7 @@ Shader 包装组件（如 `SummonShaderEffect`、`VortexShaderEffect`）在模�
 
 - **新游戏接入受击反馈**：直接使用 `useImpactFeedback()`，一次调用获得全套状态，把 `shake`/`hitStop`/`flash` 分别传给 `ShakeContainer`/`HitStopContainer`/`DamageFlash`。
 - **可选效果**：`useImpactFeedback({ shake: true, hitStop: true, flash: true })` 按需开关。
+- **禁止游戏内平行实现**：受击反馈不得在单个 `Board.tsx` 或游戏专属 CSS 中临时自创“斜切 / 红闪 / 抖动”整套平行特效；游戏层只允许通过 props 调整通用组件的颜色、时长、强度、挂载位置和业务飘字。若现有通用组件不能满足需求，先扩展 `src/components/common/animations/` 或 FX 注册，而不是复制一套新动画。
 - **禁止手动管理多套 useState + setTimeout**：受击反馈状态必须通过 `useImpactFeedback` 或其原子 hooks 管理，禁止在 Board.tsx 中手写 `useState<{ active, damage }>` + `setTimeout` 重置逻辑。
 
 ```tsx

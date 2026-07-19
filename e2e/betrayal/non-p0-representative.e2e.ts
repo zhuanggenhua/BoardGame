@@ -612,6 +612,19 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
         await expectVisiblePhysicalDiceBox(attackRollPanel);
         await waitForPhysicalDiceSettled(attackRollPanel);
+
+        const ringImpact = page.getByTestId('betrayal-attack-impact-map-2');
+        await expect(ringImpact).toBeVisible();
+        await expect(ringImpact).toHaveAttribute('data-attack-impact-active', 'true');
+        await expect(ringImpact).toHaveAttribute('data-attack-impact-kind', 'mental');
+        await expect(page.getByTestId('betrayal-attack-impact-flash-map-2')).toBeVisible();
+        const ringImpactSlash = page.getByTestId('betrayal-attack-impact-slash-map-2');
+        await expect(ringImpactSlash).toBeVisible();
+        await expect(ringImpactSlash.locator('canvas')).toBeVisible();
+        const ringImpactTrait = ringImpact.locator('[data-attack-impact-trait="knowledge"], [data-attack-impact-trait="sanity"]').first();
+        await expect(ringImpactTrait).toBeVisible();
+        await expect(ringImpactTrait).toContainText(/知识|神志/);
+        await saveScreenshot(page, RING_ATTACK_RESULT_SCREENSHOT);
         await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 4 });
         await saveScreenshot(page, RING_ATTACK_DICE_SCREENSHOT);
 
@@ -631,9 +644,12 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
             beforeAttack.traitorTraits.knowledge + beforeAttack.traitorTraits.sanity,
         );
         expect(afterAttack.attackerTraits).toEqual(beforeAttack.attackerTraits);
-        await saveScreenshot(page, RING_ATTACK_RESULT_SCREENSHOT);
 
         await expect(page.getByTestId('betrayal-attack-weapon-ring')).toHaveCount(0);
+        const ringAttackRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
+        await expect(ringAttackRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        await ringAttackRollBackdrop.click({ position: { x: 16, y: 16 } });
+        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await expect(page.getByTestId('betrayal-board')).toBeVisible();
         await saveScreenshot(page, RING_ATTACK_SETTLED_SCREENSHOT);
@@ -694,6 +710,19 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '6');
         await expectVisiblePhysicalDiceBox(attackRollPanel);
         await waitForPhysicalDiceSettled(attackRollPanel);
+
+        const daggerImpact = page.getByTestId('betrayal-attack-impact-map-2');
+        await expect(daggerImpact).toBeVisible();
+        await expect(daggerImpact).toHaveAttribute('data-attack-impact-active', 'true');
+        await expect(daggerImpact).toHaveAttribute('data-attack-impact-kind', 'physical');
+        await expect(page.getByTestId('betrayal-attack-impact-flash-map-2')).toBeVisible();
+        const daggerImpactSlash = page.getByTestId('betrayal-attack-impact-slash-map-2');
+        await expect(daggerImpactSlash).toBeVisible();
+        await expect(daggerImpactSlash.locator('canvas')).toBeVisible();
+        const daggerImpactTrait = daggerImpact.locator('[data-attack-impact-trait="might"], [data-attack-impact-trait="speed"]').first();
+        await expect(daggerImpactTrait).toBeVisible();
+        await expect(daggerImpactTrait).toContainText(/力量|速度/);
+        await saveScreenshot(page, DAGGER_ATTACK_RESULT_SCREENSHOT);
         await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 6 });
         await saveScreenshot(page, DAGGER_ATTACK_DICE_SCREENSHOT);
 
@@ -715,9 +744,12 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         expect(afterAttack.traitorTraits.knowledge + afterAttack.traitorTraits.sanity).toBe(
             beforeAttack.traitorTraits.knowledge + beforeAttack.traitorTraits.sanity,
         );
-        await saveScreenshot(page, DAGGER_ATTACK_RESULT_SCREENSHOT);
 
         await expect(page.getByTestId('betrayal-attack-weapon-dagger')).toHaveCount(0);
+        const daggerAttackRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
+        await expect(daggerAttackRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
+        await daggerAttackRollBackdrop.click({ position: { x: 16, y: 16 } });
+        await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await expect(page.getByTestId('betrayal-board')).toBeVisible();

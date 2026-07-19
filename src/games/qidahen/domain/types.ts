@@ -77,6 +77,11 @@ export interface QidahenScenarioVoteState {
     votes: Record<PlayerId, QidahenScenarioId | null>;
 }
 
+export interface QidahenFactionSelectionState {
+    availableFactionIds: QidahenFactionId[];
+    selections: Partial<Record<PlayerId, QidahenFactionId>>;
+}
+
 export interface QidahenFactionState {
     id: QidahenFactionId;
     playerId: PlayerId;
@@ -897,6 +902,7 @@ export interface QidahenRegionFocusState {
 export interface QidahenCore {
     playerIds: PlayerId[];
     scenarioVote: QidahenScenarioVoteState | null;
+    factionSelection: QidahenFactionSelectionState | null;
     scenarioId: QidahenScenarioId;
     scenarioLabel: string;
     pendingScenarioCharacterChoices: QidahenPendingScenarioCharacterChoice[];
@@ -1226,8 +1232,15 @@ interface CastScenarioVoteCommand extends Command<'CAST_SCENARIO_VOTE'> {
     };
 }
 
+interface SelectFactionCommand extends Command<'SELECT_FACTION'> {
+    payload: {
+        factionId: QidahenFactionId;
+    };
+}
+
 export type QidahenCommand =
     | CastScenarioVoteCommand
+    | SelectFactionCommand
     | SelectRegionCommand
     | ConfirmPreviewActionCommand
     | CancelPreviewActionCommand
@@ -1566,8 +1579,16 @@ interface ScenarioVoteCastEvent extends GameEvent<'SCENARIO_VOTE_CAST'> {
     };
 }
 
+interface FactionSelectedEvent extends GameEvent<'FACTION_SELECTED'> {
+    payload: {
+        playerId: PlayerId;
+        factionId: QidahenFactionId;
+    };
+}
+
 export type QidahenEvent =
     | ScenarioVoteCastEvent
+    | FactionSelectedEvent
     | RegionSelectedEvent
     | PreviewActionConfirmedEvent
     | PreviewActionCancelledEvent
@@ -1609,6 +1630,7 @@ export type QidahenEvent =
 
 export interface QidahenCommandMap extends Record<string, unknown> {
     CAST_SCENARIO_VOTE: CastScenarioVoteCommand['payload'];
+    SELECT_FACTION: SelectFactionCommand['payload'];
     SELECT_REGION: SelectRegionCommand['payload'];
     CONFIRM_PREVIEW_ACTION: ConfirmPreviewActionCommand['payload'];
     CANCEL_PREVIEW_ACTION: CancelPreviewActionCommand['payload'];

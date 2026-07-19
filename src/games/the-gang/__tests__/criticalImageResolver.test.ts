@@ -35,8 +35,11 @@ describe('theGangCriticalImageResolver', () => {
         const setupResult = theGangCriticalImageResolver(undefined);
         expect(setupResult.critical).toEqual(expect.arrayContaining([
             'the-gang/cards/card-back',
+            'the-gang/chips/round-1-white-0',
             'the-gang/chips/round-1-white-1',
+            'the-gang/chips/round-1-white-8',
             'the-gang/chips/round-4-red-6',
+            'the-gang/chips/round-4-red-8',
         ]));
         expect(setupResult.warm).toContain('the-gang/cards/ace-spades');
 

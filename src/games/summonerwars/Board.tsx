@@ -93,6 +93,7 @@ import { shouldBlockHandInteraction } from './ui/handInteractionBusy';
 import { swAttackDebugLog } from './ui/attackDebug';
 import { isTestEnvironment } from '../../engine/testing/environment';
 import { useSummonerWarsCombatEffectPreference } from './ui/useSummonerWarsCombatEffectPreference';
+import { countHits } from './config/dice';
 
 type Props = GameBoardProps<SummonerWarsCore>;
 
@@ -412,6 +413,9 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       options: (data.options ?? []) as PromptOption[],
     } satisfies SwSimpleChoiceInteraction;
   }, [currentInteraction, myPlayerId]);
+  const pendingEncourage = swInteraction?.type === 'shouren_encourage'
+    ? core.pendingAttackRoll
+    : undefined;
   const afterAttackAbilityMode = useMemo<AfterAttackAbilityModeState | null>(() => {
     return deriveAfterAttackAbilityMode(swInteraction);
   }, [swInteraction]);
@@ -1577,14 +1581,25 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
               {/* 骰子结果浮层 */}
               <DiceResultOverlay
-                results={diceResult?.results ?? null}
-                attackType={diceResult?.attackType ?? null}
-                hits={diceResult?.hits ?? 0}
+                results={pendingEncourage?.diceResults ?? diceResult?.results ?? null}
+                attackType={pendingEncourage?.attackType ?? diceResult?.attackType ?? null}
+                hits={pendingEncourage
+                  ? countHits(pendingEncourage.diceResults, pendingEncourage.attackType)
+                  : diceResult?.hits ?? 0}
                 damageReduced={diceResult?.damageReduced}
                 isOpponentAttack={diceResult?.isOpponentAttack ?? false}
                 duration={DICE_RESULT_OVERLAY_DURATION_MS}
-                onRevealComplete={() => startPendingAttackVisual('dice-reveal-complete')}
-                onClose={handleCloseDiceResult}
+                pendingDecision={!!pendingEncourage}
+                onReroll={pendingEncourage ? () => dispatch(INTERACTION_COMMANDS.RESPOND, {
+                  interactionId: swInteraction!.id,
+                  optionId: 'reroll',
+                }) : undefined}
+                onKeep={pendingEncourage ? () => dispatch(INTERACTION_COMMANDS.RESPOND, {
+                  interactionId: swInteraction!.id,
+                  optionId: 'keep',
+                }) : undefined}
+                onRevealComplete={pendingEncourage ? undefined : () => startPendingAttackVisual('dice-reveal-complete')}
+                onClose={pendingEncourage ? undefined : handleCloseDiceResult}
               />
 
               {/* 结束页面遮罩（视觉序列进行中延迟显示，确保死亡动画播完） */}

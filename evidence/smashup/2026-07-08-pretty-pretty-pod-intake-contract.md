@@ -63,7 +63,7 @@
 ### Mythic Horses POD
 
 - `mythic_horses_seastar_pod`：同基地已有其他己方随从时授予额外随从额度。
-- `mythic_horses_super_future_space_armor_power_pod`：自动给同基地有友军的己方随从临时 `+2`，不再弹基础版单目标 prompt。
+- `mythic_horses_super_future_space_armor_power_pod`：自动给同基地有友军的己方随从临时 `+2`，不弹单目标 prompt，也不授予牌面未写的销毁/移动/影响保护。
 - `mythic_horses_sharing_power_pod`：只在回合结束、来源基地有至少两个己方随从时抽 1；已阻断基础版回合开始触发的 POD 自动映射。
 - `mythic_horses_starlyte_pod`：自身按同基地其他己方随从数获得力量；已阻断基础版 Starlyte 给其他己方随从加成的 POD 继承。
 - `mythic_horses_encouragement_power_pod`：附着宿主按同基地其他己方随从数获得力量；已阻断基础版 Encouragement 只给 `+1` 的 POD 继承。

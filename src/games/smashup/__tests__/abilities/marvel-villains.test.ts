@@ -513,10 +513,35 @@ describe('漫威反派四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 41,
         });
-        expect(vulture.events[0]).toMatchObject({
+        const singleVulturePrompt = getSimpleChoicePrompt(vulture.matchState!, 'sinister_six_vulture');
+        const singleVultureOptions = getPromptOptions(singleVulturePrompt);
+        expect(singleVultureOptions.some(option => option.value?.skip === true)).toBe(true);
+        expect(singleVultureOptions.some(option => option.value?.cardUid === 'modifier')).toBe(true);
+
+        const skippedVulture = respondToPromptOption(
+            vulture.matchState!,
+            option => option.value?.skip === true,
+            '跳过秃鹫单候选',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(skippedVulture.events).not.toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.CARD_TO_DECK_TOP }),
+        ]));
+        expect(skippedVulture.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['modifier']);
+        expect(skippedVulture.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-a']);
+
+        const selectedSingleVulture = respondToPromptOption(
+            vulture.matchState!,
+            option => option.value?.cardUid === 'modifier',
+            '秃鹫选择单候选基地修正',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedSingleVulture.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.CARD_TO_DECK_TOP,
-            payload: { cardUid: 'modifier', defId: 'sinister_six_my_master_plan', ownerId: '0' },
-        });
+            payload: expect.objectContaining({ cardUid: 'modifier', defId: 'sinister_six_my_master_plan', ownerId: '0' }),
+        }));
 
         const multiDiscardCore = makeState({
             players: {

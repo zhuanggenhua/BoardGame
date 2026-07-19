@@ -1,50 +1,56 @@
+import { getChipForHandSlot } from './chips';
 import { compareHandStrength, evaluateBestTheGangHand } from './poker';
-import type { HeistRecord, ShowdownPlayerResult, TheGangCore } from './types';
+import type { HeistRecord, ShowdownPlayerResult, TheGangCore, TheGangHandSlot } from './types';
+
+const resultKey = (result: ShowdownPlayerResult): string => (
+    result.handSlot ? `${result.playerId}:${result.handSlot}` : result.playerId
+);
+
+const buildResultForHand = (
+    core: TheGangCore,
+    playerId: string,
+    handSlot: TheGangHandSlot,
+): ShowdownPlayerResult => {
+    const player = core.players[playerId];
+    const playerCommunity = player.communityCards ?? core.communityCards;
+    const boardCards = [
+        ...playerCommunity,
+        ...player.flashlightCards,
+    ];
+    const pocketCards = handSlot === 'top'
+        ? [...player.pocketCards, ...player.nightVisionCards]
+        : [...(player.secondaryPocketCards ?? [])];
+    const evaluated = evaluateBestTheGangHand(pocketCards, boardCards, {
+        rulesConfig: core.rules.config,
+        blankedRank: core.rules.blankedRank,
+    });
+
+    return {
+        playerId,
+        handSlot: core.rules.config.twoHand ? handSlot : undefined,
+        chip: getChipForHandSlot(core, playerId, handSlot) ?? 0,
+        strength: evaluated.strength,
+        pocketCards,
+        bestCards: evaluated.cards,
+        winningHandSlot: core.rules.config.twoHand ? handSlot : undefined,
+    };
+};
 
 export function buildShowdownResults(core: TheGangCore): ShowdownPlayerResult[] {
-    return core.playerIds.map((playerId) => {
-        const player = core.players[playerId];
-        const playerCommunity = player.communityCards ?? core.communityCards;
-        const handCards = [
-            ...player.pocketCards,
-            ...player.nightVisionCards,
-        ];
-        const secondaryHandCards = player.secondaryPocketCards ?? [];
-        const boardCards = [
-            ...playerCommunity,
-            ...player.flashlightCards,
-        ];
-        const evaluated = evaluateBestTheGangHand(handCards, boardCards, {
-            rulesConfig: core.rules.config,
-            blankedRank: core.rules.blankedRank,
-        });
-        const secondaryEvaluated = secondaryHandCards.length > 0
-            ? evaluateBestTheGangHand(secondaryHandCards, boardCards, {
-                rulesConfig: core.rules.config,
-                blankedRank: core.rules.blankedRank,
-            })
-            : undefined;
-        const secondaryWins = secondaryEvaluated
-            ? compareHandStrength(secondaryEvaluated.strength, evaluated.strength) > 0
-            : false;
-        const winningEvaluation = secondaryWins && secondaryEvaluated ? secondaryEvaluated : evaluated;
-
-        return {
-            playerId,
-            chip: core.currentRoundChips[playerId],
-            strength: winningEvaluation.strength,
-            pocketCards: handCards,
-            secondaryPocketCards: secondaryHandCards.length > 0 ? secondaryHandCards : undefined,
-            bestCards: winningEvaluation.cards,
-            winningHandSlot: secondaryHandCards.length > 0 ? (secondaryWins ? 'bottom' : 'top') : undefined,
-        };
-    });
+    return core.playerIds.flatMap((playerId) => (
+        core.rules.config.twoHand
+            ? [
+                buildResultForHand(core, playerId, 'top'),
+                buildResultForHand(core, playerId, 'bottom'),
+            ]
+            : [buildResultForHand(core, playerId, 'top')]
+    ));
 }
 
 export function isChipOrderCorrect(results: ShowdownPlayerResult[]): boolean {
     for (const left of results) {
         for (const right of results) {
-            if (left.playerId === right.playerId) continue;
+            if (resultKey(left) === resultKey(right)) continue;
             const chipDelta = left.chip - right.chip;
             const strengthDelta = compareHandStrength(left.strength, right.strength);
             if (chipDelta < 0 && strengthDelta > 0) return false;

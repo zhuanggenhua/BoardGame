@@ -101,7 +101,7 @@ describe('Mythic Horses abilities', () => {
         expect(used.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1']);
     });
 
-    it('mythic_horses_super_future_space_armor_power 给目标 +2 并只让其免疫其他玩家卡牌效果', () => {
+    it('mythic_horses_super_future_space_armor_power 给同基地有友军的每个己方随从 +2', () => {
         const core = makeState({
             turnNumber: 4,
             players: {
@@ -110,11 +110,22 @@ describe('Mythic Horses abilities', () => {
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [{
-                defId: 'base_a',
-                minions: [makeMinion('target-1', 'robot_microbot_alpha', '0', 3)],
-                ongoingActions: [],
-            }],
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('friend-1', 'test_friend_one', '0', 2),
+                        makeMinion('friend-2', 'test_friend_two', '0', 3),
+                        makeMinion('enemy-1', 'test_enemy', '1', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('lonely-1', 'test_lonely', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
         });
 
         const played = runCommand(
@@ -123,28 +134,25 @@ describe('Mythic Horses abilities', () => {
             defaultTestRandom,
         );
         expect(played.success, played.error).toBe(true);
+        expectNoPrompt(played.finalState);
 
-        const prompt = getSimpleChoicePrompt(played.finalState, 'mythic_horses_super_future_space_armor_power');
-        const target = getPromptOption(prompt, option => option.value?.minionUid === 'target-1', 'armor target');
-        const resolved = respondToPrompt(played.finalState, target.id, '0', defaultTestRandom);
+        const friend1 = played.finalState.core.bases[0].minions.find(minion => minion.uid === 'friend-1')!;
+        const friend2 = played.finalState.core.bases[0].minions.find(minion => minion.uid === 'friend-2')!;
+        const enemy = played.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-1')!;
+        const lonely = played.finalState.core.bases[1].minions.find(minion => minion.uid === 'lonely-1')!;
+        expect(getEffectivePower(played.finalState.core, friend1, 0)).toBe(4);
+        expect(getEffectivePower(played.finalState.core, friend2, 0)).toBe(5);
+        expect(getEffectivePower(played.finalState.core, enemy, 0)).toBe(3);
+        expect(getEffectivePower(played.finalState.core, lonely, 1)).toBe(2);
+        expect(isMinionProtected(played.finalState.core, friend1, 0, '1', 'destroy')).toBe(false);
 
-        const protectedMinion = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'target-1');
-        expect(protectedMinion).toBeDefined();
-        expect(getEffectivePower(resolved.finalState.core, protectedMinion!, 0)).toBe(5);
-        expect(isMinionProtected(resolved.finalState.core, protectedMinion!, 0, '1', 'destroy')).toBe(true);
-        expect(isMinionProtected(resolved.finalState.core, protectedMinion!, 0, '1', 'move')).toBe(true);
-        expect(isMinionProtected(resolved.finalState.core, protectedMinion!, 0, '1', 'affect')).toBe(true);
-        expect(isMinionProtected(resolved.finalState.core, protectedMinion!, 0, '1', 'action')).toBe(true);
-        expect(isMinionProtected(resolved.finalState.core, protectedMinion!, 0, '0', 'destroy')).toBe(false);
-
-        const nextTurn = reduce(resolved.finalState.core, {
+        const nextTurn = reduce(played.finalState.core, {
             type: SU_EVENTS.TURN_STARTED,
             payload: { playerId: '1', turnNumber: 5 },
             timestamp: 2000,
         } as any);
-        const expired = nextTurn.bases[0].minions.find(minion => minion.uid === 'target-1');
-        expect(getEffectivePower(nextTurn, expired!, 0)).toBe(3);
-        expect(isMinionProtected(nextTurn, expired!, 0, '1', 'destroy')).toBe(false);
+        const expired = nextTurn.bases[0].minions.find(minion => minion.uid === 'friend-1');
+        expect(getEffectivePower(nextTurn, expired!, 0)).toBe(2);
     });
 
     it('mythic_horses_teaching_power 计分前按己方随从数展示牌库顶并可打出展示随从', () => {
@@ -479,7 +487,7 @@ describe('Mythic Horses abilities', () => {
         expect(played.finalState.core.players['0'].minionLimit).toBe(2);
     });
 
-    it('mythic_horses_super_future_space_armor_power_pod 自动给有同基地友军的己方随从 +2，不弹单目标 prompt', () => {
+    it('mythic_horses_super_future_space_armor_power_pod 自动给有同基地友军的己方随从 +2，且不附加牌面外保护', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -521,7 +529,7 @@ describe('Mythic Horses abilities', () => {
         expect(getEffectivePower(played.finalState.core, friend2, 0)).toBe(4);
         expect(getEffectivePower(played.finalState.core, enemy, 0)).toBe(3);
         expect(getEffectivePower(played.finalState.core, lonely, 1)).toBe(2);
-        expect(isMinionProtected(played.finalState.core, friend1, 0, '1', 'destroy')).toBe(true);
+        expect(isMinionProtected(played.finalState.core, friend1, 0, '1', 'destroy')).toBe(false);
     });
 
     it('mythic_horses_sharing_power_pod 在回合结束且该基地有两个己方随从时由拥有者抽 1', () => {

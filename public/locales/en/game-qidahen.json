@@ -95,7 +95,9 @@
       "selectedTacticCard": "Selected tactic card \"{{card}}\"",
       "tacticCardHint": "Click Play Tactic Card to confirm. Click this hand card again to cancel the selection.",
       "confirmTacticCard": "Play Tactic Card",
-      "cancelTacticCard": "Cancel"
+      "cancelTacticCard": "Cancel",
+      "raidPaymentTarget": "Target: {{targetRegionName}} · {{resolutionHint}}",
+      "raidPaymentInvalidTarget": "This region cannot raid. Choose a highlighted legal target on the map."
     },
     "player": {
       "armamentsUndeveloped": "Not developed",
@@ -215,16 +217,23 @@
       "gaoDi": {
         "summary": "Choose a dispatch target · Troops up to {{maxTroops}} · Population up to {{maxPopulation}}",
         "hint": "Discard 1 card, then choose a target.",
+        "currentTarget": "Current target: {{targetRegionName}}",
+        "selectMapTarget": "Choose a target region on the map",
         "target": "{{targetRegionName}} · {{type}} {{amount}}",
         "typeTroops": "Troops",
         "typePopulation": "Population",
         "amountTroops": "{{amount}} troop(s)",
         "amountPopulation": "{{amount}} population",
+        "confirmDispatch": "Confirm dispatch",
         "skip": "Skip Gao Di dispatch"
       },
       "internalDispatch": {
         "summary": "Choose a dispatch target · Up to {{maxTroops}} troop(s)",
-        "committedTroops": "Send {{troops}}"
+        "currentTarget": "Current target: {{targetRegionName}}",
+        "selectMapTarget": "Choose a target region on the map",
+        "committedTroops": "Send {{troops}}",
+        "confirmDispatch": "Confirm dispatch",
+        "cancelSelection": "Cancel selection"
       },
       "recruit": {
         "title": "Recruit troops",
@@ -268,7 +277,16 @@
         "defenderCasualtyLabel": "Defender losses"
       },
       "postBattle": {
-        "summary": "{{summary}} · Commit {{committedTroops}}"
+        "summary": "{{summary}} · Commit {{committedTroops}}",
+        "modeOccupy": "Occupy",
+        "modeBesiege": "Besiege",
+        "modeWithdraw": "Withdraw",
+        "choiceCount": "{{count}} outcome(s)",
+        "occupyTitle": "Occupy options",
+        "besiegeTitle": "Besiege options",
+        "withdrawTitle": "Withdrawal route",
+        "back": "Back",
+        "confirm": "Confirm post-battle resolution"
       }
     },
     "setup": {
@@ -278,11 +296,20 @@
       "characterLabel": "Characters",
       "pickCount": "Pick {{count}} item(s) to apply",
       "pickCountAuto": "Pick {{count}} item(s) to apply",
+      "selectedCount": "Selected {{selected}} / {{count}}",
       "selectedSeal": "Selected",
       "confirmCharacter": "Pick characters",
+      "characterConfirmed": "Character choices confirmed",
+      "readyToConfirm": "All choices selected; ready to confirm",
+      "remainingChoices": "Choose {{count}} more item(s)",
+      "characterButtonConfirmed": "Characters confirmed",
       "armamentLabel": "Armaments",
+      "armamentEligible": "Generic armament card · {{factionName}} may choose it in this scenario",
       "confirmArmament": "Pick armaments",
+      "armamentConfirmed": "Armament choices confirmed",
+      "armamentButtonConfirmed": "Armaments confirmed",
       "waiting": "Waiting for other players to finish the setup items for their factions.",
+      "noPrivateChoice": "This faction has no setup items to choose. Waiting for other players.",
       "playerPage": "Characters and armaments",
       "tablePage": "Seat status",
       "noWaiting": "This seat has no pending setup items from other players.",
@@ -307,18 +334,37 @@
       "you": "You",
       "host": "Host",
       "pendingVote": "Waiting for host",
+      "pendingConfirm": "Pending confirmation",
       "tiebreakNote": "{{hostFactionName}} selects a scenario to move into character and armament setup.",
       "actionTitle": "This seat",
       "changeableHint": "The host has selected the scenario. Waiting for setup.",
       "selectHint": "Click a scenario book page on the left; it is adopted immediately.",
       "spectatorHint": "Non-host seats read the scenario briefing and wait for the host selection.",
       "noDraft": "No scenario selected yet",
+      "emptyPreview": "Choose a scenario card on the left to view details",
       "confirm": "Use scenario",
+      "confirmScenario": "Confirm scenario",
       "clear": "Clear selection",
       "hostSelected": "Host selected",
       "hostMayPick": "Click to use",
       "waitingHost": "Waiting for the host",
+      "waitingHostShort": "Waiting for host",
       "waitingHint": "Waiting for the host to choose a scenario."
+    },
+    "factionSelection": {
+      "eyebrow": "In-match setup",
+      "title": "Choose your faction",
+      "youConfirmed": "You confirmed",
+      "pendingConfirm": "Pending confirmation",
+      "occupiedBy": "{{playerName}} confirmed",
+      "seatFallback": "Seat {{seatNumber}}",
+      "available": "Available",
+      "draftStatus": "{{status}} {{factionName}}",
+      "confirmedStatus": "Confirmed",
+      "pendingStatus": "Pending",
+      "chooseAvailable": "Choose an unoccupied faction",
+      "confirmedCount": "Confirmed {{confirmed}} / {{total}}",
+      "confirmFaction": "Confirm faction"
     }
   },
   "battle": {

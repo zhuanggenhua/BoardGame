@@ -20,7 +20,7 @@ const pickCorrectChipByStrength = (core: TheGangCore) => {
         .sort(strengthOrder)
         .reduce<Record<string, number>>((chips, result, index) => ({
             ...chips,
-            [result.playerId]: index + 1,
+            [result.handSlot ? `${result.playerId}:${result.handSlot}` : result.playerId]: index + 1,
         }), {});
 };
 

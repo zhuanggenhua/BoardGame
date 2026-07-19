@@ -9,6 +9,14 @@ vi.mock('../../lib/feedback/clientAutoReport', () => ({
     reportClientAutoFeedbackOnce: vi.fn(async () => undefined),
 }));
 
+vi.mock('../../lib/staleChunkReloadGuard', async () => {
+    const actual = await vi.importActual<typeof import('../../lib/staleChunkReloadGuard')>('../../lib/staleChunkReloadGuard');
+    return {
+        ...actual,
+        reloadForStaleChunkOnce: vi.fn(() => true),
+    };
+});
+
 const ThrowingModalContent = () => {
     throw new Error('modal render failed');
 };
@@ -42,5 +50,18 @@ describe('HomeModalErrorBoundary', () => {
         );
 
         expect(screen.getByTestId('safe-modal-content')).toBeInTheDocument();
+    });
+
+    it('详情弹窗模块缺少导出时自动刷新一次', async () => {
+        const staleGuard = await import('../../lib/staleChunkReloadGuard');
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const boundary = new HomeModalErrorBoundary({ children: null, resetKey: 'smashup' });
+
+        boundary.componentDidCatch(
+            new Error('[stale-lazy-module] ../components/lobby/GameDetailsModal missing export GameDetailsModal'),
+            { componentStack: '\n    at Lazy' },
+        );
+
+        expect(staleGuard.reloadForStaleChunkOnce).toHaveBeenCalledWith('home-modal-error-boundary', window);
     });
 });

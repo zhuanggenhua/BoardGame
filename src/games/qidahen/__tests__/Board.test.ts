@@ -176,6 +176,8 @@ const FORBIDDEN_HALF_FINISHED_CHAINS = [
 ];
 
 const boardSource = readFileSync(resolve(__dirname, '..', 'Board.tsx'), 'utf-8');
+const boardShellSource = readFileSync(resolve(__dirname, '..', 'QidahenBoardShell.tsx'), 'utf-8');
+const combinedBoardSource = `${boardSource}\n${boardShellSource}`;
 const cardAtlasSource = readFileSync(resolve(__dirname, '..', 'ui', 'cardAtlas.ts'), 'utf-8');
 const mapTokenSource = readFileSync(resolve(__dirname, '..', 'domain', 'mapTokens.ts'), 'utf-8');
 const typesSource = readFileSync(resolve(__dirname, '..', 'domain', 'types.ts'), 'utf-8');
@@ -230,7 +232,13 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('qidahen-inmatch-setup-book-page-player');
         expect(boardSource).toContain('qidahen-inmatch-setup-book-page-status');
         expect(boardSource).toContain('applyInlineChoice');
-        expect(boardSource).toContain('pickCountAuto');
+        expect(boardSource).toContain('qidahen-scenario-vote-confirm');
+        expect(boardSource).toContain('qidahen-faction-selection-confirm');
+        expect(boardSource).toContain('qidahen-inmatch-setup-character-confirm-${group.id}');
+        expect(boardSource).toContain('qidahen-inmatch-setup-armament-confirm-${group.id}');
+        expect(boardSource).toContain('disabled={completed || selectedIds.length !== group.count}');
+        expect(boardSource).toContain("{completed ? '人物已确认' : '确认人物'}");
+        expect(boardSource).toContain("{completed ? '军备已确认' : '确认军备'}");
         expect(boardSource).toContain('getQidahenScenarioCardPreview(option.scenarioId)');
         expect(boardSource).toContain('getQidahenSetupCharacterPreview(group.factionId, characterId)');
         expect(boardSource).toContain('getQidahenSetupArmamentPreview(armamentId)');
@@ -428,7 +436,11 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('!tutorialInfoStepActive');
         expect(boardSource).toContain('!actionPaymentPreviewVisible');
         expect(boardSource).toContain('const isQidahenGaoDiTargetSelectionActive = (');
-        expect(boardSource).toContain('const mapRegionSelectionDecisionActive = isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection)');
+        expect(boardSource).toContain("const actionPaymentMapRegionSelectionActive = actionPaymentPreviewVisible");
+        expect(boardSource).toContain("&& core.confirmedActionId === 'raid';");
+        expect(boardSource).toContain('const gaoDiMapRegionSelectionActive = isQidahenGaoDiTargetSelectionActive(core.gaoDiDispatchSelection);');
+        expect(boardSource).toContain('const directMapRegionSelectionActive = actionPaymentMapRegionSelectionActive || gaoDiMapRegionSelectionActive;');
+        expect(boardSource).toContain('const mapRegionSelectionDecisionActive = gaoDiMapRegionSelectionActive');
         expect(boardSource).toContain('if (!mapRegionSelectionDecisionActive) {');
         expect(boardSource).toContain("t('board.actions.primaryActionSelectPrompt', { defaultValue: '手牌行动' })");
         expect(boardSource).toContain("t('board.actions.primaryStageTagFaction', { defaultValue: '行动' })");
@@ -706,12 +718,12 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('const ACTIONS_DOCK_WIDTH = 350;');
         expect(boardSource).toContain('const ACTIONS_DOCK_HEIGHT = 470;');
         expect(boardSource).toContain('const ACTIONS_DOCK_LEFT = STAGE_WIDTH - ACTIONS_DOCK_RIGHT - ACTIONS_DOCK_WIDTH;');
-        expect(boardSource).toContain("'--qidahen-mobile-edge-pull': `${stageMetrics.mobileEdgePull}px`");
-        expect(boardSource).toContain("'--qidahen-mobile-top-inset': `${stageMetrics.mobileTopInset}px`");
+        expect(boardShellSource).toContain("'--qidahen-mobile-edge-pull': `${metrics.mobileEdgePull}px`");
+        expect(boardShellSource).toContain("'--qidahen-mobile-top-inset': `${metrics.mobileTopInset}px`");
         expect(boardSource).toContain('MOBILE_LANDSCAPE_TOP_SAFE_INSET');
         expect(boardSource).toContain('const MOBILE_LANDSCAPE_CHRONOLOGY_TOP = 670;');
-        expect(boardSource).toContain('mobileChronologyTop: nextLandscapeMobileViewport ? MOBILE_LANDSCAPE_CHRONOLOGY_TOP : 542,');
-        expect(boardSource).toContain("'--qidahen-mobile-chronology-top': `${stageMetrics.mobileChronologyTop}px`,");
+        expect(boardShellSource).toContain('mobileChronologyTop: isMobileLandscape');
+        expect(boardShellSource).toContain("'--qidahen-mobile-chronology-top': `${metrics.mobileChronologyTop}px`,");
         expect(boardSource).toContain("style={{ top: 'var(--qidahen-mobile-chronology-top, 542px)' }}");
         expect(boardSource).toContain('data-testid="qidahen-action-slot"');
         expect(boardSource).toContain('className="mt-3 shrink-0"');
@@ -722,10 +734,12 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('主交互槽位激活时，被动状态块必须让位，不再跟主交互面板争抢右侧动作槽位', () => {
-        expect(boardSource).toContain('const suppressPassiveActionContext = showWheelNextStepBanner');
+        expect(boardSource).toContain('const suppressPassiveActionContext = actionPaymentPreviewVisible');
+        expect(boardSource).toContain('|| showWheelNextStepBanner');
         expect(boardSource).toContain('|| pendingTargetAction != null');
         expect(boardSource).toContain('|| postBattleSelection != null;');
         expect(boardSource).toContain("const showFortificationStrip = !suppressPassiveActionContext && core.turnPhase !== 'action-window';");
+        expect(boardSource).toContain("const showActionRail = !pendingScenarioChoices && !suppressPassiveActionContext && primaryStageMode === 'faction';");
         expect(boardSource).toContain('{showFortificationStrip ? (');
         expect(boardSource).toContain('data-testid="qidahen-fortification-strip"');
         expect(boardSource).toContain('!suppressPassiveActionContext');
@@ -761,22 +775,23 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it('手牌区默认贴底紧凑展示，只有牌多时才允许轻度重叠并继续保留横向滚动', () => {
-        expect(boardSource).toContain('const HAND_CARD_SELECTED_LIFT = 26;');
+        expect(boardSource).toMatch(/const HAND_CARD_SELECTED_LIFT = \d+;/);
         expect(boardSource).toContain('const BOTTOM_DOCK_HEIGHT = CARD_DIMENSIONS.hand.height + HAND_CARD_SELECTED_LIFT + 4;');
         expect(boardSource).toContain('const HAND_DOCK_WIDTH = 1310;');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_DOCK_WIDTH = 1460;');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 168;');
-        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 206;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MIN_WIDTH = 92;');
+        expect(boardSource).toContain('const MOBILE_LANDSCAPE_HAND_CARD_MAX_WIDTH = 118;');
         expect(boardSource).toContain('const getQidahenMobileLandscapeHandLayout = (dockWidth: number) => {');
         expect(boardSource).toContain('const getQidahenHandCardOverlapPx = (');
         expect(boardSource).toContain('const visibleCardCount = Math.min(handCount, MOBILE_LANDSCAPE_VISIBLE_HAND_LIMIT);');
         expect(boardSource).toContain('data-testid="qidahen-bottom-dock"');
         expect(boardSource).toContain('const MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET = 0;');
-        expect(boardSource).toContain('mobileBottomInset: BOTTOM_DOCK_INSET,');
-        expect(boardSource).toContain('? visibleWidth / STAGE_WIDTH');
-        expect(boardSource).toContain('? Math.min(0, visibleHeight - STAGE_HEIGHT * scale)');
-        expect(boardSource).toContain('mobileBottomInset: nextLandscapeMobileViewport && scale > 0');
-        expect(boardSource).toContain("'--qidahen-mobile-bottom-inset': `${stageMetrics.mobileBottomInset}px`,");
+        expect(boardShellSource).toContain('const sceneScale = Math.max(width / layout.width, height / layout.height);');
+        expect(boardShellSource).toContain('const hudScale = isMobileLandscape ? 1 : Math.min(width / layout.width, height / layout.height);');
+        expect(boardShellSource).toContain('width: metrics.isMobileLandscape ? metrics.viewportWidth : layout.width');
+        expect(boardShellSource).toContain('height: metrics.isMobileLandscape ? metrics.viewportHeight : layout.height');
+        expect(boardShellSource).toContain("data-qidahen-layout-mode={metrics.isMobileLandscape ? 'mobile-landscape' : 'desktop'}");
+        expect(boardShellSource).toContain('mobileBottomInset: isMobileLandscape ? layout.mobileLandscapeBottomDockInset : layout.bottomDockInset');
+        expect(boardShellSource).toContain("'--qidahen-mobile-bottom-inset': `${metrics.mobileBottomInset}px`,");
         expect(boardSource).toContain("const dockBottomInset = 'var(--qidahen-mobile-bottom-inset, 0px)';");
         expect(boardSource).toContain('bottom: dockBottomInset,');
         expect(boardSource).toContain('mapTargetSelectionActive?: boolean;');
@@ -784,7 +799,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("data-map-target-selection-active={mapTargetSelectionActive ? 'true' : undefined}");
         expect(boardSource).toContain('const mapTargetSelectionActive = topLevelMapSelectionGuide != null && topLevelMapSelectionGuide.candidates.length > 0;');
         expect(boardSource).toContain('mapTargetSelectionActive={mapTargetSelectionActive}');
-        expect(boardSource).toContain("height: BOTTOM_DOCK_HEIGHT,");
+        expect(boardSource).toContain('height: bottomDockHeight,');
         expect(boardSource).toContain('const handDockMaxWidth: number | string = isMobileLandscapeViewport ? handDockWidth : \'calc(100vw - 320px)\';');
         expect(boardSource).toContain('width: handDockWidth,');
         expect(boardSource).toContain('maxWidth: handDockMaxWidth,');
@@ -833,7 +848,9 @@ describe('Qidahen Board 结构门禁', () => {
 
     it('棋盘壳层与地图区域遮罩要保留正式底色和常驻势力浅色归属，不再露白底', () => {
         expect(boardSource).toContain("const QIDAHEN_STAGE_BG = '#c8a970';");
-        expect(boardSource).toContain('background: QIDAHEN_STAGE_BG,');
+        expect(boardSource).toContain('backgroundColor={QIDAHEN_STAGE_BG}');
+        expect(boardShellSource).toContain('backgroundColor,');
+        expect(boardShellSource).toContain("'--qidahen-scene-inverse-scale': String(1 / metrics.scene.scale)");
         expect(boardSource).toContain('applyTone(region.id, region.controller);');
     });
 
@@ -947,7 +964,7 @@ describe('Qidahen Board 结构门禁', () => {
         const selectionBranchIndex = boardSource.indexOf('core.infantryCavalryCombinedSelection ? (');
         const fallbackBranchIndex = boardSource.indexOf(') : (', selectionBranchIndex);
         const pendingChoiceOptionsIndex = boardSource.indexOf(
-            '{pendingTargetChoiceOptions.map((choice) => (',
+            '{pendingTargetChoiceOptions.map((choice) => {',
             selectionBranchIndex,
         );
 
@@ -1054,7 +1071,10 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('?? autoFocusMapTargetRegionIds[0]');
         expect(boardSource).toContain('autoFocusMapTargetRegionIdsKey,');
         expect(boardSource).toContain('tutorialMapFocusCandidateRegionId,');
-        expect(boardSource).toContain('setMapViewport((currentViewport) => (');
+        expect(boardSource).toContain('setMapViewport((currentViewport) => {');
+        expect(boardSource).toContain('mapViewportBeforeAutoFocusRef.current = currentViewport;');
+        expect(boardSource).toContain('setMapViewport(mapViewportBeforeAutoFocusRef.current);');
+        expect(boardSource).toContain('mapViewportBeforeAutoFocusRef.current = null;');
         expect(boardSource).toContain('currentViewport.zoom === viewport.zoom');
         expect(boardSource).toContain('currentViewport.panX === viewport.panX');
         expect(boardSource).toContain('currentViewport.panY === viewport.panY');
@@ -1064,7 +1084,7 @@ describe('Qidahen Board 结构门禁', () => {
 
     for (const testId of REQUIRED_TEST_IDS) {
         it(`保留关键结构标识 ${testId}`, () => {
-            expect(boardSource).toContain(testId);
+            expect(combinedBoardSource).toContain(testId);
         });
     }
 

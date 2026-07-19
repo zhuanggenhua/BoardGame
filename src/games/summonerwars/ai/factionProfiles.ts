@@ -163,6 +163,21 @@ export const SUMMONER_WARS_FACTION_AI_PROFILES: Record<FactionId, SummonerWarsFa
             positionControl: 1.04,
         },
     },
+    shouren: {
+        factionId: 'shouren',
+        summary: ['冰苔兽人推拉连击', '重视充能重掷与近战压迫'],
+        strategyTagWeights: {
+            'ability-tempo': 1.18,
+            'board-control': 1.14,
+            'summoner-pressure': 1.12,
+            'summoner-defense': 1.04,
+        },
+        evaluationWeights: {
+            threatAndKills: 1.14,
+            positionControl: 1.1,
+            tempo: 1.08,
+        },
+    },
 };
 
 export function getSummonerWarsFactionAiProfile(

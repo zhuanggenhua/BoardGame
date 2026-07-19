@@ -1,0 +1,247 @@
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-player-float'] {
+    left: 8px !important;
+    right: 8px !important;
+    top: 6px !important;
+    width: auto !important;
+    gap: 4px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-player-'] {
+    height: 54px !important;
+    padding-inline: 7px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-armaments-'],
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-character-markers-'] {
+    display: none !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-action-wheel'] {
+    left: 8px !important;
+    top: 66px !important;
+    width: 176px !important;
+    height: 176px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-chronology-zone'],
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-korea-zone'] {
+    display: none !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-actions-zone'] {
+    left: auto !important;
+    right: 8px !important;
+    top: 66px !important;
+    width: 268px !important;
+    height: calc(100% - 236px) !important;
+    min-height: 132px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-actions-zone'] button {
+    min-height: 44px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-turn-banner'] {
+    font-size: 12px !important;
+    line-height: 16px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-turn-banner'] > div:last-child {
+    font-size: 11px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-bottom-dock'] {
+    bottom: 0 !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-draw-anchor'] {
+    left: 2px !important;
+    bottom: 0 !important;
+    transform: scale(0.35);
+    transform-origin: bottom left;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-discard-anchor'] {
+    left: 70px !important;
+    right: auto !important;
+    bottom: 0 !important;
+    transform: scale(0.35);
+    transform-origin: bottom left;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-hand-zone'] {
+    scrollbar-width: thin;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-hand-interaction-tray'] {
+    bottom: 168px !important;
+    padding-inline: 8px;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-action-payment-panel'],
+[data-qidahen-layout-mode='mobile-landscape'] [data-ui-anchor='bottom-hand'] {
+    width: min(680px, calc(100vw - 200px)) !important;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-map-viewport-controls'] {
+    left: 190px !important;
+    top: 66px !important;
+    bottom: auto !important;
+    transform: scale(var(--qidahen-scene-inverse-scale, 1));
+    transform-origin: top left;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-map-viewport-controls'] button {
+    min-width: 45px !important;
+    height: 45px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-map-guide-hit-target-'] {
+    transform: scale(var(--qidahen-scene-inverse-scale, 1));
+    transform-origin: center;
+}
+
+[data-testid='qidahen-board'] [data-testid^='qidahen-map-guide-hit-target-']:focus-visible {
+    outline: 3px solid #f3d1a5 !important;
+    outline-offset: 3px;
+    background: rgba(159, 52, 38, 0.28) !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-screen'] {
+    padding: 6px !important;
+    overflow-y: auto !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-layout'] {
+    min-height: 390px;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important;
+    gap: 4px !important;
+    padding: 6px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-book-page-intro'],
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-feature-page'] {
+    padding: 8px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-title'] {
+    font-size: 20px !important;
+    margin-top: 2px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-seat-status'] {
+    display: none !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-card-rail'] {
+    gap: 6px !important;
+    padding-top: 0 !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-scenario-vote-option-'] {
+    height: 158px !important;
+    min-width: 0 !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-scenario-vote-option-'] > span:first-child {
+    width: 252px !important;
+    height: 350px !important;
+    transform: scale(0.45);
+    transform-origin: top left;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-feature-card'],
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-empty-preview'] {
+    width: 174px !important;
+    height: 240px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-feature-card'] > div:first-child {
+    width: 520px !important;
+    height: 720px !important;
+    transform: scale(0.3346);
+    transform-origin: top left;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-scenario-vote-actions'] {
+    padding: 6px 8px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-screen'] {
+    align-items: stretch !important;
+    padding: 8px !important;
+    overflow-y: auto !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-screen'] > div {
+    padding: 12px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-title'] {
+    font-size: 22px !important;
+    margin-top: 2px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-faction-selection-options'] {
+    gap: 8px !important;
+    margin-top: 10px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-faction-option-'] {
+    min-height: 190px !important;
+    padding: 8px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid^='qidahen-faction-option-'] img {
+    width: 72px !important;
+    height: 72px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-inmatch-setup-overlay'] {
+    align-items: stretch !important;
+    padding: 6px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-inmatch-setup-overlay'] > div {
+    padding: 8px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-inmatch-setup-title'] {
+    font-size: 20px !important;
+    margin-top: 2px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-inmatch-setup-book-page-status'] {
+    display: none !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-testid='qidahen-inmatch-setup-book-page-player'] {
+    grid-column: 1 / -1;
+    padding: 8px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-qidahen-setup-choice-shell],
+[data-qidahen-layout-mode='mobile-landscape'] [data-qidahen-inline-choice] [data-testid*='-option-'] {
+    width: 108px !important;
+    height: 149px !important;
+}
+
+[data-qidahen-layout-mode='mobile-landscape'] [data-qidahen-inline-choice] [data-testid*='-option-'] > span:first-child {
+    width: 164px !important;
+    height: 226px !important;
+    transform: scale(0.659);
+    transform-origin: top left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-testid='qidahen-board'] *,
+    [data-testid='qidahen-board'] *::before,
+    [data-testid='qidahen-board'] *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

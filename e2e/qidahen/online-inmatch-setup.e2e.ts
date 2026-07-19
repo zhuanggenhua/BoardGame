@@ -158,14 +158,41 @@ async function waitForInMatchSetupOverlay(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-scenario-pregame-screen')).toHaveCount(0);
 }
 
+async function waitForFactionSelectionScreen(page: Page): Promise<void> {
+    await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-title')).toContainText('选择你的阵营');
+    await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
+}
+
 async function assertVoteOverlay(page: Page, playerId: string): Promise<void> {
     await expect(page.getByTestId('qidahen-scenario-vote-option-post-sarhu-1619')).toBeVisible();
     await expect(page.getByTestId('qidahen-scenario-vote-option-shanhaiguan-1622')).toBeVisible();
     await expect(page.getByTestId(`qidahen-scenario-vote-status-${playerId}`)).toContainText('你');
 }
 
-async function hostPickScenario(page: Page, scenarioId: 'post-sarhu-1619' | 'shanhaiguan-1622'): Promise<void> {
+async function hostPickScenario(
+    page: Page,
+    scenarioId: 'post-sarhu-1619' | 'shanhaiguan-1622',
+    beforeConfirm?: () => Promise<void>,
+): Promise<void> {
     await page.getByTestId(`qidahen-scenario-vote-option-${scenarioId}`).click();
+    await expect(page.getByTestId(`qidahen-scenario-vote-option-${scenarioId}`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('qidahen-scenario-vote-confirm')).toBeEnabled();
+    await beforeConfirm?.();
+    await page.getByTestId('qidahen-scenario-vote-confirm').click();
+}
+
+async function selectFaction(
+    page: Page,
+    factionId: 'ming' | 'mongol' | 'jin',
+    beforeConfirm?: () => Promise<void>,
+): Promise<void> {
+    await page.getByTestId(`qidahen-faction-option-${factionId}`).click();
+    await expect(page.getByTestId(`qidahen-faction-option-${factionId}`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('qidahen-faction-selection-confirm')).toBeEnabled();
+    await beforeConfirm?.();
+    await page.getByTestId('qidahen-faction-selection-confirm').click();
 }
 
 async function assertHostMingView(hostPage: Page): Promise<void> {
@@ -192,17 +219,30 @@ async function assertJinView(page: Page): Promise<void> {
 }
 
 async function resolveMingSetup(hostPage: Page): Promise<void> {
+    const setupPage = hostPage.getByTestId('qidahen-inmatch-setup-book-page-player');
+    const beforeBox = await setupPage.boundingBox();
     await hostPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:ming:character:0-ming-xiong-tingbi').click();
+    await hostPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:ming:character:0').click();
+    const completedCharacterGroup = hostPage.getByTestId('qidahen-inmatch-setup-character-shanhaiguan-1622:ming:character:0');
+    await expect(completedCharacterGroup).toBeVisible();
+    await expect(completedCharacterGroup).toHaveAttribute('data-completed', 'true');
+    const afterBox = await setupPage.boundingBox();
+    expect(afterBox?.width).toBe(beforeBox?.width);
+    expect(afterBox?.height).toBe(beforeBox?.height);
 
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:0-artillery-tech').click();
+    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:0').click();
 
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:1-long-barreled-musket').click();
+    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:1').click();
 }
 
 async function resolveJinSetup(jinPage: Page): Promise<void> {
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:0-jin-fan-wencheng').click();
+    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:0').click();
 
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:1-jin-manggultai').click();
+    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:1').click();
 }
 
 async function injectMingArmamentHandCard(matchId: string, page: Page): Promise<void> {
@@ -289,7 +329,29 @@ test.describe('七大恨联机局内前置选择', () => {
             await captureEvidence(page, testInfo, '七大恨-联机局内剧本选择-01-房主进入剧本书页并可点选.png');
 
             await expect(mongolPage.getByTestId('qidahen-scenario-vote-actions')).toContainText('等待房主');
-            await hostPickScenario(page, 'shanhaiguan-1622');
+            await hostPickScenario(page, 'shanhaiguan-1622', async () => {
+                await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible();
+                await expect(page.getByTestId('qidahen-faction-selection-screen')).toHaveCount(0);
+                await captureEvidence(page, testInfo, '七大恨-联机局内剧本选择-01b-山海关之议已暂选待确认.png');
+            });
+
+            await Promise.all([
+                waitForFactionSelectionScreen(page),
+                waitForFactionSelectionScreen(mongolPage),
+                waitForFactionSelectionScreen(jinPage),
+            ]);
+            await captureEvidence(page, testInfo, '七大恨-联机局内阵营选择-02-三阵营可见且未被占用.png');
+
+            await selectFaction(page, 'ming', async () => {
+                await expect(page.getByTestId('qidahen-faction-selection-status')).toContainText('待确认 大明');
+                await expect(page.getByTestId('qidahen-faction-selection-screen')).toContainText('已确认 0 / 3');
+                await expect(page.getByTestId('qidahen-inmatch-setup-overlay')).toHaveCount(0);
+                await captureEvidence(page, testInfo, '七大恨-联机局内阵营选择-02b-大明已暂选待确认.png');
+            });
+            await expect(page.getByTestId('qidahen-faction-option-ming')).toHaveAttribute('data-selected', 'true');
+            await selectFaction(mongolPage, 'mongol');
+            await expect(mongolPage.getByTestId('qidahen-faction-option-mongol')).toHaveAttribute('data-selected', 'true');
+            await selectFaction(jinPage, 'jin');
 
             await Promise.all([
                 waitForInMatchSetupOverlay(page),

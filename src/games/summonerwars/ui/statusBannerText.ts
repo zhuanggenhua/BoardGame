@@ -2,6 +2,13 @@ import type { AbilityModeState } from './useGameEvents';
 
 type BannerTranslate = (key: string, options?: Record<string, unknown>) => string;
 
+const SHOUREN_POSITION_BANNER_KEYS: Record<string, string> = {
+  shouren_bloody_rush: 'interaction.sw.shourenBloodyRushPosition',
+  shouren_berserk: 'interaction.sw.shourenBerserkPosition',
+  shouren_brute_impact: 'interaction.sw.shourenBruteImpact',
+  shouren_primal_fury: 'interaction.sw.shourenPrimalFuryPosition',
+};
+
 export function getAbilityModeBannerFallbackText(
   t: BannerTranslate,
   abilityMode: AbilityModeState,
@@ -28,6 +35,11 @@ export function getAbilityModeBannerFallbackText(
 
   if (abilityMode.abilityId === 'huijin_quick_shot' && abilityMode.step === 'selectUnit') {
     return t('interaction.sw.huijinQuickShot');
+  }
+
+  const shourenPositionBannerKey = SHOUREN_POSITION_BANNER_KEYS[abilityMode.abilityId];
+  if (shourenPositionBannerKey && abilityMode.step === 'selectPosition') {
+    return t(shourenPositionBannerKey);
   }
 
   if (abilityMode.abilityId === 'telekinesis_instead' && abilityMode.step === 'selectUnit') {

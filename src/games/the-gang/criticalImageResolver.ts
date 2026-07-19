@@ -67,8 +67,10 @@ const THE_GANG_SPECIALIST_IMAGE_PATHS = Object.keys(THE_GANG_SPECIALISTS)
 const THE_GANG_STANDARD_CARD_IMAGE_PATHS = Object.values(CARD_RANK_ASSET_NAMES)
     .flatMap((rank) => STANDARD_SUITS.map((suit) => `the-gang/cards/${rank}-${suit}`));
 
+const THE_GANG_CHIP_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
+
 const THE_GANG_CHIP_IMAGE_PATHS = [1, 2, 3, 4]
-    .flatMap((round) => Array.from({ length: 6 }, (_, index) => getChipAssetPath(round, index + 1)));
+    .flatMap((round) => THE_GANG_CHIP_VALUES.map((value) => getChipAssetPath(round, value)));
 
 const THE_GANG_SETUP_CRITICAL_IMAGE_PATHS = dedupePreserveOrder([
     CARD_BACK_ASSET_PATH,

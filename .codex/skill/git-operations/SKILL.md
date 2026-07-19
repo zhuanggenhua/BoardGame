@@ -59,7 +59,10 @@ description: "BoardGame Git 操作入口。用于提交、推送、同步主分�
 ### 1.3 推送
 
 - 默认先推**已提交内容**，不要把未提交工作区和 push 混在一起
-- 分支 `ahead N` 且用户要 `push` 时，先直接尝试推送当前提交
+- 用户目标涉及远端 `push` 时，默认先执行 `git fetch --prune origin` 刷新远端引用；`fetch` 只更新远端跟踪信息，不改工作区，不等于授权 `pull`、`merge`、`rebase` 或 `stash`
+- `fetch` 后若分支只是 `ahead N`，继续直接推送当前提交
+- `fetch` 后若分支出现 `behind` 或 `ahead + behind`，不得自动 `pull`、`merge`、`rebase` 或 `stash`；先说明远端已有新提交，并按本项目 AI 协作常态，默认建议进入可审计的 merge 同步流程
+- 若用户当轮已经明确要求“处理远端更新后继续推 / 同步后再推 / 合并远端再推 / 改到能 push”，可把远端分叉视为同一 `push` 目标内的同步 blocker，先锁定合并方向、工作区归属和双边内容范围，再按 merge 规则推进
 - `push` 失败先分辨：是网络/协议、hook 门禁、还是代码测试失败
 - 任何门禁、guard、预算或 hook 的绕过（例如 `--no-verify`、`BG_BYPASS_GLOBAL_HEAVY_BUDGET=1`、guard bypass env）都不是默认动作；除非用户当轮明确允许，否则只能等门禁通过，或停止并汇报 blocker
 
@@ -88,7 +91,7 @@ description: "BoardGame Git 操作入口。用于提交、推送、同步主分�
 - 默认假设当前工作区里长期存在用户和其他 AI 的并发改动；`dirty` 不是异常，而是常态背景
 - 看到 `ahead/behind` 加脏工作区时，先分清用户当前目标是 `push`、`同步主线`、`整理工作区` 还是 `修 bug`；不要把它们自动合并成“先保护现场”
 - `ahead N, behind M` 且工作区已脏时，**默认只允许做审查、汇报 blocker、或继续当前目标内的最小编辑**；不得擅自用 `stash`、`pull --rebase`、`rebase`、`reset`、`restore` 去“整理现场”
-- 用户只说“push/提交”时，先处理**已提交内容**与明确范围内的改动；不要因为 `behind` 或工作区脏就私自切到同步主线、变基、stash、建临时保护分支
+- 用户只说“push/提交”时，先处理**已提交内容**与明确范围内的改动；若 `fetch` 后发现 `behind` 或 `ahead + behind`，可以建议合并远端更新，但不要因为 `behind` 或工作区脏就私自切到同步主线、变基、stash、建临时保护分支
 - 用户说“看着删 / 该删的删 / 整理改动”时，默认含义仍是**先看内容再判断**，不是任何形式的回滚、覆盖或清空授权
 
 ## 3. 检查与门禁

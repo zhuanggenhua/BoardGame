@@ -114,8 +114,14 @@ export function getExitChipCount(playerCount: number, config?: Partial<TheGangRu
 export function getChipValues(
     playerCount: number,
     config?: Partial<TheGangRulesConfig>,
-    round: number = 1,
+    _round: number = 1,
 ): number[] {
-    const chipCount = playerCount + (round === 4 ? getExitChipCount(playerCount, config) : 0);
-    return Array.from({ length: chipCount }, (_, index) => index + 1);
+    const normalized = normalizeRulesConfig(config ?? DEFAULT_THE_GANG_RULES_CONFIG);
+    const chipParticipantCount = normalized.twoHand ? playerCount * 2 : playerCount;
+    const regularChipCount = Math.min(chipParticipantCount, 8);
+    const zeroChipCount = Math.max(0, chipParticipantCount - 8);
+    return [
+        ...Array.from({ length: zeroChipCount }, () => 0),
+        ...Array.from({ length: regularChipCount }, (_, index) => index + 1),
+    ];
 }

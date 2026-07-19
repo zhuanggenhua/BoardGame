@@ -37,6 +37,7 @@ export const TheGangDomain: DomainCore<TheGangCore, TheGangCommand, TheGangEvent
 
 export * from './types';
 export * from './cards';
+export * from './chips';
 export * from './poker';
 export * from './showdown';
 export * from './expansions';

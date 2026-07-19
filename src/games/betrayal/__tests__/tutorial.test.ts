@@ -40,6 +40,7 @@ describe('Betrayal 教程配置', () => {
         expect(tutorialCatalog.defaultTutorialId).toBe('basic-setup-and-turn');
         expect(Object.keys(tutorialCatalog.tutorials)).toEqual([
             'basic-setup-and-turn',
+            'trade-and-agreement',
             'move-explore-use',
             'crimson-jack-objective',
             'haunt-actions-and-finish',
@@ -51,6 +52,7 @@ describe('Betrayal 教程配置', () => {
             .filter(([, entry]) => entry.hiddenFromCatalog !== true)
             .map(([id]) => id)).toEqual([
             'basic-setup-and-turn',
+            'trade-and-agreement',
             'haunt-actions-and-finish',
             'hero-attack-path',
             'jack-spirit-path',
@@ -122,6 +124,49 @@ describe('Betrayal 教程配置', () => {
         expect(actionSteps[0]?.highlightTarget).toBe('betrayal-inventory-omen-book');
         expect(setupFields?.eventOrder?.map((event) => event.name)).toEqual(['外星几何']);
         expect(JSON.stringify(setupFields)).not.toContain('测试中性事件');
+    });
+
+    it('交易教程会实际走同房间请求、接收方同意和结算链', () => {
+        const manifest = tutorialCatalog.tutorials['trade-and-agreement']?.manifest;
+        expect(manifest?.steps.map((step) => step.id)).toEqual([
+            'setup-trade',
+            'choose-trade-item',
+            'choose-trade-target',
+            'choose-trade-return',
+            'send-trade-request',
+            'request-waiting',
+            'accept-trade-request',
+            'trade-review',
+        ]);
+
+        const setupStep = manifest?.steps.find((step) => step.id === 'setup-trade');
+        const setupFields = setupStep?.aiActions?.[0]?.payload?.fields as { eventOrder?: Array<{ name?: string }> } | undefined;
+        expect(setupStep?.aiActions?.[0]?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
+        expect(setupStep?.autoAdvanceAfterAi).toBe(false);
+        expect(JSON.stringify(setupFields)).not.toContain('测试中性事件');
+        expect(JSON.stringify(setupFields)).toContain('地图');
+        expect(manifest?.steps.find((step) => step.id === 'choose-trade-item')?.highlightTarget).toBe('betrayal-inventory-rope');
+        expect(manifest?.steps.find((step) => step.id === 'choose-trade-target')?.highlightTarget).toBe('betrayal-room-occupant-hallway-1');
+        expect(manifest?.steps.find((step) => step.id === 'choose-trade-return')?.highlightTarget).toBe('betrayal-trade-return-selector');
+        expect(manifest?.steps.find((step) => step.id === 'request-waiting')?.highlightTarget).toBe('betrayal-trade-flow-banner');
+
+        const actionSteps = manifest?.steps.filter((step) => step.requireAction) ?? [];
+        expect(actionSteps.map((step) => step.id)).toEqual([
+            'send-trade-request',
+            'accept-trade-request',
+        ]);
+        expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
+            ['TRADE_POSSESSION'],
+            ['RESOLVE_TRADE_AGREEMENT'],
+        ]);
+        expect(actionSteps[0]?.advanceOnEvents).toEqual([
+            { type: 'POSSESSION_TRADE_REQUESTED', match: { playerId: '0', targetPlayerId: '1' } },
+        ]);
+        expect(actionSteps[1]?.advanceOnEvents).toEqual([
+            { type: 'POSSESSION_TRADED', match: { playerId: '0', targetPlayerId: '1' } },
+        ]);
+        expect(actionSteps[1]?.viewAs).toBe('1');
+        expect(manifest?.steps.find((step) => step.id === 'trade-review')?.highlightTarget).toBe('betrayal-room-latest-feedback');
     });
 
     it('教程发现事件使用正式 9x5 事件牌图集，不再按错误大格裁切', () => {
@@ -226,6 +271,15 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索的盖着房间');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('翻开成新房间');
         expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('兔脚');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.title).toContain('交易');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).toContain('双方都要同意');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeItem).toContain('兔脚');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeTarget).toContain('同房间队友');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.sendTradeRequest).toContain('发送交易请求');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.requestWaiting).toContain('等待对方同意');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.acceptTradeRequest).toContain('同意交易');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.acceptTradeRequest).toContain('拒绝');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.tradeReview).toContain('进入队友持有区');
         expect(zhCNLocale.tutorial.hauntActions.title).toContain('看目标，再驱魔');
         expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('探索和预兆');
         expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('赤红杰克归来');

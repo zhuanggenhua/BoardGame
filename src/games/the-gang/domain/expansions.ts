@@ -537,7 +537,7 @@ export function normalizeRulesConfig(config?: Partial<TheGangRulesConfig>): TheG
         exitChipMode,
         omaha: config?.omaha === true,
         twoHand,
-        handSwap: twoHand && config?.handSwap === true,
+        handSwap: twoHand,
         automode: config?.automode === true,
         antiTroll: config?.antiTroll === true,
         challenges,

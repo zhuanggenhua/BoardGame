@@ -97,10 +97,11 @@ export interface PlayingCard {
 export type TheGangRound = 1 | 2 | 3 | 4;
 export type TheGangPhase = 'chip-selection' | 'hand-swap' | 'showdown' | 'game-over';
 export type HeistOutcome = 'success' | 'failure';
+export type TheGangHandSlot = 'top' | 'bottom';
 
 export interface RoundChipState {
     round: TheGangRound;
-    chipsByPlayer: Record<PlayerId, number>;
+    chipsByPlayer: Record<string, number>;
 }
 
 export interface HandStrength {
@@ -112,12 +113,13 @@ export interface HandStrength {
 
 export interface ShowdownPlayerResult {
     playerId: PlayerId;
+    handSlot?: TheGangHandSlot;
     chip: number;
     strength: HandStrength;
     pocketCards: PlayingCard[];
     secondaryPocketCards?: PlayingCard[];
     bestCards: PlayingCard[];
-    winningHandSlot?: 'top' | 'bottom';
+    winningHandSlot?: TheGangHandSlot;
 }
 
 export interface HeistRecord {
@@ -151,6 +153,7 @@ export interface TheGangRulesConfig {
     exitChipMode: TheGangExitChipMode;
     omaha: boolean;
     twoHand: boolean;
+    /** Compatibility mirror of twoHand. TTS has no separate hand-swap setup toggle. */
     handSwap: boolean;
     automode: boolean;
     antiTroll: boolean;
@@ -180,7 +183,7 @@ export interface TheGangCore {
     heistNumber: number;
     successes: number;
     failures: number;
-    currentRoundChips: Record<PlayerId, number>;
+    currentRoundChips: Record<string, number>;
     pendingProgress?: TheGangProgressConfirmation;
     roundHistory: RoundChipState[];
     heistHistory: HeistRecord[];
@@ -209,6 +212,7 @@ export interface StartHeistCommand extends Command<typeof THE_GANG_COMMANDS.STAR
 export interface TakeChipCommand extends Command<typeof THE_GANG_COMMANDS.TAKE_CHIP> {
     payload: {
         chip: number;
+        handSlot?: TheGangHandSlot;
         tutorialChipMode?: TheGangTutorialChipMode;
         tutorialOnlyIfMissing?: boolean;
     };
@@ -273,6 +277,7 @@ export type TheGangCommandMap = {
     [THE_GANG_COMMANDS.START_HEIST]: Record<string, never>;
     [THE_GANG_COMMANDS.TAKE_CHIP]: {
         chip: number;
+        handSlot?: TheGangHandSlot;
         tutorialChipMode?: TheGangTutorialChipMode;
         tutorialOnlyIfMissing?: boolean;
     };
@@ -314,6 +319,8 @@ export interface HeistStartedEvent extends GameEvent<typeof THE_GANG_EVENTS.HEIS
 export interface ChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_TAKEN> {
     payload: {
         playerId: PlayerId;
+        ownerKey: string;
+        handSlot?: TheGangHandSlot;
         round: TheGangRound;
         chip: number;
     };

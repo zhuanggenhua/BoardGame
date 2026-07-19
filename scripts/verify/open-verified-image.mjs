@@ -17,6 +17,8 @@ const usage = () => {
   --path <路径>     打开指定图片；可重复传入多次
   --paths <路径...> 依次打开多张指定图片
   --latest [目录]   递归查找目录下最后修改的一张图片，默认 test-results/evidence-screenshots
+  --viewer <system|pureref>  指定查看器；pureref 会一次性打开整批图片
+  --pureref         等同于 --viewer pureref
   --dry-run         只解析路径，不实际打开
   --help            显示帮助
 `);
@@ -44,6 +46,7 @@ const parseArgs = (argv) => {
         path: null,
         paths: [],
         latest: null,
+        viewer: process.env.BG_IMAGE_VIEWER ?? 'system',
         dryRun: false,
         help: false,
     };
@@ -56,6 +59,19 @@ const parseArgs = (argv) => {
         }
         if (current === '--dry-run') {
             parsed.dryRun = true;
+            continue;
+        }
+        if (current === '--pureref') {
+            parsed.viewer = 'pureref';
+            continue;
+        }
+        if (current === '--viewer') {
+            const viewer = argv[index + 1] ?? null;
+            if (!viewer) {
+                throw new Error('--viewer 缺少取值');
+            }
+            parsed.viewer = viewer;
+            index += 1;
             continue;
         }
         if (current === '--path') {
@@ -120,6 +136,22 @@ const resolveImagePath = (imagePath) => {
         throw new Error(`目标文件不是支持的图片格式: ${resolved}`);
     }
     return resolved;
+};
+
+const resolvePureRefPath = () => {
+    const candidates = [
+        process.env.PUREREF_PATH,
+        'C:\\Program Files\\PureRef\\PureRef.exe',
+        'C:\\Program Files (x86)\\PureRef\\PureRef.exe',
+    ].filter(Boolean);
+
+    for (const candidate of candidates) {
+        if (existsSync(candidate)) {
+            return candidate;
+        }
+    }
+
+    throw new Error('未找到 PureRef.exe；可设置 PUREREF_PATH 指向 PureRef.exe');
 };
 
 const resolveTargetImages = ({ path: imagePath, paths, latest }) => {
@@ -200,6 +232,17 @@ const openImages = (imagePaths) => {
     }
 };
 
+const openImagesWithPureRef = (imagePaths) => {
+    const pureRefPath = resolvePureRefPath();
+    const child = spawn(pureRefPath, imagePaths, {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+    });
+    child.unref();
+    console.log(`OPENED_WITH_PUREREF=${pureRefPath}`);
+};
+
 const main = () => {
     const parsed = parseArgs(process.argv.slice(2));
 
@@ -218,11 +261,22 @@ const main = () => {
         console.log(`RESOLVED_IMAGE=${resolvedImage}`);
     }
 
+    const normalizedViewer = parsed.viewer.toLowerCase();
+    if (!['system', 'pureref'].includes(normalizedViewer)) {
+        throw new Error(`不支持的 viewer: ${parsed.viewer}`);
+    }
+
     if (parsed.dryRun) {
+        console.log(`RESOLVED_VIEWER=${normalizedViewer}`);
         return;
     }
 
-    openImages(resolvedImages);
+    if (normalizedViewer === 'pureref') {
+        openImagesWithPureRef(resolvedImages);
+    } else {
+        openImages(resolvedImages);
+    }
+
     for (const resolvedImage of resolvedImages) {
         console.log(`OPENED_IMAGE=${resolvedImage}`);
     }

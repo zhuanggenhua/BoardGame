@@ -214,7 +214,7 @@
     "kitty_cats_invisible_bicycle_minions_title": "Invisible Bicycle: choose minions of power 2 or less to move",
     "kitty_cats_invisible_bicycle_base_title": "Invisible Bicycle: choose the destination base",
     "mythic_horses_teaching_power_order_title": "Teaching Power: choose the order for the remaining revealed cards on top of your deck",
-    "mythic_horses_super_future_space_armor_power_title": "Super Future Space Armor Power: choose a minion to get +2 power and protection from other players' cards until end of turn",
+    "mythic_horses_super_future_space_armor_power_title": "Super Future Space Armor Power: each of your minions on a base with another of your minions gains +2 power until end of turn",
     "mythic_horses_teaching_power_title": "Teaching Power: choose a revealed minion to play as an extra minion",
     "mythic_horses_teaching_power_skip_option": "Do not play one",
     "mythic_horses_togetherness_power_title": "Togetherness Power: choose a base where you have a minion to gain an extra minion play limited to that base",
@@ -5591,7 +5591,7 @@
     },
     "mythic_horses_super_future_space_armor_power": {
       "name": "Super Future Space Armor Power",
-      "effectText": "Choose a minion. Until the end of the turn, it is unaffected by other players' cards and has +2 power."
+      "effectText": "Each of your minions on a base with another of your minions gains +2 power until the end of the turn."
     },
     "mythic_horses_togetherness_power": {
       "name": "Togetherness Power",

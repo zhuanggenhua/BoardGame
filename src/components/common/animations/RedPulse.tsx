@@ -15,6 +15,8 @@ export interface RedPulseProps {
   strong?: boolean;
   /** 自定义颜色，默认红色 */
   color?: string;
+  /** 动画时长（秒），默认按强度决定 */
+  duration?: number;
   className?: string;
 }
 
@@ -22,6 +24,7 @@ export const RedPulse: React.FC<RedPulseProps> = ({
   active,
   strong = false,
   color = 'rgba(220, 38, 38, 0.6)',
+  duration,
   className = '',
 }) => {
   if (!active) return null;
@@ -32,7 +35,7 @@ export const RedPulse: React.FC<RedPulseProps> = ({
       style={{ backgroundColor: color }}
       initial={{ opacity: 0 }}
       animate={{ opacity: strong ? [0, 0.7, 0.1, 0.5, 0] : [0, 0.6, 0, 0.3, 0] }}
-      transition={{ duration: strong ? 0.45 : 0.3, delay: 0.05 }}
+      transition={{ duration: duration ?? (strong ? 0.45 : 0.3), delay: 0.05 }}
     />
   );
 };

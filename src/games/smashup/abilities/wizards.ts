@@ -1300,22 +1300,16 @@ const wizardNeophyteProgram = createEffectProgram<WizardNeophyteContext, SmashUp
 });
 
 const wizardMassEnchantmentProgram = createEffectProgram<WizardMassEnchantmentContext, SmashUpCore, SmashUpEvent>((context) => {
-    const revealCards: { uid: string; defId: string }[] = [];
-    const revealTargetIds: string[] = [];
+    const events: SmashUpEvent[] = [];
     for (const pid of context.matchState.core.turnOrder) {
         if (pid === context.playerId) continue;
         const topCard = context.matchState.core.players[pid]?.deck[0];
         if (!topCard) continue;
-        revealTargetIds.push(pid);
-        revealCards.push({ uid: topCard.uid, defId: topCard.defId });
-    }
-    const events: SmashUpEvent[] = [];
-    if (revealCards.length > 0) {
         events.push(revealDeckTop(
-            revealTargetIds.length === 1 ? revealTargetIds[0] : revealTargetIds,
+            pid,
             'all',
-            revealCards,
-            revealCards.length,
+            [{ uid: topCard.uid, defId: topCard.defId }],
+            1,
             'wizard_mass_enchantment',
             context.now,
             context.playerId,

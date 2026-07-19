@@ -52,16 +52,26 @@ export interface ImpactFeedbackResult {
     flash: { isActive: boolean; damage: number };
 }
 
+export interface ImpactFeedbackOptions {
+    /** DamageFlash 激活保持时间；默认保持原有 900ms */
+    flashResetDelay?: number;
+    /** 震动持续时间；默认保持原有 500ms */
+    shakeDuration?: number;
+    /** 钝帧默认持续时间；默认保持原有 80ms */
+    hitStopDuration?: number;
+}
+
 /**
  * 受击反馈组合 hook
  * @param effects 启用的效果类型（默认全开）
  */
 export function useImpactFeedback(
     effects: ImpactFeedbackEffects = DEFAULT_EFFECTS,
+    options: ImpactFeedbackOptions = {},
 ): ImpactFeedbackResult {
-    const { isShaking, triggerShake } = useShake(500);
-    const { isActive: hitStopActive, config: hitStopConfig, triggerHitStop } = useHitStop(80);
-    const { isActive: flashActive, damage: flashDamage, trigger: triggerFlash } = useDamageFlash();
+    const { isShaking, triggerShake } = useShake(options.shakeDuration ?? 500);
+    const { isActive: hitStopActive, config: hitStopConfig, triggerHitStop } = useHitStop(options.hitStopDuration ?? 80);
+    const { isActive: flashActive, damage: flashDamage, trigger: triggerFlash } = useDamageFlash(options.flashResetDelay ?? 900);
 
     const trigger = useCallback((damage: number) => {
         if (effects.shake) triggerShake();

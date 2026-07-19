@@ -8,7 +8,7 @@ import { GAME_MANIFEST_BY_ID } from '../manifest';
 import { hasGameImplementation, loadGameImplementation, resolveGameTutorialManifest } from '../registry';
 
 describe('betrayal manifest integration', () => {
-    it('betrayal 会以本地预演入口暴露，并声明手机横屏棋盘壳适配', async () => {
+    it('betrayal 会以本地预演入口暴露，并声明手机横屏地图壳适配', async () => {
         const game = getGameById('betrayal');
         expect(game).toBeDefined();
         expect(game?.enabled).toBe(true);
@@ -16,7 +16,7 @@ describe('betrayal manifest integration', () => {
         expect(game?.playerOptions).toEqual([3, 4, 5, 6]);
         expect(game?.mobileProfile).toBe('landscape-adapted');
         expect(game?.preferredOrientation).toBe('landscape');
-        expect(game?.mobileLayoutPreset).toBe('board-shell');
+        expect(game?.mobileLayoutPreset).toBe('map-shell');
         expect(game?.shellTargets).toEqual(
             expect.arrayContaining(['pwa', 'app-webview', 'mini-program-webview']),
         );
@@ -47,6 +47,7 @@ describe('betrayal manifest integration', () => {
         expect(implementation?.tutorialCatalog?.defaultTutorialId).toBe('basic-setup-and-turn');
         expect(Object.keys(implementation?.tutorialCatalog?.tutorials ?? {})).toEqual([
             'basic-setup-and-turn',
+            'trade-and-agreement',
             'move-explore-use',
             'crimson-jack-objective',
             'haunt-actions-and-finish',
@@ -58,6 +59,7 @@ describe('betrayal manifest integration', () => {
             .filter(([, entry]) => entry.hiddenFromCatalog !== true)
             .map(([id]) => id)).toEqual([
             'basic-setup-and-turn',
+            'trade-and-agreement',
             'haunt-actions-and-finish',
             'hero-attack-path',
             'jack-spirit-path',
@@ -66,6 +68,7 @@ describe('betrayal manifest integration', () => {
         expect(resolveGameTutorialManifest('betrayal')).toEqual(
             implementation?.tutorialCatalog?.tutorials['basic-setup-and-turn']?.manifest ?? null,
         );
+        expect(resolveGameTutorialManifest('betrayal', 'trade-and-agreement')?.id).toBe('trade-and-agreement');
         expect(resolveGameTutorialManifest('betrayal', 'move-explore-use')?.id).toBe('basic-setup-and-turn');
         expect(resolveGameTutorialManifest('betrayal', 'crimson-jack-objective')?.id).toBe('haunt-actions-and-finish');
         expect(resolveGameTutorialManifest('betrayal', 'haunt-actions-and-finish')?.id).toBe('haunt-actions-and-finish');

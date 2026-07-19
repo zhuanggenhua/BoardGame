@@ -3,6 +3,7 @@ import {
     isStaleChunkError,
     reloadForStaleChunkOnceWithDeps,
 } from '../staleChunkReloadGuard';
+import { requireLazyModuleExport } from '../lazyModuleExport';
 
 describe('staleChunkReloadGuard', () => {
     it('detects known stale chunk error signatures', () => {
@@ -12,6 +13,12 @@ describe('staleChunkReloadGuard', () => {
         expect(isStaleChunkError('Importing a module script failed')).toBe(true);
         expect(isStaleChunkError(new Error('Expected a JavaScript module script but the server responded with text/html'))).toBe(true);
         expect(isStaleChunkError(new Error("'text/html' is not a valid JavaScript MIME type."))).toBe(true);
+        expect(() => requireLazyModuleExport<{ default: unknown }, 'default'>(undefined, 'default', './splendor/Board')).toThrow('[stale-lazy-module]');
+        try {
+            requireLazyModuleExport<{ default: unknown }, 'default'>(undefined, 'default', './splendor/Board');
+        } catch (error) {
+            expect(isStaleChunkError(error)).toBe(true);
+        }
         expect(isStaleChunkError(new Error('Network request failed'))).toBe(false);
     });
 

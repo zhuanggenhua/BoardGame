@@ -1,3 +1,5 @@
+import { STALE_LAZY_MODULE_MARKER } from './lazyModuleExport';
+
 export const STALE_CHUNK_RELOAD_KEY = 'bg_stale_chunk_reload_guard';
 
 export const isStaleChunkError = (value: unknown): boolean => {
@@ -6,7 +8,8 @@ export const isStaleChunkError = (value: unknown): boolean => {
         : String(value ?? '');
 
     const normalized = message.toLowerCase();
-    return normalized.includes('failed to fetch dynamically imported module')
+    return normalized.includes(STALE_LAZY_MODULE_MARKER)
+        || normalized.includes('failed to fetch dynamically imported module')
         || normalized.includes('error loading dynamically imported module')
         || normalized.includes('importing a module script failed')
         || normalized.includes('expected a javascript module script')

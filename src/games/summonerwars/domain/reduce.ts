@@ -23,6 +23,7 @@ import {
   BOARD_COLS,
   HAND_SIZE,
   clampMagic,
+  isUnitFrozen,
   normalizeFiniteNumber,
   normalizeUnitBoosts,
 } from './helpers';
@@ -203,6 +204,17 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       };
     }
 
+    case SW_EVENTS.ATTACK_ROLL_PENDING: {
+      return {
+        ...core,
+        pendingAttackRoll: payload as SummonerWarsCore['pendingAttackRoll'],
+      };
+    }
+
+    case SW_EVENTS.ABILITY_ROLL_RESOLVED: {
+      return { ...core, pendingAttackRoll: undefined };
+    }
+
     case SW_EVENTS.UNIT_ATTACKED: {
       const { attacker, target } = payload as { attacker: CellCoord; target: CellCoord };
       const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
@@ -215,6 +227,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
           hasAttacked: true,
           healingMode: false,
           extraAttacks: isExtraAttack ? (unit.extraAttacks ?? 1) - 1 : unit.extraAttacks,
+          extraAttackSources: isExtraAttack ? (unit.extraAttackSources ?? []).slice(1) : unit.extraAttackSources,
         };
       }
       const pid = unit?.owner as PlayerId;
@@ -228,6 +241,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       }
       return {
         ...core, board: newBoard,
+        pendingAttackRoll: undefined,
         players: {
           ...core.players,
           [pid]: {
@@ -665,10 +679,11 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
 
     case SW_EVENTS.EXTRA_ATTACK_GRANTED: {
       // 额外攻击：重置目标单位的 hasAttacked 并增加 extraAttacks 计数
-      const { targetPosition: eaPos, targetUnitId: _eaUnitId, destroyAfterExtraAttackSource } = payload as {
+      const { targetPosition: eaPos, targetUnitId: _eaUnitId, destroyAfterExtraAttackSource, sourceAbilityId } = payload as {
         targetPosition: CellCoord;
         targetUnitId: string;
         destroyAfterExtraAttackSource?: string;
+        sourceAbilityId?: string;
       };
       const eaBoard = core.board.map(row => row.map(cell => ({ ...cell })));
       const eaUnit = eaBoard[eaPos.row]?.[eaPos.col]?.unit;
@@ -679,6 +694,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
           ...eaUnit,
           hasAttacked: false,
           extraAttacks: newExtraAttacks,
+          extraAttackSources: [...(eaUnit.extraAttackSources ?? []), sourceAbilityId ?? 'unknown'],
           destroyAfterExtraAttackSource: destroyAfterExtraAttackSource ?? eaUnit.destroyAfterExtraAttackSource,
         };
       } else {
@@ -761,6 +777,8 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       // newPosition 由 execute 层计算后附加到 payload
       // 如果没有 newPosition，说明推拉被阻挡，不移动
       if (!newPosition) return core;
+      const targetUnit = core.board[targetPosition.row]?.[targetPosition.col]?.unit;
+      if (targetUnit && isUnitFrozen(core, targetUnit)) return core;
 
       const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
       const sourceCell = newBoard[targetPosition.row]?.[targetPosition.col];

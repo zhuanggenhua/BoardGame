@@ -71,6 +71,37 @@ export function manhattanDistance(a: CellCoord, b: CellCoord): number {
   return manhattanDist(a, b);
 }
 
+/** 冻结持续事件按稳定实例 ID 禁用目标单位。 */
+export function isUnitFrozen(state: SummonerWarsCore, unit: BoardUnit): boolean {
+  for (const playerId of ['0', '1'] as PlayerId[]) {
+    const player = state.players[playerId];
+    if (!player) continue;
+    if (player.activeEvents.some(event => (
+      getBaseCardId(event.id) === CARD_IDS.SHOUREN_FREEZE
+      && event.targetUnitId === unit.instanceId
+    ))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 获取“冻结”可选择的单位：召唤师 3 格内任意阵营的未充能士兵或英雄。 */
+export function getValidShourenFreezeTargets(state: SummonerWarsCore, playerId: PlayerId): BoardUnit[] {
+  const summoner = getSummoner(state, playerId);
+  if (!summoner) return [];
+  const targets: BoardUnit[] = [];
+  for (const ownerId of ['0', '1'] as PlayerId[]) {
+    for (const unit of getPlayerUnits(state, ownerId)) {
+      if (unit.card.unitClass !== 'common' && unit.card.unitClass !== 'champion') continue;
+      if (normalizeUnitBoosts(unit.boosts) !== 0) continue;
+      if (manhattanDistance(summoner.position, unit.position) > 3) continue;
+      targets.push(unit);
+    }
+  }
+  return targets;
+}
+
 /** 获取相邻格子 */
 export function getAdjacentCells(coord: CellCoord): CellCoord[] {
   return getAdjacentPositionsEngine(coord, BOARD_ROWS, BOARD_COLS);
@@ -206,7 +237,8 @@ export function canMoveTo(
 ): boolean {
   const unit = getUnitAt(state, from);
   if (!unit) return false;
-  
+  if (isUnitFrozen(state, unit)) return false;
+
   // 建筑不能移动
   if (getStructureAt(state, from)) return false;
   
@@ -434,7 +466,8 @@ export function canAttack(
 ): boolean {
   const attackerUnit = getUnitAt(state, attacker);
   if (!attackerUnit) return false;
-  
+  if (isUnitFrozen(state, attackerUnit)) return false;
+
   const targetUnit = getUnitAt(state, target);
   const targetStructure = getStructureAt(state, target);
   if (!targetUnit && !targetStructure) return false;
@@ -762,7 +795,25 @@ export function getUnitBaseAbilities(unit: BoardUnit): string[] {
  * 所有规则判定/执行/验证必须使用此函数
  */
 export function getUnitAbilities(unit: BoardUnit, state: SummonerWarsCore): string[] {
+  if (isUnitFrozen(state, unit)) return [];
+
   const result = getUnitBaseAbilities(unit);
+
+  const owner = state.players[unit.owner];
+  if (unit.card.unitClass === 'common'
+    && owner?.activeEvents.some(event => getBaseCardId(event.id) === CARD_IDS.SHOUREN_SUPREME_GLORY)
+    && !result.includes('shouren_reckless_strike')) {
+    result.push('shouren_reckless_strike');
+  }
+  if (owner?.activeEvents.some(event => getBaseCardId(event.id) === CARD_IDS.SHOUREN_BRUTE_FORCE)
+    && !result.includes('shouren_brute_impact')) {
+    result.push('shouren_brute_impact');
+  }
+  if (unit.card.unitClass === 'summoner'
+    && owner?.activeEvents.some(event => getBaseCardId(event.id) === CARD_IDS.SHOUREN_PRIMAL_FURY)
+    && !result.includes('shouren_primal_fury')) {
+    result.push('shouren_primal_fury');
+  }
 
   // 交缠颂歌：检查主动事件区是否有交缠颂歌标记了本单位
   for (const pid of ['0', '1'] as PlayerId[]) {
@@ -966,6 +1017,7 @@ export function canMoveToEnhanced(
 ): boolean {
   const unit = getUnitAt(state, from);
   if (!unit) return false;
+  if (isUnitFrozen(state, unit)) return false;
 
   // 建筑不能移动
   if (getStructureAt(state, from)) return false;
@@ -1117,10 +1169,12 @@ export function canAttackEnhanced(
 ): boolean {
   const attackerUnit = getUnitAt(state, attacker);
   if (!attackerUnit) return false;
+  if (isUnitFrozen(state, attackerUnit)) return false;
 
   const targetUnit = getUnitAt(state, target);
   const targetStructure = getStructureAt(state, target);
   if (!targetUnit && !targetStructure) return false;
+  if (targetUnit && isUnitFrozen(state, targetUnit)) return false;
 
   if (attackerUnit.healingMode) {
     // 治疗模式：已支付治疗代价后，只能选择相邻友方士兵/英雄并改为治疗结算。
@@ -1222,6 +1276,9 @@ export function calculatePushPullPosition(
   distance: number,
   direction: 'push' | 'pull'
 ): CellCoord | null {
+  const targetUnit = getUnitAt(state, targetPos);
+  if (targetUnit && isUnitFrozen(state, targetUnit)) return null;
+
   const { moveRow, moveCol } = getPushPullDirection(targetPos, sourcePos, direction);
 
   // 逐格移动
@@ -1255,6 +1312,11 @@ export function calculateStunPushPull(
   moveCol: number,
   distance: number,
 ): { finalPos: CellCoord | null; passedPositions: CellCoord[] } {
+  const targetUnit = getUnitAt(state, targetPos);
+  if (targetUnit && isUnitFrozen(state, targetUnit)) {
+    return { finalPos: null, passedPositions: [] };
+  }
+
   const passedPositions: CellCoord[] = [];
 
   let currentPos = { ...targetPos };
@@ -1304,6 +1366,9 @@ export function getForceDestinations(
   targetPos: CellCoord,
   distance: number,
 ): { position: CellCoord; moveRow: number; moveCol: number }[] {
+  const targetUnit = getUnitAt(state, targetPos);
+  if (targetUnit && isUnitFrozen(state, targetUnit)) return [];
+
   const results: { position: CellCoord; moveRow: number; moveCol: number }[] = [];
 
   const dirs = [

@@ -83,7 +83,7 @@ Temporary review crops were generated under `temp/smashup-pretty-pretty-intake/`
 - No new runtime image resource is added in this pass, so no compression/upload step is required.
 - Card definitions are registered as static data with exact `previewRef` indices. Gameplay ability implementation is only claimed for the L2-covered cards listed below.
 - This pass deliberately supersedes the older mixed-atlas boundary notes in the Fairies/Princesses intake contracts for the first half of `pretty_pretty.png`; those older notes over-assigned indices `12-15` to Kitty Cats even though the image shows Mythic Horses cards there.
-- `mythic_horses_super_future_space_armor_power` uses turn-scoped minion metadata (`tempProtect*UntilTurnNumber` + `tempProtectSourcePlayerId`) so protection works even though the source action is no longer in play after resolution. Existing metadata protection without `tempProtectSourcePlayerId` keeps its previous all-source semantics.
+- `mythic_horses_super_future_space_armor_power` gives temporary `+2` power to each friendly minion on a base where that player controls another minion. The card grants no destroy/move/affect protection.
 
 ## L2 Behavior Implemented In This Pass
 
@@ -113,7 +113,7 @@ The following interaction/trigger abilities are wired through `src/games/smashup
 | `mythic_horses_seastar` | Real `USE_TALENT` entry grants Seastar one extra talent use this turn while the player has a minion at another base; the second use is consumed and a third use is rejected. |
 | `mythic_horses_rainbow` | Real `USE_TALENT` entry draws one card when another friendly minion is at Rainbow's base. |
 | `mythic_horses_teaching_power` | `beforeScoring` special executor reveals one deck-top card per friendly minion at the scoring base, can play one revealed minion from the deck as an extra minion at that base, and uses an ordered multi-select to put the other revealed cards back on top in player-chosen order; the real Me First `PLAY_ACTION` response-window path is covered and records `SPECIAL_LIMIT_USED`. |
-| `mythic_horses_super_future_space_armor_power` | Real `PLAY_ACTION` entry gives the selected minion temporary `+2` power and protects it from other players' destroy/move/affect/action checks until the turn number advances. |
+| `mythic_horses_super_future_space_armor_power` | Real `PLAY_ACTION` entry gives temporary `+2` power to every friendly minion on a base where that player controls another minion; lonely friendly minions and enemy minions are unaffected. |
 | `mythic_horses_togetherness_power` | Real `PLAY_ACTION` entry only offers bases where the player controls a minion, then grants one base-limited extra minion quota. |
 | `mythic_horses_adventure_power` | Real `PLAY_ACTION` entry multi-selects owned minions and moves them to the selected destination base. |
 | `mythic_horses_freedom_power` | Real `PLAY_ACTION` entry targets an action on a base or minion and returns it to its owner's hand via the field-aware `CARD_TRANSFERRED` path. |
@@ -121,6 +121,8 @@ The following interaction/trigger abilities are wired through `src/games/smashup
 | `mythic_horses_sharing_power` | `onTurnStart` trigger owned by the attached action's owner draws one card if its base has a minion with effective power `<=2`. |
 
 ## Verification Notes
+
+- 2026-07-18 rule correction: the official card image at `public/assets/i18n/zh-CN/smashup/cards/pretty_pretty.png`, atlas index `14`, states that each qualifying minion gains `+2` until end of turn. The previous single-target `+2` plus protection contract was incorrect and is superseded by the runtime decision and L2 row above.
 
 - `npx vitest run src/games/smashup/__tests__/abilities/kitty-cats.test.ts src/games/smashup/__tests__/abilities/mythic-horses.test.ts` passed: 2 files / 20 tests.
 - `npx vitest run src/games/smashup/__tests__/abilities/kitty-cats.test.ts src/games/smashup/__tests__/abilities/mythic-horses.test.ts src/games/smashup/__tests__/ongoingModifiers.test.ts src/games/smashup/__tests__/criticalImageResolver.test.ts` passed: 4 files / 110 tests on `upstream/main@5bbad66f`, including Teaching Power's ordered return of the other revealed cards.

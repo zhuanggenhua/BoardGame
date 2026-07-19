@@ -13,8 +13,8 @@ const helpText = `
   1. 先检查 package.json 版本已随本次发布自增
   2. 等待 10 分钟
   3. 触发 GitHub Actions 构建镜像，并由 CI 直接把镜像 tar 输送到生产机后执行 update-local
-  4. 本地执行强制更新 OTA: node scripts/mobile/release-android.mjs ota --channel stable --force-update
-  5. OTA 发布脚本必须等 bundle/latest.json 线上可读，并校验 latest.json 的 CORS 预检
+  4. 触发 Android OTA Publish workflow，发布同一 git ref 的 stable OTA
+  5. OTA workflow 必须等 bundle/latest.json 线上可读，并校验 latest.json 的 CORS 预检
 
 准备版本:
   node scripts/release/deploy-and-ota.mjs --prepare-version
@@ -42,9 +42,19 @@ const helpText = `
                              remote: 服务器直接拉 GHCR 镜像并执行 update
   --ci-ref <ref>             ci-stream 触发 workflow 的 Git ref；默认 latest 用 main，指定 v* tag 时用该 tag
   --ci-workflow <file>       ci-stream 触发的 workflow 文件，默认 docker-publish.yml
+  --resume-ci-run-id <id>    不重新触发部署 workflow，继续等待已有 run
+  --workflow-timeout-minutes <number>
+                             等待单个 workflow 完成的上限，默认 30，可用 BG_DEPLOY_WORKFLOW_TIMEOUT_MINUTES 覆盖
+  --workflow-poll-seconds <number>
+                             查询 workflow 状态的间隔，默认 30，可用 BG_DEPLOY_WORKFLOW_POLL_SECONDS 覆盖
   --ota-channel <name>       OTA channel，默认 stable
-  --skip-ota                 只更新服务器，不执行本地 Android OTA 发布
-  --ota-extra "<args>"       追加给 release-android ota 的额外参数；禁止传 --no-force-update
+  --ota-mode <mode>          OTA 模式：workflow|local，默认 workflow
+  --ota-workflow <file>      OTA workflow 文件，默认 android-ota-publish.yml
+  --ota-ref <ref>            触发 OTA workflow 的 Git ref，默认同 --ci-ref
+  --ota-git-ref <ref>        OTA workflow 实际 checkout/publish 的 git_ref，默认同 --ci-ref
+  --resume-ota-run-id <id>   不重新触发 OTA workflow，继续等待已有 run
+  --skip-ota                 只更新服务器，不执行 Android OTA 发布
+  --ota-extra "<args>"       追加给 OTA 的额外参数；workflow 模式支持 --version/--display-version/--ota-version-base/--dry-run/--skip-latest/--force-update-title/--force-update-message，local 模式原样传给 release-android ota；禁止传 --no-force-update
 `.trim();
 
 const readArgValue = (name, fallback = '') => {
@@ -78,7 +88,23 @@ const deployMode = readArgValue('deploy-mode', 'ci-stream');
 const defaultCiRef = deployTag && deployTag !== 'latest' ? deployTag : 'main';
 const ciRef = readArgValue('ci-ref', defaultCiRef);
 const ciWorkflow = readArgValue('ci-workflow', 'docker-publish.yml');
+const resumeCiRunId = readArgValue('resume-ci-run-id', '');
+const workflowTimeoutMinutesRaw = readArgValue(
+    'workflow-timeout-minutes',
+    process.env.BG_DEPLOY_WORKFLOW_TIMEOUT_MINUTES || '30',
+);
+const workflowTimeoutMinutes = Number.parseFloat(workflowTimeoutMinutesRaw);
+const workflowPollSecondsRaw = readArgValue(
+    'workflow-poll-seconds',
+    process.env.BG_DEPLOY_WORKFLOW_POLL_SECONDS || '30',
+);
+const workflowPollSeconds = Number.parseFloat(workflowPollSecondsRaw);
 const otaChannel = readArgValue('ota-channel', 'stable');
+const otaMode = readArgValue('ota-mode', 'workflow');
+const otaWorkflow = readArgValue('ota-workflow', 'android-ota-publish.yml');
+const otaRef = readArgValue('ota-ref', ciRef);
+const otaGitRef = readArgValue('ota-git-ref', ciRef);
+const resumeOtaRunId = readArgValue('resume-ota-run-id', '');
 const skipOta = hasFlag('skip-ota');
 const otaExtraRaw = readArgValue('ota-extra', '').trim();
 const otaExtraArgs = otaExtraRaw ? otaExtraRaw.split(/\s+/).filter(Boolean) : [];
@@ -100,8 +126,57 @@ if (!new Set(['ci-stream', 'stream', 'remote']).has(deployMode)) {
     throw new Error(`--deploy-mode 只支持 ci-stream | stream | remote，当前值: ${deployMode}`);
 }
 
+if (!new Set(['workflow', 'local']).has(otaMode)) {
+    throw new Error(`--ota-mode 只支持 workflow | local，当前值: ${otaMode}`);
+}
+
 if (!skipWait && (!Number.isFinite(waitMinutes) || waitMinutes < 0)) {
     throw new Error(`--wait-minutes 必须是 >= 0 的数字，当前值: ${waitMinutesRaw}`);
+}
+
+if (!Number.isFinite(workflowTimeoutMinutes) || workflowTimeoutMinutes <= 0) {
+    throw new Error(`--workflow-timeout-minutes 必须是 > 0 的数字，当前值: ${workflowTimeoutMinutesRaw}`);
+}
+
+if (!Number.isFinite(workflowPollSeconds) || workflowPollSeconds <= 0) {
+    throw new Error(`--workflow-poll-seconds 必须是 > 0 的数字，当前值: ${workflowPollSecondsRaw}`);
+}
+
+const readExtraArgValue = (name, fallback = '') => {
+    const prefix = `--${name}=`;
+    const direct = otaExtraArgs.find((arg) => arg.startsWith(prefix));
+    if (direct) {
+        return direct.slice(prefix.length);
+    }
+    const index = otaExtraArgs.findIndex((arg) => arg === `--${name}`);
+    if (index >= 0 && otaExtraArgs[index + 1]) {
+        return otaExtraArgs[index + 1];
+    }
+    return fallback;
+};
+
+const hasExtraFlag = (name) => otaExtraArgs.includes(`--${name}`);
+const supportedWorkflowOtaExtraArgs = new Set([
+    '--dry-run',
+    '--skip-latest',
+    '--version',
+    '--display-version',
+    '--ota-version-base',
+    '--force-update-title',
+    '--force-update-message',
+]);
+
+if (otaMode === 'workflow') {
+    for (let index = 0; index < otaExtraArgs.length; index += 1) {
+        const arg = otaExtraArgs[index];
+        const optionName = arg.includes('=') ? arg.slice(0, arg.indexOf('=')) : arg;
+        if (!optionName.startsWith('--')) {
+            continue;
+        }
+        if (!supportedWorkflowOtaExtraArgs.has(optionName)) {
+            throw new Error(`workflow OTA 模式不支持 ota-extra 参数: ${arg}`);
+        }
+    }
 }
 
 const runCommand = (command, args, label) => new Promise((resolve, reject) => {
@@ -153,6 +228,9 @@ const sleep = (ms) => new Promise((resolve) => {
     setTimeout(resolve, ms);
 });
 
+const workflowTimeoutMs = Math.round(workflowTimeoutMinutes * 60 * 1000);
+const workflowPollMs = Math.round(workflowPollSeconds * 1000);
+
 const runNode = async (args, label) => {
     if (dryRun) {
         console.log(`[deploy-and-ota] dry-run 将执行 ${label}: ${process.execPath} ${args.join(' ')}`);
@@ -161,13 +239,13 @@ const runNode = async (args, label) => {
     await runCommand(process.execPath, args, label);
 };
 
-const findTriggeredWorkflowRun = async (startedAt) => {
+const findTriggeredWorkflowRun = async ({ workflow, startedAt, label }) => {
     for (let attempt = 1; attempt <= 24; attempt += 1) {
         const { stdout } = await runCommandCapture('gh', [
             'run',
             'list',
             '--workflow',
-            ciWorkflow,
+            workflow,
             '--event',
             'workflow_dispatch',
             '--limit',
@@ -184,10 +262,52 @@ const findTriggeredWorkflowRun = async (startedAt) => {
         }
         await sleep(5_000);
     }
-    throw new Error(`已触发 ${ciWorkflow}，但 2 分钟内没有找到对应的 workflow_dispatch run。`);
+    throw new Error(`已触发 ${workflow}，但 2 分钟内没有找到对应的 ${label} workflow_dispatch run。`);
+};
+
+const waitForWorkflowRun = async ({ runId, label }) => {
+    const deadline = Date.now() + workflowTimeoutMs;
+    let lastStatus = '';
+    let lastUrl = '';
+
+    while (Date.now() < deadline) {
+        const { stdout } = await runCommandCapture('gh', [
+            'run',
+            'view',
+            String(runId),
+            '--json',
+            'status,conclusion,displayTitle,workflowName,url,updatedAt',
+        ], `查询 ${label} workflow`);
+        const run = JSON.parse(stdout || '{}');
+        lastStatus = `${run.status || 'unknown'}${run.conclusion ? `/${run.conclusion}` : ''}`;
+        lastUrl = run.url || lastUrl;
+
+        if (run.status === 'completed') {
+            if (run.conclusion === 'success') {
+                console.log(`[deploy-and-ota] ${label} workflow 已成功: ${run.url || runId}`);
+                return run;
+            }
+            throw new Error(`${label} workflow 失败: ${run.conclusion || 'unknown'} ${run.url || runId}`);
+        }
+
+        console.log(`[deploy-and-ota] ${label} workflow 仍在运行: ${lastStatus} ${run.url || runId}`);
+        await sleep(Math.min(workflowPollMs, Math.max(1_000, deadline - Date.now())));
+    }
+
+    throw new Error(
+        `${label} workflow 在 ${workflowTimeoutMinutes} 分钟内未完成，当前状态: ${lastStatus || 'unknown'}。`
+        + ` run=${lastUrl || runId}。不要重新触发同一发布；请提高 --workflow-timeout-minutes，`
+        + `或用 --resume-${label === 'CI 镜像直传部署' ? 'ci' : 'ota'}-run-id ${runId} 继续等待。`,
+    );
 };
 
 const triggerCiStreamDeploy = async () => {
+    if (resumeCiRunId) {
+        console.log(`[deploy-and-ota] 继续等待已有 CI 镜像直传 workflow run: ${resumeCiRunId}`);
+        await waitForWorkflowRun({ runId: resumeCiRunId, label: 'CI 镜像直传部署' });
+        return;
+    }
+
     const tag = deployTag || 'latest';
     const startedAt = new Date(Date.now() - 60_000);
     const args = [
@@ -214,16 +334,13 @@ const triggerCiStreamDeploy = async () => {
     }
 
     await runCommand('gh', args, '触发 CI 镜像直传部署');
-    const run = await findTriggeredWorkflowRun(startedAt);
+    const run = await findTriggeredWorkflowRun({
+        workflow: ciWorkflow,
+        startedAt,
+        label: 'CI 镜像直传部署',
+    });
     console.log(`[deploy-and-ota] CI 镜像直传 workflow: ${run.url}`);
-    await runCommand('gh', [
-        'run',
-        'watch',
-        String(run.databaseId),
-        '--exit-status',
-        '--interval',
-        '30',
-    ], '等待 CI 镜像直传部署完成');
+    await waitForWorkflowRun({ runId: run.databaseId, label: 'CI 镜像直传部署' });
 };
 
 const readPackageVersion = async () => {
@@ -253,6 +370,56 @@ const otaCommandArgs = [
     '--force-update',
     ...otaExtraArgs,
 ];
+
+const workflowOtaInputs = (releaseVersion) => ([
+    'workflow',
+    'run',
+    otaWorkflow,
+    '--ref',
+    otaRef,
+    '-f',
+    `channel=${otaChannel}`,
+    '-f',
+    `git_ref=${otaGitRef}`,
+    '-f',
+    `expected_base_version=${releaseVersion}`,
+    '-f',
+    `dry_run=${hasExtraFlag('dry-run') ? 'true' : 'false'}`,
+    '-f',
+    `skip_latest=${hasExtraFlag('skip-latest') ? 'true' : 'false'}`,
+    '-f',
+    'force_update=true',
+    ...(readExtraArgValue('version') ? ['-f', `version=${readExtraArgValue('version')}`] : []),
+    ...(readExtraArgValue('display-version') ? ['-f', `display_version=${readExtraArgValue('display-version')}`] : []),
+    ...(readExtraArgValue('ota-version-base') ? ['-f', `ota_version_base=${readExtraArgValue('ota-version-base')}`] : []),
+    ...(readExtraArgValue('force-update-title') ? ['-f', `force_update_title=${readExtraArgValue('force-update-title')}`] : []),
+    ...(readExtraArgValue('force-update-message') ? ['-f', `force_update_message=${readExtraArgValue('force-update-message')}`] : []),
+]);
+
+const triggerOtaWorkflow = async (releaseVersion) => {
+    if (resumeOtaRunId) {
+        console.log(`[deploy-and-ota] 继续等待已有 Android OTA workflow run: ${resumeOtaRunId}`);
+        await waitForWorkflowRun({ runId: resumeOtaRunId, label: 'Android OTA' });
+        return;
+    }
+
+    const startedAt = new Date(Date.now() - 60_000);
+    const args = workflowOtaInputs(releaseVersion);
+
+    if (dryRun) {
+        console.log(`[deploy-and-ota] dry-run 将触发 Android OTA workflow: gh ${args.join(' ')}`);
+        return;
+    }
+
+    await runCommand('gh', args, '触发 Android OTA workflow');
+    const run = await findTriggeredWorkflowRun({
+        workflow: otaWorkflow,
+        startedAt,
+        label: 'Android OTA',
+    });
+    console.log(`[deploy-and-ota] Android OTA workflow: ${run.url}`);
+    await waitForWorkflowRun({ runId: run.databaseId, label: 'Android OTA' });
+};
 
 const main = async () => {
     if (prepareVersion) {
@@ -302,6 +469,8 @@ const main = async () => {
     }
     if (skipOta) {
         console.log('[deploy-and-ota] OTA 命令: 已跳过');
+    } else if (otaMode === 'workflow') {
+        console.log(`[deploy-and-ota] OTA workflow: gh ${workflowOtaInputs(releaseVersion).join(' ')}`);
     } else {
         console.log(`[deploy-and-ota] OTA 命令: ${process.execPath} ${otaCommandArgs.join(' ')}`);
     }
@@ -318,7 +487,11 @@ const main = async () => {
         await runCommand('ssh', [sshTarget, remoteDeployCommand], '生产部署（服务器直拉）');
     }
     if (!skipOta) {
-        await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
+        if (otaMode === 'workflow') {
+            await triggerOtaWorkflow(releaseVersion);
+        } else {
+            await runCommand(process.execPath, otaCommandArgs, 'Android OTA');
+        }
     }
 };
 

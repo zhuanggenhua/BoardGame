@@ -19,6 +19,8 @@
 | 派系状态 | 九头蛇、克里、邪恶大师、邪恶六人组已移除 `implementationStatus: 'in_progress'` | `src/games/smashup/ui/factionMeta.ts` |
 | 真实入口 | 已从真实派系选择入口验证四派可见、共享图集加载、真实选秀开局与代表能力链 | `e2e/smashup/smashup-marvel-villains-four-factions.e2e.ts` |
 
+2026-07-18 修订：`49 张唯一卡均有主动能力入口或持续规则注册`只能证明结构入口与代表机制，不等于每张牌的对象级行为链都已审完。邪恶六人组代表 E2E 覆盖的是`移动货物`基地修正移动链，不覆盖`秃鹫（sinister_six_vulture）`从弃牌堆选择基地修正放回牌库顶的单候选 / 跳过 / 多候选链。`秃鹫`此前 intake 仍是 `L1 pending`，本轮补到 L2 行为证据；未补独立 L3 前，不得再用“代表能力链已覆盖”代替它的对象级结论。
+
 ## 逐派实现矩阵
 
 | 派系 | 已覆盖机制 |

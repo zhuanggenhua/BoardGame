@@ -23,7 +23,14 @@ import type {
   AbilityTrigger,
 } from './abilities';
 import { abilityRegistry } from './abilities';
-import { BOARD_ROWS, BOARD_COLS, manhattanDistance, getPlayerUnits, normalizeUnitBoosts } from './helpers';
+import {
+  BOARD_ROWS,
+  BOARD_COLS,
+  manhattanDistance,
+  getPlayerUnits,
+  normalizeUnitBoosts,
+  getUnitAbilities as getUnitAbilityIds,
+} from './helpers';
 import { swCustomActionRegistry } from './customActionHandlers';
 import { resolveTargetUnits, resolveTargetPosition } from './abilityTargets';
 import {
@@ -45,6 +52,7 @@ import {
   CARD_IDS,
 } from './ids';
 import { buildUsageKey } from './utils';
+import { DECK_SYMBOLS } from '../config/symbols';
 
 // ============================================================================
 // 效果解析上下文
@@ -667,53 +675,9 @@ export function getUnitBaseAbilities(unit: UnitInstance): AbilityDef[] {
  * state 必传，确保交缠颂歌等状态依赖逻辑始终生效
  */
 export function getUnitAbilities(unit: UnitInstance, state: SummonerWarsCore): AbilityDef[] {
-  const baseIds = unit.card.abilities ?? [];
-  const tempIds = unit.tempAbilities ?? [];
-  const abilityIds = tempIds.length > 0 ? [...baseIds, ...tempIds] : [...baseIds];
-
-  // 交缠颂歌：检查主动事件区是否有交缠颂歌标记了本单位
-  for (const pid of ['0', '1'] as PlayerId[]) {
-    const player = state.players[pid];
-    if (!player) continue;
-    for (const ev of player.activeEvents) {
-      if (getBaseCardId(ev.id) !== CARD_IDS.BARBARIC_CHANT_OF_ENTANGLEMENT) continue;
-      if (!ev.entanglementTargets) continue;
-      const [t1, t2] = ev.entanglementTargets;
-      let partnerBaseAbilities: string[] | undefined;
-      if (t1 === unit.instanceId) {
-        const partner = findUnitByInstanceIdOnBoard(state, t2);
-        if (partner) {
-          // 规则定义：基础能力 = 单位卡上印刷的能力，不含 tempAbilities
-          partnerBaseAbilities = [...(partner.card.abilities ?? [])];
-        }
-      } else if (t2 === unit.instanceId) {
-        const partner = findUnitByInstanceIdOnBoard(state, t1);
-        if (partner) {
-          partnerBaseAbilities = [...(partner.card.abilities ?? [])];
-        }
-      }
-      if (partnerBaseAbilities) {
-        for (const a of partnerBaseAbilities) {
-          if (!abilityIds.includes(a)) abilityIds.push(a);
-        }
-      }
-    }
-  }
-
-  return abilityIds
+  return getUnitAbilityIds(unit, state)
     .map(id => abilityRegistry.get(id))
     .filter((def): def is AbilityDef => def !== undefined);
-}
-
-/** 按 instanceId 在棋盘上查找单位 */
-function findUnitByInstanceIdOnBoard(state: SummonerWarsCore, instanceId: string): UnitInstance | undefined {
-  for (let row = 0; row < state.board.length; row++) {
-    for (let col = 0; col < (state.board[row]?.length ?? 0); col++) {
-      const unit = state.board[row]?.[col]?.unit;
-      if (unit && unit.instanceId === instanceId) return unit;
-    }
-  }
-  return undefined;
 }
 
 /**
@@ -809,6 +773,11 @@ export function calculateEffectiveStrength(
   const abilities = getUnitAbilities(unit, state);
   const abilityIds = new Set(abilities.map(a => a.id));
 
+  if (abilityIds.has('shouren_reckless_strike')) {
+    strength += 2;
+    modifiers.push({ source: 'shouren_reckless_strike', sourceName: '鲁莽打击', value: 2 });
+  }
+
   // 附加事件卡加成（如狱火铸剑 +2）
   if (unit.attachedCards) {
     for (const attached of unit.attachedCards) {
@@ -847,6 +816,28 @@ export function calculateEffectiveStrength(
     if (hasAdjacentIgniter) {
       strength += 1;
       modifiers.push({ source: 'huijin_ignite', sourceName: '点燃', value: 1 });
+    }
+  }
+
+  // 刺骨冰霜：与塔甘相邻的友方冰霜单位获得 +1 战力。
+  if (unit.card.deckSymbols.includes(DECK_SYMBOLS.DROPLET)) {
+    const dirs = [
+      { row: -1, col: 0 }, { row: 1, col: 0 },
+      { row: 0, col: -1 }, { row: 0, col: 1 },
+    ];
+    const hasAdjacentBitingFrost = dirs.some((dir) => {
+      const position = { row: unit.position.row + dir.row, col: unit.position.col + dir.col };
+      if (position.row < 0 || position.row >= BOARD_ROWS || position.col < 0 || position.col >= BOARD_COLS) {
+        return false;
+      }
+      const adjacentUnit = state.board[position.row]?.[position.col]?.unit;
+      return !!adjacentUnit
+        && adjacentUnit.owner === unit.owner
+        && getUnitAbilities(adjacentUnit, state).some(ability => ability.id === 'shouren_biting_frost');
+    });
+    if (hasAdjacentBitingFrost) {
+      strength += 1;
+      modifiers.push({ source: 'shouren_biting_frost', sourceName: '刺骨冰霜', value: 1 });
     }
   }
 

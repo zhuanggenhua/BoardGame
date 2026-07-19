@@ -255,53 +255,36 @@ function mythicHorsesSeastarPod(ctx: AbilityContext): AbilityResult {
     return { events: [grantContextualExtraMinion(ctx, 'mythic_horses_seastar_pod')] };
 }
 
-function mythicHorsesSuperFutureSpaceArmorPower(ctx: AbilityContext): AbilityResult {
-    const targets = collectMinions(ctx.matchState.core, () => true);
-    if (targets.length === 0) {
-        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-    const prompt = createSimpleChoice(
-        `mythic_horses_super_future_space_armor_power_${ctx.cardUid}_${ctx.now}`,
-        ctx.playerId,
-        '超未来装甲之力：选择一个随从直到回合结束 +2 且不受其他玩家卡牌影响',
-        buildMinionOptions(ctx.matchState.core, targets),
-        {
-            sourceId: 'mythic_horses_super_future_space_armor_power',
-            targetType: 'minion',
-            autoResolveIfSingle: false,
-            titleKey: 'ui.mythic_horses_super_future_space_armor_power_title',
-        },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, prompt) };
-}
-
-function mythicHorsesSuperFutureSpaceArmorPowerPod(ctx: AbilityContext): AbilityResult {
+function applySuperFutureSpaceArmorPower(
+    ctx: AbilityContext,
+    sourceDefId: 'mythic_horses_super_future_space_armor_power' | 'mythic_horses_super_future_space_armor_power_pod',
+): AbilityResult {
     const events: SmashUpEvent[] = [];
     ctx.matchState.core.bases.forEach((base, baseIndex) => {
         const ownMinions = base.minions.filter(minion => minion.controller === ctx.playerId);
         if (ownMinions.length < 2) return;
         ownMinions.forEach((minion) => {
-            events.push(
-                addTempPower(minion.uid, baseIndex, 2, 'mythic_horses_super_future_space_armor_power_pod', ctx.now),
-                buildMetadataUpdatedEvent(
-                    minion.uid,
-                    baseIndex,
-                    {
-                        tempProtectSourcePlayerId: ctx.playerId,
-                        tempProtectDestroyUntilTurnNumber: ctx.matchState.core.turnNumber,
-                        tempProtectMoveUntilTurnNumber: ctx.matchState.core.turnNumber,
-                        tempProtectAffectUntilTurnNumber: ctx.matchState.core.turnNumber,
-                    },
-                    'mythic_horses_super_future_space_armor_power_pod',
-                    ctx.now,
-                ),
-            );
+            events.push(addTempPower(
+                minion.uid,
+                baseIndex,
+                2,
+                sourceDefId,
+                ctx.now,
+            ));
         });
     });
     if (events.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
     return { events };
+}
+
+function mythicHorsesSuperFutureSpaceArmorPower(ctx: AbilityContext): AbilityResult {
+    return applySuperFutureSpaceArmorPower(ctx, 'mythic_horses_super_future_space_armor_power');
+}
+
+function mythicHorsesSuperFutureSpaceArmorPowerPod(ctx: AbilityContext): AbilityResult {
+    return applySuperFutureSpaceArmorPower(ctx, 'mythic_horses_super_future_space_armor_power_pod');
 }
 
 function mythicHorsesTeachingPower(ctx: AbilityContext): AbilityResult {

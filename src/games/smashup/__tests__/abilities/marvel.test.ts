@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { fireTriggers, isCardSuppressed, isMinionProtected } from '../../domain/ongoingEffects';
 import { getEffectivePower } from '../../domain/ongoingModifiers';
+import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { SHIELD_CARDS } from '../../data/factions/shield';
 import { SPIDER_VERSE_CARDS } from '../../data/factions/spider_verse';
@@ -28,6 +29,23 @@ const FIXED_RANDOM = {
     range: (min: number) => min,
     shuffle: <T>(items: T[]) => [...items],
 };
+
+function attachBeforeScoringReactionSession(
+    matchState: ReturnType<typeof makeMatchState>,
+    sourceBaseIndex: number,
+): ReturnType<typeof makeMatchState> {
+    matchState.sys.phase = 'scoreBases';
+    return startSmashUpReactionSession(matchState, {
+        frameId: `score-before:${sourceBaseIndex}:great-power-test`,
+        frameKind: 'score-before',
+        phase: 'optional',
+        activePlayerId: '0',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex,
+        responseWindowType: 'meFirst',
+    });
+}
 
 describe('漫威第一波新增派系代表性玩法行为', () => {
     beforeEach(() => {
@@ -507,6 +525,47 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
         expect(specialResolved.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.TEMP_POWER_ADDED,
             payload: expect.objectContaining({ minionUid: 'here', amount: 2 }),
+        }));
+
+        const responseWindowCore = makeState({
+            bases: [
+                makeBase('base_juice_bar', [
+                    makeMinion('response-here', 'spider_verse_spider_man_2099', '0', 2),
+                    makeMinion('response-enemy-here', 'shield_agent', '1', 2),
+                ]),
+                makeBase('base_moon_dumpster', [
+                    makeMinion('response-there', 'shield_agent', '1', 2),
+                ]),
+            ],
+        });
+        const responseWindowPlayed = invokeRegisteredAbilityContract('spider_verse_with_great_power', 'onPlay', {
+            state: responseWindowCore,
+            matchState: attachBeforeScoringReactionSession(makeMatchState(responseWindowCore), 0),
+            playerId: '0',
+            cardUid: 'great-power-response',
+            defId: 'spider_verse_with_great_power',
+            baseIndex: 0,
+            targetBaseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 54,
+        });
+        const responseOptions = getPromptOptions(
+            getSimpleChoicePrompt(responseWindowPlayed.matchState!, 'spider_verse_with_great_power'),
+        );
+        expect(responseOptions.some(option => option.value?.minionUid === 'response-here')).toBe(true);
+        expect(responseOptions.some(option => option.value?.minionUid === 'response-enemy-here')).toBe(true);
+        expect(responseOptions.some(option => option.value?.minionUid === 'response-there')).toBe(false);
+
+        const responseResolved = respondToPromptOption(
+            responseWindowPlayed.matchState!,
+            option => option.value?.minionUid === 'response-here',
+            '能力越大响应窗口目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(responseResolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'response-here', amount: 2, sourceBaseIndex: 0 }),
         }));
 
         expect(getEffectivePower(core, core.bases[0].minions[0], 0)).toBe(3);

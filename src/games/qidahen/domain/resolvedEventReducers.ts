@@ -21,6 +21,7 @@ import {
 import {
     resolveQidahenScenarioVoteCastEvent,
 } from './scenarioVoteState';
+import { resolveQidahenFactionSelectedEvent } from './factionSelectionState';
 import {
     resolveQidahenSunYuanhuaTechResolvedEvent,
 } from './armamentUpgradeResolution';
@@ -530,6 +531,10 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
     defineResolvedEventReducer(
         ['SCENARIO_VOTE_CAST'],
         resolveQidahenScenarioVoteCastEvent,
+    ),
+    defineResolvedEventReducer(
+        ['FACTION_SELECTED'],
+        resolveQidahenFactionSelectedEvent,
     ),
     defineResolvedEventReducer(
         ['SUN_YUANHUA_TECH_RESOLVED'],

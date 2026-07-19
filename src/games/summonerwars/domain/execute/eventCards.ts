@@ -24,6 +24,7 @@ import {
   calculatePushPullPosition,
   calculateStunPushPull,
   getUnitAbilities,
+  getValidShourenFreezeTargets,
   isInStraightLine,
   BOARD_ROWS,
   BOARD_COLS,
@@ -102,6 +103,19 @@ export function executePlayEvent(
     }
 
     switch (cardBaseId) {
+      case CARD_IDS.SHOUREN_FREEZE: {
+        const targetPosition = targets?.[0];
+        const targetUnit = targetPosition ? getUnitAt(core, targetPosition) : undefined;
+        if (targetUnit && getValidShourenFreezeTargets(core, playerId)
+          .some(unit => unit.instanceId === targetUnit.instanceId)) {
+          events.push({
+            type: SW_EVENTS.HYPNOTIC_LURE_MARKED,
+            payload: { playerId, cardId, targetUnitId: targetUnit.instanceId },
+            timestamp,
+          });
+        }
+        break;
+      }
       case CARD_IDS.NECRO_HELLFIRE_BLADE: {
         if (targets && targets.length > 0) {
           events.push({

@@ -47,12 +47,15 @@ import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 import { sortGamesForLobbyDirectory } from '../components/home-v2/lobbyDirectorySorting';
 import { HomeModalErrorBoundary } from './HomeModalErrorBoundary';
+import { requireLazyModuleExport } from '../lib/lazyModuleExport';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_WARMUP_DELAY_MS = 120;
 const loadGameDetailsModalModule = () => import('../components/lobby/GameDetailsModal');
-const LazyGameDetailsModal = lazy(() => loadGameDetailsModalModule().then((m) => ({ default: m.GameDetailsModal })));
+const LazyGameDetailsModal = lazy(() => loadGameDetailsModalModule().then((module) => ({
+    default: requireLazyModuleExport(module, 'GameDetailsModal', '../components/lobby/GameDetailsModal'),
+})));
 
 const HomeGridLogo = () => (
     <svg

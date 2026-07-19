@@ -6,14 +6,16 @@
 ## 当前章节
 
 1. `basic-setup-and-turn`
-   - 目标：直接从真实恶兆前运行时进入，合并讲清基础回合、持有物使用、移动、探索和发现牌检定。
-2. `haunt-actions-and-finish`
+   - 目标：直接从真实恶兆前运行时进入，合并讲清基础回合、持有物使用、移动、探索和发现牌检定；交易不再混在这一章里带过。
+2. `trade-and-agreement`
+   - 目标：切到同房间且双方都有持有物的真实运行时局面，讲清交易必须同一房间、物品/预兆可交换、换回是可选附加项、双方同意后才结算，并完成“不点换回直接发请求”和“选兔脚 -> 点同房间队友 -> 选换回地图 -> 发请求 -> 接收方同意 -> 双向结算清空”链路。
+3. `haunt-actions-and-finish`
    - 目标：切到真实第一剧本作祟后局面，先讲清“探索/预兆导致作祟、作祟后目标改变、前置调查完成后才轮到驱魔”，再完成英雄驱魔检定。
-3. `hero-attack-path`
+4. `hero-attack-path`
    - 目标：切到真实第一剧本英雄与叛徒同房间局面，打开剧本确认目标后，演示英雄攻击叛徒和攻击骰盘。
-4. `jack-spirit-path`
+5. `jack-spirit-path`
    - 目标：切到真实第一剧本杰克之灵已出现后的局面，打开剧本确认怪物目标，再演示杰克之灵攻击英雄和同一攻击骰盘。
-5. `traitor-path`
+6. `traitor-path`
    - 目标：切到叛徒视角，演示叛徒攻击英雄并进入另一种结局。
 
 隐藏兼容入口：
@@ -28,6 +30,7 @@
 - 已挂真实教程锚点：
   - 角色选择：`betrayal-character-select-screen`、`betrayal-character-selection-grid`、`betrayal-character-confirm`
   - 运行时：`betrayal-current-traits`、`betrayal-inventory-zone`、`betrayal-room-board`、`betrayal-latest-discovery`、`betrayal-actions-zone`、`betrayal-action-*`
+  - 交易：`betrayal-trade-status`、`betrayal-room-occupant-hallway-1`、`betrayal-trade-return-selector`、`betrayal-action-trade`、`betrayal-trade-agreement-panel`
   - 帮助与终局：`betrayal-reference-entry`、`betrayal-endgame-screen`
 - 已有静态验证：
   - `src/games/betrayal/__tests__/tutorial.test.ts`
@@ -51,6 +54,10 @@
 - 这轮已重新通过教程/共享接线相关单测：
   - `node scripts/infra/vitest-cli-safe.mjs run src/components/game/framework/__tests__/ActionBarSkeleton.test.tsx src/engine/systems/__tests__/CheatSystem.test.ts src/games/__tests__/betrayalManifestIntegration.test.ts src/games/betrayal/__tests__/tutorial.test.ts src/games/betrayal/__tests__/tutorialIds.test.ts src/pages/__tests__/matchRoomStageRuntimeModelBuilders.test.ts src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx --configLoader native`
   - 结果：`7 passed / 31 passed`
+- 本轮新增交易教程后，已补充并通过：
+  - `npx eslint src/games/betrayal/tutorial.ts src/games/betrayal/__tests__/tutorial.test.ts e2e/betrayal/betrayal-tutorial.e2e.ts`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts --configLoader native`
+  - `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-command.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts --grep "交易教程"`
 - 这轮已串行通过的真实 E2E 共 7 条：
   - `basic-flow`
   - `first-scenario`
@@ -65,13 +72,19 @@
 | 规则条目 | 状态 | 对应章节 | 真实锚点 / 真实动作 | 当前证据 |
 | :--- | :--- | :--- | :--- | :--- |
 | 角色选择 / 剧本开始属于真实进入链路，但不再作为基础教程主教学落点 | 已调整 | 真实入口保留，基础教程正文不单列 | 角色选择 UI 与 `CONFIRM_EXPLORER` / `START_SCENARIO` 仍存在，但首章改为 `setup-runtime` 注入到真实恶兆前运行时 | `tutorial.ts`、`tutorial.test.ts` |
-| 恶兆前主动作入口：移动 / 探索 / 交易 / 使用 / 结束回合 | 已覆盖 | `basic-setup-and-turn` | `betrayal-actions-zone` | `tutorial.test.ts`、`evidence/betrayal-tutorial/02` |
+| 恶兆前主动作入口：移动 / 探索 / 使用 / 结束回合；交易单列为双方同意章节 | 已覆盖 | `basic-setup-and-turn`、`trade-and-agreement` | `betrayal-actions-zone`、`betrayal-action-trade` | `tutorial.test.ts`、`evidence/betrayal-tutorial/02`、`29-35` |
 | 速度决定理论移动范围，移动前先看属性区里的速度值 | 已覆盖 | `basic-setup-and-turn` | `betrayal-current-traits` | `tutorial.test.ts` |
 | 当前这回合还剩几步，要看右上角剩余移动提示 | 已覆盖 | `basic-setup-and-turn` | `betrayal-moves-remaining` | `tutorial.test.ts`、`evidence/betrayal-tutorial/02` |
 | 持有区与帮助入口都在真实牌桌里，不另造说明页 | 已覆盖 | `basic-setup-and-turn` | `betrayal-inventory-zone`、`betrayal-reference-entry` | `tutorial.test.ts`、`evidence/betrayal-tutorial/03` |
 | 房间牌桌是主视区 | 已覆盖 | `basic-setup-and-turn` | `betrayal-room-board` | `evidence/betrayal-tutorial/03` |
 | 真实移动会消耗移动点，使用兔脚可改骰 | 已覆盖 | `basic-setup-and-turn` | `USE_POSSESSION` -> `MOVE_TO_ROOM` -> `USE_RABBIT_FOOT` | `tutorial.test.ts`、`evidence/betrayal-basic-flow/04-06` |
 | 可探索的盖着房间会真实翻开，并触发事件 / 物品 / 预兆 | 已覆盖 | `basic-setup-and-turn` | `EXPLORE_ROOM` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/11-12` |
+| 同房间交易规则：同一房间、物品/预兆、双方同意、可任意数量交换且不必等价 | 已覆盖 | `trade-and-agreement` | 规则书 `Trading`；`TRADE_POSSESSION` 先写入待同意交易，`RESOLVE_TRADE_AGREEMENT` 同意后才结算 | `docs/games/betrayal/sources/official/betrayal-3e-rulebook-en.md`、`tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts` |
+| 发起方选择要给出的持有物，并直接点击地图上的同房间队友 token | 已覆盖 | `trade-and-agreement` | `betrayal-inventory-rope` -> `betrayal-room-occupant-hallway-1` | `tutorial.test.ts`、`evidence/betrayal-tutorial/30-山屋惊魂-教程-交易选择兔脚.jpg`、`31-山屋惊魂-教程-交易选择队友.jpg` |
+| 发起方不选择换回时不会误以为必须从对方持有物里选一张 | 已覆盖 | `trade-and-agreement` | 选中队友后 `betrayal-trade-return-selector` 只显示真实对方持有物卡牌；不得显示 `betrayal-trade-return-skip`；摘要显示“给出兔脚 / 不换回”；唯一 `发送交易请求` 确认必须在 `betrayal-trade-flow-banner` 同一块里；直接点后 `targetCardIds=[]` | `e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-trade-interaction.e2e.ts`、`evidence/betrayal-tutorial/31-山屋惊魂-教程-交易选择队友.jpg`、`evidence/山屋惊魂-交易不换回完整链路/01-选择队友后未选择换回.jpg` |
+| 发起方选择要从对方换回的持有物 | 已覆盖 | `trade-and-agreement` | 选中队友后显示 `betrayal-trade-return-selector`，点击 `betrayal-trade-return-card-map`，请求 payload 写入 `targetCardIds=['map']` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/32-山屋惊魂-教程-交易选择换回地图.jpg` |
+| 交易请求发出后进入等待态，接收方看到同意 / 拒绝面板 | 已覆盖 | `trade-and-agreement` | 流程条内 `betrayal-action-trade[data-trade-confirm-placement="flow-banner"]` -> `betrayal-trade-agreement-panel`，摘要必须显示“给出兔脚 / 不换回”或“给出兔脚 / 换回地图” | `tutorial.test.ts`、`evidence/betrayal-tutorial/33-山屋惊魂-教程-交易请求等待同意.jpg`、`34-山屋惊魂-教程-交易接收方同意.jpg` |
+| 接收方同意后，待同意状态清空，发起方得到地图、队友得到兔脚并回到牌桌反馈 | 已覆盖 | `trade-and-agreement` | `POSSESSION_TRADED` 后 `pendingTradeAgreement=null`，`betrayal-room-latest-feedback` 显示交易结果 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/35-山屋惊魂-教程-交易后互换结果.jpg` |
 | 第一剧本作祟后目标改变：探索目标切换为调查杰克、研究法阵、驱魔 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-reference-entry`、杰克之灵 token、作祟后状态条 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/17-山屋惊魂-教程-作祟目标改变.jpg` |
 | 打开剧本目标页是只读参考入口，不得只靠介绍 | 已覆盖 | `haunt-actions-and-finish`、`hero-attack-path`、`jack-spirit-path` | `betrayal-open-scenario` -> `betrayal-scenario-objective-page` -> `betrayal-reference-close`；目标页必须显示英雄目标、叛徒目标、杰克之灵目标 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/18-山屋惊魂-教程-打开剧本目标页.jpg`、`26-山屋惊魂-教程-杰克之灵目标页.jpg` |
 | 驱魔前玩家因果链：前置调查与两处法阵已完成，所以现在才轮到驱魔 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-action-use`、教程浮层因果说明 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/19-山屋惊魂-教程-驱魔前因果说明.jpg` |

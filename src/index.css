@@ -746,6 +746,16 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {
+    html[data-game-id="betrayal"][data-mobile-layout-preset="map-shell"] .mobile-board-shell,
+    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="map-shell"] .mobile-board-shell {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 100vh;
+        min-height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+    }
+
     html[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"],
     html:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]),
     body[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"],
@@ -784,6 +794,18 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         display: none !important;
     }
 }
+
+@media (max-width: 1023px) and (max-height: 500px) and (orientation: landscape) {
+    [data-game-ui="the-gang"][data-the-gang-two-hand="true"][data-the-gang-phase="chip-selection"] [data-bgg-zone="middle-zone"] {
+        align-items: flex-start;
+        padding-top: clamp(2.25rem, 13vh, 3.5rem);
+    }
+
+    [data-game-ui="the-gang"][data-the-gang-two-hand="true"][data-the-gang-phase="chip-selection"] [data-bgg-zone="middle-center"] {
+        gap: 0.35rem;
+    }
+}
+
 /* 绉诲姩绔Е鎽镐紭鍖?*/
 @media (max-width: 1023px) {
     /* 鍏佽杈撳叆妗嗛€夋嫨鏂囨湰 */
@@ -1324,5 +1346,160 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     to {
         opacity: 1;
         transform: translate3d(0, 0, 0);
+    }
+}
+
+.betrayal-attack-impact-surface {
+    --betrayal-impact-color: #ff9f8b;
+    --betrayal-impact-glow: rgba(255, 112, 86, 0.62);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 28;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.betrayal-attack-impact-shake,
+.betrayal-attack-impact-target {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
+.betrayal-attack-impact-flash {
+    position: absolute;
+    inset: -16px;
+    z-index: 3;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.betrayal-attack-impact-slash {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.betrayal-attack-impact-floating {
+    position: absolute;
+    left: 50%;
+    top: -18px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: max-content;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    transform: translate3d(-50%, 8px, 0);
+    animation: betrayal-attack-impact-float 720ms cubic-bezier(0.18, 0.88, 0.28, 1.05) 80ms both;
+}
+
+.betrayal-attack-impact-surface[data-density="panel"] .betrayal-attack-impact-floating {
+    top: -14px;
+    font-size: 10px;
+}
+
+.betrayal-haunt-reveal-cue {
+    transform-origin: 50% 0;
+    animation: betrayal-haunt-reveal-cue-in 780ms cubic-bezier(0.16, 0.9, 0.24, 1.08) both;
+}
+
+.betrayal-haunt-reveal-cue__slash {
+    position: absolute;
+    left: -8%;
+    right: -8%;
+    top: 48%;
+    height: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(255, 95, 72, 0.92), #ffe1a5, rgba(255, 95, 72, 0.9), transparent);
+    box-shadow:
+        0 0 26px rgba(234, 72, 48, 0.72),
+        0 0 42px rgba(255, 199, 112, 0.34);
+    transform: rotate(-8deg) scaleX(0);
+    transform-origin: 9% 50%;
+    animation: betrayal-haunt-reveal-slash 920ms cubic-bezier(0.12, 0.86, 0.24, 1) 80ms both;
+}
+
+@keyframes betrayal-attack-impact-float {
+    0% {
+        opacity: 0;
+        transform: translate3d(-50%, 8px, 0) scale(0.92);
+    }
+
+    42% {
+        opacity: 1;
+        transform: translate3d(-50%, -12px, 0) scale(1.06);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate3d(-50%, -18px, 0) scale(1);
+    }
+}
+
+@keyframes betrayal-haunt-reveal-cue-in {
+    0% {
+        opacity: 0;
+        transform: translate3d(-50%, -22px, 0) rotate(-1.5deg) scale(0.92);
+        filter: saturate(1.3) brightness(1.2);
+    }
+
+    32% {
+        opacity: 1;
+        transform: translate3d(-50%, 3px, 0) rotate(1deg) scale(1.04);
+    }
+
+    58% {
+        transform: translate3d(-50%, -2px, 0) rotate(-0.4deg) scale(1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate3d(-50%, 0, 0) rotate(0deg) scale(1);
+        filter: saturate(1) brightness(1);
+    }
+}
+
+@keyframes betrayal-haunt-reveal-slash {
+    0% {
+        opacity: 0;
+        transform: rotate(-8deg) scaleX(0);
+    }
+
+    18% {
+        opacity: 1;
+        transform: rotate(-8deg) scaleX(1);
+    }
+
+    72% {
+        opacity: 0.8;
+        transform: rotate(-8deg) translate3d(14px, 0, 0) scaleX(1);
+    }
+
+    100% {
+        opacity: 0.22;
+        transform: rotate(-8deg) translate3d(22px, 0, 0) scaleX(0.7);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .betrayal-attack-impact-surface,
+    .betrayal-attack-impact-flash,
+    .betrayal-attack-impact-slash,
+    .betrayal-attack-impact-floating,
+    .betrayal-haunt-reveal-cue,
+    .betrayal-haunt-reveal-cue__slash {
+        animation-duration: 1ms !important;
+        animation-delay: 0ms !important;
     }
 }

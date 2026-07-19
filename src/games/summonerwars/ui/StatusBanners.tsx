@@ -355,7 +355,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
               ))}
           </>
         )}
-        {['spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'mogu_transmission', 'mogu_fanatical_fungus', 'huijin_call_guards', 'huijin_ram', 'huijin_quick_shot'].includes(abilityMode.abilityId) && (
+        {['spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'mogu_transmission', 'mogu_fanatical_fungus', 'huijin_call_guards', 'huijin_ram', 'huijin_quick_shot', 'shouren_bloody_rush', 'shouren_berserk', 'shouren_brute_impact', 'shouren_primal_fury'].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
         {abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit' && (
@@ -368,7 +368,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         {abilityMode.abilityId === 'life_drain' && abilityMode.context === 'beforeAttack' && abilityMode.step === 'selectUnit' && (
           <GameButton onClick={onCancelBeforeAttack} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
-        {!['blood_rune', 'spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'mogu_transmission', 'mogu_fanatical_fungus', 'huijin_call_guards', 'huijin_ram', 'huijin_quick_shot', 'vanish', 'ice_ram', 'life_drain'].includes(abilityMode.abilityId) && (
+        {!['blood_rune', 'spirit_bond', 'ancestral_bond', 'structure_shift', 'frost_axe', 'mogu_transmission', 'mogu_fanatical_fungus', 'huijin_call_guards', 'huijin_ram', 'huijin_quick_shot', 'shouren_bloody_rush', 'shouren_berserk', 'shouren_brute_impact', 'shouren_primal_fury', 'vanish', 'ice_ram', 'life_drain'].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
         )}
         {/* life_drain 在非 beforeAttack 上下文中显示"取消"按钮 */}

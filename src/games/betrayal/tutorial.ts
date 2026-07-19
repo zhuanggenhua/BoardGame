@@ -2,6 +2,7 @@ import type { TutorialCollection, TutorialManifest } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { BETRAYAL_COMMANDS } from './game';
 import {
+    createExchangeReadyTutorialCore,
     createHeroAttackTraitorReadyTutorialCore,
     createFirstScenarioReadyToExorciseTutorialCore,
     createFirstScenarioReadyToTraitorVictoryTutorialCore,
@@ -115,6 +116,90 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             position: 'center',
             infoStep: true,
             allowedCommands: [BETRAYAL_COMMANDS.USE_RABBIT_FOOT],
+            viewAs: '0',
+        },
+    ],
+};
+
+const BETRAYAL_TRADE_AND_AGREEMENT: TutorialManifest = {
+    id: 'trade-and-agreement',
+    numPlayers: 3,
+    allowManualSkip: true,
+    steps: [
+        {
+            id: 'setup-trade',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.setupTrade',
+            position: 'center',
+            showMask: true,
+            viewAs: '0',
+            aiActions: [
+                {
+                    commandType: CHEAT_COMMANDS.MERGE_STATE,
+                    payload: {
+                        fields: createExchangeReadyTutorialCore().core ?? createExchangeReadyTutorialCore(),
+                    },
+                },
+            ],
+            autoAdvanceAfterAi: false,
+        },
+        {
+            id: 'choose-trade-item',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.chooseTradeItem',
+            highlightTarget: 'betrayal-inventory-rope',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'choose-trade-target',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.chooseTradeTarget',
+            highlightTarget: 'betrayal-room-occupant-hallway-1',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'choose-trade-return',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.chooseTradeReturn',
+            highlightTarget: 'betrayal-trade-return-selector',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'send-trade-request',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.sendTradeRequest',
+            highlightTarget: 'betrayal-action-trade',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.TRADE_POSSESSION],
+            advanceOnEvents: [{ type: 'POSSESSION_TRADE_REQUESTED', match: { playerId: '0', targetPlayerId: '1' } }],
+            viewAs: '0',
+        },
+        {
+            id: 'request-waiting',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.requestWaiting',
+            highlightTarget: 'betrayal-trade-flow-banner',
+            position: 'top',
+            infoStep: true,
+            viewAs: '0',
+        },
+        {
+            id: 'accept-trade-request',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.acceptTradeRequest',
+            highlightTarget: 'betrayal-trade-agreement-panel',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT],
+            advanceOnEvents: [{ type: 'POSSESSION_TRADED', match: { playerId: '0', targetPlayerId: '1' } }],
+            viewAs: '1',
+        },
+        {
+            id: 'trade-review',
+            content: 'game-betrayal:tutorial.tradeAndAgreement.steps.tradeReview',
+            highlightTarget: 'betrayal-room-latest-feedback',
+            position: 'center',
+            infoStep: true,
             viewAs: '0',
         },
     ],
@@ -334,6 +419,11 @@ const BETRAYAL_TUTORIAL_CATALOG: TutorialCollection = {
             titleKey: 'tutorial.basicSetup.title',
             descriptionKey: 'tutorial.basicSetup.description',
             manifest: BETRAYAL_BASIC_SETUP_AND_TURN,
+        },
+        'trade-and-agreement': {
+            titleKey: 'tutorial.tradeAndAgreement.title',
+            descriptionKey: 'tutorial.tradeAndAgreement.description',
+            manifest: BETRAYAL_TRADE_AND_AGREEMENT,
         },
         'move-explore-use': {
             titleKey: 'tutorial.basicSetup.title',

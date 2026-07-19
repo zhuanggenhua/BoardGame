@@ -28,6 +28,7 @@ import {
   isInStraightLine,
   getStructureAt,
   getUnitAbilities,
+  getValidShourenFreezeTargets,
   findUnitPositionByInstanceId,
   hasStableAbility,
   getStunDestinations,
@@ -57,6 +58,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.MOGU_COMMAND,
   CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
   CARD_IDS.MOGU_RELEASE_SPORES,
+  CARD_IDS.SHOUREN_FREEZE,
 ]);
 
 function buildBloodRuneOptions(core: SummonerWarsCore, owner: PlayerId): PromptOption<SwInteractionValue>[] {
@@ -84,6 +86,10 @@ type SwInteractionMeta =
       type: 'infection';
       sourceUnitId: string;
       targetPosition: CellCoord;
+    }
+  | {
+      type: 'shouren_encourage';
+      attackerId: string;
     }
   | {
       type: 'event_target';
@@ -271,6 +277,28 @@ type SwInteractionMeta =
       sourcePosition: CellCoord;
     }
   | {
+      type: 'after_attack_shouren_brute_impact';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetPosition: CellCoord;
+      newPosition: CellCoord;
+    }
+  | {
+      type: 'after_summon_shouren_bloody_rush';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'after_attack_shouren_berserk';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'after_attack_shouren_primal_fury';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
       type: 'after_attack_withdraw_cost';
       sourceUnitId: string;
       sourcePosition: CellCoord;
@@ -378,6 +406,7 @@ type SwInteractionMeta =
 
 type SwInteractionValue =
   | { action: 'infection'; cardId: string; sourceUnitId: string; targetPosition: CellCoord }
+  | { action: 'shouren_encourage'; choice: 'reroll' | 'keep' }
   | { action: 'event_target'; targetPosition: CellCoord }
   | { action: 'magic_event_play' }
   | { action: 'magic_event_discard' }
@@ -422,6 +451,10 @@ type SwInteractionValue =
   | { action: 'after_attack_huijin_ram_target'; targetPosition: CellCoord }
   | { action: 'after_attack_huijin_ram_position'; targetPosition: CellCoord; newPosition: CellCoord }
   | { action: 'after_attack_rapid_fire'; confirm?: boolean }
+  | { action: 'after_attack_shouren_brute_impact'; targetPosition: CellCoord; newPosition: CellCoord }
+  | { action: 'after_summon_shouren_bloody_rush'; newPosition: CellCoord }
+  | { action: 'after_attack_shouren_berserk'; newPosition: CellCoord }
+  | { action: 'after_attack_shouren_primal_fury'; newPosition: CellCoord }
   | { action: 'after_attack_withdraw_cost'; costType: 'charge' | 'magic' }
   | { action: 'after_attack_withdraw_position'; targetPosition: CellCoord; costType: 'charge' | 'magic' }
   | { action: 'on_phase_start_illusion'; targetPosition: CellCoord }
@@ -1139,6 +1172,43 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           newState = clearPhaseEndResolution(newState);
         }
 
+        if (event.type === SW_EVENTS.ATTACK_ROLL_PENDING) {
+          const pending = newState.core.pendingAttackRoll;
+          if (!pending) continue;
+          const interactionId = `sw-shouren-encourage-${event.timestamp ?? 0}-${pending.attackerId}`;
+          if (hasQueuedInteraction(newState, interactionId)) continue;
+          const options: PromptOption<SwInteractionValue>[] = [
+            {
+              id: 'reroll',
+              label: '重掷全部骰子',
+              labelKey: 'actions.shourenRerollAll',
+              value: { action: 'shouren_encourage', choice: 'reroll' },
+            },
+            {
+              id: 'keep',
+              label: '保留当前结果',
+              labelKey: 'actions.shourenKeepRoll',
+              value: { action: 'shouren_encourage', choice: 'keep' },
+            },
+          ];
+          const interaction = createSimpleChoice(
+            interactionId,
+            pending.playerId,
+            'interaction.sw.shourenEncourage',
+            options,
+            { sourceId: 'shouren_encourage', targetType: 'button', autoResolveIfSingle: false },
+          );
+          const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+          interaction.data = {
+            ...interactionData,
+            sw: {
+              type: 'shouren_encourage',
+              attackerId: pending.attackerId,
+            } satisfies SwInteractionMeta,
+          };
+          newState = queueInteraction(newState, interaction, { urgent: true });
+        }
+
         if (event.type === SW_EVENTS.EVENT_INTERACTION_REQUESTED) {
           const payload = event.payload as { playerId: PlayerId; cardId: string };
           const player = newState.core.players[payload.playerId];
@@ -1192,7 +1262,8 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             case CARD_IDS.BARBARIC_CHANT_OF_POWER:
             case CARD_IDS.BARBARIC_CHANT_OF_GROWTH:
             case CARD_IDS.BARBARIC_CHANT_OF_WEAVING:
-            case CARD_IDS.MOGU_COMMAND: {
+            case CARD_IDS.MOGU_COMMAND:
+            case CARD_IDS.SHOUREN_FREEZE: {
               const targets = (() => {
                 if (baseId === CARD_IDS.NECRO_HELLFIRE_BLADE) {
                   return friendlyUnits.filter((unit) => unit.card.unitClass === 'common').map((unit) => unit.position);
@@ -1202,6 +1273,10 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                   return friendlyUnits
                     .filter((unit) => unit.card.unitClass === 'common'
                       && manhattanDistance(summoner.position, unit.position) <= 3)
+                    .map((unit) => unit.position);
+                }
+                if (baseId === CARD_IDS.SHOUREN_FREEZE) {
+                  return getValidShourenFreezeTargets(newState.core, payload.playerId)
                     .map((unit) => unit.position);
                 }
                 if (baseId === CARD_IDS.BARBARIC_CHANT_OF_POWER) {
@@ -1742,6 +1817,9 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             sourceUnitId?: string;
             sourcePosition?: CellCoord;
             targetPosition?: CellCoord;
+            targetUnitId?: string;
+            newPosition?: CellCoord;
+            specialCount?: number;
             targetOwner?: PlayerId;
             interactionResolved?: boolean;
             iceRamOwner?: PlayerId;
@@ -1752,6 +1830,161 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           const sourceUnitId = payload.sourceUnitId;
           const sourcePosition = payload.sourcePosition;
           if (!actionId || !sourceUnitId || !sourcePosition) continue;
+
+          if (actionId === 'shouren_brute_impact') {
+            const shourenSourceUnit = getUnitAt(newState.core, sourcePosition);
+            const targetPosition = payload.targetPosition;
+            const newPosition = payload.newPosition;
+            const targetUnit = targetPosition ? getUnitAt(newState.core, targetPosition) : undefined;
+            if (!shourenSourceUnit || !targetPosition || !newPosition || !targetUnit
+              || targetUnit.instanceId !== payload.targetUnitId) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              {
+                id: `pos:${newPosition.row},${newPosition.col}`,
+                label: `(${newPosition.row},${newPosition.col})`,
+                labelKey: 'actions.position',
+                labelParams: { row: newPosition.row, col: newPosition.col },
+                value: { action: 'after_attack_shouren_brute_impact', targetPosition, newPosition },
+              },
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-shouren-brute-impact-${event.timestamp ?? 0}-${sourceUnitId}`,
+              shourenSourceUnit.owner,
+              'interaction.sw.shourenBruteImpact',
+              options,
+              { sourceId: 'shouren_brute_impact', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'after_attack_shouren_brute_impact',
+                sourceUnitId,
+                sourcePosition,
+                targetPosition,
+                newPosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (actionId === 'shouren_bloody_rush') {
+            const summonedUnit = getUnitAt(newState.core, sourcePosition);
+            if (!summonedUnit || !getUnitAbilities(summonedUnit, newState.core).includes('shouren_bloody_rush')) continue;
+            const destinations = getForceDestinations(newState.core, sourcePosition, 1);
+            if (destinations.length === 0) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...destinations.map(destination => ({
+                id: `pos:${destination.position.row},${destination.position.col}`,
+                label: `(${destination.position.row},${destination.position.col})`,
+                labelKey: 'actions.position',
+                labelParams: { row: destination.position.row, col: destination.position.col },
+                value: { action: 'after_summon_shouren_bloody_rush', newPosition: destination.position },
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-shouren-bloody-rush-${event.timestamp ?? 0}-${summonedUnit.instanceId}`,
+              summonedUnit.owner,
+              'interaction.sw.shourenBloodyRush',
+              options,
+              { sourceId: 'shouren_bloody_rush', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'after_summon_shouren_bloody_rush',
+                sourceUnitId: summonedUnit.instanceId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (actionId === 'shouren_berserk_roll') {
+            const berserkUnit = getUnitAt(newState.core, sourcePosition);
+            if (!berserkUnit || payload.specialCount === undefined || payload.specialCount < 1) continue;
+            const destinations = getForceDestinations(newState.core, sourcePosition, 1);
+            if (destinations.length === 0) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...destinations.map(destination => ({
+                id: `pos:${destination.position.row},${destination.position.col}`,
+                label: `(${destination.position.row},${destination.position.col})`,
+                labelKey: 'actions.position',
+                labelParams: { row: destination.position.row, col: destination.position.col },
+                value: { action: 'after_attack_shouren_berserk', newPosition: destination.position },
+              })),
+              { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-shouren-berserk-${event.timestamp ?? 0}-${berserkUnit.instanceId}`,
+              berserkUnit.owner,
+              'interaction.sw.shourenBerserkPosition',
+              options,
+              { sourceId: 'shouren_berserk', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'after_attack_shouren_berserk',
+                sourceUnitId: berserkUnit.instanceId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (actionId === 'shouren_primal_fury') {
+            const summoner = getUnitAt(newState.core, sourcePosition);
+            if (!summoner
+              || summoner.card.unitClass !== 'summoner'
+              || !getUnitAbilities(summoner, newState.core).includes('shouren_primal_fury')) continue;
+            const destinations = [
+              ...getForceDestinations(newState.core, sourcePosition, 1),
+              ...getForceDestinations(newState.core, sourcePosition, 2),
+            ];
+            if (destinations.length === 0) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...destinations.map(destination => ({
+                id: `pos:${destination.position.row},${destination.position.col}`,
+                label: `(${destination.position.row},${destination.position.col})`,
+                labelKey: 'actions.position',
+                labelParams: { row: destination.position.row, col: destination.position.col },
+                value: { action: 'after_attack_shouren_primal_fury', newPosition: destination.position },
+              })),
+              { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-shouren-primal-fury-${event.timestamp ?? 0}-${summoner.instanceId}`,
+              summoner.owner,
+              'interaction.sw.shourenPrimalFuryPosition',
+              options,
+              { sourceId: 'shouren_primal_fury', targetType: 'summoner', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'after_attack_shouren_primal_fury',
+                sourceUnitId: summoner.instanceId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
 
           if (actionId === 'ice_ram_trigger') {
             const ownerId = payload.iceRamOwner;
@@ -2514,6 +2747,18 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           if (!sw) continue;
           const value = payload.value ?? null;
           const values = normalizeInteractionValues(value);
+
+          if (sw.type === 'shouren_encourage') {
+            const picked = values.find((item) => item.action === 'shouren_encourage') as
+              { action: 'shouren_encourage'; choice: 'reroll' | 'keep' } | undefined;
+            if (picked) {
+              nextEvents.push(...executeSwCommand(newState, random, {
+                type: SW_COMMANDS.RESOLVE_PENDING_ATTACK,
+                payload: { choice: picked.choice, _noSnapshot: true },
+                playerId: payload.playerId,
+              }));
+            }
+          }
 
           if (sw.type === 'event_target') {
             const target = values.find((item) => item.action === 'event_target') as { action: 'event_target'; targetPosition: CellCoord } | undefined;
@@ -3500,6 +3745,75 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
               } satisfies SwInteractionMeta,
             };
             newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'after_attack_shouren_brute_impact') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_attack_shouren_brute_impact') as
+              { action: 'after_attack_shouren_brute_impact'; targetPosition: CellCoord; newPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'shouren_brute_impact',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
+                newPosition: picked.newPosition,
+                _noSnapshot: true,
+              },
+              playerId: payload.playerId,
+            }));
+          }
+
+          if (sw.type === 'after_summon_shouren_bloody_rush') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_summon_shouren_bloody_rush') as
+              { action: 'after_summon_shouren_bloody_rush'; newPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'shouren_bloody_rush',
+                sourceUnitId: sw.sourceUnitId,
+                newPosition: picked.newPosition,
+                _noSnapshot: true,
+              },
+              playerId: payload.playerId,
+            }));
+          }
+
+          if (sw.type === 'after_attack_shouren_berserk') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_attack_shouren_berserk') as
+              { action: 'after_attack_shouren_berserk'; newPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'shouren_berserk',
+                sourceUnitId: sw.sourceUnitId,
+                newPosition: picked.newPosition,
+                _noSnapshot: true,
+              },
+              playerId: payload.playerId,
+            }));
+          }
+
+          if (sw.type === 'after_attack_shouren_primal_fury') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'after_attack_shouren_primal_fury') as
+              { action: 'after_attack_shouren_primal_fury'; newPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              payload: {
+                abilityId: 'shouren_primal_fury',
+                sourceUnitId: sw.sourceUnitId,
+                newPosition: picked.newPosition,
+                _noSnapshot: true,
+              },
+              playerId: payload.playerId,
+            }));
           }
 
           if (sw.type === 'after_attack_telekinesis_direction') {

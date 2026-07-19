@@ -4,6 +4,8 @@
 
 ## Current Addendum（2026-07-14 +08）
 
+- [ ] 2026-07-18 +08：重新进入“全部正式玩家流程 UI 审计”。此前剧本 1/3/12/33 的四条作祟操作链只证明局部交互，不代表全部流程用户友好；最终必须以桌面/移动流程矩阵逐项全绿、真实整屏截图肉眼通过为准，之后才允许一次性用 PureRef 打开最终端到端原图。本轮按用户要求不发布截图站。
+- [ ] 2026-07-18 +08：额外剧本阅读器当前判定 `REVISE`。剧本 3/12/33 虽有正文和翻页状态，但仍挂在通用参考卡 `MagnifyOverlay`，底部页码错误串用参考卡总页数，末页出现无语义空白；必须统一到独立剧本阅读器，并对剧本 1/3/12/33 分别完成首页、翻页中、末页和关闭回牌桌的真实截图验收。
 - [x] 建立山屋专项计划：`docs/games/betrayal/workflows/betrayal-playability-overhaul-plan-2026-07-14.md`。
 - [x] 补强项目 E2E 规范：`docs/ai-rules/e2e-verification.md` 已明确“牌翻出类流程”必须覆盖翻出前、翻出后、选择/投骰、结算、关闭回牌桌六段。
 - [x] 继续加硬通用 E2E 证据模板：每段必须登记 `玩家实际动作 / 自动断言 / 截图文件 / 用户目标对应`，且滚动、选项尺寸、背景框、属性颜色、骰子重叠等用户点名目标必须在同一条主链里证明。
@@ -6929,6 +6931,30 @@
   - 低清联系图核验：`temp/betrayal-hungry-house-full-chain-contact-lowres.jpg`
 - [ ] 下一步：
   - 继续剩余事件、预兆、物品和骰盘全家族 L3/L4 自审；guard 通过前不宣称山屋全面完成
+
+## Current Addendum（2026-07-18 冰苔兽人）
+
+- [x] S0 录入合同与 OpenSpec 批准门禁已完成。
+- [x] S1 静态接入已完成：派系选择、30 张预构筑牌组、起始阵型、i18n、图集和关键图片预加载均有定向测试。
+- [x] S2 机制实现已完成：恢复、鲜血羁绊、远射、刺骨冰霜、狂乱打击、北方魔法、迟钝、激励、冻结、血腥急袭、狂暴、粗暴蛮力/蛮力冲击、原始狂怒、无上荣耀/鲁莽打击均有规则测试覆盖；`abilities-shouren.test.ts` 为 34/34 passed。
+- [x] S3 资源链已完成：无降采样 WebP、两级 manifest、单派系预检/上传、服务器 HEAD 回查和 Android stable 索引回查均已记录；`npm run assets:validate` 通过。
+- [x] S4 真实入口 E2E 与对象级全面审计已完成：完整 E2E 8/8 passed，血腥急袭补拍 1/1 passed，11 张最终截图人工核验 PASS，evidence 自检 OK。
+- [x] 完成门禁：`temp/summonerwars-shouren-task.json` 的 C1-C7 全部 pass；全局 `i18n:check` 仍被范围外七大恨/山屋惊魂/德州扑克帮派新增 warning 阻塞，未命中召唤师战争/冰苔兽人。
+
+### 当前实施边界
+
+- 实施现场：`D:\gongzuo\webgame\BoardGame` 根目录 `main`。
+- 真相源：`evidence/summonerwars/summonerwars-shouren-intake-2026-07-18.md`。
+- 只处理冰苔兽人和必要的召唤师战争共享链路，不触碰其它游戏改动。
+- 当前状态：OpenSpec 严格校验与 completion guard 已复跑通过，冰苔兽人当前发布口径已收口。
+
+### Errors Encountered
+
+| Error | Attempt | Resolution |
+| --- | --- | --- |
+| Vitest/esbuild 在加载“冻结不能成为攻击目标”定向测试时内存分配失败，0 tests executed | 1 | 不重复同一运行方式，改用单 worker `forks` 测试池重跑；该次不计业务测试结果 |
+| 单 worker `forks` 仍在约 30-40 MB 堆时被系统终止，0 tests executed | 2 | 保留其它用户进程，第三次给当前测试进程显式设置 4 GB Node 堆上限后重跑 |
+| `npm run i18n:check` 返回 55 条新增 warning | 1 | 判定为范围外七大恨/山屋惊魂/德州扑克帮派阻塞，未命中召唤师战争/冰苔兽人；本任务不越界修复 |
 
 ## Current Addendum（2026-07-15 06:35 +08）
 

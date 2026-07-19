@@ -142,6 +142,15 @@ async function waitForInMatchSetupOverlay(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-inmatch-setup-overlay')).toBeVisible({ timeout: 30000 });
 }
 
+async function waitForFactionSelectionScreen(page: Page): Promise<void> {
+    await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible({ timeout: 30000 });
+}
+
+async function selectFaction(page: Page, factionId: 'ming' | 'mongol' | 'jin'): Promise<void> {
+    await page.getByTestId(`qidahen-faction-option-${factionId}`).click();
+    await page.getByTestId('qidahen-faction-selection-confirm').click();
+}
+
 async function waitForActionWindow(page: Page, factionName: string): Promise<void> {
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toBeVisible({ timeout: 30000 });
@@ -162,17 +171,23 @@ async function expectViewerPrivateHand(page: Page, factionName: '大明' | '蒙�
 
 async function hostPickScenario(page: Page, scenarioId: 'post-sarhu-1619' | 'shanhaiguan-1622'): Promise<void> {
     await page.getByTestId(`qidahen-scenario-vote-option-${scenarioId}`).click();
+    await page.getByTestId('qidahen-scenario-vote-confirm').click();
 }
 
 async function resolveMingSetup(hostPage: Page): Promise<void> {
     await hostPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:ming:character:0-ming-xiong-tingbi').click();
+    await hostPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:ming:character:0').click();
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:0-artillery-tech').click();
+    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:0').click();
     await hostPage.getByTestId('qidahen-inmatch-setup-armament-option-shanhaiguan-1622:ming:armament:1-long-barreled-musket').click();
+    await hostPage.getByTestId('qidahen-inmatch-setup-armament-confirm-shanhaiguan-1622:ming:armament:1').click();
 }
 
 async function resolveJinSetup(jinPage: Page): Promise<void> {
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:0-jin-fan-wencheng').click();
+    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:0').click();
     await jinPage.getByTestId('qidahen-inmatch-setup-character-option-shanhaiguan-1622:jin:character:1-jin-manggultai').click();
+    await jinPage.getByTestId('qidahen-inmatch-setup-character-confirm-shanhaiguan-1622:jin:character:1').click();
 }
 
 async function clickMapRegion(
@@ -289,14 +304,17 @@ async function resolvePendingBattleByDefault(page: Page): Promise<void> {
 }
 
 async function resolvePostBattleByDefault(page: Page): Promise<void> {
-    const occupyChoice = page.getByTestId('qidahen-post-battle-choice-occupy');
-    if (await occupyChoice.count()) {
-        await occupyChoice.click();
-        return;
+    const occupyMode = page.getByTestId('qidahen-post-battle-mode-occupy');
+    const availableMode = await occupyMode.count()
+        ? occupyMode
+        : page.locator('[data-testid^="qidahen-post-battle-mode-"]').first();
+    if (await availableMode.count()) {
+        await availableMode.click();
     }
     const firstChoice = page.locator('[data-testid^="qidahen-post-battle-choice-"]').first();
     if (await firstChoice.count()) {
         await firstChoice.click();
+        await page.getByTestId('qidahen-post-battle-confirm').click();
         return;
     }
     throw new Error('未找到可执行的待结算按钮');
@@ -424,6 +442,15 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
 
             await expect(mongol.page.getByTestId('qidahen-scenario-vote-actions')).toContainText('等待房主');
             await hostPickScenario(host.page, 'shanhaiguan-1622');
+
+            await Promise.all([
+                waitForFactionSelectionScreen(host.page),
+                waitForFactionSelectionScreen(mongol.page),
+                waitForFactionSelectionScreen(jin.page),
+            ]);
+            await selectFaction(host.page, 'ming');
+            await selectFaction(mongol.page, 'mongol');
+            await selectFaction(jin.page, 'jin');
 
             await Promise.all([
                 waitForInMatchSetupOverlay(host.page),

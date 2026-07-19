@@ -126,7 +126,6 @@ describe('The Gang action-log', () => {
                 config: {
                     gameMode: 'texas-holdem',
                     twoHand: true,
-                    handSwap: true,
                     challenges: {},
                 },
             },

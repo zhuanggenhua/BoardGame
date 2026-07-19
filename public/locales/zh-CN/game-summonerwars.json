@@ -34,7 +34,8 @@
     "frost": "极地矮人",
     "barbaric": "野蛮部落",
     "mogu": "莫古",
-    "huijin": "灰烬"
+    "huijin": "灰烬",
+    "shouren": "冰苔兽人"
   },
   "actions": {
     "closePreview": "关闭预览",
@@ -43,6 +44,8 @@
     "moguTransmissionSelf": "从自身传输",
     "moguTransmissionAlly": "从友方传输",
     "moguFanaticalFungusStay": "不推拉",
+    "shourenRerollAll": "重掷全部骰子",
+    "shourenKeepRoll": "保留当前结果",
     "magnify": "放大查看",
     "confirm": "确认",
     "confirmDiscard": "确认弃牌",
@@ -300,7 +303,9 @@
       "huijin_scorch": "（灼烧）",
       "huijin_divine_revenge": "（神族复仇）",
       "huijin_flame_breath": "（火焰喷吐）",
-      "huijin_quick_shot": "（快速射击）"
+      "huijin_quick_shot": "（快速射击）",
+      "shouren_slow": "（迟钝）",
+      "shouren_reckless_strike": "（鲁莽打击）"
     },
     "attackDamage": "→ 造成 {{damage}} 点伤害",
     "attackBonus": "（战力 {{base}}→{{total}}）",
@@ -442,7 +447,8 @@
     "rangedAttack": "远程攻击",
     "damage": "{{count}} 点伤害！",
     "miss": "未命中",
-    "evasionReduced": "迷魂减伤 -{{count}}"
+    "evasionReduced": "迷魂减伤 -{{count}}",
+    "encourage": "激励：是否消耗 1 点充能重掷全部骰子？"
   },
   "handArea": {
     "bloodSummonOnlyLowCost": "血契召唤只能选择费用≤{{maxCost}}的单位卡",
@@ -495,7 +501,14 @@
       "huijinCallGuardsPosition": "召集护卫：选择召唤师相邻空格",
       "huijinRamTarget": "冲撞：选择相邻敌方士兵或英雄",
       "huijinRamPosition": "冲撞：选择推拉落点",
-      "huijinQuickShot": "快速射击：选择 3 格直线视野内目标"
+      "huijinQuickShot": "快速射击：选择 3 格直线视野内目标",
+      "shourenEncourage": "激励：选择重掷全部骰子或保留结果",
+      "shourenBloodyRush": "血腥急袭：移动后受到 1 点伤害，或跳过留在原位",
+      "shourenBloodyRushPosition": "血腥急袭：点棋盘高亮格移动该单位并受到 1 点伤害；跳过则留在原位",
+      "shourenBerserkPosition": "狂暴：点棋盘高亮格推拉冰苔斗士；跳过则不移动",
+      "shourenBruteImpact": "蛮力冲击：点棋盘高亮格把目标推离攻击者；跳过则不推",
+      "shourenPrimalFuryPosition": "原始狂怒：点棋盘高亮格移动格鲁纳克；跳过则不移动",
+      "shourenExtraAttack": "选择一次额外攻击的相邻目标"
     },
     "fireSacrifice": {
       "mustSelectAlly": "请选择一个友方单位作为牺牲品"
@@ -1046,6 +1059,54 @@
     "huijin_quick_shot": {
       "name": "快速射击",
       "description": "本单位移动后，可以指定 3 个直线视野区格以内的一个单位，对其造成 1 点伤害。"
+    },
+    "shouren_recover": {
+      "name": "恢复",
+      "description": "本单位移动后，如果未充能，则将其充能。"
+    },
+    "shouren_encourage": {
+      "name": "激励",
+      "description": "你的回合中，3 格内一个友方单位为攻击或技能掷骰时，可以消耗本单位 1 点充能以重掷所有骰子。"
+    },
+    "shouren_blood_bond": {
+      "name": "鲜血羁绊",
+      "description": "本单位攻击敌方单位后，按本次掷出的特殊标记数量给你的召唤师充能。"
+    },
+    "shouren_biting_frost": {
+      "name": "刺骨冰霜",
+      "description": "相邻友方冰霜单位获得战力 +1。"
+    },
+    "shouren_frenzy_strike": {
+      "name": "狂乱打击",
+      "description": "本单位攻击时，按特殊标记数量对目标造成伤害，取代通常的近战标记数量。"
+    },
+    "shouren_northern_magic": {
+      "name": "北方魔法",
+      "description": "本单位攻击时，如果掷出 0 个特殊标记，则不对目标造成伤害。"
+    },
+    "shouren_slow": {
+      "name": "迟钝",
+      "description": "本单位被攻击时，每个特殊标记对本单位额外造成 1 点伤害。"
+    },
+    "shouren_bloody_rush": {
+      "name": "血腥急袭",
+      "description": "召唤本单位后，可以对其造成 1 点伤害以将其推拉 1 格。"
+    },
+    "shouren_berserk": {
+      "name": "狂暴",
+      "description": "本单位每次攻击相邻敌方卡牌后掷 1 个骰子；若掷出特殊标记，可以将本单位推拉 1 格，若如此做，可额外攻击一次相邻敌方卡牌。"
+    },
+    "shouren_primal_fury": {
+      "name": "原始狂怒",
+      "description": "召唤师攻击相邻敌方卡牌后，可以将自身推拉 1 至 2 格；若如此做，可以额外攻击一次相邻敌方卡牌。"
+    },
+    "shouren_brute_impact": {
+      "name": "蛮力冲击",
+      "description": "本单位攻击并对一个单位造成伤害后，可以将该单位向远离本单位的方向推拉 1 格。"
+    },
+    "shouren_reckless_strike": {
+      "name": "鲁莽打击",
+      "description": "本单位战力 +2。攻击时若掷出 0 或 1 个特殊标记且对目标造成伤害，也对本单位造成等量伤害。"
     }
   },
   "buffs": {

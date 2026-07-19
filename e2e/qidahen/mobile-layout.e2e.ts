@@ -179,6 +179,7 @@ test.describe('七大恨移动端布局兼容', () => {
 
         const metrics = await page.evaluate(() => {
             const board = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-board"]');
+            const hudStage = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-desktop-stage"]');
             const mapLayer = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-layer"]');
             const mapContent = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-map-content"]');
             const actionsZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-actions-zone"]');
@@ -189,6 +190,9 @@ test.describe('七大恨移动端布局兼容', () => {
             const handZone = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-hand-zone"]');
             const drawPile = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-draw-pile"]');
             const discardPile = document.querySelector<HTMLElement>('#qidahen-harness-root [data-testid="qidahen-discard-pile"]');
+            const mapControlButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(
+                '#qidahen-harness-root [data-testid="qidahen-map-viewport-controls"] button',
+            ));
             const actionButtons = Array.from(
                 document.querySelectorAll<HTMLButtonElement>(
                     '#qidahen-harness-root [data-testid="qidahen-actions-zone"] button',
@@ -201,6 +205,9 @@ test.describe('七大恨移动端布局兼容', () => {
             ).filter((button) => (
                 !button.dataset.testid?.startsWith('qidahen-hand-card-kind-')
                 && !button.dataset.testid?.startsWith('qidahen-hand-card-magnify-')
+            ));
+            const magnifyButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(
+                '#qidahen-harness-root button[data-testid^="qidahen-hand-card-magnify-"]',
             ));
             const visibleHandCardRects = handCardButtons
                 .map((button) => button.getBoundingClientRect())
@@ -262,6 +269,8 @@ test.describe('七大恨移动端布局兼容', () => {
                 docScrollWidth: document.documentElement.scrollWidth,
                 bodyScrollWidth: document.body.scrollWidth,
                 boardRect: rect(board),
+                hudStageRect: rect(hudStage),
+                hudTransform: hudStage ? getComputedStyle(hudStage).transform : null,
                 mapLayerRect: rect(mapLayer),
                 mapContentRect: rect(mapContent),
                 actionsZoneRect: rect(actionsZone),
@@ -269,10 +278,14 @@ test.describe('七大恨移动端布局兼容', () => {
                 actionWheelRect: rect(actionWheel),
                 chronologyZoneRect: rect(chronologyZone),
                 koreaZoneRect: rect(koreaZone),
+                chronologyDisplay: chronologyZone ? getComputedStyle(chronologyZone).display : null,
+                koreaDisplay: koreaZone ? getComputedStyle(koreaZone).display : null,
                 handZoneRect: rect(handZone),
                 drawPileRect: rect(drawPile),
                 discardPileRect: rect(discardPile),
                 actionRects: actionButtons.map((button) => rect(button)).filter(Boolean),
+                mapControlRects: mapControlButtons.map((button) => rect(button)).filter(Boolean),
+                magnifyRects: magnifyButtons.map((button) => rect(button)).filter(Boolean),
                 handCards: handCardButtons.length,
                 visibleHandCards: visibleHandCardRects.length,
                 completeHandCards: completeHandCardRects.length,
@@ -285,13 +298,14 @@ test.describe('七大恨移动端布局兼容', () => {
         expect(metrics.docScrollWidth, 'Qidahen 手机横屏时 documentElement 不应横向溢出').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.bodyScrollWidth, 'Qidahen 手机横屏时 body 不应横向溢出').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.boardRect, '应渲染 Qidahen 主板面').not.toBeNull();
+        expect(metrics.hudStageRect, '应渲染 Qidahen HUD 根层').not.toBeNull();
         expect(metrics.mapLayerRect, '应渲染 Qidahen 地图交互层').not.toBeNull();
         expect(metrics.mapContentRect, '应渲染 Qidahen 地图内容').not.toBeNull();
         expect(metrics.actionsZoneRect, '应渲染 Qidahen 操作区').not.toBeNull();
         expect(metrics.playerFloatRect, '应渲染 Qidahen 玩家状态条').not.toBeNull();
         expect(metrics.actionWheelRect, '应渲染 Qidahen 轮盘').not.toBeNull();
-        expect(metrics.chronologyZoneRect, '应渲染 Qidahen 纪年卡区域').not.toBeNull();
-        expect(metrics.koreaZoneRect, '应渲染 Qidahen 朝鲜牌堆').not.toBeNull();
+        expect(metrics.chronologyDisplay, '手机主态纪年卡应让位给核心操作').toBe('none');
+        expect(metrics.koreaDisplay, '手机主态朝鲜牌堆应让位给核心操作').toBe('none');
         expect(metrics.handZoneRect, '应渲染 Qidahen 手牌区域').not.toBeNull();
         expect(metrics.drawPileRect, '应渲染 Qidahen 己方抽牌堆').not.toBeNull();
         expect(metrics.discardPileRect, '应渲染 Qidahen 己方弃牌堆').not.toBeNull();
@@ -305,6 +319,9 @@ test.describe('七大恨移动端布局兼容', () => {
         expect(metrics.boardRect!.left, 'Qidahen 板面左边界不应出视口').toBeGreaterThanOrEqual(-1);
         expect(metrics.boardRect!.right, 'Qidahen 板面右边界不应出视口').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.boardRect!.bottom, 'Qidahen 板面底边界不应出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
+        expect(metrics.hudStageRect!.width, '手机 HUD 应直接使用真实视口宽度').toBeCloseTo(metrics.innerWidth, 0);
+        expect(metrics.hudStageRect!.height, '手机 HUD 应直接使用真实视口高度').toBeCloseTo(metrics.innerHeight, 0);
+        expect(metrics.hudTransform, '手机 HUD 根层不得再整体缩小').toBe('matrix(1, 0, 0, 1, 0, 0)');
         expect(metrics.mapLayerRect!.width, 'Qidahen 地图交互层在手机横屏下不应塌成窄条').toBeGreaterThan(240);
         expect(metrics.mapLayerRect!.height, 'Qidahen 地图交互层在手机横屏下不应塌成横条').toBeGreaterThan(120);
         expect(metrics.actionsZoneRect!.bottom, 'Qidahen 操作区不应掉出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
@@ -312,19 +329,31 @@ test.describe('七大恨移动端布局兼容', () => {
         expect(metrics.playerFloatRect!.right, 'Qidahen 手机横屏时玩家状态条不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.actionWheelRect!.top, 'Qidahen 手机横屏时轮盘不应被视口上沿裁切').toBeGreaterThanOrEqual(-1);
         expect(metrics.actionWheelRect!.left, 'Qidahen 手机横屏时轮盘不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
-        expect(metrics.chronologyZoneRect!.left, 'Qidahen 手机横屏时纪年卡区域不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
-        expect(metrics.chronologyZoneRect!.bottom, 'Qidahen 手机横屏时纪年卡区域不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
-        expect(metrics.chronologyZoneRect!.top, 'Qidahen 手机横屏时纪年卡区域应下移避开轮盘遮挡').toBeGreaterThanOrEqual(metrics.actionWheelRect!.bottom + 4);
-        expect(metrics.koreaZoneRect!.top, 'Qidahen 手机横屏时朝鲜牌堆不应被视口上沿裁切').toBeGreaterThanOrEqual(-1);
-        expect(metrics.koreaZoneRect!.right, 'Qidahen 手机横屏时朝鲜牌堆不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
         expect(metrics.drawPileRect!.left, 'Qidahen 手机横屏时左侧抽牌堆不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
         expect(metrics.drawPileRect!.bottom, 'Qidahen 手机横屏时左侧抽牌堆不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
-        expect(metrics.discardPileRect!.right, 'Qidahen 手机横屏时右侧弃牌堆不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
-        expect(metrics.discardPileRect!.bottom, 'Qidahen 手机横屏时右侧弃牌堆不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
+        expect(metrics.discardPileRect!.left, 'Qidahen 手机横屏时弃牌堆不应被视口左边裁切').toBeGreaterThanOrEqual(-1);
+        expect(metrics.discardPileRect!.right, 'Qidahen 手机横屏时弃牌堆不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth + 1);
+        expect(metrics.discardPileRect!.bottom, 'Qidahen 手机横屏时弃牌堆不应被视口下沿裁切').toBeLessThanOrEqual(metrics.innerHeight + 1);
 
         expect(metrics.actionRects.length, 'Qidahen 手机横屏时操作区按钮应保留').toBeGreaterThan(0);
         for (const actionRect of metrics.actionRects) {
             expect(actionRect!.bottom, 'Qidahen 操作区按钮不应掉出视口').toBeLessThanOrEqual(metrics.innerHeight + 1);
+            expect(actionRect!.height, 'Qidahen 手机横屏行动按钮热区不得低于 44px').toBeGreaterThanOrEqual(44);
+            const overlapsDiscardPile = actionRect!.left < metrics.discardPileRect!.right
+                && actionRect!.right > metrics.discardPileRect!.left
+                && actionRect!.top < metrics.discardPileRect!.bottom
+                && actionRect!.bottom > metrics.discardPileRect!.top;
+            expect(overlapsDiscardPile, 'Qidahen 手机横屏行动按钮不得压住弃牌堆').toBe(false);
+        }
+        expect(metrics.mapControlRects.length, 'Qidahen 手机横屏地图缩放控件应可见').toBe(3);
+        for (const controlRect of metrics.mapControlRects) {
+            expect(controlRect!.height, '地图缩放控件热区不得低于 44px').toBeGreaterThanOrEqual(44);
+            expect(controlRect!.width, '地图缩放控件热区不得低于 44px').toBeGreaterThanOrEqual(44);
+        }
+        expect(metrics.magnifyRects.length, '每张手牌都应保留移动端放大入口').toBe(metrics.handCards);
+        for (const magnifyRect of metrics.magnifyRects) {
+            expect(magnifyRect!.height, '手牌放大入口热区不得低于 44px').toBeGreaterThanOrEqual(44);
+            expect(magnifyRect!.width, '手牌放大入口热区不得低于 44px').toBeGreaterThanOrEqual(44);
         }
 
         await screenshot(page, testName, '01-手机横屏-四张手牌完整可见.png');
@@ -367,17 +396,24 @@ test.describe('七大恨移动端布局兼容', () => {
 
         const magnifyOverlay = page.getByTestId('qidahen-card-magnify-overlay');
         const magnifyContent = page.getByTestId('qidahen-card-magnify-content');
+        const magnifyCloseButton = page.getByRole('button', { name: '关闭查看' });
         await expect(magnifyOverlay).toBeVisible();
         await expect(magnifyContent).toBeVisible();
+        await expect(magnifyCloseButton).toBeVisible();
         const magnifyBox = await magnifyContent.boundingBox();
+        const magnifyCloseBox = await magnifyCloseButton.boundingBox();
         expect(magnifyBox, '移动横屏手牌放大卡面应有可见尺寸').not.toBeNull();
+        expect(magnifyCloseBox, '移动横屏手牌放大关闭按钮应有可见尺寸').not.toBeNull();
         expect(magnifyBox!.x, '移动横屏手牌放大卡面左边界不应出视口').toBeGreaterThanOrEqual(0);
         expect(magnifyBox!.x + magnifyBox!.width, '移动横屏手牌放大卡面右边界不应出视口').toBeLessThanOrEqual(metrics.innerWidth);
         expect(magnifyBox!.y, '移动横屏手牌放大卡面顶边界不应出视口').toBeGreaterThanOrEqual(0);
         expect(magnifyBox!.y + magnifyBox!.height, '移动横屏手牌放大卡面底边界不应出视口').toBeLessThanOrEqual(metrics.innerHeight);
+        expect(magnifyCloseBox!.y, '移动横屏手牌放大关闭按钮不应被视口顶边裁切').toBeGreaterThanOrEqual(0);
+        expect(magnifyCloseBox!.height, '移动横屏手牌放大关闭按钮热区不得低于 44px').toBeGreaterThanOrEqual(44);
+        expect(magnifyCloseBox!.x + magnifyCloseBox!.width, '移动横屏手牌放大关闭按钮不应被视口右边裁切').toBeLessThanOrEqual(metrics.innerWidth);
 
         await screenshot(page, testName, '02-手机横屏-手牌放大查看.png');
-        await page.getByRole('button', { name: '关闭查看' }).click();
+        await magnifyCloseButton.click();
         await expect(magnifyOverlay).toBeHidden();
     });
 

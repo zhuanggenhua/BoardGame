@@ -23,7 +23,7 @@ const entry: GameManifestEntry = {
     },
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
-    mobileLayoutPreset: 'board-shell',
+    mobileLayoutPreset: 'map-shell',
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
 };
 

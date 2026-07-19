@@ -81,6 +81,10 @@ export const resolveQidahenScenarioVoteCastEvent = (
     return {
         ...finalizedCore,
         scenarioVote: null,
+        factionSelection: {
+            availableFactionIds: [...finalizedCore.currentFactionOrder],
+            selections: {},
+        },
         actionLog: [
             {
                 id: `log-scenario-vote-final-${event.timestamp}`,
