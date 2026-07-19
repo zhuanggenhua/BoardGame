@@ -1029,7 +1029,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-trade-flow-banner')).toHaveAttribute('data-trade-agreement-state', 'waiting');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('同意用狗交易');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('给出急救包、地图');
-        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('不换回');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).not.toHaveTextContent('不换回');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).not.toHaveTextContent('换回');
     });
 
     it('搜尸必须在真实页面选择尸体和具体持有物，不能默认拿第一张', async () => {
@@ -1899,7 +1900,7 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.queryByTestId('betrayal-action-use')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-haunt-command-primary')).toHaveTextContent('拍摄队友二');
-        expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('夺取队友二的 Essence');
+        expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('夺取队友二的本质');
         expect(screen.getByTestId('betrayal-bottom-teammate-2')).toHaveTextContent('拍照');
         fireEvent.click(screen.getByTestId('betrayal-haunt-command-primary'));
 

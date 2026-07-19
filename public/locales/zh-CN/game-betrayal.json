@@ -16,7 +16,7 @@
     "useRoomEffect": "玩家 {{player}} 使用了房间效果",
     "useRoomEffectAt": "玩家 {{player}} 使用了{{room}}的房间效果",
     "tradePossession": "玩家 {{player}} 与玩家 {{target}} 完成交易",
-    "tradeRequest": "玩家 {{player}} 向玩家 {{target}} 发送交易请求",
+    "tradeRequest": "玩家 {{player}} 向玩家 {{target}} 提出交易",
     "acceptTrade": "玩家 {{player}} 同意交易",
     "declineTrade": "玩家 {{player}} 拒绝交易",
     "lootCorpse": "玩家 {{player}} 搜刮了探索者尸体",
@@ -667,7 +667,7 @@
     },
     "tradeAndAgreement": {
       "title": "交易：发请求，再等同意",
-      "description": "在同房间里选持有物和队友，发送交易请求，再由对方同意或拒绝。",
+      "description": "在同房间里选择双方持有物和队友，提出交易，再由对方同意或拒绝。",
       "steps": {
         "setupTrade": "交易发生在同一房间。你可以选择自己要给出的物品或预兆，也可以选择希望对方给出的持有物；双方都要同意。",
         "chooseTradeItem": "先点持有区里的兔脚。这一步只是在牌桌上选要给出的持有物，还不会立刻转移。",

@@ -16,7 +16,7 @@
     "useRoomEffect": "Player {{player}} used a room effect",
     "useRoomEffectAt": "Player {{player}} used the room effect in {{room}}",
     "tradePossession": "Player {{player}} traded with player {{target}}",
-    "tradeRequest": "Player {{player}} sent a trade request to player {{target}}",
+    "tradeRequest": "Player {{player}} proposed a trade to player {{target}}",
     "acceptTrade": "Player {{player}} accepted the trade",
     "declineTrade": "Player {{player}} declined the trade",
     "lootCorpse": "Player {{player}} looted an explorer's corpse",
@@ -666,7 +666,7 @@
     },
     "tradeAndAgreement": {
       "title": "Trade: Request, Then Agreement",
-      "description": "In the same room, choose possessions and a teammate, send a trade request, then let the other player accept or decline.",
+      "description": "In the same room, choose possessions from either side and a teammate, propose the trade, then let the other player accept or decline.",
       "steps": {
         "setupTrade": "Trading happens on the same tile. You may choose Items or Omens you give, and you may choose possessions the other explorer gives; both explorers must agree.",
         "chooseTradeItem": "Select Rabbit's Foot in your inventory first. This only marks the possession you want to give; it does not move yet.",

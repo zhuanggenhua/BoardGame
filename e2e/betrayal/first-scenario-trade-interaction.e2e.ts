@@ -19,7 +19,7 @@ const TRADE_INITIAL_SCREENSHOT = `${EVIDENCE_DIR}/01-交易前牌桌可操作.jp
 const TRADE_ITEM_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/02-物品兔脚本体已选中.jpg`;
 const TRADE_TARGET_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/03-地图队友目标已选中.jpg`;
 const TRADE_CONFIRM_READY_SCREENSHOT = `${EVIDENCE_DIR}/04-确认交易前.jpg`;
-const TRADE_REQUEST_SENT_SCREENSHOT = `${EVIDENCE_DIR}/05-发送交易请求等待同意.jpg`;
+const TRADE_REQUEST_SENT_SCREENSHOT = `${EVIDENCE_DIR}/05-提出交易等待同意.jpg`;
 const TRADE_AGREEMENT_INCOMING_SCREENSHOT = `${EVIDENCE_DIR}/06-接收方同意交易前.jpg`;
 const TRADE_SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/07-交易结算结果可见.jpg`;
 const TRADE_RETURNED_SCREENSHOT = `${EVIDENCE_DIR}/08-交易后回牌桌状态清空.jpg`;
@@ -403,7 +403,7 @@ async function assertTradeCandidateTrayAnchoredToFlow(page: Page, selectorTestId
     expect(metrics!.selectorTop, `${selectorTestId} 不能放到顶部角落或牌堆旁`).toBeGreaterThan(metrics!.viewportHeight * 0.52);
     expect(metrics!.selectorBottom, `${selectorTestId} 必须贴在交易流程条上方`).toBeLessThanOrEqual(metrics!.bannerTop + 4);
     expect(Math.abs(metrics!.selectorCenterX - metrics!.bannerCenterX), `${selectorTestId} 必须和交易流程条水平对齐`).toBeLessThanOrEqual(120);
-    expect(metrics!.topPromptText, `${selectorTestId} 不得再出现在顶部提示带`).not.toContain('换回');
+    expect(metrics!.topPromptText, `${selectorTestId} 不得再出现在顶部提示带`).not.toContain('对方物品');
     expect(metrics!.topPromptText, `${selectorTestId} 不得再出现在顶部提示带`).not.toContain('狗');
 }
 
@@ -640,7 +640,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await assertNoFatalFrontendErrors([{ label: 'betrayal-trade-interaction', diagnostics }]);
     });
 
-    test('真实页面未选择换回时一个确认按钮即可发送交易请求', async ({ page, context }) => {
+    test('真实页面只选择己方物品时一个确认按钮即可提出交易', async ({ page, context }) => {
         test.setTimeout(180000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-no-return-trade-interaction');
@@ -656,13 +656,13 @@ test.describe('山屋惊魂首剧本交易交互', () => {
 
         await page.getByTestId('betrayal-inventory-rope').click();
         await page.getByTestId('betrayal-room-occupant-hallway-1').click();
-        await expect(page.getByTestId('betrayal-trade-return-selector'), '选中队友后可选换回区必须出现').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-return-selector'), '选中队友后对方持有物区必须出现').toBeVisible();
         await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
-        await expect(page.getByTestId('betrayal-trade-return-skip'), '不换回不能做成与地图、头骨并列的伪候选按钮').toHaveCount(0);
-        await expect(page.getByTestId('betrayal-trade-return-card-map'), '换回区必须只展示真实对方持有物卡牌').toBeVisible();
-        await expect(page.getByTestId('betrayal-trade-return-card-skull'), '换回区必须只展示真实对方持有物卡牌').toBeVisible();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '不点换回卡时摘要必须明确是不换回').toContainText(/给出.*兔脚.*不换回/);
-        await expect(page.getByTestId('betrayal-action-trade'), '不选换回时，一个发送交易请求按钮就必须足够').toBeEnabled();
+        await expect(page.getByTestId('betrayal-trade-return-skip'), '空选择不能做成与地图、头骨并列的伪候选按钮').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-trade-return-card-map'), '对方持有物区必须只展示真实对方持有物卡牌').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-return-card-skull'), '对方持有物区必须只展示真实对方持有物卡牌').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '未选对方物品时摘要只需要列出己方给出物').toContainText(/你给出.*兔脚/);
+        await expect(page.getByTestId('betrayal-action-trade'), '只选择己方物品时，一个提出交易按钮就必须足够').toBeEnabled();
         await assertTradeConfirmAnchoredToFlow(page);
         await saveScreenshot(page, NO_RETURN_TARGET_SELECTED_SCREENSHOT);
 
@@ -696,7 +696,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
                 rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
             };
         }), {
-            message: '不选换回卡时，发送请求必须保留空换回数组，不能强迫选择对方物品',
+            message: '只选择己方物品时，请求必须保留空对方物品数组，不能强迫选择对方物品',
             timeout: 10000,
         }).toMatchObject({
             currentInventory: expect.arrayContaining(['兔脚', '书本']),
@@ -708,8 +708,8 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             latestLog: expect.stringMatching(/同意|交易请求|兔脚/),
             rejected: null,
         });
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前也必须看到不换回摘要').toContainText(/给出.*兔脚.*不换回/);
-        await expect(page.getByTestId('betrayal-trade-agreement-panel'), '不换回交易仍必须进入接收方同意面板').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前也必须看到只列己方给出的摘要').toContainText(/你给出.*兔脚/);
+        await expect(page.getByTestId('betrayal-trade-agreement-panel'), '只选择己方物品的交易仍必须进入接收方同意面板').toBeVisible();
         await saveScreenshot(page, NO_RETURN_REQUEST_SENT_SCREENSHOT);
 
         await page.getByTestId('betrayal-trade-agreement-accept').click();
@@ -755,7 +755,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await assertNoFatalFrontendErrors([{ label: 'betrayal-no-return-trade-interaction', diagnostics }]);
     });
 
-    test('真实页面允许不交出物品只索要对方持有物并等待同意', async ({ page, context }) => {
+    test('真实页面允许只选择对方持有物并等待同意', async ({ page, context }) => {
         test.setTimeout(180000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-request-only-trade-interaction');
@@ -770,17 +770,17 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await waitForTradeInventoryAtlas(page);
 
         await page.getByTestId('betrayal-room-occupant-hallway-1').click();
-        await expect(page.getByTestId('betrayal-trade-return-selector'), '只索要时也必须先显示对方可给出的真实持有物').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-return-selector'), '只选择对方物品时也必须先显示对方可给出的真实持有物').toBeVisible();
         await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '只选队友但未选任何持有物时不能形成空交易请求').toContainText(/选给出或换回|选给出或索要|选/);
-        await expect(page.locator('[data-testid="betrayal-action-trade"][data-trade-confirm-placement="flow-banner"]'), '双方都没选持有物时不能出现流程条内发送请求确认').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '只选队友但未选任何持有物时不能形成空交易请求').toContainText(/选择自己或对方持有物|选择/);
+        await expect(page.locator('[data-testid="betrayal-action-trade"][data-trade-confirm-placement="flow-banner"]'), '双方都没选持有物时不能出现流程条内提出交易确认').toHaveCount(0);
         await saveScreenshot(page, REQUEST_ONLY_TARGET_SELECTED_SCREENSHOT);
 
         await page.getByTestId('betrayal-trade-return-card-map').click();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '只选对方物品时摘要必须写成索要，不能写给出无').toContainText(/索要.*地图/);
-        await expect(page.getByTestId('betrayal-trade-flow-item-step')).not.toContainText('给出 不交出');
-        await expect(page.getByTestId('betrayal-trade-return-card-map-selected-outline'), '索要地图选中后必须在卡牌本体上显示金色外框').toBeVisible();
-        await expect(page.getByTestId('betrayal-action-trade'), '只索要对方物品时必须能发送交易请求').toBeEnabled();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '只选对方物品时摘要必须写成对方给出，不能写成模式名').toContainText(/对方给出.*地图/);
+        await expect(page.getByTestId('betrayal-trade-flow-item-step')).not.toContainText('你给出 无');
+        await expect(page.getByTestId('betrayal-trade-return-card-map-selected-outline'), '选择对方地图后必须在卡牌本体上显示金色外框').toBeVisible();
+        await expect(page.getByTestId('betrayal-action-trade'), '只选择对方物品时必须能提出交易').toBeEnabled();
         await assertTradeConfirmAnchoredToFlow(page);
         await saveScreenshot(page, REQUEST_ONLY_CARD_SELECTED_SCREENSHOT);
 
@@ -814,7 +814,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
                 rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
             };
         }), {
-            message: '只索要时请求必须保留 cardIds=[]、targetCardIds=[map]，并等待对方同意',
+            message: '只选择对方物品时请求必须保留 cardIds=[]、targetCardIds=[map]，并等待对方同意',
             timeout: 10000,
         }).toMatchObject({
             currentInventory: expect.arrayContaining(['兔脚', '书本']),
@@ -823,11 +823,11 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             pendingTarget: '1',
             pendingCards: [],
             pendingReturnCards: ['map'],
-            latestLog: expect.stringMatching(/索要地图/),
+            latestLog: expect.stringMatching(/给出地图/),
             rejected: null,
         });
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前必须看到索要摘要').toContainText(/索要.*地图/);
-        await expect(page.getByTestId('betrayal-trade-agreement-panel'), '索要交易仍必须进入接收方同意面板').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前必须看到对方给出摘要').toContainText(/你给出.*地图/);
+        await expect(page.getByTestId('betrayal-trade-agreement-panel'), '只选择对方物品的交易仍必须进入接收方同意面板').toBeVisible();
         await saveScreenshot(page, REQUEST_ONLY_REQUEST_SENT_SCREENSHOT);
 
         await page.getByTestId('betrayal-trade-agreement-accept').click();
@@ -865,7 +865,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             teammateInventory: expect.arrayContaining(['头骨']),
             activePlayerId: null,
             pendingTradeAgreement: null,
-            latestLog: expect.stringMatching(/同意交易|索要地图/),
+            latestLog: expect.stringMatching(/同意交易|给出地图/),
             rejected: null,
         });
         await saveScreenshot(page, REQUEST_ONLY_SETTLED_SCREENSHOT);
@@ -873,7 +873,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await assertNoFatalFrontendErrors([{ label: 'betrayal-request-only-trade-interaction', diagnostics }]);
     });
 
-    test('真实页面可选择换回持有物并完成同意交换', async ({ page, context }) => {
+    test('真实页面可选择双方持有物并完成同意交易', async ({ page, context }) => {
         test.setTimeout(180000);
         await initBetrayalContext(context);
         const diagnostics = attachPageDiagnostics(page, 'betrayal-exchange-interaction');
@@ -897,26 +897,26 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await page.getByTestId('betrayal-inventory-rope').click();
         await assertSelectedInventoryCardHasVisibleOutline(page);
         await page.getByTestId('betrayal-room-occupant-hallway-1').click();
-        await expect(page.getByTestId('betrayal-trade-return-selector'), '选中队友后必须显示换回选择区').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-return-selector'), '选中队友后必须显示对方持有物区').toBeVisible();
         await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
-        await expect(page.getByTestId('betrayal-trade-return-skip'), '不换回不是一个候选按钮，没选对方持有物就表示不换回').toHaveCount(0);
-        await expect(page.getByTestId('betrayal-trade-return-card-map'), '队友地图必须能作为换回对象选择').toBeVisible();
-        await expect(page.getByTestId('betrayal-trade-return-card-skull'), '队友头骨必须能作为换回对象选择').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-return-skip'), '空选择不是一个候选按钮，没选对方持有物就只提交己方已选内容').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-trade-return-card-map'), '队友地图必须能作为对方给出的对象选择').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-return-card-skull'), '队友头骨必须能作为对方给出的对象选择').toBeVisible();
         await assertInventoryCandidateCardRendered(page, 'betrayal-trade-return-card-map');
         await assertInventoryCandidateCardRendered(page, 'betrayal-trade-return-card-skull');
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '未选换回前也要显示不换回，说明这是普通交易').toContainText('不换回');
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '未选对方物品前，摘要只显示己方给出物').toContainText(/你给出.*兔脚/);
         await saveScreenshot(page, EXCHANGE_TARGET_SELECTED_SCREENSHOT);
 
         await page.getByTestId('betrayal-trade-return-card-map').click();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '选择换回后交易摘要必须同时显示给出和换回').toContainText(/给出.*兔脚.*换回.*地图/);
-        await expect(page.getByTestId('betrayal-trade-return-card-map-selected-outline'), '换回地图选中后必须在卡牌本体上显示金色外框').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '选择对方物品后交易摘要必须同时显示双方给出物').toContainText(/你给出.*兔脚.*对方给出.*地图/);
+        await expect(page.getByTestId('betrayal-trade-return-card-map-selected-outline'), '选择对方地图后必须在卡牌本体上显示金色外框').toBeVisible();
         await page.getByTestId('betrayal-trade-return-card-map').click();
-        await expect(page.getByTestId('betrayal-trade-return-card-map-selected-outline'), '再次点击地图必须能取消换回选择').toHaveCount(0);
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '取消换回选择后摘要回到不换回').toContainText(/给出.*兔脚.*不换回/);
+        await expect(page.getByTestId('betrayal-trade-return-card-map-selected-outline'), '再次点击地图必须能取消对方物品选择').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '取消对方物品选择后摘要回到只列己方给出物').toContainText(/你给出.*兔脚/);
         await page.getByTestId('betrayal-trade-return-card-map').click();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '重新选择地图后交易摘要必须回到给出和换回').toContainText(/给出.*兔脚.*换回.*地图/);
-        await expect(page.getByTestId('betrayal-trade-flow-steps'), '流程短标签必须显示换回步骤').toContainText('换回');
-        await expect(page.getByTestId('betrayal-action-trade'), '选给出和换回后必须能发送交易请求').toBeEnabled();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '重新选择地图后交易摘要必须回到双方给出物').toContainText(/你给出.*兔脚.*对方给出.*地图/);
+        await expect(page.getByTestId('betrayal-trade-flow-steps'), '流程短标签必须显示对方物品步骤').toContainText('对方物品');
+        await expect(page.getByTestId('betrayal-action-trade'), '选双方物品后必须能提出交易').toBeEnabled();
         await assertTradeConfirmAnchoredToFlow(page);
         await saveScreenshot(page, EXCHANGE_RETURN_SELECTED_SCREENSHOT);
 
@@ -950,7 +950,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
                 rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
             };
         }), {
-            message: '交换请求发出后必须等待接收方同意，双方持有物暂不转移',
+            message: '交易请求发出后必须等待接收方同意，双方持有物暂不转移',
             timeout: 10000,
         }).toMatchObject({
             currentInventory: expect.arrayContaining(['兔脚', '书本']),
@@ -963,10 +963,10 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             rejected: null,
         });
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/同意|交易请求|兔脚|地图/);
-        await expect(page.getByTestId('betrayal-trade-agreement-panel'), '交换接收方必须看到同意面板').toBeVisible();
-        await expect(page.getByTestId('betrayal-trade-agreement-accept'), '交换接收方必须能同意').toBeVisible();
-        await expect(page.getByTestId('betrayal-trade-agreement-decline'), '交换接收方必须能拒绝').toBeVisible();
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前必须看到给出和换回摘要').toContainText(/给出.*兔脚.*换回.*地图/);
+        await expect(page.getByTestId('betrayal-trade-agreement-panel'), '交易接收方必须看到同意面板').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-agreement-accept'), '交易接收方必须能同意').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-agreement-decline'), '交易接收方必须能拒绝').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前必须看到双方给出物摘要').toContainText(/给出.*兔脚.*给出.*地图/);
         await saveScreenshot(page, EXCHANGE_REQUEST_SENT_SCREENSHOT);
         await saveScreenshot(page, EXCHANGE_AGREEMENT_INCOMING_SCREENSHOT);
 
@@ -1008,12 +1008,12 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             latestLog: expect.stringMatching(/同意交易|兔脚|地图/),
             rejected: null,
         });
-        await expect(page.getByTestId('betrayal-inventory-rope'), '交换后兔脚应从发起方持有区消失').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-inventory-rope'), '交易后兔脚应从发起方持有区消失').toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(/同意交易|兔脚|地图/);
         await saveScreenshot(page, EXCHANGE_SETTLED_SCREENSHOT);
         await assertTradeSelectionClearedAfterSettlement(page);
-        await expect(page.getByTestId('betrayal-trade-return-selector'), '交换结算后换回选择区必须退场').toHaveCount(0);
-        await expect(page.getByTestId('betrayal-board'), '交换结算后必须回到可操作牌桌').toBeVisible();
+        await expect(page.getByTestId('betrayal-trade-return-selector'), '交易结算后对方持有物区必须退场').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-board'), '交易结算后必须回到可操作牌桌').toBeVisible();
         await saveScreenshot(page, EXCHANGE_RETURNED_SCREENSHOT);
 
         await assertNoFatalFrontendErrors([{ label: 'betrayal-exchange-interaction', diagnostics }]);
@@ -1050,7 +1050,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await page.getByTestId('betrayal-room-occupant-upper-landing-1').click();
         await expect(page.getByTestId('betrayal-trade-status'), '选中远距队友后必须进入可交易给该玩家的状态').toContainText('可交易给');
         await expect(page.getByTestId('betrayal-trade-status')).toContainText(TRADE_TARGET_NAME_PATTERN);
-        await expect(page.getByTestId('betrayal-trade-flow-target-step'), '确认前必须明确进入发送请求阶段').toContainText('发送交易请求');
+        await expect(page.getByTestId('betrayal-trade-flow-target-step'), '确认前必须明确进入提出交易阶段').toContainText('提出交易');
         await expect(page.getByTestId('betrayal-action-trade'), '狗交易确认按钮必须可点').toBeEnabled();
         await assertTradeConfirmAnchoredToFlow(page);
         await saveScreenshot(page, DOG_TRADE_TARGET_SELECTED_SCREENSHOT);

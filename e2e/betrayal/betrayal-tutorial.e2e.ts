@@ -46,7 +46,7 @@ const STEP_28 = `${EVIDENCE_DIR}/28-山屋惊魂-教程-杰克之灵攻击骰盘
 const STEP_29 = `${EVIDENCE_DIR}/29-山屋惊魂-教程-交易同房间说明.jpg`;
 const STEP_30 = `${EVIDENCE_DIR}/30-山屋惊魂-教程-交易选择兔脚.jpg`;
 const STEP_31 = `${EVIDENCE_DIR}/31-山屋惊魂-教程-交易选择队友.jpg`;
-const STEP_32 = `${EVIDENCE_DIR}/32-山屋惊魂-教程-交易选择换回地图.jpg`;
+const STEP_32 = `${EVIDENCE_DIR}/32-山屋惊魂-教程-交易选择对方地图.jpg`;
 const STEP_33 = `${EVIDENCE_DIR}/33-山屋惊魂-教程-交易请求等待同意.jpg`;
 const STEP_34 = `${EVIDENCE_DIR}/34-山屋惊魂-教程-交易接收方同意.jpg`;
 const STEP_35 = `${EVIDENCE_DIR}/35-山屋惊魂-教程-交易后互换结果.jpg`;
@@ -1001,7 +1001,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     assertNoFatalFrontendErrors([{ label: "betrayal-tutorial", diagnostics }]);
   });
 
-  test("交易教程会选持有物、点同房间队友、选择换回物并等待接收方同意", async ({
+  test("交易教程会选双方持有物、点同房间队友并等待接收方同意", async ({
     page,
     context,
   }) => {
@@ -1074,7 +1074,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expect(
       page.getByTestId("betrayal-trade-return-skip"),
-      "不换回不是候选按钮；没点换回卡时摘要和发送按钮承接空选择",
+      "空选择不是候选按钮；没点对方卡时摘要和提出交易按钮承接当前选择",
     ).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-trade-return-card-map"),
@@ -1092,23 +1092,23 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
-      "未主动选择换回物时，交易摘要必须明确写“不换回”",
-    ).toContainText(/给出.*兔脚.*不换回/);
+      "未主动选择对方物品时，交易摘要只列己方给出物",
+    ).toContainText(/你给出.*兔脚/);
     await expect(
       page.getByTestId("betrayal-trade-flow-target-step"),
-    ).toContainText("发送交易请求");
+    ).toContainText("提出交易");
     await expectTradeConfirmAnchoredToFlow(page);
     await saveScreenshot(page, STEP_31);
 
     await clickNext(page);
     await waitForStep(page, "choose-trade-return");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "换回",
+      "对方物品",
     );
     await page.getByTestId("betrayal-trade-return-card-map").click();
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
-    ).toContainText(/给出.*兔脚.*换回.*地图/);
+    ).toContainText(/你给出.*兔脚.*对方给出.*地图/);
     await expect(
       page.getByTestId("betrayal-trade-return-card-map-selected-outline"),
     ).toBeVisible();
@@ -1129,7 +1129,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toContainText("等待");
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
-    ).toContainText(/给出.*兔脚.*换回.*地图/);
+    ).toContainText(/你给出.*兔脚.*对方给出.*地图/);
     await expect(
       page.getByTestId("betrayal-trade-agreement-panel"),
     ).toHaveCount(0);
@@ -1145,7 +1145,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-trade-flow-item-step"),
-    ).toContainText(/给出.*兔脚.*换回.*地图/);
+    ).toContainText(/给出.*兔脚.*你给出.*地图/);
     await expect(
       page.getByTestId("betrayal-trade-agreement-accept"),
     ).toBeVisible();

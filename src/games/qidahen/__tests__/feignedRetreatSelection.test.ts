@@ -27,7 +27,7 @@ const getAttackerFactionId = (defenderFactionId: TestFactionId): TestFactionId =
 );
 
 const buildCore = (defenderFactionId: TestFactionId = 'jin'): QidahenCore => {
-    const core = createInitialCore(['0', '1', '2']);
+    const core = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', true);
     const attackerFactionId = getAttackerFactionId(defenderFactionId);
     const defenderCard = core.handCards.find((card) => card.faction === defenderFactionId)!;
     core.currentPlayer = core.factions[attackerFactionId].playerId;

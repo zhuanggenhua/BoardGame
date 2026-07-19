@@ -40,7 +40,7 @@ const prepareCore = (
     jinCharacterCount: number,
     jinTroopCount: number,
 ): { core: QidahenCore; eventCard: QidahenHandCard } => {
-    const core = createInitialCore(['0', '1', '2']);
+    const core = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', true);
     setInPlayCharacters(core, 'jin', jinCharacterCount);
     setInPlayCharacters(core, 'ming', 2);
     setInPlayCharacters(core, 'mongol', 2);

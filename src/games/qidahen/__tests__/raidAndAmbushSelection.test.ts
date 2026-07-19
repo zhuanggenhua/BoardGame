@@ -21,7 +21,7 @@ const random: RandomFn = {
 };
 
 const buildCore = (): QidahenCore => {
-    const core = createInitialCore(['0', '1', '2']);
+    const core = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', true);
     const mingCard = core.handCards.find((card) => card.faction === 'ming')!;
     const jinCard = core.handCards.find((card) => card.faction === 'jin')!;
     core.currentPlayer = '0';

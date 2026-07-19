@@ -3168,7 +3168,9 @@ it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机�
         expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull', 'rope']);
         expect(core.receivedCardIdsThisTurnByPlayerId['0']).toContain('map');
         expect(core.receivedCardIdsThisTurnByPlayerId['1']).toContain('rope');
-        expect(core.activityLog[0]?.text).toContain('给出兔脚，换回地图');
+        expect(core.activityLog[0]?.text).toContain('给出兔脚');
+        expect(core.activityLog[0]?.text).toContain('给出地图');
+        expect(core.activityLog[0]?.text).not.toContain('换回');
     });
 
     it('同房间交易允许只拿对方持有物，接收方同意后才结算', () => {
@@ -3197,7 +3199,8 @@ it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机�
         expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book', 'map']);
         expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull']);
         expect(core.receivedCardIdsThisTurnByPlayerId['0']).toContain('map');
-        expect(core.activityLog[0]?.text).toContain('索要地图');
+        expect(core.activityLog[0]?.text).toContain('给出地图');
+        expect(core.activityLog[0]?.text).not.toContain('索要');
     });
 
     it('同房间交易不允许双方都不选择持有物', () => {
