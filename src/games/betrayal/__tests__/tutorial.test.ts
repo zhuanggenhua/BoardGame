@@ -275,7 +275,7 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).toContain('双方都要同意');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeItem).toContain('兔脚');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeTarget).toContain('同房间队友');
-        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.sendTradeRequest).toContain('发送交易请求');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.sendTradeRequest).toContain('提出交易');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.requestWaiting).toContain('等待对方同意');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.acceptTradeRequest).toContain('同意交易');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.acceptTradeRequest).toContain('拒绝');

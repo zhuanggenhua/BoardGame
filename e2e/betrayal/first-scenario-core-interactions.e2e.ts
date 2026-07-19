@@ -473,8 +473,8 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
     );
     await expect(
       page.getByTestId("betrayal-trade-flow-target-step"),
-      "确认前必须明确进入发送请求阶段",
-    ).toContainText("发送交易请求");
+      "确认前必须明确进入提出交易阶段",
+    ).toContainText("提出交易");
     await assertTradeLayoutDoesNotCoverMap(page);
     await assertTradeActionBarKeepsButtons(page);
     await assertSelectedInventoryCardHasVisibleOutline(page);
