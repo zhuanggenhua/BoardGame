@@ -161,7 +161,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       const unit = newBoard[from.row][from.col].unit;
       if (!unit) return { ...core, board: newBoard };
       newBoard[from.row][from.col].unit = undefined;
-      const consumesMoveAction = reason !== 'grab';
+      const consumesMoveAction = reason !== 'grab' && reason !== 'huijin_call_guards';
       newBoard[to.row][to.col].unit = { ...unit, position: to, hasMoved: consumesMoveAction ? true : unit.hasMoved };
       const pid = unit.owner as PlayerId;
       return {

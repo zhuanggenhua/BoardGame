@@ -196,7 +196,7 @@ async function tryClickVisiblePassButton(page: Page, timeout = 1500): Promise<bo
 async function dismissSpotlightQueueIfPresent(page: Page, timeout = 3000): Promise<void> {
     const spotlight = page.getByTestId('card-spotlight-queue');
     if (!await spotlight.isVisible().catch(() => false)) return;
-    await spotlight.click({ force: true });
+    await spotlight.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
     await expect(spotlight).toBeHidden({ timeout }).catch(() => {});
     await page.waitForTimeout(200);
 }
@@ -5410,7 +5410,7 @@ test.describe('Smash Up 牌库检索交互', () => {
         await expect(page.getByTestId('su-madness-supply-count')).toHaveText('x 29');
         const spotlightQueue = page.getByTestId('card-spotlight-queue');
         if (await spotlightQueue.isVisible({ timeout: 200 }).catch(() => false)) {
-            await spotlightQueue.click({ force: true });
+            await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
         }
 
         await game.playCard('special_madness');

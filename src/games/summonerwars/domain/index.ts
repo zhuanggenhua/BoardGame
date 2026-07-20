@@ -4,7 +4,7 @@
  * 入口文件，组装 execute/reduce/validate 并导出 DomainCore
  */
 
-import type { DomainCore } from '../../../engine/types';
+import type { DomainCore, GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import type {
   SummonerWarsCore,
   PlayerId,
@@ -17,6 +17,7 @@ import { BOARD_ROWS, BOARD_COLS, FIRST_PLAYER_MAGIC, SECOND_PLAYER_MAGIC, getSum
 import { executeCommand } from './execute';
 import { reduceEvent } from './reduce';
 import { validateCommand } from './validate';
+import { postProcessDeathChecks } from './execute/helpers';
 
 // 重新导出类型和常量
 export type { SummonerWarsCore } from './types';
@@ -95,6 +96,18 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
 
   /** 应用事件到状态 */
   reduce: (core, event) => reduceEvent(core, event),
+
+  /** 系统事件也要走领域死亡补全；命令事件已减过时避免重复计伤 */
+  postProcessSystemEvents: (
+    core: SummonerWarsCore,
+    events: GameEvent[],
+    _random: RandomFn,
+    matchState?: MatchState<SummonerWarsCore>,
+  ): GameEvent[] => {
+    const sys = matchState?.sys as { _ppseInputEventsReduced?: boolean } | undefined;
+    if (sys?._ppseInputEventsReduced) return events;
+    return postProcessDeathChecks(events, core);
+  },
 
   /** 验证命令合法性 */
   validate: (state, command) => validateCommand(state, command),

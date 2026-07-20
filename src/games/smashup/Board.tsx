@@ -914,12 +914,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 多选随从模式：约束
     const multiMinionConstraints = useMemo(() => {
-        if (!isMultiMinionSelect && !isMultiOngoingSelect && !isMultiBoardSelect || !currentPrompt?.multi) {
+        if (!currentPrompt?.multi) {
             return { min: 0, max: Infinity };
         }
         const multi = currentPrompt.multi as { min?: number; max?: number };
         return { min: multi.min ?? 0, max: multi.max ?? Infinity };
-    }, [isMultiMinionSelect, isMultiOngoingSelect, isMultiBoardSelect, currentPrompt]);
+    }, [currentPrompt]);
 
     // 多选随从已选中的 UID 集合（用于 BaseZone 高亮已选随从）
     const multiSelectedMinionUids = useMemo<Set<string>>(() => {
@@ -1076,6 +1076,21 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return discardOptionCount > 0;
     }, [corePlayers, currentInteraction, currentPrompt, isCurrentPromptForPlayer, playerID]);
 
+    const isMultiDiscardCardSelect = useMemo(() => {
+        return isDiscardCardPrompt && !!currentPrompt?.multi;
+    }, [isDiscardCardPrompt, currentPrompt]);
+
+    const multiSelectedDiscardCardUids = useMemo<Set<string>>(() => {
+        if (!isMultiDiscardCardSelect) return new Set();
+        const uids = new Set<string>();
+        for (const optId of multiSelectedOptionIds) {
+            const opt = currentPrompt?.options.find(o => o.id === optId);
+            const val = opt?.value as { cardUid?: string } | undefined;
+            if (val?.cardUid) uids.add(val.cardUid);
+        }
+        return uids;
+    }, [isMultiDiscardCardSelect, multiSelectedOptionIds, currentPrompt]);
+
     const activePromptSurface = useMemo<'none' | 'hand' | 'board' | 'overlay'>(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return 'none';
         if (isDirectHandSelectPrompt) return 'hand';
@@ -1193,8 +1208,25 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return value?.cardUid === cardUid;
         });
         if (!option) return;
+        if (isMultiDiscardCardSelect) {
+            setMultiSelectedOptionIds(prev => {
+                const next = new Set(prev);
+                if (next.has(option.id)) {
+                    next.delete(option.id);
+                } else if (next.size < multiMinionConstraints.max) {
+                    next.add(option.id);
+                }
+                return next;
+            });
+            return;
+        }
         respondCurrentPrompt({ optionId: option.id });
-    }, [currentPrompt, isDiscardCardPrompt, respondCurrentPrompt]);
+    }, [currentPrompt, isDiscardCardPrompt, isMultiDiscardCardSelect, multiMinionConstraints.max, respondCurrentPrompt]);
+
+    const confirmDiscardCardPromptSelection = useCallback(() => {
+        if (!isMultiDiscardCardSelect || !currentPrompt) return;
+        respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) });
+    }, [currentPrompt, isMultiDiscardCardSelect, multiSelectedOptionIds, respondCurrentPrompt]);
 
     const discardPanelCards = useMemo(
         () => (isDiscardCardPrompt ? discardCardPromptCards : discardStripCards),
@@ -1758,7 +1790,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const spotlightViewerId = isMultiplayer ? playerID : null;
     const revealViewerId = isMultiplayer ? playerID : rootPid;
 
-    const { queue: spotlightQueue, dismiss: dismissSpotlight, dismissAll: dismissAllSpotlight } = useCardSpotlightQueue<{ defId: string }>({
+    const { queue: spotlightQueue, dismiss: dismissSpotlight } = useCardSpotlightQueue<{ defId: string }>({
         entries: eventStreamEntries,
         currentPlayerId: spotlightViewerId,
         // 联机时对手页依赖服务端确认事件驱动特写，不能在 reconcile 时静默吞掉。
@@ -1767,11 +1799,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         extractCard: extractActionCard,
         maxQueue: 5,
     });
-
-    useEffect(() => {
-        if (!currentPrompt || !isCurrentPromptForPlayer) return;
-        dismissAllSpotlight();
-    }, [currentPrompt, dismissAllSpotlight, isCurrentPromptForPlayer]);
 
     const revealSuppressionRules = useMemo(() => {
         if (!currentPrompt) return [];
@@ -1790,10 +1817,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             <div
                 className="relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden"
                 style={{
-                    width: '20vw',
-                    maxWidth: '320px',
-                    height: 'calc(20vw / 0.714)',
-                    maxHeight: 'calc(320px / 0.714)',
+                    width: 'clamp(150px, 10.5vw, 200px)',
                     aspectRatio: '0.714 / 1',
                 }}
                 data-testid="smashup-action-spotlight-card"
@@ -3984,7 +4008,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             autoOpenPanel={isDiscardMinionPrompt || isDiscardCardPrompt}
                             playableCards={discardPanelCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
                             selectedUid={isDiscardCardPrompt ? null : discardStripSelectedUid}
+                            selectedUids={isMultiDiscardCardSelect ? multiSelectedDiscardCardUids : undefined}
                             onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : setDiscardStripSelectedUid}
+                            onConfirmSelection={isMultiDiscardCardSelect ? confirmDiscardCardPromptSelection : undefined}
+                            confirmDisabled={isMultiDiscardCardSelect ? multiSelectedOptionIds.size < multiMinionConstraints.min : undefined}
+                            minSelections={isMultiDiscardCardSelect ? multiMinionConstraints.min : undefined}
+                            maxSelections={isMultiDiscardCardSelect && multiMinionConstraints.max !== Infinity ? multiMinionConstraints.max : undefined}
                             selectHint={isDiscardCardPrompt
                                 ? undefined
                                 : discardStripSelectedUid
@@ -4069,14 +4098,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     <SmashUpDebugConfig G={G} dispatch={dispatch} />
                 </GameDebugPanel>
 
-                {/* 行动卡特写队列（在线只看对手，本地模式显示双方，点击关闭） */}
+                {/* 行动卡特写队列（在线只看对手，本地模式显示双方，明确关闭按钮关闭） */}
                 <CardSpotlightQueue
                     queue={spotlightQueue}
                     onDismiss={dismissSpotlight}
                     renderCard={renderSpotlightCard}
                 />
 
-                {/* 卡牌展示浮层（非阻塞，点击关闭） */}
+                {/* 卡牌展示浮层（非阻塞，明确关闭按钮关闭） */}
                 {spotlightQueue.length === 0 && (
                     <RevealOverlay
                         entries={eventStreamEntries}

@@ -26,6 +26,7 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
         <div
             className="flex flex-col gap-[0.4vw] pointer-events-auto opacity-100 w-full"
             style={{ zIndex: UI_Z_INDEX.hud }}
+            data-testid="dt-phase-indicator"
             data-tutorial-id="phase-indicator"
         >
             <h3 className="text-[1.0vw] font-black text-slate-300/80 mb-[0.4vw] ml-[0.3vw] tracking-[0.2em] uppercase truncate drop-shadow-md">
@@ -46,6 +47,7 @@ export const PhaseIndicator = ({ currentPhase }: { currentPhase: TurnPhase }) =>
                             onMouseLeave={() => setHoveredPhaseId(null)}
                         >
                             <div
+                                data-testid={isActive ? 'dt-active-phase-indicator' : undefined}
                                 className={`
                                     relative z-10 px-[0.8vw] py-[0.5vw] text-[0.75vw] font-bold rounded-r-[0.6vw] transition-[all] duration-300 border-l-[0.3vw] truncate cursor-help
                                     ${isActive

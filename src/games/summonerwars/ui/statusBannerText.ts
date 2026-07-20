@@ -17,8 +17,8 @@ export function getAbilityModeBannerFallbackText(
     return t('cardSelector.fortressPower');
   }
 
-  if (abilityMode.abilityId === 'huijin_call_guards' && abilityMode.step === 'selectCard') {
-    return t('cardSelector.huijinCallGuards');
+  if (abilityMode.abilityId === 'huijin_call_guards' && abilityMode.step === 'selectUnit') {
+    return t('interaction.sw.huijinCallGuardsTarget');
   }
 
   if (abilityMode.abilityId === 'huijin_call_guards' && abilityMode.step === 'selectPosition') {

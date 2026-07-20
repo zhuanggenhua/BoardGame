@@ -31,6 +31,10 @@ export interface CardSpotlightConfig {
     selectedCharacters?: Record<PlayerId, CharacterId>;
     /** 阻塞式奖励骰已由 modal stack 接管时，禁止再产出独立奖励骰特写 */
     suppressStandaloneBonusDie?: boolean;
+    /** 奖励骰已由骰盘承接时，卡牌特写只展示卡牌本体，不再附带骰子 */
+    suppressBonusDiceInCardSpotlight?: boolean;
+    /** 缓存作用域，用于区分不同房间/对局，避免未关闭特写串到下一局 */
+    cacheScope?: string;
 }
 
 const normalizePlayerId = (value: PlayerId | string | number | null | undefined): string => {
@@ -84,6 +88,8 @@ const BONUS_DIE_EVENT_TYPES = new Set(['BONUS_DIE_ROLLED', 'BONUS_DIE_REROLLED']
 const CARD_BONUS_BIND_THRESHOLD_MS = 1500;
 const spotlightLogger = createScopedLogger('DT_SPOTLIGHT');
 type SpotlightBonusDie = NonNullable<CardSpotlightItem['bonusDice']>[number];
+const cardSpotlightQueueCache = new Map<string, CardSpotlightItem[]>();
+const MAX_CARD_SPOTLIGHT_CACHE_KEYS = 20;
 
 function buildBonusDiePresentationKey(type: string, eventTimestamp: number): string {
     return `${type}:${eventTimestamp}`;
@@ -91,6 +97,74 @@ function buildBonusDiePresentationKey(type: string, eventTimestamp: number): str
 
 function buildCardSpotlightDedupKey(cardId: string, playerId: PlayerId, eventTimestamp: number): string {
     return `${normalizePlayerId(playerId)}|${cardId}|${eventTimestamp}`;
+}
+
+function buildCardSpotlightCacheKey(currentPlayerId: PlayerId, isSpectator: boolean, cacheScope?: string): string {
+    return `scope:${cacheScope || 'local'}|viewer:${normalizePlayerId(currentPlayerId) || 'local'}|spectator:${isSpectator ? '1' : '0'}`;
+}
+
+function getCardIdFromSpotlightItem(item: CardSpotlightItem): string {
+    if (item.cardId) {
+        return item.cardId;
+    }
+    const suffix = `-${item.timestamp}`;
+    return item.id.endsWith(suffix) ? item.id.slice(0, -suffix.length) : item.id;
+}
+
+function buildCardSpotlightDedupKeyFromItem(item: CardSpotlightItem): string {
+    return buildCardSpotlightDedupKey(getCardIdFromSpotlightItem(item), item.playerId, item.timestamp);
+}
+
+function isSpotlightItemBackedByCurrentEntries(item: CardSpotlightItem, entries: EventStreamEntry[]): boolean {
+    const cardId = getCardIdFromSpotlightItem(item);
+    const itemPlayerId = normalizePlayerId(item.playerId);
+
+    return entries.some((entry) => {
+        if (!CARD_EVENT_TYPES.has(entry.event.type)) return false;
+        const payload = entry.event.payload as Partial<CardEventPayload>;
+        const eventTimestamp = typeof entry.event.timestamp === 'number' ? entry.event.timestamp : 0;
+        return payload.cardId === cardId
+            && normalizePlayerId(payload.playerId) === itemPlayerId
+            && eventTimestamp === item.timestamp;
+    });
+}
+
+function restoreCachedCardSpotlightQueue(cacheKey: string | null, entries: EventStreamEntry[]): CardSpotlightItem[] {
+    if (!cacheKey) {
+        return [];
+    }
+    const cached = cardSpotlightQueueCache.get(cacheKey) ?? [];
+    if (cached.length === 0) {
+        return [];
+    }
+    if (entries.length === 0) {
+        return cached;
+    }
+    const backed = cached.filter((item) => isSpotlightItemBackedByCurrentEntries(item, entries));
+    return backed.length > 0 ? backed : cached;
+}
+
+function rememberCachedCardSpotlightQueue(cacheKey: string | null, queue: CardSpotlightItem[]): void {
+    if (!cacheKey) {
+        return;
+    }
+    if (queue.length === 0) {
+        return;
+    }
+
+    cardSpotlightQueueCache.set(cacheKey, queue);
+    if (cardSpotlightQueueCache.size <= MAX_CARD_SPOTLIGHT_CACHE_KEYS) return;
+    const oldestKey = cardSpotlightQueueCache.keys().next().value;
+    if (oldestKey) {
+        cardSpotlightQueueCache.delete(oldestKey);
+    }
+}
+
+function forgetCachedCardSpotlightQueue(cacheKey: string | null): void {
+    if (!cacheKey) {
+        return;
+    }
+    cardSpotlightQueueCache.delete(cacheKey);
 }
 
 function findExistingCardSpotlightIndex(
@@ -153,6 +227,37 @@ function upsertIndexedDie<T extends { index?: number }>(dice: T[], nextDie: T): 
     return nextDice;
 }
 
+function resolveSuppressedCardBonusSummary(
+    eventType: string,
+    value: number,
+    effectKey?: string,
+    effectParams?: Record<string, string | number>,
+): CardSpotlightItem['summaryText'] | undefined {
+    if (eventType !== 'BONUS_DIE_ROLLED' || !effectKey) {
+        return undefined;
+    }
+
+    if (effectKey === 'bonusDie.effect.gainCp') {
+        const cp = typeof effectParams?.cp === 'number' ? effectParams.cp : Math.ceil(value / 2);
+        return {
+            effectKey: 'bonusDie.spotlight.initialGainCp',
+            effectParams: {
+                ...effectParams,
+                value,
+                cp,
+            },
+        };
+    }
+
+    return {
+        effectKey,
+        effectParams: {
+            ...effectParams,
+            value,
+        },
+    };
+}
+
 /**
  * 绠＄悊鍗＄墝鍜岄澶栭瀛愮壒鍐欓槦鍒楋紙EventStream 椹卞姩锛?
  */
@@ -164,12 +269,21 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
         isSpectator = false,
         selectedCharacters,
         suppressStandaloneBonusDie = false,
+        suppressBonusDiceInCardSpotlight = false,
+        cacheScope,
     } = config;
 
+    const cardSpotlightCacheKey = cacheScope
+        ? buildCardSpotlightCacheKey(currentPlayerId, isSpectator, cacheScope)
+        : null;
+    const restoredCardSpotlightQueue = restoreCachedCardSpotlightQueue(cardSpotlightCacheKey, eventStreamEntries);
+
     // 鍗＄墝鐗瑰啓闃熷垪
-    const [cardSpotlightQueue, setCardSpotlightQueue] = useState<CardSpotlightItem[]>([]);
-    const cardSpotlightQueueRef = useRef<CardSpotlightItem[]>([]);
-    const processedCardSpotlightKeysRef = useRef<Set<string>>(new Set());
+    const [cardSpotlightQueue, setCardSpotlightQueue] = useState<CardSpotlightItem[]>(restoredCardSpotlightQueue);
+    const cardSpotlightQueueRef = useRef<CardSpotlightItem[]>(restoredCardSpotlightQueue);
+    const processedCardSpotlightKeysRef = useRef<Set<string>>(
+        new Set(restoredCardSpotlightQueue.map(buildCardSpotlightDedupKeyFromItem)),
+    );
 
     // 棰濆楠板瓙鐘舵€?
     const [bonusDieValue, setBonusDieValue] = useState<number | undefined>(undefined);
@@ -211,17 +325,19 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
     // 鍚屾闃熷垪鍒?ref
     useEffect(() => {
         cardSpotlightQueueRef.current = cardSpotlightQueue;
-    }, [cardSpotlightQueue]);
+        rememberCachedCardSpotlightQueue(cardSpotlightCacheKey, cardSpotlightQueue);
+    }, [cardSpotlightCacheKey, cardSpotlightQueue]);
 
     /**
      * 鏍稿績锛氭秷璐?EventStream 涓殑鏂颁簨浠?
      */
     useEffect(() => {
         const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
+        // Card spotlights are player-readable exhibits. Online reconcile/resync can
+        // temporarily move the EventStream watermark backwards without meaning the
+        // already-visible opponent card was undone, so keep the queue until the player
+        // explicitly closes it. Reset only the short-lived bonus-die animation state.
         if (didReset || didOptimisticRollback) {
-            cardSpotlightQueueRef.current = [];
-            processedCardSpotlightKeysRef.current.clear();
-            setCardSpotlightQueue([]);
             clearBonusDieState();
         }
         if (newEntries.length === 0) return;
@@ -317,6 +433,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
 
                 const newItem: CardSpotlightItem = {
                     id: `${p.cardId}-${eventTimestamp}`,
+                    cardId: p.cardId,
                     timestamp: eventTimestamp,
                     previewRef: previewRef ?? undefined,
                     playerId: p.playerId,
@@ -422,6 +539,28 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
 
                 if (cardCandidateIndex >= 0) {
                     const cardCandidate = nextCardSpotlightQueue[cardCandidateIndex];
+                    if (suppressBonusDiceInCardSpotlight && hasBonusDiceSettlement) {
+                        const summaryText = resolveSuppressedCardBonusSummary(
+                            type,
+                            bonusValue,
+                            bonusEffectKey,
+                            bonusEffectParams,
+                        );
+                        spotlightLogger.info('bonus-bound-to-card-suppressed', {
+                            cardId: cardCandidate.id,
+                            eventType: type,
+                            reason: 'bonus-dice-routed-to-tray',
+                            summaryEffectKey: summaryText?.effectKey,
+                        });
+                        if (summaryText) {
+                            nextCardSpotlightQueue[cardCandidateIndex] = {
+                                ...cardCandidate,
+                                summaryText,
+                            };
+                            didUpdateCardSpotlightQueue = true;
+                        }
+                        continue;
+                    }
                     if (isSummaryEvent) {
                         // 汇总事件：添加到 summaryText 字段
                         spotlightLogger.info('bonus-summary-event', {
@@ -549,6 +688,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
 
         if (didUpdateCardSpotlightQueue) {
             cardSpotlightQueueRef.current = nextCardSpotlightQueue;
+            rememberCachedCardSpotlightQueue(cardSpotlightCacheKey, nextCardSpotlightQueue);
             setCardSpotlightQueue(nextCardSpotlightQueue);
             spotlightLogger.info('card-queue-commit', {
                 queueSize: nextCardSpotlightQueue.length,
@@ -618,7 +758,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                 characterId: pendingStandaloneBonusDie.characterId,
             });
         }
-    }, [clearBonusDieState, consumeNew, currentPlayerId, eventStreamEntries, isSpectator, opponentName, selectedCharacters, suppressStandaloneBonusDie]);
+    }, [cardSpotlightCacheKey, clearBonusDieState, consumeNew, currentPlayerId, eventStreamEntries, isSpectator, opponentName, selectedCharacters, suppressBonusDiceInCardSpotlight, suppressStandaloneBonusDie]);
 
     useEffect(() => {
         if (!suppressStandaloneBonusDie || !showBonusDie) {
@@ -635,8 +775,16 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
      * 鍏抽棴鍗＄墝鐗瑰啓
      */
     const handleCardSpotlightClose = useCallback((id: string) => {
-        setCardSpotlightQueue(prev => prev.filter(item => item.id !== id));
-    }, []);
+        setCardSpotlightQueue(prev => {
+            const next = prev.filter(item => item.id !== id);
+            if (next.length === 0) {
+                forgetCachedCardSpotlightQueue(cardSpotlightCacheKey);
+            } else {
+                rememberCachedCardSpotlightQueue(cardSpotlightCacheKey, next);
+            }
+            return next;
+        });
+    }, [cardSpotlightCacheKey]);
 
     /**
      * 鍏抽棴棰濆楠板瓙鐗瑰啓

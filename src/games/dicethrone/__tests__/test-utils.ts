@@ -14,6 +14,7 @@ import {
 import {
     INTERACTION_COMMANDS,
     asCompareRollChoice,
+    asMultistepChoice,
     asSimpleChoice,
     createSimpleChoice,
     type MultistepChoiceData,
@@ -99,6 +100,20 @@ export const getSimpleChoicePrompt = (
     }
     if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
         throw new Error(`Expected simple-choice sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+    return prompt;
+};
+
+export const getMultistepChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const prompt = asMultistepChoice(state.sys.interaction.current as any);
+    if (!prompt) {
+        throw new Error('Expected a multistep-choice prompt, but none was active.');
+    }
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected multistep-choice sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
     }
     return prompt;
 };

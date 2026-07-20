@@ -118,7 +118,7 @@ describe('useCardSpotlightQueue', () => {
         });
     });
 
-    it('clears stale spotlight queue on optimistic rollback signal and does not replay restored old events', async () => {
+    it('keeps visible opponent spotlight across optimistic resync signals without replaying restored old events', async () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,
             seq: 0,
@@ -174,13 +174,15 @@ describe('useCardSpotlightQueue', () => {
         rerender({ entries: [] });
 
         await waitFor(() => {
-            expect(result.current.queue).toEqual([]);
+            expect(result.current.queue).toHaveLength(1);
+            expect(result.current.queue[0]?.cardData.defId).toBe('time_travelers_time_walk');
         });
 
         rerender({ entries: [oldEntry] });
 
         await act(async () => {});
-        expect(result.current.queue).toEqual([]);
+        expect(result.current.queue).toHaveLength(1);
+        expect(result.current.queue[0]?.cardData.defId).toBe('time_travelers_time_walk');
 
         const newEntry = createEntry(2, {
             type: 'ACTION_PLAYED',
@@ -194,8 +196,11 @@ describe('useCardSpotlightQueue', () => {
         rerender({ entries: [oldEntry, newEntry] });
 
         await waitFor(() => {
-            expect(result.current.queue).toHaveLength(1);
-            expect(result.current.queue[0]?.cardData.defId).toBe('super_spies_secret_agent');
+            expect(result.current.queue).toHaveLength(2);
+            expect(result.current.queue.map((item) => item.cardData.defId)).toEqual([
+                'time_travelers_time_walk',
+                'super_spies_secret_agent',
+            ]);
         });
     });
 });

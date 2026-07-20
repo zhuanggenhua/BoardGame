@@ -426,7 +426,6 @@
     "reviveUndead": "复活死灵：选择弃牌堆中的亡灵单位",
     "infection": "感染：选择弃牌堆中的疫病体",
     "fortressPower": "城塞之力：选择弃牌堆中的城塞单位",
-    "huijinCallGuards": "召集护卫：选择手牌中的士兵",
     "default": "选择卡牌",
     "empty": "没有符合条件的卡牌"
   },
@@ -497,17 +496,17 @@
       "iceShards": "寒冰碎屑：攻击阶段开始自动结算",
       "feedBeast": "喂养巨食兽：选择吞噬目标或自毁",
       "moguParasite": "寄生：选择消耗充能或受到伤害",
-      "huijinCallGuardsCard": "召集护卫：选择要召唤的士兵",
+      "huijinCallGuardsTarget": "召集护卫：选择场上的友方士兵",
       "huijinCallGuardsPosition": "召集护卫：选择召唤师相邻空格",
       "huijinRamTarget": "冲撞：选择相邻敌方士兵或英雄",
       "huijinRamPosition": "冲撞：选择推拉落点",
       "huijinQuickShot": "快速射击：选择 3 格直线视野内目标",
       "shourenEncourage": "激励：选择重掷全部骰子或保留结果",
-      "shourenBloodyRush": "血腥急袭：移动后受到 1 点伤害，或跳过留在原位",
-      "shourenBloodyRushPosition": "血腥急袭：点棋盘高亮格移动该单位并受到 1 点伤害；跳过则留在原位",
-      "shourenBerserkPosition": "狂暴：点棋盘高亮格推拉冰苔斗士；跳过则不移动",
-      "shourenBruteImpact": "蛮力冲击：点棋盘高亮格把目标推离攻击者；跳过则不推",
-      "shourenPrimalFuryPosition": "原始狂怒：点棋盘高亮格移动格鲁纳克；跳过则不移动",
+      "shourenBloodyRush": "血腥急袭：可以对本单位造成 1 点伤害以将其推拉 1 格",
+      "shourenBloodyRushPosition": "血腥急袭：可以对本单位造成 1 点伤害以将其推拉 1 格",
+      "shourenBerserkPosition": "狂暴：可以将本单位推拉 1 格；若如此做，可额外攻击一次相邻敌方卡牌",
+      "shourenBruteImpact": "蛮力冲击：可以将该单位向远离本单位的方向推拉 1 格",
+      "shourenPrimalFuryPosition": "原始狂怒：可以将召唤师推拉 1 至 2 格；若如此做，可以额外攻击一次相邻敌方卡牌",
       "shourenExtraAttack": "选择一次额外攻击的相邻目标"
     },
     "fireSacrifice": {
@@ -1018,7 +1017,7 @@
     },
     "huijin_call_guards": {
       "name": "召集护卫",
-      "description": "在你的攻击阶段结束时，可以从本召唤师上移除 1 点充能，将手牌中的一个友方士兵放置到本召唤师相邻的空区格。"
+      "description": "在你的攻击阶段结束时，可以从本召唤师上移除 1 点充能，指定一个友方士兵，将其放置到本召唤师相邻的空区格。"
     },
     "huijin_ember_summon": {
       "name": "怒焰召唤",

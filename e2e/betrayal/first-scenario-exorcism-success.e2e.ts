@@ -75,7 +75,7 @@ test.describe("山屋惊魂驱魔成功终局完整链路", () => {
       timeout: 30000,
     });
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText(/驱魔|驱散杰克之灵/);
     await expect(page.getByTestId("betrayal-room-focus-target")).toContainText(
       /驱魔|驱散杰克之灵/,

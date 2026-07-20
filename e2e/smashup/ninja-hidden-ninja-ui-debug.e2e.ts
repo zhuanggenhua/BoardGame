@@ -119,7 +119,7 @@ test.describe('便衣忍者交互创建回归', () => {
 
         const spotlightQueue = page.getByTestId('card-spotlight-queue');
         if (await spotlightQueue.isVisible().catch(() => false)) {
-            await spotlightQueue.click({ force: true });
+            await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
             await page.waitForTimeout(200);
         }
 

@@ -309,6 +309,7 @@ describe('trainingData', () => {
 
     it('生产 compose 必须把训练目录挂载到 game-server 独立持久化卷', async () => {
         const compose = await readFile(path.join(process.cwd(), 'docker-compose.prod.yml'), 'utf8');
+        expect(compose).toContain('ENABLE_TRAINING_DATA_CAPTURE: "false"');
         expect(compose).toContain('TRAINING_DATA_DIR: /data/training-data');
         expect(compose).toContain('TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS: ${TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS:-600000}');
         expect(compose).toContain('TRAINING_DATA_PENDING_RETENTION_HOURS: ${TRAINING_DATA_PENDING_RETENTION_HOURS:-24}');

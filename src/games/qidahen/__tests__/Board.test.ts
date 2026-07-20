@@ -605,6 +605,25 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('{action.detail}');
     });
 
+    it('朝鲜牌库在桌面端使用右侧小型 rail，禁止回到右上角大卡悬浮', () => {
+        const koreaZoneStart = boardSource.indexOf('const KoreaZone: React.FC<{');
+        const koreaZoneEnd = boardSource.indexOf('const TopPromptBanner: React.FC<{', koreaZoneStart);
+        const koreaZoneSource = boardSource.slice(koreaZoneStart, koreaZoneEnd);
+
+        expect(koreaZoneStart).toBeGreaterThanOrEqual(0);
+        expect(koreaZoneEnd).toBeGreaterThan(koreaZoneStart);
+        expect(boardSource).toContain('const KoreaRailItem: React.FC<{');
+        expect(boardSource).toContain('data-qidahen-korea-rail-item');
+        expect(koreaZoneSource).toContain('data-ui-anchor="right-deck-slot"');
+        expect(koreaZoneSource).toContain('data-qidahen-korea-zone-layout="desktop-rail"');
+        expect(koreaZoneSource).toContain('<KoreaRailItem');
+        expect(koreaZoneSource).toContain('testId="qidahen-korea-draw-pile"');
+        expect(koreaZoneSource).toContain('testId="qidahen-korea-discard-pile"');
+        expect(koreaZoneSource).not.toContain('<DeckStack');
+        expect(koreaZoneSource).not.toContain('CARD_DIMENSIONS.koreaDeck');
+        expect(koreaZoneSource).not.toContain('right-[80px] top-[92px]');
+    });
+
     it('战后处理必须展示本次掷骰本体，而不是只剩文字摘要', () => {
         expect(boardSource).toContain('const formatQidahenBattleRollPhaseLabel = (phase: QidahenBattleRollPhase): string => {');
         expect(boardSource).toContain('const formatQidahenBattleRollFace = (roll: QidahenBattleRoll): string => (');
@@ -733,6 +752,18 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,');
         expect(boardSource).toContain('width: suppressPassiveActionContext ? ACTIONS_DOCK_WIDTH + 12 : ACTIONS_DOCK_WIDTH,');
         expect(boardSource).toContain('height: ACTIONS_DOCK_HEIGHT,');
+    });
+
+    it('PC 右侧动作按钮必须保持桌面尺寸，禁止回到移动端式紧凑按钮', () => {
+        const actionButtonStart = boardSource.indexOf('const ActionButton: React.FC<{');
+        const actionButtonEnd = boardSource.indexOf('const ActionsZone: React.FC<{', actionButtonStart);
+        const actionButtonSource = boardSource.slice(actionButtonStart, actionButtonEnd);
+
+        expect(actionButtonStart).toBeGreaterThanOrEqual(0);
+        expect(actionButtonEnd).toBeGreaterThan(actionButtonStart);
+        expect(actionButtonSource).toContain('h-[48px] min-w-[132px]');
+        expect(actionButtonSource).toContain('px-3.5 text-left text-[14px]');
+        expect(actionButtonSource).not.toContain('h-[38px] min-w-[104px]');
     });
 
     it('主交互槽位激活时，被动状态块必须让位，不再跟主交互面板争抢右侧动作槽位', () => {

@@ -44,10 +44,17 @@ type Props = {
     playableCards?: { uid: string; defId: string; label: string }[];
     /** 当前选中的卡牌 uid */
     selectedUid?: string | null;
+    /** 多选时当前选中的卡牌 uid 集合 */
+    selectedUids?: Set<string>;
     /** 选中卡牌回调 */
     onSelectCard?: (uid: string | null) => void;
     /** 选中提示文本 */
     selectHint?: string;
+    /** 多选确认回调 */
+    onConfirmSelection?: () => void;
+    confirmDisabled?: boolean;
+    minSelections?: number;
+    maxSelections?: number;
     /** 关闭弃牌堆面板的回调（含清理逻辑） */
     onClosePanel?: () => void;
     setAsideTitans?: TitanState[];
@@ -76,8 +83,13 @@ export const DeckDiscardZone: React.FC<Props> = ({
     autoOpenPanel,
     playableCards,
     selectedUid,
+    selectedUids,
     onSelectCard,
     selectHint,
+    onConfirmSelection,
+    confirmDisabled,
+    minSelections,
+    maxSelections,
     onClosePanel,
     setAsideTitans = [],
     activatableTitanUids,
@@ -191,12 +203,17 @@ export const DeckDiscardZone: React.FC<Props> = ({
             // 有可打出的卡牌时，传递选择相关 props
             ...(playableCards && playableCards.length > 0 && {
                 selectedUid,
+                selectedUids,
                 onSelect: onSelectCard,
                 selectHint: selectHint || t('ui.click_base_to_deploy'),
                 playableUids: new Set(playableCards.map(c => c.uid)),
+                onConfirmSelection,
+                confirmDisabled,
+                minSelections,
+                maxSelections,
             }),
         };
-    }, [showDiscard, discard, playableCards, selectedUid, onSelectCard, selectHint, t, handleCloseDiscard]);
+    }, [showDiscard, discard, playableCards, selectedUid, selectedUids, onSelectCard, selectHint, onConfirmSelection, confirmDisabled, minSelections, maxSelections, t, handleCloseDiscard]);
 
     const deckDisplayCardsData = useMemo(() => {
         if (!showDeck || !deckQueryEnabled || aggregatedDeckCards.length === 0) return undefined;

@@ -90,10 +90,10 @@ function canTriggerHuijinCallGuards(
 ): boolean {
   if (unit.card.unitClass !== 'summoner') return false;
   if (normalizeUnitBoosts(unit.boosts) < 1) return false;
-  const hasCommonInHand = core.players[playerId].hand.some(card =>
-    card.cardType === 'unit' && (card as UnitCard).unitClass === 'common'
+  const hasFriendlyCommonOnBoard = getPlayerUnits(core, playerId).some(candidate =>
+    candidate.instanceId !== unit.instanceId && candidate.card.unitClass === 'common'
   );
-  if (!hasCommonInHand) return false;
+  if (!hasFriendlyCommonOnBoard) return false;
   return [
     { row: unit.position.row - 1, col: unit.position.col },
     { row: unit.position.row + 1, col: unit.position.col },

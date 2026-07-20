@@ -1428,7 +1428,7 @@ describe('BonusDieOverlay', () => {
         });
     });
 
-    it('对手打出一掷千金时，卡牌特写骰子应携带可重放的 presentationKey', async () => {
+    it('对手打出一掷千金且奖励骰走右侧骰盘时，卡牌特写只保留首次结果说明', async () => {
         const entries: EventStreamEntry[] = [
             {
                 id: 1,
@@ -1451,9 +1451,40 @@ describe('BonusDieOverlay', () => {
                         value: 6,
                         face: 'lotus',
                         effectKey: 'bonusDie.effect.gainCp',
-                        effectParams: { cp: 3 },
+                        effectParams: { value: 6, cp: 3 },
                     },
                     timestamp: 1100,
+                },
+            },
+            {
+                id: 3,
+                event: {
+                    type: 'BONUS_DICE_REROLL_REQUESTED',
+                    payload: {
+                        settlement: {
+                            id: 'card-one-throw-fortune-display-1000',
+                            sourceAbilityId: 'card-one-throw-fortune',
+                            attackerId: '1',
+                            targetId: '1',
+                            dice: [{
+                                index: 0,
+                                value: 6,
+                                face: 'lotus',
+                                effectKey: 'bonusDie.effect.gainCp',
+                                effectParams: { value: 6, cp: 3 },
+                            }],
+                            rerollCostTokenId: '',
+                            rerollCostAmount: 0,
+                            rerollCount: 0,
+                            maxRerollCount: 0,
+                            readyToSettle: false,
+                            displayOnly: true,
+                            showTotal: false,
+                            customResolutionId: 'one-throw-fortune-cp',
+                            allowDiceModification: true,
+                        },
+                    },
+                    timestamp: 1101,
                 },
             },
         ];
@@ -1467,6 +1498,7 @@ describe('BonusDieOverlay', () => {
                     '0': 'barbarian',
                     '1': 'monk',
                 },
+                suppressBonusDiceInCardSpotlight: true,
             });
 
             return (
@@ -1485,9 +1517,11 @@ describe('BonusDieOverlay', () => {
         await waitFor(() => {
             const state = JSON.parse(screen.getByTestId('opponent-one-throw-fortune-state').textContent ?? '{}');
             expect(state.cardSpotlightQueue).toHaveLength(1);
-            expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(1);
-            expect(state.cardSpotlightQueue[0].bonusDice[0].presentationKey).toBe('BONUS_DIE_ROLLED:1100');
-            expect(state.cardSpotlightQueue[0].bonusDice[0].index).toBe(0);
+            expect(state.cardSpotlightQueue[0].bonusDice).toBeUndefined();
+            expect(state.cardSpotlightQueue[0].summaryText).toEqual({
+                effectKey: 'bonusDie.spotlight.initialGainCp',
+                effectParams: { value: 6, cp: 3 },
+            });
             expect(state.bonusDie.show).toBe(false);
         });
     });

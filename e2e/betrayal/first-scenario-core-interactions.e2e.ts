@@ -648,7 +648,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       timeout: 30000,
     });
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText("调查杰克");
     await expect(page.getByTestId("betrayal-room-focus-target")).toContainText(
       "调查杰克",
@@ -697,7 +697,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       timeout: 30000,
     });
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText("调查杰克");
     await expect(page.getByTestId("betrayal-room-focus-target")).toContainText(
       "调查杰克",
@@ -790,7 +790,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       timeout: 30000,
     });
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText("研究法阵");
     await expect(page.getByTestId("betrayal-room-focus-target")).toContainText(
       "研究法阵",
@@ -841,7 +841,7 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       timeout: 30000,
     });
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText(/驱魔|驱散杰克之灵/);
     await expect(page.getByTestId("betrayal-room-focus-target")).toContainText(
       /驱魔|驱散杰克之灵/,
@@ -897,18 +897,26 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       "进入目标模式前，叛徒 token 不能提前带上作祟攻击热区",
     ).not.toHaveAttribute("data-haunt-target-hitbox", "true");
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText("攻击叛徒");
-    await page.getByTestId("betrayal-haunt-command-primary").click();
+    await page.getByTestId("betrayal-action-use").click();
+    const desktopActionRail = page.getByTestId("betrayal-action-rail");
+    const desktopCancelTargetAction = desktopActionRail.getByTestId(
+      "betrayal-haunt-target-cancel",
+    );
     await expect(
-      page.getByTestId("betrayal-haunt-target-cancel"),
+      desktopCancelTargetAction,
     ).toBeVisible();
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
-    ).toHaveAttribute("role", "status");
+      page.getByTestId("betrayal-action-use"),
+    ).toHaveAttribute("data-haunt-targeting-status", "true");
     await expect(
       page.getByTestId("betrayal-haunt-goal-card"),
       "首剧本目标态不得在左侧重复显示作祟目标卡",
+    ).toHaveCount(0);
+    await expect(
+      page.getByTestId("betrayal-trade-flow-banner"),
+      "作祟目标选择态不得残留交易流程条",
     ).toHaveCount(0);
     await expect(
       page.locator('[data-testid^="betrayal-room-occupant-target-cue-"]'),
@@ -931,24 +939,37 @@ test.describe("山屋惊魂首剧本核心交互补充", () => {
       "叛徒 token 必须有贴合本体的五边形高亮",
     ).toHaveAttribute("data-highlight-shape", "pentagon");
     const targetingAxis = await page.evaluate(() => {
-      const banner = document.querySelector<HTMLElement>(
-        '[data-testid="betrayal-haunt-command-banner"]',
+      const primaryAction = document.querySelector<HTMLElement>(
+        '[data-testid="betrayal-action-use"]',
+      )!;
+      const cancelAction = document.querySelector<HTMLElement>(
+        '[data-testid="betrayal-action-rail"] [data-testid="betrayal-haunt-target-cancel"]',
       )!;
       const room = document.querySelector<HTMLElement>(
         '[data-testid="betrayal-room-basement-east"]',
       )!;
-      const bannerRect = banner.getBoundingClientRect();
+      const primaryActionRect = primaryAction.getBoundingClientRect();
+      const cancelActionRect = cancelAction.getBoundingClientRect();
       const roomRect = room.getBoundingClientRect();
       return {
         viewportCenterX: window.innerWidth / 2,
-        bannerCenterX: bannerRect.left + bannerRect.width / 2,
+        primaryActionCenterX:
+          primaryActionRect.left + primaryActionRect.width / 2,
+        primaryActionRight: primaryActionRect.right,
+        cancelActionLeft: cancelActionRect.left,
         roomCenterX: roomRect.left + roomRect.width / 2,
       };
     });
     expect(
-      Math.abs(targetingAxis.bannerCenterX - targetingAxis.viewportCenterX),
-      "首剧本目标指令条必须按真实视口居中",
+      Math.abs(
+        targetingAxis.primaryActionCenterX - targetingAxis.viewportCenterX,
+      ),
+      "首剧本底部作祟状态按钮必须按真实视口居中",
     ).toBeLessThanOrEqual(4);
+    expect(
+      targetingAxis.cancelActionLeft - targetingAxis.primaryActionRight,
+      "取消选择必须作为右侧退路，不能挤压或重叠主状态按钮",
+    ).toBeGreaterThanOrEqual(16);
     expect(
       Math.abs(targetingAxis.roomCenterX - targetingAxis.viewportCenterX),
       "首剧本目标房间必须按真实视口居中",

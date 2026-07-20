@@ -15,10 +15,10 @@ vi.mock('react-i18next', async (importOriginal) => {
           'actions.moguFanaticalFungusStay': '不推拉',
           'actions.skip': '跳过',
           'statusBanners.ability.moguFanaticalFungus': '狂热菌菇：选择不推拉或推拉落点',
-          'interaction.sw.shourenBloodyRushPosition': '血腥急袭：点棋盘高亮格移动该单位并受到 1 点伤害；跳过则留在原位',
-          'interaction.sw.shourenBerserkPosition': '狂暴：点棋盘高亮格推拉冰苔斗士；跳过则不移动',
-          'interaction.sw.shourenBruteImpact': '蛮力冲击：点棋盘高亮格把目标推离攻击者；跳过则不推',
-          'interaction.sw.shourenPrimalFuryPosition': '原始狂怒：点棋盘高亮格移动格鲁纳克；跳过则不移动',
+          'interaction.sw.shourenBloodyRushPosition': '血腥急袭：可以对本单位造成 1 点伤害以将其推拉 1 格',
+          'interaction.sw.shourenBerserkPosition': '狂暴：可以将本单位推拉 1 格；若如此做，可额外攻击一次相邻敌方卡牌',
+          'interaction.sw.shourenBruteImpact': '蛮力冲击：可以将该单位向远离本单位的方向推拉 1 格',
+          'interaction.sw.shourenPrimalFuryPosition': '原始狂怒：可以将召唤师推拉 1 至 2 格；若如此做，可以额外攻击一次相邻敌方卡牌',
         };
         return translations[key] ?? key;
       },
@@ -151,11 +151,11 @@ describe('StatusBanners - 莫古狂热菌菇', () => {
 
 describe('StatusBanners - 冰苔兽人可选位移', () => {
   it.each([
-    ['shouren_bloody_rush', '血腥急袭：点棋盘高亮格移动该单位并受到 1 点伤害；跳过则留在原位'],
-    ['shouren_berserk', '狂暴：点棋盘高亮格推拉冰苔斗士；跳过则不移动'],
-    ['shouren_brute_impact', '蛮力冲击：点棋盘高亮格把目标推离攻击者；跳过则不推'],
-    ['shouren_primal_fury', '原始狂怒：点棋盘高亮格移动格鲁纳克；跳过则不移动'],
-  ])('%s 应显示能力说明、点击后果和跳过按钮', (abilityId, bannerText) => {
+    ['shouren_bloody_rush', '血腥急袭：可以对本单位造成 1 点伤害以将其推拉 1 格'],
+    ['shouren_berserk', '狂暴：可以将本单位推拉 1 格；若如此做，可额外攻击一次相邻敌方卡牌'],
+    ['shouren_brute_impact', '蛮力冲击：可以将该单位向远离本单位的方向推拉 1 格'],
+    ['shouren_primal_fury', '原始狂怒：可以将召唤师推拉 1 至 2 格；若如此做，可以额外攻击一次相邻敌方卡牌'],
+  ])('%s 应显示规则原文式说明和跳过按钮', (abilityId, bannerText) => {
     const onCancelAbility = vi.fn();
 
     render(
@@ -175,6 +175,7 @@ describe('StatusBanners - 冰苔兽人可选位移', () => {
     expect(screen.getByText(bannerText)).toBeInTheDocument();
     expect(prompt.textContent).toContain('跳过');
     expect(prompt.textContent).not.toBe('跳过');
+    expect(prompt.textContent).not.toContain('点棋盘高亮格');
 
     fireEvent.click(screen.getByRole('button', { name: '跳过' }));
     expect(onCancelAbility).toHaveBeenCalledTimes(1);

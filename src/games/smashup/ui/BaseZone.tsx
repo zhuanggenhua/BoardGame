@@ -882,7 +882,10 @@ export const BaseZone: React.FC<{
                 )}
 
                 {/* Power Token */}
-                <div className={powerTokenContainerClassName}>
+                <div
+                    className={powerTokenContainerClassName}
+                    data-testid={`su-base-breakpoint-token-${baseIndex}`}
+                >
                     <motion.div
                         className={`w-[3.5vw] h-[3.5vw] rounded-full flex items-center justify-center border-[0.2vw] border-dashed shadow-xl transform rotate-12 group-hover/base:scale-110 transition-transform ${isAtBreak
                             ? 'bg-green-600 border-green-300'

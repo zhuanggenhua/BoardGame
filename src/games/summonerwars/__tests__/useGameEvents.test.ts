@@ -149,7 +149,7 @@ describe('systemInteractionAdapter', () => {
     { label: 'revive_undead/selectCard', route: 'card-selector', step: 'selectCard' },
     { label: 'revive_undead/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
     { label: 'fortress_power/selectCard', route: 'card-selector', step: 'selectCard' },
-    { label: 'huijin_call_guards/selectCard', route: 'card-selector', step: 'selectCard' },
+    { label: 'huijin_call_guards/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
     { label: 'huijin_call_guards/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
     { label: 'mogu_fanatical_fungus/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
     { label: 'ice_ram/selectUnit', route: 'board-cell-position', step: 'selectUnit' },
@@ -593,10 +593,10 @@ describe('systemInteractionAdapter', () => {
       },
       {
         interaction: {
-          id: 'sw-huijin-call-guards-card-1',
-          type: 'huijin_call_guards_select_card',
+          id: 'sw-huijin-call-guards-target-1',
+          type: 'huijin_call_guards_select_target',
           meta: {
-            type: 'huijin_call_guards_select_card',
+            type: 'huijin_call_guards_select_target',
             sourceUnitId: 'huijin-summoner-1',
             sourcePosition: { row: 0, col: 3 },
           },
@@ -604,7 +604,7 @@ describe('systemInteractionAdapter', () => {
         },
         expected: {
           abilityId: 'huijin_call_guards',
-          step: 'selectCard',
+          step: 'selectUnit',
           sourceUnitId: 'huijin-summoner-1',
         },
       },
@@ -702,14 +702,14 @@ describe('systemInteractionAdapter', () => {
         type: 'huijin_call_guards_select_position',
         sourceUnitId: 'huijin-summoner-1',
         sourcePosition: { row: 0, col: 3 },
-        cardId: 'huijin-royal-guard-1',
+        targetPosition: { row: 3, col: 3 },
       },
       options: [],
     }, null)).toEqual({
       abilityId: 'huijin_call_guards',
       step: 'selectPosition',
       sourceUnitId: 'huijin-summoner-1',
-      selectedCardId: 'huijin-royal-guard-1',
+      targetPosition: { row: 3, col: 3 },
     });
 
     expect(deriveSystemAbilityMode({
@@ -1162,7 +1162,7 @@ describe('systemInteractionAdapter', () => {
         type: 'huijin_call_guards_select_position',
         sourceUnitId: 'huijin-summoner-1',
         sourcePosition: { row: 0, col: 3 },
-        cardId: 'huijin-ash-archer-1',
+        targetPosition: { row: 3, col: 3 },
       },
       options: [
         {
@@ -1170,7 +1170,7 @@ describe('systemInteractionAdapter', () => {
           label: '(1,3)',
           value: {
             action: 'huijin_call_guards_position',
-            cardId: 'huijin-ash-archer-1',
+            targetPosition: { row: 3, col: 3 },
             position: { row: 1, col: 3 },
           },
         },
@@ -1694,33 +1694,33 @@ describe('systemInteractionAdapter', () => {
     })).toBeNull();
 
     expect(getSystemCardSelectorTitleKey('fortress_power')).toBe('cardSelector.fortressPower');
-    expect(getSystemCardSelectorTitleKey('huijin_call_guards')).toBe('cardSelector.huijinCallGuards');
   });
 
-  it('系统卡牌选择器同时支持弃牌堆能力和灰烬手牌能力', () => {
+  it('召集护卫第一步走棋盘单位选择，不进入系统卡牌选择器', () => {
     const huijinInteraction: SwSimpleChoiceInteraction = {
-      id: 'sw-huijin-call-guards-card-2',
-      type: 'huijin_call_guards_select_card',
+      id: 'sw-huijin-call-guards-target-2',
+      type: 'huijin_call_guards_select_target',
       meta: {
-        type: 'huijin_call_guards_select_card',
+        type: 'huijin_call_guards_select_target',
         sourceUnitId: 'huijin-summoner-1',
         sourcePosition: { row: 0, col: 3 },
       },
       options: [
         {
-          id: 'huijin-ash-archer-1',
+          id: 'unit:huijin-ash-archer-1',
           label: '灰烬弓箭手',
-          value: { action: 'huijin_call_guards_card', cardId: 'huijin-ash-archer-1' },
+          value: { action: 'huijin_call_guards_target', targetPosition: { row: 3, col: 3 } },
         },
       ],
     };
+    const mode = deriveSystemAbilityMode(huijinInteraction, null);
 
-    expect(listSystemCardSelectorTargetCardIds(huijinInteraction, 'huijin_call_guards')).toEqual(['huijin-ash-archer-1']);
-    expect(findSystemCardSelectorOptionByCardId(
+    expect(getSystemAbilityUiRoute(mode)).toBe('board-cell-unit');
+    expect(findSystemAbilityUnitOptionByPosition(
       huijinInteraction,
-      'huijin_call_guards',
-      'huijin-ash-archer-1',
-    )?.id).toBe('huijin-ash-archer-1');
+      mode,
+      { row: 3, col: 3 },
+    )?.id).toBe('unit:huijin-ash-archer-1');
   });
 
   it('现役 abilityMode 顶部横幅文案回退到已存在的文案源', () => {
@@ -1779,7 +1779,7 @@ describe('systemInteractionAdapter', () => {
       'revive_undead/selectCard',
       'revive_undead/selectPosition',
       'fortress_power/selectCard',
-      'huijin_call_guards/selectCard',
+      'huijin_call_guards/selectUnit',
       'huijin_call_guards/selectPosition',
       'mogu_fanatical_fungus/selectPosition',
       'ice_ram/selectUnit',
@@ -1814,6 +1814,7 @@ describe('systemInteractionAdapter', () => {
       'vanish/selectUnit',
       'telekinesis_instead/selectUnit',
       'high_telekinesis_instead/selectUnit',
+      'huijin_call_guards/selectUnit',
       'huijin_ram/selectUnit',
       'huijin_quick_shot/selectUnit',
       'life_drain/selectUnit',
@@ -1835,7 +1836,6 @@ describe('systemInteractionAdapter', () => {
     expect(getRouteLabels('card-selector')).toEqual([
       'revive_undead/selectCard',
       'fortress_power/selectCard',
-      'huijin_call_guards/selectCard',
     ]);
     expect(getRouteLabels('status-banner-choice')).toEqual([
       'blood_rune/selectUnit',
@@ -1843,7 +1843,7 @@ describe('systemInteractionAdapter', () => {
   });
 
   it('Board 卡牌选择器能力集合必须与路由矩阵保持一致', () => {
-    expect(SYSTEM_CARD_SELECTOR_ABILITY_IDS).toEqual(['revive_undead', 'fortress_power', 'huijin_call_guards']);
+    expect(SYSTEM_CARD_SELECTOR_ABILITY_IDS).toEqual(['revive_undead', 'fortress_power']);
     expect(
       getRouteLabels('card-selector').map((label) => label.split('/')[0]),
     ).toEqual([...SYSTEM_CARD_SELECTOR_ABILITY_IDS]);

@@ -77,6 +77,7 @@ import {
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
 const POWDER_KEG_SETTLEMENT_ID = 'powder-keg-upkeep';
+const BLINDED_CHECK_SETTLEMENT_ID = 'blinded-check';
 
 const formatSeatLabel = (playerId: string): string => {
     const seatNumber = Number.parseInt(playerId, 10) + 1;
@@ -132,7 +133,10 @@ const hasPendingBonusDiceSettlement = (core: DiceThroneCore): boolean =>
 
 const hasInteractivePendingBonusDiceSettlement = (core: DiceThroneCore): boolean =>
     hasPendingBonusDiceSettlement(core)
-    && core.pendingBonusDiceSettlement?.displayOnly !== true;
+    && (
+        core.pendingBonusDiceSettlement?.displayOnly !== true
+        || core.pendingBonusDiceSettlement?.allowDiceModification === true
+    );
 
 registerBonusDiceSettlementHandler(POWDER_KEG_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
     const playerId = settlement.attackerId;
@@ -170,6 +174,25 @@ registerBonusDiceSettlementHandler(POWDER_KEG_SETTLEMENT_ID, ({ state, settlemen
     }
 
     return { totalDamage: 0, followupEvents };
+});
+
+registerBonusDiceSettlementHandler(BLINDED_CHECK_SETTLEMENT_ID, ({ settlement, timestamp }) => {
+    const value = Math.max(1, Math.min(6, Math.trunc(getPendingBonusSettlementDice(settlement)[0]?.value ?? 1)));
+    return {
+        totalDamage: 0,
+        followupEvents: [{
+            type: 'PENDING_ATTACK_UPDATED',
+            payload: {
+                attackerId: settlement.attackerId,
+                patch: {
+                    blindedCheckResolved: true,
+                    blindedCheckMissed: value <= 2,
+                },
+            },
+            sourceCommandType: 'SKIP_BONUS_DICE_REROLL',
+            timestamp: timestamp + 0.01,
+        } as DiceThroneEvent],
+    };
 });
 
 function extractResolvedInteractionChoiceShape(event: GameEvent): { sourceId?: string; customIds: string[] } | null {
@@ -802,6 +825,85 @@ function resolvePowderKegUpkeepEvents(
     } as DiceThroneEvent];
 }
 
+function resolveBlindedCheckExitResult(
+    core: DiceThroneCore,
+    pendingAttack: NonNullable<DiceThroneCore['pendingAttack']>,
+    sourceCommandType: string,
+    timestamp: number,
+    random?: RandomFn,
+): PhaseExitResult | null {
+    if (pendingAttack.blindedCheckResolved === true) {
+        return pendingAttack.blindedCheckMissed === true
+            ? { events: [], overrideNextPhase: 'main2' }
+            : null;
+    }
+
+    const blindedStacks = core.players[pendingAttack.attackerId]?.statusEffects[STATUS_IDS.BLINDED] ?? 0;
+    if (blindedStacks <= 0 || !random) {
+        return null;
+    }
+
+    const value = random.d(6);
+    const face = getPlayerDieFace(core, pendingAttack.attackerId, value) ?? '';
+    const effectKey = value <= 2
+        ? 'bonusDie.effect.blinded.miss'
+        : 'bonusDie.effect.blinded.hit';
+    const settlement: PendingBonusDiceSettlement = {
+        id: `${BLINDED_CHECK_SETTLEMENT_ID}-${pendingAttack.attackerId}-${timestamp}`,
+        sourceAbilityId: STATUS_IDS.BLINDED,
+        attackerId: pendingAttack.attackerId,
+        targetId: pendingAttack.attackerId,
+        dice: [{
+            index: 0,
+            value,
+            face,
+            effectKey,
+            effectParams: { value },
+        }],
+        rerollCostTokenId: '',
+        rerollCostAmount: 0,
+        rerollCount: 0,
+        maxRerollCount: 0,
+        readyToSettle: false,
+        displayOnly: true,
+        showTotal: false,
+        resolutionMode: 'none',
+        customResolutionId: BLINDED_CHECK_SETTLEMENT_ID,
+        allowDiceModification: true,
+    };
+
+    return {
+        events: [{
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: pendingAttack.attackerId,
+                targetPlayerId: pendingAttack.attackerId,
+                effectKey,
+                effectParams: { value },
+            },
+            sourceCommandType,
+            timestamp,
+        } as DiceThroneEvent, {
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: pendingAttack.attackerId,
+                statusId: STATUS_IDS.BLINDED,
+                stacks: blindedStacks,
+            },
+            sourceCommandType,
+            timestamp,
+        } as StatusRemovedEvent, {
+            type: 'BONUS_DICE_REROLL_REQUESTED',
+            payload: { settlement },
+            sourceCommandType,
+            timestamp,
+        } as DiceThroneEvent],
+        halt: true,
+    };
+}
+
 export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
     initialPhase: 'setup',
 
@@ -1068,29 +1170,19 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
-                // ========== 致盲判定：攻击方有致盲时投掷1骰 ==========
-                const attacker = core.players[core.pendingAttack.attackerId];
-                const blindedStacks = attacker?.statusEffects[STATUS_IDS.BLINDED] ?? 0;
-                if (blindedStacks > 0 && random) {
-                    const blindedValue = random.d(6);
-                    const blindedFace = getPlayerDieFace(core, core.pendingAttack.attackerId, blindedValue) ?? '';
-                    events.push({
-                        type: 'BONUS_DIE_ROLLED',
-                        payload: { value: blindedValue, face: blindedFace, playerId: core.pendingAttack.attackerId, targetPlayerId: core.pendingAttack.attackerId, effectKey: 'bonusDie.effect.blinded' },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    } as any);
-                    // 移除致盲状态
-                    events.push({
-                        type: 'STATUS_REMOVED',
-                        payload: { targetId: core.pendingAttack.attackerId, statusId: STATUS_IDS.BLINDED, stacks: blindedStacks },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    } as any);
-                    // 1-2：攻击失败，跳过攻击直接进入 main2
-                    if (blindedValue <= 2) {
-                        return { events, overrideNextPhase: 'main2' };
-                    }
+                // ========== 致盲判定：攻击方有致盲时投掷1骰，确认前允许改骰牌修改 ==========
+                const blindedCheckResult = resolveBlindedCheckExitResult(
+                    core,
+                    core.pendingAttack,
+                    command.type,
+                    timestamp,
+                    random,
+                );
+                if (blindedCheckResult) {
+                    return {
+                        ...blindedCheckResult,
+                        events: [...events, ...(blindedCheckResult.events ?? [])],
+                    };
                 }
 
                 // ========== 潜行判定：防御方有潜行时跳过防御掷骰、免除伤害 ==========
@@ -1429,26 +1521,18 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
-            const attacker = targetingCore.players[pendingAttack.attackerId];
-            const blindedStacks = attacker?.statusEffects[STATUS_IDS.BLINDED] ?? 0;
-            if (blindedStacks > 0 && random) {
-                const blindedValue = random.d(6);
-                const blindedFace = getPlayerDieFace(targetingCore, pendingAttack.attackerId, blindedValue) ?? '';
-                events.push({
-                    type: 'BONUS_DIE_ROLLED',
-                    payload: { value: blindedValue, face: blindedFace, playerId: pendingAttack.attackerId, targetPlayerId: pendingAttack.attackerId, effectKey: 'bonusDie.effect.blinded' },
-                    sourceCommandType: command.type,
-                    timestamp,
-                } as any);
-                events.push({
-                    type: 'STATUS_REMOVED',
-                    payload: { targetId: pendingAttack.attackerId, statusId: STATUS_IDS.BLINDED, stacks: blindedStacks },
-                    sourceCommandType: command.type,
-                    timestamp,
-                } as any);
-                if (blindedValue <= 2) {
-                    return { events, overrideNextPhase: 'main2' };
-                }
+            const blindedCheckResult = resolveBlindedCheckExitResult(
+                targetingCore,
+                pendingAttack,
+                command.type,
+                timestamp,
+                random,
+            );
+            if (blindedCheckResult) {
+                return {
+                    ...blindedCheckResult,
+                    events: [...events, ...(blindedCheckResult.events ?? [])],
+                };
             }
 
             const defender = pendingAttack.defenderId

@@ -6,8 +6,8 @@ import { CardSpotlightQueue } from '../CardSpotlightQueue';
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: Record<string, unknown>) => {
-            if (key === 'cardSpotlightQueue.dismiss') return '关闭后继续';
-            if (key === 'cardSpotlightQueue.queue') return `${options?.count} 张待查看 · 关闭后继续`;
+            if (key === 'cardSpotlightQueue.dismiss') return '看清后可关闭';
+            if (key === 'cardSpotlightQueue.queue') return `${options?.count} 张待查看 · 看清后可关闭`;
             if (key === 'cardSpotlightQueue.closeSpotlight') return '关闭特写';
             return key;
         },
@@ -15,7 +15,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('CardSpotlightQueue', () => {
-    it('应支持点击空白背景关闭，并保留更紧凑的默认提示文案', () => {
+    it('只允许明确关闭按钮关闭，并保留更紧凑的默认提示文案', () => {
         const onDismiss = vi.fn();
 
         render(
@@ -33,16 +33,15 @@ describe('CardSpotlightQueue', () => {
         );
 
         const content = screen.getByTestId('card-spotlight-content');
-        const backdrop = screen.getByRole('button', { name: '关闭特写' });
+        const closeButton = screen.getByRole('button', { name: '关闭特写' });
 
-        expect(screen.getByText('关闭后继续')).toBeInTheDocument();
-        expect(backdrop.className).toContain('pointer-events-auto');
+        expect(screen.getByText('看清后可关闭')).toBeInTheDocument();
+        expect(screen.getByTestId('card-spotlight-queue').className).toContain('pointer-events-none');
 
-        fireEvent.click(backdrop);
-        expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
-
-        onDismiss.mockClear();
         fireEvent.click(content);
+        expect(onDismiss).not.toHaveBeenCalled();
+
+        fireEvent.click(closeButton);
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
     });
 
@@ -60,6 +59,6 @@ describe('CardSpotlightQueue', () => {
             />,
         );
 
-        expect(screen.getByText('2 张待查看 · 关闭后继续')).toBeInTheDocument();
+        expect(screen.getByText('2 张待查看 · 看清后可关闭')).toBeInTheDocument();
     });
 });

@@ -754,6 +754,10 @@
   "bonusDie": {
     "title": "额外投掷",
     "confirm": "确认",
+    "confirmBonusDice": "确认奖励骰",
+    "spotlight": {
+      "initialGainCp": "首次投掷 {{value}}：获得 {{cp}} CP"
+    },
     "summary": {
       "attackDamageBonus": "本次伤害 +{{amount}}",
       "damage": "造成 {{amount}} 伤害",

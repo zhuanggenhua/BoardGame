@@ -742,6 +742,7 @@ export interface DieModifiedEvent extends GameEvent<'DIE_MODIFIED'> {
         playerId: PlayerId;
         sourceCardId?: string;
         ownerId?: PlayerId;
+        target?: 'activeDie' | 'pendingBonusDie' | 'attackSnapshot' | 'duelAttackerDie';
     };
 }
 

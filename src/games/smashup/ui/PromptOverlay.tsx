@@ -39,16 +39,28 @@ type DisplayCardsBase = {
 type DisplayCardsViewOnly = DisplayCardsBase & {
     onSelect?: undefined;
     selectedUid?: never;
+    selectedUids?: never;
     selectHint?: never;
     playableUids?: never;
+    onConfirmSelection?: never;
+    confirmDisabled?: never;
+    minSelections?: never;
+    maxSelections?: never;
+    confirmLabel?: never;
 };
 
 type DisplayCardsSelectable = DisplayCardsBase & {
     /** 选择模式必须由真实 card uid 驱动，不能用 defId/name 推断可点态。 */
     onSelect: (uid: string | null) => void;
     selectedUid?: string | null;
+    selectedUids?: Set<string>;
     selectHint?: string;
     playableUids: Set<string>;
+    onConfirmSelection?: () => void;
+    confirmDisabled?: boolean;
+    minSelections?: number;
+    maxSelections?: number;
+    confirmLabel?: string;
 };
 
 type DisplayCardsConfig = DisplayCardsViewOnly | DisplayCardsSelectable;
@@ -652,6 +664,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     if (displayCards) {
         const { selectedUid: selUid, onSelect: onSel } = displayCards;
         const playableUids = onSel ? displayCards.playableUids : undefined;
+        const selectedUids = onSel ? displayCards.selectedUids : undefined;
+        const selectedCount = selectedUids?.size ?? (selUid ? 1 : 0);
+        const showSelectionSummary = !!displayCards.onConfirmSelection;
 
         return (
             <AnimatePresence mode="wait">
@@ -680,12 +695,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             {displayCards.cards.map((card, idx) => {
                                 const def = getCardDef(card.defId);
                                 const name = def ? resolveCardName(def, t) : card.defId;
-                                const isSel = card.uid === selUid;
+                                const isSel = selectedUids ? selectedUids.has(card.uid) : card.uid === selUid;
                                 const isPlayable = !!(onSel && playableUids?.has(card.uid));
                                 
                                 const handleCardClick = () => {
                                     if (isPlayable && onSel) {
-                                        onSel(isSel ? null : card.uid);
+                                        onSel(!selectedUids && isSel ? null : card.uid);
                                     }
                                 };
                                 
@@ -742,10 +757,30 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             })}
                         </div>
                         <div className="flex items-center justify-center gap-3 mt-4">
-                            {selUid && displayCards.selectHint && (
+                            {showSelectionSummary && (
+                                <span className="text-sm text-amber-200/80 font-bold">
+                                    {displayCards.maxSelections !== undefined
+                                        ? t('ui.selected_count_with_max', { count: selectedCount, max: displayCards.maxSelections })
+                                        : t('ui.selected_count', { count: selectedCount })}
+                                    {(displayCards.minSelections ?? 0) > 0
+                                        ? t('ui.selected_minimum', { min: displayCards.minSelections })
+                                        : ''}
+                                </span>
+                            )}
+                            {!showSelectionSummary && selUid && displayCards.selectHint && (
                                 <span className="text-sm text-amber-200/80 font-bold animate-pulse">
                                     {displayCards.selectHint}
                                 </span>
+                            )}
+                            {displayCards.onConfirmSelection && (
+                                <GameButton
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={displayCards.onConfirmSelection}
+                                    disabled={displayCards.confirmDisabled}
+                                >
+                                    {displayCards.confirmLabel ?? t('ui.confirm')}
+                                </GameButton>
                             )}
                             <GameButton variant="secondary" size="sm" onClick={displayCards.onClose}>
                                 {t('ui.close')}

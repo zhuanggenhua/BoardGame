@@ -280,6 +280,52 @@ async function expectCombinedHorizontalCenter(
     ).toBeLessThanOrEqual(tolerancePx);
 }
 
+async function expectCardSpotlightClearOfCriticalAreas(page: Page): Promise<void> {
+    const layout = await page.evaluate(() => {
+        type Rect = { left: number; right: number; top: number; bottom: number; width: number; height: number };
+        const toRect = (element: Element): Rect => {
+            const rect = element.getBoundingClientRect();
+            return {
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            };
+        };
+        const hasArea = (rect: Rect) => rect.width > 0 && rect.height > 0;
+        const overlaps = (a: Rect, b: Rect) => !(
+            a.right <= b.left ||
+            a.left >= b.right ||
+            a.bottom <= b.top ||
+            a.top >= b.bottom
+        );
+        const spotlightNode = document.querySelector('[data-testid="card-spotlight-overlay"]');
+        const spotlight = spotlightNode ? toRect(spotlightNode) : null;
+        const targets = [
+            { label: '当前阶段提示', selector: '[data-testid="dt-active-phase-indicator"]' },
+            { label: '生命/CP 面板', selector: '[data-testid="dt-player-stats-panel"]' },
+            { label: '玩家面板', selector: '[data-testid="player-board-surface"]' },
+            { label: '提示板', selector: '[data-testid="tip-board-surface"]' },
+            { label: '骰盘', selector: '[data-testid="dicethrone-board-dice-stage"]' },
+            { label: '弃牌堆', selector: '[data-testid="discard-pile"]' },
+        ].flatMap(({ label, selector }) => Array.from(document.querySelectorAll(selector))
+            .map((element) => ({ label, rect: toRect(element) }))
+            .filter(({ rect }) => hasArea(rect)));
+
+        return {
+            spotlight,
+            overlaps: spotlight
+                ? targets.filter((target) => overlaps(spotlight, target.rect))
+                : [],
+        };
+    });
+
+    expect(layout.spotlight, '对手卡牌特写必须真实可见').not.toBeNull();
+    expect(layout.overlaps, '对手卡牌特写不得压住当前阶段提示、生命/CP 面板、玩家面板、提示板、骰盘或弃牌堆').toEqual([]);
+}
+
 async function expectNoHorizontalOverflow(page: Page): Promise<void> {
     const metrics = await page.evaluate(() => {
         const root = document.getElementById('root');
@@ -836,8 +882,9 @@ async function closeCardSpotlightByRealClickIfVisible(page: Page): Promise<void>
         .catch(() => false);
     if (!appeared) return;
 
-    await page.waitForTimeout(250);
-    await cardSpotlight.click();
+    const closeButton = cardSpotlight.getByRole('button', { name: /关闭特写|Close Spotlight|Close/i });
+    await expect(closeButton).toBeVisible({ timeout: 3000 });
+    await closeButton.click();
     await expect(cardSpotlight).toBeHidden({ timeout: 5000 });
 }
 
@@ -2332,6 +2379,9 @@ test('opponent display-only bonus settlement should not duplicate bonus overlay 
     const cardSpotlight = page.locator('[data-testid="card-spotlight-overlay"]');
     await expect(cardSpotlight).toBeVisible({ timeout: 5000 });
     await expect(cardSpotlight.locator('[data-testid="card-spotlight-die"]')).toHaveCount(2, { timeout: 5000 });
+    await page.waitForTimeout(3600);
+    await expect(cardSpotlight).toBeVisible({ timeout: 1000 });
+    await expect(cardSpotlight.getByRole('button', { name: /关闭特写|Close Spotlight|Close/i })).toBeVisible({ timeout: 1000 });
 
     await saveLocatorEvidenceScreenshot(
         cardSpotlight,
@@ -4119,18 +4169,19 @@ test('opponent common-card spotlight should match actual effect for samurai and 
             await hostPage.waitForFunction(() => {
                 const frame = document.querySelector('[data-testid="card-spotlight-overlay"] [data-card-atlas-frame="true"]');
                 if (!(frame instanceof HTMLElement)) return false;
+                const atlasImg = frame.querySelector('[data-card-atlas-img="true"]');
                 return !frame.classList.contains('atlas-shimmer')
-                    && getComputedStyle(frame).backgroundImage !== 'none';
+                    && (atlasImg instanceof HTMLImageElement || getComputedStyle(frame).backgroundImage !== 'none');
             }, undefined, { timeout: 10000, polling: 200 });
 
+            await hostPage.waitForTimeout(250);
+            await expectCardSpotlightClearOfCriticalAreas(hostPage);
             await savePageEvidenceScreenshot(
                 hostPage,
                 testInfo,
                 options.overlayName,
                 options.overlayFilename,
             );
-            await hostPage.waitForTimeout(250);
-            await hostSpotlight.click();
 
             await guestPage.waitForFunction(({ actorCardId, expectedCp, expectedShield }) => {
                 const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -4169,7 +4220,11 @@ test('opponent common-card spotlight should match actual effect for samurai and 
             expect(finalState.shieldTotal).toBe(options.expectedShield);
             expect(finalState.lastEventTypes).toContain('CARD_PLAYED');
 
-            await expect(hostSpotlight).toBeHidden({ timeout: 6000 });
+            await hostPage.waitForTimeout(3600);
+            await expect(hostSpotlight).toBeVisible({ timeout: 1000 });
+            await expect(hostSpotlight.getByRole('button', { name: /关闭特写|Close Spotlight|Close/i })).toBeVisible({ timeout: 1000 });
+            await hostSpotlight.getByRole('button', { name: /关闭特写|Close Spotlight|Close/i }).click();
+            await expect(hostSpotlight).toBeHidden({ timeout: 5000 });
             await guestPage.waitForTimeout(500);
             await savePageEvidenceScreenshot(
                 guestPage,

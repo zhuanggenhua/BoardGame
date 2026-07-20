@@ -8,6 +8,7 @@ import {
 } from '../discoveryAtlas';
 import { BETRAYAL_DISCOVERY_POOLS } from '../scenarioConfig';
 import tutorialCatalog from '../tutorial';
+import { createJackSpiritPostReviveAttackReadyTutorialCore } from '../testing/firstScenarioTestUtils';
 
 const LOCKED_EVENT_FRONT_FRAMES = {
     标本剥制: 0,
@@ -230,7 +231,11 @@ describe('Betrayal 教程配置', () => {
             'attack-traitor',
             'hero-attack-review',
         ]);
-        expect(heroAttackManifest?.steps.find((step) => step.id === 'hero-attack-objective')?.highlightTarget).toBe('betrayal-reference-entry');
+        const heroAttackObjective = heroAttackManifest?.steps.find((step) => step.id === 'hero-attack-objective');
+        expect(heroAttackObjective?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(heroAttackObjective?.requireAction).toBe(true);
+        expect(heroAttackObjective?.allowedCommands).toEqual([]);
+        expect(heroAttackObjective?.infoStep).not.toBe(true);
         expect(heroAttackManifest?.steps.find((step) => step.id === 'attack-traitor')?.allowedCommands).toEqual(['HAUNT_ATTACK']);
         expect(heroAttackManifest?.steps.find((step) => step.id === 'attack-traitor')?.advanceOnEvents).toEqual([
             { type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '0', target: 'traitor' } },
@@ -242,7 +247,11 @@ describe('Betrayal 教程配置', () => {
             'jack-spirit-attack',
             'jack-spirit-review',
         ]);
-        expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-objective')?.highlightTarget).toBe('betrayal-reference-entry');
+        const jackSpiritObjective = jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-objective');
+        expect(jackSpiritObjective?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(jackSpiritObjective?.requireAction).toBe(true);
+        expect(jackSpiritObjective?.allowedCommands).toEqual([]);
+        expect(jackSpiritObjective?.infoStep).not.toBe(true);
         expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-attack')?.allowedCommands).toEqual(['HAUNT_ATTACK']);
         expect(jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-attack')?.advanceOnEvents).toEqual([
             { type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '2', target: 'hero' } },
@@ -255,10 +264,29 @@ describe('Betrayal 教程配置', () => {
             'traitor-finish',
         ]);
         expect(traitorManifest?.steps.find((step) => step.id === 'setup-traitor-turn')?.viewAs).toBe('2');
+        const traitorObjective = traitorManifest?.steps.find((step) => step.id === 'traitor-objective');
+        expect(traitorObjective?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(traitorObjective?.requireAction).toBe(true);
+        expect(traitorObjective?.allowedCommands).toEqual([]);
+        expect(traitorObjective?.infoStep).not.toBe(true);
         expect(traitorManifest?.steps.find((step) => step.id === 'attack-hero')?.allowedCommands).toEqual(['HAUNT_ATTACK']);
         expect(traitorManifest?.steps.find((step) => step.id === 'attack-hero')?.advanceOnEvents).toEqual([
             { type: 'HAUNT_ATTACK_RESOLVED', match: { attackerPlayerId: '2', target: 'hero' } },
         ]);
+    });
+
+    it('杰克之灵攻击教程必须停在灵体已释放且英雄同房的真实攻击态', () => {
+        const core = createJackSpiritPostReviveAttackReadyTutorialCore();
+        const hero = [core.currentExplorer, ...core.otherExplorers]
+            .find((explorer) => explorer.playerId === '0');
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('2');
+        expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
+        expect(core.scenarioRuntime.jackSpiritRoomId).toBe('basement-east');
+        expect(core.monsters.find((monster) => monster.id === 'jack-spirit')?.roomId).toBe('basement-east');
+        expect(core.recentRoll).toBeNull();
+        expect(hero?.roomId).toBe('basement-east');
     });
 
     it('中文教程文案会聚焦玩家能理解的规则动作与结果', () => {

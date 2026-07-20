@@ -273,6 +273,10 @@ export interface PendingAttack {
     offensiveRollEndTokenResolved?: boolean;
     /** 攻击掷骰阶段结束时已经使用过的 Token，允许暴击和精准在同一次攻击中连续使用。 */
     offensiveRollEndTokenIdsUsed?: string[];
+    /** 致盲判定是否已确认，避免奖励骰确认后自动续跑时重复掷致盲骰。 */
+    blindedCheckResolved?: boolean;
+    /** 致盲判定最终是否让攻击失败。 */
+    blindedCheckMissed?: boolean;
     /** 攻击链内的后续选择结果（例如工匠扳手攻击的追加分支），用于交互后恢复同一条攻击。 */
     followUpChoiceBySourceAbilityId?: Record<string, string>;
     /** 树精神圣防止即将受到的负面状态的可选响应决定。 */

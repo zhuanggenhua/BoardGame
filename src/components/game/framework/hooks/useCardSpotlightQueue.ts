@@ -135,9 +135,13 @@ export function useCardSpotlightQueue<TData = unknown>(
 
     // 消费新事件
     useEffect(() => {
-        const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
+        const { entries: newEntries, didReset } = consumeNew();
 
-        const resetQueue = didReset || didOptimisticRollback;
+        // Card spotlight is a player-readable exhibit, not a visual gate.
+        // Generic optimistic/resync signals may strip EventStream entries briefly;
+        // those must not close a visible opponent card. Only a real EventStream
+        // reset/ID rollback (Undo snapshot restore) clears the queue.
+        const resetQueue = didReset;
         const newItems: SpotlightItem<TData>[] = [];
 
         for (const entry of newEntries) {

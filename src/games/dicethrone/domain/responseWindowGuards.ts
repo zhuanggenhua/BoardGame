@@ -1,6 +1,6 @@
 import type { PlayerId, ResponseWindowState } from '../../../engine/types';
 import type { DiceThroneCore } from './types';
-import { areTeammates, isTeamMode } from './rules';
+import { areTeammates, getPendingBonusSettlementDice, isTeamMode } from './rules';
 
 export const isDirectDiceInterferenceActor = (
     core: DiceThroneCore,
@@ -23,9 +23,27 @@ export const isDirectDiceInterferenceActor = (
 };
 
 export const buildAfterRollConfirmedSignature = (core: DiceThroneCore): string => {
+    const pendingBonusSettlement = core.pendingBonusDiceSettlement;
+    const pendingBonusDice = pendingBonusSettlement?.allowDiceModification === true
+        ? getPendingBonusSettlementDice(pendingBonusSettlement)
+        : [];
     const dice = core.dice ?? [];
     const turnNumber = typeof core.turnNumber === 'number' ? core.turnNumber : '';
     const activePlayerId = typeof core.activePlayerId === 'string' ? core.activePlayerId : '';
+
+    if (pendingBonusSettlement && pendingBonusDice.length > 0) {
+        return pendingBonusDice
+            .map((die) => {
+                const face = typeof die.face === 'string' ? die.face : '';
+                return `bonus:${die.index}:${die.value}:${face}`;
+            })
+            .join('|')
+            .concat(`|settlement:${pendingBonusSettlement.id}`)
+            .concat(`|source:${pendingBonusSettlement.sourceAbilityId}`)
+            .concat(`|attacker:${pendingBonusSettlement.attackerId}`)
+            .concat(`|turn:${turnNumber}|player:${activePlayerId}`);
+    }
+
     return dice
         .map((die) => {
             const symbol = typeof die.symbol === 'string' ? die.symbol : '';
@@ -40,7 +58,8 @@ export const hasAfterRollConfirmedWindowBeenHandled = (
     rollSignature?: string,
 ): boolean => {
     const sequence = core.rollConfirmedSequence ?? 0;
-    if (sequence > 0 && core.afterRollResponseWindowSequence === sequence) {
+    const isBonusDiceSignature = rollSignature?.startsWith('bonus:') === true;
+    if (!isBonusDiceSignature && sequence > 0 && core.afterRollResponseWindowSequence === sequence) {
         return true;
     }
     if (rollSignature && typeof core.afterRollResponseWindowSignature === 'string') {

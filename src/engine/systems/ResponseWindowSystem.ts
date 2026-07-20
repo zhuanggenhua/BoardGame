@@ -307,23 +307,11 @@ export function advanceToNextResponder(
     
     const newPassedPlayers = [...window.passedPlayers, currentPlayerId];
     const nextIndex = window.currentResponderIndex + 1;
-    
-    console.log('[advanceToNextResponder] 开始:', {
-        currentPlayerId,
-        currentIndex: window.currentResponderIndex,
-        nextIndex,
-        queueLength: window.responderQueue.length,
-        actionTakenThisRound: window.actionTakenThisRound,
-        consecutivePassRounds: window.consecutivePassRounds,
-        loopUntilAllPass,
-    });
-    
+
     // 所有人都已响应
     if (nextIndex >= window.responderQueue.length) {
-        console.log('[advanceToNextResponder] 到达队列末尾');
         if (loopUntilAllPass) {
             if (window.actionTakenThisRound) {
-                console.log('[advanceToNextResponder] 本轮有动作，重新开始（重置 consecutivePassRounds）');
                 // 本轮有人执行了动作，重新开始新一轮，重置 consecutivePassRounds
                 return {
                     ...window,
@@ -333,22 +321,15 @@ export function advanceToNextResponder(
                     consecutivePassRounds: 0,
                 };
             } else {
-                // 本轮所有人都 pass，增加 consecutivePassRounds 计数
-                const consecutivePassRounds = (window.consecutivePassRounds ?? 0) + 1;
-                console.log('[advanceToNextResponder] 本轮无动作，consecutivePassRounds:', consecutivePassRounds);
-                
                 // 一轮所有人都 pass，关闭窗口
                 // 注意：loopUntilAllPass 的目的是允许玩家在有人出牌后继续响应，
                 // 但如果所有人都 pass 了一轮，说明没有人想出牌，应该立即关闭窗口
-                console.log('[advanceToNextResponder] consecutivePassRounds >= 1，关闭窗口');
                 return undefined;
             }
         }
-        console.log('[advanceToNextResponder] loopUntilAllPass=false，关闭窗口');
         return undefined;
     }
-    
-    console.log('[advanceToNextResponder] 推进到下一个响应者:', nextIndex);
+
     return {
         ...window,
         currentResponderIndex: nextIndex,
@@ -392,14 +373,6 @@ function skipToNextRespondableResponder<TCore>(
 
     type CurrentWindow = NonNullable<ResponseWindowState['current']>;
 
-    console.log('[skipToNextRespondableResponder] 开始:', {
-        currentIndex: window.currentResponderIndex,
-        queueLength: window.responderQueue.length,
-        actionTakenThisRound: window.actionTakenThisRound,
-        consecutivePassRounds: window.consecutivePassRounds,
-        loopUntilAllPass,
-    });
-
     const findNextRespondable = (
         scanWindow: CurrentWindow
     ): ResponseWindowState['current'] | undefined => {
@@ -420,16 +393,9 @@ function skipToNextRespondableResponder<TCore>(
                     window: scanWindow,
                 },
             );
-            
-            console.log('[skipToNextRespondableResponder] 检查玩家:', {
-                index,
-                playerId,
-                hasContent,
-            });
-            
+
             if (hasContent) {
                 // 即使 index === originalIndex，也要返回更新后的窗口（保留 passedPlayers 更新）
-                console.log('[skipToNextRespondableResponder] 返回更新后的窗口');
                 return {
                     ...scanWindow,
                     currentResponderIndex: index,
@@ -441,34 +407,29 @@ function skipToNextRespondableResponder<TCore>(
             index += 1;
         }
 
-        console.log('[skipToNextRespondableResponder] 没有找到可响应玩家');
         return undefined;
     };
 
     const nextWindow = findNextRespondable(window);
     if (nextWindow) {
-        console.log('[skipToNextRespondableResponder] 找到下一个窗口，返回');
         return nextWindow;
     }
 
     // 没有找到可响应玩家 - 说明从当前位置到队列末尾，所有玩家都没有可响应内容
-    console.log('[skipToNextRespondableResponder] 没有找到可响应玩家');
-    
+
     // 【关键修复】如果当前是从队首开始扫描（currentResponderIndex === 0），
     // 且没有找到任何可响应玩家，说明所有玩家都没有可响应内容，应该立即关闭窗口
     // 注意：这里不检查 loopUntilAllPass，因为即使需要循环，如果所有玩家都没有可响应内容，
     // 循环也没有意义，应该立即关闭
     if (window.currentResponderIndex === 0) {
-        console.log('[skipToNextRespondableResponder] 从队首开始扫描但无人可响应，立即关闭窗口');
         return undefined;
     }
-    
+
     // loopUntilAllPass：若本轮有人出过牌，即使尾部玩家都被自动 skip，
     // 也需要重开新一轮，从队首继续检查可响应者。
     // 【修复】重新开始一轮时，也要跳过没有可响应内容的玩家
     if (loopUntilAllPass) {
         if (window.actionTakenThisRound) {
-            console.log('[skipToNextRespondableResponder] loopUntilAllPass: 本轮有动作，重新开始（跳过无内容玩家）');
             const restartedWindow: CurrentWindow = {
                 ...window,
                 currentResponderIndex: 0,
@@ -482,12 +443,10 @@ function skipToNextRespondableResponder<TCore>(
             // 本轮所有人都 pass，关闭窗口
             // 注意：这里不需要 consecutivePassRounds 计数器，因为如果所有人都 pass 了一轮，
             // 说明没有人想出牌，应该立即关闭窗口
-            console.log('[skipToNextRespondableResponder] loopUntilAllPass: 本轮无动作，关闭窗口');
             return undefined;
         }
     }
 
-    console.log('[skipToNextRespondableResponder] 返回 undefined（窗口应关闭）');
     return undefined;
 }
 
@@ -747,13 +706,6 @@ export function createResponseWindowSystem<TCore>(
                         const fingerprint = buildWindowFingerprint(window);
                         const currentWindow = newState.sys.responseWindow?.current;
                         if (currentWindow && isSemanticallyEquivalentWindow(currentWindow, window)) {
-                            console.log('[ResponseWindowSystem] 忽略重复 OPENED：当前窗口已存在语义等价窗口', {
-                                currentWindowId: currentWindow.id,
-                                duplicateWindowId: window.id,
-                                windowType: window.windowType,
-                                sourceId: window.sourceId,
-                                responderQueue: window.responderQueue,
-                            });
                             continue;
                         }
                         if (
@@ -761,13 +713,6 @@ export function createResponseWindowSystem<TCore>(
                             && !sawNonResponseWindowEventSinceClose
                             && isSemanticallyEquivalentWindow(recentClosedWindow, window)
                         ) {
-                            console.log('[ResponseWindowSystem] 忽略重复 OPENED：同批事件内关闭后立即收到语义等价 reopen', {
-                                closedWindowId: recentClosedWindow.id,
-                                duplicateWindowId: window.id,
-                                windowType: window.windowType,
-                                sourceId: window.sourceId,
-                                responderQueue: window.responderQueue,
-                            });
                             continue;
                         }
                         if (reopenDedupeCooldownMs > 0
@@ -775,15 +720,6 @@ export function createResponseWindowSystem<TCore>(
                             && lastClosedFingerprint === fingerprint
                             && (dedupeClock - lastClosedAt) <= reopenDedupeCooldownMs
                         ) {
-                            console.log('[ResponseWindowSystem] 忽略重复 OPENED：冷却期内语义等价窗口重开', {
-                                duplicateWindowId: window.id,
-                                windowType: window.windowType,
-                                sourceId: window.sourceId,
-                                responderQueue: window.responderQueue,
-                                cooldownMs: reopenDedupeCooldownMs,
-                                lastClosedAt,
-                                reopenAt: dedupeClock,
-                            });
                             continue;
                         }
                         const nextWindow = skipToNextRespondableResponder(newState, window, hasRespondableContent, loopUntilAllPass);

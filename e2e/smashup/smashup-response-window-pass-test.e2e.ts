@@ -167,7 +167,7 @@ test.describe('大杀四方 - 响应窗口 Pass 测试', () => {
             const isVisible = await spotlightQueue.isVisible({ timeout: 300 }).catch(() => false);
             if (!isVisible) return;
 
-            await spotlightQueue.click({ force: true });
+            await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
             await expect(spotlightQueue).toBeHidden({ timeout: 5000 });
         };
 

@@ -708,7 +708,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             latestLog: expect.stringMatching(/同意|交易请求|兔脚/),
             rejected: null,
         });
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前也必须看到只列己方给出的摘要').toContainText(/你给出.*兔脚/);
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '接收方同意前必须看到发起方给出兔脚').toContainText(/给出.*兔脚/);
         await expect(page.getByTestId('betrayal-trade-agreement-panel'), '只选择己方物品的交易仍必须进入接收方同意面板').toBeVisible();
         await saveScreenshot(page, NO_RETURN_REQUEST_SENT_SCREENSHOT);
 

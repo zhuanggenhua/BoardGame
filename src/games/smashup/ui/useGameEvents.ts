@@ -177,7 +177,7 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: U
         }
 
         case SU_EVENTS.ACTION_PLAYED: {
-          // 行动卡展示已迁移到 CardSpotlightQueue（点击关闭），不再走 FX 系统
+          // 行动卡展示已迁移到 CardSpotlightQueue（明确关闭按钮关闭），不再走 FX 系统
           break;
         }
 

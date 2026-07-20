@@ -246,8 +246,9 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
 ) => {
     const isDisplayOnly = !!(event.payload as { displayOnly?: boolean })?.displayOnly;
     const isAttackBonusSettlement = state.pendingBonusDiceSettlement?.resolutionMode === 'attackBonus';
+    const isNoDamageSettlement = state.pendingBonusDiceSettlement?.resolutionMode === 'none';
     // 仅“独立伤害型”奖励骰才标记 bonusDiceResolved。
-    const pendingAttack = !isDisplayOnly && !isAttackBonusSettlement && state.pendingAttack
+    const pendingAttack = !isDisplayOnly && !isAttackBonusSettlement && !isNoDamageSettlement && state.pendingAttack
         ? updatePendingAttackSettlementStage({ ...state.pendingAttack, bonusDiceResolved: true }, 'readyToResolve')
         : state.pendingAttack;
     return { ...state, pendingBonusDiceSettlement: undefined, pendingAttack };
@@ -772,13 +773,20 @@ const handleResponseWindowOpened: EventHandler<Extract<DiceThroneEvent, { type: 
     // 但需要记录各业务源对应的序号，避免 CLOSED 后在同一业务源上立即 reopen
     if (event.payload.windowType === 'afterRollConfirmed') {
         const rollSequence = state.rollConfirmedSequence ?? 0;
+        const rollSignature = buildAfterRollConfirmedSignature(state);
         if (rollSequence <= 0 || state.afterRollResponseWindowSequence === rollSequence) {
-            return state;
+            if (state.afterRollResponseWindowSignature === rollSignature) {
+                return state;
+            }
+            return {
+                ...state,
+                afterRollResponseWindowSignature: rollSignature,
+            };
         }
         return {
             ...state,
             afterRollResponseWindowSequence: rollSequence,
-            afterRollResponseWindowSignature: buildAfterRollConfirmedSignature(state),
+            afterRollResponseWindowSignature: rollSignature,
         };
     }
 
@@ -830,21 +838,32 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
     state,
     event
 ) => {
-    const { dieId, newValue, ownerId } = event.payload;
-    const pendingBonusDiceSettlement = state.pendingBonusDiceSettlement?.allowDiceModification
+    const { dieId, newValue, ownerId, target } = event.payload;
+    const targetsPendingBonusDie = target === 'pendingBonusDie'
+        || (
+            target === undefined
+            && state.pendingBonusDiceSettlement?.allowDiceModification === true
+            && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).some(die => die.index === dieId)
+            && !state.dice.some(die => die.id === dieId)
+        );
+    const pendingBonusDiceSettlement = targetsPendingBonusDie && state.pendingBonusDiceSettlement?.allowDiceModification
         ? {
             ...state.pendingBonusDiceSettlement,
             dice: getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(die => {
                 if (die.index !== dieId) return die;
-                const face = die.effectKey?.startsWith('bonusDie.effect.powderKeg.')
+                const isPowderKegDie = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true;
+                const isBlindedDie = die.effectKey?.startsWith('bonusDie.effect.blinded.') === true;
+                const face = isPowderKegDie
                     ? String(newValue)
                     : (getPlayerDieFace(state, state.pendingBonusDiceSettlement!.attackerId, newValue) ?? String(newValue));
                 return {
                     ...die,
                     value: newValue,
                     face,
-                    effectKey: die.effectKey?.startsWith('bonusDie.effect.powderKeg.')
+                    effectKey: isPowderKegDie
                         ? `bonusDie.effect.powderKeg.${newValue}`
+                        : isBlindedDie
+                            ? (newValue <= 2 ? 'bonusDie.effect.blinded.miss' : 'bonusDie.effect.blinded.hit')
                         : die.effectKey,
                     effectParams: {
                         ...die.effectParams,
@@ -855,7 +874,8 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
             }),
         }
         : state.pendingBonusDiceSettlement;
-    if (state.pendingAttack?.defenseAbilityId === 'duel'
+    if (target !== 'pendingBonusDie'
+        && state.pendingAttack?.defenseAbilityId === 'duel'
         && ownerId === state.pendingAttack.attackerId
         && dieId === 1) {
         return {
@@ -869,6 +889,7 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
     }
     const attackSnapshotDieIndex = getAttackSnapshotDieIndex(dieId);
     const pendingAttack = state.pendingAttack
+        && target !== 'pendingBonusDie'
         && ownerId === state.pendingAttack.attackerId
         && isAttackSnapshotDieId(dieId)
         && Array.isArray(state.pendingAttack.attackDiceValues)
@@ -893,12 +914,15 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
             };
         })()
         : state.pendingAttack;
-    const didDieValueChange = state.dice.some(d => d.id === dieId && d.value !== newValue);
-    const newDice = state.dice.map(d => {
-        if (d.id !== dieId) return d;
-        const face = getDieFaceByDefinition(d.definitionId, newValue);
-        return { ...d, value: newValue, symbol: face, symbols: face ? [face] : [] };
-    });
+    const targetsCoreDie = target === undefined || target === 'activeDie';
+    const didDieValueChange = targetsCoreDie && state.dice.some(d => d.id === dieId && d.value !== newValue);
+    const newDice = targetsCoreDie
+        ? state.dice.map(d => {
+            if (d.id !== dieId) return d;
+            const face = getDieFaceByDefinition(d.definitionId, newValue);
+            return { ...d, value: newValue, symbol: face, symbols: face ? [face] : [] };
+        })
+        : state.dice;
 
     const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
 

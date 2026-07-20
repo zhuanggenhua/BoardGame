@@ -122,8 +122,8 @@
     "backHome": "返回大厅"
   },
   "cardSpotlightQueue": {
-    "dismiss": "关闭后继续",
-    "queue": "{{count}} 张待查看 · 关闭后继续",
+    "dismiss": "看清后可关闭",
+    "queue": "{{count}} 张待查看 · 看清后可关闭",
     "closeSpotlight": "关闭特写"
   },
   "tutorialSelectionGate": {

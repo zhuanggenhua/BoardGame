@@ -62,6 +62,9 @@ export const RightSidebar = ({
     multistepInteraction,
     showDiceTray = true,
     showDiceActions = true,
+    showBonusDiceConfirm = false,
+    canConfirmBonusDice = false,
+    onConfirmBonusDice,
     activeModifiers,
     attackModifierBonusDamage,
     passiveAbilityProps,
@@ -97,6 +100,9 @@ export const RightSidebar = ({
     multistepInteraction?: MultistepInteractionState<DiceModifyResult | DiceSelectResult>;
     showDiceTray?: boolean;
     showDiceActions?: boolean;
+    showBonusDiceConfirm?: boolean;
+    canConfirmBonusDice?: boolean;
+    onConfirmBonusDice?: () => void;
     activeModifiers?: ActiveModifier[];
     attackModifierBonusDamage?: number;
     passiveAbilityProps?: Omit<PassiveAbilityPanelProps, never> | null;
@@ -221,6 +227,22 @@ export const RightSidebar = ({
                         isPassiveRerollMode={!!passiveAbilityProps?.rerollSelectingAction}
                     />
                 </div>
+                )}
+                {showBonusDiceConfirm && (
+                    <div className={`${actionRailWidthClassName} flex justify-center`}>
+                        <GameButton
+                            onClick={onConfirmBonusDice}
+                            disabled={!canConfirmBonusDice}
+                            variant={canConfirmBonusDice ? 'primary' : 'secondary'}
+                            clickSoundKey={null}
+                            className={`${advanceButtonSizeClassName} w-full`}
+                            size="sm"
+                            data-testid="bonus-dice-confirm-button"
+                            data-tutorial-id="bonus-dice-confirm-button"
+                        >
+                            {t('bonusDie.confirmBonusDice')}
+                        </GameButton>
+                    </div>
                 )}
                 {showDiceActions && (
                     <DiceActions

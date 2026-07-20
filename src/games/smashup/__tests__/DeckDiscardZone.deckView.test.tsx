@@ -99,4 +99,58 @@ describe('DeckDiscardZone 牌库查看', () => {
         });
         expect(latestPromptOverlayProps).toBeNull();
     });
+
+    it('弃牌堆多选 prompt 应把已选集合和确认动作传给展示层', async () => {
+        const onSelectCard = vi.fn();
+        const onConfirmSelection = vi.fn();
+
+        render(
+            <DeckDiscardZone
+                deckCount={5}
+                discard={[
+                    { uid: 'discard-1', defId: 'rock_stars_groupie', type: 'minion', owner: '0' },
+                    { uid: 'discard-2', defId: 'rock_stars_classic_rocker', type: 'minion', owner: '0' },
+                    { uid: 'discard-3', defId: 'rock_stars_rick_roll', type: 'minion', owner: '0' },
+                ]}
+                isMyTurn
+                autoOpenPanel
+                playableCards={[
+                    { uid: 'discard-1', defId: 'rock_stars_groupie', label: '伴唱粉丝' },
+                    { uid: 'discard-2', defId: 'rock_stars_classic_rocker', label: '经典摇滚客' },
+                    { uid: 'discard-3', defId: 'rock_stars_rick_roll', label: '瑞克摇滚' },
+                ]}
+                selectedUids={new Set(['discard-1', 'discard-2'])}
+                onSelectCard={onSelectCard}
+                onConfirmSelection={onConfirmSelection}
+                minSelections={0}
+                maxSelections={3}
+                dispatch={vi.fn()}
+                playerID="0"
+            />,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('mock-prompt-overlay')).toBeInTheDocument();
+        });
+
+        const displayCards = latestPromptOverlayProps?.displayCards as {
+            cards: Array<{ uid: string; defId: string }>;
+            selectedUids?: Set<string>;
+            onSelect?: (uid: string | null) => void;
+            onConfirmSelection?: () => void;
+            minSelections?: number;
+            maxSelections?: number;
+        } | undefined;
+
+        expect(displayCards?.cards.map(card => card.uid)).toEqual(['discard-3', 'discard-2', 'discard-1']);
+        expect(displayCards?.selectedUids).toEqual(new Set(['discard-1', 'discard-2']));
+        expect(displayCards?.minSelections).toBe(0);
+        expect(displayCards?.maxSelections).toBe(3);
+
+        displayCards?.onSelect?.('discard-3');
+        displayCards?.onConfirmSelection?.();
+
+        expect(onSelectCard).toHaveBeenCalledWith('discard-3');
+        expect(onConfirmSelection).toHaveBeenCalledTimes(1);
+    });
 });

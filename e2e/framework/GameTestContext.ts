@@ -428,7 +428,7 @@ export class GameTestContext {
         const spotlightQueue = this.page.getByTestId('card-spotlight-queue');
         const hasSpotlightQueue = await spotlightQueue.isVisible({ timeout: 200 }).catch(() => false);
         if (hasSpotlightQueue) {
-            await spotlightQueue.click({ force: true });
+            await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
             await this.page.waitForTimeout(200);
         }
         const dismissHint = this.page.getByText(/Click anywhere to close|点击关闭/i);

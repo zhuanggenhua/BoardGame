@@ -136,10 +136,10 @@ test.describe("山屋惊魂第一剧本", () => {
       timeout: 30000,
     });
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText(/驱魔|驱散杰克之灵|Exorcise/i);
     await setHarnessRandomQueue(page, [0.99, 0.99, 0.99]);
-    await page.getByTestId("betrayal-haunt-command-primary").click();
+    await page.getByTestId("betrayal-action-use").click();
     const exorciseRollReview = page.getByTestId(
       "betrayal-exorcise-roll-review",
     );

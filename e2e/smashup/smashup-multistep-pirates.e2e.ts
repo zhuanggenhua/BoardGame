@@ -87,7 +87,7 @@ test.describe('SmashUp 海盗多步交互', () => {
         await page.waitForTimeout(800);
         const spotlightQueue = page.getByTestId('card-spotlight-queue');
         if (await spotlightQueue.isVisible({ timeout: 300 }).catch(() => false)) {
-            await spotlightQueue.click({ force: true });
+            await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
             await expect(spotlightQueue).toBeHidden({ timeout: 5000 });
         }
         await expect(page.getByText('选择一个你有随从的基地')).toBeVisible();

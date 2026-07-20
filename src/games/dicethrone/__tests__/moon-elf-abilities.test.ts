@@ -511,14 +511,15 @@ describe('Moon Elf 状态效果逻辑', () => {
 
     /**
      * 致盲 (Blinded)：offensiveRoll 退出时投掷1骰
-     * - 1-2：攻击失败，跳过到 main2
-     * - 3-6：攻击正常进行
+     * - 先进入可确认判定窗口，确认前允许改骰
+     * - 1-2：确认后攻击失败，跳过到 main2
+     * - 3-6：确认后攻击正常进行
      *
      * 骰子值序列：
      * [5个攻击骰, 致盲判定骰, ...]
      * 攻击骰 [1,1,1,1,1] = 5弓 → 可选 longbow-5-1 (7伤害)
      */
-    it('致盲判定：骰值2 → 攻击失败，跳过到 main2', () => {
+    it('致盲判定：骰值2 → 确认后攻击失败，跳过到 main2', () => {
         // 骰子值：[1,1,1,1,1] 攻击骰(5弓), [2] 致盲判定骰(≤2失败)
         const random = createQueuedRandom([1, 1, 1, 1, 1, 2]);
         const runner = new GameTestRunner({
@@ -542,7 +543,8 @@ describe('Moon Elf 状态效果逻辑', () => {
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'longbow-5-1' }),
-                cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> 致盲判定 → main2
+                cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> 致盲判定窗口
+                cmd('SKIP_BONUS_DICE_REROLL', '0'), // 确认致盲判定 → main2
             ],
             expect: {
                 turnPhase: 'main2',
@@ -555,7 +557,7 @@ describe('Moon Elf 状态效果逻辑', () => {
         expect(result.assertionErrors).toEqual([]);
     });
 
-    it('致盲判定：骰值3 → 攻击正常进行', () => {
+    it('致盲判定：骰值3 → 确认后攻击正常进行', () => {
         // 骰子值：[1,1,1,1,1] 攻击骰(5弓), [3] 致盲判定骰(≥3成功), [1,1,1,1,1] 防御骰
         const random = createQueuedRandom([1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1]);
         const runner = new GameTestRunner({
@@ -579,7 +581,8 @@ describe('Moon Elf 状态效果逻辑', () => {
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'longbow-5-1' }),
-                cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> defensiveRoll（致盲判定通过）
+                cmd('ADVANCE_PHASE', '0'), // offensiveRoll -> 致盲判定窗口
+                cmd('SKIP_BONUS_DICE_REROLL', '0'), // 确认致盲判定通过 → defensiveRoll
                 cmd('ROLL_DICE', '1'),     // 防御方掷骰
                 cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'shadow-step' }),
@@ -688,7 +691,7 @@ describe('Moon Elf 状态效果逻辑', () => {
     /**
      * 多状态组合：缠绕 + 致盲同时存在
      * 缠绕在进入 offensiveRoll 时触发（减少掷骰次数）
-     * 致盲在退出 offensiveRoll 时触发（判定攻击是否失败）
+     * 致盲在退出 offensiveRoll 时触发（确认判定后决定攻击是否失败）
      */
     it('缠绕 + 致盲组合：两者都正确触发', () => {
         // 骰子值：[1,1,1,1,1] 攻击骰, [1] 致盲判定(≤2失败)
@@ -715,7 +718,8 @@ describe('Moon Elf 状态效果逻辑', () => {
                 cmd('ROLL_DICE', '0'),
                 cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'longbow-5-1' }),
-                cmd('ADVANCE_PHASE', '0'), // offensiveRoll exit（致盲判定：骰值1≤2，攻击失败）→ main2
+                cmd('ADVANCE_PHASE', '0'), // offensiveRoll exit（致盲判定：骰值1≤2）
+                cmd('SKIP_BONUS_DICE_REROLL', '0'), // 确认致盲判定失败 → main2
             ],
             expect: {
                 turnPhase: 'main2',

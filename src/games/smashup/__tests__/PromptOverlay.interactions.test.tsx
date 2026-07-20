@@ -146,6 +146,41 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         expect(dispatch).not.toHaveBeenCalled();
     });
 
+    it('discard display card mode keeps multiple selected cards until explicit confirm', () => {
+        const onSelect = vi.fn();
+        const onConfirmSelection = vi.fn();
+        const dispatch = vi.fn();
+
+        renderPromptOverlay({
+            interaction: undefined,
+            dispatch,
+            playerID: '0',
+            displayCards: {
+                title: '弃牌堆 (3)',
+                cards: [
+                    { uid: 'discard-card-1', defId: 'rock_stars_groupie' },
+                    { uid: 'discard-card-2', defId: 'rock_stars_classic_rocker' },
+                    { uid: 'discard-card-3', defId: 'rock_stars_rick_roll' },
+                ],
+                onClose: vi.fn(),
+                selectedUids: new Set(['discard-card-1', 'discard-card-2']),
+                onSelect,
+                playableUids: new Set(['discard-card-1', 'discard-card-2', 'discard-card-3']),
+                onConfirmSelection,
+                minSelections: 0,
+                maxSelections: 3,
+                confirmLabel: '确认选择',
+            },
+        });
+
+        fireEvent.click(screen.getAllByTestId('mock-card-preview')[0]);
+        fireEvent.click(screen.getByRole('button', { name: '确认选择' }));
+
+        expect(onSelect).toHaveBeenCalledWith('discard-card-1');
+        expect(onConfirmSelection).toHaveBeenCalledTimes(1);
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
     it('discard display card mode ignores defId-only selectability from stale callers', () => {
         const onSelect = vi.fn();
 

@@ -77,7 +77,7 @@ describe('晕眩（Daze）额外攻击链', () => {
 });
 
 describe('致盲（Blinded）攻击判定链', () => {
-    it('d6=1  攻击失败，跳过攻击直接进入 main2', () => {
+    it('d6=1  确认后攻击失败，跳过攻击进入 main2', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: 'blinded d6=1',
@@ -90,6 +90,7 @@ describe('致盲（Blinded）攻击判定链', () => {
                 cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
+                cmd('SKIP_BONUS_DICE_REROLL', '0'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -102,7 +103,7 @@ describe('致盲（Blinded）攻击判定链', () => {
         expect(result.passed).toBe(true);
     });
 
-    it('d6=2  攻击失败（边界值）', () => {
+    it('d6=2  确认后攻击失败（边界值）', () => {
         const values = Array(15).fill(1).concat([2]);
         const runner = createRunner(createQueuedRandom(values));
         const result = runner.run({
@@ -116,6 +117,7 @@ describe('致盲（Blinded）攻击判定链', () => {
                 cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
+                cmd('SKIP_BONUS_DICE_REROLL', '0'),
             ],
             expect: {
                 turnPhase: 'main2',
@@ -128,7 +130,7 @@ describe('致盲（Blinded）攻击判定链', () => {
         expect(result.passed).toBe(true);
     });
 
-    it('d6=3  攻击成功（边界值），进入防御并结算', () => {
+    it('d6=3  确认后攻击成功（边界值），进入防御并结算', () => {
         const values = Array(5).fill(1).concat([3]).concat(Array(4).fill(1));
         const runner = createRunner(createQueuedRandom(values));
         const result = runner.run({
@@ -141,6 +143,7 @@ describe('致盲（Blinded）攻击判定链', () => {
                 cmd('ROLL_DICE', '0'), cmd('CONFIRM_ROLL', '0'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'slap-5' }),
                 cmd('ADVANCE_PHASE', '0'),
+                cmd('SKIP_BONUS_DICE_REROLL', '0'),
                 cmd('ROLL_DICE', '1'), cmd('CONFIRM_ROLL', '1'),
                     cmd('SELECT_ABILITY', '1', { abilityId: 'meditation' }),
                     cmd('ADVANCE_PHASE', '1'),

@@ -694,6 +694,10 @@
   "bonusDie": {
     "title": "Bonus Roll",
     "confirm": "Confirm",
+    "confirmBonusDice": "Confirm Bonus Die",
+    "spotlight": {
+      "initialGainCp": "Initial roll {{value}}: Gain {{cp}} CP"
+    },
     "summary": {
       "attackDamageBonus": "+{{amount}} damage this attack",
       "damage": "Deal {{amount}} damage",

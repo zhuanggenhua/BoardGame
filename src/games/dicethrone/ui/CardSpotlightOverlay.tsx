@@ -34,9 +34,11 @@ const SummaryText: React.FC<{
     
     return (
         <motion.div
+            data-testid="card-spotlight-summary-text"
+            data-effect-key={effectKey}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-white text-[1.8vw] font-black italic tracking-wider whitespace-nowrap bg-black/60 px-[1.5vw] py-[0.4vw] rounded-full border border-white/20 shadow-lg"
+            className="text-white text-[1.45vw] font-black italic tracking-wider whitespace-nowrap bg-black/60 px-[1.5vw] py-[0.4vw] rounded-full border border-white/20 shadow-lg"
             style={{
                 textShadow: '0 0 1vw rgba(251, 191, 36, 0.5)',
             }}
@@ -50,6 +52,8 @@ const SummaryText: React.FC<{
 export interface CardSpotlightItem {
     /** 唯一标识（通常用 cardId + timestamp） */
     id: string;
+    /** 卡牌 ID（用于可测试地确认当前特写展示的是哪张卡） */
+    cardId?: string;
     /** 该卡牌打出的时间戳（用于关联额外骰子） */
     timestamp: number;
     /** 卡牌预览引用 */
@@ -71,13 +75,20 @@ export interface CardSpotlightItem {
         /** 骰子所属角色（用于图集选择） */
         characterId?: string;
     }>;
-    /** 汇总文本（如"2个弓面：伤害+2"） */
+    /** 汇总文本（如"2个弓面：伤害+2"，或奖励骰转交右侧骰盘时的首次结果说明） */
     summaryText?: {
         effectKey: string;
         effectParams: Record<string, string | number>;
     };
 }
 
+const getCardIdFromSpotlightItem = (item: CardSpotlightItem): string => {
+    if (item.cardId) {
+        return item.cardId;
+    }
+    const suffix = `-${item.timestamp}`;
+    return item.id.endsWith(suffix) ? item.id.slice(0, -suffix.length) : item.id;
+};
 
 interface CardSpotlightOverlayProps {
     /** 特写队列 */
@@ -129,7 +140,9 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
     if (!currentItem || startPosForId !== currentItemId) {
         return null;
     }
+    const currentCardId = getCardIdFromSpotlightItem(currentItem);
     const hasBonusDice = !!currentItem.bonusDice && currentItem.bonusDice.length > 0;
+    const hasSummaryText = !!currentItem.summaryText;
 
 
     return (
@@ -151,7 +164,10 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
         >
             <div
                 data-testid="card-spotlight-overlay"
-                className={hasBonusDice ? 'flex items-center gap-[1.5vw]' : undefined}
+                data-card-id={currentCardId}
+                data-player-id={String(currentItem.playerId)}
+                data-spotlight-item-id={currentItem.id}
+                className={hasBonusDice || hasSummaryText ? 'flex items-center gap-[1.5vw]' : undefined}
             >
                 {/* 卡牌（左） */}
                 <CardPreview
@@ -166,34 +182,36 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                     }}
                 />
 
-                {/* 额外骰子（右）- 支持多颗骰子横向排列 */}
-                {hasBonusDice && (
+                {/* 额外骰子（右）- 支持多颗骰子横向排列；无骰子时仍可显示首次结果说明 */}
+                {(hasBonusDice || hasSummaryText) && (
                     <div className="flex flex-col items-center gap-[1vw] relative z-[1]">
                         {/* 骰子行 */}
-                        <div className="flex items-center gap-[1vw]" data-testid="card-spotlight-bonus-dice">
-                            {currentItem.bonusDice!.map((die, index) => {
-                                const dieIdentityKey = typeof die.index === 'number'
-                                    ? `die-${die.index}`
-                                    : `die-pos-${index}`;
-                                return (
-                                    <div key={dieIdentityKey} data-testid="card-spotlight-die">
-                                        <BonusDieSpotlightContent
-                                            value={die.value}
-                                            face={die.face}
-                                            effectKey={die.effectKey}
-                                            effectParams={die.effectParams}
-                                            locale={locale}
-                                            size="10vw"
-                                            rollingDurationMs={BONUS_DIE_VISIBLE_ROLL_DURATION_MS + index * 120}
-                                            presentationKey={die.presentationKey}
-                                            animateOnMount={die.presentationKind !== 'choice'}
-                                            characterId={die.characterId}
-                                            compact={true}
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        {hasBonusDice && (
+                            <div className="flex items-center gap-[1vw]" data-testid="card-spotlight-bonus-dice">
+                                {currentItem.bonusDice!.map((die, index) => {
+                                    const dieIdentityKey = typeof die.index === 'number'
+                                        ? `die-${die.index}`
+                                        : `die-pos-${index}`;
+                                    return (
+                                        <div key={dieIdentityKey} data-testid="card-spotlight-die">
+                                            <BonusDieSpotlightContent
+                                                value={die.value}
+                                                face={die.face}
+                                                effectKey={die.effectKey}
+                                                effectParams={die.effectParams}
+                                                locale={locale}
+                                                size="10vw"
+                                                rollingDurationMs={BONUS_DIE_VISIBLE_ROLL_DURATION_MS + index * 120}
+                                                presentationKey={die.presentationKey}
+                                                animateOnMount={die.presentationKind !== 'choice'}
+                                                characterId={die.characterId}
+                                                compact={true}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                         
                         {/* 汇总文本（如"2个弓面：伤害+2"） */}
                         {currentItem.summaryText && (

@@ -93,7 +93,7 @@ EventStream 不是单一语义的“历史列表”。同一条事件被不同 U
 | 策略 | 现实含义 | 消费规则 | 典型场景 |
 |------|----------|----------|----------|
 | `requiredSequence` | 必须完整播放的动画序列 | 只能按 EventStream `id` / 游标 / 已消费事件 ID 控制；禁止用 `Date.now()` 或事件 `timestamp` 丢弃 | 攻击、受伤、摧毁、连锁结算动画 |
-| `transientNotification` | 临时提示或展示浮层 | 首次挂载跳过已有基线，只消费页面打开后进入 EventStream 的新事件；Undo/回滚时清空队列 | 行动卡特写、揭示浮层、toast |
+| `transientNotification` | 临时提示或展示浮层 | 首次挂载可跳过已有基线，只消费页面打开后进入 EventStream 的新事件；清理策略必须由消费者语义显式定义，不能把所有 rollback / resync 信号一概等同于关闭 | 行动卡特写、揭示浮层、toast |
 | `derivedCurrentState` | 当前 UI 状态重建 | 不走播放队列；从当前状态或必要历史事件重建当前显示 | 修正值、持续状态、高亮状态 |
 | `instantFeedback` | 轻量即时反馈 | 可按消费者规则合并、限流或弱化，但不能阻塞核心结算 | 音效、轻量闪烁、飘字 |
 
@@ -165,8 +165,8 @@ useLayoutEffect(() => {
 }, [entries, consumeNew]);
 ```
 
-> `consumeNew()` 返回 `{ entries, didReset }`。`didReset=true` 表示检测到 Undo 回退
-> （entries 清空或 ID 回退），消费者据此清理 UI 状态。
+> `consumeNew()` 返回 `{ entries, didReset }`。`didReset=true` 表示检测到 EventStream 游标回退。
+> 消费者必须先按自身语义判断是否清理 UI；展示型特写不能仅凭空 entries 或 ID 回退退场，必须有明确撤销 / Undo 证据。
 > 内部封装了：首次挂载跳过历史、Undo 检测与游标重置、`e.id > lastSeenId` 过滤 + 自动推进。
 > 消费者无需手动管理 `lastSeenIdRef` / `isFirstMountRef` / `prevEntriesLenRef`。
 
@@ -183,7 +183,7 @@ useEffect(() => {
 
 **禁止**：初始值为 `null/-1` 且无首次挂载跳过逻辑；仅靠 `mountedRef` 守卫（后续 state 变化仍会重播）。
 
-**检查清单**：① 是否使用 `useVisualEventStream` 并声明正确策略？② `requiredSequence` 是否只按 EventStream ID/游标消费，未使用时间戳过滤？③ `transientNotification` 是否跳过首次挂载基线并在 reset/rollback 时清空队列？④ `consumeNew` 返回的 `didReset` 是否被正确处理（需要清理 UI 状态的场景）？⑤ 模式 B 的 `useRef` 初始值是否为 `currentEntry?.id ?? null`？⑥ `consumeNew` 是否在依赖数组中？
+**检查清单**：① 是否使用 `useVisualEventStream` 并声明正确策略？② `requiredSequence` 是否只按 EventStream ID/游标消费，未使用时间戳过滤？③ `transientNotification` 是否跳过首次挂载基线，并按消费者语义明确清理条件？④ `consumeNew` 返回的 `didReset` 是否只用于能证明当前 UI 对象已失效的场景，而不是机械清空所有展示？⑤ 卡牌特写、展示牌、揭示牌这类玩家需要阅读的展示是否没有被 `didOptimisticRollback` / reconcile / resync / 组件重挂载误清空？⑥ 模式 B 的 `useRef` 初始值是否为 `currentEntry?.id ?? null`？⑦ `consumeNew` 是否在依赖数组中？
 
 **参考**：模式 A → `dicethrone/hooks/useCardSpotlight.ts`（简单）、`summonerwars/ui/useGameEvents.ts`（含 didReset 清理）；模式 B → `lib/audio/useGameAudio.ts`
 
@@ -193,15 +193,21 @@ useEffect(() => {
 
 > 路径：`src/components/game/framework/CardSpotlightQueue.tsx` + `hooks/useCardSpotlightQueue.ts`
 
-通用框架组件，用于展示卡牌特写。基于 EventStream 驱动，支持队列堆叠（有上限），点击任意位置关闭当前特写。
+通用框架组件，用于展示卡牌特写。基于 EventStream 驱动，支持队列堆叠（有上限），通过明确关闭按钮关闭当前特写。
 
 ### 核心特性
 
 - **默认只显示其他玩家**：提供 `currentPlayerId` 时自动过滤该玩家产生的事件；不提供时显示全部
 - **联机确认可配置**：`consumeOnReconcile` 为 `true` 时，reconcile 后仍消费服务端确认事件，适合“对手出牌特写”这类纯远端驱动展示
 - **队列有上限**：`maxQueue`（默认 5），超出时丢弃最旧的
-- **点击关闭**：点击空白/卡牌即可关闭当前项，不阻塞其他操作
-- **Undo 安全**：检测到 Undo 回退时自动清空队列
+- **明确关闭**：只能通过清楚的关闭按钮关闭当前项；不得用整屏背景、卡牌本体点击、鼠标移出、自动计时或 prompt 出现来关闭
+- **非阻塞呈现**：卡牌特写默认是“玩家需要读懂的展示”，不是阻塞式 modal。根容器必须保持 `pointer-events-none`，只让关闭按钮等最小必要区域接管点击；不得铺整屏 backdrop、暗罩或点击捕获层遮住棋盘上下文
+- **关键 UI 避让**：特写不能遮挡当前棋盘/牌桌主对象、手牌、牌库、弃牌堆、右侧 rail、工具按钮、当前 prompt 目标或其它玩家此刻需要读取/点击的控件；E2E 不得只检查单一对象（例如只检查基地不重叠）就判视觉通过，必须覆盖真实整屏里所有竞争区域。
+- **生命周期独立**：对手打出卡牌后，即使本地随后进入 prompt、waiting、response window、blocked interaction、联机确认、前后台 resync、组件重挂载或乐观引擎通用回滚信号，也不得自动清空这张特写。只有用户明确关闭、队列上限裁剪，或明确撤销 / Undo 证据能证明事件本体已失效时，才允许移除队列项；`didOptimisticRollback`、空 EventStream、ID 回退这类视觉游标信号不能直接当成“关闭特写”。
+- **重挂载恢复**：展示型特写如果已经在当前页面生命周期内入队且未被用户明确关闭，后续 hook / Board / overlay 因同步、重连或路由壳层刷新重挂载时，必须能恢复这条未关闭特写。首次挂载跳过历史事件只用于“不要把进房前旧事件重新弹出”，不能把本页刚展示过、仍应让玩家阅读的特写丢掉。
+- **旧游戏自建实现不例外**：如果游戏还没迁到通用 `CardSpotlightQueue`，例如 DiceThrone 的 `CardSpotlightOverlay` + `useCardSpotlight`，或另有 `AttackShowcaseOverlay` + `useAttackShowcase` 这类技能特写实现，也必须遵守同一生命周期。修复或审计时必须同时检查通用框架、游戏内卡牌特写和技能特写实现；不能只改通用组件或只改卡牌特写后宣称所有展示型特写已修。
+- **禁止自动退场**：卡牌特写、对手进攻技能特写、能力槽裁切展示、升级卡展示、揭示牌、剧本页等玩家需要阅读的展示型 UI 不允许用 `autoCloseDelay`、短 timer、卡面/技能本体点击、空白点击、hover/blur 或 prompt 切换来关闭。必须提供明确关闭按钮或继续按钮；测试必须断言超过旧自动关闭时间后仍可见，并通过明确按钮收口。
+- **撤销安全**：只有明确撤销 / Undo 证据证明当前特写对应事件已失效时，才清空或移除对应队列项；普通同步、重连、组件重挂载、空 EventStream 或 ID 回退不得自动清空。
 - **游戏层注入渲染**：框架层管理队列逻辑，游戏层通过 `renderCard` 提供卡牌 UI
 
 ### 特写真相源与失败口径（强制）
@@ -246,14 +252,14 @@ const renderCard = useCallback((item) => (
 
 | 维度 | FX 系统 | CardSpotlightQueue |
 |------|---------|-------------------|
-| 交互性 | `pointer-events-none`，纯展示 | 可点击关闭 |
+| 交互性 | `pointer-events-none`，纯展示 | 仅关闭按钮可点击 |
 | 生命周期 | 定时自动消失（`timeoutMs`） | 用户主动关闭 |
 | 适用场景 | 力量浮字、VP 飞行等瞬态特效 | 卡牌特写、需要玩家确认的展示 |
 
 ### 已接入游戏
 
 - **SmashUp**：行动卡打出时展示特写（在线默认只看对手，本地模式显示双方）
-- **DiceThrone**：待迁移（当前使用游戏层自建的 `CardSpotlightOverlay` + `useCardSpotlight`）
+- **DiceThrone**：当前使用游戏层自建的 `CardSpotlightOverlay` + `useCardSpotlight`；迁移前必须按本节规则单独审计和测试，尤其是“对手特写不被 resync / optimistic rollback 清空、不会自动关闭、只能明确关闭按钮收口”。
 
 ---
 

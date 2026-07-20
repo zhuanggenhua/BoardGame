@@ -257,6 +257,13 @@ describe('七大恨移动规则 helper', () => {
                     controlLabel: '蒙古',
                 };
             }
+            if (region.id === 'city-region-17') {
+                return {
+                    ...region,
+                    controller: 'jin',
+                    controlLabel: '后金',
+                };
+            }
             if (region.id === 'city-region-19') {
                 return {
                     ...region,

@@ -59,14 +59,11 @@ function isModifierResetEvent(entry: EventStreamEntry): boolean {
 }
 
 function scanActiveModifiers(entries: EventStreamEntry[]): ActiveModifier[] {
-    console.log('[scanActiveModifiers] 开始扫描，总事件数:', entries.length);
-    
     // 从后往前找最后一个 ATTACK_RESOLVED
     let lastResolvedIndex = -1;
     for (let i = entries.length - 1; i >= 0; i--) {
         if (isModifierResetEvent(entries[i])) {
             lastResolvedIndex = i;
-            console.log('[scanActiveModifiers] 找到最后一个 ATTACK_RESOLVED，索引:', i);
             break;
         }
     }
@@ -74,13 +71,7 @@ function scanActiveModifiers(entries: EventStreamEntry[]): ActiveModifier[] {
     // 收集 ATTACK_RESOLVED 之后的所有攻击修正卡
     const modifiers: ActiveModifier[] = [];
     const startIndex = lastResolvedIndex + 1;
-    
-    console.log('[scanActiveModifiers] 扫描范围:', {
-        startIndex,
-        endIndex: entries.length - 1,
-        eventCount: entries.length - startIndex,
-    });
-    
+
     for (let i = startIndex; i < entries.length; i++) {
         const entry = entries[i];
         const { type, payload, timestamp } = entry.event;
@@ -88,11 +79,6 @@ function scanActiveModifiers(entries: EventStreamEntry[]): ActiveModifier[] {
         if (type === 'CARD_PLAYED') {
             const p = payload as { cardId: string };
             const card = findHeroCard(p.cardId);
-            console.log('[scanActiveModifiers] CARD_PLAYED 事件:', {
-                index: i,
-                cardId: p.cardId,
-                card: card ? { id: card.id, name: card.name, isAttackModifier: card.isAttackModifier } : null,
-            });
             if (card && card.isAttackModifier) {
                 const modifier = {
                     cardId: p.cardId,
@@ -101,13 +87,11 @@ function scanActiveModifiers(entries: EventStreamEntry[]): ActiveModifier[] {
                     timestamp: typeof timestamp === 'number' ? timestamp : 0,
                     eventId: entry.id,
                 };
-                console.log('[scanActiveModifiers] 找到攻击修正卡:', modifier);
                 modifiers.push(modifier);
             }
         }
     }
 
-    console.log('[scanActiveModifiers] 扫描完成，找到修正卡数量:', modifiers.length);
     return modifiers;
 }
 
@@ -125,110 +109,71 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
     const isFirstMountRef = useRef(true);
     const lastRollbackSeqRef = useRef<number>(rollback.seq);
 
-    console.log('[useActiveModifiers] Hook 被调用，isFirstMount:', isFirstMountRef.current, 'totalEntries:', eventStreamEntries.length);
-
     useEffect(() => {
         if (rollback.seq === lastRollbackSeqRef.current) {
             return;
         }
 
         lastRollbackSeqRef.current = rollback.seq;
-        console.log('[useActiveModifiers] 检测到 optimistic rollback 信号，清空当前修正卡并重置游标:', rollback);
         setModifiers([]);
         lastSeenIdRef.current = rollback.watermark ?? -1;
     }, [rollback]);
 
     useEffect(() => {
         const curLen = eventStreamEntries.length;
-        console.log('[useActiveModifiers] useEffect 触发，isFirstMount:', isFirstMountRef.current, 'totalEntries:', curLen);
-        
+
         // 首次挂载：扫描历史事件，恢复未结算的攻击修正卡
         if (isFirstMountRef.current) {
             isFirstMountRef.current = false;
-            console.log('[useActiveModifiers] 执行首次挂载逻辑');
-            
-            // 详细日志：列出所有事件类型
-            const eventTypes = eventStreamEntries.map(e => e.event.type);
-            console.log('[useActiveModifiers] 首次挂载，EventStream 事件类型:', eventTypes);
-            
+
             const restoredModifiers = scanActiveModifiers(eventStreamEntries);
-            console.log('[useActiveModifiers] 首次挂载，扫描历史事件:', {
-                totalEntries: curLen,
-                restoredModifiers,
-                restoredCount: restoredModifiers.length,
-            });
-            
+
             // 更新游标到当前最新位置
             if (curLen > 0) {
                 lastSeenIdRef.current = eventStreamEntries[curLen - 1].id;
-                console.log('[useActiveModifiers] 首次挂载，更新游标到:', lastSeenIdRef.current);
             }
-            
+
             if (restoredModifiers.length > 0) {
-                console.log('[useActiveModifiers] 首次挂载，设置 modifiers:', restoredModifiers);
                 setModifiers(restoredModifiers);
-            } else {
-                console.log('[useActiveModifiers] 首次挂载，没有找到攻击修正卡');
             }
             return;
         }
-        
+
         // entries 为空：检查是否需要重置游标
         if (curLen === 0) {
             if (lastSeenIdRef.current > -1) {
-                console.log('[useActiveModifiers] EventStream 被清空，重置游标');
                 lastSeenIdRef.current = -1;
             }
             return;
         }
-        
+
         // Undo 回退检测：最大 ID 真正回退
         const maxId = eventStreamEntries[curLen - 1].id;
         if (maxId < lastSeenIdRef.current) {
-            console.log('[useActiveModifiers] 检测到 Undo 回退，重新扫描');
             lastSeenIdRef.current = maxId;
             const restoredModifiers = scanActiveModifiers(eventStreamEntries);
-            console.log('[useActiveModifiers] Undo 回退，重新扫描:', {
-                totalEntries: curLen,
-                restoredModifiers,
-            });
             setModifiers(restoredModifiers);
             return;
         }
-        
+
         // 正常消费：获取新事件
         const newEntries = eventStreamEntries.filter(e => e.id > lastSeenIdRef.current);
-        
-        console.log('[useActiveModifiers] 正常消费:', {
-            cursor: lastSeenIdRef.current,
-            totalEntries: curLen,
-            maxId,
-            newEntriesCount: newEntries.length,
-            allEventIds: eventStreamEntries.map(e => e.id),
-            newEventIds: newEntries.map(e => e.id),
-        });
-        
+
         if (newEntries.length === 0) return;
-        
+
         // 更新游标
         lastSeenIdRef.current = newEntries[newEntries.length - 1].id;
-        console.log('[useActiveModifiers] 更新游标到:', lastSeenIdRef.current);
 
         // 处理新事件：需要区分 ATTACK_RESOLVED 前后的 CARD_PLAYED
         // 逻辑：
         // 1. ATTACK_RESOLVED 之前的 CARD_PLAYED → 添加到当前修正卡列表
         // 2. ATTACK_RESOLVED 事件 → 清空所有修正卡（攻击结算完成）
         // 3. ATTACK_RESOLVED 之后的 CARD_PLAYED → 添加到新的修正卡列表（新攻击周期）
-        
-        // 详细日志：列出所有新事件类型
-        const newEventTypes = newEntries.map(e => e.event.type);
-        console.log('[useActiveModifiers] 新事件类型:', newEventTypes);
-        
+
         let attackResolvedIndex = -1;
         for (let i = newEntries.length - 1; i >= 0; i--) {
             if (isModifierResetEvent(newEntries[i])) {
                 attackResolvedIndex = i;
-                console.log('[useActiveModifiers] 找到 ATTACK_RESOLVED 事件，索引:', i);
                 break;
             }
         }
@@ -236,20 +181,14 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
         if (attackResolvedIndex >= 0) {
             // 有 ATTACK_RESOLVED 事件：清空旧修正卡，收集 ATTACK_RESOLVED 之后的新修正卡
             const newModifiers: ActiveModifier[] = [];
-            
-            console.log('[useActiveModifiers] 处理 ATTACK_RESOLVED，清空旧修正卡');
-            
+
             for (let i = attackResolvedIndex + 1; i < newEntries.length; i++) {
                 const entry = newEntries[i];
                 const { type, payload, timestamp } = entry.event;
-                
+
                 if (type === 'CARD_PLAYED') {
                     const p = payload as { cardId: string };
                     const card = findHeroCard(p.cardId);
-                    console.log('[useActiveModifiers] ATTACK_RESOLVED 后的 CARD_PLAYED:', {
-                        cardId: p.cardId,
-                        isAttackModifier: card?.isAttackModifier,
-                    });
                     if (card && card.isAttackModifier) {
                         newModifiers.push({
                             cardId: p.cardId,
@@ -261,8 +200,7 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
                     }
                 }
             }
-            
-            console.log('[useActiveModifiers] ATTACK_RESOLVED 后的新修正卡:', newModifiers, '（应该清空旧的）');
+
             setModifiers(newModifiers);
         } else {
             // 没有 ATTACK_RESOLVED 事件：正常添加修正卡
@@ -274,11 +212,6 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
                 if (type === 'CARD_PLAYED') {
                     const p = payload as { cardId: string };
                     const card = findHeroCard(p.cardId);
-                    console.log('[useActiveModifiers] CARD_PLAYED 事件:', {
-                        cardId: p.cardId,
-                        card,
-                        isAttackModifier: card?.isAttackModifier,
-                    });
                     if (card && card.isAttackModifier) {
                         newModifiers.push({
                             cardId: p.cardId,
@@ -292,7 +225,6 @@ export function useActiveModifiers(config: UseActiveModifiersConfig) {
             }
 
             if (newModifiers.length > 0) {
-                console.log('[useActiveModifiers] 添加新修正卡:', newModifiers);
                 setModifiers(prev => [...prev, ...newModifiers]);
             }
         }

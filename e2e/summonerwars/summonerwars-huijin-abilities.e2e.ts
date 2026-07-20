@@ -173,17 +173,22 @@ function addSummoners(core: SummonerWarsCore, myPosition: CellCoord, enemyPositi
 function prepareCallGuardsState(core: SummonerWarsCore) {
   clearBoard(core, 'attack');
   const summonerPosition = { row: 4, col: 2 };
+  const guardPosition = { row: 2, col: 2 };
   const summonPosition = { row: 4, col: 3 };
-  const handCard = makeCard(huijinAshArcherCard, 'huijin-ash-archer-e2e-call');
   const summoner = placeUnit(core, summonerPosition, makeCard(SUMMONER_HUIJIN, 'huijin-summoner-e2e-call'), '0', {
     instanceId: 'huijin-summoner-call',
     boosts: 1,
   });
+  const guard = placeUnit(core, guardPosition, makeCard(huijinAshArcherCard, 'huijin-ash-archer-e2e-call'), '0', {
+    instanceId: 'huijin-ash-archer-e2e-call',
+  });
   placeUnit(core, { row: 0, col: 2 }, makeCard(SUMMONER_NECROMANCER, 'necro-summoner-e2e-call'), '1', {
     instanceId: 'necro-summoner-call',
   });
-  core.players['0'].hand = [handCard];
-  return { core, summoner, summonerPosition, summonPosition, handCard };
+  core.players['0'].hand = [];
+  core.players['0'].hasAttackedEnemy = true;
+  core.players['0'].attackCount = 3;
+  return { core, summoner, summonerPosition, guard, guardPosition, summonPosition };
 }
 
 function prepareRamState(core: SummonerWarsCore) {
@@ -315,7 +320,7 @@ test.describe('召唤师战争灰烬派系真实入口 E2E', () => {
     }
   });
 
-  test('召集护卫：阶段结束后真实手牌选择并召唤到相邻空格', async ({ browser }, testInfo) => {
+  test('召集护卫：阶段结束后选择场上友方士兵并放置到相邻空格', async ({ browser }, testInfo) => {
     test.setTimeout(180000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     const match = await setupSWOnlineMatch(browser, baseURL, 'huijin', 'necromancer');
@@ -334,14 +339,14 @@ test.describe('召唤师战争灰烬派系真实入口 E2E', () => {
       await waitForPhase(hostPage, 'attack');
 
       await expect(hostPage.locator(`[data-testid="sw-unit-${prepared.summonerPosition.row}-${prepared.summonerPosition.col}"][data-owner="0"]`)).toBeVisible({ timeout: 8000 });
+      await expect(hostPage.locator(`[data-testid="sw-unit-${prepared.guardPosition.row}-${prepared.guardPosition.col}"][data-owner="0"]`)).toBeVisible({ timeout: 8000 });
       await hostPage.getByTestId('sw-end-phase').click();
 
-      await waitForSwInteraction(hostPage, matchId, { type: 'huijin_call_guards_select_card' });
-      await expect(hostPage.getByTestId('sw-card-selector-overlay')).toContainText(/召集护卫|Call Guards/i);
-      await expect(hostPage.locator(`[data-testid="sw-card-selector-overlay"] [data-card-id="${prepared.handCard.id}"]`)).toBeVisible({ timeout: 8000 });
-      await hostGame.screenshot('01-召集护卫-选择手牌士兵', testInfo);
+      await waitForSwInteraction(hostPage, matchId, { type: 'huijin_call_guards_select_target' });
+      await expect(hostPage.getByTestId(`sw-cell-${prepared.guardPosition.row}-${prepared.guardPosition.col}`)).toHaveAttribute('data-valid-ability-unit', 'true', { timeout: 8000 });
+      await hostGame.screenshot('01-召集护卫-选择场上友方士兵', testInfo);
 
-      await hostPage.locator(`[data-testid="sw-card-selector-overlay"] [data-card-id="${prepared.handCard.id}"]`).click();
+      await clickBoardElement(hostPage, `[data-testid="sw-unit-${prepared.guardPosition.row}-${prepared.guardPosition.col}"][data-owner="0"]`);
       await waitForSwInteraction(hostPage, matchId, { type: 'huijin_call_guards_select_position' });
       await expect(hostPage.getByTestId(`sw-cell-${prepared.summonPosition.row}-${prepared.summonPosition.col}`)).toHaveAttribute('data-valid-ability-pos', 'true', { timeout: 8000 });
       await hostGame.screenshot('02-召集护卫-选择相邻空格', testInfo);
@@ -350,23 +355,26 @@ test.describe('召唤师战争灰烬派系真实入口 E2E', () => {
 
       await expect.poll(async () => {
         const state = await readCoreState(hostPage) as SummonerWarsCore;
-        const summoned = state.board[prepared.summonPosition.row]?.[prepared.summonPosition.col]?.unit;
+        const moved = state.board[prepared.summonPosition.row]?.[prepared.summonPosition.col]?.unit;
+        const oldCellUnit = state.board[prepared.guardPosition.row]?.[prepared.guardPosition.col]?.unit;
         const summoner = state.board[prepared.summonerPosition.row]?.[prepared.summonerPosition.col]?.unit;
         return {
-          summonedName: summoned?.card.name ?? null,
-          summonedOwner: summoned?.owner ?? null,
-          cardStillInHand: state.players['0'].hand.some((card) => card.id === prepared.handCard.id),
+          movedName: moved?.card.name ?? null,
+          movedOwner: moved?.owner ?? null,
+          movedInstanceId: moved?.instanceId ?? null,
+          oldCellEmpty: !oldCellUnit,
           summonerBoosts: summoner?.boosts ?? null,
         };
       }, { timeout: 10000 }).toEqual({
-        summonedName: '灰烬弓箭手',
-        summonedOwner: '0',
-        cardStillInHand: false,
+        movedName: '灰烬弓箭手',
+        movedOwner: '0',
+        movedInstanceId: prepared.guard.instanceId,
+        oldCellEmpty: true,
         summonerBoosts: 0,
       });
 
       await waitForNoInteraction(hostPage, matchId);
-      await hostGame.screenshot('03-召集护卫-召唤完成', testInfo);
+      await hostGame.screenshot('03-召集护卫-放置完成', testInfo);
     } finally {
       await hostContext.close().catch(() => {});
       await guestContext.close().catch(() => {});

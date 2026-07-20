@@ -344,7 +344,7 @@ describe('小黑屋本地 AI', () => {
         expect(nextState.core.endgameResult?.outcome).toBe('survivors');
     });
 
-    test('魔法相机叛徒 AI 会优先拍摄仍有 Essence 的英雄', () => {
+    test('魔法相机叛徒 AI 会优先拍摄仍有本质的英雄', () => {
         const core = createMagicCameraAiCore('1');
         activateTestExplorer(core, '1');
         core.currentExplorer.traits = {
@@ -371,7 +371,7 @@ describe('小黑屋本地 AI', () => {
             .toBe(preferredPhoto?.actionId);
     });
 
-    test('魔法相机叛徒 AI 在没有可拍 Essence 时会让幻影摄影师攻击', () => {
+    test('魔法相机叛徒 AI 在没有可拍本质时会让幻影摄影师攻击', () => {
         const core = createMagicCameraAiCore('1');
         activateTestExplorer(core, '1');
         core.scenarioRuntime.magicCamera!.heroEssencePlayerIds = [];
@@ -454,7 +454,7 @@ describe('小黑屋本地 AI', () => {
             .toBe(BETRAYAL_AI_ACTION_KINDS.SEARCH_FOR_CURE);
     });
 
-    test('灰尘 AI 在 Research token 房间会尝试治愈灰尘', () => {
+    test('灰尘 AI 在研究标记房间会尝试治愈灰尘', () => {
         const core = createDustAiCore();
         activateTestExplorer(core, '1');
         setExplorerRoom(core, '1', 'hallway');
@@ -474,7 +474,7 @@ describe('小黑屋本地 AI', () => {
             .toBe(BETRAYAL_AI_ACTION_KINDS.CURE_THE_DUST);
     });
 
-    test('灰尘 AI 会请求同房探索者交换 Sickness token', () => {
+    test('灰尘 AI 会请求同房探索者交换疾病标记', () => {
         const core = createDustAiCore();
         activateTestExplorer(core, '1');
         setExplorerRoom(core, '1', 'hallway');
@@ -492,7 +492,7 @@ describe('小黑屋本地 AI', () => {
         });
     });
 
-    test('灰尘 AI 会同意别人发起的 Sickness token 交换', () => {
+    test('灰尘 AI 会同意别人发起的疾病标记交换', () => {
         const core = createDustAiCore();
         core.scenarioRuntime.dust!.pendingSicknessExchange = {
             requesterPlayerId: '1',

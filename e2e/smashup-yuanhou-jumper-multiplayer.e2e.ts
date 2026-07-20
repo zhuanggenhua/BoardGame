@@ -170,7 +170,7 @@ async function dismissSmashUpSpotlightQueueIfVisible(page: Page): Promise<void> 
   const spotlightQueue = page.getByTestId('card-spotlight-queue');
   const visible = await spotlightQueue.isVisible().catch(() => false);
   if (!visible) return;
-  await spotlightQueue.click({ force: true });
+  await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
   await expect(spotlightQueue).toBeHidden();
   await page.waitForTimeout(150);
 }

@@ -4118,9 +4118,9 @@ function resolveHauntRoll(
 
 function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): string {
     if (hauntRoll.automatic) {
-        return '最后一张预兆自动触发作祟';
+        return '抽到最后一张预兆，按通用预兆规则自动触发作祟';
     }
-    return `作祟检定 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '作祟开始' : `未达到 ${hauntRoll.threshold}+`}）`;
+    return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.threshold}+ 作祟开始，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
 }
 
 function buildHauntRollThresholds(hauntRoll: BetrayalHauntRollResult): { min: number; label: string; effect: UseEffectProfile }[] {
@@ -4979,7 +4979,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (command.type === BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE) {
         const pendingExchange = core.scenarioRuntime.dust?.pendingSicknessExchange;
         if (!pendingExchange) {
-            return { valid: false, error: '当前没有待回应的 Sickness token 交换。' };
+            return { valid: false, error: '当前没有待回应的疾病标记交换。' };
         }
         if (pendingExchange.targetPlayerId !== command.playerId) {
             return { valid: false, error: '必须由交换目标玩家回应。' };
@@ -4990,7 +4990,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         return { valid: true };
     }
     if (core.scenarioRuntime.dust?.pendingSicknessExchange) {
-        return { valid: false, error: '请先等待 Sickness token 交换回应。' };
+        return { valid: false, error: '请先等待疾病标记交换回应。' };
     }
     const pendingTurnEndRollValidation = validateTurnEndRollAcknowledgement(core, command);
     if (pendingTurnEndRollValidation) {
@@ -5078,7 +5078,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 return { valid: false, error: '拍照成功后必须选择一个有效属性提升。' };
             }
             if (!canTakeMagicCameraPhoto(core, actor, target.playerId)) {
-                return { valid: false, error: '目标英雄没有 Essence，或不在叛徒同板块/魔法相机视线内。' };
+                return { valid: false, error: '目标英雄没有本质，或不在叛徒同板块/魔法相机视线内。' };
             }
             return { valid: true };
         }
@@ -5321,7 +5321,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 return { valid: false, error: '寻找解药必须选择知识或神志。' };
             }
             if (!canSearchForCure(core, actor)) {
-                return { valid: false, error: '必须在带有恶兆符号且没有 Research token 的板块才能寻找解药。' };
+                return { valid: false, error: '必须在带有恶兆符号且没有研究标记的板块才能寻找解药。' };
             }
             if (core.usedCardIdsThisTurn.includes('search-for-cure')) {
                 return { valid: false, error: '本回合已经寻找过解药。' };
@@ -5337,7 +5337,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 return { valid: false, error: '治愈灰尘必须选择一个有效属性。' };
             }
             if (!canCureTheDust(core, actor)) {
-                return { valid: false, error: '必须在可研究板块或带 Research token 的板块才能治愈灰尘。' };
+                return { valid: false, error: '必须在可研究板块或带研究标记的板块才能治愈灰尘。' };
             }
             if (core.usedCardIdsThisTurn.includes('cure-the-dust')) {
                 return { valid: false, error: '本回合已经尝试过治愈灰尘。' };
@@ -5396,16 +5396,16 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
                 : null;
             if (!isDustHaunt(core) || isDead) {
-                return { valid: false, error: '只有灰尘剧本中的存活探索者能请求交换 Sickness token。' };
+                return { valid: false, error: '只有灰尘剧本中的存活探索者能请求交换疾病标记。' };
             }
             if (!target || target.playerId === actor.playerId) {
-                return { valid: false, error: '必须选择另一名探索者交换 Sickness token。' };
+                return { valid: false, error: '必须选择另一名探索者交换疾病标记。' };
             }
             if (core.scenarioRuntime.deadExplorerPlayerIds.includes(target.playerId) || target.roomId !== actor.roomId) {
-                return { valid: false, error: '只能请求同板块的存活探索者交换 Sickness token。' };
+                return { valid: false, error: '只能请求同板块的存活探索者交换疾病标记。' };
             }
             if (core.usedCardIdsThisTurn.includes('sickness-exchange')) {
-                return { valid: false, error: '本回合已经请求过 Sickness token 交换。' };
+                return { valid: false, error: '本回合已经请求过疾病标记交换。' };
             }
             return { valid: true };
         }
@@ -5882,10 +5882,10 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         kind: 'event',
                         title: pending.sourceTitle,
                         summary: pending.effect.acceptLabel,
-                        detail: `作祟检定 ${rollTotal}：${effectLabel}`,
+                        detail: `选择进行作祟检定：总点数 ${rollTotal}（${core.scenarioRuntime.hauntRollThreshold}+ 作祟开始，${effectLabel}）`,
                         tone: hauntTriggered ? 'warning' : 'accent',
                     },
-                    logText: `${actor.displayName}进行作祟检定：${pending.sourceTitle}（作祟检定 ${rollTotal}，${effectLabel}）`,
+                    logText: `${actor.displayName}进行作祟检定：${pending.sourceTitle}（总点数 ${rollTotal}，${effectLabel}）`,
                 }, timestamp)];
             }
             if (pending.effect.mode === 'chooseTraitRoll') {
@@ -6315,15 +6315,15 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const dustLogText = dustEndTurn
                 ? [
                     dustEndTurn.swaps.length > 0
-                        ? `${core.currentExplorer.displayName}在回合结束时交换了 ${dustEndTurn.swaps.length} 次 Sickness token`
+                        ? `${core.currentExplorer.displayName}在回合结束时交换了 ${dustEndTurn.swaps.length} 次疾病标记`
                         : null,
                     dustEndTurn.damagePlayerId && dustEndTurn.damageAmount !== undefined
-                        ? `${core.currentExplorer.displayName}本回合没有交换 Sickness token，承受 ${dustEndTurn.damageAmount} 点通用伤害`
+                        ? `${core.currentExplorer.displayName}本回合没有交换疾病标记，承受 ${dustEndTurn.damageAmount} 点通用伤害`
                         : null,
                 ].filter(Boolean).join('；')
                 : '';
             const magicCameraLogText = magicCameraEndTurnCapturedEssencePlayerIds.length > 0
-                ? `${core.currentExplorer.displayName}在回合结束时处于幻影摄影师视线内，Essence 被夺走`
+                ? `${core.currentExplorer.displayName}在回合结束时处于幻影摄影师视线内，本质被夺走`
                 : '';
             const hauntLogText = [dustLogText, magicCameraLogText].filter(Boolean).join('；');
             return [nowEvent(EVENTS.TURN_ENDED, {
@@ -6669,7 +6669,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                             : attackerDefeated
                                 ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被击倒${deathPreventionLog}`
                                 : damageToDefender > 0
-                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}造成 ${damageToDefender} 点 ${attackDamageLabel}${essenceBonus ? '（Essence +2）' : ''}${deathPreventionLog}`
+                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}造成 ${damageToDefender} 点 ${attackDamageLabel}${essenceBonus ? '（本质 +2）' : ''}${deathPreventionLog}`
                                     : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
                 }, timestamp)];
             }
@@ -6875,11 +6875,14 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 }
                 const defenderTraitsBeforeDamage = targetHero ? { ...targetHero.traits } : undefined;
                 const attackRoll = jackSpirit
-                    ? {
-                        total: rollTrait(random, jackSpirit.might),
-                        dice: [],
-                        passiveBonus: 0,
-                    }
+                    ? (() => {
+                        const dice = rollDicePips(random, jackSpirit.might);
+                        return {
+                            total: dice.reduce((sum, pip) => sum + pip, 0),
+                            dice,
+                            passiveBonus: 0,
+                        };
+                    })()
                     : rollAttackWithDice(random, attacker, weaponEffect);
                 const attackerRoll = attackRoll.total;
                 const defenderBonus = jackSpirit && targetHero && core.scenarioRuntime.knowledgeOfJackPlayerIds.includes(targetHero.playerId)
@@ -6946,20 +6949,25 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     weaponExtraDice: weaponEffect?.extraDice || undefined,
                     weaponSpeedCost: weaponEffect?.speedCost || undefined,
                     weaponAttackTrait: weaponEffect?.attackTrait,
-                    attackRoll: jackSpirit
-                        ? undefined
-                        : {
-                            id: `${attacker.playerId}-${command.payload.target}-${timestamp}`,
-                            dice: attackRoll.dice,
-                            passiveBonus: attackRoll.passiveBonus,
-                            latestLabel: attackerRoll === defenderRoll
-                                ? '平手无伤害'
-                                : damageToDefender > 0
-                                    ? `造成 ${damageToDefender} 点伤害`
-                                    : `反受 ${damageToAttacker} 点伤害`,
-                            attackerTraitsBeforeDamage,
-                            defenderTraitsBeforeDamage,
-                        },
+                    attackRoll: {
+                        id: `${jackSpirit ? jackSpirit.id : attacker.playerId}-${command.payload.target}-${timestamp}`,
+                        dice: attackRoll.dice,
+                        passiveBonus: attackRoll.passiveBonus,
+                        latestLabel: attackerRoll === defenderRoll
+                            ? '平手无伤害'
+                            : damageToDefender > 0
+                                ? `造成 ${damageToDefender} 点伤害`
+                                : `反受 ${damageToAttacker} 点伤害`,
+                        attackerTraitsBeforeDamage: jackSpirit
+                            ? {
+                                might: jackSpirit.might,
+                                speed: jackSpirit.speed ?? 3,
+                                knowledge: jackSpirit.knowledge ?? 3,
+                                sanity: jackSpirit.sanity ?? 3,
+                            }
+                            : attackerTraitsBeforeDamage,
+                        defenderTraitsBeforeDamage,
+                    },
                     deathPrevention,
                     logText: attackerRoll === defenderRoll
                         ? `${jackSpirit ? '杰克之灵' : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}`}扑向英雄，但双方对攻后都没有受伤`
@@ -7020,8 +7028,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 success,
                 swap,
                 logText: success
-                    ? `${actor.displayName}寻找解药成功，在${room.name}放置了 Research token`
-                    : `${actor.displayName}寻找解药失败${swap ? '，与左侧玩家随机交换了 Sickness token' : ''}`,
+                    ? `${actor.displayName}寻找解药成功，在${room.name}放置了研究标记`
+                    : `${actor.displayName}寻找解药失败${swap ? '，与左侧玩家随机交换了疾病标记' : ''}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.CURE_THE_DUST: {
@@ -7047,8 +7055,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 success,
                 swap,
                 logText: success
-                    ? `${actor.displayName}完成 Cure the Dust，英雄阵营胜利`
-                    : `${actor.displayName}尝试治愈灰尘失败${swap ? '，与左侧玩家随机交换了 Sickness token' : ''}`,
+                    ? `${actor.displayName}完成治愈灰尘，英雄阵营胜利`
+                    : `${actor.displayName}尝试治愈灰尘失败${swap ? '，与左侧玩家随机交换了疾病标记' : ''}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE: {
@@ -7057,7 +7065,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             return [nowEvent(EVENTS.SICKNESS_EXCHANGE_REQUESTED, {
                 requesterPlayerId: requester.playerId,
                 targetPlayerId: target?.playerId ?? command.payload.targetPlayerId ?? '',
-                logText: `${requester.displayName}请求交换 Sickness token`,
+                logText: `${requester.displayName}请求交换疾病标记`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE: {
@@ -7082,8 +7090,8 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 accepted,
                 swap,
                 logText: accepted && swap
-                    ? `${target?.displayName ?? '目标玩家'}同意了${requester?.displayName ?? '请求者'}的 Sickness token 交换`
-                    : `${target?.displayName ?? '目标玩家'}拒绝了 Sickness token 交换`,
+                    ? `${target?.displayName ?? '目标玩家'}同意了${requester?.displayName ?? '请求者'}的疾病标记交换`
+                    : `${target?.displayName ?? '目标玩家'}拒绝了疾病标记交换`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.TAKE_PHOTO: {
@@ -7104,7 +7112,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 passiveBonus: roll.passiveBonus,
                 success,
                 logText: success
-                    ? `${actor.displayName}拍下${target.displayName}，夺取 Essence 并提升${TRAIT_LABEL[trait]}`
+                    ? `${actor.displayName}拍下${target.displayName}，夺取本质并提升${TRAIT_LABEL[trait]}`
                     : `${actor.displayName}尝试拍下${target.displayName}，但照片失焦了`,
             }, timestamp)];
         }
@@ -7953,7 +7961,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 rollLabel: `${TRAIT_LABEL[event.payload.trait]}检定`,
                 dice: [...event.payload.dice],
                 passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success ? '放置 Research token' : '交换 Sickness token',
+                latestLabel: event.payload.success ? '放置研究标记' : '交换疾病标记',
                 consumedRabbitFootCardIds: [],
             };
             const completed = completeDustTraitorVictoryIfNeeded(core, event.timestamp);
@@ -8076,7 +8084,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 rollLabel: '速度检定',
                 dice: [...event.payload.dice],
                 passiveBonus: event.payload.passiveBonus,
-                latestLabel: event.payload.success ? '夺取 Essence' : '拍照失败',
+                latestLabel: event.payload.success ? '夺取本质' : '拍照失败',
                 consumedRabbitFootCardIds: [],
             };
             if (event.payload.success) {
@@ -8583,8 +8591,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             if (
                 event.payload.attackRoll
                 && event.payload.attackRoll.dice.length > 0
-                && event.payload.outcome !== 'traitor-defeated'
-                && event.payload.outcome !== 'hero-defeated'
             ) {
                 core.recentRoll = {
                     id: event.payload.attackRoll.id,

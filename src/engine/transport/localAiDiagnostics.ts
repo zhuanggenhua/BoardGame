@@ -6,6 +6,10 @@ import { resolveCurrentTurnPlayerId } from '../sessionContext';
 const localAiPerfLogger = createScopedLogger('LOCAL_AI_PERF');
 const aiRuntimeTruthLogger = createScopedLogger('AI_RUNTIME_TRUTH');
 
+function shouldEmitAiConsoleLog(): boolean {
+    return import.meta.env?.DEV === true;
+}
+
 export const LOCAL_AI_STALL_RECOVERY_GRACE_MS = 1_200;
 export const LOCAL_AI_IDLE_RETRY_MS = 120;
 
@@ -19,10 +23,12 @@ export type LocalAiTurnTimeline = {
 };
 
 export function emitLocalAiPerf(stage: string, payload: Record<string, unknown>): void {
+    if (!shouldEmitAiConsoleLog()) return;
     console.log('[LOCAL_AI_PERF]', { stage, ...payload });
 }
 
 export function emitAiRuntimeTruth(stage: string, payload: Record<string, unknown>): void {
+    if (!shouldEmitAiConsoleLog()) return;
     console.log('[AI_RUNTIME_TRUTH]', { stage, ...payload });
 }
 

@@ -10,6 +10,7 @@
  */
 
 import { test, expect } from '../framework';
+import type { Page } from '@playwright/test';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;
@@ -21,6 +22,72 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
   await game.setupScene({ gameId: 'smashup' });
 };
 void __ensureThreeAxesMarker;
+
+async function expectActionSpotlightDoesNotCoverCriticalUi(page: Page): Promise<void> {
+    const layout = await page.evaluate(() => {
+        const spotlightElements = Array.from(document.querySelectorAll<HTMLElement>(
+            '[data-testid="card-spotlight-content"], [data-testid="card-spotlight-status"]',
+        ));
+        if (spotlightElements.length === 0) return { hasSpotlight: false, spotlights: [], overlaps: [] };
+
+        const toRect = (element: HTMLElement) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            };
+        };
+        const targetSelectors = [
+            { group: '基地', selector: '[data-testid^="base-zone-"]' },
+            { group: '基地总力量圆标', selector: '[data-testid^="su-base-breakpoint-token-"]' },
+            { group: '玩家力量标记', selector: '[data-testid^="su-base-score-"]' },
+            { group: '弃牌堆', selector: '[data-testid="su-discard-toggle"]' },
+            { group: '牌库', selector: '[data-testid="su-deck-stack"]' },
+            { group: '工具按钮', selector: '[data-testid="debug-toggle-container"], [data-testid="debug-toggle"]' },
+            { group: '显隐按钮', selector: '[data-testid="su-scoreboard-visibility-toggle"]' },
+        ];
+        const spotlightRects = spotlightElements
+            .map((element) => ({ id: element.getAttribute('data-testid') ?? 'spotlight', rect: toRect(element) }))
+            .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+        const overlaps = targetSelectors
+            .flatMap(({ group, selector }) => Array.from(document.querySelectorAll<HTMLElement>(selector))
+                .map((element) => ({ group, id: element.getAttribute('data-testid') ?? selector, rect: toRect(element) })))
+            .filter(({ rect }) => rect.width > 0 && rect.height > 0)
+            .flatMap((target) => spotlightRects
+                .filter(({ rect: spotlightRect }) => !(
+                    spotlightRect.right <= target.rect.left ||
+                    spotlightRect.left >= target.rect.right ||
+                    spotlightRect.bottom <= target.rect.top ||
+                    spotlightRect.top >= target.rect.bottom
+                ))
+                .map(({ id: spotlightId, rect: spotlightRect }) => ({ ...target, spotlightId, spotlightRect })));
+
+        return { hasSpotlight: true, spotlights: spotlightRects, overlaps };
+    });
+
+    expect(layout.hasSpotlight, '行动卡特写必须存在').toBe(true);
+    expect(
+        Math.max(...layout.spotlights.map(({ rect }) => rect.width), 0),
+        '行动卡特写或提示不能大到压住棋盘',
+    ).toBeLessThanOrEqual(280);
+    expect(layout.overlaps, '行动卡特写和提示不得遮挡基地、计分标、弃牌堆、牌库或工具按钮').toEqual([]);
+}
+
+async function expectActionSpotlightPersists(page: Page, defId: string): Promise<void> {
+    const spotlightCard = page.getByTestId('smashup-action-spotlight-card');
+
+    await expect(spotlightCard).toBeVisible({ timeout: 5000 });
+    await expect(spotlightCard).toHaveAttribute('data-card-def-id', defId);
+
+    await page.waitForTimeout(1000);
+
+    await expect(spotlightCard, '行动卡特写不能只闪现，必须等玩家明确关闭').toBeVisible();
+    await expect(spotlightCard).toHaveAttribute('data-card-def-id', defId);
+}
 
 
 test.describe('测试框架试点 - 简化版', () => {
@@ -205,25 +272,11 @@ test.describe('测试框架试点 - 简化版', () => {
         const spotlightQueue = page.getByTestId('card-spotlight-queue');
 
         await game.playCard('wizard_mystic_studies');
-        const p0Debug = await page.evaluate(() => {
-            const harness = (window as any).__BG_TEST_HARNESS__;
-            const state = harness?.state?.get?.();
-            return {
-                currentPlayerIndex: state?.core?.currentPlayerIndex,
-                phase: state?.sys?.phase,
-                p0Hand: state?.core?.players?.['0']?.hand?.map((c: any) => c.defId) ?? [],
-                p0Discard: state?.core?.players?.['0']?.discard?.map((c: any) => c.defId) ?? [],
-                eventTypes: (state?.sys?.eventStream?.entries ?? []).slice(-12).map((entry: any) => entry.event?.type),
-                hasQueueRoot: !!document.querySelector('[data-testid="card-spotlight-queue"]'),
-                hasSpotlightCard: !!document.querySelector('[data-testid="smashup-action-spotlight-card"]'),
-            };
-        });
-        console.log('[Spotlight Debug][P0]', JSON.stringify(p0Debug, null, 2));
-        await expect(spotlightCard).toBeVisible({ timeout: 5000 });
-        await expect(spotlightCard).toHaveAttribute('data-card-def-id', 'wizard_mystic_studies');
+        await expectActionSpotlightPersists(page, 'wizard_mystic_studies');
+        await expectActionSpotlightDoesNotCoverCriticalUi(page);
         await game.screenshot('action-spotlight-p0', testInfo);
 
-        await spotlightQueue.click({ force: true });
+        await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
         await expect(spotlightCard).toBeHidden({ timeout: 5000 });
 
         await game.advancePhase();
@@ -250,8 +303,8 @@ test.describe('测试框架试点 - 简化版', () => {
         await expect(page.locator(`[data-card-uid="${p1ActionUid}"]`)).toBeVisible({ timeout: 5000 });
 
         await game.playCard('wizard_mystic_studies');
-        await expect(spotlightCard).toBeVisible({ timeout: 5000 });
-        await expect(spotlightCard).toHaveAttribute('data-card-def-id', 'wizard_mystic_studies');
+        await expectActionSpotlightPersists(page, 'wizard_mystic_studies');
+        await expectActionSpotlightDoesNotCoverCriticalUi(page);
         await game.screenshot('action-spotlight-p1', testInfo);
     });
 });

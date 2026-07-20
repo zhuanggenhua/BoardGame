@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { resolve } from "path";
 import {
   assertNoFatalFrontendErrors,
@@ -82,6 +82,64 @@ const waitForHauntRuntime = async (
     /恶兆后|Haunt/i,
     { timeout },
   );
+};
+
+const resolveCurrentRoomExplorerTarget = async (
+  page: Page,
+  mode: "attack-hero" | "attack-traitor",
+): Promise<{ roomId: string; playerId: string }> => {
+  const target = await page.evaluate((targetMode) => {
+    const state = (
+      window as unknown as {
+        __BG_TEST_HARNESS__?: {
+          state?: {
+            get?: () => {
+              core?: {
+                activeRoomId?: string;
+                currentExplorer?: { playerId?: string; roomId?: string };
+                otherExplorers?: Array<{
+                  playerId: string;
+                  roomId: string;
+                  displayName?: string;
+                }>;
+                scenarioRuntime?: {
+                  traitorPlayerId?: string;
+                  deadExplorerPlayerIds?: string[];
+                };
+              };
+            };
+          };
+        };
+      }
+    ).__BG_TEST_HARNESS__?.state?.get?.();
+    const core = state?.core;
+    const roomId = core?.activeRoomId ?? core?.currentExplorer?.roomId;
+    if (!core || !roomId) return null;
+    const deadIds = core.scenarioRuntime?.deadExplorerPlayerIds ?? [];
+    const candidates =
+      core.otherExplorers?.filter(
+        (explorer) =>
+          explorer.roomId === roomId && !deadIds.includes(explorer.playerId),
+      ) ?? [];
+    const playerId =
+      targetMode === "attack-traitor"
+        ? candidates.find(
+            (explorer) =>
+              explorer.playerId === core.scenarioRuntime?.traitorPlayerId,
+          )?.playerId
+        : candidates.find(
+            (explorer) =>
+              explorer.playerId !== core.scenarioRuntime?.traitorPlayerId,
+          )?.playerId;
+    if (!playerId) return null;
+    return { roomId, playerId };
+  }, mode);
+
+  expect(
+    target,
+    `山屋教程 ${mode} 必须能从当前运行状态找到同房间目标 token`,
+  ).not.toBeNull();
+  return target!;
 };
 
 const expectImageLoaded = async (
@@ -400,15 +458,20 @@ const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
   expect(outline.selectedBorderLeft).toBe("2px");
   expect(
     outline.selectedShape,
-    "选中态必须使用圆形高亮圈，而不是矩形外框",
-  ).toBe("circle");
-  expect(outline.selectedWidth, "圆形选中圈宽高必须一致").toBe(
-    outline.selectedHeight,
-  );
+    "持有物卡牌选中态必须使用贴合卡牌本体的卡形外描边",
+  ).toBe("card");
+  expect(
+    outline.selectedWidth ?? 0,
+    "卡形外描边必须覆盖完整卡牌宽度",
+  ).toBeGreaterThan(24);
+  expect(
+    outline.selectedHeight ?? 0,
+    "卡形外描边必须覆盖完整卡牌高度",
+  ).toBeGreaterThan(24);
   expect(
     outline.selectedBorderRadiusNumber ?? 0,
-    "选中态高亮圈圆角半径必须足以形成圆形",
-  ).toBeGreaterThanOrEqual((outline.selectedWidth ?? 0) / 2 - 1);
+    "卡形外描边必须保留卡牌圆角，而不是骰子圆形圈",
+  ).toBeGreaterThan(0);
   expect(outline.selectedInsetLeft, "选中外描边左侧外扩必须和右侧对称").toBe(
     outline.selectedInsetRight,
   );
@@ -664,6 +727,14 @@ const advanceToStep = async (
 ) => {
   const activeStep = page.locator("[data-tutorial-step]:visible").last();
   for (let index = 0; index < maxClicks; index += 1) {
+    const targetStepVisible = await page
+      .locator(`[data-tutorial-step="${targetStepId}"]`)
+      .isVisible()
+      .catch(() => false);
+    if (targetStepVisible) {
+      await waitForStep(page, targetStepId);
+      return;
+    }
     const currentStepId = await activeStep
       .getAttribute("data-tutorial-step")
       .catch(() => null);
@@ -697,7 +768,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await waitForHauntRuntime(page, 30000);
     await advanceToStep(page, "haunt-actions");
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText(/驱魔|驱散杰克之灵|Exorcise/i);
     await expect(
       page.getByTestId("betrayal-room-focus-target"),
@@ -902,9 +973,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expect(scenarioObjectivePage).toBeVisible();
     await expect(scenarioObjectivePage).toContainText("赤红杰克归来");
-    await expect(scenarioObjectivePage).toContainText("英雄目标");
-    await expect(scenarioObjectivePage).toContainText("叛徒目标");
+    await expect(scenarioObjectivePage).toContainText("英雄手册");
+    await expect(scenarioObjectivePage).toContainText("攻击叛徒");
+    await page.getByTestId("betrayal-scenario-reader-next-zone").click();
+    await expect(
+      page.getByTestId("betrayal-scenario-reader-header-progress"),
+    ).toContainText("2/2");
+    await expect(scenarioObjectivePage).toContainText("叛徒手册");
     await expect(scenarioObjectivePage).toContainText("杰克之灵");
+    await expect(scenarioObjectivePage).toContainText(/尸体.*房间/);
     await saveScreenshot(page, STEP_18);
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(
@@ -950,7 +1027,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "最后一步",
     );
     await expect(
-      page.getByTestId("betrayal-haunt-command-primary"),
+      page.getByTestId("betrayal-action-use"),
     ).toContainText(/驱魔|驱散杰克之灵|Exorcise/i);
     await expect(
       page.getByTestId("betrayal-room-basement-landing"),
@@ -1103,7 +1180,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await clickNext(page);
     await waitForStep(page, "choose-trade-return");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "对方物品",
+      "对方持有物",
     );
     await page.getByTestId("betrayal-trade-return-card-map").click();
     await expect(
@@ -1502,10 +1579,13 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         '[data-testid="betrayal-recent-roll-panel"]',
       ) as HTMLElement | null;
       const rollPanelRect = rollPanel?.getBoundingClientRect();
-      const rightPanel = document.querySelector(
-        '[data-testid="betrayal-status-rail"], [data-testid="betrayal-player-panel"], [data-testid="betrayal-deck-status"]',
-      ) as HTMLElement | null;
-      const rightPanelRect = rightPanel?.getBoundingClientRect();
+      const rightPanelRects = Array.from(
+        document.querySelectorAll(
+          '[data-testid="betrayal-status-rail"], [data-testid="betrayal-player-panel"], [data-testid="betrayal-deck-status"]',
+        ),
+      )
+        .map((candidate) => (candidate as HTMLElement).getBoundingClientRect())
+        .filter((candidate) => candidate.width > 0 && candidate.height > 0);
       const leftPanelRects = Array.from(
         document.querySelectorAll(
           '[data-testid="betrayal-left-status-rail"], [data-testid="betrayal-inventory-section"]',
@@ -1525,7 +1605,10 @@ test.describe("山屋惊魂教程最小真实链路", () => {
         contentLeft: contentRect?.left ?? 0,
         contentRight: contentRect?.right ?? 0,
         rollPanelRight: rollPanelRect?.right ?? 0,
-        rightPanelLeft: rightPanelRect?.left ?? window.innerWidth,
+        rightPanelLeft: rightPanelRects.reduce(
+          (minLeft, candidate) => Math.min(minLeft, candidate.left),
+          rect.right,
+        ),
         leftPanelRight: leftPanelRects.reduce(
           (maxRight, candidate) => Math.max(maxRight, candidate.right),
           0,
@@ -1542,6 +1625,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       (discoveryGeometry.leftPanelRight + discoveryGeometry.rightPanelLeft) / 2;
     expect(
       Math.abs(discoveryGeometry.contentCenterX - tableAreaCenterX),
+      `发现牌结果组必须居中在主牌桌可用区域内：${JSON.stringify(discoveryGeometry)}`,
     ).toBeLessThanOrEqual(24);
     expect(discoveryGeometry.contentLeft).toBeGreaterThanOrEqual(
       discoveryGeometry.leftPanelRight + 12,
@@ -1571,15 +1655,18 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "24",
     );
     await expect(discoveryFrontAtlas).toHaveAttribute(
-      "alt",
+      "aria-label",
       /外星几何|事件|物品|预兆/,
     );
     await expect
       .poll(async () =>
         discoveryFrontAtlas.evaluate((node) => {
-          const image = node as HTMLImageElement;
+          const image = node.querySelector("img");
           return (
-            image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+            Boolean(image) &&
+            image!.complete &&
+            image!.naturalWidth > 0 &&
+            image!.naturalHeight > 0
           );
         }),
       )
@@ -1725,7 +1812,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(page.getByTestId("betrayal-mobile-context-strip")).toHaveCount(
       0,
     );
-    await expect(page.locator('[data-fab-id="chat"]')).toBeVisible();
     await expect(page.getByTestId("betrayal-room-grid")).toBeVisible();
     await expect(page.getByTestId("betrayal-left-status-rail")).toBeHidden();
     await expect(page.getByTestId("betrayal-status-rail")).toBeHidden();
@@ -1768,9 +1854,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       );
       const actionRail = document.querySelector<HTMLElement>(
         '[data-testid="betrayal-mobile-action-rail"]',
-      );
-      const floatingChatButton = document.querySelector<HTMLElement>(
-        '[data-fab-id="chat"]',
       );
       const desktopActionButtons = Array.from(
         document.querySelectorAll<HTMLElement>(
@@ -1855,7 +1938,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
           : null,
         actionRailLeft: actionRailRect?.left ?? null,
         actionRailWidth: actionRailRect?.width ?? 0,
-        floatingChatButtonVisible: isVisible(floatingChatButton),
         visibleDesktopActionCount: visibleElementCount(desktopActionButtons),
         visibleMobileDockCount: visibleElementCount(mobileDockButtons),
         firstDesktopActionVisible: isVisible(pcActionButton),
@@ -1907,7 +1989,6 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     expect(mobileLayout.roomGridHeight).toBeGreaterThan(300);
     expect(mobileLayout.roomPanelBottomPadding).toBe(0);
-    expect(mobileLayout.floatingChatButtonVisible).toBe(true);
     expect(mobileLayout.inventoryRailBottomGap).not.toBeNull();
     expect(mobileLayout.inventoryRailBottomGap ?? 999).toBeLessThanOrEqual(64);
     expect(mobileLayout.inventoryRailLeft ?? 999).toBeLessThanOrEqual(12);
@@ -2090,12 +2171,41 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "所有英雄倒下",
     );
-    await clickNext(page);
+    await page.getByTestId("betrayal-open-scenario").click();
+    const traitorScenarioPage = page.getByTestId(
+      "betrayal-scenario-objective-page",
+    );
+    await expect(traitorScenarioPage).toBeVisible();
+    await expect(traitorScenarioPage).toContainText("叛徒手册");
+    await expect(traitorScenarioPage).toContainText("所有英雄死亡");
+    await expect(traitorScenarioPage).toContainText("杰克之灵");
+    await page.getByTestId("betrayal-scenario-reader-close").click();
+    await expect(
+      page.getByTestId("betrayal-scenario-reader-dialog"),
+    ).toBeHidden();
 
     await waitForStep(page, "attack-hero");
-    const attackTarget = page.getByTestId(
-      "betrayal-room-occupant-ground-north-1",
+    await expect(
+      page.getByTestId("betrayal-action-use"),
+    ).toContainText(/攻击英雄|Attack hero/i);
+    const attackTargetInfo = await resolveCurrentRoomExplorerTarget(
+      page,
+      "attack-hero",
     );
+    const attackTarget = page.getByTestId(
+      `betrayal-room-occupant-${attackTargetInfo.roomId}-${attackTargetInfo.playerId}`,
+    );
+    const attackTargetOutline = page.getByTestId(
+      `betrayal-room-occupant-target-outline-${attackTargetInfo.roomId}-${attackTargetInfo.playerId}`,
+    );
+    await expect(
+      attackTarget,
+      "点攻击英雄入口前，教程不得把唯一英雄目标自动变成攻击热区",
+    ).not.toHaveAttribute("data-haunt-target-hitbox", "true");
+    await page.getByTestId("betrayal-action-use").click();
+    await expect(
+      page.getByTestId("betrayal-action-use"),
+    ).toHaveAttribute("data-haunt-targeting-status", "true");
     await expect(
       attackTarget,
       "叛徒教程攻击英雄主路径必须点击地图上的英雄 token 本体",
@@ -2105,7 +2215,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "教程英雄 token 必须标记为直选目标",
     ).toHaveAttribute("data-direct-target", "true");
     await expect(
-      page.getByTestId("betrayal-room-occupant-target-outline-ground-north-1"),
+      attackTargetOutline,
       "教程英雄 token 必须有贴合本体的五边形高亮",
     ).toHaveAttribute("data-highlight-shape", "pentagon");
     await saveScreenshot(page, STEP_24);
@@ -2160,20 +2270,33 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "betrayal-scenario-objective-page",
     );
     await expect(heroAttackScenarioPage).toBeVisible();
-    await expect(heroAttackScenarioPage).toContainText("英雄目标");
-    await expect(heroAttackScenarioPage).toContainText("杰克之灵");
+    await expect(heroAttackScenarioPage).toContainText("英雄手册");
+    await expect(heroAttackScenarioPage).toContainText("攻击叛徒");
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(
       page.getByTestId("betrayal-scenario-reader-dialog"),
     ).toBeHidden();
-    await clickNext(page);
 
     await waitForStep(page, "attack-traitor");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "攻击叛徒",
     );
+    await expect(
+      page.getByTestId("betrayal-action-use"),
+    ).toContainText(/攻击|Attack/i);
+    const attackTraitorTargetInfo = await resolveCurrentRoomExplorerTarget(
+      page,
+      "attack-traitor",
+    );
+    await page.getByTestId("betrayal-action-use").click();
+    await expect(
+      page.getByTestId("betrayal-action-use"),
+    ).toHaveAttribute("data-haunt-targeting-status", "true");
     const attackTraitorTarget = page.getByTestId(
-      "betrayal-room-occupant-basement-east-2",
+      `betrayal-room-occupant-${attackTraitorTargetInfo.roomId}-${attackTraitorTargetInfo.playerId}`,
+    );
+    const attackTraitorTargetOutline = page.getByTestId(
+      `betrayal-room-occupant-target-outline-${attackTraitorTargetInfo.roomId}-${attackTraitorTargetInfo.playerId}`,
     );
     await expect(
       attackTraitorTarget,
@@ -2184,7 +2307,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "教程叛徒 token 必须标记为直选目标",
     ).toHaveAttribute("data-direct-target", "true");
     await expect(
-      page.getByTestId("betrayal-room-occupant-target-outline-basement-east-2"),
+      attackTraitorTargetOutline,
       "教程叛徒 token 必须有贴合本体的五边形高亮",
     ).toHaveAttribute("data-highlight-shape", "pentagon");
     await saveScreenshot(page, STEP_22);
@@ -2251,21 +2374,38 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     );
     await expect(jackSpiritScenarioPage).toBeVisible();
     await expect(jackSpiritScenarioPage).toContainText("杰克之灵");
-    await expect(jackSpiritScenarioPage).toContainText("回到尸体房间");
+    await expect(jackSpiritScenarioPage).toContainText(/尸体.*房间/);
     await saveScreenshot(page, STEP_26);
     await page.getByTestId("betrayal-scenario-reader-close").click();
     await expect(
       page.getByTestId("betrayal-scenario-reader-dialog"),
     ).toBeHidden();
-    await clickNext(page);
 
     await waitForStep(page, "jack-spirit-attack");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "怪物攻击",
     );
-    const jackSpiritAttackTarget = page.getByTestId(
-      "betrayal-room-occupant-basement-east-0",
+    await expect(
+      page.getByTestId("betrayal-action-use"),
+    ).toContainText(/攻击英雄|Attack hero/i);
+    const jackSpiritAttackTargetInfo = await resolveCurrentRoomExplorerTarget(
+      page,
+      "attack-hero",
     );
+    const jackSpiritAttackTarget = page.getByTestId(
+      `betrayal-room-occupant-${jackSpiritAttackTargetInfo.roomId}-${jackSpiritAttackTargetInfo.playerId}`,
+    );
+    const jackSpiritAttackTargetOutline = page.getByTestId(
+      `betrayal-room-occupant-target-outline-${jackSpiritAttackTargetInfo.roomId}-${jackSpiritAttackTargetInfo.playerId}`,
+    );
+    await expect(
+      page.locator('[data-haunt-target-hitbox="true"]'),
+      "点怪物攻击入口前，教程不得把唯一英雄目标自动变成攻击热区",
+    ).toHaveCount(0);
+    await page.getByTestId("betrayal-action-use").click();
+    await expect(
+      page.getByTestId("betrayal-action-use"),
+    ).toHaveAttribute("data-haunt-targeting-status", "true");
     await expect(
       jackSpiritAttackTarget,
       "杰克之灵教程攻击主路径必须点击地图上的英雄 token 本体",
@@ -2275,7 +2415,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "教程英雄 token 必须标记为直选目标",
     ).toHaveAttribute("data-direct-target", "true");
     await expect(
-      page.getByTestId("betrayal-room-occupant-target-outline-basement-east-0"),
+      jackSpiritAttackTargetOutline,
       "教程英雄 token 必须有贴合本体的五边形高亮",
     ).toHaveAttribute("data-highlight-shape", "pentagon");
     await saveScreenshot(page, STEP_27);

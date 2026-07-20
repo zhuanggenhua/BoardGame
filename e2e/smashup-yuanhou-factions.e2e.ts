@@ -213,7 +213,6 @@ async function dismissSmashUpSpotlightQueueIfVisible(page: Page): Promise<void> 
   const spotlightQueue = page.getByTestId('card-spotlight-queue');
   const revealOverlay = page.getByTestId('reveal-overlay');
   const revealDismissButton = page.getByTestId('reveal-dismiss-btn');
-  const spotlightContent = page.getByTestId('card-spotlight-content');
 
   for (let step = 0; step < 16; step += 1) {
     const revealVisible = await revealOverlay.isVisible().catch(() => false);
@@ -225,14 +224,7 @@ async function dismissSmashUpSpotlightQueueIfVisible(page: Page): Promise<void> 
 
     const spotlightVisible = await spotlightQueue.isVisible().catch(() => false);
     if (spotlightVisible) {
-      if (await spotlightContent.isVisible().catch(() => false)) {
-        await spotlightContent.click({ force: true });
-      } else {
-        await spotlightQueue.click({
-          force: true,
-          position: { x: 16, y: 16 },
-        });
-      }
+      await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
       await page.waitForTimeout(150);
       continue;
     }

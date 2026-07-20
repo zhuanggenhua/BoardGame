@@ -18,11 +18,14 @@
 
 import { describe, it, expect } from 'vitest';
 import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import {
     fixedRandom,
+    createQueuedRandom,
     createRunner,
     createNoResponseSetupWithEmptyHand,
     createHeroMatchup,
+    getCardById,
     cmd,
     advanceTo,
 } from './test-utils';
@@ -789,44 +792,109 @@ describe('锁定 (Targeted) 伤害修正', () => {
 // ============================================================================
 
 describe('致盲 (Blinded) 攻击判定', () => {
-    it('致盲掷骰 1-2 时攻击失败（跳过到 main2）', () => {
-        // 使用 fixedRandom: d() 总是返回 1，所以致盲判定必定成功（攻击失败）
+    const setupBlindedAttack = (options: { withFlick?: boolean } = {}) => {
         const baseSetup = createNoResponseSetupWithEmptyHand();
+
+        return (playerIds: string[], random: typeof fixedRandom) => {
+            const state = baseSetup(playerIds, random);
+            // player 1 在 offensiveRoll 阶段攻击 player 0，且带有致盲。
+            state.core.activePlayerId = '1';
+            state.core.turnNumber = 2;
+            (state.sys as any).phase = 'offensiveRoll';
+            state.core.players['1'].statusEffects[STATUS_IDS.BLINDED] = 1;
+            state.core.pendingAttack = {
+                attackerId: '1',
+                defenderId: '0',
+                isDefendable: true,
+                sourceAbilityId: 'fist-technique-5',
+                isUltimate: false,
+                damage: 5,
+                bonusDamage: 0,
+                preDefenseResolved: false,
+                damageResolved: false,
+                attackFaceCounts: {},
+            } as any;
+            state.core.rollConfirmed = true;
+            state.core.rollCount = 1;
+
+            if (options.withFlick) {
+                state.core.players['1'].hand = [getCardById('card-flick')];
+                state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+            }
+
+            return state;
+        };
+    };
+
+    it('致盲掷骰 1-2 时先进入可确认判定窗口，确认后攻击失败', () => {
         const runner = createRunner(fixedRandom);
-        const result = runner.run({
-            name: '致盲攻击失败',
+        const opened = runner.run({
+            name: '致盲攻击失败前先确认判定骰',
             commands: [
-                cmd('ADVANCE_PHASE', '1'), // offensiveRoll -> 致盲判定 -> main2
+                cmd('ADVANCE_PHASE', '1'),
             ],
-            setup: (playerIds, random) => {
-                const state = baseSetup(playerIds, random);
-                // 设置 player 1 在 offensiveRoll 阶段，有 pendingAttack 和致盲
-                state.core.activePlayerId = '1';
-                state.core.turnNumber = 2;
-                (state.sys as any).phase = 'offensiveRoll';
-                state.core.players['1'].statusEffects[STATUS_IDS.BLINDED] = 1;
-                // 设置 pendingAttack
-                state.core.pendingAttack = {
-                    attackerId: '1',
-                    defenderId: '0',
-                    isDefendable: true,
-                    sourceAbilityId: 'fist-technique-5',
-                    isUltimate: false,
-                    damage: 0,
-                    bonusDamage: 0,
-                    preDefenseResolved: false,
-                    damageResolved: false,
-                    attackFaceCounts: {},
-                } as any;
-                state.core.rollConfirmed = true;
-                return state;
-            },
+            setup: setupBlindedAttack(),
         });
-        const core = result.finalState.core;
-        // 致盲被移除
-        expect(core.players['1'].statusEffects[STATUS_IDS.BLINDED] ?? 0).toBe(0);
-        // fixedRandom.d(6) = 1，1 <= 2 所以攻击失败，跳到 main2
-        expect(result.finalState.sys.phase).toBe('main2');
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.finalState.sys.phase).toBe('offensiveRoll');
+        expect(opened.finalState.core.pendingBonusDiceSettlement).toMatchObject({
+            sourceAbilityId: STATUS_IDS.BLINDED,
+            attackerId: '1',
+            targetId: '1',
+            displayOnly: true,
+            allowDiceModification: true,
+            resolutionMode: 'none',
+        });
+        expect(opened.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(1);
+        expect(opened.finalState.core.players['1'].statusEffects[STATUS_IDS.BLINDED] ?? 0).toBe(0);
+
+        runner.setState(opened.finalState);
+        const settled = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: '1' });
+        expect(settled.success).toBe(true);
+        expect(settled.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.finalState.sys.phase).toBe('main2');
+    });
+
+    it('致盲判定骰可被弹一手改成 3，确认后继续进入防御阶段', () => {
+        const runner = createRunner(createQueuedRandom([2]));
+        const opened = runner.run({
+            name: '致盲判定骰可被弹一手修改',
+            commands: [
+                cmd('ADVANCE_PHASE', '1'),
+            ],
+            setup: setupBlindedAttack({ withFlick: true }),
+        });
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.finalState.core.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            index: 0,
+            value: 2,
+            effectKey: 'bonusDie.effect.blinded.miss',
+        });
+
+        runner.setState(opened.finalState);
+        const playedFlick = runner.dispatch('PLAY_CARD', { playerId: '1', cardId: 'card-flick' });
+        expect(playedFlick.success).toBe(true);
+
+        const modified = runner.dispatch('MODIFY_DIE', { playerId: '1', dieId: 0, newValue: 3 });
+        expect(modified.success).toBe(true);
+        expect(modified.finalState.core.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+            index: 0,
+            value: 3,
+            effectKey: 'bonusDie.effect.blinded.hit',
+        });
+
+        const interactionId = getCurrentInteractionSummary(modified.finalState).id;
+        expect(typeof interactionId).toBe('string');
+        const confirmedCard = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: '1', interactionId });
+        expect(confirmedCard.success).toBe(true);
+        expect(confirmedCard.finalState.core.players['1'].discard.some((card) => card.id === 'card-flick')).toBe(true);
+
+        const settled = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: '1' });
+        expect(settled.success).toBe(true);
+        expect(settled.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.finalState.sys.phase).toBe('defensiveRoll');
     });
 });
 

@@ -134,7 +134,7 @@ test.describe('SmashUp - zhongguo 男人雨链路', () => {
 async function dismissSpotlightIfPresent(page: Page): Promise<void> {
     const spotlightQueue = page.getByTestId('card-spotlight-queue');
     if (await spotlightQueue.isVisible({ timeout: 300 }).catch(() => false)) {
-        await spotlightQueue.click({ force: true });
+        await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
         await expect(spotlightQueue).toBeHidden({ timeout: 5000 });
     }
 }

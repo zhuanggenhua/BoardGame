@@ -1864,7 +1864,6 @@ async function closeCardSpotlightIfOpen(
     options?: { waitForAppearanceMs?: number },
 ): Promise<void> {
     const spotlightQueue = page.getByTestId('card-spotlight-queue');
-    const spotlightContent = page.getByTestId('card-spotlight-content').first();
     const closeButton = page.getByRole('button', { name: '关闭特写' }).first();
     const waitForAppearanceMs = options?.waitForAppearanceMs ?? 2000;
 
@@ -1877,10 +1876,6 @@ async function closeCardSpotlightIfOpen(
     for (let attempt = 0; attempt < 3; attempt += 1) {
         if (await closeButton.isVisible({ timeout: 300 }).catch(() => false)) {
             await closeButton.click({ force: true });
-        } else if (await spotlightContent.isVisible({ timeout: 300 }).catch(() => false)) {
-            await spotlightContent.click({ force: true });
-        } else {
-            await spotlightQueue.click({ force: true });
         }
 
         const hidden = await spotlightQueue.isHidden({ timeout: 800 }).catch(() => false);

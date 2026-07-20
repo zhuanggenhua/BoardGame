@@ -288,7 +288,8 @@ const BETRAYAL_HERO_ATTACK_PATH: TutorialManifest = {
             content: 'game-betrayal:tutorial.heroAttackPath.steps.heroAttackObjective',
             highlightTarget: 'betrayal-reference-entry',
             position: 'left',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [],
             viewAs: '0',
         },
         {
@@ -338,7 +339,8 @@ const BETRAYAL_JACK_SPIRIT_PATH: TutorialManifest = {
             content: 'game-betrayal:tutorial.jackSpiritPath.steps.jackSpiritObjective',
             highlightTarget: 'betrayal-reference-entry',
             position: 'left',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [],
             viewAs: '2',
         },
         {
@@ -388,7 +390,8 @@ const BETRAYAL_TRAITOR_PATH: TutorialManifest = {
             content: 'game-betrayal:tutorial.traitorPath.steps.traitorObjective',
             highlightTarget: 'betrayal-reference-entry',
             position: 'left',
-            infoStep: true,
+            requireAction: true,
+            allowedCommands: [],
             viewAs: '2',
         },
         {

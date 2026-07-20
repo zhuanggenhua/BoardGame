@@ -14,7 +14,7 @@ import {
 } from '../../../engine/systems/InteractionSystem';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import type { PromptOption, PromptMultiConfig } from '../../../engine/systems/InteractionSystem';
-import type { SummonerWarsCore, CellCoord, EventCard, UnitCard } from './types';
+import type { SummonerWarsCore, CellCoord, EventCard, UnitCard, BoardUnit } from './types';
 import { SW_COMMANDS, SW_EVENTS } from './types';
 import { executeCommand } from './execute';
 import { validateCommand } from './validate';
@@ -366,7 +366,7 @@ type SwInteractionMeta =
       sourcePosition: CellCoord;
     }
   | {
-      type: 'huijin_call_guards_select_card';
+      type: 'huijin_call_guards_select_target';
       sourceUnitId: string;
       sourcePosition: CellCoord;
     }
@@ -374,7 +374,7 @@ type SwInteractionMeta =
       type: 'huijin_call_guards_select_position';
       sourceUnitId: string;
       sourcePosition: CellCoord;
-      cardId: string;
+      targetPosition: CellCoord;
     }
   | {
       type: 'activated_ability_target';
@@ -470,8 +470,8 @@ type SwInteractionValue =
   | { action: 'after_move_mogu_transmission_amount'; amount: number }
   | { action: 'after_move_mogu_fanatical_fungus_target'; targetPosition: CellCoord; newPosition?: CellCoord }
   | { action: 'after_move_huijin_quick_shot'; targetPosition: CellCoord }
-  | { action: 'huijin_call_guards_card'; cardId: string }
-  | { action: 'huijin_call_guards_position'; cardId: string; position: CellCoord }
+  | { action: 'huijin_call_guards_target'; targetPosition: CellCoord }
+  | { action: 'huijin_call_guards_position'; targetPosition: CellCoord; position: CellCoord }
   | { action: 'activated_ability_target'; abilityId: string; targetPosition?: CellCoord; targetCardId?: string }
   | { action: 'fire_sacrifice_summon'; sacrificeUnitId: string }
   | { action: 'ice_ram_target'; targetPosition: CellCoord }
@@ -531,9 +531,9 @@ function buildGrabFollowOptions(
   ];
 }
 
-function getHuijinCallGuardCards(core: SummonerWarsCore, owner: PlayerId): UnitCard[] {
-  return core.players[owner].hand.filter((card): card is UnitCard =>
-    card.cardType === 'unit' && (card as UnitCard).unitClass === 'common'
+function getHuijinCallGuardTargets(core: SummonerWarsCore, owner: PlayerId, sourceUnitId: string): BoardUnit[] {
+  return getPlayerUnits(core, owner).filter((unit) =>
+    unit.instanceId !== sourceUnitId && unit.card.unitClass === 'common'
   );
 }
 
@@ -2033,17 +2033,17 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           if (actionId === 'huijin_call_guards') {
             if (!getUnitAbilities(sourceUnit, newState.core).includes('huijin_call_guards')) continue;
             if (!canActivateAbility(newState.core, sourceUnit, 'huijin_call_guards', sourceUnit.owner)) continue;
-            const handCards = getHuijinCallGuardCards(newState.core, sourceUnit.owner);
+            const targets = getHuijinCallGuardTargets(newState.core, sourceUnit.owner, sourceUnit.instanceId);
             const positions = getHuijinCallGuardPositions(newState.core, sourcePosition);
-            if (handCards.length === 0 || positions.length === 0) continue;
-            const interactionId = `sw-huijin-call-guards-card-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (targets.length === 0 || positions.length === 0) continue;
+            const interactionId = `sw-huijin-call-guards-target-${event.timestamp ?? 0}-${sourceUnitId}`;
             if (hasQueuedInteraction(newState, interactionId)) continue;
             const options: PromptOption<SwInteractionValue>[] = [
-              ...handCards.map((card) => ({
-                id: card.id,
-                label: card.name,
-                value: { action: 'huijin_call_guards_card' as const, cardId: card.id },
-                displayMode: 'card' as const,
+              ...targets.map((unit) => ({
+                id: `unit:${unit.instanceId}`,
+                label: unit.card.name,
+                value: { action: 'huijin_call_guards_target' as const, targetPosition: unit.position },
+                displayMode: 'button' as const,
               })),
               {
                 id: 'skip',
@@ -2055,15 +2055,15 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             const interaction = createSimpleChoice(
               interactionId,
               sourceUnit.owner,
-              'interaction.sw.huijinCallGuardsCard',
+              'interaction.sw.huijinCallGuardsTarget',
               options,
-              { sourceId: 'huijin_call_guards', targetType: 'hand', autoResolveIfSingle: false },
+              { sourceId: 'huijin_call_guards', targetType: 'unit', autoResolveIfSingle: false },
             );
             const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
             interaction.data = {
               ...interactionData,
               sw: {
-                type: 'huijin_call_guards_select_card',
+                type: 'huijin_call_guards_select_target',
                 sourceUnitId,
                 sourcePosition,
               } satisfies SwInteractionMeta,
@@ -3558,11 +3558,16 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             }
           }
 
-          if (sw.type === 'huijin_call_guards_select_card') {
+          if (sw.type === 'huijin_call_guards_select_target') {
             const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
-            const picked = values.find((item) => item.action === 'huijin_call_guards_card') as
-              { action: 'huijin_call_guards_card'; cardId: string } | undefined;
+            const picked = values.find((item) => item.action === 'huijin_call_guards_target') as
+              { action: 'huijin_call_guards_target'; targetPosition: CellCoord } | undefined;
             if (!picked || hasSkip) {
+              newState = applyPhaseEndResolution(newState, 'huijin_call_guards', sw.sourceUnitId);
+              continue;
+            }
+            const target = getUnitAt(newState.core, picked.targetPosition);
+            if (!target || target.owner !== payload.playerId || target.card.unitClass !== 'common') {
               newState = applyPhaseEndResolution(newState, 'huijin_call_guards', sw.sourceUnitId);
               continue;
             }
@@ -3573,7 +3578,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             }
             const options: PromptOption<SwInteractionValue>[] = buildPositionOptions(positions, (pos) => ({
               action: 'huijin_call_guards_position',
-              cardId: picked.cardId,
+              targetPosition: picked.targetPosition,
               position: pos,
             }));
             const interaction = createSimpleChoice(
@@ -3590,7 +3595,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 type: 'huijin_call_guards_select_position',
                 sourceUnitId: sw.sourceUnitId,
                 sourcePosition: sw.sourcePosition,
-                cardId: picked.cardId,
+                targetPosition: picked.targetPosition,
               } satisfies SwInteractionMeta,
             };
             newState = queueInteraction(newState, interaction, { urgent: true });
@@ -3600,14 +3605,14 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             newState = applyPhaseEndResolution(newState, 'huijin_call_guards', sw.sourceUnitId);
             const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
             const picked = values.find((item) => item.action === 'huijin_call_guards_position') as
-              { action: 'huijin_call_guards_position'; cardId: string; position: CellCoord } | undefined;
+              { action: 'huijin_call_guards_position'; targetPosition: CellCoord; position: CellCoord } | undefined;
             if (!picked || hasSkip) continue;
             nextEvents.push(...executeSwCommand(newState, random, {
               type: SW_COMMANDS.ACTIVATE_ABILITY,
               payload: {
                 abilityId: 'huijin_call_guards',
                 sourceUnitId: sw.sourceUnitId,
-                cardId: picked.cardId,
+                targetPosition: picked.targetPosition,
                 position: picked.position,
                 _noSnapshot: true,
               },

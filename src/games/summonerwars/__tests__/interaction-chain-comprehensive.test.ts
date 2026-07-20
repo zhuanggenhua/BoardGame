@@ -4042,6 +4042,75 @@ describe('验证层有效性门控', () => {
     expect(state.sys.interaction.queue).toHaveLength(0);
   });
 
+  it('[huijin_quick_shot] 移动后快速射击致死应在完整交互管线中立刻移除目标', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+
+    const archerStart = { row: 4, col: 2 };
+    const archerDestination = { row: 4, col: 3 };
+    const enemyPosition = { row: 4, col: 5 };
+    const archer = putUnit(core, archerStart, mkUnit('huijin-ash-archer-l4', {
+      abilities: ['huijin_quick_shot'],
+      faction: 'huijin',
+      unitClass: 'common',
+      name: '灰烬弓箭手',
+      attackType: 'ranged',
+      attackRange: 3,
+    }), '0');
+    const enemy = putUnit(core, enemyPosition, mkUnit('quick-shot-fragile-enemy', {
+      faction: 'necromancer',
+      unitClass: 'common',
+      name: '快速射击目标',
+      life: 1,
+    }), '1');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const moved = runGamePipeline(state, {
+      type: SW_COMMANDS.MOVE_UNIT,
+      playerId: '0',
+      payload: { from: archer.position, to: archerDestination },
+    });
+    expect(moved.success).toBe(true);
+    state = moved.state;
+    expect(getUnitAt(state.core, archerDestination)?.instanceId).toBe(archer.instanceId);
+    expect(getSwCurrentType(state)).toBe('after_move_huijin_quick_shot');
+
+    const current = state.sys.interaction.current;
+    expect(current?.kind).toBe('simple-choice');
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const targetOptionId = options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'after_move_huijin_quick_shot'
+        && value.targetPosition?.row === enemyPosition.row
+        && value.targetPosition.col === enemyPosition.col;
+    })?.id;
+    expect(targetOptionId).toBeTruthy();
+
+    const shot = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: targetOptionId },
+    });
+    expect(shot.success).toBe(true);
+    state = shot.state;
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(state.core, enemy.position)).toBeUndefined();
+    expect(shot.events.some(e =>
+      e.type === SW_EVENTS.UNIT_DAMAGED
+      && (e.payload as Record<string, unknown>).sourceAbilityId === 'huijin_quick_shot'
+    )).toBe(true);
+    expect(shot.events.some(e =>
+      e.type === SW_EVENTS.UNIT_DESTROYED
+      && (e.payload as Record<string, unknown>).instanceId === enemy.instanceId
+    )).toBe(true);
+  });
+
   it('[feed_beast] 攻击阶段结束吃友方后应收口并继续推进，不重复二次弃置', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'goblin', faction1: 'necromancer' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
@@ -4194,13 +4263,14 @@ describe('验证层有效性门控', () => {
     expect(getUnitAt(repeatedExit.state.core, beast.position)?.damage).toBe(0);
   });
 
-  it('[huijin_call_guards] 真实结束阶段应先选择手牌士兵，再召唤到相邻空格', () => {
+  it('[huijin_call_guards] 真实结束阶段应先选择场上友方士兵，再放置到相邻空格', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'attack';
     core.currentPlayer = '0';
     core.players['0'].hasAttackedEnemy = true;
 
+    const targetStart = { row: 2, col: 2 };
     const summonPosition = { row: 4, col: 3 };
     const summoner = putUnit(core, { row: 4, col: 2 }, mkUnit('huijin-summoner-l4', {
       abilities: ['huijin_call_guards'],
@@ -4209,13 +4279,13 @@ describe('验证层有效性门控', () => {
       name: '玛达莉雅女王',
       life: 7,
     }), '0', { boosts: 1 });
-    const guardCard = mkUnit('huijin-ash-archer-hand-l4', {
+    const guardCard = mkUnit('huijin-ash-archer-board-l4', {
       abilities: ['huijin_quick_shot'],
       faction: 'huijin',
       unitClass: 'common',
       name: '灰烬弓箭手',
     });
-    core.players['0'].hand.push(guardCard);
+    const guard = putUnit(core, targetStart, guardCard, '0');
 
     let state: MatchState<SummonerWarsCore> = {
       core,
@@ -4230,22 +4300,28 @@ describe('验证层有效性门控', () => {
     expect(phaseExit.success).toBe(true);
     state = phaseExit.state;
     expect(state.core.phase).toBe('attack');
-    expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_card');
+    expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_target');
     expect(getUnitAt(state.core, summoner.position)?.boosts).toBe(1);
 
-    const cardCurrent = state.sys.interaction.current;
-    expect(cardCurrent?.kind).toBe('simple-choice');
-    const cardOptions = ((cardCurrent?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
-    expect(cardOptions.some(option => option.id === guardCard.id)).toBe(true);
-    expect(cardOptions.some(option => option.id === 'skip')).toBe(true);
+    const targetCurrent = state.sys.interaction.current;
+    expect(targetCurrent?.kind).toBe('simple-choice');
+    const targetOptions = ((targetCurrent?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const targetOptionId = targetOptions.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'huijin_call_guards_target'
+        && value.targetPosition?.row === targetStart.row
+        && value.targetPosition.col === targetStart.col;
+    })?.id;
+    expect(targetOptionId).toBeTruthy();
+    expect(targetOptions.some(option => option.id === 'skip')).toBe(true);
 
-    const pickedCard = runGamePipeline(state, {
+    const pickedTarget = runGamePipeline(state, {
       type: INTERACTION_COMMANDS.RESPOND,
       playerId: '0',
-      payload: { interactionId: cardCurrent!.id, optionId: guardCard.id },
+      payload: { interactionId: targetCurrent!.id, optionId: targetOptionId },
     });
-    expect(pickedCard.success).toBe(true);
-    state = pickedCard.state;
+    expect(pickedTarget.success).toBe(true);
+    state = pickedTarget.state;
     expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_position');
 
     const positionCurrent = state.sys.interaction.current;
@@ -4267,7 +4343,8 @@ describe('验证层有效性门控', () => {
     expect(pickedPosition.success).toBe(true);
     state = pickedPosition.state;
     expect(state.sys.interaction.current).toBeUndefined();
-    expect(getUnitAt(state.core, summonPosition)?.card.id).toBe(guardCard.id);
+    expect(getUnitAt(state.core, targetStart)).toBeUndefined();
+    expect(getUnitAt(state.core, summonPosition)?.instanceId).toBe(guard.instanceId);
     expect(getUnitAt(state.core, summoner.position)?.boosts).toBe(0);
     expect(state.core.players['0'].hand.some(card => card.id === guardCard.id)).toBe(false);
 
@@ -4281,13 +4358,14 @@ describe('验证层有效性门控', () => {
     expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
   });
 
-  it('[huijin_call_guards] 合法手牌存在时跳过不应消耗充能或召唤单位，并可继续阶段', () => {
+  it('[huijin_call_guards] 合法场上士兵存在时跳过不应消耗充能或移动单位，并可继续阶段', () => {
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
     core.phase = 'attack';
     core.currentPlayer = '0';
     core.players['0'].hasAttackedEnemy = true;
 
+    const targetStart = { row: 2, col: 2 };
     const summonPosition = { row: 4, col: 3 };
     const summoner = putUnit(core, { row: 4, col: 2 }, mkUnit('huijin-summoner-skip-l4', {
       abilities: ['huijin_call_guards'],
@@ -4296,13 +4374,13 @@ describe('验证层有效性门控', () => {
       name: '玛达莉雅女王',
       life: 7,
     }), '0', { boosts: 1 });
-    const guardCard = mkUnit('huijin-ash-archer-hand-skip-l4', {
+    const guardCard = mkUnit('huijin-ash-archer-board-skip-l4', {
       abilities: ['huijin_quick_shot'],
       faction: 'huijin',
       unitClass: 'common',
       name: '灰烬弓箭手',
     });
-    core.players['0'].hand.push(guardCard);
+    const guard = putUnit(core, targetStart, guardCard, '0');
 
     let state: MatchState<SummonerWarsCore> = {
       core,
@@ -4316,11 +4394,16 @@ describe('验证层有效性门控', () => {
     });
     expect(phaseExit.success).toBe(true);
     state = phaseExit.state;
-    expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_card');
+    expect(getSwCurrentType(state)).toBe('huijin_call_guards_select_target');
 
     const current = state.sys.interaction.current;
     const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
-    expect(options.some(option => option.id === guardCard.id)).toBe(true);
+    expect(options.some((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'huijin_call_guards_target'
+        && value.targetPosition?.row === targetStart.row
+        && value.targetPosition.col === targetStart.col;
+    })).toBe(true);
     expect(options.some(option => option.id === 'skip')).toBe(true);
 
     const skipped = runGamePipeline(state, {
@@ -4333,7 +4416,8 @@ describe('验证层有效性门控', () => {
     expect(state.sys.interaction.current).toBeUndefined();
     expect(getUnitAt(state.core, summoner.position)?.boosts).toBe(1);
     expect(getUnitAt(state.core, summonPosition)).toBeUndefined();
-    expect(state.core.players['0'].hand.some(card => card.id === guardCard.id)).toBe(true);
+    expect(getUnitAt(state.core, targetStart)?.instanceId).toBe(guard.instanceId);
+    expect(state.core.players['0'].hand.some(card => card.id === guardCard.id)).toBe(false);
 
     const repeatedExit = runGamePipeline(state, {
       type: SW_COMMANDS.END_PHASE,

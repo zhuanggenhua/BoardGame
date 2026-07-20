@@ -12,15 +12,18 @@ function HookProbe({
         '0': 'monk',
         '1': 'gunslinger',
     },
+    cacheScope,
 }: {
     streamEntries: EventStreamEntry[];
     selectedCharacters?: Record<string, any>;
+    cacheScope?: string;
 }) {
     const state = useCardSpotlight({
         eventStreamEntries: streamEntries,
         currentPlayerId: '0',
         opponentName: '对手',
         selectedCharacters,
+        cacheScope,
     });
 
     return (
@@ -31,6 +34,18 @@ function HookProbe({
             })}
         </pre>
     );
+}
+
+function ToggleProbe({
+    mounted,
+    streamEntries,
+    cacheScope,
+}: {
+    mounted: boolean;
+    streamEntries: EventStreamEntry[];
+    cacheScope?: string;
+}) {
+    return mounted ? <HookProbe streamEntries={streamEntries} cacheScope={cacheScope} /> : null;
 }
 
 describe('useCardSpotlight rollback consumer', () => {
@@ -92,7 +107,7 @@ describe('useCardSpotlight rollback consumer', () => {
         });
     });
 
-    it('clears stale spotlight and bonus-die state on optimistic rollback signal and does not replay restored old events', async () => {
+    it('keeps opponent card spotlight visible across optimistic rollback signal and does not replay restored old events', async () => {
         let rollbackValue: EventStreamRollbackValue = {
             watermark: null,
             seq: 0,
@@ -183,7 +198,8 @@ describe('useCardSpotlight rollback consumer', () => {
 
         await waitFor(() => {
             const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
-            expect(state.cardSpotlightQueue).toEqual([]);
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('card-next-time-1000');
             expect(state.bonusDie.show).toBe(false);
         });
 
@@ -191,7 +207,8 @@ describe('useCardSpotlight rollback consumer', () => {
 
         await waitFor(() => {
             const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
-            expect(state.cardSpotlightQueue).toEqual([]);
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('card-next-time-1000');
             expect(state.bonusDie.show).toBe(false);
         });
 
@@ -199,10 +216,240 @@ describe('useCardSpotlight rollback consumer', () => {
 
         await waitFor(() => {
             const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
-            expect(state.cardSpotlightQueue).toHaveLength(1);
-            expect(state.cardSpotlightQueue[0].id).toBe('watch-out-3000');
+            expect(state.cardSpotlightQueue).toHaveLength(2);
+            expect(state.cardSpotlightQueue[0].id).toBe('card-next-time-1000');
+            expect(state.cardSpotlightQueue[1].id).toBe('watch-out-3000');
             expect(state.bonusDie.show).toBe(true);
             expect(state.bonusDie.value).toBe(6);
+        });
+    });
+
+    it('keeps an already visible opponent card spotlight when EventStream ids move backward', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
+                {children}
+            </EventStreamRollbackContext.Provider>
+        );
+
+        const visibleCardEntry: EventStreamEntry = {
+            id: 10,
+            event: {
+                type: 'CARD_PLAYED',
+                payload: {
+                    playerId: '1',
+                    cardId: 'card-next-time',
+                },
+                timestamp: 1000,
+            },
+        };
+
+        const lowerWatermarkEntry: EventStreamEntry = {
+            id: 2,
+            event: {
+                type: 'TURN_PHASE_CHANGED',
+                payload: { phase: 'main' },
+                timestamp: 2000,
+            },
+        };
+
+        const view = render(<HookProbe streamEntries={[]} />, { wrapper });
+
+        view.rerender(<HookProbe streamEntries={[visibleCardEntry]} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('card-next-time-1000');
+        });
+
+        view.rerender(<HookProbe streamEntries={[lowerWatermarkEntry]} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('card-next-time-1000');
+        });
+    });
+
+    it('restores an explicitly unclosed opponent card spotlight after the hook remounts on sync', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
+                {children}
+            </EventStreamRollbackContext.Provider>
+        );
+
+        const playedCardEntry: EventStreamEntry = {
+            id: 20,
+            event: {
+                type: 'CARD_PLAYED',
+                payload: {
+                    playerId: '1',
+                    cardId: 'card-next-time',
+                },
+                timestamp: 9000,
+            },
+        };
+
+        const cacheScope = 'remount-card-next-time';
+        const firstView = render(<HookProbe streamEntries={[]} cacheScope={cacheScope} />, { wrapper });
+        firstView.rerender(<HookProbe streamEntries={[playedCardEntry]} cacheScope={cacheScope} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('card-next-time-9000');
+        });
+
+        firstView.unmount();
+
+        render(<HookProbe streamEntries={[playedCardEntry]} cacheScope={cacheScope} />, { wrapper });
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('card-next-time-9000');
+        });
+    });
+
+    it('does not drop the unclosed cache when sync remounts with an empty EventStream before entries recover', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
+                {children}
+            </EventStreamRollbackContext.Provider>
+        );
+
+        const playedCardEntry: EventStreamEntry = {
+            id: 30,
+            event: {
+                type: 'CARD_PLAYED',
+                payload: {
+                    playerId: '1',
+                    cardId: 'watch-out',
+                },
+                timestamp: 11000,
+            },
+        };
+
+        const cacheScope = 'empty-sync-watch-out';
+        const view = render(<ToggleProbe mounted={true} streamEntries={[]} cacheScope={cacheScope} />, { wrapper });
+        view.rerender(<ToggleProbe mounted={true} streamEntries={[playedCardEntry]} cacheScope={cacheScope} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('watch-out-11000');
+        });
+
+        view.rerender(<ToggleProbe mounted={false} streamEntries={[]} cacheScope={cacheScope} />);
+        view.rerender(<ToggleProbe mounted={true} streamEntries={[]} cacheScope={cacheScope} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('watch-out-11000');
+        });
+
+        view.rerender(<ToggleProbe mounted={true} streamEntries={[playedCardEntry]} cacheScope={cacheScope} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].id).toBe('watch-out-11000');
+        });
+    });
+
+    it('binds opponent display-only bonus dice to the already visible card spotlight', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <EventStreamRollbackContext.Provider value={{ watermark: null, seq: 0, reconcileSeq: 0 }}>
+                {children}
+            </EventStreamRollbackContext.Provider>
+        );
+
+        const cardEntry: EventStreamEntry = {
+            id: 40,
+            event: {
+                type: 'CARD_PLAYED',
+                payload: {
+                    playerId: '1',
+                    cardId: 'watch-out',
+                    previewRef: {
+                        type: 'atlas',
+                        atlasId: 'dicethrone-moon_elf-cards',
+                        index: 4,
+                    },
+                },
+                timestamp: 4800,
+            },
+        };
+        const firstBonusEntry: EventStreamEntry = {
+            id: 41,
+            event: {
+                type: 'BONUS_DIE_ROLLED',
+                payload: {
+                    playerId: '1',
+                    targetPlayerId: '0',
+                    value: 1,
+                    face: 'bow',
+                    effectKey: 'bonusDie.effect.watchOut.bow',
+                    effectParams: { value: 1, index: 0 },
+                },
+                timestamp: 5000,
+            },
+        };
+        const secondBonusEntry: EventStreamEntry = {
+            id: 42,
+            event: {
+                type: 'BONUS_DIE_ROLLED',
+                payload: {
+                    playerId: '1',
+                    targetPlayerId: '0',
+                    value: 2,
+                    face: 'bow',
+                    effectKey: 'bonusDie.effect.watchOut.bow',
+                    effectParams: { value: 2, index: 1 },
+                },
+                timestamp: 5001,
+            },
+        };
+        const settlementEntry: EventStreamEntry = {
+            id: 43,
+            event: {
+                type: 'BONUS_DICE_REROLL_REQUESTED',
+                payload: {
+                    settlement: {
+                        id: 'watch-out',
+                        sourceAbilityId: 'watch-out',
+                        attackerId: '1',
+                        targetId: '0',
+                        dice: [
+                            { index: 0, value: 1, face: 'bow', effectKey: 'bonusDie.effect.watchOut.bow', effectParams: { value: 1 } },
+                            { index: 1, value: 2, face: 'bow', effectKey: 'bonusDie.effect.watchOut.bow', effectParams: { value: 2 } },
+                        ],
+                        rerollCostTokenId: 'cp',
+                        rerollCostAmount: 1,
+                        rerollCount: 0,
+                        maxRerollCount: 1,
+                        rerollEffectKey: 'bonusDie.effect.watchOut.bow',
+                        readyToSettle: false,
+                        displayOnly: true,
+                    },
+                },
+                timestamp: 5000,
+            },
+        };
+
+        const view = render(<HookProbe streamEntries={[]} />, { wrapper });
+        view.rerender(<HookProbe streamEntries={[cardEntry, firstBonusEntry, secondBonusEntry, settlementEntry]} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('rollback-card-spotlight-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0]).toMatchObject({
+                id: 'watch-out-4800',
+                playerId: '1',
+            });
+            expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(2);
+            expect(state.bonusDie.show).toBe(false);
         });
     });
 });

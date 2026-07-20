@@ -23,6 +23,10 @@ export const onlineAiPerfLogger = createScopedLogger('ONLINE_AI_PERF');
 export const onlineAiTransportLogger = createScopedLogger('ONLINE_AI_TRANSPORT');
 export const aiRuntimeTruthLogger = createScopedLogger('AI_RUNTIME_TRUTH');
 
+function shouldEmitOnlineAiConsoleLog(): boolean {
+    return import.meta.env.DEV === true;
+}
+
 function appendOnlineAiDevLog(kind: 'transport' | 'perf', event: Record<string, unknown>): void {
     if (typeof window === 'undefined' || !import.meta.env.DEV) {
         return;
@@ -38,16 +42,19 @@ function appendOnlineAiDevLog(kind: 'transport' | 'perf', event: Record<string, 
 export function emitOnlineAiPerf(stage: string, payload: Record<string, unknown>): void {
     const event = { stage, ...payload };
     appendOnlineAiDevLog('perf', event);
+    if (!shouldEmitOnlineAiConsoleLog()) return;
     console.log('[ONLINE_AI_PERF]', event);
 }
 
 export function emitOnlineAiTransport(stage: string, payload: Record<string, unknown>): void {
     const event = { stage, ...payload };
     appendOnlineAiDevLog('transport', event);
+    if (!shouldEmitOnlineAiConsoleLog()) return;
     console.log('[ONLINE_AI_TRANSPORT]', event);
 }
 
 export function emitAiRuntimeTruth(stage: string, payload: Record<string, unknown>): void {
+    if (!shouldEmitOnlineAiConsoleLog()) return;
     console.log('[AI_RUNTIME_TRUTH]', { stage, ...payload });
 }
 

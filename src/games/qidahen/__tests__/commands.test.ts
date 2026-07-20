@@ -1184,6 +1184,13 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             'qidahen-atlas05-1632-pincer-advance',
             'qidahen-atlas05-1650-wuzhen-chaoha-special',
         ]);
+        const mountedInfantryIdentity = stateDependentBattleChainIdentities.find((
+            identity,
+        ) => identity.cardDefId === 'qidahen-atlas05-1620-mounted-infantry');
+        expect(mountedInfantryIdentity?.displayName).toBe('骑马步兵');
+        const blockedStateDependentBattleChainIdentities = stateDependentBattleChainIdentities.filter((
+            identity,
+        ) => identity.cardDefId !== 'qidahen-atlas05-1620-mounted-infantry');
         const phaseOnlyIdentities = tacticIdentities.filter((identity) => {
             const rulesSummary = QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID[identity.cardDefId];
             return rulesSummary.includes('野战步兵阶段使用')
@@ -1234,7 +1241,9 @@ describe('Qidahen Commands 交互宿主门禁', () => {
             expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
             expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
         }
-        for (const identity of stateDependentBattleChainIdentities) {
+        expect(validateTactic(fieldState, mountedInfantryIdentity!.cardDefId)).toEqual({ valid: true });
+        expect(validateTactic(cityState, mountedInfantryIdentity!.cardDefId)).toEqual({ valid: true });
+        for (const identity of blockedStateDependentBattleChainIdentities) {
             expect(validateTactic(fieldState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
             expect(validateTactic(cityState, identity.cardDefId)).toEqual({ valid: false, error: 'unknownPaymentCard' });
         }

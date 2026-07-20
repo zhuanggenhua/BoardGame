@@ -15,6 +15,7 @@ import {
   EVENT_CARDS_HUIJIN,
   SUMMONER_HUIJIN,
 } from '../config/factions/huijin';
+import { DECK_SYMBOLS } from '../config/symbols';
 import { swDamageSourceResolver } from '../actionLog';
 
 function testRandom(): RandomFn {
@@ -133,17 +134,33 @@ function damageEventFor(events: GameEvent[], position: CellCoord, sourceAbilityI
 
 describe('灰烬 - 静态录入与复用能力', () => {
   it('卡牌基础字段与图集 slot 顺序保持一致', () => {
+    expect(SUMMONER_HUIJIN).toMatchObject({
+      id: 'huijin-summoner',
+      name: '玛达莉雅女王',
+      strength: 4,
+      life: 9,
+      attackType: 'ranged',
+      spriteAtlas: 'hero',
+      spriteIndex: 0,
+    });
+    expect(SUMMONER_HUIJIN.deckSymbols).toEqual([
+      DECK_SYMBOLS.DOUBLE_AXE,
+      DECK_SYMBOLS.EMBER,
+      DECK_SYMBOLS.PHOENIX,
+    ]);
+
     expect(CHAMPION_UNITS_HUIJIN.map(card => ({
       id: card.id,
       cost: card.cost,
       strength: card.strength,
       life: card.life,
       attackType: card.attackType,
+      deckSymbols: card.deckSymbols,
       spriteIndex: card.spriteIndex,
     }))).toEqual([
-      { id: 'huijin-helisi', cost: 5, strength: 3, life: 7, attackType: 'ranged', spriteIndex: 0 },
-      { id: 'huijin-flame-dragon-beast', cost: 8, strength: 4, life: 10, attackType: 'ranged', spriteIndex: 1 },
-      { id: 'huijin-fengnisha', cost: 5, strength: 3, life: 9, attackType: 'melee', spriteIndex: 2 },
+      { id: 'huijin-helisi', cost: 5, strength: 3, life: 7, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.EMBER], spriteIndex: 0 },
+      { id: 'huijin-flame-dragon-beast', cost: 8, strength: 4, life: 10, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.EMBER, DECK_SYMBOLS.PHOENIX], spriteIndex: 1 },
+      { id: 'huijin-fengnisha', cost: 5, strength: 3, life: 9, attackType: 'melee', deckSymbols: [DECK_SYMBOLS.PHOENIX], spriteIndex: 2 },
     ]);
 
     expect(COMMON_UNITS_HUIJIN.map(card => ({
@@ -152,12 +169,13 @@ describe('灰烬 - 静态录入与复用能力', () => {
       strength: card.strength,
       life: card.life,
       attackType: card.attackType,
+      deckSymbols: card.deckSymbols,
       spriteIndex: card.spriteIndex,
     }))).toEqual([
-      { id: 'huijin-ash-mage', cost: 1, strength: 2, life: 2, attackType: 'ranged', spriteIndex: 3 },
-      { id: 'huijin-royal-guard', cost: 2, strength: 1, life: 4, attackType: 'melee', spriteIndex: 4 },
-      { id: 'huijin-ash-beast', cost: 2, strength: 3, life: 3, attackType: 'melee', spriteIndex: 5 },
-      { id: 'huijin-ash-archer', cost: 1, strength: 2, life: 2, attackType: 'ranged', spriteIndex: 6 },
+      { id: 'huijin-ash-mage', cost: 1, strength: 2, life: 2, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.PHOENIX], spriteIndex: 3 },
+      { id: 'huijin-royal-guard', cost: 2, strength: 1, life: 4, attackType: 'melee', deckSymbols: [DECK_SYMBOLS.PHOENIX], spriteIndex: 4 },
+      { id: 'huijin-ash-beast', cost: 2, strength: 3, life: 3, attackType: 'melee', deckSymbols: [DECK_SYMBOLS.EMBER], spriteIndex: 5 },
+      { id: 'huijin-ash-archer', cost: 1, strength: 2, life: 2, attackType: 'ranged', deckSymbols: [DECK_SYMBOLS.PHOENIX], spriteIndex: 6 },
     ]);
 
     expect(EVENT_CARDS_HUIJIN.map(card => ({
@@ -166,12 +184,13 @@ describe('灰烬 - 静态录入与复用能力', () => {
       playPhase: card.playPhase,
       cost: card.cost,
       isActive: card.isActive,
+      deckSymbols: card.deckSymbols,
       spriteIndex: card.spriteIndex,
     }))).toEqual([
-      { id: 'huijin-dazzling-light', eventType: 'common', playPhase: 'summon', cost: 1, isActive: true, spriteIndex: 7 },
-      { id: 'huijin-scorch', eventType: 'common', playPhase: 'summon', cost: 0, isActive: false, spriteIndex: 8 },
-      { id: 'huijin-divine-revenge', eventType: 'common', playPhase: 'summon', cost: 0, isActive: true, spriteIndex: 9 },
-      { id: 'huijin-phoenix-soul', eventType: 'legendary', playPhase: 'summon', cost: 0, isActive: true, spriteIndex: 10 },
+      { id: 'huijin-dazzling-light', eventType: 'common', playPhase: 'magic', cost: 1, isActive: true, deckSymbols: [DECK_SYMBOLS.PHOENIX], spriteIndex: 7 },
+      { id: 'huijin-scorch', eventType: 'common', playPhase: 'move', cost: 0, isActive: false, deckSymbols: [DECK_SYMBOLS.EMBER], spriteIndex: 8 },
+      { id: 'huijin-divine-revenge', eventType: 'common', playPhase: 'magic', cost: 0, isActive: true, deckSymbols: [DECK_SYMBOLS.EMBER, DECK_SYMBOLS.PHOENIX], spriteIndex: 9 },
+      { id: 'huijin-phoenix-soul', eventType: 'legendary', playPhase: 'summon', cost: 0, isActive: true, deckSymbols: [], spriteIndex: 10 },
     ]);
   });
 
@@ -486,24 +505,98 @@ describe('灰烬 - 自动机制', () => {
     expect(newState.board[enemy.position.row][enemy.position.col].unit?.damage).toBe(2);
     expect(newState.board[beast.position.row][beast.position.col].unit?.damage).toBe(0);
   });
+
+  it('阶段被动伤害致死时会经系统后处理补出消灭事件', () => {
+    const state = createState();
+    state.phase = 'summon';
+    place(state, { row: 4, col: 4 }, unitCard('huijin-ash-beast', '灰烬野兽', ['huijin_wildfire']));
+    const enemy = place(state, { row: 4, col: 5 }, unitCard('enemy-fragile', '敌方脆弱单位', [], {
+      faction: 'necromancer',
+      life: 1,
+    }), '1');
+
+    const rawEvents = summonerWarsFlowHooks.onPhaseEnter!({
+      state: { core: state, sys: {} } as MatchState<SummonerWarsCore>,
+      from: 'summon',
+      to: 'move',
+      command: { type: 'FLOW_PHASE_CHANGED', payload: {}, timestamp: 1000, playerId: '0' },
+    }) as GameEvent[];
+
+    expect(damageEventFor(rawEvents, enemy.position, 'huijin_wildfire')).toBeDefined();
+    expect(SummonerWarsDomain.postProcessSystemEvents).toBeDefined();
+
+    const processed = SummonerWarsDomain.postProcessSystemEvents!(
+      state,
+      rawEvents,
+      testRandom(),
+      { core: state, sys: {} } as MatchState<SummonerWarsCore>,
+    );
+    const processedEvents = Array.isArray(processed) ? processed : processed.events;
+    expect(processedEvents).toContainEqual(expect.objectContaining({
+      type: SW_EVENTS.UNIT_DESTROYED,
+      payload: expect.objectContaining({
+        instanceId: enemy.instanceId,
+        cardId: enemy.cardId,
+      }),
+    }));
+
+    let newState = state;
+    for (const event of processedEvents) {
+      newState = SummonerWarsDomain.reduce(newState, event);
+    }
+    expect(newState.board[enemy.position.row][enemy.position.col].unit).toBeUndefined();
+  });
+
+  it('已减过的命令伤害不会在系统后处理中重复补死亡', () => {
+    const state = createState();
+    state.phase = 'move';
+    const archer = place(state, { row: 4, col: 2 }, unitCard('huijin-ash-archer', '灰烬弓箭手', ['huijin_quick_shot'], {
+      attackType: 'ranged',
+      attackRange: 3,
+    }));
+    const enemy = place(state, { row: 4, col: 5 }, unitCard('enemy-wounded', '敌方受伤单位', [], {
+      faction: 'necromancer',
+      life: 2,
+    }), '1');
+
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
+      abilityId: 'huijin_quick_shot',
+      sourceUnitId: archer.instanceId,
+      targetPosition: enemy.position,
+    });
+
+    expect(newState.board[enemy.position.row][enemy.position.col].unit?.damage).toBe(1);
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_DESTROYED)).toBe(false);
+    expect(SummonerWarsDomain.postProcessSystemEvents).toBeDefined();
+
+    const processed = SummonerWarsDomain.postProcessSystemEvents!(
+      newState,
+      events,
+      testRandom(),
+      { core: newState, sys: { _ppseInputEventsReduced: true } as never } as MatchState<SummonerWarsCore>,
+    );
+    const processedEvents = Array.isArray(processed) ? processed : processed.events;
+    expect(processedEvents.some(e => e.type === SW_EVENTS.UNIT_DESTROYED)).toBe(false);
+  });
 });
 
 describe('灰烬 - 交互型技能', () => {
-  it('玛达莉雅女王可消耗充能召集手牌士兵到相邻空格', () => {
+  it('玛达莉雅女王可消耗充能召集场上友方士兵到相邻空格', () => {
     const state = createState();
     state.phase = 'attack';
     const summoner = place(state, { row: 4, col: 4 }, SUMMONER_HUIJIN, '0', { boosts: 1 });
-    const guard = unitCard('huijin-guard-hand', '灰烬护卫', [], { cost: 1 });
-    const target = { row: 4, col: 5 };
-    state.players['0'].hand.push(guard);
+    const guard = place(state, { row: 2, col: 2 }, unitCard('huijin-guard-board', '灰烬护卫', [], { cost: 1 }));
+    const guardCardInHand = unitCard('huijin-guard-hand', '手牌灰烬护卫', [], { cost: 1 });
+    const destination = { row: 4, col: 5 };
+    state.players['0'].hand.push(guardCardInHand);
 
     expect(SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
       type: SW_COMMANDS.ACTIVATE_ABILITY,
       payload: {
         abilityId: 'huijin_call_guards',
         sourceUnitId: summoner.instanceId,
-        cardId: guard.id,
-        position: target,
+        targetPosition: guard.position,
+        position: destination,
       },
       playerId: '0',
     }).valid).toBe(true);
@@ -511,8 +604,8 @@ describe('灰烬 - 交互型技能', () => {
     const { events, newState } = executeAndReduce(state, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'huijin_call_guards',
       sourceUnitId: summoner.instanceId,
-      cardId: guard.id,
-      position: target,
+      targetPosition: guard.position,
+      position: destination,
     });
 
     expect(events).toContainEqual(expect.objectContaining({
@@ -520,27 +613,33 @@ describe('灰烬 - 交互型技能', () => {
       payload: expect.objectContaining({ delta: -1, sourceAbilityId: 'huijin_call_guards' }),
     }));
     expect(events).toContainEqual(expect.objectContaining({
-      type: SW_EVENTS.UNIT_SUMMONED,
-      payload: expect.objectContaining({ cardId: guard.id, sourceAbilityId: 'huijin_call_guards' }),
+      type: SW_EVENTS.UNIT_MOVED,
+      payload: expect.objectContaining({
+        from: guard.position,
+        to: destination,
+        unitId: guard.instanceId,
+        sourceAbilityId: 'huijin_call_guards',
+      }),
     }));
     expect(newState.board[summoner.position.row][summoner.position.col].unit?.boosts).toBe(0);
-    expect(newState.board[target.row][target.col].unit?.card.id).toBe(guard.id);
-    expect(newState.players['0'].hand.some(card => card.id === guard.id)).toBe(false);
+    expect(newState.board[guard.position.row][guard.position.col].unit).toBeUndefined();
+    expect(newState.board[destination.row][destination.col].unit?.instanceId).toBe(guard.instanceId);
+    expect(newState.players['0'].hand.some(card => card.id === guardCardInHand.id)).toBe(true);
+    expect(newState.players['0'].moveCount).toBe(state.players['0'].moveCount);
   });
 
-  it('召集护卫没有充能或选择非士兵手牌时会被拒绝', () => {
+  it('召集护卫没有充能或目标不是场上友方士兵时会被拒绝', () => {
     const noCharge = createState();
     noCharge.phase = 'attack';
     const summonerNoCharge = place(noCharge, { row: 4, col: 4 }, SUMMONER_HUIJIN, '0', { boosts: 0 });
-    const guard = unitCard('huijin-guard-no-charge', '灰烬护卫');
-    noCharge.players['0'].hand.push(guard);
+    const guard = place(noCharge, { row: 2, col: 2 }, unitCard('huijin-guard-no-charge', '灰烬护卫'));
 
     expect(SummonerWarsDomain.validate({ core: noCharge } as MatchState<SummonerWarsCore>, {
       type: SW_COMMANDS.ACTIVATE_ABILITY,
       payload: {
         abilityId: 'huijin_call_guards',
         sourceUnitId: summonerNoCharge.instanceId,
-        cardId: guard.id,
+        targetPosition: guard.position,
         position: { row: 4, col: 5 },
       },
       playerId: '0',
@@ -549,15 +648,47 @@ describe('灰烬 - 交互型技能', () => {
     const nonCommon = createState();
     nonCommon.phase = 'attack';
     const summoner = place(nonCommon, { row: 4, col: 4 }, SUMMONER_HUIJIN, '0', { boosts: 1 });
-    const champion = unitCard('huijin-champion-hand', '灰烬英雄', [], { unitClass: 'champion', cost: 5 });
-    nonCommon.players['0'].hand.push(champion);
+    const champion = place(nonCommon, { row: 2, col: 2 }, unitCard('huijin-champion-board', '灰烬英雄', [], { unitClass: 'champion', cost: 5 }));
 
     expect(SummonerWarsDomain.validate({ core: nonCommon } as MatchState<SummonerWarsCore>, {
       type: SW_COMMANDS.ACTIVATE_ABILITY,
       payload: {
         abilityId: 'huijin_call_guards',
         sourceUnitId: summoner.instanceId,
-        cardId: champion.id,
+        targetPosition: champion.position,
+        position: { row: 4, col: 5 },
+      },
+      playerId: '0',
+    }).valid).toBe(false);
+
+    const enemyTarget = createState();
+    enemyTarget.phase = 'attack';
+    const summonerEnemyTarget = place(enemyTarget, { row: 4, col: 4 }, SUMMONER_HUIJIN, '0', { boosts: 1 });
+    const enemyGuard = place(enemyTarget, { row: 2, col: 2 }, unitCard('enemy-common', '敌方士兵', [], { faction: 'necromancer' }), '1');
+
+    expect(SummonerWarsDomain.validate({ core: enemyTarget } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      payload: {
+        abilityId: 'huijin_call_guards',
+        sourceUnitId: summonerEnemyTarget.instanceId,
+        targetPosition: enemyGuard.position,
+        position: { row: 4, col: 5 },
+      },
+      playerId: '0',
+    }).valid).toBe(false);
+
+    const occupiedDestination = createState();
+    occupiedDestination.phase = 'attack';
+    const summonerOccupied = place(occupiedDestination, { row: 4, col: 4 }, SUMMONER_HUIJIN, '0', { boosts: 1 });
+    const targetGuard = place(occupiedDestination, { row: 2, col: 2 }, unitCard('huijin-guard-board-2', '灰烬护卫'));
+    place(occupiedDestination, { row: 4, col: 5 }, unitCard('huijin-blocker', '占位士兵'));
+
+    expect(SummonerWarsDomain.validate({ core: occupiedDestination } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      payload: {
+        abilityId: 'huijin_call_guards',
+        sourceUnitId: summonerOccupied.instanceId,
+        targetPosition: targetGuard.position,
         position: { row: 4, col: 5 },
       },
       playerId: '0',
@@ -753,8 +884,32 @@ describe('灰烬 - 交互型技能', () => {
 });
 
 describe('灰烬 - 事件牌机制', () => {
+  it('炫目光芒只能在魔力阶段打出', () => {
+    const state = createState();
+    const dazzlingLight = EVENT_CARDS_HUIJIN.find(card => card.id === 'huijin-dazzling-light')!;
+    state.players['0'].hand.push(dazzlingLight);
+
+    state.phase = 'summon';
+    expect(SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.PLAY_EVENT,
+      payload: { cardId: 'huijin-dazzling-light' },
+      playerId: '0',
+    })).toMatchObject({
+      valid: false,
+      error: '该事件只能在魔力阶段施放',
+    });
+
+    state.phase = 'magic';
+    expect(SummonerWarsDomain.validate({ core: state } as MatchState<SummonerWarsCore>, {
+      type: SW_COMMANDS.PLAY_EVENT,
+      payload: { cardId: 'huijin-dazzling-light' },
+      playerId: '0',
+    })).toEqual({ valid: true });
+  });
+
   it('灼烧对召唤师2格内的士兵或英雄造成2点伤害', () => {
     const state = createState();
+    state.phase = 'move';
     place(state, { row: 4, col: 4 }, SUMMONER_HUIJIN);
     const enemy = place(state, { row: 2, col: 4 }, unitCard('enemy-common', '敌方士兵', [], {
       faction: 'necromancer',

@@ -106,6 +106,40 @@ type DiceThroneBoardProps = GameBoardProps<DiceThroneCore>;
 const boardBonusDieLogger = createScopedLogger('DT_BOARD_BONUS_DIE');
 const DUEL_ATTACKER_DIE_ID = 1;
 
+const shouldUseRightTrayForPendingBonusDice = (settlement?: PendingBonusDiceSettlement): boolean => (
+    Boolean(settlement?.displayOnly && settlement.allowDiceModification)
+);
+
+const createPendingBonusDiceTrayDice = (
+    G: DiceThroneCore,
+    settlement: PendingBonusDiceSettlement,
+    displayOnly: boolean,
+): Die[] => {
+    const attackerCharacterId = G.players[settlement.attackerId]?.characterId;
+    const definitionId = attackerCharacterId && attackerCharacterId !== 'unselected'
+        ? `${attackerCharacterId}-dice`
+        : undefined;
+
+    return getPendingBonusSettlementDice(settlement).map((bonusDie) => {
+        const existingDie = G.dice.find((die) => die.id === bonusDie.index) ?? G.dice[bonusDie.index];
+        return {
+            ...(existingDie ?? {
+                id: bonusDie.index,
+                value: bonusDie.value,
+                isKept: false,
+            }),
+            id: bonusDie.index,
+            definitionId: definitionId ?? existingDie?.definitionId,
+            value: bonusDie.value,
+            symbol: bonusDie.face ?? existingDie?.symbol ?? null,
+            symbols: bonusDie.face ? [bonusDie.face] : (existingDie?.symbols ?? []),
+            isKept: false,
+            ownerId: settlement.attackerId,
+            displayOnly,
+        } as Die;
+    });
+};
+
 const createDuelAttackerDisplayDie = (G: DiceThroneCore, currentPhase: string): Die | null => {
     const pendingAttack = G.pendingAttack;
     if (currentPhase !== 'defensiveRoll' || pendingAttack?.defenseAbilityId !== 'duel') return null;
@@ -417,11 +451,20 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         opponentName,
         isSpectator,
         selectedCharacters: G.selectedCharacters,
+        cacheScope: rawG.sys.matchId
+            ?? `${Object.entries(G.selectedCharacters ?? {})
+                .map(([pid, characterId]) => `${pid}:${characterId}`)
+                .sort()
+                .join('|') || 'unselected'}`,
         suppressStandaloneBonusDie: Boolean(
             G.pendingBonusDiceSettlement
-            && !G.pendingBonusDiceSettlement.displayOnly
+            && (
+                shouldUseRightTrayForPendingBonusDice(G.pendingBonusDiceSettlement)
+                || !G.pendingBonusDiceSettlement.displayOnly
+            )
             && G.pendingBonusDiceSettlement.attackerId === rootPid
         ),
+        suppressBonusDiceInCardSpotlight: shouldUseRightTrayForPendingBonusDice(G.pendingBonusDiceSettlement),
     });
 
     const shouldHidePendingDisplayOnlyBonusOverlay = shouldSuppressPendingDisplayOnlyBonusOverlay({
@@ -435,6 +478,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return undefined;
         }
         if (dismissedBonusDiceId === settlement.id) {
+            return undefined;
+        }
+        if (shouldUseRightTrayForPendingBonusDice(settlement)) {
             return undefined;
         }
         if (settlement.displayOnly) {
@@ -451,6 +497,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         }
         return { ...settlement, displayOnly: true };
     }, [G.pendingBonusDiceSettlement, dismissedBonusDiceId, rootPid, shouldHidePendingDisplayOnlyBonusOverlay]);
+    const foregroundBonusDiceSettlement = React.useMemo(() => {
+        if (displayOnlyBonusDiceSettlement) {
+            return displayOnlyBonusDiceSettlement;
+        }
+
+        const settlement = G.pendingBonusDiceSettlement;
+        if (!settlement?.displayOnly || dismissedBonusDiceId === settlement.id || shouldUseRightTrayForPendingBonusDice(settlement)) {
+            return undefined;
+        }
+        return settlement;
+    }, [G.pendingBonusDiceSettlement, dismissedBonusDiceId, displayOnlyBonusDiceSettlement]);
     const interactiveBonusDiceSettlement = React.useMemo(() => (
         resolveInteractivePendingBonusDiceSettlement({
             settlement: G.pendingBonusDiceSettlement,
@@ -470,11 +527,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const { activeModifiers } = useActiveModifiers({
         eventStreamEntries: rawG.sys.eventStream?.entries ?? [],
     });
-    
-    // 调试日志：检查 activeModifiers 是否正确返回
-    React.useEffect(() => {
-        console.log('[Board] activeModifiers from useActiveModifiers:', activeModifiers);
-    }, [activeModifiers]);
 
     // 防御阶段进攻技能特写
     const attackerAbilityLevels = React.useMemo(() => {
@@ -610,31 +662,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         : null;
     const isTokenResponder = pendingDamage && (pendingDamage.responderId === rootPid);
 
-    // 调试日志：Token 响应状态
-    React.useEffect(() => {
-        if (pendingDamage) {
-            console.log('[Board] Token 响应状态', {
-                hasPendingDamage: !!pendingDamage,
-                responderId: pendingDamage.responderId,
-                rootPid,
-                isTokenResponder,
-                tokenResponsePhase,
-                responseType: pendingDamage.responseType,
-                currentDamage: pendingDamage.currentDamage,
-            });
-        }
-    }, [pendingDamage, rootPid, isTokenResponder, tokenResponsePhase]);
-
     // 领域层计算当前阶段可用的 Token 列表（唯一数据源）
     const usableTokens = React.useMemo(() => {
         if (!pendingDamage) return [];
-        const tokens = getUsableTokensForTiming(G, pendingDamage.responderId, pendingDamage.responseType);
-        console.log('[Board] 计算可用 Token', {
-            responderId: pendingDamage.responderId,
-            responseType: pendingDamage.responseType,
-            usableTokens: tokens.map(t => t.id),
-        });
-        return tokens;
+        return getUsableTokensForTiming(G, pendingDamage.responderId, pendingDamage.responseType);
     }, [G, pendingDamage]);
 
     const tokenUsableOverrides = React.useMemo(() => {
@@ -904,7 +935,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return;
         }
 
-        const canSettleFromCurrentView = settlement.attackerId === rootPid;
+        const canSettleFromCurrentView = String(settlement.attackerId) === String(rootPid);
         if (canSettleFromCurrentView) {
             boardBonusDieLogger.info('overlay-close-settle-dispatch', {
                 settlementId: settlement.id,
@@ -1151,30 +1182,19 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     });
     const duelAttackerDisplayDie = React.useMemo(() => createDuelAttackerDisplayDie(G, currentPhase), [G, currentPhase]);
     const duelDefenderDisplayDie = React.useMemo(() => createDuelDefenderDisplayDie(G, currentPhase), [G, currentPhase]);
-    const bonusDiceInteractionDice = React.useMemo(() => {
+    const pendingBonusDiceRoutedToRightTray = shouldUseRightTrayForPendingBonusDice(G.pendingBonusDiceSettlement);
+    const bonusDiceTrayDice = React.useMemo(() => {
         const settlement = G.pendingBonusDiceSettlement;
-        if (!diceMultistepInteraction || !settlement?.allowDiceModification) {
+        if (!settlement?.allowDiceModification) {
             return null;
         }
 
-        return getPendingBonusSettlementDice(settlement).map((bonusDie) => {
-            const existingDie = G.dice.find((die) => die.id === bonusDie.index) ?? G.dice[bonusDie.index];
-            return {
-                ...(existingDie ?? {
-                    id: bonusDie.index,
-                    value: bonusDie.value,
-                    isKept: false,
-                }),
-                id: bonusDie.index,
-                value: bonusDie.value,
-                symbol: bonusDie.face ?? existingDie?.symbol ?? null,
-                symbols: bonusDie.face ? [bonusDie.face] : (existingDie?.symbols ?? []),
-                isKept: false,
-                ownerId: settlement.attackerId,
-                displayOnly: false,
-            } as Die;
-        });
-    }, [G.dice, G.pendingBonusDiceSettlement, diceMultistepInteraction]);
+        if (!pendingBonusDiceRoutedToRightTray && !diceMultistepInteraction) {
+            return null;
+        }
+
+        return createPendingBonusDiceTrayDice(G, settlement, !diceMultistepInteraction);
+    }, [G, diceMultistepInteraction, pendingBonusDiceRoutedToRightTray]);
     const attackSnapshotInteractionDice = React.useMemo(() => {
         if (!diceMultistepInteraction || currentPhase !== 'defensiveRoll') return null;
         const data = diceMultistepInteraction.data as { allowedDieIds?: number[] } | undefined;
@@ -1205,17 +1225,34 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         });
     }, [G, currentPhase, diceMultistepInteraction]);
     const interactionDice = React.useMemo(() => {
-        if (bonusDiceInteractionDice) return bonusDiceInteractionDice;
+        if (bonusDiceTrayDice) return bonusDiceTrayDice;
         if (attackSnapshotInteractionDice) return [...G.dice, ...attackSnapshotInteractionDice];
         return G.dice;
-    }, [G.dice, attackSnapshotInteractionDice, bonusDiceInteractionDice]);
+    }, [G.dice, attackSnapshotInteractionDice, bonusDiceTrayDice]);
     const rightSidebarDice = React.useMemo(() => {
+        if (bonusDiceTrayDice) return bonusDiceTrayDice;
         const baseDice = getRailDiceForCurrentBoard(interactionDice, useBoardDiceStage);
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? baseDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : baseDice;
-    }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie, interactionDice, useBoardDiceStage]);
+    }, [G.dice, bonusDiceTrayDice, duelAttackerDisplayDie, duelDefenderDisplayDie, interactionDice, useBoardDiceStage]);
     const boardStageDice = React.useMemo(() => {
         return duelAttackerDisplayDie ? [duelDefenderDisplayDie ?? interactionDice[0] ?? G.dice[0], duelAttackerDisplayDie].filter(Boolean) : interactionDice;
     }, [G.dice, duelAttackerDisplayDie, duelDefenderDisplayDie, interactionDice]);
+    const rightTrayBonusDiceSettlement = pendingBonusDiceRoutedToRightTray
+        ? G.pendingBonusDiceSettlement
+        : undefined;
+    const canConfirmBonusDiceFromRightTray = Boolean(
+        rightTrayBonusDiceSettlement
+        && !isSpectator
+        && String(rightTrayBonusDiceSettlement.attackerId) === String(rootPid)
+        && !rawG.sys.responseWindow?.current
+        && !rawG.sys.interaction?.current
+    );
+    const handleConfirmBonusDiceFromRightTray = React.useCallback(() => {
+        if (!canConfirmBonusDiceFromRightTray || !rightTrayBonusDiceSettlement) {
+            return;
+        }
+        handlePendingBonusSettlementClose(rightTrayBonusDiceSettlement);
+    }, [canConfirmBonusDiceFromRightTray, handlePendingBonusSettlementClose, rightTrayBonusDiceSettlement]);
     // 状态效果/玩家交互配置
     const isStatusInteraction = pendingInteraction && (
         pendingInteraction.type === 'selectStatus' ||
@@ -2096,7 +2133,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
-                        diceStage={useBoardDiceStage ? (
+                        diceStage={useBoardDiceStage && !bonusDiceTrayDice ? (
                             <BoardDiceStage
                                 dice={boardStageDice}
                                 rollCount={G.rollCount}
@@ -2168,7 +2205,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         sellButtonVisible={sellButtonVisible}
                         interaction={diceMultistepInteraction ?? pendingInteraction}
                         multistepInteraction={diceMultistepState}
-                        showDiceTray={showRailDiceTray}
+                        showDiceTray={showRailDiceTray || Boolean(bonusDiceTrayDice)}
+                        showDiceActions={!rightTrayBonusDiceSettlement || Boolean(diceMultistepInteraction)}
+                        showBonusDiceConfirm={Boolean(
+                            rightTrayBonusDiceSettlement
+                            && String(rightTrayBonusDiceSettlement.attackerId) === String(rootPid)
+                        )}
+                        canConfirmBonusDice={canConfirmBonusDiceFromRightTray}
+                        onConfirmBonusDice={handleConfirmBonusDiceFromRightTray}
                         activeModifiers={activeModifiers}
                         attackModifierBonusDamage={
                             G.pendingAttack?.attackModifierBonusDamage ?? G.players[G.activePlayerId]?.pendingBonusDamage
@@ -2284,7 +2328,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
                     // 额外骰子
                     bonusDie={bonusDie}
-                    onBonusDieClose={() => handlePendingBonusSettlementClose(displayOnlyBonusDiceSettlement)}
+                    onBonusDieClose={() => handlePendingBonusSettlementClose(foregroundBonusDiceSettlement)}
                     suppressBonusDieOverlay={shouldSuppressForegroundBonusDieOverlay({
                         hasChoice: choice.hasChoice,
                         interactiveSettlement: interactiveBonusDiceSettlement,
@@ -2295,7 +2339,12 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     pendingBonusDiceSettlement={displayOnlyBonusDiceSettlement}
                     canRerollBonusDie={false}
                     onRerollBonusDie={undefined}
-                    onSkipBonusDiceReroll={undefined}
+                    onSkipBonusDiceReroll={
+                        foregroundBonusDiceSettlement
+                        && String(foregroundBonusDiceSettlement.attackerId) === String(rootPid)
+                            ? () => handlePendingBonusSettlementClose(foregroundBonusDiceSettlement)
+                            : undefined
+                    }
 
                     // Token 响应
                     // 游戏结束

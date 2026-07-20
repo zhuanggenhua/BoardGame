@@ -25,6 +25,72 @@ async function saveEvidenceScreenshot(page: Page, testInfo: TestInfo, name: stri
     await page.screenshot({ path, fullPage: true });
 }
 
+async function expectActionSpotlightPersists(page: Page, defId: string): Promise<void> {
+    const spotlightCard = page.getByTestId('smashup-action-spotlight-card');
+
+    await expect(spotlightCard).toBeVisible({ timeout: 8000 });
+    await expect(spotlightCard).toHaveAttribute('data-card-def-id', defId);
+
+    await page.waitForTimeout(1000);
+
+    await expect(spotlightCard, '行动卡特写不能只闪现，必须等玩家明确关闭').toBeVisible();
+    await expect(spotlightCard).toHaveAttribute('data-card-def-id', defId);
+}
+
+async function expectActionSpotlightDoesNotCoverCriticalUi(page: Page): Promise<void> {
+    const layout = await page.evaluate(() => {
+        const spotlightElements = Array.from(document.querySelectorAll<HTMLElement>(
+            '[data-testid="card-spotlight-content"], [data-testid="card-spotlight-status"]',
+        ));
+        if (spotlightElements.length === 0) return { hasSpotlight: false, spotlights: [], overlaps: [] };
+
+        const toRect = (element: HTMLElement) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            };
+        };
+        const targetSelectors = [
+            { group: '基地', selector: '[data-testid^="base-zone-"]' },
+            { group: '基地总力量圆标', selector: '[data-testid^="su-base-breakpoint-token-"]' },
+            { group: '玩家力量标记', selector: '[data-testid^="su-base-score-"]' },
+            { group: '弃牌堆', selector: '[data-testid="su-discard-toggle"]' },
+            { group: '牌库', selector: '[data-testid="su-deck-stack"]' },
+            { group: '工具按钮', selector: '[data-testid="debug-toggle-container"], [data-testid="debug-toggle"]' },
+            { group: '显隐按钮', selector: '[data-testid="su-scoreboard-visibility-toggle"]' },
+        ];
+        const spotlightRects = spotlightElements
+            .map((element) => ({ id: element.getAttribute('data-testid') ?? 'spotlight', rect: toRect(element) }))
+            .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+        const overlaps = targetSelectors
+            .flatMap(({ group, selector }) => Array.from(document.querySelectorAll<HTMLElement>(selector))
+                .map((element) => ({ group, id: element.getAttribute('data-testid') ?? selector, rect: toRect(element) })))
+            .filter(({ rect }) => rect.width > 0 && rect.height > 0)
+            .flatMap((target) => spotlightRects
+                .filter(({ rect: spotlightRect }) => !(
+                    spotlightRect.right <= target.rect.left ||
+                    spotlightRect.left >= target.rect.right ||
+                    spotlightRect.bottom <= target.rect.top ||
+                    spotlightRect.top >= target.rect.bottom
+                ))
+                .map(({ id: spotlightId, rect: spotlightRect }) => ({ ...target, spotlightId, spotlightRect })));
+
+        return { hasSpotlight: true, spotlights: spotlightRects, overlaps };
+    });
+
+    expect(layout.hasSpotlight, '行动卡特写必须存在').toBe(true);
+    expect(
+        Math.max(...layout.spotlights.map(({ rect }) => rect.width), 0),
+        '行动卡特写或提示不能大到压住棋盘',
+    ).toBeLessThanOrEqual(280);
+    expect(layout.overlaps, '行动卡特写和提示不得遮挡基地、计分标、弃牌堆、牌库或工具按钮').toEqual([]);
+}
+
 async function applyOnlineMatchState(
     matchId: string,
     page: Page,
@@ -479,8 +545,9 @@ async function installSmashUpAiResponsePassPatch(
 }
 
 async function waitForTurnTracker(page: Page, side: 'YOU' | 'OPP'): Promise<void> {
+    const sideText = side === 'YOU' ? /YOU|你自己/i : /OPP|对手/i;
     await expect(
-        page.locator('[data-tutorial-id="su-turn-tracker"]').filter({ hasText: new RegExp(side, 'i') }),
+        page.locator('[data-tutorial-id="su-turn-tracker"]').filter({ hasText: sideText }),
     ).toBeVisible({ timeout: 8000 });
 }
 
@@ -491,6 +558,42 @@ async function getPlayerActionUid(page: Page, playerId: '0' | '1', defId: string
         const hand = state?.core?.players?.[currentPlayerId]?.hand ?? [];
         return hand.find((card: any) => card.defId === targetDefId)?.uid ?? null;
     }, { currentPlayerId: playerId, targetDefId: defId });
+}
+
+async function playActionCardWithoutTargetByUi(
+    page: Page,
+    matchId: string,
+    playerId: '0' | '1',
+    cardUid: string,
+): Promise<void> {
+    const card = page.locator(`[data-card-uid="${cardUid}"]`);
+    await expect(card).toBeVisible({ timeout: 5000 });
+
+    // SmashUp hand cards use "first click selects, second click confirms" for no-target actions.
+    await card.click();
+    await page.waitForTimeout(250);
+    await card.click();
+
+    await expect.poll(async () => {
+        const state = await getMatchState(matchId, page) as any;
+        const player = state?.core?.players?.[playerId];
+        const eventStreamEntries = state?.sys?.eventStream?.entries ?? [];
+        return {
+            inHand: Boolean(player?.hand?.some((entry: any) => entry.uid === cardUid)),
+            inDiscard: Boolean(player?.discard?.some((entry: any) => entry.uid === cardUid)),
+            hasActionPlayed: eventStreamEntries.some((entry: any) => (
+                entry.event?.type === 'su:action_played'
+                && entry.event?.payload?.cardUid === cardUid
+            )),
+        };
+    }, {
+        timeout: 10000,
+        message: `等待玩家 ${playerId} 通过真实 UI 打出行动卡 ${cardUid}`,
+    }).toEqual({
+        inHand: false,
+        inDiscard: true,
+        hasActionPlayed: true,
+    });
 }
 
 async function getCurrentInteraction(page: Page): Promise<any> {
@@ -579,7 +682,7 @@ async function dismissSpotlightIfVisible(page: Page): Promise<void> {
     const spotlightQueue = page.getByTestId('card-spotlight-queue');
     const isVisible = await spotlightQueue.isVisible({ timeout: 300 }).catch(() => false);
     if (!isVisible) return;
-    await spotlightQueue.click({ force: true });
+    await spotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
     await expect(spotlightQueue).toBeHidden({ timeout: 5000 });
 }
 
@@ -2271,13 +2374,13 @@ test('在线模式对手打出行动卡时应显示特写', async ({ browser }, 
 
         const hostActionUid = await getPlayerActionUid(hostPage, '0', 'wizard_mystic_studies');
         expect(hostActionUid).toBeTruthy();
-        await hostPage.locator(`[data-card-uid="${hostActionUid}"]`).click();
-        await expect(guestSpotlightCard).toBeVisible({ timeout: 8000 });
-        await expect(guestSpotlightCard).toHaveAttribute('data-card-def-id', 'wizard_mystic_studies');
+        await playActionCardWithoutTargetByUi(hostPage, firstSetup.matchId, '0', hostActionUid);
+        await expectActionSpotlightPersists(guestPage, 'wizard_mystic_studies');
+        await expectActionSpotlightDoesNotCoverCriticalUi(guestPage);
         await expect(hostSpotlightQueue).toHaveCount(0);
         await saveEvidenceScreenshot(guestPage, testInfo, 'action-spotlight-online-p0');
 
-        await guestSpotlightQueue.click({ force: true });
+        await guestSpotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
         await expect(guestSpotlightCard).toBeHidden({ timeout: 5000 });
     } finally {
         await firstSetup.guestContext.close();
@@ -2304,13 +2407,13 @@ test('在线模式对手打出行动卡时应显示特写', async ({ browser }, 
 
         const guestActionUid = await getPlayerActionUid(guestPage, '1', 'wizard_mystic_studies');
         expect(guestActionUid).toBeTruthy();
-        await guestPage.locator(`[data-card-uid="${guestActionUid}"]`).click();
-        await expect(hostSpotlightCard).toBeVisible({ timeout: 8000 });
-        await expect(hostSpotlightCard).toHaveAttribute('data-card-def-id', 'wizard_mystic_studies');
+        await playActionCardWithoutTargetByUi(guestPage, secondSetup.matchId, '1', guestActionUid);
+        await expectActionSpotlightPersists(hostPage, 'wizard_mystic_studies');
+        await expectActionSpotlightDoesNotCoverCriticalUi(hostPage);
         await expect(guestSpotlightQueue).toHaveCount(0);
         await saveEvidenceScreenshot(hostPage, testInfo, 'action-spotlight-online-p1');
 
-        await hostSpotlightQueue.click({ force: true });
+        await hostSpotlightQueue.getByRole('button', { name: /^(关闭特写|Close spotlight)$/i }).click({ force: true });
         await expect(hostSpotlightCard).toBeHidden({ timeout: 5000 });
     } finally {
         await secondSetup.guestContext.close();

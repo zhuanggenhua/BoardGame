@@ -426,7 +426,6 @@
     "reviveUndead": "Revive Undead: Select an undead unit from the discard pile",
     "infection": "Infection: Select a plague zombie from the discard pile",
     "fortressPower": "Fortress Power: Select a fortress unit from the discard pile",
-    "huijinCallGuards": "Call Guards: Select a common unit from your hand",
     "default": "Select a card",
     "empty": "No eligible cards"
   },
@@ -668,17 +667,17 @@
       "iceShards": "Ice Shards: resolves automatically at Attack phase start",
       "feedBeast": "Feed Beast: choose a victim or self-destruct",
       "moguParasite": "Parasite: choose charge spending or damage",
-      "huijinCallGuardsCard": "Call Guards: choose a common unit to summon",
+      "huijinCallGuardsTarget": "Call Guards: choose a friendly common unit on the board",
       "huijinCallGuardsPosition": "Call Guards: choose an adjacent space",
       "huijinRamTarget": "Ram: choose an adjacent enemy common or champion",
       "huijinRamPosition": "Ram: choose a push or pull destination",
       "huijinQuickShot": "Quick Shot: choose a target within 3 clear spaces",
       "shourenEncourage": "Encourage: reroll all dice or keep the result",
-      "shourenBloodyRush": "Bloody Rush: move and take 1 damage, or skip to stay put",
-      "shourenBloodyRushPosition": "Bloody Rush: click a highlighted board space to move this unit and take 1 damage; skip to stay put",
-      "shourenBerserkPosition": "Berserk: click a highlighted board space to push or pull the Tundra Fighter; skip to keep it in place",
-      "shourenBruteImpact": "Brute Impact: click a highlighted board space to push the target away from the attacker; skip to avoid pushing",
-      "shourenPrimalFuryPosition": "Primal Fury: click a highlighted board space to move Grognack; skip to keep him in place",
+      "shourenBloodyRush": "Bloody Rush: you may deal 1 damage to this unit to push or pull it 1 space",
+      "shourenBloodyRushPosition": "Bloody Rush: you may deal 1 damage to this unit to push or pull it 1 space",
+      "shourenBerserkPosition": "Berserk: you may push or pull this unit 1 space; if you do, it may make one extra attack against an adjacent enemy card",
+      "shourenBruteImpact": "Brute Impact: you may push that unit 1 space away from this unit",
+      "shourenPrimalFuryPosition": "Primal Fury: you may push or pull the Summoner 1 or 2 spaces; if you do, it may make one extra attack against an adjacent enemy card",
       "shourenExtraAttack": "Choose an adjacent target for the extra attack"
     },
     "fireSacrifice": {
@@ -1018,7 +1017,7 @@
     },
     "huijin_call_guards": {
       "name": "Call Guards",
-      "description": "At the end of your Attack phase, you may remove 1 charge from this summoner to place a friendly common unit from your hand in an empty space adjacent to this summoner."
+      "description": "At the end of your Attack phase, you may remove 1 charge from this summoner to choose a friendly common unit and place it in an empty space adjacent to this summoner."
     },
     "huijin_ember_summon": {
       "name": "Ember Summon",

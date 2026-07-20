@@ -196,9 +196,7 @@ const closeCardSpotlightIfOpen = async (page: Page) => {
     }
     const cardSpotlight = page.getByTestId('card-spotlight-overlay');
     if (await cardSpotlight.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await page.waitForTimeout(250);
-        await cardSpotlight.click();
-        await expect(cardSpotlight).toBeHidden({ timeout: 5000 });
+        throw new Error('卡牌特写可见但没有明确关闭按钮');
     }
 };
 

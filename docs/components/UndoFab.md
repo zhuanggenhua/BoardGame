@@ -15,6 +15,35 @@
 
 ## 使用方法
 
+### 当前推荐：通过 GameHUD 统一入口接入
+
+当前游戏内通用入口优先使用 `GameHUD` 的悬浮球菜单承载操作日志、撤回、反馈、设置等按钮。只证明 `UndoSystem`、日志 allowlist 或管线测试通过，不能算玩家入口已接入。
+
+Board 层必须同时满足：
+
+1. 用 `UndoProvider` 包住真实游戏内容，并传入当前 `G`、`dispatch`、`playerID`、`isGameOver` 与本地/联机模式。
+2. 在真实路由环境下渲染 `GameHUD`，并传入 `gameId`、`matchId`、`myPlayerId`、`players` 和阶段门禁。
+3. 正式局内不能被 `isPregameSetupPhase`、选角阶段、终局阶段或游戏专属 FAB suppress 规则误隐藏。
+4. 至少补一条 Board/页面层测试，使用真实 `sys.actionLog.entries` 与 `sys.undo.snapshots` 状态，断言公共 FAB 展开后能看到 `action-log` 和 `undo-request` / `undo-idle` 入口。
+
+示例：
+
+```tsx
+<UndoProvider value={{ G, dispatch, playerID, isGameOver, isLocalMode }}>
+    <YourBoardContent />
+    <GameHUD
+        mode={isMultiplayer ? 'online' : 'local'}
+        gameId={YOUR_GAME_MANIFEST.id}
+        matchId={G.sys?.matchId}
+        myPlayerId={playerID}
+        players={matchData}
+        isPregameSetupPhase={isPregameSetupPhase}
+    />
+</UndoProvider>
+```
+
+`UndoFab` 直接接入只适用于尚未使用 `GameHUD` 的旧页面或专用页面。新接入或审计“撤回已完成”时，默认按上面的 `UndoProvider + GameHUD + Board 层测试` 判定。
+
 ### 1. 导入组件
 
 ```tsx

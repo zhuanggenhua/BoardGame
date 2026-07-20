@@ -117,6 +117,52 @@ const buildAfterRollConfirmedWindowEvent = (
     };
 };
 
+const shouldOpenAfterRollConfirmedForCardEvents = (
+    matchState: { sys?: { responseWindow?: { current?: { windowType: string } } } },
+    cardEvents: DiceThroneEvent[],
+): boolean => {
+    if (matchState.sys?.responseWindow?.current) {
+        return false;
+    }
+
+    return cardEvents.some((event) => (
+        event.type === 'BONUS_DICE_REROLL_REQUESTED'
+        && event.payload.settlement?.allowDiceModification === true
+        && getPendingBonusSettlementDice(event.payload.settlement).length > 0
+    ));
+};
+
+const appendAfterRollConfirmedWindowForCardEvents = (
+    matchState: { core: DiceThroneCore; sys?: { phase?: string; responseWindow?: { current?: { windowType: string } } } },
+    cardEvents: DiceThroneEvent[],
+    phase: TurnPhase,
+    timestamp: number,
+    commandType: string,
+): DiceThroneEvent[] => {
+    if (!shouldOpenAfterRollConfirmedForCardEvents(matchState, cardEvents)) {
+        return cardEvents;
+    }
+
+    const stateAfterCardEvents = applyEvents(matchState.core, cardEvents, reduce);
+    const settlement = stateAfterCardEvents.pendingBonusDiceSettlement;
+    if (
+        settlement?.allowDiceModification !== true
+        || getPendingBonusSettlementDice(settlement).length === 0
+    ) {
+        return cardEvents;
+    }
+
+    const responseWindowEvent = buildAfterRollConfirmedWindowEvent(
+        stateAfterCardEvents,
+        settlement.attackerId,
+        phase,
+        timestamp,
+        commandType,
+    );
+
+    return responseWindowEvent ? [...cardEvents, responseWindowEvent] : cardEvents;
+};
+
 const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): string => {
     if (abilityId === 'shadow-guard') return 'shadow-defense';
     if (
@@ -580,8 +626,16 @@ export function execute(
         case 'UNDO_SELL_CARD':
         case 'REORDER_CARD_TO_END':
         case 'PLAY_CARD':
-        case 'PLAY_UPGRADE_CARD':
-            return executeCardCommand(matchState, command, random, phase, timestamp);
+        case 'PLAY_UPGRADE_CARD': {
+            const cardEvents = executeCardCommand(matchState, command, random, phase, timestamp);
+            return appendAfterRollConfirmedWindowForCardEvents(
+                matchState,
+                cardEvents,
+                phase,
+                timestamp,
+                command.type,
+            );
+        }
 
         case 'RESOLVE_CHOICE': {
             // 由 InteractionSystem 处理，这里只生成领域事件
@@ -654,18 +708,28 @@ export function execute(
                 ? state.pendingAttack.attackDiceValues?.[attackSnapshotDieIndex]
                 : undefined;
             if (die || pendingBonusDie || attackSnapshotDieValue !== undefined || duelAttackerDieActive) {
+                const dieTarget = pendingBonusDie
+                    ? 'pendingBonusDie'
+                    : duelAttackerDieActive
+                        ? 'duelAttackerDie'
+                        : attackSnapshotDieValue !== undefined
+                            ? 'attackSnapshot'
+                            : 'activeDie';
                 const event: DieModifiedEvent = {
                     type: 'DIE_MODIFIED',
                     payload: {
                         dieId,
                         oldValue: duelAttackerDieActive
                             ? state.pendingAttack?.duelAttackerDieValue ?? newValue
-                            : die?.value ?? pendingBonusDie?.value ?? attackSnapshotDieValue ?? newValue,
+                            : pendingBonusDie?.value ?? die?.value ?? attackSnapshotDieValue ?? newValue,
                         newValue,
                         playerId: command.playerId,
                         ownerId: duelAttackerDieActive
                             ? state.pendingAttack?.attackerId
-                            : die?.ownerId ?? (attackSnapshotDieValue !== undefined ? state.pendingAttack?.attackerId : undefined),
+                            : pendingBonusDie
+                                ? state.pendingBonusDiceSettlement?.attackerId
+                                : die?.ownerId ?? (attackSnapshotDieValue !== undefined ? state.pendingAttack?.attackerId : undefined),
+                        target: dieTarget,
                     },
                     sourceCommandType: command.type,
                     timestamp,
@@ -676,6 +740,7 @@ export function execute(
                 // 终极技能只有正式发动后才行动锁定；发动前仍可被改骰取消。
                 if (phase === 'offensiveRoll'
                     && state.pendingAttack
+                    && dieTarget === 'activeDie'
                     && die
                     && newValue !== die.value) {
                     events.push({

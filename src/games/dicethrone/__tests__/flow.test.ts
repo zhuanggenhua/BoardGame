@@ -43,6 +43,7 @@ import {
     createNoResponseSetup,
     getDefenderChoicePrompt,
     getSimpleChoicePrompt,
+    getMultistepChoicePrompt,
     getCardById,
     assertState,
     advanceTo,
@@ -1169,9 +1170,9 @@ describe('王权骰铸流程测试', () => {
 
             expect(state.core.players['2'].discard.some((card) => card.id === 'card-flick')).toBe(true);
             expect(state.sys.responseWindow?.current?.responderQueue).toEqual(['0']);
-            expect(state.sys.interaction.current?.playerId).toBe('2');
-            expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
-            expect((state.sys.interaction.current?.data as { meta?: { dtType?: string; targetOpponentDice?: boolean; diceOwnerId?: PlayerId } } | undefined)?.meta).toMatchObject({
+            const teammateFlickPrompt = getMultistepChoicePrompt(state);
+            expect(teammateFlickPrompt.playerId).toBe('2');
+            expect(teammateFlickPrompt.meta).toMatchObject({
                 dtType: 'modifyDie',
                 targetOpponentDice: true,
                 diceOwnerId: '3',
@@ -1236,9 +1237,9 @@ describe('王权骰铸流程测试', () => {
             expect(playCardResult.success).toBe(true);
             state = playCardResult.state as MatchState<DiceThroneCore>;
 
-            expect(state.sys.interaction.current?.playerId).toBe('3');
-            expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
-            expect((state.sys.interaction.current?.data as { meta?: { dtType?: string; targetOpponentDice?: boolean; diceOwnerId?: PlayerId } } | undefined)?.meta).toMatchObject({
+            const flickPrompt = getMultistepChoicePrompt(state);
+            expect(flickPrompt.playerId).toBe('3');
+            expect(flickPrompt.meta).toMatchObject({
                 dtType: 'modifyDie',
                 targetOpponentDice: true,
                 diceOwnerId: '0',
@@ -1262,7 +1263,7 @@ describe('王权骰铸流程测试', () => {
             expect(modifyDieResult.success).toBe(true);
             state = modifyDieResult.state as MatchState<DiceThroneCore>;
 
-            const interactionId = state.sys.interaction.current?.id;
+            const interactionId = getMultistepChoicePrompt(state).id;
             expect(typeof interactionId).toBe('string');
             const confirmInteractionResult = executePipeline(
                 pipelineConfig,
@@ -2854,6 +2855,90 @@ describe('王权骰铸流程测试', () => {
             expect(result.assertionErrors).toEqual([]);
             expect(result.finalState.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
             expect(result.finalState.sys.responseWindow?.current?.responderQueue).toEqual(['1']);
+        });
+
+        it.each([
+            { attackerId: '0' as PlayerId, responderId: '1' as PlayerId },
+            { attackerId: '1' as PlayerId, responderId: '0' as PlayerId },
+        ])('一掷千金奖励骰结算前，玩家 $attackerId 使用时对手持有弹一手应打开 afterRollConfirmed 并允许改骰后结算', ({ attackerId, responderId }) => {
+            const runner = createRunner(createQueuedRandom([3]));
+            const attackerStartingCp = 5;
+            const responderStartingCp = 10;
+            const opened = runner.run({
+                name: '一掷千金奖励骰响应窗口 - 弹一手',
+                setup: createSetupWithHand(['card-one-throw-fortune'], {
+                    playerId: attackerId,
+                    cp: attackerStartingCp,
+                    mutate: (core) => {
+                        core.activePlayerId = attackerId;
+                        core.players[attackerId].deck = [];
+                        core.players[responderId].hand = [getCardById('card-flick')];
+                        core.players[responderId].deck = [];
+                        core.players[responderId].discard = [];
+                        core.players[responderId].resources[RESOURCE_IDS.CP] = responderStartingCp;
+                        core.rollConfirmedSequence = 2;
+                        core.afterRollResponseWindowSequence = 2;
+                        core.afterRollResponseWindowSignature = 'normal-roll:previous';
+                    },
+                }),
+                commands: [
+                    cmd('PLAY_CARD', attackerId, { cardId: 'card-one-throw-fortune' }),
+                ],
+            });
+
+            expect(opened.assertionErrors).toEqual([]);
+            expect(opened.finalState.core.pendingBonusDiceSettlement).toMatchObject({
+                sourceAbilityId: 'card-one-throw-fortune',
+                attackerId,
+                displayOnly: true,
+                allowDiceModification: true,
+            });
+            expect(opened.finalState.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(3);
+            expect(opened.finalState.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
+            expect(opened.finalState.sys.responseWindow?.current?.responderQueue).toEqual([responderId]);
+
+            runner.setState(opened.finalState);
+            const playedFlick = runner.dispatch('PLAY_CARD', { playerId: responderId, cardId: 'card-flick' });
+            expect(playedFlick.success).toBe(true);
+
+            const interactionData = getMultistepChoicePrompt(playedFlick.finalState) as {
+                playerId?: PlayerId;
+                allowedDieIds?: number[];
+                meta?: {
+                    dtType?: string;
+                    diceOwnerId?: PlayerId;
+                    targetOpponentDice?: boolean;
+                    dieModifyConfig?: { mode?: string; adjustRange?: { min?: number; max?: number } };
+                };
+            } | undefined;
+            expect(interactionData?.playerId).toBe(responderId);
+            expect(interactionData?.allowedDieIds).toEqual([0]);
+            expect(interactionData?.meta).toMatchObject({
+                dtType: 'modifyDie',
+                diceOwnerId: attackerId,
+                targetOpponentDice: true,
+                dieModifyConfig: { mode: 'adjust', adjustRange: { min: -1, max: 1 } },
+            });
+
+            const modified = runner.dispatch('MODIFY_DIE', { playerId: responderId, dieId: 0, newValue: 2 });
+            expect(modified.success).toBe(true);
+            expect(modified.finalState.core.pendingBonusDiceSettlement?.dice[0]).toMatchObject({
+                index: 0,
+                value: 2,
+                effectParams: { cp: 1, value: 2 },
+            });
+
+            const interactionId = getMultistepChoicePrompt(modified.finalState).id;
+            expect(typeof interactionId).toBe('string');
+            const confirmed = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: responderId, interactionId });
+            expect(confirmed.success).toBe(true);
+            expect(getCurrentInteractionSummary(confirmed.finalState).id).toBeUndefined();
+            expect(confirmed.finalState.core.players[responderId].discard.some((card) => card.id === 'card-flick')).toBe(true);
+
+            const settled = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: attackerId });
+            expect(settled.success).toBe(true);
+            expect(settled.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+            expect(settled.finalState.core.players[attackerId].resources[RESOURCE_IDS.CP]).toBe(attackerStartingCp + 1);
         });
 
         it('响应窗口：对手仅持有真正只能改自己骰子的卡时不应打开 afterRollConfirmed', () => {

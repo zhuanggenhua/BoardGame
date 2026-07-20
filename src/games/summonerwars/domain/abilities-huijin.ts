@@ -9,13 +9,14 @@ import type { AbilityDef } from './abilities';
 import { abilityText } from './abilityTextHelper';
 import {
   getUnitAt,
+  getPlayerUnits,
   isCellEmpty,
   isInStraightLine,
   isRangedPathClear,
   manhattanDistance,
   normalizeUnitBoosts,
 } from './helpers';
-import type { CellCoord, UnitCard } from './types';
+import type { CellCoord } from './types';
 
 export const HUIJIN_ABILITIES: AbilityDef[] = [
   {
@@ -30,11 +31,11 @@ export const HUIJIN_ABILITIES: AbilityDef[] = [
       customValidator: (ctx) => {
         if (ctx.sourceUnit.card.unitClass !== 'summoner') return { valid: false, error: '只有召唤师可以召集护卫' };
         if (normalizeUnitBoosts(ctx.sourceUnit.boosts) < 1) return { valid: false, error: '没有充能可消耗' };
-        const cardId = ctx.payload.cardId as string | undefined;
+        const targetPosition = ctx.payload.targetPosition as CellCoord | undefined;
         const position = ctx.payload.position as CellCoord | undefined;
-        if (!cardId || !position) {
-          const hasCommonInHand = ctx.core.players[ctx.playerId].hand.some(card =>
-            card.cardType === 'unit' && (card as UnitCard).unitClass === 'common'
+        if (!targetPosition || !position) {
+          const hasFriendlyCommonOnBoard = getPlayerUnits(ctx.core, ctx.playerId).some(unit =>
+            unit.instanceId !== ctx.sourceUnit.instanceId && unit.card.unitClass === 'common'
           );
           const hasAdjacentEmpty = [
             { row: ctx.sourcePosition.row - 1, col: ctx.sourcePosition.col },
@@ -42,13 +43,13 @@ export const HUIJIN_ABILITIES: AbilityDef[] = [
             { row: ctx.sourcePosition.row, col: ctx.sourcePosition.col - 1 },
             { row: ctx.sourcePosition.row, col: ctx.sourcePosition.col + 1 },
           ].some(pos => isCellEmpty(ctx.core, pos));
-          return hasCommonInHand && hasAdjacentEmpty
+          return hasFriendlyCommonOnBoard && hasAdjacentEmpty
             ? { valid: true }
             : { valid: false, error: '没有可召集的护卫或相邻空格' };
         }
-        const card = ctx.core.players[ctx.playerId].hand.find(item => item.id === cardId);
-        if (!card || card.cardType !== 'unit' || (card as UnitCard).unitClass !== 'common') {
-          return { valid: false, error: '必须选择手牌中的士兵单位' };
+        const target = getUnitAt(ctx.core, targetPosition);
+        if (!target || target.owner !== ctx.playerId || target.card.unitClass !== 'common') {
+          return { valid: false, error: '必须选择场上的友方士兵单位' };
         }
         if (manhattanDistance(ctx.sourcePosition, position) !== 1 || !isCellEmpty(ctx.core, position)) {
           return { valid: false, error: '必须放置到召唤师相邻空格' };

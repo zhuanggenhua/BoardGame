@@ -590,6 +590,7 @@ export const DiceTray = ({
                         const clickable = isInteractionMode
                             ? (isAnyMode ? false : (!isInactiveDie && (canSelectMore || selected)))
                             : canToggleDieLock;
+                        const isReadOnlyDisplayDie = !isInteractionMode && Boolean(d.displayOnly);
                         const displayValue = (isAnyMode || isAdjustMode)
                             ? (modifyResult?.modifications[d.id] ?? d.value)
                             : d.value;
@@ -624,7 +625,7 @@ export const DiceTray = ({
                                         className={`
                                             relative flex-shrink-0 group transition-all duration-200
                                             ${!isInteractionMode && d.isKept ? 'opacity-80' : ''}
-                                            ${!clickable && !showAdjustButtons && !showAnyModeButtons ? 'cursor-not-allowed opacity-50' : ''}
+                                            ${!clickable && !showAdjustButtons && !showAnyModeButtons ? (isReadOnlyDisplayDie ? 'cursor-default' : 'cursor-not-allowed opacity-50') : ''}
                                             ${clickable ? 'cursor-pointer hover:scale-110' : ''}
                                             ${selected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-105' : ''}
                                         `}

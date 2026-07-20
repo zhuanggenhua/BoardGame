@@ -1105,7 +1105,11 @@ export function createJackSpiritPostReviveAttackReadyCore(): BetrayalCore {
 }
 
 export function createJackSpiritPostReviveAttackReadyTutorialCore(): BetrayalCore {
+  const attackReadyCore = createJackSpiritMovementRollReadyCore();
   return applyTutorialDiscoveryOrder(
-    createJackSpiritPostReviveAttackReadyCore(),
+    {
+      ...attackReadyCore,
+      recentRoll: null,
+    },
   );
 }

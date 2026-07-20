@@ -152,8 +152,12 @@ describe('召唤师战争卡面数值录入', () => {
         expect(catalogEntry?.heroImagePath).toBe('summonerwars/hero/huijin/hero');
 
         const deck = createDeckByFactionId('huijin');
-        expect(deck.summoner.name).toBe('玛达莉雅女王');
-        expect(deck.summoner.spriteAtlas).toBe('hero');
+        expect(deck.summoner).toMatchObject({
+            name: '玛达莉雅女王',
+            strength: 4,
+            life: 9,
+            spriteAtlas: 'hero',
+        });
         expect(deck.startingUnits.map(({ unit }) => unit.name)).toEqual(['灰烬弓箭手', '皇家守卫']);
 
         const phoenixSoul = deck.deck.find(card => card.spriteAtlas === 'cards' && card.spriteIndex === 10);

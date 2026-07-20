@@ -124,7 +124,7 @@ export const LeftSidebar = ({
                     />
                 </div>
                 {/* 血条和自动响应开关容器 */}
-                <div className="w-full px-[1vw]" data-tutorial-id="player-stats">
+                <div className="w-full px-[1vw]" data-testid="dt-player-stats-panel" data-tutorial-id="player-stats">
                     <div className="w-full flex flex-col gap-[0.4vw]">
                         <PlayerStats
                             player={viewPlayer}

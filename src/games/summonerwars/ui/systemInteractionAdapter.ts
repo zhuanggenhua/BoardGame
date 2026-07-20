@@ -45,19 +45,16 @@ type ActivatedAbilityId = typeof ACTIVATED_ABILITY_IDS[number];
 export const SYSTEM_CARD_SELECTOR_ABILITY_IDS = [
   'revive_undead',
   'fortress_power',
-  'huijin_call_guards',
 ] as const;
 
 type SystemCardSelectorAbilityId = typeof SYSTEM_CARD_SELECTOR_ABILITY_IDS[number];
 type SystemCardSelectorTitleKey =
   | 'cardSelector.reviveUndead'
-  | 'cardSelector.fortressPower'
-  | 'cardSelector.huijinCallGuards';
+  | 'cardSelector.fortressPower';
 
 const SYSTEM_CARD_SELECTOR_TITLE_KEYS: Record<SystemCardSelectorAbilityId, SystemCardSelectorTitleKey> = {
   revive_undead: 'cardSelector.reviveUndead',
   fortress_power: 'cardSelector.fortressPower',
-  huijin_call_guards: 'cardSelector.huijinCallGuards',
 };
 
 const isCellCoord = (value: unknown): value is CellCoord => {
@@ -374,16 +371,6 @@ export function listSystemCardSelectorTargetCardIds(
   abilityId: SystemCardSelectorAbilityId,
 ): string[] {
   if (!swInteraction) return [];
-  if (abilityId === 'huijin_call_guards' && swInteraction.type === 'huijin_call_guards_select_card') {
-    return swInteraction.options
-      .map((option) => {
-        const value = option.value as { action?: string; cardId?: string } | undefined;
-        return value?.action === 'huijin_call_guards_card' && typeof value.cardId === 'string'
-          ? value.cardId
-          : null;
-      })
-      .filter((cardId): cardId is string => !!cardId);
-  }
   return listActivatedAbilityTargetCardIds(swInteraction, abilityId, 'selectCard');
 }
 
@@ -392,13 +379,6 @@ export function findSystemCardSelectorOptionByCardId(
   abilityId: SystemCardSelectorAbilityId,
   targetCardId: string,
 ): PromptOption | null {
-  if (abilityId === 'huijin_call_guards') {
-    if (swInteraction?.type !== 'huijin_call_guards_select_card') return null;
-    return swInteraction.options.find((option) => {
-      const value = option.value as { action?: string; cardId?: string } | undefined;
-      return value?.action === 'huijin_call_guards_card' && value.cardId === targetCardId;
-    }) ?? null;
-  }
   return findActivatedAbilityTargetOptionByCardId(swInteraction, abilityId, targetCardId, 'selectCard');
 }
 
@@ -831,6 +811,15 @@ export function findSystemAbilityUnitOptionByPosition(
     }) ?? null;
   }
 
+  if (abilityMode.abilityId === 'huijin_call_guards' && swInteraction.type === 'huijin_call_guards_select_target') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'huijin_call_guards_target'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
   return null;
 }
 
@@ -888,6 +877,7 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'telekinesis_instead'
       || abilityMode.abilityId === 'high_telekinesis_instead'
       || abilityMode.abilityId === 'mogu_blood_infusion'
+      || abilityMode.abilityId === 'huijin_call_guards'
       || abilityMode.abilityId === 'huijin_ram'
       || abilityMode.abilityId === 'huijin_quick_shot'
     )
@@ -1045,10 +1035,10 @@ export function deriveSystemAbilityMode(
     };
   }
 
-  if (swInteraction.type === 'huijin_call_guards_select_card') {
+  if (swInteraction.type === 'huijin_call_guards_select_target') {
     return {
       abilityId: 'huijin_call_guards',
-      step: 'selectCard',
+      step: 'selectUnit',
       sourceUnitId: meta.sourceUnitId,
     };
   }
@@ -1058,7 +1048,7 @@ export function deriveSystemAbilityMode(
       abilityId: 'huijin_call_guards',
       step: 'selectPosition',
       sourceUnitId: meta.sourceUnitId,
-      selectedCardId: typeof meta.cardId === 'string' ? meta.cardId : undefined,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
     };
   }
 

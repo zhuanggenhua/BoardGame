@@ -527,7 +527,7 @@ function buildDustSicknessExchangeActions(
         type: BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE,
         payload: { accept: true },
         kind: ACTION_KINDS.RESOLVE_SICKNESS_EXCHANGE,
-        label: `同意${requester?.displayName ?? '请求者'}交换 Sickness token`,
+        label: `同意${requester?.displayName ?? '请求者'}交换疾病标记`,
         idParts: [pending.requesterPlayerId, pending.targetPlayerId],
         metadata: {
             requesterPlayerId: pending.requesterPlayerId,
@@ -605,7 +605,7 @@ function buildDustHauntActions(
             type: BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE,
             payload: { targetPlayerId: target.playerId },
             kind: ACTION_KINDS.REQUEST_SICKNESS_EXCHANGE,
-            label: `请求与${target.displayName}交换 Sickness token`,
+            label: `请求与${target.displayName}交换疾病标记`,
             idParts: [target.playerId],
             metadata: {
                 targetPlayerId: target.playerId,

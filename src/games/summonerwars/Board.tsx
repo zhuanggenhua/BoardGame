@@ -511,11 +511,9 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     : null;
   const systemCardSelectorCards = useMemo(() => {
     if (!systemCardSelectorAbilityId || !systemAbilitySelectableCardIds) return [];
-    const sourceCards = systemCardSelectorAbilityId === 'huijin_call_guards'
-      ? myHand
-      : (core.players[myPlayerId]?.discard ?? []);
+    const sourceCards = core.players[myPlayerId]?.discard ?? [];
     return sourceCards.filter((card) => systemAbilitySelectableCardIds.has(card.id));
-  }, [core.players, myHand, myPlayerId, systemAbilitySelectableCardIds, systemCardSelectorAbilityId]);
+  }, [core.players, myPlayerId, systemAbilitySelectableCardIds, systemCardSelectorAbilityId]);
   useEffect(() => {
     if (abilityMode?.step === 'selectCard' && abilityUiRoute !== 'card-selector') {
       console.warn('[SummonerWars] 未处理的系统能力卡牌选择器分支', {
@@ -1529,7 +1527,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                     if (!isSystemCardSelectorActive || !swInteraction) return;
                     cancelSwInteraction(true);
                   }}
-                  cancelLabelKey={systemCardSelectorAbilityId === 'huijin_call_guards' ? 'actions.skip' : undefined}
                 />
               )}
 

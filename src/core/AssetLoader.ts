@@ -1305,6 +1305,20 @@ const isCapacitorFileAssetUrl = (src: string) => {
     return /^https?:\/\/[^/]+\/_capacitor_file_\//i.test(path)
         || path.startsWith('/_capacitor_file_/');
 };
+const isLocalBrowserAssetOrigin = () => {
+    const maybeProcess = (globalThis as typeof globalThis & {
+        process?: { env?: Record<string, string | undefined> };
+    }).process;
+    if (maybeProcess?.env?.VITEST) {
+        return false;
+    }
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    const hostname = window.location?.hostname?.toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]';
+};
 
 /** 移除扩展名 */
 const stripExtension = (src: string) => {
@@ -1596,12 +1610,19 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
             DEFAULT_ASSETS_BASE_URL,
         ].filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index);
         const publicUrl = resolveVersionedAssetUrl(`/assets/${remoteRelative}`);
+        const preferPublicAssetBeforeRemote = (import.meta.env.DEV || isLocalBrowserAssetOrigin())
+            && !isCapacitorFileAssetUrl(localizedUrl);
 
         pushCandidate(localizedUrl);
+        if (preferPublicAssetBeforeRemote) {
+            pushCandidate(publicUrl);
+        }
         remoteBaseUrls.forEach((baseUrl) => {
             pushCandidate(resolveVersionedRemoteAssetUrl(`${baseUrl}/${remoteRelative}`, remoteRelative));
         });
-        pushCandidate(publicUrl);
+        if (!preferPublicAssetBeforeRemote) {
+            pushCandidate(publicUrl);
+        }
     });
 
     return candidates.filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index);

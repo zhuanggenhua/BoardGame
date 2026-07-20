@@ -397,7 +397,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.eventOrder.map((event) => event.name).sort()).toEqual(supportedEventNames.sort());
     });
 
-    it('剧本3玩家视图只允许本人看到自己的 Sickness token 数字', () => {
+    it('剧本3玩家视图只允许本人看到自己的疾病标记数字', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.scenarioRuntime.dust = {
             sicknessTokensByPlayerId: {
@@ -1163,7 +1163,7 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.phase).toBe('preHaunt');
-        expect(core.latestDiscovery?.detail).toContain('作祟检定 0');
+        expect(core.latestDiscovery?.detail).toContain('选择进行作祟检定：总点数 0');
         expect(core.latestDiscovery?.detail).toContain('速度 +1');
         expect(core.currentExplorer.traits.speed).toBe(5);
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -1227,7 +1227,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.traitorPlayerId).toBe('0');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(1);
         expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Splash of Crimson');
-        expect(core.latestDiscovery?.detail).toContain('作祟检定 6');
+        expect(core.latestDiscovery?.detail).toContain('选择进行作祟检定：总点数 6');
         expect(core.activityLog[0]?.text).toContain('Crimson Jack Returns');
     });
 
@@ -1257,7 +1257,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.turnEndedByDiscovery).toBe(true);
     });
 
-    it('一瓶微尘作祟检定成功会进入灰尘剧本并分发隐藏 Sickness token', () => {
+    it('一瓶微尘作祟检定成功会进入灰尘剧本并分发隐藏疾病标记', () => {
         const core = createDustHauntCore();
 
         expect(core.phase).toBe('haunt');
@@ -1273,7 +1273,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds).toEqual(['0']);
     });
 
-    it('灰尘剧本 Search for a Cure 成功会在当前恶兆板块放置 Research token', () => {
+    it('灰尘剧本寻找解药成功会在当前恶兆板块放置研究标记', () => {
         let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
         setTestExplorerTraits(core, '1', { knowledge: 3 });
 
@@ -1288,11 +1288,11 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.scenarioRuntime.dust?.researchRoomIds).toContain('ground-north');
         expect(core.usedCardIdsThisTurn).toContain('search-for-cure');
-        expect(core.recentRoll?.latestLabel).toBe('放置 Research token');
+        expect(core.recentRoll?.latestLabel).toBe('放置研究标记');
         expect(core.recommendedAction).toBe('endTurn');
     });
 
-    it('灰尘剧本 Cure the Dust 成功会进入英雄胜利终局', () => {
+    it('灰尘剧本治愈灰尘成功会进入英雄胜利终局', () => {
         let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
         core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway'];
         setTestExplorerTraits(core, '1', { knowledge: 5 });
@@ -1538,7 +1538,7 @@ it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机�
         expect(core.turnEndedByDiscovery).toBe(true);
     });
 
-    it('魔法相机剧本 Take a Photo 成功会夺取英雄 Essence 并提升叛徒属性', () => {
+    it('魔法相机剧本拍照成功会夺取英雄本质并提升叛徒属性', () => {
         let core = createMagicCameraHauntCore('1');
         activateTestExplorer(core, '1');
         core.currentExplorer.roomId = 'hallway';
@@ -1564,7 +1564,7 @@ it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机�
         expect(core.scenarioRuntime.magicCamera?.heroEssencePlayerIds).not.toContain('0');
         expect(core.scenarioRuntime.magicCamera?.capturedEssencePlayerIds).toContain('0');
         expect(findTestExplorer(core, '1').traits.might).toBe(mightBefore + 1);
-        expect(core.recentRoll?.latestLabel).toBe('夺取 Essence');
+        expect(core.recentRoll?.latestLabel).toBe('夺取本质');
     });
 
     it('魔法相机剧本 Smash the Magic Camera 成功且摄影师全灭时英雄胜利', () => {
@@ -5257,6 +5257,8 @@ it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机�
         expect(core.latestDiscovery?.kind).toBe('omen');
         expect(core.latestDiscovery?.title).toBe(omen.name);
         expect(core.latestDiscovery?.detail).toContain('作祟检定');
+        expect(core.latestDiscovery?.detail).toContain('抽到预兆后进行作祟检定');
+        expect(core.latestDiscovery?.detail).toContain('5+ 作祟开始');
         expect(core.recentRoll?.kind).toBe('hauntRoll');
         expect(core.recentRoll?.sourceTitle).toBe(omen.name);
         expect(core.recentRoll?.rollLabel).toBe('作祟检定');
@@ -5826,6 +5828,11 @@ it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机�
         const updatedHero = core.currentExplorer.playerId === '0'
             ? core.currentExplorer
             : core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        expect(core.recentRoll?.kind).toBe('attackRoll');
+        expect(core.recentRoll?.playerId).toBe('2');
+        expect(core.recentRoll?.dice.length).toBeGreaterThan(0);
+        expect(core.recentRoll?.attack?.target).toBe('hero');
+        expect(core.recentRoll?.attack?.defenderPlayerId).toBe('0');
         expect(updatedHero.traits.might + updatedHero.traits.speed).toBeLessThan(hero.traits.might + hero.traits.speed);
     });
 

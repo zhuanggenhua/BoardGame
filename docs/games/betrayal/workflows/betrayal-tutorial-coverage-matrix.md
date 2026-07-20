@@ -8,7 +8,7 @@
 1. `basic-setup-and-turn`
    - 目标：直接从真实恶兆前运行时进入，合并讲清基础回合、持有物使用、移动、探索和发现牌检定；交易不再混在这一章里带过。
 2. `trade-and-agreement`
-   - 目标：切到同房间且双方都有持有物的真实运行时局面，讲清交易必须同一房间、物品/预兆可交换、换回是可选附加项、双方同意后才结算，并完成“不点换回直接发请求”和“选兔脚 -> 点同房间队友 -> 选换回地图 -> 发请求 -> 接收方同意 -> 双向结算清空”链路。
+   - 目标：切到同房间且双方都有持有物的真实运行时局面，讲清交易必须同一房间、物品/预兆可交换、双方同意后才结算，并完成“只选择己方物品 -> 提出交易”“只选择对方物品 -> 提出交易”和“选兔脚 -> 点同房间队友 -> 选对方地图 -> 提出交易 -> 接收方同意 -> 双向结算清空”链路。
 3. `haunt-actions-and-finish`
    - 目标：切到真实第一剧本作祟后局面，先讲清“探索/预兆导致作祟、作祟后目标改变、前置调查完成后才轮到驱魔”，再完成英雄驱魔检定。
 4. `hero-attack-path`
@@ -81,9 +81,9 @@
 | 可探索的盖着房间会真实翻开，并触发事件 / 物品 / 预兆 | 已覆盖 | `basic-setup-and-turn` | `EXPLORE_ROOM` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/11-12` |
 | 同房间交易规则：同一房间、物品/预兆、双方同意、可任意数量交换且不必等价 | 已覆盖 | `trade-and-agreement` | 规则书 `Trading`；`TRADE_POSSESSION` 先写入待同意交易，`RESOLVE_TRADE_AGREEMENT` 同意后才结算 | `docs/games/betrayal/sources/official/betrayal-3e-rulebook-en.md`、`tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts` |
 | 发起方选择要给出的持有物，并直接点击地图上的同房间队友 token | 已覆盖 | `trade-and-agreement` | `betrayal-inventory-rope` -> `betrayal-room-occupant-hallway-1` | `tutorial.test.ts`、`evidence/betrayal-tutorial/30-山屋惊魂-教程-交易选择兔脚.jpg`、`31-山屋惊魂-教程-交易选择队友.jpg` |
-| 发起方不选择换回时不会误以为必须从对方持有物里选一张 | 已覆盖 | `trade-and-agreement` | 选中队友后 `betrayal-trade-return-selector` 只显示真实对方持有物卡牌；不得显示 `betrayal-trade-return-skip`；摘要显示“给出兔脚 / 不换回”；唯一 `发送交易请求` 确认必须在 `betrayal-trade-flow-banner` 同一块里；直接点后 `targetCardIds=[]` | `e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-trade-interaction.e2e.ts`、`evidence/betrayal-tutorial/31-山屋惊魂-教程-交易选择队友.jpg`、`evidence/山屋惊魂-交易不换回完整链路/01-选择队友后未选择换回.jpg` |
-| 发起方选择要从对方换回的持有物 | 已覆盖 | `trade-and-agreement` | 选中队友后显示 `betrayal-trade-return-selector`，点击 `betrayal-trade-return-card-map`，请求 payload 写入 `targetCardIds=['map']` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/32-山屋惊魂-教程-交易选择换回地图.jpg` |
-| 交易请求发出后进入等待态，接收方看到同意 / 拒绝面板 | 已覆盖 | `trade-and-agreement` | 流程条内 `betrayal-action-trade[data-trade-confirm-placement="flow-banner"]` -> `betrayal-trade-agreement-panel`，摘要必须显示“给出兔脚 / 不换回”或“给出兔脚 / 换回地图” | `tutorial.test.ts`、`evidence/betrayal-tutorial/33-山屋惊魂-教程-交易请求等待同意.jpg`、`34-山屋惊魂-教程-交易接收方同意.jpg` |
+| 发起方只选择己方持有物时不会误以为必须从对方持有物里选一张 | 已覆盖 | `trade-and-agreement` | 选中队友后 `betrayal-trade-return-selector` 只显示真实对方持有物卡牌；不得显示 `betrayal-trade-return-skip` 或任何空值伪候选；摘要只显示“你给出兔脚”，唯一 `提出交易` 确认必须在 `betrayal-trade-flow-banner` 同一块里；直接点后 `targetCardIds=[]` | `e2e/betrayal/betrayal-tutorial.e2e.ts`、`e2e/betrayal/first-scenario-trade-interaction.e2e.ts`、`evidence/betrayal-tutorial/31-山屋惊魂-教程-交易选择队友.jpg`、`evidence/山屋惊魂-交易只给出完整链路/01-选择队友后只给出兔脚.jpg` |
+| 发起方可以直接选择对方持有物作为对方给出的对象 | 已覆盖 | `trade-and-agreement` | 选中队友后显示 `betrayal-trade-return-selector`，点击 `betrayal-trade-return-card-map`，摘要显示“对方给出地图”或双方给出摘要，请求 payload 写入 `targetCardIds=['map']` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/32-山屋惊魂-教程-交易选择对方地图.jpg` |
+| 交易请求发出后进入等待态，接收方看到同意 / 拒绝面板 | 已覆盖 | `trade-and-agreement` | 流程条内 `betrayal-action-trade[data-trade-confirm-placement="flow-banner"]` -> `betrayal-trade-agreement-panel`，摘要必须显示“你给出兔脚”“对方给出地图”或接收方视角的“发起方给出兔脚 / 你给出地图”；不得显示“索要 / 换回 / 不换回”模式词 | `tutorial.test.ts`、`evidence/betrayal-tutorial/33-山屋惊魂-教程-交易请求等待同意.jpg`、`34-山屋惊魂-教程-交易接收方同意.jpg` |
 | 接收方同意后，待同意状态清空，发起方得到地图、队友得到兔脚并回到牌桌反馈 | 已覆盖 | `trade-and-agreement` | `POSSESSION_TRADED` 后 `pendingTradeAgreement=null`，`betrayal-room-latest-feedback` 显示交易结果 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/35-山屋惊魂-教程-交易后互换结果.jpg` |
 | 第一剧本作祟后目标改变：探索目标切换为调查杰克、研究法阵、驱魔 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-reference-entry`、杰克之灵 token、作祟后状态条 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/17-山屋惊魂-教程-作祟目标改变.jpg` |
 | 打开剧本目标页是只读参考入口，不得只靠介绍 | 已覆盖 | `haunt-actions-and-finish`、`hero-attack-path`、`jack-spirit-path` | `betrayal-open-scenario` -> `betrayal-scenario-objective-page` -> `betrayal-reference-close`；目标页必须显示英雄目标、叛徒目标、杰克之灵目标 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/18-山屋惊魂-教程-打开剧本目标页.jpg`、`26-山屋惊魂-教程-杰克之灵目标页.jpg` |
