@@ -5023,6 +5023,114 @@
         }
       }
     },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-1": {
+      "variants": {
+        "webp": {
+          "sha256": "3c282cc77ec7026cc18a6bb97ddcab16a28d3b6ff577e199a2d3f891924313c4",
+          "bytes": 26016,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-1-front": {
+      "variants": {
+        "webp": {
+          "sha256": "82ef4b60d4d995ff400fe074248298ba72aff6346b23e66c3e2046fbe0da9078",
+          "bytes": 14034,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-2": {
+      "variants": {
+        "webp": {
+          "sha256": "a917520b444405eccc1ff3fc7844225883a41c95281a6a82cd341801e1e9f355",
+          "bytes": 19154,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-2-front": {
+      "variants": {
+        "webp": {
+          "sha256": "34eb647625536f450981319153e195a65681127b39098771645f6f58cb4d3071",
+          "bytes": 10824,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-3": {
+      "variants": {
+        "webp": {
+          "sha256": "a6d45751ccfb78e2cdf098235ca15010794b2e93c65c9d4960b787cb68d07a0e",
+          "bytes": 19340,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-3-front": {
+      "variants": {
+        "webp": {
+          "sha256": "7892c4a5a4081455392bd750c6e3b2281527054142ade5281a5f95677dafbba5",
+          "bytes": 9822,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-4": {
+      "variants": {
+        "webp": {
+          "sha256": "6d2782a5c9f1cdecec7ef14fa4238b6fbba599608fad2ffe00b44495ea94174a",
+          "bytes": 18354,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-4-front": {
+      "variants": {
+        "webp": {
+          "sha256": "087849a2a3f2b35b15c7b5681c32f0f5124cfb4b96b4edfe6b7343d73d1a38e9",
+          "bytes": 9960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-5": {
+      "variants": {
+        "webp": {
+          "sha256": "4ee888dcf83cdcc2a7cc75d9de9b35e9a284fa690a92da9a4b624388467a17cf",
+          "bytes": 20932,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-5-front": {
+      "variants": {
+        "webp": {
+          "sha256": "094a4906b932ffe26cdfcdff4340d7b18d44efd45bb8163d70e03f6da27d7be8",
+          "bytes": 11176,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-6": {
+      "variants": {
+        "webp": {
+          "sha256": "2f013e36b4b6ab86fe057193594e5298488bf9779ace107b281e1a79e1629575",
+          "bytes": 18396,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/compressed/small-monster-6-front": {
+      "variants": {
+        "webp": {
+          "sha256": "165e56070b55c2ddba0f58fb2dfd3104a15bfb07af1f843f8520aa6201a653d9",
+          "bytes": 9982,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/betrayal/tokens/monsters/compressed/werewolf": {
       "variants": {
         "webp": {
@@ -5037,6 +5145,114 @@
         "png": {
           "sha256": "8068a1acfe6e6d21c231b9ad04bada3cc9e368a0faf2fcd18276f7ade2ee0629",
           "bytes": 197927,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-1": {
+      "variants": {
+        "png": {
+          "sha256": "64dc1d89c693180fbdb11313ad624ad63c961a5693dccceb82995acc1a023fbb",
+          "bytes": 148408,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-1-front": {
+      "variants": {
+        "png": {
+          "sha256": "d2648e23b1fa987821347bbf7d1530a9cd7ba695a03828a3603e35821d9094c1",
+          "bytes": 67773,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-2": {
+      "variants": {
+        "png": {
+          "sha256": "4fbbbb78d18820ac21f9450f84b2e1e38436da3c4d58f7b550d412c3e60254d5",
+          "bytes": 113122,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-2-front": {
+      "variants": {
+        "png": {
+          "sha256": "adba223a7256f72b24e7c88d59e5a3f17e2cf45ff90f0881c759c91d1c214e3c",
+          "bytes": 53019,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-3": {
+      "variants": {
+        "png": {
+          "sha256": "c491aa245108ee7e2558b5ef0ba5584da3a7e2a59bc13c12dc842bfea6a15838",
+          "bytes": 110861,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-3-front": {
+      "variants": {
+        "png": {
+          "sha256": "d3c274f70529d8fab17585d13332c5727dd49d0326555e94e81265aaa039febb",
+          "bytes": 51032,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-4": {
+      "variants": {
+        "png": {
+          "sha256": "dd05ffe05548086af8e0a69cca0d5b5976b88849cc60cbb7673d8fcee4ea45cc",
+          "bytes": 111181,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-4-front": {
+      "variants": {
+        "png": {
+          "sha256": "59478b635346a4a30d44e8ad41c737c0676dde386acbe9f6aa48f54621814d75",
+          "bytes": 50819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-5": {
+      "variants": {
+        "png": {
+          "sha256": "0294adc16d29f574c8e56f639be71de5eafc13f6f811489342a60af9a2cf526f",
+          "bytes": 112769,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-5-front": {
+      "variants": {
+        "png": {
+          "sha256": "85460eba7db37fde0cffd98105b4f8b05fa3b1e5e9563828d5a64652adb08476",
+          "bytes": 52458,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-6": {
+      "variants": {
+        "png": {
+          "sha256": "63490f311bd9e002bcd790ab7e3330b11c6a7ba5dfa8d9538be916a77ad69361",
+          "bytes": 111644,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/betrayal/tokens/monsters/small-monster-6-front": {
+      "variants": {
+        "png": {
+          "sha256": "f950f2163757f0f28c6c7e2d9908d334be173f6a2c6e50b3ba7bf865eb8f0be3",
+          "bytes": 51008,
           "mime": "image/png"
         }
       }

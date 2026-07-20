@@ -573,6 +573,11 @@ export interface PendingBonusDiceSettlement {
     customResolutionId?: string;
     /** 允许普通改骰牌修改这组奖励骰，并在确认结算时读取改后的结果 */
     allowDiceModification?: boolean;
+    /**
+     * 当前奖励骰结果是否应打开 afterRollConfirmed 响应窗口。
+     * 仅用于“投出特定结果才触发效果”的奖励骰；像一掷千金这种任意结果都会结算数值的奖励骰不打开响应窗口。
+     */
+    opensAfterRollConfirmedResponseWindow?: boolean;
 }
 
 export interface HeroState {

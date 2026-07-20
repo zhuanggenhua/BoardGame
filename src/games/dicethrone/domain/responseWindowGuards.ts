@@ -1,6 +1,11 @@
 import type { PlayerId, ResponseWindowState } from '../../../engine/types';
 import type { DiceThroneCore } from './types';
-import { areTeammates, getPendingBonusSettlementDice, isTeamMode } from './rules';
+import {
+    areTeammates,
+    getPendingBonusSettlementDice,
+    isTeamMode,
+    shouldOpenAfterRollConfirmedForBonusSettlement,
+} from './rules';
 
 export const isDirectDiceInterferenceActor = (
     core: DiceThroneCore,
@@ -24,7 +29,7 @@ export const isDirectDiceInterferenceActor = (
 
 export const buildAfterRollConfirmedSignature = (core: DiceThroneCore): string => {
     const pendingBonusSettlement = core.pendingBonusDiceSettlement;
-    const pendingBonusDice = pendingBonusSettlement?.allowDiceModification === true
+    const pendingBonusDice = shouldOpenAfterRollConfirmedForBonusSettlement(pendingBonusSettlement)
         ? getPendingBonusSettlementDice(pendingBonusSettlement)
         : [];
     const dice = core.dice ?? [];

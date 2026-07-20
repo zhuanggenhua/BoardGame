@@ -138,6 +138,14 @@ export const getPendingBonusSettlementDice = (
     return Array.isArray(rawDice) ? rawDice : [];
 };
 
+export const shouldOpenAfterRollConfirmedForBonusSettlement = (
+    settlement: DiceThroneCore['pendingBonusDiceSettlement'] | null | undefined,
+): boolean => (
+    settlement?.allowDiceModification === true
+    && settlement.opensAfterRollConfirmedResponseWindow === true
+    && getPendingBonusSettlementDice(settlement).length > 0
+);
+
 /**
  * 计算给定骰子点数数组里的最大重复次数（用于 N-of-a-kind 的“相同数字”判定）
  */
@@ -788,6 +796,7 @@ const canPlayRollCardOutsideRollPhaseWithDiceResult = (
     state: DiceThroneCore,
     card: AbilityCard,
     phase: TurnPhase,
+    responseWindowType?: DtResponseWindowType,
 ): boolean => {
     if (
         (card.timing !== 'roll' && card.timing !== 'instant')
@@ -798,8 +807,8 @@ const canPlayRollCardOutsideRollPhaseWithDiceResult = (
     }
 
     if (
-        state.pendingBonusDiceSettlement?.allowDiceModification === true
-        && getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).length > 0
+        responseWindowType === 'afterRollConfirmed'
+        && shouldOpenAfterRollConfirmedForBonusSettlement(state.pendingBonusDiceSettlement)
     ) {
         return true;
     }
@@ -951,7 +960,7 @@ const checkStandardCardPlay = (
         const isAfterAttackRollResponse =
             responseWindowType === 'afterAttackResolved'
             && card.playCondition?.requireMinDamageDealt !== undefined;
-        const isDiceResultInterference = canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase);
+        const isDiceResultInterference = canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase, responseWindowType);
         if (
             !isAfterAttackRollResponse
             && !isDiceResultInterference
@@ -972,7 +981,7 @@ const checkStandardCardPlay = (
             || (card.timing === 'instant' && hasExistingDiceToolEffect(card))
         )
         && !isDiceRollPhase(phase)
-        && !canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)
+        && !canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase, responseWindowType)
     ) {
         return { ok: false, reason: 'wrongPhaseForRoll' };
     }
@@ -1037,7 +1046,7 @@ const checkStandardCardPlay = (
         }
 
         if (cond.requireHasRolled && state.rollCount === 0) {
-            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase, responseWindowType)) {
                 return { ok: false, reason: 'requireHasRolled' };
             }
         }
@@ -1045,7 +1054,7 @@ const checkStandardCardPlay = (
         const diceResultCount = getDiceResultCountForCardPlay(state);
 
         if (cond.requireDiceExists && diceResultCount === 0) {
-            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase, responseWindowType)) {
                 return { ok: false, reason: 'requireDiceExists' };
             }
         }
@@ -1057,13 +1066,13 @@ const checkStandardCardPlay = (
         }
 
         if (cond.requireOpponentDiceExists && diceResultCount === 0) {
-            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase, responseWindowType)) {
                 return { ok: false, reason: 'requireOpponentDiceExists' };
             }
         }
 
         if (cond.requireRollConfirmed && !state.rollConfirmed) {
-            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase)) {
+            if (!canPlayRollCardOutsideRollPhaseWithDiceResult(state, card, phase, responseWindowType)) {
                 return { ok: false, reason: 'requireRollConfirmed' };
             }
         }

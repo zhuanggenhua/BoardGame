@@ -7,6 +7,7 @@
  * 直到交互完成或取消。
  */
 import { describe, expect, it } from 'vitest';
+import { DiceThroneDomain } from '../domain';
 import { execute as executeDomainCommand } from '../domain/execute';
 import { RESOURCE_IDS } from '../domain/resources';
 import { ATTACK_SNAPSHOT_DIE_ID_OFFSET, getResponderQueue } from '../domain/rules';
@@ -66,6 +67,68 @@ function createUltimatePreActivationState() {
 }
 
 describe('终极技能发动前响应时机', () => {
+    it('响应窗口等待玩家 1 时，玩家 0 不能在领域校验中继续出牌', () => {
+        const state = createSetupWithHand(['card-surprise'], {
+            playerId: '0',
+            cp: 10,
+            mutate: (core) => {
+                core.activePlayerId = '1';
+                core.rollCount = 1;
+                core.rollConfirmed = true;
+                core.dice = core.dice.map((die, index) => ({
+                    ...die,
+                    value: index + 1,
+                    symbol: 'fist',
+                    symbols: ['fist'],
+                }));
+            },
+        })(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.sys.responseWindow.current = {
+            id: 'afterRollConfirmed-test',
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+            currentResponderIndex: 0,
+            passedPlayers: [],
+        };
+
+        const validation = DiceThroneDomain.validate(state, {
+            type: 'PLAY_CARD',
+            playerId: '0',
+            payload: { cardId: 'card-surprise' },
+            timestamp: 1,
+        } as any);
+
+        expect(validation).toEqual({ valid: false, error: 'not_current_responder' });
+    });
+
+    it('响应窗口等待玩家 1 时，玩家 0 不能在领域校验中继续打升级牌', () => {
+        const state = createSetupWithHand(['card-meditation-2'], {
+            playerId: '0',
+            cp: 10,
+            mutate: (core) => {
+                core.activePlayerId = '1';
+            },
+        })(['0', '1'], fixedRandom);
+        state.sys.phase = 'main1';
+        state.sys.responseWindow.current = {
+            id: 'afterRollConfirmed-test',
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+            currentResponderIndex: 0,
+            passedPlayers: [],
+        };
+
+        const validation = DiceThroneDomain.validate(state, {
+            type: 'PLAY_UPGRADE_CARD',
+            playerId: '0',
+            payload: { cardId: 'card-meditation-2', targetAbilityId: 'meditation' },
+            timestamp: 1,
+        } as any);
+
+        expect(validation).toEqual({ valid: false, error: 'not_current_responder' });
+    });
+
     it('选中终极技能后仍应让对手进入掷骰确认响应窗口', () => {
         const state = createUltimatePreActivationState();
 

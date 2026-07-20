@@ -3,7 +3,7 @@
  * 从 game.ts 各 move 的校验逻辑抽取
  */
 
-import type { ValidationResult, PlayerId } from '../../../engine/types';
+import type { ValidationResult, PlayerId, ResponseWindowState } from '../../../engine/types';
 import type {
     InteractionDescriptor,
     DiceThroneCore,
@@ -70,6 +70,7 @@ import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
 import { getGameMode } from './utils';
 import { isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
+import { isDirectDiceInterferenceActor } from './responseWindowGuards';
 
 // ============================================================================
 // 验证函数
@@ -78,6 +79,34 @@ import { isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 const ok = (): ValidationResult => ({ valid: true });
 const fail = (error: string): ValidationResult => ({ valid: false, error });
 const SELECTABLE_CHARACTER_ID_SET = new Set<string>(DICETHRONE_CHARACTER_CATALOG.map(character => character.id));
+
+const getCurrentResponseWindowResponderId = (
+    currentWindow: ResponseWindowState['current'] | undefined,
+): PlayerId | undefined => {
+    if (!currentWindow) return undefined;
+    return currentWindow.responderQueue[currentWindow.currentResponderIndex];
+};
+
+const validateCurrentResponseWindowActor = (
+    state: DiceThroneCore,
+    currentWindow: ResponseWindowState['current'] | undefined,
+    actingPlayerId: PlayerId,
+    allowDirectInterferenceActor = false,
+): ValidationResult => {
+    if (!currentWindow) {
+        return ok();
+    }
+
+    const currentResponderId = getCurrentResponseWindowResponderId(currentWindow);
+    const isCurrentResponder = currentResponderId === actingPlayerId;
+    const isAllowedDirectInterference = allowDirectInterferenceActor
+        && isDirectDiceInterferenceActor(state, currentWindow, actingPlayerId);
+    if (!isCurrentResponder && !isAllowedDirectInterference) {
+        return fail('not_current_responder');
+    }
+
+    return ok();
+};
 
 const getActionBlockedByStunLikeStatus = (
     state: DiceThroneCore,
@@ -897,7 +926,8 @@ const validatePlayCard = (
     cmd: PlayCardCommand,
     playerId: PlayerId,
     phase: TurnPhase,
-    responseWindowType?: DtResponseWindowType
+    responseWindowType?: DtResponseWindowType,
+    currentResponseWindow?: ResponseWindowState['current'],
 ): ValidationResult => {
     const actingPlayerId = playerId;
 
@@ -920,6 +950,18 @@ const validatePlayCard = (
     const blockedError = getActionBlockedByStunLikeStatus(state, playerId);
     if (blockedError) {
         return fail(blockedError);
+    }
+
+    if (responseWindowType) {
+        const responseWindowActorCheck = validateCurrentResponseWindowActor(
+            state,
+            currentResponseWindow,
+            actingPlayerId,
+            true,
+        );
+        if (!responseWindowActorCheck.valid) {
+            return responseWindowActorCheck;
+        }
     }
 
     // 主要阶段牌：仅允许当前回合玩家
@@ -962,8 +1004,14 @@ const validatePlayUpgradeCard = (
     state: DiceThroneCore,
     cmd: PlayUpgradeCardCommand,
     playerId: PlayerId,
-    phase: TurnPhase
+    phase: TurnPhase,
+    currentResponseWindow?: ResponseWindowState['current'],
 ): ValidationResult => {
+    const responseWindowActorCheck = validateCurrentResponseWindowActor(state, currentResponseWindow, playerId);
+    if (!responseWindowActorCheck.valid) {
+        return responseWindowActorCheck;
+    }
+
     if (!isMoveAllowed(playerId, state.activePlayerId)) {
         return fail('player_mismatch');
     }
@@ -1569,7 +1617,8 @@ export const validateCommand = (
     phase: TurnPhase,
     pendingInteraction?: InteractionDescriptor,
     pendingDefenderChoice?: PendingDefenderChoice,
-    responseWindowType?: DtResponseWindowType
+    responseWindowType?: DtResponseWindowType,
+    currentResponseWindow?: ResponseWindowState['current'],
 ): ValidationResult => {
     if (command.type.startsWith('SYS_')) {
         return ok();
@@ -1585,8 +1634,8 @@ export const validateCommand = (
     if (isCommandType(command, 'SELL_CARD')) return validateSellCard(state, command, playerId, phase);
     if (isCommandType(command, 'UNDO_SELL_CARD')) return validateUndoSellCard(state, command, playerId, phase);
     if (isCommandType(command, 'REORDER_CARD_TO_END')) return validateReorderCardToEnd(state, command, playerId);
-    if (isCommandType(command, 'PLAY_CARD')) return validatePlayCard(state, command, playerId, phase, responseWindowType);
-    if (isCommandType(command, 'PLAY_UPGRADE_CARD')) return validatePlayUpgradeCard(state, command, playerId, phase);
+    if (isCommandType(command, 'PLAY_CARD')) return validatePlayCard(state, command, playerId, phase, responseWindowType, currentResponseWindow);
+    if (isCommandType(command, 'PLAY_UPGRADE_CARD')) return validatePlayUpgradeCard(state, command, playerId, phase, currentResponseWindow);
     if (isCommandType(command, 'RESOLVE_CHOICE')) return validateResolveChoice(state, command, playerId);
     if (isCommandType(command, 'SELECT_DEFENDER_TARGET')) return validateSelectDefenderTarget(state, command, playerId, pendingDefenderChoice);
     if (isCommandType(command, 'ADVANCE_PHASE')) return validateAdvancePhase(state, command, playerId, phase);

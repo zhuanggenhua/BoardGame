@@ -157,7 +157,7 @@ describe('抬一手（card-give-hand）边界测试', () => {
             expect((result as any).reason).toBe('wrongPhaseForRoll');
         });
 
-        it('主要阶段待结算奖励骰可被骰子主人用红色改骰牌修改', () => {
+        it('主要阶段待结算奖励骰不能让骰子主人绕过响应窗口打改骰牌', () => {
             const core = makeCore({
                 activePlayerId: '1',
                 dice: [],
@@ -174,15 +174,16 @@ describe('抬一手（card-give-hand）边界测试', () => {
                     rerollCount: 0,
                     readyToSettle: false,
                     allowDiceModification: true,
+                    opensAfterRollConfirmedResponseWindow: true,
                 } as any,
             });
             core.players['0'].hand = [playSixCard];
 
             const result = checkPlayCard(core, '0', playSixCard, 'main1');
-            expect(result.ok).toBe(true);
+            expect(result.ok).toBe(false);
         });
 
-        it('主要阶段待结算奖励骰可被对手用抬一手响应', () => {
+        it('响应窗口内待结算奖励骰可被对手用抬一手响应', () => {
             const core = makeCore({
                 activePlayerId: '1',
                 dice: [],
@@ -199,10 +200,11 @@ describe('抬一手（card-give-hand）边界测试', () => {
                     rerollCount: 0,
                     readyToSettle: false,
                     allowDiceModification: true,
+                    opensAfterRollConfirmedResponseWindow: true,
                 } as any,
             });
 
-            const result = checkPlayCard(core, '1', giveHandCard, 'main1');
+            const result = checkPlayCard(core, '1', giveHandCard, 'main1', 'afterRollConfirmed');
             expect(result.ok).toBe(true);
         });
     });

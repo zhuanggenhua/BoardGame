@@ -40,6 +40,7 @@ import {
     getAttackSnapshotDieIndex,
     getPendingBonusSettlementDice,
     isAttackSnapshotDieId,
+    shouldOpenAfterRollConfirmedForBonusSettlement,
 } from './rules';
 import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
 import { applyEvents } from './utils';
@@ -127,8 +128,7 @@ const shouldOpenAfterRollConfirmedForCardEvents = (
 
     return cardEvents.some((event) => (
         event.type === 'BONUS_DICE_REROLL_REQUESTED'
-        && event.payload.settlement?.allowDiceModification === true
-        && getPendingBonusSettlementDice(event.payload.settlement).length > 0
+        && shouldOpenAfterRollConfirmedForBonusSettlement(event.payload.settlement)
     ));
 };
 
@@ -145,10 +145,7 @@ const appendAfterRollConfirmedWindowForCardEvents = (
 
     const stateAfterCardEvents = applyEvents(matchState.core, cardEvents, reduce);
     const settlement = stateAfterCardEvents.pendingBonusDiceSettlement;
-    if (
-        settlement?.allowDiceModification !== true
-        || getPendingBonusSettlementDice(settlement).length === 0
-    ) {
+    if (!shouldOpenAfterRollConfirmedForBonusSettlement(settlement)) {
         return cardEvents;
     }
 

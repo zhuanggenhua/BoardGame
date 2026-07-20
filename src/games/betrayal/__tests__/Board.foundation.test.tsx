@@ -2042,6 +2042,8 @@ describe('Betrayal Board foundation', () => {
         let core = createHungryHouseHauntBoardCore();
         const hungryHouse = core.scenarioRuntime.hungryHouse!;
         const cultistId = hungryHouse.cultistIds[0]!;
+        const cultist = core.monsters.find((monster) => monster.id === cultistId);
+        expect(cultist?.tokenAsset).toBe('betrayal/tokens/monsters/small-monster-1-front');
         core = activateBoardExplorer(core, '1');
         core.currentExplorer = { ...core.currentExplorer, roomId: hungryHouse.ritualRoomId };
         core.activeRoomId = hungryHouse.ritualRoomId;
@@ -2145,6 +2147,8 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-action-use'));
         const cultistToken = screen.getByTestId(`betrayal-room-monster-${hungryHouse.ritualRoomId}-${cultistId}`);
         expect(cultistToken).toHaveAttribute('data-direct-target', 'true');
+        expect(cultistToken).toHaveAttribute('data-token-asset', 'betrayal/tokens/monsters/small-monster-1-front');
+        expect(cultistToken.querySelector('[data-token-placeholder="cultist"]')).toBeNull();
         expect(screen.getByTestId(`betrayal-room-monster-target-cue-${hungryHouse.ritualRoomId}-${cultistId}`)).toHaveTextContent('点邪教徒开战');
         fireEvent.click(cultistToken);
 

@@ -122,7 +122,7 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
 
         expect(checkPlayCard(state.core, '1', getCardById('card-me-too'), 'main1')).toEqual({
             ok: false,
-            reason: 'requireMinDiceCount',
+            reason: 'wrongPhaseForRoll',
         });
 
         const actions = buildDiceThroneAiLegalActions({

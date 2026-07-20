@@ -68,6 +68,15 @@ type BetrayalRoomEnterEffect = 'mysticElevator';
 type BetrayalRoomDiscoveryEffect = NonNullable<BetrayalRoomDiscoveryTemplate['discoveryEffect']>;
 export type BetrayalRoomMarkerToken = 'obstacle' | 'secretPassage';
 
+const HUNGRY_HOUSE_CULTIST_TOKEN_ASSETS = [
+    'betrayal/tokens/monsters/small-monster-1-front',
+    'betrayal/tokens/monsters/small-monster-2-front',
+    'betrayal/tokens/monsters/small-monster-3-front',
+    'betrayal/tokens/monsters/small-monster-4-front',
+    'betrayal/tokens/monsters/small-monster-5-front',
+    'betrayal/tokens/monsters/small-monster-6-front',
+] as const;
+
 export interface BetrayalInventoryCard {
     id: string;
     name: string;
@@ -2051,6 +2060,8 @@ function createHungryHouseCultists(playerCount: number, ritualRoomId: string): B
         id: `cultist-${index + 1}`,
         name: '邪教徒',
         portraitAsset: 'betrayal/cards/back-monster',
+        tokenAsset:
+            HUNGRY_HOUSE_CULTIST_TOKEN_ASSETS[index] ?? HUNGRY_HOUSE_CULTIST_TOKEN_ASSETS[0],
         roomId: ritualRoomId,
         might: 5,
         speed: 3,

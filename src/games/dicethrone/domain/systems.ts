@@ -17,6 +17,8 @@ import type {
     BonusDiceRerollRequestedEvent,
     CpChangedEvent,
     InteractionDescriptor as DtInteractionDescriptor,
+    ResponseWindowOpenedEvent,
+    TurnPhase,
 } from './types';
 import { getPlayerPassiveAbilities } from './passiveAbility';
 import { findPlayerAbility } from './abilityLookup';
@@ -24,9 +26,18 @@ import { getChoiceResolvedEventHandler } from './choiceResolvedEvents';
 import { hasCurrentChoiceAnchor } from './choiceEffects';
 import { RESOURCE_IDS } from './resources';
 import { CP_MAX } from './core-types';
-import { getActiveDice } from './rules';
+import {
+    getActiveDice,
+    getCombatOpponentId,
+    getResponderQueue,
+    shouldOpenAfterRollConfirmedForBonusSettlement,
+} from './rules';
 import { isRemovableStatusId } from './statusRemoval';
 import { updatePendingAttackSettlementStage } from './utils';
+import {
+    buildAfterRollConfirmedSignature,
+    hasAfterRollConfirmedWindowBeenHandled,
+} from './responseWindowGuards';
 
 const UNSATISFIABLE_CHOICE_REASONS = new Set([
     'empty-options',
@@ -38,6 +49,53 @@ const UNSATISFIABLE_CHOICE_REASONS = new Set([
 type EmergencySkipContext = {
     sourceId?: string;
     interactionData?: unknown;
+};
+
+const buildBonusDiceAfterRollConfirmedWindowEvent = (
+    state: MatchState<DiceThroneCore>,
+    settlement: DiceThroneCore['pendingBonusDiceSettlement'],
+    timestamp: number,
+    sourceCommandType?: string,
+): ResponseWindowOpenedEvent | null => {
+    if (
+        !settlement
+        || state.sys.responseWindow?.current
+        || !shouldOpenAfterRollConfirmedForBonusSettlement(settlement)
+    ) {
+        return null;
+    }
+
+    const rollSignature = buildAfterRollConfirmedSignature(state.core);
+    if (hasAfterRollConfirmedWindowBeenHandled(state.core, rollSignature)) {
+        return null;
+    }
+
+    const rollerId = settlement.attackerId;
+    const phase = (state.sys.phase || 'main1') as TurnPhase;
+    const responseTriggerId = getCombatOpponentId(state.core, rollerId) ?? rollerId;
+    const responderQueue = getResponderQueue(
+        state.core,
+        'afterRollConfirmed',
+        responseTriggerId,
+        undefined,
+        rollerId,
+        phase,
+    );
+    if (responderQueue.length === 0) {
+        return null;
+    }
+
+    return {
+        type: 'RESPONSE_WINDOW_OPENED',
+        payload: {
+            windowId: `afterRollConfirmed-${timestamp}`,
+            responderQueue,
+            windowType: 'afterRollConfirmed',
+            sourceId: rollSignature,
+        },
+        sourceCommandType,
+        timestamp,
+    };
 };
 
 function extractChoiceCustomIds(interactionData: unknown): string[] {
@@ -804,6 +862,16 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             data: null,
                         };
                         newState = syncCurrentChoiceAnchorWithInteraction(queueInteraction(newState, interaction));
+                    }
+                    const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
+                    const responseWindowEvent = buildBonusDiceAfterRollConfirmedWindowEvent(
+                        newState,
+                        payload.settlement,
+                        eventTimestamp,
+                        dtEvent.sourceCommandType,
+                    );
+                    if (responseWindowEvent) {
+                        nextEvents.push(responseWindowEvent);
                     }
                 }
 

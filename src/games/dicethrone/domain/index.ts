@@ -174,7 +174,8 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         const normalizedCore = normalizeLegacyDiceThroneMatchState(state).core;
         const phase = (state.sys?.phase ?? 'setup') as TurnPhase;
         const interaction = state.sys?.interaction?.current;
-        const responseWindowType = state.sys?.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
+        const currentResponseWindow = state.sys?.responseWindow?.current;
+        const responseWindowType = currentResponseWindow?.windowType as DtResponseWindowType | undefined;
 
         // dt:card-interaction：data 直接是 PendingInteraction（状态选择类）
         // multistep-choice：骰子类交互，从 meta 构造兼容的 InteractionDescriptor
@@ -217,7 +218,15 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
             }
         }
 
-        return validateCommand(normalizedCore, command, phase, pendingInteraction, pendingDefenderChoice, responseWindowType);
+        return validateCommand(
+            normalizedCore,
+            command,
+            phase,
+            pendingInteraction,
+            pendingDefenderChoice,
+            responseWindowType,
+            currentResponseWindow,
+        );
     },
     execute: (state, command, random) => execute(
         normalizeLegacyDiceThroneMatchState(state),

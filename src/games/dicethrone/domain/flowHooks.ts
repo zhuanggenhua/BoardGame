@@ -805,6 +805,7 @@ function resolvePowderKegUpkeepEvents(
         showTotal: false,
         customResolutionId: POWDER_KEG_SETTLEMENT_ID,
         allowDiceModification: true,
+        opensAfterRollConfirmedResponseWindow: value <= 2 || value === 6,
     };
     return [{
         type: 'BONUS_DIE_ROLLED',
@@ -870,6 +871,7 @@ function resolveBlindedCheckExitResult(
         resolutionMode: 'none',
         customResolutionId: BLINDED_CHECK_SETTLEMENT_ID,
         allowDiceModification: true,
+        opensAfterRollConfirmedResponseWindow: value <= 2,
     };
 
     return {

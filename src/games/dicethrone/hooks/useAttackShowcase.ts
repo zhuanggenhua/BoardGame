@@ -188,7 +188,7 @@ export function useAttackShowcase(config: AttackShowcaseConfig): AttackShowcaseS
                 key: attackKey,
                 data: showcaseData,
                 mode: showcaseMode,
-                autoDismissMs: showcaseMode === 'offensive-preview' ? 3000 : null,
+                autoDismissMs: null,
             };
         });
     }, [attackKey, showcaseData, showcaseMode, dismissedKey]);

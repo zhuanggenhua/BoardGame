@@ -3739,6 +3739,19 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
         "data-haunt-target-hitbox",
         "true",
       );
+      await expect(targetCultistToken).toHaveAttribute(
+        "data-token-asset",
+        `betrayal/tokens/monsters/small-monster-${targetCultistId.replace("cultist-", "")}-front`,
+      );
+      await expect(
+        targetCultistToken.locator('[data-token-placeholder="cultist"]'),
+      ).toHaveCount(0);
+      await expect(targetCultistToken.locator("img")).toHaveAttribute(
+        "data-debug-current-src",
+        new RegExp(
+          `tokens/monsters/compressed/small-monster-${targetCultistId.replace("cultist-", "")}-front\\.webp`,
+        ),
+      );
       await expect(targetAffordance).toHaveAttribute(
         "data-haunt-target-affordance",
         "true",
@@ -3793,6 +3806,34 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(page.getByTestId("betrayal-status-rail")).toBeVisible();
     await expect(page.getByTestId("betrayal-phase-chip")).toBeVisible();
     await expect(page.getByTestId("betrayal-status-chip")).toBeVisible();
+    const targetModeRoomMetrics = await page.evaluate(() => {
+      const roomShells = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '[data-testid^="betrayal-room-shell-"]',
+        ),
+      );
+      return {
+        visibleRooms: roomShells.filter((room) => {
+          const rect = room.getBoundingClientRect();
+          return rect.width > 40 && rect.height > 40;
+        }).length,
+        dimmedRooms: roomShells.filter((room) => {
+          const button = room.querySelector<HTMLElement>(
+            '[data-haunt-target-dimmed="true"]',
+          );
+          const rect = room.getBoundingClientRect();
+          return Boolean(button) && rect.width > 40 && rect.height > 40;
+        }).length,
+      };
+    });
+    expect(
+      targetModeRoomMetrics.visibleRooms,
+      "目标选择态不能把牌桌主体过滤到只剩目标房间",
+    ).toBeGreaterThan(1);
+    expect(
+      targetModeRoomMetrics.dimmedRooms,
+      "目标选择态应保留非目标房间作为暗化背景，而不是清空地图",
+    ).toBeGreaterThanOrEqual(1);
     await expect(
       page.getByTestId("betrayal-haunt-command-banner"),
       "目标选择态不得恢复旧作祟横幅",

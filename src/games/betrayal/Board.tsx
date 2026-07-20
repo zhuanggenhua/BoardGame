@@ -9241,11 +9241,24 @@ export default function BetrayalBoard({
                     } ${
                       isPhoneLandscapeLayout
                         ? shouldUseMobileEventOpenTableChrome
-                          ? "justify-start gap-1.5 max-h-[calc(100vh-5.25rem)] w-[min(604px,calc(100vw-20.75rem))] max-w-[calc(100vw-20.75rem)] rounded-[12px] border border-[rgba(211,179,109,0.18)] bg-[rgba(5,9,8,0.94)] px-2 py-2 shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[2px]"
+                          ? "relative justify-start gap-1.5 max-h-[calc(100vh-5.25rem)] w-[min(604px,calc(100vw-20.75rem))] max-w-[calc(100vw-20.75rem)] rounded-[12px] border border-[rgba(211,179,109,0.18)] bg-[rgba(5,9,8,0.94)] px-2 py-2 shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[2px]"
                           : "justify-center gap-3 max-h-[calc(100vh-4.5rem)] max-w-[calc(100vw-2rem)]"
                         : "justify-center gap-3 max-h-[calc(100vh-8rem)]"
                     }`}
                   >
+                    {isPhoneLandscapeLayout &&
+                    shouldShowLatestDiscoveryRoll &&
+                    latestDiscoveryRecentRoll ? (
+                      <button
+                        type="button"
+                        data-testid="betrayal-discovery-continue"
+                        data-discovery-action-position="panel-corner"
+                        className="pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-h-[44px] min-w-[92px] shrink-0 items-center justify-center border border-[#d6b56d] bg-[rgba(214,181,109,0.22)] px-3 py-1.5 text-[12px] font-bold leading-tight tracking-[0.10em] text-[#fff1b8] shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition hover:bg-[rgba(214,181,109,0.32)]"
+                        onClick={handleDismissLatestDiscovery}
+                      >
+                        {t("board.roll.backToBoard")}
+                      </button>
+                    ) : null}
                     <div
                       data-testid="betrayal-discovery-panel-main"
                       className={`flex min-h-0 items-center justify-center ${
@@ -9318,19 +9331,6 @@ export default function BetrayalBoard({
                           openTable
                           compactResult
                           denseResult={isPhoneLandscapeLayout}
-                          actionSlot={
-                            isPhoneLandscapeLayout ? (
-                              <button
-                                type="button"
-                                data-testid="betrayal-discovery-continue"
-                                data-discovery-action-position="roll-result"
-                                className="pointer-events-auto inline-flex min-h-[44px] min-w-[92px] shrink-0 items-center justify-center border border-[#d6b56d] bg-[rgba(214,181,109,0.22)] px-3 py-1.5 text-[12px] font-bold leading-tight tracking-[0.10em] text-[#fff1b8] shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition hover:bg-[rgba(214,181,109,0.32)]"
-                                onClick={handleDismissLatestDiscovery}
-                              >
-                                {t("board.roll.backToBoard")}
-                              </button>
-                            ) : null
-                          }
                         />
                       ) : null}
                     </div>
@@ -10088,13 +10088,7 @@ export default function BetrayalBoard({
                   }
                   ariaLabel={t("board.sections.rooms")}
                 >
-                  {visibleMapRooms
-                    .filter(
-                      (room) =>
-                        !activeHauntTargetGuide?.roomId ||
-                        room.id === activeHauntTargetGuide.roomId,
-                    )
-                    .map((room) => {
+                  {visibleMapRooms.map((room) => {
                       const tone = FLOOR_TONE[room.floor];
                       const isActive = room.id === core.activeRoomId;
                       const occupants = roomOccupants[room.id] ?? [];
@@ -10335,10 +10329,10 @@ export default function BetrayalBoard({
                                               : "0 8px 16px rgba(0,0,0,0.14)",
                               opacity: !isDiscovered
                                 ? shouldDimForHauntTargetGuide
-                                  ? 0.45
+                                  ? 0.58
                                   : 1
                                 : shouldDimForHauntTargetGuide
-                                  ? 0.42
+                                  ? 0.62
                                   : isActive ||
                                       isHauntTargetRoom ||
                                       canSelectRoomFocusAction ||
@@ -10349,7 +10343,7 @@ export default function BetrayalBoard({
                                     ? 1
                                     : 0.92,
                               filter: shouldDimForHauntTargetGuide
-                                ? "saturate(0.58) brightness(0.58)"
+                                ? "saturate(0.70) brightness(0.76)"
                                 : isHauntTargetRoom
                                   ? "saturate(1.18) brightness(1.12)"
                                   : undefined,
@@ -10831,6 +10825,10 @@ export default function BetrayalBoard({
                                             data-testid={`betrayal-room-monster-${room.id}-${monster.id}`}
                                             data-highlight-shape="token"
                                             data-direct-target="true"
+                                            data-token-asset={
+                                              monster.tokenAsset ??
+                                              monster.portraitAsset
+                                            }
                                             data-haunt-target-hitbox={
                                               isHauntGuideMonsterTarget
                                                 ? "true"
@@ -10874,6 +10872,10 @@ export default function BetrayalBoard({
                                           key={monster.id}
                                           className="relative"
                                           data-testid={`betrayal-room-monster-${room.id}-${monster.id}`}
+                                          data-token-asset={
+                                            monster.tokenAsset ??
+                                            monster.portraitAsset
+                                          }
                                           title={`${monster.name} · 力量 ${monster.might} · 速度 ${monster.speed}`}
                                         >
                                           {monsterContent}

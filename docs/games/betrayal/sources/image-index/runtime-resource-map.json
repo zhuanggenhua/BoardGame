@@ -276,6 +276,78 @@
     "status": "runtime"
   },
   {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-1.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750837678FEE53F21DE2D1CA808649E879BD7527852507F3C.png",
+    "meaning": "地图怪物 token：Small Monster 1 / 小型怪物 1；规则书剧本 12「大宅饿了」用作邪教徒，不能用骷髅、文字或怪物卡代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-1-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750837678FEE53F21DE2D1CA808649E879BD7527852507F3C.png",
+    "meaning": "地图怪物 token 正面裁片：Small Monster 1 / 小型怪物 1；从同名 TTS 正式材质裁出上半部正面，规则书剧本 12「大宅饿了」运行时用作邪教徒",
+    "status": "runtime-derived-front-crop"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-2.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18369224847509257561175574C47D00D041ACE2A56DA9E0721078F8EB5.png",
+    "meaning": "地图怪物 token：Small Monster 2 / 小型怪物 2；规则书剧本 12「大宅饿了」用作邪教徒，不能用骷髅、文字或怪物卡代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-2-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18369224847509257561175574C47D00D041ACE2A56DA9E0721078F8EB5.png",
+    "meaning": "地图怪物 token 正面裁片：Small Monster 2 / 小型怪物 2；从同名 TTS 正式材质裁出上半部正面，规则书剧本 12「大宅饿了」运行时用作邪教徒",
+    "status": "runtime-derived-front-crop"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-3.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc183692248475092584263090DC36BF8382E993C2B4710C32E3CBF923550.png",
+    "meaning": "地图怪物 token：Small Monster 3 / 小型怪物 3；规则书剧本 12「大宅饿了」用作邪教徒，不能用骷髅、文字或怪物卡代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-3-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc183692248475092584263090DC36BF8382E993C2B4710C32E3CBF923550.png",
+    "meaning": "地图怪物 token 正面裁片：Small Monster 3 / 小型怪物 3；从同名 TTS 正式材质裁出上半部正面，规则书剧本 12「大宅饿了」运行时用作邪教徒",
+    "status": "runtime-derived-front-crop"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-4.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750925886FA6C69E8241BAD0CC2240B3ADCCE0AC11462C954.png",
+    "meaning": "地图怪物 token：Small Monster 4 / 小型怪物 4；规则书剧本 12「大宅饿了」用作邪教徒，不能用骷髅、文字或怪物卡代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-4-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750925886FA6C69E8241BAD0CC2240B3ADCCE0AC11462C954.png",
+    "meaning": "地图怪物 token 正面裁片：Small Monster 4 / 小型怪物 4；从同名 TTS 正式材质裁出上半部正面，规则书剧本 12「大宅饿了」运行时用作邪教徒",
+    "status": "runtime-derived-front-crop"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-5.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750925941CEEDCA58C17603A5B16519E3CE6C42E88CDD5362.png",
+    "meaning": "地图怪物 token：Small Monster 5 / 小型怪物 5；规则书剧本 12「大宅饿了」用作邪教徒，不能用骷髅、文字或怪物卡代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-5-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750925941CEEDCA58C17603A5B16519E3CE6C42E88CDD5362.png",
+    "meaning": "地图怪物 token 正面裁片：Small Monster 5 / 小型怪物 5；从同名 TTS 正式材质裁出上半部正面，规则书剧本 12「大宅饿了」运行时用作邪教徒",
+    "status": "runtime-derived-front-crop"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-6.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750926004D1A292C71A2EFF0B40BC129520EA727CA5764837.png",
+    "meaning": "地图怪物 token：Small Monster 6 / 小型怪物 6；规则书剧本 12「大宅饿了」用作邪教徒，不能用骷髅、文字或怪物卡代替",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/small-monster-6-front.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1836922484750926004D1A292C71A2EFF0B40BC129520EA727CA5764837.png",
+    "meaning": "地图怪物 token 正面裁片：Small Monster 6 / 小型怪物 6；从同名 TTS 正式材质裁出上半部正面，规则书剧本 12「大宅饿了」运行时用作邪教徒",
+    "status": "runtime-derived-front-crop"
+  },
+  {
     "target": "public/assets/i18n/zh-CN/betrayal/markers/number-1.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182002455367F6E3604E028BD5A419DDB70FA45D7F3CFDF94.png",
     "meaning": "数字标记 1",

@@ -1388,7 +1388,13 @@ describe('Betrayal first scenario runtime', () => {
         expect(hungryHouse?.ritualProgress).toBe(3);
         expect(core.rooms.find((room) => room.id === hungryHouse?.chasmRoomId)?.state).toBe('discovered');
         expect(core.rooms.find((room) => room.id === hungryHouse?.ritualRoomId)?.state).toBe('discovered');
-        expect(core.monsters.filter((monster) => hungryHouse?.cultistIds.includes(monster.id))).toHaveLength(3);
+        const cultists = core.monsters.filter((monster) => hungryHouse?.cultistIds.includes(monster.id));
+        expect(cultists).toHaveLength(3);
+        expect(cultists.map((monster) => monster.tokenAsset)).toEqual([
+            'betrayal/tokens/monsters/small-monster-1-front',
+            'betrayal/tokens/monsters/small-monster-2-front',
+            'betrayal/tokens/monsters/small-monster-3-front',
+        ]);
         expect(core.monsters.every((monster) => !hungryHouse?.cultistIds.includes(monster.id) || monster.roomId === hungryHouse.ritualRoomId)).toBe(true);
         expect(findTestExplorer(core, '0').traits.might).toBe(5);
         expect(findTestExplorer(core, '0').traits.speed).toBe(4);
