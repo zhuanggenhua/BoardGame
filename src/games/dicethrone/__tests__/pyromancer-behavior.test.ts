@@ -167,6 +167,7 @@ function getPyroBlastSettlement(events: DiceThroneEvent[]) {
     const settlement = request.payload.settlement;
     expect(settlement.customResolutionId).toBe('pyro-blast-roll');
     expect(settlement.allowDiceModification).toBe(true);
+    expect(settlement.opensAfterRollConfirmedResponseWindow).toBe(true);
     return settlement;
 }
 
@@ -1013,6 +1014,7 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             expect(settlement.maxRerollCount).toBe(1);
             expect(settlement.rerollCostTokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
             expect(settlement.allowDiceModification).toBe(true);
+            expect(settlement.opensAfterRollConfirmedResponseWindow).toBe(true);
         });
 
         it('FM=0时也进入免费重投模式', () => {
@@ -1034,6 +1036,7 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
             expect(settlement.maxRerollCount).toBe(1);
             expect(settlement.rerollCostTokenId).toBe(TOKEN_IDS.FIRE_MASTERY);
             expect(settlement.allowDiceModification).toBe(true);
+            expect(settlement.opensAfterRollConfirmedResponseWindow).toBe(true);
         });
     });
 });

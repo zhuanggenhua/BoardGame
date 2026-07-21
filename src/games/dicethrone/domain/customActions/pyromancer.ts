@@ -629,6 +629,10 @@ const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount
             damageTargetId: opponentId,
             customResolutionId: PYRO_BLAST_SETTLEMENT_ID,
             allowDiceModification: true,
+            opensAfterRollConfirmedResponseWindow: (dice) => dice.some((die) => {
+                const effect = getPyroBlastDieEffect(die.face ?? '');
+                return Object.keys(effect).length > 0;
+            }),
         },
         (dice) => buildPyroBlastDieEvents({
             state: ctx.state,

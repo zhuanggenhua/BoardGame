@@ -3,7 +3,9 @@ import type { PendingAttack, PendingDamage, TurnPhase } from '../domain/types';
 import {
     computeViewModeState,
     getResponseViewSuggestionKey,
+    resolveManualResponseEnabledForWindow,
     resolveResponseAutoViewTransition,
+    shouldAutoPassResponseWindow,
     shouldSuggestOpponentViewOnResponseChange,
 } from '../ui/viewMode';
 
@@ -221,5 +223,51 @@ describe('DiceThrone 视角逻辑', () => {
             currentSuggestionKey: currentKey,
             autoResponseEnabled: false,
         })).toBe(false);
+    });
+
+    it('普通响应只受总响应开关控制，不受奖励骰响应开关影响', () => {
+        const params = {
+            autoResponseEnabled: true,
+            bonusDiceResponseEnabled: false,
+            isBonusDiceResponseWindow: false,
+        };
+
+        expect(resolveManualResponseEnabledForWindow(params)).toBe(true);
+        expect(shouldAutoPassResponseWindow(params)).toBe(false);
+    });
+
+    it('奖励骰响应需要总响应和奖励骰响应同时开启', () => {
+        expect(resolveManualResponseEnabledForWindow({
+            autoResponseEnabled: true,
+            bonusDiceResponseEnabled: false,
+            isBonusDiceResponseWindow: true,
+        })).toBe(false);
+        expect(shouldAutoPassResponseWindow({
+            autoResponseEnabled: true,
+            bonusDiceResponseEnabled: false,
+            isBonusDiceResponseWindow: true,
+        })).toBe(true);
+
+        expect(resolveManualResponseEnabledForWindow({
+            autoResponseEnabled: true,
+            bonusDiceResponseEnabled: true,
+            isBonusDiceResponseWindow: true,
+        })).toBe(true);
+        expect(shouldAutoPassResponseWindow({
+            autoResponseEnabled: true,
+            bonusDiceResponseEnabled: true,
+            isBonusDiceResponseWindow: true,
+        })).toBe(false);
+    });
+
+    it('总响应关闭时，即使奖励骰响应存储为开启也会自动让过', () => {
+        const params = {
+            autoResponseEnabled: false,
+            bonusDiceResponseEnabled: true,
+            isBonusDiceResponseWindow: true,
+        };
+
+        expect(resolveManualResponseEnabledForWindow(params)).toBe(false);
+        expect(shouldAutoPassResponseWindow(params)).toBe(true);
     });
 });

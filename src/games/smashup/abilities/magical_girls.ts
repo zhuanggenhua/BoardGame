@@ -1118,23 +1118,71 @@ export function registerMagicalGirlsInteractionHandlers(): void {
             return { state, events: [] };
         }
         const destinations = state.core.bases
-            .map((_base, baseIndex) => baseIndex)
-            .filter(baseIndex => target.baseIndex === source.baseIndex ? baseIndex !== source.baseIndex : baseIndex === source.baseIndex);
+            .map((_base, baseIndex) => ({ baseIndex, label: baseLabel(state.core, baseIndex) }))
+            .filter(destination => target.baseIndex === source.baseIndex
+                ? destination.baseIndex !== source.baseIndex
+                : destination.baseIndex === source.baseIndex);
         if (destinations.length === 0) return { state, events: [] };
+        const moveContext = {
+            minionUid: target.minion.uid,
+            minionDefId: target.minion.defId,
+            fromBaseIndex: target.baseIndex,
+            sourceCardUid: continuation?.sourceCardUid ?? source.minion.uid,
+            sourceDefId: continuation?.sourceDefId ?? source.minion.defId,
+            sourceBaseIndex: continuation?.sourceBaseIndex ?? source.baseIndex,
+        } satisfies MoveChoice;
+        if (destinations.length > 1) {
+            const interaction = createSimpleChoice(
+                `magical_girls_power_maid_destination_${timestamp}`,
+                playerId,
+                `${cardLabel(source.minion.defId)}：选择移动目的基地`,
+                buildBaseTargetOptions(destinations, state.core),
+                {
+                    sourceId: 'magical_girls_power_maid_destination',
+                    titleKey: 'ui.magical_girls_power_maid_destination_title',
+                    targetType: 'base',
+                },
+            );
+            (interaction.data as { continuationContext?: unknown }).continuationContext = moveContext;
+            return { state: queueInteraction(state, interaction), events: [] };
+        }
         return {
             state,
             events: buildValidatedMoveEvents(state.core, {
-                minionUid: target.minion.uid,
-                minionDefId: target.minion.defId,
-                fromBaseIndex: target.baseIndex,
-                toBaseIndex: destinations[0],
-                reason: continuation?.sourceDefId ?? source.minion.defId,
+                minionUid: moveContext.minionUid,
+                minionDefId: moveContext.minionDefId,
+                fromBaseIndex: moveContext.fromBaseIndex,
+                toBaseIndex: destinations[0].baseIndex,
+                reason: moveContext.sourceDefId ?? source.minion.defId,
                 now: timestamp,
                 sourcePlayerId: playerId,
-                sourceCardUid: continuation?.sourceCardUid,
-                sourceDefId: continuation?.sourceDefId,
+                sourceCardUid: moveContext.sourceCardUid,
+                sourceDefId: moveContext.sourceDefId,
                 sourceControllerId: playerId,
-                sourceBaseIndex: continuation?.sourceBaseIndex,
+                sourceBaseIndex: moveContext.sourceBaseIndex,
+                sourceKind: 'nonAction',
+            }),
+        };
+    });
+
+    registerInteractionHandler('magical_girls_power_maid_destination', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        const context = data?.continuationContext as MoveChoice | undefined;
+        if (!context || selected?.baseIndex === undefined) return { state, events: [] };
+        return {
+            state,
+            events: buildValidatedMoveEvents(state.core, {
+                minionUid: context.minionUid,
+                minionDefId: context.minionDefId,
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                reason: context.sourceDefId ?? 'magical_girls_power_maid',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: context.sourceDefId,
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.sourceBaseIndex,
                 sourceKind: 'nonAction',
             }),
         };

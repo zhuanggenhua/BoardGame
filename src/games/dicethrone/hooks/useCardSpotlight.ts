@@ -386,17 +386,23 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
             if (CARD_EVENT_TYPES.has(type)) {
                 const p = payload as CardEventPayload;
                 const cardPlayerId = normalizePlayerId(p.playerId);
-                const skipSelfCardSpotlight = !isSpectator && cardPlayerId === selfId;
+                const selfCardHasRelatedBonusDice = !isSpectator
+                    && cardPlayerId === selfId
+                    && countRelatedBonusDiceEvents(newEntries, cardPlayerId, eventTimestamp) > 0;
+                const skipSelfCardSpotlight = !isSpectator
+                    && cardPlayerId === selfId
+                    && !selfCardHasRelatedBonusDice;
 
                 spotlightLogger.info('card-event', {
                     eventType: type,
                     cardId: p.cardId,
                     cardPlayerId,
                     selfId,
+                    selfCardHasRelatedBonusDice,
                     skipSelfCardSpotlight,
                 });
 
-                // 自己打出的卡牌默认不显示特写；自方多骰改走独立多骰面板聚合
+                // 自己打出的普通卡牌默认不显示特写；但会触发奖励骰的自方卡牌仍需要保留卡牌特写承接结果说明。
                 if (skipSelfCardSpotlight) continue;
 
                 const existingIndex = findExistingCardSpotlightIndex(

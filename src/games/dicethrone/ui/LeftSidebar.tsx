@@ -34,6 +34,7 @@ export const LeftSidebar = ({
     selfDamageFlashDamage,
     overrideHp,
     onAutoResponseToggle,
+    onBonusDiceResponseToggle,
 }: {
     currentPhase: TurnPhase;
     viewPlayer: HeroState;
@@ -66,6 +67,8 @@ export const LeftSidebar = ({
     overrideHp?: number;
     /** 自动响应开关回调 */
     onAutoResponseToggle?: (enabled: boolean) => void;
+    /** 奖励骰响应开关回调 */
+    onBonusDiceResponseToggle?: (enabled: boolean) => void;
 }) => {
     return (
         <div
@@ -139,7 +142,10 @@ export const LeftSidebar = ({
                         />
                         {/* 自动响应开关 - 相对血条居中 */}
                         <div className="flex justify-center">
-                            <AutoResponseToggle onToggle={onAutoResponseToggle} />
+                            <AutoResponseToggle
+                                onToggle={onAutoResponseToggle}
+                                onBonusDiceToggle={onBonusDiceResponseToggle}
+                            />
                         </div>
                     </div>
                 </div>

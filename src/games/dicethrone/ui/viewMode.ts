@@ -53,6 +53,23 @@ export interface ResponseViewSuggestionKeyParams {
     pendingDamage?: PendingDamage;
 }
 
+export interface ResponseWindowPreferenceParams {
+    autoResponseEnabled: boolean;
+    bonusDiceResponseEnabled: boolean;
+    isBonusDiceResponseWindow: boolean;
+}
+
+export const resolveManualResponseEnabledForWindow = (
+    params: ResponseWindowPreferenceParams,
+): boolean => (
+    params.autoResponseEnabled
+    && (!params.isBonusDiceResponseWindow || params.bonusDiceResponseEnabled)
+);
+
+export const shouldAutoPassResponseWindow = (
+    params: ResponseWindowPreferenceParams,
+): boolean => !resolveManualResponseEnabledForWindow(params);
+
 export const getResponseViewSuggestionKey = (
     params: ResponseViewSuggestionKeyParams,
 ): string | null => {

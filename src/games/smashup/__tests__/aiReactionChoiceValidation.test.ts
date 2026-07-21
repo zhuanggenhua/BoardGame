@@ -213,4 +213,81 @@ describe('SmashUp AI reaction choice validation', () => {
             optionId: 'pass',
         });
     });
+
+    it('smashup_reaction_choose live 刷新临时为空时，AI 应保留当前让过选项而不是紧急取消', () => {
+        const core = makeState({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.TIME_TRAVELERS, SMASHUP_FACTION_IDS.ALIENS],
+                }),
+            },
+            bases: [makeBase({
+                defId: 'base_tabletop',
+            })],
+        });
+        const reactionSession: SmashUpReactionSession = {
+            frameId: 'score-after:0:empty-refresh-keeps-pass',
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '1',
+            currentPlayerId: '1',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        };
+        const stateForAi = startSmashUpReactionSession(makeMatchState(core), reactionSession);
+        stateForAi.sys.phase = 'scoreBases' as any;
+
+        const interaction = createSimpleChoice(
+            'empty-refresh-keeps-pass',
+            '1',
+            '选择响应',
+            [
+                {
+                    id: 'trigger:onMinionDiscardedFromBase:time_travelers_jumper:onMinionDiscardedFromBase:0:0',
+                    label: 'cards.time_travelers_jumper.name',
+                    value: {
+                        kind: 'trigger',
+                        triggerId: 'onMinionDiscardedFromBase:time_travelers_jumper:onMinionDiscardedFromBase:0:0',
+                    },
+                    displayMode: 'button',
+                },
+                {
+                    id: 'pass',
+                    label: 'Pass',
+                    value: { kind: 'pass' },
+                    displayMode: 'button',
+                },
+            ],
+            {
+                sourceId: 'smashup_reaction_choose',
+                targetType: 'button',
+                responseValidationMode: 'live',
+            },
+        );
+        (interaction.data as any).optionsGenerator = () => [];
+        stateForAi.sys.interaction = {
+            current: interaction,
+            queue: [],
+            isBlocked: false,
+        } as any;
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: stateForAi,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'interaction-cancel')).toBe(false);
+        const passAction = legalActions.find((action) => action.metadata?.optionId === 'pass');
+        expect(passAction).toBeDefined();
+        expect(passAction?.commands[0]?.payload).toMatchObject({
+            interactionId: interaction.id,
+            optionId: 'pass',
+        });
+
+        const resolved = respondToPrompt(stateForAi, 'pass', '1');
+        expect(resolved.success).toBe(true);
+    });
 });

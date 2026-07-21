@@ -20,7 +20,7 @@ export const MYTHIC_HORSES_POD_MINIONS: MinionCardDef[] = [
         nameEn: 'Seastar',
         faction: SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD,
         power: 3,
-        abilityTags: ['talent'],
+        abilityTags: ['onPlay'],
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.MYTHIC_HORSES_POD_CARDS, index: 14 },
     },

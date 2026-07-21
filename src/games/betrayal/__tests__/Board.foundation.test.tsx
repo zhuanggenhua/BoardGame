@@ -2149,7 +2149,7 @@ describe('Betrayal Board foundation', () => {
         expect(cultistToken).toHaveAttribute('data-direct-target', 'true');
         expect(cultistToken).toHaveAttribute('data-token-asset', 'betrayal/tokens/monsters/small-monster-1-front');
         expect(cultistToken.querySelector('[data-token-placeholder="cultist"]')).toBeNull();
-        expect(screen.getByTestId(`betrayal-room-monster-target-cue-${hungryHouse.ritualRoomId}-${cultistId}`)).toHaveTextContent('点邪教徒开战');
+        expect(screen.getByTestId(`betrayal-room-monster-target-cue-${hungryHouse.ritualRoomId}`)).toHaveTextContent('选择邪教徒发起攻击');
         fireEvent.click(cultistToken);
 
         await waitFor(() => {

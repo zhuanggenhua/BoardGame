@@ -289,6 +289,8 @@ export interface BonusDiceRollConfig {
     customResolutionId?: string;
     /** 允许普通改骰牌修改这组奖励骰，并在确认结算时读取改后的结果 */
     allowDiceModification?: boolean;
+    /** 当前奖励骰结果是否应打开 afterRollConfirmed 响应窗口 */
+    opensAfterRollConfirmedResponseWindow?: boolean | ((dice: BonusDieInfo[]) => boolean);
     /** 可选：构建每颗奖励骰的 effectParams（用于文案插值/日志展示） */
     effectParamsBuilder?: (params: { value: number; index: number; face: DieFace }) => Record<string, string | number>;
 }
@@ -341,6 +343,9 @@ export function createBonusDiceWithReroll(
 
     const attacker = state.players[attackerId];
     const hasToken = (attacker?.tokens?.[config.rerollCostTokenId] ?? 0) >= config.rerollCostAmount;
+    const opensAfterRollConfirmedResponseWindow = typeof config.opensAfterRollConfirmedResponseWindow === 'function'
+        ? config.opensAfterRollConfirmedResponseWindow(dice)
+        : config.opensAfterRollConfirmedResponseWindow;
 
     if (hasToken) {
         // 有足够 token，创建可重掷的 settlement
@@ -364,6 +369,7 @@ export function createBonusDiceWithReroll(
             postSettleBonusDamageAdds: config.postSettleBonusDamageAdds,
             customResolutionId: config.customResolutionId,
             allowDiceModification: config.allowDiceModification,
+            opensAfterRollConfirmedResponseWindow,
         };
         events.push({
             type: 'BONUS_DICE_REROLL_REQUESTED',
@@ -391,6 +397,7 @@ export function createBonusDiceWithReroll(
                     showTotal: config.showTotal ?? true,
                     customResolutionId: config.customResolutionId,
                     allowDiceModification: config.allowDiceModification,
+                    opensAfterRollConfirmedResponseWindow,
                 },
             },
             sourceCommandType: 'ABILITY_EFFECT',

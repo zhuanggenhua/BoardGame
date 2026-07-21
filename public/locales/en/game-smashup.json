@@ -712,6 +712,7 @@
     "magical_girls_technomagical_lass_title": "Technomagical Lass: destroy an enemy minion here with power not greater than your number of minions here",
     "magical_girls_sakura_warrior_title": "Sakura Warrior: choose a minion here to get -{{amount}} power until the start of your next turn",
     "magical_girls_power_maid_title": "Power Maid: choose a minion with power not greater than your number of minions here to move into or out of here",
+    "magical_girls_power_maid_destination_title": "Power Maid: choose the destination base",
     "shapeshifters_genetic_shift_all_option": "All your minions get +1 power",
     "shapeshifters_genetic_shift_choose_title": "Genetic Shift: choose a boost mode",
     "shapeshifters_mitosis_choose_title": "Mitosis: choose a same-name minion to play as an extra minion",
@@ -5575,7 +5576,7 @@
     },
     "mythic_horses_seastar": {
       "name": "Seastar",
-      "abilityText": "If you control another base where you have minions, you may play an extra minion here."
+      "abilityText": "Talent: If you control another base where you have minions, you may play an extra minion here."
     },
     "mythic_horses_rainbow": {
       "name": "Rainbow",

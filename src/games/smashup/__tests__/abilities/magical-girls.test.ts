@@ -342,6 +342,41 @@ describe('Magical Girls 代表性玩法行为', () => {
         expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'target')).toBe(true);
     });
 
+    it('Power Maid 从当前基地移走随从时有多个目的基地必须由玩家选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_akihabara_high', [
+                    makeMinion('maid', 'magical_girls_power_maid', '0', 3),
+                    makeMinion('ally', 'magical_girls_white_magicat', '0', 1),
+                    makeMinion('enemy-low', 'itty_critters_flooffairy', '1', 2),
+                ]),
+                makeBase('base_q_point'),
+                makeBase('base_mermaid_pool'),
+            ],
+        });
+
+        const maid = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'maid', baseIndex: 0 },
+            timestamp: 93,
+        }, FIXED_RANDOM);
+        const selectedMinion = respondToPromptOption(maid.finalState, option => option.value?.minionUid === 'ally', 'ally', '0', FIXED_RANDOM);
+        const destinationPrompt = getSimpleChoicePrompt(selectedMinion.finalState, 'magical_girls_power_maid_destination');
+        expect(destinationPrompt.targetType).toBe('base');
+        expect(getPromptOption(destinationPrompt, option => option.value?.baseIndex === 1, 'second base destination')).toBeDefined();
+        expect(getPromptOption(destinationPrompt, option => option.value?.baseIndex === 2, 'third base destination')).toBeDefined();
+
+        const moved = respondToPromptOption(selectedMinion.finalState, option => option.value?.baseIndex === 2, 'third base', '0', FIXED_RANDOM);
+        expect(moved.finalState.core.bases[0].minions.some(minion => minion.uid === 'ally')).toBe(false);
+        expect(moved.finalState.core.bases[1].minions.some(minion => minion.uid === 'ally')).toBe(false);
+        expect(moved.finalState.core.bases[2].minions.some(minion => minion.uid === 'ally')).toBe(true);
+    });
+
     it('Coordination 在 borrowed setaside Walking Castle 上仍应给当前控制者提供泰坦进场分支，并保留真实 owner', () => {
         const core = makeState({
             players: {

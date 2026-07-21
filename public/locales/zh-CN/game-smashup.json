@@ -688,6 +688,7 @@
     "magical_girls_technomagical_lass_title": "科技魔法少女：消灭这里一个力量不高于你这里随从数量的敌方随从",
     "magical_girls_sakura_warrior_title": "樱花战士：选择这里一个随从直到你的下回合开始时 -{{amount}} 力量",
     "magical_girls_power_maid_title": "女仆：选择力量不高于你这里随从数量的随从，将其移入或移出这里",
+    "magical_girls_power_maid_destination_title": "女仆：选择要移到的基地",
     "shapeshifters_genetic_shift_all_option": "你的所有随从 +1",
     "shapeshifters_genetic_shift_choose_title": "基因转变：选择强化模式",
     "shapeshifters_mitosis_choose_title": "有丝分裂：选择要额外打出的同名随从",
@@ -5558,7 +5559,7 @@
     },
     "mythic_horses_seastar": {
       "name": "海星",
-      "abilityText": "如果你控制另一个有你仆从的基地，你可以在这里额外打出一个仆从。"
+      "abilityText": "天赋：如果你控制另一个有你仆从的基地，你可以在这里额外打出一个仆从。"
     },
     "mythic_horses_rainbow": {
       "name": "彩虹",

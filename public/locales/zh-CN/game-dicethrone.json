@@ -508,6 +508,10 @@
     "autoResponseDisabled": "自动跳过已启用",
     "autoResponse": "自动跳过",
     "manualResponse": "手动响应",
+    "bonusDiceResponse": "响应奖励骰",
+    "bonusDiceResponseEnabled": "奖励骰响应已启用",
+    "bonusDiceResponseDisabled": "奖励骰响应已关闭",
+    "bonusDiceResponseRequiresManual": "开启手动响应后才能响应奖励骰",
     "diceDisplay": {
       "title": "骰子显示",
       "hint": "切换局内骰子的展示方式，不改变真实掷骰结果。",

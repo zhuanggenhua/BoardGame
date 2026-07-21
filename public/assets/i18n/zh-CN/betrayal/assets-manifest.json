@@ -1,7 +1,7 @@
 {
   "manifestVersion": 1,
   "scope": "official",
-  "id": "i18n/zh-CN/betrayal",
+  "id": "betrayal",
   "basePrefix": "official/i18n/zh-CN/betrayal/",
   "files": {
     "cards/back-event": {
@@ -270,6 +270,60 @@
         "png": {
           "sha256": "55c767f7b18a9926f6274c2a8ea9ac1d7f964eda421221dff6e60f03796bf68a",
           "bytes": 1386807,
+          "mime": "image/png"
+        }
+      }
+    },
+    "dice/compressed/house-die-0": {
+      "variants": {
+        "webp": {
+          "sha256": "ce7e5a540c806a3444e02d2a9170d24416f2e77f5fb4318a2f5c885fd1856176",
+          "bytes": 37052,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "dice/compressed/house-die-1": {
+      "variants": {
+        "webp": {
+          "sha256": "eaa8f7d752a2dc7a03b3fbaa80ea7aea132fa175aafef2b1c65aef2aeb8ddf43",
+          "bytes": 26872,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "dice/compressed/house-die-2": {
+      "variants": {
+        "webp": {
+          "sha256": "2c899338166d40216f67f260c6f4525765d42c93cba0e13d256f592080134a73",
+          "bytes": 24370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "dice/house-die-0": {
+      "variants": {
+        "png": {
+          "sha256": "9f4cd562bee3e812ad4fe73fc4f78affba48dd9129f659effe4fcd20a567b2cd",
+          "bytes": 103850,
+          "mime": "image/png"
+        }
+      }
+    },
+    "dice/house-die-1": {
+      "variants": {
+        "png": {
+          "sha256": "bdc77808ab6b8b1a309948463c6e120b0baff0d21766bc5dd46875ce11c7114f",
+          "bytes": 72181,
+          "mime": "image/png"
+        }
+      }
+    },
+    "dice/house-die-2": {
+      "variants": {
+        "png": {
+          "sha256": "9f49e13e30366677c02184bd9d7bce3cb0d7efe733717f32cdf7572d55e0b678",
+          "bytes": 66553,
           "mime": "image/png"
         }
       }
@@ -1309,6 +1363,114 @@
         }
       }
     },
+    "tokens/monsters/compressed/small-monster-1": {
+      "variants": {
+        "webp": {
+          "sha256": "3c282cc77ec7026cc18a6bb97ddcab16a28d3b6ff577e199a2d3f891924313c4",
+          "bytes": 26016,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-1-front": {
+      "variants": {
+        "webp": {
+          "sha256": "dc73d7cdb23816878c595e3795874c1db1b92239873d7ef43a6ed4ad7b6b7bac",
+          "bytes": 14158,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-2": {
+      "variants": {
+        "webp": {
+          "sha256": "a917520b444405eccc1ff3fc7844225883a41c95281a6a82cd341801e1e9f355",
+          "bytes": 19154,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-2-front": {
+      "variants": {
+        "webp": {
+          "sha256": "9e34c6328f366d8f69703ce87058ba654f1d2d1fa3d784f925b7d0ad7c87d3fb",
+          "bytes": 11040,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-3": {
+      "variants": {
+        "webp": {
+          "sha256": "a6d45751ccfb78e2cdf098235ca15010794b2e93c65c9d4960b787cb68d07a0e",
+          "bytes": 19340,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-3-front": {
+      "variants": {
+        "webp": {
+          "sha256": "514a223918980fd46f15063114f9b4cb612d3662fd1c83a25ccef6ddb90753bc",
+          "bytes": 10198,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-4": {
+      "variants": {
+        "webp": {
+          "sha256": "6d2782a5c9f1cdecec7ef14fa4238b6fbba599608fad2ffe00b44495ea94174a",
+          "bytes": 18354,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-4-front": {
+      "variants": {
+        "webp": {
+          "sha256": "9d813c20441958ebf4b26fb963a75ec45777b8da22433fe42de38ef00fc34d36",
+          "bytes": 10186,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-5": {
+      "variants": {
+        "webp": {
+          "sha256": "4ee888dcf83cdcc2a7cc75d9de9b35e9a284fa690a92da9a4b624388467a17cf",
+          "bytes": 20932,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-5-front": {
+      "variants": {
+        "webp": {
+          "sha256": "aa94f62286f8a7ef29c51af3c26c9c63e7b4157d1c0d411901b6fdbe01d88ab8",
+          "bytes": 10620,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-6": {
+      "variants": {
+        "webp": {
+          "sha256": "2f013e36b4b6ab86fe057193594e5298488bf9779ace107b281e1a79e1629575",
+          "bytes": 18396,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/monsters/compressed/small-monster-6-front": {
+      "variants": {
+        "webp": {
+          "sha256": "5406ac6720f9e161224c97f232986cd934505cb6c254994159d967ed54b55d59",
+          "bytes": 10398,
+          "mime": "image/webp"
+        }
+      }
+    },
     "tokens/monsters/compressed/werewolf": {
       "variants": {
         "webp": {
@@ -1323,6 +1485,114 @@
         "png": {
           "sha256": "8068a1acfe6e6d21c231b9ad04bada3cc9e368a0faf2fcd18276f7ade2ee0629",
           "bytes": 197927,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-1": {
+      "variants": {
+        "png": {
+          "sha256": "64dc1d89c693180fbdb11313ad624ad63c961a5693dccceb82995acc1a023fbb",
+          "bytes": 148408,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-1-front": {
+      "variants": {
+        "png": {
+          "sha256": "6364c5032220dfeec908946dbb51bca24c4ec5cd10206e49691c67e58ee5315d",
+          "bytes": 67785,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-2": {
+      "variants": {
+        "png": {
+          "sha256": "4fbbbb78d18820ac21f9450f84b2e1e38436da3c4d58f7b550d412c3e60254d5",
+          "bytes": 113122,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-2-front": {
+      "variants": {
+        "png": {
+          "sha256": "59e43146100148560c0b56e1e92fe77458d4ea4cc1abec27451863c0e152a01c",
+          "bytes": 53014,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-3": {
+      "variants": {
+        "png": {
+          "sha256": "c491aa245108ee7e2558b5ef0ba5584da3a7e2a59bc13c12dc842bfea6a15838",
+          "bytes": 110861,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-3-front": {
+      "variants": {
+        "png": {
+          "sha256": "298e532d59207eca0b5f9187d8b95f4fce6e75fef186ce311697a8cb86e2320f",
+          "bytes": 50987,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-4": {
+      "variants": {
+        "png": {
+          "sha256": "dd05ffe05548086af8e0a69cca0d5b5976b88849cc60cbb7673d8fcee4ea45cc",
+          "bytes": 111181,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-4-front": {
+      "variants": {
+        "png": {
+          "sha256": "e94854111150c88347b26f92b6212290fc43d1553af7a0d3c8773ff2ec110076",
+          "bytes": 50828,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-5": {
+      "variants": {
+        "png": {
+          "sha256": "0294adc16d29f574c8e56f639be71de5eafc13f6f811489342a60af9a2cf526f",
+          "bytes": 112769,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-5-front": {
+      "variants": {
+        "png": {
+          "sha256": "f2c05926208c208f6312a0d2a6ca7ffb71d5d62b796ffff44f1cf1c820ad9f3d",
+          "bytes": 52559,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-6": {
+      "variants": {
+        "png": {
+          "sha256": "63490f311bd9e002bcd790ab7e3330b11c6a7ba5dfa8d9538be916a77ad69361",
+          "bytes": 111644,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/monsters/small-monster-6-front": {
+      "variants": {
+        "png": {
+          "sha256": "49c8bbd267bc7083fc363e8b1d49559ebdc9c7f3e6f07a1aa4404872c10921e8",
+          "bytes": 51056,
           "mime": "image/png"
         }
       }

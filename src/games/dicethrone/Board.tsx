@@ -16,6 +16,7 @@ import {
     getOpponents,
     areTeammates,
     getUpgradeTargetAbilityId,
+    shouldOpenAfterRollConfirmedForBonusSettlement,
 } from './domain/rules';
 import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
@@ -77,7 +78,9 @@ import { playDeniedSound } from '../../lib/audio/useGameAudio';
 import {
     computeViewModeState,
     getResponseViewSuggestionKey,
+    resolveManualResponseEnabledForWindow,
     resolveResponseAutoViewTransition,
+    shouldAutoPassResponseWindow,
 } from './ui/viewMode';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { resolveMoves, type DiceThroneMoveMap } from './ui/resolveMoves';
@@ -87,7 +90,7 @@ import { useAttackShowcase } from './hooks/useAttackShowcase';
 import { AttackShowcaseOverlay } from './ui/AttackShowcaseOverlay';
 import { useDieRerollAnimationConsumer } from './hooks/useDieRerollAnimationConsumer';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
-import { getAutoResponseEnabled } from './ui/AutoResponseToggle';
+import { getAutoResponseEnabled, getBonusDiceResponseEnabled } from './ui/responsePreferences';
 import { getAbilityChoiceText } from './ui/abilityChoiceText';
 import { useDiceThroneDisplayPreference } from './ui/useDiceThroneDisplayPreference';
 import { canInteractDiceForCurrentBoard, getRailDiceForCurrentBoard, shouldShowRailDiceTray, shouldUseBoardDiceStage } from './ui/diceStagePolicy';
@@ -239,6 +242,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const toast = useToast();
     const locale = i18n.resolvedLanguage ?? i18n.language;
     const [autoResponseEnabled, setAutoResponseEnabled] = React.useState(() => getAutoResponseEnabled());
+    const [bonusDiceResponseEnabled, setBonusDiceResponseEnabled] = React.useState(() => (
+        getBonusDiceResponseEnabled(getAutoResponseEnabled())
+    ));
 
     const isGameOver = rawG.sys.gameover;
     const resolveMatchFallbackName = React.useCallback((playerId: string) => `P${Number(playerId) + 1}`, []);
@@ -285,8 +291,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const isResponseActorOnMyTeam = Boolean(
         isResponseWindowOpen && currentResponderId && (currentResponderId === rootPid || isDirectDiceActor),
     );
+    const isBonusDiceResponseWindow = Boolean(
+        currentResponseWindow?.windowType === 'afterRollConfirmed'
+        && shouldOpenAfterRollConfirmedForBonusSettlement(G.pendingBonusDiceSettlement),
+    );
+    const manualResponseEnabledForCurrentWindow = resolveManualResponseEnabledForWindow({
+        autoResponseEnabled,
+        bonusDiceResponseEnabled,
+        isBonusDiceResponseWindow,
+    });
     const isManualSelfResponseWindow = Boolean(
-        isResponseWindowOpen && currentResponderId === rootPid && autoResponseEnabled,
+        isResponseWindowOpen && currentResponderId === rootPid && manualResponseEnabledForCurrentWindow,
     );
     const playerOrder = playerView.orderedPlayerIds;
     const otherPids = React.useMemo(() => playerOrder.filter(pid => pid !== rootPid), [playerOrder, rootPid]);
@@ -687,17 +702,30 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const isActivePlayer = G.activePlayerId === rootPid;
 
     // 响应窗口状态
-    // 自动跳过逻辑：当响应窗口打开且自己是响应者时，如果是自动跳过模式（!autoResponseEnabled），自动跳过
+    // 自动跳过逻辑：
+    // - 总响应关闭：所有响应窗口自动让过
+    // - 奖励骰响应关闭：仅奖励骰 afterRollConfirmed 响应窗口自动让过
     React.useEffect(() => {
-        // 灰色"自动跳过" = 自动跳过，不拦截
-        // 绿色"显示响应" = 显示响应窗口，等待手动选择
-        if (autoResponseEnabled || !isResponseWindowOpen || !currentResponderId || currentResponderId !== rootPid) return;
+        const shouldAutoPass = shouldAutoPassResponseWindow({
+            autoResponseEnabled,
+            bonusDiceResponseEnabled,
+            isBonusDiceResponseWindow,
+        });
+        if (!shouldAutoPass || !isResponseWindowOpen || !currentResponderId || currentResponderId !== rootPid) return;
         // 延迟一小段时间确保 UI 状态同步
         const timer = setTimeout(() => {
             engineMoves.responsePass(currentResponderId);
         }, 300);
         return () => clearTimeout(timer);
-    }, [autoResponseEnabled, isResponseWindowOpen, currentResponderId, rootPid, engineMoves]);
+    }, [
+        autoResponseEnabled,
+        bonusDiceResponseEnabled,
+        isBonusDiceResponseWindow,
+        isResponseWindowOpen,
+        currentResponderId,
+        rootPid,
+        engineMoves,
+    ]);
 
     const { rollerId, shouldAutoObserve, viewMode, isSelfView } = computeViewModeState({
         currentPhase,
@@ -727,7 +755,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     React.useEffect(() => {
         const transition = resolveResponseAutoViewTransition({
             currentSuggestionKey: responseViewSuggestionKey,
-            autoResponseEnabled,
+            autoResponseEnabled: manualResponseEnabledForCurrentWindow,
             manualViewMode,
             session: responseAutoViewSessionRef.current,
         });
@@ -737,7 +765,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (transition.nextViewMode && transition.nextViewMode !== manualViewMode) {
             setViewMode(transition.nextViewMode);
         }
-    }, [responseViewSuggestionKey, autoResponseEnabled, manualViewMode, setViewMode]);
+    }, [responseViewSuggestionKey, manualResponseEnabledForCurrentWindow, manualViewMode, setViewMode]);
 
     const isFourPlayerView = otherPids.length > 1;
     const handleOpponentHeaderSelect = React.useCallback((targetPid: string) => {
@@ -2110,6 +2138,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         selfDamageFlashDamage={selfImpact.flash.damage}
                         overrideHp={damageBuffer.get(`hp-${rootPid}`, player.resources[RESOURCE_IDS.HP] ?? 0)}
                         onAutoResponseToggle={setAutoResponseEnabled}
+                        onBonusDiceResponseToggle={setBonusDiceResponseEnabled}
                     />
 
                     <CenterBoard

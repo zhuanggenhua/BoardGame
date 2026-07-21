@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearRegistry, resolveSpecial } from '../../domain/abilityRegistry';
+import { clearRegistry, resolveOnPlay, resolveSpecial, resolveTalent } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearOngoingEffectRegistry, fireTriggers, isMinionProtected } from '../../domain/ongoingEffects';
 import { reduce } from '../../domain/reduce';
@@ -485,6 +485,19 @@ describe('Mythic Horses abilities', () => {
 
         expect(played.success, played.error).toBe(true);
         expect(played.finalState.core.players['0'].minionLimit).toBe(2);
+
+        const talentAttempt = runCommand(
+            played.finalState,
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'seastar-pod-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        expect(talentAttempt.success).toBe(false);
+        expect(talentAttempt.error).toContain('没有天赋能力');
+    });
+
+    it('mythic_horses_seastar_pod 只注册打出时能力，不继承基础版海星天赋', () => {
+        expect(resolveOnPlay('mythic_horses_seastar_pod')).toBeDefined();
+        expect(resolveTalent('mythic_horses_seastar_pod')).toBeUndefined();
     });
 
     it('mythic_horses_super_future_space_armor_power_pod 自动给有同基地友军的己方随从 +2，且不附加牌面外保护', () => {

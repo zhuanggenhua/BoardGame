@@ -1217,7 +1217,10 @@ function normalizeFreshSimpleChoiceOptions<T>(
     freshOptions: PromptOption<T>[],
     data: SimpleChoiceData<T>,
 ): PromptOption<T>[] {
-    const hydratedOptions = mergeRenderableOptionMetadata(freshOptions, data.options);
+    const optionsToNormalize = freshOptions.length === 0
+        ? data.options.filter((option) => isEnabledControlChoiceOption(option))
+        : freshOptions;
+    const hydratedOptions = mergeRenderableOptionMetadata(optionsToNormalize, data.options);
     return ensureResolvableSimpleChoiceOptions(hydratedOptions, data);
 }
 

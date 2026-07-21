@@ -508,6 +508,10 @@
     "autoResponseDisabled": "Auto Skip Enabled",
     "autoResponse": "Auto Skip",
     "manualResponse": "Manual Response",
+    "bonusDiceResponse": "Bonus Dice Response",
+    "bonusDiceResponseEnabled": "Bonus Dice Response Enabled",
+    "bonusDiceResponseDisabled": "Bonus Dice Response Disabled",
+    "bonusDiceResponseRequiresManual": "Enable Manual Response before responding to bonus dice",
     "diceDisplay": {
       "title": "Dice Display",
       "hint": "Switch the in-match dice presentation without changing the actual roll result.",
