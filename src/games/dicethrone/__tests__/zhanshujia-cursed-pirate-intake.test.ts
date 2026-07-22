@@ -467,7 +467,10 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
             ['zhanshujia-bind-if-three-kind'],
         ]);
 
-        expect(getCustomActionIds(findZhanshujiaAbility('war-monger', WAR_MONGER_2.name))).toEqual(['zhanshujia-war-monger-2-roll']);
+        expect(getCustomActionIds(findZhanshujiaAbility('war-monger', WAR_MONGER_2.name))).toEqual([
+            'zhanshujia-war-monger-2-roll',
+            'zhanshujia-war-monger-attack-damage',
+        ]);
         expect(getCustomActionMeta('zhanshujia-war-monger-2-roll')?.categories).toEqual(['damage', 'token', 'card', 'other']);
     });
 
@@ -502,8 +505,12 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
         expect(getCustomActionMeta('zhanshujia-war-room-roll')?.categories).toEqual(['dice', 'token', 'card']);
 
         const warMonger = findZhanshujiaAbility('war-monger');
-        expect(getCustomActionIds(warMonger)).toEqual(['zhanshujia-war-monger-roll']);
+        expect(getCustomActionIds(warMonger)).toEqual([
+            'zhanshujia-war-monger-roll',
+            'zhanshujia-war-monger-attack-damage',
+        ]);
         expect(getCustomActionMeta('zhanshujia-war-monger-roll')?.categories).toEqual(['damage', 'token', 'card', 'other']);
+        expect(getCustomActionMeta('zhanshujia-war-monger-attack-damage')?.categories).toEqual(['damage']);
 
         const disengageRoll = getRollDieAction(findZhanshujiaCard('card-zhanshujia-disengage'));
         expect(disengageRoll.diceCount).toBe(1);
@@ -513,7 +520,10 @@ describe('DiceThrone 战术家 / 咒缚海盗新英雄接入', () => {
             ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
         ]);
 
-        expect(getCustomActionIds(findZhanshujiaAbility('war-monger', WAR_MONGER_2.name))).toEqual(['zhanshujia-war-monger-2-roll']);
+        expect(getCustomActionIds(findZhanshujiaAbility('war-monger', WAR_MONGER_2.name))).toEqual([
+            'zhanshujia-war-monger-2-roll',
+            'zhanshujia-war-monger-attack-damage',
+        ]);
         expect(getCustomActionMeta('zhanshujia-war-monger-2-roll')?.categories).toEqual(['damage', 'token', 'card', 'other']);
     });
 

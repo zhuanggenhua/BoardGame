@@ -315,7 +315,39 @@
       "hauntRiskPhaseHaunt": "作祟中",
       "hauntRevealTitle": "作祟开始",
       "hauntRevealTraitor": "叛徒：{{player}}",
-      "hauntRevealTraitorUnknown": "叛徒已揭示"
+      "hauntRevealTraitorUnknown": "叛徒已揭示",
+      "hauntRevealHiddenTraitor": "隐藏叛徒作祟",
+      "hauntRevealNoTraitor": "无叛徒作祟",
+      "hauntRevealStep": {
+        "heroes-intro": "公开：英雄介绍",
+        "heroes-setup": "公开：英雄设置",
+        "traitor-intro": "公开：叛徒介绍",
+        "traitor-setup": "公开：叛徒设置"
+      },
+      "hauntRevealSecretBoundary": "之后分开阅读目标；使用规则时可公开对应文本",
+      "hauntRevealSecretBoundaryNoTraitor": "公开设置后全员读英雄目标；使用规则时读出对应文本",
+      "hauntRevealSecretBoundaryHiddenTraitor": "隐藏身份不公开；使用规则时可公开对应文本",
+      "hauntSetupQueueTitle": "公开设置队列",
+      "hauntSetupQueue": {
+        "assign-revealer-traitor": "指定揭秘者为叛徒",
+        "traitor-remains-in-game": "叛徒保留探索者",
+        "heal-and-boost-traitor": "治疗并强化叛徒",
+        "prepare-jack-spirit-tokens": "准备杰克标记",
+        "monster-card-left-of-traitor": "怪物卡放叛徒左侧",
+        "first-player-left-of-traitor": "叛徒左侧先行动",
+        "announce-hidden-traitor": "公开隐藏叛徒规则",
+        "deal-secret-sickness-tokens": "秘密分发疾病标记",
+        "monster-card-left-of-revealer": "怪物卡放揭秘者左侧",
+        "prepare-research-tokens": "准备研究标记",
+        "first-player-left-of-revealer": "揭秘者左侧先行动",
+        "place-phantom-photographers": "放置幻影摄影师",
+        "recover-magic-camera": "找出魔法相机",
+        "deal-hero-essence-tokens": "发放英雄本质"
+      },
+      "hauntSetupStatus": {
+        "resolved": "已落地",
+        "manual-check": "按书确认"
+      }
     },
     "feedback": {
       "label": "刚发生",

@@ -460,6 +460,7 @@ export interface BetrayalScenarioRuntimeStatus {
     traitorCorpseRoomId: string | null;
     corpseLootedByPlayerIdsThisTurn: string[];
     usedRoomEffectIdsThisTurn: string[];
+    hauntSetupQueue: BetrayalHauntSetupQueueEntry[];
     dust?: BetrayalDustRuntimeState;
     hungryHouse?: BetrayalHungryHouseRuntimeState;
     magicCamera?: BetrayalMagicCameraRuntimeState;
@@ -473,6 +474,61 @@ export interface BetrayalHauntRiskStatus {
     hauntStarted: boolean;
     nextOmenAutomatic: boolean;
     omenDeckRemaining: number;
+}
+
+export type BetrayalHauntType = 'no-traitor' | 'one-traitor' | 'hidden-traitor' | 'free-for-all';
+
+export type BetrayalHauntRevealPublicStepId =
+    | 'heroes-intro'
+    | 'heroes-setup'
+    | 'traitor-intro'
+    | 'traitor-setup';
+
+export interface BetrayalHauntRevealPublicStep {
+    id: BetrayalHauntRevealPublicStepId;
+    side: 'heroes' | 'traitor';
+    kind: 'intro' | 'setup';
+}
+
+export type BetrayalHauntSetupQueueEntryId =
+    | 'assign-revealer-traitor'
+    | 'traitor-remains-in-game'
+    | 'heal-and-boost-traitor'
+    | 'prepare-jack-spirit-tokens'
+    | 'monster-card-left-of-traitor'
+    | 'first-player-left-of-traitor'
+    | 'announce-hidden-traitor'
+    | 'deal-secret-sickness-tokens'
+    | 'monster-card-left-of-revealer'
+    | 'prepare-research-tokens'
+    | 'first-player-left-of-revealer'
+    | 'place-phantom-photographers'
+    | 'recover-magic-camera'
+    | 'deal-hero-essence-tokens';
+
+export type BetrayalHauntSetupQueueEntryStatus =
+    | 'resolved'
+    | 'manual-check';
+
+export interface BetrayalHauntSetupQueueEntry {
+    id: BetrayalHauntSetupQueueEntryId;
+    side: 'all' | 'heroes' | 'traitor';
+    status: BetrayalHauntSetupQueueEntryStatus;
+}
+
+export interface BetrayalHauntSecretBoundary {
+    heroBookVisibleTo: 'heroes' | 'all';
+    traitorBookVisibleTo: 'traitor' | 'none';
+    revealOnUse: boolean;
+}
+
+export interface BetrayalHauntRevealProtocol {
+    active: boolean;
+    hauntCardNumber: number | null;
+    hauntType: BetrayalHauntType;
+    publicSteps: BetrayalHauntRevealPublicStep[];
+    setupQueue: BetrayalHauntSetupQueueEntry[];
+    secretBoundary: BetrayalHauntSecretBoundary;
 }
 
 export interface BetrayalCore {
@@ -1937,6 +1993,7 @@ function createInitialScenarioRuntimeStatus(): BetrayalScenarioRuntimeStatus {
         traitorCorpseRoomId: null,
         corpseLootedByPlayerIdsThisTurn: [],
         usedRoomEffectIdsThisTurn: [],
+        hauntSetupQueue: [],
     };
 }
 
@@ -3472,6 +3529,7 @@ function cloneScenarioRuntimeStatus(status: BetrayalScenarioRuntimeStatus): Betr
         deadExplorerPlayerIds: [...status.deadExplorerPlayerIds],
         corpseLootedByPlayerIdsThisTurn: [...status.corpseLootedByPlayerIdsThisTurn],
         usedRoomEffectIdsThisTurn: [...status.usedRoomEffectIdsThisTurn],
+        hauntSetupQueue: (status.hauntSetupQueue ?? []).map((entry) => ({ ...entry })),
         dust: status.dust ? cloneDustRuntimeState(status.dust) : undefined,
         hungryHouse: status.hungryHouse ? cloneHungryHouseRuntimeState(status.hungryHouse) : undefined,
         magicCamera: status.magicCamera ? cloneMagicCameraRuntimeState(status.magicCamera) : undefined,
@@ -3625,6 +3683,101 @@ export function resolveBetrayalHauntRisk(
             && !core.scenarioRuntime.hauntTriggered
             && core.deckCounts.omen <= 1,
         omenDeckRemaining: core.deckCounts.omen,
+    };
+}
+
+const BETRAYAL_HERO_PUBLIC_HAUNT_STEPS: BetrayalHauntRevealPublicStep[] = [
+    { id: 'heroes-intro', side: 'heroes', kind: 'intro' },
+    { id: 'heroes-setup', side: 'heroes', kind: 'setup' },
+];
+
+const BETRAYAL_TRAITOR_PUBLIC_HAUNT_STEPS: BetrayalHauntRevealPublicStep[] = [
+    { id: 'traitor-intro', side: 'traitor', kind: 'intro' },
+    { id: 'traitor-setup', side: 'traitor', kind: 'setup' },
+];
+
+const CRIMSON_JACK_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
+    { id: 'assign-revealer-traitor', side: 'all', status: 'resolved' },
+    { id: 'traitor-remains-in-game', side: 'all', status: 'resolved' },
+    { id: 'heal-and-boost-traitor', side: 'traitor', status: 'resolved' },
+    { id: 'monster-card-left-of-traitor', side: 'all', status: 'manual-check' },
+    { id: 'prepare-jack-spirit-tokens', side: 'all', status: 'manual-check' },
+    { id: 'first-player-left-of-traitor', side: 'all', status: 'resolved' },
+];
+
+const DUST_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
+    { id: 'announce-hidden-traitor', side: 'all', status: 'resolved' },
+    { id: 'deal-secret-sickness-tokens', side: 'all', status: 'resolved' },
+    { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
+    { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
+    { id: 'prepare-research-tokens', side: 'all', status: 'manual-check' },
+];
+
+const MAGIC_CAMERA_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
+    { id: 'traitor-remains-in-game', side: 'all', status: 'resolved' },
+    { id: 'place-phantom-photographers', side: 'traitor', status: 'resolved' },
+    { id: 'recover-magic-camera', side: 'traitor', status: 'resolved' },
+    { id: 'deal-hero-essence-tokens', side: 'heroes', status: 'resolved' },
+    { id: 'first-player-left-of-traitor', side: 'all', status: 'resolved' },
+];
+
+function cloneHauntSetupQueue(queue: BetrayalHauntSetupQueueEntry[]): BetrayalHauntSetupQueueEntry[] {
+    return queue.map((entry) => ({ ...entry }));
+}
+
+export function resolveBetrayalHauntSetupQueue(core: BetrayalCore): BetrayalHauntSetupQueueEntry[] {
+    if (core.phase !== 'haunt' || !core.scenarioRuntime.hauntTriggered) {
+        return [];
+    }
+    const existingQueue = core.scenarioRuntime.hauntSetupQueue ?? [];
+    if (existingQueue.length > 0) {
+        return cloneHauntSetupQueue(existingQueue);
+    }
+    switch (core.scenarioRuntime.hauntCardNumber) {
+        case 1:
+            return cloneHauntSetupQueue(CRIMSON_JACK_HAUNT_SETUP_QUEUE);
+        case 3:
+            return cloneHauntSetupQueue(DUST_HAUNT_SETUP_QUEUE);
+        case 33:
+            return cloneHauntSetupQueue(MAGIC_CAMERA_HAUNT_SETUP_QUEUE);
+        default:
+            return [];
+    }
+}
+
+function resolveBetrayalHauntType(core: BetrayalCore): BetrayalHauntType {
+    if (!core.scenarioRuntime.hauntTriggered || core.phase !== 'haunt') {
+        return 'one-traitor';
+    }
+    if (core.scenarioRuntime.hauntCardNumber === 3) {
+        return 'hidden-traitor';
+    }
+    if (core.scenarioRuntime.hauntCardNumber === 12) {
+        return 'free-for-all';
+    }
+    return core.scenarioRuntime.traitorPlayerId ? 'one-traitor' : 'hidden-traitor';
+}
+
+export function resolveBetrayalHauntRevealProtocol(core: BetrayalCore): BetrayalHauntRevealProtocol {
+    const active = core.phase === 'haunt' && core.scenarioRuntime.hauntTriggered;
+    const hauntType = resolveBetrayalHauntType(core);
+    const hasTraitorBook = active && hauntType === 'one-traitor';
+    return {
+        active,
+        hauntCardNumber: core.scenarioRuntime.hauntCardNumber,
+        hauntType,
+        publicSteps: active
+            ? [
+                ...BETRAYAL_HERO_PUBLIC_HAUNT_STEPS,
+                ...(hasTraitorBook ? BETRAYAL_TRAITOR_PUBLIC_HAUNT_STEPS : []),
+            ]
+            : [],
+        setupQueue: active ? resolveBetrayalHauntSetupQueue(core) : [],
+        secretBoundary: {
+            heroBookVisibleTo: hauntType === 'one-traitor' ? 'heroes' : 'all',
+            traitorBookVisibleTo: hasTraitorBook ? 'traitor' : 'none',
+            revealOnUse: true,
+        },
     };
 }
 
@@ -10509,6 +10662,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         ?? setupMagicCameraHaunt(core, event.payload.traitorPlayerId),
                 );
             }
+            core.scenarioRuntime.hauntSetupQueue = resolveBetrayalHauntSetupQueue(core);
             core.turnStartSpeed = 0;
             core.movesRemaining = 0;
             core.usedCardIdsThisTurn = [];

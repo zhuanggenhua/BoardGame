@@ -48,6 +48,8 @@ import type {
   BetrayalDeckKind,
   BetrayalDiscoverySummary,
   BetrayalExplorerSummary,
+  BetrayalHauntRevealProtocol,
+  BetrayalHauntSetupQueueEntry,
   BetrayalHauntSpecialActionId,
   BetrayalHauntSpecialActionStatus,
   BetrayalInventoryCard,
@@ -77,6 +79,7 @@ import {
   createBetrayalCharacterSelectCore,
   resolveBetrayalAttackTargetPlayerIds,
   resolveBetrayalHauntRisk,
+  resolveBetrayalHauntRevealProtocol,
   resolveBetrayalHauntSpecialActionStatus,
   resolveBetrayalLineOfSightRoomIds,
   resolveAttackWeaponCards,
@@ -766,13 +769,12 @@ function isHauntScenarioOpeningDiscovery(core: BetrayalCore): boolean {
   ) {
     return false;
   }
-  return [
+  const discoveryText = [
     core.latestDiscovery.title,
     core.latestDiscovery.summary,
     core.latestDiscovery.detail,
-  ]
-    .join(" ")
-    .includes("剧本");
+  ].join(" ");
+  return discoveryText.includes("剧本") || discoveryText.includes("作祟开始");
 }
 
 function cloneRecentRollForDiscoveryDisplay(
@@ -830,6 +832,18 @@ function buildLatestDiscoveryDisplayEntry(
     ownerPlayerId: core.latestDiscoveryOwnerPlayerId,
     recentRoll: cloneRecentRollForDiscoveryDisplay(relatedRecentRoll),
   };
+}
+
+function isSpiderAdjacentRoomResolutionDiscovery(
+  discovery: BetrayalDiscoverySummary | null,
+): boolean {
+  return Boolean(
+    discovery?.kind === "event" &&
+      discovery.title === "蜘蛛！" &&
+      discovery.detail.includes("放置到") &&
+      (discovery.detail.includes("神志 +1") ||
+        discovery.detail.includes("速度 +1")),
+  );
 }
 
 function resolvePlayerName(
@@ -3676,18 +3690,30 @@ function BetrayalHauntRevealCue({
   scenarioTitle,
   traitorName,
   triggerLabel,
+  revealProtocol,
   isPhoneLandscapeLayout,
 }: {
   title: string;
   scenarioTitle: string;
   traitorName: string;
   triggerLabel: string | null;
+  revealProtocol: BetrayalHauntRevealProtocol;
   isPhoneLandscapeLayout: boolean;
 }) {
+  const { t } = useTranslation("game-betrayal");
+  const secretBoundaryLabel =
+    revealProtocol.secretBoundary.traitorBookVisibleTo === "none"
+      ? revealProtocol.hauntType === "hidden-traitor"
+        ? t("board.status.hauntRevealSecretBoundaryHiddenTraitor")
+        : t("board.status.hauntRevealSecretBoundaryNoTraitor")
+      : t("board.status.hauntRevealSecretBoundary");
+  const setupQueue = revealProtocol.setupQueue;
+
   return (
     <div
       data-testid="betrayal-haunt-reveal-cue"
       data-haunt-reveal-active="true"
+      data-haunt-type={revealProtocol.hauntType}
       className={`betrayal-haunt-reveal-cue pointer-events-none absolute left-1/2 -translate-x-1/2 ${
         isPhoneLandscapeLayout ? "top-3" : "top-[86px]"
       }`}
@@ -3706,6 +3732,57 @@ function BetrayalHauntRevealCue({
           {triggerLabel ? <span>{triggerLabel}</span> : null}
           <span>{traitorName}</span>
         </div>
+        <div
+          data-testid="betrayal-haunt-reveal-public-steps"
+          data-haunt-type={revealProtocol.hauntType}
+          className="relative mt-3 flex flex-wrap items-center justify-center gap-1.5"
+        >
+          {revealProtocol.publicSteps.map((step) => (
+            <span
+              key={step.id}
+              data-testid={`betrayal-haunt-reveal-step-${step.id}`}
+              className="rounded-[5px] border border-[rgba(255,206,147,0.32)] bg-[rgba(255,215,147,0.10)] px-2 py-1 text-[10px] font-bold tracking-[0.10em] text-[#ffe1bd]"
+            >
+              {t(`board.status.hauntRevealStep.${step.id}`)}
+            </span>
+          ))}
+        </div>
+        <div
+          data-testid="betrayal-haunt-reveal-secret-boundary"
+          data-reveal-on-use={
+            revealProtocol.secretBoundary.revealOnUse ? "true" : "false"
+          }
+          className="relative mt-2 text-[10px] font-semibold tracking-[0.08em] text-[#ffc7bc]"
+        >
+          {secretBoundaryLabel}
+        </div>
+        {setupQueue.length > 0 ? (
+          <div
+            data-testid="betrayal-haunt-setup-queue"
+            data-haunt-setup-count={setupQueue.length}
+            className="relative mt-2 flex flex-col items-center gap-1"
+          >
+            <div className="text-[9px] font-black uppercase tracking-[0.28em] text-[#ffb37a]">
+              {t("board.status.hauntSetupQueueTitle")}
+            </div>
+            <div className="flex max-w-[520px] flex-wrap items-center justify-center gap-1">
+              {setupQueue.map((entry: BetrayalHauntSetupQueueEntry) => (
+                <span
+                  key={entry.id}
+                  data-testid={`betrayal-haunt-setup-entry-${entry.id}`}
+                  data-haunt-setup-side={entry.side}
+                  data-haunt-setup-status={entry.status}
+                  className="rounded-[5px] border border-[rgba(255,206,147,0.24)] bg-[rgba(255,215,147,0.08)] px-2 py-0.5 text-[9px] font-bold tracking-[0.06em] text-[#ffe1bd]"
+                >
+                  {t(`board.status.hauntSetupQueue.${entry.id}`)}
+                  <span className="ml-1 text-[#ff9d8c]">
+                    {t(`board.status.hauntSetupStatus.${entry.status}`)}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -7768,7 +7845,7 @@ export default function BetrayalBoard({
   const latestDiscoveryOwnerPlayerId =
     latestDiscoveryEntry?.ownerPlayerId ?? null;
   const latestDiscoveryKey = latestDiscoveryEntry?.key ?? null;
-  const shouldShowLatestDiscovery = Boolean(
+  const hasLatestDiscoveryDisplayEntry = Boolean(
     latestDiscovery &&
     latestDiscoveryKey !== previewState.dismissedLatestDiscoveryKey,
   );
@@ -7849,11 +7926,19 @@ export default function BetrayalBoard({
           explorer.playerId === core.scenarioRuntime.traitorPlayerId,
       ) ?? null)
     : null;
+  const hauntRevealProtocol = resolveBetrayalHauntRevealProtocol(core);
+  const hauntOpeningDiscovery = isHauntScenarioOpeningDiscovery(core)
+    ? core.latestDiscovery
+    : latestDiscovery;
+  const hauntRevealDiscoveryKey = hauntOpeningDiscovery
+    ? (buildLatestDiscoveryKey(core) ?? latestDiscoveryKey)
+    : null;
   const shouldShowHauntRevealCue = Boolean(
     core.phase === "haunt" &&
     core.scenarioRuntime.hauntTriggered &&
-    latestDiscovery &&
-    latestDiscoveryKey !== previewState.dismissedLatestDiscoveryKey,
+    hauntRevealProtocol.active &&
+    hauntOpeningDiscovery &&
+    hauntRevealDiscoveryKey !== previewState.dismissedLatestDiscoveryKey,
   );
   const hauntRevealTraitorName = hauntRevealTraitor
     ? t("board.status.hauntRevealTraitor", {
@@ -7863,14 +7948,34 @@ export default function BetrayalBoard({
           matchData,
         ),
       })
-    : t("board.status.hauntRevealTraitorUnknown");
+    : hauntRevealProtocol.hauntType === "no-traitor"
+      ? t("board.status.hauntRevealNoTraitor")
+      : hauntRevealProtocol.hauntType === "hidden-traitor"
+        ? t("board.status.hauntRevealHiddenTraitor")
+        : t("board.status.hauntRevealTraitorUnknown");
   const hasRecentRollModifier = rollModifierCardIds.size > 0;
   const isLatestDiscoveryRecentRollDismissed = Boolean(
     latestDiscoveryRecentRoll &&
       previewState.dismissedRecentRollId === latestDiscoveryRecentRoll.id,
   );
+  const latestDiscoveryHasActionableRollModifier = Boolean(
+    latestDiscovery &&
+      latestDiscoveryRecentRoll &&
+      hasRecentRollModifier &&
+      core.recentRoll?.id === latestDiscoveryRecentRoll.id &&
+      latestDiscoveryRecentRoll.playerId === core.currentExplorer.playerId,
+  );
+  const shouldAutoReturnAfterLatestDiscovery = Boolean(
+    !pendingEventChoice &&
+      core.turnEndedByDiscovery &&
+      isSpiderAdjacentRoomResolutionDiscovery(core.latestDiscovery) &&
+      !latestDiscoveryHasActionableRollModifier,
+  );
+  const shouldShowLatestDiscovery =
+    hasLatestDiscoveryDisplayEntry && !shouldAutoReturnAfterLatestDiscovery;
   const shouldShowLatestDiscoveryRoll = Boolean(
     shouldShowLatestDiscovery &&
+    !shouldAutoReturnAfterLatestDiscovery &&
     !isLatestDiscoveryRecentRollDismissed &&
     latestDiscoveryRecentRoll &&
     ((latestDiscovery?.kind === "event" &&
@@ -7897,6 +8002,7 @@ export default function BetrayalBoard({
     !isRecentRollDismissed &&
     !isConfirmedExorciseRoll &&
     !pendingEventChoice &&
+    !shouldAutoReturnAfterLatestDiscovery &&
     !shouldShowLatestDiscovery,
   );
   const shouldUseMobileEventOpenTableChrome =
@@ -7904,14 +8010,22 @@ export default function BetrayalBoard({
     !activeHauntTargetGuide &&
     Boolean(
       pendingEventChoice ||
-        (shouldShowLatestDiscovery && latestDiscovery?.kind === "event"),
+        (shouldShowLatestDiscovery &&
+          !shouldAutoReturnAfterLatestDiscovery &&
+          latestDiscovery?.kind === "event"),
     );
   // 只用于非事件发现结果 / 独立投骰结果这类需要整桌退场的阻塞层。
   // 事件选择与事件结算必须保持 PC 同构的开放桌面叠层，不得把行动栏、HUD 等整套牌桌 UI 藏掉。
   const shouldHideTableChromeForBlockingOverlay = Boolean(
-    !(shouldShowLatestDiscovery && latestDiscovery?.kind === "event") &&
+    !(
+      shouldShowLatestDiscovery &&
+      !shouldAutoReturnAfterLatestDiscovery &&
+      latestDiscovery?.kind === "event"
+    ) &&
       !shouldUseMobileEventOpenTableChrome &&
-      ((shouldShowLatestDiscovery && !pendingEventChoice) ||
+      ((shouldShowLatestDiscovery &&
+        !shouldAutoReturnAfterLatestDiscovery &&
+        !pendingEventChoice) ||
         shouldShowBlockingRecentRollOverlay),
   );
   const shouldSuppressMobileBlockingRollChrome =
@@ -9887,6 +10001,7 @@ export default function BetrayalBoard({
               scenarioTitle={activeHauntTitle}
               traitorName={hauntRevealTraitorName}
               triggerLabel={core.scenarioRuntime.hauntTriggerLabel}
+              revealProtocol={hauntRevealProtocol}
               isPhoneLandscapeLayout={isPhoneLandscapeLayout}
             />
           ) : null}
@@ -10392,7 +10507,7 @@ export default function BetrayalBoard({
                 <span data-testid="betrayal-room-latest-feedback">
                   {latestLogEntry?.text || t("board.feedback.idle")}
                 </span>
-                {shouldShowLatestDiscovery ? (
+                {shouldShowLatestDiscovery && !shouldAutoReturnAfterLatestDiscovery ? (
                   <span>
                     {t("board.discovery.label")} {latestDiscovery!.title}{" "}
                     {latestDiscovery!.summary} {latestDiscovery!.detail}
@@ -10404,7 +10519,9 @@ export default function BetrayalBoard({
                 ) : null}
               </div>
 
-              {shouldShowLatestDiscovery && !pendingEventChoice ? (
+              {shouldShowLatestDiscovery &&
+              !shouldAutoReturnAfterLatestDiscovery &&
+              !pendingEventChoice ? (
                 <div
                   data-testid="betrayal-discovery-panel"
                   data-card-testid="betrayal-discovery-card-reveal"
@@ -10559,6 +10676,7 @@ export default function BetrayalBoard({
               !isRecentRollDismissed &&
               !isConfirmedExorciseRoll &&
               !pendingEventChoice &&
+              !shouldAutoReturnAfterLatestDiscovery &&
               !shouldShowLatestDiscovery ? (
                 isExorciseRollReview ||
                 core.recentRoll.kind === "attackRoll" ? (

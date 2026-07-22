@@ -722,10 +722,52 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-scenario-reader-dialog')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('剧本33查阅');
         expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('魔法相机');
+        expect(screen.getByTestId('betrayal-haunt-reveal-public-steps')).toHaveAttribute('data-haunt-type', 'one-traitor');
+        expect(screen.getByTestId('betrayal-haunt-reveal-step-heroes-intro')).toHaveTextContent('公开：英雄介绍');
+        expect(screen.getByTestId('betrayal-haunt-reveal-step-heroes-setup')).toHaveTextContent('公开：英雄设置');
+        expect(screen.getByTestId('betrayal-haunt-reveal-step-traitor-intro')).toHaveTextContent('公开：叛徒介绍');
+        expect(screen.getByTestId('betrayal-haunt-reveal-step-traitor-setup')).toHaveTextContent('公开：叛徒设置');
+        expect(screen.getByTestId('betrayal-haunt-reveal-secret-boundary')).toHaveTextContent('之后分开阅读目标');
+        expect(screen.getByTestId('betrayal-haunt-setup-queue')).toHaveAttribute('data-haunt-setup-count', '5');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-place-phantom-photographers')).toHaveTextContent('放置幻影摄影师');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-recover-magic-camera')).toHaveTextContent('找出魔法相机');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-deal-hero-essence-tokens')).toHaveTextContent('发放英雄 Essence');
 
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-close'));
 
         expect(screen.queryByTestId('betrayal-scenario-reader-dialog')).not.toBeInTheDocument();
+    });
+
+    it('首剧本作祟检定只写作祟开始也必须自动打开剧本书', async () => {
+        const core = createFirstScenarioHauntCore();
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntCardNumber).toBe(1);
+        expect(core.latestDiscovery?.detail).toContain('作祟开始');
+        expect(core.latestDiscovery?.detail).not.toContain('剧本');
+
+        renderBoard(core, {
+            playerID: '1',
+            matchData: defaultMatchData.slice(0, 3),
+        });
+
+        expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-scenario-reader-dialog')).toBeInTheDocument();
+        });
+        expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('剧本1查阅');
+        expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('赤红杰克归来');
+        expect(screen.getByTestId('betrayal-haunt-reveal-public-steps')).toHaveAttribute('data-haunt-type', 'one-traitor');
+        expect(screen.getByTestId('betrayal-haunt-setup-queue')).toHaveAttribute('data-haunt-setup-count', '6');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-heal-and-boost-traitor')).toHaveTextContent('治疗并强化叛徒');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-prepare-jack-spirit-tokens')).toHaveTextContent('按书确认');
+
+        fireEvent.click(screen.getByTestId('betrayal-scenario-reader-close'));
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-scenario-reader-dialog')).not.toBeInTheDocument();
+        });
+        expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-haunt-reveal-cue')).toBeInTheDocument();
     });
 
     it('作祟自动打开剧本书后关闭必须直接回牌桌，不再显示本次作祟检定结果层', async () => {
@@ -3120,7 +3162,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
     });
 
-    it('蜘蛛！真实探索先神志检定，并在待选项同屏保留投骰结果', () => {
+    it('蜘蛛！真实探索先神志检定，并在待选项同屏保留投骰结果，点最终房间后直接回牌桌', () => {
         const spider = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '蜘蛛！');
         expect(spider?.roll?.trait).toBe('sanity');
         let core = createStartedFirstScenarioCore(['0', '1', '2', '3']);
@@ -3178,13 +3220,10 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-room-hallway'));
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('神志检定');
-        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('速度 +1');
-        expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('放置到门厅');
-        fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('速度 +1');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('放置到门厅');
     });
 
     it('吊死鬼待选事件能在真实页面选择奖励属性', () => {

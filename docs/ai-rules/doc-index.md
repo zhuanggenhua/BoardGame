@@ -43,7 +43,7 @@
 | **粒子特效开发** (Canvas 2D 引擎) | `docs/particle-engine.md` | API、预设字段、性能优化、视觉质量规则、新增检查清单 |
 | **新增棋盘特效** (FX 系统) | `docs/ai-rules/animation-effects.md` § 引擎级 FX 系统 | FxRegistry 注册、FxBus push/pushSequence、FxRenderer 适配器、新增流程 |
 | **动画数值时序** (HP/damage 跳变) | `docs/ai-rules/engine-visual-events.md` § 动画表现与逻辑分离规范 | `useVisualStateBuffer` 冻结/释放、`FxLayer.onEffectImpact`、新游戏接入流程 |
-| **卡牌 / 技能展示型特写** (其他玩家打出卡牌、展示卡牌、对手进攻技能或升级卡展示) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 + `docs/ai-rules/ui-ux.md` § 对手卡牌 / 技能展示型特写不得瞬时退场 | `useCardSpotlightQueue` + `CardSpotlightQueue`，EventStream 驱动，明确关闭按钮关闭，队列上限；游戏自建卡牌特写和技能特写也必须超过旧自动关闭时间仍可见，不能只修其中一套 |
+| **卡牌 / 技能展示型特写** (需要玩家阅读/复盘/确认的卡牌展示、对手进攻技能或升级卡展示) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 + `docs/ai-rules/ui-ux.md` § 对手卡牌 / 技能展示型特写不得瞬时退场 | `useCardSpotlightQueue` + `CardSpotlightQueue` 只用于阅读/复盘/确认型展示；普通出牌动效、飞牌、飘字、分数飞行和大杀四方行动卡打出展示继续走 FX / animation 自动退场，不得升级成“看清后可关闭” |
 | **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-visual-events.md` | pushSequence API、delayAfter、cancelSequence、适用场景 |
 | **新增/审查游戏机制实现** (技能/Token/事件卡/被动/主动开发或全面审查) | `docs/ai-rules/description-to-implementation-audit.md` + `docs/ai-rules/engine-systems.md` | 新增或主动审查机制时，先锁权威描述并拆成原子断言；逐交互链检查定义、注册、执行、状态、消耗、验证、UI、i18n、测试。玩家反馈的规则 bug 优先走上方规则 bug 修复 workflow |
 | **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` + `docs/games/dicethrone/token-active-use-custom-action.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分；Token 主动使用依赖 custom action 时必须显式声明 |

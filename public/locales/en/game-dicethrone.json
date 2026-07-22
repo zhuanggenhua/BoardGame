@@ -3312,6 +3312,7 @@
       "effects": {
         "gainTa1": "Gain 1 Tactical Advantage.",
         "bonusRoll": "Roll 1 die: Sabre deals 5 damage; Banner gains 4 Tactical Advantage; Medal draws 1 card.",
+        "resolveSabreDamage": "If the Sabre branch hit, resolve that attack damage.",
         "extraOffensiveRoll": "Immediately enter an extra Offensive Roll Phase."
       }
     },
@@ -3320,7 +3321,8 @@
       "description": "1 Sabre + 3 Banners: gain 2 Tactical Advantage and roll 1 die; Sabre deals 6, Banner gains 3 Tactical Advantage, Medal draws 1 and immediately grants an extra Offensive Roll Phase.",
       "effects": {
         "gainTa2": "Gain 2 Tactical Advantage.",
-        "bonusRoll": "Roll 1 die: Sabre deals 6 damage; Banner gains 3 Tactical Advantage; Medal draws 1 card and immediately grants an extra Offensive Roll Phase."
+        "bonusRoll": "Roll 1 die: Sabre deals 6 damage; Banner gains 3 Tactical Advantage; Medal draws 1 card and immediately grants an extra Offensive Roll Phase.",
+        "resolveSabreDamage": "If the Sabre branch hit, resolve that attack damage."
       }
     },
     "drum-movement": {

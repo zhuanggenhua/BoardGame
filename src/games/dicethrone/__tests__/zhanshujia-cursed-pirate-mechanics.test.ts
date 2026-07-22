@@ -1443,6 +1443,12 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
     it('基础战争贩子只有勋章分支才触发额外进攻投掷阶段', () => {
         const sabreState = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        sabreState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'war-monger',
+            isDefendable: true,
+        } as any;
         const sabreEvents = resolveEffectsToEvents(
             getAbilityEffects(sabreState.core, '0', 'war-monger'),
             'preDefense',
@@ -1456,7 +1462,24 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             },
             { random: createQueuedRandom([1]) },
         );
-        expect(eventsOfType(sabreEvents, 'DAMAGE_DEALT')[0]?.payload.amount).toBe(5);
+        const sabreAfterRoll = applyEvents(sabreState.core, sabreEvents);
+        const sabreDamageEvents = resolveEffectsToEvents(
+            getAbilityEffects(sabreAfterRoll, '0', 'war-monger'),
+            'withDamage',
+            {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'war-monger',
+                state: sabreAfterRoll,
+                damageDealt: 0,
+                timestamp: 101,
+            },
+            { random: fixedRandom },
+        );
+
+        expect(eventsOfType(sabreEvents, 'PENDING_ATTACK_UPDATED')[0]?.payload.patch).toMatchObject({ damage: 5 });
+        expect(eventsOfType(sabreEvents, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(eventsOfType(sabreDamageEvents, 'DAMAGE_DEALT')[0]?.payload.amount).toBe(5);
         expect(eventsOfType(sabreEvents, 'EXTRA_ATTACK_TRIGGERED')).toHaveLength(0);
 
         const medalState = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
@@ -1478,6 +1501,151 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(eventsOfType(medalEvents, 'DAMAGE_DEALT')).toHaveLength(0);
         expect(medalNext.players['0'].hand.length).toBe(handBefore + 1);
         expect(eventsOfType(medalEvents, 'EXTRA_ATTACK_TRIGGERED')[0]?.payload).toMatchObject({
+            attackerId: '0',
+            targetId: '1',
+            sourceStatusId: 'war-monger',
+        });
+    });
+
+    it('基础战争贩子军刀分支应先进入防御投掷，防御减伤后才结算攻击伤害', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '1', 'normal');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: [1, 4, 4, 4, 6][index] ?? die.value,
+            symbol: [
+                ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            ][index] ?? die.symbol,
+        }));
+
+        const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'war-monger' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+
+        const enteredDefense = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([1]),
+            ['0', '1'],
+        );
+
+        expect(enteredDefense.success).toBe(true);
+        expect(enteredDefense.state.sys.phase).toBe('defensiveRoll');
+        expect(enteredDefense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore);
+        expect(eventsOfType(enteredDefense.events as DiceThroneEvent[], 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(enteredDefense.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'war-monger',
+            isDefendable: true,
+            damage: 5,
+            defenseAbilityId: 'human-still-wet-behind-ears',
+        });
+
+        const defenseRolled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            enteredDefense.state,
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([6, 4, 4, 4]),
+            ['0', '1'],
+        );
+        expect(defenseRolled.success).toBe(true);
+
+        const defenseConfirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            defenseRolled.state,
+            command('CONFIRM_ROLL', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(defenseConfirmed.success).toBe(true);
+
+        const resolved = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            defenseConfirmed.state,
+            command('ADVANCE_PHASE', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore - 3);
+        expect(eventsOfType(resolved.events as DiceThroneEvent[], 'PREVENT_DAMAGE')[0]?.payload).toMatchObject({
+            targetId: '1',
+            amount: 2,
+            sourceAbilityId: 'human-still-wet-behind-ears',
+        });
+        const warMongerDamage = eventsOfType(resolved.events as DiceThroneEvent[], 'DAMAGE_DEALT')
+            .find(event => event.payload.sourceAbilityId === 'war-monger');
+        expect(warMongerDamage?.payload.amount).toBe(5);
+        expect(warMongerDamage?.payload.shieldsConsumed?.[0]).toMatchObject({
+            sourceId: 'human-still-wet-behind-ears',
+            absorbed: 2,
+        });
+    });
+
+    it('基础战争贩子勋章分支不应进入防御投掷，应直接进入额外进攻投掷阶段', () => {
+        const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            value: [1, 4, 4, 4, 6][index] ?? die.value,
+            symbol: [
+                ZHANSHUJIA_DICE_FACE_IDS.SABRE,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.BANNER,
+                ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+            ][index] ?? die.symbol,
+        }));
+
+        const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP];
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'war-monger' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([6]),
+            ['0', '1'],
+        );
+
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.sys.phase).toBe('offensiveRoll');
+        expect(advanced.state.core.pendingAttack).toBeNull();
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBefore);
+        expect(eventsOfType(advanced.events as DiceThroneEvent[], 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(eventsOfType(advanced.events as DiceThroneEvent[], 'EXTRA_ATTACK_TRIGGERED')[0]?.payload).toMatchObject({
             attackerId: '0',
             targetId: '1',
             sourceStatusId: 'war-monger',

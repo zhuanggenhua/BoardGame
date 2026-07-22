@@ -32,6 +32,7 @@ import {
     resolveBetrayalRoomSpecialActionStatus,
     resolveBetrayalTradeCardStatus,
     resolveBetrayalHauntRisk,
+    resolveBetrayalHauntRevealProtocol,
     resolveBetrayalOmenCount,
     resolveBetrayalRoomDrawResolution,
     resolveRoomTileAdjustmentOptions,
@@ -1822,6 +1823,40 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.activityLog[0]?.text).toContain('Crimson Jack Returns');
     });
 
+    it('作祟揭示读模型先列公开介绍和设置，再分开阅读秘密目标', () => {
+        const core = createFirstScenarioHauntCore();
+        const protocol = resolveBetrayalHauntRevealProtocol(core);
+
+        expect(protocol.active).toBe(true);
+        expect(protocol.hauntCardNumber).toBe(1);
+        expect(protocol.hauntType).toBe('one-traitor');
+        expect(protocol.publicSteps.map((step) => step.id)).toEqual([
+            'heroes-intro',
+            'heroes-setup',
+            'traitor-intro',
+            'traitor-setup',
+        ]);
+        expect(protocol.setupQueue.map((entry) => entry.id)).toEqual([
+            'assign-revealer-traitor',
+            'traitor-remains-in-game',
+            'heal-and-boost-traitor',
+            'monster-card-left-of-traitor',
+            'prepare-jack-spirit-tokens',
+            'first-player-left-of-traitor',
+        ]);
+        expect(protocol.setupQueue.filter((entry) => entry.status === 'resolved').map((entry) => entry.id)).toEqual([
+            'assign-revealer-traitor',
+            'traitor-remains-in-game',
+            'heal-and-boost-traitor',
+            'first-player-left-of-traitor',
+        ]);
+        expect(protocol.secretBoundary).toEqual({
+            heroBookVisibleTo: 'heroes',
+            traitorBookVisibleTo: 'traitor',
+            revealOnUse: true,
+        });
+    });
+
     it('一瓶微尘仍可选择跳过作祟检定并结算原事件效果', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -1862,6 +1897,48 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']).toHaveLength(3);
         expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']).toHaveLength(3);
         expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds).toEqual(['0']);
+    });
+
+    it('灰尘隐藏叛徒作祟揭示不公开叛徒书，但必须保留隐藏身份和 setup 队列', () => {
+        const protocol = resolveBetrayalHauntRevealProtocol(createDustHauntCore());
+
+        expect(protocol.active).toBe(true);
+        expect(protocol.hauntCardNumber).toBe(3);
+        expect(protocol.hauntType).toBe('hidden-traitor');
+        expect(protocol.publicSteps.map((step) => step.id)).toEqual([
+            'heroes-intro',
+            'heroes-setup',
+        ]);
+        expect(protocol.setupQueue.map((entry) => entry.id)).toEqual([
+            'announce-hidden-traitor',
+            'deal-secret-sickness-tokens',
+            'monster-card-left-of-revealer',
+            'first-player-left-of-revealer',
+            'prepare-research-tokens',
+        ]);
+        expect(protocol.setupQueue.find((entry) => entry.id === 'deal-secret-sickness-tokens')?.status).toBe('resolved');
+        expect(protocol.setupQueue.find((entry) => entry.id === 'prepare-research-tokens')?.status).toBe('manual-check');
+        expect(protocol.secretBoundary).toEqual({
+            heroBookVisibleTo: 'all',
+            traitorBookVisibleTo: 'none',
+            revealOnUse: true,
+        });
+    });
+
+    it('魔法相机作祟揭示队列必须列出摄影师、相机和 Essence 设置', () => {
+        const protocol = resolveBetrayalHauntRevealProtocol(createMagicCameraHauntCore(null));
+
+        expect(protocol.active).toBe(true);
+        expect(protocol.hauntCardNumber).toBe(33);
+        expect(protocol.hauntType).toBe('one-traitor');
+        expect(protocol.setupQueue.map((entry) => entry.id)).toEqual([
+            'traitor-remains-in-game',
+            'place-phantom-photographers',
+            'recover-magic-camera',
+            'deal-hero-essence-tokens',
+            'first-player-left-of-traitor',
+        ]);
+        expect(protocol.setupQueue.every((entry) => entry.status === 'resolved')).toBe(true);
     });
 
     it('灰尘剧本寻找解药成功会在当前恶兆板块放置研究标记', () => {

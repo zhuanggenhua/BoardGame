@@ -20,10 +20,9 @@ import type { SmashUpCore, CardInstance, ActionCardDef, FusionCardDef, CardOrTit
 import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId } from './domain/types';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { asSimpleChoice, INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
-import { getCardDef, getBaseDef, getMinionDef, resolveCardName, resolveCardText } from './data/cards';
+import { getCardDef, getBaseDef, getMinionDef, resolveCardName } from './data/cards';
 import { getScoringEligibleBaseIndices } from './domain/ongoingModifiers';
 import { useGameAudio, playDeniedSound, playSound } from '../../lib/audio/useGameAudio';
-import { CardPreview } from '../../components/common/media/CardPreview';
 import { AnimatePresence, motion } from 'framer-motion';
 import { initSmashUpAtlases } from './ui/cardAtlas';
 
@@ -76,7 +75,7 @@ import {
 import { SMASHUP_AUDIO_CONFIG } from './audio.config';
 import { useTutorialBridge, useTutorial } from '../../contexts/TutorialContext';
 import { UndoProvider } from '../../contexts/UndoContext';
-import { MobileBattlefieldViewport, TutorialSelectionGate, useCardSpotlightQueue, CardSpotlightQueue, useMatchPlayerViewModel } from '../../components/game/framework';
+import { MobileBattlefieldViewport, TutorialSelectionGate, useMatchPlayerViewModel } from '../../components/game/framework';
 import { LoadingScreen } from '../../components/system/LoadingScreen';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import { SmashUpDebugConfig } from './debug-config';
@@ -84,7 +83,6 @@ import { UI_Z_INDEX } from '../../core';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { SmashUpEndgameContent, SmashUpEndgameActions } from './ui/SmashUpEndgame';
-import type { SpotlightItem } from '../../components/game/framework';
 import { resolveRuntimeLayoutScaleMetrics } from '../mobileSupport';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { RevealOverlay, resolveRevealSuppressionRules } from './ui/RevealOverlay';
@@ -1774,31 +1772,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
 
-    // 行动卡特写队列：
-    // - 在线模式：只显示对手打出的行动卡
-    // - 本地/测试模式：显示双方行动卡；测试页会固定注入 playerID='0'，因此不能仅靠 playerID 是否为空来区分
-    const extractActionCard = useCallback((event: { type: string; payload: unknown }) => {
-        const p = event.payload as { playerId: string; defId: string };
-        if (!p?.playerId || !p?.defId) return null;
-        return { playerId: p.playerId, cardData: { defId: p.defId } };
-    }, []);
-
-    const SPOTLIGHT_TRIGGER_EVENTS = useMemo(() => ['su:action_played'], []);
-
     // 事件流条目（统一获取，避免重复调用）
     const eventStreamEntries = getEventStreamEntries(G);
-    const spotlightViewerId = isMultiplayer ? playerID : null;
     const revealViewerId = isMultiplayer ? playerID : rootPid;
-
-    const { queue: spotlightQueue, dismiss: dismissSpotlight } = useCardSpotlightQueue<{ defId: string }>({
-        entries: eventStreamEntries,
-        currentPlayerId: spotlightViewerId,
-        // 联机时对手页依赖服务端确认事件驱动特写，不能在 reconcile 时静默吞掉。
-        consumeOnReconcile: true,
-        triggerEventTypes: SPOTLIGHT_TRIGGER_EVENTS,
-        extractCard: extractActionCard,
-        maxQueue: 5,
-    });
 
     const revealSuppressionRules = useMemo(() => {
         if (!currentPrompt) return [];
@@ -1807,39 +1783,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             isCurrentPromptForPlayer,
         );
     }, [currentPrompt, currentPromptData, isCurrentPromptForPlayer]);
-
-    // 行动卡特写渲染
-    const renderSpotlightCard = useCallback((item: SpotlightItem<{ defId: string }>) => {
-        const def = getCardDef(item.cardData.defId);
-        const resolvedName = resolveCardName(def, t) || item.cardData.defId;
-        const resolvedText = resolveCardText(def, t);
-        return (
-            <div
-                className="relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden"
-                style={{
-                    width: 'clamp(150px, 10.5vw, 200px)',
-                    aspectRatio: '0.714 / 1',
-                }}
-                data-testid="smashup-action-spotlight-card"
-                data-card-def-id={item.cardData.defId}
-            >
-                <CardPreview
-                    previewRef={def?.previewRef}
-                    className="w-full h-full object-cover"
-                    title={resolvedName}
-                />
-                {!def?.previewRef && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-[#f3f0e8]">
-                        <div className="text-[1.2vw] font-black uppercase text-slate-800 mb-2">{resolvedName}</div>
-                        <div className="text-[0.7vw] text-slate-600 text-center font-mono">{resolvedText}</div>
-                    </div>
-                )}
-                <div className="absolute top-2 right-2 bg-red-500 text-white text-[0.7vw] font-black px-2 py-0.5 rounded shadow-md rotate-6">
-                    {t('ui.played')}
-                </div>
-            </div>
-        );
-    }, [t]);
 
     // 能力反馈 toast：失败提示，以及成功获得额外出牌额度的明确反馈。
     useEffect(() => {
@@ -4098,22 +4041,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     <SmashUpDebugConfig G={G} dispatch={dispatch} />
                 </GameDebugPanel>
 
-                {/* 行动卡特写队列（在线只看对手，本地模式显示双方，明确关闭按钮关闭） */}
-                <CardSpotlightQueue
-                    queue={spotlightQueue}
-                    onDismiss={dismissSpotlight}
-                    renderCard={renderSpotlightCard}
-                />
-
                 {/* 卡牌展示浮层（非阻塞，明确关闭按钮关闭） */}
-                {spotlightQueue.length === 0 && (
-                    <RevealOverlay
-                        entries={eventStreamEntries}
-                        currentPlayerId={revealViewerId}
-                        playerNames={playerNames}
-                        suppressionRules={revealSuppressionRules}
-                    />
-                )}
+                <RevealOverlay
+                    entries={eventStreamEntries}
+                    currentPlayerId={revealViewerId}
+                    playerNames={playerNames}
+                    suppressionRules={revealSuppressionRules}
+                />
 
                 {/* PREVIEW OVERLAY */}
                 <CardMagnifyOverlay target={viewingCard} onClose={() => setViewingCard(null)} />

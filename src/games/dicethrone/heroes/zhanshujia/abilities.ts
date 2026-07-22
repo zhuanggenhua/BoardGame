@@ -155,6 +155,7 @@ const WAR_MONGER: AbilityDef = {
     effects: [
         grantToken(1, abilityEffectText('war-monger', 'gainTa1')),
         custom('zhanshujia-war-monger-roll', abilityEffectText('war-monger', 'bonusRoll'), 'preDefense', 'opponent'),
+        custom('zhanshujia-war-monger-attack-damage', abilityEffectText('war-monger', 'resolveSabreDamage'), 'withDamage', 'opponent'),
     ],
 };
 
@@ -168,6 +169,7 @@ export const WAR_MONGER_2: AbilityDef = {
     effects: [
         grantToken(2, abilityEffectText('war-monger-2', 'gainTa2')),
         custom('zhanshujia-war-monger-2-roll', abilityEffectText('war-monger-2', 'bonusRoll'), 'preDefense', 'opponent'),
+        custom('zhanshujia-war-monger-attack-damage', abilityEffectText('war-monger-2', 'resolveSabreDamage'), 'withDamage', 'opponent'),
     ],
 };
 

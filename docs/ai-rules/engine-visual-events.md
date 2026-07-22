@@ -193,7 +193,9 @@ useEffect(() => {
 
 > 路径：`src/components/game/framework/CardSpotlightQueue.tsx` + `hooks/useCardSpotlightQueue.ts`
 
-通用框架组件，用于展示卡牌特写。基于 EventStream 驱动，支持队列堆叠（有上限），通过明确关闭按钮关闭当前特写。
+通用框架组件，用于需要玩家阅读、复盘或确认的卡牌特写。基于 EventStream 驱动，支持队列堆叠（有上限），通过明确关闭按钮关闭当前特写。
+
+**适用边界（强制）**：只有展示本身承担“玩家必须读懂这张牌 / 这个结果后才能合理继续”的语义时，才接入 `CardSpotlightQueue`。普通出牌动效、仪式性反馈、飞牌、闪卡、飘字、分数飞行等不承担确认权的瞬时反馈，继续走 FX / animation 自动退场；不得因为本节存在，就把原本的瞬时反馈升级成“看清后可关闭”。大杀四方行动卡打出展示属于 `SU_FX.ACTION_SHOW` 瞬时反馈，不属于本队列接入对象。
 
 ### 核心特性
 
@@ -203,10 +205,10 @@ useEffect(() => {
 - **明确关闭**：只能通过清楚的关闭按钮关闭当前项；不得用整屏背景、卡牌本体点击、鼠标移出、自动计时或 prompt 出现来关闭
 - **非阻塞呈现**：卡牌特写默认是“玩家需要读懂的展示”，不是阻塞式 modal。根容器必须保持 `pointer-events-none`，只让关闭按钮等最小必要区域接管点击；不得铺整屏 backdrop、暗罩或点击捕获层遮住棋盘上下文
 - **关键 UI 避让**：特写不能遮挡当前棋盘/牌桌主对象、手牌、牌库、弃牌堆、右侧 rail、工具按钮、当前 prompt 目标或其它玩家此刻需要读取/点击的控件；E2E 不得只检查单一对象（例如只检查基地不重叠）就判视觉通过，必须覆盖真实整屏里所有竞争区域。
-- **生命周期独立**：对手打出卡牌后，即使本地随后进入 prompt、waiting、response window、blocked interaction、联机确认、前后台 resync、组件重挂载或乐观引擎通用回滚信号，也不得自动清空这张特写。只有用户明确关闭、队列上限裁剪，或明确撤销 / Undo 证据能证明事件本体已失效时，才允许移除队列项；`didOptimisticRollback`、空 EventStream、ID 回退这类视觉游标信号不能直接当成“关闭特写”。
+- **生命周期独立**：已经被判定为“需要阅读/复盘”的特写入队后，即使本地随后进入 prompt、waiting、response window、blocked interaction、联机确认、前后台 resync、组件重挂载或乐观引擎通用回滚信号，也不得自动清空这张特写。只有用户明确关闭、队列上限裁剪，或明确撤销 / Undo 证据能证明事件本体已失效时，才允许移除队列项；`didOptimisticRollback`、空 EventStream、ID 回退这类视觉游标信号不能直接当成“关闭特写”。
 - **重挂载恢复**：展示型特写如果已经在当前页面生命周期内入队且未被用户明确关闭，后续 hook / Board / overlay 因同步、重连或路由壳层刷新重挂载时，必须能恢复这条未关闭特写。首次挂载跳过历史事件只用于“不要把进房前旧事件重新弹出”，不能把本页刚展示过、仍应让玩家阅读的特写丢掉。
 - **旧游戏自建实现不例外**：如果游戏还没迁到通用 `CardSpotlightQueue`，例如 DiceThrone 的 `CardSpotlightOverlay` + `useCardSpotlight`，或另有 `AttackShowcaseOverlay` + `useAttackShowcase` 这类技能特写实现，也必须遵守同一生命周期。修复或审计时必须同时检查通用框架、游戏内卡牌特写和技能特写实现；不能只改通用组件或只改卡牌特写后宣称所有展示型特写已修。
-- **禁止自动退场**：卡牌特写、对手进攻技能特写、能力槽裁切展示、升级卡展示、揭示牌、剧本页等玩家需要阅读的展示型 UI 不允许用 `autoCloseDelay`、短 timer、卡面/技能本体点击、空白点击、hover/blur 或 prompt 切换来关闭。必须提供明确关闭按钮或继续按钮；测试必须断言超过旧自动关闭时间后仍可见，并通过明确按钮收口。
+- **禁止自动退场**：需要阅读/复盘/确认的卡牌特写、对手进攻技能特写、能力槽裁切展示、升级卡展示、揭示牌、剧本页等展示型 UI 不允许用 `autoCloseDelay`、短 timer、卡面/技能本体点击、空白点击、hover/blur 或 prompt 切换来关闭。必须提供明确关闭按钮或继续按钮；测试必须断言超过旧自动关闭时间后仍可见，并通过明确按钮收口。反过来，纯动效反馈不得套用本条升级成交互式特写。
 - **撤销安全**：只有明确撤销 / Undo 证据证明当前特写对应事件已失效时，才清空或移除对应队列项；普通同步、重连、组件重挂载、空 EventStream 或 ID 回退不得自动清空。
 - **游戏层注入渲染**：框架层管理队列逻辑，游戏层通过 `renderCard` 提供卡牌 UI
 
@@ -234,7 +236,7 @@ const { queue, dismiss } = useCardSpotlightQueue({
     entries: getEventStreamEntries(G),
     currentPlayerId: myPid, // 传 null/undefined 可关闭“过滤自己”
     consumeOnReconcile: true, // 联机对手页需要消费服务端确认事件时开启
-    triggerEventTypes: ['su:action_played'],  // 触发特写的事件类型
+    triggerEventTypes: ['game:card_revealed'],  // 触发特写的事件类型
     extractCard,
     maxQueue: 5,
 });
@@ -254,11 +256,11 @@ const renderCard = useCallback((item) => (
 |------|---------|-------------------|
 | 交互性 | `pointer-events-none`，纯展示 | 仅关闭按钮可点击 |
 | 生命周期 | 定时自动消失（`timeoutMs`） | 用户主动关闭 |
-| 适用场景 | 力量浮字、VP 飞行等瞬态特效 | 卡牌特写、需要玩家确认的展示 |
+| 适用场景 | 力量浮字、VP 飞行、普通出牌展示等瞬态特效 | 需要玩家阅读/复盘/确认的卡牌展示 |
 
 ### 已接入游戏
 
-- **SmashUp**：行动卡打出时展示特写（在线默认只看对手，本地模式显示双方）
+- **SmashUp（大杀四方）**：行动卡打出展示不接入本队列；保留 `SU_FX.ACTION_SHOW` 瞬时 FX 自动退场，避免把普通出牌动效升级成“看清后可关闭”。
 - **DiceThrone**：当前使用游戏层自建的 `CardSpotlightOverlay` + `useCardSpotlight`；迁移前必须按本节规则单独审计和测试，尤其是“对手特写不被 resync / optimistic rollback 清空、不会自动关闭、只能明确关闭按钮收口”。
 
 ---

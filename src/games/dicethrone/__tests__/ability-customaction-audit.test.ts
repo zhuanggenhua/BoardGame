@@ -265,6 +265,8 @@ describe('CustomAction 覆盖完整性审计', () => {
         'shadow_thief-cornucopia-discard', // 聚宝盆旧版 handler（向后兼容）
         // 僧侣（通用状态移除，由卡牌系统直接调用）
         'remove-status-self',
+        // 僧侣：花开见佛的不可防御选择由战斗流程按太极数量临时触发
+        'lotus-palm-unblockable-choice',
         // 通用卡牌目标选择：执行卡牌时先选对手，再回调结算卡牌效果
         'resolve-card-effects-on-selected-opponent',
         // 枪手卡牌：手枪鞭打先进入目标选择包装入口，再回调 resolve 入口

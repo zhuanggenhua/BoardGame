@@ -314,7 +314,39 @@
       "hauntRiskPhaseHaunt": "Haunt",
       "hauntRevealTitle": "Haunt Begins",
       "hauntRevealTraitor": "Traitor: {{player}}",
-      "hauntRevealTraitorUnknown": "Traitor revealed"
+      "hauntRevealTraitorUnknown": "Traitor revealed",
+      "hauntRevealHiddenTraitor": "Hidden-traitor haunt",
+      "hauntRevealNoTraitor": "No-traitor haunt",
+      "hauntRevealStep": {
+        "heroes-intro": "Public: hero intro",
+        "heroes-setup": "Public: hero setup",
+        "traitor-intro": "Public: traitor intro",
+        "traitor-setup": "Public: traitor setup"
+      },
+      "hauntRevealSecretBoundary": "Then read goals separately; used rules can be read aloud",
+      "hauntRevealSecretBoundaryNoTraitor": "Then all players read hero goals; used rules can be read aloud",
+      "hauntRevealSecretBoundaryHiddenTraitor": "Hidden identity stays private; used rules can be read aloud",
+      "hauntSetupQueueTitle": "Public setup queue",
+      "hauntSetupQueue": {
+        "assign-revealer-traitor": "Assign revealer as traitor",
+        "traitor-remains-in-game": "Traitor stays in play",
+        "heal-and-boost-traitor": "Heal and boost traitor",
+        "prepare-jack-spirit-tokens": "Prepare Jack tokens",
+        "monster-card-left-of-traitor": "Monster Card left of traitor",
+        "first-player-left-of-traitor": "Player left of traitor starts",
+        "announce-hidden-traitor": "Announce hidden-traitor rules",
+        "deal-secret-sickness-tokens": "Deal secret Sickness tokens",
+        "monster-card-left-of-revealer": "Monster Card left of revealer",
+        "prepare-research-tokens": "Prepare Research tokens",
+        "first-player-left-of-revealer": "Player left of revealer starts",
+        "place-phantom-photographers": "Place Phantom Photographers",
+        "recover-magic-camera": "Recover Magic Camera",
+        "deal-hero-essence-tokens": "Deal hero Essence"
+      },
+      "hauntSetupStatus": {
+        "resolved": "Resolved",
+        "manual-check": "Check book"
+      }
     },
     "feedback": {
       "label": "Latest",

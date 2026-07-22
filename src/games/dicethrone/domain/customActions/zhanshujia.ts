@@ -5,6 +5,7 @@ import type {
     DiceThroneEvent,
     ExtraAttackTriggeredEvent,
     InteractionRequestedEvent,
+    PendingAttackUpdatedEvent,
     PendingInteraction,
     PreventDamageEvent,
     StatusAppliedEvent,
@@ -12,11 +13,12 @@ import type {
     TokenGrantedEvent,
 } from '../types';
 import { buildDrawEvents } from '../deckEvents';
-import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement, createDTPassiveTriggerHandler, registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
 import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 
 function gainCpWithTacticalAdvantage({
     attackerId,
@@ -227,19 +229,16 @@ function resolveWarMongerRollByConfig(
     } as BonusDieRolledEvent];
 
     if (face === ZHANSHUJIA_DICE_FACE_IDS.SABRE) {
-        const target = state.players[targetId];
         const amount = config.sabreDamage;
         events.push({
-            type: 'DAMAGE_DEALT',
+            type: 'PENDING_ATTACK_UPDATED',
             payload: {
-                targetId,
-                amount,
-                actualDamage: Math.min(amount, target?.resources[RESOURCE_IDS.HP] ?? 0),
-                sourceAbilityId,
+                attackerId,
+                patch: { damage: amount },
             },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: timestamp + 1,
-        } as DamageDealtEvent);
+        } as PendingAttackUpdatedEvent);
     } else if (face === ZHANSHUJIA_DICE_FACE_IDS.BANNER) {
         const currentAmount = state.players[attackerId]?.tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] ?? 0;
         const maxStacks = getTokenStackLimit(state, attackerId, TOKEN_IDS.TACTICAL_ADVANTAGE);
@@ -258,6 +257,15 @@ function resolveWarMongerRollByConfig(
         } as TokenGrantedEvent);
     } else if (face === ZHANSHUJIA_DICE_FACE_IDS.MEDAL) {
         events.push(...buildDrawEvents(state, attackerId, 1, random, 'ABILITY_EFFECT', timestamp + 1, sourceAbilityId));
+        events.push({
+            type: 'PENDING_ATTACK_UPDATED',
+            payload: {
+                attackerId,
+                patch: { damage: 0, isDefendable: false },
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 1.5,
+        } as PendingAttackUpdatedEvent);
         events.push(...triggerWarMongerExtraOffensiveRoll({
             attackerId,
             targetId,
@@ -289,6 +297,59 @@ function resolveWarMongerRoll(ctx: CustomActionContext): DiceThroneEvent[] {
         bannerEffectKey: 'bonusDie.effect.zhanshujiaWarMongerBanner',
         medalEffectKey: 'bonusDie.effect.zhanshujiaWarMongerMedal',
     });
+}
+
+function resolveWarMongerAttackDamage({
+    attackerId,
+    targetId,
+    sourceAbilityId,
+    state,
+    timestamp,
+    random,
+    ctx,
+}: CustomActionContext): DiceThroneEvent[] {
+    const pending = state.pendingAttack;
+    if (!pending || pending.attackerId !== attackerId || pending.sourceAbilityId !== sourceAbilityId) return [];
+
+    const defenderId = pending.defenderId ?? targetId;
+    const baseDamage = pending.damage ?? 0;
+    if (baseDamage <= 0 || !state.players[defenderId]) return [];
+
+    const calc = createDamageCalculation({
+        source: { playerId: attackerId, abilityId: sourceAbilityId },
+        target: { playerId: defenderId },
+        baseDamage,
+        state,
+        damageScope: 'attack',
+        autoCollectShields: false,
+        passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
+        timestamp,
+    });
+    const result = calc.resolve();
+    const events = [...result.sideEffectEvents] as DiceThroneEvent[];
+    if (result.finalDamage <= 0) return events;
+
+    events.push({
+        type: 'DAMAGE_DEALT',
+        payload: {
+            targetId: defenderId,
+            amount: result.finalDamage,
+            actualDamage: result.actualDamage,
+            sourceAbilityId,
+            damageScope: 'attack',
+            modifiers: result.modifiers.map(modifier => ({
+                type: modifier.type as 'defense' | 'token' | 'shield' | 'status',
+                value: modifier.value,
+                sourceId: modifier.sourceId,
+                sourceName: modifier.sourceName,
+            })),
+            breakdown: result.breakdown,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as DamageDealtEvent);
+
+    return events;
 }
 
 function applyBindIfThreeOfAKind({
@@ -574,6 +635,9 @@ export function registerZhanshujiaCustomActions(): void {
     });
     registerCustomActionHandler('zhanshujia-war-monger-2-roll', resolveWarMonger2Roll, {
         categories: ['damage', 'token', 'card', 'other'],
+    });
+    registerCustomActionHandler('zhanshujia-war-monger-attack-damage', resolveWarMongerAttackDamage, {
+        categories: ['damage'],
     });
     registerCustomActionHandler('zhanshujia-war-room-roll', resolveWarRoomRoll, {
         categories: ['dice', 'token', 'card'],
