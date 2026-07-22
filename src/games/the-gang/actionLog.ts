@@ -12,7 +12,9 @@ import {
 
 export const THE_GANG_ACTION_ALLOWLIST = [
     THE_GANG_COMMANDS.START_HEIST,
+    THE_GANG_COMMANDS.REDEAL_HEIST,
     THE_GANG_COMMANDS.TAKE_CHIP,
+    THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
     THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
@@ -21,7 +23,9 @@ export const THE_GANG_ACTION_ALLOWLIST = [
 
 export const THE_GANG_UNDO_ALLOWLIST = [
     THE_GANG_COMMANDS.START_HEIST,
+    THE_GANG_COMMANDS.REDEAL_HEIST,
     THE_GANG_COMMANDS.TAKE_CHIP,
+    THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
     THE_GANG_COMMANDS.END_ROUND,
     THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
     THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
@@ -106,6 +110,13 @@ export function formatTheGangActionEntry({
                 heist: heistStarted.payload.heistNumber,
             })]);
         }
+        case THE_GANG_COMMANDS.REDEAL_HEIST: {
+            if (!hasEvent(events, THE_GANG_EVENTS.HEIST_REDEALT)) return null;
+            return entry(command, [i18nSeg('actionLog.redealHeist', {
+                player: actor,
+                heist: core.heistNumber,
+            })]);
+        }
         case THE_GANG_COMMANDS.TAKE_CHIP: {
             if (!hasEvent(events, THE_GANG_EVENTS.CHIP_TAKEN)) return null;
             const payload = command.payload as { chip: number; handSlot?: 'top' | 'bottom' };
@@ -116,6 +127,15 @@ export function formatTheGangActionEntry({
                 ...(payload.handSlot ? { hand: payload.handSlot === 'bottom' ? '下手' : '上手' } : {}),
             };
             return entry(command, [i18nSeg(payload.handSlot ? 'actionLog.takeChipHand' : 'actionLog.takeChip', params)]);
+        }
+        case THE_GANG_COMMANDS.TAKE_EXIT_CHIP: {
+            if (!hasEvent(events, THE_GANG_EVENTS.EXIT_CHIP_TAKEN)) return null;
+            const payload = command.payload as { handSlot?: 'top' | 'bottom' };
+            const params = {
+                player: actor,
+                ...(payload.handSlot ? { hand: payload.handSlot === 'bottom' ? '下手' : '上手' } : {}),
+            };
+            return entry(command, [i18nSeg(payload.handSlot ? 'actionLog.takeExitChipHand' : 'actionLog.takeExitChip', params)]);
         }
         case THE_GANG_COMMANDS.END_ROUND: {
             const roundEnded = findRoundEndedEvent(events);

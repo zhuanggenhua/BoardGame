@@ -22,6 +22,7 @@ import {
   findActivatedAbilityTargetOptionByCardId,
   findActivatedAbilityTargetOptionByPosition,
   findIceRamPushOption,
+  findSystemHandCardOptionByCardId,
   findStructureShiftDirectionOption,
   getSystemCardSelectorAbilityId,
   getSystemCardSelectorTitleKey,
@@ -30,8 +31,6 @@ import {
   findSystemAbilityUnitOptionByPosition,
   listSystemAbilityPositionTargets,
   listActivatedAbilityTargetCardIds,
-  listSystemCardSelectorTargetCardIds,
-  findSystemCardSelectorOptionByCardId,
   resolveBeforeAttackCancellation,
   resolveBeforeAttackCardConfirmation,
   SYSTEM_CARD_SELECTOR_ABILITY_IDS,
@@ -157,6 +156,17 @@ describe('systemInteractionAdapter', () => {
     { label: 'huijin_ram/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
     { label: 'huijin_ram/selectPushDirection', route: 'board-cell-position', step: 'selectPushDirection' },
     { label: 'huijin_quick_shot/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
+    { label: 'yongheng_draw/selectChoice', route: 'status-banner-choice', step: 'selectChoice' },
+    { label: 'yongheng_continuance/selectChoice', route: 'status-banner-choice', step: 'selectChoice' },
+    { label: 'yongheng_mental_invasion/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
+    { label: 'yongheng_collision/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
+    { label: 'yongheng_collision/selectPushDirection', route: 'board-cell-position', step: 'selectPushDirection' },
+    { label: 'yongheng_warning/selectCards', route: 'hand-card-select', step: 'selectCards' },
+    { label: 'yongheng_warning/selectPosition', route: 'board-cell-position', step: 'selectPosition' },
+    { label: 'yongheng_application/selectCards', route: 'hand-card-select', step: 'selectCards' },
+    { label: 'yongheng_application/selectUnit', route: 'board-cell-unit', step: 'selectUnit' },
+    { label: 'yongheng_arouse_fear/selectCards', route: 'hand-card-select', step: 'selectCards' },
+    { label: 'yongheng_punish/selectCards', route: 'hand-card-select', step: 'selectCards' },
     { label: 'life_drain/selectUnit', route: 'board-cell-unit', step: 'selectUnit', context: 'beforeAttack' },
     { label: 'holy_arrow/selectCards', route: 'hand-card-select', step: 'selectCards', context: 'beforeAttack' },
     { label: 'healing/selectCards', route: 'hand-card-select', step: 'selectCards', context: 'beforeAttack' },
@@ -1723,6 +1733,92 @@ describe('systemInteractionAdapter', () => {
     )?.id).toBe('unit:huijin-ash-archer-1');
   });
 
+  it('永恒议会系统交互适配到棋盘、手牌和状态横幅', () => {
+    const collisionInteraction: SwSimpleChoiceInteraction = {
+      id: 'sw-yongheng-collision-target-1',
+      type: 'yongheng_collision_target',
+      meta: {
+        type: 'yongheng_collision_target',
+        sourceUnitId: 'yongheng-knight-1',
+        sourcePosition: { row: 4, col: 4 },
+      },
+      options: [
+        {
+          id: 'pos:4,5',
+          label: '(4,5)',
+          value: { action: 'yongheng_collision_target', targetPosition: { row: 4, col: 5 } },
+        },
+        { id: 'skip', label: '跳过', value: { skip: true } },
+      ],
+    };
+    const collisionMode = deriveSystemAbilityMode(collisionInteraction, null);
+    expect(getSystemAbilityUiRoute(collisionMode)).toBe('board-cell-unit');
+    expect(findSystemAbilityUnitOptionByPosition(
+      collisionInteraction,
+      collisionMode,
+      { row: 4, col: 5 },
+    )?.id).toBe('pos:4,5');
+
+    const warningInteraction: SwSimpleChoiceInteraction = {
+      id: 'sw-yongheng-warning-card-1',
+      type: 'yongheng_warning_card',
+      meta: {
+        type: 'yongheng_warning_card',
+        sourceUnitId: 'yongheng-advisor-1',
+        sourcePosition: { row: 5, col: 2 },
+        targetPosition: { row: 7, col: 3 },
+      },
+      options: [
+        {
+          id: 'card:yongheng-warning-card-1',
+          label: '警告手牌',
+          value: {
+            action: 'yongheng_warning_card',
+            targetCardId: 'yongheng-warning-card-1',
+          },
+        },
+        { id: 'skip', label: '跳过', value: { skip: true } },
+      ],
+    };
+    const warningMode = deriveSystemAbilityMode(warningInteraction, null);
+    expect(getSystemAbilityUiRoute(warningMode)).toBe('hand-card-select');
+    expect(warningMode).toMatchObject({
+      abilityId: 'yongheng_warning',
+      step: 'selectCards',
+      selectableCardIds: ['yongheng-warning-card-1'],
+    });
+    expect(findSystemHandCardOptionByCardId(
+      warningInteraction,
+      warningMode,
+      'yongheng-warning-card-1',
+    )?.id).toBe('card:yongheng-warning-card-1');
+
+    const continuanceInteraction: SwSimpleChoiceInteraction = {
+      id: 'sw-yongheng-continuance-1',
+      type: 'yongheng_continuance',
+      meta: {
+        type: 'yongheng_continuance',
+        sourceUnitId: 'yongheng-summoner-1',
+        sourcePosition: { row: 7, col: 3 },
+        targetCardId: 'yongheng-search',
+      },
+      options: [
+        { id: 'confirm', label: '确认', labelKey: 'actions.confirm', value: { action: 'yongheng_continuance_retain', targetOwner: '0', targetCardId: 'yongheng-search' } },
+        { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
+      ],
+    };
+    const continuanceMode = deriveSystemAbilityMode(continuanceInteraction, null);
+    expect(getSystemAbilityUiRoute(continuanceMode)).toBe('status-banner-choice');
+    expect(continuanceMode).toMatchObject({
+      abilityId: 'yongheng_continuance',
+      step: 'selectChoice',
+      systemChoiceOptions: [
+        { id: 'confirm', label: '确认', labelKey: 'actions.confirm' },
+        { id: 'skip', label: '跳过', labelKey: 'actions.skip' },
+      ],
+    });
+  });
+
   it('现役 abilityMode 顶部横幅文案回退到已存在的文案源', () => {
     const t = (key: string, options?: Record<string, unknown> | string): string => {
       if (key === 'cardSelector.fortressPower') {
@@ -1736,6 +1832,12 @@ describe('systemInteractionAdapter', () => {
       }
       if (key === 'statusBanners.afterAttack.message' && options && typeof options === 'object') {
         return `${String(options.ability)}: Select a target`;
+      }
+      if (key === 'interaction.sw.yonghengWarningCard') {
+        return 'Warning: choose a hand card';
+      }
+      if (key === 'interaction.sw.yonghengCollisionPosition') {
+        return 'Collision: choose a push destination';
       }
       return typeof options === 'string' ? options : key;
     };
@@ -1762,6 +1864,16 @@ describe('systemInteractionAdapter', () => {
       t,
       makeAbilityMode('high_telekinesis_instead', 'selectUnit'),
     )).toBe('High Telekinesis Instead of Attack: Select a target');
+
+    expect(getAbilityModeBannerFallbackText(
+      t,
+      makeAbilityMode('yongheng_warning', 'selectCards'),
+    )).toBe('Warning: choose a hand card');
+
+    expect(getAbilityModeBannerFallbackText(
+      t,
+      makeAbilityMode('yongheng_collision', 'selectPushDirection'),
+    )).toBe('Collision: choose a push destination');
   });
 
   it('当前 system ability 派生分支已全部登记到 UI 路由矩阵', () => {
@@ -1787,6 +1899,17 @@ describe('systemInteractionAdapter', () => {
       'huijin_ram/selectUnit',
       'huijin_ram/selectPushDirection',
       'huijin_quick_shot/selectUnit',
+      'yongheng_draw/selectChoice',
+      'yongheng_continuance/selectChoice',
+      'yongheng_mental_invasion/selectUnit',
+      'yongheng_collision/selectUnit',
+      'yongheng_collision/selectPushDirection',
+      'yongheng_warning/selectCards',
+      'yongheng_warning/selectPosition',
+      'yongheng_application/selectCards',
+      'yongheng_application/selectUnit',
+      'yongheng_arouse_fear/selectCards',
+      'yongheng_punish/selectCards',
       'life_drain/selectUnit',
       'holy_arrow/selectCards',
       'healing/selectCards',
@@ -1817,6 +1940,9 @@ describe('systemInteractionAdapter', () => {
       'huijin_call_guards/selectUnit',
       'huijin_ram/selectUnit',
       'huijin_quick_shot/selectUnit',
+      'yongheng_mental_invasion/selectUnit',
+      'yongheng_collision/selectUnit',
+      'yongheng_application/selectUnit',
       'life_drain/selectUnit',
     ]);
     expect(getRouteLabels('board-cell-position')).toEqual([
@@ -1828,8 +1954,14 @@ describe('systemInteractionAdapter', () => {
       'ice_ram/selectUnit',
       'ice_ram/selectPushDirection',
       'huijin_ram/selectPushDirection',
+      'yongheng_collision/selectPushDirection',
+      'yongheng_warning/selectPosition',
     ]);
     expect(getRouteLabels('hand-card-select')).toEqual([
+      'yongheng_warning/selectCards',
+      'yongheng_application/selectCards',
+      'yongheng_arouse_fear/selectCards',
+      'yongheng_punish/selectCards',
       'holy_arrow/selectCards',
       'healing/selectCards',
     ]);
@@ -1839,6 +1971,8 @@ describe('systemInteractionAdapter', () => {
     ]);
     expect(getRouteLabels('status-banner-choice')).toEqual([
       'blood_rune/selectUnit',
+      'yongheng_draw/selectChoice',
+      'yongheng_continuance/selectChoice',
     ]);
   });
 

@@ -176,6 +176,21 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
             expect(shield).toHaveLength(1);
             expect((shield[0] as any).payload.value).toBe(3); // 1×1 + 1×2
         });
+
+        it('多个剑面应按数量对原攻击者造成反伤', () => {
+            const state = createState({});
+            state.dice = [1, 2, 5].map(v => createPaladinDie(v));
+            state.rollDiceCount = 3;
+            const handler = getCustomActionHandler('paladin-holy-defense')!;
+            const events = handler(buildCtx(state, 'paladin-holy-defense', {
+                asDefender: true,
+            }));
+
+            const dmg = eventsOfType(events, 'DAMAGE_DEALT');
+            expect(dmg).toHaveLength(1);
+            expect((dmg[0] as any).payload.amount).toBe(2);
+            expect((dmg[0] as any).payload.targetId).toBe('1');
+        });
     });
 
     describe('paladin-holy-defense-3 (神圣防御III：基于防御骰面+特殊效果)', () => {

@@ -1,12 +1,19 @@
 import type { MatchState, RandomFn } from '../../../engine/types';
 import {
-    allRequiredChipOwnersHaveChips,
+    allRequiredFinalTokensAreTaken,
+    getCurrentRoundExitChipOwners,
     getUnoccupiedChipValues,
     removeConflictingChipOwners,
     resolveChipOwnerKey,
 } from './chips';
 import { createHeistRecord } from './showdown';
-import { createInitialHeistCore, discardHighestCard, discardLowestCard, getChipValues } from './setup';
+import {
+    createInitialHeistCore,
+    discardHighestCard,
+    discardLowestCard,
+    getChipValues,
+    retuneInitialHeistCoreForRulesConfig,
+} from './setup';
 import {
     buildDealPlan,
     createSpecialistDeck,
@@ -177,6 +184,7 @@ const applyHandSwapConfirmationToCore = (
 
 const buildCoreWithRulesConfig = (core: TheGangCore, random: RandomFn, config: Partial<TheGangCore['rules']['config']>) => {
     const normalizedConfig = normalizeRulesConfig(config);
+    void random;
     if (!rulesConfigRequiresRedeal(core.rules.config, normalizedConfig)) {
         return {
             ...core,
@@ -184,27 +192,24 @@ const buildCoreWithRulesConfig = (core: TheGangCore, random: RandomFn, config: P
                 config: normalizedConfig,
                 blankedRank: getBlackedRankForHeist(normalizedConfig, core.heistNumber),
             },
-            pendingProgress: undefined,
         };
     }
-
-    return createInitialHeistCore(core.playerIds, random, {
-        heistNumber: core.heistNumber,
-        successes: core.successes,
-        failures: core.failures,
-        heistHistory: core.heistHistory,
-        rulesConfig: normalizedConfig,
-    });
+    return retuneInitialHeistCoreForRulesConfig(core, normalizedConfig);
 };
 
 const buildAutoProgressEventsAfterChip = (
     core: TheGangCore,
-    command: Extract<TheGangCommand, { type: typeof THE_GANG_COMMANDS.TAKE_CHIP }>,
+    command: Extract<TheGangCommand, { type: typeof THE_GANG_COMMANDS.TAKE_CHIP | typeof THE_GANG_COMMANDS.TAKE_EXIT_CHIP }>,
     nextRoundChips: Record<string, number>,
+    nextExitChipOwners: string[],
     timestamp: number,
 ): TheGangEvent[] => {
     if (!core.rules.config.automode) return [];
-    if (!allRequiredChipOwnersHaveChips({ ...core, currentRoundChips: nextRoundChips })) return [];
+    if (!allRequiredFinalTokensAreTaken({
+        ...core,
+        currentRoundChips: nextRoundChips,
+        currentRoundExitChipOwners: nextExitChipOwners,
+    })) return [];
 
     if (isHandSwapEnabled(core)) {
         if (core.round < 4 || core.communityCards.length >= 5) {
@@ -231,6 +236,7 @@ const buildAutoProgressEventsAfterChip = (
     const coreWithFinalChip = {
         ...core,
         currentRoundChips: nextRoundChips,
+        currentRoundExitChipOwners: nextExitChipOwners,
     };
     const record = createHeistRecord(coreWithFinalChip);
     const successes = core.successes + (record.outcome === 'success' ? 1 : 0);
@@ -449,6 +455,21 @@ export function execute(
                 sourceCommandType: command.type,
                 timestamp,
             }];
+        case THE_GANG_COMMANDS.REDEAL_HEIST:
+            return [{
+                type: THE_GANG_EVENTS.HEIST_REDEALT,
+                payload: {
+                    nextCore: createInitialHeistCore(core.playerIds, random, {
+                        heistNumber: core.heistNumber,
+                        successes: core.successes,
+                        failures: core.failures,
+                        heistHistory: core.heistHistory,
+                        rulesConfig: core.rules.config,
+                    }),
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
         case THE_GANG_COMMANDS.TAKE_CHIP: {
             const chip = resolveTakeChipValue(core, command);
             if (chip === null) return [];
@@ -474,7 +495,35 @@ export function execute(
             };
             return [
                 chipTakenEvent,
-                ...buildAutoProgressEventsAfterChip(core, command, nextRoundChips, timestamp),
+                ...buildAutoProgressEventsAfterChip(
+                    core,
+                    command,
+                    nextRoundChips,
+                    getCurrentRoundExitChipOwners(core),
+                    timestamp,
+                ),
+            ];
+        }
+        case THE_GANG_COMMANDS.TAKE_EXIT_CHIP: {
+            const ownerKey = resolveChipOwnerKey(core, command.playerId, command.payload.handSlot);
+            const nextExitChipOwners = [
+                ...getCurrentRoundExitChipOwners(core).filter((currentOwnerKey) => currentOwnerKey !== ownerKey),
+                ownerKey,
+            ];
+            const exitChipTakenEvent: TheGangEvent = {
+                type: THE_GANG_EVENTS.EXIT_CHIP_TAKEN,
+                payload: {
+                    playerId: command.playerId,
+                    ownerKey,
+                    handSlot: command.payload.handSlot,
+                    round: core.round,
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            };
+            return [
+                exitChipTakenEvent,
+                ...buildAutoProgressEventsAfterChip(core, command, core.currentRoundChips, nextExitChipOwners, timestamp),
             ];
         }
         case THE_GANG_COMMANDS.SET_RULES_CONFIG:
@@ -601,6 +650,8 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                 heistStarted: true,
                 pendingProgress: undefined,
             };
+        case THE_GANG_EVENTS.HEIST_REDEALT:
+            return event.payload.nextCore;
         case THE_GANG_EVENTS.CHIP_TAKEN: {
             const nextRoundChips = removeConflictingChipOwners(
                 core.currentRoundChips,
@@ -617,6 +668,15 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                 pendingProgress: undefined,
             };
         }
+        case THE_GANG_EVENTS.EXIT_CHIP_TAKEN:
+            return {
+                ...core,
+                currentRoundExitChipOwners: [
+                    ...getCurrentRoundExitChipOwners(core).filter((ownerKey) => ownerKey !== event.payload.ownerKey),
+                    event.payload.ownerKey,
+                ],
+                pendingProgress: undefined,
+            };
         case THE_GANG_EVENTS.RULES_CONFIG_SET:
             return event.payload.nextCore;
         case THE_GANG_EVENTS.TOOLS_DEALT: {
@@ -727,6 +787,7 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
             const historyEntry = {
                 round: event.payload.round,
                 chipsByPlayer: { ...core.currentRoundChips },
+                exitChipOwners: [...getCurrentRoundExitChipOwners(core)],
             };
             const players = Object.fromEntries(core.playerIds.map((playerId) => {
                 const player = core.players[playerId];
@@ -752,6 +813,7 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                 deck: core.deck.slice(event.payload.cardsConsumed ?? event.payload.revealedCards.length),
                 communityCards: [...core.communityCards, ...event.payload.revealedCards],
                 currentRoundChips: {},
+                currentRoundExitChipOwners: [],
                 pendingProgress: undefined,
                 roundHistory: [...core.roundHistory, historyEntry],
             };
@@ -767,7 +829,11 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                 pendingProgress: undefined,
                 roundHistory: [
                     ...core.roundHistory,
-                    { round: core.round, chipsByPlayer: { ...core.currentRoundChips } },
+                    {
+                        round: core.round,
+                        chipsByPlayer: { ...core.currentRoundChips },
+                        exitChipOwners: [...getCurrentRoundExitChipOwners(core)],
+                    },
                 ],
             };
         case THE_GANG_EVENTS.NEXT_HEIST_STARTED:

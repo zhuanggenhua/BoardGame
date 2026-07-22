@@ -1987,7 +1987,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     // --- 游戏进行阶段：渲染完整棋盘 UI ---
     return (
         <UndoProvider value={{ G: rawG, dispatch, playerID, isGameOver: !!isGameOver, isLocalMode: !isMultiplayer }}>
-            <div className="relative w-full h-full bg-black overflow-hidden font-sans select-none text-slate-200">
+            <div
+                className="relative w-full h-full bg-black overflow-hidden font-sans select-none text-slate-200"
+                data-testid="dicethrone-board-root"
+            >
                 {!isSpectator && (
                     <GameDebugPanel
                         G={rawG}

@@ -69,6 +69,8 @@ describe('小黑屋操作日志与撤回', () => {
         };
         const payloadByCommand: Partial<Record<string, Record<string, unknown>>> = {
             [BETRAYAL_COMMANDS.SELECT_EXPLORER]: { explorerId: 'secret-explorer-id' },
+            [BETRAYAL_COMMANDS.PROPOSE_SCENARIO_CARD]: { candidateId: 'friends-forever' },
+            [BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD]: {},
             [BETRAYAL_COMMANDS.START_SCENARIO]: { scenarioId: 'first-scenario' },
             [BETRAYAL_COMMANDS.MOVE_TO_ROOM]: { roomId: 'hallway', useSkeletonKey: true },
             [BETRAYAL_COMMANDS.EXPLORE_ROOM]: { roomId: 'ground-north' },

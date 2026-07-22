@@ -1829,10 +1829,10 @@
     },
     "vengeance": {
       "name": "Retribution",
-      "description": "3 Helm + 1 Pray: gain 1 Retribution, gain 2 CP",
+      "description": "3 Helm + 1 Pray: gain 1 Retribution, gain 3 CP",
       "effects": {
         "gainRetribution": "Gain 1 Retribution token",
-        "gain2CP": "Gain 2 CP"
+        "gain3CP": "Gain 3 CP"
       }
     },
     "vengeance-2": {
@@ -1875,23 +1875,23 @@
     },
     "holy-defense": {
       "name": "Holy Defense",
-      "description": "Defense (3 dice): Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP",
+      "description": "Defense (3 dice): each Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP",
       "effects": {
-        "effect": "Roll 3 dice: Sword→1 undefendable dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP"
+        "effect": "Roll 3 dice: each Sword→1 undefendable dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP"
       }
     },
     "holy-defense-2": {
       "name": "Holy Defense II",
-      "description": "Defense (4 dice): Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP",
+      "description": "Defense (4 dice): each Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP",
       "effects": {
-        "effect": "Roll 4 dice: Sword→1 undefendable dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP"
+        "effect": "Roll 4 dice: each Sword→1 undefendable dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP"
       }
     },
     "holy-defense-3": {
       "name": "Holy Defense III",
-      "description": "Defense (4 dice): Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP; 2 Helm + 1 Pray→Protect",
+      "description": "Defense (4 dice): each Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP; 2 Helm + 1 Pray→Protect",
       "effects": {
-        "effect": "Roll 4 dice: Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP; if 2 Helm + 1 Pray→gain Protect"
+        "effect": "Roll 4 dice: each Sword→1 dmg, Helm→prevent 1, Heart→prevent 2, Pray→1 CP; if 2 Helm + 1 Pray→gain Protect"
       }
     },
     "unyielding-faith": {

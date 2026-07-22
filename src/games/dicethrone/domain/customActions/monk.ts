@@ -238,6 +238,8 @@ type ThunderStrikeBonusConfig = {
     rerollEffectKey: string;
     threshold?: number;
     thresholdEffect?: 'knockdown';
+    allowDiceModification?: boolean;
+    opensAfterRollConfirmedResponseWindow?: boolean;
 };
 
 import { STATUS_IDS } from '../ids';
@@ -298,6 +300,8 @@ function handleThunderStrikeRollDamage(context: CustomActionContext): DiceThrone
         maxRerollCount: 1,
         dieEffectKey: 'bonusDie.effect.thunderStrikeDie',
         rerollEffectKey: 'bonusDie.effect.thunderStrikeReroll',
+        allowDiceModification: true,
+        opensAfterRollConfirmedResponseWindow: true,
     });
 }
 
@@ -313,6 +317,8 @@ function handleThunderStrike2RollDamage(context: CustomActionContext): DiceThron
         rerollEffectKey: 'bonusDie.effect.thunderStrike2Reroll',
         threshold: 12,
         thresholdEffect: 'knockdown',
+        allowDiceModification: true,
+        opensAfterRollConfirmedResponseWindow: true,
     });
 }
 

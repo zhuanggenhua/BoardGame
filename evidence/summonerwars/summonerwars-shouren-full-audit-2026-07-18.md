@@ -55,7 +55,7 @@
 | 冰霜萨满 | 士兵：北方魔法 | passed | passed | passed | N/A：自动伤害门控 | passed：零特殊标记不伤害 | passed |
 | 粉碎者 | 士兵：迟钝 | passed | passed | passed | N/A：被攻击后自动伤害 | passed：额外伤害 | passed |
 | 冰苔冲锋者 | 士兵：血腥急袭 | passed | passed | passed | direct：真实召唤后位移/跳过 | passed | passed |
-| 冰苔斗士 | 士兵：狂暴 | passed | passed | passed | direct：攻击后位移/跳过 | passed：额外攻击不递归 | passed |
+| 冰苔斗士 | 士兵：狂暴 | passed | passed | passed | direct：攻击后位移/跳过 | passed：额外攻击后再次按“每次攻击后”掷狂暴骰 | passed |
 | 冻结 | 普通事件 | passed | passed | passed | direct：手牌打出、目标高亮、附着 | passed：持续限制/离场恢复 | passed |
 | 粗暴蛮力 | 普通事件：蛮力冲击 | passed | passed | passed | direct：造成伤害后推拉/跳过 | passed：远离方向+离场移除 | passed |
 | 原始狂怒 | 普通事件 | passed | passed | passed | direct：召唤师攻击后 1-2 格/跳过 | passed：额外攻击不递归 | passed |
@@ -76,7 +76,7 @@
 | 冰霜萨满・北方魔法 | C1 攻击时；C2 0特殊标记；C3 伤害0 | `execute.ts` | 有特殊标记时按远程标记正常结算 | D1 D8 D16 D18 D22 |
 | 粉碎者・迟钝 | C1 被攻击；C2 每特殊标记额外+1伤害 | `execute.ts` 攻击伤害 | 仅目标是粉碎者时生效 | D1 D2 D6 D22 |
 | 冰苔冲锋者・血腥急袭 | C1 召唤后；C2 可跳过；C3 自伤1；C4 自身推拉1格；C5 合法空格 | `execute.ts` `after_summon`；`systems.ts`；`executors/shouren.ts` | 跳过不伤不移；无合法格不建空交互 | D5 D6 D8 D18 D24 D34 D39 D46 D51 D57 |
-| 冰苔斗士・狂暴 | C1 攻击相邻敌方卡后；C2 掷1技能骰；C3 特殊标记继续；C4 可跳过；C5 自身移1格；C6 获得1额外攻击；C7 不递归 | `execute.ts` `shouren_berserk_roll`；`systems.ts` | 失败骰无交互；跳过无额度；额外攻击消耗后无残留 | D5 D8 D9 D18 D21 D24 D39 D45 D54 D56 |
+| 冰苔斗士・狂暴 | C1 攻击相邻敌方卡后；C2 掷1技能骰；C3 特殊标记继续；C4 可跳过；C5 自身移1格；C6 获得1额外攻击；C7 额外攻击后若仍攻击相邻敌方卡牌，会再次掷狂暴骰；C8 同一响应不重复授予 | `execute.ts` `shouren_berserk_roll`；`systems.ts` | 失败骰无交互；跳过无额度；额外攻击消耗后可再次触发新一轮狂暴骰 | D5 D8 D9 D18 D21 D24 D39 D45 D54 D56 |
 | 冻结 | C1 召唤阶段；C2 3格内；C3 未充能；C4 士兵/英雄；C5 持续；C6 失去技能；C7 禁移动；C8 禁攻击；C9 禁推拉；C10 禁成为攻击目标；C11 离场恢复 | `eventCards.ts`；`helpers.ts`；`validate.ts`；`abilityResolver.ts`；`useEventCardModes.ts` | UI、AI候选和命令层不能绕过；按稳定单位实例身份附着 | D1 D2 D3 D5 D12 D14 D15 D18 D28 D31 D38 D51 D55 D57 |
 | 粗暴蛮力・蛮力冲击 | C1 持续授予友方单位；C2 真实攻击伤害后；C3 可跳过；C4 目标远离来源1格；C5 合法空格；C6 离场移除 | `abilityResolver.ts`；`execute.ts`；`systems.ts` | 未造成伤害不创建交互；跳过不移目标 | D1 D4 D5 D8 D14 D18 D24 D35 D39 D51 D55 D57 |
 | 原始狂怒 | C1 持续；C2 召唤师攻击相邻敌方卡后；C3 可跳过；C4 自身1-2格；C5 获得1额外攻击；C6 不递归 | `execute.ts`；`systems.ts` | 事件不在场/攻击者非召唤师不触发；跳过无额度 | D1 D2 D5 D8 D9 D14 D18 D21 D39 D56 D57 |
@@ -91,7 +91,7 @@
 | 恢复/鲜血羁绊/远射/刺骨冰霜/狂乱打击/北方魔法/迟钝 | 单卡主裁图 | `abilities-shouren.ts`+单位定义 | 共享移动/攻击入口 | `execute.ts`/`helpers.ts`/resolver | 卡面范围和骰面 | 充能/射程/战力/伤害 | 距离、归属、0特殊标记等负向 | 无新临时交互 | L1+L2+L4 | passed |
 | 激励 | 召唤师主裁图 | `shouren_encourage` + 攻击待结算状态 | 攻击/技能骰后 | `RESPOND` -> 专用继续攻击命令 | 重掷耗1充能，保留0 | 以最终骰面结算 | 重掷/保留，等待时其它命令被拒 | 清攻击待结算状态和 interaction，攻击只落地一次 | L2+L3+L4 | passed |
 | 血腥急袭 | 单卡主裁图 | `shouren_bloody_rush` | 真实召唤后 | `RESPOND -> executor` | 执行时自伤1 | 自身移1格 | 跳过/无合法格 | interaction 清空 | L2+L3+L4 | passed |
-| 狂暴 | 单卡主裁图 | `shouren_berserk` | 攻击相邻敌卡后掷技能骰 | `RESPOND -> executor` | 特殊标记才继续 | 移1格+额外攻击 | 失败骰/跳过/不递归 | 额外攻击额度消耗为0 | L2+L3+L4 | passed |
+| 狂暴 | 单卡主裁图 | `shouren_berserk` | 每次攻击相邻敌卡后掷技能骰 | `RESPOND -> executor` | 特殊标记才继续 | 移1格+额外攻击 | 失败骰/跳过/额外攻击后再次掷骰 | 额外攻击额度消耗为0，同一响应不重复授予 | L2+L3+L4 | passed |
 | 冻结 | 单卡主裁图 | active event+稳定目标实例 | 手牌卡本体->棋盘单位 | `PLAY_EVENT`/event executor | 0费，3格、未充能、士兵/英雄 | 技能清空+四类禁止 | 充能/超距离/召唤师/建筑不可选 | 事件离场即恢复 | L2+L3+L4 | passed |
 | 粗暴蛮力 | 单卡主裁图 | active event 动态授予 | 造成攻击伤害后 | `RESPOND -> executor` | 远离方向合法空格 | 移动受伤目标 | 跳过/零伤害 | interaction清空，事件离场卸载技能 | L2+L3+L4 | passed |
 | 原始狂怒 | 单卡主裁图 | active event 动态授予 | 召唤师攻击相邻敌卡后 | `RESPOND -> executor` | 移1-2格 | 额外攻击 | 跳过/非召唤师/无事件/不递归 | 额外额度消耗，无残留 | L2+L3+L4 | passed |
@@ -143,7 +143,7 @@
 | D6 | 副作用传播 | 自伤/目标受伤/充能/位移均生成正式事件 | passed |
 | D7 | 资源守恒 | 激励仅重掷扣1充能，保留和跳过不扣 | passed |
 | D8 | 时序正确 | 激励先等待后伤害；攻击后技能均在最终伤害后 | passed |
-| D9 | 幂等与重入 | 额外攻击有来源标识，不递归，攻击只落地一次 | passed |
+| D9 | 幂等与重入 | 狂暴额外攻击会再次按“每次攻击后”触发新掷骰；同一响应不重复授予，攻击只落地一次 | passed |
 | D10 | 元数据一致 | faction/symbol/phase/type/tags/atlas 与图面一致 | passed |
 | D11 | Reducer 消耗路径 | 充能、额外攻击、事件牌和攻击待结算状态有对应 reducer 分支 | passed |
 | D12 | 写入-消耗对称 | 攻击待结算状态/active event/extraAttacks 写入与最终消费同源 | passed |
@@ -155,7 +155,7 @@
 | D18 | 否定路径 | 合法候选仍跳过、失败骰、无伤害、无事件、非法目标均有断言 | passed |
 | D19 | 组合场景 | 激励可作用狂暴技能骰；持续授予与基础战力/攻击共存 | passed |
 | D20 | 状态可观测性 | 充能、持续事件、骰面、可选格和跳过均可见 | passed |
-| D21 | 触发频率 | 激励单次重掷；狂暴/原始狂怒来源额外攻击不重入 | passed |
+| D21 | 触发频率 | 激励单次重掷；狂暴每次攻击后均可再掷骰；原始狂怒来源额外攻击仍按原审计口径防重入 | passed |
 | D22 | 伤害计算管线 | 命中替换、额外伤害、零伤害、自伤都在正式攻击结算 | passed |
 | D23 | 架构假设一致 | 远射、冻结和暂停攻击均在底层合法性/结算开口，非 UI 旁路 | passed |
 | D24 | Handler 共返状态 | 四类位置交互以事件后 core 建候选，无空交互 | passed |
@@ -180,7 +180,7 @@
 | D42 | 事件流全链 | `DECLARE_ATTACK` -> 攻击掷骰待结算 -> `RESPOND` -> `UNIT_ATTACKED/damage` -> after-attack 已领域+E2E覆盖 | passed |
 | D43 | 重构完整性 | 本批是新增派系，未用新旧双系统并行替代旧系统 | N/A |
 | D44 | 测试反模式 | 高风险交互测试经 `executePipeline`，并断言最终 core/sys 而非只测内部 helper | passed |
-| D45 | Pipeline 多阶段去重 | 激励只发一次正式攻击，额外攻击来源防重入 | passed |
+| D45 | Pipeline 多阶段去重 | 激励只发一次正式攻击；狂暴允许新攻击生成新掷骰事件，但同一交互响应不重复授予 | passed |
 | D46 | 交互显示模式声明 | 按钮/卡牌/单位/位置消费者路由清楚，跳过不被误渲染成取消 | passed |
 | D47 | E2E 覆盖 | 正式入口 8/8：选派系/开局+六类关键交互 | passed |
 | D48 | UI 交互渲染完整 | 卡牌选择、按钮选择、棋盘单位和位置选择四种载体均真实渲染 | passed |
@@ -206,7 +206,7 @@
 ### L2 领域行为证据
 
 - `src/games/summonerwars/__tests__/abilities-shouren.test.ts`：`34/34 passed`。
-- 覆盖每个规则子句的成功、跳过/否定、数量、距离、动态移除、额外攻击不递归和最终权威状态。
+- 覆盖每个规则子句的成功、跳过/否定、数量、距离、动态移除、狂暴额外攻击后再次掷骰和最终权威状态。
 
 ### L3 真实玩法证据
 
@@ -218,7 +218,8 @@
 ### L4 治理与收口证据
 
 - 激励：选择前 `UNIT_ATTACKED=0`、伤害=0、攻击次数=0；响应后正式攻击只有1次，攻击待结算状态清空。
-- 狂暴/原始狂怒：额外攻击额度执行后归零，不再创建同来源交互。
+- 狂暴：额外攻击额度执行后归零，但若这次额外攻击仍攻击相邻敌方卡牌，会再次创建新的狂暴掷骰交互。
+- 原始狂怒：额外攻击额度执行后归零，仍按原审计口径不再创建同来源交互。
 - 冻结：活跃事件存续时 UI/AI/命令/技能 resolver 一致限制，事件离场后不保留静态污染。
 - 四种位置交互：执行和跳过都使 `sys.interaction.current` 收口；无候选时不创建空 prompt。
 

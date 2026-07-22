@@ -88,6 +88,19 @@ const getShourenPositionInteraction = (type: string) => (
   SHOUREN_POSITION_INTERACTIONS[type as ShourenPositionInteractionType]
 );
 
+const YONGHENG_HAND_CARD_ACTIONS = {
+  yongheng_warning: 'yongheng_warning_card',
+  yongheng_application: 'yongheng_application_card',
+  yongheng_arouse_fear: 'yongheng_forced_discard_card',
+  yongheng_punish: 'yongheng_forced_discard_card',
+} as const;
+
+const YONGHENG_HAND_CARD_ABILITIES = Object.keys(YONGHENG_HAND_CARD_ACTIONS);
+
+const getYonghengHandCardAction = (abilityId: string): string | null => (
+  YONGHENG_HAND_CARD_ACTIONS[abilityId as keyof typeof YONGHENG_HAND_CARD_ACTIONS] ?? null
+);
+
 const isActivatedAbilityId = (value: unknown): value is ActivatedAbilityId => (
   typeof value === 'string' && ACTIVATED_ABILITY_IDS.includes(value as ActivatedAbilityId)
 );
@@ -382,6 +395,20 @@ export function findSystemCardSelectorOptionByCardId(
   return findActivatedAbilityTargetOptionByCardId(swInteraction, abilityId, targetCardId, 'selectCard');
 }
 
+export function findSystemHandCardOptionByCardId(
+  swInteraction: SwSimpleChoiceInteraction | null | undefined,
+  abilityMode: AbilityModeState | null | undefined,
+  targetCardId: string,
+): PromptOption | null {
+  if (!swInteraction || !abilityMode || abilityMode.step !== 'selectCards') return null;
+  const expectedAction = getYonghengHandCardAction(abilityMode.abilityId);
+  if (!expectedAction) return null;
+  return swInteraction.options.find((option) => {
+    const value = option.value as { action?: string; targetCardId?: string } | undefined;
+    return value?.action === expectedAction && value.targetCardId === targetCardId;
+  }) ?? null;
+}
+
 export function resolveBeforeAttackCardConfirmation(
   swInteraction: SwSimpleChoiceInteraction | null | undefined,
   abilityMode: AbilityModeState | null | undefined,
@@ -575,6 +602,28 @@ export function listSystemAbilityPositionTargets(
       .filter((position): position is CellCoord => !!position);
   }
 
+  if (abilityMode.abilityId === 'yongheng_collision' && abilityMode.step === 'selectPushDirection') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+        return value?.action === 'yongheng_collision_position' && isCellCoord(value.newPosition)
+          ? value.newPosition
+          : null;
+      })
+      .filter((position): position is CellCoord => !!position);
+  }
+
+  if (abilityMode.abilityId === 'yongheng_warning' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+        return value?.action === 'yongheng_warning_position' && isCellCoord(value.newPosition)
+          ? value.newPosition
+          : null;
+      })
+      .filter((position): position is CellCoord => !!position);
+  }
+
   const shourenInteraction = getShourenPositionInteraction(swInteraction.type);
   if (shourenInteraction?.abilityId === abilityMode.abilityId && abilityMode.step === 'selectPosition') {
     return swInteraction.options
@@ -637,6 +686,24 @@ export function findSystemAbilityPositionOption(
     return swInteraction.options.find((option) => {
       const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
       return value?.action === 'after_attack_huijin_ram_position'
+        && value.newPosition?.row === position.row
+        && value.newPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'yongheng_collision' && abilityMode.step === 'selectPushDirection') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+      return value?.action === 'yongheng_collision_position'
+        && value.newPosition?.row === position.row
+        && value.newPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'yongheng_warning' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+      return value?.action === 'yongheng_warning_position'
         && value.newPosition?.row === position.row
         && value.newPosition?.col === position.col;
     }) ?? null;
@@ -820,6 +887,33 @@ export function findSystemAbilityUnitOptionByPosition(
     }) ?? null;
   }
 
+  if (abilityMode.abilityId === 'yongheng_mental_invasion' && swInteraction.type === 'yongheng_mental_invasion') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'yongheng_mental_invasion'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'yongheng_collision' && swInteraction.type === 'yongheng_collision_target') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'yongheng_collision_target'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
+  if (abilityMode.abilityId === 'yongheng_application' && swInteraction.type === 'yongheng_application_target') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'yongheng_application_target'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
   return null;
 }
 
@@ -857,6 +951,8 @@ export function getSystemAbilityUiRoute(
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectUnit')
     || (abilityMode.abilityId === 'ice_ram' && abilityMode.step === 'selectPushDirection')
     || (abilityMode.abilityId === 'huijin_ram' && abilityMode.step === 'selectPushDirection')
+    || (abilityMode.abilityId === 'yongheng_collision' && abilityMode.step === 'selectPushDirection')
+    || (abilityMode.abilityId === 'yongheng_warning' && abilityMode.step === 'selectPosition')
     || (
       abilityMode.step === 'selectPosition'
       && Object.values(SHOUREN_POSITION_INTERACTIONS).some(({ abilityId }) => abilityId === abilityMode.abilityId)
@@ -880,9 +976,26 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'huijin_call_guards'
       || abilityMode.abilityId === 'huijin_ram'
       || abilityMode.abilityId === 'huijin_quick_shot'
+      || abilityMode.abilityId === 'yongheng_mental_invasion'
+      || abilityMode.abilityId === 'yongheng_collision'
+      || abilityMode.abilityId === 'yongheng_application'
     )
   ) {
     return 'board-cell-unit';
+  }
+
+  if (abilityMode.step === 'selectCards' && YONGHENG_HAND_CARD_ABILITIES.includes(abilityMode.abilityId)) {
+    return 'hand-card-select';
+  }
+
+  if (
+    abilityMode.step === 'selectChoice'
+    && (
+      abilityMode.abilityId === 'yongheng_draw'
+      || abilityMode.abilityId === 'yongheng_continuance'
+    )
+  ) {
+    return 'status-banner-choice';
   }
 
   if (abilityMode.abilityId === 'blood_rune' && abilityMode.step === 'selectUnit') {
@@ -1066,6 +1179,118 @@ export function deriveSystemAbilityMode(
       step: 'selectPushDirection',
       sourceUnitId: meta.sourceUnitId,
       targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_draw') {
+    return {
+      abilityId: 'yongheng_draw',
+      step: 'selectChoice',
+      sourceUnitId: meta.sourceUnitId,
+      systemStep: typeof meta.abilityId === 'string' ? meta.abilityId : undefined,
+      systemChoiceOptions: swInteraction.options.map((option) => ({
+        id: option.id,
+        label: typeof option.label === 'string' ? option.label : undefined,
+        labelKey: typeof option.labelKey === 'string' ? option.labelKey : undefined,
+      })),
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_continuance') {
+    return {
+      abilityId: 'yongheng_continuance',
+      step: 'selectChoice',
+      sourceUnitId: meta.sourceUnitId,
+      systemChoiceOptions: swInteraction.options.map((option) => ({
+        id: option.id,
+        label: typeof option.label === 'string' ? option.label : undefined,
+        labelKey: typeof option.labelKey === 'string' ? option.labelKey : undefined,
+      })),
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_mental_invasion') {
+    return {
+      abilityId: 'yongheng_mental_invasion',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_collision_target') {
+    return {
+      abilityId: 'yongheng_collision',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_collision_position') {
+    return {
+      abilityId: 'yongheng_collision',
+      step: 'selectPushDirection',
+      sourceUnitId: meta.sourceUnitId,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_warning_card') {
+    return {
+      abilityId: 'yongheng_warning',
+      step: 'selectCards',
+      sourceUnitId: meta.sourceUnitId,
+      selectableCardIds: swInteraction.options
+        .map((option) => {
+          const value = option.value as { action?: string; targetCardId?: string } | undefined;
+          return value?.action === 'yongheng_warning_card' ? value.targetCardId : null;
+        })
+        .filter((cardId): cardId is string => !!cardId),
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_warning_position') {
+    return {
+      abilityId: 'yongheng_warning',
+      step: 'selectPosition',
+      sourceUnitId: meta.sourceUnitId,
+      targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_application_card') {
+    return {
+      abilityId: 'yongheng_application',
+      step: 'selectCards',
+      sourceUnitId: meta.sourceUnitId,
+      selectableCardIds: swInteraction.options
+        .map((option) => {
+          const value = option.value as { action?: string; targetCardId?: string } | undefined;
+          return value?.action === 'yongheng_application_card' ? value.targetCardId : null;
+        })
+        .filter((cardId): cardId is string => !!cardId),
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_application_target') {
+    return {
+      abilityId: 'yongheng_application',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'yongheng_forced_discard') {
+    const abilityId = meta.abilityId === 'yongheng_punish' ? 'yongheng_punish' : 'yongheng_arouse_fear';
+    return {
+      abilityId,
+      step: 'selectCards',
+      sourceUnitId: meta.sourceUnitId,
+      selectableCardIds: swInteraction.options
+        .map((option) => {
+          const value = option.value as { action?: string; targetCardId?: string } | undefined;
+          return value?.action === 'yongheng_forced_discard_card' ? value.targetCardId : null;
+        })
+        .filter((cardId): cardId is string => !!cardId),
     };
   }
 

@@ -32,8 +32,12 @@ import {
 import { getChipValues } from './domain/setup';
 import {
     allRequiredChipOwnersHaveChips,
+    allRequiredFinalTokensAreTaken,
     getChipForHandSlot,
+    getCurrentRoundExitChipOwners,
+    getRequiredExitChipCount,
     getUnoccupiedChipValues,
+    hasExitChipForHandSlot,
     parseChipOwnerKey,
     resolveChipOwnerKey,
     THE_GANG_HAND_SLOTS,
@@ -197,6 +201,7 @@ interface CurrentChipDisplay {
     key: string;
     chip?: number;
     handSlot?: HandSlot;
+    exited?: boolean;
 }
 
 interface ProgressButtonState {
@@ -1392,6 +1397,64 @@ function ChipButton({
     );
 }
 
+function ExitChipBadge({ compact = false }: { compact?: boolean }) {
+    const { t } = useTranslation('game-the-gang');
+    return (
+        <span
+            className={[
+                'inline-flex items-center justify-center rounded-full border border-sky-100/55 bg-sky-300 text-sky-950 shadow-[0_0_12px_rgba(125,211,252,0.5)]',
+                compact
+                    ? 'min-h-4 px-1.5 text-[0.48rem] font-black tracking-[0.08em]'
+                    : 'min-h-5 px-2 text-[0.56rem] font-black tracking-[0.1em] lg:text-[0.62rem]',
+            ].join(' ')}
+            data-testid="the-gang-exit-chip-badge"
+            aria-label={t('board.exitChipShort')}
+        >
+            {t('board.exitChipShort')}
+        </span>
+    );
+}
+
+function ExitChipButton({
+    index,
+    total,
+    selected,
+    disabled,
+    onClick,
+}: {
+    index: number;
+    total: number;
+    selected: boolean;
+    disabled: boolean;
+    onClick: () => void;
+}) {
+    const { t } = useTranslation('game-the-gang');
+    const label = selected
+        ? t('board.exitChipTakenLabel', { index, total })
+        : t('board.exitChipLabel', { index, total });
+    return (
+        <button
+            type="button"
+            disabled={disabled}
+            onClick={onClick}
+            aria-label={label}
+            title={label}
+            data-testid={`the-gang-exit-chip-button-${index}`}
+            className={[
+                'relative flex h-8 min-w-14 items-center justify-center rounded-full border px-3 text-[0.58rem] font-black tracking-[0.1em] transition md:h-9 lg:h-12 lg:min-w-16 lg:text-xs',
+                selected
+                    ? 'scale-105 border-sky-50 bg-sky-300 text-sky-950 shadow-[0_0_20px_rgba(125,211,252,0.75)]'
+                    : 'border-sky-100/45 bg-sky-950/82 text-sky-100 shadow-[0_0.35rem_1.1rem_rgba(0,0,0,0.36)]',
+                !selected && !disabled ? 'hover:scale-105 hover:border-sky-50 hover:bg-sky-800' : '',
+                disabled && !selected ? 'cursor-not-allowed opacity-35 grayscale' : '',
+                selected ? 'cursor-not-allowed' : '',
+            ].join(' ')}
+        >
+            {t('board.exitChipShort')}
+        </button>
+    );
+}
+
 function AlarmTrack({ failures }: { failures: number }) {
     const { t } = useTranslation('game-the-gang');
 
@@ -1549,38 +1612,39 @@ function ShowdownResultPanel({
                                 key={resultKey}
                                 className="flex min-w-0 flex-col gap-3 overflow-visible rounded-[1.25rem] bg-emerald-950/34 px-3 py-3 outline outline-1 outline-amber-100/10 shadow-[0_0_34px_rgba(251,191,36,0.14),0_14px_34px_rgba(0,0,0,0.28)] md:px-4 md:py-4"
                             >
-                            <div className="flex items-center justify-between gap-3">
-                                <span className="truncate text-sm font-black text-stone-100 md:text-base">
-                                    {playerName(result.playerId)}
-                                    {handLabel && ` · ${handLabel}`}
-                                </span>
-                                <div className="flex items-center gap-2">
-                                    <ChipDisc round={4} value={result.chip} size="md" zone="plreveal-token" />
-                                    <span className="text-xs font-black tracking-[0.08em] text-amber-100 md:text-sm">
-                                        {result.strength.label}
-                                        {result.winningHandSlot === 'bottom' && ` · ${t('board.winningBottomHand')}`}
-                                        {result.winningHandSlot === 'top' && ` · ${t('board.winningTopHand')}`}
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="truncate text-sm font-black text-stone-100 md:text-base">
+                                        {playerName(result.playerId)}
+                                        {handLabel && ` · ${handLabel}`}
                                     </span>
+                                    <div className="flex items-center gap-2">
+                                        <ChipDisc round={4} value={result.chip} size="md" zone="plreveal-token" />
+                                        {result.exited && <ExitChipBadge />}
+                                        <span className="text-xs font-black tracking-[0.08em] text-amber-100 md:text-sm">
+                                            {result.strength.label}
+                                            {result.winningHandSlot === 'bottom' && ` · ${t('board.winningBottomHand')}`}
+                                            {result.winningHandSlot === 'top' && ` · ${t('board.winningTopHand')}`}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div
-                                className="flex justify-center overflow-visible"
-                                data-bgg-zone="reveal-pocket-cards"
-                                aria-label={`${playerName(result.playerId)} ${result.strength.label}`}
-                            >
-                                <HandCardRows
-                                    primaryCards={result.pocketCards}
-                                    secondaryCards={result.secondaryPocketCards}
-                                    emphasis="showdown"
-                                    t={t}
-                                    testIdPrefix={`the-gang-showdown-hand-${resultKey.replace(':', '-')}`}
-                                    revealOrderBase={(playerResultIndex.get(resultKey) ?? 0) * 4}
-                                    winningHandSlot={result.winningHandSlot}
-                                    showLabels={!!handLabel || !!result.secondaryPocketCards?.length}
-                                    singleRowSlot={result.handSlot}
-                                    singleRowLabel={handLabel}
-                                />
-                            </div>
+                                <div
+                                    className="flex justify-center overflow-visible"
+                                    data-bgg-zone="reveal-pocket-cards"
+                                    aria-label={`${playerName(result.playerId)} ${result.strength.label}`}
+                                >
+                                    <HandCardRows
+                                        primaryCards={result.pocketCards}
+                                        secondaryCards={result.secondaryPocketCards}
+                                        emphasis="showdown"
+                                        t={t}
+                                        testIdPrefix={`the-gang-showdown-hand-${resultKey.replace(':', '-')}`}
+                                        revealOrderBase={(playerResultIndex.get(resultKey) ?? 0) * 4}
+                                        winningHandSlot={result.winningHandSlot}
+                                        showLabels={!!handLabel || !!result.secondaryPocketCards?.length}
+                                        singleRowSlot={result.handSlot}
+                                        singleRowLabel={handLabel}
+                                    />
+                                </div>
                         </div>
                         );
                     })}
@@ -1658,6 +1722,7 @@ function PlayerChipStrip({
                             className="scale-110 drop-shadow-[0_0_22px_rgba(252,211,77,0.82)]"
                             zone="player-current-token"
                         />
+                        {display.exited && <ExitChipBadge compact />}
                     </span>
                 );
                 return canTakeCurrentChip ? (
@@ -1728,6 +1793,7 @@ function HandChipStrip({
                         className={compact ? 'drop-shadow-[0_0_12px_rgba(252,211,77,0.48)]' : 'drop-shadow-[0_0_18px_rgba(252,211,77,0.55)]'}
                         zone="hand-current-chip"
                     />
+                    {display.exited && <ExitChipBadge compact={compact} />}
                 </span>
             ))}
         </div>
@@ -1736,13 +1802,14 @@ function HandChipStrip({
 
 function buildCurrentChipDisplays(core: TheGangCore, playerId: string): CurrentChipDisplay[] {
     if (!core.rules.config.twoHand) {
-        return [{ key: playerId, chip: core.currentRoundChips[playerId] }];
+        return [{ key: playerId, chip: core.currentRoundChips[playerId], exited: hasExitChipForHandSlot(core, playerId) }];
     }
 
     return THE_GANG_HAND_SLOTS.map((handSlot) => ({
         key: resolveChipOwnerKey(core, playerId, handSlot),
         handSlot,
         chip: getChipForHandSlot(core, playerId, handSlot),
+        exited: hasExitChipForHandSlot(core, playerId, handSlot),
     }));
 }
 
@@ -1883,6 +1950,17 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
     const heistStarted = core.heistStarted === true;
     const setupOpen = core.phase === 'chip-selection' && !heistStarted;
     const allPlayersHaveChip = allRequiredChipOwnersHaveChips(core);
+    const allFinalTokensTaken = allRequiredFinalTokensAreTaken(core);
+    const requiredExitChipCount = getRequiredExitChipCount(core);
+    const takenExitChipCount = getCurrentRoundExitChipOwners(core).length;
+    const localActiveChipOwnerKey = resolveChipOwnerKey(core, localPlayerId, activeChipHandSlot);
+    const localCanTakeExitChip = core.phase === 'chip-selection'
+        && heistStarted
+        && core.round === 4
+        && requiredExitChipCount > 0
+        && core.currentRoundChips[localActiveChipOwnerKey] !== undefined
+        && !getCurrentRoundExitChipOwners(core).includes(localActiveChipOwnerKey)
+        && takenExitChipCount < requiredExitChipCount;
     const nextRoundProgress = getProgressButtonState(core, 'end-round', localPlayerId, t('board.nextRound'), t);
     const revealShowdownProgress = getProgressButtonState(core, 'reveal-showdown', localPlayerId, t('board.revealShowdown'), t);
     const handSwapProgress = getProgressButtonState(core, 'hand-swap', localPlayerId, t('board.confirmHandSwap'), t);
@@ -1938,6 +2016,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         key:
             | 'board.toastStartBeforeChip'
             | 'board.toastHostOnlyStart'
+            | 'board.toastHostOnlyRedeal'
             | 'board.toastToolsHostOnly'
             | 'board.toastToolsAlreadyDealt',
         dedupeKey: string,
@@ -1949,6 +2028,10 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         }
         if (key === 'board.toastHostOnlyStart') {
             toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastHostOnlyStart' }, undefined, options);
+            return;
+        }
+        if (key === 'board.toastHostOnlyRedeal') {
+            toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastHostOnlyRedeal' }, undefined, options);
             return;
         }
         if (key === 'board.toastToolsHostOnly') {
@@ -1992,6 +2075,12 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         }
         dispatchForPlayer(THE_GANG_COMMANDS.TAKE_CHIP, {
             chip,
+            ...(core.rules.config.twoHand ? { handSlot: activeChipHandSlot } : {}),
+        });
+    };
+
+    const takeExitChip = () => {
+        dispatchForPlayer(THE_GANG_COMMANDS.TAKE_EXIT_CHIP, {
             ...(core.rules.config.twoHand ? { handSlot: activeChipHandSlot } : {}),
         });
     };
@@ -2057,6 +2146,14 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
             return;
         }
         dispatchForPlayer(THE_GANG_COMMANDS.START_HEIST, {});
+    };
+
+    const redealHeist = () => {
+        if (!canConfigureRules) {
+            showWarning('board.toastHostOnlyRedeal', 'host-only-redeal');
+            return;
+        }
+        dispatchForPlayer(THE_GANG_COMMANDS.REDEAL_HEIST, {});
     };
 
     const startNextHeist = () => {
@@ -2227,6 +2324,28 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                                 active={core.phase === 'chip-selection' && core.round === round}
                                             />
                                         ))}
+                                {!handSwapLayout && core.phase === 'chip-selection' && core.round === 4 && requiredExitChipCount > 0 && (
+                                    <div
+                                        className="flex flex-wrap items-center justify-center gap-2 border-l border-sky-100/25 pl-2 lg:gap-3 lg:pl-3"
+                                        data-testid="the-gang-exit-chip-row"
+                                        aria-label={t('board.exitChipRowLabel', { count: requiredExitChipCount })}
+                                    >
+                                        {Array.from({ length: requiredExitChipCount }, (_, index) => {
+                                            const exitIndex = index + 1;
+                                            const taken = exitIndex <= takenExitChipCount;
+                                            return (
+                                                <ExitChipButton
+                                                    key={`exit-chip-${exitIndex}`}
+                                                    index={exitIndex}
+                                                    total={requiredExitChipCount}
+                                                    selected={taken}
+                                                    disabled={taken || !localCanTakeExitChip}
+                                                    onClick={takeExitChip}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
                             <div
@@ -2325,21 +2444,37 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
                         <div className="pointer-events-auto absolute bottom-0 right-24 flex min-w-[7rem] flex-col items-center gap-1 lg:right-28" data-bgg-zone="action-dock">
                             {setupOpen && (
-                                <button
-                                    type="button"
-                                    aria-disabled={!canConfigureRules}
-                                    onClick={startHeist}
-                                    data-testid="the-gang-start-heist"
-                                    data-tutorial-id="the-gang-start-heist"
-                                    className={[
-                                        'min-w-[5.75rem] rounded-full border px-5 py-2.5 text-base font-black tracking-[0.08em] shadow-[0_12px_28px_rgba(245,158,11,0.36)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:min-w-[7rem] lg:px-7 lg:py-3.5 lg:text-lg',
-                                        canConfigureRules
-                                            ? 'cursor-pointer border-amber-200/75 bg-amber-300 text-stone-950 hover:-translate-y-0.5 hover:bg-amber-200'
-                                            : 'cursor-not-allowed border-stone-600/70 bg-stone-700/75 text-stone-400 shadow-none',
-                                    ].join(' ')}
-                                >
-                                    {t(canConfigureRules ? 'board.startHeist' : 'board.setupWaitingHost')}
-                                </button>
+                                <>
+                                    <button
+                                        type="button"
+                                        aria-disabled={!canConfigureRules}
+                                        onClick={redealHeist}
+                                        data-testid="the-gang-redeal-heist"
+                                        className={[
+                                            'min-w-[5.75rem] rounded-full border px-4 py-1.5 text-xs font-black tracking-[0.08em] shadow-[0_0.25rem_1rem_rgba(0,0,0,0.34)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:min-w-[7rem] lg:px-5 lg:py-2 lg:text-sm',
+                                            canConfigureRules
+                                                ? 'cursor-pointer border-amber-100/35 bg-emerald-950/92 text-amber-100 hover:-translate-y-0.5 hover:border-amber-100 hover:bg-emerald-900'
+                                                : 'cursor-not-allowed border-stone-600/70 bg-stone-700/75 text-stone-400 shadow-none',
+                                        ].join(' ')}
+                                    >
+                                        {t(canConfigureRules ? 'board.redealHeist' : 'board.setupWaitingHost')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        aria-disabled={!canConfigureRules}
+                                        onClick={startHeist}
+                                        data-testid="the-gang-start-heist"
+                                        data-tutorial-id="the-gang-start-heist"
+                                        className={[
+                                            'min-w-[5.75rem] rounded-full border px-5 py-2.5 text-base font-black tracking-[0.08em] shadow-[0_12px_28px_rgba(245,158,11,0.36)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:min-w-[7rem] lg:px-7 lg:py-3.5 lg:text-lg',
+                                            canConfigureRules
+                                                ? 'cursor-pointer border-amber-200/75 bg-amber-300 text-stone-950 hover:-translate-y-0.5 hover:bg-amber-200'
+                                                : 'cursor-not-allowed border-stone-600/70 bg-stone-700/75 text-stone-400 shadow-none',
+                                        ].join(' ')}
+                                    >
+                                        {t(canConfigureRules ? 'board.startHeist' : 'board.setupWaitingHost')}
+                                    </button>
+                                </>
                             )}
                             {heistStarted && core.phase === 'chip-selection' && core.round < 4 && (
                                 <button
@@ -2355,7 +2490,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             {heistStarted && core.phase === 'chip-selection' && core.round === 4 && (
                                 <button
                                     type="button"
-                                    disabled={!allPlayersHaveChip || revealShowdownProgress.hasApproved}
+                                    disabled={!allFinalTokensTaken || revealShowdownProgress.hasApproved}
                                     onClick={revealShowdown}
                                     data-tutorial-id="the-gang-reveal-showdown"
                                     className="min-w-[5.75rem] rounded-full border border-rose-200/80 bg-rose-400 px-5 py-2.5 text-base font-black tracking-[0.08em] text-stone-950 shadow-[0_12px_30px_rgba(244,63,94,0.38)] transition hover:-translate-y-0.5 hover:bg-rose-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-100 disabled:cursor-not-allowed disabled:border-stone-600/70 disabled:bg-stone-700/75 disabled:text-stone-400 disabled:shadow-none disabled:hover:translate-y-0 lg:min-w-[7rem] lg:px-7 lg:py-3.5 lg:text-lg"
@@ -2399,7 +2534,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     />
                                 </>
                             )}
-                            {heistStarted && allPlayersHaveChip && core.phase === 'chip-selection' && (
+                            {heistStarted && (core.round < 4 ? allPlayersHaveChip : allFinalTokensTaken) && core.phase === 'chip-selection' && (
                                 <ProgressVoteDots
                                     approvals={core.round < 4 ? nextRoundProgress.approvals : revealShowdownProgress.approvals}
                                     label={core.round < 4 ? nextRoundProgress.status : revealShowdownProgress.status}

@@ -938,11 +938,22 @@ function filterRuntimeMatchedActions(
     baseDefId: string,
     options?: RuntimeActionMatchOptions,
 ): ModifierRuntimeAction[] {
+    const explicitPodSourceId = ctx.modifierSourceDefId && !ctx.modifierSourceDefId.endsWith('_pod')
+        ? `${ctx.modifierSourceDefId}_pod`
+        : undefined;
+    const exactDefId = options?.exactDefId
+        ?? (
+            explicitPodSourceId
+            && ctx.modifierSourceDefId === baseDefId
+            && modifierRegistry.some(entry => entry.sourceDefId === explicitPodSourceId)
+                ? ctx.modifierSourceDefId
+                : undefined
+        );
     return filterSemanticMatchedRuntimeActions(
         { state: ctx.state, minion: ctx.minion, baseIndex: ctx.baseIndex },
         actions,
         baseDefId,
-        options,
+        exactDefId ? { ...options, exactDefId } : options,
     ) as ModifierRuntimeAction[];
 }
 

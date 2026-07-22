@@ -1,16 +1,39 @@
-import type { Page } from '@playwright/test';
+import type { Browser, BrowserContext, Page } from '@playwright/test';
 import { test, expect } from '../framework';
-import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath, withJpegEvidenceScreenshotOptions } from '../framework/evidenceScreenshots';
+import { waitForTestHarness } from '../helpers/common';
 import {
+    applyCoreStateDirect,
     dispatchDiceThroneCommand,
     ensureDebugPanelClosed,
-    resolveSelectedAttack,
+    readyAndStartGame,
+    readCoreState,
+    selectCharacter,
+    setupDTOnlineMatch,
     setDiceThroneBonusDiceValues,
     setDiceThroneDiceValues,
+    waitForGameBoard,
     waitForDiceThroneHarness,
 } from '../helpers/dicethrone';
+import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
+import { MOON_ELF_CARDS } from '../../src/games/dicethrone/heroes/moon_elf/cards';
 
-const DICETHRONE_OPEN_TIMEOUT_MS = 180000;
+const DICETHRONE_ONLINE_TEST_TIMEOUT_MS = 600000;
+
+type MutableCore = Record<string, any>;
+
+const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+const MOON_ELF_BOW_VALUES = new Set([1, 2, 3]);
+const moonElfFaceForValue = (value: number) => (value <= 3 ? 'bow' : value <= 5 ? 'foot' : 'moon');
+const monkFaceForValue = (value: number) => (value <= 2 ? 'fist' : value === 3 ? 'palm' : value <= 5 ? 'taiji' : 'lotus');
+
+const getCard = (cardId: string): Record<string, any> => {
+    const card = [...COMMON_CARDS, ...MOON_ELF_CARDS].find((nextCard) => nextCard.id === cardId);
+    if (!card) {
+        throw new Error(`未找到卡牌 ${cardId}`);
+    }
+    return clone(card) as Record<string, any>;
+};
 
 async function screenshotStep(
     page: Page,
@@ -18,301 +41,622 @@ async function screenshotStep(
     name: string,
 ): Promise<string> {
     const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
-    await page.screenshot({ path, fullPage: false });
+    const boardRoot = page.getByTestId('dicethrone-board-root').first();
+    if (await boardRoot.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await boardRoot.screenshot(withJpegEvidenceScreenshotOptions({ path, timeout: 20000 }));
+        return path;
+    }
+    await page.screenshot(withJpegEvidenceScreenshotOptions({ path, fullPage: false, timeout: 20000 }));
     return path;
-}
-
-async function waitForCardSpotlight(page: Page, cardId: string) {
-    const spotlight = page.locator(`[data-testid="card-spotlight-overlay"][data-card-id="${cardId}"]`).first();
-    await expect(spotlight).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(900);
-    return spotlight;
-}
-
-async function waitForCardSpotlightGone(page: Page) {
-    await expect(page.locator('[data-testid="card-spotlight-overlay"]')).toHaveCount(0, { timeout: 8000 });
-}
-
-async function waitForBonusOverlay(page: Page) {
-    const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
-    await expect(overlay).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(900);
-    return overlay;
 }
 
 async function dispatch(page: Page, type: string, playerId: string, payload: Record<string, unknown> = {}) {
     await dispatchDiceThroneCommand(page, { type, playerId, payload });
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(350);
 }
 
-test.describe('DiceThrone 奖励骰端到端截图链', () => {
-    test('月精灵万箭齐发从打牌到五颗奖励骰展示再到伤害收口', async ({ page, game }, testInfo) => {
-        test.setTimeout(120000);
+async function updateCoreState(page: Page, mutate: (core: MutableCore) => void) {
+    const coreState = clone(await readCoreState(page) as MutableCore);
+    mutate(coreState);
+    await applyCoreStateDirect(page, coreState);
+    await page.waitForTimeout(500);
+}
+
+async function waitForHandCardVisualReady(page: Page, cardId: string): Promise<void> {
+    await page.waitForFunction((expectedCardId) => {
+        const handArea = document.querySelector('[data-testid="hand-area"]');
+        if (!handArea) return false;
+        const card = handArea.querySelector(`[data-card-id="${expectedCardId}"]`);
+        if (!card) return false;
+        return card.getAttribute('data-is-flipped') === 'true'
+            && handArea.querySelectorAll('.atlas-shimmer').length === 0;
+    }, cardId, { timeout: 15000, polling: 100 });
+    await page.waitForTimeout(700);
+}
+
+async function waitForCardSpotlightVisualReady(page: Page, cardId: string) {
+    await expect(page.getByTestId('attack-showcase-overlay')).toHaveCount(0, { timeout: 15000 });
+
+    const spotlight = page.locator(`[data-testid="card-spotlight-overlay"][data-card-id="${cardId}"]`).first();
+    await expect(spotlight).toBeVisible({ timeout: 15000 });
+
+    await expect.poll(async () => page.evaluate((expectedCardId) => {
+        const attackShowcase = document.querySelector('[data-testid="attack-showcase-overlay"]');
+        const overlay = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="card-spotlight-overlay"]'))
+            .find((node) => node.dataset.cardId === expectedCardId);
+        if (!overlay) {
+            return { ready: false, reason: 'missing-overlay' };
+        }
+
+        const rect = overlay.getBoundingClientRect();
+        const atlasFrame = overlay.querySelector<HTMLElement>('[data-card-atlas-frame="true"]');
+        const atlasImage = overlay.querySelector<HTMLImageElement>('[data-card-atlas-img="true"]');
+        const image = atlasImage ?? overlay.querySelector<HTMLImageElement>('img');
+        const hasShimmer = overlay.querySelector('.atlas-shimmer') !== null;
+        const imageReady = image ? image.complete && image.naturalWidth > 16 && image.naturalHeight > 16 : false;
+        const cardLargeEnough = rect.width > window.innerWidth * 0.1 && rect.height > window.innerHeight * 0.25;
+        const settledNearMainView =
+            rect.left > window.innerWidth * 0.2
+            && rect.right < window.innerWidth * 0.8
+            && rect.top > window.innerHeight * 0.03
+            && rect.bottom < window.innerHeight * 0.86;
+
+        return {
+            ready: Boolean(
+                !attackShowcase
+                && overlay.dataset.cardId === expectedCardId
+                && cardLargeEnough
+                && settledNearMainView
+                && imageReady
+                && (atlasFrame ? !hasShimmer : true),
+            ),
+            cardId: overlay.dataset.cardId ?? null,
+            attackShowcaseVisible: Boolean(attackShowcase),
+            hasShimmer,
+            imageReady,
+            reason: 'not-ready',
+        };
+    }, cardId), { timeout: 15000, intervals: [100, 200, 500] }).toMatchObject({ ready: true });
+
+    await page.waitForTimeout(500);
+    return spotlight;
+}
+
+async function closeCardSpotlightIfVisible(page: Page): Promise<void> {
+    const spotlight = page.locator('[data-testid="card-spotlight-overlay"]');
+    if (!await spotlight.first().isVisible({ timeout: 1000 }).catch(() => false)) {
+        return;
+    }
+
+    await expect(spotlight).toHaveCount(0, { timeout: 8000 });
+}
+
+async function dismissAttackShowcaseIfVisible(page: Page): Promise<void> {
+    const attackShowcase = page.getByTestId('attack-showcase-overlay').first();
+    if (!await attackShowcase.isVisible({ timeout: 1500 }).catch(() => false)) {
+        return;
+    }
+
+    const continueButton = attackShowcase.getByRole('button', { name: /开始防御|继续|Defend|Continue/i }).first();
+    await expect(continueButton).toBeVisible({ timeout: 5000 });
+    await continueButton.click();
+    await expect(page.getByTestId('attack-showcase-overlay')).toHaveCount(0, { timeout: 8000 });
+}
+
+async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
+    const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(handCard).toBeVisible({ timeout: 10000 });
+    const cardBox = await page.evaluate((nextCardId) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }, cardId);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    }
+
+    const startX = cardBox.x + (cardBox.width / 2);
+    const startY = cardBox.y + (cardBox.height * 0.78);
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(450);
+}
+
+async function clickBonusConfirm(page: Page, playerId: string): Promise<void> {
+    const confirmButton = page.locator(`[data-player-seat-anchor="${playerId}"] [data-testid="bonus-dice-confirm-button"]`).first();
+    await expect(confirmButton).toBeEnabled({ timeout: 8000 });
+    await confirmButton.click();
+    await page.waitForTimeout(500);
+}
+
+async function setupTwoPageDicethrone(
+    browser: Browser,
+    baseURL: string | undefined,
+    characters: { host: string; guest: string },
+) {
+    const setup = await setupDTOnlineMatch(browser, baseURL);
+    if (!setup?.guestPage || !setup.guestContext) {
+        return null;
+    }
+
+    await enableManualBonusDiceResponse(setup.hostContext, setup.hostPage);
+    await enableManualBonusDiceResponse(setup.guestContext, setup.guestPage);
+    await selectCharacter(setup.hostPage, characters.host);
+    await selectCharacter(setup.guestPage, characters.guest);
+    await readyAndStartGame(setup.hostPage, setup.guestPage);
+    await waitForGameBoard(setup.hostPage);
+    await waitForGameBoard(setup.guestPage);
+    await waitForDiceThroneHarness(setup.hostPage, 10000);
+    await waitForDiceThroneHarness(setup.guestPage, 10000);
+    await waitForTestHarness(setup.hostPage, 10000);
+    await waitForTestHarness(setup.guestPage, 10000);
+    await ensureDebugPanelClosed(setup.hostPage);
+    await ensureDebugPanelClosed(setup.guestPage);
+
+    return setup;
+}
+
+async function enableManualBonusDiceResponse(context: BrowserContext, page: Page) {
+    const setPreferences = () => {
+        localStorage.setItem('dicethrone:autoResponse', 'true');
+        localStorage.setItem('dicethrone:bonusDiceResponse', 'true');
+    };
+    await context.addInitScript(setPreferences);
+    await page.evaluate(setPreferences);
+}
+
+async function readVisibleBonusSnapshot(page: Page) {
+    return page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+        const settlement = state?.core?.pendingBonusDiceSettlement;
+        const windowState = state?.sys?.responseWindow?.current;
+        return {
+            phase: state?.sys?.phase ?? null,
+            sourceAbilityId: settlement?.sourceAbilityId ?? null,
+            customResolutionId: settlement?.customResolutionId ?? null,
+            allowDiceModification: settlement?.allowDiceModification ?? null,
+            windowType: windowState?.windowType ?? null,
+            currentResponderId: Array.isArray(windowState?.responderQueue)
+                ? windowState.responderQueue[windowState.currentResponderIndex]
+                : null,
+            diceValues: Array.isArray(settlement?.dice) ? settlement.dice.map((die: any) => die.value) : [],
+            diceFaces: Array.isArray(settlement?.dice) ? settlement.dice.map((die: any) => die.face) : [],
+            pendingAttackBonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
+            defenderHp: state?.core?.players?.['1']?.resources?.hp
+                ?? state?.core?.players?.['1']?.resources?.HP
+                ?? null,
+            defenderEntangle: state?.core?.players?.['1']?.statusEffects?.entangle
+                ?? state?.core?.players?.['1']?.tokens?.entangle
+                ?? 0,
+            interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+            interactionPlayerId: state?.sys?.interaction?.current?.playerId ?? null,
+            allowedDieIds: state?.sys?.interaction?.current?.data?.allowedDieIds ?? null,
+        };
+    });
+}
+
+function chooseVolleyBoundaryDie(snapshot: Awaited<ReturnType<typeof readVisibleBonusSnapshot>>) {
+    const indexWithThree = snapshot.diceValues.findIndex((value) => value === 3);
+    if (indexWithThree >= 0) {
+        return {
+            dieIndex: indexWithThree,
+            beforeValue: 3,
+            afterValue: 4,
+            direction: 'increment' as const,
+            beforeBowCount: snapshot.diceValues.filter((value) => MOON_ELF_BOW_VALUES.has(value)).length,
+            afterBowCount: snapshot.diceValues
+                .map((value, index) => (index === indexWithThree ? 4 : value))
+                .filter((value) => MOON_ELF_BOW_VALUES.has(value)).length,
+        };
+    }
+
+    const indexWithFour = snapshot.diceValues.findIndex((value) => value === 4);
+    if (indexWithFour >= 0) {
+        return {
+            dieIndex: indexWithFour,
+            beforeValue: 4,
+            afterValue: 3,
+            direction: 'decrement' as const,
+            beforeBowCount: snapshot.diceValues.filter((value) => MOON_ELF_BOW_VALUES.has(value)).length,
+            afterBowCount: snapshot.diceValues
+                .map((value, index) => (index === indexWithFour ? 3 : value))
+                .filter((value) => MOON_ELF_BOW_VALUES.has(value)).length,
+        };
+    }
+
+    throw new Error(`万箭齐发奖励骰没有可用的一步边界骰（3↔4），实际值：${snapshot.diceValues.join(',')}`);
+}
+
+function chooseThunderDie(snapshot: Awaited<ReturnType<typeof readVisibleBonusSnapshot>>) {
+    const dieIndex = snapshot.diceValues.findIndex((value) => value === 6);
+    if (dieIndex >= 0) {
+        const beforeValue = snapshot.diceValues[dieIndex];
+        return {
+            dieIndex,
+            beforeValue,
+            afterValue: beforeValue - 1,
+            direction: 'decrement' as const,
+            beforeTotal: snapshot.diceValues.reduce((sum, value) => sum + value, 0),
+            afterTotal: snapshot.diceValues.reduce((sum, value, index) => sum + (index === dieIndex ? beforeValue - 1 : value), 0),
+        };
+    }
+
+    const fallbackDieIndex = snapshot.diceValues.findIndex((value) => value > 1);
+    if (fallbackDieIndex >= 0) {
+        const beforeValue = snapshot.diceValues[fallbackDieIndex];
+        return {
+            dieIndex: fallbackDieIndex,
+            beforeValue,
+            afterValue: beforeValue - 1,
+            direction: 'decrement' as const,
+            beforeTotal: snapshot.diceValues.reduce((sum, value) => sum + value, 0),
+            afterTotal: snapshot.diceValues.reduce((sum, value, index) => sum + (index === fallbackDieIndex ? beforeValue - 1 : value), 0),
+        };
+    }
+
+    return {
+        dieIndex: 0,
+        beforeValue: snapshot.diceValues[0],
+        afterValue: snapshot.diceValues[0] + 1,
+        direction: 'increment' as const,
+        beforeTotal: snapshot.diceValues.reduce((sum, value) => sum + value, 0),
+        afterTotal: snapshot.diceValues.reduce((sum, value, index) => sum + (index === 0 ? value + 1 : value), 0),
+    };
+}
+
+async function normalizePendingBonusDice(
+    page: Page,
+    diceValues: number[],
+    faceForValue: (value: number) => string,
+) {
+    await updateCoreState(page, (core) => {
+        const settlement = core.pendingBonusDiceSettlement;
+        if (!settlement) {
+            throw new Error('当前没有待确认的奖励骰结算');
+        }
+        const previousDice = Array.isArray(settlement.dice) ? settlement.dice : [];
+        settlement.dice = diceValues.map((value, index) => ({
+            ...(previousDice[index] ?? {}),
+            index,
+            value,
+            face: faceForValue(value),
+            effectParams: {
+                ...(previousDice[index]?.effectParams ?? {}),
+                value,
+            },
+        }));
+    });
+    await ensureDebugPanelClosed(page);
+    await page.waitForTimeout(350);
+}
+
+async function normalizeCurrentDice(
+    page: Page,
+    diceValues: number[],
+    faceForValue: (value: number) => string,
+) {
+    await updateCoreState(page, (core) => {
+        const previousDice = Array.isArray(core.dice) ? core.dice : [];
+        core.dice = previousDice.map((die: Record<string, unknown>, index: number) => {
+            const value = diceValues[index] ?? Number(die.value ?? 1);
+            const face = faceForValue(value);
+            return {
+                ...die,
+                value,
+                symbol: face,
+                symbols: [face],
+                isKept: false,
+            };
+        });
+        core.rollConfirmed = true;
+    });
+    await ensureDebugPanelClosed(page);
+    await page.waitForTimeout(350);
+}
+
+async function getThunderStrikeSlot(page: Page) {
+    const byResolvedAbility = page.locator('[data-ability-slot][data-resolved-ability-id="thunder-strike"]').first();
+    if (await byResolvedAbility.isVisible({ timeout: 2000 }).catch(() => false)) {
+        return byResolvedAbility;
+    }
+    return page.locator('[data-ability-slot="lotus"]').first();
+}
+
+function dieButton(page: Page, dieIndex: number) {
+    return page.locator(`[data-testid="die-button-${dieIndex}"][data-owner-id="0"]:visible`).first();
+}
+
+test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () => {
+    test('万箭齐发：弹一手修改奖励骰后按改后弓面数加伤并施加缠绕', async ({ browser }, testInfo) => {
+        test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
         await clearEvidenceScreenshotsForTest(testInfo);
 
-        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
-        await waitForDiceThroneHarness(page);
-        await game.setupScene({
-            gameId: 'dicethrone',
-            player0: {
-                hand: ['volley'],
-                resources: { CP: 3, HP: 50 },
-            },
-            player1: {
-                resources: { CP: 2, HP: 50 },
-            },
-            currentPlayer: '0',
-            phase: 'offensiveRoll',
-            extra: {
-                selectedCharacters: { '0': 'moon_elf', '1': 'barbarian' },
-                hostStarted: true,
-                activePlayerId: '0',
-                rollCount: 1,
-                rollLimit: 3,
-                rollConfirmed: true,
-                dice: [
-                    { id: 0, value: 1, isKept: false },
-                    { id: 1, value: 2, isKept: false },
-                    { id: 2, value: 3, isKept: false },
-                    { id: 3, value: 4, isKept: false },
-                    { id: 4, value: 5, isKept: false },
-                ],
-                pendingAttack: {
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupTwoPageDicethrone(browser, baseURL, { host: 'moon_elf', guest: 'barbarian' });
+        if (!setup) {
+            test.skip(true, 'online setup unavailable in current environment');
+            return;
+        }
+
+        const { hostPage, guestPage, hostContext, guestContext } = setup;
+
+        try {
+            await updateCoreState(hostPage, (core) => {
+                core.players['0'].hand = [];
+                core.players['0'].resources.cp = 5;
+                core.players['0'].resources.CP = 5;
+                core.players['0'].resources.hp = 50;
+                core.players['0'].resources.HP = 50;
+                core.players['1'].hand = [];
+                core.players['1'].resources.cp = 5;
+                core.players['1'].resources.CP = 5;
+                core.players['1'].resources.hp = 50;
+                core.players['1'].resources.HP = 50;
+                core.players['1'].statusEffects = {};
+                core.activePlayerId = '0';
+                core.pendingBonusDiceSettlement = undefined;
+                core.pendingDamage = null;
+            });
+            await ensureDebugPanelClosed(hostPage);
+            await ensureDebugPanelClosed(guestPage);
+
+            await setDiceThroneDiceValues(hostPage, [1, 1, 1, 1, 4]);
+            await dispatch(hostPage, 'ADVANCE_PHASE', '0');
+            await dispatch(hostPage, 'ROLL_DICE', '0');
+            await dispatch(hostPage, 'CONFIRM_ROLL', '0');
+            await normalizeCurrentDice(hostPage, [1, 1, 1, 1, 4], moonElfFaceForValue);
+            await dispatch(hostPage, 'SELECT_ABILITY', '0', { abilityId: 'longbow' });
+
+            await updateCoreState(hostPage, (core) => {
+                core.players['0'].hand = [getCard('volley')];
+                core.players['1'].hand = [getCard('card-flick')];
+                core.pendingAttack = {
+                    ...(core.pendingAttack ?? {}),
                     attackerId: '0',
                     defenderId: '1',
+                    settlementStage: core.pendingAttack?.settlementStage ?? 'preDamage',
                     isDefendable: false,
-                    sourceAbilityId: 'longbow-4-1',
-                    damage: 5,
-                    bonusDamage: 0,
-                    attackModifierBonusDamage: 0,
-                    damageResolved: false,
-                    resolvedDamage: 0,
-                    preDefenseResolved: false,
-                    offensiveRollEndTokenResolved: false,
-                },
-                pendingDamage: null,
-                pendingBonusDiceSettlement: undefined,
-            },
-        });
-        await ensureDebugPanelClosed(page);
+                    sourceAbilityId: core.pendingAttack?.sourceAbilityId ?? 'longbow',
+                    isUltimate: core.pendingAttack?.isUltimate ?? false,
+                    damageResolved: core.pendingAttack?.damageResolved ?? false,
+                    resolvedDamage: core.pendingAttack?.resolvedDamage ?? 0,
+                    attackDiceFaceCounts: core.pendingAttack?.attackDiceFaceCounts ?? { bow: 4, foot: 1 },
+                    attackDiceValues: core.pendingAttack?.attackDiceValues ?? [1, 1, 1, 1, 4],
+                    damage: core.pendingAttack?.damage ?? 5,
+                    bonusDamage: core.pendingAttack?.bonusDamage ?? 0,
+                    attackModifierBonusDamage: core.pendingAttack?.attackModifierBonusDamage ?? 0,
+                };
+            });
+            await ensureDebugPanelClosed(hostPage);
+            await ensureDebugPanelClosed(guestPage);
 
-        await expect(page.locator('[data-testid="hand-area"] [data-card-id="volley"]').first())
-            .toBeVisible({ timeout: 10000 });
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return {
-                phase: state?.sys?.phase ?? null,
-                handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
-                sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
-            };
-        }, { timeout: 10000 }).toMatchObject({
-            phase: 'offensiveRoll',
-            handIds: ['volley'],
-            sourceAbilityId: 'longbow-4-1',
-        });
-        await screenshotStep(page, testInfo, '01-万箭齐发-打牌前攻击已选且手牌可见');
+            await expect.poll(async () => hostPage.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
+                return {
+                    phase: state?.sys?.phase ?? null,
+                    pendingAttack: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+                    isDefendable: state?.core?.pendingAttack?.isDefendable ?? null,
+                    hostHand: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+                    guestHand: (state?.core?.players?.['1']?.hand ?? []).map((card: any) => card.id),
+                };
+            }), { timeout: 10000 }).toMatchObject({
+                phase: 'offensiveRoll',
+                pendingAttack: 'longbow',
+                isDefendable: false,
+                hostHand: ['volley'],
+                guestHand: ['card-flick'],
+            });
 
-        await setDiceThroneBonusDiceValues(page, [1, 2, 3, 4, 5]);
-        await dispatch(page, 'PLAY_CARD', '0', { cardId: 'volley' });
+            await waitForHandCardVisualReady(hostPage, 'volley');
+            await screenshotStep(hostPage, testInfo, '01-万箭齐发-攻击已选且手牌可见');
 
-        const spotlight = await waitForCardSpotlight(page, 'volley');
-        await expect(spotlight.locator('[data-testid="card-spotlight-die"]')).toHaveCount(5, { timeout: 5000 });
-        await expect(spotlight.locator('[data-testid="card-spotlight-summary-text"]').first()).toBeVisible({ timeout: 5000 });
-        await expect.poll(async () => {
-            const state = await game.getState();
-            const bonusEvents = (state?.sys?.eventStream?.entries ?? [])
-                .filter((entry: any) => entry?.event?.type === 'BONUS_DIE_ROLLED');
-            const summary = bonusEvents
-                .map((entry: any) => entry.event?.payload)
-                .find((payload: any) => payload?.effectKey === 'bonusDie.effect.volley.result');
-            return {
-                bonusEventCount: bonusEvents.length,
-                summaryKey: summary?.effectKey ?? null,
-                pendingSettlement: state?.core?.pendingBonusDiceSettlement ? 'present' : 'none',
-                handIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
-                discardIds: state?.core?.players?.['0']?.discard?.map((card: any) => card.id) ?? [],
-            };
-        }, { timeout: 10000 }).toMatchObject({
-            bonusEventCount: 6,
-            summaryKey: 'bonusDie.effect.volley.result',
-            pendingSettlement: 'none',
-            handIds: [],
-            discardIds: ['volley'],
-        });
-        await screenshotStep(page, testInfo, '02-万箭齐发-卡牌特写展示五颗奖励骰和结果描述');
+            await setDiceThroneBonusDiceValues(hostPage, [1, 2, 3, 4, 5]);
+            await dismissAttackShowcaseIfVisible(guestPage);
+            await dragHandCardToPlay(hostPage, 'volley');
+            await dismissAttackShowcaseIfVisible(guestPage);
+            const volleySpotlight = await waitForCardSpotlightVisualReady(guestPage, 'volley');
+            await expect(volleySpotlight.locator('[data-testid="card-spotlight-summary-text"]').first())
+                .toHaveAttribute('data-effect-key', 'bonusDie.effect.volley.result', { timeout: 5000 });
+            await screenshotStep(guestPage, testInfo, '02-万箭齐发-卡牌特写显示首次奖励骰结果描述');
 
-        await waitForCardSpotlightGone(page);
-        await screenshotStep(page, testInfo, '03-万箭齐发-特写关闭后攻击修正留在结算前');
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 15000 }).toMatchObject({
+                sourceAbilityId: 'volley',
+                customResolutionId: 'moon-elf-volley',
+                allowDiceModification: true,
+                windowType: 'afterRollConfirmed',
+                currentResponderId: '1',
+            });
+            await normalizePendingBonusDice(hostPage, [1, 2, 3, 4, 5], moonElfFaceForValue);
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
+                diceValues: [1, 2, 3, 4, 5],
+            });
+            const volleyBeforeSnapshot = await readVisibleBonusSnapshot(guestPage);
+            const volleyChoice = chooseVolleyBoundaryDie(volleyBeforeSnapshot);
+            expect(volleyChoice.beforeBowCount).not.toBe(volleyChoice.afterBowCount);
+            await closeCardSpotlightIfVisible(guestPage);
+            await waitForHandCardVisualReady(guestPage, 'card-flick');
+            await expect(guestPage.getByRole('button', { name: /^(跳过|Pass)$/i }).first()).toBeVisible({ timeout: 5000 });
+            await screenshotStep(guestPage, testInfo, '03-万箭齐发-奖励骰响应窗口可出弹一手');
 
-        const beforeResolve = await game.getState();
-        const defenderHpBefore = beforeResolve?.core?.players?.['1']?.resources?.HP
-            ?? beforeResolve?.core?.players?.['1']?.resources?.hp
-            ?? 50;
-        const expectedDamage = (beforeResolve?.core?.pendingAttack?.damage ?? 0)
-            + (beforeResolve?.core?.pendingAttack?.bonusDamage ?? 0);
+            await dispatch(guestPage, 'PLAY_CARD', '1', { cardId: 'card-flick' });
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
+                interactionKind: 'multistep-choice',
+                interactionPlayerId: '1',
+                allowedDieIds: [0, 1, 2, 3, 4],
+            });
+            const selectedVolleyDie = dieButton(guestPage, volleyChoice.dieIndex);
+            await expect(selectedVolleyDie).toBeVisible({ timeout: 5000 });
+            await expect(selectedVolleyDie).toHaveAttribute('data-owner-id', '0', { timeout: 5000 });
+            await expect(selectedVolleyDie).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
+            await expect(selectedVolleyDie).toHaveAttribute('data-display-value', String(volleyChoice.beforeValue), { timeout: 5000 });
+            await screenshotStep(guestPage, testInfo, '04-万箭齐发-弹一手选择奖励骰改前');
 
-        await resolveSelectedAttack(page);
-        await expect.poll(async () => {
-            const state = await game.getState();
-            const defender = state?.core?.players?.['1'];
-            return {
-                phase: state?.sys?.phase ?? null,
-                pendingAttack: state?.core?.pendingAttack ?? null,
-                defenderHp: defender?.resources?.HP ?? defender?.resources?.hp ?? null,
-                entangle: defender?.statusEffects?.entangle ?? defender?.tokens?.entangle ?? 0,
-            };
-        }, { timeout: 10000 }).toMatchObject({
-            phase: 'main2',
-            pendingAttack: null,
-            defenderHp: defenderHpBefore - expectedDamage,
-            entangle: 1,
-        });
-        await screenshotStep(page, testInfo, '04-万箭齐发-伤害和缠绕已落地流程收口');
+            await dispatch(guestPage, 'MODIFY_DIE', '1', {
+                dieId: volleyChoice.dieIndex,
+                newValue: volleyChoice.afterValue,
+            });
+            await expect(selectedVolleyDie).toHaveAttribute('data-display-value', String(volleyChoice.afterValue), { timeout: 5000 });
+            await screenshotStep(guestPage, testInfo, '05-万箭齐发-弹一手已修改奖励骰');
+
+            await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');
+            const volleyAfterValues = volleyBeforeSnapshot.diceValues
+                .map((value, index) => (index === volleyChoice.dieIndex ? volleyChoice.afterValue : value));
+            await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
+                windowType: null,
+                diceValues: volleyAfterValues,
+            });
+            await expect(dieButton(hostPage, volleyChoice.dieIndex))
+                .toHaveAttribute('data-display-value', String(volleyChoice.afterValue), { timeout: 5000 });
+            await screenshotStep(hostPage, testInfo, '06-万箭齐发-改后奖励骰等待攻击方确认');
+
+            await clickBonusConfirm(hostPage, '0');
+            await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
+                sourceAbilityId: null,
+                pendingAttackBonusDamage: volleyChoice.afterBowCount,
+                defenderEntangle: 1,
+            });
+            await screenshotStep(hostPage, testInfo, '07-万箭齐发-改后弓面数已写入加伤并施加缠绕');
+        } finally {
+            await guestContext.close();
+            await hostContext.close();
+        }
     });
 
-    test('武僧雷霆万钧从技能触发到奖励骰重掷再到结算收口', async ({ page, game }, testInfo) => {
-        test.setTimeout(150000);
+    test('武僧雷霆万钧：弹一手修改奖励骰后按改后点数和造成伤害', async ({ browser }, testInfo) => {
+        test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
         await clearEvidenceScreenshotsForTest(testInfo);
 
-        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
-        await waitForDiceThroneHarness(page);
-        await game.setupScene({
-            gameId: 'dicethrone',
-            player0: {
-                resources: { CP: 0, HP: 50 },
-                tokens: { taiji: 2 },
-            },
-            player1: {
-                resources: { CP: 0, HP: 50 },
-            },
-            currentPlayer: '0',
-            phase: 'offensiveRoll',
-            extra: {
-                selectedCharacters: { '0': 'monk', '1': 'barbarian' },
-                hostStarted: true,
-                activePlayerId: '0',
-                rollCount: 1,
-                rollLimit: 3,
-                rollConfirmed: true,
-                dice: [
-                    { id: 0, value: 3, isKept: false },
-                    { id: 1, value: 3, isKept: false },
-                    { id: 2, value: 3, isKept: false },
-                    { id: 3, value: 1, isKept: false },
-                    { id: 4, value: 1, isKept: false },
-                ],
-                pendingAttack: null,
-                pendingDamage: null,
-                pendingBonusDiceSettlement: undefined,
-            },
-        });
-        await ensureDebugPanelClosed(page);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupTwoPageDicethrone(browser, baseURL, { host: 'monk', guest: 'barbarian' });
+        if (!setup) {
+            test.skip(true, 'online setup unavailable in current environment');
+            return;
+        }
 
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return {
-                phase: state?.sys?.phase ?? null,
-                diceValues: state?.core?.dice?.map((die: any) => die.value).slice(0, 5) ?? [],
-                taiji: state?.core?.players?.['0']?.tokens?.taiji ?? 0,
-            };
-        }, { timeout: 10000 }).toEqual({
-            phase: 'offensiveRoll',
-            diceValues: [3, 3, 3, 1, 1],
-            taiji: 2,
-        });
-        const thunderStrikeSlot = page
-            .locator('[data-ability-slot][data-resolved-ability-id="thunder-strike"]')
-            .first();
-        await expect(thunderStrikeSlot).toBeVisible({ timeout: 10000 });
-        await expect(thunderStrikeSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
-        await screenshotStep(page, testInfo, '01-雷霆万钧-三掌骰面已确认技能可选');
+        const { hostPage, guestPage, hostContext, guestContext } = setup;
 
-        await dispatch(page, 'SELECT_ABILITY', '0', { abilityId: 'thunder-strike' });
-        await expect.poll(async () => {
-            const state = await game.getState();
-            return {
-                phase: state?.sys?.phase ?? null,
-                sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
-            };
-        }, { timeout: 10000 }).toMatchObject({
-            phase: 'offensiveRoll',
-            sourceAbilityId: 'thunder-strike',
-        });
-        await screenshotStep(page, testInfo, '02-雷霆万钧-技能已触发进入攻击结算');
+        try {
+            await updateCoreState(hostPage, (core) => {
+                core.players['0'].hand = [];
+                core.players['0'].tokens = {};
+                core.players['0'].resources.cp = 0;
+                core.players['0'].resources.CP = 0;
+                core.players['0'].resources.hp = 50;
+                core.players['0'].resources.HP = 50;
+                core.players['1'].hand = [];
+                core.players['1'].tokens = {};
+                core.players['1'].resources.cp = 5;
+                core.players['1'].resources.CP = 5;
+                core.players['1'].resources.hp = 50;
+                core.players['1'].resources.HP = 50;
+                core.activePlayerId = '0';
+                core.pendingBonusDiceSettlement = undefined;
+                core.pendingDamage = null;
+            });
+            await ensureDebugPanelClosed(hostPage);
+            await ensureDebugPanelClosed(guestPage);
 
-        await setDiceThroneBonusDiceValues(page, [4, 5, 6]);
-        await dispatch(page, 'ADVANCE_PHASE', '0');
-        await expect.poll(async () => (await game.getState())?.sys?.phase ?? null, { timeout: 10000 }).toBe('defensiveRoll');
-        await dispatch(page, 'ROLL_DICE', '1');
-        await dispatch(page, 'CONFIRM_ROLL', '1');
-        await dispatch(page, 'RESPONSE_PASS', '1');
-        await dispatch(page, 'ADVANCE_PHASE', '1');
+            await setDiceThroneDiceValues(hostPage, [3, 3, 3, 1, 1]);
+            await dispatch(hostPage, 'ADVANCE_PHASE', '0');
+            await dispatch(hostPage, 'ROLL_DICE', '0');
+            await dispatch(hostPage, 'CONFIRM_ROLL', '0');
+            await normalizeCurrentDice(hostPage, [3, 3, 3, 1, 1], monkFaceForValue);
+            const thunderStrikeSlot = await getThunderStrikeSlot(hostPage);
+            await expect(thunderStrikeSlot).toBeVisible({ timeout: 10000 });
+            await expect(thunderStrikeSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await screenshotStep(hostPage, testInfo, '01-雷霆万钧-三掌骰面已确认技能可选');
 
-        const overlay = await waitForBonusOverlay(page);
-        await expect(overlay.locator('[data-testid^="bonus-die-reroll-option-"]')).toHaveCount(3, { timeout: 5000 });
-        await expect(overlay.getByRole('button', { name: /Confirm Damage|确认伤害|继续/i }).last())
-            .toBeVisible({ timeout: 5000 });
-        const openedSettlement = await game.getState();
-        const defenderHpBefore = openedSettlement?.core?.players?.['1']?.resources?.HP
-            ?? openedSettlement?.core?.players?.['1']?.resources?.hp
-            ?? 50;
-        await expect.poll(async () => {
-            const state = await game.getState();
-            const settlement = state?.core?.pendingBonusDiceSettlement;
-            return {
-                sourceAbilityId: settlement?.sourceAbilityId ?? null,
-                diceCount: settlement?.dice?.length ?? 0,
-                rerollCount: settlement?.rerollCount ?? null,
-                maxRerollCount: settlement?.maxRerollCount ?? null,
-                taiji: state?.core?.players?.['0']?.tokens?.taiji ?? 0,
-            };
-        }, { timeout: 10000 }).toEqual({
-            sourceAbilityId: 'thunder-strike',
-            diceCount: 3,
-            rerollCount: 0,
-            maxRerollCount: 1,
-            taiji: 2,
-        });
-        await screenshotStep(page, testInfo, '03-雷霆万钧-奖励骰面板出现且可花太极重掷');
+            await dispatch(hostPage, 'SELECT_ABILITY', '0', { abilityId: 'thunder-strike' });
+            await updateCoreState(hostPage, (core) => {
+                core.players['1'].hand = [getCard('card-flick')];
+                core.players['1'].resources.cp = 5;
+                core.players['1'].resources.CP = 5;
+                core.pendingAttack = {
+                    ...(core.pendingAttack ?? {}),
+                    attackerId: '0',
+                    defenderId: '1',
+                    settlementStage: core.pendingAttack?.settlementStage ?? 'preDamage',
+                    isDefendable: false,
+                    sourceAbilityId: core.pendingAttack?.sourceAbilityId ?? 'thunder-strike',
+                    isUltimate: core.pendingAttack?.isUltimate ?? false,
+                    damageResolved: core.pendingAttack?.damageResolved ?? false,
+                    resolvedDamage: core.pendingAttack?.resolvedDamage ?? 0,
+                    attackDiceFaceCounts: core.pendingAttack?.attackDiceFaceCounts ?? { palm: 3, fist: 2 },
+                    attackDiceValues: core.pendingAttack?.attackDiceValues ?? [3, 3, 3, 1, 1],
+                    damage: core.pendingAttack?.damage ?? 0,
+                    bonusDamage: core.pendingAttack?.bonusDamage ?? 0,
+                    attackModifierBonusDamage: core.pendingAttack?.attackModifierBonusDamage ?? 0,
+                };
+            });
+            await ensureDebugPanelClosed(hostPage);
+            await ensureDebugPanelClosed(guestPage);
+            await screenshotStep(hostPage, testInfo, '02-雷霆万钧-技能已触发并让对手持有弹一手');
 
-        await setDiceThroneBonusDiceValues(page, [2]);
-        await page.getByTestId('bonus-die-reroll-option-0').click({ force: true });
-        await expect.poll(async () => {
-            const state = await game.getState();
-            const settlement = state?.core?.pendingBonusDiceSettlement;
-            return {
-                rerollCount: settlement?.rerollCount ?? null,
-                lastRerolledDieIndex: settlement?.lastRerolledDieIndex ?? null,
-                diceValues: settlement?.dice?.map((die: any) => die.value) ?? [],
-                taiji: state?.core?.players?.['0']?.tokens?.taiji ?? 0,
-            };
-        }, { timeout: 10000 }).toMatchObject({
-            rerollCount: 1,
-            lastRerolledDieIndex: 0,
-            diceValues: [2, expect.any(Number), expect.any(Number)],
-            taiji: 0,
-        });
-        await screenshotStep(page, testInfo, '04-雷霆万钧-重掷一颗后太极耗尽骰面更新');
+            await setDiceThroneBonusDiceValues(hostPage, [4, 5, 6]);
+            await dismissAttackShowcaseIfVisible(guestPage);
+            await dispatch(hostPage, 'ADVANCE_PHASE', '0');
+            await dismissAttackShowcaseIfVisible(guestPage);
 
-        const beforeSettle = await game.getState();
-        const expectedDamage = beforeSettle?.core?.pendingBonusDiceSettlement?.dice
-            ?.reduce((sum: number, die: any) => sum + (die.value ?? 0), 0) ?? 0;
-        await overlay.getByRole('button', { name: /Confirm Damage|确认伤害|继续/i }).last().click();
-        await expect.poll(async () => {
-            const state = await game.getState();
-            const defender = state?.core?.players?.['1'];
-            return {
-                phase: state?.sys?.phase ?? null,
-                pendingSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
-                pendingDamage: state?.core?.pendingDamage ?? null,
-                defenderHp: defender?.resources?.HP ?? defender?.resources?.hp ?? null,
-            };
-        }, { timeout: 10000 }).toEqual({
-            phase: 'main2',
-            pendingSettlement: null,
-            pendingDamage: null,
-            defenderHp: defenderHpBefore - expectedDamage,
-        });
-        await screenshotStep(page, testInfo, '05-雷霆万钧-确认后按重掷后点数造成伤害收口');
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 15000 }).toMatchObject({
+                sourceAbilityId: 'thunder-strike',
+                allowDiceModification: true,
+                windowType: 'afterRollConfirmed',
+                currentResponderId: '1',
+            });
+            await normalizePendingBonusDice(hostPage, [4, 5, 6], monkFaceForValue);
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
+                diceValues: [4, 5, 6],
+            });
+            const thunderBeforeSnapshot = await readVisibleBonusSnapshot(guestPage);
+            const thunderChoice = chooseThunderDie(thunderBeforeSnapshot);
+            await waitForHandCardVisualReady(guestPage, 'card-flick');
+            await screenshotStep(guestPage, testInfo, '03-雷霆万钧-奖励骰响应窗口可出弹一手');
+
+            await dispatch(guestPage, 'PLAY_CARD', '1', { cardId: 'card-flick' });
+            await expect.poll(() => readVisibleBonusSnapshot(guestPage), { timeout: 10000 }).toMatchObject({
+                interactionKind: 'multistep-choice',
+                interactionPlayerId: '1',
+                allowedDieIds: [0, 1, 2],
+            });
+            const selectedThunderDie = dieButton(guestPage, thunderChoice.dieIndex);
+            await expect(selectedThunderDie).toBeVisible({ timeout: 5000 });
+            await expect(selectedThunderDie).toHaveAttribute('data-owner-id', '0', { timeout: 5000 });
+            await expect(selectedThunderDie).toHaveAttribute('data-clickable', 'true', { timeout: 5000 });
+            await expect(selectedThunderDie).toHaveAttribute('data-display-value', String(thunderChoice.beforeValue), { timeout: 5000 });
+            await screenshotStep(guestPage, testInfo, '04-雷霆万钧-弹一手选择奖励骰改前');
+
+            await dispatch(guestPage, 'MODIFY_DIE', '1', {
+                dieId: thunderChoice.dieIndex,
+                newValue: thunderChoice.afterValue,
+            });
+            await expect(selectedThunderDie).toHaveAttribute('data-display-value', String(thunderChoice.afterValue), { timeout: 5000 });
+            await screenshotStep(guestPage, testInfo, '05-雷霆万钧-弹一手已修改奖励骰');
+
+            await dispatch(guestPage, 'SYS_INTERACTION_CONFIRM', '1');
+            const thunderAfterValues = thunderBeforeSnapshot.diceValues
+                .map((value, index) => (index === thunderChoice.dieIndex ? thunderChoice.afterValue : value));
+            await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
+                windowType: null,
+                diceValues: thunderAfterValues,
+            });
+            await screenshotStep(hostPage, testInfo, '06-雷霆万钧-改后奖励骰等待攻击方确认');
+
+            await clickBonusConfirm(hostPage, '0');
+            await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
+                phase: 'main2',
+                sourceAbilityId: null,
+                defenderHp: 50 - thunderChoice.afterTotal,
+            });
+            await screenshotStep(hostPage, testInfo, '07-雷霆万钧-按改后点数和造成伤害');
+        } finally {
+            await guestContext.close();
+            await hostContext.close();
+        }
     });
 });

@@ -793,6 +793,9 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'pyro-blast-2-roll',
             // 火法师炎爆术 III：有 FM 时走 reroll 分支（BONUS_DICE_REROLL_REQUESTED），不直接产生 DAMAGE_DEALT
             'pyro-blast-3-roll',
+            // 武僧雷霆万钧：伤害由奖励骰结算链路落地，基础 mock 只会创建待结算骰面
+            'thunder-strike-roll-damage',
+            'thunder-strike-2-roll-damage',
             // 圣骑士神圣祝福防御：只有致死伤害 + 有 Blessing token 时才触发，产生 DAMAGE_DEALT（将 HP 设为 1）
             'paladin-blessing-prevent',
             // 神枪手决斗：当前 handler 只发起比较/选项交互，实际伤害在 choice-resolved handler 中落地

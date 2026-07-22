@@ -17,6 +17,7 @@ import { getBaseCardId, CARD_IDS } from './ids';
 import { canActivateAbility } from './abilityHelpers';
 import { reduceEvent } from './reduce';
 import { applyHuijinPhoenixSoulBonus } from './execute/helpers';
+import { getYonghengPostProcessEvents } from './yonghengMechanics';
 
 /**
  * 需要玩家确认的阶段结束技能（"你可以"/"may" 语义）
@@ -269,6 +270,7 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
       from as GamePhase,
       state.sys.summonerWars?.phaseEndAbilityResolved,
     );
+    events.push(...getYonghengPostProcessEvents(core, events, timestamp));
     if (needsConfirmation) {
       return { events, halt: true };
     }
@@ -339,6 +341,7 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
     }
 
     applyHuijinPhoenixSoulBonus(events, core, timestamp);
+    events.push(...getYonghengPostProcessEvents(core, events, timestamp));
     return events;
   },
 

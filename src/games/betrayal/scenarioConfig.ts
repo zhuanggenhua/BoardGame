@@ -3,6 +3,13 @@ export type BetrayalInventoryKind = 'item' | 'omen';
 export type BetrayalDeckKind = 'event' | 'item' | 'omen';
 export type BetrayalRecommendedAction = 'move' | 'explore' | 'trade' | 'use' | 'endTurn';
 export type BetrayalScenarioId = 'first-scenario';
+export type BetrayalScenarioCardId =
+    | 'crimson-jack-returns'
+    | 'friends-forever'
+    | 'free-the-realtor'
+    | 'blood-from-a-stone'
+    | 'inheritance';
+export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'contract-pending';
 export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo';
 export type BetrayalTraitorSelectionPolicy = 'last-explorer' | 'current-explorer';
 export type BetrayalSurvivorSelectionPolicy = 'all-non-traitor' | 'current-explorer-only';
@@ -354,6 +361,110 @@ export interface BetrayalScenarioConfig {
     };
     runtimePreview?: BetrayalScenarioRuntimePreview;
     completion: BetrayalScenarioCompletionConfig;
+}
+
+export interface BetrayalScenarioCardCandidate {
+    id: BetrayalScenarioCardId;
+    title: string;
+    titleEn: string;
+    scenarioCardLabel: string;
+    triggerOmenLabel: string;
+    hauntNumber: number;
+    summary: string;
+    summaryEn: string;
+    implementationStatus: BetrayalScenarioCardImplementationStatus;
+    implementedScenarioId?: BetrayalScenarioId;
+    sourcePath: string;
+}
+
+export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCandidate[] = [
+    {
+        id: 'crimson-jack-returns',
+        title: '赤红杰克归来',
+        titleEn: 'Crimson Jack Returns',
+        scenarioCardLabel: 'NONE',
+        triggerOmenLabel: 'A Splash of Crimson',
+        hauntNumber: 1,
+        summary: '当前已接入真实运行时的代表作祟链路。',
+        summaryEn: 'Implemented as the current real runtime haunt chain.',
+        implementationStatus: 'implemented',
+        implementedScenarioId: 'first-scenario',
+        sourcePath: 'docs/games/betrayal/haunts/01-stacked-like-cordwood-2.md',
+    },
+    {
+        id: 'friends-forever',
+        title: '永远的朋友',
+        titleEn: 'Friends Forever',
+        scenarioCardLabel: 'Cursed!',
+        triggerOmenLabel: 'Ring',
+        hauntNumber: 2,
+        summary: '剧本合同已建档，运行时规则待接入。',
+        summaryEn: 'Contract documented; runtime rules are pending.',
+        implementationStatus: 'contract-pending',
+        sourcePath: 'docs/games/betrayal/haunts/02-friends-forever.md',
+    },
+    {
+        id: 'free-the-realtor',
+        title: '释放房产经纪人',
+        titleEn: 'Free the Realtor',
+        scenarioCardLabel: 'For Sale',
+        triggerOmenLabel: 'Dog',
+        hauntNumber: 4,
+        summary: '剧本合同已建档，运行时规则待接入。',
+        summaryEn: 'Contract documented; runtime rules are pending.',
+        implementationStatus: 'contract-pending',
+        sourcePath: 'docs/games/betrayal/haunts/04-free-the-realtor.md',
+    },
+    {
+        id: 'blood-from-a-stone',
+        title: '石中血',
+        titleEn: 'Blood From a Stone',
+        scenarioCardLabel: 'Paranormal Investigators',
+        triggerOmenLabel: 'Mask',
+        hauntNumber: 5,
+        summary: '剧本合同已建档，运行时规则待接入。',
+        summaryEn: 'Contract documented; runtime rules are pending.',
+        implementationStatus: 'contract-pending',
+        sourcePath: 'docs/games/betrayal/haunts/05-blood-from-a-stone.md',
+    },
+    {
+        id: 'inheritance',
+        title: '继承',
+        titleEn: 'Inheritance',
+        scenarioCardLabel: 'A Mysterious Invitation',
+        triggerOmenLabel: 'Dagger',
+        hauntNumber: 6,
+        summary: '剧本合同已建档，运行时规则待接入。',
+        summaryEn: 'Contract documented; runtime rules are pending.',
+        implementationStatus: 'contract-pending',
+        sourcePath: 'docs/games/betrayal/haunts/06-inheritance.md',
+    },
+] as const;
+
+export const BETRAYAL_SCENARIO_CARD_IDS = BETRAYAL_SCENARIO_CARD_CANDIDATES
+    .map((candidate) => candidate.id);
+
+export const DEFAULT_BETRAYAL_SCENARIO_CARD_ID: BetrayalScenarioCardId = 'crimson-jack-returns';
+
+const BETRAYAL_SCENARIO_CARD_BY_ID = new Map<BetrayalScenarioCardId, BetrayalScenarioCardCandidate>(
+    BETRAYAL_SCENARIO_CARD_CANDIDATES.map((candidate) => [candidate.id, candidate]),
+);
+
+export function isBetrayalScenarioCardId(value: unknown): value is BetrayalScenarioCardId {
+    return typeof value === 'string' && BETRAYAL_SCENARIO_CARD_BY_ID.has(value as BetrayalScenarioCardId);
+}
+
+export function getBetrayalScenarioCardCandidate(
+    candidateId: BetrayalScenarioCardId,
+): BetrayalScenarioCardCandidate {
+    return BETRAYAL_SCENARIO_CARD_BY_ID.get(candidateId)
+        ?? BETRAYAL_SCENARIO_CARD_BY_ID.get(DEFAULT_BETRAYAL_SCENARIO_CARD_ID)!;
+}
+
+export function resolveImplementedScenarioIdForCard(
+    candidateId: BetrayalScenarioCardId,
+): BetrayalScenarioId | undefined {
+    return getBetrayalScenarioCardCandidate(candidateId).implementedScenarioId;
 }
 
 export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [

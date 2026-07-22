@@ -373,6 +373,60 @@
         }
       }
     },
+    "hero/yongheng/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "9d8d7d269e252078dddbb5527f27b099a5e72a98c60b2220574b0d364e7b0037",
+          "bytes": 1372856,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/yongheng/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "d0fddf484d720c05e471c2446de8d07d13f721b30e51e6071294bd3e4889b112",
+          "bytes": 2062610,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/yongheng/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "29b3f824407bb93a5e29ce1990a20bb72ddd17dac90d341ad441529962a4c77b",
+          "bytes": 295994,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/yongheng/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "e9df6ad384612addbb6fe2a7498cbc6b1ca932cf8e946aef3b2f94edc4f5f396",
+          "bytes": 125230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/yongheng/hero": {
+      "variants": {
+        "png": {
+          "sha256": "b246838720c39409b537e74184bb55d6d04256e656fe4498020c00f1be53041a",
+          "bytes": 2583575,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/yongheng/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "64d48aee3bc19702de8e0f49367961a2d851fa50624ddb901aa1f410c0b55196",
+          "bytes": 242959,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "thumbnails/compressed/cover": {
       "variants": {
         "webp": {

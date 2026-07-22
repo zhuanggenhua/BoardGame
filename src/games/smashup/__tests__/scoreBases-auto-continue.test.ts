@@ -1594,6 +1594,74 @@ describe('scoreBases 阶段自动推进', () => {
         expect((resolution?.action.commands[0]?.payload as { optionId?: string } | undefined)?.optionId).toBe('pass');
     });
 
+    it('smashup_reaction_choose 实时会话候选为空但快照仍有 pass 时，AI 应选择 pass 而不是应急取消', () => {
+        const baseState: MatchState<SmashUpCore> = {
+            core: makeMinimalCore({
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1', '2'],
+            }),
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: { history: [] },
+                eventStream: { nextId: 1 },
+            } as any,
+        };
+        const sessionState = startSmashUpReactionSession(baseState, {
+            frameId: 'onMinionDiscardedFromBase:onMinionDiscardedFromBase:0_1_0',
+            frameKind: 'score-after',
+            phase: 'mandatory',
+            activePlayerId: '1',
+            currentPlayerId: '0',
+            responseWindowType: 'afterScoring',
+        });
+        const state: MatchState<SmashUpCore> = {
+            ...sessionState,
+            sys: {
+                ...sessionState.sys,
+                interaction: {
+                    current: createSimpleChoice(
+                        'smashup_reaction_onMinionDiscardedFromBase:onMinionDiscardedFromBase:0_1_0',
+                        '1',
+                        '选择一个反应动作',
+                        [
+                            {
+                                id: 'trigger:onMinionDiscardedFromBase:time_travelers_jumper_pod:onMinionDiscardedFromBase:0:0',
+                                label: '跳跃者',
+                                displayMode: 'button',
+                                value: {
+                                    kind: 'trigger',
+                                    triggerId: 'onMinionDiscardedFromBase:time_travelers_jumper_pod:onMinionDiscardedFromBase:0:0',
+                                },
+                            },
+                            {
+                                id: 'pass',
+                                label: 'Pass',
+                                displayMode: 'button',
+                                value: { kind: 'pass' },
+                            },
+                        ],
+                        {
+                            sourceId: 'smashup_reaction_choose',
+                            targetType: 'button',
+                            responseValidationMode: 'live',
+                        },
+                    ),
+                    queue: [],
+                },
+            } as any,
+        };
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: state as any,
+        });
+
+        expect(legalActions).toHaveLength(1);
+        expect(legalActions[0]?.kind).toBe('interaction-choice');
+        expect((legalActions[0]?.commands[0]?.payload as { optionId?: string } | undefined)?.optionId).toBe('pass');
+    });
+
     it('smashup_reaction_choose 响应持久化后的失效 special 快照时，应按当前 live 语义正规化并直接收口', () => {
         registerArcaneProtectorSpecialForTests();
         const state = createPersistedStaleReactionChoiceState();

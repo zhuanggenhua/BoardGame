@@ -337,7 +337,7 @@ describe('DECLARE_ATTACK 验证', () => {
     expect(r.error).toContain('无法攻击该目标');
   });
 
-  it('普通攻击允许指定满足距离的友方卡牌', () => {
+  it('普通攻击拒绝指定满足距离的友方卡牌', () => {
     const core = createInitializedCore(['0', '1'], createTestRandom());
     core.phase = 'attack';
     clearArea(core, [4, 5], [3]);
@@ -349,7 +349,8 @@ describe('DECLARE_ATTACK 验证', () => {
       target: { row: 4, col: 3 },
     });
 
-    expect(r.valid).toBe(true);
+    expect(r.valid).toBe(false);
+    expect(r.error).toContain('无法攻击该目标');
   });
 
   it('已攻击单位拒绝', () => {

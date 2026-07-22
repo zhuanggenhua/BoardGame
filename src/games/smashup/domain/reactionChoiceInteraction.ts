@@ -43,11 +43,20 @@ export function getSmashUpReactionChoiceOptions(
         return refreshedOptions;
     }
 
-    return resolveLiveSmashUpReactionChoice(
+    const liveChoice = resolveLiveSmashUpReactionChoice(
         state,
         { kind: 'pass' },
         state.core.turnNumber ?? 0,
-    )?.options ?? refreshedOptions;
+    );
+    if (!liveChoice) {
+        return refreshedOptions;
+    }
+    if (liveChoice.options.length > 0) {
+        return liveChoice.options;
+    }
+
+    const refreshedPassOptions = refreshedOptions.filter(isReactionPassLikeOption);
+    return refreshedPassOptions.length > 0 ? refreshedPassOptions : liveChoice.options;
 }
 
 export function getSmashUpReactionChoicePassOptionId(

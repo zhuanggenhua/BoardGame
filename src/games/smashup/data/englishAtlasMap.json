@@ -2651,6 +2651,14 @@
     "atlasId": "smashup:base6",
     "index": 3
   },
+  "base_locker_room_pod": {
+    "atlasId": "smashup:base4",
+    "index": 10
+  },
+  "base_stadium_pod": {
+    "atlasId": "smashup:base4",
+    "index": 11
+  },
   "base_wyrms_desolation_pod": {
     "atlasId": "smashup:base7",
     "index": 1

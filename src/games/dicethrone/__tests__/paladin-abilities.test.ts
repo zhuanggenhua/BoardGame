@@ -98,6 +98,7 @@ describe('圣骑士技能定义', () => {
             // 效果：获得神罚 + 获得 CP
             expect(ability!.effects).toHaveLength(2);
             expect(ability!.effects![0].action.tokenId).toBe(TOKEN_IDS.RETRIBUTION);
+            expect(ability!.effects![1].action.params.amount).toBe(3);
         });
 
         it('正义祈祷 - 4 Pray 触发', () => {

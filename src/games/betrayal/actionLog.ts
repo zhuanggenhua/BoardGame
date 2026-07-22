@@ -72,6 +72,10 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.selectExplorer', { player: actor })]);
         case BETRAYAL_COMMANDS.CONFIRM_EXPLORER:
             return entry(command, state, [i18nSeg('actionLog.confirmExplorer', { player: actor })]);
+        case BETRAYAL_COMMANDS.PROPOSE_SCENARIO_CARD:
+            return entry(command, state, [i18nSeg('actionLog.proposeScenarioCard', { player: actor })]);
+        case BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD:
+            return entry(command, state, [i18nSeg('actionLog.confirmScenarioCard', { player: actor })]);
         case BETRAYAL_COMMANDS.START_SCENARIO:
             return entry(command, state, [i18nSeg('actionLog.startScenario', { player: actor })]);
         case BETRAYAL_COMMANDS.MOVE_TO_ROOM: {

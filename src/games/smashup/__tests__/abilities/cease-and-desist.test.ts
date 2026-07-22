@@ -12,6 +12,8 @@ import { TITAN_CARD_DEFS } from '../../data/titans';
 import {
     applyEvents,
     expectRegisteredAbilityContract,
+    findInteractionOption,
+    getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
     makeCard,
@@ -175,6 +177,70 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
         expect(getEffectivePower(selected.finalState.core, selected.finalState.core.bases[0].minions[1], 0)).toBe(4);
     });
 
+    it('宇宙武士的恶棍天赋会选择另一己方随从和目标基地', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_no_moon', [
+                    makeMinion('scoundrel', 'astroknights_scoundrel', '0', 4),
+                    makeMinion('chosen-ally', 'astroknights_mannersbot', '0', 2),
+                    makeMinion('other-ally', 'astroknights_annoying_alien', '0', 2),
+                    makeMinion('enemy', 'ignobles_sneaky_squire', '1', 2),
+                ]),
+                makeBase('base_uss_undertaking'),
+                makeBase('base_neutral_space'),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('astroknights_scoundrel', 'talent', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'scoundrel',
+            defId: 'astroknights_scoundrel',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 15,
+        });
+
+        expect(result.events).toEqual([]);
+        const minionPrompt = getSimpleChoicePrompt(result.matchState!, 'astroknights_scoundrel_choose_minion');
+        expect(findInteractionOption(minionPrompt, option => option.value?.minionUid === 'scoundrel')).toBeUndefined();
+        expect(findInteractionOption(minionPrompt, option => option.value?.minionUid === 'chosen-ally')).toBeDefined();
+        expect(findInteractionOption(minionPrompt, option => option.value?.minionUid === 'other-ally')).toBeDefined();
+        expect(findInteractionOption(minionPrompt, option => option.value?.minionUid === 'enemy')).toBeUndefined();
+
+        const choseMinion = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'chosen-ally',
+            'choose Scoundrel companion',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(choseMinion.success).toBe(true);
+
+        const basePrompt = getSimpleChoicePrompt(choseMinion.finalState, 'astroknights_scoundrel_choose_base');
+        expect(findInteractionOption(basePrompt, option => option.value?.baseIndex === 0)).toBeUndefined();
+        expect(findInteractionOption(basePrompt, option => option.value?.baseIndex === 1)).toBeDefined();
+        expect(findInteractionOption(basePrompt, option => option.value?.baseIndex === 2)).toBeDefined();
+
+        const moved = respondToPromptOption(
+            choseMinion.finalState,
+            option => option.value?.baseIndex === 2,
+            'choose Scoundrel destination base',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(moved.success).toBe(true);
+        expect(moved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['other-ally', 'enemy']);
+        expect(moved.finalState.core.bases[2].minions.map(minion => minion.uid)).toEqual(['scoundrel', 'chosen-ally']);
+        expect(
+            moved.events
+                .filter(event => event.type === SU_EVENTS.MINION_MOVED)
+                .map(event => (event as any).payload.minionUid),
+        ).toEqual(['scoundrel', 'chosen-ally']);
+    });
+
     it('卑劣封臣的有债必还交出控制权后抽 2 并获得额外随从额度', () => {
         const core = makeState({
             players: {
@@ -308,10 +374,35 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
                 expect.objectContaining({ sourceDefId: 'astroknights_ghost_knight', value: 2 }),
             ]),
         );
+        expect(getEffectivePower(core, core.bases[0].minions[0], 0)).toBe(6);
         expect(isMinionProtected(core, core.bases[0].minions[0], 0, '1', 'affect', { sourceKind: 'nonAction' })).toBe(true);
         expect(isMinionProtected(core, core.bases[0].minions[0], 0, '1', 'affect', { sourceKind: 'action' })).toBe(false);
         expect(getEffectivePower(core, core.bases[0].minions[1], 0)).toBe(2);
         expect(isMinionProtected(core, core.bases[0].minions[1], 0, '1', 'destroy')).toBe(true);
+
+        const laserOnlyCore = makeState({
+            bases: [makeBase('base_no_moon', [
+                makeMinion('laser-only-host', 'astroknights_mannersbot', '0', 2, {
+                    attachedActions: [{ uid: 'laser-only', defId: 'astroknights_laser_sword', ownerId: '0' }],
+                }),
+            ])],
+        });
+        expect(getOngoingPowerModifierDetails(laserOnlyCore, laserOnlyCore.bases[0].minions[0], 0)).toEqual([
+            expect.objectContaining({ sourceDefId: 'astroknights_laser_sword', value: 2 }),
+        ]);
+        expect(getEffectivePower(laserOnlyCore, laserOnlyCore.bases[0].minions[0], 0)).toBe(4);
+
+        const laserPodOnlyCore = makeState({
+            bases: [makeBase('base_no_moon', [
+                makeMinion('laser-pod-only-host', 'astroknights_mannersbot', '0', 2, {
+                    attachedActions: [{ uid: 'laser-pod-only', defId: 'astroknights_laser_sword_pod', ownerId: '0' }],
+                }),
+            ])],
+        });
+        expect(getOngoingPowerModifierDetails(laserPodOnlyCore, laserPodOnlyCore.bases[0].minions[0], 0)).toEqual([
+            expect.objectContaining({ sourceDefId: 'astroknights_laser_sword', value: 2 }),
+        ]);
+        expect(getEffectivePower(laserPodOnlyCore, laserPodOnlyCore.bases[0].minions[0], 0)).toBe(4);
     });
 
     it('星际旅者的防御力场保护同基地己方随从免受其他玩家行动牌影响', () => {

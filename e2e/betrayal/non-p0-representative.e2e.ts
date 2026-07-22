@@ -2,7 +2,10 @@ import { mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { BETRAYAL_DISCOVERY_POOLS } from '../../src/games/betrayal/scenarioConfig';
+import { BETRAYAL_COMMANDS, type BetrayalCore } from '../../src/games/betrayal/game';
 import {
+    applyBetrayalCommand,
+    createBetrayalScriptedRandom,
     createFirstScenarioHauntCore,
     createStartedFirstScenarioCore,
 } from '../../src/games/betrayal/testing/firstScenarioTestUtils';
@@ -58,6 +61,14 @@ const DAGGER_ATTACK_TARGET_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/03-叛徒
 const DAGGER_ATTACK_DICE_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/04-匕首6骰攻击骰盘停稳.jpg`;
 const DAGGER_ATTACK_RESULT_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/05-物理伤害与速度花费结果可见.jpg`;
 const DAGGER_ATTACK_SETTLED_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/06-匕首攻击后回牌桌继续可操作.jpg`;
+const CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-弩远程视线完整链路');
+const CROSSBOW_LINE_OF_SIGHT_READY_SCREENSHOT = `${CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR}/01-弩攻击前牌桌可操作.jpg`;
+const CROSSBOW_LINE_OF_SIGHT_SELECTED_SCREENSHOT = `${CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR}/02-弩武器已选中.jpg`;
+const CROSSBOW_LINE_OF_SIGHT_TARGET_SCREENSHOT = `${CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR}/03-弩视线连线与叛徒目标高亮.jpg`;
+const PHANTOM_PHOTOGRAPHER_LINE_OF_SIGHT_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-幻影摄影师视线攻击完整链路');
+const PHANTOM_PHOTOGRAPHER_READY_SCREENSHOT = `${PHANTOM_PHOTOGRAPHER_LINE_OF_SIGHT_EVIDENCE_DIR}/01-幻影摄影师攻击前牌桌可操作.jpg`;
+const PHANTOM_PHOTOGRAPHER_TARGET_SCREENSHOT = `${PHANTOM_PHOTOGRAPHER_LINE_OF_SIGHT_EVIDENCE_DIR}/02-幻影摄影师视线连线与英雄目标高亮.jpg`;
+const PHANTOM_PHOTOGRAPHER_DICE_SCREENSHOT = `${PHANTOM_PHOTOGRAPHER_LINE_OF_SIGHT_EVIDENCE_DIR}/03-幻影摄影师攻击骰盘.jpg`;
 
 const openBetrayalPage = async (page: Page, context: Parameters<typeof initBetrayalContext>[0], label: string) => {
     await initBetrayalContext(context);
@@ -71,6 +82,22 @@ const openBetrayalPage = async (page: Page, context: Parameters<typeof initBetra
 const saveLocatorScreenshot = async (locator: Locator, path: string) => {
     mkdirSync(dirname(path), { recursive: true });
     await locator.screenshot({ path });
+};
+
+const confirmPendingRoomPlacement = async (page: Page) => {
+    const placementPanel = page.getByTestId('betrayal-room-placement-panel');
+    await expect(placementPanel).toBeVisible({ timeout: 30000 });
+    await page.getByTestId('betrayal-room-placement-confirm').click();
+    await expect(placementPanel).toHaveCount(0);
+};
+
+const enterAttackTargeting = async (page: Page) => {
+    const attackAction = page.getByTestId('betrayal-action-use');
+    await expect(attackAction).toHaveAttribute('data-haunt-primary-action-kind', 'attack-traitor');
+    await expect(attackAction).toHaveAttribute('data-haunt-primary-action-mode', 'choose-target');
+    await attackAction.click();
+    await expect(attackAction).toHaveAttribute('data-haunt-primary-action-kind', 'attack-traitor');
+    await expect(attackAction).toHaveAttribute('data-haunt-primary-action-mode', 'targeting');
 };
 
 const dismissDiscoveryPanel = async (page: Page) => {
@@ -171,6 +198,38 @@ const createHuntingKnifeAttackCore = () => {
     core.latestDiscoveryOwnerPlayerId = null;
     core.recentRoll = null;
     return core;
+};
+
+const isMagicCameraTestCard = (card: BetrayalCore['currentExplorer']['inventory'][number]) =>
+    card.id === 'camera' || card.name === '魔法相机';
+
+const removeMagicCameraFromE2EExplorer = (
+    explorer: BetrayalCore['currentExplorer'],
+): BetrayalCore['currentExplorer'] => ({
+    ...explorer,
+    inventory: explorer.inventory.filter((card) => !isMagicCameraTestCard(card)),
+});
+
+const activateE2EExplorer = (core: BetrayalCore, playerId: string) => {
+    const explorers = [core.currentExplorer, ...core.otherExplorers].map((explorer) => ({
+        ...explorer,
+        inventory: explorer.inventory.map((card) => ({ ...card })),
+    }));
+    const actor = explorers.find((explorer) => explorer.playerId === playerId);
+    if (!actor) {
+        throw new Error(`山屋 E2E 夹具缺少玩家 ${playerId}`);
+    }
+    core.currentExplorer = { ...actor };
+    core.otherExplorers = explorers.filter((explorer) => explorer.playerId !== playerId);
+    core.currentPlayer = actor.playerId;
+    core.activeRoomId = actor.roomId;
+    core.currentExplorerInventory = [...actor.inventory];
+    core.currentExplorerTraits = { ...actor.traits };
+    core.turnStartInventoryCardIds = actor.inventory.map((card) => card.id);
+    core.usedCardIdsThisTurn = [];
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+    core.recentRoll = null;
 };
 
 const createUnarmedAttackCore = () => {
@@ -308,6 +367,133 @@ const createDaggerAttackCore = () => {
     return core;
 };
 
+const createCrossbowLineOfSightAttackCore = () => {
+    const core = createFirstScenarioHauntCore();
+    const helper = core.otherExplorers.find((explorer) => explorer.playerId === '1');
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+    if (!helper || !traitor) {
+        throw new Error('山屋首剧本弩视线夹具缺少英雄或叛徒');
+    }
+
+    core.currentExplorer = {
+        ...core.currentExplorer,
+        roomId: 'grand-staircase',
+        inventory: [{ id: 'crossbow', name: '弩', kind: 'item' }],
+    };
+    core.otherExplorers = [
+        { ...helper },
+        {
+            ...traitor,
+            roomId: 'entrance-hall',
+            traits: {
+                might: 4,
+                speed: 8,
+                knowledge: 4,
+                sanity: 4,
+            },
+        },
+    ];
+    core.currentPlayer = core.currentExplorer.playerId;
+    core.activeRoomId = 'grand-staircase';
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.turnStartInventoryCardIds = ['crossbow'];
+    core.usedCardIdsThisTurn = [];
+    core.activityLog = [];
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+    core.recentRoll = null;
+    return core;
+};
+
+const createPhantomPhotographerLineOfSightAttackCore = () => {
+    const eventCard = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！');
+    if (!eventCard) {
+        throw new Error('山屋事件池缺少魔法相机事件：说“茄子”！');
+    }
+
+    let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core.drawOrder = ['event'];
+    core.eventOrder = [eventCard];
+    core.currentExplorer = removeMagicCameraFromE2EExplorer(core.currentExplorer);
+    core.otherExplorers = core.otherExplorers.map(removeMagicCameraFromE2EExplorer);
+    core.currentExplorer.inventory = [
+        ...core.currentExplorer.inventory,
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'mask', name: '面具', kind: 'omen' },
+    ];
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.otherExplorers = core.otherExplorers.map((explorer) => (
+        explorer.playerId === '1'
+            ? { ...explorer, inventory: [...explorer.inventory, { id: 'camera', name: '魔法相机', kind: 'item' }] }
+            : explorer
+    ));
+
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+    core = applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+        '0',
+        { accept: true },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3),
+    );
+
+    activateE2EExplorer(core, '1');
+    const magicCamera = core.scenarioRuntime.magicCamera;
+    const monsterId = magicCamera?.phantomPhotographerIds[0];
+    if (!magicCamera || !monsterId) {
+        throw new Error('山屋魔法相机夹具缺少幻影摄影师');
+    }
+    core.scenarioRuntime.magicCamera = {
+        ...magicCamera,
+        heroEssencePlayerIds: ['0'],
+    };
+    core.currentExplorer = {
+        ...core.currentExplorer,
+        roomId: 'hallway',
+        inventory: [
+            ...core.currentExplorer.inventory.filter((card) => !isMagicCameraTestCard(card)),
+            { id: 'camera', name: '魔法相机', kind: 'item' },
+        ],
+    };
+    core.otherExplorers = core.otherExplorers.map((explorer) => {
+        if (explorer.playerId === '0') {
+            return { ...explorer, roomId: 'upper-landing' };
+        }
+        if (explorer.playerId === '2') {
+            return {
+                ...explorer,
+                roomId: 'entrance-hall',
+                traits: {
+                    might: 4,
+                    speed: 4,
+                    knowledge: 4,
+                    sanity: 1,
+                },
+            };
+        }
+        return explorer;
+    });
+    core.monsters = core.monsters.map((monster) => (
+        monster.id === monsterId
+            ? { ...monster, roomId: 'grand-staircase', sanity: 6 }
+            : monster
+    ));
+    core.activeRoomId = core.currentExplorer.roomId;
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+    core.usedCardIdsThisTurn = [];
+    core.recentRoll = null;
+    core.latestDiscovery = null;
+    core.latestDiscoveryOwnerPlayerId = null;
+    return core;
+};
+
 const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
     const core = (window as Window & {
         __BG_TEST_HARNESS__?: { state?: { get?: () => { core: {
@@ -381,6 +567,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, ORDINARY_ROLL_EVENT_TARGET_SCREENSHOT);
 
         await page.getByTestId('betrayal-room-ground-north').click();
+        await confirmPendingRoomPlacement(page);
 
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveAttribute('aria-label', /标本剥制/);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-card-testid', 'betrayal-discovery-card-reveal');
@@ -422,6 +609,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-room-explore-target-ground-north')).toBeVisible();
         await saveScreenshot(page, IDOL_EXPLORE_TARGET_SCREENSHOT);
         await page.getByTestId('betrayal-room-ground-north').click();
+        await confirmPendingRoomPlacement(page);
 
         const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
@@ -462,6 +650,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, HUNTING_KNIFE_SELECTOR_SCREENSHOT);
 
         await page.getByTestId('betrayal-attack-weapon-hunting-knife').click();
+        await enterAttackTargeting(page);
         await expect(page.getByTestId('betrayal-room-occupant-entrance-hall-2')).toHaveAttribute('data-direct-target', 'true');
         await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
         await saveScreenshot(page, HUNTING_KNIFE_TARGET_SCREENSHOT);
@@ -479,6 +668,125 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, HUNTING_KNIFE_ATTACK_FEEDBACK_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-hunting-knife-attack', diagnostics }]);
+    });
+
+    test('弩远程视线代表链：真实页面选择弩后连线并高亮视线内叛徒', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-crossbow-line-of-sight');
+
+        const injectedCore = createCrossbowLineOfSightAttackCore();
+        expect(injectedCore.currentExplorer.inventory.map((card) => card.id)).toEqual(['crossbow']);
+        await injectCore(page, injectedCore);
+        await expect.poll(async () => {
+            const state = await readWeaponAttackState(page);
+            return {
+                roomId: state.attackerRoomId,
+                inventoryIds: state.attackerInventoryIds,
+            };
+        }, { timeout: 30000 }).toEqual({
+            roomId: 'grand-staircase',
+            inventoryIds: ['crossbow'],
+        });
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-inventory-crossbow')).toBeVisible();
+        await expect(page.getByTestId('betrayal-attack-weapon-selector')).toBeVisible();
+        await expect(page.getByTestId('betrayal-attack-weapon-crossbow')).toBeVisible();
+        await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toHaveCount(0);
+        await saveScreenshot(page, CROSSBOW_LINE_OF_SIGHT_READY_SCREENSHOT);
+
+        await page.getByTestId('betrayal-attack-weapon-crossbow').click();
+        await expect(page.getByTestId('betrayal-attack-weapon-crossbow')).toHaveClass(/underline/);
+        await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toHaveCount(0);
+        await saveScreenshot(page, CROSSBOW_LINE_OF_SIGHT_SELECTED_SCREENSHOT);
+        await enterAttackTargeting(page);
+
+        const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
+        await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toBeVisible();
+        const lineOfSightLine = page.getByTestId('betrayal-line-of-sight-line-grand-staircase-entrance-hall-2');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-source-room', 'grand-staircase');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-target-room', 'entrance-hall');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-target-player', '2');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-weapon', 'crossbow');
+        await expect(lineOfSightLine.locator('line')).toHaveCount(2);
+        await expect(lineOfSightLine.locator('circle')).toHaveCount(1);
+        await saveScreenshot(page, CROSSBOW_LINE_OF_SIGHT_TARGET_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-crossbow-line-of-sight', diagnostics }]);
+    });
+
+    test('幻影摄影师视线攻击代表链：真实页面高亮视线内英雄并显示非交互连线', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-phantom-photographer-line-of-sight');
+
+        const injectedCore = createPhantomPhotographerLineOfSightAttackCore();
+        await injectCore(page, injectedCore);
+        await expect.poll(async () => {
+            const state = await readPhantomPhotographerAttackState(page);
+            return {
+                currentPlayer: state.currentPlayer,
+                currentExplorerPlayerId: state.currentExplorerPlayerId,
+                currentExplorerRoomId: state.currentExplorerRoomId,
+                hauntCardNumber: state.hauntCardNumber,
+                traitorPlayerId: state.traitorPlayerId,
+                targetHeroRoomId: state.targetHero?.roomId,
+                phantomRoomId: state.phantomPhotographer?.roomId,
+            };
+        }, { timeout: 30000 }).toEqual({
+            currentPlayer: '1',
+            currentExplorerPlayerId: '1',
+            currentExplorerRoomId: 'hallway',
+            hauntCardNumber: 33,
+            traitorPlayerId: '1',
+            targetHeroRoomId: 'entrance-hall',
+            phantomRoomId: 'grand-staircase',
+        });
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-action-use')).toHaveAttribute('data-haunt-primary-action-kind', 'use');
+        await expect(page.getByTestId('betrayal-action-use')).toHaveAttribute('data-haunt-primary-action-mode', 'execute');
+        await expect(page.getByTestId('betrayal-action-cue')).toContainText('摄影师攻击');
+        await expect(page.getByTestId('betrayal-room-monster-grand-staircase-phantom-photographer-1')).toBeVisible();
+
+        const targetHeroToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
+        await expect(targetHeroToken).toHaveAttribute('data-direct-target', 'true');
+        const targetHeroOutline = page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2');
+        await expect(targetHeroOutline).toHaveAttribute('data-highlight-shape', 'pentagon');
+        await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toBeVisible();
+        const lineOfSightLine = page.getByTestId('betrayal-line-of-sight-line-grand-staircase-entrance-hall-2');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-source-room', 'grand-staircase');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-source-monster', 'phantom-photographer-1');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-target-room', 'entrance-hall');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-target-player', '2');
+        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-kind', 'phantom-photographer');
+        await expect(lineOfSightLine.locator('line')).toHaveCount(2);
+        await expect(lineOfSightLine.locator('circle')).toHaveCount(1);
+        await saveScreenshot(page, PHANTOM_PHOTOGRAPHER_READY_SCREENSHOT);
+
+        await targetHeroToken.click();
+        await expect(targetHeroOutline).toHaveClass(/border-\[#ffe08a\]/);
+        await saveScreenshot(page, PHANTOM_PHOTOGRAPHER_TARGET_SCREENSHOT);
+
+        await setHarnessRandomQueue(page, [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0]);
+        await page.getByTestId('betrayal-action-use').click();
+
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('幻影摄影师');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('精神伤害');
+        const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
+        await expect(attackRollPanel).toBeVisible();
+        await expect(attackRollPanel).toContainText('幻影摄影师攻击');
+        await expect(attackRollPanel).toContainText('神志攻击');
+        await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '6');
+        await expectVisiblePhysicalDiceBox(attackRollPanel);
+        await waitForPhysicalDiceSettled(attackRollPanel);
+        await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 6 });
+        await saveScreenshot(page, PHANTOM_PHOTOGRAPHER_DICE_SCREENSHOT);
+
+        const afterAttack = await readPhantomPhotographerAttackState(page);
+        expect(afterAttack.recentRoll?.kind).toBe('hauntActionTraitCheck');
+        expect(afterAttack.targetHero?.traits.sanity).toBeLessThan(1);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-phantom-photographer-line-of-sight', diagnostics }]);
     });
 
     test('无武器攻击真实链路：默认徒手目标高亮后4骰攻击并造成物理伤害', async ({ page, context }) => {
@@ -507,6 +815,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-action-cue')).toContainText('点攻击叛徒');
         await expect(page.getByTestId('betrayal-attack-weapon-selector')).toHaveCount(0);
         await saveScreenshot(page, UNARMED_ATTACK_DEFAULT_SCREENSHOT);
+        await enterAttackTargeting(page);
 
         const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
         await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
@@ -595,6 +904,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await page.getByTestId('betrayal-attack-weapon-ring').click();
         await expect(page.getByTestId('betrayal-attack-weapon-ring')).toHaveClass(/underline/);
         await saveScreenshot(page, RING_ATTACK_SELECTED_SCREENSHOT);
+        await enterAttackTargeting(page);
 
         const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
         await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
@@ -690,6 +1000,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await page.getByTestId('betrayal-attack-weapon-dagger').click();
         await expect(page.getByTestId('betrayal-attack-weapon-dagger')).toHaveClass(/underline/);
         await saveScreenshot(page, DAGGER_ATTACK_SELECTED_SCREENSHOT);
+        await enterAttackTargeting(page);
 
         const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
         await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
@@ -757,4 +1068,49 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-dagger-attack', diagnostics }]);
     });
+});
+
+const readPhantomPhotographerAttackState = async (page: Page) => page.evaluate(() => {
+    const core = (window as Window & {
+        __BG_TEST_HARNESS__?: { state?: { get?: () => { core: {
+            currentPlayer: string;
+            phase: string;
+            activeRoomId: string;
+            currentExplorer: { playerId: string; roomId: string; inventory: { id: string }[] };
+            otherExplorers: Array<{ playerId: string; roomId: string; traits: { sanity: number } }>;
+            monsters: Array<{ id: string; roomId: string; sanity?: number }>;
+            scenarioRuntime: {
+                hauntCardNumber?: number;
+                traitorPlayerId: string | null;
+                magicCamera?: {
+                    phantomPhotographerIds: string[];
+                    killedPhantomPhotographerIds: string[];
+                    stunnedPhantomPhotographerIds: string[];
+                };
+            };
+            recentRoll: null | {
+                kind: string;
+                monsterMovementRoll?: unknown;
+            };
+        } } } };
+    }).__BG_TEST_HARNESS__?.state?.get?.()?.core;
+    if (!core) {
+        throw new Error('missing betrayal test harness state');
+    }
+    return {
+        currentPlayer: core.currentPlayer,
+        phase: core.phase,
+        activeRoomId: core.activeRoomId,
+        currentExplorerPlayerId: core.currentExplorer.playerId,
+        currentExplorerRoomId: core.currentExplorer.roomId,
+        currentExplorerInventoryIds: core.currentExplorer.inventory.map((card) => card.id),
+        hauntCardNumber: core.scenarioRuntime.hauntCardNumber,
+        traitorPlayerId: core.scenarioRuntime.traitorPlayerId,
+        magicCamera: core.scenarioRuntime.magicCamera,
+        targetHero: core.otherExplorers.find((explorer) => explorer.playerId === '2'),
+        phantomPhotographer: core.monsters.find((monster) => (
+            core.scenarioRuntime.magicCamera?.phantomPhotographerIds.includes(monster.id)
+        )),
+        recentRoll: core.recentRoll,
+    };
 });

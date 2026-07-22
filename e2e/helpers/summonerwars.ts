@@ -27,6 +27,7 @@ export const SUMMONERWARS_FACTION_INDEX: Record<string, number> = {
   mogu: 6,
   huijin: 7,
   shouren: 8,
+  yongheng: 9,
 };
 
 // ============================================================================

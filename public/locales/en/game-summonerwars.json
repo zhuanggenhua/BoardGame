@@ -35,7 +35,8 @@
     "barbaric": "Barbarian Horde",
     "mogu": "Mogu",
     "huijin": "Ashen Phoenix",
-    "shouren": "Tundra Orcs"
+    "shouren": "Tundra Orcs",
+    "yongheng": "Eternal Council"
   },
   "actions": {
     "closePreview": "Close Preview",
@@ -678,7 +679,17 @@
       "shourenBerserkPosition": "Berserk: you may push or pull this unit 1 space; if you do, it may make one extra attack against an adjacent enemy card",
       "shourenBruteImpact": "Brute Impact: you may push that unit 1 space away from this unit",
       "shourenPrimalFuryPosition": "Primal Fury: you may push or pull the Summoner 1 or 2 spaces; if you do, it may make one extra attack against an adjacent enemy card",
-      "shourenExtraAttack": "Choose an adjacent target for the extra attack"
+      "shourenExtraAttack": "Choose an adjacent target for the extra attack",
+      "yonghengDraw": "Eternal Council: confirm drawing 1 card",
+      "yonghengMentalInvasion": "Mental Invasion: choose an enemy common or champion within 2 spaces of the Summoner",
+      "yonghengCollisionTarget": "Collision: choose an adjacent enemy common or champion",
+      "yonghengCollisionPosition": "Collision: choose the push/pull destination",
+      "yonghengWarningCard": "Warning: choose a hand card to place on the bottom of your deck",
+      "yonghengWarningPosition": "Warning: choose the Summoner movement destination",
+      "yonghengApplicationCard": "Application: choose a hand card to place on the bottom of your deck",
+      "yonghengApplicationTarget": "Application: choose an adjacent unit to deal 1 damage",
+      "yonghengForcedDiscard": "Eternal Council: choose a hand card to discard",
+      "yonghengContinuance": "Continuance: spend 2 charges to keep this continuous event"
     },
     "fireSacrifice": {
       "mustSelectAlly": "Please select an ally unit to sacrifice"
@@ -1106,6 +1117,66 @@
     "shouren_reckless_strike": {
       "name": "Reckless Strike",
       "description": "This unit gains +2 strength. When it attacks with 0 or 1 special marks and damages the target, it also takes the same amount of damage."
+    },
+    "yongheng_kinetic_siphon": {
+      "name": "Kinetic Siphon",
+      "description": "Once per turn, after this unit attacks an enemy unit or is attacked by an enemy unit, charge this unit."
+    },
+    "yongheng_continuance": {
+      "name": "Continuance",
+      "description": "When you would discard a continuous event, you may spend 2 charges to keep that event in play."
+    },
+    "yongheng_intelligence": {
+      "name": "Intelligence",
+      "description": "After this unit moves, you may draw 1 card."
+    },
+    "yongheng_warning": {
+      "name": "Warning",
+      "description": "After this unit attacks an enemy unit, you may choose a card from your hand and place it on the bottom of your deck to push or pull your Summoner 1 space."
+    },
+    "yongheng_arouse_fear": {
+      "name": "Arouse Fear",
+      "description": "If an enemy unit ends movement adjacent to this unit, that opponent must discard 1 card from hand if possible."
+    },
+    "yongheng_collision": {
+      "name": "Collision",
+      "description": "After this unit attacks an adjacent enemy common or champion, you may push or pull that unit 1 space."
+    },
+    "yongheng_punish": {
+      "name": "Punish",
+      "description": "After an enemy unit is summoned within 2 spaces of this unit, that opponent must discard 1 card from hand if possible."
+    },
+    "yongheng_wisdom": {
+      "name": "Wisdom",
+      "description": "After this unit is summoned, you may draw 1 card."
+    },
+    "yongheng_analysis": {
+      "name": "Analysis",
+      "description": "After this unit attacks an enemy unit, you may draw 1 card."
+    },
+    "yongheng_scheme": {
+      "name": "Scheme",
+      "description": "This unit gains +1 strength for every 2 cards in your hand."
+    },
+    "yongheng_tenacity": {
+      "name": "Tenacity",
+      "description": "At the end of your turn, if your deck is depleted, charge this unit."
+    },
+    "yongheng_power_reinforcement": {
+      "name": "Power Reinforcement",
+      "description": "This unit gains +1 strength for each charge on it, up to +5."
+    },
+    "yongheng_search": {
+      "name": "Search",
+      "description": "At the start of your Move, Build, and Attack phases, you may draw 1 card."
+    },
+    "yongheng_mental_invasion": {
+      "name": "Mental Invasion",
+      "description": "After you draw one or more cards during your own turn, you may choose an enemy common or champion within 2 spaces of your Summoner. Deal 1 damage to that target."
+    },
+    "yongheng_application": {
+      "name": "Application",
+      "description": "After this unit attacks an enemy unit, you may choose a card from your hand and place it on the bottom of your deck to target an adjacent unit. Deal 1 damage to that target."
     }
   },
   "buffs": {

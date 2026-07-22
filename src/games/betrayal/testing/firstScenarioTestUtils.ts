@@ -5,8 +5,16 @@ import {
   type BetrayalCommand,
   type BetrayalCommandMap,
   type BetrayalCore,
+  type BetrayalTraitKey,
 } from "../game";
 import { BETRAYAL_DISCOVERY_POOLS } from "../scenarioConfig";
+
+const BETRAYAL_TRAIT_KEYS: BetrayalTraitKey[] = [
+  "might",
+  "speed",
+  "knowledge",
+  "sanity",
+];
 
 export const BETRAYAL_FIXED_RANDOM: RandomFn = {
   random: () => 0.42,
@@ -35,6 +43,105 @@ function stateOf(core: BetrayalCore): MatchState<BetrayalCore> {
   return { core, sys: {} as MatchState<BetrayalCore>["sys"] };
 }
 
+function buildLinearTestTraitTrack(
+  trackId: string,
+  value: number,
+): BetrayalCore["currentExplorer"]["traitTracks"][BetrayalTraitKey] {
+  const currentValue = Math.max(1, Math.round(value));
+  const values = [
+    Math.max(1, currentValue - 2),
+    Math.max(1, currentValue - 1),
+    currentValue,
+    currentValue + 1,
+    currentValue + 2,
+  ];
+  const startPosition = 2;
+  return {
+    trackId,
+    values,
+    position: startPosition,
+    startPosition,
+    criticalPosition: 0,
+    skullPosition: -1,
+    maxPosition: values.length - 1,
+  };
+}
+
+function traitValueAtTestTrack(
+  track: BetrayalCore["currentExplorer"]["traitTracks"][BetrayalTraitKey],
+): number {
+  if (track.position <= track.skullPosition) {
+    return 0;
+  }
+  const position = Math.max(
+    track.criticalPosition,
+    Math.min(track.maxPosition, track.position),
+  );
+  return track.values[position] ?? track.values[track.criticalPosition] ?? 1;
+}
+
+function positionForTestTrackValue(
+  track: BetrayalCore["currentExplorer"]["traitTracks"][BetrayalTraitKey],
+  value: number,
+): number | null {
+  if (value <= 0) {
+    return track.skullPosition;
+  }
+  const exactPositions = track.values
+    .map((trackValue, index) => ({ trackValue, index }))
+    .filter(({ trackValue }) => trackValue === value)
+    .map(({ index }) => index);
+  if (exactPositions.length === 0) {
+    return null;
+  }
+  return exactPositions.reduce((best, index) => (
+    Math.abs(index - track.startPosition) < Math.abs(best - track.startPosition)
+      ? index
+      : best
+  ), exactPositions[0]!);
+}
+
+function syncLegacyTestExplorerTraitTracks(
+  explorer: BetrayalCore["currentExplorer"],
+): void {
+  for (const trait of BETRAYAL_TRAIT_KEYS) {
+    const track = explorer.traitTracks[trait];
+    const isExplicitTestTrack = track?.trackId.startsWith("test-") ?? false;
+    if (!track) {
+      explorer.traitTracks[trait] = buildLinearTestTraitTrack(
+        `legacy-test-${explorer.explorerId}-${trait}`,
+        explorer.traits[trait],
+      );
+      continue;
+    }
+    if (explorer.traits[trait] !== traitValueAtTestTrack(track)) {
+      if (isExplicitTestTrack) {
+        explorer.traits[trait] = traitValueAtTestTrack(track);
+        continue;
+      }
+      const nextPosition = positionForTestTrackValue(track, explorer.traits[trait]);
+      if (nextPosition === null) {
+        explorer.traitTracks[trait] = buildLinearTestTraitTrack(
+          `legacy-test-${explorer.explorerId}-${trait}`,
+          explorer.traits[trait],
+        );
+        explorer.traits[trait] = traitValueAtTestTrack(explorer.traitTracks[trait]);
+      } else {
+        track.position = nextPosition;
+        explorer.traits[trait] = traitValueAtTestTrack(track);
+      }
+    }
+  }
+}
+
+function syncLegacyTestCoreTraitTracks(core: BetrayalCore): void {
+  syncLegacyTestExplorerTraitTracks(core.currentExplorer);
+  for (const explorer of core.otherExplorers) {
+    syncLegacyTestExplorerTraitTracks(explorer);
+  }
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+}
+
 export function createBetrayalCommand<Type extends keyof BetrayalCommandMap>(
   type: Type,
   playerId: string,
@@ -57,6 +164,7 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
   timestamp = 100,
   random: RandomFn = BETRAYAL_FIXED_RANDOM,
 ): BetrayalCore {
+  syncLegacyTestCoreTraitTracks(core);
   const nextCommand = createBetrayalCommand(type, playerId, payload, timestamp);
   const validation = BetrayalDomain.validate(stateOf(core), nextCommand);
   if (!validation.valid) {
@@ -68,6 +176,14 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
     (nextCore, event) => BetrayalDomain.reduce(nextCore, event),
     core,
   );
+}
+
+export function setScenarioTestTurnMovement(
+  core: BetrayalCore,
+  amount: number,
+): void {
+  core.turnStartSpeed = amount;
+  core.movesRemaining = amount;
 }
 
 export function createStartedFirstScenarioCore(
@@ -83,8 +199,13 @@ export function createStartedFirstScenarioCore(
     "0",
     {},
   );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
+    "0",
+    {},
+  );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, "0", {
-    scenarioId: "first-scenario",
   });
   core.eventOrder = [
     {
@@ -112,6 +233,12 @@ function cloneTestExplorer(
   return {
     ...explorer,
     traits: { ...explorer.traits },
+    traitTracks: Object.fromEntries(
+      Object.entries(explorer.traitTracks).map(([trait, track]) => [
+        trait,
+        { ...track, values: [...track.values] },
+      ]),
+    ) as BetrayalCore["currentExplorer"]["traitTracks"],
     inventory: explorer.inventory.map((card) => ({ ...card })),
   };
 }
@@ -177,6 +304,7 @@ export function createFirstScenarioHauntCore(
     3, // 第三次探索第一次真正抽到恶兆：当前全员持有 4 张恶兆，haunt roll = 8
   );
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "hallway",
   });
@@ -196,6 +324,7 @@ export function createFirstScenarioHauntCore(
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "1", {
     roomId: "hallway",
   });
@@ -209,6 +338,7 @@ export function createFirstScenarioHauntCore(
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "hallway",
   });
@@ -227,6 +357,7 @@ export function createFirstScenarioHauntCore(
     hauntTriggerRandom,
   );
 
+  setScenarioTestTurnMovement(core, 6);
   return core;
 }
 
@@ -268,6 +399,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     3, // 最终驱魔成功
   );
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -287,6 +419,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -307,12 +440,15 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     100,
     hauntSuccessRandom,
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-landing",
   });
@@ -394,6 +530,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     3, // 第二处驱魔法阵成功
   );
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -413,6 +550,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -433,12 +571,15 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     100,
     hauntProgressRandom,
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-landing",
   });
@@ -490,6 +631,7 @@ export function createFirstScenarioReadyToExorciseTutorialCore(): BetrayalCore {
 
 export function createFirstScenarioReadyToLearnAboutJackCore(): BetrayalCore {
   let core = createFirstScenarioHauntCore();
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -503,6 +645,7 @@ export function createFirstScenarioReadyToStudyExorcismCore(): BetrayalCore {
   let core = createFirstScenarioHauntCore();
   const hauntProgressRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -527,6 +670,7 @@ export function createFirstScenarioReadyToStudyExorcismCore(): BetrayalCore {
     createBetrayalScriptedRandom(2, 2, 1),
   );
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -729,7 +873,7 @@ export function createSkeletonKeyMoveReadyCore(): BetrayalCore {
   core.currentExplorerInventory = [...core.currentExplorer.inventory];
   core.turnStartInventoryCardIds = ["lockpick-tool"];
   core.usedCardIdsThisTurn = [];
-  core.movesRemaining = 2;
+  setScenarioTestTurnMovement(core, 2);
   core.recommendedAction = "move";
   core.latestDiscovery = null;
   core.latestDiscoveryOwnerPlayerId = null;
@@ -802,6 +946,7 @@ export function createMaskMoveReadyCore(): BetrayalCore {
 
 export function createHeroAttackTraitorReadyCore(): BetrayalCore {
   let core = createFirstScenarioHauntCore();
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -846,6 +991,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     1, // 第二次对攻击倒英雄
   );
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -860,6 +1006,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "1", {
     roomId: "hallway",
   });
@@ -868,6 +1015,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
@@ -889,6 +1037,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     traitorWinRandom,
   );
 
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
   core = applyBetrayalCommand(
     core,
@@ -923,6 +1072,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
     1, // 第二次对攻击倒英雄
   );
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -937,6 +1087,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "1", {
     roomId: "hallway",
   });
@@ -945,6 +1096,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
   });
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
@@ -966,6 +1118,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
     traitorWinRandom,
   );
 
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
 
   return focusCoreOnExplorer(core, "2");
@@ -1011,7 +1164,7 @@ export function createCorpseLootReadyCore(): BetrayalCore {
   core.currentExplorerInventory = [...core.currentExplorer.inventory];
   core.scenarioRuntime.deadExplorerPlayerIds = ["0"];
   core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = [];
-  core.movesRemaining = 4;
+  setScenarioTestTurnMovement(core, 4);
   core.recommendedAction = "trade";
   core.usedCardIdsThisTurn = [];
   core.pendingEventChoice = null;
@@ -1025,6 +1178,7 @@ export function createCorpseLootReadyCore(): BetrayalCore {
 export function createJackSpiritReviveReadyCore(): BetrayalCore {
   let core = createFirstScenarioHauntCore();
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -1045,6 +1199,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.END_TURN,
@@ -1053,6 +1208,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(2, 2, 1),
   );
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "basement-landing",
   });
@@ -1068,6 +1224,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
 export function createJackSpiritMovementRollReadyCore(): BetrayalCore {
   let core = createFirstScenarioHauntCore();
 
+  setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
   });
@@ -1088,6 +1245,7 @@ export function createJackSpiritMovementRollReadyCore(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
   );
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   return applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.END_TURN,

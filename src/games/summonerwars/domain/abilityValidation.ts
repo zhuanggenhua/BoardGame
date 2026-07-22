@@ -97,6 +97,20 @@ export function validateAbilityActivation(
   if (sourceUnit.owner !== playerId) {
     return { valid: false, error: '只能发动自己单位的技能' };
   }
+
+  if (abilityId === 'yongheng_search' || abilityId === 'yongheng_mental_invasion') {
+    const requiredEventBaseId = abilityId === 'yongheng_search'
+      ? CARD_IDS.YONGHENG_SEARCH
+      : CARD_IDS.YONGHENG_MENTAL_INVASION;
+    const hasActiveEvent = core.players[playerId]?.activeEvents.some(event =>
+      event.isActive && getBaseCardId(event.id) === requiredEventBaseId
+    );
+    if (!hasActiveEvent) return { valid: false, error: '缺少对应的永恒议会主动事件' };
+    if (sourceUnit.card.unitClass !== 'summoner') {
+      return { valid: false, error: '永恒议会主动事件必须由召唤师结算' };
+    }
+    return { valid: true };
+  }
   
   // 检查单位是否拥有该技能
   const unitAbilities = getUnitAbilities(sourceUnit, core);

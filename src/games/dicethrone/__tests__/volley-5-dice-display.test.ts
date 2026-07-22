@@ -3,8 +3,8 @@
  *
  * 目标：
  * 1. 确认当前实现会发出 5 个独立 BONUS_DIE_ROLLED 事件 + 1 个汇总事件
- * 2. 确认不会再生成额外 displayOnly settlement，避免与卡牌特写双弹
- * 3. 确认 bonusDamage 与缠绕状态正确落地
+ * 2. 确认会创建可被改骰响应的奖励骰结算窗口
+ * 3. 确认弹一手修改奖励骰后，bonusDamage 与缠绕状态按改后结果落地
  */
 
 import { describe, expect, it } from 'vitest';
@@ -97,7 +97,7 @@ function createVolleyCopyState(playerIds: PlayerId[], random: RandomFn): MatchSt
 }
 
 describe('Volley 5 Dice Display', () => {
-    it('应发出 5 个独立奖励骰事件、1 个汇总事件，且不再创建 displayOnly settlement', () => {
+    it('应发出 5 个独立奖励骰事件、1 个汇总事件，并创建可响应的 displayOnly settlement', () => {
         const queuedRandom = createQueuedRandom([1, 2, 3, 4, 5]);
 
         const runner = new GameTestRunner({
@@ -105,7 +105,12 @@ describe('Volley 5 Dice Display', () => {
             systems: diceThroneSystemsForTest,
             playerIds: ['0', '1'],
             random: queuedRandom,
-            setup: (playerIds, random) => createVolleyState(playerIds, random),
+            setup: (playerIds, random) => {
+                const state = createVolleyState(playerIds, random);
+                state.core.players['1'].hand = [getCardById('card-flick')];
+                state.core.players['1'].resources.CP = 3;
+                return state;
+            },
             silent: true,
         });
 
@@ -138,19 +143,74 @@ describe('Volley 5 Dice Display', () => {
             bonusDamage: bowCount,
         });
 
-        expect(result.finalState.core.pendingAttack?.bonusDamage).toBe(bowCount);
-        expect(result.finalState.core.pendingAttack?.attackModifierBonusDamage).toBe(bowCount);
-
-        const entangleEvent = eventStream.find(entry =>
-            entry.event.type === 'STATUS_APPLIED'
-            && (entry.event as any).payload.statusId === STATUS_IDS.ENTANGLE
-            && (entry.event as any).payload.targetId === '1'
-        );
-        expect(entangleEvent).toBeDefined();
-
         const settlementEvent = eventStream.find(entry => entry.event.type === 'BONUS_DICE_REROLL_REQUESTED');
-        expect(settlementEvent).toBeUndefined();
-        expect(result.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settlementEvent).toBeDefined();
+        expect(result.finalState.core.pendingBonusDiceSettlement).toMatchObject({
+            displayOnly: true,
+            customResolutionId: 'moon-elf-volley',
+            allowDiceModification: true,
+            opensAfterRollConfirmedResponseWindow: bowCount > 0,
+        });
+        expect(result.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+        });
+        expect(result.finalState.core.pendingAttack?.bonusDamage).toBe(0);
+        expect(result.finalState.core.pendingAttack?.attackModifierBonusDamage ?? 0).toBe(0);
+    });
+
+    it('弹一手修改万箭齐发奖励骰后，应按改后的弓面数加伤并施加缠绕', () => {
+        const queuedRandom = createQueuedRandom([1, 2, 3, 4, 5]);
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: diceThroneSystemsForTest,
+            playerIds: ['0', '1'],
+            random: queuedRandom,
+            setup: (playerIds, random) => {
+                const state = createVolleyState(playerIds, random);
+                state.core.players['1'].hand = [getCardById('card-flick')];
+                state.core.players['1'].resources.CP = 3;
+                return state;
+            },
+            silent: true,
+        });
+
+        const opened = runner.run({
+            name: 'Volley bonus dice opens response',
+            commands: [
+                cmd('PLAY_CARD', '0', { cardId: 'volley' }),
+            ],
+        });
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.finalState.core.pendingBonusDiceSettlement?.dice.map(die => die.value)).toEqual([1, 2, 3, 4, 5]);
+        expect(opened.finalState.core.pendingBonusDiceSettlement?.dice.filter(die => die.face === 'bow')).toHaveLength(3);
+        expect(opened.finalState.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
+
+        runner.setState(opened.finalState);
+        const playedFlick = runner.dispatch('PLAY_CARD', { playerId: '1', cardId: 'card-flick' });
+        expect(playedFlick.success).toBe(true);
+        expect(playedFlick.finalState.sys.responseWindow?.current?.pendingInteractionId).toBeDefined();
+
+        const modified = runner.dispatch('MODIFY_DIE', { playerId: '1', dieId: 2, newValue: 4 });
+        expect(modified.success).toBe(true);
+        expect(modified.finalState.core.pendingBonusDiceSettlement?.dice.find(die => die.index === 2)).toMatchObject({
+            value: 4,
+            face: 'foot',
+        });
+
+        const confirmedCard = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: '1' });
+        expect(confirmedCard.success).toBe(true);
+        expect(confirmedCard.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(confirmedCard.finalState.core.players['1'].discard.some(card => card.id === 'card-flick')).toBe(true);
+
+        const settled = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: '0' });
+        expect(settled.success).toBe(true);
+        expect(settled.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.finalState.core.pendingAttack?.bonusDamage).toBe(2);
+        expect(settled.finalState.core.pendingAttack?.attackModifierBonusDamage).toBe(2);
+        expect(settled.finalState.core.players['1'].statusEffects[STATUS_IDS.ENTANGLE]).toBe(1);
     });
 
     it('奖励骰事件时间戳应严格递增，便于 UI 按顺序展示', () => {
@@ -200,6 +260,7 @@ describe('Volley 5 Dice Display', () => {
             name: 'Volley copy source no-op should keep bonus',
             commands: [
                 cmd('PLAY_CARD', '0', { cardId: 'volley' }),
+                cmd('SKIP_BONUS_DICE_REROLL', '0'),
                 cmd('PLAY_CARD', '0', { cardId: 'card-me-too' }),
                 cmd('MODIFY_DIE', '0', { dieId: 4, newValue: 5 }),
             ],

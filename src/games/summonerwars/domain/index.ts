@@ -18,6 +18,7 @@ import { executeCommand } from './execute';
 import { reduceEvent } from './reduce';
 import { validateCommand } from './validate';
 import { postProcessDeathChecks } from './execute/helpers';
+import { interceptYonghengContinuanceEvent } from './yonghengMechanics';
 
 // 重新导出类型和常量
 export type { SummonerWarsCore } from './types';
@@ -96,6 +97,9 @@ export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
 
   /** 应用事件到状态 */
   reduce: (core, event) => reduceEvent(core, event),
+
+  /** 永恒议会“延续”需要在持续事件真正弃除前拦截。 */
+  interceptEvent: (core, event) => interceptYonghengContinuanceEvent(core, event),
 
   /** 系统事件也要走领域死亡补全；命令事件已减过时避免重复计伤 */
   postProcessSystemEvents: (

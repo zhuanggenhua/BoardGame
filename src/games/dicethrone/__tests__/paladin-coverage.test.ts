@@ -4,7 +4,7 @@
  * 通过 GameTestRunner 走完整管线验证技能效果：
  * 1. blessing-of-might — 不可防御 3 伤害 + 暴击 + 精准（preDefense 授予，offensiveRollEnd 门控过滤无弹窗）
  * 2. holy-strike-small — 小顺 5 伤害 + 治疗 1（可防御，BONUS_DICE_REROLL 流程）
- * 3. vengeance — 获得神罚 + 2 CP（无伤害，跳过防御）
+ * 3. vengeance — 获得神罚 + 3 CP（无伤害，跳过防御）
  * 4. unyielding-faith — 终极：不可防御 10 伤害 + 治疗 5 + 神圣祝福
  *
  * 注意：
@@ -254,12 +254,12 @@ describe('圣骑士 GTR 技能覆盖', () => {
     });
 
     // ========================================================================
-    // vengeance — 复仇（获得神罚 + 2 CP，无伤害，跳过防御）
+    // vengeance — 复仇（获得神罚 + 3 CP，无伤害，跳过防御）
     // ========================================================================
     describe('复仇 (vengeance)', () => {
-        it('3 盔 + 1 祈祷获得神罚 + 2 CP（无伤害，跳过防御）', () => {
+        it('3 盔 + 1 祈祷获得神罚 + 3 CP（无伤害，跳过防御）', () => {
             // 进攻骰: [3,3,3,6,1] → 3 helm + 1 pray + 1 sword
-            // 流程：preDefense 授予 RETRIBUTION + 2 CP → 无伤害 → 跳过防御 → main2
+            // 流程：preDefense 授予 RETRIBUTION + 3 CP → 无伤害 → 跳过防御 → main2
             const random = createQueuedRandom([3, 3, 3, 6, 1]);
             const runner = new GameTestRunner({
                 domain: DiceThroneDomain, systems: testSystems,
@@ -267,7 +267,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                 setup: createPaladinSetup(), assertFn: assertState, silent: true,
             });
             const result = runner.run({
-                name: '复仇 3盔1祈祷=神罚+2CP',
+                name: '复仇 3盔1祈祷=神罚+3CP',
                 commands: [
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '0'),
@@ -279,7 +279,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     turnPhase: 'main2',
                     players: {
                         '0': {
-                            cp: INITIAL_CP + 2,
+                            cp: INITIAL_CP + 3,
                             tokens: { [TOKEN_IDS.RETRIBUTION]: 1 },
                         },
                         '1': { hp: 50 },

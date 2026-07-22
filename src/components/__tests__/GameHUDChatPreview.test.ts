@@ -12,6 +12,7 @@ import {
     trimChatMessages,
 } from '../game/framework/widgets/GameHUD';
 import {
+    areFabAnchorRectsEqual,
     MOBILE_FAB_VISIBLE_ITEM_LIMIT,
     resolveFabLayerZIndex,
     resolveFabSatellitesToRender,
@@ -250,6 +251,14 @@ describe('FabMenu helpers', () => {
             isActive: false,
             hasContent: false,
         })).toBe(true);
+    });
+
+    it('悬浮按钮锚点矩形未实际变化时应视为相同，避免每帧重复更新状态', () => {
+        const rect = { left: 10, top: 20, right: 58, bottom: 68, width: 48, height: 48 };
+
+        expect(areFabAnchorRectsEqual(rect, { ...rect })).toBe(true);
+        expect(areFabAnchorRectsEqual(rect, { ...rect, left: 10.25, right: 58.25 })).toBe(true);
+        expect(areFabAnchorRectsEqual(rect, { ...rect, left: 11, right: 59 })).toBe(false);
     });
 
     it('设置面板内的滑块拖动不应触发悬浮球拖拽', () => {

@@ -25,6 +25,7 @@
  * - 莫古：SPORE（孢子）、MYCELIUM（菌丝）
  * - 灰烬：EMBER（灰烬）、PHOENIX（凤凰）
  * - 冰苔兽人：TUNDRA（冰苔）、DROPLET（水滴）
+ * - 永恒议会：COUNCIL（议会）、EYE（眼睛）
  */
 export const DECK_SYMBOLS = {
   // 通用符号（所有召唤师都有）
@@ -64,6 +65,9 @@ export const DECK_SYMBOLS = {
 
   // 冰苔兽人符号；另一枚复用 DROPLET
   TUNDRA: 'tundra',
+
+  // 永恒议会符号；另一枚复用 EYE
+  COUNCIL: 'council',
 } as const;
 
 export type DeckSymbol = typeof DECK_SYMBOLS[keyof typeof DECK_SYMBOLS];
@@ -83,4 +87,5 @@ export const FACTION_ICONS = {
   MOGU: 'spore',           // 孢子 - 莫古
   HUIJIN: 'phoenix',        // 凤凰 - 灰烬
   SHOUREN: 'tundra',        // 冰苔 - 冰苔兽人
+  YONGHENG: 'council',      // 议会 - 永恒议会
 } as const;

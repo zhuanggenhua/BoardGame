@@ -35,7 +35,8 @@
     "barbaric": "野蛮部落",
     "mogu": "莫古",
     "huijin": "灰烬",
-    "shouren": "冰苔兽人"
+    "shouren": "冰苔兽人",
+    "yongheng": "永恒议会"
   },
   "actions": {
     "closePreview": "关闭预览",
@@ -507,7 +508,17 @@
       "shourenBerserkPosition": "狂暴：可以将本单位推拉 1 格；若如此做，可额外攻击一次相邻敌方卡牌",
       "shourenBruteImpact": "蛮力冲击：可以将该单位向远离本单位的方向推拉 1 格",
       "shourenPrimalFuryPosition": "原始狂怒：可以将召唤师推拉 1 至 2 格；若如此做，可以额外攻击一次相邻敌方卡牌",
-      "shourenExtraAttack": "选择一次额外攻击的相邻目标"
+      "shourenExtraAttack": "选择一次额外攻击的相邻目标",
+      "yonghengDraw": "永恒议会：确认是否抓 1 张牌",
+      "yonghengMentalInvasion": "心念侵袭：选择召唤师 2 格内的敌方士兵或英雄",
+      "yonghengCollisionTarget": "冲撞：选择相邻敌方士兵或英雄",
+      "yonghengCollisionPosition": "冲撞：选择推拉落点",
+      "yonghengWarningCard": "警告：选择一张手牌放到牌库底",
+      "yonghengWarningPosition": "警告：选择召唤师移动落点",
+      "yonghengApplicationCard": "运用：选择一张手牌放到牌库底",
+      "yonghengApplicationTarget": "运用：选择相邻单位造成 1 点伤害",
+      "yonghengForcedDiscard": "永恒议会：选择要弃除的手牌",
+      "yonghengContinuance": "延续：消耗 2 点充能保留持续事件"
     },
     "fireSacrifice": {
       "mustSelectAlly": "请选择一个友方单位作为牺牲品"
@@ -1106,6 +1117,66 @@
     "shouren_reckless_strike": {
       "name": "鲁莽打击",
       "description": "本单位战力 +2。攻击时若掷出 0 或 1 个特殊标记且对目标造成伤害，也对本单位造成等量伤害。"
+    },
+    "yongheng_kinetic_siphon": {
+      "name": "动能虹吸",
+      "description": "每回合一次，在本单位攻击一个敌方单位或被一个敌方单位攻击之后，将本单位充能。"
+    },
+    "yongheng_continuance": {
+      "name": "延续",
+      "description": "当你将要弃除一个持续事件时，你可以消耗 2 点充能以将该事件保留在场上。"
+    },
+    "yongheng_intelligence": {
+      "name": "情报",
+      "description": "在本单位移动之后，你可以抓取一张卡牌。"
+    },
+    "yongheng_warning": {
+      "name": "警告",
+      "description": "在本单位攻击一个敌方单位之后，你可以从你的手牌选择一张卡牌放置到你的牌库底部以将你的召唤师推拉 1 个区格。"
+    },
+    "yongheng_arouse_fear": {
+      "name": "唤起恐惧",
+      "description": "如果一个敌方单位移动结束时和本单位相邻，则如果可能，对手必须从其手牌弃除一张卡牌。"
+    },
+    "yongheng_collision": {
+      "name": "冲撞",
+      "description": "在本单位攻击一个相邻敌方士兵或英雄之后，你可以将该单位推拉 1 个区格。"
+    },
+    "yongheng_punish": {
+      "name": "惩戒",
+      "description": "在一个敌方单位被召唤到本单位 2 个区格以内的任意区格之后，如果可能，对手必须从其手牌弃除一张卡牌。"
+    },
+    "yongheng_wisdom": {
+      "name": "智慧",
+      "description": "在召唤本单位之后，你可以抓取一张卡牌。"
+    },
+    "yongheng_analysis": {
+      "name": "分析",
+      "description": "在本单位攻击一个敌方单位之后，你可以抓取一张卡牌。"
+    },
+    "yongheng_scheme": {
+      "name": "谋划",
+      "description": "你每拥有两张手牌，则本单位获得战力 +1。"
+    },
+    "yongheng_tenacity": {
+      "name": "坚毅",
+      "description": "在你的回合结束时，如果你的牌库已经耗尽，则将本单位充能。"
+    },
+    "yongheng_power_reinforcement": {
+      "name": "力量强化",
+      "description": "本单位每有 1 点充能，则获得战力 +1，至多为 +5。"
+    },
+    "yongheng_search": {
+      "name": "探寻",
+      "description": "在你的移动、建造和攻击阶段开始时，你可以抓取一张卡牌。"
+    },
+    "yongheng_mental_invasion": {
+      "name": "心念侵袭",
+      "description": "在你自己的回合中抓取一张或多张卡牌之后，你可以选择你的召唤师 2 个区格以内的一个敌方士兵或英雄。对该目标造成 1 点伤害。"
+    },
+    "yongheng_application": {
+      "name": "运用",
+      "description": "在本单位攻击一个敌方单位之后，你可以从你的手牌选择一张卡牌放置到你的牌库底部以指定一个相邻单位为目标。对目标造成 1 点伤害。"
     }
   },
   "buffs": {

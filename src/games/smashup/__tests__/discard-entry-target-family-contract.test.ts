@@ -34,6 +34,7 @@ describe('SmashUp 弃牌堆入口目标族合同', () => {
             'huluwawa_purple_gold_gourd',
         ]);
         expect(__getDiscardSpecialProviderIdsForTest().sort()).toEqual([
+            'mounties_eh',
             'skeletons_revenant',
             'world_champs_eh',
         ]);
@@ -181,6 +182,32 @@ describe('SmashUp 弃牌堆入口目标族合同', () => {
         expect(canActivateSpecialFromDiscard(ehCore, '0', 'eh-a', 0, 'ally-b')).toEqual({
             allowed: true,
             sourceId: 'world_champs_eh',
+        });
+
+        const mountiesCore = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('mounties-eh-a', 'mounties_eh', 'action', '0')],
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_monkey_lab', [
+                makeMinion('mountie-ally', 'mounties_dudlee', '0', 3),
+                makeMinion('enemy-minion', 'robot_microbot_alpha', '1', 2),
+            ])],
+        });
+        const mountiesOptions = getDiscardSpecialOptions(mountiesCore, '0');
+        expect(mountiesOptions).toHaveLength(1);
+        expect(mountiesOptions[0]?.sourceId).toBe('mounties_eh');
+        expect(mountiesOptions[0]?.allowedMinionUids).toEqual(['mountie-ally']);
+        expect(canActivateSpecialFromDiscard(mountiesCore, '0', 'mounties-eh-a', 0)).toBeNull();
+        expect(canActivateSpecialFromDiscard(mountiesCore, '0', 'mounties-eh-a', 0, 'mountie-ally')).toEqual({
+            allowed: true,
+            sourceId: 'mounties_eh',
         });
     });
 });

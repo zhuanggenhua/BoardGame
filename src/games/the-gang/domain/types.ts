@@ -102,6 +102,7 @@ export type TheGangHandSlot = 'top' | 'bottom';
 export interface RoundChipState {
     round: TheGangRound;
     chipsByPlayer: Record<string, number>;
+    exitChipOwners?: string[];
 }
 
 export interface HandStrength {
@@ -115,6 +116,7 @@ export interface ShowdownPlayerResult {
     playerId: PlayerId;
     handSlot?: TheGangHandSlot;
     chip: number;
+    exited?: boolean;
     strength: HandStrength;
     pocketCards: PlayingCard[];
     secondaryPocketCards?: PlayingCard[];
@@ -184,6 +186,7 @@ export interface TheGangCore {
     successes: number;
     failures: number;
     currentRoundChips: Record<string, number>;
+    currentRoundExitChipOwners: string[];
     pendingProgress?: TheGangProgressConfirmation;
     roundHistory: RoundChipState[];
     heistHistory: HeistRecord[];
@@ -193,7 +196,9 @@ export interface TheGangCore {
 
 export const THE_GANG_COMMANDS = {
     START_HEIST: 'START_HEIST',
+    REDEAL_HEIST: 'REDEAL_HEIST',
     TAKE_CHIP: 'TAKE_CHIP',
+    TAKE_EXIT_CHIP: 'TAKE_EXIT_CHIP',
     SET_RULES_CONFIG: 'SET_RULES_CONFIG',
     DEAL_TOOLS: 'DEAL_TOOLS',
     RESET_TOOLS: 'RESET_TOOLS',
@@ -209,12 +214,22 @@ export interface StartHeistCommand extends Command<typeof THE_GANG_COMMANDS.STAR
     payload: Record<string, never>;
 }
 
+export interface RedealHeistCommand extends Command<typeof THE_GANG_COMMANDS.REDEAL_HEIST> {
+    payload: Record<string, never>;
+}
+
 export interface TakeChipCommand extends Command<typeof THE_GANG_COMMANDS.TAKE_CHIP> {
     payload: {
         chip: number;
         handSlot?: TheGangHandSlot;
         tutorialChipMode?: TheGangTutorialChipMode;
         tutorialOnlyIfMissing?: boolean;
+    };
+}
+
+export interface TakeExitChipCommand extends Command<typeof THE_GANG_COMMANDS.TAKE_EXIT_CHIP> {
+    payload: {
+        handSlot?: TheGangHandSlot;
     };
 }
 
@@ -262,7 +277,9 @@ export interface StartNextHeistCommand extends Command<typeof THE_GANG_COMMANDS.
 
 export type TheGangCommand =
     | StartHeistCommand
+    | RedealHeistCommand
     | TakeChipCommand
+    | TakeExitChipCommand
     | SetRulesConfigCommand
     | DealToolsCommand
     | ResetToolsCommand
@@ -275,12 +292,14 @@ export type TheGangCommand =
 
 export type TheGangCommandMap = {
     [THE_GANG_COMMANDS.START_HEIST]: Record<string, never>;
+    [THE_GANG_COMMANDS.REDEAL_HEIST]: Record<string, never>;
     [THE_GANG_COMMANDS.TAKE_CHIP]: {
         chip: number;
         handSlot?: TheGangHandSlot;
         tutorialChipMode?: TheGangTutorialChipMode;
         tutorialOnlyIfMissing?: boolean;
     };
+    [THE_GANG_COMMANDS.TAKE_EXIT_CHIP]: { handSlot?: TheGangHandSlot };
     [THE_GANG_COMMANDS.SET_RULES_CONFIG]: { config: Partial<TheGangRulesConfig> };
     [THE_GANG_COMMANDS.DEAL_TOOLS]: Record<string, never>;
     [THE_GANG_COMMANDS.RESET_TOOLS]: Record<string, never>;
@@ -294,7 +313,9 @@ export type TheGangCommandMap = {
 
 export const THE_GANG_EVENTS = {
     HEIST_STARTED: 'HEIST_STARTED',
+    HEIST_REDEALT: 'HEIST_REDEALT',
     CHIP_TAKEN: 'CHIP_TAKEN',
+    EXIT_CHIP_TAKEN: 'EXIT_CHIP_TAKEN',
     RULES_CONFIG_SET: 'RULES_CONFIG_SET',
     TOOLS_DEALT: 'TOOLS_DEALT',
     TOOLS_RESET: 'TOOLS_RESET',
@@ -316,6 +337,12 @@ export interface HeistStartedEvent extends GameEvent<typeof THE_GANG_EVENTS.HEIS
     };
 }
 
+export interface HeistRedealtEvent extends GameEvent<typeof THE_GANG_EVENTS.HEIST_REDEALT> {
+    payload: {
+        nextCore: TheGangCore;
+    };
+}
+
 export interface ChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_TAKEN> {
     payload: {
         playerId: PlayerId;
@@ -323,6 +350,15 @@ export interface ChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_TA
         handSlot?: TheGangHandSlot;
         round: TheGangRound;
         chip: number;
+    };
+}
+
+export interface ExitChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.EXIT_CHIP_TAKEN> {
+    payload: {
+        playerId: PlayerId;
+        ownerKey: string;
+        handSlot?: TheGangHandSlot;
+        round: TheGangRound;
     };
 }
 
@@ -415,7 +451,9 @@ export interface GameFinishedEvent extends GameEvent<typeof THE_GANG_EVENTS.GAME
 
 export type TheGangEvent =
     | HeistStartedEvent
+    | HeistRedealtEvent
     | ChipTakenEvent
+    | ExitChipTakenEvent
     | RulesConfigSetEvent
     | ToolsDealtEvent
     | ToolsResetEvent

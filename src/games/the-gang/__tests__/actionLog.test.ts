@@ -6,11 +6,11 @@ import { THE_GANG_COMMANDS, type TheGangCommand, type TheGangCore } from '../dom
 
 const playerIds = ['0', '1', '2'];
 
-const setupState = (): MatchState<TheGangCore> => {
+const setupState = (ids = playerIds): MatchState<TheGangCore> => {
     const random = createSeededRandom('the-gang-action-log-test');
     return {
-        core: engineConfig.domain.setup(playerIds, random),
-        sys: createInitialSystemState(playerIds, engineConfig.systems, 'the-gang-action-log-test'),
+        core: engineConfig.domain.setup(ids, random),
+        sys: createInitialSystemState(ids, engineConfig.systems, 'the-gang-action-log-test'),
     };
 };
 
@@ -19,7 +19,7 @@ const runCommand = (state: MatchState<TheGangCore>, command: TheGangCommand) => 
     const result = executePipeline({
         domain: engineConfig.domain,
         systems: engineConfig.systems,
-    }, state, command, random, playerIds);
+    }, state, command, random, state.core.playerIds);
     expect(result.success).toBe(true);
     return result.state;
 };
@@ -52,6 +52,95 @@ const confirmProgressForAllPlayers = (
 };
 
 describe('The Gang action-log', () => {
+    test('记录重新发牌但不公开新底牌', () => {
+        let state = setupState();
+
+        state = runCommand(state, command({
+            type: THE_GANG_COMMANDS.REDEAL_HEIST,
+            playerId: '0',
+            payload: {},
+            timestamp: 1,
+        }));
+
+        const latestEntry = state.sys.actionLog.entries.at(-1);
+        expect(latestEntry?.kind).toBe(THE_GANG_COMMANDS.REDEAL_HEIST);
+        expect(latestEntry?.segments).toEqual([{
+            type: 'i18n',
+            ns: 'game-the-gang',
+            key: 'actionLog.redealHeist',
+            params: { player: 1, heist: 1 },
+        }]);
+
+        const serializedLog = JSON.stringify(latestEntry);
+        expect(serializedLog).not.toContain('"rank"');
+        expect(serializedLog).not.toContain('"suit"');
+        for (const player of Object.values(state.core.players)) {
+            for (const card of player.pocketCards) {
+                expect(serializedLog).not.toContain(card.suit);
+            }
+        }
+    });
+
+    test('记录撤离筹码但不公开手牌或内部手牌槽位', () => {
+        let state = setupState(['0', '1', '2', '3']);
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                heistStarted: true,
+                round: 4,
+                phase: 'chip-selection',
+                rules: {
+                    ...state.core.rules,
+                    config: {
+                        ...state.core.rules.config,
+                        gameMode: 'texas-holdem',
+                        twoHand: true,
+                        challenges: {},
+                    },
+                },
+                currentRoundChips: {
+                    '0:top': 1,
+                    '0:bottom': 2,
+                    '1:top': 3,
+                    '1:bottom': 4,
+                    '2:top': 5,
+                    '2:bottom': 6,
+                    '3:top': 7,
+                    '3:bottom': 8,
+                },
+                currentRoundExitChipOwners: [],
+            },
+        };
+
+        state = runCommand(state, command({
+            type: THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
+            playerId: '0',
+            payload: { handSlot: 'top' },
+            timestamp: 2,
+        }));
+
+        const latestEntry = state.sys.actionLog.entries.at(-1);
+        expect(latestEntry?.kind).toBe(THE_GANG_COMMANDS.TAKE_EXIT_CHIP);
+        expect(latestEntry?.segments).toEqual([{
+            type: 'i18n',
+            ns: 'game-the-gang',
+            key: 'actionLog.takeExitChipHand',
+            params: { player: 1, hand: '上手' },
+        }]);
+
+        const serializedLog = JSON.stringify(latestEntry);
+        expect(serializedLog).not.toContain('"rank"');
+        expect(serializedLog).not.toContain('"suit"');
+        expect(serializedLog).not.toContain('handSlot');
+        expect(serializedLog).not.toContain('top');
+        for (const player of Object.values(state.core.players)) {
+            for (const card of player.pocketCards) {
+                expect(serializedLog).not.toContain(card.suit);
+            }
+        }
+    });
+
     test('记录公开抢劫流程且不暴露隐藏手牌', () => {
         let state = setupState();
         state = startHeist(state, 1);

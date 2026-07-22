@@ -103,6 +103,11 @@ The `betrayal` implementation MUST model room exploration, placement, orientatio
 - **WHEN** a player explores through an unexplored doorway
 - **THEN** the interaction identifies the entry doorway, drawn room candidate, legal connection choices, selected orientation, and resulting room connections
 
+#### Scenario: Placement would seal a region
+
+- **WHEN** the only matching room tile can connect to the entry doorway but would leave its region without any open doorway
+- **THEN** the interaction blocks automatic placement and requires a player-visible tile-adjustment decision that records which existing room tile changed, the selected position or orientation, and the resulting open doorway before the new room can be confirmed
+
 #### Scenario: Placement is not fully implemented
 
 - **WHEN** room orientation or connection is automatically chosen

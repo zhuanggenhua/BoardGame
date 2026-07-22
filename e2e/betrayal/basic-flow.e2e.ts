@@ -115,7 +115,7 @@ test.describe("山屋惊魂基本流程", () => {
 
     await page.getByTestId("betrayal-character-confirm").click();
     await expect(page.getByTestId("betrayal-character-confirm")).toHaveText(
-      /开始剧本/,
+      /确认此剧本卡/,
     );
     await expect(
       page.getByTestId("betrayal-character-scenario-button"),
@@ -125,8 +125,14 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-scenario-select-dialog"),
     ).toBeVisible();
     await expect(
-      page.getByTestId("betrayal-scenario-option-first-scenario"),
+      page.getByTestId("betrayal-scenario-candidate-list").locator("button"),
+    ).toHaveCount(5);
+    await expect(
+      page.getByTestId("betrayal-scenario-option-crimson-jack-returns"),
     ).toContainText("赤红杰克归来");
+    await expect(
+      page.getByTestId("betrayal-scenario-option-friends-forever"),
+    ).toContainText("待接入");
     await expect(
       page.getByTestId("betrayal-scenario-detail-toggle"),
     ).toContainText("阅读完整剧本");
@@ -458,7 +464,7 @@ test.describe("山屋惊魂基本流程", () => {
 
     await page.getByTestId("betrayal-character-confirm").click();
     await expect(page.getByTestId("betrayal-character-confirm")).toHaveText(
-      /开始剧本/,
+      /确认此剧本卡/,
     );
     await expect(
       page.getByTestId("betrayal-character-scenario-button"),
@@ -468,14 +474,17 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-scenario-select-dialog"),
     ).toBeVisible();
     await expect(
-      page.getByTestId("betrayal-scenario-option-first-scenario"),
+      page.getByTestId("betrayal-scenario-candidate-list").locator("button"),
+    ).toHaveCount(5);
+    await expect(
+      page.getByTestId("betrayal-scenario-option-crimson-jack-returns"),
     ).toContainText("赤红杰克归来");
     await expect(
       page.getByTestId("betrayal-scenario-detail-toggle"),
     ).toContainText("阅读完整剧本");
     for (const [label, target] of [
       ["阅读完整剧本", page.getByTestId("betrayal-scenario-detail-toggle")],
-      ["使用该剧本", page.getByTestId("betrayal-scenario-select-current")],
+      ["确认此剧本卡", page.getByTestId("betrayal-scenario-select-current")],
       ["关闭剧本选择", page.getByTestId("betrayal-scenario-dialog-close")],
     ] as const) {
       const box = await target.boundingBox();

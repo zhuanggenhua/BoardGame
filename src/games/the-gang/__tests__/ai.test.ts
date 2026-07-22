@@ -6,7 +6,7 @@ import { resolveNextLocalAiAction } from '../../../engine/ai/localRunner';
 import { TheGangDomain } from '../domain';
 import { buildTheGangAiLegalActions, theGangAiRuntime } from '../ai';
 import { engineConfig } from '../game';
-import { THE_GANG_COMMANDS, type TheGangCore } from '../domain/types';
+import { THE_GANG_COMMANDS, type PlayingCard, type TheGangCore } from '../domain/types';
 
 const setupState = () => {
     const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-test');
@@ -40,6 +40,56 @@ const buildContext = (state: ReturnType<typeof setupState>, playerId = '0'): AiD
         source: 'local',
         seatController: { type: 'local-ai' },
     });
+
+const standardCard = (rank: PlayingCard['rank'], suit: PlayingCard['suit']): PlayingCard => ({
+    rank,
+    suit,
+    kind: 'standard',
+});
+
+const setupFourPlayerTwoHandFinalRoundState = () => {
+    const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-two-hand-exit-chip-test');
+    let state = adapter.setup(['0', '1', '2', '3']);
+    state = adapter.execute(state, {
+        type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+        playerId: '0',
+        payload: {
+            config: {
+                gameMode: 'texas-holdem',
+                twoHand: true,
+                challenges: {},
+            },
+        },
+        timestamp: 1,
+    }).state as ReturnType<typeof setupState>;
+    state = startHeist(adapter, state, 2);
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            round: 4,
+            phase: 'chip-selection',
+            communityCards: [
+                standardCard('2', 'clubs'),
+                standardCard('7', 'diamonds'),
+                standardCard('9', 'hearts'),
+                standardCard('J', 'clubs'),
+                standardCard('K', 'diamonds'),
+            ],
+            currentRoundChips: {
+                '0:top': 1,
+                '0:bottom': 2,
+                '1:top': 3,
+                '1:bottom': 4,
+                '2:top': 5,
+                '2:bottom': 6,
+                '3:top': 7,
+                '3:bottom': 8,
+            },
+            currentRoundExitChipOwners: [],
+        },
+    } satisfies ReturnType<typeof setupState>;
+};
 
 const confirmProgressForAllPlayers = (
     adapter: ReturnType<typeof createReplayAdapter>,
@@ -307,6 +357,68 @@ describe('The Gang local AI', () => {
         const remainingActions = buildTheGangAiLegalActions({ playerId: '1', state })
             .filter((action) => action.kind === 'take-chip');
         expect(new Set(remainingActions.map((action) => action.metadata?.handSlot))).toEqual(new Set(['bottom']));
+    });
+
+    test('五人两副手牌 AI 每手生成 0 星和 1-8 星筹码动作且不重复 actionId', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-ai-two-hand-zero-chip-test');
+        let state = adapter.setup(['0', '1', '2', '3', '4']);
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }).state;
+        state = startHeist(adapter, state, 2);
+
+        const actions = buildTheGangAiLegalActions({ playerId: '4', state })
+            .filter((action) => action.kind === 'take-chip');
+        const topActions = actions.filter((action) => action.metadata?.handSlot === 'top');
+        const bottomActions = actions.filter((action) => action.metadata?.handSlot === 'bottom');
+
+        expect(actions).toHaveLength(18);
+        expect(new Set(actions.map((action) => action.actionId)).size).toBe(actions.length);
+        expect(topActions.map((action) => action.metadata?.chip)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        expect(bottomActions.map((action) => action.metadata?.chip)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    });
+
+    test('四人两副手牌第四轮 AI 先拿撤离筹码，拿够后才允许摊牌', () => {
+        const state = setupFourPlayerTwoHandFinalRoundState();
+        const actions = buildTheGangAiLegalActions({ playerId: '0', state });
+
+        expect(actions.map((action) => action.kind)).toEqual(['take-exit-chip', 'take-exit-chip']);
+        expect(actions.map((action) => action.commands[0])).toEqual([
+            { type: THE_GANG_COMMANDS.TAKE_EXIT_CHIP, payload: { handSlot: 'top' } },
+            { type: THE_GANG_COMMANDS.TAKE_EXIT_CHIP, payload: { handSlot: 'bottom' } },
+        ]);
+        expect(theGangAiRuntime.localPolicies?.baseline.decide(buildContext(state, '0'))?.actionId)
+            .toBe('take-exit-chip:top');
+
+        const oneExitChipState: ReturnType<typeof setupState> = {
+            ...state,
+            core: {
+                ...state.core,
+                currentRoundExitChipOwners: ['0:top'],
+            },
+        };
+        expect(buildTheGangAiLegalActions({ playerId: '0', state: oneExitChipState })
+            .map((action) => action.metadata?.handSlot)).toEqual(['bottom']);
+
+        const allExitChipsTakenState: ReturnType<typeof setupState> = {
+            ...state,
+            core: {
+                ...state.core,
+                currentRoundExitChipOwners: ['0:top', '1:bottom'],
+            },
+        };
+        const completedActions = buildTheGangAiLegalActions({ playerId: '0', state: allExitChipsTakenState });
+        expect(completedActions.some((action) => action.kind === 'take-exit-chip')).toBe(false);
+        expect(completedActions.some((action) => action.kind === 'reveal-showdown')).toBe(true);
     });
 
     test('baseline policy 只返回当前上下文里的合法 actionId', () => {

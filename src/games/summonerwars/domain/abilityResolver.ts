@@ -251,6 +251,14 @@ registerConditionHandler(swConditionRegistry, 'hasCardInDiscard', (params, ctx) 
   });
 });
 
+registerConditionHandler(swConditionRegistry, 'deckEmpty', (params, ctx) => {
+  const abilityCtx = (ctx as any).abilityCtx as AbilityContext | undefined;
+  if (!abilityCtx) return false;
+  const { target } = (params ?? {}) as { target?: 'owner' | 'opponent' };
+  const playerId = target === 'opponent' ? getOpponentId(abilityCtx.ownerId) : abilityCtx.ownerId;
+  return abilityCtx.state.players[playerId]?.deck.length === 0;
+});
+
 function toPrimitiveConditionNode(condition: AbilityCondition): PrimitiveConditionNode {
   switch (condition.type) {
     case 'always':
@@ -267,7 +275,11 @@ function toPrimitiveConditionNode(condition: AbilityCondition): PrimitiveConditi
 
     default:
       // 其余条件为 domain-specific，交给自定义 handler
-      return { type: 'custom', handler: condition.type, params: condition as any };
+      return {
+        type: 'custom',
+        handler: condition.type,
+        params: condition as unknown as Record<string, unknown>,
+      };
   }
 }
 
@@ -1001,6 +1013,27 @@ export function calculateEffectiveStrength(
     if (hasHolyJudgment) {
       strength += 1;
       modifiers.push({ source: CARD_IDS.PALADIN_HOLY_JUDGMENT, sourceName: '圣洁审判', value: 1 });
+    }
+  }
+
+  // 洞察：友方召唤师按主动事件上的充能获得战力，单张事件最多 +5。
+  if (unit.card.unitClass === 'summoner') {
+    const player = state.players[unit.owner];
+    const insightBonus = player.activeEvents
+      .filter(ev => getBaseCardId(ev.id) === CARD_IDS.YONGHENG_INSIGHT)
+      .reduce((sum, ev) => sum + Math.min(5, normalizeUnitBoosts(ev.charges)), 0);
+    if (insightBonus > 0) {
+      strength += insightBonus;
+      modifiers.push({ source: CARD_IDS.YONGHENG_INSIGHT, sourceName: '洞察', value: insightBonus });
+    }
+  }
+
+  // 谋划：主管奥维按手牌数量每 2 张获得 +1 战力。
+  if (abilityIds.has('yongheng_scheme')) {
+    const handBonus = Math.floor((state.players[unit.owner]?.hand.length ?? 0) / 2);
+    if (handBonus > 0) {
+      strength += handBonus;
+      modifiers.push({ source: 'yongheng_scheme', sourceName: '谋划', value: handBonus });
     }
   }
 

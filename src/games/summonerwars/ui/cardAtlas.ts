@@ -10,7 +10,8 @@
  *
  * @atlas-contract 召唤战争图集裁剪依据：旧版 hero/cards/Portal/dice 沿用既有源图尺寸注释；
  * mogu/cards.jpg、huijin/cards.jpg 与 shouren/cards.jpg 均为 8088x1454，按 8列 x 2行均分为 1011x727；
- * mogu/hero.png 为 1267x908，huijin/hero.png 为 1038x722，shouren/hero.png 为 1005x741，均为全图单帧；新格式卡图 slot 11-15 为空白占位。
+ * mogu/hero.png 为 1267x908，huijin/hero.png 为 1038x722，shouren/hero.png 为 1005x741，
+ * yongheng/hero.png 为 1269x929，均为全图单帧；新格式卡图 slot 11-15 为空白占位。
  */
 
 import type { CSSProperties } from 'react';
@@ -175,6 +176,19 @@ export const SHOUREN_HERO_ATLAS: SpriteAtlasConfig = {
 
 export const SHOUREN_CARDS_ATLAS = MOGU_CARDS_ATLAS;
 
+export const YONGHENG_HERO_ATLAS: SpriteAtlasConfig = {
+  imageW: 1269,
+  imageH: 929,
+  cols: 1,
+  rows: 1,
+  colStarts: [0],
+  colWidths: [1269],
+  rowStarts: [0],
+  rowHeights: [929],
+};
+
+export const YONGHENG_CARDS_ATLAS = MOGU_CARDS_ATLAS;
+
 /**
  * dice.png 配置（骰子面精灵图）
  * 3x3 布局，约 1024x1024
@@ -213,10 +227,11 @@ const FACTION_DIR_MAP: Record<FactionId, string> = {
   mogu: 'mogu',
   huijin: 'huijin',
   shouren: 'shouren',
+  yongheng: 'yongheng',
 };
 
 /** 所有阵营目录名列表 */
-const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin', 'shouren'] as const;
+const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin', 'shouren', 'yongheng'] as const;
 
 /**
  * 根据阵营名获取精灵图 atlas ID
@@ -240,12 +255,14 @@ const CARD_ID_PREFIX_MAP: Record<string, FactionId> = {
   mogu: 'mogu',
   huijin: 'huijin',
   shouren: 'shouren',
+  yongheng: 'yongheng',
 };
 
 function getHeroAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'mogu') return MOGU_HERO_ATLAS;
   if (dir === 'huijin') return HUIJIN_HERO_ATLAS;
   if (dir === 'shouren') return SHOUREN_HERO_ATLAS;
+  if (dir === 'yongheng') return YONGHENG_HERO_ATLAS;
   return HERO_ATLAS;
 }
 
@@ -254,6 +271,7 @@ function getCardsAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'mogu') return MOGU_CARDS_ATLAS;
   if (dir === 'huijin') return HUIJIN_CARDS_ATLAS;
   if (dir === 'shouren') return SHOUREN_CARDS_ATLAS;
+  if (dir === 'yongheng') return YONGHENG_CARDS_ATLAS;
   return CARDS_ATLAS;
 }
 

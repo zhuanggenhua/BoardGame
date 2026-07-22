@@ -1,4 +1,4 @@
-import { getChipForHandSlot } from './chips';
+import { getChipForHandSlot, hasExitChipForHandSlot } from './chips';
 import { compareHandStrength, evaluateBestTheGangHand } from './poker';
 import type { HeistRecord, ShowdownPlayerResult, TheGangCore, TheGangHandSlot } from './types';
 
@@ -29,6 +29,7 @@ const buildResultForHand = (
         playerId,
         handSlot: core.rules.config.twoHand ? handSlot : undefined,
         chip: getChipForHandSlot(core, playerId, handSlot) ?? 0,
+        exited: hasExitChipForHandSlot(core, playerId, handSlot),
         strength: evaluated.strength,
         pocketCards,
         bestCards: evaluated.cards,
@@ -48,8 +49,9 @@ export function buildShowdownResults(core: TheGangCore): ShowdownPlayerResult[] 
 }
 
 export function isChipOrderCorrect(results: ShowdownPlayerResult[]): boolean {
-    for (const left of results) {
-        for (const right of results) {
+    const activeResults = results.filter((result) => !result.exited);
+    for (const left of activeResults) {
+        for (const right of activeResults) {
             if (resultKey(left) === resultKey(right)) continue;
             const chipDelta = left.chip - right.chip;
             const strengthDelta = compareHandStrength(left.strength, right.strength);

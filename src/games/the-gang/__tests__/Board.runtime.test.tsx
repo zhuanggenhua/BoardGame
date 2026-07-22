@@ -180,6 +180,13 @@ const defaultMatchData = [
     { id: 2, name: 'AI 3 号位', isConnected: true },
 ];
 
+const matchDataForPlayerCount = (count: number) => Array.from({ length: count }, (_, index) => ({
+    id: index,
+    name: index === 0 ? '玩家 1' : `AI ${index + 1} 号位`,
+    isConnected: true,
+    ...(index === 0 ? { isOwner: true } : {}),
+}));
+
 const renderBoardForCore = (core: TheGangCore) => renderWithToast(
     <Board
         G={stateOf(core)}
@@ -206,6 +213,46 @@ const expectBggTableAnchors = () => {
     expect(document.querySelector('[data-bgg-zone="hand-chips"]')).toBeInTheDocument();
 };
 
+const buildFourPlayerTwoHandFinalRoundCore = () => {
+    let core = TheGangDomain.setup(['0', '1', '2', '3'], fixedRandom);
+    core = reduceCommand(core, {
+        type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+        playerId: '0',
+        payload: {
+            config: {
+                gameMode: 'texas-holdem',
+                twoHand: true,
+                challenges: {},
+            },
+        },
+        timestamp: 1,
+    } as Parameters<typeof TheGangDomain.execute>[1]);
+    core = startHeistCore(core, '0', 2);
+    return {
+        ...core,
+        round: 4,
+        phase: 'chip-selection',
+        communityCards: [
+            standardCard('2', 'clubs'),
+            standardCard('7', 'diamonds'),
+            standardCard('9', 'hearts'),
+            standardCard('J', 'clubs'),
+            standardCard('K', 'diamonds'),
+        ],
+        currentRoundChips: {
+            '0:top': 1,
+            '0:bottom': 2,
+            '1:top': 3,
+            '1:bottom': 4,
+            '2:top': 5,
+            '2:bottom': 6,
+            '3:top': 7,
+            '3:bottom': 8,
+        },
+        currentRoundExitChipOwners: [],
+    } satisfies TheGangCore;
+};
+
 describe('The Gang Board 运行入口', () => {
     test('初始抢劫必须由房主点击开始才派发正式开始命令', () => {
         const dispatch = vi.fn();
@@ -222,12 +269,46 @@ describe('The Gang Board 运行入口', () => {
         );
 
         expect(screen.getByTestId('the-gang-start-heist')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-redeal-heist')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'board.nextRound' })).not.toBeInTheDocument();
         fireEvent.click(screen.getByTestId('the-gang-start-heist'));
 
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.START_HEIST, {
             __internalPlayerId: '0',
         });
+    });
+
+    test('开始抢劫前房主可以点击重新发牌，开始后按钮消失', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        const { unmount } = renderWithToast(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('the-gang-redeal-heist'));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.REDEAL_HEIST, {
+            __internalPlayerId: '0',
+        });
+
+        unmount();
+        renderWithToast(
+            <Board
+                G={stateOf(startHeistCore(initial))}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.queryByTestId('the-gang-redeal-heist')).not.toBeInTheDocument();
     });
 
     test('非房主点击开始抢劫会 toast 提示且不派发命令', () => {
@@ -248,6 +329,26 @@ describe('The Gang Board 运行入口', () => {
 
         expect(dispatch).not.toHaveBeenCalled();
         expect(screen.getByText(/只有房主可以开始抢劫|board\.toastHostOnlyStart/u)).toBeInTheDocument();
+    });
+
+    test('非房主点击重新发牌会 toast 提示且不派发命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+
+        renderWithToast(
+            <Board
+                G={stateOf(initial)}
+                dispatch={dispatch as never}
+                playerID="1"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('the-gang-redeal-heist'));
+
+        expect(dispatch).not.toHaveBeenCalled();
+        expect(screen.getByText(/只有房主可以重新发牌|board\.toastHostOnlyRedeal/u)).toBeInTheDocument();
     });
 
     test('开始前点击筹码会 toast 提示且不派发拿筹码命令', () => {
@@ -454,6 +555,51 @@ describe('The Gang Board 运行入口', () => {
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {
             __internalPlayerId: '0',
         });
+    });
+
+    test('四人两副手牌第四轮未拿够撤离筹码时不能摊牌，撤离按钮按当前手牌派发命令', () => {
+        const dispatch = vi.fn();
+        const finalRoundCore = buildFourPlayerTwoHandFinalRoundCore();
+        const matchData = matchDataForPlayerCount(4);
+
+        const { unmount } = renderWithToast(
+            <Board
+                G={stateOf(finalRoundCore)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={matchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-exit-chip-row')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-exit-chip-button-1')).not.toBeDisabled();
+        expect(screen.getByTestId('the-gang-exit-chip-button-2')).not.toBeDisabled();
+        expect(screen.getByRole('button', { name: /board\.revealShowdown|摊牌/u })).toBeDisabled();
+
+        fireEvent.click(screen.getByTestId('the-gang-exit-chip-button-1'));
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_EXIT_CHIP, {
+            __internalPlayerId: '0',
+            handSlot: 'top',
+        });
+
+        unmount();
+        renderWithToast(
+            <Board
+                G={stateOf({
+                    ...finalRoundCore,
+                    currentRoundExitChipOwners: ['0:top', '1:bottom'],
+                })}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={matchData}
+                isConnected
+            />,
+        );
+
+        expect(screen.getByTestId('the-gang-exit-chip-button-1')).toBeDisabled();
+        expect(screen.getByTestId('the-gang-exit-chip-button-2')).toBeDisabled();
+        expect(screen.getByRole('button', { name: /board\.revealShowdown|摊牌/u })).not.toBeDisabled();
     });
 
     test('真实 Board 可以完成四轮抢劫并显示摊牌结果', () => {

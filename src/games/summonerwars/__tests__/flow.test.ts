@@ -734,7 +734,7 @@ const testCases: TestCase<SummonerWarsExpectation>[] = [
         },
     },
     {
-        name: '攻击 - 可攻击自己的卡牌但不算攻击敌方',
+        name: '攻击错误 - 普通攻击不能指定己方卡牌',
         setup: (playerIds, random) => {
             const core = createInitializedCore(playerIds, random);
             core.phase = 'attack';
@@ -749,8 +749,7 @@ const testCases: TestCase<SummonerWarsExpectation>[] = [
             },
         ],
         expect: {
-            player0AttackCount: 1,
-            player0HasAttackedEnemy: false,
+            errorAtStep: { step: 1, error: '无法攻击该目标' },
         },
     },
 

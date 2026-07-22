@@ -54,6 +54,7 @@ describe('fireTriggers direct caller contract', () => {
       { rel: 'domain/duel.ts', timing: 'onDuelStarted', hasReplacementPhase: false },
       { rel: 'domain/reducer.ts', timing: 'onMinionDestroyed', hasReplacementPhase: true },
       { rel: 'domain/reducer.ts', timing: 'onCardReturnedToHand', hasReplacementPhase: true },
+      { rel: 'domain/reducer.ts', timing: 'onMinionAffected', hasReplacementPhase: true },
     ]);
   });
 });

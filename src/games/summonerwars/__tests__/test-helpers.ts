@@ -7,9 +7,54 @@
 import { SummonerWarsDomain } from '../domain';
 import { SW_SELECTION_EVENTS } from '../domain/types';
 import type { SummonerWarsCore, FactionId, PlayerId, CellCoord, BoardUnit, UnitCard } from '../domain/types';
-import type { RandomFn } from '../../../engine/types';
+import type { MatchState, RandomFn } from '../../../engine/types';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { createDeckByFactionId } from '../config/factions';
 import { generateInstanceId, resetInstanceCounter } from '../domain/utils';
+
+type PromptOptionView = { id: string };
+type SwPromptView = {
+  options?: PromptOptionView[];
+  sw?: { type?: string };
+};
+
+function activePrompt(state: MatchState<SummonerWarsCore>) {
+  return state.sys.interaction.current;
+}
+
+export function getPromptOptionIds(state: MatchState<SummonerWarsCore>): string[] {
+  const data = activePrompt(state)?.data as SwPromptView | undefined;
+  return (data?.options ?? []).map(option => option.id);
+}
+
+export function getPromptSwType(state: MatchState<SummonerWarsCore>): string | undefined {
+  const data = activePrompt(state)?.data as SwPromptView | undefined;
+  return data?.sw?.type;
+}
+
+export function getPromptPlayerId(state: MatchState<SummonerWarsCore>): PlayerId | undefined {
+  return activePrompt(state)?.playerId as PlayerId | undefined;
+}
+
+export function hasActivePrompt(state: MatchState<SummonerWarsCore>): boolean {
+  return Boolean(activePrompt(state));
+}
+
+export function createPromptResponseCommand(
+  state: MatchState<SummonerWarsCore>,
+  playerId: PlayerId,
+  optionId: string,
+) {
+  const interactionId = activePrompt(state)?.id;
+  if (!interactionId) {
+    throw new Error('当前没有可响应的召唤师战争提示');
+  }
+  return {
+    type: INTERACTION_COMMANDS.RESPOND,
+    playerId,
+    payload: { interactionId, optionId },
+  };
+}
 
 /**
  * 测试用：在指定位置放置单位，自动生成 instanceId

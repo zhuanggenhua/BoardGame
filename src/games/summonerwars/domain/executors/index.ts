@@ -19,3 +19,4 @@ import './barbaric';
 import './mogu';
 import './huijin';
 import './shouren';
+import './yongheng';

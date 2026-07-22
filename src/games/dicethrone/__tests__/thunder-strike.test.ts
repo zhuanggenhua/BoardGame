@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { DiceThroneDomain } from '../domain';
 import { diceThroneSystemsForTest } from '../game';
-import { createQueuedRandom } from './test-utils';
+import { createQueuedRandom, getCardById } from './test-utils';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { DiceThroneCore, DiceThroneCommand } from '../domain/types';
@@ -80,11 +80,6 @@ describe('雷霆万钧技能', () => {
             ],
         });
 
-        console.log('=== 技能激活后的状态 ===');
-        console.log('pendingBonusDiceSettlement:', result.finalState.core.pendingBonusDiceSettlement);
-        console.log('玩家0太极标记:', result.finalState.core.players['0'].tokens?.[TOKEN_IDS.TAIJI]);
-        console.log('步骤日志:', result.steps);
-
         // 验证命令执行成功
         expect(result.steps[0].success).toBe(true);
 
@@ -105,7 +100,100 @@ describe('雷霆万钧技能', () => {
         const rerollRequestedEvents = eventStream.filter(e => e.event.type === 'BONUS_DICE_REROLL_REQUESTED');
         expect(rerollRequestedEvents).toHaveLength(1); // 应该有1个重掷请求事件
 
-        console.log('✅ 所有验证通过');
+    });
+
+    it('弹一手修改雷霆万钧奖励骰后，应按改后的点数和结算伤害', () => {
+        const queuedRandom = createQueuedRandom([3, 3, 3, 1, 1, 1, 1, 1, 1, 1, 4, 5, 6]);
+
+        const runner = new GameTestRunner({
+            domain: DiceThroneDomain,
+            systems: diceThroneSystemsForTest,
+            playerIds: ['0', '1'],
+            random: queuedRandom,
+            setup: (playerIds, random) => {
+                const state = createMonkState(playerIds, random);
+                state.core.selectedCharacters['1'] = 'barbarian';
+                state.core.players['1'] = initHeroState('1', 'barbarian', random);
+                state.core.players['0'].tokens = {};
+                state.core.players['1'].tokens = {};
+                state.core.players['0'].hand = [];
+                state.core.players['1'].hand = [getCardById('card-flick')];
+                state.core.players['1'].resources[RESOURCE_IDS.CP] = 3;
+                return state;
+            },
+            silent: true,
+        });
+
+        const opened = runner.run({
+            name: '雷霆万钧奖励骰打开弹一手响应窗口',
+            commands: [
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
+                { type: 'ROLL_DICE', playerId: '0', payload: {} },
+                { type: 'CONFIRM_ROLL', playerId: '0', payload: {} },
+                { type: 'SELECT_ABILITY', playerId: '0', payload: { abilityId: 'thunder-strike' } },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+                { type: 'ADVANCE_PHASE', playerId: '0', payload: {} },
+                { type: 'ROLL_DICE', playerId: '1', payload: {} },
+                { type: 'CONFIRM_ROLL', playerId: '1', payload: {} },
+                { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
+                { type: 'ADVANCE_PHASE', playerId: '1', payload: {} },
+            ],
+        });
+
+        expect(opened.assertionErrors).toEqual([]);
+        expect(opened.steps.every(step => step.success)).toBe(true);
+        expect(opened.finalState.core.pendingBonusDiceSettlement).toMatchObject({
+            displayOnly: true,
+            sourceAbilityId: 'thunder-strike',
+            attackerId: '0',
+            targetId: '1',
+            allowDiceModification: true,
+            opensAfterRollConfirmedResponseWindow: true,
+        });
+        const openedDiceValues = opened.finalState.core.pendingBonusDiceSettlement?.dice.map(die => die.value) ?? [];
+        expect(openedDiceValues).toHaveLength(3);
+        expect(opened.finalState.sys.responseWindow?.current).toMatchObject({
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['1'],
+        });
+        const targetDieIndex = 2;
+        const targetDieValue = openedDiceValues[targetDieIndex] ?? 1;
+        const modifiedDieValue = targetDieValue < 6 ? targetDieValue + 1 : targetDieValue - 1;
+        const expectedModifiedDamage = openedDiceValues.reduce((sum, value, index) => (
+            sum + (index === targetDieIndex ? modifiedDieValue : value)
+        ), 0);
+
+        runner.setState(opened.finalState);
+        const playedFlick = runner.dispatch('PLAY_CARD', { playerId: '1', cardId: 'card-flick' });
+        expect(playedFlick.success).toBe(true);
+        expect(playedFlick.finalState.sys.responseWindow?.current?.pendingInteractionId).toBeDefined();
+
+        const modified = runner.dispatch('MODIFY_DIE', { playerId: '1', dieId: targetDieIndex, newValue: modifiedDieValue });
+        expect(modified.success).toBe(true);
+        expect(modified.finalState.core.pendingBonusDiceSettlement?.dice.find(die => die.index === targetDieIndex)).toMatchObject({
+            value: modifiedDieValue,
+        });
+
+        const confirmedCard = runner.dispatch('SYS_INTERACTION_CONFIRM', { playerId: '1' });
+        expect(confirmedCard.success).toBe(true);
+        expect(confirmedCard.finalState.sys.responseWindow?.current).toBeUndefined();
+        expect(confirmedCard.finalState.core.players['1'].discard.some(card => card.id === 'card-flick')).toBe(true);
+
+        const defenderHpBeforeSettle = confirmedCard.finalState.core.players['1'].resources[RESOURCE_IDS.HP];
+        const settled = runner.dispatch('SKIP_BONUS_DICE_REROLL', { playerId: '0' });
+        expect(settled.success).toBe(true);
+        expect(settled.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(settled.finalState.core.pendingDamage).toBeUndefined();
+        expect(settled.finalState.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHpBeforeSettle - expectedModifiedDamage);
+
+        const damageEvent = settled.events.find(event => event.type === 'DAMAGE_DEALT');
+        expect(damageEvent?.payload).toMatchObject({
+            targetId: '1',
+            amount: expectedModifiedDamage,
+            actualDamage: expectedModifiedDamage,
+            sourceAbilityId: 'thunder-strike',
+            sourcePlayerId: '0',
+        });
     });
 
     it('雷霆万钧奖励骰伤害结算前应该允许攻击方使用气增伤', () => {
@@ -223,9 +311,14 @@ describe('雷霆万钧技能', () => {
             random: queuedRandom,
             setup: (playerIds, random) => {
                 const state = createMonkState(playerIds, random);
+                state.core.selectedCharacters['1'] = 'barbarian';
+                state.core.players['1'] = initHeroState('1', 'barbarian', random);
                 
                 // 玩家0没有太极标记
                 state.core.players['0'].tokens = {};
+                state.core.players['1'].tokens = {};
+                state.core.players['0'].hand = [];
+                state.core.players['1'].hand = [];
                 
                 return state;
             },
@@ -244,15 +337,9 @@ describe('雷霆万钧技能', () => {
                 { type: 'CONFIRM_ROLL', playerId: '1', payload: {} },
                 { type: 'RESPONSE_PASS', playerId: '1', payload: {} }, // 跳过防御技能
                 { type: 'ADVANCE_PHASE', playerId: '1', payload: {} }, // defensiveRoll exit → 攻击结算 + displayOnly 结算暂停
-                { type: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: {} }, // 防御方跳过 Token 响应交互
                 { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {} }, // 确认骰子结果 → 推进到 main2
             ],
         });
-
-        console.log('=== 技能激活后的状态（无太极标记）===');
-        console.log('pendingBonusDiceSettlement:', result.finalState.core.pendingBonusDiceSettlement);
-        console.log('玩家1 HP:', result.finalState.core.players['1'].resources?.hp);
-        console.log('步骤日志:', result.steps);
 
         // 验证命令执行成功
         expect(result.steps[0].success).toBe(true);
@@ -278,7 +365,5 @@ describe('雷霆万钧技能', () => {
         const initialHp = 50;
         const currentHp = result.finalState.core.players['1'].resources?.hp ?? 0;
         expect(currentHp).toBeLessThan(initialHp); // HP 应该减少
-
-        console.log('✅ 所有验证通过');
     });
 });

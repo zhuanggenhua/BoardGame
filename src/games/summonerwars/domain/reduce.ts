@@ -106,8 +106,16 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
     }
 
     case SW_EVENTS.CARD_DISCARDED: {
-      const { playerId, cardId } = payload as { playerId: PlayerId; cardId: string };
+      const { playerId, cardId, to } = payload as { playerId: PlayerId; cardId: string; to?: 'discard' | 'deckBottom' };
       const player = core.players[playerId];
+      if (to === 'deckBottom') {
+        const { card, hand: newHand } = removeFromHand(player.hand, cardId);
+        if (!card) return core;
+        return {
+          ...core,
+          players: { ...core.players, [playerId]: { ...player, hand: newHand, deck: [...player.deck, card] } },
+        };
+      }
       const result = discardFromHand(player.hand, player.discard, cardId);
       if (!result.found) return core;
       return {
@@ -573,17 +581,30 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
 
     case SW_EVENTS.CARD_RETRIEVED: {
       // 从弃牌堆拿回手牌
-      const { playerId: crPlayerId, cardId: crCardId } = payload as { playerId: PlayerId; cardId: string };
-      const crPlayer = core.players[crPlayerId];
-      const crCard = crPlayer.discard.find(c => c.id === crCardId);
+      const { playerId: crPlayerId, cardId: crCardId, fromPlayerId, toPlayerId } = payload as {
+        playerId: PlayerId; cardId: string; fromPlayerId?: PlayerId; toPlayerId?: PlayerId;
+      };
+      const crSourcePlayerId = fromPlayerId ?? crPlayerId;
+      const crTargetPlayerId = toPlayerId ?? crPlayerId;
+      const crSourcePlayer = core.players[crSourcePlayerId];
+      const crTargetPlayer = core.players[crTargetPlayerId];
+      const crCard = crSourcePlayer.discard.find(c => c.id === crCardId);
       if (!crCard) return core;
-      const { discard: crNewDiscard } = removeFromDiscard(crPlayer.discard, crCardId);
+      const { discard: crNewDiscard } = removeFromDiscard(crSourcePlayer.discard, crCardId);
+      const crPlayers = {
+        ...core.players,
+        [crSourcePlayerId]: { ...crSourcePlayer, discard: crNewDiscard },
+      };
+      const crTargetAfterSourceUpdate = crSourcePlayerId === crTargetPlayerId
+        ? crPlayers[crTargetPlayerId]
+        : crTargetPlayer;
+      crPlayers[crTargetPlayerId] = {
+        ...crTargetAfterSourceUpdate,
+        hand: [...crTargetAfterSourceUpdate.hand, crCard],
+      };
       return {
         ...core,
-        players: {
-          ...core.players,
-          [crPlayerId]: { ...crPlayer, hand: [...crPlayer.hand, crCard], discard: crNewDiscard },
-        },
+        players: crPlayers,
       };
     }
 

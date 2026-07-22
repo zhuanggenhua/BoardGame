@@ -9,6 +9,7 @@ import type { DiceThroneCore, Die, HeroState, DiceThroneEvent } from '../domain/
 import { getCustomActionHandler } from '../domain/effects';
 import type { CustomActionContext } from '../domain/effects';
 import { initializeCustomActions } from '../domain/customActions';
+import { getBonusDiceSettlementHandler } from '../domain/bonusDiceSettlement';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { moonElfDiceDefinition } from '../heroes/moon_elf/diceConfig';
 import { reduce } from '../domain/reducer';
@@ -105,6 +106,28 @@ function eventsOfType(events: DiceThroneEvent[], type: string) {
 
 function reduceAll(state: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore {
     return events.reduce((acc, event) => reduce(acc, event as any), state);
+}
+
+function getVolleySettlement(events: DiceThroneEvent[]) {
+    const request = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED')[0] as any;
+    expect(request).toBeDefined();
+    const settlement = request.payload.settlement;
+    expect(settlement).toMatchObject({
+        customResolutionId: 'moon-elf-volley',
+        displayOnly: true,
+        allowDiceModification: true,
+    });
+    return settlement;
+}
+
+function settleVolleyDice(state: DiceThroneCore, settlement: any, dice = settlement.dice): DiceThroneEvent[] {
+    const handler = getBonusDiceSettlementHandler('moon-elf-volley');
+    expect(handler).toBeDefined();
+    return handler!({
+        state,
+        settlement: { ...settlement, dice },
+        timestamp: 2000,
+    })?.followupEvents ?? [];
 }
 
 // ============================================================================
@@ -472,7 +495,7 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
     });
 
     describe('moon_elf-action-volley (齐射：弓面数伤害+缠绕)', () => {
-        it('5骰全弓时应发出 BONUS_DAMAGE_ADDED，并在 reduce 后增加 5 点伤害且施加缠绕', () => {
+        it('5骰全弓时应先创建可结算骰面，结算后增加 5 点伤害且施加缠绕', () => {
             const state = createState({});
             state.pendingAttack = {
                 attackerId: '0', defenderId: '1', isDefendable: true,
@@ -485,21 +508,25 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
             }));
 
             const bonusEvents = eventsOfType(events, 'BONUS_DAMAGE_ADDED');
-            expect(bonusEvents).toHaveLength(1);
-            expect((bonusEvents[0] as any).payload).toMatchObject({
+            const settlement = getVolleySettlement(events);
+            expect(settlement.dice).toHaveLength(5);
+            expect(settlement.dice.filter((die: any) => die.face === FACES.BOW)).toHaveLength(5);
+            expect(bonusEvents).toHaveLength(0);
+            const settleEvents = settleVolleyDice(state, settlement);
+            const settledBonusEvents = eventsOfType(settleEvents, 'BONUS_DAMAGE_ADDED');
+            expect(settledBonusEvents).toHaveLength(1);
+            expect((settledBonusEvents[0] as any).payload).toMatchObject({
                 playerId: '0',
                 amount: 5,
                 sourceCardId: 'volley',
             });
-            const reduced = reduceAll(state, events);
-            expect(reduced.pendingAttack?.bonusDamage).toBe(5);
-            expect(reduced.pendingAttack?.attackModifierBonusDamage).toBe(5);
-            expect(reduced.players['1'].statusEffects[STATUS_IDS.ENTANGLE]).toBe(1);
-            const settlement = eventsOfType(events, 'BONUS_DICE_REROLL_REQUESTED');
-            expect(settlement).toHaveLength(0);
+            const settled = reduceAll(state, settleEvents);
+            expect(settled.pendingAttack?.bonusDamage).toBe(5);
+            expect(settled.pendingAttack?.attackModifierBonusDamage).toBe(5);
+            expect(settled.players['1'].statusEffects[STATUS_IDS.ENTANGLE]).toBe(1);
         });
 
-        it('5骰3弓2非弓时应在 reduce 后增加 3 点伤害', () => {
+        it('5骰3弓2非弓时应在结算后增加 3 点伤害', () => {
             const state = createState({});
             state.pendingAttack = {
                 attackerId: '0', defenderId: '1', isDefendable: true,
@@ -512,13 +539,14 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
                 random: () => { callCount++; return callCount <= 3 ? 1 / 6 : 4 / 6; },
             }));
 
-            const reduced = reduceAll(state, events);
+            const settlement = getVolleySettlement(events);
+            const reduced = reduceAll(state, settleVolleyDice(state, settlement));
             expect(reduced.pendingAttack?.bonusDamage).toBe(3);
             expect(reduced.pendingAttack?.attackModifierBonusDamage).toBe(3);
             expect(reduced.players['1'].statusEffects[STATUS_IDS.ENTANGLE]).toBe(1);
         });
 
-        it('当前攻击尚未创建时，应先写入 pendingBonusDamage 等待 ATTACK_INITIATED 转移', () => {
+        it('当前攻击尚未创建时，结算后应先写入 pendingBonusDamage 等待 ATTACK_INITIATED 转移', () => {
             const state = createState({});
             let callCount = 0;
             const handler = getCustomActionHandler('moon_elf-action-volley')!;
@@ -526,7 +554,8 @@ describe('月精灵 Custom Action 运行时行为断言', () => {
                 random: () => { callCount++; return callCount <= 3 ? 1 / 6 : 4 / 6; },
             }));
 
-            const reduced = reduceAll(state, events);
+            const settlement = getVolleySettlement(events);
+            const reduced = reduceAll(state, settleVolleyDice(state, settlement));
             expect(reduced.pendingAttack).toBeNull();
             expect((reduced.players['0'] as any).pendingBonusDamage).toBe(3);
             expect(reduced.players['1'].statusEffects[STATUS_IDS.ENTANGLE]).toBe(1);

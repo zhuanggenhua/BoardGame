@@ -1,12 +1,15 @@
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import {
+    allRequiredFinalTokensAreTaken,
+    getCurrentRoundExitChipOwners,
+    getRequiredExitChipCount,
     allRequiredChipOwnersHaveChips,
     getUnoccupiedChipValues,
     resolveChipOwnerKey,
 } from './chips';
 import { normalizeRulesConfig } from './expansions';
 import { getChipValues } from './setup';
-import { THE_GANG_COMMANDS, type TakeChipCommand, type TheGangCommand, type TheGangCore } from './types';
+import { THE_GANG_COMMANDS, type TakeChipCommand, type TakeExitChipCommand, type TheGangCommand, type TheGangCore } from './types';
 
 const success = (): ValidationResult => ({ valid: true });
 const failure = (error: string): ValidationResult => ({ valid: false, error });
@@ -24,8 +27,12 @@ export function validate(
     switch (command.type) {
         case THE_GANG_COMMANDS.START_HEIST:
             return validateStartHeist(core, command.playerId);
+        case THE_GANG_COMMANDS.REDEAL_HEIST:
+            return validateRedealHeist(core, command.playerId);
         case THE_GANG_COMMANDS.TAKE_CHIP:
             return validateTakeChip(core, command.playerId, command.payload);
+        case THE_GANG_COMMANDS.TAKE_EXIT_CHIP:
+            return validateTakeExitChip(core, command.playerId, command.payload);
         case THE_GANG_COMMANDS.SET_RULES_CONFIG:
             return validateSetRulesConfig(core, command.playerId, command.payload.config);
         case THE_GANG_COMMANDS.DEAL_TOOLS:
@@ -63,6 +70,15 @@ function validateStartHeist(core: TheGangCore, playerId: string): ValidationResu
     return success();
 }
 
+function validateRedealHeist(core: TheGangCore, playerId: string): ValidationResult {
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
+    if (core.heistNumber !== 1 || core.round !== 1 || core.phase !== 'chip-selection') return failure('rulesLocked');
+    if (core.heistStarted || Object.keys(core.currentRoundChips).length > 0 || core.roundHistory.length > 0) {
+        return failure('rulesLocked');
+    }
+    return success();
+}
+
 function validateTakeChip(core: TheGangCore, playerId: string, payload: TakeChipCommand['payload']): ValidationResult {
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
     if (!core.heistStarted) return failure('heistNotStarted');
@@ -82,6 +98,26 @@ function validateTakeChip(core: TheGangCore, playerId: string, payload: TakeChip
     if (!availableChips.includes(chip)) return failure('invalidChip');
     if (core.currentRoundChips[ownerKey] === chip) return failure('chipAlreadyHeld');
 
+    return success();
+}
+
+function validateTakeExitChip(
+    core: TheGangCore,
+    playerId: string,
+    payload: TakeExitChipCommand['payload'],
+): ValidationResult {
+    if (core.phase !== 'chip-selection') return failure('notSelectingChips');
+    if (!core.heistStarted) return failure('heistNotStarted');
+    if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
+    if (core.round !== 4) return failure('notFinalRound');
+    if (core.rules.config.twoHand && payload.handSlot !== 'top' && payload.handSlot !== 'bottom') {
+        return failure('missingHandSlot');
+    }
+
+    const ownerKey = resolveChipOwnerKey(core, playerId, payload.handSlot);
+    if (core.currentRoundChips[ownerKey] === undefined) return failure('missingChips');
+    if (getCurrentRoundExitChipOwners(core).includes(ownerKey)) return failure('chipAlreadyHeld');
+    if (getCurrentRoundExitChipOwners(core).length >= getRequiredExitChipCount(core)) return failure('invalidChip');
     return success();
 }
 
@@ -154,7 +190,7 @@ function validateRevealShowdown(core: TheGangCore, playerId: string): Validation
     if (core.phase !== 'chip-selection') return failure('notSelectingChips');
     if (!core.heistStarted) return failure('heistNotStarted');
     if (core.round !== 4) return failure('notFinalRound');
-    if (!allRequiredChipOwnersHaveChips(core)) {
+    if (!allRequiredFinalTokensAreTaken(core)) {
         return failure('missingChips');
     }
     if (core.communityCards.length < 5) return failure('missingCommunityCards');

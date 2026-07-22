@@ -178,6 +178,21 @@ export const SUMMONER_WARS_FACTION_AI_PROFILES: Record<FactionId, SummonerWarsFa
             tempo: 1.08,
         },
     },
+    yongheng: {
+        factionId: 'yongheng',
+        summary: ['永恒议会资源滚动', '重视抓牌、充能和手牌节奏'],
+        strategyTagWeights: {
+            economy: 1.24,
+            'ability-tempo': 1.18,
+            'board-control': 1.08,
+            'summoner-defense': 1.04,
+        },
+        evaluationWeights: {
+            magicEconomy: 1.18,
+            tempo: 1.12,
+            positionControl: 1.06,
+        },
+    },
 };
 
 export function getSummonerWarsFactionAiProfile(

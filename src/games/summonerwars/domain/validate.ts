@@ -680,8 +680,11 @@ function validateActivateAbility(
   core: SummonerWarsCore,
   playerId: PlayerId,
   payload: Record<string, unknown>,
-  _commandPlayerId?: string
+  commandPlayerId?: string
 ): ValidationResult {
+  const activationPlayerId = commandPlayerId === '0' || commandPlayerId === '1'
+    ? commandPlayerId
+    : playerId;
   // 所有技能统一走数据驱动验证
-  return validateAbilityActivation(core, playerId, payload);
+  return validateAbilityActivation(core, activationPlayerId, payload);
 }

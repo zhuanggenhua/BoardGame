@@ -36,18 +36,22 @@ test.describe('山屋惊魂未知房间探索', () => {
         await page.getByTestId('betrayal-action-move').click();
         await page.getByTestId('betrayal-room-hallway').click();
         await expect(page.getByTestId('betrayal-status-chip')).toContainText('杰登·琼斯');
-        await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*可探索/);
-        await expect(page.getByTestId('betrayal-room-ground-south')).toHaveAccessibleName(/未探索.*一层.*可探索/);
+        await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层/);
+        await expect(page.getByTestId('betrayal-room-ground-south')).toHaveAccessibleName(/未探索.*一层/);
         await expect(page.getByTestId('betrayal-action-explore')).toBeEnabled();
         await saveScreenshot(page, READY_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-explore').click();
         await expect(page.getByTestId('betrayal-room-explore-target-ground-north')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-explore-target-ground-south')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*可探索/);
+        await expect(page.getByTestId('betrayal-room-ground-south')).toHaveAccessibleName(/未探索.*一层.*可探索/);
         await saveScreenshot(page, TARGETS_SCREENSHOT);
 
-        await setHarnessRandomQueue(page, [0.01]);
         await page.getByTestId('betrayal-room-ground-north').click();
+        await expect(page.getByTestId('betrayal-room-placement-panel')).toBeVisible();
+        await setHarnessRandomQueue(page, [0.01]);
+        await page.getByTestId('betrayal-room-placement-confirm').click();
 
         await expect(page.getByTestId('betrayal-room-ground-north')).not.toHaveAccessibleName(/未探索/);
         await expect(page.getByTestId('betrayal-room-occupant-ground-north-0')).toBeVisible();

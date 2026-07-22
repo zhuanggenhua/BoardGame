@@ -134,6 +134,9 @@ export const AttackShowcaseOverlay: React.FC<AttackShowcaseOverlayProps> = ({
             <AnimatePresence>
                 <motion.div
                     key="attack-showcase"
+                    data-testid="attack-showcase-overlay"
+                    data-showcase-mode={mode ?? undefined}
+                    data-source-ability-id={data.sourceAbilityId}
                     className="fixed inset-0 flex items-center justify-center"
                     style={{ zIndex: UI_Z_INDEX.overlayRaised + 10 }}
                     initial={{ opacity: 0 }}

@@ -471,6 +471,8 @@ export function canAttack(
   const targetUnit = getUnitAt(state, target);
   const targetStructure = getStructureAt(state, target);
   if (!targetUnit && !targetStructure) return false;
+  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
+  if (targetOwner === attackerUnit.owner) return false;
   
   const distance = manhattanDistance(attacker, target);
   
@@ -813,6 +815,11 @@ export function getUnitAbilities(unit: BoardUnit, state: SummonerWarsCore): stri
     && owner?.activeEvents.some(event => getBaseCardId(event.id) === CARD_IDS.SHOUREN_PRIMAL_FURY)
     && !result.includes('shouren_primal_fury')) {
     result.push('shouren_primal_fury');
+  }
+  if (unit.card.unitClass === 'summoner'
+    && owner?.activeEvents.some(event => getBaseCardId(event.id) === CARD_IDS.YONGHENG_MENTAL_INVASION)
+    && !result.includes('yongheng_mental_invasion')) {
+    result.push('yongheng_mental_invasion');
   }
 
   // 交缠颂歌：检查主动事件区是否有交缠颂歌标记了本单位
@@ -1184,6 +1191,9 @@ export function canAttackEnhanced(
     if (targetUnit.card.unitClass !== 'common' && targetUnit.card.unitClass !== 'champion') return false;
     return manhattanDistance(attacker, target) === 1;
   }
+
+  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
+  if (targetOwner === attackerUnit.owner) return false;
 
   const distance = manhattanDistance(attacker, target);
 

@@ -1,5 +1,6 @@
 import type { PlayerId } from '../../../engine/types';
 import type { TheGangCore, TheGangHandSlot } from './types';
+import { getExitChipCount } from './setup';
 
 export type { TheGangHandSlot } from './types';
 
@@ -39,6 +40,22 @@ export const allRequiredChipOwnersHaveChips = (core: TheGangCore): boolean => (
     getRequiredChipOwnerKeys(core).every((ownerKey) => core.currentRoundChips[ownerKey] !== undefined)
 );
 
+export const getRequiredExitChipCount = (core: TheGangCore): number => (
+    core.round === 4 ? getExitChipCount(core.playerIds.length, core.rules.config) : 0
+);
+
+export const getCurrentRoundExitChipOwners = (core: TheGangCore): string[] => (
+    core.currentRoundExitChipOwners ?? []
+);
+
+export const allRequiredExitChipsAreTaken = (core: TheGangCore): boolean => (
+    getCurrentRoundExitChipOwners(core).length >= getRequiredExitChipCount(core)
+);
+
+export const allRequiredFinalTokensAreTaken = (core: TheGangCore): boolean => (
+    allRequiredChipOwnersHaveChips(core) && allRequiredExitChipsAreTaken(core)
+);
+
 export const getMissingHandSlotsForPlayer = (
     core: TheGangCore,
     playerId: PlayerId,
@@ -55,6 +72,12 @@ export const getChipForHandSlot = (
     playerId: PlayerId,
     handSlot: TheGangHandSlot = 'top',
 ): number | undefined => core.currentRoundChips[resolveChipOwnerKey(core, playerId, handSlot)];
+
+export const hasExitChipForHandSlot = (
+    core: TheGangCore,
+    playerId: PlayerId,
+    handSlot: TheGangHandSlot = 'top',
+): boolean => getCurrentRoundExitChipOwners(core).includes(resolveChipOwnerKey(core, playerId, handSlot));
 
 const countChipValues = (chips: readonly number[]): Map<number, number> => {
     const counts = new Map<number, number>();

@@ -43,6 +43,7 @@ type FabAlignment = { v: 'top' | 'bottom'; h: 'left' | 'right' };
 type SafeAreaInsets = { top: number; right: number; bottom: number; left: number };
 type FabPosition = { left: number; top: number };
 type FabAnchorRect = { left: number; top: number; right: number; bottom: number; width: number; height: number };
+const FAB_RECT_EPSILON = 0.5;
 const FAB_EDGE_PEEK_SIZE_MOBILE = 32;
 const FAB_EDGE_PEEK_SIZE_DESKTOP = 20;
 const FAB_PANEL_GAP_MOBILE = 14;
@@ -100,6 +101,17 @@ export const shouldTrackFabButtonRect = ({
     isActive: boolean;
     hasContent: boolean;
 }) => showTooltip || showPreview || (isActive && hasContent);
+
+export const areFabAnchorRectsEqual = (left: FabAnchorRect | null, right: FabAnchorRect | null) => {
+    if (left === right) return true;
+    if (!left || !right) return false;
+    return Math.abs(left.left - right.left) < FAB_RECT_EPSILON
+        && Math.abs(left.top - right.top) < FAB_RECT_EPSILON
+        && Math.abs(left.right - right.right) < FAB_RECT_EPSILON
+        && Math.abs(left.bottom - right.bottom) < FAB_RECT_EPSILON
+        && Math.abs(left.width - right.width) < FAB_RECT_EPSILON
+        && Math.abs(left.height - right.height) < FAB_RECT_EPSILON;
+};
 
 export const FabMenu = ({
     items,
@@ -781,14 +793,6 @@ const Panel = ({
         0,
         Math.floor(resolvedAnchor.left - panelGap - safeAreaInsets.left - edgePadding),
     );
-    const spaceBelow = Math.max(
-        0,
-        Math.floor(viewportHeight - resolvedVerticalAnchor.top - safeAreaInsets.bottom - edgePadding),
-    );
-    const spaceAbove = Math.max(
-        0,
-        Math.floor(resolvedVerticalAnchor.bottom - safeAreaInsets.top - edgePadding),
-    );
     const anchorSpaceBelow = Math.max(
         0,
         Math.floor(viewportHeight - resolvedVerticalAnchor.top - safeAreaInsets.bottom - edgePadding),
@@ -992,16 +996,18 @@ const MenuButton = ({
     const updateTooltipRect = useCallback(() => {
         if (!buttonRef.current) return;
         const rect = buttonRef.current.getBoundingClientRect();
-        setTooltipRect(rect);
-        onRectChange?.({
+        const nextRect = {
             left: rect.left,
             top: rect.top,
             right: rect.right,
             bottom: rect.bottom,
             width: rect.width,
             height: rect.height,
-        });
-    }, [onRectChange]);
+        };
+        if (areFabAnchorRectsEqual(tooltipRect, nextRect)) return;
+        setTooltipRect(rect);
+        onRectChange?.(nextRect);
+    }, [onRectChange, tooltipRect]);
 
     useEffect(() => {
         if (!shouldTrackRect) return;

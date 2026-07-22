@@ -14,7 +14,7 @@ import {
 } from '../../../engine/systems/InteractionSystem';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import type { PromptOption, PromptMultiConfig } from '../../../engine/systems/InteractionSystem';
-import type { SummonerWarsCore, CellCoord, EventCard, UnitCard, BoardUnit } from './types';
+import type { SummonerWarsCore, CellCoord, EventCard, UnitCard, StructureCard, BoardUnit } from './types';
 import { SW_COMMANDS, SW_EVENTS } from './types';
 import { executeCommand } from './execute';
 import { validateCommand } from './validate';
@@ -366,6 +366,66 @@ type SwInteractionMeta =
       sourcePosition: CellCoord;
     }
   | {
+      type: 'yongheng_draw';
+      abilityId: 'yongheng_intelligence' | 'yongheng_wisdom' | 'yongheng_analysis' | 'yongheng_search';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'yongheng_mental_invasion';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'yongheng_collision_target';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'yongheng_collision_position';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetPosition: CellCoord;
+    }
+  | {
+      type: 'yongheng_warning_card';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetPosition: CellCoord;
+    }
+  | {
+      type: 'yongheng_warning_position';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetPosition: CellCoord;
+      targetCardId: string;
+    }
+  | {
+      type: 'yongheng_application_card';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+    }
+  | {
+      type: 'yongheng_application_target';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetCardId: string;
+    }
+  | {
+      type: 'yongheng_forced_discard';
+      abilityId: 'yongheng_arouse_fear' | 'yongheng_punish';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetOwner: PlayerId;
+    }
+  | {
+      type: 'yongheng_continuance';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetOwner: PlayerId;
+      targetCardId: string;
+    }
+  | {
       type: 'huijin_call_guards_select_target';
       sourceUnitId: string;
       sourcePosition: CellCoord;
@@ -470,6 +530,16 @@ type SwInteractionValue =
   | { action: 'after_move_mogu_transmission_amount'; amount: number }
   | { action: 'after_move_mogu_fanatical_fungus_target'; targetPosition: CellCoord; newPosition?: CellCoord }
   | { action: 'after_move_huijin_quick_shot'; targetPosition: CellCoord }
+  | { action: 'yongheng_draw'; abilityId: 'yongheng_intelligence' | 'yongheng_wisdom' | 'yongheng_analysis' | 'yongheng_search' }
+  | { action: 'yongheng_mental_invasion'; targetPosition: CellCoord }
+  | { action: 'yongheng_collision_target'; targetPosition: CellCoord }
+  | { action: 'yongheng_collision_position'; targetPosition: CellCoord; newPosition: CellCoord }
+  | { action: 'yongheng_warning_card'; targetCardId: string; defId: string }
+  | { action: 'yongheng_warning_position'; targetPosition: CellCoord; newPosition: CellCoord; targetCardId: string }
+  | { action: 'yongheng_application_card'; targetCardId: string; defId: string }
+  | { action: 'yongheng_application_target'; targetPosition: CellCoord; targetCardId: string }
+  | { action: 'yongheng_forced_discard_card'; targetOwner: PlayerId; targetCardId: string; defId: string }
+  | { action: 'yongheng_continuance_retain'; targetOwner: PlayerId; targetCardId: string }
   | { action: 'huijin_call_guards_target'; targetPosition: CellCoord }
   | { action: 'huijin_call_guards_position'; targetPosition: CellCoord; position: CellCoord }
   | { action: 'activated_ability_target'; abilityId: string; targetPosition?: CellCoord; targetCardId?: string }
@@ -581,6 +651,169 @@ function getHuijinQuickShotTargets(
     }
   }
   return targets;
+}
+
+function createConfirmSkipOptions<T extends SwInteractionValue>(
+  confirm: T,
+): PromptOption<SwInteractionValue>[] {
+  return [
+    {
+      id: 'confirm',
+      label: '确认',
+      labelKey: 'actions.confirm',
+      value: confirm,
+    },
+    {
+      id: 'skip',
+      label: '跳过',
+      labelKey: 'actions.skip',
+      value: { skip: true },
+    },
+  ];
+}
+
+function buildYonghengHandOptions(
+  core: SummonerWarsCore,
+  playerId: PlayerId,
+  buildValue: (card: UnitCard | EventCard | StructureCard) => SwInteractionValue,
+): PromptOption<SwInteractionValue>[] {
+  return core.players[playerId].hand.map((card) => ({
+    id: `card:${card.id}`,
+    label: card.name,
+    value: buildValue(card as UnitCard | EventCard | StructureCard),
+    displayMode: 'card',
+  }));
+}
+
+function getYonghengMentalInvasionTargets(
+  core: SummonerWarsCore,
+  owner: PlayerId,
+  summonerPosition: CellCoord,
+): CellCoord[] {
+  const targets: CellCoord[] = [];
+  for (let row = 0; row < BOARD_ROWS; row++) {
+    for (let col = 0; col < BOARD_COLS; col++) {
+      const position = { row, col };
+      const unit = getUnitAt(core, position);
+      if (!unit || unit.owner === owner) continue;
+      if (unit.card.unitClass !== 'common' && unit.card.unitClass !== 'champion') continue;
+      if (manhattanDistance(summonerPosition, position) <= 2) {
+        targets.push(position);
+      }
+    }
+  }
+  return targets;
+}
+
+function getYonghengAdjacentUnitTargets(
+  core: SummonerWarsCore,
+  sourcePosition: CellCoord,
+  owner?: PlayerId,
+  enemyOnly = false,
+): CellCoord[] {
+  return getAdjacentCells(sourcePosition).filter((pos) => {
+    const unit = getUnitAt(core, pos);
+    if (!unit) return false;
+    if (enemyOnly && unit.owner === owner) return false;
+    return unit.card.unitClass === 'common' || unit.card.unitClass === 'champion';
+  });
+}
+
+type YonghengDrawAbilityId = 'yongheng_intelligence' | 'yongheng_wisdom' | 'yongheng_analysis' | 'yongheng_search';
+
+function createYonghengDrawInteraction(
+  timestamp: number | undefined,
+  owner: PlayerId,
+  abilityId: YonghengDrawAbilityId,
+  sourceUnitId: string,
+  sourcePosition: CellCoord,
+): ReturnType<typeof createSimpleChoice> {
+  const interaction = createSimpleChoice(
+    `sw-yongheng-draw-${abilityId}-${timestamp ?? 0}-${sourceUnitId}`,
+    owner,
+    'interaction.sw.yonghengDraw',
+    createConfirmSkipOptions({ action: 'yongheng_draw', abilityId }),
+    { sourceId: abilityId, targetType: 'button', autoResolveIfSingle: false },
+  );
+  const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+  interaction.data = {
+    ...interactionData,
+    sw: {
+      type: 'yongheng_draw',
+      abilityId,
+      sourceUnitId,
+      sourcePosition,
+    } satisfies SwInteractionMeta,
+  };
+  return interaction;
+}
+
+function createYonghengForcedDiscardInteraction(
+  timestamp: number | undefined,
+  core: SummonerWarsCore,
+  targetOwner: PlayerId,
+  abilityId: 'yongheng_arouse_fear' | 'yongheng_punish',
+  sourceUnitId: string,
+  sourcePosition: CellCoord,
+): ReturnType<typeof createSimpleChoice> | null {
+  const options = buildYonghengHandOptions(core, targetOwner, (card) => ({
+    action: 'yongheng_forced_discard_card',
+    targetOwner,
+    targetCardId: card.id,
+    defId: getBaseCardId(card.id),
+  }));
+  if (options.length === 0) return null;
+  const interaction = createSimpleChoice(
+    `sw-yongheng-forced-discard-${abilityId}-${timestamp ?? 0}-${sourceUnitId}`,
+    targetOwner,
+    'interaction.sw.yonghengForcedDiscard',
+    options,
+    { sourceId: abilityId, targetType: 'hand', autoResolveIfSingle: false },
+  );
+  const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+  interaction.data = {
+    ...interactionData,
+    sw: {
+      type: 'yongheng_forced_discard',
+      abilityId,
+      sourceUnitId,
+      sourcePosition,
+      targetOwner,
+    } satisfies SwInteractionMeta,
+  };
+  return interaction;
+}
+
+function createYonghengContinuanceInteraction(
+  timestamp: number | undefined,
+  owner: PlayerId,
+  targetCardId: string,
+  sourceUnitId: string,
+  sourcePosition: CellCoord,
+): ReturnType<typeof createSimpleChoice> {
+  const interaction = createSimpleChoice(
+    `sw-yongheng-continuance-${timestamp ?? 0}-${sourceUnitId}-${targetCardId}`,
+    owner,
+    'interaction.sw.yonghengContinuance',
+    createConfirmSkipOptions({
+      action: 'yongheng_continuance_retain',
+      targetOwner: owner,
+      targetCardId,
+    }),
+    { sourceId: 'yongheng_continuance', targetType: 'button', autoResolveIfSingle: false },
+  );
+  const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+  interaction.data = {
+    ...interactionData,
+    sw: {
+      type: 'yongheng_continuance',
+      sourceUnitId,
+      sourcePosition,
+      targetOwner: owner,
+      targetCardId,
+    } satisfies SwInteractionMeta,
+  };
+  return interaction;
 }
 
 function buildMoguTransmissionModeInteraction(
@@ -1170,6 +1403,30 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
         // 阶段变化时清理 phaseEnd 解析缓存
         if (event.type === FLOW_EVENTS.PHASE_CHANGED) {
           newState = clearPhaseEndResolution(newState);
+        }
+
+        if (event.type === FLOW_EVENTS.PHASE_CHANGED || event.type === SW_EVENTS.PHASE_CHANGED) {
+          const payload = event.payload as { to?: string; activePlayerId?: PlayerId };
+          if (payload.to === 'move' || payload.to === 'build' || payload.to === 'attack') {
+            const activePlayerId = payload.activePlayerId ?? newState.core.currentPlayer;
+            const player = newState.core.players[activePlayerId];
+            const hasSearch = player?.activeEvents.some(card =>
+              getBaseCardId(card.id) === CARD_IDS.YONGHENG_SEARCH && card.isActive
+            );
+            const summoner = hasSearch ? getSummoner(newState.core, activePlayerId) : undefined;
+            if (player && player.deck.length > 0 && summoner) {
+              const interaction = createYonghengDrawInteraction(
+                event.timestamp,
+                activePlayerId,
+                'yongheng_search',
+                summoner.instanceId,
+                summoner.position,
+              );
+              if (!hasQueuedInteraction(newState, interaction.id)) {
+                newState = queueInteraction(newState, interaction);
+              }
+            }
+          }
         }
 
         if (event.type === SW_EVENTS.ATTACK_ROLL_PENDING) {
@@ -1818,6 +2075,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             sourcePosition?: CellCoord;
             targetPosition?: CellCoord;
             targetUnitId?: string;
+            targetCardId?: string;
             newPosition?: CellCoord;
             specialCount?: number;
             targetOwner?: PlayerId;
@@ -1830,6 +2088,28 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           const sourceUnitId = payload.sourceUnitId;
           const sourcePosition = payload.sourcePosition;
           if (!actionId || !sourceUnitId || !sourcePosition) continue;
+
+          if (actionId === 'yongheng_continuance_retain') {
+            const owner = payload.targetOwner;
+            const targetCardId = payload.targetCardId;
+            if (!owner || !targetCardId) continue;
+            const actualSourcePosition = findUnitPositionByInstanceId(newState.core, sourceUnitId) ?? sourcePosition;
+            const sourceUnit = getUnitAt(newState.core, actualSourcePosition);
+            const stillActive = newState.core.players[owner]?.activeEvents.some(card => card.id === targetCardId);
+            if (!sourceUnit || sourceUnit.owner !== owner || !stillActive) continue;
+            if (normalizeUnitBoosts(sourceUnit.boosts) < 2) continue;
+            const interaction = createYonghengContinuanceInteraction(
+              event.timestamp,
+              owner,
+              targetCardId,
+              sourceUnitId,
+              actualSourcePosition,
+            );
+            if (!hasQueuedInteraction(newState, interaction.id)) {
+              newState = queueInteraction(newState, interaction);
+            }
+            continue;
+          }
 
           if (actionId === 'shouren_brute_impact') {
             const shourenSourceUnit = getUnitAt(newState.core, sourcePosition);
@@ -2029,6 +2309,200 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
 
           const sourceUnit = getUnitAt(newState.core, sourcePosition);
           if (!sourceUnit) continue;
+
+          const yonghengDrawAbilityByAction: Partial<Record<string, YonghengDrawAbilityId>> = {
+            'afterMove:yongheng_intelligence': 'yongheng_intelligence',
+            yongheng_intelligence_draw: 'yongheng_intelligence',
+            yongheng_wisdom_draw: 'yongheng_wisdom',
+            yongheng_analysis_draw: 'yongheng_analysis',
+            yongheng_search_draw: 'yongheng_search',
+          };
+          const yonghengDrawAbility = yonghengDrawAbilityByAction[actionId];
+          if (yonghengDrawAbility) {
+            if (newState.core.players[sourceUnit.owner]?.deck.length <= 0) continue;
+            const interaction = createYonghengDrawInteraction(
+              event.timestamp,
+              sourceUnit.owner,
+              yonghengDrawAbility,
+              sourceUnitId,
+              sourcePosition,
+            );
+            if (!hasQueuedInteraction(newState, interaction.id)) {
+              newState = queueInteraction(newState, interaction);
+            }
+            continue;
+          }
+
+          if (actionId === 'yongheng_mental_invasion_damage' || actionId === 'yongheng_mental_invasion') {
+            const targets = getYonghengMentalInvasionTargets(newState.core, sourceUnit.owner, sourcePosition);
+            if (targets.length === 0) continue;
+            const interactionId = `sw-yongheng-mental-invasion-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildPositionOptions(targets, (pos) => ({
+                action: 'yongheng_mental_invasion',
+                targetPosition: pos,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.yonghengMentalInvasion',
+              options,
+              { sourceId: 'yongheng_mental_invasion', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'yongheng_mental_invasion',
+                sourceUnitId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+            continue;
+          }
+
+          if (actionId === 'yongheng_collision_push_pull') {
+            const targets = getYonghengAdjacentUnitTargets(newState.core, sourcePosition, sourceUnit.owner, true);
+            if (targets.length === 0) continue;
+            const interactionId = `sw-yongheng-collision-target-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildPositionOptions(targets, (pos) => ({
+                action: 'yongheng_collision_target',
+                targetPosition: pos,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.yonghengCollisionTarget',
+              options,
+              { sourceId: 'yongheng_collision', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'yongheng_collision_target',
+                sourceUnitId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+            continue;
+          }
+
+          if (actionId === 'yongheng_warning_move_summoner') {
+            const player = newState.core.players[sourceUnit.owner];
+            const summoner = getSummoner(newState.core, sourceUnit.owner);
+            const destinations = summoner ? getAdjacentCells(summoner.position).filter((pos) => isValidCoord(pos) && isCellEmpty(newState.core, pos)) : [];
+            if (!summoner || player.hand.length === 0 || destinations.length === 0) continue;
+            const interactionId = `sw-yongheng-warning-card-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildYonghengHandOptions(newState.core, sourceUnit.owner, (card) => ({
+                action: 'yongheng_warning_card',
+                targetCardId: card.id,
+                defId: getBaseCardId(card.id),
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.yonghengWarningCard',
+              options,
+              { sourceId: 'yongheng_warning', targetType: 'hand', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'yongheng_warning_card',
+                sourceUnitId,
+                sourcePosition,
+                targetPosition: summoner.position,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+            continue;
+          }
+
+          if (actionId === 'yongheng_application_discard_damage') {
+            const player = newState.core.players[sourceUnit.owner];
+            const targets = getYonghengAdjacentUnitTargets(newState.core, sourcePosition);
+            if (player.hand.length === 0 || targets.length === 0) continue;
+            const interactionId = `sw-yongheng-application-card-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildYonghengHandOptions(newState.core, sourceUnit.owner, (card) => ({
+                action: 'yongheng_application_card',
+                targetCardId: card.id,
+                defId: getBaseCardId(card.id),
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.yonghengApplicationCard',
+              options,
+              { sourceId: 'yongheng_application', targetType: 'hand', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'yongheng_application_card',
+                sourceUnitId,
+                sourcePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+            continue;
+          }
+
+          if (actionId === 'yongheng_arouse_fear_discard' || actionId === 'yongheng_punish_discard') {
+            if (!payload.targetOwner) continue;
+            const abilityId = actionId === 'yongheng_arouse_fear_discard' ? 'yongheng_arouse_fear' : 'yongheng_punish';
+            const interaction = createYonghengForcedDiscardInteraction(
+              event.timestamp,
+              newState.core,
+              payload.targetOwner,
+              abilityId,
+              sourceUnitId,
+              sourcePosition,
+            );
+            if (interaction && !hasQueuedInteraction(newState, interaction.id)) {
+              newState = queueInteraction(newState, interaction);
+            }
+            continue;
+          }
 
           if (actionId === 'huijin_call_guards') {
             if (!getUnitAbilities(sourceUnit, newState.core).includes('huijin_call_guards')) continue;
@@ -4275,6 +4749,274 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 _noSnapshot: true,
               },
             }));
+          }
+
+          if (sw.type === 'yongheng_draw') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_draw') as
+              { action: 'yongheng_draw'; abilityId: YonghengDrawAbilityId } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              playerId: payload.playerId,
+              payload: {
+                abilityId: sw.abilityId,
+                sourceUnitId: sw.sourceUnitId,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'yongheng_mental_invasion') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_mental_invasion') as
+              { action: 'yongheng_mental_invasion'; targetPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              playerId: payload.playerId,
+              payload: {
+                abilityId: 'yongheng_mental_invasion',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'yongheng_collision_target') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_collision_target') as
+              { action: 'yongheng_collision_target'; targetPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            const destinations = getAdjacentCells(picked.targetPosition).filter((pos) => isValidCoord(pos) && isCellEmpty(newState.core, pos));
+            if (destinations.length === 0) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildPositionOptions(destinations, (pos) => ({
+                action: 'yongheng_collision_position',
+                targetPosition: picked.targetPosition,
+                newPosition: pos,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-yongheng-collision-position-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.yonghengCollisionPosition',
+              options,
+              { sourceId: 'yongheng_collision', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'yongheng_collision_position',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetPosition: picked.targetPosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'yongheng_collision_position') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_collision_position') as
+              { action: 'yongheng_collision_position'; targetPosition: CellCoord; newPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              playerId: payload.playerId,
+              payload: {
+                abilityId: 'yongheng_collision',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
+                newPosition: picked.newPosition,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'yongheng_warning_card') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_warning_card') as
+              { action: 'yongheng_warning_card'; targetCardId: string } | undefined;
+            if (!picked || hasSkip) continue;
+            const summoner = getSummoner(newState.core, payload.playerId);
+            if (!summoner) continue;
+            const destinations = getAdjacentCells(summoner.position).filter((pos) => isValidCoord(pos) && isCellEmpty(newState.core, pos));
+            if (destinations.length === 0) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildPositionOptions(destinations, (pos) => ({
+                action: 'yongheng_warning_position',
+                targetPosition: summoner.position,
+                newPosition: pos,
+                targetCardId: picked.targetCardId,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-yongheng-warning-position-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.yonghengWarningPosition',
+              options,
+              { sourceId: 'yongheng_warning', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'yongheng_warning_position',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetPosition: summoner.position,
+                targetCardId: picked.targetCardId,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'yongheng_warning_position') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_warning_position') as
+              { action: 'yongheng_warning_position'; targetPosition: CellCoord; newPosition: CellCoord; targetCardId: string } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              playerId: payload.playerId,
+              payload: {
+                abilityId: 'yongheng_warning',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
+                newPosition: picked.newPosition,
+                targetCardId: picked.targetCardId,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'yongheng_application_card') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_application_card') as
+              { action: 'yongheng_application_card'; targetCardId: string } | undefined;
+            if (!picked || hasSkip) continue;
+            const targets = getYonghengAdjacentUnitTargets(newState.core, sw.sourcePosition);
+            if (targets.length === 0) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...buildPositionOptions(targets, (pos) => ({
+                action: 'yongheng_application_target',
+                targetPosition: pos,
+                targetCardId: picked.targetCardId,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              `sw-yongheng-application-target-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.yonghengApplicationTarget',
+              options,
+              { sourceId: 'yongheng_application', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'yongheng_application_target',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetCardId: picked.targetCardId,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'yongheng_application_target') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_application_target') as
+              { action: 'yongheng_application_target'; targetPosition: CellCoord; targetCardId: string } | undefined;
+            if (!picked || hasSkip) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              playerId: payload.playerId,
+              payload: {
+                abilityId: 'yongheng_application',
+                sourceUnitId: sw.sourceUnitId,
+                targetPosition: picked.targetPosition,
+                targetCardId: picked.targetCardId,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'yongheng_forced_discard') {
+            const picked = values.find((item) => item.action === 'yongheng_forced_discard_card') as
+              { action: 'yongheng_forced_discard_card'; targetOwner: PlayerId; targetCardId: string } | undefined;
+            if (!picked) continue;
+            const sourceUnit = getUnitAt(newState.core, sw.sourcePosition);
+            if (!sourceUnit || sourceUnit.instanceId !== sw.sourceUnitId) continue;
+            nextEvents.push(...executeSwCommand(newState, random, {
+              type: SW_COMMANDS.ACTIVATE_ABILITY,
+              playerId: sourceUnit.owner,
+              payload: {
+                abilityId: sw.abilityId,
+                sourceUnitId: sw.sourceUnitId,
+                targetOwner: sw.targetOwner,
+                targetCardId: picked.targetCardId,
+                _noSnapshot: true,
+              },
+            }));
+          }
+
+          if (sw.type === 'yongheng_continuance') {
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'yongheng_continuance_retain') as
+              { action: 'yongheng_continuance_retain'; targetOwner: PlayerId; targetCardId: string } | undefined;
+            const sourcePosition = findUnitPositionByInstanceId(newState.core, sw.sourceUnitId) ?? sw.sourcePosition;
+            const sourceUnit = getUnitAt(newState.core, sourcePosition);
+            const stillActive = newState.core.players[sw.targetOwner]?.activeEvents.some(card => card.id === sw.targetCardId);
+            const canRetain = !!picked
+              && !hasSkip
+              && !!sourceUnit
+              && sourceUnit.owner === sw.targetOwner
+              && normalizeUnitBoosts(sourceUnit.boosts) >= 2
+              && stillActive;
+            if (canRetain) {
+              nextEvents.push({
+                type: SW_EVENTS.UNIT_CHARGED,
+                payload: {
+                  position: sourcePosition,
+                  delta: -2,
+                  sourceAbilityId: 'yongheng_continuance',
+                  targetCardId: sw.targetCardId,
+                },
+                timestamp: event.timestamp,
+              });
+            } else if (stillActive) {
+              nextEvents.push({
+                type: SW_EVENTS.ACTIVE_EVENT_DISCARDED,
+                payload: {
+                  playerId: sw.targetOwner,
+                  cardId: sw.targetCardId,
+                  yonghengContinuanceResolved: true,
+                },
+                timestamp: event.timestamp,
+              });
+            }
           }
 
           if (sw.type === 'activated_ability_target') {

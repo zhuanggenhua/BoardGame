@@ -13,7 +13,7 @@ import type { FactionId, UnitCard } from './types';
 
 /** 所有合法阵营 ID（从 FactionId 类型派生） */
 export const VALID_FACTION_IDS: readonly FactionId[] = [
-  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren',
+  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren', 'yongheng',
 ] as const;
 
 // ============================================================================
@@ -76,6 +76,12 @@ export const CARD_IDS = {
   SHOUREN_BRUTE_FORCE: 'shouren-brute-force',
   SHOUREN_PRIMAL_FURY: 'shouren-primal-fury',
   SHOUREN_SUPREME_GLORY: 'shouren-supreme-glory',
+
+  // 永恒议会事件卡
+  YONGHENG_LEARNING: 'yongheng-learning',
+  YONGHENG_INSIGHT: 'yongheng-insight',
+  YONGHENG_SEARCH: 'yongheng-search',
+  YONGHENG_MENTAL_INVASION: 'yongheng-mental-invasion',
 } as const;
 
 // ============================================================================

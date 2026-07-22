@@ -67,6 +67,10 @@ import { executeActivateAbility } from './execute/abilities';
 import { executePlayEvent } from './execute/eventCards';
 import { getBaseCardId, CARD_IDS, isFortressUnit, isMoguFungalBeastCard } from './ids';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import {
+  getYonghengDefenderAfterAttackEvents,
+  getYonghengPostProcessEvents,
+} from './yonghengMechanics';
 
 // 辅助函数已迁移到 execute/helpers.ts
 // 保留 getPhaseDisplayName 的导出以保持向后兼容
@@ -100,6 +104,33 @@ function canTriggerHuijinCallGuards(
     { row: unit.position.row, col: unit.position.col - 1 },
     { row: unit.position.row, col: unit.position.col + 1 },
   ].some(pos => isCellEmpty(core, pos));
+}
+
+const INSTANCE_ID_SUFFIX_RE = /#(\d+)$/;
+
+function allocateSummonedInstanceId(core: SummonerWarsCore, cardId: string): string {
+  const usedIds = new Set<string>();
+  for (let row = 0; row < BOARD_ROWS; row += 1) {
+    for (let col = 0; col < BOARD_COLS; col += 1) {
+      const instanceId = core.board[row]?.[col]?.unit?.instanceId;
+      if (instanceId) usedIds.add(instanceId);
+    }
+  }
+
+  let nextSeq = 1;
+  for (const id of usedIds) {
+    const matched = id.match(INSTANCE_ID_SUFFIX_RE);
+    if (!matched) continue;
+    const seq = Number(matched[1]);
+    if (Number.isFinite(seq) && seq >= nextSeq) nextSeq = seq + 1;
+  }
+
+  let candidate = `${cardId}#${nextSeq}`;
+  while (usedIds.has(candidate)) {
+    nextSeq += 1;
+    candidate = `${cardId}#${nextSeq}`;
+  }
+  return candidate;
 }
 
 function isHuijinDazzlingLightProtected(
@@ -265,9 +296,12 @@ export function executeCommand(
           summonPosition = moguFinalFormTarget.position;
         }
 
+        const summonInstanceId = (payload.instanceId as string | undefined)
+          ?? allocateSummonedInstanceId(core, cardId);
+
         events.push({
           type: SW_EVENTS.UNIT_SUMMONED,
-          payload: { playerId, cardId, position: summonPosition, card: unitCard },
+          payload: { playerId, cardId, position: summonPosition, card: unitCard, instanceId: summonInstanceId },
           timestamp,
         });
 
@@ -280,14 +314,23 @@ export function executeCommand(
           ));
         }
 
-        // 聚能（gather_power）：召唤后充能
-        if ((unitCard.abilities ?? []).includes('gather_power')) {
-          events.push({
-            type: SW_EVENTS.UNIT_CHARGED,
-            payload: { position: summonPosition, delta: 1, sourceAbilityId: 'gather_power' },
-            timestamp,
-          });
-        }
+        events.push(...triggerAbilities('onSummon', {
+          state: core,
+          sourceUnit: {
+            cardId,
+            card: unitCard,
+            owner: playerId as PlayerId,
+            position: summonPosition,
+            damage: 0,
+            boosts: 0,
+            hasMoved: false,
+            hasAttacked: false,
+            instanceId: summonInstanceId,
+          },
+          sourcePosition: summonPosition,
+          ownerId: playerId as PlayerId,
+          timestamp,
+        }));
 
         // 编织颂歌：召唤到目标相邻位置时，充能目标
         const cwEvent = player.activeEvents.find(ev =>
@@ -461,6 +504,7 @@ export function executeCommand(
             'frost_axe',         // 冰霜战斧：充能 / 消耗充能附加
             'mogu_transmission', // 鲜血萨满：移动后传输充能
             'huijin_quick_shot',  // 灰烬弓箭手：移动后快速射击
+            'yongheng_intelligence', // 城塞参谋：移动后可抓1
           ];
           for (const abilityId of afterMoveChoiceAbilities) {
             if (unitAbilities.includes(abilityId)) {
@@ -1095,12 +1139,19 @@ export function executeCommand(
         // 这里不能再手动补发 telekinesis / mind_transmission，否则会生成重复交互。
         const afterAttackEvents = triggerAbilities('afterAttack', afterAttackCtx);
         events.push(...afterAttackEvents);
+        events.push(...getYonghengDefenderAfterAttackEvents(
+          core,
+          targetCell?.unit,
+          target,
+          attackerUnit,
+          attacker,
+          timestamp,
+        ));
         const attackedEnemyCard = (targetCell?.unit?.owner !== undefined
           && targetCell.unit.owner !== attackerUnit.owner)
           || (targetCell?.structure?.owner !== undefined
             && targetCell.structure.owner !== attackerUnit.owner);
         if (attackerAbilities.includes('shouren_berserk')
-          && consumedExtraAttackSource !== 'shouren_berserk'
           && attackedEnemyCard
           && manhattanDistance(attacker, target) === 1) {
           const berserkDice = rollDice(1, () => random.random());
@@ -1392,7 +1443,10 @@ export function executeCommand(
     }
 
     case SW_COMMANDS.ACTIVATE_ABILITY: {
-      executeActivateAbility(events, core, playerId, payload, timestamp);
+      const activationPlayerId = command.playerId === '0' || command.playerId === '1'
+        ? command.playerId
+        : playerId;
+      executeActivateAbility(events, core, activationPlayerId, payload, timestamp);
       break;
     }
 
@@ -1726,6 +1780,7 @@ export function executeCommand(
     }
   }
 
+  processedEvents.push(...getYonghengPostProcessEvents(core, processedEvents, timestamp));
   return processedEvents;
 }
 

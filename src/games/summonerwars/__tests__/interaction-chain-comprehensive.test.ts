@@ -784,7 +784,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
     expect(archerAfterDuplicate?.extraAttacks).toBe(1);
   });
 
-  it('[mind_transmission] 普通攻击友方目标可结算，但不满足攻击敌方卡牌触发前提', () => {
+  it('[mind_transmission] 普通攻击友方目标被拒绝，不触发攻击敌方前提', () => {
     resetInstanceCounter();
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'trickster', faction1: 'necromancer' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
@@ -815,7 +815,8 @@ describe('SummonerWars 系统交互桥接回归', () => {
       payload: { attacker: gurzhuangPos, target: friendlyTargetPos },
     });
 
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('无法攻击该目标');
     expect(getSwCurrentType(result.state)).toBeUndefined();
     expect(result.state.core.players['0'].hasAttackedEnemy).toBe(false);
   });

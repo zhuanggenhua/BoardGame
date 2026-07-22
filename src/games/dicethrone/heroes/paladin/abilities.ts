@@ -416,7 +416,7 @@ export const PALADIN_ABILITIES: AbilityDef[] = [
         trigger: { type: 'diceSet', faces: { [FACES.HELM]: 3, [FACES.PRAY]: 1 } },
         effects: [
             grantToken(TOKEN_IDS.RETRIBUTION, 1, abilityEffectText('vengeance', 'gainRetribution')),
-            cpGain(2, abilityEffectText('vengeance', 'gain2CP')),
+            cpGain(3, abilityEffectText('vengeance', 'gain3CP')),
         ]
     },
 

@@ -23,6 +23,10 @@ const TRADE_REQUEST_SENT_SCREENSHOT = `${EVIDENCE_DIR}/05-提出交易等待同�
 const TRADE_AGREEMENT_INCOMING_SCREENSHOT = `${EVIDENCE_DIR}/06-接收方同意交易前.jpg`;
 const TRADE_SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/07-交易结算结果可见.jpg`;
 const TRADE_RETURNED_SCREENSHOT = `${EVIDENCE_DIR}/08-交易后回牌桌状态清空.jpg`;
+const TRADE_TURN_LIMIT_EVIDENCE_DIR = 'evidence/betrayal-core-interactions/trade-turn-limit';
+const TRADE_TURN_LIMIT_INITIAL_SCREENSHOT = `${TRADE_TURN_LIMIT_EVIDENCE_DIR}/01-交易前.jpg`;
+const TRADE_TURN_LIMIT_USED_SCREENSHOT = `${TRADE_TURN_LIMIT_EVIDENCE_DIR}/02-交易完成本回合已交易.jpg`;
+const TRADE_TURN_LIMIT_NEXT_TURN_SCREENSHOT = `${TRADE_TURN_LIMIT_EVIDENCE_DIR}/03-下回合交易恢复.jpg`;
 const NO_RETURN_EVIDENCE_DIR = 'evidence/山屋惊魂-交易只给出完整链路';
 const NO_RETURN_TARGET_SELECTED_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/01-选择队友后只给出兔脚.jpg`;
 const NO_RETURN_REQUEST_SENT_SCREENSHOT = `${NO_RETURN_EVIDENCE_DIR}/02-提出交易等待同意.jpg`;
@@ -91,7 +95,13 @@ async function assertTradeLayoutDoesNotCoverMap(page: Page) {
         const omenBookImage = omenBook?.querySelector<HTMLImageElement>('[data-testid="betrayal-inventory-omen-book-front-atlas"]');
         const ropeText = rope?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const allInventoryText = document.querySelector('[data-testid="betrayal-inventory-section"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
-        const mobileDockActions = document.querySelectorAll('[data-testid^="betrayal-mobile-dock-"]').length;
+        const mobileDockActions = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-testid^="betrayal-mobile-dock-"]'),
+        ).filter((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity || '1') > 0;
+        }).length;
 
         return {
             inventory: rectOf('betrayal-inventory-section'),
@@ -157,7 +167,9 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
         const actionButtonParentTutorialIds = actionButtons.map((button) => (
             button.parentElement?.getAttribute('data-tutorial-id') ?? ''
         ));
-        const actionButtonStyles = actionButtons.map((button) => {
+        const actionButtonStyles = actionButtons
+            .filter((button) => !button.closest('[data-testid="betrayal-trade-flow-banner"]'))
+            .map((button) => {
             const style = window.getComputedStyle(button);
             return {
                 id: button.getAttribute('data-testid') ?? '',
@@ -436,11 +448,12 @@ async function assertTradeConfirmAnchoredToFlow(page: Page) {
 async function assertTradeSelectionClearedAfterSettlement(page: Page) {
     await expect(page.getByTestId('betrayal-selected-inventory-card-name'), '交易结算后不能残留已选物品').toHaveCount(0);
     await expect(page.getByTestId('betrayal-inventory-rope'), '兔脚交易后必须从当前玩家持有区消失').toHaveCount(0);
-    await expect(page.getByTestId('betrayal-trade-status'), '交易结算后目标选择必须清空，状态回到可交易对象提示').toContainText('同房间可交易对象：1人');
+    await expect(page.getByTestId('betrayal-trade-status'), '普通交易结算后本回合交易额度必须锁定').toContainText('本回合已交易');
     const flowBannerCount = await page.getByTestId('betrayal-trade-flow-banner').count();
     if (flowBannerCount > 0) {
-        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '交易结算后提示若仍显示，必须回到从头选择物品').toContainText('先选持有物');
+        await expect(page.getByTestId('betrayal-trade-flow-item-step'), '交易结算后提示若仍显示，必须说明本回合已交易').toContainText('本回合已交易');
         await expect(page.getByTestId('betrayal-trade-flow-target-step'), '交易结算后确认提示若仍显示，必须回到待选择状态').toContainText('先选物品和目标');
+        await expect(page.locator('[data-testid="betrayal-action-trade"][data-trade-confirm-placement="flow-banner"]'), '本回合已交易后不能再出现流程条确认按钮').toHaveCount(0);
     }
     const targetState = await page.evaluate(() => {
         const outline = document.querySelector('[data-testid="betrayal-room-occupant-target-outline-hallway-1"]');
@@ -521,6 +534,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await assertTradeTargetKeepsTeammateCard(page);
         await assertTradeTargetUsesMapToken(page);
         await saveScreenshot(page, TRADE_INITIAL_SCREENSHOT);
+        await saveScreenshot(page, TRADE_TURN_LIMIT_INITIAL_SCREENSHOT);
 
         await page.getByTestId('betrayal-inventory-rope').click();
         await assertTradeLayoutDoesNotCoverMap(page);
@@ -601,6 +615,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
                             core?: {
                                 activePlayerId?: string | null;
                                 pendingTradeAgreement?: unknown | null;
+                                tradeUsedThisTurnPlayerIds?: string[];
                                 currentExplorer?: { inventory?: Array<{ name: string }> };
                                 otherExplorers?: Array<{ playerId: string; inventory?: Array<{ name: string }> }>;
                                 activityLog?: Array<{ text: string }>;
@@ -616,6 +631,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
                 teammateInventory: state?.core?.otherExplorers?.find((explorer) => explorer.playerId === '1')?.inventory?.map((item) => item.name) ?? [],
                 activePlayerId: state?.core?.activePlayerId ?? null,
                 pendingTradeAgreement: state?.core?.pendingTradeAgreement ?? null,
+                tradeUsedThisTurnPlayerIds: state?.core?.tradeUsedThisTurnPlayerIds ?? [],
                 latestLog: state?.core?.activityLog?.[0]?.text ?? null,
                 rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
             };
@@ -627,6 +643,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
             teammateInventory: expect.arrayContaining(['兔脚']),
             activePlayerId: null,
             pendingTradeAgreement: null,
+            tradeUsedThisTurnPlayerIds: expect.arrayContaining(['0']),
             latestLog: expect.stringMatching(/同意交易|给出.*兔脚/),
             rejected: null,
         });
@@ -634,8 +651,45 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await saveScreenshot(page, TRADE_SETTLED_SCREENSHOT);
         await assertTradeSelectionClearedAfterSettlement(page);
         await expect(page.getByTestId('betrayal-board'), '交易结算后必须回到可操作牌桌').toBeVisible();
-        await expect(page.getByTestId('betrayal-action-trade'), '交易后仍在牌桌动作区，可继续下一步').toContainText('交易');
+        await expect(page.getByTestId('betrayal-action-trade'), '普通交易后交易按钮仍在动作区，但本回合必须禁用').toContainText('交易');
+        await expect(page.getByTestId('betrayal-action-trade'), '普通交易每回合一次：同回合第二笔交易入口必须禁用').toBeDisabled();
         await saveScreenshot(page, TRADE_RETURNED_SCREENSHOT);
+        await saveScreenshot(page, TRADE_TURN_LIMIT_USED_SCREENSHOT);
+
+        await page.getByTestId('betrayal-action-endTurn').click();
+        await expect.poll(async () => page.evaluate(() => {
+            const holder = window as unknown as {
+                __BG_TEST_HARNESS__?: {
+                    state?: {
+                        get?: () => {
+                            core?: {
+                                currentPlayer?: string | null;
+                                currentExplorer?: { playerId?: string; inventory?: Array<{ name: string }> };
+                                tradeUsedThisTurnPlayerIds?: string[];
+                            };
+                        };
+                    };
+                };
+            };
+            const state = holder.__BG_TEST_HARNESS__?.state?.get?.();
+            return {
+                currentPlayer: state?.core?.currentPlayer ?? null,
+                currentExplorerPlayerId: state?.core?.currentExplorer?.playerId ?? null,
+                currentInventory: state?.core?.currentExplorer?.inventory?.map((item) => item.name) ?? [],
+                tradeUsedThisTurnPlayerIds: state?.core?.tradeUsedThisTurnPlayerIds ?? [],
+            };
+        }), {
+            message: '换到下一名玩家后普通交易额度必须恢复',
+            timeout: 10000,
+        }).toMatchObject({
+            currentPlayer: '1',
+            currentExplorerPlayerId: '1',
+            currentInventory: expect.arrayContaining(['兔脚']),
+            tradeUsedThisTurnPlayerIds: [],
+        });
+        await expect(page.getByTestId('betrayal-trade-status'), '下一名玩家新回合应重新看到可交易对象').toContainText('同房间可交易对象：1人');
+        await expect(page.getByTestId('betrayal-action-trade'), '下一名玩家新回合可以重新发起普通交易').toBeEnabled();
+        await saveScreenshot(page, TRADE_TURN_LIMIT_NEXT_TURN_SCREENSHOT);
 
         await assertNoFatalFrontendErrors([{ label: 'betrayal-trade-interaction', diagnostics }]);
     });

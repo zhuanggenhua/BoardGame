@@ -62,6 +62,18 @@ const HANDLED_BY_UI_EVENTS = new Set([
 const HANDLED_BY_INTERACTION_SYSTEM = new Set([
     'ice_shards_damage',      // InteractionSystem → 自动 ACTIVATE_ABILITY(ice_shards)
     'feed_beast_check',       // InteractionSystem → 交互确认 → ACTIVATE_ABILITY(feed_beast)
+    'huijin_call_guards',     // InteractionSystem → 选择友方士兵与相邻落点 → ACTIVATE_ABILITY(huijin_call_guards)
+    'huijin_ram',             // InteractionSystem → 选择敌方士兵/英雄与推拉落点 → ACTIVATE_ABILITY(huijin_ram)
+    'huijin_quick_shot',      // InteractionSystem → 移动后选择直线目标 → ACTIVATE_ABILITY(huijin_quick_shot)
+    'yongheng_intelligence_draw', // InteractionSystem → 永恒议会抓牌确认
+    'yongheng_wisdom_draw',       // InteractionSystem → 永恒议会抓牌确认
+    'yongheng_analysis_draw',     // InteractionSystem → 永恒议会抓牌确认
+    'yongheng_search_draw',       // InteractionSystem → 永恒议会抓牌确认
+    'yongheng_mental_invasion_damage', // InteractionSystem → 选择相邻敌方单位造成伤害
+    'yongheng_collision_push_pull',    // InteractionSystem → 选择相邻单位与推拉落点
+    'yongheng_warning_move_summoner',  // InteractionSystem → 弃牌并移动召唤师
+    'yongheng_application_discard_damage', // InteractionSystem → 弃牌并选择相邻单位造成伤害
+    'yongheng_arouse_fear_discard',    // InteractionSystem → 对方弃牌
 ]);
 
 /**
@@ -107,6 +119,7 @@ const HANDLED_BY_COMMAND_FLOW = new Set([
     'mogu_final_form_replace', // → execute SUMMON_UNIT 替换高充能菌化野兽
     'mogu_decay',             // → execute END_PHASE 移动阶段结束处理
     'mogu_parasite',          // → execute END_PHASE 攻击阶段结束处理
+    'shouren_blood_bond',     // → execute DECLARE_ATTACK afterAttack 按 special 数给召唤师充能
 ]);
 
 /**

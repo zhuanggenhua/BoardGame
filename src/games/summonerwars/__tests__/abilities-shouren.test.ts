@@ -23,7 +23,14 @@ import {
 } from '../domain/helpers';
 import { createSummonerWarsInteractionSystem } from '../domain/systems';
 import type { BoardUnit, CellCoord, PlayerId, SummonerWarsCore, UnitCard } from '../domain/types';
-import { createInitializedCore, generateInstanceId, placeTestUnit } from './test-helpers';
+import {
+  createInitializedCore,
+  createPromptResponseCommand,
+  generateInstanceId,
+  getPromptOptionIds,
+  hasActivePrompt,
+  placeTestUnit,
+} from './test-helpers';
 
 function testRandom(values: number[] = [0]): RandomFn {
   let index = 0;
@@ -194,7 +201,7 @@ describe('冰苔兽人 - 狂乱打击', () => {
 });
 
 describe('冰苔兽人 - 北方魔法', () => {
-  it('冰霜萨满未掷出特殊标记时不造成伤害，掷出后按远程标记结算', () => {
+  it('冰霜萨满未掷出特殊标记时不造成伤害，掷出特殊标记后按远程命中正常结算', () => {
     const noSpecialState = createState();
     noSpecialState.phase = 'attack';
     const noSpecialShaman = place(noSpecialState, { row: 4, col: 1 }, COMMON_UNITS_SHOUREN[0]);
@@ -276,6 +283,26 @@ describe('冰苔兽人 - 迟钝', () => {
     }, testRandom([0]));
     expect((withoutSpecial.events.find(event => event.type === SW_EVENTS.UNIT_ATTACKED)?.payload as { hits?: number }).hits).toBe(2);
     expect(withoutSpecial.newState.board[4][4].unit?.damage).toBe(2);
+  });
+
+  it('冰霜萨满掷出特殊标记攻击粉碎者时，迟钝额外伤害会叠加到最终伤害', () => {
+    const state = createState();
+    state.phase = 'attack';
+    const shaman = place(state, { row: 4, col: 1 }, COMMON_UNITS_SHOUREN[0], '1');
+    place(state, { row: 4, col: 3 }, {
+      ...COMMON_UNITS_SHOUREN[1],
+      id: 'slow-high-life-target',
+      life: 20,
+    }, '0');
+    state.currentPlayer = '1';
+
+    const result = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
+      attacker: shaman.position,
+      target: { row: 4, col: 3 },
+    }, testRandom([0.2]));
+
+    expect((result.events.find(event => event.type === SW_EVENTS.UNIT_ATTACKED)?.payload as { hits?: number }).hits).toBe(6);
+    expect(result.newState.board[4][3].unit?.damage).toBe(6);
   });
 });
 
@@ -679,7 +706,7 @@ describe('冰苔兽人 - 血腥急袭', () => {
     expect(skipped.state.core.board[4][4].unit).toBeUndefined();
   });
 
-  it('血腥急袭选择位移后自伤1并移动同一单位实例', () => {
+  it('血腥急袭选择位移后自伤1、移动同一单位实例并继续提供选择', () => {
     const core = createState();
     core.phase = 'summon';
     core.board[4][2].structure = {
@@ -701,17 +728,17 @@ describe('冰苔兽人 - 血腥急袭', () => {
       ['0', '1'],
     );
     const sourceId = summoned.state.core.board[4][3].unit?.instanceId;
-    const current = summoned.state.sys.interaction.current;
     const moved = executePipeline(
       { domain: SummonerWarsDomain, systems },
       summoned.state,
-      { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { interactionId: current!.id, optionId: 'pos:4,4' } },
+      createPromptResponseCommand(summoned.state, '0', 'pos:4,4'),
       testRandom(),
       ['0', '1'],
     );
 
     expect(moved.success).toBe(true);
-    expect(moved.state.sys.interaction.current).toBeUndefined();
+    expect(hasActivePrompt(moved.state)).toBe(true);
+    expect(getPromptOptionIds(moved.state)).toEqual(expect.arrayContaining(['skip']));
     expect(moved.state.core.board[4][3].unit).toBeUndefined();
     expect(moved.state.core.board[4][4].unit?.instanceId).toBe(sourceId);
     expect(moved.state.core.board[4][4].unit?.damage).toBe(1);
@@ -750,7 +777,7 @@ describe('冰苔兽人 - 血腥急袭', () => {
 });
 
 describe('冰苔兽人 - 狂暴', () => {
-  it('技能骰出现特殊标记后可位移并获得一次额外攻击，额外攻击不递归触发狂暴', () => {
+  it('技能骰出现特殊标记后可位移并获得一次额外攻击，额外攻击后会再次掷狂暴骰', () => {
     const core = createState();
     core.phase = 'attack';
     const fighter = place(core, { row: 4, col: 3 }, COMMON_UNITS_SHOUREN[3], '0');
@@ -807,7 +834,9 @@ describe('冰苔兽人 - 狂暴', () => {
     );
     expect(extraAttack.success).toBe(true);
     expect(extraAttack.state.core.board[3][3].unit?.extraAttacks).toBe(0);
-    expect(extraAttack.state.sys.interaction.current).toBeUndefined();
+    const secondOptionIds = getPromptOptionIds(extraAttack.state);
+    expect(secondOptionIds).toContain('pos:2,3');
+    expect(secondOptionIds).toContain('skip');
   });
 
   it('激励可重掷狂暴技能骰并按重掷结果决定是否出现位移', () => {

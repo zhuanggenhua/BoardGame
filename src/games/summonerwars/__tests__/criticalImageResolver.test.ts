@@ -12,6 +12,7 @@ const ALL_HERO_ATLASES = [
     'summonerwars/hero/mogu/hero',
     'summonerwars/hero/huijin/hero',
     'summonerwars/hero/shouren/hero',
+    'summonerwars/hero/yongheng/hero',
 ];
 
 const ALL_TIP_IMAGES = [
@@ -24,6 +25,7 @@ const ALL_TIP_IMAGES = [
     'summonerwars/hero/mogu/tip',
     'summonerwars/hero/huijin/tip',
     'summonerwars/hero/shouren/tip',
+    'summonerwars/hero/yongheng/tip',
 ];
 
 const SELECTION_CRITICAL = [
@@ -139,5 +141,17 @@ describe('summonerWarsCriticalImageResolver', () => {
         expect(result.critical).toContain('summonerwars/hero/shouren/hero');
         expect(result.critical).toContain('summonerwars/hero/shouren/cards');
         expect(result.warm).not.toContain('summonerwars/hero/shouren/cards');
+    });
+
+    it('永恒议会进入对局时 hero 与 cards 图集都进入 critical', () => {
+        const result = summonerWarsCriticalImageResolver(
+            makeState(true, { '0': 'yongheng', '1': 'necromancer' }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('summonerwars/hero/yongheng/hero');
+        expect(result.critical).toContain('summonerwars/hero/yongheng/cards');
+        expect(result.warm).not.toContain('summonerwars/hero/yongheng/cards');
     });
 });

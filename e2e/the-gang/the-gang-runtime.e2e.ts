@@ -73,6 +73,10 @@ const THE_GANG_TWO_HAND_MOBILE_HAND_SWAP_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '08-移动横屏两副手牌调换阶段公共牌无遮挡.jpg',
 );
+const THE_GANG_TWO_HAND_FIVE_PLAYER_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '09-PC五人两副手牌10个筹码含两枚0星.jpg',
+);
 const THE_GANG_TWO_HAND_RULES_PC_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '06-PC规则面板只有两副手牌没有独立手牌调换.jpg',
@@ -488,6 +492,19 @@ async function expectAvailableChipButtons(page: Page, chipPrefix: string, expect
         } else {
             await expect(chipButton).toHaveCount(0);
         }
+    }
+}
+
+async function expectExactChipButtonCounts(page: Page, chipPrefix: string, expectedValues: number[]) {
+    const tokenPile = page.locator('[data-bgg-zone="token-pile"]');
+    await expect(tokenPile.getByRole('button')).toHaveCount(expectedValues.length);
+
+    const expectedCounts = new Map<number, number>();
+    for (const chip of expectedValues) {
+        expectedCounts.set(chip, (expectedCounts.get(chip) ?? 0) + 1);
+    }
+    for (const [chip, count] of expectedCounts.entries()) {
+        await expect(tokenPile.getByRole('button', { name: `${chipPrefix} ${chip} 星`, exact: true })).toHaveCount(count);
     }
 }
 
@@ -1448,6 +1465,67 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             fullPage: false,
         });
         await game.screenshot('桌面两副手牌调换全员确认后进入橙筹码', testInfo);
+    });
+
+    test('桌面端五人两副手牌有10个排名筹码且模式变化保留原手牌', async ({ game, page }, testInfo) => {
+        test.setTimeout(120000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        const playerCount = 5;
+        const chipValues = [0, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: playerCount,
+            seed: 'the-gang-five-player-twohand-redeal-e2e',
+            seat1: 'human',
+            seat2: 'human',
+            seat3: 'human',
+            seat4: 'human',
+            seat5: 'human',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        const initialTopHandSignature = JSON.stringify((await getTheGangState(page))?.core?.players?.['0']?.pocketCards ?? []);
+        await expect(page.getByTestId('the-gang-redeal-heist')).toBeVisible();
+        await page.getByTestId('the-gang-redeal-heist').click();
+        await expect
+            .poll(async () => JSON.stringify((await getTheGangState(page))?.core?.players?.['0']?.pocketCards ?? []), {
+                message: '等待真实入口重新发牌换掉开局底牌',
+            })
+            .not.toBe(initialTopHandSignature);
+
+        const redealtTopHandSignature = JSON.stringify((await getTheGangState(page))?.core?.players?.['0']?.pocketCards ?? []);
+        const rulesPanel = page.getByTestId('the-gang-rules-config');
+        await rulesPanel.getByRole('button', { name: '扩展' }).click();
+        await page.getByTestId('the-gang-rule-toggle-twoHand').click();
+        await expect(page.getByTestId('the-gang-rule-toggle-twoHand')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByRole('button', { name: '确认设置' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    bottomCards: state?.core?.players?.['0']?.secondaryPocketCards?.length ?? 0,
+                    topHandSignature: JSON.stringify(state?.core?.players?.['0']?.pocketCards ?? []),
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                };
+            }, { message: '等待两副手牌设置生效，同时保留原上手底牌' })
+            .toEqual({
+                bottomCards: 2,
+                topHandSignature: redealtTopHandSignature,
+                twoHand: true,
+            });
+
+        await startHeistFromSetup(page);
+        await expect(page.getByTestId('the-gang-redeal-heist')).toHaveCount(0);
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
+        await expect(page.getByTestId('the-gang-chip-hand-selector')).toBeVisible();
+        await page.waitForTimeout(350);
+        await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
+        await page.screenshot({ path: THE_GANG_TWO_HAND_FIVE_PLAYER_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
+        await game.screenshot('桌面五人两副手牌10个筹码含两枚0星', testInfo);
+
+        await chooseTwoHandChipsForSeats(page, playerCount);
+        await expectCurrentRoundChips(page, chipValues.length);
+        await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
     });
 
     test('移动横屏从大厅创建 AI 房间后扩展选择不会被 AI 抢先锁定', async ({ game, page }, testInfo) => {

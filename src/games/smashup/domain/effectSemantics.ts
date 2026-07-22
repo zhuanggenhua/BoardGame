@@ -39,6 +39,7 @@ export interface SemanticRuntimeAction {
 export interface SemanticRuntimeActionMatchOptions {
     controllerLens?: SemanticControllerLens;
     relationToTargetController?: 'any' | 'same' | 'different';
+    exactDefId?: string;
     semanticRole?: SemanticTargetRole;
     targetEffectType?: MinionSemanticEffectType;
     targetMode?: SemanticPreviewMode;
@@ -673,7 +674,11 @@ export function filterSemanticMatchedRuntimeActions(
     options?: SemanticRuntimeActionMatchOptions,
 ): SemanticRuntimeAction[] {
     return actions.filter((action) => {
-        if (!matchesSemanticRuntimeDefId(action.defId, baseDefId)) {
+        if (options?.exactDefId) {
+            if (action.defId !== options.exactDefId) {
+                return false;
+            }
+        } else if (!matchesSemanticRuntimeDefId(action.defId, baseDefId)) {
             return false;
         }
 

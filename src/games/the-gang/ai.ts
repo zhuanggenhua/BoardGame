@@ -3,8 +3,11 @@ import { createAiLegalActionId } from '../../engine/ai';
 import type { AiDecisionContext, AiLegalAction, GameAiRuntime, LocalAiPolicy } from '../../engine/ai';
 import {
     allRequiredChipOwnersHaveChips,
+    allRequiredExitChipsAreTaken,
     evaluateBestTheGangHand,
+    getCurrentRoundExitChipOwners,
     getMissingHandSlotsForPlayer,
+    getRequiredExitChipCount,
     getUnoccupiedChipValues,
     resolveChipOwnerKey,
 } from './domain';
@@ -14,6 +17,7 @@ import { THE_GANG_COMMANDS, type TheGangCore, type TheGangHandSlot, type TheGang
 type TheGangState = MatchState<TheGangCore>;
 
 const ACTION_KIND_TAKE_CHIP = 'take-chip';
+const ACTION_KIND_TAKE_EXIT_CHIP = 'take-exit-chip';
 const ACTION_KIND_END_ROUND = 'end-round';
 const ACTION_KIND_REVEAL_SHOWDOWN = 'reveal-showdown';
 const ACTION_KIND_CONFIRM_HAND_SWAP = 'confirm-hand-swap';
@@ -28,6 +32,17 @@ const createTakeChipAction = (chip: number, handSlot?: TheGangHandSlot): AiLegal
         payload: { chip, ...(handSlot ? { handSlot } : {}) },
     }],
     metadata: { chip, handSlot },
+});
+
+const createTakeExitChipAction = (handSlot?: TheGangHandSlot): AiLegalAction => ({
+    actionId: createAiLegalActionId(ACTION_KIND_TAKE_EXIT_CHIP, handSlot ?? 'single'),
+    kind: ACTION_KIND_TAKE_EXIT_CHIP,
+    label: `${handSlot === 'bottom' ? '下手' : handSlot === 'top' ? '上手' : ''}选择撤离筹码`.trim(),
+    commands: [{
+        type: THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
+        payload: { ...(handSlot ? { handSlot } : {}) },
+    }],
+    metadata: { handSlot },
 });
 
 const createProgressAction = (
@@ -59,6 +74,21 @@ const isProgressAlreadyApprovedByPlayer = (
 
 const allPlayersHaveChips = (core: TheGangCore): boolean => allRequiredChipOwnersHaveChips(core);
 
+const getMissingExitChipHandSlotsForPlayer = (
+    core: TheGangCore,
+    playerId: PlayerId,
+): TheGangHandSlot[] => {
+    if (core.round !== 4 || getRequiredExitChipCount(core) <= 0 || allRequiredExitChipsAreTaken(core)) return [];
+    return (core.rules.config.twoHand ? (['top', 'bottom'] as const) : (['top'] as const))
+        .filter((handSlot) => {
+            const ownerKey = resolveChipOwnerKey(core, playerId, handSlot);
+            return core.currentRoundChips[ownerKey] !== undefined
+                && !getCurrentRoundExitChipOwners(core).includes(ownerKey);
+        });
+};
+
+const uniqueChipValues = (chips: readonly number[]): number[] => [...new Set(chips)];
+
 const getAvailableChipsForPlayer = (
     core: TheGangCore,
     playerId: PlayerId,
@@ -66,8 +96,10 @@ const getAvailableChipsForPlayer = (
 ): number[] => {
     const ownChip = core.currentRoundChips[resolveChipOwnerKey(core, playerId, handSlot)];
 
-    return getChipValues(core.playerIds.length, core.rules.config, core.round)
-        .filter((chip) => chip !== ownChip);
+    return uniqueChipValues(
+        getChipValues(core.playerIds.length, core.rules.config, core.round)
+            .filter((chip) => chip !== ownChip),
+    );
 };
 
 const getUnoccupiedCurrentRoundChips = (core: TheGangCore): number[] => {
@@ -160,6 +192,10 @@ export function buildTheGangAiLegalActions(args: {
 
         if (!allPlayersHaveChips(core)) return actions;
 
+        const exitChipActions = getMissingExitChipHandSlotsForPlayer(core, args.playerId)
+            .map((handSlot) => createTakeExitChipAction(core.rules.config.twoHand ? handSlot : undefined));
+        if (exitChipActions.length > 0) return exitChipActions;
+
         if (core.round < 4 && !isProgressAlreadyApprovedByPlayer(core, args.playerId, 'end-round')) {
             actions.push(createProgressAction(
                 ACTION_KIND_END_ROUND,
@@ -233,6 +269,9 @@ const baselineLocalPolicy: LocalAiPolicy = {
             const preferredAction = targetChipActions.find((action) => action.metadata?.chip === preferredChip);
             return preferredAction ? { actionId: preferredAction.actionId } : { actionId: chipActions[0].actionId };
         }
+
+        const exitChipAction = context.legalActions.find((action) => action.kind === ACTION_KIND_TAKE_EXIT_CHIP);
+        if (exitChipAction) return { actionId: exitChipAction.actionId };
 
         const firstProgressAction = context.legalActions.find((action) => (
             action.kind === ACTION_KIND_END_ROUND

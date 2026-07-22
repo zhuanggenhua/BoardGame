@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { createReplayAdapter } from '../../../engine/adapter';
-import { buildShowdownResults, TheGangDomain } from '../domain';
+import { allRequiredChipOwnersHaveChips, buildShowdownResults, getRequiredChipOwnerKeys, TheGangDomain } from '../domain';
 import { engineConfig } from '../game';
-import { getChipValues } from '../domain/setup';
+import { getChipValues, getExitChipCount } from '../domain/setup';
 import { THE_GANG_COMMANDS, type PlayingCard, type TheGangCommand, type TheGangCore } from '../domain/types';
 
 const stateOf = (core: TheGangCore) => ({
@@ -214,9 +214,10 @@ describe('The Gang domain flow', () => {
         expect(state.core.deck).toBe(twoHandDeck);
     });
 
-    test('改变牌结构的扩展配置才重新发牌', () => {
-        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-rules-config-redeal-test');
+    test('改变牌结构的扩展配置会保留已有牌并只补新牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-rules-config-retune-test');
         let state = adapter.setup(['0', '1', '2']);
+        const initialPlayer0Hand = [...state.core.players['0'].pocketCards];
 
         state = adapter.execute(state, {
             type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
@@ -237,13 +238,15 @@ describe('The Gang domain flow', () => {
         expect(state.core.rules.config.challenges['security-camera']).toBe(1);
         expect(state.core.rules.config.challenges['foot-door']).toBeUndefined();
         expect(state.core.players['0'].pocketCards).toHaveLength(4);
+        expect(state.core.players['0'].pocketCards.slice(0, 2)).toEqual(initialPlayer0Hand);
         expect(state.core.players['0'].communityCards).toHaveLength(1);
         expect(state.core.communityCards).toHaveLength(0);
     });
 
-    test('两副手牌和奥马哈会改变起手牌张', () => {
-        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-two-hand-omaha-deal-test');
+    test('增加和减少起手牌时不重洗已有手牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-hand-count-retune-test');
         let state = adapter.setup(['0', '1', '2']);
+        const initialPlayer0Hand = [...state.core.players['0'].pocketCards];
 
         state = adapter.execute(state, {
             type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
@@ -263,6 +266,31 @@ describe('The Gang domain flow', () => {
         expect(state.core.rules.config.omaha).toBe(true);
         expect(state.core.players['0'].pocketCards).toHaveLength(4);
         expect(state.core.players['0'].secondaryPocketCards).toHaveLength(4);
+        expect(state.core.players['0'].pocketCards.slice(0, 2)).toEqual(initialPlayer0Hand);
+
+        const expandedPlayer0Hand = [...state.core.players['0'].pocketCards];
+        const expandedPlayer0SecondaryHand = [...(state.core.players['0'].secondaryPocketCards ?? [])];
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    ...state.core.rules.config,
+                    omaha: false,
+                    twoHand: false,
+                    challenges: {},
+                },
+            },
+            timestamp: 2,
+        }).state;
+
+        expect(state.core.rules.config.twoHand).toBe(false);
+        expect(state.core.rules.config.omaha).toBe(false);
+        expect(state.core.players['0'].pocketCards).toEqual(expandedPlayer0Hand.slice(0, 2));
+        expect(state.core.players['0'].pocketCards).toEqual(initialPlayer0Hand);
+        expect(state.core.players['0'].secondaryPocketCards).toBeUndefined();
+        expect(expandedPlayer0SecondaryHand).toHaveLength(4);
     });
 
     test('两副手牌最多 5 人', () => {
@@ -292,6 +320,178 @@ describe('The Gang domain flow', () => {
 
         expect(getChipValues(4, twoHandConfig, 1)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
         expect(getChipValues(5, twoHandConfig, 1)).toEqual([0, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        expect(getExitChipCount(4, { ...twoHandConfig, twoHand: false })).toBe(0);
+        expect(getExitChipCount(4, twoHandConfig)).toBe(2);
+        expect(getExitChipCount(5, twoHandConfig)).toBe(3);
+    });
+
+    test('四人两副手牌第 4 轮必须拿够撤离筹码后才能摊牌', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-two-hand-exit-chip-test');
+        let state = adapter.setup(['0', '1', '2', '3']);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }).state;
+        state = stateOf({
+            ...state.core,
+            heistStarted: true,
+            round: 4,
+            phase: 'chip-selection',
+            communityCards: [
+                standardCard('2', 'clubs'),
+                standardCard('7', 'diamonds'),
+                standardCard('9', 'hearts'),
+                standardCard('J', 'clubs'),
+                standardCard('K', 'diamonds'),
+            ],
+            currentRoundChips: {
+                '0:top': 1,
+                '0:bottom': 2,
+                '1:top': 3,
+                '1:bottom': 4,
+                '2:top': 5,
+                '2:bottom': 6,
+                '3:top': 7,
+                '3:bottom': 8,
+            },
+            currentRoundExitChipOwners: [],
+        });
+
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+            playerId: '0',
+            payload: {},
+            timestamp: 2,
+        })).toMatchObject({ valid: false, error: 'missingChips' });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
+            playerId: '0',
+            payload: { handSlot: 'top' },
+            timestamp: 3,
+        }).state;
+        expect(state.core.currentRoundExitChipOwners).toEqual(['0:top']);
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+            playerId: '0',
+            payload: {},
+            timestamp: 4,
+        })).toMatchObject({ valid: false, error: 'missingChips' });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.TAKE_EXIT_CHIP,
+            playerId: '1',
+            payload: { handSlot: 'bottom' },
+            timestamp: 5,
+        }).state;
+
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.REVEAL_SHOWDOWN,
+            playerId: '0',
+            payload: {},
+            timestamp: 6,
+        })).toMatchObject({ valid: true });
+        expect(buildShowdownResults(state.core)
+            .filter((result) => result.exited)
+            .map((result) => `${result.playerId}:${result.handSlot}`)
+            .sort()).toEqual(['0:top', '1:bottom']);
+    });
+
+    test('五人两副手牌可以给 10 个排名位分完两枚 0 星和 1-8 星筹码', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-two-hand-ten-chip-slots-test');
+        let state = adapter.setup(['0', '1', '2', '3', '4']);
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: {
+                config: {
+                    gameMode: 'texas-holdem',
+                    twoHand: true,
+                    challenges: {},
+                },
+            },
+            timestamp: 1,
+        }).state;
+        state = startHeist(adapter, state, 2);
+
+        const ownerKeys = getRequiredChipOwnerKeys(state.core);
+        const chips = [0, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+        expect(ownerKeys).toHaveLength(10);
+        expect(getChipValues(5, state.core.rules.config, 1)).toEqual(chips);
+
+        for (const [index, ownerKey] of ownerKeys.entries()) {
+            const [playerId, handSlot] = ownerKey.split(':') as [string, 'top' | 'bottom'];
+            state = adapter.execute(state, {
+                type: THE_GANG_COMMANDS.TAKE_CHIP,
+                playerId,
+                payload: { chip: chips[index], handSlot },
+                timestamp: 10 + index,
+                skipValidation: true,
+            }).state;
+        }
+
+        expect(state.core.currentRoundChips).toEqual(Object.fromEntries(
+            ownerKeys.map((ownerKey, index) => [ownerKey, chips[index]]),
+        ));
+        expect(allRequiredChipOwnersHaveChips(state.core)).toBe(true);
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.END_ROUND,
+            playerId: '0',
+            payload: {},
+            timestamp: 30,
+        })).toMatchObject({ valid: true });
+    });
+
+    test('开局前可以显式重新发牌，开始抢劫后重发锁定', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-redeal-heist-test');
+        let state = adapter.setup(['0', '1', '2']);
+        const initialSignature = JSON.stringify({
+            players: state.core.players,
+            deck: state.core.deck,
+            communityCards: state.core.communityCards,
+        });
+
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.REDEAL_HEIST,
+            playerId: '0',
+            payload: {},
+            timestamp: 1,
+        })).toMatchObject({ valid: true });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.REDEAL_HEIST,
+            playerId: '0',
+            payload: {},
+            timestamp: 1,
+        }).state;
+
+        expect(JSON.stringify({
+            players: state.core.players,
+            deck: state.core.deck,
+            communityCards: state.core.communityCards,
+        })).not.toBe(initialSignature);
+        expect(state.core.heistNumber).toBe(1);
+        expect(state.core.successes).toBe(0);
+        expect(state.core.failures).toBe(0);
+        expect(state.core.heistStarted).toBe(false);
+
+        state = startHeist(adapter, state, 2);
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.REDEAL_HEIST,
+            playerId: '0',
+            payload: {},
+            timestamp: 3,
+        })).toMatchObject({ valid: false, error: 'rulesLocked' });
     });
 
     test('扩展配置开始抢劫后锁定', () => {

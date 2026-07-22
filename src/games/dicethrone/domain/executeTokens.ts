@@ -484,8 +484,14 @@ export function executeTokenCommand(
                 timestamp,
             } as import('./types').BonusDiceSettledEvent);
             
-            // displayOnly 模式：仅展示骰子结果，伤害/状态已由 custom action 处理
-            if (settlement.displayOnly) {
+            // displayOnly 默认只负责展示；但可被改骰且没有自定义收口的奖励骰，
+            // 必须在确认后用“改后的奖励骰”继续走默认伤害/阈值结算。
+            const shouldResolveDisplayOnlyByCurrentDice =
+                settlement.displayOnly === true
+                && settlement.allowDiceModification === true
+                && !settlement.customResolutionId
+                && settlement.resolutionMode !== 'none';
+            if (settlement.displayOnly && !shouldResolveDisplayOnlyByCurrentDice) {
                 events.push(...followupEvents);
                 break;
             }

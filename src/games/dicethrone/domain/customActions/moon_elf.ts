@@ -8,7 +8,7 @@
  * - 琛屽姩鍗￠€昏緫 (Moon Shadow Strike / Volley / Watch Out)
  */
 
-import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPlayerDieFace } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPendingBonusSettlementDice, getPlayerDieFace } from '../rules';
 import { STATUS_IDS, MOON_ELF_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import type {
@@ -24,10 +24,12 @@ import type {
 } from '../types';
 import { buildDrawEvents } from '../deckEvents';
 import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import type { BonusDieInfo } from '../types';
 
 const FACE = MOON_ELF_DICE_FACE_IDS;
+const MOON_ELF_VOLLEY_SETTLEMENT_ID = 'moon-elf-volley';
 
 // ============================================================================
 // 杈呭姪鍑芥暟
@@ -479,68 +481,40 @@ function handleVolley(context: CustomActionContext): DiceThroneEvent[] {
         return [];
     }
     const events: DiceThroneEvent[] = [];
-    const dice: BonusDieInfo[] = [];
+    const roll = rollMoonElfFiveBonusDice(state, attackerId, random);
+    const bowCount = roll.bowCount;
 
-    const diceValues: number[] = [];
-    const diceFaces: string[] = [];
-    for (let i = 0; i < 5; i++) {
-        const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
-        diceValues.push(value);
-        diceFaces.push(face);
-        dice.push({ index: i, value, face });
-    }
-
-    const bowCount = diceFaces.filter(f => f === FACE.BOW).length;
-    const bonusDamage = bowCount;
-
-    for (let i = 0; i < 5; i++) {
-        events.push({
-            type: 'BONUS_DIE_ROLLED',
-            payload: {
-                value: diceValues[i],
-                face: diceFaces[i],
-                playerId: attackerId,
-                targetPlayerId: opponentId,
-                effectParams: { value: diceValues[i], index: i },
-            },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: timestamp + i,
-        } as BonusDieRolledEvent);
-    }
-
-    events.push({
-        type: 'BONUS_DIE_ROLLED',
-        payload: {
-            value: diceValues[0],
-            face: diceFaces[0],
-            playerId: attackerId,
-            targetPlayerId: opponentId,
-            effectKey: 'bonusDie.effect.volley.result',
-            effectParams: {
+    events.push(
+        ...createMoonElfFiveDiceEvents(
+            attackerId,
+            opponentId,
+            roll,
+            'bonusDie.effect.volley.result',
+            {
                 bowCount,
-                bonusDamage,
+                bonusDamage: bowCount,
             },
+            timestamp,
+        ),
+    );
+
+    events.push(createDisplayOnlySettlement(
+        sourceAbilityId,
+        attackerId,
+        opponentId,
+        roll.dice,
+        timestamp + 6,
+        {
+            summaryEffectKey: 'bonusDie.effect.volley.result',
+            summaryEffectParams: {
+                bowCount,
+                bonusDamage: bowCount,
+            },
+            customResolutionId: MOON_ELF_VOLLEY_SETTLEMENT_ID,
+            allowDiceModification: true,
+            opensAfterRollConfirmedResponseWindow: bowCount > 0,
         },
-        sourceCommandType: 'ABILITY_EFFECT',
-        timestamp: timestamp + 5,
-    } as BonusDieRolledEvent);
-
-    if (bowCount > 0) {
-        // 统一走事件 + reducer，让攻击修正卡在攻击已创建和未创建两种时序下都能生效。
-        events.push({
-            type: 'BONUS_DAMAGE_ADDED',
-            payload: {
-                playerId: attackerId,
-                amount: bowCount,
-                sourceCardId: 'volley',
-            },
-            sourceCommandType: 'ABILITY_EFFECT',
-            timestamp: timestamp + 6,
-        } as DiceThroneEvent);
-    }
-
-    events.push(applyStatus(opponentId, STATUS_IDS.ENTANGLE, 1, sourceAbilityId, state, timestamp + 7));
+    ));
 
     return events;
 }
@@ -694,6 +668,41 @@ function handleEntangleEffect(context: CustomActionContext): DiceThroneEvent[] {
 // ============================================================================
 
 export function registerMoonElfCustomActions(): void {
+    registerBonusDiceSettlementHandler(MOON_ELF_VOLLEY_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+        const bowCount = getPendingBonusSettlementDice(settlement)
+            .filter(die => die.face === FACE.BOW).length;
+        const followupEvents: DiceThroneEvent[] = [];
+
+        if (bowCount > 0) {
+            followupEvents.push({
+                type: 'BONUS_DAMAGE_ADDED',
+                payload: {
+                    playerId: settlement.attackerId,
+                    amount: bowCount,
+                    sourceCardId: 'volley',
+                },
+                sourceCommandType: 'SKIP_BONUS_DICE_REROLL',
+                timestamp: timestamp + 1,
+            } as DiceThroneEvent);
+        }
+
+        followupEvents.push(
+            applyStatus(
+                settlement.targetId,
+                STATUS_IDS.ENTANGLE,
+                1,
+                settlement.sourceAbilityId,
+                state,
+                timestamp + 2,
+            ),
+        );
+
+        return {
+            totalDamage: bowCount,
+            followupEvents,
+        };
+    });
+
     // 闀垮紦杩炲嚮鍒ゅ畾
     registerCustomActionHandler('moon_elf-longbow-bonus-check-4', handleLongbowBonusCheck4, {
         categories: ['status'],

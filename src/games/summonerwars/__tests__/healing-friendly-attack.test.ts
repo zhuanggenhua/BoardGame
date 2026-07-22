@@ -1,6 +1,6 @@
 /**
- * 友方攻击测试
- * 验证普通攻击可以攻击友方卡牌；牧师治疗技能会把友方攻击改为治疗
+ * 友方治疗目标测试
+ * 验证普通攻击不能攻击友方卡牌；牧师治疗技能会把友方目标改为治疗
  */
 
 import { describe, it, expect } from 'vitest';
@@ -194,7 +194,7 @@ describe('治疗技能 - 友军攻击', () => {
     expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 4, col: 3 })).toBe(false);
   });
 
-  it('普通攻击可以攻击满足距离的友方卡牌，但不算攻击过敌方', () => {
+  it('普通攻击不能攻击满足距离的友方卡牌', () => {
     const state = createHealingTestState();
     
     // 替换为普通士兵（无 healing 技能）
@@ -253,12 +253,12 @@ describe('治疗技能 - 友军攻击', () => {
       structure: undefined,
     };
     
-    expect(canAttack(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(true);
-    expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(true);
+    expect(canAttack(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(false);
+    expect(canAttackEnhanced(state.core, { row: 3, col: 3 }, { row: 3, col: 4 })).toBe(false);
 
     const magicBefore = state.core.players['0'].magic;
     const result = runner.run({
-      name: '普通攻击友方卡牌',
+      name: '普通攻击拒绝友方卡牌',
       setup: () => state,
       commands: [
         {
@@ -273,8 +273,10 @@ describe('治疗技能 - 友军攻击', () => {
     });
 
     expect(result.passed).toBe(true);
-    expect(result.steps[0].success).toBe(true);
-    expect(result.finalState.core.players['0'].hasAttackedEnemy).toBe(false);
+    expect(result.steps[0].success).toBe(false);
+    expect(result.steps[0].error).toBe('无法攻击该目标');
+    expect(result.finalState.core.players['0'].hasAttackedEnemy).not.toBe(true);
+    expect(result.finalState.core.players['0'].attackCount).toBe(0);
     expect(result.finalState.core.players['0'].magic).toBe(magicBefore);
   });
 

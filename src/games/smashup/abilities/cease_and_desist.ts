@@ -28,9 +28,13 @@ import {
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
-import { registerPowerModifier } from '../domain/ongoingModifiers';
+import {
+    getActionControllerId,
+    registerCustomPowerModifiers,
+    registerOngoingPowerModifier,
+    registerPowerModifier,
+} from '../domain/ongoingModifiers';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
-import { getActionControllerId } from '../domain/ongoingModifiers';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef, getMinionDef } from '../data/cards';
@@ -514,44 +518,171 @@ function pupoks(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
+const scoundrelChooseBasePrompt = createPromptProgram<
+    PromptContext<{
+        sourceBaseIndex: number;
+        sourceMinionUid: string;
+        sourceMinionDefId: string;
+        companionUid: string;
+        companionDefId: string;
+    }>
+, SmashUpCore, SmashUpEvent>({
+    sourceId: 'astroknights_scoundrel_choose_base',
+    buildInteraction: context => createAbilityRuntimeSimpleChoice(
+        `astroknights_scoundrel_choose_base_${context.sourceMinionUid}_${context.companionUid}_${context.now}`,
+        context.playerId,
+        '恶棍：选择移动到的基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases
+                .map((base, baseIndex) => ({
+                    baseIndex,
+                    label: getCardDef(base.defId)?.name ?? base.defId,
+                }))
+                .filter(base => base.baseIndex !== context.sourceBaseIndex),
+            context.matchState.core,
+        ),
+        {
+            sourceId: 'astroknights_scoundrel_choose_base',
+            targetType: 'base',
+            titleKey: 'ui.astroknights_scoundrel_choose_base_title',
+            responseValidationMode: 'live',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const destinationBaseIndex = (value as BaseChoice | undefined)?.baseIndex;
+        if (
+            destinationBaseIndex === undefined
+            || destinationBaseIndex === context.sourceBaseIndex
+            || !state.core.bases[destinationBaseIndex]
+        ) {
+            return { events: [] };
+        }
+
+        const sourceBase = state.core.bases[context.sourceBaseIndex];
+        const self = sourceBase?.minions.find(minion =>
+            minion.uid === context.sourceMinionUid
+            && minion.controller === context.playerId);
+        const companion = sourceBase?.minions.find(minion =>
+            minion.uid === context.companionUid
+            && minion.controller === context.playerId);
+        if (!self || !companion) return { events: [] };
+
+        return {
+            events: [
+                ...buildValidatedMoveEvents(state.core, {
+                    minionUid: self.uid,
+                    minionDefId: self.defId,
+                    fromBaseIndex: context.sourceBaseIndex,
+                    toBaseIndex: destinationBaseIndex,
+                    reason: 'astroknights_scoundrel',
+                    now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'astroknights_scoundrel',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
+                    sourceKind: 'nonAction',
+                }),
+                ...buildValidatedMoveEvents(state.core, {
+                    minionUid: companion.uid,
+                    minionDefId: companion.defId,
+                    fromBaseIndex: context.sourceBaseIndex,
+                    toBaseIndex: destinationBaseIndex,
+                    reason: 'astroknights_scoundrel',
+                    now: timestamp,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'astroknights_scoundrel',
+                    sourceControllerId: context.playerId,
+                    sourceBaseIndex: context.sourceBaseIndex,
+                    sourceKind: 'nonAction',
+                }),
+            ],
+        };
+    },
+});
+
+const scoundrelChooseMinionPrompt = createPromptProgram<
+    PromptContext<{
+        sourceBaseIndex: number;
+        sourceMinionUid: string;
+        sourceMinionDefId: string;
+        candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
+    }>
+, SmashUpCore, SmashUpEvent>({
+    sourceId: 'astroknights_scoundrel_choose_minion',
+    buildInteraction: context => createAbilityRuntimeSimpleChoice(
+        `astroknights_scoundrel_choose_minion_${context.sourceMinionUid}_${context.now}`,
+        context.playerId,
+        '恶棍：选择这里你的另一个随从',
+        buildMinionTargetOptions(context.candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'astroknights_scoundrel',
+            sourceKind: 'nonAction',
+            effectType: 'move',
+        }),
+        {
+            sourceId: 'astroknights_scoundrel_choose_minion',
+            targetType: 'minion',
+            titleKey: 'ui.astroknights_scoundrel_choose_minion_title',
+            responseValidationMode: 'live',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || !context.candidates.some(candidate => candidate.uid === selected.minionUid)) {
+            return { events: [] };
+        }
+
+        const sourceBase = state.core.bases[context.sourceBaseIndex];
+        const self = sourceBase?.minions.find(minion =>
+            minion.uid === context.sourceMinionUid
+            && minion.controller === context.playerId);
+        const companion = sourceBase?.minions.find(minion =>
+            minion.uid === selected.minionUid
+            && minion.uid !== context.sourceMinionUid
+            && minion.controller === context.playerId);
+        if (!self || !companion) return { events: [] };
+
+        return {
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                companionUid: companion.uid,
+                companionDefId: companion.defId,
+            },
+            nextProgram: scoundrelChooseBasePrompt,
+        };
+    },
+});
+
 function scoundrel(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base || ctx.state.bases.length <= 1) return { events: [] };
-    const dest = firstOtherBaseIndex(ctx.state, ctx.baseIndex);
-    if (dest === undefined) return { events: [] };
-    const self = base.minions.find(minion => minion.uid === ctx.cardUid);
-    const companion = base.minions.find(minion => minion.controller === ctx.playerId && minion.uid !== ctx.cardUid);
-    if (!self || !companion) return { events: [] };
-    return {
-        events: [
-            ...buildValidatedMoveEvents(ctx.state, {
-                minionUid: self.uid,
-                minionDefId: self.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toBaseIndex: dest,
-                reason: 'astroknights_scoundrel',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'astroknights_scoundrel',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'nonAction',
-            }),
-            ...buildValidatedMoveEvents(ctx.state, {
-                minionUid: companion.uid,
-                minionDefId: companion.defId,
-                fromBaseIndex: ctx.baseIndex,
-                toBaseIndex: dest,
-                reason: 'astroknights_scoundrel',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'astroknights_scoundrel',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-                sourceKind: 'nonAction',
-            }),
-        ],
-    };
+    const self = base.minions.find(minion => minion.uid === ctx.cardUid && minion.controller === ctx.playerId);
+    if (!self) return { events: [] };
+
+    const candidates = base.minions
+        .filter(minion => minion.controller === ctx.playerId && minion.uid !== ctx.cardUid)
+        .map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex: ctx.baseIndex,
+            label: getMinionDef(minion.defId)?.name ?? minion.defId,
+        }));
+    if (candidates.length === 0) return { events: [] };
+
+    return runtimeToAbilityResult(executeAbilityProgram(scoundrelChooseMinionPrompt, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceBaseIndex: ctx.baseIndex,
+        sourceMinionUid: self.uid,
+        sourceMinionDefId: self.defId,
+        candidates,
+    }));
 }
 
 const astroRobotPrompt = createPromptProgram<
@@ -1740,15 +1871,16 @@ function registerCeaseAndDesistBaseAbilities(): void {
     registerBaseAbility('base_hive_of_scum_and_villainy', 'onActionPlayed', baseHiveOnActionPlayed);
 }
 function registerOngoingPieces(): void {
-    registerPowerModifier('astroknights_laser_sword', (ctx) =>
-        ctx.minion.attachedActions.filter(action => matchesDefId(action.defId, 'astroknights_laser_sword')).length * 2);
-    registerPowerModifier('astroknights_ghost_knight', (ctx) => {
-        const hasGhost = ctx.base.minions.some(minion =>
-            minion.controller === ctx.minion.controller
-            && minion.uid !== ctx.minion.uid
-            && matchesDefId(minion.defId, 'astroknights_ghost_knight'));
-        return hasGhost ? 2 : 0;
-    });
+    registerOngoingPowerModifier('astroknights_laser_sword', 'minion', 'self', 2);
+    registerCustomPowerModifiers([{
+        sourceDefId: 'astroknights_ghost_knight',
+        compute: (ctx, helpers) => (
+            helpers.countMinionsOnBaseMatchingRuntimeDefId(ctx, 'astroknights_ghost_knight', {
+                controllerId: ctx.minion.controller,
+                excludeSelf: true,
+            }) > 0 ? 2 : 0
+        ),
+    }]);
     registerPowerModifier('changerbots_cesium_armor', (ctx) =>
         ctx.minion.attachedActions.filter(action => matchesDefId(action.defId, 'changerbots_cesium_armor')).length);
     registerPowerModifier('changerbots_matrix_of_bossiness', (ctx) =>

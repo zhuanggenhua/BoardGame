@@ -215,6 +215,9 @@ export function createDisplayOnlySettlement(
     options?: {
         summaryEffectKey?: string;
         summaryEffectParams?: Record<string, string | number>;
+        customResolutionId?: string;
+        allowDiceModification?: boolean;
+        opensAfterRollConfirmedResponseWindow?: boolean;
     },
 ): BonusDiceRerollRequestedEvent {
     return {
@@ -234,6 +237,9 @@ export function createDisplayOnlySettlement(
                 displayOnly: true,
                 summaryEffectKey: options?.summaryEffectKey,
                 summaryEffectParams: options?.summaryEffectParams,
+                customResolutionId: options?.customResolutionId,
+                allowDiceModification: options?.allowDiceModification,
+                opensAfterRollConfirmedResponseWindow: options?.opensAfterRollConfirmedResponseWindow,
             },
         },
         sourceCommandType: 'ABILITY_EFFECT',
@@ -395,6 +401,12 @@ export function createBonusDiceWithReroll(
                     readyToSettle: false,
                     displayOnly: true,
                     showTotal: config.showTotal ?? true,
+                    threshold: config.threshold,
+                    thresholdEffect: config.thresholdEffect,
+                    resolutionMode: config.resolutionMode ?? 'damage',
+                    attackBonusScale: config.attackBonusScale ?? 'raw',
+                    attackBonusSourceCardId: config.attackBonusSourceCardId,
+                    postSettleBonusDamageAdds: config.postSettleBonusDamageAdds,
                     customResolutionId: config.customResolutionId,
                     allowDiceModification: config.allowDiceModification,
                     opensAfterRollConfirmedResponseWindow,

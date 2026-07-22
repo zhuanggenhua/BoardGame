@@ -31,6 +31,7 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import {
   findSystemAbilityPositionOption,
   findSystemAbilityUnitOptionByPosition,
+  findSystemHandCardOptionByCardId,
   getSystemAbilityUiRoute,
   listSystemAbilityPositionTargets,
   resolveBeforeAttackCancellation,
@@ -623,6 +624,12 @@ export function useCellInteraction({
         });
         return;
       }
+      const systemHandCardOption = findSystemHandCardOptionByCardId(swInteraction, abilityMode, cardId);
+      if (systemHandCardOption) {
+        respondInteractionOption(systemHandCardOption.id);
+        setAbilityMode(null);
+        return;
+      }
       const selected = abilityMode.selectedCardIds ?? [];
       const isSelected = selected.includes(cardId);
       if (
@@ -680,7 +687,7 @@ export function useCellInteraction({
         prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]
       );
     }
-  }, [abilityMode, core, currentPhase, dispatch, isMyTurn, myHand, myPlayerId, setAbilityMode, showToast, swInteraction, t]);
+  }, [abilityMode, core, currentPhase, dispatch, isMyTurn, myHand, myPlayerId, respondInteractionOption, setAbilityMode, showToast, swInteraction, t]);
 
   // 手牌选中（召唤/建造阶段单选）
   const handleCardSelect = (cardId: string | null) => {

@@ -21,6 +21,7 @@ import { BARBARIC_ABILITIES } from './abilities-barbaric';
 import { MOGU_ABILITIES } from './abilities-mogu';
 import { HUIJIN_ABILITIES } from './abilities-huijin';
 import { SHOUREN_ABILITIES } from './abilities-shouren';
+import { YONGHENG_ABILITIES } from './abilities-yongheng';
 import { abilityText } from './abilityTextHelper';
 import type { InteractionChain } from '../../../engine/primitives/ability';
 
@@ -43,6 +44,7 @@ export type AbilityTrigger =
   | 'onTurnEnd'          // 回合结束时（血腥狂怒充能衰减）
   | 'onPhaseStart'       // 阶段开始时（幻化）
   | 'onPhaseEnd'         // 阶段结束时
+  | 'afterDraw'          // 抓牌后（永恒议会主动事件）
   | 'activated'          // 主动激活（复活死灵）
   | 'passive'            // 被动效果（暴怒）
   | 'onDamageCalculation' // 伤害计算时（暴怒加成）
@@ -132,6 +134,7 @@ export type AbilityCondition =
   | { type: 'isInRange'; target: TargetRef; range: number }
   | { type: 'isOwner'; target: TargetRef; owner: 'self' | 'opponent' }
   | { type: 'hasCardInDiscard'; cardType: string }
+  | { type: 'deckEmpty'; target: 'owner' | 'opponent' }
   | { type: 'and'; conditions: AbilityCondition[] }
   | { type: 'or'; conditions: AbilityCondition[] }
   | { type: 'not'; condition: AbilityCondition };
@@ -683,3 +686,6 @@ abilityRegistry.registerAll(HUIJIN_ABILITIES);
 
 // 注册冰苔兽人技能
 abilityRegistry.registerAll(SHOUREN_ABILITIES);
+
+// 注册永恒议会技能
+abilityRegistry.registerAll(YONGHENG_ABILITIES);

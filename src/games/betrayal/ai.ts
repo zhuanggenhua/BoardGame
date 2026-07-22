@@ -10,6 +10,7 @@ import { BETRAYAL_COMMANDS } from './commands';
 import {
     BETRAYAL_EXPLORER_CATALOG,
     isImplementedBetrayalHauntCardNumber,
+    type BetrayalScenarioCardId,
     type BetrayalScenarioId,
     type BetrayalTraitKey,
     type BetrayalUseEffectSeed as UseEffectProfile,
@@ -113,6 +114,8 @@ interface BetrayalAiRoom {
 interface BetrayalAiCore {
     phase: 'characterSelect' | 'preHaunt' | 'haunt' | 'endgame';
     scenarioId: BetrayalScenarioId;
+    proposedScenarioCardId: BetrayalScenarioCardId;
+    scenarioCardConfirmations: Record<string, BetrayalScenarioCardId>;
     playerIds: string[];
     selectedExplorerByPlayerId: Record<string, string>;
     readyPlayerIds: string[];
@@ -171,6 +174,7 @@ type BetrayalAiValidator = (
 const ACTION_KINDS = {
     SELECT_EXPLORER: 'select-explorer',
     CONFIRM_EXPLORER: 'confirm-explorer',
+    CONFIRM_SCENARIO_CARD: 'confirm-scenario-card',
     START_SCENARIO: 'start-scenario',
     RESOLVE_EVENT_CHOICE: 'resolve-event-choice',
     MOVE_TO_ROOM: 'move-to-room',
@@ -416,13 +420,27 @@ function buildCharacterSelectActions(
         return action ? [action] : [];
     }
 
+    if (core.scenarioCardConfirmations[playerId] !== core.proposedScenarioCardId) {
+        const action = createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
+            payload: {},
+            kind: ACTION_KINDS.CONFIRM_SCENARIO_CARD,
+            label: '确认剧本卡',
+            metadata: { visibleStepDelayPolicy: 'hidden' },
+        });
+        return action ? [action] : [];
+    }
+
     if (core.readyPlayerIds.length === core.playerIds.length) {
         const action = createValidatedAction({
             validate,
             state,
             playerId,
             type: BETRAYAL_COMMANDS.START_SCENARIO,
-            payload: { scenarioId: core.scenarioId },
+            payload: {},
             kind: ACTION_KINDS.START_SCENARIO,
             label: '开始剧本',
             metadata: { visibleStepDelayPolicy: 'hidden' },
@@ -1687,6 +1705,8 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return 1000;
         case ACTION_KINDS.CONFIRM_EXPLORER:
             return 1100;
+        case ACTION_KINDS.CONFIRM_SCENARIO_CARD:
+            return 1150;
         case ACTION_KINDS.START_SCENARIO:
             return 1200;
         case ACTION_KINDS.RESOLVE_EVENT_CHOICE:

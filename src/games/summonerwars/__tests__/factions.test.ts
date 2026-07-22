@@ -26,6 +26,8 @@ import { getBaseCardId } from '../domain/ids';
 import {
     SHOUREN_CARDS_ATLAS,
     SHOUREN_HERO_ATLAS,
+    YONGHENG_CARDS_ATLAS,
+    YONGHENG_HERO_ATLAS,
 } from '../ui/cardAtlas';
 
 const createEmptyBoard = () => Array.from({ length: 6 }, () => Array.from({ length: 8 }, () => ({})));
@@ -81,6 +83,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('莫古')).toBe('mogu');
         expect(resolveFactionId('灰烬')).toBe('huijin');
         expect(resolveFactionId('冰苔兽人')).toBe('shouren');
+        expect(resolveFactionId('永恒议会')).toBe('yongheng');
     });
 
     it('英文阵营 ID 应原样返回', () => {
@@ -93,6 +96,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('mogu')).toBe('mogu');
         expect(resolveFactionId('huijin')).toBe('huijin');
         expect(resolveFactionId('shouren')).toBe('shouren');
+        expect(resolveFactionId('yongheng')).toBe('yongheng');
     });
 
     it('未知字符串应原样返回（兜底）', () => {
@@ -197,6 +201,54 @@ describe('召唤师战争卡面数值录入', () => {
 
         expect(SHOUREN_HERO_ATLAS).toMatchObject({ imageW: 1005, imageH: 741, cols: 1, rows: 1 });
         expect(SHOUREN_CARDS_ATLAS).toMatchObject({ imageW: 8088, imageH: 1454, cols: 8, rows: 2 });
+    });
+
+    it('永恒议会牌组、起始阵型与图集合同应完整接入', () => {
+        const catalogEntry = FACTION_CATALOG.find(faction => faction.id === 'yongheng');
+        expect(catalogEntry).toMatchObject({
+            nameKey: 'factions.yongheng',
+            heroImagePath: 'summonerwars/hero/yongheng/hero',
+            tipImagePath: 'summonerwars/hero/yongheng/tip',
+            selectable: true,
+            statusTag: 'under_construction',
+        });
+
+        const deck = createDeckByFactionId('yongheng');
+        expect(deck.summoner).toMatchObject({
+            name: '大议长艾迪雅',
+            strength: 3,
+            life: 13,
+            attackType: 'ranged',
+            spriteAtlas: 'hero',
+        });
+        expect(deck.summonerPosition).toEqual({ row: 0, col: 3 });
+        expect(deck.startingGatePosition).toEqual({ row: 1, col: 3 });
+        expect(deck.startingUnits.map(({ unit, position }) => ({ name: unit.name, position }))).toEqual([
+            { name: '城塞参谋', position: { row: 2, col: 2 } },
+            { name: '心灵骑士', position: { row: 2, col: 3 } },
+        ]);
+
+        expect(deck.deck).toHaveLength(30);
+        expect(deck.deck.filter(card => card.cardType === 'unit' && card.unitClass === 'champion')).toHaveLength(3);
+        expect(deck.deck.filter(card => card.cardType === 'unit' && card.unitClass === 'common')).toHaveLength(16);
+        expect(deck.deck.filter(card => card.cardType === 'event')).toHaveLength(8);
+        expect(deck.deck.filter(card => card.cardType === 'structure')).toHaveLength(3);
+
+        const uniqueSpriteIndexes = new Set(
+            deck.deck
+                .filter(card => card.spriteAtlas === 'cards' && card.cardType !== 'structure')
+                .map(card => card.spriteIndex),
+        );
+        expect(uniqueSpriteIndexes).toEqual(new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
+
+        const poolGroups = groupCardsByType(getCardPoolByFaction('yongheng'));
+        expect(poolGroups.summoners).toHaveLength(1);
+        expect(poolGroups.champions).toHaveLength(3);
+        expect(poolGroups.commons).toHaveLength(4);
+        expect(poolGroups.events.map(card => card.name).sort()).toEqual(['心念侵袭', '探寻', '洞察'].sort());
+
+        expect(YONGHENG_HERO_ATLAS).toMatchObject({ imageW: 1269, imageH: 929, cols: 1, rows: 1 });
+        expect(YONGHENG_CARDS_ATLAS).toMatchObject({ imageW: 8088, imageH: 1454, cols: 8, rows: 2 });
     });
 });
 
