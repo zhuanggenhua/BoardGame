@@ -83,6 +83,17 @@ const HUNGRY_HOUSE_CULTIST_TOKEN_ASSETS = [
     'betrayal/tokens/monsters/small-monster-6-front',
 ] as const;
 
+const HELPING_HANDS_STRANGE_AMULET_CARD_ID = 'strange-amulet';
+const HELPING_HANDS_STRANGE_AMULET_CARD: BetrayalInventoryCard = {
+    id: HELPING_HANDS_STRANGE_AMULET_CARD_ID,
+    name: '奇异护符',
+    kind: 'item',
+};
+const HELPING_HANDS_TROLL_HAND_TOKEN_ASSETS = [
+    'betrayal/tokens/monsters/small-monster-1-front',
+    'betrayal/tokens/monsters/small-monster-2-front',
+] as const;
+
 export interface BetrayalInventoryCard {
     id: string;
     name: string;
@@ -426,6 +437,21 @@ export interface BetrayalHungryHouseRuntimeState {
     sacrificedCorpseIds: string[];
 }
 
+export interface BetrayalHelpingHandsRuntimeState {
+    strangeAmuletCardId: string;
+    strangeAmuletFoundDuringSetup: boolean;
+    trollHandIds: string[];
+    monsterTurnAfterPlayerId: string;
+}
+
+export interface BetrayalHelpingHandsMonsterTurnStatus {
+    active: boolean;
+    controllerPlayerId: string | null;
+    monsterTurnAfterPlayerId: string | null;
+    trollHandIds: string[];
+    reason: string | null;
+}
+
 export interface BetrayalDustSicknessSwapResult {
     fromPlayerId: string;
     toPlayerId: string;
@@ -462,6 +488,7 @@ export interface BetrayalScenarioRuntimeStatus {
     usedRoomEffectIdsThisTurn: string[];
     hauntSetupQueue: BetrayalHauntSetupQueueEntry[];
     dust?: BetrayalDustRuntimeState;
+    helpingHands?: BetrayalHelpingHandsRuntimeState;
     hungryHouse?: BetrayalHungryHouseRuntimeState;
     magicCamera?: BetrayalMagicCameraRuntimeState;
 }
@@ -499,6 +526,8 @@ export type BetrayalHauntSetupQueueEntryId =
     | 'first-player-left-of-traitor'
     | 'announce-hidden-traitor'
     | 'deal-secret-sickness-tokens'
+    | 'recover-strange-amulet'
+    | 'place-troll-hands'
     | 'monster-card-left-of-revealer'
     | 'prepare-research-tokens'
     | 'first-player-left-of-revealer'
@@ -744,6 +773,7 @@ type BetrayalEvent =
         dustSetup?: BetrayalDustRuntimeState;
         magicCameraSetup?: BetrayalMagicCameraRuntimeState;
         hungryHouseSetup?: BetrayalHungryHouseRuntimeState;
+        helpingHandsSetup?: BetrayalHelpingHandsRuntimeState;
         nextPendingEventChoice?: BetrayalPendingEventChoiceState;
         eventEffect?: UseEffectProfile;
         eventRoll?: {
@@ -807,6 +837,7 @@ type BetrayalEvent =
         dustSetup?: BetrayalDustRuntimeState;
         magicCameraSetup?: BetrayalMagicCameraRuntimeState;
         hungryHouseSetup?: BetrayalHungryHouseRuntimeState;
+        helpingHandsSetup?: BetrayalHelpingHandsRuntimeState;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.HAUNT_ATTACK_RESOLVED, {
@@ -2527,6 +2558,129 @@ function cloneHungryHouseRuntimeState(hungryHouse: BetrayalHungryHouseRuntimeSta
     };
 }
 
+function isHelpingHandsHaunt(core: BetrayalCore): boolean {
+    return core.phase === 'haunt'
+        && core.scenarioRuntime.hauntCardNumber === 12
+        && Boolean(core.scenarioRuntime.helpingHands);
+}
+
+function isStrangeAmuletCard(card: BetrayalInventoryCard): boolean {
+    return resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_CARD_ID;
+}
+
+function cloneHelpingHandsRuntimeState(helpingHands: BetrayalHelpingHandsRuntimeState): BetrayalHelpingHandsRuntimeState {
+    return {
+        strangeAmuletCardId: helpingHands.strangeAmuletCardId,
+        strangeAmuletFoundDuringSetup: helpingHands.strangeAmuletFoundDuringSetup,
+        trollHandIds: [...helpingHands.trollHandIds],
+        monsterTurnAfterPlayerId: helpingHands.monsterTurnAfterPlayerId,
+    };
+}
+
+function findStrangeAmuletHolder(core: BetrayalCore): { playerId: string; card: BetrayalInventoryCard } | null {
+    for (const explorer of getAllExplorers(core)) {
+        const card = explorer.inventory.find(isStrangeAmuletCard);
+        if (card) {
+            return { playerId: explorer.playerId, card };
+        }
+    }
+    return null;
+}
+
+export function resolveHelpingHandsControllerPlayerId(core: BetrayalCore): string | null {
+    return findStrangeAmuletHolder(core)?.playerId ?? null;
+}
+
+function removeStrangeAmuletFromItemDeck(core: BetrayalCore): void {
+    const deck = [...core.possessionOrderByKind.item];
+    const index = deck.findIndex(isStrangeAmuletCard);
+    if (index < 0) {
+        return;
+    }
+    deck.splice(index, 1);
+    core.possessionOrderByKind = {
+        ...core.possessionOrderByKind,
+        item: deck,
+    };
+    core.deckCounts.item = Math.max(0, core.deckCounts.item - 1);
+}
+
+function ensureStrangeAmuletForHelpingHands(
+    core: BetrayalCore,
+    revealerPlayerId: string,
+): { cardId: string; foundDuringSetup: boolean } {
+    const existingHolder = findStrangeAmuletHolder(core);
+    if (existingHolder) {
+        return { cardId: existingHolder.card.id, foundDuringSetup: false };
+    }
+    const revealer = findExplorerByPlayerId(core, revealerPlayerId);
+    if (!revealer) {
+        return { cardId: HELPING_HANDS_STRANGE_AMULET_CARD_ID, foundDuringSetup: false };
+    }
+    const card = core.possessionOrderByKind.item.find(isStrangeAmuletCard)
+        ?? HELPING_HANDS_STRANGE_AMULET_CARD;
+    revealer.inventory = [
+        ...revealer.inventory.filter((item) => !isStrangeAmuletCard(item)),
+        cloneInventoryCard(card),
+    ];
+    removeStrangeAmuletFromItemDeck(core);
+    return { cardId: card.id, foundDuringSetup: true };
+}
+
+function createHelpingHandsTrollHands(): BetrayalMonsterSummary[] {
+    return [
+        { id: 'troll-hand-1', roomId: 'entrance-hall' },
+        { id: 'troll-hand-2', roomId: 'basement-landing' },
+    ].map((seed, index) => ({
+        id: seed.id,
+        name: '巨魔手',
+        portraitAsset: 'betrayal/cards/back-monster',
+        tokenAsset: HELPING_HANDS_TROLL_HAND_TOKEN_ASSETS[index],
+        roomId: seed.roomId,
+        might: 5,
+        speed: 3,
+        sanity: 4,
+        knowledge: 4,
+        damage: 1,
+    }));
+}
+
+function setupHelpingHandsHaunt(core: BetrayalCore, revealerPlayerId: string): BetrayalHelpingHandsRuntimeState {
+    const amulet = ensureStrangeAmuletForHelpingHands(core, revealerPlayerId);
+    const trollHands = createHelpingHandsTrollHands();
+    core.monsters = [
+        ...core.monsters.filter((monster) => !monster.id.startsWith('troll-hand-')),
+        ...trollHands,
+    ];
+    return {
+        strangeAmuletCardId: amulet.cardId,
+        strangeAmuletFoundDuringSetup: amulet.foundDuringSetup,
+        trollHandIds: trollHands.map((monster) => monster.id),
+        monsterTurnAfterPlayerId: revealerPlayerId,
+    };
+}
+
+export function resolveHelpingHandsMonsterTurnStatus(core: BetrayalCore): BetrayalHelpingHandsMonsterTurnStatus {
+    const helpingHands = core.scenarioRuntime.helpingHands;
+    if (!isHelpingHandsHaunt(core) || !helpingHands) {
+        return {
+            active: false,
+            controllerPlayerId: null,
+            monsterTurnAfterPlayerId: null,
+            trollHandIds: [],
+            reason: '当前不是剧本12《大宅饿了 / 援手》。',
+        };
+    }
+    const controllerPlayerId = resolveHelpingHandsControllerPlayerId(core);
+    return {
+        active: Boolean(controllerPlayerId),
+        controllerPlayerId,
+        monsterTurnAfterPlayerId: helpingHands.monsterTurnAfterPlayerId,
+        trollHandIds: [...helpingHands.trollHandIds],
+        reason: controllerPlayerId ? null : '无人持有奇异护符，巨魔手怪物回合跳过。',
+    };
+}
+
 function createHungryHouseRoomNode(
     template: RoomTemplate,
     id: string,
@@ -2590,7 +2744,7 @@ function createHungryHouseCultists(playerCount: number, ritualRoomId: string): B
     }));
 }
 
-function setupHungryHouseHaunt(core: BetrayalCore, setupPlayerId: string): BetrayalHungryHouseRuntimeState {
+function _setupHungryHouseHaunt(core: BetrayalCore, setupPlayerId: string): BetrayalHungryHouseRuntimeState {
     const chasmRoomId = ensureHungryHouseRoom(core, 'chasm', 'hungry-house-chasm', 1);
     const ritualRoomId = ensureHungryHouseRoom(core, 'ritualRoom', 'hungry-house-ritual-room', 2);
     const setupExplorer = findExplorerByPlayerId(core, setupPlayerId);
@@ -3531,6 +3685,7 @@ function cloneScenarioRuntimeStatus(status: BetrayalScenarioRuntimeStatus): Betr
         usedRoomEffectIdsThisTurn: [...status.usedRoomEffectIdsThisTurn],
         hauntSetupQueue: (status.hauntSetupQueue ?? []).map((entry) => ({ ...entry })),
         dust: status.dust ? cloneDustRuntimeState(status.dust) : undefined,
+        helpingHands: status.helpingHands ? cloneHelpingHandsRuntimeState(status.helpingHands) : undefined,
         hungryHouse: status.hungryHouse ? cloneHungryHouseRuntimeState(status.hungryHouse) : undefined,
         magicCamera: status.magicCamera ? cloneMagicCameraRuntimeState(status.magicCamera) : undefined,
     };
@@ -3713,6 +3868,13 @@ const DUST_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
     { id: 'prepare-research-tokens', side: 'all', status: 'manual-check' },
 ];
 
+const HELPING_HANDS_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
+    { id: 'recover-strange-amulet', side: 'all', status: 'resolved' },
+    { id: 'monster-card-left-of-revealer', side: 'all', status: 'manual-check' },
+    { id: 'place-troll-hands', side: 'all', status: 'resolved' },
+    { id: 'first-player-left-of-revealer', side: 'all', status: 'resolved' },
+];
+
 const MAGIC_CAMERA_HAUNT_SETUP_QUEUE: BetrayalHauntSetupQueueEntry[] = [
     { id: 'traitor-remains-in-game', side: 'all', status: 'resolved' },
     { id: 'place-phantom-photographers', side: 'traitor', status: 'resolved' },
@@ -3738,6 +3900,8 @@ export function resolveBetrayalHauntSetupQueue(core: BetrayalCore): BetrayalHaun
             return cloneHauntSetupQueue(CRIMSON_JACK_HAUNT_SETUP_QUEUE);
         case 3:
             return cloneHauntSetupQueue(DUST_HAUNT_SETUP_QUEUE);
+        case 12:
+            return cloneHauntSetupQueue(HELPING_HANDS_HAUNT_SETUP_QUEUE);
         case 33:
             return cloneHauntSetupQueue(MAGIC_CAMERA_HAUNT_SETUP_QUEUE);
         default:
@@ -7889,7 +8053,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     ? createDustRuntimeState(core, random)
                     : undefined;
                 const hauntTraitorPlayerId = hauntTriggered
-                    ? pending.effect.successHauntId === 3
+                    ? pending.effect.successHauntId === 3 || pending.effect.successHauntId === 12
                         ? null
                         : pending.effect.successTraitorSelection === 'magic-camera-owner'
                         ? resolveMagicCameraOwnerPlayerId(core) ?? command.playerId
@@ -9644,6 +9808,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 const scenario = scenarioConfigById(core.scenarioId);
                 const hauntRevealerPlayerId = event.payload.playerId;
                 const hauntTraitorPlayerId = event.payload.hauntCardNumber === 3
+                    || event.payload.hauntCardNumber === 12
                     ? null
                     : event.payload.hauntTraitorPlayerId ?? hauntRevealerPlayerId;
                 const nextPlayerAnchor = event.payload.hauntCardNumber === 33
@@ -9659,6 +9824,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     dustSetup: event.payload.dustSetup,
                     magicCameraSetup: event.payload.magicCameraSetup,
                     hungryHouseSetup: event.payload.hungryHouseSetup,
+                    helpingHandsSetup: event.payload.helpingHandsSetup,
                     logText: event.payload.hauntCardNumber && event.payload.hauntCardNumber !== 1
                         ? `作祟触发：剧本${event.payload.hauntCardNumber}（${event.payload.hauntTriggerLabel ?? event.payload.sourceTitle}）`
                         : scenario.logs.hauntTriggered,
@@ -10646,14 +10812,15 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ? cloneDustRuntimeState(event.payload.dustSetup ?? createDustRuntimeState(core, DEFAULT_BETRAYAL_RANDOM))
                 : undefined;
             core.scenarioRuntime.magicCamera = undefined;
+            core.scenarioRuntime.helpingHands = undefined;
             core.scenarioRuntime.hungryHouse = undefined;
             if (event.payload.hauntCardNumber === 12) {
                 const setupPlayerId = event.payload.hauntRevealerPlayerId
                     ?? event.payload.traitorPlayerId
                     ?? event.payload.nextPlayerId;
-                core.scenarioRuntime.hungryHouse = cloneHungryHouseRuntimeState(
-                    event.payload.hungryHouseSetup
-                        ?? setupHungryHouseHaunt(core, setupPlayerId),
+                core.scenarioRuntime.helpingHands = cloneHelpingHandsRuntimeState(
+                    event.payload.helpingHandsSetup
+                        ?? setupHelpingHandsHaunt(core, setupPlayerId),
                 );
             }
             if (event.payload.hauntCardNumber === 33) {

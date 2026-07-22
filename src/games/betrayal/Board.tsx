@@ -7830,9 +7830,7 @@ export default function BetrayalBoard({
       const currentEntry = previousQueue[0] ?? null;
       if (
         currentEntry &&
-        currentEntry.sourceKey === nextEntry.sourceKey &&
-        currentEntry.recentRoll?.id &&
-        currentEntry.recentRoll.id === nextEntry.recentRoll?.id
+        currentEntry.sourceKey === nextEntry.sourceKey
       ) {
         return [nextEntry, ...previousQueue.slice(1)];
       }

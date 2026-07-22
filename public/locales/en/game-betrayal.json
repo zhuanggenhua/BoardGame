@@ -336,6 +336,8 @@
         "first-player-left-of-traitor": "Player left of traitor starts",
         "announce-hidden-traitor": "Announce hidden-traitor rules",
         "deal-secret-sickness-tokens": "Deal secret Sickness tokens",
+        "recover-strange-amulet": "Recover the Strange Amulet",
+        "place-troll-hands": "Place 2 Troll Hands",
         "monster-card-left-of-revealer": "Monster Card left of revealer",
         "prepare-research-tokens": "Prepare Research tokens",
         "first-player-left-of-revealer": "Player left of revealer starts",
@@ -480,30 +482,30 @@
       "hungryHouse": {
         "title": "The House Is Hungry",
         "referenceTitle": "Haunt 12 Reference",
-        "objective": "Survivors carry corpses to the chasm and reduce the hunger track.",
-        "heroGoal": "Attack cultists, carry corpses, and feed the chasm.",
-        "traitorGoal": "Use cultists to protect corpses and the hunger track.",
-        "nextFallback": "Find a corpse and carry it to the chasm",
+        "objective": "Free-for-all: take the Strange Amulet and be the last explorer alive.",
+        "heroGoal": "Hold the Strange Amulet and use Troll Hand pressure against the other explorers.",
+        "traitorGoal": "No fixed traitor: every explorer is an opponent.",
+        "nextFallback": "Fight for the Strange Amulet and move the Troll Hands",
         "progress": {
-          "hunger": "Hunger",
-          "rooms": "Ritual/Chasm",
-          "roomsValue": "{{ritual}} / {{chasm}}",
-          "corpse": "Carrying",
-          "corpseCount": "Corpses"
+          "hunger": "Strange Amulet",
+          "rooms": "Troll Hands",
+          "roomsValue": "Entrance Hall / Basement Landing",
+          "corpse": "Controller",
+          "corpseCount": "Troll Hands"
         },
         "reader": {
-          "prologueLabel": "The House Opens",
-          "prologue": "A chewing sound moves inside the walls. Rooms tighten like a stomach, and a dark chasm waits for offerings.",
+          "prologueLabel": "Helping Hands",
+          "prologue": "A chewing sound moves inside the walls. The house reaches out with hands that obey whoever holds the Strange Amulet.",
           "setupLabel": "Opening Record",
-          "setup": "After Haunt 12, The House Is Hungry, the ritual room, chasm, and cultists enter play. The hunger track shows how many offerings the house still needs.\n\nDefeated cultists leave carryable corpses.",
-          "heroesLabel": "Survivor Manual",
-          "heroes": "Survivors attack cultists, pick up corpses, and bring them to the chasm.\n\nEach successful offering lowers the hunger track. When it reaches 0, survivors complete the scenario goal.",
-          "specialLabel": "Corpses and Chasm",
-          "special": "Corpses can come from cultists or fallen explorers. A carrier must bring the corpse to the chasm room before feeding the house.",
-          "traitorLabel": "House Route",
-          "traitor": "The house and cultists stop survivors from delivering corpses. Cultists attack explorers and block carrying routes.",
+          "setup": "After Haunt 12, The House Is Hungry / Helping Hands, if no one has the Strange Amulet, search the item deck and give it to the haunt revealer.\n\nPlace the Monster Card to the revealer's left. Place one Troll Hand in the Entrance Hall and one in the Basement Landing. The player to the revealer's left takes the first turn.",
+          "heroesLabel": "Free-for-All Goal",
+          "heroes": "Each explorer is trying to survive alone. You win by holding the Strange Amulet while every other explorer is dead.\n\nThe current Strange Amulet holder controls the Troll Hands. If no one has the amulet, skip the monster turn.",
+          "specialLabel": "Amulet and Troll Hands",
+          "special": "Troll Hands have Might 5, Speed 3, Sanity 4, and Knowledge 4, and cannot be stunned. If both Troll Hands are in the same room, a later slice must offer the combined attack choice.\n\nWhen you win a Might attack against another explorer, a later slice must let you steal one item or omen instead of dealing damage.",
+          "traitorLabel": "Free-for-All Boundary",
+          "traitor": "This haunt has no fixed traitor and no hidden team. The Strange Amulet holder, Troll Hand locations, and monster controller are public.",
           "endingLabel": "Win Conditions",
-          "ending": "Survivors win when the hunger track reaches 0 and the chasm closes for now.\n\nThe house wins if it keeps feeding on the people trapped inside."
+          "ending": "You win when you hold the Strange Amulet and every other explorer is dead.\n\nIf the Strange Amulet changes hands, Troll Hand control changes immediately."
         }
       },
       "magicCamera": {

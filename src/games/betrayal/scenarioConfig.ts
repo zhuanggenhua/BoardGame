@@ -299,6 +299,7 @@ export interface BetrayalEventSeed {
     );
 }
 
+// 12 号当前只接入官方 setup / 奇异护符控制权切片；巨魔手合击和偷牌替代伤害仍需后续实现。
 export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = [1, 3, 12, 33] as const;
 
 export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): boolean {
@@ -538,7 +539,7 @@ export const BETRAYAL_SHARED_PRE_HAUNT_SETUP = {
     explorerStartTileId: 'entrance-hall',
     initialDeckCounts: {
         omen: 9,
-        item: 11,
+        item: 12,
         event: 20,
     } satisfies Record<BetrayalDeckKind, number>,
     startingRoomLayout: [
@@ -774,6 +775,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             { id: 'flashlight', name: '手电筒', kind: 'item' },
             { id: 'radio', name: '头戴耳机', kind: 'item' },
             { id: 'map', name: '地图', kind: 'item' },
+            { id: 'strange-amulet', name: '奇异护符', kind: 'item' },
             { id: 'rope', name: '兔脚', kind: 'item' },
             { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
             { id: 'hunting-knife', name: '砍刀', kind: 'item' },

@@ -35,6 +35,8 @@ import {
     resolveBetrayalHauntRevealProtocol,
     resolveBetrayalOmenCount,
     resolveBetrayalRoomDrawResolution,
+    resolveHelpingHandsControllerPlayerId,
+    resolveHelpingHandsMonsterTurnStatus,
     resolveRoomTileAdjustmentOptions,
     resolveExplorableRoomSlots,
     resolveMoveTargetRooms,
@@ -529,7 +531,8 @@ describe('Betrayal first scenario runtime', () => {
 
         const allDiscoveryRooms = Object.values(BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor).flat();
 
-        expect(itemIds).toHaveLength(11);
+        expect(itemIds).toHaveLength(12);
+        expect(itemIds).toContain('strange-amulet');
         expect(omenIds).toEqual([
             'omen-book',
             'dog',
@@ -929,7 +932,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(eventNames).not.toContain('残留祝福');
     });
 
-    it('正式运行事件牌堆不得包含会触发未完整作祟剧本的事件', () => {
+    it('正式运行事件牌堆只包含当前已接入运行切片的事件', () => {
         const supportedEventNames = BETRAYAL_DISCOVERY_POOLS.events
             .filter(isBetrayalEventRuntimeSupported)
             .map((event) => event.name);
@@ -944,6 +947,49 @@ describe('Betrayal first scenario runtime', () => {
         expect(supportedEventNames).toContain('说“茄子”！');
         expect(supportedEventNames).toContain('大宅饿了');
         expect(core.eventOrder.map((event) => event.name).sort()).toEqual(supportedEventNames.sort());
+        expect(core.eventOrder.map((event) => event.name)).toContain('大宅饿了');
+    });
+
+    it('大宅饿了作祟检定成功会进入剧本12官方开局切片', () => {
+        const core = createHungryHouseHauntCore();
+        const helpingHands = core.scenarioRuntime.helpingHands;
+        const trollHands = core.monsters.filter((monster) => helpingHands?.trollHandIds.includes(monster.id));
+        const monsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
+
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntTriggered).toBe(true);
+        expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
+        expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
+        expect(core.scenarioRuntime.hauntCardNumber).toBe(12);
+        expect(core.scenarioRuntime.hungryHouse).toBeUndefined();
+        expect(helpingHands).toMatchObject({
+            strangeAmuletCardId: 'strange-amulet',
+            strangeAmuletFoundDuringSetup: true,
+            trollHandIds: ['troll-hand-1', 'troll-hand-2'],
+            monsterTurnAfterPlayerId: '0',
+        });
+        expect(resolveHelpingHandsControllerPlayerId(core)).toBe('0');
+        expect(findTestExplorer(core, '0').inventory.some((card) => card.id === 'strange-amulet')).toBe(true);
+        expect(core.possessionOrderByKind.item.some((card) => card.id === 'strange-amulet')).toBe(false);
+        expect(core.deckCounts.item).toBe(11);
+        expect(trollHands).toHaveLength(2);
+        expect(trollHands.map((monster) => [monster.roomId, monster.might, monster.speed, monster.sanity, monster.knowledge])).toEqual([
+            ['entrance-hall', 5, 3, 4, 4],
+            ['basement-landing', 5, 3, 4, 4],
+        ]);
+        expect(core.scenarioRuntime.hauntSetupQueue.map((entry) => entry.id)).toEqual([
+            'recover-strange-amulet',
+            'monster-card-left-of-revealer',
+            'place-troll-hands',
+            'first-player-left-of-revealer',
+        ]);
+        expect(monsterTurnStatus).toMatchObject({
+            active: true,
+            controllerPlayerId: '0',
+            monsterTurnAfterPlayerId: '0',
+            trollHandIds: ['troll-hand-1', 'troll-hand-2'],
+            reason: null,
+        });
     });
 
     it('事件牌结算后应回到牌堆底部，事件牌堆数量不减少', () => {
@@ -2043,128 +2089,156 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.recentRoll).toBeNull();
     });
 
-        it('大宅饿了作祟检定成功会进入剧本12并建立裂隙、仪式房和邪教徒', () => {
-        const core = createHungryHouseHauntCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse;
+    it('大宅饿了作祟检定成功会按官方援手 setup 建立奇异护符和巨魔手', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
+        core.currentExplorer.inventory = [
+            ...core.currentExplorer.inventory,
+            { id: 'omen-book', name: '书本', kind: 'omen' },
+            { id: 'dog', name: '狗', kind: 'omen' },
+            { id: 'mask', name: '面具', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        const itemDeckBefore = core.deckCounts.item;
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { accept: true },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3),
+        );
+
+        const helpingHands = core.scenarioRuntime.helpingHands;
+        const trollHands = core.monsters.filter((monster) => helpingHands?.trollHandIds.includes(monster.id));
+        const monsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
 
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
-        expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
-        expect(core.scenarioRuntime.traitorPlayerId).toBe('0');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(12);
+        expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
+        expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
         expect(core.currentPlayer).toBe('1');
-        expect(hungryHouse?.ritualProgress).toBe(3);
-        expect(core.rooms.find((room) => room.id === hungryHouse?.chasmRoomId)?.state).toBe('discovered');
-        expect(core.rooms.find((room) => room.id === hungryHouse?.ritualRoomId)?.state).toBe('discovered');
-        expect(findTestExplorer(core, '0').roomId).toBe('ground-north');
-        expect(findTestExplorer(core, '0').roomId).not.toBe(hungryHouse?.ritualRoomId);
-        const cultists = core.monsters.filter((monster) => hungryHouse?.cultistIds.includes(monster.id));
-        expect(cultists).toHaveLength(3);
-        expect(cultists.map((monster) => monster.tokenAsset)).toEqual([
-            'betrayal/tokens/monsters/small-monster-1-front',
-            'betrayal/tokens/monsters/small-monster-2-front',
-            'betrayal/tokens/monsters/small-monster-3-front',
+        expect(core.scenarioRuntime.hungryHouse).toBeUndefined();
+        expect(helpingHands).toMatchObject({
+            strangeAmuletCardId: 'strange-amulet',
+            strangeAmuletFoundDuringSetup: true,
+            monsterTurnAfterPlayerId: '0',
+        });
+        expect(core.scenarioRuntime.hauntSetupQueue.map((entry) => [entry.id, entry.status])).toEqual([
+            ['recover-strange-amulet', 'resolved'],
+            ['monster-card-left-of-revealer', 'manual-check'],
+            ['place-troll-hands', 'resolved'],
+            ['first-player-left-of-revealer', 'resolved'],
         ]);
-        expect(core.monsters.every((monster) => !hungryHouse?.cultistIds.includes(monster.id) || monster.roomId === hungryHouse.ritualRoomId)).toBe(true);
-        expect(findTestExplorer(core, '0').traits.might).toBe(5);
-        expect(findTestExplorer(core, '0').traits.speed).toBe(4);
+        expect(findTestExplorer(core, '0').inventory.some((card) => card.id === 'strange-amulet')).toBe(true);
+        expect(core.possessionOrderByKind.item.some((card) => card.id === 'strange-amulet')).toBe(false);
+        expect(core.deckCounts.item).toBe(itemDeckBefore - 1);
+        expect(trollHands).toHaveLength(2);
+        expect(trollHands.map((monster) => monster.roomId).sort()).toEqual(['basement-landing', 'entrance-hall']);
+        expect(trollHands.every((monster) => (
+            monster.name === '巨魔手'
+            && monster.might === 5
+            && monster.speed === 3
+            && monster.sanity === 4
+            && monster.knowledge === 4
+            && monster.damage === 1
+        ))).toBe(true);
+        expect(resolveHelpingHandsControllerPlayerId(core)).toBe('0');
+        expect(monsterTurnStatus).toEqual({
+            active: true,
+            controllerPlayerId: '0',
+            monsterTurnAfterPlayerId: '0',
+            trollHandIds: helpingHands?.trollHandIds,
+            reason: null,
+        });
+
+        findTestExplorer(core, '0').inventory = findTestExplorer(core, '0').inventory.filter((card) => card.id !== 'strange-amulet');
+        expect(resolveHelpingHandsMonsterTurnStatus(core)).toEqual({
+            active: false,
+            controllerPlayerId: null,
+            monsterTurnAfterPlayerId: '0',
+            trollHandIds: helpingHands?.trollHandIds,
+            reason: '无人持有奇异护符，巨魔手怪物回合跳过。',
+        });
     });
 
-    it('大宅饿了中探索者可击倒邪教徒、搬尸到裂隙并献祭达成单人胜利', () => {
-        let core = createHungryHouseHauntCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-        activateTestExplorer(core, '1');
-        core.currentExplorer.roomId = hungryHouse.ritualRoomId;
-        core.activeRoomId = hungryHouse.ritualRoomId;
-        core.currentExplorer.traits.might = 6;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.HAUNT_ATTACK,
-            '1',
-            { target: 'cultist', targetMonsterId: cultistId },
-            100,
-            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0),
-        );
-
-        expect(core.monsters.some((monster) => monster.id === cultistId)).toBe(false);
-        expect(core.scenarioRuntime.hungryHouse?.cultistCorpseRoomIds[cultistId]).toBe(hungryHouse.ritualRoomId);
-
-        activateTestExplorer(core, '2');
-        core.currentExplorer.roomId = hungryHouse.ritualRoomId;
-        core.activeRoomId = hungryHouse.ritualRoomId;
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.PICK_UP_CORPSE, '2', { corpseKind: 'cultist', corpseId: cultistId });
-        expect(core.scenarioRuntime.hungryHouse?.carriedCorpseByPlayerId['2']?.corpseId).toBe(cultistId);
-        expect(core.scenarioRuntime.hungryHouse?.cultistCorpseRoomIds[cultistId]).toBeUndefined();
-
-        core.scenarioRuntime.hungryHouse!.ritualProgress = 1;
-        core.currentExplorer.roomId = hungryHouse.chasmRoomId;
-        core.activeRoomId = hungryHouse.chasmRoomId;
-        core.currentExplorer.traits.sanity = 6;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.FEED_HER,
-            '2',
-            {},
-            100,
-            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
-        );
-
-        expect(core.phase).toBe('endgame');
-        expect(core.endgameResult?.hauntId).toBe('hungry-house');
-        expect(core.endgameResult?.outcome).toBe('solo');
-        expect(core.endgameResult?.winners).toEqual(['2']);
-    });
-
-    it('大宅饿了献祭失败会治疗神志，邪教徒击倒倒数第二名探索者会让最后生还者胜利', () => {
-        let core = createHungryHouseHauntCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-
-        activateTestExplorer(core, '1');
-        core.currentExplorer.roomId = hungryHouse.chasmRoomId;
-        core.activeRoomId = hungryHouse.chasmRoomId;
-        core.scenarioRuntime.hungryHouse!.carriedCorpseByPlayerId['1'] = {
-            kind: 'explorer',
-            corpseId: 'explorer:2',
-            sourcePlayerId: '2',
-            name: '测试尸体',
-        };
-        core.currentExplorer.traits.sanity = 2;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.FEED_HER, '1', {}, 100, createBetrayalScriptedRandom(0, 0));
-        expect(core.phase).toBe('haunt');
-        expect(findTestExplorer(core, '1').traits.sanity).toBe(4);
-        expect(core.scenarioRuntime.hungryHouse?.ritualProgress).toBe(3);
-
-        core.scenarioRuntime.deadExplorerPlayerIds = ['2'];
-        activateTestExplorer(core, '1');
-        core.currentExplorer.roomId = hungryHouse.ritualRoomId;
-        core.currentExplorer.traits = { ...core.currentExplorer.traits, might: 1, speed: 1 };
-        core.currentExplorer.inventory = [];
-        core.activeRoomId = hungryHouse.ritualRoomId;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        core.currentExplorerInventory = [];
-        core.monsters = core.monsters.map((monster) => (
-            monster.id === cultistId ? { ...monster, roomId: hungryHouse.ritualRoomId } : monster
+    it('大宅饿了 setup 若已有奇异护符持有人，不会从物品牌堆重复找牌', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
+        core.currentExplorer.inventory = [
+            ...core.currentExplorer.inventory,
+            { id: 'omen-book', name: '书本', kind: 'omen' },
+            { id: 'dog', name: '狗', kind: 'omen' },
+            { id: 'mask', name: '面具', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? { ...explorer, inventory: [...explorer.inventory, { id: 'strange-amulet', name: '奇异护符', kind: 'item' }] }
+                : explorer
         ));
+        core.possessionOrderByKind.item = core.possessionOrderByKind.item.filter((card) => card.id !== 'strange-amulet');
+        core.deckCounts.item = core.possessionOrderByKind.item.length;
+        const itemDeckBefore = core.deckCounts.item;
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         core = applyBetrayalCommand(
             core,
-            BETRAYAL_COMMANDS.CULTIST_ATTACK,
-            '1',
-            { monsterId: cultistId, targetPlayerId: '1' },
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { accept: true },
             100,
-            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 0),
+            createBetrayalScriptedRandom(3, 3, 3),
         );
 
-        expect(core.phase).toBe('endgame');
-        expect(core.endgameResult?.hauntId).toBe('hungry-house');
-        expect(core.endgameResult?.winners).toEqual(['0']);
+        expect(core.scenarioRuntime.helpingHands).toMatchObject({
+            strangeAmuletCardId: 'strange-amulet',
+            strangeAmuletFoundDuringSetup: false,
+        });
+        expect(findTestExplorer(core, '0').inventory.some((card) => card.id === 'strange-amulet')).toBe(false);
+        expect(findTestExplorer(core, '1').inventory.some((card) => card.id === 'strange-amulet')).toBe(true);
+        expect(core.deckCounts.item).toBe(itemDeckBefore);
+        expect(resolveHelpingHandsControllerPlayerId(core)).toBe('1');
+        expect(resolveHelpingHandsMonsterTurnStatus(core).controllerPlayerId).toBe('1');
     });
-it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机持有者决定叛徒', () => {
+
+    it('大宅饿了的巨魔手控制权会随普通交易后的奇异护符换手实时变化', () => {
+        let core = createHungryHouseHauntCore();
+        expect(resolveHelpingHandsControllerPlayerId(core)).toBe('0');
+
+        activateTestExplorer(core, '0');
+        const holderRoomId = core.currentExplorer.roomId;
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? { ...explorer, roomId: holderRoomId }
+                : explorer
+        ));
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            targetPlayerId: '1',
+            cardId: 'strange-amulet',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: true,
+        });
+
+        expect(findTestExplorer(core, '0').inventory.some((card) => card.id === 'strange-amulet')).toBe(false);
+        expect(findTestExplorer(core, '1').inventory.some((card) => card.id === 'strange-amulet')).toBe(true);
+        expect(resolveHelpingHandsControllerPlayerId(core)).toBe('1');
+        expect(resolveHelpingHandsMonsterTurnStatus(core)).toMatchObject({
+            active: true,
+            controllerPlayerId: '1',
+            monsterTurnAfterPlayerId: '0',
+        });
+    });
+
+    it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机持有者决定叛徒', () => {
         const core = createMagicCameraHauntCore('1');
 
         expect(core.phase).toBe('haunt');

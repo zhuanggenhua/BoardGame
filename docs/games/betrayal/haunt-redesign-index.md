@@ -43,8 +43,8 @@
 | 9 | Let Bygones be Bygones | A Mysterious Invitation / Idol | 自由混战 | `source-mapped-contract-pending` | 建子账本 |
 | 10 | A Serious Offer | For Sale / Armor | 自由混战 | `source-mapped-contract-pending` | 建子账本 |
 | 11 | Don't Get Cooked | A Strange Disappearance / Dagger | 自由混战 | `source-mapped-contract-pending` | 建子账本 |
-| 12 | The House is Hungry / Helping Hands | NONE / The House is Hungry | 自由混战 | `representative-only` | 回填完整合同 |
-| 13 | Holy Ground | A Strange Disappearance / Holy Symbol | 作祟揭秘者 | `source-mapped-contract-pending` | 建子账本 |
+| 12 | The House is Hungry / Helping Hands | NONE / The House is Hungry | 自由混战 | `setup-controller-implemented-needs-combat-e2e` | 已接入官方 setup、奇异护符换手控制权、巨魔手初始放置；旧 12 邪教徒链仍是错挂候选，不作 12 验收 |
+| 13 | Holy Ground | A Strange Disappearance / Holy Symbol | 作祟揭秘者 | `contract-ready-runtime-candidate-mismatch` | 子账本已建；现有邪教徒 / 仪式房 / 裂隙链更像此剧本，迁移前需逐条审计 |
 | 14 | Object Permanence | For Sale / Book | 作祟揭秘者左侧玩家 | `source-mapped-contract-pending` | 建子账本 |
 | 15 | Of Monsters and Mayhem | Paranormal Investigators / Dagger | 作祟揭秘者 | `source-mapped-contract-pending` | 建子账本 |
 | 16 | Come Play With Us | Paranormal Investigators / Book | 作祟揭秘者 | `source-mapped-contract-pending` | 建子账本 |

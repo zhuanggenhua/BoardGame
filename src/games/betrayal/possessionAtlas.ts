@@ -65,6 +65,7 @@ const POSSESSION_FRONT_VISUALS: Record<string, BetrayalPossessionAtlasVisual> = 
     lantern: buildItemVisual(8),
     'lockpick-tool': buildItemVisual(14),
     map: buildItemVisual(16),
+    'strange-amulet': buildItemVisual(10),
     notebook: buildItemVisual(16),
     journal: buildItemVisual(16),
     manuscript: buildItemVisual(16),

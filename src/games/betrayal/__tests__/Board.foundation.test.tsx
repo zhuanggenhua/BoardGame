@@ -308,10 +308,6 @@ function createHungryHouseHauntOpeningBoardCore(playerIds: string[] = ['0', '1',
     return core;
 }
 
-function createHungryHouseHauntBoardCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
-    return dismissBlockingBoardOverlays(createHungryHouseHauntOpeningBoardCore(playerIds));
-}
-
 function createMagicCameraHauntRevealBoardCore(cameraOwnerPlayerId: string | null = '1'): BetrayalCore {
     let core = createStartedFirstScenarioCore(['0', '1', '2']);
     core.drawOrder = ['event'];
@@ -731,7 +727,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-haunt-setup-queue')).toHaveAttribute('data-haunt-setup-count', '5');
         expect(screen.getByTestId('betrayal-haunt-setup-entry-place-phantom-photographers')).toHaveTextContent('放置幻影摄影师');
         expect(screen.getByTestId('betrayal-haunt-setup-entry-recover-magic-camera')).toHaveTextContent('找出魔法相机');
-        expect(screen.getByTestId('betrayal-haunt-setup-entry-deal-hero-essence-tokens')).toHaveTextContent('发放英雄 Essence');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-deal-hero-essence-tokens')).toHaveTextContent('发放英雄本质');
 
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-close'));
 
@@ -770,10 +766,13 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-haunt-reveal-cue')).toBeInTheDocument();
     });
 
-    it('作祟自动打开剧本书后关闭必须直接回牌桌，不再显示本次作祟检定结果层', async () => {
+    it('大宅饿了作祟打开剧本书会显示援手公开设置队列', async () => {
         const core = createHungryHouseHauntOpeningBoardCore(['0', '1', '2', '3']);
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(12);
+        expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
+        expect(core.scenarioRuntime.helpingHands).toBeTruthy();
+        expect(core.scenarioRuntime.hungryHouse).toBeUndefined();
         expect(core.latestDiscovery?.detail).toContain('剧本12');
         expect(core.recentRoll?.sourceTitle).toBe('大宅饿了');
 
@@ -785,6 +784,19 @@ describe('Betrayal Board foundation', () => {
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-scenario-reader-dialog')).toBeInTheDocument();
         });
+
+        expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('剧本12查阅');
+        expect(screen.getByTestId('betrayal-scenario-objective-page')).toHaveTextContent('奇异护符');
+        expect(screen.getByTestId('betrayal-haunt-reveal-public-steps')).toHaveAttribute('data-haunt-type', 'free-for-all');
+        expect(screen.getByTestId('betrayal-haunt-reveal-step-heroes-intro')).toHaveTextContent('公开：英雄介绍');
+        expect(screen.getByTestId('betrayal-haunt-reveal-step-heroes-setup')).toHaveTextContent('公开：英雄设置');
+        expect(screen.queryByTestId('betrayal-haunt-reveal-step-traitor-intro')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-haunt-reveal-step-traitor-setup')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-haunt-setup-queue')).toHaveAttribute('data-haunt-setup-count', '4');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-recover-strange-amulet')).toHaveTextContent('找出奇异护符');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-monster-card-left-of-revealer')).toHaveTextContent('怪物卡放揭秘者左侧');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-place-troll-hands')).toHaveTextContent('放置 2 个巨魔手');
+        expect(screen.getByTestId('betrayal-haunt-setup-entry-first-player-left-of-revealer')).toHaveTextContent('揭秘者左侧先行动');
 
         fireEvent.click(screen.getByTestId('betrayal-scenario-reader-close'));
 
@@ -2419,125 +2431,6 @@ describe('Betrayal Board foundation', () => {
         });
     });
 
-    it('大宅饿了页面能显示饥饿刻度并搬起邪教徒尸体', async () => {
-        let core = createHungryHouseHauntBoardCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-        const cultist = core.monsters.find((monster) => monster.id === cultistId);
-        expect(cultist?.tokenAsset).toBe('betrayal/tokens/monsters/small-monster-1-front');
-        core = activateBoardExplorer(core, '1');
-        core.currentExplorer = { ...core.currentExplorer, roomId: hungryHouse.ritualRoomId };
-        core.activeRoomId = hungryHouse.ritualRoomId;
-        core.currentExplorerRoomId = hungryHouse.ritualRoomId;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.monsters = core.monsters.filter((monster) => monster.id !== cultistId);
-        hungryHouse.cultistCorpseRoomIds = {
-            ...hungryHouse.cultistCorpseRoomIds,
-            [cultistId]: hungryHouse.ritualRoomId,
-        };
-
-        render(
-            <HarnessBoardWithRandom
-                initialCore={core}
-                playerID="1"
-                matchData={defaultMatchData.slice(0, 3)}
-            />,
-        );
-
-        expect(screen.getByTestId('betrayal-hungry-house-status')).toHaveTextContent('饥饿刻度');
-        expect(screen.getByTestId('betrayal-hungry-house-status')).toHaveTextContent('3');
-        expect(screen.getByTestId('betrayal-action-use')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('搬起邪教徒尸体');
-        fireEvent.click(screen.getByTestId('betrayal-action-use'));
-
-        await waitFor(() => {
-            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('搬起了邪教徒尸体');
-            expect(screen.getByTestId('betrayal-hungry-house-status')).toHaveTextContent('携带：邪教徒尸体');
-        });
-    });
-
-    it('大宅饿了页面能把携带尸体献给裂隙并推进饥饿刻度', async () => {
-        let core = createHungryHouseHauntBoardCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        core = activateBoardExplorer(core, '1');
-        core.currentExplorer = {
-            ...core.currentExplorer,
-            roomId: hungryHouse.chasmRoomId,
-            traits: { ...core.currentExplorer.traits, sanity: 5 },
-        };
-        core.activeRoomId = hungryHouse.chasmRoomId;
-        core.currentExplorerRoomId = hungryHouse.chasmRoomId;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        hungryHouse.carriedCorpseByPlayerId['1'] = {
-            kind: 'cultist',
-            corpseId: 'cultist-test',
-            sourceMonsterId: 'cultist-test',
-            name: '邪教徒尸体',
-        };
-
-        render(
-            <HarnessBoardWithRandom
-                initialCore={core}
-                playerID="1"
-                matchData={defaultMatchData.slice(0, 3)}
-                diceResults={[3, 3, 3, 3, 3]}
-            />,
-        );
-
-        expect(screen.getByTestId('betrayal-action-use')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('献给大宅');
-        fireEvent.click(screen.getByTestId('betrayal-action-use'));
-
-        await waitFor(() => {
-            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('大宅的饥饿减弱到 2');
-            expect(screen.getByTestId('betrayal-hungry-house-status')).toHaveTextContent('2');
-        });
-    });
-
-    it('大宅饿了页面能点击同房邪教徒 token 发起攻击', async () => {
-        let core = createHungryHouseHauntBoardCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-        core = activateBoardExplorer(core, '1');
-        core.currentExplorer = {
-            ...core.currentExplorer,
-            roomId: hungryHouse.ritualRoomId,
-            traits: { ...core.currentExplorer.traits, might: 6 },
-        };
-        core.activeRoomId = hungryHouse.ritualRoomId;
-        core.currentExplorerRoomId = hungryHouse.ritualRoomId;
-        core.currentExplorerTraits = { ...core.currentExplorer.traits };
-        core.currentExplorerInventory = [...core.currentExplorer.inventory];
-        core.monsters = core.monsters.map((monster) => (
-            monster.id === cultistId ? { ...monster, roomId: hungryHouse.ritualRoomId } : monster
-        ));
-        dismissBlockingBoardOverlays(core);
-
-        render(
-            <HarnessBoardWithRandom
-                initialCore={core}
-                playerID="1"
-                matchData={defaultMatchData.slice(0, 3)}
-                diceResults={[3, 3, 3, 3, 3, 3, 0, 0, 0]}
-            />,
-        );
-
-        expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('攻击邪教徒');
-        fireEvent.click(screen.getByTestId('betrayal-action-use'));
-        const cultistToken = screen.getByTestId(`betrayal-room-monster-${hungryHouse.ritualRoomId}-${cultistId}`);
-        expect(cultistToken).toHaveAttribute('data-direct-target', 'true');
-        expect(cultistToken).toHaveAttribute('data-token-asset', 'betrayal/tokens/monsters/small-monster-1-front');
-        expect(cultistToken.querySelector('[data-token-placeholder="cultist"]')).toBeNull();
-        expect(screen.getByTestId(`betrayal-room-monster-target-cue-${hungryHouse.ritualRoomId}`)).toHaveTextContent('选择邪教徒发起攻击');
-        expect(screen.getByTestId(`betrayal-room-monster-target-identity-${hungryHouse.ritualRoomId}-${cultistId}`)).toHaveTextContent('邪教徒');
-        fireEvent.click(cultistToken);
-
-        await waitFor(() => {
-            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('邪教徒变成可献祭的尸体');
-        });
-    });
 
     it('灰尘剧本真实页面能在恶兆板块寻找解药并放置研究标记', async () => {
         let core = createDustHauntBoardCore();
