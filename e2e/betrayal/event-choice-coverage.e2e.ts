@@ -6737,13 +6737,13 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ).toHaveCount(0);
     await expectEventMapTargetSelectionForeground(
       page,
-      "移动端蜘蛛选择速度后地图房间选择态",
+      "移动端蜘蛛4+效果处理中选择相邻房间",
       "betrayal-room-event-choice-target-hallway",
       "betrayal-room-hallway",
     );
     await saveScreenshot(
       page,
-      `${screenshotBase}-03-选择速度后地图房间选择态.jpg`,
+      `${screenshotBase}-03-4+效果处理中选择相邻房间.jpg`,
     );
 
     await page.getByTestId("betrayal-room-hallway").click();
@@ -6755,28 +6755,28 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(discoveryDetail).toContainText("放置到门厅");
     await saveScreenshot(
       page,
-      `${screenshotBase}-04-点击门厅后直接结算.jpg`,
+      `${screenshotBase}-04-点击门厅后效果处理结果.jpg`,
     );
     const mobileSettledCore = await readCurrentCore(page);
     expect(mobileSettledCore.pendingEventChoice).toBeNull();
     expect(
       mobileSettledCore.currentExplorer.traitTracks.speed.position,
-      "移动端蜘蛛结算后必须真实让速度轨道前进 1 格，不得只显示结算文案",
+      "移动端蜘蛛效果处理完成后必须真实让速度轨道前进 1 格，不得只显示结果文案",
     ).toBe(mobileSpeedPositionBefore + 1);
     expect(
       mobileSettledCore.currentExplorerTraits.speed,
-      "移动端蜘蛛结算后 UI 属性快照必须同步真实速度数值",
+      "移动端蜘蛛效果处理完成后 UI 属性快照必须同步真实速度数值",
     ).toBe(mobileSettledCore.currentExplorer.traits.speed);
     expect(
       mobileSettledCore.currentExplorer.roomId,
-      "移动端蜘蛛结算后探索者必须真实放置到所选相邻板块",
+      "移动端蜘蛛效果处理完成后探索者必须真实放置到所选相邻板块",
     ).toBe("hallway");
     expect(mobileSettledCore.activeRoomId).toBe("hallway");
     expect(mobileSettledCore.recommendedAction).toBe("endTurn");
     expect(mobileSettledCore.turnEndedByDiscovery).toBe(true);
     await expectAtlasFrameImageRendered(
       discoveryPanel.getByTestId("betrayal-discovery-card-front-atlas"),
-      "移动端蜘蛛结算态事件牌",
+      "移动端蜘蛛效果处理结果态事件牌",
     );
     const discoveryRollPanel = discoveryPanel.getByTestId(
       "betrayal-recent-roll-panel",
@@ -6789,8 +6789,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       minCanvasClientWidth: 180,
       minCanvasClientHeight: 140,
     });
-    await expectMobileDiceBoxStable(discoveryRollPanel, "移动端蜘蛛结算态");
-    await expectMobileDiscoveryRollLayout(page, "移动端蜘蛛结算态");
+    await expectMobileDiceBoxStable(discoveryRollPanel, "移动端蜘蛛效果处理结果态");
+    await expectMobileDiscoveryRollLayout(page, "移动端蜘蛛效果处理结果态");
     await saveScreenshot(page, `${screenshotBase}-05-结算结果可读.jpg`);
 
     await page.getByTestId("betrayal-discovery-continue").click();
@@ -6976,7 +6976,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ]);
   });
 
-  test("蜘蛛真实链路从探索翻牌到已有检定再选择结算关闭", async ({ page }) => {
+  test("蜘蛛真实链路从探索翻牌到检定后处理4+效果再关闭", async ({ page }) => {
     test.setTimeout(120000);
     const diagnostics = attachPageDiagnostics(
       page,
@@ -7091,13 +7091,13 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ).toHaveCount(0);
     await expectEventMapTargetSelectionForeground(
       page,
-      "PC 蜘蛛选择速度后地图房间选择态",
+      "PC 蜘蛛4+效果处理中选择相邻房间",
       "betrayal-room-event-choice-target-hallway",
       "betrayal-room-hallway",
     );
     await saveScreenshot(
       page,
-      `${screenshotBase}-04-选择速度后地图房间选择态.jpg`,
+      `${screenshotBase}-04-4+效果处理中选择相邻房间.jpg`,
     );
 
     await page.getByTestId("betrayal-room-hallway").click();
@@ -7107,28 +7107,28 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
     await expect(discoveryDetail).toContainText("速度 +1");
     await expect(discoveryDetail).toContainText("放置到门厅");
-    await saveScreenshot(page, `${screenshotBase}-05-点击门厅后直接结算.jpg`);
+    await saveScreenshot(page, `${screenshotBase}-05-点击门厅后效果处理结果.jpg`);
     const pcSettledCore = await readCurrentCore(page);
     expect(pcSettledCore.pendingEventChoice).toBeNull();
     expect(
       pcSettledCore.currentExplorer.traitTracks.speed.position,
-      "PC 蜘蛛结算后必须真实让速度轨道前进 1 格，不得只显示结算文案",
+      "PC 蜘蛛效果处理完成后必须真实让速度轨道前进 1 格，不得只显示结果文案",
     ).toBe(pcSpeedPositionBefore + 1);
     expect(
       pcSettledCore.currentExplorerTraits.speed,
-      "PC 蜘蛛结算后 UI 属性快照必须同步真实速度数值",
+      "PC 蜘蛛效果处理完成后 UI 属性快照必须同步真实速度数值",
     ).toBe(pcSettledCore.currentExplorer.traits.speed);
     expect(
       pcSettledCore.currentExplorer.roomId,
-      "PC 蜘蛛结算后探索者必须真实放置到所选相邻板块",
+      "PC 蜘蛛效果处理完成后探索者必须真实放置到所选相邻板块",
     ).toBe("hallway");
     expect(pcSettledCore.activeRoomId).toBe("hallway");
     expect(pcSettledCore.recommendedAction).toBe("endTurn");
     expect(pcSettledCore.turnEndedByDiscovery).toBe(true);
-    await expectDiscoveryResultKeepsTableChrome(page, "PC 蜘蛛结算态");
+    await expectDiscoveryResultKeepsTableChrome(page, "PC 蜘蛛效果处理结果态");
     await expectAtlasFrameImageRendered(
       discoveryPanel.getByTestId("betrayal-discovery-card-front-atlas"),
-      "PC 蜘蛛结算态事件牌",
+      "PC 蜘蛛效果处理结果态事件牌",
     );
     await saveScreenshot(page, `${screenshotBase}-06-结算后.jpg`);
 

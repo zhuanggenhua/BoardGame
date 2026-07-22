@@ -23,6 +23,9 @@
 | `needs-breakdown` | 已确认是规则，但仍需拆到更细的交互 / 状态 |
 | `source-blocked` | 需要回到原 PDF、牌面、剧本书或素材核对 |
 | `representative-only` | 只允许作为代表链，不能宣称完整规则 |
+| `implemented-needs-remodel` | 已有部分实现或代表链，但仍需继续重构到完整规则合同 |
+| `implemented-verified` | 已有领域 / UI / 真实入口 E2E / 截图核验 / 服务器相册证据，只证明该行声明的范围 |
+| `contract-ready` | 合同字段和来源已进入账本，可进入实现；不代表功能完成 |
 | `out-of-scope-approved` | 明确经用户批准不纳入当前实现 |
 
 ### 0.3 不漏细节的硬门槛
@@ -130,7 +133,7 @@
 | 19 攻击结算 | 默认力量攻击；高者赢；低者受差值伤害；平局无伤；知识 / 神志攻击造成精神伤害 | 攻击声明保存属性和伤害类型映射 | `attackTrait`, `damageType` | 攻击面板 / 骰盘 | 属性攻击测试 | `design-ready` |
 | 19.1 武器 | 每次攻击最多一件；可选择不用；攻击后本回合不能交易；刚获得不能用；不能防御 | 武器声明 interaction 必须让玩家选“不使用 / 某一件合法武器” | `AttackDeclarationInteraction` | 武器选择面板 | 武器边界测试 | `design-ready` |
 | 19.2 视线 | 同方向且不换区域可视线，中间可隔房间；房间内所有角色都在视线内 | 已补基础读模型，按同楼层 / 同一直线 / 连续已发现板块判断房间视线；远程武器领域校验代表链已接入通用英雄 / 叛徒目标范围，近战和徒手仍限同房间；牌桌目标高亮和视线线条代表链已接入当前选中武器的合法目标，弩可高亮并连线视线内非同房间叛徒；弩真实入口 E2E、截图核验和服务器相册已补证据；魔法相机幻影摄影师可攻击视线内英雄的代表链已补目标切换、视线线、骰盘、截图核验和服务器相册；仍需完整怪物系统、所有怪物视线攻击和真实远程牌面完整录入 | `lineOfSightGraph` / `resolveBetrayalLineOfSightRoomIds`, `rangedAttackWeaponIds`, `resolveBetrayalAttackTargetPlayerIds` | 目标高亮 / 视线线条 | 基础视线单测已覆盖，同楼层直线、跨楼层、未发现目标和中间断点；远程武器代表单测覆盖视线内可攻击、视线外不可攻击、近战 / 徒手不可跨房间；Board 组件测试覆盖弩选择后高亮并连线视线内非同房间叛徒；真实入口 E2E：`e2e/betrayal/non-p0-representative.e2e.ts "弩远程视线"`，1 passed；证据：`evidence/山屋惊魂-弩远程视线完整链路/e2e-test.md`；魔法相机幻影摄影师代表链真实入口 E2E：`e2e/betrayal/non-p0-representative.e2e.ts "幻影摄影师视线攻击"`，1 passed；证据：`evidence/山屋惊魂-幻影摄影师视线攻击完整链路/e2e-test.md` | `implemented-needs-remodel` |
-| 官方补充：尸体搜刮 | 死者仍持有物品 / 预兆；同房间每回合可拿一个，不需同意 | 死亡后产生 corpse，搜刮是无许可交易的特殊动作 | `corpseInventory`, `lootUsedThisTurn` | 尸体 token + 物品选择 | 尸体搜刮测试 | `design-ready` |
+| 官方补充：尸体搜刮 | 死者仍持有物品 / 预兆；同房间每回合可拿一个，不需同意 | 已补基础尸体搜刮代表链：死亡探索者保留为尸体对象，同房间存活探索者必须点选尸体和具体物品 / 预兆；同一尸体本回合拿 1 张后禁用二次搜刮；不外推为特殊作祟尸体用途或完整怪物尸体系统 | `LOOT_CORPSE`, `resolveCorpseLootTargets`, `corpseLootedByPlayerIdsThisTurn` | 尸体 token + 物品 / 预兆选择 | 领域定向测试、组件测试、`e2e/betrayal/first-scenario-corpse-loot.e2e.ts`、`evidence/betrayal-first-scenario-corpse-loot/betrayal-first-scenario-corpse-loot-e2e-test.md`、服务器相册 `http://8.148.71.102:18080/#/boardgame/betrayal-first-scenario-corpse-loot` | `implemented-verified` |
 | 官方补充：障碍物 | 障碍物所在房间离开耗 2 移动力；作祟后敌对探索者 / 怪物也算障碍物 | 已补基础移动成本读模型：房间障碍标记、作祟后同房间敌对探索者、英雄同房间怪物都会把离开成本抬到 2；仍需路径预览和完整怪物阵营模型 | `movementCost` / `resolveBetrayalMoveCost`, `obstacles` | 路径预览显示耗费 | 房间标记 / 敌对探索者 / 怪物障碍物移动测试已覆盖 | `implemented-needs-remodel` |
 | 20 作祟条目结构 | 识别、介绍设置、目标、指示物、重要地点、其他规则、If You Win、怪物盒 | 每个作祟录入必须按字段拆，不允许整段文本壳 | `HauntDefinition` | 剧本书分区 + 目标条 | 作祟 schema 测试 | `design-ready` |
 | 20 怪物盒 | 怪物名、属性、特殊规则、特殊行动仅适用于该怪物 | 怪物 template 和 action list 归属作祟 | `monsterDefinitions` | 怪物卡 / token | 怪物定义测试 | `design-ready` |
@@ -145,7 +148,7 @@
 | 26 怪物移动 | 怪物回合开始按速度掷骰决定移动，至少 1；同类型怪物只掷一次，多类型各掷一次 | 怪物移动力是按类型 roll，不按每个 token roll | `monsterMovementRollByType` | 怪物行动提示 | 怪物移动测试 | `design-ready` |
 | 26 怪物邻接 | 怪物可把地下室平台和一楼楼梯视为相邻 | 怪物有专属特殊相邻边 | `monsterSpecialAdjacency` | 路径预览 | 怪物楼梯测试 | `design-ready` |
 | 26 怪物攻击 / 限制 | 默认力量攻击；可忽略伤害性房间；不能持有物品 / 预兆；不能探索新板块 | 怪物动作列表与探索者不同 | `monsterActionSet` | 怪物动作槽 | 怪物动作测试 | `design-ready` |
-| 27 死亡 | 作祟后才会死亡；死亡时立牌倒在房间变尸体，持有物保留在角色板旁，可被搜刮 | 死亡不是删除角色；产生 corpse 和 inventory owner | `deathState`, `corpseTileId`, `corpseInventory` | 倒伏角色 / 尸体 marker | 死亡 / 搜刮测试 | `design-ready` |
+| 27 死亡 | 作祟后才会死亡；死亡时立牌倒在房间变尸体，持有物保留在角色板旁，可被搜刮 | 已验证基础搜尸代表链会保留尸体和持有物 owner，但完整死亡 UI、倒伏立牌表现、所有作祟死亡变体和特殊尸体用途仍需继续拆 | `deathState`, `corpseTileId`, `corpseInventory`, `corpseLootedByPlayerIdsThisTurn` | 倒伏角色 / 尸体 marker / 搜尸选择器 | 基础搜尸 E2E 已覆盖尸体可搜刮；完整死亡链仍需补测 | `implemented-needs-remodel` |
 | 27 终局 | 首个达成作祟目标的阵营获胜，朗读该方 If You Win | 胜负由作祟目标 resolver 触发，终局文本按阵营显示 | `winningSide`, `endingTextId` | 终局页 | 胜利文本测试 | `design-ready` |
 | 28 角色描述 | 背景用于代入，不直接改变基础规则；角色板属性才是规则数据 | 角色 lore 与规则属性分离 | `characterLore`, `traitTracks` | 角色详情页 | 角色 catalog 测试 | `design-ready` |
 | 29 索引 | 移动、攻击、作祟、卡牌、房间、属性、伤害死亡、骰子、计数轨、掩埋 | 索引入口全部能回链到账本行 | `ruleIndexMap` | 帮助层搜索 | 覆盖检查 | `design-ready` |
