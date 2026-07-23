@@ -49,6 +49,13 @@ type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
 let immediateExtraPromptCounter = 0;
 
+function isBaseModifierActionLike(def: ActionCardDef | FusionCardDef): boolean {
+    if (def.type === 'fusion') {
+        return def.actionSubtype === 'ongoing' && (def.actionOngoingTarget ?? 'base') === 'base';
+    }
+    return def.subtype === 'ongoing' && (def.ongoingTarget ?? 'base') === 'base';
+}
+
 function buildImmediateExtraEventKey(event: LimitModifiedEvent): string {
     const payload = event.payload as ImmediateExtraLimitPayload;
     return [
@@ -59,6 +66,9 @@ function buildImmediateExtraEventKey(event: LimitModifiedEvent): string {
         payload.delta,
         payload.restrictToBase ?? '__any_base__',
         payload.restrictToMinionUid ?? '__any_minion__',
+        payload.restrictToCardUid ?? '__any_card_uid__',
+        payload.restrictToCardDefId ?? '__any_card_def__',
+        payload.restrictToBaseModifier ? 'base_modifier_only' : 'any_action_kind',
         payload.specificCardUid ?? '__any_card__',
         payload.sameNameDefId ?? '__any_name__',
         payload.sameNameOnly ? 'same_name' : 'not_same_name',
@@ -237,6 +247,7 @@ function buildImmediateExtraActionCardOptions(
         .flatMap((card, index) => {
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return [];
+            if (extra.restrictToBaseModifier && !isBaseModifierActionLike(def)) return [];
 
             const targetMode = getActionPlayTargetMode(def);
             if (extra.restrictToMinionUid && targetMode !== 'minion') return [];
@@ -438,6 +449,19 @@ function executeImmediateExtraActionPlay(
         return { state, events: [] };
     }
     if (extra.restrictToBase !== undefined && targetBaseIndex !== extra.restrictToBase) {
+        return { state, events: [] };
+    }
+    const choiceDef = getCardDef(choice.defId) as ActionCardDef | FusionCardDef | undefined;
+    if (!choiceDef) {
+        return { state, events: [] };
+    }
+    if (extra.restrictToCardUid !== undefined && choice.cardUid !== extra.restrictToCardUid) {
+        return { state, events: [] };
+    }
+    if (extra.restrictToCardDefId !== undefined && choice.defId !== extra.restrictToCardDefId) {
+        return { state, events: [] };
+    }
+    if (extra.restrictToBaseModifier && !isBaseModifierActionLike(choiceDef)) {
         return { state, events: [] };
     }
     const validationState = buildValidationState(state, extra);

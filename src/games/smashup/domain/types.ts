@@ -443,6 +443,8 @@ export interface PlayerState {
     minionLimit: number;
     /** 本回合已打出行动数 */
     actionsPlayed: number;
+    /** 本回合已打出的行动牌张数（包含额外行动；不包含作为行动额度打出的随从） */
+    actionCardsPlayedThisTurn?: number;
     /** 本回合可打出行动额度（默认 1） */
     actionLimit: number;
     /** 本回合作为“额外牌”打出的牌总数（Eliza 等效果使用） */
@@ -1211,6 +1213,11 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         fromBuried?: boolean;
         /** 从弃牌堆打出 */
         fromDiscard?: boolean;
+        /** 行动目标基地（持续行动、特殊行动、目标随从行动均可携带） */
+        targetBaseIndex?: number;
+        targetType?: 'base' | 'minion';
+        /** 行动目标随从 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1524,6 +1531,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         restrictToCardUid?: string;
         /** 立即额外行动限定只能打出指定卡牌定义 */
         restrictToCardDefId?: string;
+        /** 立即额外行动限定只能打出基地修正（持续行动且目标为基地） */
+        restrictToBaseModifier?: boolean;
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */
         powerMax?: number;
         /** 同名限制：这些额度只能用于打出同一 defId 的随从（第一个打出时锁定） */
