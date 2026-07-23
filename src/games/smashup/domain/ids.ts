@@ -50,6 +50,7 @@ export const SMASHUP_ATLAS_IDS = {
     MEGA_TROOPERS_POD: 'smashup:mega-troopers-pod',
     CEASE_AND_DESIST_CARDS: 'smashup:cease-and-desist-cards',
     CEASE_AND_DESIST_BASES: 'smashup:cease-and-desist-bases',
+    ASTROKNIGHTS_POD_CARDS: 'smashup:astroknights-pod-cards',
     POLYNESIAN_VOYAGERS_CARDS: 'smashup:polynesian-voyagers-cards',
     PENGUINS_CARDS: 'smashup:penguins-cards',
     PENGUINS_BASES: 'smashup:penguins-bases',
@@ -66,6 +67,9 @@ export const SMASHUP_ATLAS_IDS = {
     ALL_STARS_POD_CARDS: 'smashup:all-stars-pod-cards',
     PROMOS_SHEEP_ALL_STARS_CARDS: 'smashup:promos-sheep-all-stars-cards',
     TORNADOS_POD_CARDS: 'smashup:tornados-pod-cards',
+    KUNG_FU_FIGHTERS_POD_CARDS: 'smashup:kung-fu-fighters-pod-cards',
+    RUSSIAN_FAIRY_TALES_POD_CARDS: 'smashup:russian-fairy-tales-pod-cards',
+    ANANSI_TALES_POD_CARDS: 'smashup:anansi-tales-pod-cards',
 } as const;
 
 export const SMASHUP_CARD_BACK = {
