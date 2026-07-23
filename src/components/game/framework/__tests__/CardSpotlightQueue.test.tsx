@@ -6,8 +6,8 @@ import { CardSpotlightQueue } from '../CardSpotlightQueue';
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string, options?: Record<string, unknown>) => {
-            if (key === 'cardSpotlightQueue.dismiss') return '看清后可关闭';
-            if (key === 'cardSpotlightQueue.queue') return `${options?.count} 张待查看 · 看清后可关闭`;
+            if (key === 'cardSpotlightQueue.dismiss') return '关闭特写';
+            if (key === 'cardSpotlightQueue.queue') return `${options?.count} 张特写`;
             if (key === 'cardSpotlightQueue.closeSpotlight') return '关闭特写';
             return key;
         },
@@ -15,7 +15,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('CardSpotlightQueue', () => {
-    it('只允许明确关闭按钮关闭，并保留更紧凑的默认提示文案', () => {
+    it('只允许明确关闭按钮关闭，并保留玩家可见的默认提示文案', () => {
         const onDismiss = vi.fn();
 
         render(
@@ -35,7 +35,7 @@ describe('CardSpotlightQueue', () => {
         const content = screen.getByTestId('card-spotlight-content');
         const closeButton = screen.getByRole('button', { name: '关闭特写' });
 
-        expect(screen.getByText('看清后可关闭')).toBeInTheDocument();
+        expect(screen.getByText('关闭特写')).toBeInTheDocument();
         expect(screen.getByTestId('card-spotlight-queue').className).toContain('pointer-events-none');
 
         fireEvent.click(content);
@@ -45,7 +45,7 @@ describe('CardSpotlightQueue', () => {
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
     });
 
-    it('多张队列时应显示统一的待查看提示，而不是额外动作暗示', () => {
+    it('多张队列时应显示统一的特写数量，而不是过程话术', () => {
         render(
             <CardSpotlightQueue
                 queue={[
@@ -59,6 +59,6 @@ describe('CardSpotlightQueue', () => {
             />,
         );
 
-        expect(screen.getByText('2 张待查看 · 看清后可关闭')).toBeInTheDocument();
+        expect(screen.getByText('2 张特写')).toBeInTheDocument();
     });
 });

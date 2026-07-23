@@ -77,7 +77,7 @@
 | **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-responsive-layout.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
 | **大规模 UI 改动** (新页面/重做布局/新游戏UI) | 先 `D:\codex-home\skills\ui-design-pipeline\SKILL.md`，再全局 `ui-ux-pro-max --design-system` 与 `design-system/` | 先锁 spec/domain/design/components/craft/template/evaluator，再生成或更新具体设计系统；见 §UI/UX 规范 → §0. 大规模 UI 改动前置流程 |
 | **游戏内 UI 交互** (按钮/面板/指示器) | `design-system/game-ui/MASTER.md` | 交互原则、反馈规范、动画时长、状态清晰 |
-| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单不得上屏) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md` | 总原则在 `MASTER.md`；具体承接方式按来源家族选型；单游戏 workflow 只引用入口，不重复维护正文 |
+| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单 / AI 过程话术不得上屏) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md` | 总原则在 `MASTER.md`；“看清后可关闭”这类给 AI 或测试人员的验收话术不得进入玩家 UI；具体承接方式按来源家族选型；单游戏 workflow 只引用入口，不重复维护正文 |
 | **选择成熟交互来源家族** (prompt / waiting / 手牌区 / 右侧 rail / setup 壳层) | `design-system/game-ui/source-families.md` | 先从批准家族中选型；复用仓内成熟不变量；找不到家族前不得发明正式交互模式 |
 | **游戏 UI 风格选择** | `design-system/styles/` | arcade-3d（街机立体）、tactical-clean（战术简洁）、classic-parchment（经典羊皮纸） |
 | **创建临时文件 / 清理根目录** (Bug 分析/测试脚本/Wiki 数据) | `docs/temp-files-management.md` | 临时文件分类规则、目录结构、.gitignore 规则、开发规范 |

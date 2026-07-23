@@ -299,7 +299,7 @@ export interface BetrayalEventSeed {
     );
 }
 
-// 12 号当前只接入官方 setup / 奇异护符控制权切片；巨魔手合击和偷牌替代伤害仍需后续实现。
+// 12 号已接入官方 setup / 奇异护符控制权 / 巨魔手攻击和偷牌替代伤害。
 export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = [1, 3, 12, 33] as const;
 
 export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): boolean {

@@ -437,11 +437,24 @@ export interface BetrayalHungryHouseRuntimeState {
     sacrificedCorpseIds: string[];
 }
 
+export interface BetrayalHelpingHandsAttackRewardChoice {
+    id: string;
+    attackerPlayerId: string;
+    defenderPlayerId: string;
+    damageToDefender: number;
+    damageKind: 'physical' | 'mental';
+    attackerRoll: number;
+    defenderRoll: number;
+    defenderTraitsBeforeDamage: BetrayalExplorerSummary['traits'];
+}
+
 export interface BetrayalHelpingHandsRuntimeState {
     strangeAmuletCardId: string;
     strangeAmuletFoundDuringSetup: boolean;
     trollHandIds: string[];
     monsterTurnAfterPlayerId: string;
+    trollHandAttackUsedIdsThisTurn: string[];
+    pendingAttackReward?: BetrayalHelpingHandsAttackRewardChoice;
 }
 
 export interface BetrayalHelpingHandsMonsterTurnStatus {
@@ -450,6 +463,16 @@ export interface BetrayalHelpingHandsMonsterTurnStatus {
     monsterTurnAfterPlayerId: string | null;
     trollHandIds: string[];
     reason: string | null;
+}
+
+export interface BetrayalHelpingHandsTrollHandAttackOption {
+    id: string;
+    label: string;
+    trollHandIds: string[];
+    roomId: string;
+    might: number;
+    combined: boolean;
+    targetPlayerIds: string[];
 }
 
 export interface BetrayalDustSicknessSwapResult {
@@ -657,6 +680,8 @@ export type BetrayalCommandMap = {
         targetMonsterId?: string;
         weaponCardId?: string;
     };
+    [BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD]: { choice?: 'damage' | 'steal'; cardId?: string };
+    [BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK]: { monsterId?: string; targetPlayerId?: string; combined?: boolean };
     [BETRAYAL_COMMANDS.LEARN_ABOUT_JACK]: Record<string, never>;
     [BETRAYAL_COMMANDS.STUDY_EXORCISM]: Record<string, never>;
     [BETRAYAL_COMMANDS.EXORCISE_JACK]: Record<string, never>;
@@ -697,6 +722,8 @@ const EVENTS = {
     TURN_END_ROLL_ACKNOWLEDGED: 'TURN_END_ROLL_ACKNOWLEDGED',
     HAUNT_TRIGGERED: 'HAUNT_TRIGGERED',
     HAUNT_ATTACK_RESOLVED: 'HAUNT_ATTACK_RESOLVED',
+    HELPING_HANDS_ATTACK_REWARD_RESOLVED: 'HELPING_HANDS_ATTACK_REWARD_RESOLVED',
+    HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED: 'HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED',
     JACK_LEARNED: 'JACK_LEARNED',
     EXORCISM_STUDIED: 'EXORCISM_STUDIED',
     JACK_EXORCISED: 'JACK_EXORCISED',
@@ -879,6 +906,53 @@ type BetrayalEvent =
             damageKind: 'physical' | 'mental';
             traitsBeforeDamage: BetrayalExplorerSummary['traits'];
             releasedJackSpiritRoomId?: string;
+            prevented: boolean;
+        };
+        helpingHandsAttackRewardChoice?: BetrayalHelpingHandsAttackRewardChoice;
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.HELPING_HANDS_ATTACK_REWARD_RESOLVED, {
+        attackerPlayerId: string;
+        defenderPlayerId: string;
+        choice: 'damage' | 'steal';
+        stolenCardId?: string;
+        stolenCardName?: string;
+        damageToDefender?: number;
+        damageKind?: 'physical' | 'mental';
+        defeatedPlayerId?: string;
+        deathPrevention?: {
+            playerId: string;
+            cardId: string;
+            rollTotal: number;
+            dice: number[];
+            minTotal: number;
+            damageAmount: number;
+            damageKind: 'physical' | 'mental';
+            traitsBeforeDamage: BetrayalExplorerSummary['traits'];
+            prevented: boolean;
+        };
+        logText: string;
+    }>
+    | GameEvent<typeof EVENTS.HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED, {
+        controllerPlayerId: string;
+        targetPlayerId: string;
+        trollHandIds: string[];
+        combined: boolean;
+        attackDice?: number[];
+        attackerRoll: number;
+        defenderRoll: number;
+        damageToDefender?: number;
+        defenderTraitsBeforeDamage?: BetrayalExplorerSummary['traits'];
+        defeatedPlayerId?: string;
+        deathPrevention?: {
+            playerId: string;
+            cardId: string;
+            rollTotal: number;
+            dice: number[];
+            minTotal: number;
+            damageAmount: number;
+            damageKind: 'physical' | 'mental';
+            traitsBeforeDamage: BetrayalExplorerSummary['traits'];
             prevented: boolean;
         };
         logText: string;
@@ -2574,6 +2648,13 @@ function cloneHelpingHandsRuntimeState(helpingHands: BetrayalHelpingHandsRuntime
         strangeAmuletFoundDuringSetup: helpingHands.strangeAmuletFoundDuringSetup,
         trollHandIds: [...helpingHands.trollHandIds],
         monsterTurnAfterPlayerId: helpingHands.monsterTurnAfterPlayerId,
+        trollHandAttackUsedIdsThisTurn: [...helpingHands.trollHandAttackUsedIdsThisTurn],
+        pendingAttackReward: helpingHands.pendingAttackReward
+            ? {
+                ...helpingHands.pendingAttackReward,
+                defenderTraitsBeforeDamage: { ...helpingHands.pendingAttackReward.defenderTraitsBeforeDamage },
+            }
+            : undefined,
     };
 }
 
@@ -2657,6 +2738,7 @@ function setupHelpingHandsHaunt(core: BetrayalCore, revealerPlayerId: string): B
         strangeAmuletFoundDuringSetup: amulet.foundDuringSetup,
         trollHandIds: trollHands.map((monster) => monster.id),
         monsterTurnAfterPlayerId: revealerPlayerId,
+        trollHandAttackUsedIdsThisTurn: [],
     };
 }
 
@@ -2679,6 +2761,69 @@ export function resolveHelpingHandsMonsterTurnStatus(core: BetrayalCore): Betray
         trollHandIds: [...helpingHands.trollHandIds],
         reason: controllerPlayerId ? null : '无人持有奇异护符，巨魔手怪物回合跳过。',
     };
+}
+
+export function resolveHelpingHandsStealableCards(
+    core: BetrayalCore,
+    defenderPlayerId: string,
+): BetrayalInventoryCard[] {
+    const defender = findExplorerByPlayerId(core, defenderPlayerId);
+    return defender
+        ? defender.inventory.filter((card) => card.kind === 'item' || card.kind === 'omen')
+        : [];
+}
+
+export function resolveHelpingHandsPendingAttackReward(
+    core: BetrayalCore,
+): BetrayalHelpingHandsAttackRewardChoice | null {
+    return isHelpingHandsHaunt(core)
+        ? core.scenarioRuntime.helpingHands?.pendingAttackReward ?? null
+        : null;
+}
+
+export function resolveHelpingHandsTrollHandAttackOptions(
+    core: BetrayalCore,
+): BetrayalHelpingHandsTrollHandAttackOption[] {
+    const status = resolveHelpingHandsMonsterTurnStatus(core);
+    if (!status.active || !core.scenarioRuntime.helpingHands) {
+        return [];
+    }
+    const usedIds = new Set(core.scenarioRuntime.helpingHands.trollHandAttackUsedIdsThisTurn);
+    const trollHands = status.trollHandIds
+        .map((id) => core.monsters.find((monster) => monster.id === id) ?? null)
+        .filter((monster): monster is BetrayalMonsterSummary => Boolean(monster))
+        .filter((monster) => !usedIds.has(monster.id));
+    const livingExplorers = getAllExplorers(core).filter((explorer) => (
+        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+    const options = trollHands.map((monster) => ({
+        id: monster.id,
+        label: monster.name,
+        trollHandIds: [monster.id],
+        roomId: monster.roomId,
+        might: monster.might,
+        combined: false,
+        targetPlayerIds: livingExplorers
+            .filter((explorer) => explorer.roomId === monster.roomId)
+            .map((explorer) => explorer.playerId),
+    }));
+    if (
+        trollHands.length === 2
+        && trollHands[0]!.roomId === trollHands[1]!.roomId
+    ) {
+        options.push({
+            id: 'combined-troll-hands',
+            label: '巨魔手合击',
+            trollHandIds: trollHands.map((monster) => monster.id),
+            roomId: trollHands[0]!.roomId,
+            might: 8,
+            combined: true,
+            targetPlayerIds: livingExplorers
+                .filter((explorer) => explorer.roomId === trollHands[0]!.roomId)
+                .map((explorer) => explorer.playerId),
+        });
+    }
+    return options.filter((option) => option.targetPlayerIds.length > 0);
 }
 
 function createHungryHouseRoomNode(
@@ -2805,6 +2950,25 @@ function completeHungryHouseSoloVictoryIfNeeded(core: BetrayalCore, winnerPlayer
     }
     return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
         result: createHungryHouseEndgameResult(core, winnerPlayerId),
+    }, timestamp));
+}
+
+function completeHelpingHandsSoloVictoryIfNeeded(core: BetrayalCore, timestamp: number): BetrayalCore | null {
+    if (!isHelpingHandsHaunt(core)) {
+        return null;
+    }
+    const livingExplorers = getAllExplorers(core).filter((explorer) => (
+        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+    if (livingExplorers.length !== 1) {
+        return null;
+    }
+    const winner = livingExplorers[0]!;
+    if (resolveHelpingHandsControllerPlayerId(core) !== winner.playerId) {
+        return null;
+    }
+    return reduceEvent(core, nowEvent(EVENTS.SCENARIO_COMPLETED, {
+        result: createHungryHouseEndgameResult(core, winner.playerId),
     }, timestamp));
 }
 
@@ -4012,6 +4176,19 @@ export function resolveBetrayalAttackTargetPlayerIds(
     const weaponEffect = weaponCardId ? resolveAttackWeaponEffect(actor, weaponCardId) : null;
     if (weaponCardId && !weaponEffect) {
         return { traitorPlayerId: null, heroPlayerIds: [] };
+    }
+
+    if (isHelpingHandsHaunt(core)) {
+        return {
+            traitorPlayerId: null,
+            heroPlayerIds: getAllExplorers(core)
+                .filter((explorer) => (
+                    explorer.playerId !== actor.playerId
+                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+                    && isAttackTargetInWeaponRange(core, actorRoomId, explorer.roomId, weaponEffect)
+                ))
+                .map((explorer) => explorer.playerId),
+        };
     }
 
     const traitor = core.scenarioRuntime.traitorPlayerId
@@ -7017,6 +7194,8 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
         case BETRAYAL_COMMANDS.HAUNT_ATTACK:
+        case BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD:
+        case BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK:
         case BETRAYAL_COMMANDS.TAKE_PHOTO:
         case BETRAYAL_COMMANDS.SMASH_MAGIC_CAMERA:
         case BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK:
@@ -7038,6 +7217,13 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     const core = state.core;
     if (core.phase !== 'haunt') {
         return { valid: false, error: '当前不在 haunt 阶段。' };
+    }
+    const pendingHelpingHandsReward = resolveHelpingHandsPendingAttackReward(core);
+    if (
+        pendingHelpingHandsReward
+        && command.type !== BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD
+    ) {
+        return { valid: false, error: '请先选择造成伤害或偷取物品/预兆。' };
     }
     if (command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT) {
         const card = resolveRabbitFootCard(core, command.payload.cardId, command.playerId);
@@ -7143,6 +7329,46 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return { valid: true };
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
+        case BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD: {
+            const pending = pendingHelpingHandsReward;
+            if (!pending) {
+                return { valid: false, error: '当前没有待选择的援手攻击奖励。' };
+            }
+            if (pending.attackerPlayerId !== actor.playerId) {
+                return { valid: false, error: '必须由攻击获胜者选择伤害或偷牌。' };
+            }
+            if (command.payload.choice === 'damage') {
+                return { valid: true };
+            }
+            if (command.payload.choice !== 'steal') {
+                return { valid: false, error: '必须选择造成伤害或偷取物品/预兆。' };
+            }
+            const cardId = command.payload.cardId;
+            if (!cardId) {
+                return { valid: false, error: '偷取时必须选择一张物品或预兆。' };
+            }
+            if (!resolveHelpingHandsStealableCards(core, pending.defenderPlayerId).some((card) => card.id === cardId)) {
+                return { valid: false, error: '只能偷取防守者持有的物品或预兆。' };
+            }
+            return { valid: true };
+        }
+        case BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK: {
+            const status = resolveHelpingHandsMonsterTurnStatus(core);
+            if (!status.active || status.controllerPlayerId !== actor.playerId) {
+                return { valid: false, error: '只有奇异护符持有人能控制巨魔手攻击。' };
+            }
+            const options = resolveHelpingHandsTrollHandAttackOptions(core);
+            const option = command.payload.combined
+                ? options.find((item) => item.combined)
+                : options.find((item) => !item.combined && item.trollHandIds[0] === command.payload.monsterId);
+            if (!option) {
+                return { valid: false, error: command.payload.combined ? '两个巨魔手必须同板块且未行动才能合击。' : '必须选择一个可行动的巨魔手。' };
+            }
+            if (!command.payload.targetPlayerId || !option.targetPlayerIds.includes(command.payload.targetPlayerId)) {
+                return { valid: false, error: '巨魔手只能攻击同板块的存活探索者。' };
+            }
+            return { valid: true };
+        }
         case BETRAYAL_COMMANDS.TAKE_PHOTO: {
             const target = command.payload.targetPlayerId
                 ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
@@ -7224,6 +7450,45 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 }
                 return { valid: true };
             }
+            if (isHelpingHandsHaunt(core)) {
+                if (isDead) {
+                    return { valid: false, error: '死亡探索者不能在大宅饿了 / 援手中攻击。' };
+                }
+                const weaponEffect = command.payload.weaponCardId
+                    ? resolveAttackWeaponEffect(actor, command.payload.weaponCardId)
+                    : null;
+                if (command.payload.weaponCardId) {
+                    if (!weaponEffect) {
+                        return { valid: false, error: '当前探索者没有可用于攻击的这把武器。' };
+                    }
+                    if (!core.turnStartInventoryCardIds.includes(command.payload.weaponCardId)) {
+                        return { valid: false, error: '本回合新获得的武器不能立刻使用。' };
+                    }
+                    if (core.usedCardIdsThisTurn.includes(command.payload.weaponCardId)) {
+                        return { valid: false, error: '这把武器本回合已经使用。' };
+                    }
+                }
+                if (command.payload.target !== 'hero') {
+                    return { valid: false, error: '自由混战只能攻击另一名探索者。' };
+                }
+                const target = command.payload.targetPlayerId
+                    ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
+                    : null;
+                if (
+                    !target
+                    || target.playerId === actor.playerId
+                    || core.scenarioRuntime.deadExplorerPlayerIds.includes(target.playerId)
+                    || !isAttackTargetInWeaponRange(core, actorRoomId, target.roomId, weaponEffect)
+                ) {
+                    return {
+                        valid: false,
+                        error: weaponEffect?.ranged
+                            ? '自由混战只能攻击同板块或视线内的其他存活探索者。'
+                            : '自由混战只能攻击同板块的其他存活探索者。',
+                    };
+                }
+                return { valid: true };
+            }
             if (isHungryHouseHaunt(core)) {
                 if (isDead) {
                     return { valid: false, error: '死亡探索者不能在大宅饿了剧本中攻击。' };
@@ -7265,40 +7530,6 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                     return { valid: true };
                 }
                 return { valid: false, error: '大宅饿了剧本只能攻击邪教徒或同板块探索者。' };
-            }
-            if (isHungryHouseHaunt(core)) {
-                const hungryHouse = core.scenarioRuntime.hungryHouse;
-                if (hungryHouse && event.payload.outcome === 'cultist-killed' && event.payload.defeatedMonsterId) {
-                    const corpseRoomId = event.payload.defeatedMonsterRoomId
-                        ?? core.monsters.find((monster) => monster.id === event.payload.defeatedMonsterId)?.roomId
-                        ?? core.activeRoomId;
-                    core.monsters = core.monsters.filter((monster) => monster.id !== event.payload.defeatedMonsterId);
-                    hungryHouse.cultistCorpseRoomIds = {
-                        ...hungryHouse.cultistCorpseRoomIds,
-                        [event.payload.defeatedMonsterId]: corpseRoomId,
-                    };
-                }
-                if (event.payload.defeatedPlayerId) {
-                    markDeadExplorer(core, event.payload.defeatedPlayerId);
-                }
-                const livingExplorers = getAllExplorers(core).filter((explorer) => (
-                    !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-                ));
-                const winnerPlayerId = livingExplorers.length === 1
-                    ? livingExplorers[0]!.playerId
-                    : event.payload.attackerPlayerId;
-                const completed = completeHungryHouseSoloVictoryIfNeeded(core, winnerPlayerId, event.timestamp);
-                if (completed) {
-                    return completed;
-                }
-                const nextPlayerId = rotateToNextLivingPlayer(core, core.currentPlayer);
-                const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
-                return {
-                    ...nextCore,
-                    currentPlayer: nextPlayerId,
-                    recommendedAction: 'move',
-                    activityLog: appendActivity(nextCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
-                };
             }
             if (isMagicCameraHaunt(core)) {
                 if (command.payload.weaponCardId) {
@@ -8746,6 +8977,116 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     }, timestamp)];
                 }
             }
+            if (isHelpingHandsHaunt(core)) {
+                const defender = command.payload.targetPlayerId
+                    ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
+                    : null;
+                if (!defender || defender.playerId === attacker.playerId) {
+                    return [];
+                }
+                const defenderTraitsBeforeDamage = { ...defender.traits };
+                const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
+                const attackerRoll = attackRoll.total;
+                const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
+                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
+                const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                const attackTrait = weaponEffect?.attackTrait ?? 'might';
+                const canChooseSteal = attackTrait === 'might'
+                    && damageToDefender > 0
+                    && resolveHelpingHandsStealableCards(core, defender.playerId).length > 0;
+                const defenderDeathPrevention = !canChooseSteal && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
+                    ? rollDeathPrevention(random, defender)
+                    : null;
+                const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
+                    ? rollDeathPrevention(random, attacker)
+                    : null;
+                const defenderDefeated = !canChooseSteal
+                    && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
+                    && !defenderDeathPrevention?.prevented;
+                const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
+                    && !attackerDeathPrevention?.prevented;
+                const deathPrevention = defenderDeathPrevention
+                    ? {
+                        ...defenderDeathPrevention,
+                        damageAmount: damageToDefender,
+                        damageKind: attackDamageKind,
+                        traitsBeforeDamage: defenderTraitsBeforeDamage,
+                    }
+                    : attackerDeathPrevention
+                        ? {
+                            ...attackerDeathPrevention,
+                            damageAmount: damageToAttacker,
+                            damageKind: attackDamageKind,
+                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
+                        }
+                        : undefined;
+                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
+                const helpingHandsAttackRewardChoice = canChooseSteal
+                    ? {
+                        id: `${attacker.playerId}-${defender.playerId}-helping-hands-reward-${timestamp}`,
+                        attackerPlayerId: attacker.playerId,
+                        defenderPlayerId: defender.playerId,
+                        damageToDefender,
+                        damageKind: attackDamageKind,
+                        attackerRoll,
+                        defenderRoll,
+                        defenderTraitsBeforeDamage,
+                    }
+                    : undefined;
+                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
+                    attackerPlayerId: attacker.playerId,
+                    target: 'hero',
+                    defenderPlayerId: defender.playerId,
+                    defeatedPlayerId: defenderDefeated
+                        ? defender.playerId
+                        : attackerDefeated
+                            ? attacker.playerId
+                            : undefined,
+                    outcome: attackerRoll === defenderRoll
+                        ? 'no-damage'
+                        : defenderDefeated || attackerDefeated
+                            ? 'hero-defeated'
+                            : 'wound',
+                    attackerRoll,
+                    defenderRoll,
+                    damageToAttacker: damageToAttacker || undefined,
+                    damageToDefender: canChooseSteal ? undefined : damageToDefender || undefined,
+                    damageKind: attackDamageKind,
+                    weaponCardId: weaponEffect?.card.id,
+                    weaponName: weaponEffect?.card.name,
+                    weaponAttackBonus: weaponEffect?.bonus || undefined,
+                    weaponExtraDice: weaponEffect?.extraDice || undefined,
+                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
+                    weaponAttackTrait: weaponEffect?.attackTrait,
+                    attackRoll: {
+                        id: `${attacker.playerId}-helping-hands-explorer-${timestamp}`,
+                        dice: attackRoll.dice,
+                        passiveBonus: attackRoll.passiveBonus,
+                        latestLabel: attackerRoll === defenderRoll
+                            ? '平手无伤害'
+                            : canChooseSteal
+                                ? `可偷牌或造成 ${damageToDefender} 点伤害`
+                                : damageToDefender > 0
+                                    ? `造成 ${damageToDefender} 点伤害`
+                                    : `反受 ${damageToAttacker} 点伤害`,
+                        attackerTraitsBeforeDamage,
+                        defenderTraitsBeforeDamage,
+                    },
+                    deathPrevention,
+                    helpingHandsAttackRewardChoice,
+                    logText: canChooseSteal
+                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}用力量攻击赢过${defender.displayName}，可选择造成 ${damageToDefender} 点伤害或偷取 1 张物品/预兆`
+                        : attackerRoll === defenderRoll
+                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，双方都没有受伤`
+                            : defenderDefeated
+                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击倒了${defender.displayName}${deathPreventionLog}`
+                                : attackerDefeated
+                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被${defender.displayName}击倒${deathPreventionLog}`
+                                    : damageToDefender > 0
+                                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
+                                        : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
+                }, timestamp)];
+            }
             if (isMagicCameraHaunt(core)) {
                 if (command.payload.target === 'phantom-photographer') {
                     const monster = findPhantomPhotographer(core, command.payload.targetMonsterId);
@@ -8888,6 +9229,113 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                                 : damageToDefender > 0
                                     ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}造成 ${damageToDefender} 点 ${attackDamageLabel}${essenceBonus ? '（本质 +2）' : ''}${deathPreventionLog}`
                                     : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
+                }, timestamp)];
+            }
+            if (isHelpingHandsHaunt(core)) {
+                const defender = command.payload.targetPlayerId
+                    ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
+                    : null;
+                if (!defender) {
+                    return [];
+                }
+                const defenderTraitsBeforeDamage = { ...defender.traits };
+                const attackRoll = rollAttackWithDice(random, attacker, weaponEffect);
+                const attackerRoll = attackRoll.total;
+                const defenderRoll = rollAttackDefense(random, defender, weaponEffect);
+                const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
+                const damageToAttacker = Math.max(0, defenderRoll - attackerRoll);
+                const defenderStealableCards = resolveHelpingHandsStealableCards(core, defender.playerId);
+                const pendingAttackReward = damageToDefender > 0 && defenderStealableCards.length > 0
+                    ? {
+                        id: `helping-hands-attack-reward-${attacker.playerId}-${defender.playerId}-${timestamp}`,
+                        attackerPlayerId: attacker.playerId,
+                        defenderPlayerId: defender.playerId,
+                        damageToDefender,
+                        damageKind: attackDamageKind,
+                        attackerRoll,
+                        defenderRoll,
+                        defenderTraitsBeforeDamage,
+                    }
+                    : undefined;
+                const defenderDeathPrevention = !pendingAttackReward && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
+                    ? rollDeathPrevention(random, defender)
+                    : null;
+                const attackerDeathPrevention = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
+                    ? rollDeathPrevention(random, attacker)
+                    : null;
+                const defenderDefeated = !pendingAttackReward
+                    && wouldExplorerDieFromAttackDamage(defender, damageToDefender, attackDamageKind)
+                    && !defenderDeathPrevention?.prevented;
+                const attackerDefeated = wouldExplorerDieFromAttackDamage(attacker, damageToAttacker, attackDamageKind)
+                    && !attackerDeathPrevention?.prevented;
+                const deathPrevention = defenderDeathPrevention
+                    ? {
+                        ...defenderDeathPrevention,
+                        damageAmount: damageToDefender,
+                        damageKind: attackDamageKind,
+                        traitsBeforeDamage: defenderTraitsBeforeDamage,
+                    }
+                    : attackerDeathPrevention
+                        ? {
+                            ...attackerDeathPrevention,
+                            damageAmount: damageToAttacker,
+                            damageKind: attackDamageKind,
+                            traitsBeforeDamage: { ...attackerTraitsBeforeDamage },
+                        }
+                        : undefined;
+                const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
+                return [nowEvent(EVENTS.HAUNT_ATTACK_RESOLVED, {
+                    attackerPlayerId: attacker.playerId,
+                    target: 'hero',
+                    defenderPlayerId: defender.playerId,
+                    defeatedPlayerId: defenderDefeated
+                        ? defender.playerId
+                        : attackerDefeated
+                            ? attacker.playerId
+                            : undefined,
+                    outcome: attackerRoll === defenderRoll
+                        ? 'no-damage'
+                        : defenderDefeated || attackerDefeated
+                            ? 'hero-defeated'
+                            : 'wound',
+                    attackerRoll,
+                    defenderRoll,
+                    damageToAttacker: damageToAttacker || undefined,
+                    damageToDefender: pendingAttackReward ? undefined : damageToDefender || undefined,
+                    damageKind: attackDamageKind,
+                    weaponCardId: weaponEffect?.card.id,
+                    weaponName: weaponEffect?.card.name,
+                    weaponAttackBonus: weaponEffect?.bonus || undefined,
+                    weaponExtraDice: weaponEffect?.extraDice || undefined,
+                    weaponSpeedCost: weaponEffect?.speedCost || undefined,
+                    weaponAttackTrait: weaponEffect?.attackTrait,
+                    attackRoll: {
+                        id: `${attacker.playerId}-helping-hands-explorer-${timestamp}`,
+                        dice: attackRoll.dice,
+                        passiveBonus: attackRoll.passiveBonus,
+                        latestLabel: attackerRoll === defenderRoll
+                            ? '平手无伤害'
+                            : damageToDefender > 0
+                                ? pendingAttackReward
+                                    ? '胜出，选择造成伤害或偷牌'
+                                    : `造成 ${damageToDefender} 点伤害`
+                                : `反受 ${damageToAttacker} 点伤害`,
+                        attackerTraitsBeforeDamage,
+                        defenderTraitsBeforeDamage,
+                    },
+                    deathPrevention,
+                    helpingHandsAttackRewardChoice: pendingAttackReward,
+                    logText: attackerRoll === defenderRoll
+                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，双方都没有受伤`
+                        : pendingAttackReward
+                            ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}压制了${defender.displayName}，可以选择造成 ${damageToDefender} 点 ${attackDamageLabel}或偷取物品/预兆`
+                            : defenderDefeated
+                                ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}击倒了${defender.displayName}${deathPreventionLog}`
+                                : attackerDefeated
+                                    ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击失败并被${defender.displayName}击倒${deathPreventionLog}`
+                                    : damageToDefender > 0
+                                        ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}，造成 ${damageToDefender} 点 ${attackDamageLabel}${deathPreventionLog}`
+                                        : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}攻击${defender.displayName}失败，反受 ${damageToAttacker} 点 ${attackDamageLabel}${deathPreventionLog}`,
                 }, timestamp)];
             }
             if (isDustHaunt(core)) {
@@ -9223,6 +9671,99 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 logText: attackerRoll > jackSpiritDefense
                     ? `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}压制住了杰克之灵`
                     : `${attacker.displayName}${weaponEffect ? `使用${weaponEffect.card.name}` : ''}尝试攻击杰克之灵，但没能造成有效压制`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD: {
+            const pending = resolveHelpingHandsPendingAttackReward(core);
+            const attacker = pending ? findExplorerByPlayerId(core, pending.attackerPlayerId) : null;
+            const defender = pending ? findExplorerByPlayerId(core, pending.defenderPlayerId) : null;
+            if (!pending || !attacker || !defender) {
+                return [];
+            }
+            if (command.payload.choice === 'steal') {
+                const card = defender.inventory.find((item) => item.id === command.payload.cardId);
+                if (!card || (card.kind !== 'item' && card.kind !== 'omen')) {
+                    return [];
+                }
+                return [nowEvent(EVENTS.HELPING_HANDS_ATTACK_REWARD_RESOLVED, {
+                    attackerPlayerId: attacker.playerId,
+                    defenderPlayerId: defender.playerId,
+                    choice: 'steal',
+                    stolenCardId: card.id,
+                    stolenCardName: card.name,
+                    logText: `${attacker.displayName}没有造成伤害，改为从${defender.displayName}手中偷走${card.name}`,
+                }, timestamp)];
+            }
+            const deathPreventionRoll = wouldExplorerDieFromAttackDamage(defender, pending.damageToDefender, pending.damageKind)
+                ? rollDeathPrevention(random, defender)
+                : null;
+            const defenderDefeated = wouldExplorerDieFromAttackDamage(defender, pending.damageToDefender, pending.damageKind)
+                && !deathPreventionRoll?.prevented;
+            const deathPrevention = deathPreventionRoll
+                ? {
+                    ...deathPreventionRoll,
+                    damageAmount: pending.damageToDefender,
+                    damageKind: pending.damageKind,
+                    traitsBeforeDamage: { ...pending.defenderTraitsBeforeDamage },
+                }
+                : undefined;
+            const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
+            return [nowEvent(EVENTS.HELPING_HANDS_ATTACK_REWARD_RESOLVED, {
+                attackerPlayerId: attacker.playerId,
+                defenderPlayerId: defender.playerId,
+                choice: 'damage',
+                damageToDefender: pending.damageToDefender,
+                damageKind: pending.damageKind,
+                defeatedPlayerId: defenderDefeated ? defender.playerId : undefined,
+                deathPrevention,
+                logText: `${attacker.displayName}选择造成 ${pending.damageToDefender} 点 ${pending.damageKind} damage${deathPreventionLog}`,
+            }, timestamp)];
+        }
+        case BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK: {
+            const options = resolveHelpingHandsTrollHandAttackOptions(core);
+            const option = command.payload.combined
+                ? options.find((item) => item.combined)
+                : options.find((item) => !item.combined && item.trollHandIds[0] === command.payload.monsterId);
+            const target = command.payload.targetPlayerId
+                ? findExplorerByPlayerId(core, command.payload.targetPlayerId)
+                : null;
+            if (!option || !target) {
+                return [];
+            }
+            const defenderTraitsBeforeDamage = { ...target.traits };
+            const dice = rollDicePips(random, option.might);
+            const attackerRoll = dice.reduce((sum, pip) => sum + pip, 0);
+            const defenderRoll = rollTrait(random, target.traits.might);
+            const damageToDefender = Math.max(0, attackerRoll - defenderRoll);
+            const deathPreventionRoll = wouldExplorerDieFromPhysicalDamage(target, damageToDefender)
+                ? rollDeathPrevention(random, target)
+                : null;
+            const defenderDefeated = wouldExplorerDieFromPhysicalDamage(target, damageToDefender)
+                && !deathPreventionRoll?.prevented;
+            const deathPrevention = deathPreventionRoll
+                ? {
+                    ...deathPreventionRoll,
+                    damageAmount: damageToDefender,
+                    damageKind: 'physical' as const,
+                    traitsBeforeDamage: defenderTraitsBeforeDamage,
+                }
+                : undefined;
+            const deathPreventionLog = formatDeathPreventionLog(deathPrevention);
+            return [nowEvent(EVENTS.HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED, {
+                controllerPlayerId: command.playerId,
+                targetPlayerId: target.playerId,
+                trollHandIds: option.trollHandIds,
+                combined: option.combined,
+                attackDice: dice,
+                attackerRoll,
+                defenderRoll,
+                damageToDefender: damageToDefender || undefined,
+                defenderTraitsBeforeDamage,
+                defeatedPlayerId: defenderDefeated ? target.playerId : undefined,
+                deathPrevention,
+                logText: damageToDefender > 0
+                    ? `${option.label}攻击${target.displayName}，造成 ${damageToDefender} 点 physical damage${deathPreventionLog}`
+                    : `${option.label}攻击${target.displayName}，但没有造成伤害`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.SEARCH_FOR_CURE: {
@@ -10692,6 +11233,12 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         exchangedSicknessThisTurnPlayerIds: [],
                     }
                     : undefined,
+                helpingHands: nextCore.scenarioRuntime.helpingHands
+                    ? {
+                        ...cloneHelpingHandsRuntimeState(nextCore.scenarioRuntime.helpingHands),
+                        trollHandAttackUsedIdsThisTurn: [],
+                    }
+                    : undefined,
                 magicCamera: nextCore.scenarioRuntime.magicCamera
                     ? cloneMagicCameraRuntimeState(nextCore.scenarioRuntime.magicCamera)
                     : undefined,
@@ -10757,6 +11304,12 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     ? {
                         ...cloneDustRuntimeState(nextCore.scenarioRuntime.dust),
                         exchangedSicknessThisTurnPlayerIds: [],
+                    }
+                    : undefined,
+                helpingHands: nextCore.scenarioRuntime.helpingHands
+                    ? {
+                        ...cloneHelpingHandsRuntimeState(nextCore.scenarioRuntime.helpingHands),
+                        trollHandAttackUsedIdsThisTurn: [],
                     }
                     : undefined,
                 magicCamera: nextCore.scenarioRuntime.magicCamera
@@ -11030,6 +11583,46 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     activityLog: appendActivity(nextCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
                 };
             }
+            if (isHelpingHandsHaunt(core)) {
+                const helpingHands = core.scenarioRuntime.helpingHands;
+                if (helpingHands && event.payload.helpingHandsAttackRewardChoice) {
+                    helpingHands.pendingAttackReward = {
+                        ...event.payload.helpingHandsAttackRewardChoice,
+                        defenderTraitsBeforeDamage: { ...event.payload.helpingHandsAttackRewardChoice.defenderTraitsBeforeDamage },
+                    };
+                }
+                if (event.payload.defeatedPlayerId) {
+                    markDeadExplorer(core, event.payload.defeatedPlayerId);
+                }
+                const completed = completeHelpingHandsSoloVictoryIfNeeded(core, event.timestamp);
+                if (completed) {
+                    return completed;
+                }
+                const tone = event.payload.defeatedPlayerId
+                    ? 'warning'
+                    : event.payload.outcome === 'no-damage'
+                        ? 'neutral'
+                        : 'accent';
+                if (
+                    event.payload.attackerPlayerId === core.currentPlayer
+                    && !core.scenarioRuntime.deadExplorerPlayerIds.includes(event.payload.attackerPlayerId)
+                ) {
+                    const syncedCore = syncCurrentExplorerProjection(core);
+                    return {
+                        ...syncedCore,
+                        recommendedAction: resolveRecommendedAction(syncedCore),
+                        activityLog: appendActivity(syncedCore, event.payload.logText, tone),
+                    };
+                }
+                const nextPlayerId = rotateToNextLivingPlayer(core, core.currentPlayer);
+                const nextCore = replaceExplorers(core, getAllExplorers(core), nextPlayerId);
+                return {
+                    ...nextCore,
+                    currentPlayer: nextPlayerId,
+                    recommendedAction: 'move',
+                    activityLog: appendActivity(nextCore, event.payload.logText, tone),
+                };
+            }
             if (event.payload.outcome === 'traitor-defeated' && event.payload.defeatedPlayerId) {
                 core.scenarioRuntime.deadExplorerPlayerIds = Array.from(new Set([
                     ...core.scenarioRuntime.deadExplorerPlayerIds,
@@ -11100,6 +11693,128 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 currentPlayer: nextPlayerId,
                 recommendedAction: 'move',
                 activityLog: appendActivity(nextCore, event.payload.logText, event.payload.outcome === 'hero-defeated' ? 'warning' : 'accent'),
+            };
+        }
+        case EVENTS.HELPING_HANDS_ATTACK_REWARD_RESOLVED: {
+            const helpingHands = core.scenarioRuntime.helpingHands;
+            if (!helpingHands) {
+                return core;
+            }
+            const attacker = findExplorerByPlayerId(core, event.payload.attackerPlayerId);
+            const defender = findExplorerByPlayerId(core, event.payload.defenderPlayerId);
+            helpingHands.pendingAttackReward = undefined;
+            if (event.payload.choice === 'steal' && attacker && defender && event.payload.stolenCardId) {
+                const stolenCard = defender.inventory.find((card) => card.id === event.payload.stolenCardId);
+                if (stolenCard) {
+                    defender.inventory = defender.inventory.filter((card) => card.id !== stolenCard.id);
+                    attacker.inventory = [...attacker.inventory, cloneInventoryCard(stolenCard)];
+                    core.receivedCardIdsThisTurnByPlayerId = {
+                        ...core.receivedCardIdsThisTurnByPlayerId,
+                        [attacker.playerId]: Array.from(new Set([
+                            ...(core.receivedCardIdsThisTurnByPlayerId[attacker.playerId] ?? []),
+                            stolenCard.id,
+                        ])),
+                    };
+                }
+            }
+            if (defender && event.payload.damageToDefender && event.payload.damageKind) {
+                applyAttackDamage(defender, event.payload.damageToDefender, event.payload.damageKind);
+            }
+            if (event.payload.deathPrevention?.prevented) {
+                const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
+                if (protectedExplorer) {
+                    setExplorerTraitsToDeathsDoor(protectedExplorer);
+                }
+            }
+            if (event.payload.deathPrevention?.dice.length) {
+                core.recentRoll = {
+                    id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
+                    kind: 'deathPrevention',
+                    playerId: event.payload.deathPrevention.playerId,
+                    sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
+                    dice: [...event.payload.deathPrevention.dice],
+                    passiveBonus: 0,
+                    latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
+                    deathPrevention: {
+                        cardId: event.payload.deathPrevention.cardId,
+                        minTotal: event.payload.deathPrevention.minTotal,
+                        damageKind: event.payload.deathPrevention.damageKind,
+                        damageAmount: event.payload.deathPrevention.damageAmount,
+                        traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
+                        scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(core.scenarioRuntime),
+                        monstersBeforeDefeat: core.monsters.map(cloneMonster),
+                        releasedJackSpiritRoomId: event.payload.deathPrevention.releasedJackSpiritRoomId,
+                    },
+                    consumedRabbitFootCardIds: [],
+                };
+            }
+            if (event.payload.defeatedPlayerId) {
+                markDeadExplorer(core, event.payload.defeatedPlayerId);
+            }
+            const completed = completeHelpingHandsSoloVictoryIfNeeded(core, event.timestamp);
+            if (completed) {
+                return completed;
+            }
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: resolveRecommendedAction(syncedCore),
+                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
+            };
+        }
+        case EVENTS.HELPING_HANDS_TROLL_HAND_ATTACK_RESOLVED: {
+            const helpingHands = core.scenarioRuntime.helpingHands;
+            if (!helpingHands) {
+                return core;
+            }
+            const target = findExplorerByPlayerId(core, event.payload.targetPlayerId);
+            helpingHands.trollHandAttackUsedIdsThisTurn = Array.from(new Set([
+                ...helpingHands.trollHandAttackUsedIdsThisTurn,
+                ...event.payload.trollHandIds,
+            ]));
+            if (target && event.payload.damageToDefender) {
+                applyAttackDamage(target, event.payload.damageToDefender, 'physical');
+            }
+            if (event.payload.deathPrevention?.prevented) {
+                const protectedExplorer = findExplorerByPlayerId(core, event.payload.deathPrevention.playerId);
+                if (protectedExplorer) {
+                    setExplorerTraitsToDeathsDoor(protectedExplorer);
+                }
+            }
+            if (event.payload.deathPrevention?.dice.length) {
+                core.recentRoll = {
+                    id: `${event.payload.deathPrevention.playerId}-death-prevention-${event.timestamp}`,
+                    kind: 'deathPrevention',
+                    playerId: event.payload.deathPrevention.playerId,
+                    sourceTitle: event.payload.deathPrevention.cardId === 'skull' ? '头骨死亡保护' : '死亡保护',
+                    dice: [...event.payload.deathPrevention.dice],
+                    passiveBonus: 0,
+                    latestLabel: event.payload.deathPrevention.prevented ? '阻止死亡' : '正常死亡',
+                    deathPrevention: {
+                        cardId: event.payload.deathPrevention.cardId,
+                        minTotal: event.payload.deathPrevention.minTotal,
+                        damageKind: event.payload.deathPrevention.damageKind,
+                        damageAmount: event.payload.deathPrevention.damageAmount,
+                        traitsBeforeDamage: { ...event.payload.deathPrevention.traitsBeforeDamage },
+                        scenarioRuntimeBeforeDefeat: cloneScenarioRuntimeStatus(core.scenarioRuntime),
+                        monstersBeforeDefeat: core.monsters.map(cloneMonster),
+                        releasedJackSpiritRoomId: event.payload.deathPrevention.releasedJackSpiritRoomId,
+                    },
+                    consumedRabbitFootCardIds: [],
+                };
+            }
+            if (event.payload.defeatedPlayerId) {
+                markDeadExplorer(core, event.payload.defeatedPlayerId);
+            }
+            const completed = completeHelpingHandsSoloVictoryIfNeeded(core, event.timestamp);
+            if (completed) {
+                return completed;
+            }
+            const syncedCore = syncCurrentExplorerProjection(core);
+            return {
+                ...syncedCore,
+                recommendedAction: resolveRecommendedAction(syncedCore),
+                activityLog: appendActivity(syncedCore, event.payload.logText, event.payload.defeatedPlayerId ? 'warning' : 'accent'),
             };
         }
         case EVENTS.JACK_LEARNED: {

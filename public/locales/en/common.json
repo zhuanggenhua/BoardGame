@@ -122,8 +122,8 @@
     "backHome": "Back to lobby"
   },
   "cardSpotlightQueue": {
-    "dismiss": "Review, then close",
-    "queue": "{{count}} cards waiting · review, then close",
+    "dismiss": "Close spotlight",
+    "queue": "{{count}} spotlights",
     "closeSpotlight": "Close spotlight"
   },
   "tutorialSelectionGate": {
