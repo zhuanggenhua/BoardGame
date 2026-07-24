@@ -681,7 +681,11 @@ export class FeedbackService {
         existingStatus: FeedbackStatus | undefined,
         incomingStatus: FeedbackStatus | undefined,
     ): FeedbackStatus {
-        if (existingStatus === FeedbackStatus.IN_PROGRESS || existingStatus === FeedbackStatus.CLOSED) {
+        if (
+            existingStatus === FeedbackStatus.IN_PROGRESS
+            || existingStatus === FeedbackStatus.CLOSED
+            || existingStatus === FeedbackStatus.RESOLVED
+        ) {
             return existingStatus;
         }
         if (incomingStatus === FeedbackStatus.RESOLVED) {

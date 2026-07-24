@@ -152,6 +152,8 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
     React.createElement(motion.div, { className: 'absolute inset-0 bg-black/30' }),
     // 卡牌
     React.createElement(motion.div, {
+      'data-testid': 'smashup-action-fx-card',
+      'data-card-def-id': defId,
       className: 'relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
       style: {
         width: '18vw',

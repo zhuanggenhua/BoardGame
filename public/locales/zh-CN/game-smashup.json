@@ -181,6 +181,7 @@
     "hide_nonessential_controls_short": "隐",
     "me_first_title": "⚡ 先手响应！",
     "after_scoring_title": "计分后响应",
+    "paladins_devout_pastor_discard_title": "虔诚的牧师：选择一张手牌弃掉",
     "kitty_cats_hang_in_there_title": "坚持住：选择要移动到的其他基地",
     "kitty_cats_temporary_control_title": "猫咪：选择一个力量 {{maxPower}} 或以下的随从获得控制权直到回合结束",
     "kitty_cats_mr_grumpers_title": "坏脾气先生：选择一个随从直到回合结束 -2 力量",

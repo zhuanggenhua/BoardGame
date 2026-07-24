@@ -36,6 +36,7 @@ import {
   calculateEffectiveCost,
   canAffordCard,
   getBankForPlayerCount,
+  hasAnyStandardTurnAction,
   getMissingColors,
   getMissingTokenCount,
   getMissingNobleRequirementCount,
@@ -64,6 +65,7 @@ export const AI_ACTION_KINDS = {
   BUY_RESERVED: "buy-reserved",
   DISCARD: "discard",
   CHOOSE_NOBLE: "choose-noble",
+  PASS_TURN: "pass-turn",
 } as const;
 
 // --- Scoring weights ---
@@ -366,6 +368,21 @@ function createChooseNobleAction(nobleId: string): AiLegalAction {
       },
     ],
     metadata: { nobleId },
+  };
+}
+
+function createPassTurnAction(): AiLegalAction {
+  return {
+    actionId: createAiLegalActionId(AI_ACTION_KINDS.PASS_TURN, "no-standard-action"),
+    kind: AI_ACTION_KINDS.PASS_TURN,
+    label: "无可执行动作，跳过当前玩家",
+    commands: [
+      {
+        type: SPLENDOR_COMMANDS.PASS_TURN,
+        payload: {},
+      },
+    ],
+    metadata: { reason: "no-standard-action" },
   };
 }
 
@@ -1657,6 +1674,24 @@ export function buildSplendorAiLegalActions(
         availableColors.slice(0, Math.min(3, availableColors.length)),
       ),
     );
+  }
+
+  if (actions.length === 0 && player.reservedCardIds.length < MAX_RESERVED_CARDS) {
+    for (const tier of CARD_TIERS) {
+      const cardId = core.market[tier].find((id) => !isHiddenDeckPlaceholderId(id));
+      if (cardId) {
+        actions.push(createReserveOpenAction(tier, cardId));
+        break;
+      }
+      if (core.decks[tier].length > 0) {
+        actions.push(createReserveDeckAction(tier));
+        break;
+      }
+    }
+  }
+
+  if (actions.length === 0 && !hasAnyStandardTurnAction(core, playerId)) {
+    actions.push(createPassTurnAction());
   }
 
   return actions;

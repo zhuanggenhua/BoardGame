@@ -22,6 +22,11 @@ const INITIAL_CP = 1;
 const INITIAL_HP = 50;
 
 const cmd = (type: string, playerId: string, payload?: any) => ({ type, playerId, payload });
+const expectPaladinResources = (result: ReturnType<GameTestRunner<any, any, any, any>['run']>, cp: number) => {
+    const player = result.finalState.core.players['0'];
+    expect(player.resources[RESOURCE_IDS.CP]).toBe(cp);
+    expect(player.tokens[TOKEN_IDS.RETRIBUTION] ?? 0).toBe(1);
+};
 
 const createVengeance2Setup = (startingCp: number) => createHeroMatchup('paladin', 'barbarian', (core) => {
     const player = core.players['0'];
@@ -41,7 +46,7 @@ const createVengeance2Setup = (startingCp: number) => createHeroMatchup('paladin
 });
 
 describe('圣骑士复仇技能 CP 获取测试', () => {
-    it('复仇 I - 应该获得 2 CP（基础版本）', () => {
+    it('复仇 I - 应该获得 3 CP（基础版本）', () => {
         const random = createQueuedRandom([3, 3, 3, 6, 1]); // 3盔+1祈祷
         const runner = new GameTestRunner({
             domain: DiceThroneDomain,
@@ -58,7 +63,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
         });
 
         const result = runner.run({
-            name: '复仇I获得2CP',
+            name: '复仇I获得3CP',
             commands: [
                 cmd('ADVANCE_PHASE', '0'),
                 cmd('ROLL_DICE', '0'),
@@ -69,7 +74,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
             expect: {
                 players: {
                     '0': {
-                        cp: INITIAL_CP + 2,
+                        cp: INITIAL_CP + 3,
                         tokens: { [TOKEN_IDS.RETRIBUTION]: 1 },
                     },
                 },
@@ -78,6 +83,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
 
         expect(result.assertionErrors).toEqual([]);
         expect(result.actualErrors).toEqual([]);
+        expectPaladinResources(result, INITIAL_CP + 3);
     });
 
     it('反击 II - 应该在真实交互链路中只获得 4 CP 一次', () => {
@@ -116,6 +122,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
 
         expect(result.assertionErrors).toEqual([]);
         expect(result.actualErrors).toEqual([]);
+        expectPaladinResources(result, INITIAL_CP + 4);
     });
 
     it('复仇 I - 接近上限时只应钳制到 CP_MAX，不应异常回满/溢出', () => {
@@ -155,6 +162,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
 
         expect(result.assertionErrors).toEqual([]);
         expect(result.actualErrors).toEqual([]);
+        expectPaladinResources(result, CP_MAX);
     });
 
     it('反击 II - 多次点击技能按钮不应该重复获得 CP', () => {
@@ -192,6 +200,7 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
 
         expect(result.assertionErrors).toEqual([]);
         expect(result.actualErrors.map((entry) => entry.error)).toContain('attack_already_initiated');
+        expectPaladinResources(result, INITIAL_CP + 4);
     });
 
     it('反击 II - 交互完成后再连点，也只能结算一次并在边界处钳制到 CP_MAX', () => {
@@ -229,5 +238,6 @@ describe('圣骑士复仇技能 CP 获取测试', () => {
 
         expect(result.assertionErrors).toEqual([]);
         expect(result.actualErrors.map((entry) => entry.error)).toContain('no_pending_interaction');
+        expectPaladinResources(result, CP_MAX);
     });
 });

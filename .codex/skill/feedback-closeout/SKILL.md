@@ -439,22 +439,27 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 
 只在拿到明确结论后改状态：
 
-- 误报、建议、重复、已失效
+- 误报、建议、已失效
   - 改 `closed`
 - 确认为 bug，且代码与验证已完成
   - 改 `resolved`
+- 重复、合并、同根因反馈
+  - 不单独按“重复”决定状态，必须跟随代表项 / 同根因问题的最终结论
+  - 如果同根因问题是已修复 bug，同组所有反馈都改 `resolved`
+  - 只有当代表项本身是误报、建议、已失效、证据不足且需要关闭时，同组反馈才改 `closed`
 - 预计要持续处理较久，且已经明确接手
   - 可先改 `in_progress`
 
 状态语义补强：
 
 - **只要本轮结论是“这条真实 bug 已经修复”，默认只能回写 `resolved`，不得改成 `closed`。**
-- `closed` 只用于：误报、建议、重复、旧样本已失效、当前树已恢复但本轮没有再次做该 bug 的正式修复。
+- **同根因 / 重复反馈不改变 bug 的状态语义**：如果代表项是已解决 bug，同组反馈也是 `resolved`；不得因为它是重复上报就降级成 `closed`。
+- `closed` 只用于：误报、建议、旧样本已失效、当前树已恢复但本轮没有再次做该 bug 的正式修复、或同组代表项本身就是这类关闭结论。
 - `resolved` 的现实含义必须是：
   - 这条反馈本体是 bug；
   - 本轮已经完成根因定位、代码修复、匹配验证和 evidence；
   - 因此正式标记为“已修复”。
-- **禁止**把“修过了但顺手关掉”“真实 bug 已修好但写成 closed”“因为想减少 open 数量就用 closed 代替 resolved”当成可接受口径。
+- **禁止**把“修过了但顺手关掉”“真实 bug 已修好但写成 closed”“已解决的重复反馈按 closed 处理”“因为想减少 open 数量就用 closed 代替 resolved”当成可接受口径。
 
 字段要求：
 
@@ -486,11 +491,23 @@ node .codex/skill/feedback-closeout/scripts/sync-feedback-status-board.mjs temp/
 - 这里的“完整”至少要回答：
   - 这条反馈为什么被判成 `resolved` 或 `closed`
   - 若是 `resolved`，修的是哪条现实规则/链路、用了什么验证
-  - 若是 `closed`，为什么它不是现存 bug（如重复、误报、当前树已恢复、证据不足、已失效）
+  - 若是 `closed`，为什么它不是需要按“已解决”展示的 bug（如误报、当前树已恢复、证据不足、已失效）
 - 禁止只写空字符串、占位词、只写“已处理”“已修复”“当前正常”“close”这类无信息密度文本。
 - 推荐自检：
   - 把 `closedReason / resolvedMethod` 单独读一遍，假设看到它的人只有最终用户而不知道仓库、测试、状态机、worktree、当前树这些背景；如果这句话在这种前提下仍然成立，才算合格。
   - 如果一句话里出现了“bug、代码缺陷、当前树、证据不足、归档、收口、误报、候选、现存”等明显内部裁定词，默认先重写成用户语言。
+
+### 面向玩家回复口径（强制）
+
+- `closedReason / resolvedMethod` 是可能直接展示给反馈提交者看的回复，不是研发备注、排重备注、任务交接、测试结论或 agent 自我解释。
+- 重复、合并、同根因反馈也必须写成玩家能理解的现实结论；允许说“同一问题已合并处理”，但必须同时说明玩家遇到的现实影响、为什么合并处理、玩家是否还需要额外操作。
+- 重复、合并、同根因反馈的状态必须跟随代表项最终结论：代表项已修复则同组都写 `resolved + resolvedMethod`；代表项关闭才同组写 `closed + closedReason`。
+- 禁止把下面这类内部流程词直接写进玩家可见理由字段：`代表反馈`、`重复项`、`排重`、`收口`、`归档`、`验证通过`、`当前树`、`现存 bug`、`候选`、`状态回写`、`研发已处理`。
+- 对重复/合并反馈，推荐写法是：
+  - “你提交的这次页面崩溃和同一局里的另一条崩溃记录属于同一个问题，我们已合并处理。”
+  - “问题来自某条具体游戏链路/页面状态，后续版本会按修复后的逻辑处理；你不需要重复提交同一场景。”
+- 写完后必须做最终用户视角自检：如果这句话直接出现在玩家反馈详情页，玩家应能看懂“发生了什么、为什么这样处理、自己是否还要做什么”；如果只能让研发看懂，就必须重写。
+- 内部追溯信息只能留在 agent 汇报、诊断包、临时 evidence 或真实库的内部字段（若 schema 明确存在），不得塞进 `closedReason / resolvedMethod` 这类玩家可见字段。
 
 执行顺序硬规则：
 
@@ -520,6 +537,8 @@ node .codex/skill/feedback-closeout/scripts/update-feedback-status.mjs <feedback
 ```bash
 node .codex/skill/feedback-closeout/scripts/finalize-feedback-group.mjs temp/feedback-closeout/<timestamp>/summary.json <feedbackId> resolved --base-url <真实反馈接口基址> --token <BearerToken>
 ```
+
+`finalize-feedback-group.mjs` 的同组反馈默认必须同步为同一个最终状态：代表项 `resolved` 时，同组反馈也必须 `resolved`；代表项 `closed` 时，同组反馈才 `closed`。禁止再把“同组重复反馈”固定写成 `closed`。
 
 补充规则：
 
@@ -565,7 +584,7 @@ node .codex/skill/feedback-closeout/scripts/finalize-feedback-group.mjs temp/fee
 - `update-feedback-status.mjs`
   - 用开放接口回写状态。
 - `finalize-feedback-group.mjs`
-  - 按 `summary.json` 收口代表项，并默认关闭同组重复项。
+  - 按 `summary.json` 收口代表项，并默认把同组反馈同步为代表项的最终状态。
 - `sync-feedback-status-board.mjs`
   - 仅在阻塞/并行认领时，从 `summary.json` 初始化临时本地状态板。
 - `update-local-feedback-board.mjs`

@@ -71,10 +71,10 @@
 | 0 文档索引 | 基础规则、叛徒秘籍、生存秘诀、扩展手册是不同真相源 | 建立来源类型和录入状态，禁止用基础规则覆盖作祟书 | `sourceRegistry` | 开发 / 审计文档，不进玩家主 UI | 来源清单测试 / 文档审计 | `design-ready` |
 | 1 游戏目标 | 作祟前探索并增强；作祟后按阵营目标争胜 | 阶段模型必须区分 `preHaunt` 和 `haunt`，目标条随阶段切换 | `phase`, `objectiveSummary` | 顶部短目标条 | 阶段切换单测 | `design-ready` |
 | 2 规则书结构 | 准备、配件、作祟前、作祟后、索引 | 设计和测试按同样分区组织，避免只测代表链 | `ruleCoverageSections` | 不进主 UI | 覆盖矩阵完整性检查 | `design-ready` |
-| 3.1 剧本卡 | 开局团队翻阅五张剧本卡并选择一张；作祟时由剧本卡 + 预兆确定编号和叛徒 | 设置阶段必须有剧本卡候选、提议、确认和锁定流程 | `scenarioCandidates`, `scenarioId`, `triggerOmenId` | 剧本卡选择面板 | 候选池 / 锁定 / 非法选择测试 | `design-ready` |
+| 3.1 剧本卡 | 开局团队翻阅五张剧本卡并选择一张；作祟时由剧本卡 + 预兆确定编号和叛徒 | 已补设置阶段剧本卡候选、提议、已选探索者共同确认、确认进度和锁定流程；未全员确认不能开始，待接入剧本即使确认也不能开局 | `scenarioCandidateIds`, `proposedScenarioCardId`, `scenarioCardConfirmations`, `scenarioId`, `triggerOmenId` | 剧本卡选择面板 + 角色选择页剧本卡按钮，显示“先选探索者 / 剧本确认 N/M / 等待其他玩家确认” | 领域单测、组件测试和真实入口 E2E 已覆盖候选池、提议清空确认、多人确认、待接入阻止开局、共同确认进度和进入牌桌；证据见 `evidence/betrayal-core-interactions/scenario-card-selection/e2e-test.md` | `implemented-verified` |
 | 3.2 作祟检定 | 抽预兆后按所有玩家已持有预兆总数掷骰，5+ 开始作祟，掷骰者为作祟揭秘者 | 作祟风险条 + 抽预兆后检定流程 | `omenCount`, `hauntRoll`, `hauntRevealerPlayerId` | 主 HUD 风险条 + 骰盘 | 多人预兆 / 阈值测试 | `design-ready` |
 | 3.3 探索结束回合 | 探索并放置新房间，结算房间 / 卡牌后回合结束；可自愿结束 | 探索结算链完成后锁定“结束回合”动作 | `turnEndedByDiscovery`, `pendingDiscoveryResolution` | 行动槽短状态 | 探索成功 / 失败分支测试 | `design-ready` |
-| 3.4 作祟开始公开介绍和设置 | 英雄、叛徒先公开读介绍和设置，再分开读秘密目标 | 已补代表读模型和牌桌揭示层短步骤：一名叛徒作祟显示英雄介绍 / 设置、叛徒介绍 / 设置；灰尘按隐藏叛徒处理，只显示英雄公开步骤并提示隐藏身份不公开；自动打开剧本书时仍保留公开步骤提示；首剧本只写“作祟开始”也按作祟开场处理；1 / 3 / 33 已补代表 setup 队列短标签。仍缺完整逐作祟可确认 setup 命令队列、段落级秘密可见性、隐藏叛徒完整阵营和自由混战 | `resolveBetrayalHauntRevealProtocol`, `resolveBetrayalHauntSetupQueue`, `publicSteps`, `secretBoundary`, `hauntSetupQueue` | 揭示层 + 剧本书 + setup 队列短标签 | 公开设置顺序领域测试 + 灰尘隐藏叛徒领域测试 + 魔法相机 setup 队列组件测试 + 真实入口 E2E 截图 | `implemented-needs-remodel` |
+| 3.4 作祟开始公开介绍和设置 | 英雄、叛徒先公开读介绍和设置，再分开读秘密目标 | 已补代表读模型和牌桌揭示层短提示：一名叛徒作祟提示公开读英雄介绍 / 设置，再公开读叛徒介绍 / 设置；灰尘按隐藏叛徒处理，只提示英雄公开读法、隐藏身份保持秘密、目标与秘密规则分开阅读；牌桌保留手动剧本书入口，不能把 setup 队列明细、状态或秘密分发项堆成前景信息墙；作祟揭示期必须保持单主焦点，作祟后进度条 / 主动作 / 交换或攻击提示 / 武器选择在玩家点“返回牌桌”后才出现，不能通过可见层、sr-only、aria/status 或 title 和揭示提示同屏抢焦点；首剧本只写“作祟开始”也按作祟开场处理。仍缺完整逐作祟可确认 setup 命令队列、段落级秘密可见性、隐藏叛徒完整阵营和自由混战 | `resolveBetrayalHauntRevealProtocol`, `resolveBetrayalHauntSetupQueue`, `publicSteps`, `secretBoundary`, `hauntSetupQueue` | 轻量揭示提示 + 剧本书入口；setup 队列仅作领域/内部状态 | 公开设置顺序领域测试 + 灰尘隐藏叛徒领域测试 + 魔法相机 setup 队列领域测试 + 真实入口 E2E 截图 | `implemented-needs-remodel` |
 | 4 配件 | 角色板、立牌、夹子、骰子、指示物、卡牌、房间、剧本卡、参考卡、作祟书 | 每类配件进入 `componentCatalog`，记录类型、资源、owner 范围、是否公开、是否可交互；参考卡和作祟书只进帮助 / 剧本书入口，不挤占主 UI | `componentCatalog`, `componentResourceState`, `componentOwnerScope` | 当前相关对象本体 + 帮助入口 | catalog 类型 / owner / 资源状态测试 | `design-ready` |
 | 5.1 作祟书放一边 | 作祟书作祟后才用 | 作祟前剧本书入口只允许剧本卡；作祟书锁定 | `hauntBooksLockedUntilHaunt` | 剧本书入口禁用短提示 | 阶段权限测试 | `design-ready` |
 | 5.2 选角色 | 玩家选择角色、角色面板、立牌、底座 | 角色选择必须锁定唯一角色和座位 | `players[].characterId`, `figureId` | 角色选择页 | 重复角色 / 座位测试 | `design-ready` |
@@ -85,7 +85,7 @@
 | 5.8 起始房间 | 三个起始板块置中，保留探索空间 | 起始地图图结构必须固定，未来房间从开放门位扩展 | `roomGraph`, `startingTiles` | 中央地图 | 起始拓扑测试 | `design-ready` |
 | 5.9 房间堆 | 剩余房间洗混成堆 | 房间堆按区域和顺序建模，不能固定下一房间 | `roomTileStack`, `roomDiscoveryOrderByFloor` | 牌堆 / 探索状态 | 房间池测试 | `design-ready` |
 | 5.10 起始位置 | 探索者放入口大厅 | 所有角色 figure 起点一致，除非剧本 / 效果改写 | `explorers[].tileId` | 角色 token | 初始位置测试 | `design-ready` |
-| 5.11 剧本卡选择 | 团队翻阅五张选一张 | 见 3.1，不能单剧本冒充完整 | `scenarioCandidates`, `scenarioId` | 剧本选择面板 | 页面选择测试 | `design-ready` |
+| 5.11 剧本卡选择 | 团队翻阅五张选一张 | 见 3.1；当前已补五张候选、提议和共同确认流程，但仍不代表 50 个作祟逐条运行时完成 | `scenarioCandidateIds`, `proposedScenarioCardId`, `scenarioCardConfirmations`, `scenarioId` | 剧本选择面板 + 共同确认短状态 | 页面选择、共同确认和待接入阻止测试；证据见 `evidence/betrayal-core-interactions/scenario-card-selection/e2e-test.md` | `implemented-verified` |
 | 5.12 首玩家 | 按规则决定第一个玩家，顺时针轮流行动；作祟 setup 可指定叛徒左侧玩家先行动 | 首玩家规则 catalog 化，setup 首玩家、作祟后首玩家和作祟覆盖规则分开记录，不允许硬编码代表玩家 | `firstPlayerRule`, `turnOrder`, `hauntFirstPlayerOverride` | 设置摘要 + 作祟设置完成提示 | 首玩家 / 作祟首玩家覆盖测试 | `design-ready` |
 | 6.1 房间板块区域 | 房间背面标明地下室 / 一楼 / 二楼；正面可能有事件 / 物品 / 预兆符号 | 房间 catalog 存区域、门位、符号、文字效果 | `roomTileCatalog`, `roomInstances` | 房间板块本体 | 房间数据完整性测试 | `design-ready` |
 | 6.2 事件卡 | 朗读斜体文本，按指示，检定表只读匹配结果，完成后掩埋到底部 | 已补事件牌堆顺序语义：探索抽事件牌堆顶，结算后把该事件牌放回事件牌堆底部，`discardCounts.event` 保持 0；事件选择和兔脚重掷链路仍可复用该牌堆快照；仍需完整阻塞式事件牌逐步确认 UI | `eventOrder`, `latestDiscovery`, `pendingEventChoice`, `recentRoll.eventEffectSnapshot` | 翻牌亮相 + 当前结果 | 事件掩埋到底部测试 + 事件选择回归 | `implemented-needs-ui` |
@@ -96,9 +96,9 @@
 | 7 官方补充：提升 / 下降 | Gain/Lose 移动夹子一格，可能不改变数值；最高值不能再升 | trait event 必须按步移动并处理重复数字 | `TRAIT_STEP_CHANGED` | 轨道移动动画 | 非线性轨测试 | `design-ready` |
 | 7 官方补充：治疗 | Heal trait 回到绿色起始值；已在或高于起始值则不降 | 治疗不是加 N，也不是回满最高 | `HEAL_TRAIT_TO_START` | 轨道预览 | 治疗边界测试 | `design-ready` |
 | 7.1 临界 / 死亡 | 最低红值为临界；作祟前不会死；作祟后到骷髅死亡 | 死亡规则依赖阶段 | `criticalPosition`, `skullPosition`, `deathState` | 角色板红色警示 / 死亡反馈 | 作祟前后死亡测试 | `design-ready` |
-| 8 伤害 | 物理分配力量 / 速度；精神分配知识 / 神志；一般由玩家选择属性 | 伤害分配必须玩家确认，不自动扣 | `DamageAllocationInteraction` | 伤害分配面板 + 轨道预览 | 分配合法性测试 | `design-ready` |
-| 8 官方补充：按步扣 | 伤害降低的是属性轨步数，不是数值差 | 扣减事件使用 steps，不用 `value -= damage` | `TRAIT_STEP_CHANGED` | 轨道预览 | 重复数字伤害测试 | `design-ready` |
-| 8 官方补充：临界分配限制 | 作祟前不能把伤害分到已临界属性，如果还有其他可降属性 | 伤害分配选项要动态禁用临界属性 | `allocationOptions` | 禁用原因短提示 | 临界属性分配测试 | `design-ready` |
+| 8 伤害 | 物理分配力量 / 速度；精神分配知识 / 神志；一般由玩家选择属性 | 已补事件一般伤害、火炉房回合末物理伤害、12 号作祟「援手」力量攻击奖励伤害的玩家确认分配切片；火炉房结束回合和援手选择造成伤害都会停在伤害分配面板，受伤玩家确认后才扣属性 / 推进。仍缺普通攻击主链、致死攻击胜负收口、倒塌房间、作祟 / 怪物伤害、灰尘等来源统一接入 | `DamageAllocationInteraction`, `pendingDamageAllocation` | 伤害分配面板 + 轨道预览 | 火炉房领域 / Board 定向测试 + 援手攻击奖励伤害领域 / Board 定向测试；后续补普通攻击、怪物和作祟伤害 | `implemented-needs-remodel` |
+| 8 官方补充：按步扣 | 伤害降低的是属性轨步数，不是数值差 | 火炉房分配确认和援手攻击奖励分配确认后均复用属性轨步数扣减；重复数字时位置变化仍成立。其它伤害来源仍需迁入同一分配模型 | `TRAIT_STEP_CHANGED`, `pendingDamageAllocation.traits` | 轨道预览 | 重复数字伤害测试 + 火炉房分配测试 + 援手攻击奖励分配测试 | `implemented-needs-remodel` |
+| 8 官方补充：临界分配限制 | 作祟前不能把伤害分到已临界属性，如果还有其他可降属性 | 火炉房和事件一般伤害领域校验均会拒绝把作祟前伤害分到已临界属性；Board 面板按可分配步数禁用属性。援手攻击奖励为作祟后伤害，当前代表切片允许到骷髅；其它伤害来源仍需逐步接入 | `allocationOptions`, `damageTraitsAreAssignable`, `pendingDamageAllocation.allowedTraits` | 禁用原因短提示 / 禁用属性按钮 | 临界属性分配测试 + 援手攻击奖励分配测试 | `implemented-needs-remodel` |
 | 9 骰子 | 8 枚骰子，每面 0/1/2，结果为点数和 | 骰子系统要记录每颗骰面和总和 | `diceRollResult` | 物理骰盘 / 结果条 | 骰值范围测试 | `design-ready` |
 | 9.1 属性检定 | 按当前属性值掷骰，执行对应结果表 | 检定请求要记录属性、骰数、结果表分支 | `TraitRollRequest` | 骰盘 + 当前分支 | 检定分支测试 | `design-ready` |
 | 9.2 作祟检定 | 按预兆总数掷骰，5+ 作祟，掷骰者为揭秘者 | 见 3.2；作祟检定不是属性检定 | `HauntRollRequest` | 风险条 + 骰盘 | 作祟检定不受属性修正测试 | `design-ready` |
@@ -127,7 +127,7 @@
 | 16 作祟流程 | 50 个作祟，各有英雄和叛徒版本；作祟由预兆触发 | 作祟定义必须按编号和双方版本建模；50 个子账本已分别覆盖公开/私密/setup/目标/行动/触发/token/怪物/UI/验证 | `hauntDefinitions`, `hauntRuntime`, `hauntContracts[1..50]` | 作祟揭示 / 剧本书 / 目标条 | 子账本必填字段机检 + 作祟目录测试 | `contract-ready` |
 | 16 作祟定位 | 用开局剧本卡找到触发预兆对应编号和叛徒 | 剧本卡 + 预兆映射表必须覆盖全部组合；揭示层保存剧本卡、触发预兆、作祟编号、揭秘者、叛徒策略和双方书页 | `scenarioOmenHauntMap`, `hauntRevealerPlayerId`, `traitorResolver` | 作祟揭示层 | 映射完整性测试 + 50 个源段页码账本 | `contract-ready` |
 | 17 作祟类型 | 无叛徒 / 一名叛徒 / 隐藏叛徒 / 自由混战 | 阵营模型支持合作、一对多、隐藏身份、自由混战 | `teamModel`, `hiddenRoleState` | 目标条和可攻击对象 | 四类型代表测试 | `design-ready` |
-| 18 开始作祟 | 英雄介绍和设置 -> 叛徒介绍和设置 -> 分开读秘密目标 / 规则 | 已补作祟揭示代表协议：公开步骤按官方顺序派生，牌桌揭示层用短标签承接；灰尘已从旧“无叛徒”口径修正为隐藏叛徒，不公开隐藏身份；1 / 3 / 33 代表作祟会显示 setup 队列短标签。当前不是完整逐作祟可确认 setup 命令队列，尚未逐作祟拆公开设置操作 | `resolveBetrayalHauntRevealProtocol`, `resolveBetrayalHauntSetupQueue`, `publicSteps`, `hauntSetupQueue` | 公开揭示层 + 设置步骤短标签 + setup 队列短标签 | 领域测试覆盖一名叛徒、灰尘隐藏叛徒和魔法相机 setup 队列；组件测试覆盖自动开书、首剧本开场和 setup 队列；真实入口 E2E 覆盖一名叛徒 / 隐藏叛徒截图 | `implemented-needs-remodel` |
+| 18 开始作祟 | 英雄介绍和设置 -> 叛徒介绍和设置 -> 分开读秘密目标 / 规则 | 已补作祟揭示代表协议：公开步骤按官方顺序派生，牌桌揭示层只用短提示承接；灰尘已从旧“无叛徒”口径修正为隐藏叛徒，不公开隐藏身份；setup 队列保留为领域/内部状态，不在作祟揭示前景 UI 直接显示；作祟后常驻进度、主动作、交换 / 攻击提示和武器选择只能在揭示提示收口后恢复，且可见层、sr-only、aria/status 和 title 都必须遵守同一边界，避免把公开读法提示、进度条和内部 setup 状态堆成同屏信息墙。当前不是完整逐作祟可确认 setup 命令队列，尚未逐作祟拆公开设置操作 | `resolveBetrayalHauntRevealProtocol`, `resolveBetrayalHauntSetupQueue`, `publicSteps`, `hauntSetupQueue` | 轻量公开揭示提示 + 手动剧本书入口；返回牌桌后恢复作祟进度 / 主动作 | 领域测试覆盖一名叛徒、灰尘隐藏叛徒和魔法相机 setup 队列；组件测试覆盖不自动开书、手动剧本入口、首剧本开场、setup 队列不进入玩家前景和揭示收口后恢复进度；真实入口 E2E 覆盖一名叛徒 / 隐藏叛徒揭示与返回牌桌截图 | `implemented-needs-remodel` |
 | 18 官方补充：秘密信息 | 作祟书信息默认对另一方保密；但使用规则 / 特殊行动时对方可要求朗读相关段落 | 已补基础秘密边界读模型和揭示层提示：分开阅读目标，使用规则时可公开对应文本；灰尘隐藏叛徒分支明确隐藏身份不公开。当前仍缺段落级 `visibility`、`reveal-on-use` 记录、隐藏叛徒完整阵营模型和对方请求朗读交互 | `secretBoundary`, `heroBookVisibleTo`, `traitorBookVisibleTo`, `revealOnUse`, `hiddenRoleState` | 揭示层秘密边界短提示 | 领域测试覆盖秘密边界；组件测试覆盖玩家可见提示；真实入口 E2E 截图覆盖一名叛徒 / 隐藏叛徒两种提示 | `implemented-needs-remodel` |
 | 19 攻击时机 | 作祟开始后可攻击同房间敌方探索者 / 怪物；每回合只能攻击一次 | 攻击动作只在作祟后开放，目标按阵营过滤 | `attackUsedThisTurn`, `teams` | 目标高亮 | 攻击时机测试 | `design-ready` |
 | 19 攻击结算 | 默认力量攻击；高者赢；低者受差值伤害；平局无伤；知识 / 神志攻击造成精神伤害 | 攻击声明保存属性和伤害类型映射 | `attackTrait`, `damageType` | 攻击面板 / 骰盘 | 属性攻击测试 | `design-ready` |
@@ -213,7 +213,7 @@
 ### 4.3 第三批：修作祟系统
 
 1. 作祟映射表覆盖所有剧本卡 + 预兆。
-2. 作祟揭示公开步骤和秘密可见性：已补代表读模型、揭示层短提示、灰尘隐藏叛徒口径和 1 / 3 / 33 代表 setup 队列短标签；仍需完整逐作祟可确认 setup 命令队列、段落级可见性和逐作祟公开设置。
+2. 作祟揭示公开步骤和秘密可见性：已补代表读模型、轻量揭示提示、灰尘隐藏叛徒口径、setup 队列只留在领域状态不进入玩家前景，以及“揭示期单主焦点 / 返回牌桌后才恢复作祟进度、主动作、攻击或交换提示、武器选择和对应无障碍状态”的 UI 边界；仍需完整逐作祟可确认 setup 命令队列、段落级可见性和逐作祟公开设置。
 3. 阵营模型支持四类作祟。
 4. 怪物行动、击晕、移动和特殊能力。
 5. 计数轨、特定房间搜索、叛徒选择策略。

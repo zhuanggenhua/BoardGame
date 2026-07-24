@@ -59,6 +59,56 @@ describe('i18n 静态检查工具', () => {
         expect(parseNamespaceLiteral("['lobby', 'auth']")).toEqual(['lobby', 'auth']);
     });
 
+    it('玩家可见本地化文案不得包含审查或 AI 过程话术', () => {
+        const forbiddenPhrases = [
+            '上屏',
+            'off-screen',
+            '看清后可关闭',
+            '阅读后关闭',
+            '确认是否受影响',
+            '确认一下是否受影响',
+            '如果有就给我看图',
+            'setup 队列',
+            'setup queue',
+        ];
+        const localeRoot = path.resolve('public/locales');
+        const files: string[] = [];
+        const collectFiles = (dir: string) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                const entryPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    collectFiles(entryPath);
+                } else if (entry.isFile() && entry.name.endsWith('.json')) {
+                    files.push(entryPath);
+                }
+            }
+        };
+        const violations: string[] = [];
+        const visit = (value: unknown, trail: string[], sourceFile: string) => {
+            if (typeof value === 'string') {
+                for (const phrase of forbiddenPhrases) {
+                    if (value.includes(phrase)) {
+                        violations.push(`${path.relative(process.cwd(), sourceFile)}:${trail.join('.')} -> ${phrase} in "${value}"`);
+                    }
+                }
+                return;
+            }
+            if (!value || typeof value !== 'object') {
+                return;
+            }
+            for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+                visit(child, [...trail, key], sourceFile);
+            }
+        };
+
+        collectFiles(localeRoot);
+        for (const file of files) {
+            visit(JSON.parse(fs.readFileSync(file, 'utf-8')), [], file);
+        }
+
+        expect(violations).toEqual([]);
+    });
+
     it('识别 useTranslation/Toast/i18nKey 的引用', () => {
         const content = `
             import { useTranslation } from 'react-i18next';

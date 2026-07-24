@@ -369,6 +369,10 @@ function HandCardRows({
     selectedTopIndex,
     selectedBottomIndex,
     onCardSelect,
+    chipDisplays,
+    chipRoundHistory,
+    currentRound,
+    chipOwnerId,
 }: {
     primaryCards: PlayingCard[];
     secondaryCards?: PlayingCard[];
@@ -385,6 +389,10 @@ function HandCardRows({
     selectedTopIndex?: number;
     selectedBottomIndex?: number;
     onCardSelect?: (slot: HandSlot, index: number) => void;
+    chipDisplays?: CurrentChipDisplay[];
+    chipRoundHistory?: TheGangCore['roundHistory'];
+    currentRound?: number;
+    chipOwnerId?: string;
 }) {
     const hasSecondaryRows = secondaryCards.length > 0;
     const rows = [
@@ -442,7 +450,18 @@ function HandCardRows({
                                 {visibleRankHint}
                             </span>
                         ) : null}
-                        <div className="flex items-center justify-center gap-2 overflow-visible md:gap-3">
+                        <div className="relative flex items-center justify-center gap-2 overflow-visible pr-8 md:gap-3 lg:pr-10">
+                            {chipOwnerId && chipRoundHistory && currentRound !== undefined ? (
+                                <HandChipRail
+                                    roundHistory={chipRoundHistory}
+                                    currentRound={currentRound}
+                                    currentChips={chipDisplays ?? []}
+                                    playerId={chipOwnerId}
+                                    handSlot={row.slot}
+                                    variant="attached"
+                                    testId={`${testIdPrefix}-${row.slot}-chip-rail`}
+                                />
+                            ) : null}
                             {row.cards.map((card, index) => {
                                 const selected = row.slot === 'top'
                                     ? selectedTopIndex === index
@@ -1687,115 +1706,178 @@ function PlayerChipStrip({
     localPlayerId: string;
     onTakeCurrentChip?: (chip: number) => void;
 }) {
-    const { t } = useTranslation('game-the-gang');
+    const hasTwoHandRows = currentChips.some((display) => display.handSlot)
+        || roundHistory.some((entry) => Object.keys(entry.chipsByPlayer).some((ownerKey) => {
+            const owner = parseChipOwnerKey(ownerKey);
+            return owner.playerId === playerId && owner.handSlot !== undefined;
+        }));
+    const visibleCurrentChips = playerId === localPlayerId ? [] : currentChips;
     const canTakeCurrentChip = playerId !== localPlayerId && !!onTakeCurrentChip;
 
+    if (playerId === localPlayerId) {
+        return (
+            <div
+                className="min-h-8 lg:min-h-12"
+                data-bgg-zone="player-tokens"
+                data-testid={`the-gang-player-chip-strip-${playerId}`}
+                data-local-current-hidden="true"
+            />
+        );
+    }
+
     return (
-        <div className="flex min-h-8 items-center justify-center gap-1.5 lg:min-h-12 lg:gap-2" data-bgg-zone="player-tokens">
-            {roundHistory.map((entry) => {
-                return Object.entries(entry.chipsByPlayer)
-                    .filter(([ownerKey]) => parseChipOwnerKey(ownerKey).playerId === playerId)
-                    .map(([ownerKey, chip]) => (
-                        <ChipDisc
-                            key={`${entry.round}-${ownerKey}-${chip}`}
-                            round={entry.round}
-                            value={chip}
-                            size="sm"
-                            className="transition hover:scale-150"
-                            zone="player-token"
-                        />
-                    ));
-            })}
-            {currentChips.filter((display) => display.chip !== undefined).map((display) => {
-                const label = display.handSlot === 'bottom' ? t('board.bottomHand') : t('board.topHand');
-                const chipDisc = (
-                    <span className="flex flex-col items-center gap-0.5">
-                        {display.handSlot && (
-                            <span className="text-[0.5rem] font-black leading-none tracking-[0.08em] text-amber-100/78 lg:text-[0.58rem]">
-                                {label}
-                            </span>
-                        )}
-                        <ChipDisc
-                            round={currentRound}
-                            value={display.chip!}
-                            size="lg"
-                            className="scale-110 drop-shadow-[0_0_22px_rgba(252,211,77,0.82)]"
-                            zone="player-current-token"
-                        />
-                        {display.exited && <ExitChipBadge compact />}
-                    </span>
-                );
-                return canTakeCurrentChip ? (
-                    <button
-                        key={display.key}
-                        type="button"
-                        className="rounded-full transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
-                        data-testid={`the-gang-take-player-chip-${playerId}-${display.handSlot ?? 'single'}`}
-                        onClick={() => onTakeCurrentChip(display.chip!)}
-                    >
-                        {chipDisc}
-                    </button>
-                ) : (
-                    <span key={display.key}>{chipDisc}</span>
-                );
-            })}
+        <div
+            className={[
+                'flex min-h-8 items-center justify-center gap-1.5 lg:min-h-12 lg:gap-2',
+                hasTwoHandRows ? 'w-full max-w-[14rem] flex-col lg:max-w-[18rem]' : '',
+            ].join(' ')}
+            data-bgg-zone="player-tokens"
+            data-testid={`the-gang-player-chip-strip-${playerId}`}
+        >
+            {(hasTwoHandRows ? THE_GANG_HAND_SLOTS : (['top'] as const)).map((handSlot) => (
+                <HandChipRail
+                    key={handSlot}
+                    roundHistory={roundHistory}
+                    currentRound={currentRound}
+                    currentChips={visibleCurrentChips}
+                    playerId={playerId}
+                    handSlot={handSlot}
+                    variant="player"
+                    showLabel={hasTwoHandRows}
+                    showEmpty={hasTwoHandRows}
+                    canTakeCurrentChip={canTakeCurrentChip}
+                    onTakeCurrentChip={onTakeCurrentChip}
+                    testId={`the-gang-player-chip-row-${playerId}-${hasTwoHandRows ? handSlot : 'single'}`}
+                />
+            ))}
         </div>
     );
 }
 
-function HandChipStrip({
+function HandChipRail({
     roundHistory,
     currentRound,
     currentChips,
     playerId,
-    compact = false,
+    handSlot,
+    variant,
+    showLabel = false,
+    showEmpty = false,
+    canTakeCurrentChip = false,
+    onTakeCurrentChip,
+    testId,
 }: {
     roundHistory: TheGangCore['roundHistory'];
     currentRound: number;
     currentChips: CurrentChipDisplay[];
     playerId: string;
-    compact?: boolean;
+    handSlot: HandSlot;
+    variant: 'attached' | 'player';
+    showLabel?: boolean;
+    showEmpty?: boolean;
+    canTakeCurrentChip?: boolean;
+    onTakeCurrentChip?: (chip: number) => void;
+    testId: string;
 }) {
     const { t } = useTranslation('game-the-gang');
+    const label = handSlot === 'bottom' ? t('board.bottomHand') : t('board.topHand');
+    const previousChips = roundHistory.flatMap((entry) => (
+        Object.entries(entry.chipsByPlayer)
+            .filter(([ownerKey]) => {
+                const owner = parseChipOwnerKey(ownerKey);
+                return owner.playerId === playerId && (owner.handSlot ?? 'top') === handSlot;
+            })
+            .map(([ownerKey, chip]) => ({
+                key: `${entry.round}-${ownerKey}-${chip}`,
+                round: entry.round,
+                chip,
+                exited: entry.exitChipOwners?.includes(ownerKey) ?? false,
+            }))
+    ));
+    const currentChip = currentChips.find((display) => (
+        display.chip !== undefined && (display.handSlot ?? 'top') === handSlot
+    ));
+
+    if (!showEmpty && previousChips.length === 0 && currentChip === undefined) {
+        return null;
+    }
+
+    const isAttached = variant === 'attached';
+    const chipHolderClass = isAttached
+        ? 'pointer-events-auto absolute -right-1.5 -top-2 z-20 flex max-w-[6.5rem] flex-wrap items-start justify-end gap-0.5 rounded-full border border-amber-100/24 bg-emerald-950/82 px-1 py-0.5 shadow-[0_0.45rem_1.1rem_rgba(0,0,0,0.36)] backdrop-blur-[2px] lg:-right-2 lg:-top-3 lg:max-w-[8rem] lg:gap-1'
+        : 'flex min-h-7 w-full items-center justify-between gap-1 rounded-full border border-amber-100/16 bg-black/18 px-1.5 py-0.5 shadow-[inset_0_0_0.8rem_rgba(0,0,0,0.12)] lg:min-h-8 lg:px-2';
+    const chipListClass = isAttached
+        ? 'flex flex-wrap items-center justify-end gap-0.5 lg:gap-1'
+        : 'flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1';
+    const currentChipSize = isAttached ? 'md' : 'sm';
+    const previousChipSize = isAttached ? 'xs' : 'xs';
+
+    const currentChipNode = currentChip?.chip !== undefined ? (
+        <span className="relative inline-flex">
+            <ChipDisc
+                round={currentRound}
+                value={currentChip.chip}
+                size={currentChipSize}
+                className={isAttached
+                    ? 'scale-105 drop-shadow-[0_0_14px_rgba(252,211,77,0.72)]'
+                    : 'drop-shadow-[0_0_12px_rgba(252,211,77,0.62)]'}
+                zone={isAttached ? 'hand-current-chip' : 'player-current-token'}
+            />
+            {currentChip.exited && (
+                <span className="absolute -bottom-1 -right-1">
+                    <ExitChipBadge compact />
+                </span>
+            )}
+        </span>
+    ) : null;
 
     return (
         <div
-            className={[
-                'flex items-center justify-center',
-                compact ? 'min-h-6 gap-1 lg:min-h-8 lg:gap-1.5' : 'min-h-8 gap-1.5 lg:min-h-11 lg:gap-2',
-            ].join(' ')}
-            data-bgg-zone="hand-chips"
+            className={chipHolderClass}
+            data-testid={testId}
+            data-hand-slot={handSlot}
+            data-bgg-zone={isAttached ? 'hand-chips' : undefined}
         >
-            {roundHistory.map((entry) => {
-                return Object.entries(entry.chipsByPlayer)
-                    .filter(([ownerKey]) => parseChipOwnerKey(ownerKey).playerId === playerId)
-                    .map(([ownerKey, chip]) => (
-                        <ChipDisc
-                            key={`${entry.round}-${ownerKey}-${chip}`}
-                            round={entry.round}
-                            value={chip}
-                            size={compact ? 'xs' : 'sm'}
-                            zone="hand-chips-previous"
-                        />
-                    ));
-            })}
-            {currentChips.filter((display) => display.chip !== undefined).map((display) => (
-                <span key={display.key} className="flex flex-col items-center gap-0.5">
-                    {display.handSlot && (
-                        <span className="text-[0.5rem] font-black leading-none tracking-[0.08em] text-amber-100/78 lg:text-[0.58rem]">
-                            {display.handSlot === 'bottom' ? t('board.bottomHand') : t('board.topHand')}
-                        </span>
-                    )}
-                    <ChipDisc
-                        round={currentRound}
-                        value={display.chip!}
-                        size={compact ? 'sm' : 'lg'}
-                        className={compact ? 'drop-shadow-[0_0_12px_rgba(252,211,77,0.48)]' : 'drop-shadow-[0_0_18px_rgba(252,211,77,0.55)]'}
-                        zone="hand-current-chip"
-                    />
-                    {display.exited && <ExitChipBadge compact={compact} />}
+            {showLabel && (
+                <span className="shrink-0 text-[0.52rem] font-black leading-none tracking-[0.08em] text-amber-100/72 lg:text-[0.6rem]">
+                    {label}
                 </span>
-            ))}
+            )}
+            <span className={chipListClass}>
+                {previousChips.map((entry) => (
+                    <span key={entry.key} className="relative inline-flex">
+                        <ChipDisc
+                            round={entry.round}
+                            value={entry.chip}
+                            size={previousChipSize}
+                            zone={isAttached ? 'hand-chips-previous' : 'player-token'}
+                        />
+                        {entry.exited && (
+                            <span className="absolute -bottom-1 -right-1">
+                                <ExitChipBadge compact />
+                            </span>
+                        )}
+                    </span>
+                ))}
+                {canTakeCurrentChip && currentChip?.chip !== undefined && onTakeCurrentChip ? (
+                    <button
+                        type="button"
+                        className="rounded-full transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                        data-testid={`the-gang-take-player-chip-${playerId}-${currentChip.handSlot ?? 'single'}`}
+                        onClick={() => onTakeCurrentChip(currentChip.chip!)}
+                    >
+                        {currentChipNode}
+                    </button>
+                ) : (
+                    currentChipNode
+                )}
+                {previousChips.length === 0 && currentChip === undefined && (
+                    <span
+                        className="h-4 w-10 rounded-full border border-dashed border-amber-100/16 bg-black/10 lg:h-5"
+                        aria-label={label}
+                    />
+                )}
+            </span>
         </div>
     );
 }

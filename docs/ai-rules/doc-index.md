@@ -13,7 +13,7 @@
 | **国际化资源架构** (i18n 路径/符号链接/locale) | `docs/i18n-asset-architecture.md` | 方案 B2 架构、符号链接设置、未来迁移计划 |
 | **修改 DiceThrone** (文案/资源) | `docs/games/dicethrone/dicethrone-i18n.md` | 翻译 Key 结构、Scheme A 取图函数 |
 | **环境配置 / 部署** (端口/同域代理) | `docs/deploy.md` | 端口映射、环境变量、Nginx 参数 |
-| **协作者接入 Figma MCP** (Codex / OpenClaw 缺少 Figma 工具、首次授权、凭据失效、重启后仍不可用) | `docs/infra/figma-mcp.md` | 仓库脚本是唯一真相源；默认只补配置，显式 `-Login` 才重授权；`CODEX_HOME` 只存每人自己的配置和凭据 |
+| **协作者接入 Open Design** (需要设计 MCP、本地 AI 设计工具、设计稿 / 视觉方案工作流) | `docs/infra/open-design.md` | Open Design 是当前默认设计入口；优先接 `od mcp install codex/openclaw`；`CODEX_HOME` 默认 `D:\codex-home` |
 | **Android App 打包 / 上传 / 原生更新 / OTA / 网站下载入口** | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/android-app-build.md` | 先分 OTA 还是 native；release 必须正式壳；本地 build 不算完成；发布后必须回查 `latest.json` 并直接下载线上 APK 验 `appId/appName`；不要把“更新下载入口”误升格成“必须部署网站” |
 | **移动端素材包下载/清理/校验失败** (增量校验失败、本地临时文件校验失败、清理并重下仍失败) | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/ai-rules/asset-pipeline.md` | 先回到真实移动素材包链路，锁 H5 清理、服务层安装模式、原生桥参数和原生日志；清理重下必须证明下一次安装已切完整 ZIP，发布 OTA 后必须下载线上 OTA zip 反查修复代码，缺少原始失败位点日志时不得宣称彻底修好 |
 | **本地联机测试** (单人同步调试) | `docs/test-mode.md` | 测试模式开关及其对视角的影响 |
@@ -43,7 +43,7 @@
 | **粒子特效开发** (Canvas 2D 引擎) | `docs/particle-engine.md` | API、预设字段、性能优化、视觉质量规则、新增检查清单 |
 | **新增棋盘特效** (FX 系统) | `docs/ai-rules/animation-effects.md` § 引擎级 FX 系统 | FxRegistry 注册、FxBus push/pushSequence、FxRenderer 适配器、新增流程 |
 | **动画数值时序** (HP/damage 跳变) | `docs/ai-rules/engine-visual-events.md` § 动画表现与逻辑分离规范 | `useVisualStateBuffer` 冻结/释放、`FxLayer.onEffectImpact`、新游戏接入流程 |
-| **卡牌 / 技能展示型特写** (需要玩家阅读/复盘/确认的卡牌展示、对手进攻技能或升级卡展示) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 + `docs/ai-rules/ui-ux.md` § 对手卡牌 / 技能展示型特写不得瞬时退场 | `useCardSpotlightQueue` + `CardSpotlightQueue` 只用于阅读/复盘/确认型展示；普通出牌动效、飞牌、飘字、分数飞行和大杀四方行动卡打出展示继续走 FX / animation 自动退场，不得升级成“看清后可关闭” |
+| **卡牌 / 技能展示型特写** (瞬时反馈、短暂展示、阻塞阅读 / 复盘 / 确认型展示的分流) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 + `docs/ai-rules/ui-ux.md` § 特写生命周期必须按语义分流 | `useCardSpotlightQueue` + `CardSpotlightQueue` 只用于阅读/复盘/确认型展示；大杀四方行动卡打出展示继续走 FX / animation 自动退场；DiceThrone 自建卡牌短展示保留 3 秒自动关闭；小黑屋连续发现牌 / 骰盘展示队列要逐个读完再关闭；“看清后可关闭”这类 AI 过程话术不得进入玩家 UI，也不得据此改生命周期 |
 | **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-visual-events.md` | pushSequence API、delayAfter、cancelSequence、适用场景 |
 | **新增/审查游戏机制实现** (技能/Token/事件卡/被动/主动开发或全面审查) | `docs/ai-rules/description-to-implementation-audit.md` + `docs/ai-rules/engine-systems.md` | 新增或主动审查机制时，先锁权威描述并拆成原子断言；逐交互链检查定义、注册、执行、状态、消耗、验证、UI、i18n、测试。玩家反馈的规则 bug 优先走上方规则 bug 修复 workflow |
 | **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` + `docs/games/dicethrone/token-active-use-custom-action.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分；Token 主动使用依赖 custom action 时必须显式声明 |
@@ -77,7 +77,7 @@
 | **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-responsive-layout.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
 | **大规模 UI 改动** (新页面/重做布局/新游戏UI) | 先 `D:\codex-home\skills\ui-design-pipeline\SKILL.md`，再全局 `ui-ux-pro-max --design-system` 与 `design-system/` | 先锁 spec/domain/design/components/craft/template/evaluator，再生成或更新具体设计系统；见 §UI/UX 规范 → §0. 大规模 UI 改动前置流程 |
 | **游戏内 UI 交互** (按钮/面板/指示器) | `design-system/game-ui/MASTER.md` | 交互原则、反馈规范、动画时长、状态清晰 |
-| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单 / AI 过程话术不得上屏) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md` | 总原则在 `MASTER.md`；“看清后可关闭”这类给 AI 或测试人员的验收话术不得进入玩家 UI；具体承接方式按来源家族选型；单游戏 workflow 只引用入口，不重复维护正文 |
+| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单 / AI 过程话术不得进入玩家 UI) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md` | 总原则在 `MASTER.md`；“看清后可关闭”这类给 AI 或测试人员的验收话术不得进入玩家 UI；具体承接方式按来源家族选型；单游戏 workflow 只引用入口，不重复维护正文 |
 | **选择成熟交互来源家族** (prompt / waiting / 手牌区 / 右侧 rail / setup 壳层) | `design-system/game-ui/source-families.md` | 先从批准家族中选型；复用仓内成熟不变量；找不到家族前不得发明正式交互模式 |
 | **游戏 UI 风格选择** | `design-system/styles/` | arcade-3d（街机立体）、tactical-clean（战术简洁）、classic-parchment（经典羊皮纸） |
 | **创建临时文件 / 清理根目录** (Bug 分析/测试脚本/Wiki 数据) | `docs/temp-files-management.md` | 临时文件分类规则、目录结构、.gitignore 规则、开发规范 |

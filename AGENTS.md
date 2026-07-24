@@ -22,7 +22,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 > 本文档定义 AI 编程助手在本项目中的行为规范、开发流程和质量标准。
 > **坚持"强制优先、结果导向、可审计"，所有流程需可追溯。**
 > **以当前对话为主，当我说继续指的都是当前对话的任务，除非指明否则不关心其他对话的修改**
-> **涉及 Figma 任务且当前会话缺少 Figma MCP 工具时，先运行 `scripts/infra/setup-figma-mcp.ps1`（或 `npm run setup:figma:mcp:window`）补环境；脚本默认只补配置并复用 Codex 文件态 OAuth 凭据，不应每次触发网页登录。只有首次授权、凭据失效或用户明确要求重新授权时，才追加 `-Login` 走 Codex CLI OAuth 网页登录。脚本必须固定 `mcp_oauth_credentials_store = "file"`，避免网页登录成功但新会话吃不到登录态。**
+> **涉及设计工具 / 设计稿 / 视觉方案任务时，默认走 Open Design：读 `docs/infra/open-design.md`，使用 `scripts/infra/setup-open-design.ps1` 或 `npm run setup:design:mcp` 接入；不得恢复旧设计工具 OAuth 或旧 MCP 接入。**
 
 #### 当前对话事实边界（强制）
 

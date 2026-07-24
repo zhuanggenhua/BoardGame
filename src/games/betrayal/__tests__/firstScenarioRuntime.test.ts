@@ -37,6 +37,9 @@ import {
     resolveBetrayalRoomDrawResolution,
     resolveHelpingHandsControllerPlayerId,
     resolveHelpingHandsMonsterTurnStatus,
+    resolveHelpingHandsPendingAttackReward,
+    resolveHelpingHandsTrollHandAttackOptions,
+    resolveHelpingHandsTrollHandMoveOptions,
     resolveRoomTileAdjustmentOptions,
     resolveExplorableRoomSlots,
     resolveMoveTargetRooms,
@@ -240,7 +243,7 @@ function createMagicCameraHauntCore(cameraOwnerPlayerId: string | null = '1'): B
     );
 }
 
-function createHungryHouseHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
+function createHelpingHandsHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
     let core = createStartedFirstScenarioCore(playerIds);
     core.drawOrder = ['event'];
     core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
@@ -264,6 +267,43 @@ function createHungryHouseHauntCore(playerIds: string[] = ['0', '1', '2']): Betr
         { accept: true },
         100,
         createBetrayalScriptedRandom(3, 3, 3),
+    );
+}
+
+function createHelpingHandsExplorerAttackCore(): BetrayalCore {
+    const core = createHelpingHandsHauntCore();
+    activateTestExplorer(core, '0');
+    const sharedRoomId = core.currentExplorer.roomId;
+    const defender = findTestExplorer(core, '1');
+    defender.roomId = sharedRoomId;
+    defender.inventory = [
+        { id: 'first-aid-kit', name: '急救包', kind: 'item' },
+        { id: 'omen-skull', name: '头骨', kind: 'omen' },
+    ];
+    setTestTraitTrack(core, '0', 'might', [1, 2, 3], 1, 1);
+    setTestTraitTrack(core, '0', 'sanity', [1, 2, 3], 1, 1);
+    for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+        setTestTraitTrack(core, '1', trait, [1, 2, 2, 2, 2, 2], 4, 4);
+    }
+    core.activeRoomId = sharedRoomId;
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+    return core;
+}
+
+function startHelpingHandsMonsterTurn(
+    core: BetrayalCore,
+    random = createBetrayalScriptedRandom(1, 2, 3),
+): BetrayalCore {
+    activateTestExplorer(core, '0');
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.END_TURN,
+        '0',
+        {},
+        100,
+        random,
     );
 }
 function placeCurrentExplorerInDustResearchRoom(
@@ -299,6 +339,8 @@ describe('Betrayal first scenario runtime', () => {
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '1', { explorerId: 'rebecca-allen' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '1', {});
 
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -321,6 +363,19 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
         )).toMatchObject({
             valid: false,
+            error: '请先确认当前剧本卡。',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '1', {});
+        expect(core.scenarioCardConfirmations).toEqual({
+            '0': 'friends-forever',
+            '1': 'friends-forever',
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
+        )).toMatchObject({
+            valid: false,
             error: '所选剧本卡的运行时规则尚未接入，不能开始剧本。',
         });
 
@@ -329,6 +384,14 @@ describe('Betrayal first scenario runtime', () => {
         });
         expect(core.scenarioCardConfirmations).toEqual({});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '0', {});
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前剧本卡。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '1', {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', {});
 
         expect(core.phase).toBe('preHaunt');
@@ -433,6 +496,15 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '火炉房',
+            damageKind: 'physical',
+            amount: 1,
+            allowedTraits: ['might', 'speed'],
+            playerId: '0',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0', { traits: ['might'] });
 
         const damagedExplorer = findTestExplorer(core, '0');
         expect(damagedExplorer.traitTracks.might.position).toBe(positionBefore - 1);
@@ -470,6 +542,12 @@ describe('Betrayal first scenario runtime', () => {
         preHauntCore = applyBetrayalCommand(preHauntCore, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         preHauntCore = applyBetrayalCommand(preHauntCore, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         preHauntCore = applyBetrayalCommand(preHauntCore, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        preHauntCore = applyBetrayalCommand(
+            preHauntCore,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: ['might'] },
+        );
 
         const preHauntExplorer = findTestExplorer(preHauntCore, '0');
         expect(preHauntExplorer.traitTracks.might.position).toBe(0);
@@ -837,12 +915,13 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.activityLog[0]?.text).toContain('先调整房间板块');
     });
 
-    it('火炉房在探索者结束回合时造成 1 点物理伤害', () => {
+    it('火炉房在探索者结束回合时要求受伤玩家分配 1 点物理伤害', () => {
         let core = createStartedFirstScenarioCore();
         core.roomDiscoveryOrderByFloor.ground = [
             BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'furnaceRoom')!,
         ];
-        const mightBefore = core.currentExplorer.traits.might;
+        const speedBefore = core.currentExplorer.traits.speed;
+        const speedPositionBefore = core.currentExplorer.traitTracks.speed.position;
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
@@ -850,9 +929,42 @@ describe('Betrayal first scenario runtime', () => {
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '火炉房',
+            damageKind: 'physical',
+            amount: 1,
+            allowedTraits: ['might', 'speed'],
+            playerId: '0',
+        });
+        expect(core.currentPlayer).toBe('0');
+        expect(core.activePlayerId).toBe('0');
+
+        const blockedMove = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'hallway' }),
+        );
+        expect(blockedMove).toMatchObject({ valid: false, error: '请先分配当前伤害。' });
+
+        const wrongPlayer = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '1', { traits: ['speed'] }),
+        );
+        expect(wrongPlayer).toMatchObject({ valid: false, error: '必须由受伤玩家分配伤害。' });
+
+        const wrongTrait = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0', { traits: ['knowledge'] }),
+        );
+        expect(wrongTrait).toMatchObject({ valid: false, error: '该伤害不能分配到所选属性。' });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0', { traits: ['speed'] });
+
         const damagedExplorer = core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
-        expect(damagedExplorer.traits.might).toBe(mightBefore - 1);
+        expect(damagedExplorer.traitTracks.speed.position).toBe(speedPositionBefore - 1);
+        expect(damagedExplorer.traits.speed).toBe(speedBefore - 1);
+        expect(core.pendingDamageAllocation).toBeNull();
         expect(core.currentPlayer).toBe('1');
+        expect(core.activityLog[0]?.text).toContain('分配');
         expect(core.activityLog[0]?.text).toContain('火炉房');
     });
 
@@ -890,8 +1002,41 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
         const armoredExplorer = core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        expect(core.pendingDamageAllocation).toBeNull();
         expect(armoredExplorer.traits.might).toBe(mightBefore);
         expect(armoredExplorer.traits.speed).toBe(speedBefore);
+        expect(core.currentPlayer).toBe('1');
+    });
+
+    it('火炉房伤害不能分配到作祟前已临界的物理属性', () => {
+        let core = createStartedFirstScenarioCore();
+        setTestTraitTrack(core, '0', 'might', [1, 2, 3], 0, 1);
+        setTestTraitTrack(core, '0', 'speed', [1, 2, 3], 2, 1);
+        core.roomDiscoveryOrderByFloor.ground = [
+            BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'furnaceRoom')!,
+        ];
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+
+        const lockedMight = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0', { traits: ['might'] }),
+        );
+        expect(lockedMight).toMatchObject({ valid: false, error: '不能把伤害分配到已锁定的属性。' });
+
+        const validSpeed = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0', { traits: ['speed'] }),
+        );
+        expect(validSpeed).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0', { traits: ['speed'] });
+
+        const explorer = findTestExplorer(core, '0');
+        expect(explorer.traitTracks.might.position).toBe(0);
+        expect(explorer.traitTracks.speed.position).toBe(1);
         expect(core.currentPlayer).toBe('1');
     });
 
@@ -951,7 +1096,7 @@ describe('Betrayal first scenario runtime', () => {
     });
 
     it('大宅饿了作祟检定成功会进入剧本12官方开局切片', () => {
-        const core = createHungryHouseHauntCore();
+        const core = createHelpingHandsHauntCore();
         const helpingHands = core.scenarioRuntime.helpingHands;
         const trollHands = core.monsters.filter((monster) => helpingHands?.trollHandIds.includes(monster.id));
         const monsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
@@ -961,7 +1106,6 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
         expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
         expect(core.scenarioRuntime.hauntCardNumber).toBe(12);
-        expect(core.scenarioRuntime.hungryHouse).toBeUndefined();
         expect(helpingHands).toMatchObject({
             strangeAmuletCardId: 'strange-amulet',
             strangeAmuletFoundDuringSetup: true,
@@ -984,11 +1128,11 @@ describe('Betrayal first scenario runtime', () => {
             'first-player-left-of-revealer',
         ]);
         expect(monsterTurnStatus).toMatchObject({
-            active: true,
+            active: false,
             controllerPlayerId: '0',
             monsterTurnAfterPlayerId: '0',
             trollHandIds: ['troll-hand-1', 'troll-hand-2'],
-            reason: null,
+            reason: '等待揭秘者结束回合后开始巨魔手怪物回合。',
         });
     });
 
@@ -2123,7 +2267,6 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
         expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
         expect(core.currentPlayer).toBe('1');
-        expect(core.scenarioRuntime.hungryHouse).toBeUndefined();
         expect(helpingHands).toMatchObject({
             strangeAmuletCardId: 'strange-amulet',
             strangeAmuletFoundDuringSetup: true,
@@ -2150,11 +2293,14 @@ describe('Betrayal first scenario runtime', () => {
         ))).toBe(true);
         expect(resolveHelpingHandsControllerPlayerId(core)).toBe('0');
         expect(monsterTurnStatus).toEqual({
-            active: true,
+            active: false,
             controllerPlayerId: '0',
             monsterTurnAfterPlayerId: '0',
             trollHandIds: helpingHands?.trollHandIds,
-            reason: null,
+            moveAllowance: 0,
+            moveDice: [],
+            moveRemainingById: {},
+            reason: '等待揭秘者结束回合后开始巨魔手怪物回合。',
         });
 
         findTestExplorer(core, '0').inventory = findTestExplorer(core, '0').inventory.filter((card) => card.id !== 'strange-amulet');
@@ -2163,6 +2309,9 @@ describe('Betrayal first scenario runtime', () => {
             controllerPlayerId: null,
             monsterTurnAfterPlayerId: '0',
             trollHandIds: helpingHands?.trollHandIds,
+            moveAllowance: 0,
+            moveDice: [],
+            moveRemainingById: {},
             reason: '无人持有奇异护符，巨魔手怪物回合跳过。',
         });
     });
@@ -2210,7 +2359,7 @@ describe('Betrayal first scenario runtime', () => {
     });
 
     it('大宅饿了的巨魔手控制权会随普通交易后的奇异护符换手实时变化', () => {
-        let core = createHungryHouseHauntCore();
+        let core = createHelpingHandsHauntCore();
         expect(resolveHelpingHandsControllerPlayerId(core)).toBe('0');
 
         activateTestExplorer(core, '0');
@@ -2232,10 +2381,374 @@ describe('Betrayal first scenario runtime', () => {
         expect(findTestExplorer(core, '1').inventory.some((card) => card.id === 'strange-amulet')).toBe(true);
         expect(resolveHelpingHandsControllerPlayerId(core)).toBe('1');
         expect(resolveHelpingHandsMonsterTurnStatus(core)).toMatchObject({
-            active: true,
+            active: false,
             controllerPlayerId: '1',
             monsterTurnAfterPlayerId: '0',
+            reason: '等待揭秘者结束回合后开始巨魔手怪物回合。',
         });
+    });
+
+    it('大宅饿了会在揭秘者结束回合后开始巨魔手回合，并让两只手共享一次速度骰', () => {
+        let core = createHelpingHandsHauntCore();
+        core = startHelpingHandsMonsterTurn(core, createBetrayalScriptedRandom(1, 2, 3));
+
+        const helpingHands = core.scenarioRuntime.helpingHands;
+        const monsterTurnStatus = resolveHelpingHandsMonsterTurnStatus(core);
+
+        expect(monsterTurnStatus.active).toBe(true);
+        expect(monsterTurnStatus.controllerPlayerId).toBe('0');
+        expect(monsterTurnStatus.moveDice).toHaveLength(3);
+        expect(monsterTurnStatus.moveAllowance).toBe(
+            Math.max(1, monsterTurnStatus.moveDice.reduce((sum, pip) => sum + pip, 0)),
+        );
+        expect(monsterTurnStatus.moveRemainingById).toEqual(
+            Object.fromEntries(
+                (helpingHands?.trollHandIds ?? []).map((monsterId) => [
+                    monsterId,
+                    monsterTurnStatus.moveAllowance,
+                ]),
+            ),
+        );
+        expect(core.currentExplorer.playerId).toBe('0');
+        expect(core.recentRoll).toMatchObject({
+            kind: 'monsterMoveRoll',
+            playerId: '0',
+            dice: monsterTurnStatus.moveDice,
+        });
+    });
+
+    it('大宅饿了无人持有奇异护符时会跳过巨魔手回合并推进到下一名探索者', () => {
+        let core = createHelpingHandsHauntCore();
+        findTestExplorer(core, '0').inventory = findTestExplorer(core, '0').inventory.filter(
+            (card) => card.id !== 'strange-amulet',
+        );
+
+        core = startHelpingHandsMonsterTurn(core);
+
+        expect(resolveHelpingHandsMonsterTurnStatus(core)).toMatchObject({
+            active: false,
+            controllerPlayerId: null,
+            reason: '无人持有奇异护符，巨魔手怪物回合跳过。',
+        });
+        expect(core.currentPlayer).toBe('1');
+        expect(core.currentExplorer.playerId).toBe('1');
+        expect(core.activityLog.some((entry) => entry.text.includes('巨魔手怪物回合跳过'))).toBe(true);
+    });
+
+    it('大宅饿了只有当前奇异护符持有人能移动、攻击或结束巨魔手回合', () => {
+        let core = createHelpingHandsHauntCore();
+        core = startHelpingHandsMonsterTurn(core);
+        const trollHandId = core.scenarioRuntime.helpingHands?.trollHandIds[0];
+
+        const moveValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND, '1', {
+                monsterId: trollHandId,
+                roomId: 'hallway',
+            }),
+        );
+        const attackValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK, '1', {
+                monsterId: trollHandId,
+                targetPlayerId: '2',
+            }),
+        );
+        const endValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_HELPING_HANDS_MONSTER_TURN, '1', {}),
+        );
+
+        expect(moveValidation).toMatchObject({ valid: false });
+        expect(moveValidation.error).toContain('当前奇异护符持有人');
+        expect(attackValidation).toMatchObject({ valid: false });
+        expect(attackValidation.error).toContain('奇异护符持有人');
+        expect(endValidation).toMatchObject({ valid: false });
+        expect(endValidation.error).toContain('当前奇异护符持有人');
+    });
+
+    it('大宅饿了巨魔手只能走已发现真实连接，地下室登陆点能走到大阶梯', () => {
+        let core = createHelpingHandsHauntCore();
+        core = startHelpingHandsMonsterTurn(core);
+        const basementTrollHandId = core.scenarioRuntime.helpingHands?.trollHandIds.find((monsterId) => (
+            core.monsters.find((monster) => monster.id === monsterId)?.roomId === 'basement-landing'
+        ));
+        expect(basementTrollHandId).toBeDefined();
+
+        const moveOptions = resolveHelpingHandsTrollHandMoveOptions(core, basementTrollHandId!);
+        expect(moveOptions.map((room) => room.id)).toContain('grand-staircase');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND,
+            '0',
+            { monsterId: basementTrollHandId, roomId: 'grand-staircase' },
+        );
+
+        expect(core.monsters.find((monster) => monster.id === basementTrollHandId)?.roomId).toBe('grand-staircase');
+    });
+
+    it('大宅饿了巨魔手离开有探索者的房间会消耗两点移动', () => {
+        let core = createHelpingHandsHauntCore();
+        core = startHelpingHandsMonsterTurn(core);
+        const trollHandId = core.scenarioRuntime.helpingHands?.trollHandIds[0];
+        const trollHand = core.monsters.find((monster) => monster.id === trollHandId);
+        expect(trollHand).toBeDefined();
+        findTestExplorer(core, '1').roomId = trollHand!.roomId;
+
+        const targetRoom = resolveHelpingHandsTrollHandMoveOptions(core, trollHandId!)[0];
+        const moveRemainingBefore = resolveHelpingHandsMonsterTurnStatus(core)
+            .moveRemainingById[trollHandId!];
+        expect(targetRoom).toBeDefined();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND,
+            '0',
+            { monsterId: trollHandId, roomId: targetRoom!.id },
+        );
+
+        expect(resolveHelpingHandsMonsterTurnStatus(core).moveRemainingById[trollHandId!])
+            .toBe(moveRemainingBefore - 2);
+    });
+
+    it('大宅饿了结束巨魔手回合后才推进到揭秘者之后的下一名探索者', () => {
+        let core = createHelpingHandsHauntCore();
+        core = startHelpingHandsMonsterTurn(core);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_HELPING_HANDS_MONSTER_TURN,
+            '0',
+            {},
+        );
+
+        expect(resolveHelpingHandsMonsterTurnStatus(core).active).toBe(false);
+        expect(core.currentPlayer).toBe('1');
+        expect(core.currentExplorer.playerId).toBe('1');
+        expect(core.recentRoll).toBeNull();
+    });
+
+    it('大宅饿了探索者击败巨魔手后，巨魔手仍在场且不能被击晕', () => {
+        let core = createHelpingHandsHauntCore();
+        activateTestExplorer(core, '1');
+        const trollHand = core.monsters.find((monster) => monster.id === 'troll-hand-1');
+        expect(trollHand).toBeDefined();
+        core.currentExplorer.roomId = trollHand!.roomId;
+        core.activeRoomId = trollHand!.roomId;
+        setTestExplorerTraits(core, '1', { might: 5 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '1',
+            { target: 'troll-hand', targetMonsterId: trollHand!.id },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 0, 0, 0, 0, 0),
+        );
+
+        expect(core.monsters.find((monster) => monster.id === trollHand!.id)).toMatchObject({
+            id: trollHand!.id,
+            roomId: trollHand!.roomId,
+        });
+        expect(core.recentRoll?.latestLabel).toBe('巨魔手不能被击晕');
+        expect(core.activityLog.some((entry) => entry.text.includes('巨魔手不能被击晕'))).toBe(true);
+    });
+
+    it('大宅饿了力量攻击获胜后生成伤害或偷牌选择且不立即扣血', () => {
+        let core = createHelpingHandsExplorerAttackCore();
+        const defenderPhysicalBefore = traitTrackPositionTotal(core, '1', ['might', 'speed']);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1, 1),
+        );
+
+        expect(resolveHelpingHandsPendingAttackReward(core)).toMatchObject({
+            attackerPlayerId: '0',
+            defenderPlayerId: '1',
+            damageToDefender: 4,
+            damageKind: 'physical',
+            attackerRoll: 4,
+            defenderRoll: 0,
+        });
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
+        expect(core.recentRoll?.latestLabel).toBe('可偷牌或造成 4 点伤害');
+
+        const blockedEndTurn = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        );
+        expect(blockedEndTurn.valid).toBe(false);
+        expect(blockedEndTurn.error).toContain('请先选择造成伤害或偷取物品/预兆');
+    });
+
+    it('大宅饿了选择偷取物品或预兆后不造成伤害', () => {
+        let core = createHelpingHandsExplorerAttackCore();
+        const defenderPhysicalBefore = traitTrackPositionTotal(core, '1', ['might', 'speed']);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1, 1),
+        );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
+            '0',
+            { choice: 'steal', cardId: 'first-aid-kit' },
+        );
+
+        expect(resolveHelpingHandsPendingAttackReward(core)).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.some((card) => card.id === 'first-aid-kit')).toBe(true);
+        expect(findTestExplorer(core, '1').inventory.some((card) => card.id === 'first-aid-kit')).toBe(false);
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
+        expect(core.receivedCardIdsThisTurnByPlayerId['0']).toContain('first-aid-kit');
+    });
+
+    it('大宅饿了选择造成伤害后由防守者分配才扣属性', () => {
+        let core = createHelpingHandsExplorerAttackCore();
+        const defenderPhysicalBefore = traitTrackPositionTotal(core, '1', ['might', 'speed']);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1, 1),
+        );
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD,
+            '0',
+            { choice: 'damage' },
+        );
+
+        expect(resolveHelpingHandsPendingAttackReward(core)).toBeNull();
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: '1',
+            sourceTitle: '援手攻击',
+            damageKind: 'physical',
+            amount: 4,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
+
+        const blockedEndTurn = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        );
+        expect(blockedEndTurn).toMatchObject({ valid: false, error: '请先分配当前伤害。' });
+
+        const wrongPlayerAllocation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+                '0',
+                { traits: ['might', 'might', 'speed', 'speed'] },
+            ),
+        );
+        expect(wrongPlayerAllocation).toMatchObject({ valid: false, error: '必须由受伤玩家分配伤害。' });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'might', 'speed', 'speed'] },
+        );
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore - 4);
+        expect(findTestExplorer(core, '1').inventory.some((card) => card.id === 'first-aid-kit')).toBe(true);
+    });
+
+    it('大宅饿了非力量攻击获胜不能偷物品或预兆', () => {
+        let core = createHelpingHandsExplorerAttackCore();
+        core.currentExplorer.inventory = [
+            ...core.currentExplorer.inventory,
+            { id: 'ring', name: '指环', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        const defenderPhysicalBefore = traitTrackPositionTotal(core, '1', ['might', 'speed']);
+        const defenderMentalBefore = traitTrackPositionTotal(core, '1', ['knowledge', 'sanity']);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: 'ring' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1, 1),
+        );
+
+        expect(resolveHelpingHandsPendingAttackReward(core)).toBeNull();
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
+        expect(traitTrackPositionTotal(core, '1', ['knowledge', 'sanity'])).toBe(defenderMentalBefore - 4);
+        expect(findTestExplorer(core, '1').inventory.some((card) => card.id === 'first-aid-kit')).toBe(true);
+        expect(core.usedCardIdsThisTurn).toContain('ring');
+    });
+
+    it('大宅饿了巨魔手同房提供力量8合击并消耗两个巨魔手', () => {
+        let core = createHelpingHandsHauntCore();
+        core = startHelpingHandsMonsterTurn(core);
+        const helpingHands = core.scenarioRuntime.helpingHands;
+        expect(helpingHands).toBeDefined();
+        const sharedRoomId = 'entrance-hall';
+        core.monsters = core.monsters.map((monster) => (
+            helpingHands?.trollHandIds.includes(monster.id)
+                ? { ...monster, roomId: sharedRoomId }
+                : monster
+        ));
+        const target = findTestExplorer(core, '1');
+        target.roomId = sharedRoomId;
+        setTestTraitTrack(core, '1', 'might', [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 10, 10);
+        setTestTraitTrack(core, '1', 'speed', [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 10, 10);
+
+        const combinedOption = resolveHelpingHandsTrollHandAttackOptions(core).find((option) => option.combined);
+        expect(combinedOption).toMatchObject({
+            label: '巨魔手合击',
+            trollHandIds: helpingHands?.trollHandIds,
+            roomId: sharedRoomId,
+            might: 8,
+            targetPlayerIds: expect.arrayContaining(['1']),
+        });
+        const defenderPhysicalBefore = traitTrackPositionTotal(core, '1', ['might', 'speed']);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK,
+            '0',
+            { combined: true, targetPlayerId: '1' },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2, 2, 2, 2, 2, 2, 1, 1),
+        );
+
+        expect(core.scenarioRuntime.helpingHands?.trollHandAttackUsedIdsThisTurn.sort()).toEqual(
+            [...(helpingHands?.trollHandIds ?? [])].sort(),
+        );
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore - 8);
+        expect(resolveHelpingHandsTrollHandAttackOptions(core)).toEqual([]);
+        const spentAttack = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK, '0', {
+                monsterId: helpingHands?.trollHandIds[0],
+                targetPlayerId: '1',
+            }),
+        );
+        expect(spentAttack.valid).toBe(false);
+        expect(spentAttack.error).toContain('必须选择一个可行动的巨魔手');
     });
 
     it('说“茄子”！作祟检定成功会进入魔法相机剧本并按相机持有者决定叛徒', () => {
@@ -2774,6 +3287,46 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.latestDiscovery?.detail).toContain('通用伤害 2（力量、知识）');
         expect(core.turnEndedByDiscovery).toBe(true);
+    });
+
+    it('事件一般伤害不能绕过页面分配到作祟前已临界属性', () => {
+        let core = createStartedFirstScenarioCore();
+        setTestTraitTrack(core, '0', 'might', [1, 2, 3], 0, 1);
+        setTestTraitTrack(core, '0', 'speed', [1, 2, 3], 2, 1);
+        core.pendingEventChoice = {
+            id: 'test-critical-general-damage-choice',
+            playerId: '0',
+            sourceTitle: '临界伤害领域校验',
+            effect: {
+                mode: 'generalDamageChoice',
+                amount: 1,
+                allowedTraits: ['might', 'speed'],
+                recommendedAction: 'endTurn',
+            },
+        };
+
+        const lockedTraitDamage = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { traits: ['might'] }),
+        );
+        expect(lockedTraitDamage.valid).toBe(false);
+
+        const validSpeedDamage = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '0', { traits: ['speed'] }),
+        );
+        expect(validSpeedDamage.valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { traits: ['speed'] },
+        );
+
+        expect(core.currentExplorer.traitTracks.might.position).toBe(0);
+        expect(core.currentExplorer.traitTracks.speed.position).toBe(1);
+        expect(core.latestDiscovery?.detail).toContain('通用伤害 1（速度）');
     });
 
     it('上古旧宅按官方锁定文本选择速度或力量检定、目标板块和伤害分支', () => {

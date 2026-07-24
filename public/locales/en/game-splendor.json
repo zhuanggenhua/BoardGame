@@ -132,6 +132,7 @@
     "buyCard": "spends ",
     "freePurchase": "nothing",
     "discardGem": "discards a gem: ",
-    "chooseNoble": "chooses noble tile: {{noble}}"
+    "chooseNoble": "chooses noble tile: {{noble}}",
+    "passTurn": "has no available action and passes the turn"
   }
 }

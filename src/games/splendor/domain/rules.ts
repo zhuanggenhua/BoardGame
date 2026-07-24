@@ -119,6 +119,44 @@ export function canAffordCard(player: SplendorPlayerState, card: SplendorCardDef
     return getMissingTokenCount(player, card) <= 0;
 }
 
+export function canPlayerBuyAnyCard(core: SplendorCore, playerId: PlayerId): boolean {
+    const player = core.players[playerId];
+    if (!player) return false;
+
+    for (const tier of CARD_TIERS) {
+        for (const cardId of core.market[tier]) {
+            const card = CARD_DEFS_BY_ID[cardId];
+            if (card && canAffordCard(player, card)) {
+                return true;
+            }
+        }
+    }
+
+    return player.reservedCardIds.some((cardId) => {
+        const card = CARD_DEFS_BY_ID[cardId];
+        return card ? canAffordCard(player, card) : false;
+    });
+}
+
+export function canPlayerTakeAnyGem(core: SplendorCore): boolean {
+    return GEM_COLORS.some((color) => core.bank[color] > 0);
+}
+
+export function canPlayerReserveAnyCard(core: SplendorCore, playerId: PlayerId): boolean {
+    const player = core.players[playerId];
+    if (!player || player.reservedCardIds.length >= MAX_RESERVED_CARDS) {
+        return false;
+    }
+
+    return CARD_TIERS.some((tier) => core.market[tier].length > 0 || core.decks[tier].length > 0);
+}
+
+export function hasAnyStandardTurnAction(core: SplendorCore, playerId: PlayerId): boolean {
+    return canPlayerBuyAnyCard(core, playerId)
+        || canPlayerTakeAnyGem(core)
+        || canPlayerReserveAnyCard(core, playerId);
+}
+
 export function getPaymentTokens(player: SplendorPlayerState, card: SplendorCardDef): Partial<Record<TokenColor, number>> {
     const effectiveCost = calculateEffectiveCost(player, card);
     const payment: Partial<Record<TokenColor, number>> = {};
