@@ -1906,6 +1906,38 @@
     "luchadors": {
       "name": "摔角手",
       "description": "把铺垫行动挂到对手随从上，再利用这些铺垫抽牌、控场和改写计分。"
+    },
+    "avengers_pod": {
+      "name": "复仇者 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与复仇者一致。"
+    },
+    "shield_pod": {
+      "name": "神盾局 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与神盾局一致。"
+    },
+    "spider_verse_pod": {
+      "name": "蜘蛛宇宙 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与蜘蛛宇宙一致。"
+    },
+    "ultimates_pod": {
+      "name": "终极战队 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与终极战队一致。"
+    },
+    "hydra_pod": {
+      "name": "九头蛇 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与九头蛇一致。"
+    },
+    "kree_pod": {
+      "name": "克里 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与克里一致。"
+    },
+    "masters_of_evil_pod": {
+      "name": "邪恶大师 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与邪恶大师一致。"
+    },
+    "sinister_six_pod": {
+      "name": "邪恶六人组 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与邪恶六人组一致。"
     }
   },
   "tutorial": {

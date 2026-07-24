@@ -1923,6 +1923,38 @@
     "luchadors": {
       "name": "Luchadors",
       "description": "Play Set-Up actions on enemy minions, then cash those setups in for draw, control, and scoring tricks."
+    },
+    "avengers_pod": {
+      "name": "Avengers (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Avengers."
+    },
+    "shield_pod": {
+      "name": "S.H.I.E.L.D. (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as S.H.I.E.L.D."
+    },
+    "spider_verse_pod": {
+      "name": "Spider-Verse (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Spider-Verse."
+    },
+    "ultimates_pod": {
+      "name": "Ultimates (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Ultimates."
+    },
+    "hydra_pod": {
+      "name": "Hydra (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Hydra."
+    },
+    "kree_pod": {
+      "name": "Kree (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Kree."
+    },
+    "masters_of_evil_pod": {
+      "name": "Masters of Evil (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Masters of Evil."
+    },
+    "sinister_six_pod": {
+      "name": "Sinister Six (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Sinister Six."
     }
   },
   "tutorial": {
