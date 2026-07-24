@@ -60,6 +60,10 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.ALL_STARS_POD_CARDS, kind: 'card', image: 'smashup/cards/all_stars_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.PROMOS_SHEEP_ALL_STARS_CARDS, kind: 'card', image: 'smashup/cards/promos_sheep_all_stars', grid: { rows: 6, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.TORNADOS_POD_CARDS, kind: 'card', image: 'smashup/cards/tornados_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.EXPLORERS_POD_CARDS, kind: 'card', image: 'smashup/cards/explorers_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.STAR_ROAMERS_POD_CARDS, kind: 'card', image: 'smashup/cards/star_roamers_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.VIGILANTES_POD_CARDS, kind: 'card', image: 'smashup/cards/vigilantes_pod', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.LUCHADORS_POD_CARDS, kind: 'card', image: 'smashup/cards/luchadors_pod', grid: { rows: 4, cols: 5 } },
 
     { id: SMASHUP_ATLAS_IDS.BASE1, kind: 'base', image: 'smashup/base/base1', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE2, kind: 'base', image: 'smashup/base/base2', grid: { rows: 2, cols: 4 } },
