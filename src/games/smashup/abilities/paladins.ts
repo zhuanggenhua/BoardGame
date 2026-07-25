@@ -4,6 +4,7 @@ import { registerAbility, resolveTalent, type AbilityContext, type AbilityResult
 import { registerInteractionHandler, type InteractionHandler } from '../domain/abilityInteractionHandlers';
 import { startDuel } from '../domain/duel';
 import { registerInterceptor, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
+import { reduce } from '../domain/reduce';
 import {
     addPowerCounter,
     addTitanPowerCounter,
@@ -21,7 +22,7 @@ import {
 import { getCardDef } from '../data/cards';
 import type {
     CardInstance,
-    CardsDrawnEvent,
+    CardsDiscardedEvent,
     MinionCardDef,
     MinionOnBase,
     MinionPlayedEvent,
@@ -171,6 +172,33 @@ function makeCardReturnedToHandEvent(cardUid: string, ownerId: PlayerId, now: nu
     } as SmashUpEvent;
 }
 
+function applyEventsToCore(state: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
+    return events.reduce((core, event) => reduce(core, event), state);
+}
+
+function makeCardsDiscardedEvent(playerId: PlayerId, cardUids: string[], now: number): CardsDiscardedEvent {
+    return {
+        type: SU_EVENTS.CARDS_DISCARDED,
+        payload: { playerId, cardUids },
+        timestamp: now,
+    };
+}
+
+function buildHandDiscardOption(card: CardInstance) {
+    return {
+        id: `discard-${card.uid}`,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId },
+        displayMode: 'card' as const,
+        previewDefId: card.defId,
+    };
+}
+
+function readStringSet(value: unknown): Set<string> | undefined {
+    if (!Array.isArray(value)) return undefined;
+    return new Set(value.filter((entry): entry is string => typeof entry === 'string'));
+}
+
 function paladinsRoland(ctx: AbilityContext): AbilityResult {
     const found = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!found || found.baseIndex !== ctx.baseIndex) return { events: [] };
@@ -181,21 +209,36 @@ function paladinsRoland(ctx: AbilityContext): AbilityResult {
 function paladinsDevoutPastor(ctx: AbilityContext): AbilityResult {
     if (hasOwnTitanAtBase(ctx.state, ctx.playerId, ctx.baseIndex)) return { events: [] };
     const drawEvents = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
-    const drawnUids = drawEvents.flatMap(event =>
-        event.type === SU_EVENTS.CARDS_DRAWN ? ((event as CardsDrawnEvent).payload.cardUids ?? []) : [],
-    );
-    const firstDiscard = drawnUids[0] ?? ctx.state.players[ctx.playerId]?.hand[0]?.uid;
-    const card = firstDiscard
-        ? [...(ctx.state.players[ctx.playerId]?.hand ?? []), ...(ctx.state.players[ctx.playerId]?.deck ?? [])].find(candidate => candidate.uid === firstDiscard)
-        : undefined;
-    const discardEvent = card
-        ? [{
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: { playerId: ctx.playerId, cardUids: [card.uid], reason: 'paladins_devout_pastor' },
-            timestamp: ctx.now,
-        } as SmashUpEvent]
-        : [];
-    return { events: [...drawEvents, ...discardEvent] };
+    const projectedCore = applyEventsToCore(ctx.state, drawEvents);
+    const handAfterDraw = projectedCore.players[ctx.playerId]?.hand ?? [];
+    if (handAfterDraw.length === 0) return { events: drawEvents };
+
+    if (ctx.matchState) {
+        const interaction = createSimpleChoice(
+            `paladins_devout_pastor_discard_${ctx.cardUid}_${ctx.now}`,
+            ctx.playerId,
+            '虔诚的牧师：选择一张手牌弃掉',
+            handAfterDraw.map(buildHandDiscardOption),
+            {
+                sourceId: 'paladins_devout_pastor_discard',
+                targetType: 'hand',
+                responseValidationMode: 'live',
+                titleKey: 'ui.paladins_devout_pastor_discard_title',
+            },
+        );
+        interaction.data.allowedCardUids = handAfterDraw.map(card => card.uid);
+        return {
+            events: drawEvents,
+            matchState: queueInteraction(ctx.matchState, interaction),
+        };
+    }
+
+    return {
+        events: [
+            ...drawEvents,
+            makeCardsDiscardedEvent(ctx.playerId, [handAfterDraw[0].uid], ctx.now),
+        ],
+    };
 }
 
 function paladinsSeniorMentor(ctx: AbilityContext): AbilityResult {
@@ -563,6 +606,17 @@ function handleSeniorMentor(state: MatchState<SmashUpCore>, _playerId: PlayerId,
     return { state, events: [addPowerCounter(found.minion.uid, found.baseIndex, 1, 'paladins_senior_mentor', timestamp)] };
 }
 
+function handleDevoutPastorDiscard(state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, data: Record<string, unknown> | undefined, _random: unknown, timestamp: number) {
+    const selected = value as { cardUid?: string } | undefined;
+    const cardUid = selected?.cardUid;
+    if (!cardUid) return { state, events: [] };
+    const allowedCardUids = readStringSet(data?.allowedCardUids);
+    if (!allowedCardUids?.has(cardUid)) return { state, events: [] };
+    const player = state.core.players[playerId];
+    if (!player?.hand.some(card => card.uid === cardUid)) return { state, events: [] };
+    return { state, events: [makeCardsDiscardedEvent(playerId, [cardUid], timestamp)] };
+}
+
 function handleKnightsDuel(state: MatchState<SmashUpCore>, playerId: PlayerId, value: unknown, data: Record<string, unknown> | undefined, _random: unknown, timestamp: number) {
     const selected = value as { minionUid?: string; uid?: string } | undefined;
     const challengedMinionUid = selected?.minionUid ?? selected?.uid;
@@ -724,6 +778,7 @@ export function registerPaladinAbilities(): void {
     registerInterceptor('base_paladins_roncesvalles_gorge', paladinsTitanBaseInterceptor);
 
     registerInteractionHandler('paladins_senior_mentor', handleSeniorMentor as InteractionHandler);
+    registerInteractionHandler('paladins_devout_pastor_discard', handleDevoutPastorDiscard as InteractionHandler);
     registerInteractionHandler('paladins_knights_duel', handleKnightsDuel as InteractionHandler);
     registerInteractionHandler('paladins_expel', handleExpel as InteractionHandler);
     registerInteractionHandler('paladins_seraphim', handleSeraphimDestroy as InteractionHandler);

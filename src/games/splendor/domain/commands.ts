@@ -1,5 +1,5 @@
 import type { ValidationResult } from '../../../engine/types';
-import { CARD_DEFS_BY_ID, CARD_TIERS, GEM_COLORS, MAX_RESERVED_CARDS, canAffordCard } from './rules';
+import { CARD_DEFS_BY_ID, CARD_TIERS, GEM_COLORS, MAX_RESERVED_CARDS, canAffordCard, hasAnyStandardTurnAction } from './rules';
 import type { SplendorCommand, SplendorCore, TokenColor } from './types';
 
 export function validate(state: SplendorCore, command: SplendorCommand): ValidationResult {
@@ -45,6 +45,8 @@ export function validate(state: SplendorCore, command: SplendorCommand): Validat
             return state.pendingResolution?.type === 'chooseNoble' && state.pendingResolution.nobleIds.includes(command.payload.nobleId)
                 ? { valid: true }
                 : { valid: false, error: 'invalidNobleChoice' };
+        case 'PASS_TURN':
+            return validatePassTurn(state, command.playerId);
         default:
             return { valid: false, error: 'unknownCommand' };
     }
@@ -162,6 +164,16 @@ function validateDiscard(state: SplendorCore, color: TokenColor, playerId: strin
     }
     if (state.players[playerId].tokens[color] < 1) {
         return { valid: false, error: 'noTokenToDiscard' };
+    }
+    return { valid: true };
+}
+
+function validatePassTurn(state: SplendorCore, playerId: string): ValidationResult {
+    if (state.pendingResolution) {
+        return { valid: false, error: 'pendingResolutionActive' };
+    }
+    if (hasAnyStandardTurnAction(state, playerId)) {
+        return { valid: false, error: 'standardActionAvailable' };
     }
     return { valid: true };
 }

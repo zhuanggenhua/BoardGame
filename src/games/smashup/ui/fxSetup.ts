@@ -16,9 +16,9 @@ import { FxRegistry, type FxRendererProps, type FeedbackPack } from '../../../en
 import { getCardDef, resolveCardName, resolveCardText } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { UI_Z_INDEX } from '../../../core';
-import { Zap } from 'lucide-react';
 import i18next from 'i18next';
 import { PLAYER_CONFIG } from './playerConfig';
+import { SmashUpAbilityTriggeredEffect } from './AbilityTriggeredEffect';
 
 // ============================================================================
 // Cue 常量
@@ -152,6 +152,8 @@ const ActionShowRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
     React.createElement(motion.div, { className: 'absolute inset-0 bg-black/30' }),
     // 卡牌
     React.createElement(motion.div, {
+      'data-testid': 'smashup-action-fx-card',
+      'data-card-def-id': defId,
       className: 'relative bg-white rounded-lg shadow-2xl border-2 border-slate-300 overflow-hidden',
       style: {
         width: '18vw',
@@ -283,120 +285,15 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 /**
  * params:
  * - sourceDefId: string — 触发源卡牌 defId
- * - position: { left: number; top: number } | undefined — 屏幕坐标（可选）
+ * - sourcePosition / targetPosition: { left: number; top: number } | undefined
  * - targetDefId: string | undefined — 被影响的目标卡牌 defId（可选）
- * - effectLabel: string | undefined — 影响文案（如“消灭”）
- * - highlightTone: 'info' | 'danger' | undefined — 提示色调
+ * - sourcePreviewRef / targetPreviewRef — 预览页或事件携带的权威卡图（可选）
+ * - sourceLabel / targetLabel / effectLabel — 短标签（可选，仅作辅助）
+ * - highlightTone: 'info' | 'danger' | 'buff' | 'score' | undefined
  */
 /** 持续效果/触发器激活渲染器（导出供特效预览使用） */
-export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
-  const stableComplete = useStableComplete(onComplete);
-  const sourceDefId = event.params?.sourceDefId as string | undefined;
-  const position = event.params?.position as { left: number; top: number } | undefined;
-  const targetDefId = event.params?.targetDefId as string | undefined;
-  const effectLabel = event.params?.effectLabel as string | undefined;
-  const highlightTone = event.params?.highlightTone as 'info' | 'danger' | undefined;
-  const shouldRender = !!sourceDefId;
-
-  const impactFired = useRef(false);
-  useEffect(() => {
-    if (!impactFired.current) {
-      impactFired.current = true;
-      onImpact();
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!shouldRender) return;
-    const timer = setTimeout(stableComplete, 1600);
-    return () => clearTimeout(timer);
-  }, [shouldRender, stableComplete]);
-
-  useEffect(() => {
-    if (!shouldRender) {
-      stableComplete();
-    }
-  }, [shouldRender, stableComplete]);
-
-  if (!shouldRender) return null;
-
-  const t = i18next.getFixedT(null, 'game-smashup');
-  const def = getCardDef(sourceDefId);
-  const resolvedName = resolveCardName(def, t) || sourceDefId;
-  const targetDef = targetDefId ? getCardDef(targetDefId) : undefined;
-  const resolvedTargetName = targetDefId ? (resolveCardName(targetDef, t) || targetDefId) : undefined;
-
-  // 默认位置：屏幕中上方
-  const pos = position ?? { left: window.innerWidth / 2, top: window.innerHeight * 0.25 };
-  const isDangerTone = highlightTone === 'danger';
-
-  return React.createElement(motion.div, {
-    className: 'fixed pointer-events-none select-none flex flex-col items-center gap-1',
-    style: {
-      left: pos.left,
-      top: pos.top,
-      transform: 'translate(-50%, -50%)',
-      zIndex: UI_Z_INDEX.overlayRaised,
-    },
-    'data-testid': 'smashup-triggered-fx',
-    initial: { opacity: 0, scale: 0.3, y: 10 },
-    animate: { opacity: [0, 1, 1, 0], scale: [0.3, 1.1, 1, 0.8], y: [10, 0, 0, -40] },
-    transition: { duration: 1.5, times: [0, 0.15, 0.6, 1], ease: 'easeOut' },
-  },
-    // 闪光脉冲背景
-    React.createElement(motion.div, {
-      className: 'absolute rounded-full',
-      style: {
-        background: 'radial-gradient(circle, rgba(251,191,36,0.5) 0%, rgba(251,191,36,0) 70%)',
-        width: '12vw',
-        height: '12vw',
-        left: '50%',
-        top: '50%',
-        transform: 'translate(-50%, -50%)',
-      },
-      initial: { scale: 0.3, opacity: 0 },
-      animate: { scale: [0.3, 1.8, 0], opacity: [0, 0.7, 0] },
-      transition: { duration: 1.0, ease: 'easeOut' },
-    }),
-    // 触发图标（SVG）
-    React.createElement(motion.div, {
-      className: 'drop-shadow-lg text-amber-400',
-      style: { width: '2.5vw', height: '2.5vw' },
-      initial: { scale: 0, rotate: -30 },
-      animate: { scale: [0, 1.4, 1], rotate: [-30, 10, 0] },
-      transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] },
-    }, React.createElement(Zap, { className: 'w-full h-full', fill: 'currentColor', strokeWidth: 1.5 })),
-    // 卡牌名 + "触发！"标签
-    React.createElement(motion.div, {
-      className: 'bg-amber-900/90 text-amber-100 px-3 py-1.5 rounded-md shadow-lg border border-amber-600/50 whitespace-nowrap flex items-center gap-2',
-      style: { fontFamily: "'Caveat', 'Comic Sans MS', cursive" },
-      initial: { opacity: 0, y: 8, scale: 0.8 },
-      animate: { opacity: 1, y: 0, scale: 1 },
-      transition: { delay: 0.12, duration: 0.3, ease: [0.34, 1.56, 0.64, 1] },
-    },
-      React.createElement('span', {
-        className: 'text-[1.1vw] font-black tracking-wide',
-      }, resolvedName),
-      React.createElement('span', {
-        className: 'text-[0.7vw] font-bold text-amber-400 bg-amber-800/60 px-1.5 py-0.5 rounded',
-      }, t('ui.triggered')),
-    ),
-    resolvedTargetName && effectLabel
-      ? React.createElement(motion.div, {
-        className: `rounded-md px-3 py-1 text-[0.82vw] font-black shadow-lg border whitespace-nowrap ${
-          isDangerTone
-            ? 'bg-red-950/92 text-red-100 border-red-500/60'
-            : 'bg-sky-950/92 text-sky-100 border-sky-400/60'
-        }`,
-        style: { fontFamily: "'Caveat', 'Comic Sans MS', cursive" },
-        initial: { opacity: 0, y: 6, scale: 0.86 },
-        animate: { opacity: 1, y: 0, scale: 1 },
-        transition: { delay: 0.2, duration: 0.28, ease: [0.34, 1.56, 0.64, 1] },
-        'data-testid': 'smashup-triggered-fx-effect',
-      }, `${effectLabel} ${resolvedTargetName}`)
-      : null,
-  );
-};
+export const AbilityTriggeredRenderer: React.FC<FxRendererProps> = (props) =>
+  React.createElement(SmashUpAbilityTriggeredEffect, props);
 
 // ============================================================================
 // 音效 key 常量
@@ -452,7 +349,7 @@ function createRegistry(): FxRegistry {
   }, BASE_SCORED_FEEDBACK);
 
   registry.register(SU_FX.ABILITY_TRIGGERED, AbilityTriggeredRenderer, {
-    timeoutMs: 2500,
+    timeoutMs: 5000,
     maxConcurrent: 1,
   }, ABILITY_TRIGGERED_FEEDBACK);
 

@@ -60,20 +60,24 @@ test.describe('山屋惊魂属性后果预览', () => {
         await expect(page.getByTestId('betrayal-event-choice-panel')).toBeVisible();
 
         await page.getByTestId('betrayal-event-choice-damage-might').click();
-        await expect(page.getByTestId('betrayal-event-choice-confirm')).toBeDisabled();
-        await page.getByTestId('betrayal-event-choice-damage-might').click();
-
         await expect(page.getByTestId('betrayal-event-choice-damage-might')).toHaveAttribute(
             'data-damage-selected-count',
-            '2',
+            '1',
         );
         const mightPreview = page.getByTestId('betrayal-event-damage-preview-might');
         await expect(mightPreview).toHaveAttribute('data-trait-preview-mode', 'damage');
-        await expect(mightPreview).toHaveAttribute('data-trait-preview-step-count', '2');
+        await expect(mightPreview).toHaveAttribute('data-trait-preview-step-count', '1');
         await expect(mightPreview).toHaveAttribute('data-trait-preview-locked', 'false');
-        await expect(page.getByTestId('betrayal-event-choice-confirm')).toBeEnabled();
+        await expect(page.getByTestId('betrayal-event-choice-confirm')).toHaveCount(0);
 
         await saveScreenshot(page, DAMAGE_PREVIEW_SCREENSHOT);
+
+        await page.getByTestId('betrayal-event-choice-damage-might').click();
+        await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-current-trait-track-might')).toHaveAttribute(
+            'data-trait-track-position',
+            '1',
+        );
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-trait-outcome-damage', diagnostics }]);
     });

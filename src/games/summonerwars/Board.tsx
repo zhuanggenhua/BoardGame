@@ -147,7 +147,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.004)`,
   };
   const opponentBarClass = 'absolute top-3 right-3 pointer-events-auto flex flex-col items-end gap-2';
-  const playerBarClass = 'absolute left-3 bottom-3 z-20 pointer-events-auto flex flex-col items-start gap-3';
+  const playerBarClass = 'absolute left-3 bottom-3 z-20 pointer-events-none flex flex-col items-start gap-3';
   const phaseControlsClass = isLandscapeMobileViewport
     ? 'absolute right-3 bottom-3 z-50 pointer-events-auto flex flex-col items-end gap-3'
     : 'absolute right-3 bottom-3 z-20 pointer-events-auto flex flex-col items-end gap-3';
@@ -1299,7 +1299,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         const sprite = getEventSpriteConfig(ev);
                         const charges = ev.charges ?? 0;
                         return (
-                          <div key={ev.id} className="relative cursor-pointer group" onClick={() => handleMagnifyCard(ev)}>
+                          <div key={ev.id} className="relative cursor-pointer group pointer-events-auto" onClick={() => handleMagnifyCard(ev)}>
                             <CardSprite atlasId={sprite.atlasId} frameIndex={sprite.frameIndex} className="rounded shadow-lg border border-amber-500/40 hover:border-amber-400 transition-all hover:scale-105" style={activeEventCardStyle} />
                             <div className="absolute inset-0 rounded bg-black/0 group-hover:bg-black/20 transition-colors" />
                             <div className={`absolute bottom-0 left-0 right-0 bg-black/80 text-amber-200 text-center rounded-b truncate border-t border-amber-500/20 ${activeEventNameClass}`}>{ev.name}</div>
@@ -1338,7 +1338,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         const sprite = getEventSpriteConfig(ev);
                         const charges = ev.charges ?? 0;
                         return (
-                          <div key={ev.id} className="relative cursor-pointer group" onClick={() => handleMagnifyCard(ev)}>
+                          <div key={ev.id} className="relative cursor-pointer group pointer-events-auto" onClick={() => handleMagnifyCard(ev)}>
                             <CardSprite atlasId={sprite.atlasId} frameIndex={sprite.frameIndex} className="rounded shadow-lg border border-amber-500/40 hover:border-amber-400 transition-all hover:scale-105" style={activeEventCardStyle} />
                             <div className="absolute inset-0 rounded bg-black/0 group-hover:bg-black/20 transition-colors" />
                             <div className={`absolute bottom-0 left-0 right-0 bg-black/80 text-amber-200 text-center rounded-b truncate border-t border-amber-500/20 ${activeEventNameClass}`}>{ev.name}</div>

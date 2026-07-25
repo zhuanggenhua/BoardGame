@@ -99,7 +99,7 @@ interface CardSpotlightOverlayProps {
     onClose: (id: string) => void;
     /** 对手悬浮窗元素引用（用于计算起始位置） */
     opponentHeaderRef?: React.RefObject<HTMLElement | null>;
-    /** @deprecated 卡牌阅读特写必须手动关闭；保留字段仅兼容旧调用方。 */
+    /** 自动关闭延迟（毫秒），默认保留 DiceThrone 自建短展示的 3 秒合同 */
     autoCloseDelay?: number;
 }
 
@@ -108,6 +108,7 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
     locale,
     onClose,
     opponentHeaderRef,
+    autoCloseDelay = 3000,
 }) => {
     const currentItem = queue[0];
     const currentItemId = currentItem?.id;
@@ -149,7 +150,7 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
             id={currentItem.id}
             isVisible={true}
             onClose={() => onClose(currentItem.id)}
-            disableAutoClose={true}
+            autoCloseDelay={autoCloseDelay}
             zIndex={UI_Z_INDEX.overlayRaised}
             disableBackdropClose={true}
             closeOnContentClick={false}
