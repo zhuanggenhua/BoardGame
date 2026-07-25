@@ -66,6 +66,8 @@ export const SMASHUP_ATLAS_IDS = {
     ALL_STARS_POD_CARDS: 'smashup:all-stars-pod-cards',
     PROMOS_SHEEP_ALL_STARS_CARDS: 'smashup:promos-sheep-all-stars-cards',
     TORNADOS_POD_CARDS: 'smashup:tornados-pod-cards',
+    DISNEY_CARDS: 'smashup:disney-cards',
+    DISNEY_BASES: 'smashup:disney-bases',
 } as const;
 
 export const SMASHUP_CARD_BACK = {
@@ -83,6 +85,10 @@ export const SMASHUP_FACTION_IDS = {
     KREE: 'kree',
     MASTERS_OF_EVIL: 'masters_of_evil',
     SINISTER_SIX: 'sinister_six',
+    ALADDIN: 'aladdin',
+    BEAUTY_AND_THE_BEAST: 'beauty_and_the_beast',
+    NIGHTMARE_BEFORE_CHRISTMAS: 'nightmare_before_christmas',
+    WRECK_IT_RALPH: 'wreck_it_ralph',
     ALIENS: 'aliens',
     ASTROKNIGHTS: 'astroknights',
     ANCIENT_EGYPTIANS: 'ancient_egyptians',
@@ -243,6 +249,10 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.SHIELD]: '神盾局',
     [SMASHUP_FACTION_IDS.SPIDER_VERSE]: '蜘蛛宇宙',
     [SMASHUP_FACTION_IDS.ULTIMATES]: '终极战队',
+    [SMASHUP_FACTION_IDS.ALADDIN]: '阿拉丁',
+    [SMASHUP_FACTION_IDS.BEAUTY_AND_THE_BEAST]: '美女与野兽',
+    [SMASHUP_FACTION_IDS.NIGHTMARE_BEFORE_CHRISTMAS]: '圣诞夜惊魂',
+    [SMASHUP_FACTION_IDS.WRECK_IT_RALPH]: '无敌破坏王',
     [SMASHUP_FACTION_IDS.ASTROKNIGHTS]: '宇宙武士',
     [SMASHUP_FACTION_IDS.PIRATES]: '海盗',
     [SMASHUP_FACTION_IDS.PIRATES_POD]: '海盗 (POD版)',

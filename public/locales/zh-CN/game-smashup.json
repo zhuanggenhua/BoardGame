@@ -42,6 +42,11 @@
     "extra_minion_granted_after_interaction": "当前结算结束后，你将额外获得 {{count}} 次随从打出机会。",
     "extra_action_granted": "你额外获得了 {{count}} 次战术打出机会。",
     "extra_action_granted_after_interaction": "当前结算结束后，你将额外获得 {{count}} 次战术打出机会。",
+    "aladdin_wish_title": "许愿：选择一个效果",
+    "aladdin_wish_skip_option": "不使用许愿",
+    "aladdin_wish_extra_cards_option": "额外打出一张角色和一张战术",
+    "aladdin_wish_power_option": "一个角色本回合 +5 力量",
+    "aladdin_wish_draw_option": "抽四张牌",
     "select_minion_hint": "请选择一个随从来附着此卡",
     "your_turn": "轮到你了！",
     "me_first_your_turn": "轮到你响应 — 打出特殊牌或让过",
@@ -1906,6 +1911,22 @@
     "luchadors": {
       "name": "摔角手",
       "description": "把铺垫行动挂到对手随从上，再利用这些铺垫抽牌、控场和改写计分。"
+    },
+    "aladdin": {
+      "name": "阿拉丁",
+      "description": "围绕神灯、许愿和额外出牌展开，通过检索关键牌、弃行动换收益和力量指示物制造爆发。"
+    },
+    "beauty_and_the_beast": {
+      "name": "美女与野兽",
+      "description": "通过弃牌触发、额外出牌和力量指示物滚雪球，依靠贝儿与野兽以及魔法物品连动。"
+    },
+    "nightmare_before_christmas": {
+      "name": "圣诞夜惊魂",
+      "description": "专注角色修正牌，移动、附着、压制与计分后回收，把礼物变成对手的麻烦。"
+    },
+    "wreck_it_ralph": {
+      "name": "无敌破坏王",
+      "description": "用基地修正牌改写基地、移动角色并破坏场面，围绕基地控制和修正牌循环。"
     }
   },
   "tutorial": {
@@ -9017,6 +9038,258 @@
     "base_the_squared_circle": {
       "name": "方形擂台",
       "abilityText": "每回合第一次你在这里打出随从后，你可以随机将你弃牌堆中的一个行动置入手牌。"
+    },
+    "aladdin_carpet": {
+      "name": "魔毯",
+      "abilityText": "天赋：将这个角色和这里至多两个你的其他角色移动到另一个基地。"
+    },
+    "aladdin_palace_guard": {
+      "name": "王宫守卫",
+      "abilityText": "天赋：弃掉一张行动牌，在这里每个你的王宫守卫上各放置一个 +1 力量指示物。"
+    },
+    "aladdin_abu": {
+      "name": "阿布",
+      "abilityText": "将你弃牌堆中的一张行动牌放到你的牌库顶。"
+    },
+    "aladdin_genie": {
+      "name": "灯神",
+      "abilityText": "天赋：从你的牌库和/或弃牌堆中检索一张“许愿”，展示并置入你的手牌。若你检索了牌库，则洗牌。"
+    },
+    "aladdin_rajah": {
+      "name": "拉贾",
+      "abilityText": "天赋：弃掉一张行动牌，使这个角色直到回合结束获得 +2 力量。特殊：这个基地计分前，你可以使用这个角色的天赋。"
+    },
+    "aladdin_jasmine": {
+      "name": "茉莉公主",
+      "abilityText": "天赋：弃掉一张行动牌，以额外行动打出一张行动牌。"
+    },
+    "aladdin_aladdin": {
+      "name": "阿拉丁",
+      "abilityText": "从你的牌库和/或弃牌堆中检索“神灯”，展示并抽取它。若你检索了牌库，则洗牌。天赋：从你的牌库展示牌，直到展示一张行动牌。抽取它，并将其余牌洗回牌库。"
+    },
+    "aladdin_a_friend_like_me": {
+      "name": "有我这样的朋友",
+      "effectText": "展示你牌库顶的四张牌。抽取其中所有行动牌，并将其余牌洗回你的牌库。"
+    },
+    "aladdin_cave_of_wonders": {
+      "name": "奇迹之洞",
+      "effectText": "将你弃牌堆中的一张行动牌置入你的手牌。"
+    },
+    "aladdin_jafar": {
+      "name": "贾方",
+      "effectText": "每个其他玩家弃掉其手牌中的一张行动牌，或展示手牌以证明其中没有行动牌。你可以将一张被弃掉的行动牌或你手牌中的一张行动牌作为额外行动打出。"
+    },
+    "aladdin_magic_carpet_ride": {
+      "name": "乘坐魔毯",
+      "effectText": "从你的牌库、手牌和/或弃牌堆中检索“魔毯”；若你检索了牌库，则洗牌；将“魔毯”作为额外角色打出。"
+    },
+    "aladdin_street_rat": {
+      "name": "街头老鼠",
+      "effectText": "将另一名玩家弃牌堆中的一张行动牌作为额外行动打出。"
+    },
+    "aladdin_the_lamp": {
+      "name": "神灯",
+      "effectText": "从你的牌库和/或弃牌堆中检索“灯神”，展示并抽取它。若你检索了牌库，则洗牌。将此牌放到你的牌库底。"
+    },
+    "aladdin_wish": {
+      "name": "许愿",
+      "effectText": "如果你有“灯神”在场，选择一个效果并将此牌放入盒中：打出两张额外的非“许愿”牌；使一个角色直到回合结束获得 +5 力量；抽四张牌。"
+    },
+    "beauty_and_the_beast_enchanted_objects": {
+      "name": "魔法物品",
+      "abilityText": "特殊：当你从手牌弃掉此牌后，你可以将它作为额外角色打出。每回合只能使用一次“魔法物品”的能力。"
+    },
+    "beauty_and_the_beast_cogsworth": {
+      "name": "葛士华",
+      "abilityText": "天赋：弃掉一张牌，以额外行动打出一张行动牌。"
+    },
+    "beauty_and_the_beast_lumiere": {
+      "name": "卢米亚",
+      "abilityText": "天赋：弃掉一张牌，在这里以额外角色打出一张力量 3 或以下的角色。"
+    },
+    "beauty_and_the_beast_mrs_potts_and_chip": {
+      "name": "茶煲太太和阿奇",
+      "abilityText": "天赋：弃掉一张牌，抽一张牌。"
+    },
+    "beauty_and_the_beast_beast": {
+      "name": "野兽",
+      "abilityText": "如果“贝儿”在这里，在她和此牌上各放置一个 +1 力量指示物。天赋：弃掉一张牌，在此牌上放置一个 +1 力量指示物。"
+    },
+    "beauty_and_the_beast_belle": {
+      "name": "贝儿",
+      "abilityText": "如果“野兽”在这里，你可以至多抽三张牌。天赋：抽一张牌，或弃掉一张牌。"
+    },
+    "beauty_and_the_beast_be_our_guest": {
+      "name": "我们的贵客",
+      "effectText": "基地修正。天赋：如果你本回合已从手牌弃过一张牌，抽一张牌。"
+    },
+    "beauty_and_the_beast_break_the_curse": {
+      "name": "打破诅咒",
+      "effectText": "选择一个基地。那里当前每个你的角色直到回合结束获得 +1 力量。特殊：当你从手牌弃掉此牌后，你可以将它作为额外行动打出。"
+    },
+    "beauty_and_the_beast_discover_the_library": {
+      "name": "发现图书馆",
+      "effectText": "抽两张牌，然后弃掉一张牌。特殊：当你从手牌弃掉此牌后，你可以将它作为额外行动打出。"
+    },
+    "beauty_and_the_beast_ever_a_surprise": {
+      "name": "不断的惊喜",
+      "effectText": "将你弃牌堆中至多两个角色洗入你的牌库。特殊：当你从手牌弃掉此牌后，你可以将它作为额外行动打出。"
+    },
+    "beauty_and_the_beast_gaston": {
+      "name": "加斯顿",
+      "effectText": "基地修正。持续：此基地的临界点增加 5。每名玩家的回合中，该玩家可以弃掉两张牌来消灭此牌。"
+    },
+    "beauty_and_the_beast_petals_of_the_rose": {
+      "name": "玫瑰花瓣",
+      "effectText": "基地修正。持续：当你从手牌弃掉一张或多张牌后，你可以查看你牌库顶两张牌。按任意顺序将它们放到牌库顶和/或底。"
+    },
+    "beauty_and_the_beast_this_provincial_town": {
+      "name": "遥远的小镇",
+      "effectText": "以额外角色打出一张力量 3 或以下的角色。然后你可以弃掉一张牌，在其上放置一个 +1 力量指示物。"
+    },
+    "nightmare_before_christmas_jack_skellington": {
+      "name": "杰克骷髅王",
+      "abilityText": "将你弃牌堆中的一张角色修正牌置入你的手牌。持续：当你打出一张角色修正牌后，你可以在一个角色上放置一个 +1 力量指示物，或抽一张牌。"
+    },
+    "nightmare_before_christmas_halloween_town_folks": {
+      "name": "万圣节镇的人们",
+      "abilityText": "展示你牌库顶三张牌。如果其中有角色修正牌，抽取一张。按任意顺序将其余牌放到你牌库顶和/或底。"
+    },
+    "nightmare_before_christmas_lock_shock_and_barrel": {
+      "name": "锁、震与桶",
+      "abilityText": "特殊：这个基地计分前，你可以在这里的一个角色上将一张角色修正牌作为额外行动打出。"
+    },
+    "nightmare_before_christmas_the_mayor_of_halloween_town": {
+      "name": "万圣节镇的市长",
+      "abilityText": "持续：如果你控制这里的一张角色修正牌，你在这里的角色获得 +1 力量。"
+    },
+    "nightmare_before_christmas_dr_finkelstein": {
+      "name": "芬克尔斯坦博士",
+      "abilityText": "天赋：将一张角色修正牌从一个角色移动到另一个角色上。"
+    },
+    "nightmare_before_christmas_sally": {
+      "name": "莎莉",
+      "abilityText": "天赋：将一张角色修正牌作为额外行动打出。"
+    },
+    "nightmare_before_christmas_zero": {
+      "name": "幽灵犬",
+      "abilityText": "持续：如果你控制这里的任意角色修正牌，此角色获得 +3 力量。特殊：此基地计分后，将此角色返回你的手牌而非弃牌堆，且你可以将它作为额外角色打出到另一个基地。"
+    },
+    "nightmare_before_christmas_christmas_will_be_ours": {
+      "name": "圣诞节将属于我们！",
+      "effectText": "查看另一名玩家的手牌。你可以将其中或你手牌中的一张行动牌作为额外行动打出。如果它由另一名玩家拥有，回合结束时无论它在哪里都返回其手牌（盒中除外）。"
+    },
+    "nightmare_before_christmas_ghostly_presents": {
+      "name": "幽灵礼物",
+      "effectText": "角色修正。持续：如果你控制此角色，立即消灭此牌并以额外角色打出一张力量 3 或以下的角色。否则，其控制者不能在这里打出力量 3 或以下的角色。"
+    },
+    "nightmare_before_christmas_jack_o_lantern_in_the_box": {
+      "name": "盒子里的杰克南瓜灯",
+      "effectText": "角色修正。持续：如果你控制此角色，你在回合结束前额外抽一张牌；否则，此角色的控制者在其回合中不能将额外牌加入手牌。"
+    },
+    "nightmare_before_christmas_monster_garland": {
+      "name": "怪物花环",
+      "effectText": "角色修正。持续：如果你控制此角色，它获得 +3 力量；否则它获得 -2 力量。"
+    },
+    "nightmare_before_christmas_oogie_boogie": {
+      "name": "乌基布基",
+      "effectText": "角色修正。你可以将此角色移动到另一个基地。持续：此角色力量为 0，且其能力被取消。如果这里有另一个力量 5 或以上的角色，则消灭此牌。"
+    },
+    "nightmare_before_christmas_sandy_claws_costume": {
+      "name": "圣诞老人服装",
+      "effectText": "角色修正。持续：你每控制一张角色修正牌，此角色获得 +1 力量。特殊：此基地计分后，将此角色返回其拥有者手牌，并将此牌放到你的牌库底。"
+    },
+    "nightmare_before_christmas_winter_surprise": {
+      "name": "冬季惊喜",
+      "effectText": "将你弃牌堆中的一张角色修正牌作为额外行动打出。将此牌洗入你的牌库。"
+    },
+    "nightmare_before_christmas_zombie_duck_toy": {
+      "name": "玩具僵尸鸭",
+      "effectText": "角色修正。特殊：此基地计分时，如果你控制此角色，你多获得 1 点 VP；否则其控制者少获得 1 点 VP。"
+    },
+    "wreck_it_ralph_sugar_rush_racer": {
+      "name": "甜蜜冲刺车手",
+      "abilityText": "持续：当你打出一张基地修正牌后，你可以将此角色移入或移出那个基地，使它直到回合结束获得 +1 力量。"
+    },
+    "wreck_it_ralph_sergeant_calhoun": {
+      "name": "卡尔霍恩军士",
+      "abilityText": "天赋：如果你在这里有基地修正牌，你这里的其他角色直到回合结束获得 +1 力量。"
+    },
+    "wreck_it_ralph_vanellope_von_schweetz": {
+      "name": "云妮洛普",
+      "abilityText": "天赋：将此角色移动到另一个基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "wreck_it_ralph_fix_it_felix_jr": {
+      "name": "快手阿修",
+      "abilityText": "将你弃牌堆中的一张基地修正牌置入你的手牌。天赋：将这里的一张基地修正牌放到其拥有者的牌库顶。"
+    },
+    "wreck_it_ralph_wreck_it_ralph": {
+      "name": "破坏王拉尔夫",
+      "abilityText": "天赋：在这里以额外行动打出一张基地修正牌，或消灭这里的一张基地修正牌。"
+    },
+    "wreck_it_ralph_cy_bug_infestation": {
+      "name": "赛博虫灾变",
+      "effectText": "基地修正。天赋：消灭此牌和此基地。从你左手边的玩家开始，每名玩家选择一个基地，并将他们在这里的所有牌移动到那里。正常替换此基地。"
+    },
+    "wreck_it_ralph_escape_pod": {
+      "name": "逃生舱",
+      "effectText": "将你至多两张牌从一个基地移动到另一个基地。特殊：你可以在一个基地计分前打出此牌；此时从计分基地移动你的一张牌，而不是两张。"
+    },
+    "wreck_it_ralph_i_m_gonna_wreck_it": {
+      "name": "我要破坏它！",
+      "effectText": "基地修正。持续：此基地的临界点降低 3。天赋：此基地的能力直到你下个回合开始前被取消。"
+    },
+    "wreck_it_ralph_kart_bakery": {
+      "name": "卡丁车面包房",
+      "effectText": "基地修正。天赋：如果你在这里有角色，抽一张牌。"
+    },
+    "wreck_it_ralph_king_candy": {
+      "name": "糖果国王",
+      "effectText": "基地修正。天赋：你可以将此牌移动到另一个基地。选择此牌所在基地的一个角色。直到你下个回合开始前，其上的角色修正牌能力被取消，且其力量指示物不增加其力量。"
+    },
+    "wreck_it_ralph_mints_eruption": {
+      "name": "薄荷喷发",
+      "effectText": "选择一个基地。将其与弃牌堆中的一个基地交换。原基地上的所有牌保留在原处。"
+    },
+    "wreck_it_ralph_research_lab_beacon": {
+      "name": "研究实验室信标",
+      "effectText": "基地修正。持续：如果这里有四个或更多角色，消灭此牌。天赋：指定一个派系。将该派系的所有角色移动到这里。"
+    },
+    "wreck_it_ralph_sugar_rush": {
+      "name": "甜蜜冲刺",
+      "effectText": "基地修正。天赋：将至多两个你的角色从这里移动到另一个基地，或从另一个基地移动到这里。它们各自直到回合结束获得 +1 力量。"
+    },
+    "base_agrabah_bazaar": {
+      "name": "阿格拉巴集市",
+      "abilityText": "你的回合中，你可以弃掉一张行动牌，在这里你的角色上合计放置至多两个 +1 力量指示物。"
+    },
+    "base_sultans_palace": {
+      "name": "苏丹皇宫",
+      "abilityText": "每回合第一次你在这里打出角色后，抽一张牌。"
+    },
+    "base_enchanted_castle": {
+      "name": "魔法城堡",
+      "abilityText": "你的回合中第一次从手牌弃掉一张牌后，在这里你的一个角色上放置一个 +1 力量指示物。"
+    },
+    "base_gastons_tavern": {
+      "name": "加斯顿酒馆",
+      "abilityText": "你的回合中，你可以弃掉一张牌，在这里以额外角色打出一张力量 3 或以下的角色。"
+    },
+    "base_halloween_town": {
+      "name": "万圣节镇",
+      "abilityText": "此基地计分后，每名玩家可以将这里任意数量、附着在角色上的自己的修正牌洗入其拥有者的牌库。"
+    },
+    "base_spiral_hill": {
+      "name": "螺旋山丘",
+      "abilityText": "此基地计分后，每个在这里有角色的玩家可以将这里或其弃牌堆中的一张角色修正牌返回手牌。"
+    },
+    "base_the_dump": {
+      "name": "垃圾场",
+      "abilityText": "当另一个基地上的基地修正牌进入弃牌堆时，改为将其移动到这里。此基地计分后，每名玩家可以将这里其一张基地修正牌返回其拥有者手牌。"
+    },
+    "base_the_power_strip": {
+      "name": "电源插排",
+      "abilityText": "你的回合中，你可以将你的一个角色移入或移出此基地。"
     }
   },
   "debug": {

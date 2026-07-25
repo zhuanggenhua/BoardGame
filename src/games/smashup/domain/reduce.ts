@@ -1485,6 +1485,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 players: nextPlayers,
+                ...(discardedFromHand.length > 0
+                    ? {
+                        cardsDiscardedFromHandThisTurn: {
+                            ...(state.cardsDiscardedFromHandThisTurn ?? {}),
+                            [playerId]: ((state.cardsDiscardedFromHandThisTurn ?? {})[playerId] ?? 0) + discardedFromHand.length,
+                        },
+                    }
+                    : {}),
             };
         }
 
@@ -1732,6 +1740,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         passengersMovedTurnNumber: _passengersMovedTurnNumber,
                         ...remainingMetadata
                     } = m.metadata ?? {};
+                    if (remainingMetadata.kingCandyCounterSuppressedByPlayerId === playerId) {
+                        delete remainingMetadata.kingCandyCounterSuppressedBy;
+                        delete remainingMetadata.kingCandyCounterSuppressedByPlayerId;
+                    }
                     const metadata = Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined;
                     return {
                         ...m,
@@ -1749,12 +1761,23 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         })),
                     };
                 }),
-                ongoingActions: base.ongoingActions.map(o => ({
-                    ...o,
-                    talentUsed: ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) === playerId
-                        ? false
-                        : o.talentUsed,
-                })),
+                ongoingActions: base.ongoingActions.map(o => {
+                    const controllerId = (o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId;
+                    const {
+                        kingCandyTargetMinionUid: _kingCandyTargetMinionUid,
+                        ...remainingMetadata
+                    } = (controllerId === playerId && o.defId === 'wreck_it_ralph_king_candy')
+                        ? (o.metadata ?? {})
+                        : {};
+                    const metadata = controllerId === playerId && o.defId === 'wreck_it_ralph_king_candy'
+                        ? (Object.keys(remainingMetadata).length > 0 ? remainingMetadata : undefined)
+                        : o.metadata;
+                    return {
+                        ...o,
+                        ...(metadata ? { metadata } : { metadata: undefined }),
+                        talentUsed: controllerId === playerId ? false : o.talentUsed,
+                    };
+                }),
             }));
             const newTitans = (state.titans ?? []).map(titan => ({
                 ...titan,
@@ -1813,6 +1836,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 // 清空本回合消灭记录
                 turnDestroyedMinions: [],
                 cardsPlayedThisTurn: 0,
+                cardsDiscardedFromHandThisTurn: undefined,
                 powerCountersPlacedOnMinionsThisTurn: 0,
                 destroyedMinionByPlayersThisTurn: undefined,
                 basePowerDecreasedPlayersThisTurn: undefined,
