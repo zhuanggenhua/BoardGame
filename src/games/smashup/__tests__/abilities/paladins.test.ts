@@ -57,10 +57,11 @@ describe('Paladins DIY faction playable behavior', () => {
         expect(seraphim?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
     });
 
-    it('Devout Pastor draws then discards one card only when no own titan is here', () => {
+    it('Devout Pastor draws then lets the player choose one hand card to discard when no own titan is here', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
+                    hand: [makeCard('old-hand', 'alien_invader', 'minion', '0')],
                     deck: [makeCard('drawn', 'paladins_novice_knight', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
@@ -77,8 +78,17 @@ describe('Paladins DIY faction playable behavior', () => {
         } as any);
 
         expect(result.success).toBe(true);
-        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('drawn');
-        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).toContain('drawn');
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['old-hand', 'drawn']);
+        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([]);
+
+        const prompt = getSimpleChoicePrompt(result.finalState, 'paladins_devout_pastor_discard');
+        const oldHandOption = getPromptOption(prompt, option => option.value?.cardUid === 'old-hand', 'old hand discard option');
+        expect(getPromptOption(prompt, option => option.value?.cardUid === 'drawn', 'drawn card discard option')).toBeDefined();
+
+        const resolved = respondToPrompt(result.finalState, oldHandOption.id, '0');
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['drawn']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['old-hand']);
+        expectNoPrompt(resolved.finalState);
 
         const blocked = runCommand(makeMatchState({
             ...core,

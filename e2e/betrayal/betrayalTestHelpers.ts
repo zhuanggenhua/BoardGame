@@ -7,12 +7,17 @@ import {
   type Page,
 } from "@playwright/test";
 import {
+  BETRAYAL_COMMANDS,
   type BetrayalCommand,
   type BetrayalCommandMap,
   type BetrayalCore,
+  type BetrayalTraitKey,
   createBetrayalMonsterEncounterCore,
 } from "../../src/games/betrayal/game";
+import { BETRAYAL_DISCOVERY_POOLS } from "../../src/games/betrayal/scenarioConfig";
 import {
+  applyBetrayalCommand,
+  createBetrayalScriptedRandom,
   createCorpseLootReadyCore,
   createDogTradeReadyCore,
   createExchangeReadyCore,
@@ -50,8 +55,16 @@ type BetrayalHarnessWindow = Window & {
   __E2E_TEST_MODE__?: boolean;
   __BG_TEST_HARNESS__?: {
     state?: {
+      isRegistered?: () => boolean;
       get?: () => BetrayalHarnessSnapshot;
       set?: (state: BetrayalHarnessSnapshot) => Promise<void> | void;
+    };
+    command?: {
+      isRegistered?: () => boolean;
+      dispatch?: (command: Command) => Promise<void> | void;
+    };
+    random?: {
+      setQueue?: (values: number[]) => void;
     };
   };
 };
@@ -739,6 +752,331 @@ export function createJackSpiritMovementRollReadyRuntimeCore(): BetrayalCore {
 
 export function createJackSpiritPostReviveAttackReadyRuntimeCore(): BetrayalCore {
   return createJackSpiritPostReviveAttackReadyCore();
+}
+
+const BETRAYAL_E2E_TRAIT_KEYS: BetrayalTraitKey[] = [
+  "might",
+  "speed",
+  "knowledge",
+  "sanity",
+];
+
+function findBetrayalE2EExplorer(core: BetrayalCore, playerId: string) {
+  const explorer = [core.currentExplorer, ...core.otherExplorers].find(
+    (candidate) => candidate.playerId === playerId,
+  );
+  if (!explorer) {
+    throw new Error(`山屋 E2E 夹具缺少玩家 ${playerId}`);
+  }
+  return explorer;
+}
+
+function cloneBetrayalE2EExplorer(
+  explorer: BetrayalCore["currentExplorer"],
+): BetrayalCore["currentExplorer"] {
+  return {
+    ...explorer,
+    traits: { ...explorer.traits },
+    traitTracks: Object.fromEntries(
+      Object.entries(explorer.traitTracks).map(([trait, track]) => [
+        trait,
+        { ...track, values: [...track.values] },
+      ]),
+    ) as BetrayalCore["currentExplorer"]["traitTracks"],
+    inventory: explorer.inventory.map((card) => ({ ...card })),
+  };
+}
+
+function focusBetrayalE2EExplorer(
+  core: BetrayalCore,
+  playerId: string,
+): BetrayalCore {
+  const explorers = [core.currentExplorer, ...core.otherExplorers].map(
+    cloneBetrayalE2EExplorer,
+  );
+  const active = explorers.find((explorer) => explorer.playerId === playerId);
+  if (!active) {
+    throw new Error(`山屋 E2E 夹具不能切到缺失玩家 ${playerId}`);
+  }
+  core.currentPlayer = playerId;
+  core.currentExplorer = active;
+  core.otherExplorers = explorers.filter(
+    (explorer) => explorer.playerId !== playerId,
+  );
+  core.activeRoomId = active.roomId;
+  core.currentExplorerRoomId = active.roomId;
+  core.currentExplorerTraits = { ...active.traits };
+  core.currentExplorerInventory = active.inventory.map((card) => ({ ...card }));
+  core.turnStartInventoryCardIds = active.inventory.map((card) => card.id);
+  return core;
+}
+
+function syncBetrayalE2ECurrentExplorer(core: BetrayalCore): void {
+  core.activeRoomId = core.currentExplorer.roomId;
+  core.currentExplorerRoomId = core.currentExplorer.roomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
+    ...card,
+  }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map(
+    (card) => card.id,
+  );
+}
+
+function moveStrangeAmuletForHelpingHandsE2E(
+  core: BetrayalCore,
+  holderPlayerId: string | null,
+): void {
+  const explorers = [core.currentExplorer, ...core.otherExplorers];
+  let strangeAmulet =
+    explorers
+      .flatMap((explorer) => explorer.inventory)
+      .find((card) => card.id === "strange-amulet") ?? null;
+  for (const explorer of explorers) {
+    explorer.inventory = explorer.inventory.filter(
+      (card) => card.id !== "strange-amulet",
+    );
+  }
+  if (!holderPlayerId) {
+    syncBetrayalE2ECurrentExplorer(core);
+    return;
+  }
+  const holder = explorers.find(
+    (explorer) => explorer.playerId === holderPlayerId,
+  );
+  if (!holder) {
+    throw new Error(`山屋 E2E 夹具缺少奇异护符目标玩家 ${holderPlayerId}`);
+  }
+  strangeAmulet ??= { id: "strange-amulet", name: "奇异护符", kind: "item" };
+  holder.inventory = [...holder.inventory, { ...strangeAmulet }];
+  syncBetrayalE2ECurrentExplorer(core);
+}
+
+function setBetrayalE2ETraitTrack(
+  core: BetrayalCore,
+  playerId: string,
+  trait: BetrayalTraitKey,
+  values: number[],
+  position: number,
+  startPosition = 3,
+): void {
+  const explorer = findBetrayalE2EExplorer(core, playerId);
+  explorer.traitTracks[trait] = {
+    trackId: `e2e-${playerId}-${trait}`,
+    values: [...values],
+    position,
+    startPosition,
+    criticalPosition: 0,
+    skullPosition: -1,
+    maxPosition: values.length - 1,
+  };
+  explorer.traits[trait] = values[position] ?? 0;
+  if (core.currentExplorer.playerId === playerId) {
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  }
+}
+
+function dismissBetrayalE2EBlockingOverlays(core: BetrayalCore): BetrayalCore {
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
+  core.pendingEventChoice = null;
+  core.recentRoll = null;
+  return core;
+}
+
+function createHelpingHandsHauntRuntimeCore(
+  playerIds: string[] = ["0", "1", "2"],
+): BetrayalCore {
+  let core = createStartedFirstScenarioCore(playerIds);
+  const helpingHandsEvent = BETRAYAL_DISCOVERY_POOLS.events.find(
+    (event) => event.name === "大宅饿了",
+  );
+  if (!helpingHandsEvent) {
+    throw new Error("山屋 E2E 夹具缺少作祟 12 事件：大宅饿了");
+  }
+
+  core.drawOrder = ["event"];
+  core.eventOrder = [helpingHandsEvent];
+  core.currentExplorer.inventory = [
+    ...core.currentExplorer.inventory,
+    { id: "omen-book", name: "书本", kind: "omen" },
+    { id: "dog", name: "狗", kind: "omen" },
+    { id: "mask", name: "面具", kind: "omen" },
+  ];
+  core.currentExplorer.traits = {
+    ...core.currentExplorer.traits,
+    might: 5,
+    sanity: 5,
+  };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
+    ...card,
+  }));
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
+    roomId: "hallway",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, "0", {
+    roomId: "ground-north",
+  });
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+    "0",
+    { accept: true },
+    100,
+    createBetrayalScriptedRandom(3, 3, 3),
+  );
+  core.recommendedAction = "use";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
+export function createHelpingHandsPendingRewardRuntimeCore(): BetrayalCore {
+  let core = createHelpingHandsHauntRuntimeCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "0");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "entrance-hall",
+    inventory: [
+      ...core.currentExplorer.inventory.filter((card) => card.id !== "rope"),
+      { id: "rope", name: "兔脚", kind: "item" },
+    ],
+    traits: {
+      ...core.currentExplorer.traits,
+      might: 5,
+    },
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === "1"
+      ? {
+          ...explorer,
+          roomId: "entrance-hall",
+          inventory: [{ id: "medical-kit", name: "急救包", kind: "item" }],
+          traits: {
+            ...explorer.traits,
+            might: 1,
+          },
+        }
+      : explorer,
+  );
+  core.activeRoomId = "entrance-hall";
+  core.currentExplorerRoomId = "entrance-hall";
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
+    ...card,
+  }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map(
+    (card) => card.id,
+  );
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.HAUNT_ATTACK,
+    "0",
+    { target: "hero", targetPlayerId: "1" },
+    100,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 3, 1, 1, 1, 1, 1),
+  );
+  return core;
+}
+
+export function createHelpingHandsTrollHandAttackRuntimeCore(): BetrayalCore {
+  let core = createHelpingHandsHauntRuntimeCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "0");
+  const sharedRoomId = "entrance-hall";
+  const trollHandIds = core.scenarioRuntime.helpingHands?.trollHandIds ?? [];
+  core.monsters = core.monsters.map((monster) =>
+    trollHandIds.includes(monster.id)
+      ? { ...monster, roomId: sharedRoomId }
+      : monster,
+  );
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === "1"
+      ? { ...explorer, roomId: sharedRoomId }
+      : explorer,
+  );
+  for (const trait of BETRAYAL_E2E_TRAIT_KEYS) {
+    setBetrayalE2ETraitTrack(
+      core,
+      "1",
+      trait,
+      [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+      10,
+      10,
+    );
+  }
+  core.activeRoomId = sharedRoomId;
+  core.currentExplorerRoomId = core.currentExplorer.roomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
+    ...card,
+  }));
+  core.recommendedAction = "use";
+  return startHelpingHandsMonsterTurnForE2E(core);
+}
+
+function startHelpingHandsMonsterTurnForE2E(core: BetrayalCore): BetrayalCore {
+  core = focusBetrayalE2EExplorer(core, "0");
+  return applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.END_TURN,
+    "0",
+    {},
+    100,
+    createBetrayalScriptedRandom(1, 2, 3),
+  );
+}
+
+function placeHelpingHandsTrollHandsAndTargets(
+  core: BetrayalCore,
+  currentPlayerId: string,
+): BetrayalCore {
+  const sharedRoomId = "entrance-hall";
+  const trollHandIds = core.scenarioRuntime.helpingHands?.trollHandIds ?? [];
+  core.monsters = core.monsters.map((monster) =>
+    trollHandIds.includes(monster.id)
+      ? { ...monster, roomId: sharedRoomId }
+      : monster,
+  );
+  core = focusBetrayalE2EExplorer(core, currentPlayerId);
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: currentPlayerId === "0" ? "hallway" : sharedRoomId,
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === "2"
+      ? { ...explorer, roomId: sharedRoomId }
+      : explorer.playerId === "1"
+        ? { ...explorer, roomId: sharedRoomId }
+        : { ...explorer, roomId: "hallway" },
+  );
+  syncBetrayalE2ECurrentExplorer(core);
+  core.recommendedAction = "use";
+  return core;
+}
+
+export function createHelpingHandsTransferredAmuletOldHolderRuntimeCore(): BetrayalCore {
+  let core = createHelpingHandsHauntRuntimeCore(["0", "1", "2"]);
+  moveStrangeAmuletForHelpingHandsE2E(core, "1");
+  core = placeHelpingHandsTrollHandsAndTargets(core, "0");
+  return startHelpingHandsMonsterTurnForE2E(core);
+}
+
+export function createHelpingHandsTransferredAmuletControllerRuntimeCore(): BetrayalCore {
+  let core = createHelpingHandsHauntRuntimeCore(["0", "1", "2"]);
+  moveStrangeAmuletForHelpingHandsE2E(core, "1");
+  core = placeHelpingHandsTrollHandsAndTargets(core, "1");
+  return startHelpingHandsMonsterTurnForE2E(core);
+}
+
+export function createHelpingHandsNoAmuletRuntimeCore(): BetrayalCore {
+  let core = createHelpingHandsHauntRuntimeCore(["0", "1", "2"]);
+  moveStrangeAmuletForHelpingHandsE2E(core, null);
+  core = placeHelpingHandsTrollHandsAndTargets(core, "0");
+  return core;
 }
 
 export const injectCore = async (page: Page, core: BetrayalCore) => {

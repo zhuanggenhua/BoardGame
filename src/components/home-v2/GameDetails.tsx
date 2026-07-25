@@ -19,9 +19,10 @@ import {
     setOwnerActiveMatch,
 } from '../../hooks/match/useMatchStatus';
 import {
-    readLocalMatchPreferences,
+    readStoredLocalMatchPreferences,
     stripAiSeatsFromLocalMatchPreferences,
     writeLocalMatchPreferences,
+    type LocalMatchPreferences,
 } from '../../engine/ai/localMatchPreferences';
 import * as matchApi from '../../services/matchApi';
 import { fetchReviews, fetchReviewStats, type Review, type ReviewStats } from '../../api/review';
@@ -934,7 +935,7 @@ export const Right = ({ game }: RightProps) => {
     const [isDestroyingRoom, setIsDestroyingRoom] = React.useState(false);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = React.useState(false);
     const [optimisticallyRemovedRoomIds, setOptimisticallyRemovedRoomIds] = React.useState<string[]>([]);
-    const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = React.useState<ReturnType<typeof readLocalMatchPreferences> | null>(null);
+    const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = React.useState<LocalMatchPreferences | null>(null);
     const createRoomInFlightRef = React.useRef(false);
     const [activeTab, setActiveTab] = React.useState<HomeV2DetailTab>('lobby');
     const [leaderboardData, setLeaderboardData] = React.useState<{
@@ -1346,7 +1347,10 @@ export const Right = ({ game }: RightProps) => {
             if (!i18n.hasLoadedNamespace(namespace)) {
                 await i18n.loadNamespaces(namespace);
             }
-            setInitialCreateRoomPreferences(stripAiSeatsFromLocalMatchPreferences(readLocalMatchPreferences(game)));
+            const storedPreferences = readStoredLocalMatchPreferences(game);
+            setInitialCreateRoomPreferences(
+                storedPreferences ? stripAiSeatsFromLocalMatchPreferences(storedPreferences) : null,
+            );
             setShowCreateRoomModal(true);
         } finally {
             setIsPreparingCreateRoom(false);

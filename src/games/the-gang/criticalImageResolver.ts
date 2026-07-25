@@ -8,6 +8,7 @@ import {
 import type { PlayingCard, Suit, TheGangCore } from './domain/types';
 
 const CARD_BACK_ASSET_PATH = 'the-gang/cards/card-back';
+const EXIT_CHIP_ASSET_PATH = 'the-gang/chips/exit-chip';
 
 const CARD_RANK_ASSET_NAMES = {
     2: 'two',
@@ -74,6 +75,7 @@ const THE_GANG_CHIP_IMAGE_PATHS = [1, 2, 3, 4]
 
 const THE_GANG_SETUP_CRITICAL_IMAGE_PATHS = dedupePreserveOrder([
     CARD_BACK_ASSET_PATH,
+    EXIT_CHIP_ASSET_PATH,
     ...THE_GANG_CHIP_IMAGE_PATHS,
 ]);
 
@@ -136,6 +138,7 @@ export const theGangCriticalImageResolver: CriticalImageResolver = (
 
 export const _testExports = {
     THE_GANG_CHALLENGE_IMAGE_PATHS,
+    EXIT_CHIP_ASSET_PATH,
     THE_GANG_RULE_WARM_IMAGE_PATHS,
     THE_GANG_SETUP_CRITICAL_IMAGE_PATHS,
     THE_GANG_STANDARD_CARD_IMAGE_PATHS,

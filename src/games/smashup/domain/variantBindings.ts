@@ -34,14 +34,19 @@ function createVariantProfile(
     baseFactionId: string,
     podFactionId: string,
     familyOverrides?: SmashUpFactionVariantProfile['familyOverrides'],
+    defaultOverrides?: Partial<Record<SmashUpVariantSurface, SmashUpVariantRelation>>,
 ): SmashUpFactionVariantProfile {
     return {
         baseFactionId,
         podFactionId,
-        defaults: { ...DEFAULT_VARIANT_SURFACES },
+        defaults: { ...DEFAULT_VARIANT_SURFACES, ...defaultOverrides },
         ...(familyOverrides ? { familyOverrides } : {}),
     };
 }
+
+const MARVEL_POD_DEFAULT_OVERRIDES = {
+    basePool: 'shared',
+} satisfies Partial<Record<SmashUpVariantSurface, SmashUpVariantRelation>>;
 
 export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantProfile[] = [
     createVariantProfile(SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.ALIENS_POD),
@@ -96,6 +101,14 @@ export const SMASHUP_VARIANT_BINDING_PROFILES: readonly SmashUpFactionVariantPro
     createVariantProfile(SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.SAMURAI_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.DRAGONS, SMASHUP_FACTION_IDS.DRAGONS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.SUPERHEROES, SMASHUP_FACTION_IDS.SUPERHEROES_POD),
+    createVariantProfile(SMASHUP_FACTION_IDS.AVENGERS, SMASHUP_FACTION_IDS.AVENGERS_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
+    createVariantProfile(SMASHUP_FACTION_IDS.SHIELD, SMASHUP_FACTION_IDS.SHIELD_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
+    createVariantProfile(SMASHUP_FACTION_IDS.SPIDER_VERSE, SMASHUP_FACTION_IDS.SPIDER_VERSE_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
+    createVariantProfile(SMASHUP_FACTION_IDS.ULTIMATES, SMASHUP_FACTION_IDS.ULTIMATES_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
+    createVariantProfile(SMASHUP_FACTION_IDS.HYDRA, SMASHUP_FACTION_IDS.HYDRA_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
+    createVariantProfile(SMASHUP_FACTION_IDS.KREE, SMASHUP_FACTION_IDS.KREE_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
+    createVariantProfile(SMASHUP_FACTION_IDS.MASTERS_OF_EVIL, SMASHUP_FACTION_IDS.MASTERS_OF_EVIL_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
+    createVariantProfile(SMASHUP_FACTION_IDS.SINISTER_SIX, SMASHUP_FACTION_IDS.SINISTER_SIX_POD, undefined, MARVEL_POD_DEFAULT_OVERRIDES),
     createVariantProfile(SMASHUP_FACTION_IDS.MAGICAL_GIRLS, SMASHUP_FACTION_IDS.MAGICAL_GIRLS_POD),
     createVariantProfile(SMASHUP_FACTION_IDS.MEGA_TROOPERS, SMASHUP_FACTION_IDS.MEGA_TROOPERS_POD, {
         mega_troopers_blitzing_sword_attack: { ability: 'separate', interaction: 'separate' },

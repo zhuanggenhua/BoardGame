@@ -132,6 +132,7 @@
     "buyCard": "支付",
     "freePurchase": "免费",
     "discardGem": "弃回标记：",
-    "chooseNoble": "选择贵族板块：{{noble}}"
+    "chooseNoble": "选择贵族板块：{{noble}}",
+    "passTurn": "没有可执行动作，跳过当前玩家"
   }
 }
