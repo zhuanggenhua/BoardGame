@@ -10,5 +10,27 @@
 - 补资源合同测试，覆盖图集、manifest、POD 变体关系、文案可见性与关键图片预加载。
 
 ## Impact
-- Affected specs: smashup-marvel-pod-factions, smashup-faction-registry, asset-manifest, game-asset-preloading
-- Affected code: src/games/smashup/domain/**, src/games/smashup/data/**, src/games/smashup/ui/factionMeta.ts, public/locales/**/game-smashup.json, public/assets/i18n/zh-CN/smashup/cards/**
+- Affected specs:
+  - openspec/changes/add-smashup-marvel-pod-factions/specs/smashup-marvel-pod-factions/spec.md
+  - openspec/changes/add-smashup-marvel-pod-factions/specs/smashup-faction-registry/spec.md
+  - openspec/changes/add-smashup-marvel-pod-factions/specs/asset-manifest/spec.md
+  - openspec/changes/add-smashup-marvel-pod-factions/specs/game-asset-preloading/spec.md
+- Affected code:
+  - src/games/smashup/domain/ids.ts:20
+  - src/games/smashup/domain/atlasCatalog.ts:32
+  - src/games/smashup/domain/variantBindings.ts:29
+  - src/games/smashup/domain/variantBindingValidation.ts:1
+  - src/games/smashup/data/cards.ts:89
+  - src/games/smashup/data/factions/avengers_pod.ts:1
+  - src/games/smashup/data/factions/hydra_pod.ts:1
+  - src/games/smashup/data/factions/kree_pod.ts:1
+  - src/games/smashup/data/factions/masters_of_evil_pod.ts:1
+  - src/games/smashup/data/factions/shield_pod.ts:1
+  - src/games/smashup/data/factions/sinister_six_pod.ts:1
+  - src/games/smashup/data/factions/spider_verse_pod.ts:1
+  - src/games/smashup/data/factions/ultimates_pod.ts:1
+  - src/games/smashup/ui/factionMeta.ts:235
+  - public/locales/en/game-smashup.json:1926
+  - public/locales/zh-CN/game-smashup.json:1909
+  - public/assets/i18n/assets-manifest.json:13258
+  - public/assets/i18n/zh-CN/smashup/assets-manifest.json:763

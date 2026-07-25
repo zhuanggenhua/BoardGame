@@ -9145,7 +9145,7 @@
     },
     "shield_phil_coulson_pod": {
       "name": "菲尔·科尔森",
-      "abilityText": "你可以额外打出一个力量2或更底的角色到这里。"
+      "abilityText": "你可以额外打出一个力量 2 或更低的角色到这里。"
     },
     "shield_agent_pod": {
       "name": "神盾局探员",
@@ -9163,8 +9163,8 @@
     },
     "shield_proving_ground_pod": {
       "name": "试验场",
-      "abilityText": "基地神器。天赋：在这里打出一个力量3或更底的角色作为额外角色。",
-      "effectText": "基地神器。天赋：在这里打出一个力量3或更底的角色作为额外角色。"
+      "abilityText": "基地神器。天赋：在这里打出一个力量 3 或更低的角色作为额外角色。",
+      "effectText": "基地神器。天赋：在这里打出一个力量 3 或更低的角色作为额外角色。"
     },
     "shield_reassignment_pod": {
       "name": "调任",
@@ -9178,13 +9178,13 @@
     },
     "shield_superior_firepower_pod": {
       "name": "强大的火力",
-      "abilityText": "摧毁一个基地神器或一个力量3或更底的角色。",
-      "effectText": "摧毁一个基地神器或一个力量3或更底的角色。"
+      "abilityText": "摧毁一个基地神器或一个力量 3 或更低的角色。",
+      "effectText": "摧毁一个基地神器或一个力量 3 或更低的角色。"
     },
     "shield_troop_drop_pod": {
       "name": "空投部队",
-      "abilityText": "额外打出一个力量3或更底的角色。",
-      "effectText": "额外打出一个力量3或更底的角色。"
+      "abilityText": "额外打出一个力量 3 或更低的角色。",
+      "effectText": "额外打出一个力量 3 或更低的角色。"
     },
     "shield_together_pod": {
       "name": "并肩作战",
@@ -9229,8 +9229,8 @@
     },
     "spider_verse_view_from_above_pod": {
       "name": "高处不胜寒",
-      "abilityText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗牌洗回你的牌库。",
-      "effectText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗牌洗回你的牌库。"
+      "abilityText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗回你的牌库。",
+      "effectText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗回你的牌库。"
     },
     "spider_verse_webbed_up_pod": {
       "name": "束缚",

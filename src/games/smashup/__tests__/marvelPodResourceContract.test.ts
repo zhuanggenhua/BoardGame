@@ -175,15 +175,12 @@ describe('SmashUp 漫威 POD 资源合同', () => {
             const cards = getFactionCards(entry.factionId);
             expect(cards, entry.factionId + ' unique cards').toHaveLength(entry.uniqueCount);
             expect(cards.reduce((sum, card) => sum + card.count, 0), entry.factionId + ' deck count').toBe(20);
-            expect(cards[0]?.previewRef).toEqual({
-                type: 'atlas',
-                atlasId: entry.atlasId,
-                index: entry.firstIndex,
-            });
-            expect(cards.at(-1)?.previewRef).toEqual({
-                type: 'atlas',
-                atlasId: entry.atlasId,
-                index: entry.lastIndex,
+            cards.forEach((card, offset) => {
+                expect(card.previewRef).toEqual({
+                    type: 'atlas',
+                    atlasId: entry.atlasId,
+                    index: entry.firstIndex + offset,
+                });
             });
             expect(cards.every(card => card.id.endsWith('_pod'))).toBe(true);
             expect(cards.every(card => card.faction === entry.factionId)).toBe(true);

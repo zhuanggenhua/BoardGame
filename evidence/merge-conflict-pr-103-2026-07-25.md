@@ -44,8 +44,14 @@
 
 ## 5. 风险与验证
 - 风险点：资源清单 JSON 合并不完整会造成缺图；语言 JSON 合并不完整会造成派系或既有交互缺文案。
-- 已执行核对：用共同祖先到 main 与 PR head 的文件重叠核对，确认重叠文件为上述 4 个 JSON。
-- 待执行验证：推送后等待 GitHub `quality-gate`；PR 转 ready 后再以 GitHub 合并结果为准。
+- 审计范围：`bf8daeb34fdbe2d18f932f3c37d07a1565b9e369...7d0710f9c8c199428e49f4475edae36dc8711795` 与 `bf8daeb34fdbe2d18f932f3c37d07a1565b9e369...0d253f8e4645800cdb9ad7f25304d7f86297f143` 的交集。
+- 权威来源：当前 main 为 `7d0710f9c8c199428e49f4475edae36dc8711795`，原 PR head 为 `0d253f8e4645800cdb9ad7f25304d7f86297f143`。
+- 逐项合并结论：根级 manifest 保留 main 的山屋惊魂资源哈希并追加 Marvel POD 图集；大杀四方 manifest 保留 main 的 effect-preview 条目并追加 Marvel POD 图集；英文/中文文案保留 main 的圣骑士交互标题并追加 Marvel POD 派系与卡牌文案。
+- 审计维度：四个重叠 JSON 均按结构化三方合并处理，不采用整份单边结果；未覆盖风险为 JSON 键级合并以外的业务语义仍需质量门和审查兜底。
+- 已执行命令：`git push https://github.com/deathcats4/BoardGame.git 081ce2dbb4bb65c1f06076c65bd95e3e93065c14:refs/heads/codex/smashup-marvel-pod-pr`。
+- 已执行输出：pre-push 的 merge conflict guard 审计 `c57c43156ac5068b4049dc230d4a32a91c5b6582`，4 个文件均为 `混合结果`，`完全等于父1: 0`，`完全等于父2: 0`。
+- 格式核验：`git diff --check 7d0710f9c8c199428e49f4475edae36dc8711795..081ce2dbb4bb65c1f06076c65bd95e3e93065c14` 无输出。
+- 远端验证：GitHub `quality-gate` 在补齐 POD 卡牌文案后通过，运行 `30158882843` / job `89682667811`。
 
 ## 6. 结果
 - 合并提交：c57c43156ac5068b4049dc230d4a32a91c5b6582
