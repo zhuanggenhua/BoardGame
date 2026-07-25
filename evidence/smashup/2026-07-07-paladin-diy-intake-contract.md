@@ -69,7 +69,7 @@
   - 结论：不是点击穿透，是旧实现把“抓牌后玩家从手牌选择一张弃掉”误实现成“自动弃掉刚抽到的牌”。本轮已改为先抓牌，再进入手牌选择交互；玩家可以弃旧手牌，也可以弃刚抽到的牌。
   - 旧审计问题：本文档原先把虔诚的牧师标为“可玩 handler + 测试”，但该状态只证明存在实现和测试，没有证明关键交互语义正确。旧测试还把错误语义固化为断言：发动后要求刚抽到的牌不在手牌、进入弃牌堆。
   - 漏审归因：属于“旧测试已经失效”和“测试断言过窄”的组合；缺少“抽牌后真实手牌候选包含旧手牌与新抽牌”“弃牌必须由玩家选择”“响应后只弃所选牌”的原子断言。
-  - 本轮补测口径：`src/games/smashup/__tests__/abilities/paladins.test.ts` 中虔诚的牧师用例已改为初始存在旧手牌、牌库顶存在新牌；发动后先断言两张牌都在手牌且弃牌堆为空，再响应选择旧手牌，最终断言只弃所选旧手牌。
+  - 测试语义对账 / 本轮补测口径：`src/games/smashup/__tests__/abilities/paladins.test.ts` 中虔诚的牧师用例已改为初始存在旧手牌、牌库顶存在新牌；发动后先断言两张牌都在手牌且弃牌堆为空，再响应选择旧手牌，最终断言只弃所选旧手牌。
   - 本轮实现口径：`src/games/smashup/abilities/paladins.ts` 中虔诚的牧师改为基于抽牌后的真实手牌生成选择项，并注册专用弃牌响应处理；只有无 matchState 的兜底路径才自动弃投影手牌第一张。
   - 同类扩审记录：本轮先用 `buildStandardDrawEvents` / `CARDS_DISCARDED` / `draw.*discard` / `抓.*弃` 在 `src/games/smashup` 做关键词扩搜；命中大量其他派系的抽牌、弃牌、随机弃牌、从弃牌堆抓牌或弃后抓牌路径，语义并不等同于虔诚的牧师“抓一后从手牌选一弃一”。本节只收口虔诚的牧师反馈，不把全量 Smash Up 抽弃链路声明为已审计。
   - 验证命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/paladins.test.ts --configLoader native` 通过；`npx eslint src/games/smashup/abilities/paladins.ts src/games/smashup/__tests__/abilities/paladins.test.ts` 通过；中英文 `paladins_devout_pastor_discard_title` i18n key 已做 JSON parse 轻量校验。

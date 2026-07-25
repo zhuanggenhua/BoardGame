@@ -140,6 +140,14 @@ export function formatBetrayalActionEntry({
                     : 'actionLog.attackHero';
             return entry(command, state, [i18nSeg(key, { player: actor })]);
         }
+        case BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE:
+            return entry(command, state, [i18nSeg('actionLog.resolveMonsterDamage', { player: actor })]);
+        case BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START:
+            return entry(command, state, [i18nSeg('actionLog.resolveMonsterTurnStart', { player: actor })]);
+        case BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP:
+            return entry(command, state, [i18nSeg('actionLog.rollMonsterMovementGroup', { player: actor })]);
+        case BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM:
+            return entry(command, state, [i18nSeg('actionLog.moveMonster', { player: actor })]);
         case BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND:
             return entry(command, state, [i18nSeg('actionLog.moveTrollHand', { player: actor })]);
         case BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK:

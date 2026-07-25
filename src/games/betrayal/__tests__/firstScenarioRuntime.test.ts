@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    acknowledgePendingCardResolutions,
     applyBetrayalCommand,
     BETRAYAL_FIXED_RANDOM,
     createBetrayalCommand,
@@ -12,6 +13,7 @@ import {
     createFirstScenarioReadyToLearnAboutJackCore,
     createFirstScenarioReadyToStudyExorcismCore,
     createJackSpiritReviveReadyCore,
+    createJackSpiritMovementRollReadyCore,
     createJackSpiritPostReviveAttackReadyCore,
     createFirstScenarioReadyToTraitorVictoryCore,
     createStartedFirstScenarioCore,
@@ -28,13 +30,39 @@ import {
     resolveBetrayalMoveCost,
     resolveBetrayalLineOfSightRoomIds,
     resolveBetrayalHauntSpecialActionStatus,
+    resolveBetrayalHauntTokenInstances,
     resolveBetrayalPossessionSpecialActionStatus,
     resolveBetrayalRoomSpecialActionStatus,
     resolveBetrayalTradeCardStatus,
+    resolveAttackWeaponCardStatuses,
+    resolveBetrayalDeathStateSummary,
+    resolveBetrayalEndgameReadModel,
     resolveBetrayalHauntRisk,
     resolveBetrayalHauntRevealProtocol,
+    resolveBetrayalHauntSetupCommandPreviews,
+    resolveBetrayalHauntSetupProgress,
+    resolveBetrayalReferenceCardAccess,
+    resolveBetrayalMonsterActionPanel,
+    resolveBetrayalMonsterActionSet,
+    resolveBetrayalMonsterActionSets,
+    createBetrayalMonsterMovementRollGroupResult,
+    resolveBetrayalMonsterMovementGroups,
+    resolveBetrayalMonsterMovementRollGroupPreview,
+    resolveBetrayalMonsterDamageOutcome,
+    resolveBetrayalMonsterMoveCost,
+    resolveBetrayalMonsterMoveTargetRooms,
+    resolveBetrayalMonsterStatuses,
+    resolveBetrayalMonsterTurnStartResolutionPreview,
+    resolveBetrayalMonsterTurnStartStatus,
+    resolveBetrayalMonsterTurnRuntimeState,
+    resolveBetrayalNumberTracks,
     resolveBetrayalOmenCount,
     resolveBetrayalRoomDrawResolution,
+    resolveBetrayalTileStackSearchPreview,
+    resolveBetrayalTraitorVolunteerInteraction,
+    resolveBetrayalTraitorVolunteerResolutionPreview,
+    resolveBetrayalTraitorPowerStatus,
+    applyBetrayalTileStackSearch,
     resolveHelpingHandsControllerPlayerId,
     resolveHelpingHandsMonsterTurnStatus,
     resolveHelpingHandsPendingAttackReward,
@@ -155,6 +183,17 @@ function setTestTraitTrack(
     }
 }
 
+function setHighCapacityPhysicalDamageTracks(
+    core: BetrayalCore,
+    playerId: string,
+    value = 4,
+    position = 14,
+): void {
+    const values = Array.from({ length: position + 2 }, () => value);
+    setTestTraitTrack(core, playerId, 'might', values, position, position);
+    setTestTraitTrack(core, playerId, 'speed', values, position, position);
+}
+
 function traitTrackPosition(core: BetrayalCore, playerId: string, trait: BetrayalTraitKey): number {
     return findTestExplorer(core, playerId).traitTracks[trait].position;
 }
@@ -171,6 +210,89 @@ function traitTrackPositionTotal(
 function physicalTraitTotal(core: BetrayalCore, playerId: string): number {
     const explorer = findTestExplorer(core, playerId);
     return explorer.traits.might + explorer.traits.speed;
+}
+
+function mentalTraitTotal(core: BetrayalCore, playerId: string): number {
+    const explorer = findTestExplorer(core, playerId);
+    return explorer.traits.knowledge + explorer.traits.sanity;
+}
+
+function repeatTraitsForPendingDamage(
+    core: BetrayalCore,
+    traits: BetrayalTraitKey[],
+): BetrayalTraitKey[] {
+    const amount = core.pendingDamageAllocation?.amount ?? 0;
+    return Array.from({ length: amount }, (_, index) => traits[index % traits.length]!);
+}
+
+function setDiscoveredTestRoom(
+    core: BetrayalCore,
+    roomId: string,
+    overrides: Partial<BetrayalCore['rooms'][number]>,
+): void {
+    core.rooms = core.rooms.map((room) => (
+        room.id === roomId
+            ? {
+                ...room,
+                state: 'discovered',
+                ...overrides,
+            }
+            : room
+    ));
+}
+
+function placeActiveTestExplorerInRoom(core: BetrayalCore, playerId: string, roomId: string): void {
+    activateTestExplorer(core, playerId);
+    core.currentExplorer.roomId = roomId;
+    core.activeRoomId = roomId;
+    core.turnEndedByDiscovery = false;
+    core.pendingEventChoice = null;
+    core.pendingDamageAllocation = null;
+    core.recentRoll = null;
+}
+
+function createOpenFrontierHauntTestCore(activePlayerId: string): BetrayalCore {
+    const core = createStartedFirstScenarioCore(['0', '1', '2', '3']);
+    core.phase = 'haunt';
+    core.scenarioRuntime.hauntTriggered = true;
+    core.scenarioRuntime.hauntRevealerPlayerId = '0';
+    core.scenarioRuntime.traitorPlayerId = '2';
+    core.scenarioRuntime.nextHauntPlayerId = activePlayerId;
+    core.scenarioRuntime.hauntCardNumber = 1;
+    core.scenarioRuntime.hauntTriggerLabel = '测试作祟';
+    core.scenarioRuntime.hauntScenarioCardId = DEFAULT_BETRAYAL_SCENARIO_CARD_ID;
+    core.scenarioRuntime.hauntScenarioCardTitle = '赤红杰克归来';
+    core.scenarioRuntime.hauntScenarioCardLabel = '作祟 1';
+    core.scenarioRuntime.triggeringOmenName = '测试恶兆';
+    placeActiveTestExplorerInRoom(core, activePlayerId, 'entrance-hall');
+    setScenarioTestTurnMovement(core, 6);
+    return core;
+}
+
+function lethalTraitsForPendingDamage(core: BetrayalCore, lethalTrait: BetrayalTraitKey): BetrayalTraitKey[] {
+    const pending = core.pendingDamageAllocation;
+    if (!pending) {
+        throw new Error('expected pending damage allocation');
+    }
+    const explorer = findTestExplorer(core, pending.playerId);
+    const orderedTraits = [
+        lethalTrait,
+        ...pending.allowedTraits.filter((trait) => trait !== lethalTrait),
+    ];
+    const traits: BetrayalTraitKey[] = [];
+    let remaining = pending.amount;
+    for (const trait of orderedTraits) {
+        if (remaining <= 0) {
+            break;
+        }
+        const track = explorer.traitTracks[trait];
+        const floorPosition = pending.allowSkull ? track.skullPosition : track.criticalPosition;
+        const assignableSteps = Math.max(0, track.position - floorPosition);
+        const take = Math.min(remaining, assignableSteps);
+        traits.push(...Array.from({ length: take }, () => trait));
+        remaining -= take;
+    }
+    return traits;
 }
 
 function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
@@ -196,6 +318,48 @@ function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCor
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+}
+
+function createFeverishControlReadyCore(): BetrayalCore {
+    const core = createDustHauntCore();
+    const playerId = '0';
+    activateTestExplorer(core, playerId);
+    core.currentExplorer.roomId = 'hallway';
+    core.activeRoomId = 'hallway';
+    core.scenarioRuntime.deadExplorerPlayerIds = Array.from(new Set([
+        ...core.scenarioRuntime.deadExplorerPlayerIds,
+        playerId,
+    ]));
+    core.scenarioRuntime.dust!.permanentTraitorPlayerIds = Array.from(new Set([
+        ...core.scenarioRuntime.dust!.permanentTraitorPlayerIds,
+        playerId,
+    ]));
+    core.scenarioRuntime.dust!.feverishPlayerIds = Array.from(new Set([
+        ...core.scenarioRuntime.dust!.feverishPlayerIds,
+        playerId,
+    ]));
+    core.currentExplorer.inventory = [
+        { id: 'medical-kit', name: '急救包', kind: 'item' },
+        { id: 'rope', name: '兔脚', kind: 'item' },
+    ];
+    core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+    core.monsters = [
+        ...core.monsters.filter((monster) => monster.id !== `feverish-${playerId}`),
+        {
+            id: `feverish-${playerId}`,
+            name: '狂热病患',
+            portraitAsset: 'betrayal/monsters/spirit',
+            roomId: core.currentExplorer.roomId,
+            might: 6,
+            speed: 5,
+            sanity: 3,
+            knowledge: 3,
+            damage: 1,
+        },
+    ];
+    setScenarioTestTurnMovement(core, 2);
+    return core;
 }
 
 function createMagicCameraHauntCore(cameraOwnerPlayerId: string | null = '1'): BetrayalCore {
@@ -433,6 +597,38 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.movesRemaining).toBe(5);
     });
 
+    it('普通移动只允许门位直连，几何相邻但无连接门位不能移动', () => {
+        let core = createStartedFirstScenarioCore();
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+
+        expect(resolveMoveTargetRooms(core).map((room) => room.id)).toContain('grand-staircase');
+
+        core.rooms = core.rooms.map((room) => {
+            if (room.id === 'hallway') {
+                return {
+                    ...room,
+                    doorways: room.doorways.filter((doorway) => doorway.connectsToRoomId !== 'grand-staircase'),
+                };
+            }
+            if (room.id === 'grand-staircase') {
+                return {
+                    ...room,
+                    doorways: room.doorways.filter((doorway) => doorway.connectsToRoomId !== 'hallway'),
+                };
+            }
+            return room;
+        });
+
+        expect(resolveMoveTargetRooms(core).map((room) => room.id)).not.toContain('grand-staircase');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' }),
+        )).toMatchObject({
+            valid: false,
+            error: '目标房间不可移动。',
+        });
+    });
+
     it('基础视线只覆盖同楼层同一直线的连续已发现房间', () => {
         const core = createStartedFirstScenarioCore();
 
@@ -598,6 +794,27 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestRoomDrawResolution?.selectedRoom?.name).toBe(expectedFirstUpperRoom.name);
         expect(core.latestRoomDrawResolution?.buriedRoomTiles.every((room) => room.floor !== 'upper')).toBe(true);
         expect(core.currentExplorer.inventory.at(-1)?.name).toBe('匕首');
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'omen',
+            cardName: '匕首',
+            stepKind: 'drawn-card',
+            index: 1,
+            total: 1,
+        });
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认刚抽到的物品或预兆。',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
     });
 
     it('正式发现池只使用已确认正面素材和可渲染房间图集，不再回落到最小代表池', () => {
@@ -636,6 +853,134 @@ describe('Betrayal first scenario runtime', () => {
         for (const visualId of roomVisualIds) {
             expect(Object.prototype.hasOwnProperty.call(BETRAYAL_ROOM_TILE_VISUALS, visualId)).toBe(true);
         }
+    });
+
+    it('搜索特定房间板块会移除目标并重洗剩余房间堆', () => {
+        const core = createStartedFirstScenarioCore();
+        const targetEntry = core.roomDiscoveryDeck.find((entry) => entry.room.visualId === 'library')!;
+        const remainingVisualIds = core.roomDiscoveryDeck
+            .filter((entry) => entry.room.visualId !== targetEntry.room.visualId)
+            .map((entry) => entry.room.visualId)
+            .reverse();
+
+        const result = applyBetrayalTileStackSearch(core, {
+            roomName: targetEntry.room.name,
+            visualId: targetEntry.room.visualId,
+            floor: targetEntry.floor,
+        }, {
+            random: () => 0.42,
+            d: (max) => Math.max(1, Math.min(max, 1)),
+            range: (min) => min,
+            shuffle: (array) => [...array].reverse(),
+        });
+
+        expect(result.result).toMatchObject({
+            foundRoom: {
+                floor: targetEntry.floor,
+                name: targetEntry.room.name,
+                visualId: targetEntry.room.visualId,
+            },
+            searchedCount: core.roomDiscoveryDeck.length,
+            remainingCount: core.roomDiscoveryDeck.length - 1,
+            reshuffled: true,
+        });
+        expect(result.core.roomDiscoveryDeck.map((entry) => entry.room.visualId)).toEqual(remainingVisualIds);
+        expect(result.core.roomDiscoveryDeck.some((entry) => entry.room.visualId === targetEntry.room.visualId)).toBe(false);
+        expect(result.core.roomDiscoveryOrderByFloor.ground.map((room) => room.visualId)).toEqual(
+            result.core.roomDiscoveryDeck
+                .filter((entry) => entry.floor === 'ground')
+                .map((entry) => entry.room.visualId),
+        );
+    });
+
+    it('房间堆搜索预览会标出命中候选和重洗后果', () => {
+        const core = createStartedFirstScenarioCore();
+        const targetEntry = core.roomDiscoveryDeck.find((entry) => entry.room.visualId === 'library')!;
+
+        const preview = resolveBetrayalTileStackSearchPreview(core, {
+            roomName: targetEntry.room.name,
+            visualId: targetEntry.room.visualId,
+            floor: targetEntry.floor,
+        });
+
+        expect(preview).toMatchObject({
+            requestedRoomName: targetEntry.room.name,
+            requestedVisualId: targetEntry.room.visualId,
+            requestedFloor: targetEntry.floor,
+            searchedCount: core.roomDiscoveryDeck.length,
+            firstCandidate: {
+                floor: targetEntry.floor,
+                name: targetEntry.room.name,
+                visualId: targetEntry.room.visualId,
+            },
+            discoveredRooms: [],
+            targetAlreadyInHouse: false,
+            canSearch: true,
+            willRemoveFirstCandidate: true,
+            willReshuffleAfterSearch: true,
+            remainingCountAfterSearch: core.roomDiscoveryDeck.length - 1,
+            reason: null,
+        });
+        expect(preview.candidateRooms).toEqual([{
+            floor: targetEntry.floor,
+            name: targetEntry.room.name,
+            visualId: targetEntry.room.visualId,
+        }]);
+        expect(preview.ruleNotes).toEqual(expect.arrayContaining([
+            '若从房间堆命中特定板块，应移除该板块并重洗剩余房间堆。',
+            '当前读模型只表达搜索候选与重洗后果，不等于玩家可见搜索面板或逐作祟 setup 放置流程完成。',
+        ]));
+    });
+
+    it('房间堆搜索预览会在目标已在屋内时阻止重复搜索', () => {
+        const core = createStartedFirstScenarioCore();
+
+        const preview = resolveBetrayalTileStackSearchPreview(core, {
+            roomName: '门厅',
+            visualId: 'startHallway',
+            floor: 'ground',
+        });
+
+        expect(preview).toMatchObject({
+            requestedRoomName: '门厅',
+            requestedVisualId: 'startHallway',
+            requestedFloor: 'ground',
+            candidateRooms: [],
+            firstCandidate: null,
+            discoveredRooms: [{
+                roomId: 'hallway',
+                floor: 'ground',
+                name: '门厅',
+                visualId: 'startHallway',
+            }],
+            targetAlreadyInHouse: true,
+            canSearch: false,
+            willRemoveFirstCandidate: false,
+            willReshuffleAfterSearch: false,
+            remainingCountAfterSearch: core.roomDiscoveryDeck.length,
+            reason: '目标房间已经在屋内，不需要搜索房间堆。',
+        });
+    });
+
+    it('搜索不存在的房间板块不会重洗或移除房间堆', () => {
+        const core = createStartedFirstScenarioCore();
+        const visualIdsBeforeSearch = core.roomDiscoveryDeck.map((entry) => entry.room.visualId);
+
+        const result = applyBetrayalTileStackSearch(core, { roomName: '不存在的房间' }, {
+            random: () => 0.42,
+            d: (max) => Math.max(1, Math.min(max, 1)),
+            range: (min) => min,
+            shuffle: (array) => [...array].reverse(),
+        });
+
+        expect(result.result).toMatchObject({
+            requestedRoomName: '不存在的房间',
+            foundRoom: null,
+            searchedCount: core.roomDiscoveryDeck.length,
+            remainingCount: core.roomDiscoveryDeck.length,
+            reshuffled: false,
+        });
+        expect(result.core.roomDiscoveryDeck.map((entry) => entry.room.visualId)).toEqual(visualIdsBeforeSearch);
     });
 
     it('区域房间池耗尽时探索会被拒绝，且不消耗移动或结束回合', () => {
@@ -1105,7 +1450,24 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
         expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
+        expect(core.scenarioRuntime.hauntTraitorResolution).toMatchObject({
+            policy: 'free-for-all',
+            traitorPlayerId: null,
+            teamModel: 'free-for-all',
+            reasonLabel: '自由混战',
+            candidatePlayerIds: [],
+            excludedPlayerIds: [],
+            representativeOnly: true,
+        });
+        expect(core.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-revealer',
+            anchorPlayerId: '0',
+            nextPlayerId: '1',
+            reasonLabel: '作祟揭秘者左侧玩家先行动',
+            representativeOnly: true,
+        });
         expect(core.scenarioRuntime.hauntCardNumber).toBe(12);
+        expect(core.currentPlayer).toBe('1');
         expect(helpingHands).toMatchObject({
             strangeAmuletCardId: 'strange-amulet',
             strangeAmuletFoundDuringSetup: true,
@@ -1133,6 +1495,150 @@ describe('Betrayal first scenario runtime', () => {
             monsterTurnAfterPlayerId: '0',
             trollHandIds: ['troll-hand-1', 'troll-hand-2'],
             reason: '等待揭秘者结束回合后开始巨魔手怪物回合。',
+        });
+    });
+
+    it('一名公开叛徒作祟会给出自愿替代叛徒候选和触发牌转移口径', () => {
+        const core = createFirstScenarioHauntCore();
+        const interaction = resolveBetrayalTraitorVolunteerInteraction(core);
+
+        expect(interaction).toMatchObject({
+            active: true,
+            designatedTraitorPlayerId: core.scenarioRuntime.traitorPlayerId,
+            volunteerCandidatePlayerIds: ['0', '1'],
+            triggerCardId: core.scenarioRuntime.triggeringOmenId,
+            requiresPositionSwap: true,
+            requiresTriggerCardTransfer: true,
+            reason: null,
+        });
+        expect(interaction.triggerCardHolderPlayerId).toBe(core.scenarioRuntime.traitorPlayerId);
+    });
+
+    it('自由混战作祟不会错误进入自愿替代叛徒流程', () => {
+        const core = createHelpingHandsHauntCore();
+
+        expect(resolveBetrayalTraitorVolunteerInteraction(core)).toMatchObject({
+            active: false,
+            designatedTraitorPlayerId: null,
+            volunteerCandidatePlayerIds: [],
+            requiresPositionSwap: false,
+            requiresTriggerCardTransfer: false,
+            reason: '只有一名公开叛徒的作祟才使用自愿替代叛徒流程。',
+        });
+    });
+
+    it('自愿者替代叛徒预览会列出角色变化、换位、触发牌转移和重算缺口', () => {
+        const core = createFirstScenarioHauntCore();
+        const designatedTraitorPlayerId = core.scenarioRuntime.traitorPlayerId!;
+        const volunteerPlayerId = '0';
+        const designatedTraitorRoomId = findTestExplorer(core, designatedTraitorPlayerId).roomId;
+        const volunteerRoomId = findTestExplorer(core, volunteerPlayerId).roomId;
+        const preview = resolveBetrayalTraitorVolunteerResolutionPreview(core, {
+            decision: 'volunteer-replaces',
+            volunteerPlayerId,
+        });
+
+        expect(preview).toMatchObject({
+            active: true,
+            canResolve: true,
+            status: 'ready',
+            decision: 'volunteer-replaces',
+            designatedTraitorPlayerId,
+            volunteerPlayerId,
+            resultingTraitorPlayerId: volunteerPlayerId,
+            roleChanges: [
+                { playerId: designatedTraitorPlayerId, fromSide: 'traitor', toSide: 'hero' },
+                { playerId: volunteerPlayerId, fromSide: 'hero', toSide: 'traitor' },
+            ],
+            positionSwap: {
+                required: true,
+                designatedTraitorPlayerId,
+                volunteerPlayerId,
+                fromRoomByPlayerId: {
+                    [designatedTraitorPlayerId]: designatedTraitorRoomId,
+                    [volunteerPlayerId]: volunteerRoomId,
+                },
+                toRoomByPlayerId: {
+                    [designatedTraitorPlayerId]: volunteerRoomId,
+                    [volunteerPlayerId]: designatedTraitorRoomId,
+                },
+            },
+            triggerCardTransfer: {
+                required: true,
+                cardId: core.scenarioRuntime.triggeringOmenId,
+                fromPlayerId: designatedTraitorPlayerId,
+                toPlayerId: volunteerPlayerId,
+                holderAlreadyCorrect: false,
+            },
+            requiresTraitorBoostReconciliation: true,
+            requiresFirstPlayerReconciliation: true,
+            requiresHauntSetupReconciliation: true,
+            contractGaps: [
+                'formal-command',
+                'reveal-ui',
+                'traitor-boost-reconciliation',
+                'first-player-reconciliation',
+                'haunt-setup-reconciliation',
+            ],
+            previewOnly: true,
+            reason: null,
+        });
+    });
+
+    it('无人自愿替代叛徒预览会保留指定叛徒且不换位不转移触发牌', () => {
+        const core = createFirstScenarioHauntCore();
+        const designatedTraitorPlayerId = core.scenarioRuntime.traitorPlayerId!;
+        const preview = resolveBetrayalTraitorVolunteerResolutionPreview(core, {
+            decision: 'no-volunteer',
+        });
+
+        expect(preview).toMatchObject({
+            active: true,
+            canResolve: true,
+            status: 'ready',
+            decision: 'no-volunteer',
+            designatedTraitorPlayerId,
+            volunteerPlayerId: null,
+            resultingTraitorPlayerId: designatedTraitorPlayerId,
+            roleChanges: [],
+            positionSwap: { required: false },
+            triggerCardTransfer: {
+                required: false,
+                cardId: core.scenarioRuntime.triggeringOmenId,
+                fromPlayerId: designatedTraitorPlayerId,
+                toPlayerId: null,
+            },
+            requiresTraitorBoostReconciliation: false,
+            requiresFirstPlayerReconciliation: false,
+            requiresHauntSetupReconciliation: false,
+            contractGaps: ['formal-command', 'reveal-ui'],
+            previewOnly: true,
+            reason: null,
+        });
+    });
+
+    it('自愿替代叛徒预览会阻止非法志愿者和非适用作祟', () => {
+        const core = createFirstScenarioHauntCore();
+        const designatedTraitorPlayerId = core.scenarioRuntime.traitorPlayerId!;
+
+        expect(resolveBetrayalTraitorVolunteerResolutionPreview(core, {
+            decision: 'volunteer-replaces',
+            volunteerPlayerId: designatedTraitorPlayerId,
+        })).toMatchObject({
+            active: true,
+            canResolve: false,
+            status: 'invalid-volunteer',
+            reason: '该玩家不在可自愿替代叛徒列表。',
+        });
+
+        expect(resolveBetrayalTraitorVolunteerResolutionPreview(createHelpingHandsHauntCore(), {
+            decision: 'volunteer-replaces',
+            volunteerPlayerId: '0',
+        })).toMatchObject({
+            active: false,
+            canResolve: false,
+            status: 'not-applicable',
+            reason: '只有一名公开叛徒的作祟才使用自愿替代叛徒流程。',
         });
     });
 
@@ -1391,6 +1897,38 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.recentRoll?.dice).toHaveLength(5);
         expect(core.currentExplorer.traits.sanity).toBe(1);
         expect(core.nextNonCombatTraitReplacement).toBeNull();
+    });
+
+    it('属性检定最多使用 8 颗山屋骰，且单颗骰面只会是 0/1/2', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '测试高属性检定',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    { min: 0, label: '记录骰池', effect: { mode: 'none', recommendedAction: 'endTurn' } },
+                ],
+            },
+        }];
+        core.currentExplorer.traits.knowledge = 12;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-north' },
+            100,
+            createBetrayalScriptedRandom(1, 2, 3, 1, 2, 3, 1, 2, 3, 3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('eventTraitCheck');
+        expect(core.recentRoll?.dice).toEqual([0, 1, 2, 0, 1, 2, 0, 1]);
+        expect(core.recentRoll?.passiveBonus).toBe(1);
+        expect(core.recentRoll?.dice.every((pip) => pip >= 0 && pip <= 2)).toBe(true);
+        expect(core.latestDiscovery?.detail).toContain('知识检定 8');
     });
 
     it('一种怪异的感觉按固定 2 骰执行成功和失败分支', () => {
@@ -2007,7 +2545,24 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
         expect(core.scenarioRuntime.traitorPlayerId).toBe('0');
+        expect(core.scenarioRuntime.hauntTraitorResolution).toMatchObject({
+            policy: 'haunt-revealer',
+            traitorPlayerId: '0',
+            teamModel: 'one-traitor',
+            reasonLabel: '作祟揭秘者',
+            candidatePlayerIds: ['0'],
+            excludedPlayerIds: [],
+            representativeOnly: false,
+        });
+        expect(core.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-traitor',
+            anchorPlayerId: '0',
+            nextPlayerId: '1',
+            reasonLabel: '叛徒左侧玩家先行动',
+            representativeOnly: false,
+        });
         expect(core.scenarioRuntime.hauntCardNumber).toBe(1);
+        expect(core.currentPlayer).toBe('1');
         expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Splash of Crimson');
         expect(core.latestDiscovery?.detail).toContain('选择进行作祟检定：总点数 6');
         expect(core.activityLog[0]?.text).toContain('Crimson Jack Returns');
@@ -2047,6 +2602,186 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+    it('参考资料权限读模型按作祟阶段、阵营和怪物运行态开放', () => {
+        const preHauntCore = createStartedFirstScenarioCore();
+        const preHauntReferences = resolveBetrayalReferenceCardAccess(preHauntCore, '0');
+        expect(preHauntReferences.find((entry) => entry.id === 'player-reference-front')).toMatchObject({
+            active: true,
+            visibleTo: 'all',
+            viewerCanOpen: true,
+            source: 'base-rule',
+        });
+        expect(preHauntReferences.find((entry) => entry.id === 'heroes-book')).toMatchObject({
+            active: false,
+            visibleTo: 'none',
+            viewerCanOpen: false,
+            reason: '作祟尚未开始，不能打开作祟剧本书。',
+        });
+
+        const crimsonJackCore = createFirstScenarioHauntCore();
+        const traitorPlayerId = crimsonJackCore.scenarioRuntime.traitorPlayerId!;
+        const heroPlayerId = crimsonJackCore.playerIds.find((playerId) => playerId !== traitorPlayerId)!;
+        const traitorReferences = resolveBetrayalReferenceCardAccess(crimsonJackCore, traitorPlayerId);
+        const heroReferences = resolveBetrayalReferenceCardAccess(crimsonJackCore, heroPlayerId);
+        expect(traitorReferences.find((entry) => entry.id === 'traitor-book')).toMatchObject({
+            active: true,
+            visibleTo: 'traitor',
+            viewerSide: 'traitor',
+            viewerCanOpen: true,
+            source: 'haunt-protocol',
+        });
+        expect(traitorReferences.find((entry) => entry.id === 'heroes-book')).toMatchObject({
+            active: true,
+            visibleTo: 'heroes',
+            viewerCanOpen: false,
+        });
+        expect(heroReferences.find((entry) => entry.id === 'heroes-book')).toMatchObject({
+            active: true,
+            visibleTo: 'heroes',
+            viewerSide: 'hero',
+            viewerCanOpen: true,
+        });
+        expect(heroReferences.find((entry) => entry.id === 'traitor-book')).toMatchObject({
+            active: true,
+            visibleTo: 'traitor',
+            viewerCanOpen: false,
+        });
+
+        const dustCore = createDustHauntCore();
+        const hiddenTraitorReferences = resolveBetrayalReferenceCardAccess(dustCore, '0');
+        expect(hiddenTraitorReferences.find((entry) => entry.id === 'heroes-book')).toMatchObject({
+            active: true,
+            visibleTo: 'all',
+            viewerCanOpen: true,
+        });
+        expect(hiddenTraitorReferences.find((entry) => entry.id === 'traitor-book')).toMatchObject({
+            active: false,
+            visibleTo: 'none',
+            viewerCanOpen: false,
+            reason: '该作祟当前没有公开叛徒书入口，避免泄露隐藏身份或不存在的秘密段落。',
+        });
+
+        const magicCameraCore = createMagicCameraHauntCore('1');
+        expect(resolveBetrayalReferenceCardAccess(magicCameraCore, '0')
+            .find((entry) => entry.id === 'monster-reference-card')).toMatchObject({
+            active: true,
+            visibleTo: 'all',
+            viewerCanOpen: true,
+            source: 'monster-box',
+            representativeOnly: true,
+        });
+    });
+
+    it('作祟目标计数轨按已建档剧本运行态派生并保留代表边界', () => {
+        const crimsonJackCore = createFirstScenarioHauntCore();
+        crimsonJackCore.scenarioRuntime.exorcismCircleRoomIds = ['ground-north'];
+        const crimsonJackTrack = resolveBetrayalNumberTracks(crimsonJackCore)
+            .find((track) => track.id === 'crimson-jack-exorcism-circles');
+
+        expect(crimsonJackTrack).toMatchObject({
+            kind: 'haunt-objective',
+            label: '驱魔圈',
+            value: 1,
+            min: 0,
+            max: 2,
+            targetValue: 2,
+            currentLabel: '1/2',
+            targetLabel: '2 个驱魔圈',
+            statusLabel: '继续研究驱魔',
+            progressPercent: 50,
+            source: 'haunt-contract',
+            representativeOnly: true,
+        });
+
+        const dustCore = createDustHauntCore();
+        dustCore.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'upper-west'];
+        const dustTrack = resolveBetrayalNumberTracks(dustCore)
+            .find((track) => track.id === 'dust-research-tokens');
+
+        expect(dustTrack).toMatchObject({
+            kind: 'haunt-objective',
+            label: '研究 token',
+            value: 2,
+            max: 8,
+            currentLabel: '2/8',
+            statusLabel: '治愈检定 +4',
+            progressPercent: 25,
+            representativeOnly: true,
+        });
+    });
+
+    it('作祟 token 目录统一列出现有标记、目标、怪物、疾病和尸体', () => {
+        const markerCore = createStartedFirstScenarioCore(['0', '1', '2']);
+        markerCore.rooms = markerCore.rooms.map((room) => (
+            room.id === 'ground-north'
+                ? { ...room, markerTokens: ['obstacle', 'secretPassage'] }
+                : room
+        ));
+        const markerTokens = resolveBetrayalHauntTokenInstances(markerCore)
+            .filter((token) => token.kind === 'room-marker');
+        expect(markerTokens.map((token) => [token.label, token.roomId, token.visibility]).sort()).toEqual([
+            ['秘密通道', 'ground-north', 'public'],
+            ['障碍物', 'ground-north', 'public'],
+        ]);
+        expect(markerTokens.every((token) => token.visibleToPlayerIds.length === 3)).toBe(true);
+
+        const crimsonJackCore = createFirstScenarioHauntCore();
+        crimsonJackCore.scenarioRuntime.exorcismCircleRoomIds = ['ground-north'];
+        expect(resolveBetrayalHauntTokenInstances(crimsonJackCore)
+            .find((token) => token.id === 'crimson-jack-exorcism-circle-ground-north')).toMatchObject({
+            kind: 'haunt-objective',
+            label: '驱魔圈',
+            roomId: 'ground-north',
+            visibility: 'public',
+            source: 'haunt-contract',
+            representativeOnly: true,
+        });
+
+        const dustCore = createDustHauntCore();
+        dustCore.scenarioRuntime.dust!.researchRoomIds = ['ground-north'];
+        const dustViewForPlayer1 = BetrayalDomain.playerView?.(dustCore, '1') as BetrayalCore;
+        const dustTokens = resolveBetrayalHauntTokenInstances(dustViewForPlayer1);
+        const ownSicknessTokens = dustTokens.filter((token) => token.kind === 'sickness' && token.ownerPlayerId === '1');
+        const hiddenSicknessTokens = dustTokens.filter((token) => token.kind === 'sickness' && token.ownerPlayerId === '0');
+        expect(ownSicknessTokens).toHaveLength(3);
+        expect(ownSicknessTokens.every((token) => (
+            token.visibility === 'owner-only'
+            && token.visibleToPlayerIds.join(',') === '1'
+            && token.value !== null
+            && !token.valueHidden
+        ))).toBe(true);
+        expect(hiddenSicknessTokens).toHaveLength(3);
+        expect(hiddenSicknessTokens.every((token) => token.value === null && token.valueHidden)).toBe(true);
+        expect(dustTokens.find((token) => token.id === 'dust-research-token-ground-north')).toMatchObject({
+            kind: 'haunt-objective',
+            label: '研究 token',
+            roomId: 'ground-north',
+            source: 'haunt-contract',
+        });
+
+        const helpingHandsCore = createHelpingHandsHauntCore();
+        const trollHandTokens = resolveBetrayalHauntTokenInstances(helpingHandsCore)
+            .filter((token) => token.kind === 'monster' && token.label === '巨魔手');
+        expect(trollHandTokens).toHaveLength(2);
+        expect(trollHandTokens.every((token) => (
+            token.status === 'active'
+            && token.source === 'monster-box'
+            && token.asset?.includes('betrayal/tokens/monsters/small-monster-')
+        ))).toBe(true);
+
+        const corpseCore = createCorpseLootReadyCore();
+        expect(resolveBetrayalHauntTokenInstances(corpseCore)
+            .find((token) => token.id === 'corpse-0')).toMatchObject({
+            kind: 'corpse',
+            label: '杰登·琼斯尸体',
+            roomId: 'hallway',
+            ownerPlayerId: '0',
+            value: 2,
+            status: 'lootable',
+            source: 'death-rule',
+        });
+    });
+
     it('一瓶微尘仍可选择跳过作祟检定并结算原事件效果', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2080,6 +2815,22 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
         expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
+        expect(core.scenarioRuntime.hauntTraitorResolution).toMatchObject({
+            policy: 'hidden-traitor',
+            traitorPlayerId: null,
+            teamModel: 'hidden-traitor',
+            reasonLabel: '隐藏叛徒',
+            candidatePlayerIds: ['0', '1', '2'],
+            excludedPlayerIds: [],
+            representativeOnly: true,
+        });
+        expect(core.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-revealer',
+            anchorPlayerId: '0',
+            nextPlayerId: '1',
+            reasonLabel: '作祟揭秘者左侧玩家先行动',
+            representativeOnly: true,
+        });
         expect(core.scenarioRuntime.hauntCardNumber).toBe(3);
         expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Dusty Vial');
         expect(core.currentPlayer).toBe('1');
@@ -2131,6 +2882,127 @@ describe('Betrayal first scenario runtime', () => {
         expect(protocol.setupQueue.every((entry) => entry.status === 'resolved')).toBe(true);
     });
 
+    it('作祟 setup 进度读模型汇总已解决和待人工确认状态', () => {
+        expect(resolveBetrayalHauntSetupProgress(createStartedFirstScenarioCore())).toMatchObject({
+            active: false,
+            hauntCardNumber: null,
+            status: 'inactive',
+            totalCount: 0,
+            resolvedCount: 0,
+            manualCheckCount: 0,
+            manualCheckEntryIds: [],
+            needsFormalConfirmationCommand: false,
+            representativeOnly: false,
+        });
+
+        const dustProgress = resolveBetrayalHauntSetupProgress(createDustHauntCore());
+        expect(dustProgress).toMatchObject({
+            active: true,
+            hauntCardNumber: 3,
+            status: 'manual-check-required',
+            totalCount: 5,
+            resolvedCount: 3,
+            manualCheckCount: 2,
+            manualCheckEntryIds: ['monster-card-left-of-revealer', 'prepare-research-tokens'],
+            needsFormalConfirmationCommand: true,
+            representativeOnly: true,
+        });
+
+        expect(resolveBetrayalHauntSetupProgress(createMagicCameraHauntCore(null))).toMatchObject({
+            active: true,
+            hauntCardNumber: 33,
+            status: 'resolved',
+            totalCount: 5,
+            resolvedCount: 5,
+            manualCheckCount: 0,
+            manualCheckEntryIds: [],
+            needsFormalConfirmationCommand: false,
+            representativeOnly: true,
+        });
+    });
+
+    it('作祟 setup 命令预览列出当前证据和待人工确认步骤', () => {
+        expect(resolveBetrayalHauntSetupCommandPreviews(createStartedFirstScenarioCore())).toMatchObject({
+            active: false,
+            hauntCardNumber: null,
+            status: 'inactive',
+            previews: [],
+            readyCount: 0,
+            manualCheckCount: 0,
+            manualCheckEntryIds: [],
+            needsFormalConfirmationCommand: false,
+            representativeOnly: false,
+        });
+
+        const dustPreview = resolveBetrayalHauntSetupCommandPreviews(createDustHauntCore());
+        expect(dustPreview).toMatchObject({
+            active: true,
+            hauntCardNumber: 3,
+            status: 'manual-check-required',
+            readyCount: 3,
+            manualCheckCount: 2,
+            manualCheckEntryIds: ['monster-card-left-of-revealer', 'prepare-research-tokens'],
+            needsFormalConfirmationCommand: true,
+            representativeOnly: true,
+        });
+        expect(dustPreview.previews.find((preview) => preview.entryId === 'deal-secret-sickness-tokens')).toMatchObject({
+            action: 'deal-secret-tokens',
+            targetPlayerIds: ['0', '1', '2'],
+            alreadyApplied: true,
+            canConfirmFromCurrentState: true,
+            requiresManualConfirmation: false,
+        });
+        expect(dustPreview.previews.find((preview) => preview.entryId === 'prepare-research-tokens')).toMatchObject({
+            action: 'prepare-token-pool',
+            targetRoomIds: [],
+            alreadyApplied: false,
+            canConfirmFromCurrentState: false,
+            requiresManualConfirmation: true,
+            contractGaps: ['formal-command', 'ui-confirmation', 'token-placement-command', 'room-selection'],
+        });
+    });
+
+    it('作祟 setup 命令预览会把代表剧本已放置对象映射成可确认目标', () => {
+        const helpingHandsPreview = resolveBetrayalHauntSetupCommandPreviews(createHelpingHandsHauntCore());
+        expect(helpingHandsPreview).toMatchObject({
+            hauntCardNumber: 12,
+            status: 'manual-check-required',
+            readyCount: 3,
+            manualCheckCount: 1,
+            manualCheckEntryIds: ['monster-card-left-of-revealer'],
+        });
+        expect(helpingHandsPreview.previews.find((preview) => preview.entryId === 'recover-strange-amulet')).toMatchObject({
+            action: 'recover-card',
+            targetPlayerIds: ['0'],
+            targetCardIds: ['strange-amulet'],
+            alreadyApplied: true,
+        });
+        expect(helpingHandsPreview.previews.find((preview) => preview.entryId === 'place-troll-hands')).toMatchObject({
+            action: 'place-monster-tokens',
+            targetMonsterIds: ['troll-hand-1', 'troll-hand-2'],
+            targetRoomIds: ['entrance-hall', 'basement-landing'],
+            canConfirmFromCurrentState: true,
+        });
+
+        const magicCameraPreview = resolveBetrayalHauntSetupCommandPreviews(createMagicCameraHauntCore(null));
+        expect(magicCameraPreview).toMatchObject({
+            hauntCardNumber: 33,
+            status: 'ready',
+            readyCount: 5,
+            manualCheckCount: 0,
+        });
+        expect(magicCameraPreview.previews.find((preview) => preview.entryId === 'place-phantom-photographers')).toMatchObject({
+            action: 'place-monster-tokens',
+            targetMonsterIds: ['phantom-photographer-1', 'phantom-photographer-2', 'phantom-photographer-3'],
+            canConfirmFromCurrentState: true,
+        });
+        expect(magicCameraPreview.previews.find((preview) => preview.entryId === 'deal-hero-essence-tokens')).toMatchObject({
+            action: 'deal-secret-tokens',
+            targetPlayerIds: ['1', '2'],
+            alreadyApplied: true,
+        });
+    });
+
     it('灰尘剧本寻找解药成功会在当前恶兆板块放置研究标记', () => {
         let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
         setTestExplorerTraits(core, '1', { knowledge: 3 });
@@ -2168,6 +3040,43 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.endgameResult?.hauntId).toBe('the-dust');
         expect(core.endgameResult?.outcome).toBe('survivors');
         expect(core.endgameResult?.winners).toEqual(['1', '2']);
+    });
+
+    it('灰尘终局读模型会标记胜利文本和同时达成政策仍缺合同', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway'];
+        setTestExplorerTraits(core, '1', { knowledge: 5 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CURE_THE_DUST,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3),
+        );
+
+        const endgame = resolveBetrayalEndgameReadModel(core);
+
+        expect(endgame).toMatchObject({
+            active: true,
+            hauntId: 'the-dust',
+            hauntTitle: '灰尘',
+            outcome: 'survivors',
+            winningSideLabel: '英雄',
+            winnerPlayerIds: ['1', '2'],
+            ifYouWinTextId: 'the-dust.survivors.if-you-win',
+            ifYouWinTextStatus: 'representative-only',
+            ifYouWinTextAvailable: false,
+            needsIfYouWinTextSource: true,
+            simultaneousCompletionPolicyStatus: 'missing-contract',
+            tiePolicyStatus: 'missing-contract',
+            representativeOnly: true,
+        });
+        expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
+            'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。',
+            '同时达成、平局或共享胜利处理仍需逐作祟合同接入。',
+        ]));
     });
 
     it('灰尘剧本同意交换后若所有存活者都成为叛徒则叛徒胜利', () => {
@@ -2417,6 +3326,87 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+    it('怪物移动分组读模型会让同类型巨魔手只建立一个速度骰组', () => {
+        const core = createHelpingHandsHauntCore();
+        const helpingHands = core.scenarioRuntime.helpingHands;
+        const movementGroups = resolveBetrayalMonsterMovementGroups(core);
+
+        expect(movementGroups).toHaveLength(1);
+        expect(movementGroups[0]).toMatchObject({
+            monsterName: '巨魔手',
+            monsterIds: helpingHands?.trollHandIds,
+            speed: 3,
+            diceCount: 3,
+            rollOnceForGroup: true,
+            minimumMoveAllowance: 1,
+        });
+    });
+
+    it('怪物移动骰组预览和结果会按同类型怪物只掷一次并至少移动 1', () => {
+        const core = createHelpingHandsHauntCore();
+        const helpingHands = core.scenarioRuntime.helpingHands;
+        const groupId = '巨魔手:3';
+        const preview = resolveBetrayalMonsterMovementRollGroupPreview(core, groupId);
+
+        expect(preview).toMatchObject({
+            active: true,
+            canRoll: true,
+            groupId,
+            monsterName: '巨魔手',
+            monsterIds: helpingHands?.trollHandIds,
+            speed: 3,
+            diceCount: 3,
+            rollOnceForGroup: true,
+            minimumMoveAllowance: 1,
+            willWriteMoveAllowanceForMonsterIds: helpingHands?.trollHandIds,
+            contractGaps: ['path-preview-ui'],
+            previewOnly: true,
+            reason: null,
+        });
+
+        const result = createBetrayalMonsterMovementRollGroupResult(
+            core,
+            groupId,
+            '0',
+            createBetrayalScriptedRandom(1, 2, 3),
+        );
+        expect(result).toMatchObject({
+            groupId,
+            monsterName: '巨魔手',
+            monsterIds: helpingHands?.trollHandIds,
+            playerId: '0',
+            speed: 3,
+            diceCount: 3,
+            dice: [0, 1, 2],
+            total: 3,
+            moveAllowance: 3,
+            rollOnceForGroup: true,
+            minimumMoveAllowance: 1,
+        });
+
+        expect(createBetrayalMonsterMovementRollGroupResult(
+            core,
+            groupId,
+            '0',
+            createBetrayalScriptedRandom(1, 1, 1),
+        )).toMatchObject({
+            dice: [0, 0, 0],
+            total: 0,
+            moveAllowance: 1,
+        });
+        expect(resolveBetrayalMonsterMovementRollGroupPreview(core, 'missing-group')).toMatchObject({
+            active: false,
+            canRoll: false,
+            reason: '当前没有可行动的同类型怪物移动骰组。',
+        });
+        expect(createBetrayalMonsterMovementRollGroupResult(
+            core,
+            'missing-group',
+            '0',
+            BETRAYAL_FIXED_RANDOM,
+        )).toBeNull();
+    });
+
     it('大宅饿了无人持有奇异护符时会跳过巨魔手回合并推进到下一名探索者', () => {
         let core = createHelpingHandsHauntCore();
         findTestExplorer(core, '0').inventory = findTestExplorer(core, '0').inventory.filter(
@@ -2477,6 +3467,9 @@ describe('Betrayal first scenario runtime', () => {
 
         const moveOptions = resolveHelpingHandsTrollHandMoveOptions(core, basementTrollHandId!);
         expect(moveOptions.map((room) => room.id)).toContain('grand-staircase');
+        const monsterMoveTargets = resolveBetrayalMonsterMoveTargetRooms(core, basementTrollHandId!);
+        expect(monsterMoveTargets.map((room) => room.id)).toContain('grand-staircase');
+        expect(monsterMoveTargets.every((room) => room.state === 'discovered')).toBe(true);
 
         core = applyBetrayalCommand(
             core,
@@ -2486,6 +3479,34 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.monsters.find((monster) => monster.id === basementTrollHandId)?.roomId).toBe('grand-staircase');
+    });
+
+    it('怪物行动集合读模型会表达默认力量攻击和不能持有或探索', () => {
+        const core = createHelpingHandsHauntCore();
+        const basementTrollHandId = core.scenarioRuntime.helpingHands?.trollHandIds.find((monsterId) => (
+            core.monsters.find((monster) => monster.id === monsterId)?.roomId === 'basement-landing'
+        ));
+        expect(basementTrollHandId).toBeDefined();
+
+        const actionSet = resolveBetrayalMonsterActionSet(core, basementTrollHandId!);
+
+        expect(actionSet).toMatchObject({
+            monsterId: basementTrollHandId,
+            name: '巨魔手',
+            status: 'active',
+            canMove: true,
+            canAttack: true,
+            defaultAttackTrait: 'might',
+            usesNormalAttackRules: true,
+            canHoldPossessions: false,
+            canHoldOmens: false,
+            canUsePossessionActions: false,
+            canExploreNewRooms: false,
+            canDiscoverRoomTiles: false,
+            canIgnoreDamagingRoomEffects: true,
+            scenarioSpecificOverridesMayApply: true,
+        });
+        expect(actionSet?.moveTargetRoomIds).toContain('grand-staircase');
     });
 
     it('大宅饿了巨魔手离开有探索者的房间会消耗两点移动', () => {
@@ -2553,6 +3574,210 @@ describe('Betrayal first scenario runtime', () => {
         });
         expect(core.recentRoll?.latestLabel).toBe('巨魔手不能被击晕');
         expect(core.activityLog.some((entry) => entry.text.includes('巨魔手不能被击晕'))).toBe(true);
+    });
+
+    it('怪物受伤结果原语区分不可击晕、击晕和杀死', () => {
+        const helpingHandsCore = createHelpingHandsHauntCore();
+        const trollHandOutcome = resolveBetrayalMonsterDamageOutcome(helpingHandsCore, 'troll-hand-1', {
+            damageAmount: 2,
+            damageTrait: 'might',
+        });
+
+        expect(trollHandOutcome).toMatchObject({
+            monsterId: 'troll-hand-1',
+            name: '巨魔手',
+            kind: 'resisted',
+            previousStatus: 'active',
+            nextStatus: 'active',
+            canBeStunned: false,
+            stunned: false,
+            killed: false,
+            removedFromHouse: false,
+            logLabel: '巨魔手不能被击晕',
+        });
+
+        const magicCameraCore = createMagicCameraHauntCore('1');
+        const [killMonsterId, stunMonsterId] = magicCameraCore.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(killMonsterId).toBeDefined();
+        expect(stunMonsterId).toBeDefined();
+
+        expect(resolveBetrayalMonsterDamageOutcome(magicCameraCore, killMonsterId!, {
+            damageAmount: 2,
+            damageTrait: 'might',
+        })).toMatchObject({
+            monsterId: killMonsterId,
+            name: '幻影摄影师',
+            kind: 'killed',
+            previousStatus: 'active',
+            nextStatus: 'killed',
+            canBeStunned: true,
+            stunned: false,
+            killed: true,
+            removedFromHouse: true,
+            logLabel: '击杀幻影摄影师',
+        });
+
+        expect(resolveBetrayalMonsterDamageOutcome(magicCameraCore, stunMonsterId!, {
+            damageAmount: 2,
+            damageTrait: 'sanity',
+        })).toMatchObject({
+            monsterId: stunMonsterId,
+            name: '幻影摄影师',
+            kind: 'stunned',
+            previousStatus: 'active',
+            nextStatus: 'stunned',
+            canBeStunned: true,
+            stunned: true,
+            killed: false,
+            removedFromHouse: false,
+            logLabel: '击晕幻影摄影师',
+        });
+    });
+
+    it('怪物受伤正式命令复用通用结果并写入可持久化怪物状态', () => {
+        let core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '2');
+        const [killMonsterId, stunMonsterId] = core.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(killMonsterId).toBeDefined();
+        expect(stunMonsterId).toBeDefined();
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE, '2', {
+                monsterId: stunMonsterId,
+                damageAmount: 1,
+                damageTrait: 'sanity',
+            }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE, '2', {
+            monsterId: stunMonsterId,
+            damageAmount: 1,
+            damageTrait: 'sanity',
+        });
+
+        expect(core.scenarioRuntime.magicCamera?.stunnedPhantomPhotographerIds).toContain(stunMonsterId);
+        expect(core.scenarioRuntime.magicCamera?.killedPhantomPhotographerIds).not.toContain(stunMonsterId);
+        expect(core.monsters.some((monster) => monster.id === stunMonsterId)).toBe(true);
+        expect(core.activityLog.some((entry) => entry.text.includes('击晕幻影摄影师'))).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE, '2', {
+            monsterId: killMonsterId,
+            damageAmount: 1,
+            damageTrait: 'might',
+        });
+
+        expect(core.scenarioRuntime.magicCamera?.killedPhantomPhotographerIds).toContain(killMonsterId);
+        expect(core.scenarioRuntime.magicCamera?.stunnedPhantomPhotographerIds).not.toContain(killMonsterId);
+        expect(core.monsters.some((monster) => monster.id === killMonsterId)).toBe(false);
+    });
+
+    it('怪物受伤正式命令会用通用状态后端击晕狂热病患并在回合开始翻正跳过', () => {
+        let core = createFeverishControlReadyCore();
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE, '0', {
+                monsterId: 'feverish-0',
+                damageAmount: 1,
+                damageTrait: 'might',
+            }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE, '0', {
+            monsterId: 'feverish-0',
+            damageAmount: 1,
+            damageTrait: 'might',
+        });
+
+        expect(resolveBetrayalMonsterStatuses(core).find((status) => status.monsterId === 'feverish-0')).toMatchObject({
+            name: '狂热病患',
+            status: 'stunned',
+            stunned: true,
+            slowsHeroMovement: false,
+        });
+        expect(resolveBetrayalMonsterActionSet(core, 'feverish-0')).toMatchObject({
+            canMove: false,
+            canAttack: false,
+        });
+        expect(core.activityLog.some((entry) => entry.text.includes('击晕狂热病患'))).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
+            '0',
+            { monsterId: 'feverish-0' },
+        );
+
+        expect(resolveBetrayalMonsterStatuses(core).find((status) => status.monsterId === 'feverish-0')).toMatchObject({
+            status: 'active',
+            stunned: false,
+        });
+        expect(resolveBetrayalMonsterTurnRuntimeState(core)).toMatchObject({
+            resolvedStartMonsterIds: ['feverish-0'],
+            skippedMonsterIdsThisTurn: ['feverish-0'],
+        });
+        expect(resolveBetrayalMonsterTurnStartStatus(core, 'feverish-0')).toMatchObject({
+            status: 'active',
+            canRollMovement: false,
+            canAttack: false,
+            reason: '该怪物本回合已跳过，不能再次移动或攻击。',
+        });
+    });
+
+    it('怪物状态读模型把固定属性和不可击晕怪物从探索者属性轨分离', () => {
+        const core = createHelpingHandsHauntCore();
+        const trollHandStatus = resolveBetrayalMonsterStatuses(core)
+            .find((status) => status.monsterId === 'troll-hand-1');
+
+        expect(trollHandStatus).toMatchObject({
+            monsterId: 'troll-hand-1',
+            name: '巨魔手',
+            status: 'active',
+            canBeStunned: false,
+            stunned: false,
+            killed: false,
+            slowsHeroMovement: true,
+            canHoldPossessions: false,
+            canExploreNewRooms: false,
+            defaultAttackTrait: 'might',
+            traits: {
+                might: 5,
+                speed: 3,
+                sanity: 4,
+                knowledge: 4,
+                usesTraitTrack: false,
+            },
+        });
+
+        const jackCore = createFirstScenarioHauntCore();
+        jackCore.monsters = [{
+            id: 'jack-spirit',
+            name: '杰克之灵',
+            portraitAsset: 'betrayal/monsters/spirit',
+            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            roomId: 'entrance-hall',
+            might: 5,
+            speed: 3,
+            sanity: 4,
+            knowledge: 4,
+            damage: 1,
+        }];
+        const jackStatus = resolveBetrayalMonsterStatuses(jackCore)
+            .find((status) => status.monsterId === 'jack-spirit');
+
+        expect(jackStatus).toMatchObject({
+            name: '杰克之灵',
+            canBeStunned: false,
+            status: 'active',
+            traits: {
+                might: 5,
+                speed: 3,
+                sanity: 4,
+                knowledge: 4,
+                usesTraitTrack: false,
+            },
+        });
     });
 
     it('大宅饿了力量攻击获胜后生成伤害或偷牌选择且不立即扣血', () => {
@@ -2738,8 +3963,36 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.helpingHands?.trollHandAttackUsedIdsThisTurn.sort()).toEqual(
             [...(helpingHands?.trollHandIds ?? [])].sort(),
         );
-        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore - 8);
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: '1',
+            sourceTitle: '巨魔手攻击',
+            damageKind: 'physical',
+            amount: 8,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore);
         expect(resolveHelpingHandsTrollHandAttackOptions(core)).toEqual([]);
+
+        const wrongPlayerAllocation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+                '0',
+                { traits: ['might', 'might', 'might', 'might', 'speed', 'speed', 'speed', 'speed'] },
+            ),
+        );
+        expect(wrongPlayerAllocation).toMatchObject({ valid: false, error: '必须由受伤玩家分配伤害。' });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'might', 'might', 'might', 'speed', 'speed', 'speed', 'speed'] },
+        );
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(traitTrackPositionTotal(core, '1', ['might', 'speed'])).toBe(defenderPhysicalBefore - 8);
         const spentAttack = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK, '0', {
@@ -2757,6 +4010,22 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(33);
         expect(core.scenarioRuntime.traitorPlayerId).toBe('1');
+        expect(core.scenarioRuntime.hauntTraitorResolution).toMatchObject({
+            policy: 'magic-camera-owner',
+            traitorPlayerId: '1',
+            teamModel: 'one-traitor',
+            reasonLabel: '魔法相机持有者；没有持有者时为作祟揭秘者',
+            candidatePlayerIds: ['1'],
+            excludedPlayerIds: [],
+            representativeOnly: true,
+        });
+        expect(core.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-traitor',
+            anchorPlayerId: '1',
+            nextPlayerId: '2',
+            reasonLabel: '叛徒左侧玩家先行动',
+            representativeOnly: true,
+        });
         expect(core.currentPlayer).toBe('2');
         expect(core.scenarioRuntime.magicCamera?.cameraHolderPlayerId).toBe('1');
         expect(core.scenarioRuntime.magicCamera?.heroEssencePlayerIds.sort()).toEqual(['0', '2']);
@@ -2766,6 +4035,18 @@ describe('Betrayal first scenario runtime', () => {
 
         const fallbackCore = createMagicCameraHauntCore(null);
         expect(fallbackCore.scenarioRuntime.traitorPlayerId).toBe('0');
+        expect(fallbackCore.scenarioRuntime.hauntTraitorResolution).toMatchObject({
+            policy: 'magic-camera-owner',
+            traitorPlayerId: '0',
+            teamModel: 'one-traitor',
+            candidatePlayerIds: ['0'],
+        });
+        expect(fallbackCore.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-traitor',
+            anchorPlayerId: '0',
+            nextPlayerId: '1',
+        });
+        expect(fallbackCore.currentPlayer).toBe('1');
         expect(fallbackCore.scenarioRuntime.magicCamera?.cameraHolderPlayerId).toBe('0');
         expect(findTestExplorer(fallbackCore, '0').inventory.some((card) => card.name === '魔法相机')).toBe(true);
     });
@@ -2921,6 +4202,516 @@ describe('Betrayal first scenario runtime', () => {
         );
         expect(stunnedAttack.valid).toBe(false);
         expect(stunnedAttack.error).toContain('已被眩晕');
+    });
+
+    it('怪物状态读模型区分幻影摄影师眩晕和杀死移除', () => {
+        const core = createMagicCameraHauntCore('1');
+        const [stunnedMonsterId, killedMonsterId] = core.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(stunnedMonsterId).toBeDefined();
+        expect(killedMonsterId).toBeDefined();
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId!],
+            killedPhantomPhotographerIds: [killedMonsterId!],
+        };
+        core.monsters = core.monsters.filter((monster) => monster.id !== killedMonsterId);
+
+        const statuses = resolveBetrayalMonsterStatuses(core);
+        const stunnedStatus = statuses.find((status) => status.monsterId === stunnedMonsterId);
+        const killedStatus = statuses.find((status) => status.monsterId === killedMonsterId);
+
+        expect(stunnedStatus).toMatchObject({
+            name: '幻影摄影师',
+            status: 'stunned',
+            canBeStunned: true,
+            stunned: true,
+            killed: false,
+            removedFromHouse: false,
+            slowsHeroMovement: false,
+            canHoldPossessions: false,
+            canExploreNewRooms: false,
+            traits: {
+                usesTraitTrack: false,
+            },
+        });
+        expect(killedStatus).toMatchObject({
+            name: '幻影摄影师',
+            roomId: null,
+            status: 'killed',
+            canBeStunned: true,
+            stunned: false,
+            killed: true,
+            removedFromHouse: true,
+            slowsHeroMovement: false,
+            traits: {
+                might: 4,
+                speed: 1,
+                sanity: 6,
+                knowledge: 2,
+                usesTraitTrack: false,
+            },
+        });
+        expect(statuses.filter((status) => status.monsterId === killedMonsterId)).toHaveLength(1);
+    });
+
+    it('怪物回合开始读模型会让已击晕怪物翻正并跳过本次回合', () => {
+        const core = createMagicCameraHauntCore('1');
+        const [stunnedMonsterId, killedMonsterId, activeMonsterId] = core.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(stunnedMonsterId).toBeDefined();
+        expect(killedMonsterId).toBeDefined();
+        expect(activeMonsterId).toBeDefined();
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId!],
+            killedPhantomPhotographerIds: [killedMonsterId!],
+        };
+        core.monsters = core.monsters.filter((monster) => monster.id !== killedMonsterId);
+
+        expect(resolveBetrayalMonsterTurnStartStatus(core, stunnedMonsterId!)).toMatchObject({
+            monsterId: stunnedMonsterId,
+            name: '幻影摄影师',
+            status: 'stunned',
+            nextStatus: 'active',
+            canStartTurn: false,
+            mustFlipStunnedSideUp: true,
+            mustSkipTurn: true,
+            canRollMovement: false,
+            canAttack: false,
+        });
+        expect(resolveBetrayalMonsterTurnStartStatus(core, killedMonsterId!)).toMatchObject({
+            status: 'killed',
+            nextStatus: 'killed',
+            canStartTurn: false,
+            mustSkipTurn: true,
+            canRollMovement: false,
+            canAttack: false,
+        });
+        expect(resolveBetrayalMonsterTurnStartStatus(core, activeMonsterId!)).toMatchObject({
+            status: 'active',
+            nextStatus: 'active',
+            canStartTurn: true,
+            mustFlipStunnedSideUp: false,
+            mustSkipTurn: false,
+            canRollMovement: true,
+            canAttack: true,
+            reason: null,
+        });
+    });
+
+    it('怪物回合开始结算预览会列出翻正跳过和移动骰合同', () => {
+        const core = createMagicCameraHauntCore('1');
+        const [stunnedMonsterId, killedMonsterId, activeMonsterId] = core.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(stunnedMonsterId).toBeDefined();
+        expect(killedMonsterId).toBeDefined();
+        expect(activeMonsterId).toBeDefined();
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId!],
+            killedPhantomPhotographerIds: [killedMonsterId!],
+        };
+        core.monsters = core.monsters.filter((monster) => monster.id !== killedMonsterId);
+
+        expect(resolveBetrayalMonsterTurnStartResolutionPreview(core, stunnedMonsterId!)).toMatchObject({
+            active: true,
+            canResolve: true,
+            resolutionStatus: 'ready',
+            monsterId: stunnedMonsterId,
+            name: '幻影摄影师',
+            status: 'stunned',
+            nextStatus: 'active',
+            willFlipStunnedSideUp: true,
+            willRemoveStunnedMarker: true,
+            willSkipTurn: true,
+            willStartTurn: false,
+            willRollMovement: false,
+            willOpenAttackWindow: false,
+            movementGroupId: null,
+            movementDiceCount: null,
+            minimumMoveAllowance: null,
+            contractGaps: ['ui-token-flip'],
+            previewOnly: true,
+        });
+        expect(resolveBetrayalMonsterTurnStartResolutionPreview(core, activeMonsterId!)).toMatchObject({
+            active: true,
+            canResolve: true,
+            resolutionStatus: 'ready',
+            monsterId: activeMonsterId,
+            status: 'active',
+            nextStatus: 'active',
+            willFlipStunnedSideUp: false,
+            willRemoveStunnedMarker: false,
+            willSkipTurn: false,
+            willStartTurn: true,
+            willRollMovement: true,
+            willOpenAttackWindow: true,
+            movementGroupId: '幻影摄影师:1',
+            movementDiceCount: 1,
+            minimumMoveAllowance: 1,
+            contractGaps: [],
+            previewOnly: true,
+            reason: null,
+        });
+        expect(resolveBetrayalMonsterTurnStartResolutionPreview(core, killedMonsterId!)).toMatchObject({
+            active: true,
+            canResolve: true,
+            resolutionStatus: 'ready',
+            status: 'killed',
+            nextStatus: 'killed',
+            willSkipTurn: true,
+            willStartTurn: false,
+            willRollMovement: false,
+            willOpenAttackWindow: false,
+            contractGaps: [],
+        });
+        expect(resolveBetrayalMonsterTurnStartResolutionPreview(core, 'missing-monster')).toMatchObject({
+            active: false,
+            canResolve: false,
+            resolutionStatus: 'missing-monster',
+            status: null,
+            nextStatus: null,
+            contractGaps: [],
+            reason: '当前宅邸中找不到该怪物。',
+        });
+    });
+
+    it('怪物回合开始正式命令会翻正击晕怪物并记录本次跳过', () => {
+        let core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
+        const stunnedMonsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId],
+        };
+
+        const validation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START, '1', { monsterId: stunnedMonsterId }),
+        );
+        expect(validation.valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
+            '1',
+            { monsterId: stunnedMonsterId },
+        );
+
+        expect(core.scenarioRuntime.magicCamera?.stunnedPhantomPhotographerIds).not.toContain(stunnedMonsterId);
+        expect(resolveBetrayalMonsterTurnStartStatus(core, stunnedMonsterId)).toMatchObject({
+            status: 'active',
+            canRollMovement: false,
+            canAttack: false,
+            reason: '该怪物本回合已跳过，不能再次移动或攻击。',
+        });
+        expect(resolveBetrayalMonsterTurnRuntimeState(core)).toMatchObject({
+            resolvedStartMonsterIds: [stunnedMonsterId],
+            skippedMonsterIdsThisTurn: [stunnedMonsterId],
+        });
+        expect(resolveBetrayalMonsterMovementGroups(core).flatMap((group) => group.monsterIds))
+            .not.toContain(stunnedMonsterId);
+        expect(resolveBetrayalMonsterMoveTargetRooms(core, stunnedMonsterId)).toEqual([]);
+        expect(resolveBetrayalMonsterActionSet(core, stunnedMonsterId)).toMatchObject({
+            canMove: false,
+            canAttack: false,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START, '1', { monsterId: stunnedMonsterId }),
+        )).toMatchObject({
+            valid: false,
+            error: '该怪物本回合开始步骤已处理。',
+        });
+        expect(core.activityLog[0]?.text).toContain('翻回正面');
+    });
+
+    it('怪物移动骰组正式命令会写入同类型怪物共享移动额度', () => {
+        let core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
+        const groupId = '幻影摄影师:1';
+        const activeMonsterIds = resolveBetrayalMonsterMovementGroups(core)
+            .find((group) => group.groupId === groupId)?.monsterIds ?? [];
+        expect(activeMonsterIds.length).toBeGreaterThan(1);
+        expect(resolveBetrayalMonsterMovementRollGroupPreview(core, groupId)).toMatchObject({
+            canRoll: true,
+            contractGaps: ['path-preview-ui'],
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            '1',
+            { groupId },
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+
+        const monsterTurn = resolveBetrayalMonsterTurnRuntimeState(core);
+        expect(monsterTurn.movementRollsByGroupId[groupId]).toMatchObject({
+            groupId,
+            monsterName: '幻影摄影师',
+            monsterIds: activeMonsterIds,
+            dice: [2],
+            total: 2,
+            moveAllowance: 2,
+        });
+        expect(Object.fromEntries(
+            activeMonsterIds.map((monsterId) => [monsterId, monsterTurn.moveRemainingById[monsterId]]),
+        )).toEqual(Object.fromEntries(activeMonsterIds.map((monsterId) => [monsterId, 2])));
+        expect(core.recentRoll).toMatchObject({
+            kind: 'monsterMoveRoll',
+            playerId: '1',
+            sourceTitle: '幻影摄影师移动',
+            latestLabel: '每只可移动 2 间',
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP, '1', { groupId }),
+        )).toMatchObject({
+            valid: false,
+            error: '该怪物移动骰组本回合已掷骰。',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        expect(resolveBetrayalMonsterTurnRuntimeState(core)).toMatchObject({
+            resolvedStartMonsterIds: [],
+            skippedMonsterIdsThisTurn: [],
+            movementRollsByGroupId: {},
+            moveRemainingById: {},
+        });
+    });
+
+    it('怪物正式移动命令会消耗移动额度并写回目标房间', () => {
+        let core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
+        const groupId = '幻影摄影师:1';
+        const monsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === monsterId
+                ? { ...monster, roomId: 'hallway' }
+                : monster
+        ));
+        findTestExplorer(core, '0').roomId = 'hallway';
+        const targetRoom = resolveBetrayalMonsterMoveTargetRooms(core, monsterId)[0];
+        expect(targetRoom).toBeDefined();
+        expect(resolveBetrayalMonsterMoveCost(core, monsterId)).toBe(2);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, '1', {
+                monsterId,
+                roomId: targetRoom!.id,
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '该怪物本回合没有剩余移动额度。',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            '1',
+            { groupId },
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, '1', {
+                monsterId,
+                roomId: targetRoom!.id,
+            }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
+            '1',
+            { monsterId, roomId: targetRoom!.id },
+        );
+
+        expect(core.monsters.find((monster) => monster.id === monsterId)?.roomId).toBe(targetRoom!.id);
+        expect(resolveBetrayalMonsterTurnRuntimeState(core).moveRemainingById[monsterId]).toBe(0);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, '1', {
+                monsterId,
+                roomId: 'entrance-hall',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '该怪物本回合没有剩余移动额度。',
+        });
+        expect(core.activityLog.some((entry) => entry.text.includes('幻影摄影师') && entry.text.includes('移动到'))).toBe(true);
+    });
+
+    it('怪物移动分组读模型不会给击晕或已杀死怪物分配移动骰组', () => {
+        const core = createMagicCameraHauntCore('1');
+        const [stunnedMonsterId, killedMonsterId, activeMonsterId] = core.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(stunnedMonsterId).toBeDefined();
+        expect(killedMonsterId).toBeDefined();
+        expect(activeMonsterId).toBeDefined();
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId!],
+            killedPhantomPhotographerIds: [killedMonsterId!],
+        };
+        core.monsters = core.monsters.filter((monster) => monster.id !== killedMonsterId);
+
+        const movementGroups = resolveBetrayalMonsterMovementGroups(core);
+
+        expect(movementGroups).toHaveLength(1);
+        expect(movementGroups[0]).toMatchObject({
+            monsterName: '幻影摄影师',
+            monsterIds: [activeMonsterId],
+            speed: 1,
+            diceCount: 1,
+            rollOnceForGroup: true,
+            minimumMoveAllowance: 1,
+        });
+        expect(movementGroups[0]?.monsterIds).not.toContain(stunnedMonsterId);
+        expect(movementGroups[0]?.monsterIds).not.toContain(killedMonsterId);
+    });
+
+    it('怪物移动目标读模型不会让击晕或已杀死怪物移动', () => {
+        const core = createMagicCameraHauntCore('1');
+        const [stunnedMonsterId, killedMonsterId, activeMonsterId] = core.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(stunnedMonsterId).toBeDefined();
+        expect(killedMonsterId).toBeDefined();
+        expect(activeMonsterId).toBeDefined();
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId!],
+            killedPhantomPhotographerIds: [killedMonsterId!],
+        };
+        core.monsters = core.monsters.filter((monster) => monster.id !== killedMonsterId);
+
+        expect(resolveBetrayalMonsterMoveTargetRooms(core, stunnedMonsterId!)).toEqual([]);
+        expect(resolveBetrayalMonsterMoveTargetRooms(core, killedMonsterId!)).toEqual([]);
+        expect(resolveBetrayalMonsterMoveTargetRooms(core, activeMonsterId!)
+            .every((room) => room.state === 'discovered')).toBe(true);
+    });
+
+    it('怪物行动集合读模型不会给击晕或已杀死怪物开放移动和攻击', () => {
+        const core = createMagicCameraHauntCore('1');
+        const [stunnedMonsterId, killedMonsterId, activeMonsterId] = core.scenarioRuntime.magicCamera!.phantomPhotographerIds;
+        expect(stunnedMonsterId).toBeDefined();
+        expect(killedMonsterId).toBeDefined();
+        expect(activeMonsterId).toBeDefined();
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId!],
+            killedPhantomPhotographerIds: [killedMonsterId!],
+        };
+        core.monsters = core.monsters.filter((monster) => monster.id !== killedMonsterId);
+
+        const actionSets = resolveBetrayalMonsterActionSets(core);
+        const stunnedActionSet = actionSets.find((actionSet) => actionSet.monsterId === stunnedMonsterId);
+        const killedActionSet = actionSets.find((actionSet) => actionSet.monsterId === killedMonsterId);
+        const activeActionSet = actionSets.find((actionSet) => actionSet.monsterId === activeMonsterId);
+
+        expect(stunnedActionSet).toMatchObject({
+            status: 'stunned',
+            canMove: false,
+            moveTargetRoomIds: [],
+            canAttack: false,
+            usesNormalAttackRules: false,
+        });
+        expect(killedActionSet).toMatchObject({
+            status: 'killed',
+            roomId: null,
+            canMove: false,
+            moveTargetRoomIds: [],
+            canAttack: false,
+            usesNormalAttackRules: false,
+        });
+        expect(activeActionSet).toMatchObject({
+            status: 'active',
+            canAttack: true,
+            defaultAttackTrait: 'might',
+        });
+    });
+
+    it('怪物动作槽读模型会把击晕翻正跳过和 UI 翻面缺口暴露给界面', () => {
+        const core = createMagicCameraHauntCore('1');
+        const stunnedMonsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        core.scenarioRuntime.magicCamera = {
+            ...core.scenarioRuntime.magicCamera!,
+            stunnedPhantomPhotographerIds: [stunnedMonsterId],
+        };
+
+        const panel = resolveBetrayalMonsterActionPanel(core);
+        const turnStartSlot = panel.slots.find((slot) => slot.id === `turn-start:${stunnedMonsterId}`);
+        const moveSlot = panel.slots.find((slot) => slot.id === `move:${stunnedMonsterId}`);
+        const attackSlot = panel.slots.find((slot) => slot.id === `attack:${stunnedMonsterId}`);
+
+        expect(panel.active).toBe(true);
+        expect(panel.contractGaps).toContain('ui-token-flip');
+        expect(turnStartSlot).toMatchObject({
+            kind: 'turn-start',
+            command: BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
+            enabled: true,
+            contractGaps: ['ui-token-flip'],
+        });
+        expect(moveSlot).toMatchObject({
+            enabled: false,
+            targetRoomIds: [],
+        });
+        expect(attackSlot).toMatchObject({
+            enabled: false,
+            defaultAttackTrait: 'might',
+        });
+    });
+
+    it('怪物动作槽读模型会先要求掷移动骰，掷完后才开放移动目标', () => {
+        let core = createMagicCameraHauntCore('1');
+        activateTestExplorer(core, '1');
+        const groupId = '幻影摄影师:1';
+        const monsterId = core.scenarioRuntime.magicCamera!.phantomPhotographerIds[0]!;
+        core.monsters = core.monsters.map((monster) => (
+            monster.id === monsterId
+                ? { ...monster, roomId: 'hallway' }
+                : monster
+        ));
+        findTestExplorer(core, '0').roomId = 'hallway';
+
+        const beforeRoll = resolveBetrayalMonsterActionPanel(core);
+        expect(beforeRoll.movementGroupIds).toContain(groupId);
+        expect(beforeRoll.slots.find((slot) => slot.id === `movement-roll:${groupId}`)).toMatchObject({
+            command: BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            enabled: true,
+            contractGaps: ['path-preview-ui'],
+        });
+        expect(beforeRoll.slots.find((slot) => slot.id === `move:${monsterId}`)).toMatchObject({
+            command: BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
+            enabled: false,
+            moveRemaining: 0,
+            moveCost: 2,
+            reason: '请先为该怪物所属类型掷移动骰，或移动点不足以离开当前房间。',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            '1',
+            { groupId },
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+
+        const afterRoll = resolveBetrayalMonsterActionPanel(core);
+        const moveSlot = afterRoll.slots.find((slot) => slot.id === `move:${monsterId}`);
+        expect(moveSlot).toMatchObject({
+            enabled: true,
+            moveRemaining: 2,
+            moveCost: 2,
+        });
+        expect(moveSlot?.targetRoomIds.length).toBeGreaterThan(0);
+        expect(afterRoll.contractGaps).toContain('path-preview-ui');
+        expect(afterRoll.slots.find((slot) => slot.id === `attack:${monsterId}`)).toMatchObject({
+            command: BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            enabled: true,
+            defaultAttackTrait: 'might',
+            contractGaps: ['attack-target-ui', 'scenario-specific-attack'],
+        });
     });
 
     it('魔法相机剧本幻影摄影师视线攻击可击倒全部英雄并让叛徒胜利', () => {
@@ -4021,6 +5812,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         expect(core.rooms.find((room) => room.id === 'ground-north')?.name).toBe('墓园');
+        core = acknowledgePendingCardResolutions(core);
 
         core = {
             ...core,
@@ -4034,6 +5826,7 @@ describe('Betrayal first scenario runtime', () => {
         };
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'basement-east' });
         expect(core.rooms.find((room) => room.id === 'basement-east')?.name).toBe('地下洞窟');
+        core = acknowledgePendingCardResolutions(core);
 
         core = {
             ...core,
@@ -4191,6 +5984,44 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.movesRemaining).toBe(0);
     });
 
+    it('自由混战作祟中其他探索者会作为敌对阻碍', () => {
+        const baseCore = createStartedFirstScenarioCore();
+        const core: BetrayalCore = {
+            ...baseCore,
+            phase: 'haunt' as const,
+            activeRoomId: 'hallway',
+            currentExplorer: {
+                ...baseCore.currentExplorer,
+                roomId: 'hallway',
+            },
+            otherExplorers: baseCore.otherExplorers.map((explorer) => (
+                explorer.playerId === '1'
+                    ? { ...explorer, roomId: 'hallway' }
+                    : explorer
+            )),
+            scenarioRuntime: {
+                ...baseCore.scenarioRuntime,
+                hauntTriggered: true,
+                hauntCardNumber: 12,
+                traitorPlayerId: null,
+                hauntTraitorResolution: {
+                    hauntCardNumber: 12,
+                    policy: 'free-for-all',
+                    traitorPlayerId: null,
+                    teamModel: 'free-for-all',
+                    reasonLabel: '自由混战',
+                    candidatePlayerIds: [],
+                    excludedPlayerIds: [],
+                    tieBreak: 'none',
+                    representativeOnly: false,
+                },
+            },
+        };
+
+        expect(resolveBetrayalMoveCost(core)).toBe(2);
+        expect(resolveBetrayalMoveCost(core, '2')).toBe(1);
+    });
+
     it('作祟后同房间怪物会作为英雄障碍物，离开需要 2 点移动', () => {
         let core = createStartedFirstScenarioCore();
         core = {
@@ -4229,6 +6060,47 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'entrance-hall' });
         expect(core.currentExplorer.roomId).toBe('entrance-hall');
         expect(core.movesRemaining).toBe(0);
+    });
+
+    it('无叛徒作祟中怪物仍会作为英雄障碍物', () => {
+        const baseCore = createStartedFirstScenarioCore();
+        const core: BetrayalCore = {
+            ...baseCore,
+            phase: 'haunt',
+            activeRoomId: 'hallway',
+            currentExplorer: {
+                ...baseCore.currentExplorer,
+                roomId: 'hallway',
+            },
+            scenarioRuntime: {
+                ...baseCore.scenarioRuntime,
+                hauntTriggered: true,
+                hauntCardNumber: 4,
+                traitorPlayerId: null,
+                hauntTraitorResolution: {
+                    hauntCardNumber: 4,
+                    policy: 'no-traitor',
+                    traitorPlayerId: null,
+                    teamModel: 'no-traitor',
+                    reasonLabel: '无叛徒',
+                    candidatePlayerIds: [],
+                    excludedPlayerIds: [],
+                    tieBreak: 'none',
+                    representativeOnly: true,
+                },
+            },
+            monsters: [{
+                id: 'test-monster',
+                name: '测试怪物',
+                portraitAsset: 'betrayal/cards/back-monster',
+                roomId: 'hallway',
+                might: 3,
+                speed: 3,
+                damage: 1,
+            }],
+        };
+
+        expect(resolveBetrayalMoveCost(core)).toBe(2);
     });
 
     it('图书馆发现时获得 1 点知识', () => {
@@ -4347,6 +6219,49 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.inventory.some((card) => card.id === 'flashlight-0')).toBe(true);
         expect(core.latestDiscovery?.kind).toBe('item');
         expect(core.latestDiscovery?.title).toBe('手电筒');
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => step.text)).toEqual([
+            '器械库获得砍刀',
+            '展示后埋葬急救包',
+            '已加入持有区：手电筒（按卡面规则持有）',
+        ]);
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => step.kind)).toEqual([
+            'room-discovery-card',
+            'buried-room-discovery-card',
+            'drawn-card',
+        ]);
+        expect(core.pendingCardResolutionQueue.map((resolution) => ({
+            stepKind: resolution.stepKind,
+            text: resolution.text,
+            index: resolution.index,
+            total: resolution.total,
+        }))).toEqual([
+            { stepKind: 'room-discovery-card', text: '器械库获得砍刀', index: 1, total: 3 },
+            { stepKind: 'buried-room-discovery-card', text: '展示后埋葬急救包', index: 2, total: 3 },
+            { stepKind: 'drawn-card', text: '已加入持有区：手电筒（按卡面规则持有）', index: 3, total: 3 },
+        ]);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认刚抽到的物品或预兆。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue.map((resolution) => resolution.index)).toEqual([2, 3]);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue.map((resolution) => resolution.index)).toEqual([3]);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        ).valid).toBe(true);
         expect(core.discardCounts.item).toBe(0);
         expect(core.deckCounts.item).toBe(itemDeckBefore - 2);
         expect(core.possessionOrderByKind.item.map((card) => card.name)).toEqual(['急救包']);
@@ -4357,7 +6272,7 @@ describe('Betrayal first scenario runtime', () => {
         core.roomDiscoveryOrderByFloor.upper = [
             BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'collapsedRoom')!,
         ];
-        const mightBefore = core.currentExplorer.traits.might;
+        const traitsBeforeFall = { ...core.currentExplorer.traits };
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
@@ -4376,7 +6291,7 @@ describe('Betrayal first scenario runtime', () => {
 
         const fallenExplorer = core.currentExplorer;
         expect(fallenExplorer.roomId).toBe('basement-landing');
-        expect(fallenExplorer.traits.might).toBe(mightBefore - 1);
+        expect(fallenExplorer.traits).toEqual(traitsBeforeFall);
         expect(core.currentPlayer).toBe('0');
         expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
         expect(core.recentRoll?.roomEndTurn?.nextPlayerId).toBe('1');
@@ -4390,9 +6305,28 @@ describe('Betrayal first scenario runtime', () => {
         ).valid).toBe(true);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '0', {});
+        expect(core.currentPlayer).toBe('0');
+        expect(core.recentRoll).toBeNull();
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '倒塌房间',
+            damageKind: 'physical',
+            playerId: '0',
+            allowedTraits: ['might', 'speed'],
+            nextPlayerId: '1',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
+        );
+
         expect(core.currentPlayer).toBe('1');
         expect(core.recentRoll).toBeNull();
+        expect(core.pendingDamageAllocation).toBeNull();
         expect(core.otherExplorers.find((explorer) => explorer.playerId === '0')?.roomId).toBe('basement-landing');
+        expect(physicalTraitTotal(core, '0')).toBeLessThan(traitsBeforeFall.might + traitsBeforeFall.speed);
     });
 
     it('兔脚可以重掷倒塌房间结束回合速度检定，并按新结果回算坠落', () => {
@@ -4433,7 +6367,7 @@ describe('Betrayal first scenario runtime', () => {
 
         const fallenExplorer = core.currentExplorer;
         expect(fallenExplorer.roomId).toBe('basement-landing');
-        expect(fallenExplorer.traits.might).toBe(traitsBeforeFall.might - 1);
+        expect(fallenExplorer.traits).toEqual(traitsBeforeFall);
         expect(core.currentPlayer).toBe('0');
         expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
         expect(core.recentRoll?.playerId).toBe('0');
@@ -4708,6 +6642,39 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.activityLog[0]?.text).toContain('给出兔脚');
         expect(core.activityLog[0]?.text).toContain('给出地图');
         expect(core.activityLog[0]?.text).not.toContain('换回');
+    });
+
+    it('同房间交易允许发起方一次给出任意多张持有物，接收方同意后才结算', () => {
+        let core = createExchangeReadyCore();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+            targetPlayerId: '1',
+            cardIds: ['rope', 'omen-book'],
+            targetCardIds: ['map'],
+        });
+
+        expect(core.pendingTradeAgreement).toMatchObject({
+            playerId: '0',
+            targetPlayerId: '1',
+            cardIds: ['rope', 'omen-book'],
+            targetCardIds: ['map'],
+        });
+        expect(core.activePlayerId).toBe('1');
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['rope', 'omen-book']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['map', 'skull']);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '1', {
+            accept: true,
+        });
+
+        expect(core.pendingTradeAgreement).toBeNull();
+        expect(core.activePlayerId).toBeNull();
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['map']);
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull', 'rope', 'omen-book']);
+        expect(core.receivedCardIdsThisTurnByPlayerId['0']).toContain('map');
+        expect(core.receivedCardIdsThisTurnByPlayerId['1']).toEqual(expect.arrayContaining(['rope', 'omen-book']));
+        expect(core.activityLog[0]?.text).toContain('给出兔脚、书本');
+        expect(core.activityLog[0]?.text).toContain('给出地图');
     });
 
     it('同房间交易允许只拿对方持有物，接收方同意后才结算', () => {
@@ -5131,7 +7098,18 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('2');
         expect(core.scenarioRuntime.traitorPlayerId).toBe('2');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(1);
-        expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Splash of Crimson');
+        expect(core.scenarioRuntime.hauntTriggerLabel).toBe('书本');
+        expect(core.scenarioRuntime.triggeringOmenName).toBe('书本');
+        expect(core.scenarioRuntime.hauntScenarioCardTitle).toBe('赤红杰克归来');
+        expect(core.scenarioRuntime.hauntResolutionMatchedTrigger).toBe(false);
+        expect(core.scenarioRuntime.hauntResolutionRepresentativeOnly).toBe(true);
+        expect(core.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-traitor',
+            anchorPlayerId: '2',
+            nextPlayerId: '0',
+            representativeOnly: true,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentPlayer).toBe('0');
         expect(core.activityLog[0]?.text).toContain('Crimson Jack Returns');
     });
@@ -5162,6 +7140,17 @@ describe('Betrayal first scenario runtime', () => {
         expect(newCardId).toBeTruthy();
         expect(core.latestDiscovery?.summary).toBe('已加入持有区');
         expect(core.turnStartInventoryCardIds).not.toContain(newCardId);
+
+        const pendingCardUseValidation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: newCardId }),
+        );
+        expect(pendingCardUseValidation.valid).toBe(false);
+        if (!pendingCardUseValidation.valid) {
+            expect(pendingCardUseValidation.error).toContain('请先确认刚抽到的物品或预兆');
+        }
+
+        core = acknowledgePendingCardResolutions(core);
 
         const immediateUseValidation = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -6462,7 +8451,24 @@ describe('Betrayal first scenario runtime', () => {
             '2',
             { target: 'hero', targetPlayerId: '0' },
             100,
-            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 1, 1, 1, 1, 3, 3, 1),
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 1, 1, 1, 1),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: '0',
+            sourceTitle: '攻击',
+            allowSkull: true,
+        });
+        expect(core.recentRoll?.kind).toBe('attackRoll');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+            101,
+            createBetrayalScriptedRandom(3, 3, 1),
         );
 
         const protectedHero = [core.currentExplorer, ...core.otherExplorers]
@@ -6505,7 +8511,23 @@ describe('Betrayal first scenario runtime', () => {
             '2',
             { target: 'hero', targetPlayerId: '0' },
             100,
-            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1),
+            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: '0',
+            sourceTitle: '攻击',
+            allowSkull: true,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+            101,
+            createBetrayalScriptedRandom(1, 1, 1),
         );
 
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
@@ -6543,7 +8565,23 @@ describe('Betrayal first scenario runtime', () => {
             '2',
             { target: 'hero', targetPlayerId: '0' },
             100,
-            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 2, 2),
+            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: '0',
+            sourceTitle: '攻击',
+            allowSkull: true,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+            101,
+            createBetrayalScriptedRandom(1, 2, 2),
         );
 
         expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
@@ -6605,6 +8643,224 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.rooms.some((room) => room.id === 'upper-west' && room.name === '图书馆')).toBe(true);
     });
 
+    it('叛徒能力可忽略火炉房这类伤害性房间效果', () => {
+        let core = createFirstScenarioHauntCore();
+        placeActiveTestExplorerInRoom(core, '2', 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房',
+            hint: '在此结束回合会受到房间伤害。',
+            tags: ['伤害'],
+            discoveryReward: null,
+            visualId: 'furnaceRoom',
+            endTurnEffect: 'physicalDamage1',
+        });
+        const traitorTraitsBefore = { ...findTestExplorer(core, '2').traits };
+
+        expect(resolveBetrayalTraitorPowerStatus(core, '2')).toMatchObject({
+            active: true,
+            isTraitor: true,
+            currentRoomName: '火炉房',
+            currentTrigger: 'damaging-room-effect',
+            canIgnoreDamagingTileEffects: true,
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+
+        expect(findTestExplorer(core, '2').traits).toEqual(traitorTraitsBefore);
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.activityLog[0]?.text).toContain('叛徒能力忽略房间伤害');
+    });
+
+    it('叛徒在倒塌房间仍会坠落，但不承受坠落伤害', () => {
+        let core = createFirstScenarioHauntCore();
+        placeActiveTestExplorerInRoom(core, '2', 'upper-north');
+        setDiscoveredTestRoom(core, 'upper-north', {
+            name: '倒塌房间',
+            hint: '速度检定失败会坠落到地下室起始点。',
+            tags: ['上层', '伤害'],
+            discoveryReward: null,
+            visualId: 'collapsedRoom',
+            endTurnEffect: 'speedCheckFallToBasement',
+        });
+        const traitorPhysicalBefore = physicalTraitTotal(core, '2');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '2',
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1, 1, 1),
+        );
+
+        expect(findTestExplorer(core, '2').roomId).toBe('basement-landing');
+        expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
+        expect(core.recentRoll?.roomEndTurn?.previousPhysicalDamage).toBe(0);
+        expect(core.recentRoll?.latestLabel).toContain('坠落');
+        expect(core.activityLog[0]?.text).toContain('叛徒能力忽略坠落伤害');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '2', {});
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(physicalTraitTotal(core, '2')).toBe(traitorPhysicalBefore);
+    });
+
+    it('叛徒仍必须结算洗衣滑槽这类非伤害性强制房间效果', () => {
+        let core = createFirstScenarioHauntCore();
+        placeActiveTestExplorerInRoom(core, '2', 'basement-east');
+        setDiscoveredTestRoom(core, 'basement-east', {
+            name: '洗衣滑槽',
+            hint: '结束回合时滑落到地下室起始点。',
+            tags: ['地下室', '滑槽'],
+            discoveryReward: null,
+            visualId: 'laundryChute',
+            endTurnEffect: 'moveToBasementLanding',
+        });
+        const traitorPhysicalBefore = physicalTraitTotal(core, '2');
+
+        expect(resolveBetrayalTraitorPowerStatus(core, '2')).toMatchObject({
+            active: true,
+            currentRoomName: '洗衣滑槽',
+            currentTrigger: 'mandatory-room-effect',
+            mustResolveMandatoryTileEffects: true,
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+
+        expect(findTestExplorer(core, '2').roomId).toBe('basement-landing');
+        expect(physicalTraitTotal(core, '2')).toBe(traitorPhysicalBefore);
+        expect(core.activityLog[0]?.text).toContain('洗衣滑槽');
+    });
+
+    it('叛徒仍必须结算神秘电梯，作祟后可继续使用既有房间效果命令', () => {
+        let core = createFirstScenarioHauntCore();
+        placeActiveTestExplorerInRoom(core, '2', 'upper-north');
+        setDiscoveredTestRoom(core, 'upper-north', {
+            name: '神秘电梯',
+            hint: '投骰后移动电梯板块。',
+            tags: ['电梯', '强制房间效果'],
+            discoveryReward: null,
+            visualId: 'mysticElevator',
+            endTurnEffect: undefined,
+            enterEffect: 'mysticElevator',
+        });
+
+        expect(resolveBetrayalTraitorPowerStatus(core, '2')).toMatchObject({
+            active: true,
+            currentRoomName: '神秘电梯',
+            currentTrigger: 'mandatory-room-effect',
+            mustResolveMandatoryTileEffects: true,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_ROOM_EFFECT, '2', {}),
+        )).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_ROOM_EFFECT,
+            '2',
+            {},
+            100,
+            createBetrayalScriptedRandom(3, 3),
+        );
+
+        expect(core.scenarioRuntime.usedRoomEffectIdsThisTurn).toContain('mysticElevator');
+        expect(core.recentRoll?.kind).toBe('mysticElevator');
+        expect(core.activityLog[0]?.text).toContain('神秘电梯');
+    });
+
+    it('叛徒作祟后探索事件符号房间时可选择忽略事件，且不抽取事件牌', () => {
+        let core = createOpenFrontierHauntTestCore('2');
+        core.drawOrder = ['event'];
+        const eventCard: BetrayalCore['eventOrder'][number] = {
+            name: '阴影扑面',
+            text: '阴影扑向你。失去 1 点力量。',
+            effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+        };
+        core.eventOrder = [eventCard];
+        core.deckCounts.event = core.eventOrder.length;
+        const eventOrderBefore = core.eventOrder.map((event) => event.name);
+        const discardCountBefore = core.discardCounts.event;
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        expect(resolveBetrayalTraitorPowerStatus(core, '2')).toMatchObject({
+            active: true,
+            canIgnoreEventSymbols: true,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', {
+                roomId: targetRoomId!,
+                ignoreEventSymbolWithTraitorPower: true,
+            }),
+        )).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', {
+            roomId: targetRoomId!,
+            ignoreEventSymbolWithTraitorPower: true,
+        });
+
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.state).toBe('discovered');
+        expect(core.currentExplorer.roomId).toBe(targetRoomId);
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '事件符号',
+            summary: '跳过事件',
+            detail: '没有抽取或结算事件卡',
+        });
+        expect(core.pendingEventChoice).toBeNull();
+        expect(core.discardCounts.event).toBe(discardCountBefore);
+        expect(core.eventOrder.map((event) => event.name)).toEqual(eventOrderBefore);
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntTriggered).toBe(true);
+        expect(core.recentRoll?.kind).not.toBe('hauntRoll');
+        expect(core.activityLog[0]?.text).toContain('叛徒跳过了事件符号');
+    });
+
+    it('叛徒作祟后探索事件符号房间时若不忽略事件，则正常抽取并结算事件牌', () => {
+        let core = createOpenFrontierHauntTestCore('2');
+        core.drawOrder = ['event'];
+        const eventCard: BetrayalCore['eventOrder'][number] = {
+            name: '阴影扑面',
+            text: '阴影扑向你。失去 1 点力量。',
+            effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+        };
+        const nextEventCard: BetrayalCore['eventOrder'][number] = {
+            name: '远处低语',
+            text: '远处传来低语。没有效果。',
+            effect: { mode: 'none', recommendedAction: 'endTurn' },
+        };
+        core.eventOrder = [eventCard, nextEventCard];
+        core.deckCounts.event = core.eventOrder.length;
+        const mightPositionBefore = traitTrackPosition(core, '2', 'might');
+        const discardCountBefore = core.discardCounts.event;
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', {
+            roomId: targetRoomId!,
+        });
+
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.state).toBe('discovered');
+        expect(core.currentExplorer.roomId).toBe(targetRoomId);
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '阴影扑面',
+            summary: '即时生效',
+        });
+        expect(core.latestDiscovery?.detail).toContain('力量 -1');
+        expect(traitTrackPosition(core, '2', 'might')).toBe(mightPositionBefore - 1);
+        expect(core.pendingEventChoice).toBeNull();
+        expect(core.discardCounts.event).toBe(discardCountBefore);
+        expect(core.eventOrder.map((event) => event.name)).toEqual(['远处低语', '阴影扑面']);
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntTriggered).toBe(true);
+        expect(core.recentRoll?.kind).not.toBe('hauntRoll');
+        expect(core.activityLog[0]?.text).toContain('事件：阴影扑面');
+    });
+
     it('叛徒开局按人数获得 {1/1/2/2} 点力量和速度加成', () => {
         const cases = [
             { playerIds: ['0', '1', '2'], expectedBonus: 1 },
@@ -6639,6 +8895,54 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.endgameResult?.hauntTitle).toBe('Crimson Jack Returns');
         expect(core.endgameResult?.outcome).toBe('survivors');
         expect(core.endgameResult?.winners).toEqual(['0', '1']);
+    });
+
+    it('终局读模型在作祟未完成时保持非激活，不提前展示胜利文本', () => {
+        const core = createFirstScenarioHauntCore();
+        const endgame = resolveBetrayalEndgameReadModel(core);
+
+        expect(endgame).toMatchObject({
+            active: false,
+            phase: 'haunt',
+            hauntId: null,
+            outcome: null,
+            winnerPlayerIds: [],
+            ifYouWinTextId: null,
+            ifYouWinTextStatus: 'inactive',
+            ifYouWinTextAvailable: false,
+            needsIfYouWinTextSource: false,
+            simultaneousCompletionPolicyStatus: 'inactive',
+            tiePolicyStatus: 'inactive',
+            representativeOnly: false,
+        });
+    });
+
+    it('首剧本英雄终局读模型只暴露胜方和胜利文本合同 id，不冒充原文已接入', () => {
+        const core = playFirstScenarioToSurvivorVictory();
+        const endgame = resolveBetrayalEndgameReadModel(core);
+
+        expect(endgame).toMatchObject({
+            active: true,
+            phase: 'endgame',
+            hauntId: 'crimson-jack-returns',
+            hauntTitle: 'Crimson Jack Returns',
+            outcome: 'survivors',
+            winningSideLabel: '英雄',
+            winnerPlayerIds: ['0', '1'],
+            traitorPlayerId: '2',
+            ifYouWinTextId: 'crimson-jack-returns.survivors.if-you-win',
+            ifYouWinTextStatus: 'representative-only',
+            ifYouWinTextAvailable: false,
+            needsIfYouWinTextSource: true,
+            simultaneousCompletionPolicyStatus: 'missing-contract',
+            tiePolicyStatus: 'missing-contract',
+            representativeOnly: true,
+        });
+        expect(endgame.winnerNames).toHaveLength(2);
+        expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
+            '终局结果已记录胜方和获胜玩家。',
+            '当前只证明代表作祟终局读模型，不代表 50 个作祟终局全部完成。',
+        ]));
     });
 
     it('叛徒线可以通过击倒全部英雄进入终局', () => {
@@ -7002,20 +9306,43 @@ describe('Betrayal first scenario runtime', () => {
         }
     });
 
-    it('haunt 阶段即使走本地测试通道也不能继续探索新房间', () => {
-        const core = createFirstScenarioHauntCore();
+    it('作祟阶段探索新房间会正常结算发现，但不会再进行作祟检定', () => {
+        let core = createOpenFrontierHauntTestCore('0');
+        core.drawOrder = ['event'];
+        const firstEvent: BetrayalCore['eventOrder'][number] = {
+            name: '阴影扑面',
+            text: '阴影扑向你。失去 1 点速度。',
+            effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+        };
+        const secondEvent: BetrayalCore['eventOrder'][number] = {
+            name: '第二张测试事件',
+            text: '用于确认事件牌堆顺序。',
+            effect: { mode: 'none', recommendedAction: 'endTurn' },
+        };
+        core.eventOrder = [firstEvent, secondEvent];
+        core.deckCounts.event = core.eventOrder.length;
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+        const speedBeforeExplore = findTestExplorer(core, '0').traits.speed;
+
         expect(core.phase).toBe('haunt');
         expect(core.rooms.some((room) => room.state === 'unexplored')).toBe(true);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: targetRoomId! }),
+        )).toMatchObject({ valid: true });
 
-        const command = {
-            ...createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {}),
-            skipValidation: true,
-        };
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: targetRoomId! });
 
-        expect(BetrayalDomain.validate({ core, sys: {} as never }, command)).toMatchObject({
-            valid: false,
-            error: 'haunt 阶段不能继续探索新房间。',
-        });
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.state).toBe('discovered');
+        expect(core.currentExplorer.roomId).toBe(targetRoomId);
+        expect(core.latestDiscovery?.title).toBe('阴影扑面');
+        expect(core.pendingEventChoice).toBeNull();
+        expect(findTestExplorer(core, '0').traits.speed).toBe(speedBeforeExplore - 1);
+        expect(core.eventOrder.map((event) => event.name)).toEqual(['第二张测试事件', '阴影扑面']);
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntTriggered).toBe(true);
+        expect(core.recentRoll?.kind).not.toBe('hauntRoll');
     });
 
     it('翻开未知房间时会把新房间门位旋转到当前开放门位，不再靠黄色连接补丁伪造门', () => {
@@ -7146,6 +9473,12 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+        );
 
         expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
         expect(core.currentPlayer).toBe('0');
@@ -7179,6 +9512,79 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.monsters.find((monster) => monster.id === 'jack-spirit')?.roomId).toBe('basement-landing');
     });
 
+    it('杰克之灵控制回合不能使用持有物、兔脚、交易或搜刮尸体', () => {
+        const core = createJackSpiritMovementRollReadyCore();
+        expect(core.currentPlayer).toBe('2');
+        expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
+
+        core.currentExplorer.inventory = [
+            { id: 'medical-kit', name: '急救包', kind: 'item' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' }),
+        ).valid).toBe(true);
+
+        const blockedCommands = [
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '2', { cardId: 'medical-kit' }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '2', { cardId: 'rope', dieIndex: 0 }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.TRADE_POSSESSION, '2', {
+                cardIds: ['medical-kit'],
+                targetPlayerId: '0',
+            }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '2', { accept: true }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, '2', {
+                sourcePlayerId: '2',
+                cardId: 'medical-kit',
+            }),
+        ];
+
+        blockedCommands.forEach((command) => {
+            expect(BetrayalDomain.validate({ core, sys: {} as never }, command)).toMatchObject({
+                valid: false,
+                error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。',
+            });
+        });
+    });
+
+
+    it('狂热病患控制回合同样不能使用持有物、兔脚、交易或搜刮尸体', () => {
+        const core = createFeverishControlReadyCore();
+        expect(core.currentPlayer).toBe('0');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('0');
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'entrance-hall' }),
+        ).valid).toBe(true);
+
+        const blockedCommands = [
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: 'medical-kit' }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 0 }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+                cardIds: ['medical-kit'],
+                targetPlayerId: '1',
+            }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '0', { accept: true }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.LOOT_CORPSE, '0', {
+                sourcePlayerId: '0',
+                cardId: 'medical-kit',
+            }),
+        ];
+
+        blockedCommands.forEach((command) => {
+            expect(BetrayalDomain.validate({ core, sys: {} as never }, command)).toMatchObject({
+                valid: false,
+                error: '怪物不能使用持有物、预兆、兔脚、交易或搜刮尸体。',
+            });
+        });
+    });
+
     it('英雄攻击叛徒时应按对攻差值造成 physical damage，平手无伤害，Knowledge of Jack 只在此时加成', () => {
         let tieCore = createFirstScenarioHauntCore();
         tieCore = applyBetrayalCommand(tieCore, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
@@ -7200,6 +9606,12 @@ describe('Betrayal first scenario runtime', () => {
         expect(tieCore.scenarioRuntime.jackSpiritReleased).toBe(false);
         expect(tieCore.currentExplorer.traits).toEqual(heroBeforeTie);
         expect(traitorAfterTie.traits).toEqual(traitorBeforeTie.traits);
+        expect(tieCore.usedCardIdsThisTurn).toContain('haunt-attack');
+        const secondAttackSameTurn = BetrayalDomain.validate(
+            { core: tieCore, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.HAUNT_ATTACK, '0', { target: 'traitor' }),
+        );
+        expect(secondAttackSameTurn).toMatchObject({ valid: false, error: '本回合已经攻击过。' });
 
         let bonusCore = createFirstScenarioHauntCore();
         bonusCore.scenarioRuntime.knowledgeOfJackPlayerIds = ['0'];
@@ -7216,8 +9628,60 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
 
+        expect(bonusCore.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            playerId: '2',
+        });
+        expect(bonusCore.scenarioRuntime.jackSpiritReleased).toBe(false);
+        bonusCore = applyBetrayalCommand(
+            bonusCore,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: lethalTraitsForPendingDamage(bonusCore, 'might') },
+        );
+
         expect(bonusCore.scenarioRuntime.jackSpiritReleased).toBe(true);
         expect(bonusCore.scenarioRuntime.deadExplorerPlayerIds).toContain('2');
+    });
+
+    it('致死普通攻击先等待受伤方分配伤害，确认后才释放杰克之灵', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.knowledgeOfJackPlayerIds = ['0'];
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'traitor' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '2',
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('2');
+        expect(core.scenarioRuntime.jackSpiritReleased).toBe(false);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+        );
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('2');
+        expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
+        expect(core.scenarioRuntime.jackSpiritRoomId).toBeTruthy();
     });
 
     it('兔脚可以重掷刚刚攻击投骰的一颗骰子，并按新结果回算非致死攻击伤害', () => {
@@ -7270,17 +9734,95 @@ describe('Betrayal first scenario runtime', () => {
             .find((explorer) => explorer.playerId === '0')!;
         const traitorAfterReroll = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
         expect(heroAfterReroll.traits).toEqual(heroBeforeAttack);
-        expect(traitorAfterReroll.traits.might + traitorAfterReroll.traits.speed).toBeLessThan(
-            traitorBeforeAttack.traits.might + traitorBeforeAttack.traits.speed,
-        );
+        expect(traitorAfterReroll.traits).toEqual(traitorBeforeAttack.traits);
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '2',
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(core.activePlayerId).toBe('2');
         expect(core.recentRoll?.latestLabel).toContain('造成');
         expect(core.usedCardIdsThisTurn).toContain('rope');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
+        );
+
+        const traitorAfterDamageAllocation = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
+        expect(traitorAfterDamageAllocation.traits.might + traitorAfterDamageAllocation.traits.speed).toBeLessThan(
+            traitorBeforeAttack.traits.might + traitorBeforeAttack.traits.speed,
+        );
+        expect(core.pendingDamageAllocation).toBeNull();
 
         const useAgain = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 1 }),
         );
         expect(useAgain.valid).toBe(false);
+    });
+
+    it('兔脚重掷未确认的攻击伤害时，会替换待分配伤害而不是强制先分配', () => {
+        let core = createFirstScenarioHauntCore();
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-east' });
+        core.currentExplorer.inventory = [
+            ...core.currentExplorer.inventory,
+            { id: 'hunting-knife', name: '砍刀', kind: 'item' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.turnStartInventoryCardIds = [...core.turnStartInventoryCardIds, 'hunting-knife', 'rope'];
+
+        const traitorBeforeAttack = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'traitor', weaponCardId: 'hunting-knife' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1, 1, 1),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '2',
+        });
+        const firstPendingDamageId = core.pendingDamageAllocation?.id;
+        const firstPendingDamageAmount = core.pendingDamageAllocation?.originalAmount ?? 0;
+        expect(core.activePlayerId).toBe('2');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '0', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '0',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(2),
+        );
+
+        const traitorAfterReroll = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '2',
+        });
+        expect(core.pendingDamageAllocation?.id).not.toBe(firstPendingDamageId);
+        expect(core.pendingDamageAllocation?.originalAmount).toBeGreaterThan(firstPendingDamageAmount);
+        expect(core.activePlayerId).toBe('2');
+        expect(traitorAfterReroll.traits).toEqual(traitorBeforeAttack.traits);
+        expect(core.recentRoll?.latestLabel).toContain('造成');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
     });
 
     it('砍刀只能作为攻击武器显式使用，攻击结果 +1 且本回合不能交易', () => {
@@ -7313,10 +9855,27 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.usedCardIdsThisTurn).toContain('hunting-knife');
         expect(core.activityLog[0]?.text).toContain('使用砍刀');
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '2',
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(core.otherExplorers.find((explorer) => explorer.playerId === '2')?.traits).toEqual(traitorBeforeAttack.traits);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
+        );
+
         const traitorAfterAttack = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
         expect(traitorAfterAttack.traits.might + traitorAfterAttack.traits.speed).toBeLessThan(
             traitorBeforeAttack.traits.might + traitorBeforeAttack.traits.speed,
         );
+        expect(core.pendingDamageAllocation).toBeNull();
 
         core.otherExplorers = core.otherExplorers.map((explorer) => (
             explorer.playerId === '1' ? { ...explorer, roomId: core.activeRoomId } : explorer
@@ -7330,6 +9889,41 @@ describe('Betrayal first scenario runtime', () => {
         );
         expect(tradeUsedWeapon.valid).toBe(false);
         expect(tradeUsedWeapon.error).toContain('本回合已经使用过的持有物不能交易');
+    });
+
+    it('攻击武器读模型保留刚获得和已使用武器并给出不可用原因', () => {
+        const core = createFirstScenarioHauntCore();
+        core.currentExplorer.inventory = [
+            { id: 'hunting-knife', name: '砍刀', kind: 'item' },
+            { id: 'dagger', name: '匕首', kind: 'omen' },
+            { id: 'ring', name: '指环', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = ['hunting-knife', 'ring'];
+        core.usedCardIdsThisTurn = ['ring'];
+
+        const statusesByCardId = Object.fromEntries(
+            resolveAttackWeaponCardStatuses(core).map((status) => [status.card.id, status]),
+        );
+
+        expect(statusesByCardId['hunting-knife']).toMatchObject({
+            canUse: true,
+            reason: null,
+            availableAtTurnStart: true,
+            usedThisTurn: false,
+        });
+        expect(statusesByCardId.dagger).toMatchObject({
+            canUse: false,
+            reason: '本回合新获得的武器不能立刻使用。',
+            availableAtTurnStart: false,
+            usedThisTurn: false,
+        });
+        expect(statusesByCardId.ring).toMatchObject({
+            canUse: false,
+            reason: '这把武器本回合已经使用。',
+            availableAtTurnStart: true,
+            usedThisTurn: true,
+        });
     });
 
     it('未声明使用砍刀时，不会只因持有武器自动获得攻击 +1', () => {
@@ -7396,8 +9990,23 @@ describe('Betrayal first scenario runtime', () => {
             ? core.currentExplorer
             : core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
         expect(attackerAfterDagger.traits.speed).toBe(heroSpeedBefore - 1);
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '2',
+            allowedTraits: ['might', 'speed'],
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
+        );
+
         const traitorAfter = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
         expect(traitorAfter.traits.might + traitorAfter.traits.speed).toBeLessThan(traitorPhysicalBefore);
+        expect(core.pendingDamageAllocation).toBeNull();
         expect(core.scenarioRuntime.jackSpiritReleased).toBe(false);
     });
 
@@ -7463,9 +10072,40 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.usedCardIdsThisTurn).toContain('ring');
         expect(core.activityLog[0]?.text).toContain('使用指环');
         expect(core.activityLog[0]?.text).toContain('mental damage');
-        const traitorAfter = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
-        expect(traitorAfter.traits.might + traitorAfter.traits.speed).toBe(traitorPhysicalBefore);
-        expect(traitorAfter.traits.knowledge + traitorAfter.traits.sanity).toBeLessThan(traitorMentalBefore);
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'mental',
+            playerId: '2',
+            allowedTraits: ['knowledge', 'sanity'],
+            allowSkull: true,
+        });
+        expect(physicalTraitTotal(core, '2')).toBe(traitorPhysicalBefore);
+        expect(mentalTraitTotal(core, '2')).toBe(traitorMentalBefore);
+
+        const attackerCannotEndBeforeDamage = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        );
+        expect(attackerCannotEndBeforeDamage).toMatchObject({ valid: false, error: '请先分配当前伤害。' });
+
+        const wrongPlayer = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '0', {
+                traits: repeatTraitsForPendingDamage(core, ['knowledge', 'sanity']),
+            }),
+        );
+        expect(wrongPlayer).toMatchObject({ valid: false, error: '必须由受伤玩家分配伤害。' });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: repeatTraitsForPendingDamage(core, ['knowledge', 'sanity']) },
+        );
+
+        expect(physicalTraitTotal(core, '2')).toBe(traitorPhysicalBefore);
+        expect(mentalTraitTotal(core, '2')).toBeLessThan(traitorMentalBefore);
+        expect(core.pendingDamageAllocation).toBeNull();
         expect(core.scenarioRuntime.jackSpiritReleased).toBe(false);
     });
 
@@ -7589,6 +10229,12 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+        );
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
 
@@ -7611,7 +10257,9 @@ describe('Betrayal first scenario runtime', () => {
                 ? { ...explorer, roomId: core.scenarioRuntime.jackSpiritRoomId! }
                 : explorer
         ));
+        setHighCapacityPhysicalDamageTracks(core, '0');
         const hero = core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        const heroPhysicalPositionBefore = traitTrackPositionTotal(core, '0', ['might', 'speed']);
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -7621,15 +10269,31 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1),
         );
 
-        const updatedHero = core.currentExplorer.playerId === '0'
-            ? core.currentExplorer
-            : core.otherExplorers.find((explorer) => explorer.playerId === '0')!;
         expect(core.recentRoll?.kind).toBe('attackRoll');
         expect(core.recentRoll?.playerId).toBe('2');
         expect(core.recentRoll?.dice.length).toBeGreaterThan(0);
         expect(core.recentRoll?.attack?.target).toBe('hero');
         expect(core.recentRoll?.attack?.defenderPlayerId).toBe('0');
-        expect(updatedHero.traits.might + updatedHero.traits.speed).toBeLessThan(hero.traits.might + hero.traits.speed);
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '0',
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(heroPhysicalPositionBefore);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
+        );
+
+        const updatedHero = findTestExplorer(core, '0');
+        expect(updatedHero.traits.might + updatedHero.traits.speed).toBe(hero.traits.might + hero.traits.speed);
+        expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBeLessThan(heroPhysicalPositionBefore);
+        expect(core.pendingDamageAllocation).toBeNull();
     });
 
     it('英雄持有 Knowledge of Jack 时，被 Jack’s Spirit 攻击也应获得 +2 防御加成', () => {
@@ -7646,9 +10310,16 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        withoutBonus = applyBetrayalCommand(
+            withoutBonus,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: lethalTraitsForPendingDamage(withoutBonus, 'might') },
+        );
         withoutBonus = applyBetrayalCommand(withoutBonus, BETRAYAL_COMMANDS.END_TURN, '0', {});
         withoutBonus = applyBetrayalCommand(withoutBonus, BETRAYAL_COMMANDS.END_TURN, '1', {}, 100, createBetrayalScriptedRandom(2, 2, 1));
-        const noBonusHeroBefore = withoutBonus.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        setHighCapacityPhysicalDamageTracks(withoutBonus, '0');
+        const noBonusHeroPositionBefore = traitTrackPositionTotal(withoutBonus, '0', ['might', 'speed']);
         withoutBonus = applyBetrayalCommand(
             withoutBonus,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -7657,9 +10328,18 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(2, 2, 2, 2, 2, 2, 1, 1, 1),
         );
-        const noBonusHeroAfter = withoutBonus.currentExplorer.playerId === '0'
-            ? withoutBonus.currentExplorer
-            : withoutBonus.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        expect(withoutBonus.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '0',
+        });
+        withoutBonus = applyBetrayalCommand(
+            withoutBonus,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(withoutBonus, ['might', 'speed']) },
+        );
+        const noBonusHeroPositionAfter = traitTrackPositionTotal(withoutBonus, '0', ['might', 'speed']);
 
         let withBonus = createFirstScenarioHauntCore();
         withBonus = applyBetrayalCommand(withBonus, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
@@ -7674,10 +10354,17 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
         );
+        withBonus = applyBetrayalCommand(
+            withBonus,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: lethalTraitsForPendingDamage(withBonus, 'might') },
+        );
         withBonus.scenarioRuntime.knowledgeOfJackPlayerIds = ['0'];
         withBonus = applyBetrayalCommand(withBonus, BETRAYAL_COMMANDS.END_TURN, '0', {});
         withBonus = applyBetrayalCommand(withBonus, BETRAYAL_COMMANDS.END_TURN, '1', {}, 100, createBetrayalScriptedRandom(2, 2, 1));
-        const bonusHeroBefore = withBonus.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        setHighCapacityPhysicalDamageTracks(withBonus, '0');
+        const bonusHeroPositionBefore = traitTrackPositionTotal(withBonus, '0', ['might', 'speed']);
         withBonus = applyBetrayalCommand(
             withBonus,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -7686,14 +10373,21 @@ describe('Betrayal first scenario runtime', () => {
             100,
             createBetrayalScriptedRandom(2, 2, 2, 2, 2, 2, 1, 1, 1),
         );
-        const bonusHeroAfter = withBonus.currentExplorer.playerId === '0'
-            ? withBonus.currentExplorer
-            : withBonus.otherExplorers.find((explorer) => explorer.playerId === '0')!;
+        expect(withBonus.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '0',
+        });
+        withBonus = applyBetrayalCommand(
+            withBonus,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(withBonus, ['might', 'speed']) },
+        );
+        const bonusHeroPositionAfter = traitTrackPositionTotal(withBonus, '0', ['might', 'speed']);
 
-        const noBonusLoss = (noBonusHeroBefore.traits.might + noBonusHeroBefore.traits.speed)
-            - (noBonusHeroAfter.traits.might + noBonusHeroAfter.traits.speed);
-        const bonusLoss = (bonusHeroBefore.traits.might + bonusHeroBefore.traits.speed)
-            - (bonusHeroAfter.traits.might + bonusHeroAfter.traits.speed);
+        const noBonusLoss = noBonusHeroPositionBefore - noBonusHeroPositionAfter;
+        const bonusLoss = bonusHeroPositionBefore - bonusHeroPositionAfter;
 
         expect(noBonusLoss).toBeGreaterThan(bonusLoss);
     });
@@ -7711,6 +10405,12 @@ describe('Betrayal first scenario runtime', () => {
             { target: 'traitor' },
             100,
             createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
+        );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
         );
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {}, 100, createBetrayalScriptedRandom(2, 2, 1));
@@ -7755,6 +10455,25 @@ describe('Betrayal first scenario runtime', () => {
 
     it('同房间尸体上的 Item/Omen 应可每回合搜刮 1 件，且同一尸体同回合不能连续搜刮', () => {
         let core = createCorpseLootReadyCore();
+        let deathState = resolveBetrayalDeathStateSummary(core);
+
+        expect(deathState).toMatchObject({
+            hauntDeathRulesActive: true,
+            livingExplorerPlayerIds: ['1', '2'],
+            deadExplorerPlayerIds: ['0'],
+            corpseLootedThisTurnPlayerIds: [],
+        });
+        expect(deathState.corpses[0]).toMatchObject({
+            playerId: '0',
+            roomId: 'hallway',
+            roomName: '门厅',
+            shouldLayTokenFlat: true,
+            itemCount: 1,
+            omenCount: 1,
+            lootedThisTurn: false,
+            canBeLootedByCurrentExplorer: true,
+            lootableCardIds: ['corpse-item-1', 'corpse-omen-1'],
+        });
 
         const missingCardValidation = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -7772,6 +10491,16 @@ describe('Betrayal first scenario runtime', () => {
         expect(lootedByTeammate.inventory.length).toBeGreaterThan(1);
         expect(corpseAfterLoot.inventory).toHaveLength(1);
         expect(core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn).toContain('0');
+        deathState = resolveBetrayalDeathStateSummary(core);
+        expect(deathState.corpses[0]).toMatchObject({
+            playerId: '0',
+            inventory: [{ id: 'corpse-omen-1', name: '黑暗预兆', kind: 'omen' }],
+            itemCount: 0,
+            omenCount: 1,
+            lootedThisTurn: true,
+            canBeLootedByCurrentExplorer: false,
+            lootableCardIds: [],
+        });
 
         const secondLootValidation = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -7853,6 +10582,22 @@ describe('Betrayal first scenario runtime', () => {
         expect(risk.nextRollDiceCount).toBe(4);
         expect(risk.threshold).toBe(5);
         expect(risk.hauntStarted).toBe(false);
+
+        const riskTrack = resolveBetrayalNumberTracks(core).find((track) => track.id === 'haunt-risk');
+        expect(riskTrack).toMatchObject({
+            kind: 'haunt-risk',
+            label: '作祟风险',
+            value: 3,
+            min: 0,
+            max: 5,
+            targetValue: 5,
+            currentLabel: '预兆 3',
+            targetLabel: '5+ 作祟',
+            statusLabel: '下次 4 骰',
+            progressPercent: 38,
+            source: 'base-rule',
+            representativeOnly: false,
+        });
     });
 
     it('抽到新预兆时作祟检定骰数和风险读模型一致', () => {
@@ -7887,5 +10632,102 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.recentRoll?.kind).toBe('hauntRoll');
         expect(core.recentRoll?.dice).toHaveLength(riskBeforeDraw.nextRollDiceCount);
         expect(core.latestDiscovery?.detail).toContain('4 颗骰子');
+    });
+
+    it('作祟检定按全员预兆总数请求骰数，但最多只投 8 颗骰', () => {
+        let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.drawOrder = ['omen'];
+        core.possessionOrderByKind.omen = [
+            { id: 'omen-new', name: '新预兆', kind: 'omen' },
+        ];
+        core.currentExplorer.inventory = Array.from({ length: 3 }, (_, index) => ({
+            id: `omen-current-${index + 1}`,
+            name: `当前预兆${index + 1}`,
+            kind: 'omen' as const,
+        }));
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.otherExplorers = core.otherExplorers.map((explorer, explorerIndex) => ({
+            ...explorer,
+            inventory: Array.from({ length: 3 }, (_, index) => ({
+                id: `omen-${explorerIndex + 1}-${index + 1}`,
+                name: `预兆${explorerIndex + 1}-${index + 1}`,
+                kind: 'omen' as const,
+            })),
+        }));
+        const riskBeforeDraw = resolveBetrayalHauntRisk(core);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-east' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1, 1, 1, 1, 1, 3, 3),
+        );
+
+        expect(riskBeforeDraw.omenCount).toBe(9);
+        expect(riskBeforeDraw.requestedRollOmenCount).toBe(9);
+        expect(riskBeforeDraw.nextRollDiceCount).toBe(8);
+        expect(core.recentRoll?.kind).toBe('hauntRoll');
+        expect(core.recentRoll?.dice).toHaveLength(8);
+        expect(core.recentRoll?.dice).toEqual(Array.from({ length: 8 }, () => 0));
+        expect(core.latestDiscovery?.detail).toContain('8 颗骰子');
+    });
+
+    it('普通预兆触发作祟时记录开局剧本卡和触发预兆来源', () => {
+        let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.drawOrder = ['omen'];
+        core.possessionOrderByKind.omen = [
+            { id: 'omen-crimson-splash', name: 'A Splash of Crimson', kind: 'omen' },
+        ];
+        core.currentExplorer.inventory = [
+            { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
+            ...explorer,
+            inventory: [
+                { id: `omen-${index + 1}`, name: `预兆${index + 1}`, kind: 'omen' },
+            ],
+        }));
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-east' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntTriggered).toBe(true);
+        expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
+        expect(core.scenarioRuntime.traitorPlayerId).toBe('0');
+        expect(core.scenarioRuntime.hauntTraitorResolution).toMatchObject({
+            policy: 'haunt-revealer',
+            traitorPlayerId: '0',
+            teamModel: 'one-traitor',
+            reasonLabel: '作祟揭秘者',
+            candidatePlayerIds: ['0'],
+            excludedPlayerIds: [],
+            representativeOnly: false,
+        });
+        expect(core.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-traitor',
+            anchorPlayerId: '0',
+            nextPlayerId: '1',
+            reasonLabel: '叛徒左侧玩家先行动',
+            representativeOnly: false,
+        });
+        expect(core.scenarioRuntime.hauntCardNumber).toBe(1);
+        expect(core.scenarioRuntime.hauntScenarioCardId).toBe(DEFAULT_BETRAYAL_SCENARIO_CARD_ID);
+        expect(core.scenarioRuntime.hauntScenarioCardTitle).toBe('赤红杰克归来');
+        expect(core.scenarioRuntime.hauntScenarioCardLabel).toBe('NONE');
+        expect(core.scenarioRuntime.triggeringOmenId).toMatch(/^omen-crimson-splash/);
+        expect(core.scenarioRuntime.triggeringOmenName).toBe('A Splash of Crimson');
+        expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Splash of Crimson');
+        expect(core.scenarioRuntime.hauntResolutionMatchedTrigger).toBe(true);
+        expect(core.scenarioRuntime.hauntResolutionRepresentativeOnly).toBe(false);
     });
 });

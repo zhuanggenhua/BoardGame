@@ -70,6 +70,15 @@ describe('i18n 静态检查工具', () => {
             '如果有就给我看图',
             'setup 队列',
             'setup queue',
+            '缺正面',
+            'Front missing',
+            '叛徒忽略事件',
+        ];
+        const forbiddenPatterns = [
+            {
+                label: '剧本编号+查阅拼接标题',
+                pattern: /剧本[0-9一二三四五六七八九十]+查阅/,
+            },
         ];
         const localeRoot = path.resolve('public/locales');
         const files: string[] = [];
@@ -89,6 +98,11 @@ describe('i18n 静态检查工具', () => {
                 for (const phrase of forbiddenPhrases) {
                     if (value.includes(phrase)) {
                         violations.push(`${path.relative(process.cwd(), sourceFile)}:${trail.join('.')} -> ${phrase} in "${value}"`);
+                    }
+                }
+                for (const { label, pattern } of forbiddenPatterns) {
+                    if (pattern.test(value)) {
+                        violations.push(`${path.relative(process.cwd(), sourceFile)}:${trail.join('.')} -> ${label} in "${value}"`);
                     }
                 }
                 return;

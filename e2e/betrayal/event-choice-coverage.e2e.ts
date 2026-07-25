@@ -3299,7 +3299,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 2 });
     await expect(
       page.getByTestId("betrayal-event-choice-confirm"),
-    ).toBeEnabled();
+      "肉质苔癣投骰后只剩属性奖励选择，不应再要求额外确认按钮",
+    ).toHaveCount(0);
     for (const trait of ["might", "speed", "knowledge", "sanity"]) {
       await expect(
         page.getByTestId(`betrayal-event-choice-trait-${trait}`),
@@ -3357,10 +3358,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
 
     await page.getByTestId("betrayal-event-choice-trait-knowledge").click();
-    await expect(
-      page.getByTestId("betrayal-event-choice-confirm"),
-    ).not.toBeDisabled();
-    await page.getByTestId("betrayal-event-choice-confirm").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();

@@ -1,0 +1,1142 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "doudizhu",
+  "basePrefix": "official/i18n/zh-CN/doudizhu/",
+  "files": {
+    "avatars/compressed/player-1": {
+      "variants": {
+        "webp": {
+          "sha256": "eba9a0bfa606602adbdcea1958372557dd1e9d1248a436e54ff41399b8f7c24c",
+          "bytes": 20538,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "avatars/compressed/player-2": {
+      "variants": {
+        "webp": {
+          "sha256": "e34d2c58e0b1ccb1939090ec4518567519bca772ac9c08df2ed205d05a1bfb62",
+          "bytes": 20114,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "avatars/compressed/player-3": {
+      "variants": {
+        "webp": {
+          "sha256": "4549074e1c1291eafc8e71437443b3040c63ae8aca4d70ab251e7600a6d51c60",
+          "bytes": 19926,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "avatars/player-1": {
+      "variants": {
+        "png": {
+          "sha256": "cf7c7dbc843d628b307b9475920edc122231db343ade0b0af3f75d5033980c48",
+          "bytes": 52295,
+          "mime": "image/png"
+        }
+      }
+    },
+    "avatars/player-2": {
+      "variants": {
+        "png": {
+          "sha256": "7cf35c0105b836b70a191975cdd42b6069c8fe83a8be94e5aec18b572ee04b44",
+          "bytes": 52604,
+          "mime": "image/png"
+        }
+      }
+    },
+    "avatars/player-3": {
+      "variants": {
+        "png": {
+          "sha256": "0bb8a5db58ae03c956fb4590f1323bb3a46c78b224719eb6e3ef204d2d7c389b",
+          "bytes": 52184,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/card-back": {
+      "variants": {
+        "png": {
+          "sha256": "e3bbdcbfa2313cc20ec8de2f240a2e603b0f8dbec8a9dc35e2a97f85dbc207f5",
+          "bytes": 61626,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "bd92ee4a5749062128b9e1aa688f73cf434c281770cb23b8a09eaa7ec19c1599",
+          "bytes": 21548,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/club-10": {
+      "variants": {
+        "png": {
+          "sha256": "fa3de53bf6d62932c0566acba13cbd8bbdab9e28e407b24e7793940a7d6220a7",
+          "bytes": 76695,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-2": {
+      "variants": {
+        "png": {
+          "sha256": "c5520ded01bf39f605dc9b51f7ef6693fd5e57344d4e7c3d694103a5d53104ba",
+          "bytes": 73297,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-3": {
+      "variants": {
+        "png": {
+          "sha256": "c07afb5456223c0fad997101ded8b3b474b9c7281ba70401598cc1ffd51f8c7f",
+          "bytes": 74712,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-4": {
+      "variants": {
+        "png": {
+          "sha256": "8cbedb5793579412f49bb2f568ae41c7d6f9490197ece5c5f419e5ba85a02805",
+          "bytes": 73422,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-5": {
+      "variants": {
+        "png": {
+          "sha256": "fc88098cdbdfb808002f950d7d656d5a352b47a793b1c2f7dfff2542a6ca2604",
+          "bytes": 75014,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-6": {
+      "variants": {
+        "png": {
+          "sha256": "7d46859692cb4cea4fbe6f21abf48af27749ef640f2417820b5432479bda1de4",
+          "bytes": 76019,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-7": {
+      "variants": {
+        "png": {
+          "sha256": "9a94bbd870597d55a0153f125e8aecb3cd0648565e4e25fad6d4da87109956a0",
+          "bytes": 74281,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-8": {
+      "variants": {
+        "png": {
+          "sha256": "80e7601e9137b26364e74d57e517000c19244b4219270920d7e01f31288e0d9a",
+          "bytes": 77113,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-9": {
+      "variants": {
+        "png": {
+          "sha256": "3c928e97cdc4267b0375d3c98b32c09447b7ea305a5df224e1e094887a7338fc",
+          "bytes": 77220,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-a": {
+      "variants": {
+        "png": {
+          "sha256": "e06f055f5c3ce8f8bb381bde0a6a4eb56fcd7f5530096704f049e398a1dc3677",
+          "bytes": 72609,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-j": {
+      "variants": {
+        "png": {
+          "sha256": "5c80349d41004c503e3aa32bbf95b57bcd2292fc49838a8b9fb12980f4155249",
+          "bytes": 69661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-k": {
+      "variants": {
+        "png": {
+          "sha256": "7276df8967c076fdf99d56c0b4f7f11632714b9f8ac58aff6f18332ced7417d5",
+          "bytes": 71214,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/club-q": {
+      "variants": {
+        "png": {
+          "sha256": "836dee30b9b89b8cca2f4f74741ce33846f5d739a23a288cd989366f57e78ff6",
+          "bytes": 72091,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/compressed/club-10": {
+      "variants": {
+        "webp": {
+          "sha256": "43df9a4e3b93caac4f538ea6fdf8ce042b781c55f360a488f7cb01c386dffbf5",
+          "bytes": 18844,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-2": {
+      "variants": {
+        "webp": {
+          "sha256": "bcd4b3ad31a97e251ff7e2a6fdad925b3c1c98a90ddd95bd955020295e8f8a63",
+          "bytes": 15496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-3": {
+      "variants": {
+        "webp": {
+          "sha256": "d1493ccb06d0453526bb8598e3224b541c23026ff557b47d13e9aa8af1f807a6",
+          "bytes": 16370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-4": {
+      "variants": {
+        "webp": {
+          "sha256": "2892c3e7098a29077ca2fa7da31feacb51da6b95e4759af41d15a7f758e27f07",
+          "bytes": 16140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-5": {
+      "variants": {
+        "webp": {
+          "sha256": "ff87e8c7ed4c3a8fd163768b3bb344e4bfca4eb5c1f40c8f54ce362ec09a3cf0",
+          "bytes": 16988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-6": {
+      "variants": {
+        "webp": {
+          "sha256": "ecc26d6fc157f00bca9ca4689fa2e41a3e4962f350457287e69f320651a4a70f",
+          "bytes": 17688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-7": {
+      "variants": {
+        "webp": {
+          "sha256": "abeb2dc9096277f3fbe3d690304bd474965075b6af6b90e351671f24a3890b1d",
+          "bytes": 17124,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-8": {
+      "variants": {
+        "webp": {
+          "sha256": "b8b50054fd5f06ab8d2dc9828dced899eb46145ca5a03952444cabb4260cf62d",
+          "bytes": 18494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-9": {
+      "variants": {
+        "webp": {
+          "sha256": "4014fc8606f5e248b436a1f62e92bf7b37446630d7c82de954a36c5f51892454",
+          "bytes": 18794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-a": {
+      "variants": {
+        "webp": {
+          "sha256": "5f1a6bd7bac7c5f5092ba4babb0927d66b53693319a48a8927c4224703168809",
+          "bytes": 15018,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-j": {
+      "variants": {
+        "webp": {
+          "sha256": "73d068334a5158abd21579afe25e2622cb56e0428a60529b7408aeddf69bb488",
+          "bytes": 21292,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-k": {
+      "variants": {
+        "webp": {
+          "sha256": "9beca98524d7525a680090210b71a133f97d45bb834396b24ff96098939888ee",
+          "bytes": 21960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/club-q": {
+      "variants": {
+        "webp": {
+          "sha256": "63408950bc8c005d0a90c9b8411444b8bcb98ae493dcee229b1ba591160edfa6",
+          "bytes": 22666,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-10": {
+      "variants": {
+        "webp": {
+          "sha256": "8f6f65c79ca205916831e0ca7cd4d87e387be8c993d61856935df4a3651bb804",
+          "bytes": 17070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-2": {
+      "variants": {
+        "webp": {
+          "sha256": "e3d21023d0dfc69254ddc16e7430e11f777e1f91350fe6e267a750f7fdc71c56",
+          "bytes": 14990,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-3": {
+      "variants": {
+        "webp": {
+          "sha256": "34c702694820f1ed9d12f3f07380588e85a4e6440418e86e9f278f3ec736fbc6",
+          "bytes": 15580,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-4": {
+      "variants": {
+        "webp": {
+          "sha256": "5a380d0fa220e250adde1073a4ba0d7320c7ed12cab446eb2061b1fd708c0dc8",
+          "bytes": 15270,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-5": {
+      "variants": {
+        "webp": {
+          "sha256": "7fb7b103e7b47f58907deb94d435817bccf5fbe37bce04b2e15c95c48e422528",
+          "bytes": 15964,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-6": {
+      "variants": {
+        "webp": {
+          "sha256": "ac446c476966ee542fbb1c8ff114c6162e2dccf0c4280a967669180ac6fa66d5",
+          "bytes": 16736,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-7": {
+      "variants": {
+        "webp": {
+          "sha256": "746e0f17266ddb08644c4f059c954f90db6e5f9d9261ab0611c9017145518742",
+          "bytes": 16228,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-8": {
+      "variants": {
+        "webp": {
+          "sha256": "fb7af96f3b163ac95055d3c910fd1a3566ba262d986d35264e5d2487a65a1e0c",
+          "bytes": 17268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-9": {
+      "variants": {
+        "webp": {
+          "sha256": "a9bf637f7d3e2cefa984fb0e19baf4a94ac98781fbee5ddb932e51ca65da2287",
+          "bytes": 17290,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-a": {
+      "variants": {
+        "webp": {
+          "sha256": "663d9234bf9bf5df0f0383730ac2397f0b2bd32ee08e5245580b5837ca31c69d",
+          "bytes": 14674,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-j": {
+      "variants": {
+        "webp": {
+          "sha256": "6e415a32fd6c4b8773fab7ee1ba66ca70d6d8d78a95dd6b2c878ee5265e6815e",
+          "bytes": 20780,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-k": {
+      "variants": {
+        "webp": {
+          "sha256": "2cef275bc629836059e5d1953a8730bfe4269ac4e56ad39d33f7f6c809118c95",
+          "bytes": 21714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/diamond-q": {
+      "variants": {
+        "webp": {
+          "sha256": "76d53e4a682593e79a2d5483d99488afb7f8b2d81f0a028e12748e9c2bf84203",
+          "bytes": 21816,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-10": {
+      "variants": {
+        "webp": {
+          "sha256": "2e4e74bfa998027d8e4e31ce07df5b922dae010b911a2312b97c05954e145d53",
+          "bytes": 17112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-2": {
+      "variants": {
+        "webp": {
+          "sha256": "a2ca5f7ce20d5daf4244d88a39b672c11b16db383cc366fa81b676e9761e19db",
+          "bytes": 15270,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-3": {
+      "variants": {
+        "webp": {
+          "sha256": "ebf3533369ae4853debad1d12ddf915d1c7411db1eb5eb27669fd2b1ea89093a",
+          "bytes": 15924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-4": {
+      "variants": {
+        "webp": {
+          "sha256": "99b58b2f1f3e207fb523695599a0f409f349557411c01a80adf6a4ffe66f5d18",
+          "bytes": 15606,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-5": {
+      "variants": {
+        "webp": {
+          "sha256": "78336b38a38c193ab51a71957b63d75f27d7c4e4874f54deca1d3c81edbabcfe",
+          "bytes": 16348,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-6": {
+      "variants": {
+        "webp": {
+          "sha256": "fafd65445c3c81ec1a8a5c05740f0abc6523dcd3877c8a0c6f723335495fb45f",
+          "bytes": 17108,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-7": {
+      "variants": {
+        "webp": {
+          "sha256": "f5c096a6ff0eaef1ca6993d166244f340b607d82ea38669dc21f988462570704",
+          "bytes": 16474,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-8": {
+      "variants": {
+        "webp": {
+          "sha256": "01ab5becd362208aeb5fc6a1d34675ba520dfcf8e933c4dbcf868c4cefba7a54",
+          "bytes": 17604,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-9": {
+      "variants": {
+        "webp": {
+          "sha256": "6aca1e5b5deaa9d8eb61bf4f8dc0f63ce95b80db26cb957a2f12f46d9b0e25cb",
+          "bytes": 18268,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-a": {
+      "variants": {
+        "webp": {
+          "sha256": "303d5ac809ef30095c597914d7cf0bc42e480d75d46c6de6dbd7bbfab110945e",
+          "bytes": 14866,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-j": {
+      "variants": {
+        "webp": {
+          "sha256": "e2e1c0b7064b5830ff3d9fb63bb06180e515bcee19a42b62bfc8779f7f34465e",
+          "bytes": 21000,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-k": {
+      "variants": {
+        "webp": {
+          "sha256": "7e4cfb4aad81be8888955a236a4b55976c79b3f0f55dc3a77b12ec27d4f45e19",
+          "bytes": 21838,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/heart-q": {
+      "variants": {
+        "webp": {
+          "sha256": "ff81c9d8ef7a7b628bb9c244f9e7b9b123f92bce61ec35f985aa07b76a796062",
+          "bytes": 21936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/joker-big": {
+      "variants": {
+        "webp": {
+          "sha256": "5fb1d3e58e0f94b2cab87d9eb6be7fd9e7b3556e0627e6a0cc501cedc984b412",
+          "bytes": 23394,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/joker-small": {
+      "variants": {
+        "webp": {
+          "sha256": "7bda7353597fcc2643242f27e94645aa05d577996bf678669f307722e716959d",
+          "bytes": 23564,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-10": {
+      "variants": {
+        "webp": {
+          "sha256": "671f9954e1477fbd3c68aa8cfb34a5750a8ea78c5b89486d205d965ee37cccca",
+          "bytes": 17636,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-2": {
+      "variants": {
+        "webp": {
+          "sha256": "fa506dfccc3a55cc31a8ab224cb70e22b6217747dee99e126d3f382fbc2316bf",
+          "bytes": 15094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-3": {
+      "variants": {
+        "webp": {
+          "sha256": "5318a200873671ac28c3e099629b31079280a41e055fac507a1496630aca400d",
+          "bytes": 15850,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-4": {
+      "variants": {
+        "webp": {
+          "sha256": "9fdbffb13c70fec6ce10aa7428a3dce9f769face43dd68d81f78ba35aaeda448",
+          "bytes": 15618,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-5": {
+      "variants": {
+        "webp": {
+          "sha256": "f083bd516f80283465f1c86e843f04d3719780b6842ca3e49666e993809e06b8",
+          "bytes": 16458,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-6": {
+      "variants": {
+        "webp": {
+          "sha256": "7cfb713b4033f09f1e3bc41492f8b13a113f5a3431353842b26987fd381d2cba",
+          "bytes": 17044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-7": {
+      "variants": {
+        "webp": {
+          "sha256": "1f2f58739740cbc3332e009465a69522c013ec27e325bf8980c5385138ca4555",
+          "bytes": 16590,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-8": {
+      "variants": {
+        "webp": {
+          "sha256": "6e15c53b018bd70b80b85cfd271e663bdce8182f2afff94afd3b87d3dbe625e2",
+          "bytes": 17794,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-9": {
+      "variants": {
+        "webp": {
+          "sha256": "af9f12ec038e764057fa25e8708925a509b7ebba8ad04a0e670180e52de776a7",
+          "bytes": 18036,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-a": {
+      "variants": {
+        "webp": {
+          "sha256": "41e23558a9c5d368c06c49c3a63840d4a096de44b490177a43050e1929094b04",
+          "bytes": 14706,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-j": {
+      "variants": {
+        "webp": {
+          "sha256": "5b9abd2b2849bcd2794ab35f7606234a60cfe1e5393ce7d76094db51b8ad87bc",
+          "bytes": 21058,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-k": {
+      "variants": {
+        "webp": {
+          "sha256": "1a30f6556235b074577210c1a3868a165ba0ec0170f2fa3f55c156cd60689e77",
+          "bytes": 21730,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/compressed/spade-q": {
+      "variants": {
+        "webp": {
+          "sha256": "b8805c392970ddd4275d3af509bd61a5edb4ec3792c6e26e171e5491ee0ad5e9",
+          "bytes": 22444,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/faces/diamond-10": {
+      "variants": {
+        "png": {
+          "sha256": "bca2a80f8eb07913041f39e8c435fd79329bbcdb5cd279cbe2fa20debf2297aa",
+          "bytes": 74426,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-2": {
+      "variants": {
+        "png": {
+          "sha256": "9ea661091facc280896fc8605e0410efe518467ce2fea60e47713c770a90c52f",
+          "bytes": 72207,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-3": {
+      "variants": {
+        "png": {
+          "sha256": "04bea3e279cd38c29f56f648e5c2c11df07f2f4ed0680808ff7cc3f3e77515e4",
+          "bytes": 73378,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-4": {
+      "variants": {
+        "png": {
+          "sha256": "7e8d7c58608c420499b0df3b1e326bdec6893d2f9a467e8e04876bff10a4f39f",
+          "bytes": 71902,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-5": {
+      "variants": {
+        "png": {
+          "sha256": "6307b7a2125200438f621ece9cc8516bc28106ea857c7c638acf853b6ac5ccfe",
+          "bytes": 73366,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-6": {
+      "variants": {
+        "png": {
+          "sha256": "9c225e5636dc4fda67ef021aa17aaa578005ed595729676a761986a2a9f25961",
+          "bytes": 74215,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-7": {
+      "variants": {
+        "png": {
+          "sha256": "776b759580be02b643cc6bae0fea3da7b74eb319db471c5462c00d0499688424",
+          "bytes": 72474,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-8": {
+      "variants": {
+        "png": {
+          "sha256": "0939db013f738a1b9ec2d0251edcbd2f0776173dfb993246795780f7d57d225d",
+          "bytes": 74678,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-9": {
+      "variants": {
+        "png": {
+          "sha256": "91006dce6dd7c2d1cd0bed842b498d9e6894684b5b9d0140761f4bddee48ed1b",
+          "bytes": 74872,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-a": {
+      "variants": {
+        "png": {
+          "sha256": "f7c23b54cffc6ff452f0bbebd67a27ac57bc69df3a0d69d5df37b959ecbd25c2",
+          "bytes": 71787,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-j": {
+      "variants": {
+        "png": {
+          "sha256": "d1fafa14f7084fa76839f3cb79b98ee320ca7c608dfd0c89ec307d96cb988e2e",
+          "bytes": 68688,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-k": {
+      "variants": {
+        "png": {
+          "sha256": "abdda191817aaa93609174fadd650ef342c8586262623df5b947eebfd2b7a067",
+          "bytes": 70085,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/diamond-q": {
+      "variants": {
+        "png": {
+          "sha256": "45140607a610210eea56b59ccf9529eee5a28debfff2dfa097df1cb4d71e7063",
+          "bytes": 70988,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-10": {
+      "variants": {
+        "png": {
+          "sha256": "6a71055b98d93b721661d6549ecc9e65f59cca61642f41932fc66821aae1812c",
+          "bytes": 74751,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-2": {
+      "variants": {
+        "png": {
+          "sha256": "81d0d712a2c3a86e0f260f0325bb0c5e5664452c3000a547b3866edd9360aa27",
+          "bytes": 72286,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-3": {
+      "variants": {
+        "png": {
+          "sha256": "acceb4416624aa76d00e20285bdcafd05d88acaa4bf982d9c47577424ea215c0",
+          "bytes": 73325,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-4": {
+      "variants": {
+        "png": {
+          "sha256": "ac77f848739056f1fea5b56531b18e7cda38c27a26fda71d732ca18d5a8729a4",
+          "bytes": 72102,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-5": {
+      "variants": {
+        "png": {
+          "sha256": "2003f131e74b03f36d8c21316749d0b25c843e9b5e4749ba812d653c5f86c5a9",
+          "bytes": 73638,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-6": {
+      "variants": {
+        "png": {
+          "sha256": "6da997ea97afab72304135fc12f6382ac3181556ec0aac459cb0a461f0b6c5e3",
+          "bytes": 74529,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-7": {
+      "variants": {
+        "png": {
+          "sha256": "79a4d3581db4cca5d8347338c3fc2f3459b7e3e45312742e5fcf7fff525ba45d",
+          "bytes": 72717,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-8": {
+      "variants": {
+        "png": {
+          "sha256": "799754462405716e992ed1dcd8d0cce182784166ce4678ad1434c4fd79c4eda6",
+          "bytes": 75079,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-9": {
+      "variants": {
+        "png": {
+          "sha256": "adb10b1cc4fc186121b57cda0ec9651f6ab68dc4b06bdcdbf2da0ae3dd735c82",
+          "bytes": 75210,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-a": {
+      "variants": {
+        "png": {
+          "sha256": "6a260552ef8075dae3103dabeecf3a6ef979d8a8239882c579aef0dbf1fa3b7d",
+          "bytes": 71602,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-j": {
+      "variants": {
+        "png": {
+          "sha256": "4ad8df846d9b92bc3ff33c11d120fb02fb1e572145e8b9772991e1b910a39df3",
+          "bytes": 68913,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-k": {
+      "variants": {
+        "png": {
+          "sha256": "0776b69ea09346d7a05877a0c0581b94bcdc41dbb4e7dc05bd420b2b1f60e92f",
+          "bytes": 70330,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/heart-q": {
+      "variants": {
+        "png": {
+          "sha256": "f66a44a5a8d77fa7841b8c5b506baff03241598262a628e40ecfb564e61a5207",
+          "bytes": 71236,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/joker-big": {
+      "variants": {
+        "png": {
+          "sha256": "4df6c09c2a666de029b0731f42d12350d2402f119e4072e673499750bdb2d54a",
+          "bytes": 67782,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/joker-small": {
+      "variants": {
+        "png": {
+          "sha256": "9cce3d24e38b1161ff5bd1bd8bbbe3c6f2eb7fae3ffa1c6db4634a35c169704f",
+          "bytes": 68266,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-10": {
+      "variants": {
+        "png": {
+          "sha256": "8a679cae793551cd9231d12621a0c922a1242059953035cbc1506e47fa15278d",
+          "bytes": 76046,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-2": {
+      "variants": {
+        "png": {
+          "sha256": "36d892331e7e8a79360a3553acbd10103b0fe7a4ca1b430612b5f49ad7f0eadd",
+          "bytes": 72999,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-3": {
+      "variants": {
+        "png": {
+          "sha256": "0425e012e8bf62a9c463928e7f2527b7e60626767a31ebd6ea267d6bf4988fb8",
+          "bytes": 74382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-4": {
+      "variants": {
+        "png": {
+          "sha256": "8304683c426a389c3c5b3fde33b1a29120d715b9ac35677e28a2ca96dda2d659",
+          "bytes": 72896,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-5": {
+      "variants": {
+        "png": {
+          "sha256": "74e47de3b546448daa204e81eba857d2d74a1a359ea3da2e8e77baa501e1a393",
+          "bytes": 74662,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-6": {
+      "variants": {
+        "png": {
+          "sha256": "ae639cd3ad13c11eee58a1dc21d14ba0ca91e88728a13367619c9ada3b8bb7d1",
+          "bytes": 75543,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-7": {
+      "variants": {
+        "png": {
+          "sha256": "2e57a6e641b0ff18c2cbfee6397e713bfa8af9e325388aaf7151a53d896cb310",
+          "bytes": 73829,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-8": {
+      "variants": {
+        "png": {
+          "sha256": "8d0332f230103d9ba398d32f8c285e89baceea3b85072e48ded69d5a1d01e14c",
+          "bytes": 76257,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-9": {
+      "variants": {
+        "png": {
+          "sha256": "93fded3dd1e3e985dd510130149478d33653098b53ec236176f37ad1f34fd710",
+          "bytes": 76696,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-a": {
+      "variants": {
+        "png": {
+          "sha256": "c9c5b0e7d38d5b13cd6be97cf1e4937b16282c98376b7da383aee620ece489b9",
+          "bytes": 72537,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-j": {
+      "variants": {
+        "png": {
+          "sha256": "2e085f3f16ba5bae8a560241b05c64e63fbe84704fa0ea6e0073ec161b3246af",
+          "bytes": 69344,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-k": {
+      "variants": {
+        "png": {
+          "sha256": "714f226bda4a2394aa271d454c1c98a794dff4943b05454859a589630669e265",
+          "bytes": 70893,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/faces/spade-q": {
+      "variants": {
+        "png": {
+          "sha256": "d86d7611dc1689263985b074a41ebabf38e031476821a965f8d089de8a7c1fb6",
+          "bytes": 71766,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/bid-1": {
+      "variants": {
+        "png": {
+          "sha256": "aaea7895eebc37804eea6bd3252301b8d5597032b9b982fd9a635301cf1bdcd2",
+          "bytes": 48608,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/bid-2": {
+      "variants": {
+        "png": {
+          "sha256": "27de97d47bbef5e5d0d2ac1abd05c64cfcfde3526f3ebc5ad619273ab2a77e57",
+          "bytes": 49072,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/bid-3": {
+      "variants": {
+        "png": {
+          "sha256": "0290e5d29221e8c71e414eabc16d03395ab58f915f9999da1c30525a0cf58af5",
+          "bytes": 51855,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/bid-pass": {
+      "variants": {
+        "png": {
+          "sha256": "e39d7110354e85a8758e1c1cf872edf577baaa4440df900ab738a762b8333a33",
+          "bytes": 51102,
+          "mime": "image/png"
+        }
+      }
+    },
+    "chips/compressed/bid-1": {
+      "variants": {
+        "webp": {
+          "sha256": "166f40eb5574da40f9c90211a69465e4abf1829f42a801396093aa4cbcbf5120",
+          "bytes": 17752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/bid-2": {
+      "variants": {
+        "webp": {
+          "sha256": "4d409f44685dc4cb4f775725f38694a7cad3a4adeee8a5e70fbbee0dd622fe15",
+          "bytes": 18618,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/bid-3": {
+      "variants": {
+        "webp": {
+          "sha256": "bda37b0840a9de7b99675bf6935a468e303e046f8f5f8d4b9fc16803f0c40091",
+          "bytes": 18688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "chips/compressed/bid-pass": {
+      "variants": {
+        "webp": {
+          "sha256": "cceae364178ced5e3b0836e69117021d359433a6a713ce62eabf25728082eeb2",
+          "bytes": 18408,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "table/compressed/felt": {
+      "variants": {
+        "webp": {
+          "sha256": "276f5fa8d76bb41e61f185a3b4a7824eb9ed728cd32482c34625d7f67486c462",
+          "bytes": 28286,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "table/felt": {
+      "variants": {
+        "png": {
+          "sha256": "43d0fcb938beb0233d669c8f324e88aa2c37416e952cf96885ccdf993482d5d5",
+          "bytes": 723211,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

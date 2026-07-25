@@ -40,6 +40,8 @@
 | L0-L4 证据层级 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 命中 D 维度 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 真实入口 E2E 与截图核验 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 测试语义对账 / 旧测试失效检查 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
+| 同类扩审记录 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 残余范围声明 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 | 旧 evidence / 旧结论对账回写 | `passed` / `representative_only` / `blocked` / `scoped_debt` |  |
 
@@ -87,6 +89,7 @@
 - `规则子句` 不能只写对象摘要，必须覆盖时机、主效果、替代入口、额外触发、例外/否则、once/turn、清理。
 - `共享链路 / 复用依据` 为空时，表示该对象未复用代表链；若复用，必须写清共享链名称、代表对象、触发时机 / 候选生成 / 交互入口 / payload 字段 / resolver 或 handler / 最终权威状态六项判等依据，以及剩余差异。
 - 任一对象缺独立行，即视为未审。
+- 若对象行写 `可玩 handler + 测试`、`定向测试覆盖`、`测试覆盖` 或等价口径，必须补“测试语义对账”：测试到底断言了哪些最终权威状态、哪些玩家选择/可选/数量边界、哪些负向路径；若旧测试断言了错误语义，必须在本节或修订记录里标成旧测试失效，不能继续把它当正向证据。
 
 ### 5.0 语义门禁快照（高风险对象默认强制）
 
@@ -202,12 +205,20 @@ npm run audit:evidence:selfcheck -- <本 evidence 文件>
 
 - 是否误用“选择页 / 横幅 / 静态展示 E2E”充当玩法收口：
 - 是否误用“测试里出现 id / registerAbility 覆盖”充当行为完整：
+- 是否误用“有测试 / tests passed / 可玩 handler + 测试”充当语义正确：
+- 是否检查旧测试是否仍在断言旧规则、旧文案或旧错误语义：
 - 是否误用“注入型 interaction E2E”充当真实入口玩法证据：
 - 是否只证明 prompt 出现、未证明最终权威状态变化：
 
 ## 8. 共享根因与残余范围
 
 - 共享根因项：
+- 同类扩审记录：
+  - 根因关键词 / 事件 / 状态字段 / helper / UI 入口：
+  - 搜索范围与命中项：
+  - 已一并修复项：
+  - 判定不受影响项及理由：
+  - 未完成扩审范围：
 - 对象级局部问题：
 - 未审家族 / 未覆盖交互链：
 - 当前不能宣称整体收口的原因：

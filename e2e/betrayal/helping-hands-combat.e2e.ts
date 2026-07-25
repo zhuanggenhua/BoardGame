@@ -26,10 +26,13 @@ const ROLL_REVIEW_SCREENSHOT = `${EVIDENCE_DIR}/01-大宅饿了-力量攻击投�
 const REWARD_CHOICE_SCREENSHOT = `${EVIDENCE_DIR}/02-大宅饿了-伤害或偷牌选择.jpg`;
 const STEAL_SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/03-大宅饿了-偷牌后回牌桌.jpg`;
 const TROLL_COMBINED_READY_SCREENSHOT = `${EVIDENCE_DIR}/04-大宅饿了-巨魔手合击入口.jpg`;
-const TROLL_COMBINED_SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/05-大宅饿了-巨魔手合击后反馈.jpg`;
-const AMULET_OLD_HOLDER_SCREENSHOT = `${EVIDENCE_DIR}/06-大宅饿了-护符换手后旧持有人无巨魔手入口.jpg`;
-const AMULET_NEW_HOLDER_SCREENSHOT = `${EVIDENCE_DIR}/07-大宅饿了-护符新持有人获得巨魔手入口.jpg`;
-const NO_AMULET_SKIP_SCREENSHOT = `${EVIDENCE_DIR}/08-大宅饿了-无人持护符巨魔手跳过.jpg`;
+const TROLL_COMBINED_DAMAGE_ALLOCATION_SCREENSHOT = `${EVIDENCE_DIR}/05-大宅饿了-巨魔手合击后伤害分配.jpg`;
+const TROLL_MOVE_TARGETS_SCREENSHOT = `${EVIDENCE_DIR}/06-大宅饿了-巨魔手移动目标高亮.jpg`;
+const TROLL_MOVE_SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/07-大宅饿了-巨魔手移动后回牌桌.jpg`;
+const TROLL_MONSTER_TURN_ENDED_SCREENSHOT = `${EVIDENCE_DIR}/08-大宅饿了-结束巨魔手回合后下一位.jpg`;
+const AMULET_OLD_HOLDER_SCREENSHOT = `${EVIDENCE_DIR}/09-大宅饿了-护符换手后旧持有人无巨魔手入口.jpg`;
+const AMULET_NEW_HOLDER_SCREENSHOT = `${EVIDENCE_DIR}/10-大宅饿了-护符新持有人获得巨魔手入口.jpg`;
+const NO_AMULET_SKIP_SCREENSHOT = `${EVIDENCE_DIR}/11-大宅饿了-无人持护符巨魔手跳过.jpg`;
 const HELPING_HANDS_TEST_URL =
   "/play/betrayal?players=3&playerID=0&seat0=human&seat1=human&seat2=human";
 const HELPING_HANDS_CONTROLLER_TEST_URL =
@@ -62,7 +65,16 @@ type HelpingHandsState = {
   controllerPlayerId: string | null;
   monsterTurnActive: boolean;
   monsterTurnReason: string | null;
+  pendingDamageAllocation: {
+    playerId: string;
+    sourceTitle: string;
+    damageKind: string;
+    amount: number;
+    allowedTraits: string[];
+    allowSkull: boolean;
+  } | null;
   trollHandIds: string[];
+  trollHandRooms: Record<string, string>;
   usedTrollHandIds: string[];
 };
 
@@ -90,6 +102,16 @@ const readHelpingHandsState = async (
     const monsterTurnActive = Boolean(
       core.scenarioRuntime.helpingHands?.activeMonsterTurn,
     );
+    const pendingDamageAllocation = core.pendingDamageAllocation
+      ? {
+          playerId: core.pendingDamageAllocation.playerId,
+          sourceTitle: core.pendingDamageAllocation.sourceTitle,
+          damageKind: core.pendingDamageAllocation.damageKind,
+          amount: core.pendingDamageAllocation.amount,
+          allowedTraits: [...core.pendingDamageAllocation.allowedTraits],
+          allowSkull: core.pendingDamageAllocation.allowSkull,
+        }
+      : null;
     return {
       currentPlayer: core.currentPlayer,
       currentExplorerPlayerId: core.currentExplorer.playerId,
@@ -107,9 +129,18 @@ const readHelpingHandsState = async (
         !monsterTurnActive && !controller
           ? "无人持有奇异护符，巨魔手怪物回合跳过。"
           : null,
+      pendingDamageAllocation,
       trollHandIds: [
         ...(core.scenarioRuntime.helpingHands?.trollHandIds ?? []),
       ],
+      trollHandRooms: Object.fromEntries(
+        (core.scenarioRuntime.helpingHands?.trollHandIds ?? [])
+          .map((monsterId) => {
+            const monster = core.monsters.find((item) => item.id === monsterId);
+            return monster ? [monsterId, monster.roomId] : null;
+          })
+          .filter((entry): entry is [string, string] => Boolean(entry)),
+      ),
       usedTrollHandIds: [
         ...(core.scenarioRuntime.helpingHands
           ?.trollHandAttackUsedIdsThisTurn ?? []),
@@ -248,10 +279,21 @@ test.describe("山屋惊魂作祟 12 大宅饿了 / 援手战斗链", () => {
     const trollReadyState = await readHelpingHandsState(page);
     expect(trollReadyState.trollHandIds).toHaveLength(2);
     expect(trollReadyState.usedTrollHandIds).toEqual([]);
+    await expect(
+      page.locator('[data-testid^="betrayal-helping-hands-troll-single-"]'),
+    ).toHaveCount(2);
+    for (const [index, trollHandId] of trollReadyState.trollHandIds.entries()) {
+      const singleAttackButton = page.getByTestId(
+        `betrayal-helping-hands-troll-single-${trollHandId}`,
+      );
+      await expect(singleAttackButton).toContainText(`第${index + 1}只`);
+      await expect(singleAttackButton).toContainText("攻击 力量5");
+      await expectReadableBottomAction(singleAttackButton);
+    }
     await saveScreenshot(page, TROLL_COMBINED_READY_SCREENSHOT);
 
     await setHarnessRandomQueue(page, [
-      0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99,
+      0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
       0,
       0,
     ]);
@@ -260,11 +302,46 @@ test.describe("山屋惊魂作祟 12 大宅饿了 / 援手战斗链", () => {
     await expect(page.getByTestId("betrayal-room-latest-feedback")).toContainText(
       "巨魔手合击",
     );
+    const damageAllocationPanel = page.getByTestId(
+      "betrayal-damage-allocation-panel",
+    );
+    await expect(damageAllocationPanel).toBeVisible();
+    await expect(damageAllocationPanel).toHaveAttribute("data-player-id", "1");
+    await expect(
+      page.getByTestId("betrayal-damage-allocation-source"),
+    ).toContainText("巨魔手攻击");
+    await expect(
+      page.getByTestId("betrayal-damage-allocation-amount"),
+    ).toContainText("8 点物理伤害");
+    await expect(
+      page.getByTestId("betrayal-damage-allocation-traits"),
+    ).toContainText("力量");
+    await expect(
+      page.getByTestId("betrayal-damage-allocation-traits"),
+    ).toContainText("速度");
+    const damageConfirmButton = page.getByTestId(
+      "betrayal-damage-allocation-confirm",
+    );
+    await expect(damageConfirmButton).toBeDisabled();
+    await expect(damageConfirmButton).toContainText("等待");
+    await expect.poll(async () => {
+      const state = await readHelpingHandsState(page);
+      return state.pendingDamageAllocation;
+    }).toEqual(
+      expect.objectContaining({
+        playerId: "1",
+        sourceTitle: "巨魔手攻击",
+        damageKind: "physical",
+        amount: 8,
+        allowedTraits: ["might", "speed"],
+        allowSkull: true,
+      }),
+    );
     await expect.poll(async () => {
       const state = await readHelpingHandsState(page);
       return [...state.usedTrollHandIds].sort();
     }).toEqual([...trollReadyState.trollHandIds].sort());
-    await saveScreenshot(page, TROLL_COMBINED_SETTLED_SCREENSHOT);
+    await saveScreenshot(page, TROLL_COMBINED_DAMAGE_ALLOCATION_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-helping-hands-combat", diagnostics },
@@ -312,9 +389,9 @@ test.describe("山屋惊魂作祟 12 大宅饿了 / 援手战斗链", () => {
       page.getByTestId("betrayal-helping-hands-troll-attack-banner"),
       "旧持有人已没有巨魔手行动入口",
     ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-action-use")).not.toContainText(
-      "巨魔手",
-    );
+    await expect(
+      page.getByTestId("betrayal-action-use").filter({ hasText: "巨魔手" }),
+    ).toHaveCount(0);
     await saveScreenshot(page, AMULET_OLD_HOLDER_SCREENSHOT);
 
     await page.goto(HELPING_HANDS_CONTROLLER_TEST_URL, {
@@ -365,13 +442,112 @@ test.describe("山屋惊魂作祟 12 大宅饿了 / 援手战斗链", () => {
     await expect(
       page.getByTestId("betrayal-helping-hands-troll-attack-banner"),
     ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-action-use")).not.toContainText(
-      "巨魔手",
-    );
+    await expect(
+      page.getByTestId("betrayal-action-use").filter({ hasText: "巨魔手" }),
+    ).toHaveCount(0);
     await saveScreenshot(page, NO_AMULET_SKIP_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-helping-hands-control", diagnostics },
+    ]);
+  });
+
+  test("巨魔手移动必须由地图房间本体承接，并可明确结束怪物回合", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(150000);
+    await initBetrayalContext(context);
+    const diagnostics = attachPageDiagnostics(
+      page,
+      "betrayal-helping-hands-monster-turn",
+    );
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await warmBetrayalFrontend(context);
+    await page.goto(HELPING_HANDS_TEST_URL, { waitUntil: "domcontentloaded" });
+    await waitForBetrayalPageReady(page);
+
+    await injectCore(page, createHelpingHandsTrollHandAttackRuntimeCore());
+    await expect(page.getByTestId("betrayal-board")).toBeVisible({
+      timeout: 30000,
+    });
+    await dismissHelpingHandsMonsterMoveRoll(page);
+    const initialState = await readHelpingHandsState(page);
+    expect(initialState.monsterTurnActive).toBe(true);
+    expect(initialState.controllerPlayerId).toBe("0");
+    expect(initialState.trollHandIds).toHaveLength(2);
+    const selectedTrollHandId = initialState.trollHandIds[0];
+    const selectedTrollHandRoomId = initialState.trollHandRooms[selectedTrollHandId];
+    expect(selectedTrollHandRoomId).toBeTruthy();
+
+    const monsterStatus = page.getByTestId(
+      "betrayal-helping-hands-monster-turn-status",
+    );
+    await expect(monsterStatus).toBeVisible();
+    await expect(monsterStatus).toContainText("控制");
+    await expect(page.getByTestId("betrayal-action-move")).toContainText(
+      "移动巨魔手",
+    );
+    await expect(page.getByTestId("betrayal-action-endTurn")).toContainText(
+      "结束巨魔手回合",
+    );
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
+
+    await page.getByTestId("betrayal-action-move").click();
+    const selectedTrollHandToken = page.getByTestId(
+      `betrayal-room-monster-${selectedTrollHandRoomId}-${selectedTrollHandId}`,
+    );
+    await expect(selectedTrollHandToken).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
+    const moveTargets = page.locator(
+      '[data-testid^="betrayal-room-helping-hands-troll-move-target-"]',
+    );
+    await expect(moveTargets.first()).toBeVisible();
+    const targetTestId = await moveTargets.first().getAttribute("data-testid");
+    expect(targetTestId).toBeTruthy();
+    const targetRoomId = targetTestId!.replace(
+      "betrayal-room-helping-hands-troll-move-target-",
+      "",
+    );
+    const targetRoomButton = page.getByTestId(`betrayal-room-${targetRoomId}`);
+    await expect(targetRoomButton).toHaveAttribute(
+      "data-direct-action",
+      "helping-hands-troll-move",
+    );
+    await saveScreenshot(page, TROLL_MOVE_TARGETS_SCREENSHOT);
+
+    await targetRoomButton.click({ position: { x: 12, y: 12 } });
+    await expect(page.getByTestId("betrayal-room-latest-feedback")).toContainText(
+      "移动到",
+    );
+    await expect(
+      page.getByTestId(`betrayal-room-monster-${targetRoomId}-${selectedTrollHandId}`),
+    ).toBeVisible();
+    const movedState = await readHelpingHandsState(page);
+    expect(movedState.trollHandRooms[selectedTrollHandId]).toBe(targetRoomId);
+    expect(movedState.monsterTurnActive).toBe(true);
+    await saveScreenshot(page, TROLL_MOVE_SETTLED_SCREENSHOT);
+
+    await page.getByTestId("betrayal-action-endTurn").click();
+    await expect(
+      page.getByTestId("betrayal-helping-hands-monster-turn-status"),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-room-latest-feedback")).toContainText(
+      "巨魔手怪物回合结束",
+    );
+    await expect.poll(() => readHelpingHandsState(page)).toEqual(
+      expect.objectContaining({
+        currentExplorerPlayerId: "1",
+        monsterTurnActive: false,
+      }),
+    );
+    await saveScreenshot(page, TROLL_MONSTER_TURN_ENDED_SCREENSHOT);
+
+    assertNoFatalFrontendErrors([
+      { label: "betrayal-helping-hands-monster-turn", diagnostics },
     ]);
   });
 });
