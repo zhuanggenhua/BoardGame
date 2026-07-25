@@ -18,6 +18,7 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    getPromptMulti,
     getPromptOptions,
     getSimpleChoicePrompt,
     respondToPromptOption,
@@ -196,7 +197,20 @@ describe('漫威反派四派系代表性玩法行为', () => {
             ])],
         });
 
-        expect(getEffectivePower(core, core.bases[0].minions[0], 0)).toBe(4);
+        expect(getEffectivePower(core, core.bases[0].minions[0], 0)).toBe(2);
+        const afterTwoActionCards = {
+            ...core,
+            players: {
+                ...core.players,
+                '0': {
+                    ...core.players['0'],
+                    actionsPlayed: 1,
+                    extraCardsPlayedThisTurn: 1,
+                    actionCardsPlayedThisTurn: 2,
+                },
+            },
+        };
+        expect(getEffectivePower(afterTwoActionCards, afterTwoActionCards.bases[0].minions[0], 0)).toBe(4);
 
         const minnErva = invokeRegisteredAbilityContract('kree_minn_erva', 'onPlay', {
             state: core,
@@ -254,10 +268,230 @@ describe('漫威反派四派系代表性玩法行为', () => {
             random: FIXED_RANDOM,
             now: 23,
         });
-        expect(methods.events[0]).toMatchObject({
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: { deckUids: ['discard-action', 'draw-a', 'draw-b', 'draw-c'] },
+        const methodsPrompt = getSimpleChoicePrompt(methods.matchState!, 'kree_proven_methods');
+        expect(getPromptMulti(methodsPrompt)).toMatchObject({ min: 0, max: 1 });
+        const methodsOptions = getPromptOptions(methodsPrompt);
+        expect(methodsOptions.some(option => option.value?.cardUid === 'discard-action')).toBe(true);
+        expect(methodsOptions.some(option => option.value?.cardUid === 'discard-minion')).toBe(false);
+        const selectedMethods = respondToPromptOptions(
+            methods.matchState!,
+            methodsOptions.filter(option => option.value?.cardUid === 'discard-action').map(option => option.id),
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedMethods.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: expect.objectContaining({ deckUids: ['discard-action', 'draw-a', 'draw-b', 'draw-c'] }),
+            }),
+        ]));
+    });
+
+    it('九头蛇和克里的检索/回收类行动尊重“至多/任意数量”的玩家选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('low-a', 'hydra_hydra_agent', 'minion', '0'),
+                        makeCard('action-a', 'kree_speed_up', 'action', '0'),
+                        makeCard('high', 'hydra_red_skull', 'minion', '0'),
+                        makeCard('action-b', 'kree_call_for_backup', 'action', '0'),
+                        makeCard('low-b', 'kree_kree_sentry', 'minion', '0'),
+                        makeCard('tail', 'kree_battle_rage', 'action', '0'),
+                    ],
+                    discard: [
+                        makeCard('discard-low-a', 'hydra_hydra_agent', 'minion', '0'),
+                        makeCard('discard-low-b', 'kree_kree_sentry', 'minion', '0'),
+                        makeCard('discard-high', 'hydra_red_skull', 'minion', '0'),
+                        makeCard('discard-action', 'kree_call_for_backup', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar')],
         });
+
+        const hour = invokeRegisteredAbilityContract('hydra_hour_of_destiny', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'hour',
+            defId: 'hydra_hour_of_destiny',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 24,
+        });
+        expect(hour.events).toEqual([]);
+        const hourPrompt = getSimpleChoicePrompt(hour.matchState!, 'hydra_hour_of_destiny_search');
+        expect(getPromptMulti(hourPrompt)).toMatchObject({ min: 0, max: 2 });
+        const hourOptions = getPromptOptions(hourPrompt);
+        expect(hourOptions.some(option => option.value?.cardUid === 'low-a')).toBe(true);
+        expect(hourOptions.some(option => option.value?.cardUid === 'low-b')).toBe(true);
+        expect(hourOptions.some(option => option.value?.cardUid === 'high')).toBe(false);
+        const selectedHour = respondToPromptOptions(
+            hour.matchState!,
+            hourOptions.filter(option => option.value?.cardUid === 'low-b').map(option => option.id),
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedHour.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.DECK_REORDERED, payload: expect.objectContaining({ deckUids: ['low-b', 'low-a', 'action-a', 'high', 'action-b', 'tail'] }) }),
+            expect.objectContaining({ type: SU_EVENTS.CARDS_DRAWN, payload: expect.objectContaining({ cardUids: ['low-b'] }) }),
+        ]));
+
+        const reactivate = invokeRegisteredAbilityContract('hydra_reactivate_agents', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'reactivate',
+            defId: 'hydra_reactivate_agents',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 25,
+        });
+        const reactivatePrompt = getSimpleChoicePrompt(reactivate.matchState!, 'hydra_reactivate_agents');
+        expect(getPromptMulti(reactivatePrompt)).toMatchObject({ min: 0, max: 2 });
+        const reactivateOptions = getPromptOptions(reactivatePrompt);
+        expect(reactivateOptions.some(option => option.value?.cardUid === 'discard-high')).toBe(false);
+        const selectedReactivate = respondToPromptOptions(
+            reactivate.matchState!,
+            reactivateOptions.filter(option => option.value?.cardUid === 'discard-low-a').map(option => option.id),
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedReactivate.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    cardUids: ['discard-low-a'],
+                    reason: 'hydra_reactivate_agents',
+                }),
+            }),
+        ]));
+
+        const reserves = invokeRegisteredAbilityContract('hydra_secret_reserves', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'reserves',
+            defId: 'hydra_secret_reserves',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 26,
+        });
+        const reservesPrompt = getSimpleChoicePrompt(reserves.matchState!, 'hydra_secret_reserves');
+        expect(getPromptMulti(reservesPrompt)).toMatchObject({ min: 0, max: 2 });
+        const reservesOptions = getPromptOptions(reservesPrompt);
+        const selectedReserves = respondToPromptOptions(
+            reserves.matchState!,
+            reservesOptions.filter(option => option.value?.cardUid === 'discard-low-b').map(option => option.id),
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedReserves.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: expect.objectContaining({
+                    deckUids: ['low-a', 'action-a', 'high', 'action-b', 'low-b', 'tail', 'discard-low-b'],
+                }),
+            }),
+        ]));
+
+        const prepare = invokeRegisteredAbilityContract('kree_prepare_to_engage', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'prepare',
+            defId: 'kree_prepare_to_engage',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 27,
+        });
+        expect(prepare.events.map(event => event.type)).toEqual([SU_EVENTS.DECK_INSPECTED, SU_EVENTS.REVEAL_DECK_TOP]);
+        const preparePrompt = getSimpleChoicePrompt(prepare.matchState!, 'kree_prepare_to_engage');
+        expect(getPromptMulti(preparePrompt)).toMatchObject({ min: 0, max: 2 });
+        const prepareOptions = getPromptOptions(preparePrompt);
+        expect(prepareOptions.map(option => option.value?.cardUid).sort()).toEqual(['action-a', 'action-b']);
+        const selectedPrepare = respondToPromptOptions(
+            prepare.matchState!,
+            prepareOptions.filter(option => option.value?.cardUid === 'action-b').map(option => option.id),
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedPrepare.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.DECK_REORDERED, payload: expect.objectContaining({ deckUids: ['action-b', 'low-a', 'action-a', 'high', 'low-b', 'tail'] }) }),
+            expect.objectContaining({ type: SU_EVENTS.CARDS_DRAWN, payload: expect.objectContaining({ cardUids: ['action-b'] }) }),
+        ]));
+    });
+
+    it('邪恶大师直接目标路径会拒绝不符合法定条件的角色', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar', [
+                makeMinion('own', 'masters_of_evil_absorbing_man', '0', 3),
+                makeMinion('small-enemy', 'hydra_hydra_agent', '1', 2),
+                makeMinion('big-enemy', 'hydra_red_skull', '1', 5),
+            ])],
+        });
+
+        const invalidGain = invokeRegisteredAbilityContract('masters_of_evil_gain_the_upper_hand', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'gain',
+            defId: 'masters_of_evil_gain_the_upper_hand',
+            baseIndex: 0,
+            targetMinionUid: 'big-enemy',
+            random: FIXED_RANDOM,
+            now: 28,
+        });
+        expect(invalidGain.events).toEqual([]);
+
+        const invalidOwnShockwave = invokeRegisteredAbilityContract('masters_of_evil_sonic_shockwave', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'shock-own',
+            defId: 'masters_of_evil_sonic_shockwave',
+            baseIndex: 0,
+            targetMinionUid: 'own',
+            random: FIXED_RANDOM,
+            now: 29,
+        });
+        expect(invalidOwnShockwave.events).toEqual([]);
+
+        const invalidStrongShockwave = invokeRegisteredAbilityContract('masters_of_evil_sonic_shockwave', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'shock-strong',
+            defId: 'masters_of_evil_sonic_shockwave',
+            baseIndex: 0,
+            targetMinionUid: 'big-enemy',
+            random: FIXED_RANDOM,
+            now: 30,
+        });
+        expect(invalidStrongShockwave.events).toEqual([]);
+
+        const validShockwave = invokeRegisteredAbilityContract('masters_of_evil_sonic_shockwave', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'shock-small',
+            defId: 'masters_of_evil_sonic_shockwave',
+            baseIndex: 0,
+            targetMinionUid: 'small-enemy',
+            random: FIXED_RANDOM,
+            now: 31,
+        });
+        expect(validShockwave.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({ minionUid: 'small-enemy' }),
+        }));
     });
 
     it('邪恶大师按 VP 阈值、摧毁换 VP、计分后 VP 和保护能力结算', () => {
@@ -604,6 +838,25 @@ describe('漫威反派四派系代表性玩法行为', () => {
             expect.objectContaining({
                 type: SU_EVENTS.CARDS_DRAWN,
                 payload: expect.objectContaining({ playerId: '0', cardUids: ['draw-a'] }),
+            }),
+        ]));
+        const extraModifier = respondToPromptOption(
+            mysterio.matchState!,
+            option => option.value?.mode === 'extraBaseModifier',
+            'extra base modifier with Mysterio',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(extraModifier.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.LIMIT_MODIFIED,
+                payload: expect.objectContaining({
+                    limitType: 'action',
+                    reason: 'sinister_six_mysterio',
+                    playTiming: 'immediate',
+                    restrictToBase: 0,
+                    restrictToBaseModifier: true,
+                }),
             }),
         ]));
 

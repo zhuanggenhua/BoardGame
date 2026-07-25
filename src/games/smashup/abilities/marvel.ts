@@ -1030,6 +1030,45 @@ const spiderVerseViewFromAbovePromptProgram = createPromptProgram<MarvelPromptCo
     },
 });
 
+const ultimatesFirstToArrivePromptProgram = createPromptProgram<MarvelPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ultimates_first_to_arrive',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `ultimates_first_to_arrive_${context.now}`,
+        context.playerId,
+        '率先抵达：选择一个没有己方角色的基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases
+                .map((base, baseIndex) => ({
+                    baseIndex,
+                    label: getBaseDef(base.defId)?.name ?? base.defId,
+                }))
+                .filter(candidate => !context.matchState.core.bases[candidate.baseIndex]?.minions
+                    .some(minion => minion.controller === context.playerId)),
+            context.matchState.core,
+        ),
+        {
+            sourceId: 'ultimates_first_to_arrive',
+            targetType: 'base',
+            titleKey: 'ui.ultimates_first_to_arrive_title',
+            responseValidationMode: 'live',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as BaseChoice | undefined;
+        if (choice?.baseIndex === undefined) return { events: [] };
+        const base = state.core.bases[choice.baseIndex];
+        if (!base || base.minions.some(minion => minion.controller === context.playerId)) return { events: [] };
+        return {
+            events: [grantContextualExtraMinion(
+                { playerId: context.playerId, now: timestamp, matchState: state },
+                'ultimates_first_to_arrive',
+                choice.baseIndex,
+            )],
+        };
+    },
+});
+
 function extraMinion(ctx: AbilityContext, reason: string, restrictToBase?: number, powerMax?: number): AbilityResult {
     return {
         events: [grantContextualExtraMinion(ctx, reason, restrictToBase, powerMax === undefined ? undefined : { powerMax })],
@@ -1164,11 +1203,19 @@ function ultimatesCosmicKnowledge(ctx: AbilityContext): AbilityResult {
 }
 
 function ultimatesFirstToArrive(ctx: AbilityContext): AbilityResult {
-    const targetBaseIndex = ctx.state.bases.findIndex(
-        base => !base.minions.some(minion => minion.controller === ctx.playerId),
-    );
-    if (targetBaseIndex < 0) return { events: [] };
-    return extraMinion(ctx, 'ultimates_first_to_arrive', targetBaseIndex);
+    const legalBaseIndexes = ctx.state.bases
+        .map((base, baseIndex) => ({ base, baseIndex }))
+        .filter(({ base }) => !base.minions.some(minion => minion.controller === ctx.playerId))
+        .map(({ baseIndex }) => baseIndex);
+    if (legalBaseIndexes.length === 0) return { events: [] };
+    if (legalBaseIndexes.length === 1 || !ctx.matchState) {
+        return extraMinion(ctx, 'ultimates_first_to_arrive', legalBaseIndexes[0]);
+    }
+    return runtimeToAbilityResult(executeAbilityProgram(ultimatesFirstToArrivePromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+    }));
 }
 
 function ultimatesHeroicLanding(ctx: AbilityContext): AbilityResult {

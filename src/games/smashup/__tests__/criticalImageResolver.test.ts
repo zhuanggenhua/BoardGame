@@ -174,7 +174,27 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical).toContain('smashup/base/base4');
     });
 
-    it('文化冲击四派系会共享预热文化冲击卡图与基地 atlas', () => {
+    it('本轮 POD 卡图派系会预热各自 4x5 卡图', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['astroknights', 'kung_fu_fighters'],
+                '1': ['anansi_tales', 'russian_fairy_tales'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/astroknights_pod');
+        expect(result.critical).toContain('smashup/cards/kung_fu_fighters_pod');
+        expect(result.critical).toContain('smashup/cards/anansi_tales_pod');
+        expect(result.critical).toContain('smashup/cards/russian_fairy_tales_pod');
+        expect(result.critical.filter(path => path === 'smashup/cards/astroknights_pod')).toHaveLength(1);
+        expect(result.critical.filter(path => path === 'smashup/cards/kung_fu_fighters_pod')).toHaveLength(1);
+        expect(result.critical.filter(path => path === 'smashup/cards/anansi_tales_pod')).toHaveLength(1);
+        expect(result.critical.filter(path => path === 'smashup/cards/russian_fairy_tales_pod')).toHaveLength(1);
+    });
+
+    it('文化冲击剩余派系会继续预热文化冲击卡图与基地 atlas', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({
                 '0': ['anansi_tales', 'grimms_fairy_tales'],

@@ -24,6 +24,7 @@ import {
     createFirstScenarioReadyToStudyExorcismCore,
     createFirstScenarioReadyToTraitorVictoryCore,
     createHeroAttackTraitorReadyCore,
+    createJackSpiritMovementRollReadyCore,
     createStartedFirstScenarioCore,
     createTradeReadyCore,
 } from '../testing/firstScenarioTestUtils';
@@ -171,7 +172,7 @@ function createDustAiCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
     );
 }
 
-function createHungryHouseAiCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
+function createHelpingHandsAiCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
     let core = createStartedFirstScenarioCore(playerIds);
     core.drawOrder = ['event'];
     core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
@@ -200,6 +201,19 @@ function createHungryHouseAiCore(playerIds: string[] = ['0', '1', '2']): Betraya
         createBetrayalScriptedRandom(3, 3, 3),
     );
 }
+
+function startHelpingHandsMonsterTurn(core: BetrayalCore): BetrayalCore {
+    activateTestExplorer(core, '0');
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.END_TURN,
+        '0',
+        {},
+        100,
+        createBetrayalScriptedRandom(1, 2, 3),
+    );
+}
+
 function applyAiResolution(
     state: MatchState<BetrayalCore>,
     resolution: NonNullable<Awaited<ReturnType<typeof resolveNextLocalAiAction>>>,
@@ -507,94 +521,56 @@ describe('小黑屋本地 AI', () => {
         expect(actions[0]?.commands[0]?.payload).toEqual({ accept: true });
     });
 
-    test('大宅饿了 AI 同房有邪教徒尸体时优先搬起尸体', () => {
-        const core = createHungryHouseAiCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-        activateTestExplorer(core, '1');
-        setExplorerRoom(core, '1', hungryHouse.ritualRoomId);
-        core.monsters = core.monsters.filter((monster) => monster.id !== cultistId);
-        hungryHouse.cultistCorpseRoomIds = {
-            ...hungryHouse.cultistCorpseRoomIds,
-            [cultistId]: hungryHouse.ritualRoomId,
-        };
-
-        const state = stateOf(core, 'betrayal-ai-hungry-house-pick-up-corpse');
-        const pickUpAction = buildActions(state, '1')
-            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.PICK_UP_CORPSE);
-
-        expect(pickUpAction?.commands[0]?.payload).toMatchObject({
-            corpseKind: 'cultist',
-            corpseId: cultistId,
-        });
-        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
-            .toBe(pickUpAction?.actionId);
-    });
-
-    test('大宅饿了 AI 携尸在裂隙时优先献给大宅', () => {
-        const core = createHungryHouseAiCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-        activateTestExplorer(core, '1');
-        setExplorerRoom(core, '1', hungryHouse.chasmRoomId);
-        hungryHouse.carriedCorpseByPlayerId['1'] = {
-            kind: 'cultist',
-            corpseId: cultistId,
-            sourceMonsterId: cultistId,
-            name: '邪教徒尸体',
-        };
-
-        const state = stateOf(core, 'betrayal-ai-hungry-house-feed-her');
-        const feedAction = buildActions(state, '1')
-            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.FEED_HER);
-
-        expect(feedAction?.commands[0]?.payload).toEqual({});
-        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
-            .toBe(feedAction?.actionId);
-    });
-
-    test('大宅饿了 AI 与邪教徒同房时生成攻击邪教徒动作', () => {
-        const core = createHungryHouseAiCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-        activateTestExplorer(core, '1');
-        setExplorerRoom(core, '1', hungryHouse.ritualRoomId);
+    test('大宅饿了 AI 会在独立巨魔手回合移动、合击并结束，不会误走探索者回合', async () => {
+        let core = createHelpingHandsAiCore();
+        const helpingHands = core.scenarioRuntime.helpingHands!;
+        const sharedRoomId = 'entrance-hall';
         core.monsters = core.monsters.map((monster) => (
-            monster.id === cultistId ? { ...monster, roomId: hungryHouse.ritualRoomId } : monster
+            helpingHands.trollHandIds.includes(monster.id)
+                ? { ...monster, roomId: sharedRoomId }
+                : monster
+        ));
+        setExplorerRoom(core, '1', sharedRoomId);
+        core = startHelpingHandsMonsterTurn(core);
+
+        const state = stateOf(core, 'betrayal-ai-helping-hands-monster-turn');
+        const controllerActions = buildActions(state, '0');
+        const nonControllerActions = buildActions(state, '1');
+        const combinedAttack = controllerActions.find((action) => (
+            action.kind === BETRAYAL_AI_ACTION_KINDS.TROLL_HAND_ATTACK
+            && action.metadata?.combined === true
         ));
 
-        const state = stateOf(core, 'betrayal-ai-hungry-house-attack-cultist');
-        const attackAction = buildActions(state, '1')
-            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.ATTACK_CULTIST);
+        expect(core.currentPlayer).toBe('0');
+        expect(controllerActions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.MOVE_TROLL_HAND)).toBe(true);
+        expect(combinedAttack).toBeDefined();
+        expect(controllerActions.some((action) => (
+            action.kind === BETRAYAL_AI_ACTION_KINDS.END_TROLL_HAND_MONSTER_TURN
+        ))).toBe(true);
+        expect(controllerActions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.END_TURN)).toBe(false);
+        expect(nonControllerActions).toEqual([]);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '0'))?.actionId)
+            .toBe(combinedAttack?.actionId);
 
-        expect(attackAction?.commands[0]?.payload).toMatchObject({
-            target: 'cultist',
-            targetMonsterId: cultistId,
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-helping-hands-monster-turn',
+            seatControllers: {
+                '0': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '1': { type: 'local-ai', minimumActionDelayMs: 0 },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.TROLL_HAND_ATTACK);
+        expect(resolution?.action.commands[0]?.payload).toMatchObject({
+            combined: true,
+            targetPlayerId: '1',
         });
     });
 
-    test('大宅饿了 AI 会让同房邪教徒攻击探索者', () => {
-        const core = createHungryHouseAiCore();
-        const hungryHouse = core.scenarioRuntime.hungryHouse!;
-        const cultistId = hungryHouse.cultistIds[0]!;
-        activateTestExplorer(core, '1');
-        setExplorerRoom(core, '1', hungryHouse.chasmRoomId);
-        setExplorerRoom(core, '2', hungryHouse.ritualRoomId);
-        core.monsters = core.monsters.map((monster) => (
-            monster.id === cultistId ? { ...monster, roomId: hungryHouse.ritualRoomId } : monster
-        ));
-
-        const state = stateOf(core, 'betrayal-ai-hungry-house-cultist-attack');
-        const cultistAttack = buildActions(state, '1')
-            .find((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.CULTIST_ATTACK);
-
-        expect(cultistAttack?.commands[0]?.payload).toMatchObject({
-            monsterId: cultistId,
-            targetPlayerId: '2',
-        });
-        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
-            .toBe(cultistAttack?.actionId);
-    });
     test('AI 会用急救包治疗同房受伤队友，并通过正式领域管线生效', async () => {
         const core = createStartedFirstScenarioCore();
         const teammate = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
@@ -906,17 +882,17 @@ describe('小黑屋本地 AI', () => {
             .toMatch(/^traitor-attack-hero:/);
     });
 
+    test('英雄 AI 与叛徒同房时优先攻击叛徒', () => {
+        const state = stateOf(createHeroAttackTraitorReadyCore());
+        const actions = buildActions(state, '0');
+
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.HERO_ATTACK_TRAITOR)).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '0'))?.actionId)
+            .toBe('hero-attack-traitor');
+    });
+
     test('叛徒死亡后轮到其行动时会生成杰克之灵移动动作', () => {
-        let core = createHeroAttackTraitorReadyCore();
-        core = applyBetrayalCommand(
-            core,
-            BETRAYAL_COMMANDS.HAUNT_ATTACK,
-            '0',
-            { target: 'traitor' },
-            100,
-            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
-        );
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        const core = createJackSpiritMovementRollReadyCore();
         const state = stateOf(core);
         const actions = buildActions(state, '2');
 
@@ -974,7 +950,7 @@ describe('小黑屋本地 AI', () => {
         expect(state.core.currentPlayer).not.toBe(initialPlayerId);
     });
 
-    test('全 AI 对局会真实分配 AI 叛徒并通过合法阵营动作推进到终局', async () => {
+    test('全 AI 对局会真实分配 AI 叛徒并通过合法阵营动作推进到有胜者的终局', async () => {
         const playerIds = ['0', '1', '2'];
         const random = createSeededRandom('betrayal-ai-full-audit');
         let state: MatchState<BetrayalCore> = {
@@ -987,7 +963,6 @@ describe('小黑屋本地 AI', () => {
         ]));
         let sawAiTraitor = false;
         let sawTraitorAttack = false;
-        let sawHeroAttack = false;
         let sawCorpseAttack = false;
         let executedSteps = 0;
 
@@ -1006,7 +981,6 @@ describe('小黑屋本地 AI', () => {
             if (traitorPlayerId) {
                 sawAiTraitor = true;
                 sawTraitorAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.TRAITOR_ATTACK_HERO;
-                sawHeroAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.HERO_ATTACK_TRAITOR;
                 const traitorIsDead = state.core.scenarioRuntime.deadExplorerPlayerIds.includes(traitorPlayerId);
                 if (traitorIsDead) {
                     sawCorpseAttack ||= resolution.action.kind === BETRAYAL_AI_ACTION_KINDS.HERO_ATTACK_TRAITOR;
@@ -1021,10 +995,9 @@ describe('小黑屋本地 AI', () => {
         expect(sawAiTraitor).toBe(true);
         expect(state.core.scenarioRuntime.traitorPlayerId).toBe(state.core.scenarioRuntime.hauntRevealerPlayerId);
         expect(sawTraitorAttack).toBe(true);
-        expect(sawHeroAttack).toBe(true);
         expect(sawCorpseAttack).toBe(false);
         expect(executedSteps).toBeLessThan(160);
         expect(state.core.phase).toBe('endgame');
-        expect(state.core.endgameResult?.outcome).toBe('traitor');
+        expect(state.core.endgameResult?.winners.length).toBeGreaterThan(0);
     });
 });

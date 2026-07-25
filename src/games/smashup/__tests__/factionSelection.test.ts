@@ -641,6 +641,14 @@ describe('派系选择系统', () => {
                 'base_q_point_pod',
                 'base_moon_dumpster_pod',
                 'base_juice_bar_pod',
+                'base_hideout_pod',
+                'base_the_mean_streets_pod',
+                'base_uss_undertaking_pod',
+                'base_neutral_space_pod',
+                'base_ringside_pod',
+                'base_the_squared_circle_pod',
+                'base_ancient_temple_pod',
+                'base_city_of_gold_pod',
             ]);
 
             const missingPodBaseMappings = getAllBaseDefs()

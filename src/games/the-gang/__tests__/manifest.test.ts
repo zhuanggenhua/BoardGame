@@ -53,8 +53,12 @@ describe('The Gang manifest', () => {
 
         expect(gameAssetManifest.files?.[thumbnailKey]).toBeDefined();
         expect(gameAssetManifest.files?.[compressedThumbnailKey]).toBeDefined();
+        expect(gameAssetManifest.files?.['chips/exit-chip']).toBeDefined();
+        expect(gameAssetManifest.files?.['chips/compressed/exit-chip']).toBeDefined();
         expect(rootAssetManifest.files?.[rootThumbnailKey]).toBeDefined();
         expect(rootAssetManifest.files?.[rootCompressedThumbnailKey]).toBeDefined();
+        expect(rootAssetManifest.files?.['zh-CN/the-gang/chips/exit-chip']).toBeDefined();
+        expect(rootAssetManifest.files?.['zh-CN/the-gang/chips/compressed/exit-chip']).toBeDefined();
     });
 
     test('TTS 扩展规则、工具牌和专家牌素材进入正式资源清单', () => {

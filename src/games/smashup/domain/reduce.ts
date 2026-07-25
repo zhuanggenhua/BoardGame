@@ -811,6 +811,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         : sourceDiscard,
                     // Special 卡和额外行动不消耗行动额度
                     actionsPlayed: (isSpecial || isExtraAction) ? player.actionsPlayed : player.actionsPlayed + 1,
+                    actionCardsPlayedThisTurn: (player.actionCardsPlayedThisTurn ?? 0) + 1,
                     extraCardsPlayedThisTurn: wasExtraActionPlay
                         ? (player.extraCardsPlayedThisTurn ?? 0) + 1
                         : player.extraCardsPlayedThisTurn,
@@ -1805,6 +1806,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         minionsPlayed: 0,
                         minionLimit: 1,
                         actionsPlayed: 0,
+                        actionCardsPlayedThisTurn: 0,
                         actionLimit: newActionLimit,
                         minionsPlayedPerBase: undefined,
                         usedDiscardPlayAbilities: undefined,

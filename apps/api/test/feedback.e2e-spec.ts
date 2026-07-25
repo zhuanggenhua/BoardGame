@@ -810,6 +810,57 @@ describe('Feedback Module (e2e)', () => {
         expect(second.body.occurrenceCount).toBe(2);
     });
 
+    it('online-ai-watchdog 已 resolved 的失败聚合项，不应被旧线上重复失败上报重新打开', async () => {
+        const payload = {
+            content: '[system][online-ai-watchdog] force-end-turn-failed active-turn:follow-up-advance:legal_action_unavailable',
+            source: 'online-ai-watchdog',
+            type: 'bug',
+            severity: 'high',
+            autoReportKind: 'force-end-turn-failed',
+            incidentKey: 'resolved-failure-tracker-a',
+            gameName: 'splendor',
+            clientContext: {
+                gameId: 'splendor',
+                route: 'server-watchdog',
+                mode: 'online',
+            },
+            errorContext: {
+                source: 'online-ai-watchdog',
+                name: 'force-end-turn-failed',
+                message: 'active-turn:follow-up-advance:legal_action_unavailable',
+            },
+        };
+
+        const first = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(payload)
+            .expect(201);
+
+        await feedbackModel.findByIdAndUpdate(first.body._id, {
+            status: 'resolved',
+            resolvedMethod: '已按领域动作修复，等待发布链路带到线上',
+        });
+
+        const second = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                ...payload,
+                incidentKey: 'resolved-failure-tracker-b',
+            })
+            .expect(201);
+
+        expect(second.body._id).toBe(first.body._id);
+        expect(second.body.status).toBe('resolved');
+        expect(second.body.occurrenceCount).toBe(2);
+        expect(second.body.latestIncidentKey).toBe('resolved-failure-tracker-b');
+
+        const docs = await feedbackModel.find({ source: 'online-ai-watchdog' }).lean();
+        expect(docs).toHaveLength(1);
+        expect(docs[0].status).toBe('resolved');
+    });
+
     it('online-ai-watchdog 超出去重窗口后应新建新的 canonical 记录', async () => {
         const payload = {
             content: '[system][online-ai-watchdog] force-end-turn-success active-turn:follow-up-advance:steps=1',

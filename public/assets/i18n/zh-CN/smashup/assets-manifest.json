@@ -94,15 +94,6 @@
         }
       }
     },
-    "base/compressed/disney_bases": {
-      "variants": {
-        "webp": {
-          "sha256": "2cbbc4ed8b68ed678774883d3088c7c93997de68dc6a68721cdadabfd7c9aca7",
-          "bytes": 1534842,
-          "mime": "image/webp"
-        }
-      }
-    },
     "base/compressed/international_incident_bases": {
       "variants": {
         "webp": {
@@ -172,15 +163,6 @@
           "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
           "bytes": 560560,
           "mime": "image/webp"
-        }
-      }
-    },
-    "base/disney_bases": {
-      "variants": {
-        "jpg": {
-          "sha256": "d0a91b1dff2831eb77ff25f7eee8845ee29e37f942ebc7c6ad9855267c1037b1",
-          "bytes": 1253348,
-          "mime": "image/jpeg"
         }
       }
     },
@@ -351,15 +333,6 @@
         "webp": {
           "sha256": "b8a029374b872cc17efa1d4f5475dc01183f7a27a246be7f1fac5b843ef4c98a",
           "bytes": 887820,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "cards/compressed/disney": {
-      "variants": {
-        "webp": {
-          "sha256": "37bc0c782fcb2839f9155b610681768a1b6bf233257107cc60c671ded035c2e3",
-          "bytes": 7904230,
           "mime": "image/webp"
         }
       }
@@ -589,12 +562,75 @@
         }
       }
     },
-    "cards/disney": {
+    "cards/effect-preview/compressed/assassination": {
       "variants": {
-        "png": {
-          "sha256": "d156b6428665ffc1f4182cc955fd7aa7d35d7638e0e6d593e238a9b3b02674cc",
-          "bytes": 39745874,
-          "mime": "image/png"
+        "webp": {
+          "sha256": "dd62aaa54b2fdd64f34bd96a0a4e16446648e87e1e9402ad11cb0ab82c26dd11",
+          "bytes": 22596,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/effect-preview/compressed/brownie": {
+      "variants": {
+        "webp": {
+          "sha256": "f6353a945b17fa21a448a41b810cd3b3982517e4b7c92ced8d67aef1ffb1c6b7",
+          "bytes": 28066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/effect-preview/compressed/flame-trap": {
+      "variants": {
+        "webp": {
+          "sha256": "388a69b0f58fcd128d36b6867c145b2e91fe34c74525b9650f2c63f486b80808",
+          "bytes": 23460,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/effect-preview/compressed/gnome": {
+      "variants": {
+        "webp": {
+          "sha256": "9cacaac595b07532c580c4ce21fd884a84b921d56ff113ccf4aad124845a57d5",
+          "bytes": 25550,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/effect-preview/compressed/high-ground": {
+      "variants": {
+        "webp": {
+          "sha256": "5b115faef24e2ce9ee4f4b04bd5207e1bd0f3a0cf280e2d5b113a9a58232cd67",
+          "bytes": 31808,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/effect-preview/compressed/imp": {
+      "variants": {
+        "webp": {
+          "sha256": "1774192d4ec2b51a4d5e428070fa67c5e59bb2ab3e6579377b6ae9e09a3c6b32",
+          "bytes": 24296,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/effect-preview/compressed/leprechaun": {
+      "variants": {
+        "webp": {
+          "sha256": "bae7c7ba8c2862b5916f9d44d56b9161333e68c9e48ca6e4d4422da428b487da",
+          "bytes": 22708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/effect-preview/compressed/winds-of-change": {
+      "variants": {
+        "webp": {
+          "sha256": "48a9f818b78f0792722be0c6357fc4639d6bcc67b9df49809f67a31afb0ee89f",
+          "bytes": 26364,
+          "mime": "image/webp"
         }
       }
     },
@@ -793,6 +829,150 @@
           "sha256": "1ae0270532e40348e0a2a03ae6cd576b082c28fcf0488d696c68030a03d829b4",
           "bytes": 71064,
           "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/marvel_villains_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "1b6b83736dbde9cd99a5f6268ad02ddae618e5d04147a7fb06a9c1fb6e167b24",
+          "bytes": 6320664,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/marvel_wave_one_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "f410e6bf194e873884a78fb097619e0997bf12c83e199b785d05f8a7f129099a",
+          "bytes": 6257536,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/marvel_villains_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
+          "bytes": 34711937,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/marvel_wave_one_pod": {
+      "variants": {
+        "png": {
+          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
+          "bytes": 35943625,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/astroknights_pod": {
+      "variants": {
+        "png": {
+          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
+          "bytes": 6565353,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/astroknights_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
+          "bytes": 1624082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/kung_fu_fighters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
+          "bytes": 5995300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/kung_fu_fighters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
+          "bytes": 1729742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "2cbbc4ed8b68ed678774883d3088c7c93997de68dc6a68721cdadabfd7c9aca7",
+          "bytes": 1534842,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/disney_bases": {
+      "variants": {
+        "jpg": {
+          "sha256": "d0a91b1dff2831eb77ff25f7eee8845ee29e37f942ebc7c6ad9855267c1037b1",
+          "bytes": 1253348,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "cards/compressed/disney": {
+      "variants": {
+        "webp": {
+          "sha256": "37bc0c782fcb2839f9155b610681768a1b6bf233257107cc60c671ded035c2e3",
+          "bytes": 7904230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/disney": {
+      "variants": {
+        "png": {
+          "sha256": "d156b6428665ffc1f4182cc955fd7aa7d35d7638e0e6d593e238a9b3b02674cc",
+          "bytes": 39745874,
+          "mime": "image/png"
         }
       }
     }

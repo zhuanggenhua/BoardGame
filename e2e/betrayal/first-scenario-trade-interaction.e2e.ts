@@ -169,6 +169,7 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
         ));
         const actionButtonStyles = actionButtons
             .filter((button) => !button.closest('[data-testid="betrayal-trade-flow-banner"]'))
+            .filter((button) => !button.closest('[data-testid="betrayal-trade-action-panel"]'))
             .map((button) => {
             const style = window.getComputedStyle(button);
             return {
@@ -267,7 +268,7 @@ async function assertTradeActionBarKeepsButtons(page: Page) {
     expect(metrics.actionButtonCentersHitMap, `动作按钮中心必须落在房间地图内容上，实际：${JSON.stringify(metrics.actionButtonRoomOverlaps)}`).toBe(true);
     expect(metrics.probeHitsRoomLayer, `交易按钮下面必须仍是地图/房间层，实际命中：${JSON.stringify(metrics.elementsUnderTradeButton)}`).toBe(true);
     expect(metrics.flowBannerExists, '交易态必须保留醒目的请求/同意提示条').toBe(true);
-    expect(metrics.flowBanner!.backgroundColor, '交易流程提示必须有可辨认的深色压场，不能继续过于隐形').toBe('rgba(18, 17, 13, 0.78)');
+    expect(metrics.flowBanner!.backgroundColor, '交易流程提示必须有可辨认的深色压场，不能继续过于隐形').toBe('rgba(18, 17, 13, 0.9)');
     expect(metrics.flowBanner!.backgroundImage, '交易流程提示不应额外叠复杂背景图').toBe('none');
     expect(metrics.flowBanner!.borderWidth, '交易流程提示必须有边界以突出同意步骤').toBe('1px');
     expect(metrics.flowBanner!.hasVisibleShadow, '交易流程提示必须有轻量阴影，但不能侵入地图主交互').toBe(true);
@@ -405,16 +406,17 @@ async function assertTradeCandidateTrayAnchoredToFlow(page: Page, selectorTestId
             selectorBottom: selectorRect.bottom,
             selectorCenterX: selectorRect.left + selectorRect.width / 2,
             bannerTop: bannerRect.top,
+            bannerBottom: bannerRect.bottom,
             bannerCenterX: bannerRect.left + bannerRect.width / 2,
             viewportHeight,
             topPromptText: topPrompt?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
         };
     }, selectorTestId);
 
-    expect(metrics, `${selectorTestId} 必须和交易流程条同时存在`).not.toBeNull();
+    expect(metrics, `${selectorTestId} 必须和顶部交易提示同时存在`).not.toBeNull();
     expect(metrics!.selectorTop, `${selectorTestId} 不能放到顶部角落或牌堆旁`).toBeGreaterThan(metrics!.viewportHeight * 0.52);
-    expect(metrics!.selectorBottom, `${selectorTestId} 必须贴在交易流程条上方`).toBeLessThanOrEqual(metrics!.bannerTop + 4);
-    expect(Math.abs(metrics!.selectorCenterX - metrics!.bannerCenterX), `${selectorTestId} 必须和交易流程条水平对齐`).toBeLessThanOrEqual(120);
+    expect(metrics!.selectorTop, `${selectorTestId} 必须和顶部交易提示分层，不能混进提示横幅`).toBeGreaterThan(metrics!.bannerBottom + 260);
+    expect(Math.abs(metrics!.selectorCenterX - metrics!.bannerCenterX), `${selectorTestId} 必须和顶部交易提示保持同一视觉中轴`).toBeLessThanOrEqual(160);
     expect(metrics!.topPromptText, `${selectorTestId} 不得再出现在顶部提示带`).not.toContain('对方物品');
     expect(metrics!.topPromptText, `${selectorTestId} 不得再出现在顶部提示带`).not.toContain('狗');
 }
@@ -423,26 +425,35 @@ async function assertTradeConfirmAnchoredToFlow(page: Page) {
     const metrics = await page.evaluate(() => {
         const confirm = document.querySelector('[data-testid="betrayal-action-trade"]') as HTMLElement | null;
         const banner = document.querySelector('[data-testid="betrayal-trade-flow-banner"]') as HTMLElement | null;
+        const actionPanel = document.querySelector('[data-testid="betrayal-trade-action-panel"]') as HTMLElement | null;
         const allConfirmButtons = Array.from(document.querySelectorAll('[data-testid="betrayal-action-trade"]'));
-        if (!confirm || !banner) return null;
+        if (!confirm || !banner || !actionPanel) return null;
         const confirmRect = confirm.getBoundingClientRect();
         const bannerRect = banner.getBoundingClientRect();
+        const actionPanelRect = actionPanel.getBoundingClientRect();
         return {
             count: allConfirmButtons.length,
             placement: confirm.getAttribute('data-trade-confirm-placement') ?? '',
             insideBanner: Boolean(confirm.closest('[data-testid="betrayal-trade-flow-banner"]')),
+            insideActionPanel: Boolean(confirm.closest('[data-testid="betrayal-trade-action-panel"]')),
+            actionPanelFor: actionPanel.getAttribute('data-prompt-actions-for') ?? '',
             confirmCenterY: confirmRect.top + confirmRect.height / 2,
             bannerTop: bannerRect.top,
             bannerBottom: bannerRect.bottom,
+            actionPanelTop: actionPanelRect.top,
+            actionPanelBottom: actionPanelRect.bottom,
         };
     });
 
     expect(metrics, '交易确认按钮必须存在').not.toBeNull();
-    expect(metrics!.count, '交易确认只能有一个，不能流程条和底部动作栏各放一个').toBe(1);
-    expect(metrics!.placement, '交易确认必须声明在流程条里，而不是底部导航或角落').toBe('flow-banner');
-    expect(metrics!.insideBanner, '交易确认按钮必须和交易摘要处在同一个流程条里').toBe(true);
-    expect(metrics!.confirmCenterY, '交易确认按钮必须落在交易流程条高度范围内').toBeGreaterThanOrEqual(metrics!.bannerTop);
-    expect(metrics!.confirmCenterY, '交易确认按钮必须落在交易流程条高度范围内').toBeLessThanOrEqual(metrics!.bannerBottom);
+    expect(metrics!.count, '交易确认只能有一个，不能顶部提示和底部动作区各放一个').toBe(1);
+    expect(metrics!.placement, '交易确认必须声明在底部动作面板里').toBe('bottom-action-panel');
+    expect(metrics!.insideBanner, '交易确认按钮不能再塞进顶部交易提示横幅').toBe(false);
+    expect(metrics!.insideActionPanel, '交易确认按钮必须留在底部交易动作面板里').toBe(true);
+    expect(metrics!.actionPanelFor, '底部交易动作面板必须关联顶部交易提示').toBe('betrayal-trade-flow-banner');
+    expect(metrics!.confirmCenterY, '交易确认按钮必须落在底部动作面板高度范围内').toBeGreaterThanOrEqual(metrics!.actionPanelTop);
+    expect(metrics!.confirmCenterY, '交易确认按钮必须落在底部动作面板高度范围内').toBeLessThanOrEqual(metrics!.actionPanelBottom);
+    expect(metrics!.actionPanelTop, '底部动作面板必须和顶部提示分层').toBeGreaterThan(metrics!.bannerBottom + 260);
 }
 
 async function assertTradeSelectionClearedAfterSettlement(page: Page) {
@@ -453,7 +464,7 @@ async function assertTradeSelectionClearedAfterSettlement(page: Page) {
     if (flowBannerCount > 0) {
         await expect(page.getByTestId('betrayal-trade-flow-item-step'), '交易结算后提示若仍显示，必须说明本回合已交易').toContainText('本回合已交易');
         await expect(page.getByTestId('betrayal-trade-flow-target-step'), '交易结算后确认提示若仍显示，必须回到待选择状态').toContainText('先选物品和目标');
-        await expect(page.locator('[data-testid="betrayal-action-trade"][data-trade-confirm-placement="flow-banner"]'), '本回合已交易后不能再出现流程条确认按钮').toHaveCount(0);
+        await expect(page.locator('[data-testid="betrayal-action-trade"][data-trade-confirm-placement="bottom-action-panel"]'), '本回合已交易后不能再出现交易确认按钮').toHaveCount(0);
     }
     const targetState = await page.evaluate(() => {
         const outline = document.querySelector('[data-testid="betrayal-room-occupant-target-outline-hallway-1"]');
@@ -827,7 +838,7 @@ test.describe('山屋惊魂首剧本交易交互', () => {
         await expect(page.getByTestId('betrayal-trade-return-selector'), '只选择对方物品时也必须先显示对方可给出的真实持有物').toBeVisible();
         await assertTradeCandidateTrayAnchoredToFlow(page, 'betrayal-trade-return-selector');
         await expect(page.getByTestId('betrayal-trade-flow-item-step'), '只选队友但未选任何持有物时不能形成空交易请求').toContainText(/选择自己或对方持有物|选择/);
-        await expect(page.locator('[data-testid="betrayal-action-trade"][data-trade-confirm-placement="flow-banner"]'), '双方都没选持有物时不能出现流程条内提出交易确认').toHaveCount(0);
+        await expect(page.locator('[data-testid="betrayal-action-trade"][data-trade-confirm-placement="bottom-action-panel"]'), '双方都没选持有物时不能出现底部动作面板内提出交易确认').toHaveCount(0);
         await saveScreenshot(page, REQUEST_ONLY_TARGET_SELECTED_SCREENSHOT);
 
         await page.getByTestId('betrayal-trade-return-card-map').click();

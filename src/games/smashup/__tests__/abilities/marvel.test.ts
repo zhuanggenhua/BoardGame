@@ -1247,6 +1247,43 @@ describe('漫威第一波新增派系代表性玩法行为', () => {
             },
         });
 
+        const multipleCore = makeState({
+            bases: [
+                makeBase('base_juice_bar', [makeMinion('enemy-a', 'shield_agent', '1', 2)]),
+                makeBase('base_moon_dumpster', [makeMinion('enemy-b', 'shield_agent', '1', 2)]),
+            ],
+        });
+        const multiple = invokeRegisteredAbilityContract('ultimates_first_to_arrive', 'onPlay', {
+            state: multipleCore,
+            matchState: makeMatchState(multipleCore),
+            playerId: '0',
+            cardUid: 'first-choice',
+            defId: 'ultimates_first_to_arrive',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 1301,
+        });
+        expect(multiple.events).toEqual([]);
+        const firstPrompt = getSimpleChoicePrompt(multiple.matchState!, 'ultimates_first_to_arrive');
+        expect(getPromptOptions(firstPrompt).map(option => option.value?.baseIndex)).toEqual([0, 1]);
+        const selectedSecondBase = respondToPromptOption(
+            multiple.matchState!,
+            option => option.value?.baseIndex === 1,
+            'second legal base for First to Arrive',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(selectedSecondBase.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.LIMIT_MODIFIED,
+                payload: expect.objectContaining({
+                    limitType: 'minion',
+                    restrictToBase: 1,
+                    reason: 'ultimates_first_to_arrive',
+                }),
+            }),
+        ]));
+
         const fullCore = makeState({
             bases: [
                 makeBase('base_juice_bar', [makeMinion('ally-a', 'ultimates_spectrum', '0', 4)]),

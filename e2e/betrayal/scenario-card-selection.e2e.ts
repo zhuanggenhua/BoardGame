@@ -33,10 +33,12 @@ test.describe('山屋惊魂剧本卡候选选择', () => {
             .click();
         await page.getByTestId('betrayal-character-confirm').click();
         await expect(page.getByTestId('betrayal-character-confirm')).toHaveText(/确认此剧本卡/);
+        await expect(page.getByTestId('betrayal-scenario-confirmation-count')).toHaveText(/剧本确认 0\/1/);
 
         await page.getByTestId('betrayal-character-scenario-button').click();
         await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeVisible();
         await expect(page.getByTestId('betrayal-scenario-candidate-count')).toHaveText(/5 张候选/);
+        await expect(page.getByTestId('betrayal-scenario-dialog-confirmation-count')).toHaveText(/剧本确认 0\/1/);
         await expect(page.getByTestId('betrayal-scenario-candidate-list').locator('button')).toHaveCount(5);
         await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('赤红杰克归来');
         await expect(page.getByTestId('betrayal-scenario-option-crimson-jack-returns')).toContainText('当前提议');
@@ -52,6 +54,7 @@ test.describe('山屋惊魂剧本卡候选选择', () => {
         await expect(page.getByTestId('betrayal-scenario-select-dialog')).toBeHidden();
         await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('永远的朋友');
         await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('已确认');
+        await expect(page.getByTestId('betrayal-scenario-confirmation-count')).toHaveText(/剧本确认 1\/1/);
         await expect(page.getByTestId('betrayal-character-confirm')).toBeDisabled();
         await expect(page.getByTestId('betrayal-character-confirm')).toHaveText(/规则待接入，不能开始/);
         await saveScreenshot(page, PENDING_BLOCKED_SCREENSHOT);
@@ -60,6 +63,7 @@ test.describe('山屋惊魂剧本卡候选选择', () => {
         await page.getByTestId('betrayal-scenario-option-crimson-jack-returns').click();
         await page.getByTestId('betrayal-scenario-select-current').click();
         await expect(page.getByTestId('betrayal-character-scenario-button')).toContainText('赤红杰克归来');
+        await expect(page.getByTestId('betrayal-scenario-confirmation-count')).toHaveText(/剧本确认 1\/1/);
         await expect(page.getByTestId('betrayal-character-confirm')).toBeEnabled();
         await expect(page.getByTestId('betrayal-character-confirm')).toHaveText(/开始剧本/);
         await page.getByTestId('betrayal-character-confirm').click();

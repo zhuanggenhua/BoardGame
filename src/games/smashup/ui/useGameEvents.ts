@@ -70,6 +70,45 @@ function resolveTriggeredFxPosition(
   };
 }
 
+function resolveTriggeredFxActionKind(eventType: string): 'destroy' | 'buff' | 'score' | 'info' {
+  switch (eventType) {
+    case SU_EVENTS.MINION_DESTROYED:
+      return 'destroy';
+    case SU_EVENTS.POWER_COUNTER_ADDED:
+    case SU_EVENTS.TEMP_POWER_ADDED:
+      return 'buff';
+    case SU_EVENTS.VP_AWARDED:
+      return 'score';
+    default:
+      return 'info';
+  }
+}
+
+function resolveTriggeredFxTone(eventType: string): 'danger' | 'buff' | 'score' | 'info' {
+  const actionKind = resolveTriggeredFxActionKind(eventType);
+  if (actionKind === 'destroy') return 'danger';
+  if (actionKind === 'buff') return 'buff';
+  if (actionKind === 'score') return 'score';
+  return 'info';
+}
+
+function resolveTriggeredFxTargetDefId(
+  G: MatchState<SmashUpCore>,
+  event: { type: string; payload?: unknown },
+): string | undefined {
+  if (event.type === SU_EVENTS.MINION_DESTROYED) {
+    return (event.payload as { minionDefId?: string })?.minionDefId;
+  }
+
+  if (event.type === SU_EVENTS.POWER_COUNTER_ADDED || event.type === SU_EVENTS.TEMP_POWER_ADDED) {
+    const payload = event.payload as { baseIndex?: number; minionUid?: string };
+    if (payload.baseIndex === undefined || !payload.minionUid) return undefined;
+    return G.core.bases[payload.baseIndex]?.minions.find(minion => minion.uid === payload.minionUid)?.defId;
+  }
+
+  return undefined;
+}
+
 function isImmediateExtraPromptFamilyActive(
   G: MatchState<SmashUpCore>,
   playerId: string,
@@ -145,15 +184,15 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: U
         if (reason && triggerDefIds.has(reason) && !triggeredThisBatch.has(reason)) {
           triggeredThisBatch.add(reason);
           const position = resolveTriggeredFxPosition(event, baseRefs);
-          const destroyedPayload = event.type === SU_EVENTS.MINION_DESTROYED
-            ? (event.payload as { minionDefId?: string })
-            : undefined;
+          const actionKind = resolveTriggeredFxActionKind(event.type);
+          const targetDefId = resolveTriggeredFxTargetDefId(G, event);
           fxBus.push(SU_FX.ABILITY_TRIGGERED, { space: 'screen' }, {
             sourceDefId: reason,
             position,
-            targetDefId: destroyedPayload?.minionDefId,
-            effectLabel: destroyedPayload?.minionDefId ? '消灭' : undefined,
-            highlightTone: destroyedPayload?.minionDefId ? 'danger' : 'info',
+            targetDefId,
+            actionKind,
+            effectLabel: actionKind === 'destroy' ? '消灭' : undefined,
+            highlightTone: resolveTriggeredFxTone(event.type),
           });
         }
       }
