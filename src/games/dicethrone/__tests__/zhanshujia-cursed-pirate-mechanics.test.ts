@@ -1434,6 +1434,11 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
         expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(4);
         expect(next.players['0'].hand.length).toBe(handBefore + 1);
+        expect(eventsOfType(events, 'DAMAGE_DEALT')).toHaveLength(0);
+        expect(eventsOfType(events, 'PENDING_ATTACK_UPDATED')[0]?.payload.patch).toMatchObject({
+            damage: 0,
+            isDefendable: false,
+        });
         expect(eventsOfType(events, 'EXTRA_ATTACK_TRIGGERED')[0]?.payload).toMatchObject({
             attackerId: '0',
             targetId: '1',
@@ -2051,12 +2056,12 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(eventsOfType((resolved?.events ?? []) as DiceThroneEvent[], 'EXTRA_ATTACK_TRIGGERED')).toHaveLength(0);
     });
 
-    it('战争贩子 II 勋章分支在防御阶段收口后会进入额外进攻投掷阶段', () => {
+    it('额外进攻标记尚未进入 offensiveRoll 时，防御阶段收口会进入额外进攻投掷阶段', () => {
         const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
         state.core.pendingAttack = {
             attackerId: '0',
             defenderId: '1',
-            sourceAbilityId: 'war-monger',
+            sourceAbilityId: 'flanking',
             isDefendable: true,
             defenseAbilityId: 'still-wet-behind-ears',
             damageResolved: true,

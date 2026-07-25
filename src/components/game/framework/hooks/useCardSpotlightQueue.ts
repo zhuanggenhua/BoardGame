@@ -84,6 +84,9 @@ function spotlightQueueReducer<TData>(
 ): SpotlightItem<TData>[] {
     switch (action.type) {
         case 'consume': {
+            if (action.resetQueue && state.length === 0 && action.items.length === 0) {
+                return state;
+            }
             const baseQueue = action.resetQueue ? [] : state;
             if (action.items.length === 0) {
                 return baseQueue;

@@ -1,5 +1,7 @@
 # Smash Up 动作英雄 / 返时者 / 异形变体 / 青少年 / 怨灵捕手 Approval Readiness
 
+> Merge note (2026-07-26): this file is a historical pre-implementation checkpoint. PR #105 has since progressed into staged runtime implementation and marks the new factions as in-progress; it still does not represent complete faction implementation or a closed server asset publication chain.
+
 ## Current Verdict
 
 - Status: `ready-for-approval-review`, not implementation-ready.

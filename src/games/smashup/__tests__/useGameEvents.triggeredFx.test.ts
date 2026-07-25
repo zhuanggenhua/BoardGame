@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { FxBus } from '../../../engine/fx';
@@ -93,6 +92,7 @@ describe('useGameEvents triggered FX', () => {
         expect.objectContaining({
           sourceDefId: 'trickster_leprechaun',
           targetDefId: 'pirate_first_mate',
+          actionKind: 'destroy',
           effectLabel: '消灭',
           highlightTone: 'danger',
           position: { left: 270, top: 147.2 },

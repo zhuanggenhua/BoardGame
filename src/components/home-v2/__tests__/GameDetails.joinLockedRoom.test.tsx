@@ -20,6 +20,11 @@ const packageMocks = vi.hoisted(() => ({
     retryInstall: vi.fn(),
     openNotificationSettings: vi.fn(),
     hookResult: null as null | Record<string, unknown>,
+    createRoomModalProps: null as null | {
+        isOpen?: boolean;
+        initialPreferences?: unknown;
+        gameManifest?: { id?: string };
+    },
 }));
 let mockMatches = [{
     matchID: 'match-locked-1',
@@ -55,7 +60,11 @@ vi.mock('react-i18next', async () => {
                 if (key === 'lobby:rooms.scenario' || key === 'rooms.scenario') return '剧本';
                 return options?.defaultValue ?? key;
             },
-            i18n: { language: 'zh-CN' },
+            i18n: {
+                language: 'zh-CN',
+                hasLoadedNamespace: () => true,
+                loadNamespaces: async () => undefined,
+            },
         }),
     };
 });
@@ -141,7 +150,14 @@ vi.mock('../../../config/server', () => ({
 }));
 
 vi.mock('../../lobby/CreateRoomModal', () => ({
-    CreateRoomModal: () => null,
+    CreateRoomModal: (props: {
+        isOpen?: boolean;
+        initialPreferences?: unknown;
+        gameManifest?: { id?: string };
+    }) => {
+        packageMocks.createRoomModalProps = props;
+        return null;
+    },
 }));
 
 vi.mock('../../common/overlays/HomeV2PaperModalFrame', () => ({
@@ -185,6 +201,7 @@ vi.mock('../../lobby/gameDetailsContent', () => ({
 beforeEach(() => {
     packageMocks.nativeAndroidRuntime = false;
     packageMocks.hookResult = null;
+    packageMocks.createRoomModalProps = null;
     mockOwnerActiveMatch = null;
     mockMatches = [{
         matchID: 'match-locked-1',
@@ -206,6 +223,39 @@ afterEach(() => {
 });
 
 describe('HomeV2 GameDetails locked room join', () => {
+    it('纸牌帮首次创建房间时不把默认本地 AI 三人偏好误当成保存偏好', async () => {
+        localStorage.removeItem('local_ai_match_preferences:the-gang');
+
+        render(createElement(GameDetailsRight, {
+            game: {
+                id: 'the-gang',
+                type: 'game',
+                enabled: true,
+                titleKey: 'games.the-gang.title',
+                descriptionKey: 'games.the-gang.description',
+                category: 'card',
+                playersKey: 'games.the-gang.players',
+                icon: 'TG',
+                playerOptions: [3, 4, 5, 6, 7, 8, 9, 10],
+                bestPlayers: [4, 5, 6],
+                ai: {
+                    capture: true,
+                    localAi: true,
+                    remoteAi: false,
+                    defaultLocalAiSeats: 'all-opponents',
+                },
+            },
+        }));
+
+        fireEvent.click(screen.getByTestId('home-v2-create-room-button'));
+
+        await waitFor(() => {
+            expect(packageMocks.createRoomModalProps?.isOpen).toBe(true);
+        });
+        expect(packageMocks.createRoomModalProps?.gameManifest?.id).toBe('the-gang');
+        expect(packageMocks.createRoomModalProps?.initialPreferences).toBeNull();
+    });
+
     it('确认密码后会先 getMatch，再带密码 join，并导航到返回的座位', async () => {
         const getMatchSpy = vi.spyOn(matchApi, 'getMatch').mockResolvedValueOnce({
             matchID: 'match-locked-1',

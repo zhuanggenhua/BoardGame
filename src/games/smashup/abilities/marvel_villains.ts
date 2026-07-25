@@ -44,6 +44,7 @@ import {
 } from '../domain/ongoingEffects';
 import { reduce } from '../domain/reduce';
 import type {
+    CardInstance,
     CardToDeckBottomEvent,
     CardToDeckTopEvent,
     DeckReorderedEvent,
@@ -67,7 +68,12 @@ type VillainPromptMode =
     | 'mysterioChoice'
     | 'supremeIntelligenceBuff'
     | 'deckOwnMinions'
-    | 'vultureDiscardBaseModifier';
+    | 'vultureDiscardBaseModifier'
+    | 'hydraHourOfDestinySearch'
+    | 'hydraReactivateAgents'
+    | 'hydraSecretReserves'
+    | 'kreePrepareToEngage'
+    | 'kreeProvenMethods';
 
 type VillainPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -88,6 +94,7 @@ type VillainPromptContext = {
     selectedOngoingDefId?: string;
     selectedOngoingOwnerId?: PlayerId;
     selectedOngoingBaseIndex?: number;
+    revealedCardUids?: string[];
 };
 
 type MinionChoice = {
@@ -115,6 +122,36 @@ type MysterioChoice = {
     mode?: 'extraBaseModifier' | 'draw';
     skip?: boolean;
 };
+
+type CardChoice = {
+    cardUid?: string;
+    defId?: string;
+    ownerId?: PlayerId;
+    skip?: boolean;
+};
+
+function cardChoiceOptions(cards: CardInstance[]) {
+    return cards.map((card, index) => ({
+        id: card.uid + '-' + index,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+        displayMode: 'card' as const,
+        displayCard: { defId: card.defId, cardUid: card.uid },
+    }));
+}
+
+function uniqueCardChoices(value: unknown, maxCount: number): CardChoice[] {
+    const raw = (Array.isArray(value) ? value : [value]) as CardChoice[];
+    const seen = new Set<string>();
+    const choices: CardChoice[] = [];
+    for (const choice of raw) {
+        if (choice?.skip || !choice?.cardUid || seen.has(choice.cardUid)) continue;
+        seen.add(choice.cardUid);
+        choices.push(choice);
+        if (choices.length >= maxCount) break;
+    }
+    return choices;
+}
 
 function runtimeToAbilityResult(result: {
     events: SmashUpEvent[];
@@ -270,6 +307,26 @@ function anyMinionOptions(
         effectType: 'destroy',
         respectActionProtection: true,
     });
+}
+
+function isAnyMinionDestroyTargetLegal(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    selected: { minion: MinionOnBase; baseIndex: number },
+    sourceDefId: string,
+    options: { powerMax?: number } = {},
+): boolean {
+    if (options.powerMax !== undefined && getMinionPower(state, selected.minion, selected.baseIndex) > options.powerMax) {
+        return false;
+    }
+    if (sourceDefId === 'masters_of_evil_sonic_shockwave') {
+        if (selected.minion.controller === playerId) return false;
+        const base = state.bases[selected.baseIndex];
+        if (!base) return false;
+        const playerPower = getPlayerEffectivePowerOnBase(state, base, selected.baseIndex, playerId);
+        if (getMinionPower(state, selected.minion, selected.baseIndex) >= playerPower) return false;
+    }
+    return true;
 }
 
 function awardVp(playerId: PlayerId, amount: number, reason: string, now: number): VpAwardedEvent {
@@ -704,6 +761,93 @@ const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCo
             );
         }
 
+        if (context.mode === 'hydraHourOfDestinySearch') {
+            const cards = (state.players[context.playerId]?.deck ?? [])
+                .filter(card => getCardDef(card.defId)?.type === 'minion' && printedPower(card.defId) <= 2);
+            return createAbilityRuntimeSimpleChoice(
+                'hydra_hour_of_destiny_' + context.now,
+                context.playerId,
+                '命运时刻：选择至多两名力量≤2的角色',
+                cardChoiceOptions(cards),
+                {
+                    sourceId: 'hydra_hour_of_destiny_search',
+                    targetType: 'generic',
+                    titleKey: 'ui.hydra_hour_of_destiny_title',
+                    multi: { min: 0, max: Math.min(2, cards.length) },
+                    responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
+                },
+            );
+        }
+
+        if (context.mode === 'hydraReactivateAgents' || context.mode === 'hydraSecretReserves') {
+            const cards = (state.players[context.playerId]?.discard ?? [])
+                .filter(card => getCardDef(card.defId)?.type === 'minion' && printedPower(card.defId) <= 2);
+            return createAbilityRuntimeSimpleChoice(
+                context.mode + '_' + context.now,
+                context.playerId,
+                context.mode === 'hydraReactivateAgents'
+                    ? '重新激活特工：选择至多两名力量≤2的角色'
+                    : '秘密储备：选择任意数量力量≤2的角色洗回牌库',
+                cardChoiceOptions(cards),
+                {
+                    sourceId: context.mode === 'hydraReactivateAgents'
+                        ? 'hydra_reactivate_agents'
+                        : 'hydra_secret_reserves',
+                    targetType: 'discard',
+                    titleKey: context.mode === 'hydraReactivateAgents'
+                        ? 'ui.hydra_reactivate_agents_title'
+                        : 'ui.hydra_secret_reserves_title',
+                    multi: {
+                        min: 0,
+                        max: context.mode === 'hydraReactivateAgents' ? Math.min(2, cards.length) : cards.length,
+                    },
+                    responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
+                },
+            );
+        }
+
+        if (context.mode === 'kreePrepareToEngage') {
+            const revealed = (context.revealedCardUids ?? [])
+                .map(uid => state.players[context.playerId]?.deck.find(card => card.uid === uid))
+                .filter((card): card is CardInstance => !!card)
+                .filter(card => getCardDef(card.defId)?.type === 'action');
+            return createAbilityRuntimeSimpleChoice(
+                'kree_prepare_to_engage_' + context.now,
+                context.playerId,
+                '准备接战：选择至多两张已展示行动加入手牌',
+                cardChoiceOptions(revealed),
+                {
+                    sourceId: 'kree_prepare_to_engage',
+                    targetType: 'generic',
+                    titleKey: 'ui.kree_prepare_to_engage_title',
+                    multi: { min: 0, max: Math.min(2, revealed.length) },
+                    responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
+                },
+            );
+        }
+
+        if (context.mode === 'kreeProvenMethods') {
+            const cards = (state.players[context.playerId]?.discard ?? [])
+                .filter(card => getCardDef(card.defId)?.type === 'action');
+            return createAbilityRuntimeSimpleChoice(
+                'kree_proven_methods_' + context.now,
+                context.playerId,
+                '验证方法：选择至多两张行动按选择顺序置于牌库顶',
+                cardChoiceOptions(cards),
+                {
+                    sourceId: 'kree_proven_methods',
+                    targetType: 'discard',
+                    titleKey: 'ui.kree_proven_methods_title',
+                    multi: { min: 0, max: Math.min(2, cards.length) },
+                    responseValidationMode: 'live',
+                    autoResolveIfSingle: false,
+                },
+            );
+        }
+
         if (context.mode === 'vultureDiscardBaseModifier') {
             const options = state.players[context.playerId]?.discard
                 .filter(card => {
@@ -877,9 +1021,109 @@ const villainPromptProgram = createPromptProgram<VillainPromptContext, SmashUpCo
                 return { events: buildStandardDrawEventsFromRuntimeContext(args, playerId, 1) };
             }
             if (choice?.mode === 'extraBaseModifier' && context.sourceBaseIndex !== undefined) {
-                return { events: [grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, context.sourceDefId, { restrictToBase: context.sourceBaseIndex })] };
+                return {
+                    events: [grantContextualExtraAction(
+                        { playerId, now: timestamp, matchState: state },
+                        context.sourceDefId,
+                        {
+                            playTiming: 'immediate',
+                            restrictToBase: context.sourceBaseIndex,
+                            restrictToBaseModifier: true,
+                        },
+                    )],
+                };
             }
             return { events: [] };
+        }
+
+        if (context.mode === 'hydraHourOfDestinySearch') {
+            const choices = uniqueCardChoices(value, 2);
+            if (choices.length === 0) return { events: [] };
+            const selected = choices
+                .map(choice => state.core.players[playerId]?.deck.find(card => card.uid === choice.cardUid))
+                .filter((card): card is CardInstance => !!card)
+                .filter(card => getCardDef(card.defId)?.type === 'minion' && printedPower(card.defId) <= 2)
+                .slice(0, 2);
+            if (selected.length === 0) return { events: [] };
+            const player = state.core.players[playerId];
+            const restDeck = player.deck.filter(card => !selected.some(hit => hit.uid === card.uid));
+            return {
+                events: [
+                    deckReordered(playerId, [...selected, ...restDeck].map(card => card.uid), timestamp),
+                    {
+                        type: SU_EVENTS.CARDS_DRAWN,
+                        payload: { playerId, count: selected.length, cardUids: selected.map(card => card.uid) },
+                        timestamp,
+                    } as SmashUpEvent,
+                ],
+            };
+        }
+
+        if (context.mode === 'hydraReactivateAgents') {
+            const choices = uniqueCardChoices(value, 2);
+            const selected = choices
+                .map(choice => state.core.players[playerId]?.discard.find(card => card.uid === choice.cardUid))
+                .filter((card): card is CardInstance => !!card)
+                .filter(card => getCardDef(card.defId)?.type === 'minion' && printedPower(card.defId) <= 2)
+                .slice(0, 2);
+            return selected.length > 0
+                ? { events: [recoverCardsFromDiscard(playerId, selected.map(card => card.uid), context.sourceDefId, timestamp)] }
+                : { events: [] };
+        }
+
+        if (context.mode === 'hydraSecretReserves') {
+            const choices = uniqueCardChoices(value, Number.MAX_SAFE_INTEGER);
+            const player = state.core.players[playerId];
+            const selected = choices
+                .map(choice => player?.discard.find(card => card.uid === choice.cardUid))
+                .filter((card): card is CardInstance => !!card)
+                .filter(card => getCardDef(card.defId)?.type === 'minion' && printedPower(card.defId) <= 2);
+            if (!player || selected.length === 0) return { events: [] };
+            const nextDeck = args.random.shuffle([...player.deck, ...selected]);
+            return { events: [deckReordered(playerId, nextDeck.map(card => card.uid), timestamp)] };
+        }
+
+        if (context.mode === 'kreePrepareToEngage') {
+            const revealedSet = new Set(context.revealedCardUids ?? []);
+            const choices = uniqueCardChoices(value, 2);
+            const selected = choices
+                .map(choice => state.core.players[playerId]?.deck.find(card => card.uid === choice.cardUid))
+                .filter((card): card is CardInstance => !!card)
+                .filter(card => revealedSet.has(card.uid))
+                .filter(card => getCardDef(card.defId)?.type === 'action')
+                .slice(0, 2);
+            const player = state.core.players[playerId];
+            if (!player) return { events: [] };
+            const revealed = (context.revealedCardUids ?? [])
+                .map(uid => player.deck.find(card => card.uid === uid))
+                .filter((card): card is CardInstance => !!card);
+            const selectedIds = new Set(selected.map(card => card.uid));
+            const remainingRevealed = revealed.filter(card => !selectedIds.has(card.uid));
+            const restDeck = player.deck.filter(card => !revealed.some(hit => hit.uid === card.uid));
+            const events: SmashUpEvent[] = [
+                deckReordered(playerId, [...selected, ...args.random.shuffle([...remainingRevealed, ...restDeck])].map(card => card.uid), timestamp),
+            ];
+            if (selected.length > 0) {
+                events.push({
+                    type: SU_EVENTS.CARDS_DRAWN,
+                    payload: { playerId, count: selected.length, cardUids: selected.map(card => card.uid) },
+                    timestamp,
+                } as SmashUpEvent);
+            }
+            return { events };
+        }
+
+        if (context.mode === 'kreeProvenMethods') {
+            const choices = uniqueCardChoices(value, 2);
+            const player = state.core.players[playerId];
+            const selected = choices
+                .map(choice => player?.discard.find(card => card.uid === choice.cardUid))
+                .filter((card): card is CardInstance => !!card)
+                .filter(card => getCardDef(card.defId)?.type === 'action')
+                .slice(0, 2);
+            return player && selected.length > 0
+                ? { events: [deckReordered(playerId, [...selected, ...player.deck].map(card => card.uid), timestamp)] }
+                : { events: [] };
         }
 
         if (context.mode === 'vultureDiscardBaseModifier') {
@@ -961,7 +1205,7 @@ function destroyOwnMinionAbility(
 
 function destroyAnyMinionAbility(ctx: AbilityContext, options: { powerMax?: number } = {}): AbilityResult {
     const selected = ctx.targetMinionUid ? findMinion(ctx.state, ctx.targetMinionUid) : undefined;
-    if (selected) {
+    if (selected && isAnyMinionDestroyTargetLegal(ctx.state, ctx.playerId, selected, ctx.defId, options)) {
         return runDestroyFollowup({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
@@ -977,6 +1221,7 @@ function destroyAnyMinionAbility(ctx: AbilityContext, options: { powerMax?: numb
             baseIndex: selected.baseIndex,
         }, ctx.random, ctx.now);
     }
+    if (selected) return { events: [] };
     return prompt({
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -990,6 +1235,17 @@ function destroyAnyMinionAbility(ctx: AbilityContext, options: { powerMax?: numb
 }
 
 function hydraHourOfDestiny(ctx: AbilityContext): AbilityResult {
+    if (ctx.matchState) {
+        return prompt({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            mode: 'hydraHourOfDestinySearch',
+            sourceDefId: ctx.defId,
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+        });
+    }
     const result = revealAndPickFromDeck({
         state: ctx.state,
         random: ctx.random,
@@ -1004,6 +1260,17 @@ function hydraHourOfDestiny(ctx: AbilityContext): AbilityResult {
 }
 
 function hydraReactivateAgents(ctx: AbilityContext): AbilityResult {
+    if (ctx.matchState) {
+        return prompt({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            mode: 'hydraReactivateAgents',
+            sourceDefId: ctx.defId,
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+        });
+    }
     const selected = ctx.state.players[ctx.playerId]?.discard
         .filter(card => getCardDef(card.defId)?.type === 'minion' && printedPower(card.defId) <= 2)
         .slice(0, 2) ?? [];
@@ -1015,6 +1282,17 @@ function hydraReactivateAgents(ctx: AbilityContext): AbilityResult {
 function hydraSecretReserves(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
+    if (ctx.matchState) {
+        return prompt({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            mode: 'hydraSecretReserves',
+            sourceDefId: ctx.defId,
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+        });
+    }
     const selected = player.discard.filter(card => getCardDef(card.defId)?.type === 'minion' && printedPower(card.defId) <= 2);
     if (selected.length === 0) return { events: [] };
     const nextDeck = ctx.random.shuffle([...player.deck, ...selected]);
@@ -1026,12 +1304,31 @@ function kreePrepareToEngage(ctx: AbilityContext): AbilityResult {
     if (!player) return { events: [] };
     const revealed = player.deck.slice(0, 5);
     if (revealed.length === 0) return { events: [] };
+    const revealEvents: SmashUpEvent[] = [
+        inspectDeck(ctx.playerId, ctx.playerId, revealed.length, ctx.defId, ctx.now),
+        revealDeckTop(ctx.playerId, ctx.playerId, revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, ctx.defId, ctx.now, ctx.playerId),
+    ];
+    if (ctx.matchState) {
+        const prompted = executeAbilityProgram(villainPromptProgram, {
+            matchState: simulateMatchState(ctx.matchState, revealEvents),
+            playerId: ctx.playerId,
+            now: ctx.now,
+            mode: 'kreePrepareToEngage',
+            sourceDefId: ctx.defId,
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+            revealedCardUids: revealed.map(card => card.uid),
+        });
+        return {
+            events: [...revealEvents, ...prompted.events],
+            ...(prompted.matchState ? { matchState: prompted.matchState } : {}),
+        };
+    }
     const picked = revealed.filter(card => getCardDef(card.defId)?.type === 'action').slice(0, 2);
     const remaining = revealed.filter(card => !picked.some(hit => hit.uid === card.uid));
     const restDeck = player.deck.slice(revealed.length);
     const events: SmashUpEvent[] = [
-        inspectDeck(ctx.playerId, ctx.playerId, revealed.length, ctx.defId, ctx.now),
-        revealDeckTop(ctx.playerId, ctx.playerId, revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, ctx.defId, ctx.now, ctx.playerId),
+        ...revealEvents,
         deckReordered(ctx.playerId, [...picked, ...ctx.random.shuffle([...remaining, ...restDeck])].map(card => card.uid), ctx.now),
     ];
     if (picked.length > 0) {
@@ -1047,6 +1344,17 @@ function kreePrepareToEngage(ctx: AbilityContext): AbilityResult {
 function kreeProvenMethods(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
+    if (ctx.matchState) {
+        return prompt({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            mode: 'kreeProvenMethods',
+            sourceDefId: ctx.defId,
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+        });
+    }
     const selected = player.discard.filter(card => getCardDef(card.defId)?.type === 'action').slice(0, 2);
     return selected.length > 0
         ? { events: [deckReordered(ctx.playerId, [...selected, ...player.deck].map(card => card.uid), ctx.now)] }
@@ -1390,8 +1698,8 @@ export function registerMarvelVillainsAbilities(): void {
             compute: (ctx, helpers) => {
                 if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'kree_kree_sentry')) return 0;
                 const player = ctx.state.players[ctx.minion.controller];
-                const actionLikeCount = (player?.actionsPlayed ?? 0) + (player?.extraCardsPlayedThisTurn ?? 0);
-                return actionLikeCount >= 2 ? 2 : 0;
+                const actionCardCount = player?.actionCardsPlayedThisTurn ?? 0;
+                return actionCardCount >= 2 ? 2 : 0;
             },
         },
         {

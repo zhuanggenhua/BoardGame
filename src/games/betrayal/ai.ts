@@ -62,26 +62,16 @@ interface BetrayalAiDustRuntime {
     };
 }
 
-interface BetrayalAiHungryHouseCarriedCorpse {
-    kind: 'cultist' | 'explorer';
-    corpseId: string;
-    name: string;
-    sourcePlayerId?: string;
-    sourceMonsterId?: string;
-}
-
-interface BetrayalAiHungryHouseRuntime {
-    ritualProgress: number;
-    ritualRoomId: string;
-    chasmRoomId: string;
-    cultistIds: string[];
-    cultistCorpseRoomIds: Record<string, string>;
-    carriedCorpseByPlayerId: Record<string, BetrayalAiHungryHouseCarriedCorpse>;
-    sacrificedCorpseIds: string[];
+interface BetrayalAiHelpingHandsRuntime {
+    trollHandIds: string[];
+    activeMonsterTurn: boolean;
+    monsterTurnControllerPlayerId: string | null;
+    trollHandMoveRemainingById: Record<string, number>;
+    trollHandAttackUsedIdsThisTurn: string[];
 }
 
 interface BetrayalAiRecentRoll {
-    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck';
+    kind: 'eventTraitCheck' | 'eventDiceRoll' | 'hauntRoll' | 'mysticElevator' | 'attackRoll' | 'roomEndTurnTraitCheck' | 'deathPrevention' | 'hauntActionTraitCheck' | 'monsterMoveRoll';
     playerId: string;
     dice: number[];
     passiveBonus: number;
@@ -153,7 +143,7 @@ interface BetrayalAiCore {
         knowledgeOfJackPlayerIds: string[];
         dust?: BetrayalAiDustRuntime;
         magicCamera?: BetrayalAiMagicCameraRuntime;
-        hungryHouse?: BetrayalAiHungryHouseRuntime;
+        helpingHands?: BetrayalAiHelpingHandsRuntime;
     };
     endgameResult: unknown | null;
 }
@@ -189,10 +179,6 @@ const ACTION_KINDS = {
     CURE_THE_DUST: 'cure-the-dust',
     REQUEST_SICKNESS_EXCHANGE: 'request-sickness-exchange',
     RESOLVE_SICKNESS_EXCHANGE: 'resolve-sickness-exchange',
-    PICK_UP_CORPSE: 'pick-up-corpse',
-    FEED_HER: 'feed-her',
-    ATTACK_CULTIST: 'attack-cultist',
-    CULTIST_ATTACK: 'cultist-attack',
     LEARN_ABOUT_JACK: 'learn-about-jack',
     STUDY_EXORCISM: 'study-exorcism',
     EXORCISE_JACK: 'exorcise-jack',
@@ -204,6 +190,9 @@ const ACTION_KINDS = {
     USE_ROOM_EFFECT: 'use-room-effect',
     END_TURN: 'end-turn',
     ACKNOWLEDGE_TURN_END_ROLL: 'acknowledge-turn-end-roll',
+    MOVE_TROLL_HAND: 'move-troll-hand',
+    TROLL_HAND_ATTACK: 'troll-hand-attack',
+    END_TROLL_HAND_MONSTER_TURN: 'end-troll-hand-monster-turn',
 } as const;
 
 const BETRAYAL_AI_TRAITS: BetrayalTraitKey[] = ['might', 'speed', 'knowledge', 'sanity'];
@@ -471,62 +460,18 @@ function isDustHaunt(core: BetrayalAiCore): boolean {
         && Boolean(core.scenarioRuntime.dust);
 }
 
-function isHungryHouseHaunt(core: BetrayalAiCore): boolean {
+function isHelpingHandsMonsterTurn(core: BetrayalAiCore, playerId: PlayerId): boolean {
+    const helpingHands = core.scenarioRuntime.helpingHands;
     return core.phase === 'haunt'
         && core.scenarioRuntime.hauntCardNumber === 12
-        && Boolean(core.scenarioRuntime.hungryHouse);
+        && Boolean(helpingHands?.activeMonsterTurn)
+        && helpingHands?.monsterTurnControllerPlayerId === playerId;
 }
 
 function resolveLowestTrait(explorer: BetrayalAiExplorer): BetrayalTraitKey {
     return BETRAYAL_AI_TRAITS.reduce((lowest, trait) => (
         explorer.traits[trait] < explorer.traits[lowest] ? trait : lowest
     ), 'might');
-}
-
-function resolveHungryHouseCarriableCorpses(
-    core: BetrayalAiCore,
-    actor: BetrayalAiExplorer,
-): BetrayalAiHungryHouseCarriedCorpse[] {
-    const hungryHouse = core.scenarioRuntime.hungryHouse;
-    if (
-        !isHungryHouseHaunt(core)
-        || !hungryHouse
-        || core.scenarioRuntime.deadExplorerPlayerIds.includes(actor.playerId)
-        || hungryHouse.carriedCorpseByPlayerId[actor.playerId]
-    ) {
-        return [];
-    }
-
-    const cultistCorpses = Object.entries(hungryHouse.cultistCorpseRoomIds)
-        .filter(([, roomId]) => roomId === actor.roomId)
-        .filter(([corpseId]) => !hungryHouse.sacrificedCorpseIds.includes(corpseId))
-        .map(([corpseId]) => ({
-            kind: 'cultist' as const,
-            corpseId,
-            sourceMonsterId: corpseId,
-            name: '邪教徒尸体',
-        }));
-    const carriedExplorerCorpseIds = new Set(
-        Object.values(hungryHouse.carriedCorpseByPlayerId)
-            .map((corpse) => corpse.sourcePlayerId)
-            .filter((sourcePlayerId): sourcePlayerId is string => Boolean(sourcePlayerId)),
-    );
-    const explorerCorpses = getAllExplorers(core)
-        .filter((explorer) => (
-            explorer.playerId !== actor.playerId
-            && explorer.roomId === actor.roomId
-            && core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-            && !carriedExplorerCorpseIds.has(explorer.playerId)
-            && !hungryHouse.sacrificedCorpseIds.includes(`explorer:${explorer.playerId}`)
-        ))
-        .map((explorer) => ({
-            kind: 'explorer' as const,
-            corpseId: `explorer:${explorer.playerId}`,
-            sourcePlayerId: explorer.playerId,
-            name: `${explorer.displayName}的尸体`,
-        }));
-
-    return [...cultistCorpses, ...explorerCorpses];
 }
 
 function buildDustSicknessExchangeActions(
@@ -749,118 +694,6 @@ function buildMagicCameraHauntActions(
             },
         });
         if (action) actions.push(action);
-    }
-
-    return actions;
-}
-
-function buildHungryHouseHauntActions(
-    validate: BetrayalAiValidator,
-    state: BetrayalState,
-    playerId: PlayerId,
-    isDead: boolean,
-): AiLegalAction[] {
-    const core = state.core;
-    const hungryHouse = core.scenarioRuntime.hungryHouse;
-    const actor = findExplorer(core, playerId);
-    if (!isHungryHouseHaunt(core) || !hungryHouse || !actor) return [];
-
-    const actions: AiLegalAction[] = [];
-    if (!isDead) {
-        for (const corpse of resolveHungryHouseCarriableCorpses(core, actor)) {
-            const action = createValidatedAction({
-                validate,
-                state,
-                playerId,
-                type: BETRAYAL_COMMANDS.PICK_UP_CORPSE,
-                payload: {
-                    corpseKind: corpse.kind,
-                    corpseId: corpse.corpseId,
-                    ...(corpse.sourcePlayerId ? { sourcePlayerId: corpse.sourcePlayerId } : {}),
-                },
-                kind: ACTION_KINDS.PICK_UP_CORPSE,
-                label: `搬起${corpse.name}`,
-                idParts: [corpse.kind, corpse.corpseId, corpse.sourcePlayerId],
-                metadata: {
-                    corpseKind: corpse.kind,
-                    corpseId: corpse.corpseId,
-                    strategicScore: corpse.kind === 'cultist' ? 1260 : 1220,
-                    visibleStepDelayPolicy: 'visible',
-                },
-            });
-            if (action) actions.push(action);
-        }
-
-        const carriedCorpse = hungryHouse.carriedCorpseByPlayerId[playerId];
-        if (carriedCorpse) {
-            const action = createValidatedAction({
-                validate,
-                state,
-                playerId,
-                type: BETRAYAL_COMMANDS.FEED_HER,
-                payload: {},
-                kind: ACTION_KINDS.FEED_HER,
-                label: `把${carriedCorpse.name}献给大宅`,
-                metadata: {
-                    corpseId: carriedCorpse.corpseId,
-                    strategicScore: 1380,
-                    visibleStepDelayPolicy: 'visible',
-                },
-            });
-            if (action) actions.push(action);
-        }
-
-        for (const monster of core.monsters) {
-            if (
-                !hungryHouse.cultistIds.includes(monster.id)
-                || monster.roomId !== actor.roomId
-            ) {
-                continue;
-            }
-            const action = createValidatedAction({
-                validate,
-                state,
-                playerId,
-                type: BETRAYAL_COMMANDS.HAUNT_ATTACK,
-                payload: { target: 'cultist', targetMonsterId: monster.id },
-                kind: ACTION_KINDS.ATTACK_CULTIST,
-                label: `攻击${monster.name}`,
-                idParts: [monster.id],
-                metadata: {
-                    monsterId: monster.id,
-                    strategicScore: 1120,
-                    visibleStepDelayPolicy: 'visible',
-                },
-            });
-            if (action) actions.push(action);
-        }
-    }
-
-    const livingExplorers = getAllExplorers(core).filter((explorer) => (
-        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-    ));
-    for (const monster of core.monsters) {
-        if (!hungryHouse.cultistIds.includes(monster.id)) continue;
-        for (const explorer of livingExplorers) {
-            if (explorer.roomId !== monster.roomId) continue;
-            const action = createValidatedAction({
-                validate,
-                state,
-                playerId,
-                type: BETRAYAL_COMMANDS.CULTIST_ATTACK,
-                payload: { monsterId: monster.id, targetPlayerId: explorer.playerId },
-                kind: ACTION_KINDS.CULTIST_ATTACK,
-                label: `让邪教徒攻击${explorer.displayName}`,
-                idParts: [monster.id, explorer.playerId],
-                metadata: {
-                    monsterId: monster.id,
-                    targetPlayerId: explorer.playerId,
-                    strategicScore: 1180 + Math.max(0, 6 - explorer.traits.might) * 8,
-                    visibleStepDelayPolicy: 'visible',
-                },
-            });
-            if (action) actions.push(action);
-        }
     }
 
     return actions;
@@ -1328,7 +1161,6 @@ function buildTurnActions(
         const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(playerId);
         actions.push(...buildDustHauntActions(validate, state, playerId, isDead));
         actions.push(...buildMagicCameraHauntActions(validate, state, playerId, isTraitor, isDead));
-        actions.push(...buildHungryHouseHauntActions(validate, state, playerId, isDead));
         if (isTraitor) {
             for (const hero of getAllExplorers(core)) {
                 if (
@@ -1417,6 +1249,120 @@ function buildTurnActions(
     return actions;
 }
 
+function buildHelpingHandsMonsterTurnActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const core = state.core;
+    const helpingHands = core.scenarioRuntime.helpingHands;
+    if (!helpingHands || !isHelpingHandsMonsterTurn(core, playerId)) {
+        return [];
+    }
+
+    const livingExplorers = getAllExplorers(core).filter((explorer) => (
+        !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ));
+    const activeTrollHands = helpingHands.trollHandIds
+        .filter((monsterId) => !helpingHands.trollHandAttackUsedIdsThisTurn.includes(monsterId))
+        .map((monsterId) => core.monsters.find((monster) => monster.id === monsterId))
+        .filter((monster): monster is BetrayalAiMonster => Boolean(monster));
+    const actions: AiLegalAction[] = [];
+    const add = (action: AiLegalAction | null) => {
+        if (action) actions.push(action);
+    };
+
+    if (
+        activeTrollHands.length === 2
+        && activeTrollHands[0]!.roomId === activeTrollHands[1]!.roomId
+    ) {
+        for (const target of livingExplorers.filter((explorer) => (
+            explorer.roomId === activeTrollHands[0]!.roomId
+        ))) {
+            add(createValidatedAction({
+                validate,
+                state,
+                playerId,
+                type: BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK,
+                payload: { combined: true, targetPlayerId: target.playerId },
+                kind: ACTION_KINDS.TROLL_HAND_ATTACK,
+                label: `让巨魔手合击${target.displayName}`,
+                idParts: ['combined', target.playerId],
+                metadata: {
+                    combined: true,
+                    targetPlayerId: target.playerId,
+                    strategicScore: 1360 + Math.max(0, 8 - target.traits.might) * 8,
+                    visibleStepDelayPolicy: 'visible',
+                },
+            }));
+        }
+    }
+
+    for (const monster of activeTrollHands) {
+        for (const target of livingExplorers.filter((explorer) => explorer.roomId === monster.roomId)) {
+            add(createValidatedAction({
+                validate,
+                state,
+                playerId,
+                type: BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK,
+                payload: { monsterId: monster.id, targetPlayerId: target.playerId },
+                kind: ACTION_KINDS.TROLL_HAND_ATTACK,
+                label: `让${monster.name}攻击${target.displayName}`,
+                idParts: [monster.id, target.playerId],
+                metadata: {
+                    monsterId: monster.id,
+                    targetPlayerId: target.playerId,
+                    strategicScore: 1290 + Math.max(0, 7 - target.traits.might) * 8,
+                    visibleStepDelayPolicy: 'visible',
+                },
+            }));
+        }
+    }
+
+    for (const monster of activeTrollHands) {
+        if ((helpingHands.trollHandMoveRemainingById[monster.id] ?? 0) <= 0) {
+            continue;
+        }
+        for (const room of core.rooms) {
+            if (room.state !== 'discovered' || room.id === monster.roomId) {
+                continue;
+            }
+            add(createValidatedAction({
+                validate,
+                state,
+                playerId,
+                type: BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND,
+                payload: { monsterId: monster.id, roomId: room.id },
+                kind: ACTION_KINDS.MOVE_TROLL_HAND,
+                label: `移动${monster.name}到${room.name}`,
+                idParts: [monster.id, room.id],
+                metadata: {
+                    monsterId: monster.id,
+                    roomId: room.id,
+                    strategicScore: 560,
+                    visibleStepDelayPolicy: 'visible',
+                },
+            }));
+        }
+    }
+
+    add(createValidatedAction({
+        validate,
+        state,
+        playerId,
+        type: BETRAYAL_COMMANDS.END_HELPING_HANDS_MONSTER_TURN,
+        payload: {},
+        kind: ACTION_KINDS.END_TROLL_HAND_MONSTER_TURN,
+        label: '结束巨魔手回合',
+        metadata: {
+            strategicScore: 0,
+            visibleStepDelayPolicy: 'visible',
+        },
+    }));
+
+    return actions;
+}
+
 function buildTurnEndRollAcknowledgementActions(
     validate: BetrayalAiValidator,
     state: BetrayalState,
@@ -1487,6 +1433,11 @@ function buildBetrayalAiLegalActions(
         return turnEndRollAcknowledgementActions;
     }
 
+    const helpingHandsMonsterTurnActions = buildHelpingHandsMonsterTurnActions(validate, state, args.playerId);
+    if (helpingHandsMonsterTurnActions.length > 0) {
+        return helpingHandsMonsterTurnActions;
+    }
+
     return buildTurnActions(validate, state, args.playerId);
 }
 
@@ -1513,42 +1464,6 @@ function roomDistance(core: BetrayalAiCore, fromRoomId: string, targetRoomId: st
     if (!from || !target) return 99;
     const floorPenalty = from.floor === target.floor ? 0 : 6;
     return Math.abs(from.x - target.x) + Math.abs(from.y - target.y) + floorPenalty;
-}
-
-function resolveHungryHouseObjectiveRoomIds(core: BetrayalAiCore, playerId: PlayerId): string[] {
-    const hungryHouse = core.scenarioRuntime.hungryHouse;
-    const actor = findExplorer(core, playerId);
-    if (!isHungryHouseHaunt(core) || !hungryHouse || !actor) return [];
-
-    if (hungryHouse.carriedCorpseByPlayerId[playerId]) {
-        return [hungryHouse.chasmRoomId];
-    }
-
-    const corpseRoomIds = new Set<string>();
-    for (const roomId of Object.values(hungryHouse.cultistCorpseRoomIds)) {
-        corpseRoomIds.add(roomId);
-    }
-    for (const explorer of getAllExplorers(core)) {
-        if (
-            explorer.playerId !== playerId
-            && core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
-            && !hungryHouse.sacrificedCorpseIds.includes(`explorer:${explorer.playerId}`)
-        ) {
-            corpseRoomIds.add(explorer.roomId);
-        }
-    }
-    if (corpseRoomIds.size > 0) {
-        return [...corpseRoomIds];
-    }
-
-    const cultistRoomIds = core.monsters
-        .filter((monster) => hungryHouse.cultistIds.includes(monster.id))
-        .map((monster) => monster.roomId);
-    if (cultistRoomIds.length > 0) {
-        return Array.from(new Set(cultistRoomIds));
-    }
-
-    return [hungryHouse.ritualRoomId, hungryHouse.chasmRoomId];
 }
 
 function resolveDustObjectiveRoomIds(core: BetrayalAiCore, playerId: PlayerId): string[] {
@@ -1600,11 +1515,6 @@ function resolveObjectiveRoomIds(core: BetrayalAiCore, playerId: PlayerId): stri
     const dustObjectiveRoomIds = resolveDustObjectiveRoomIds(core, playerId);
     if (dustObjectiveRoomIds.length > 0) {
         return dustObjectiveRoomIds;
-    }
-
-    const hungryHouseObjectiveRoomIds = resolveHungryHouseObjectiveRoomIds(core, playerId);
-    if (hungryHouseObjectiveRoomIds.length > 0) {
-        return hungryHouseObjectiveRoomIds;
     }
 
     const isTraitor = core.scenarioRuntime.traitorPlayerId === playerId;
@@ -1731,14 +1641,6 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return Math.min(strategicScore, 1280);
         case ACTION_KINDS.REQUEST_SICKNESS_EXCHANGE:
             return Math.min(strategicScore, 1170);
-        case ACTION_KINDS.FEED_HER:
-            return Math.min(strategicScore, 1390);
-        case ACTION_KINDS.PICK_UP_CORPSE:
-            return Math.min(strategicScore, 1270);
-        case ACTION_KINDS.CULTIST_ATTACK:
-            return Math.min(strategicScore, 1230);
-        case ACTION_KINDS.ATTACK_CULTIST:
-            return Math.min(strategicScore, 1130);
         case ACTION_KINDS.STUDY_EXORCISM:
             return 1050;
         case ACTION_KINDS.LEARN_ABOUT_JACK:
@@ -1761,6 +1663,12 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return 800;
         case ACTION_KINDS.MOVE_TO_ROOM:
             return 500 + scoreMoveAction(core, context.playerId, action);
+        case ACTION_KINDS.TROLL_HAND_ATTACK:
+            return Math.min(strategicScore, 1360);
+        case ACTION_KINDS.MOVE_TROLL_HAND:
+            return Math.min(strategicScore, 560);
+        case ACTION_KINDS.END_TROLL_HAND_MONSTER_TURN:
+            return 0;
         case ACTION_KINDS.END_TURN:
             return 0;
         default:
@@ -1811,10 +1719,6 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.CURE_THE_DUST,
                 ACTION_KINDS.REQUEST_SICKNESS_EXCHANGE,
                 ACTION_KINDS.RESOLVE_SICKNESS_EXCHANGE,
-                ACTION_KINDS.PICK_UP_CORPSE,
-                ACTION_KINDS.FEED_HER,
-                ACTION_KINDS.ATTACK_CULTIST,
-                ACTION_KINDS.CULTIST_ATTACK,
                 ACTION_KINDS.LEARN_ABOUT_JACK,
                 ACTION_KINDS.STUDY_EXORCISM,
                 ACTION_KINDS.EXORCISE_JACK,
@@ -1824,6 +1728,9 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.LOOT_CORPSE,
                 ACTION_KINDS.USE_RABBIT_FOOT,
                 ACTION_KINDS.USE_ROOM_EFFECT,
+                ACTION_KINDS.MOVE_TROLL_HAND,
+                ACTION_KINDS.TROLL_HAND_ATTACK,
+                ACTION_KINDS.END_TROLL_HAND_MONSTER_TURN,
             ],
         },
         localPolicies: {

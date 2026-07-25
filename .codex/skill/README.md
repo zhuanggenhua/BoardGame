@@ -50,6 +50,7 @@
 - `android-app-release`
 - `atlas-crop`
 - `boardgame-ui-imagegen`
+- `img2threejs-reconstruction`
 - `create-new-game`
 - `data-entry-workflow`
 - `deploy-after-ci`

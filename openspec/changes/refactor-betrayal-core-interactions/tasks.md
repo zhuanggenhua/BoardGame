@@ -14,14 +14,14 @@
 - [ ] 2.1 Confirm the full rule ledger scope with the user.
 - [ ] 2.2 Confirm the P0 implementation slice and which items may remain representative-only.
 - [ ] 2.3 Split implementation into small passes after design approval.
-- [ ] 2.4 Create per-haunt sub-ledgers under `docs/games/betrayal/haunts/` before claiming any haunt complete.
+- [x] 2.4 Create per-haunt sub-ledgers under `docs/games/betrayal/haunts/` before claiming any haunt complete.
 
 ## 3. Implementation Plan After Approval
 
-- [ ] 3.1 Implement setup and scenario selection contract.
-- [ ] 3.2 Implement trait track data model and migration helpers.
-- [ ] 3.3 Implement haunt risk status and UI affordance.
-- [ ] 3.4 Implement room placement / orientation interaction.
+- [x] 3.1 Implement setup and scenario selection contract.
+- [x] 3.2 Implement trait track data model and migration helpers.
+- [x] 3.3 Implement haunt risk status and UI affordance.
+- [x] 3.4 Implement room placement / orientation interaction.
 - [ ] 3.5 Rework tests around the interaction coverage matrix.
 - [ ] 3.6 Implement trade, special action, attack, corpse, obstacle, and monster contracts.
 - [ ] 3.7 Run agreed validation and update both ledgers with evidence.

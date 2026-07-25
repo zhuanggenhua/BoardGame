@@ -1,0 +1,4 @@
+interface:
+  display_name: "Img2ThreeJS 重建"
+  short_description: "用参考图重建 BoardGame Three.js 程序化模型"
+  default_prompt: "按 BoardGame 项目流程，用参考图先拆结构和材质，再生成可验收的 Three.js 程序化模型原型。"
