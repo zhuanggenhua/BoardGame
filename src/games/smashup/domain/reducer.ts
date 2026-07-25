@@ -180,10 +180,11 @@ function executeCommand(
             const fromDiscard = command.payload.fromDiscard === true;
             const fromStored = command.payload.fromStored === true;
             const card = fromStored
-                ? player.storedCards?.find(c => c.uid === command.payload.cardUid)!
+                ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
                 : fromDiscard
                     ? player.discard.find(c => c.uid === command.payload.cardUid)!
                     : player.hand.find(c => c.uid === command.payload.cardUid)!;
+            if (!card) return state;
             const minionDef = getMinionDef(card.defId);
             const reactionWindow = getSmashUpReactionWindowContext(state);
             const baseIndex = command.payload.baseIndex;
