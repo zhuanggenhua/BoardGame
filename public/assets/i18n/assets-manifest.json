@@ -13398,6 +13398,24 @@
           "mime": "image/webp"
         }
       }
+    },
+    "zh-CN/smashup/cards/excellent_movies_teens": {
+      "variants": {
+        "png": {
+          "sha256": "62a150f66f95e4fafc84d5cfbc22dfe57783511d19ad4a7ea8f8e49948ab07ad",
+          "bytes": 57778043,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/excellent_movies_teens": {
+      "variants": {
+        "webp": {
+          "sha256": "9af400ebdd443dc5f0f8a03985ca14162e0211932b33fa534e807d56ccc47e2f",
+          "bytes": 5032252,
+          "mime": "image/webp"
+        }
+      }
     }
   },
   "id": "i18n",

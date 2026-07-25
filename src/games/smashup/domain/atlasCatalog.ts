@@ -52,6 +52,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.PENGUINS_CARDS, kind: 'card', image: 'smashup/cards/penguins', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.INTERNATIONAL_INCIDENT_CARDS, kind: 'card', image: 'smashup/cards/international_incident', grid: { rows: 7, cols: 8 } },
     { id: SMASHUP_ATLAS_IDS.WHAT_WERE_WE_THINKING_CARDS, kind: 'card', image: 'smashup/cards/what_were_we_thinking', grid: { rows: 6, cols: 8 } },
+    { id: SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_CARDS, kind: 'card', image: 'smashup/cards/excellent_movies_teens', grid: { rows: 7, cols: 10 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_CARDS, kind: 'card', image: 'smashup/cards/paladin_cards', grid: { rows: 3, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },

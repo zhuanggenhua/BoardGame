@@ -1923,6 +1923,26 @@
     "luchadors": {
       "name": "Luchadors",
       "description": "Play Set-Up actions on enemy minions, then cash those setups in for draw, control, and scoring tricks."
+    },
+    "action_heroes": {
+      "name": "Action Heroes",
+      "description": "Big solo minions, one-minion bases, and breakpoint pressure."
+    },
+    "backtimers": {
+      "name": "Backtimers",
+      "description": "Put cards into stasis and cash them in when the future arrives."
+    },
+    "extramorphs": {
+      "name": "Extramorphs",
+      "description": "Stack the top of the deck, hatch minions, and strike from outside the hand."
+    },
+    "teens": {
+      "name": "Teens",
+      "description": "Printed-power-3 friends chaining names, movement, counters, and extra plays."
+    },
+    "wraithrustlers": {
+      "name": "Wraithrustlers",
+      "description": "Attach Wraith actions to bases, destroy actions, and move hauntings around."
     }
   },
   "tutorial": {
@@ -9034,6 +9054,310 @@
     "base_the_squared_circle": {
       "name": "The Squared Circle",
       "abilityText": "After the first time you play a minion here each turn, you may place a random action from your discard pile into your hand."
+    },
+    "action_heroes_commandbro": {
+      "name": "Commandbro",
+      "abilityText": "Ongoing: At the end of your turn, if this is your only minion here, draw a card."
+    },
+    "action_heroes_gracie_brones": {
+      "name": "Gracie Brones",
+      "abilityText": "Ongoing: At the start of your turn, if this is your only minion here, you may place a +1 power counter on this minion and give it an additional +1 power until the end of the turn for each +1 power counter on it."
+    },
+    "action_heroes_kickboxbro": {
+      "name": "Kickboxbro",
+      "abilityText": "Ongoing: At the end of your turn, you may store a card from your hand under this card. Talent: Play an action stored under this card as an extra action. Special: Before this base scores, if this is your only minion here, you may use this minion's talent."
+    },
+    "action_heroes_robobro": {
+      "name": "Robobro",
+      "abilityText": "Ongoing: After another player plays or moves a minion to here, you may place a +1 power counter on this minion."
+    },
+    "action_heroes_rumbro": {
+      "name": "Rumbro",
+      "abilityText": "Ongoing: During your turn, if this is your only minion here, the breakpoint of this base is reduced by 4."
+    },
+    "action_heroes_warbro": {
+      "name": "Warbro",
+      "abilityText": "Talent: Reduce the breakpoint of a different base where you have exactly one minion by 3 until the end of the turn."
+    },
+    "action_heroes_all_out_of_bubblegum": {
+      "name": "All Out of Bubblegum",
+      "effectText": "Give one of your minions +2 power until the end of the turn. If it is your only minion at that base, you may play an extra action."
+    },
+    "action_heroes_collateral_damage": {
+      "name": "Collateral Damage",
+      "effectText": "Reduce the breakpoint of a base by 5 until the end of the turn."
+    },
+    "action_heroes_final_stand": {
+      "name": "Final Stand",
+      "effectText": "Special: Play before a base scores where you have exactly one minion. Destroy a minion of printed power 3 or less there controlled by each other player."
+    },
+    "action_heroes_friends_through_eternity": {
+      "name": "Friends Through Eternity",
+      "effectText": "Discard a card to play two extra actions."
+    },
+    "action_heroes_get_to_the_choppa": {
+      "name": "Get to the Choppa!",
+      "effectText": "Move one of your minions from one base to another. If it is your only minion there, you may play an extra action."
+    },
+    "action_heroes_hostage_rescue": {
+      "name": "Hostage Rescue",
+      "effectText": "Search your deck for a minion and place it on top of your deck."
+    },
+    "action_heroes_lone_wolf": {
+      "name": "Lone Wolf",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power. If it is your only minion here, it has +4 power instead."
+    },
+    "action_heroes_pushing_the_limit": {
+      "name": "Pushing the Limit",
+      "effectText": "For each base where you have exactly one minion, either place two +1 power counters on that minion or draw a card."
+    },
+    "action_heroes_slo_mo_attack": {
+      "name": "Slo-Mo Attack",
+      "effectText": "Play on a base. Talent: If you have exactly one minion here, reduce this base's breakpoint by 3 until the end of the turn. Ongoing: Your minions here are not affected by other players' actions."
+    },
+    "action_heroes_the_right_person": {
+      "name": "The Right Person",
+      "effectText": "Play an extra minion on a base where you have no minions. Play an extra action."
+    },
+    "action_heroes_walk_away_slowly": {
+      "name": "Walk Away... Slowly",
+      "effectText": "Special: Play after a base scores. Return one of your minions there to its owner's hand."
+    },
+    "backtimers_sidelined_girlfriend": {
+      "name": "Sidelined Girlfriend",
+      "abilityText": "You may place a stasis counter on this card. Special: After a stasis counter is removed from this card, you may place a +1 power counter on one of your minions on a base. When you play this card from stasis, play it as an extra minion and place a +1 power counter on it."
+    },
+    "backtimers_lifelong_bully": {
+      "name": "Lifelong Bully",
+      "abilityText": "Add a stasis counter to one of your cards in stasis, OR look at the top two cards of your deck, you may place two stasis counters on one of them, and return the rest in any order."
+    },
+    "backtimers_zany_prof": {
+      "name": "Zany Prof",
+      "abilityText": "Ongoing: At the start of your turn, you may remove a stasis counter from, or add one to, one of your cards in stasis."
+    },
+    "backtimers_alex_p_mcglide": {
+      "name": "Alex P. McGlide",
+      "abilityText": "You may place two stasis counters on a card from your hand. Talent: If a card had its last stasis counter removed this turn, you may place a +1 power counter one of your minions."
+    },
+    "backtimers_back_from_the_future": {
+      "name": "Back From the Future",
+      "effectText": "Reveal the top three cards of your deck. You may place two stasis counters on one of them. Return the rest in any order."
+    },
+    "backtimers_99_mph": {
+      "name": "99 MPH",
+      "effectText": "Place two stasis counters on a card from your hand. Draw a card."
+    },
+    "backtimers_future_almanac": {
+      "name": "Future Almanac?",
+      "effectText": "Place three stasis counters on this card. Special: After you remove a stasis counter from this card, draw a card. When you play this card from stasis, discard it."
+    },
+    "backtimers_lightning_strike": {
+      "name": "Lightning Strike",
+      "effectText": "Place two stasis counters on this card. Special: When you remove stasis counters from other cards you may place them on this card. On your turn you may use an action play to reduce the breakpoint of a base by one for each stasis counter on this card (up to 5) until the end of the turn and discard this card. When you play this card from stasis, discard it."
+    },
+    "backtimers_will_have_to_do": {
+      "name": "Will Have to Do",
+      "effectText": "Place up to two +1 power counters total on your minions, OR remove up to two stasis counters total from your cards in stasis."
+    },
+    "backtimers_help_from_the_past": {
+      "name": "Help From the Past",
+      "effectText": "Place three stasis counters on this card. Special: When this card enters stasis, store a card from your discard pile under it. When you play this card from stasis, discard it, and you may play a card stored under it as an extra card."
+    },
+    "backtimers_letter_from_another_time": {
+      "name": "Letter From Another Time",
+      "effectText": "Place three stasis counters on this card. Special: When this card enters stasis, search your deck for a card and store it under this card. When you play this card from stasis, discard it, and you may play a card stored under it as an extra card."
+    },
+    "backtimers_disrupt_the_space_time_continuum": {
+      "name": "Disrupt the Space-Time Continuum",
+      "effectText": "Choose up to two cards from your hand. Place a number of stasis counters on each of them equal to the number of cards you chose."
+    },
+    "extramorphs_chestbreaker": {
+      "name": "Chestbreaker",
+      "abilityText": "Talent: If this minion was on a base at the start of the turn, place it on the bottom of your deck to choose power 3 or 4 and play an extra minion of that power off the top of your deck here."
+    },
+    "extramorphs_extradrone": {
+      "name": "Extradrone",
+      "abilityText": "You may move another player's minion of power 3 or less here to another base; if you do, you may move this minion to that base. If this minion was played off the top of a deck, place a +1 power counter on it."
+    },
+    "extramorphs_alien_life_form": {
+      "name": "Alien Life Form",
+      "abilityText": "You may destroy a minion of power 3 or less here. If this minion was played off the top of a deck, place two +1 power counters on it. Talent: Remove a +1 power counter from this minion to move it to another base."
+    },
+    "extramorphs_hive_queen": {
+      "name": "Hive Queen",
+      "abilityText": "You may search your deck and/or discard pile for an Egg Field and draw it. Talent: Until the start of your next turn, other players' minions at bases where you have an Egg Field have -1 power."
+    },
+    "extramorphs_close_encounters": {
+      "name": "Close Encounters",
+      "effectText": "Draw a card. You may place a card from your hand on top of your deck. Play an extra action."
+    },
+    "extramorphs_distress_call": {
+      "name": "Distress Call",
+      "effectText": "Move a minion to another base."
+    },
+    "extramorphs_egg_field": {
+      "name": "Egg Field",
+      "effectText": "Play on a base. You may search your hand, deck, and/or discard pile for a Head Grabber and play it on a minion of power 3 or less here as an extra action. Talent: Play an extra minion of power 2 or less off the top of your deck here."
+    },
+    "extramorphs_five_by_five": {
+      "name": "Five by Five",
+      "effectText": "Draw five cards, then place five cards from your hand on top of your deck in any order."
+    },
+    "extramorphs_game_over_dude": {
+      "name": "Game Over, Dude!",
+      "effectText": "Choose a base and a power less than 5. Play an extra minion of that power off the top of your deck there."
+    },
+    "extramorphs_head_grabber": {
+      "name": "Head Grabber",
+      "effectText": "Play on a minion of power 3 or less. Talent: If this is on your minion or if this was on a minion at the start of the turn, destroy that minion to choose power 4 or less, then play an extra minion of that power off the top of your deck here."
+    },
+    "extramorphs_nuke_it_from_orbit": {
+      "name": "Nuke It From Orbit",
+      "effectText": "Play on a base. Talent: If this card was on a base at the start of the turn, destroy this base and all other cards on it. Replace it normally. Place this card in the box."
+    },
+    "extramorphs_time_to_go": {
+      "name": "Time to Go",
+      "effectText": "Shuffle up to three cards from your discard pile into your deck."
+    },
+    "teens_brain": {
+      "name": "Brain",
+      "abilityText": "If there is a Slacker here, you may play an extra action. Ongoing: Once per turn, after you play another minion of power 3, you may draw a card."
+    },
+    "teens_jock": {
+      "name": "Jock",
+      "abilityText": "If there is a Prep here, place two +1 power counters on this minion. Ongoing: Once per turn, after you play another minion of power 3, you may place a +1 power counter on this minion."
+    },
+    "teens_prep": {
+      "name": "Prep",
+      "abilityText": "If there is a Brain here, you may search your deck for a minion of power 3 and draw it. Ongoing: Once per turn, after you play another minion of power 3, you may give one of your minions +2 power until the end of the turn."
+    },
+    "teens_rebel": {
+      "name": "Rebel",
+      "abilityText": "If there is a Jock here, you may play an extra non-Rebel minion of power 3 here. Ongoing: Once per turn, after you play another minion of power 3, you may move one of your minions to another base."
+    },
+    "teens_slacker": {
+      "name": "Slacker",
+      "abilityText": "If there is a Rebel here, move up to two of your minions to other bases. Ongoing: Once per turn, after you play another minion of power 3, you may place a card from your discard pile on the bottom of your deck."
+    },
+    "teens_abe_frohman": {
+      "name": "Abe Frohman",
+      "effectText": "Play on one of your minions. Talent: Until the start of your next turn, this minion also has the same name as every other minion you own. Using this minion's abilities does not count as using another minion's abilities."
+    },
+    "teens_babysitter": {
+      "name": "Babysitter",
+      "effectText": "Play on one of your minions. Ongoing: Your minions here cannot be affected by other players' abilities."
+    },
+    "teens_booty_trap": {
+      "name": "Booty Trap",
+      "effectText": "Play on a base. Ongoing: After you play or move a minion with printed power 3 to this base, draw a card."
+    },
+    "teens_brunch_bunch": {
+      "name": "Brunch Bunch",
+      "effectText": "Choose a base. For each name on a minion of yours there with printed power 3, you may choose a different effect: Move one of your minions to there. Draw a card. Play an extra minion of power 3 there. Give a minion there +2 power until the end of the turn. Place a card from your discard pile on the bottom of your deck."
+    },
+    "teens_explosion_at_school": {
+      "name": "Explosion at School",
+      "effectText": "Shuffle any number of minions of power 3 with different names from your discard pile into your deck and draw a card."
+    },
+    "teens_new_kid": {
+      "name": "New Kid",
+      "effectText": "Search your deck for a minion of power 3 and play it as an extra minion."
+    },
+    "teens_principals_office": {
+      "name": "Principal's Office",
+      "effectText": "Return one of your minions to your hand. You may play a minion of printed power 3 as an extra minion."
+    },
+    "teens_strange_science": {
+      "name": "Strange Science",
+      "effectText": "Play a minion of power 3 from your discard pile as an extra minion."
+    },
+    "wraithrustlers_watson": {
+      "name": "Watson",
+      "abilityText": "You may destroy one of your actions on this base OR reveal cards from the top of your deck until you reveal a Wraith, draw it, and shuffle the rest into your deck."
+    },
+    "wraithrustlers_roy": {
+      "name": "Roy",
+      "abilityText": "You may transfer one of your actions from another base to here. Ongoing: If a Wraith has been destroyed here this turn, this minion has +2 power."
+    },
+    "wraithrustlers_ellen": {
+      "name": "Ellen",
+      "abilityText": "Talent: Destroy one of your actions on this base to reduce this base's breakpoint by 3 until the end of the turn. Ongoing: After a Wraith is destroyed here, you may play an extra action."
+    },
+    "wraithrustlers_funkman": {
+      "name": "Funkman",
+      "abilityText": "Ongoing: After you destroy an action, give each of your minions on its base +1 power until the end of the turn OR draw a card. Special: Before a base scores, you may transfer an action on it to another base."
+    },
+    "wraithrustlers_ancient_sumerian_god": {
+      "name": "Ancient Sumerian God",
+      "effectText": "Wraith. Play on a base. Talent: Store an action from your discard pile that can be played on a base under this card. Ongoing: This base's breakpoint is increased by 3. When this card leaves play, for each base you may play one of the actions stored under this card as an extra action there."
+    },
+    "wraithrustlers_demon_dogs": {
+      "name": "Demon Dogs",
+      "effectText": "Wraith. Play on a base. You may store a minion of power 3 or less from your hand or discard pile under this card. Ongoing: This base's breakpoint is increased by 3. After this card is destroyed, you may play a minion stored under it as an extra minion."
+    },
+    "wraithrustlers_ectoplasm_one": {
+      "name": "Ectoplasm One",
+      "effectText": "Play on a base. Talent: Transfer this action to another base to move one of your minions from here to there. If you move a minion, you may destroy an action on the new base."
+    },
+    "wraithrustlers_librarian_haunt": {
+      "name": "Librarian Haunt",
+      "effectText": "Wraith. Play on a base. Ongoing: This base's breakpoint is increased by 3. After this card is destroyed, draw three cards."
+    },
+    "wraithrustlers_resurgence": {
+      "name": "Resurgence",
+      "effectText": "Choose an action on a base. Destroy it or transfer it to another base. Special: You may play this before a base scores."
+    },
+    "wraithrustlers_slimy": {
+      "name": "Slimy",
+      "effectText": "Wraith. Play on a base. Ongoing: This base's breakpoint is increased by 3. After this card is destroyed, each of your minions here gains +2 power until the end of the turn."
+    },
+    "wraithrustlers_the_tools_and_the_talent": {
+      "name": "The Tools and The Talent",
+      "effectText": "Search your deck for a card and place it on top of your deck."
+    },
+    "wraithrustlers_unlicensed_nuclear_accelerator": {
+      "name": "Unlicensed Nuclear Accelerator",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power. Talent: Destroy one of your actions on this base to place a +1 power counter on this minion."
+    },
+    "base_building_rooftop": {
+      "name": "Building Rooftop",
+      "abilityText": "Breakpoint 20 - VPs: 3 1 1 - At the start of your turn, if you have exactly one minion here, you may reduce the breakpoint of this base by that minion's power until the end of the turn. When this base scores, each player with exactly one minion here gains 1 VP."
+    },
+    "base_jungle_camp": {
+      "name": "Jungle Camp",
+      "abilityText": "Breakpoint 20 - VPs: 3 2 1 - After this base scores, the winner may return one of their minions here to their hand."
+    },
+    "base_alternate_present": {
+      "name": "Alternate Present",
+      "abilityText": "Breakpoint 20 - VPs: 4 2 2 - After the first time you play a minion here each turn, you may place two stasis counters on a card from your hand."
+    },
+    "base_time_traveling_car": {
+      "name": "Time-Traveling Car",
+      "abilityText": "Breakpoint 22 - VPs: 3 2 1 - After this base scores, the winner may place two stasis counters on one of their minions or actions here."
+    },
+    "base_ancient_crashed_ship": {
+      "name": "Ancient Crashed Ship",
+      "abilityText": "Breakpoint 21 - VPs: 4 2 1 - After you play a minion here from anywhere except your hand, place a +1 power counter on it."
+    },
+    "base_brood_hive": {
+      "name": "Brood Hive",
+      "abilityText": "Breakpoint 22 - VPs: 4 2 1 - Before this base scores, starting with the player to the current player's left, each player with a minion here may play an extra minion off the top of their deck here."
+    },
+    "base_cabin_in_the_woods": {
+      "name": "Cabin in the Woods",
+      "abilityText": "Breakpoint 24 - VPs: 4 3 1 - If you have at least two minions here, your minions here each have +2 power."
+    },
+    "base_montridge_high": {
+      "name": "Montridge High",
+      "abilityText": "Breakpoint 20 - VPs: 4 2 1 - After you play a minion here, place a +1 counter on one of your minions with a different name here."
+    },
+    "base_rooftop_portal": {
+      "name": "Rooftop Portal",
+      "abilityText": "Breakpoint 22 - VPs: 5 3 2 - Once per turn, after you destroy a card here, draw a card."
+    },
+    "base_wraithrustlers_hq": {
+      "name": "Wraithrustlers HQ",
+      "abilityText": "Breakpoint 20 - VPs: 4 2 1 - The winner, on their next turn, may play an extra action or an extra minion."
     }
   },
   "debug": {

@@ -338,6 +338,17 @@ export interface CardInstance {
     provenance?: SmashUpCardProvenanceSnapshot;
 }
 
+/** 被其他卡牌/机制暂存的卡牌（如踢拳兄弟、返时者停滞区）。 */
+export interface StoredCardInstance extends CardInstance {
+    storedByPlayerId: PlayerId;
+    storedUnderUid?: string;
+    storedUnderDefId?: string;
+    counters?: number;
+    /** 当前回合内移除了最后一个停滞指示物，用于返时者后续天赋/特殊能力判断。 */
+    lastStasisCounterRemovedTurn?: number;
+    reason: string;
+}
+
 /** 基地上的随从 */
 export interface MinionOnBase {
     uid: string;
@@ -435,6 +446,8 @@ export interface PlayerState {
     /** 牌库（索引 0 为顶部） */
     deck: CardInstance[];
     discard: CardInstance[];
+    /** 被特定来源暂存、仍可由规则重新打出的卡牌。 */
+    storedCards?: StoredCardInstance[];
     /** 移出游戏（放入盒中）的卡牌 */
     removedFromGame?: CardInstance[];
     /** 本回合已打出随从数 */
@@ -1049,6 +1062,8 @@ export interface PlayMinionCommand extends Command<typeof SU_COMMANDS.PLAY_MINIO
         baseIndex: number;
         /** 从弃牌堆打出（而非手牌）。由"它们为你而来"等持续效果启用 */
         fromDiscard?: boolean;
+        /** 从暂存区打出（如返时者停滞区）。 */
+        fromStored?: boolean;
         /** 替代普通行动额度打出这张随从牌，不消耗普通随从额度。 */
         playAsAction?: boolean;
     };
@@ -1062,6 +1077,8 @@ export interface PlayActionCommand extends Command<typeof SU_COMMANDS.PLAY_ACTIO
         targetMinionUid?: string;
         /** 从弃牌堆打出行动卡（如 Cyberback 允许打到自己身上） */
         fromDiscard?: boolean;
+        /** 从暂存区打出行动卡（如踢拳兄弟储存的行动）。 */
+        fromStored?: boolean;
     };
 }
 
@@ -1181,6 +1198,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         fromDeck?: boolean;
         /** 从埋葬区打出（揭开时使用） */
         fromBuried?: boolean;
+        /** 从暂存区打出（如返时者停滞区）。 */
+        fromStored?: boolean;
         targetBaseIndex?: number;
         targetType?: 'base' | 'minion';
         targetMinionUid?: string;
@@ -1211,6 +1230,8 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         fromBuried?: boolean;
         /** 从弃牌堆打出 */
         fromDiscard?: boolean;
+        /** 从暂存区打出 */
+        fromStored?: boolean;
     };
 }
 
@@ -1594,6 +1615,9 @@ export type SmashUpEvent =
     | CardToDeckBottomEvent
     | CardTransferredEvent
     | CardRecoveredFromDiscardEvent
+    | CardStoredEvent
+    | StoredCardCounterChangedEvent
+    | StoredCardReleasedEvent
     | HandShuffledIntoDeckEvent
     | StartingHandMulliganUsedEvent
     | MadnessDrawnEvent
@@ -1933,6 +1957,40 @@ export interface CardRecoveredFromDiscardEvent extends GameEvent<typeof SU_EVENT
     payload: {
         playerId: PlayerId;
         cardUids: string[];
+        reason: string;
+    };
+}
+
+/** 将卡牌暂存到某个来源之下/旁边。 */
+export interface CardStoredEvent extends GameEvent<typeof SU_EVENTS.CARD_STORED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        from: 'hand' | 'deck' | 'discard';
+        storedUnderUid?: string;
+        storedUnderDefId?: string;
+        counters?: number;
+        reason: string;
+    };
+}
+
+/** 调整暂存牌上的计数器。返时者用它表达停滞指示物增减。 */
+export interface StoredCardCounterChangedEvent extends GameEvent<typeof SU_EVENTS.STORED_CARD_COUNTER_CHANGED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        delta: number;
+        reason: string;
+    };
+}
+
+/** 从暂存区释放一张卡牌，通常紧接着被打出。 */
+export interface StoredCardReleasedEvent extends GameEvent<typeof SU_EVENTS.STORED_CARD_RELEASED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
         reason: string;
     };
 }

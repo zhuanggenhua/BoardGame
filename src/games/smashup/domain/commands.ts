@@ -391,9 +391,12 @@ export function validate(
             const player = core.players[command.playerId];
             if (!player) return { valid: false, error: '玩家不存在' };
 
-            const { baseIndex, fromDiscard, playAsAction } = command.payload;
+            const { baseIndex, fromDiscard, fromStored, playAsAction } = command.payload;
             if (baseIndex < 0 || baseIndex >= core.bases.length) {
                 return { valid: false, error: '无效的基地索引' };
+            }
+            if (fromDiscard && fromStored) {
+                return { valid: false, error: '不能同时从弃牌堆和暂存区打出随从' };
             }
 
             // 从弃牌堆打出：通过 discardPlayability 模块验证
@@ -451,6 +454,58 @@ export function validate(
                     fromDiscard: true,
                 })) {
                     return { valid: false, error: '该基地禁止打出该随从' };
+                }
+                return { valid: true };
+            }
+
+            if (fromStored) {
+                const storedCard = player.storedCards?.find(c => c.uid === command.payload.cardUid);
+                if (!storedCard) return { valid: false, error: '暂存区中没有该随从' };
+                if (!isCardMinionLike(storedCard)) return { valid: false, error: '该暂存牌不是随从' };
+                if ((storedCard.counters ?? 0) > 0) return { valid: false, error: '该停滞牌仍有停滞指示物' };
+                const storedMinionDef = getMinionDef(storedCard.defId);
+                const storedFusionDef = getFusionDef(storedCard.defId);
+                const storedBasePower = (storedMinionDef?.power ?? storedFusionDef?.minionPower) ?? 0;
+                const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
+                    && isExtraMinionPlayAttempt(
+                        core,
+                        command.playerId,
+                        baseIndex,
+                        storedCard.defId,
+                        storedBasePower,
+                        false,
+                        false,
+                    );
+                if (blockedByBearNecessitiesPod) {
+                    return { valid: false, error: '受黑熊口粮POD限制：你不能打出额外牌' };
+                }
+                const blockedByEliza = hasActivePrincessesElizaRestriction(core, command.playerId)
+                    && (player.extraCardsPlayedThisTurn ?? 0) >= 1
+                    && isExtraMinionPlayAttempt(
+                        core,
+                        command.playerId,
+                        baseIndex,
+                        storedCard.defId,
+                        storedBasePower,
+                        false,
+                        false,
+                    );
+                if (blockedByEliza) {
+                    return { valid: false, error: '受伊莱莎限制：你本回合不能再打出额外牌' };
+                }
+                if (isOperationRestricted(core, baseIndex, command.playerId, 'play_minion', {
+                    minionDefId: storedCard.defId,
+                    basePower: storedBasePower,
+                    usesBaseLimitedMinionQuota: false,
+                    cardUid: storedCard.uid,
+                    fromDiscard: false,
+                })) {
+                    return { valid: false, error: '该基地禁止打出该随从' };
+                }
+                const storedConstraint = storedMinionDef?.playConstraint ?? storedFusionDef?.minionPlayConstraint;
+                if (storedConstraint) {
+                    const constraintError = checkPlayConstraint(storedConstraint, core, baseIndex, command.playerId);
+                    if (constraintError) return { valid: false, error: constraintError };
                 }
                 return { valid: true };
             }
@@ -675,15 +730,29 @@ export function validate(
             ) {
                 return { valid: false, error: '受伊莱莎限制：你本回合不能再打出额外牌' };
             }
-            if (player.actionsPlayed >= player.actionLimit) {
+            const fromDiscard = command.payload.fromDiscard === true;
+            const fromStored = command.payload.fromStored === true;
+            if (fromDiscard && fromStored) {
+                return { valid: false, error: '不能同时从弃牌堆和暂存区打出行动卡' };
+            }
+            if (!fromStored && player.actionsPlayed >= player.actionLimit) {
                 return { valid: false, error: '本回合行动额度已用完' };
             }
-            const fromDiscard = command.payload.fromDiscard === true;
-            const card = fromDiscard
+            const card = fromStored
+                ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
+                : fromDiscard
                 ? player.discard.find(c => c.uid === command.payload.cardUid)
                 : player.hand.find(c => c.uid === command.payload.cardUid);
-            if (!card) return { valid: false, error: fromDiscard ? '弃牌堆中没有该卡牌' : '手牌中没有该卡牌' };
+            if (!card) {
+                return {
+                    valid: false,
+                    error: fromStored ? '暂存区中没有该卡牌' : fromDiscard ? '弃牌堆中没有该卡牌' : '手牌中没有该卡牌',
+                };
+            }
             if (!isCardActionLike(card)) return { valid: false, error: '该卡牌不是行动卡' };
+            if (fromStored && (card.counters ?? 0) > 0) {
+                return { valid: false, error: '该停滞牌仍有停滞指示物' };
+            }
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return { valid: false, error: '卡牌定义不存在' };
             if (fromDiscard) {

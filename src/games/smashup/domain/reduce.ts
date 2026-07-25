@@ -24,6 +24,9 @@ import type {
     CardBoxedEvent,
     CardTransferredEvent,
     CardRecoveredFromDiscardEvent,
+    CardStoredEvent,
+    StoredCardCounterChangedEvent,
+    StoredCardReleasedEvent,
     HandShuffledIntoDeckEvent,
     MadnessDrawnEvent,
     MadnessReturnedEvent,
@@ -549,6 +552,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 fromDiscard,
                 fromDeck,
                 fromBuried,
+                fromStored,
                 discardPlaySourceId,
                 consumesNormalLimit,
                 allowImplicitSource,
@@ -560,21 +564,32 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const cardInHand = player.hand.some(card => card.uid === cardUid);
             const cardInDiscard = player.discard.some(card => card.uid === cardUid);
             const cardInDeck = player.deck.some(card => card.uid === cardUid);
+            const cardInStored = player.storedCards?.some(card => card.uid === cardUid) ?? false;
             const buriedHasCard = fromBuried
                 ? (state.bases[resolvedBaseIndex]?.buriedCards ?? []).some(c => c.uid === cardUid)
                 : false;
             const canResolveFromDeck = fromDeck ? (cardInDeck || cardInHand) : false;
             if (fromBuried && !buriedHasCard && !allowImplicitSource) return state;
-            if (!fromBuried && !allowImplicitSource && ((fromDiscard && !cardInDiscard) || (fromDeck && !canResolveFromDeck) || (!fromDiscard && !fromDeck && !cardInHand))) {
+            if (!fromBuried && !allowImplicitSource && (
+                (fromDiscard && !cardInDiscard)
+                || (fromDeck && !canResolveFromDeck)
+                || (fromStored && !cardInStored)
+                || (!fromDiscard && !fromDeck && !fromStored && !cardInHand)
+            )) {
                 return state;
             }
             // 根据来源从手牌、弃牌堆或牌库移除卡牌
             // allowImplicitSource: true 时从所有位置尝试移除（用于动态牌源）
             const removeCard = (cards: CardInstance[]) => cards.filter(c => c.uid !== cardUid);
-            const shouldRemoveFromHand = !fromDiscard && !fromBuried && (!fromDeck || cardInHand);
+            const shouldRemoveFromHand = !fromDiscard && !fromBuried && !fromStored && (!fromDeck || cardInHand);
             const newHand = allowImplicitSource ? removeCard(player.hand) : shouldRemoveFromHand ? removeCard(player.hand) : player.hand;
             const newDiscard = allowImplicitSource ? removeCard(player.discard) : fromDiscard ? removeCard(player.discard) : player.discard;
             const newDeck = allowImplicitSource ? removeCard(player.deck) : (fromDeck && cardInDeck) ? removeCard(player.deck) : player.deck;
+            const newStoredCards = allowImplicitSource
+                ? removeCard(player.storedCards ?? [])
+                : fromStored
+                    ? removeCard(player.storedCards ?? [])
+                    : player.storedCards;
             const minion: MinionOnBase = {
                 uid: cardUid,
                 defId,
@@ -587,8 +602,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 talentUsed: false,
                 playedThisTurn: true,
                 attachedActions: [],
-                metadata: (fromDiscard || fromDeck || fromBuried)
-                    ? { playedFrom: fromDiscard ? 'discard' : fromDeck ? 'deck' : 'buried' }
+                metadata: (fromDiscard || fromDeck || fromBuried || fromStored)
+                    ? { playedFrom: fromDiscard ? 'discard' : fromDeck ? 'deck' : fromBuried ? 'buried' : 'stored' }
                     : undefined,
             };
             const newBases = state.bases.map((base, i) => {
@@ -733,6 +748,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         hand: newHand,
                         discard: newDiscard,
                         deck: newDeck,
+                        storedCards: newStoredCards && newStoredCards.length > 0 ? newStoredCards : undefined,
                         minionsPlayed: quotaResolution.minionsPlayed,
                         minionsPlayedPerBase: {
                             ...(player.minionsPlayedPerBase ?? {}),
@@ -759,9 +775,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ACTION_PLAYED: {
-            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, ownerId } = event.payload as any;
+            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, fromStored, ownerId } = event.payload as any;
             const player = state.players[playerId];
-            const card = fromDiscard
+            const card = fromStored
+                ? player.storedCards?.find(c => c.uid === cardUid)
+                : fromDiscard
                 ? player.discard.find(c => c.uid === cardUid)
                 : player.hand.find(c => c.uid === cardUid);
             const buriedLookup = (() => {
@@ -779,7 +797,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const isSpecial = def && def.type === 'action' && (def as ActionCardDef).subtype === 'special';
             const wasExtraActionPlay = isExtraAction === true || player.actionsPlayed >= 1;
 
-            const newHand = (fromBuried || fromDiscard) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
+            const newHand = (fromBuried || fromDiscard || fromStored) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
+            const newStoredCards = fromStored
+                ? (player.storedCards ?? []).filter(c => c.uid !== cardUid)
+                : player.storedCards;
             // ongoing 行动卡不进弃牌堆（由 ONGOING_ATTACHED 处理）
             const movedCard: CardInstance | undefined = card ?? (buriedLookup ? {
                 uid: buriedLookup.buried.uid,
@@ -806,6 +827,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 [playerId]: {
                     ...player,
                     hand: newHand,
+                    storedCards: newStoredCards && newStoredCards.length > 0 ? newStoredCards : undefined,
                     discard: resolvedOwnerId === playerId
                         ? targetDiscard
                         : sourceDiscard,
@@ -3428,6 +3450,86 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 players: nextPlayers,
+            };
+        }
+
+        case SU_EVENTS.CARD_STORED: {
+            const { playerId, cardUid, defId, ownerId, from, storedUnderUid, storedUnderDefId, counters, reason } = (event as CardStoredEvent).payload;
+            const player = state.players[playerId];
+            if (!player) return state;
+            const sourceZone = player[from] ?? [];
+            const sourceCard = sourceZone.find(card => card.uid === cardUid);
+            if (!sourceCard) return state;
+            const updatedSourceZone = sourceZone.filter(card => card.uid !== cardUid);
+            return {
+                ...state,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        [from]: updatedSourceZone,
+                        storedCards: [
+                            ...(player.storedCards ?? []),
+                            {
+                                ...sourceCard,
+                                defId,
+                                owner: ownerId,
+                                storedByPlayerId: playerId,
+                                storedUnderUid,
+                                storedUnderDefId,
+                                counters,
+                                reason,
+                            },
+                        ],
+                    },
+                },
+            };
+        }
+
+        case SU_EVENTS.STORED_CARD_COUNTER_CHANGED: {
+            const { playerId, cardUid, delta } = (event as StoredCardCounterChangedEvent).payload;
+            const player = state.players[playerId];
+            if (!player) return state;
+            const storedCards = player.storedCards ?? [];
+            const target = storedCards.find(card => card.uid === cardUid);
+            if (!target) return state;
+            const current = target.counters ?? 0;
+            const nextCounters = Math.max(0, current + delta);
+            const lastRemoved = delta < 0 && current > 0 && nextCounters === 0;
+            const nextStoredCards = storedCards.map(card => {
+                if (card.uid !== cardUid) return card;
+                return {
+                    ...card,
+                    counters: nextCounters,
+                    ...(lastRemoved ? { lastStasisCounterRemovedTurn: state.turnNumber ?? 0 } : {}),
+                };
+            });
+            return {
+                ...state,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        storedCards: nextStoredCards,
+                    },
+                },
+            };
+        }
+
+        case SU_EVENTS.STORED_CARD_RELEASED: {
+            const { playerId, cardUid } = (event as StoredCardReleasedEvent).payload;
+            const player = state.players[playerId];
+            if (!player) return state;
+            const nextStored = (player.storedCards ?? []).filter(card => card.uid !== cardUid);
+            return {
+                ...state,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        storedCards: nextStored.length > 0 ? nextStored : undefined,
+                    },
+                },
             };
         }
 
