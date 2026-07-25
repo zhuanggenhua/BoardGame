@@ -1939,6 +1939,22 @@
     "sinister_six_pod": {
       "name": "邪恶六人组 (POD版)",
       "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与邪恶六人组一致。"
+    },
+    "explorers_pod": {
+      "name": "探险家 (POD版)",
+      "description": "使用 POD 卡图与新版注册入口的探险家 POD 牌组。"
+    },
+    "star_roamers_pod": {
+      "name": "星际旅者 (POD版)",
+      "description": "使用 POD 卡图与新版注册入口的星际旅者 POD 牌组。"
+    },
+    "vigilantes_pod": {
+      "name": "侠义义警 (POD版)",
+      "description": "使用 POD 卡图与 POD 文案的侠义义警牌组；与基础版不同的规则已单独处理。"
+    },
+    "luchadors_pod": {
+      "name": "摔角手 (POD版)",
+      "description": "使用 POD 卡图与 POD 卡面名称的摔角手牌组。"
     }
   },
   "tutorial": {
@@ -9498,6 +9514,230 @@
     "sinister_six_witness_our_superiority_pod": {
       "name": "见证我们的优势",
       "effectText": "基地修正。持续：此基地的能力被取消。"
+    },
+    "explorers_lost_city_pod": {
+      "name": "失落之城",
+      "effectText": "特殊：基地计分后，展示基地牌库顶的两张牌。选择一张替换已计分的基地，弃掉另一张。额外打出一个佣兵至新基地。"
+    },
+    "explorers_forgotten_horrors_pod": {
+      "name": "被遗忘的恐怖",
+      "effectText": "对基地打出。持续：在你打出佣兵至本基地或打出卡牌使你的佣兵移动至本基地后，抓一张牌并转移此牌至另一个基地。"
+    },
+    "explorers_fortune_and_glory_pod": {
+      "name": "财富与荣耀",
+      "effectText": "选择一个基地。你可以移动该基地上至多两个佣兵至另一个基地。"
+    },
+    "explorers_it_belongs_in_a_museum_pod": {
+      "name": "它该进博物馆",
+      "effectText": "选择两个处于不同基地的佣兵。将它们分别移动至对方的基地。"
+    },
+    "explorers_i_said_no_camels_pod": {
+      "name": "我说了不要骆驼！",
+      "effectText": "选择一个基地。该处你的每个佣兵各获得 +1 战力标记，或抓数量等于该处你的佣兵数的牌。"
+    },
+    "explorers_x_never_marks_the_spot_pod": {
+      "name": "X 从不标记地点",
+      "effectText": "移动你的每一个佣兵。"
+    },
+    "explorers_dr_livingstone_i_presume_pod": {
+      "name": "利文斯通医生，想必是你？",
+      "effectText": "选择一个佣兵。若其是该基地上的唯一佣兵，将其洗回其拥有者的牌库。"
+    },
+    "explorers_you_call_this_archaeology_pod": {
+      "name": "你管这叫考古？",
+      "effectText": "移动你的一个佣兵。特殊：可以在基地计分前或计分后打出。"
+    },
+    "explorers_glory_hound_pod": {
+      "name": "逐名猎犬",
+      "abilityText": "查看基地牌库顶的两张牌。将其中一张置于牌库底，另一张置于牌库顶。"
+    },
+    "explorers_crypt_looter_pod": {
+      "name": "古墓掠夺者",
+      "abilityText": "特殊：当有新的基地进场时，你可以额外打出此佣兵至该基地。"
+    },
+    "explorers_guide_pod": {
+      "name": "向导",
+      "abilityText": "持续：你的佣兵于某回合进行了第一次移动后，其获得 +1 战力直到该回合结束。"
+    },
+    "explorers_idaho_smith_pod": {
+      "name": "爱达荷·史密斯",
+      "abilityText": "你可以打出基地牌库顶的基地牌，并从本基地移动此佣兵和任意数量你的其他佣兵至该基地。"
+    },
+    "star_roamers_hyperspeed_10_pod": {
+      "name": "超高速运转",
+      "effectText": "选择一个基地。将那里的所有随从移动到同一个其他基地。"
+    },
+    "star_roamers_port_me_up_pod": {
+      "name": "传送我上船",
+      "effectText": "将你的一个随从返回其拥有者手牌。特殊：你可以在一个基地计分后打出此牌；该随从必须在计分基地上。"
+    },
+    "star_roamers_mass_teleport_pod": {
+      "name": "大规模传送",
+      "effectText": "每位玩家将自己的一个随从返回其拥有者手牌。"
+    },
+    "star_roamers_teleport_error_pod": {
+      "name": "传送事故",
+      "effectText": "选择一个随从。将它移动到另一个随机基地。"
+    },
+    "star_roamers_protector_fields_pod": {
+      "name": "防御力场",
+      "effectText": "打出到一个你有随从的基地上。持续：这里你的随从不受其他玩家的牌影响。"
+    },
+    "star_roamers_weird_new_worlds_pod": {
+      "name": "奇异新世界",
+      "effectText": "打出一个新基地。你可以在那里额外打出一个随从。"
+    },
+    "star_roamers_whiplash_maneuver_pod": {
+      "name": "鞭绳回旋",
+      "effectText": "打出到一个基地上。持续：若其他基地上你的任意随从将要返回你的手牌，你可以改为将它们移动到这里。"
+    },
+    "star_roamers_teleport_overflow_pod": {
+      "name": "传送超额",
+      "effectText": "将你的一个随从返回其拥有者手牌。从你的手牌展示任意数量同名随从，并将它们作为额外随从打出。"
+    },
+    "star_roamers_ensign_pod": {
+      "name": "炮灰",
+      "abilityText": "持续：当一名对手打出一张直接影响这里你的另一个随从的牌时，你可以改为让它影响此随从。"
+    },
+    "star_roamers_ships_engineer_pod": {
+      "name": "舰船工程师",
+      "abilityText": "持续：若你的另一个随从将要返回你的手牌，你可以改为将它移动到另一个基地。"
+    },
+    "star_roamers_medical_officer_pod": {
+      "name": "医疗指挥官",
+      "abilityText": "持续：当你的一个或多个其他随从将要返回你的手牌时，你可以抽一张牌来代替返回其中一个。"
+    },
+    "star_roamers_science_officer_pod": {
+      "name": "科学指挥官",
+      "abilityText": "天赋：将你一个力量 4 或以下的随从返回其拥有者手牌。额外打出一个不同名称的随从。"
+    },
+    "star_roamers_ships_captain_pod": {
+      "name": "舰长",
+      "abilityText": "从你的牌库搜寻一个随从，展示它，加入手牌并洗牌。若它力量为 3 或以下，将它作为额外随从打到这里。"
+    },
+    "vigilantes_make_my_day_pod": {
+      "name": "一天的快乐",
+      "effectText": "消灭有你随从的基地中一个印刷战力 3 或更低的随从。特殊：在你的回合，一个基地计分前可以打出此牌。"
+    },
+    "vigilantes_tough_it_out_pod": {
+      "name": "咬紧牙关",
+      "effectText": "打在一个随从上。持续：此随从 -3 战力且不能被消灭。在任意玩家回合开始时，你可以消灭此行动，使该随从直到你的回合结束 +3 战力。"
+    },
+    "vigilantes_scared_straight_pod": {
+      "name": "直面恐惧",
+      "effectText": "将有你随从的基地中另一位玩家的一个随从移动到另一个基地。若这是你本回合打出的第一个行动，你可以额外打出一个行动。"
+    },
+    "vigilantes_feeling_lucky_pod": {
+      "name": "觉得运气不错？",
+      "effectText": "打在另一位玩家的一个随从上。持续：此随从的控制者打出行动后，查看你牌库顶牌，并将其放在牌库顶或牌库底。特殊：此基地计分前，展示你牌库顶牌；若是行动，消灭此随从。"
+    },
+    "vigilantes_shrug_it_off_pod": {
+      "name": "不屑一顾",
+      "effectText": "打在一个基地上。天赋：直到你的回合开始，这里其他玩家的随从 -1 战力。"
+    },
+    "vigilantes_knocked_into_next_week_pod": {
+      "name": "打到穿越",
+      "effectText": "选择一个随从。将其洗回拥有者的牌库中。"
+    },
+    "vigilantes_lets_finish_this_pod": {
+      "name": "做个了断吧",
+      "effectText": "对基地打出。持续：在你的回合开始时，若此处有你的随从和其他玩家随从，将本基地的爆破点降为 0 至回合结束。"
+    },
+    "vigilantes_the_revenge_pod": {
+      "name": "复仇",
+      "effectText": "特殊：基地计分后你不是第一名时打出。移动该处你的一个随从至其他基地而不进入弃牌堆。"
+    },
+    "vigilantes_a_whole_lot_meaner_pod": {
+      "name": "凶恶百倍",
+      "effectText": "在你的一个随从上放置至多 3 个 +1 战力指示物。特殊：在一个你没有获胜的基地计分后，你可以从弃牌堆抓取此牌。"
+    },
+    "vigilantes_street_justice_pod": {
+      "name": "街头正义",
+      "effectText": "打在一个基地上。天赋：将你的一个随从移入或移出此基地；或者直到你的回合开始，在其他玩家回合中你在这里的随从 +2 战力。"
+    },
+    "vigilantes_who_loves_ya_baby_pod": {
+      "name": "谁爱你，小老弟？",
+      "effectText": "从你牌库顶展示一个 4 战力随从。抓取它，或将其作为额外随从打出。"
+    },
+    "vigilantes_jacky_bill_pod": {
+      "name": "杰基比尔",
+      "abilityText": "持续：当其他玩家打出战术后，你可以使此随从 +2 战力直至回合结束。"
+    },
+    "vigilantes_death_wisher_pod": {
+      "name": "猛龙怪客",
+      "abilityText": "特殊：此基地计分前，你可以消灭一个本回合打出或移动到此基地的随从。"
+    },
+    "vigilantes_shift_pod": {
+      "name": "铁杆神探",
+      "abilityText": "将你弃牌堆中至多 2 张随从置于你的牌库顶。"
+    },
+    "vigilantes_foxy_green_pod": {
+      "name": "狐狸翠",
+      "abilityText": "持续：当另一位玩家打出一张牌或使用天赋直接影响本基地中的随从时，放置 1 枚 +1 战力标记于此随从上。"
+    },
+    "vigilantes_brojak_pod": {
+      "name": "神探布洛杰克",
+      "abilityText": "持续：当有随从移动后，你可以移动此随从至同一个基地，并 +1 战力直至回合结束。"
+    },
+    "vigilantes_stoneford_pod": {
+      "name": "破萝飞龙",
+      "abilityText": "从你的牌库中搜索一张战术置于手牌。"
+    },
+    "vigilantes_dusty_henry_pod": {
+      "name": "瞌睡的亨利",
+      "abilityText": "你可以将这里一个战力 5 或以下的随从洗回其拥有者牌库。"
+    },
+    "luchadors_quick_set_up_pod": {
+      "name": "快速铺垫",
+      "effectText": "打在另一位玩家的一个随从上。你可以额外打出一个行动。"
+    },
+    "luchadors_smart_set_up_pod": {
+      "name": "聪明铺垫",
+      "effectText": "打在另一位玩家的一个随从上。持续：每回合第一次有随从打到这里后，抽 1 张牌。"
+    },
+    "luchadors_powerful_set_up_pod": {
+      "name": "强力铺垫",
+      "effectText": "打在另一位玩家的一个随从上。持续：你在这里的每个随从 +1 力量。"
+    },
+    "luchadors_pin_pod": {
+      "name": "压制",
+      "effectText": "打在一个带有你的行动的随从上。持续：此随从的能力被取消，且其力量不计入其控制者在这里的总力量。"
+    },
+    "luchadors_out_for_the_count_pod": {
+      "name": "点名出局",
+      "effectText": "选择一个其上有一个或多个你的行动的随从。将其中一个行动返回你的手牌。摧毁该随从。"
+    },
+    "luchadors_senor_muchoslam_vs_the_monsters_pod": {
+      "name": "圣徒大战怪物",
+      "effectText": "从你的弃牌堆中选择任意数量的行动。将其中一个可打在随从上的行动置入手牌，并将其余洗入你的牌库。"
+    },
+    "luchadors_reversal_pod": {
+      "name": "逆转",
+      "effectText": "特殊：在一个你没有领先的基地计分前，获得那里一个带有铺垫行动的随从控制权直到回合结束。摧毁该随从上任意数量你的行动。"
+    },
+    "luchadors_tag_team_pod": {
+      "name": "团队标记",
+      "effectText": "在一个你有随从的基地额外打出一个随从。"
+    },
+    "luchadors_cheap_pop_pod": {
+      "name": "廉价欢呼",
+      "effectText": "你的一个随从直到回合结束 +2 力量；如果那里有带铺垫行动的随从，改为 +4 力量。"
+    },
+    "luchadors_yellow_demon_pod": {
+      "name": "黄色恶魔",
+      "abilityText": "你可以从你的牌库和/或弃牌堆中搜寻一个铺垫行动并置入手牌。"
+    },
+    "luchadors_flor_loca_pod": {
+      "name": "火炬女郎",
+      "abilityText": "持续：若另一位玩家在这里的随从上有你的行动，此随从 +2 战力。"
+    },
+    "luchadors_capa_roja_pod": {
+      "name": "红披风",
+      "abilityText": "特殊：在此基地计分前，你可以摧毁这里每位其他玩家控制的一个印制力量 3 或以下的随从。"
+    },
+    "luchadors_senor_muchoslam_pod": {
+      "name": "圣徒",
+      "abilityText": "将你弃牌堆中的一个行动置入手牌。天赋：将一个行动作为额外行动打在另一位玩家的随从上。"
     }
   },
   "debug": {

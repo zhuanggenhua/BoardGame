@@ -1956,6 +1956,22 @@
     "sinister_six_pod": {
       "name": "Sinister Six (POD)",
       "description": "POD card-art edition with separate card and base identities and the same gameplay as Sinister Six."
+    },
+    "explorers_pod": {
+      "name": "Explorers (POD)",
+      "description": "Print-on-Demand Explorers deck using the POD card sheet and updated registry entries."
+    },
+    "star_roamers_pod": {
+      "name": "Star Roamers (POD)",
+      "description": "Print-on-Demand Star Roamers deck using the POD card sheet and updated registry entries."
+    },
+    "vigilantes_pod": {
+      "name": "Vigilantes (POD)",
+      "description": "Print-on-Demand Vigilantes deck with POD card text and separated rules where the POD edition differs."
+    },
+    "luchadors_pod": {
+      "name": "Luchadors (POD)",
+      "description": "Print-on-Demand Luchadors deck using the POD card sheet and renamed POD card faces."
     }
   },
   "tutorial": {
@@ -9515,6 +9531,230 @@
     "sinister_six_witness_our_superiority_pod": {
       "name": "Witness Our Superiority",
       "effectText": "Base modifier. Ongoing: This base’s abilities are cancelled."
+    },
+    "explorers_lost_city_pod": {
+      "name": "Lost City",
+      "effectText": "Special: After a base scores, reveal the top two cards of the base deck. Choose one to replace the scored base and discard the other. Play a minion on the new base as an extra minion."
+    },
+    "explorers_forgotten_horrors_pod": {
+      "name": "Forgotten Horrors",
+      "effectText": "Play on a base. Ongoing: After you play a minion here or play a card that moves your minions to here, draw a card and transfer this action to another base."
+    },
+    "explorers_fortune_and_glory_pod": {
+      "name": "Fortune and Glory",
+      "effectText": "Choose a base. You may move up to two minions from there to another base."
+    },
+    "explorers_it_belongs_in_a_museum_pod": {
+      "name": "It Belongs in a Museum",
+      "effectText": "Choose two minions on different bases. Move each one to the other’s base."
+    },
+    "explorers_i_said_no_camels_pod": {
+      "name": "I Said No Camels!",
+      "effectText": "Choose a base. Place a +1 power counter on each of your minions there OR draw a card for each of your minions there."
+    },
+    "explorers_x_never_marks_the_spot_pod": {
+      "name": "X Never Marks the Spot",
+      "effectText": "Move each of your minions."
+    },
+    "explorers_dr_livingstone_i_presume_pod": {
+      "name": "Dr Livingstone, I Presume?",
+      "effectText": "Choose a minion. If it is the only minion on its base, shuffle it into its owner’s deck."
+    },
+    "explorers_you_call_this_archaeology_pod": {
+      "name": "You Call This Archaeology?",
+      "effectText": "Move one of your minions. Special: You may play this before or after a base scores."
+    },
+    "explorers_glory_hound_pod": {
+      "name": "Glory Hound",
+      "abilityText": "Look at the top two cards of the base deck. Place one on the bottom of the deck and the other on the top."
+    },
+    "explorers_crypt_looter_pod": {
+      "name": "Crypt Looter",
+      "abilityText": "Special: After a new base comes into play, you may play this minion on it as an extra minion."
+    },
+    "explorers_guide_pod": {
+      "name": "Guide",
+      "abilityText": "Ongoing: After the first time each of your minions moves in a turn it gains +1 power until the end of the turn."
+    },
+    "explorers_idaho_smith_pod": {
+      "name": "Idaho Smith",
+      "abilityText": "You may play the top base of the base deck, and move this minion and any number of your other minions from here to there."
+    },
+    "star_roamers_hyperspeed_10_pod": {
+      "name": "Hyperspeed 10",
+      "effectText": "Choose a base. Move all minions from there to a single other base."
+    },
+    "star_roamers_port_me_up_pod": {
+      "name": "Port Me Up",
+      "effectText": "Return one of your minions to its owner’s hand. Special: You may play this after a base scores; the minion must be on the scoring base."
+    },
+    "star_roamers_mass_teleport_pod": {
+      "name": "Mass Teleport",
+      "effectText": "Each player returns one of their minions to its owner’s hand."
+    },
+    "star_roamers_teleport_error_pod": {
+      "name": "Teleport Error",
+      "effectText": "Choose a minion. Move it to another random base."
+    },
+    "star_roamers_protector_fields_pod": {
+      "name": "Protector Fields",
+      "effectText": "Play on a base where you have a minion. Ongoing: Your minions here are not affected by other players’ cards."
+    },
+    "star_roamers_weird_new_worlds_pod": {
+      "name": "Weird New Worlds",
+      "effectText": "Play a new base. You may play an extra minion there."
+    },
+    "star_roamers_whiplash_maneuver_pod": {
+      "name": "Whiplash Maneuver",
+      "effectText": "Play on a base. Ongoing: If any of your minions on other bases would be returned to your hand, you may move them here instead."
+    },
+    "star_roamers_teleport_overflow_pod": {
+      "name": "Teleport Overflow",
+      "effectText": "Return one of your minions to its owner’s hand. Reveal any number of minions with the same name from your hand, and play them as extra minions."
+    },
+    "star_roamers_ensign_pod": {
+      "name": "Ensign",
+      "abilityText": "Ongoing: When an opponent plays a card that directly affects one of your other minions here, you may have it affect this minion instead."
+    },
+    "star_roamers_ships_engineer_pod": {
+      "name": "Ship's Engineer",
+      "abilityText": "Ongoing: If another one of your minions would be returned to your hand, you may move it to another base instead."
+    },
+    "star_roamers_medical_officer_pod": {
+      "name": "Medical Officer",
+      "abilityText": "Ongoing: When one or more of your other minions would be returned to your hand, you may draw a card instead of returning one of them."
+    },
+    "star_roamers_science_officer_pod": {
+      "name": "Science Officer",
+      "abilityText": "Talent: Return one of your minions of power 4 or less to its owner’s hand. Play an extra minion with a different name."
+    },
+    "star_roamers_ships_captain_pod": {
+      "name": "Ship's Captain",
+      "abilityText": "Search your deck for a minion, reveal it, add it to your hand and shuffle your deck. If it has power 3 or less, play it here as an extra minion."
+    },
+    "vigilantes_make_my_day_pod": {
+      "name": "Make My Day",
+      "effectText": "Destroy a minion of printed power 3 or less on a base where you have a minion. Special: Play before a base scores during your turn."
+    },
+    "vigilantes_tough_it_out_pod": {
+      "name": "Tough It Out",
+      "effectText": "Play on a minion. Ongoing: This minion has -3 power and can't be destroyed. At the start of any player's turn, you may destroy this action to give this minion +3 power until the end of your turn."
+    },
+    "vigilantes_scared_straight_pod": {
+      "name": "Scared Straight",
+      "effectText": "Move another player's minion from a base where you have a minion to another base. If this was your first action played this turn, you may play an extra action."
+    },
+    "vigilantes_feeling_lucky_pod": {
+      "name": "Feeling Lucky?",
+      "effectText": "Play on another player's minion. Ongoing: After this minion's controller plays an action, look at the top card of your deck. Place it on the top or bottom of your deck. Special: Before this base scores, reveal the top card of your deck. If it is an action, destroy this minion."
+    },
+    "vigilantes_shrug_it_off_pod": {
+      "name": "Shrug it Off",
+      "effectText": "Play on a base. Talent: Until the start of your turn, other players' minions here have -1 power."
+    },
+    "vigilantes_knocked_into_next_week_pod": {
+      "name": "Knocked into Next Week",
+      "effectText": "Choose a minion. Shuffle it into its owner's deck."
+    },
+    "vigilantes_lets_finish_this_pod": {
+      "name": "Let's Finish This",
+      "effectText": "Play on a base. Ongoing: At the start of your turn, if you have a minion here and another player has a minion here, reduce this base's breakpoint to 0 until the end of the turn."
+    },
+    "vigilantes_the_revenge_pod": {
+      "name": "The Revenge",
+      "effectText": "Special: Play after a base scores if you are not the winner. Move one of your minions there to another base instead of the discard pile."
+    },
+    "vigilantes_a_whole_lot_meaner_pod": {
+      "name": "A Whole Lot Meaner",
+      "effectText": "Place up to three +1 power counters on one of your minions. Special: After a base scores where you didn't win, you may draw this card from your discard pile."
+    },
+    "vigilantes_street_justice_pod": {
+      "name": "Street Justice",
+      "effectText": "Play on a base. Talent: Move one of your minions to or from this base OR until the start of your turn, your minions here have +2 power during other players' turns."
+    },
+    "vigilantes_who_loves_ya_baby_pod": {
+      "name": "Who Loves Ya, Baby?",
+      "effectText": "Reveal a minion of power 4 off the top of your deck. Draw it or play it as an extra minion."
+    },
+    "vigilantes_jacky_bill_pod": {
+      "name": "Jacky Bill",
+      "abilityText": "Ongoing: After another player plays an action, you may give this minion +2 power until the end of the turn."
+    },
+    "vigilantes_death_wisher_pod": {
+      "name": "Death Wisher",
+      "abilityText": "Special: Before this base scores, you may destroy a minion that was played or moved to this base this turn."
+    },
+    "vigilantes_shift_pod": {
+      "name": "Shift",
+      "abilityText": "Place up to two minions from your discard pile on top of your deck."
+    },
+    "vigilantes_foxy_green_pod": {
+      "name": "Foxy Green",
+      "abilityText": "Ongoing: After another player plays a card or uses a Talent that directly affects a minion here, place a +1 power counter on this minion."
+    },
+    "vigilantes_brojak_pod": {
+      "name": "Brojak",
+      "abilityText": "Ongoing: After a minion moves, you may move this minion to the same base and give it +1 power until the end of the turn."
+    },
+    "vigilantes_stoneford_pod": {
+      "name": "Stoneford",
+      "abilityText": "Search your deck for an action and place it into your hand."
+    },
+    "vigilantes_dusty_henry_pod": {
+      "name": "Dusty Henry",
+      "abilityText": "You may shuffle a minion of power 5 or less here into its owner's deck."
+    },
+    "luchadors_quick_set_up_pod": {
+      "name": "Quick Set-Up",
+      "effectText": "Play on another player's minion. You may play an extra action."
+    },
+    "luchadors_smart_set_up_pod": {
+      "name": "Smart Set-Up",
+      "effectText": "Play on another player's minion. Ongoing: After the first time each turn a minion is played here, draw a card."
+    },
+    "luchadors_powerful_set_up_pod": {
+      "name": "Powerful Set-Up",
+      "effectText": "Play on another player's minion. Ongoing: Each of your minions here has +1 power."
+    },
+    "luchadors_pin_pod": {
+      "name": "Pin",
+      "effectText": "Play on a minion with one of your actions on it. Ongoing: This minion's abilities are cancelled, and its power is not added to its controller's total power here."
+    },
+    "luchadors_out_for_the_count_pod": {
+      "name": "Out for the Count",
+      "effectText": "Choose a minion with one or more of your actions on it. Return one of those actions to your hand. Destroy that minion."
+    },
+    "luchadors_senor_muchoslam_vs_the_monsters_pod": {
+      "name": "Sagrado vs the Monsters",
+      "effectText": "Choose any number of actions from your discard pile. Place one that can be played on a minion into your hand and shuffle the rest into your deck."
+    },
+    "luchadors_reversal_pod": {
+      "name": "Reversal",
+      "effectText": "Special: Before a base scores where you are not winning, take control of a minion there with a Set-Up action on it until the end of the turn. Destroy any number of your actions on that minion."
+    },
+    "luchadors_tag_team_pod": {
+      "name": "Tag-Team",
+      "effectText": "Play an extra minion at a base where you have a minion."
+    },
+    "luchadors_cheap_pop_pod": {
+      "name": "Cheap Pop",
+      "effectText": "Give one of your minions +2 power until the end of the turn, or +4 power instead if a minion there has a Set-Up action on it."
+    },
+    "luchadors_yellow_demon_pod": {
+      "name": "Yellow Demon",
+      "abilityText": "You may search your deck and/or discard pile for a Set-Up action and place it into your hand."
+    },
+    "luchadors_flor_loca_pod": {
+      "name": "La Torcha",
+      "abilityText": "Ongoing: If another player's minion here has one of your actions on it, this minion has +2 power."
+    },
+    "luchadors_capa_roja_pod": {
+      "name": "Capa Roja",
+      "abilityText": "Special: Before this base scores, you may destroy a minion here with printed power 3 or less controlled by each other player."
+    },
+    "luchadors_senor_muchoslam_pod": {
+      "name": "El Sagrado",
+      "abilityText": "Place an action from your discard pile into your hand. Talent: Play an action as an extra action on another player's minion."
     }
   },
   "debug": {
