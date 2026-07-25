@@ -210,6 +210,22 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical.filter(path => path === 'smashup/base/polynesian_voyagers/atlas')).toHaveLength(1);
     });
 
+    it('Disney 四派系会共享预热 Disney 卡图与基地 atlas', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['aladdin', 'beauty_and_the_beast'],
+                '1': ['nightmare_before_christmas', 'wreck_it_ralph'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/disney');
+        expect(result.critical).toContain('smashup/base/disney_bases');
+        expect(result.critical.filter(path => path === 'smashup/cards/disney')).toHaveLength(1);
+        expect(result.critical.filter(path => path === 'smashup/base/disney_bases')).toHaveLength(1);
+    });
+
     it('fairies 会命中 Pretty Pretty card atlas 与共享 Pretty Pretty base atlas', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

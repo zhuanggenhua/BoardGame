@@ -1350,7 +1350,12 @@
     "sumo_wrestlers_yokozuna_move_option": "Move another player's minion here",
     "international_incident_skip_destroy_minion_option": "Skip (do not destroy a minion)",
     "international_incident_skip_discard_option": "Skip (do not discard)",
-    "international_incident_skip_move_minion_option": "Skip (do not move a minion)"
+    "international_incident_skip_move_minion_option": "Skip (do not move a minion)",
+    "aladdin_wish_title": "Wish: choose an effect",
+    "aladdin_wish_skip_option": "Do not use Wish",
+    "aladdin_wish_extra_cards_option": "Play an extra character and an extra action",
+    "aladdin_wish_power_option": "Give a character +5 power this turn",
+    "aladdin_wish_draw_option": "Draw four cards"
   },
   "mechanics": {
     "madness": {
@@ -1978,6 +1983,22 @@
     "luchadors_pod": {
       "name": "Luchadors (POD)",
       "description": "Print-on-Demand Luchadors deck using the POD card sheet and renamed POD card faces."
+    },
+    "aladdin": {
+      "name": "Aladdin",
+      "description": "Search for key cards, spend actions for talents, and turn The Lamp, Genie, and Wish into explosive extra plays."
+    },
+    "beauty_and_the_beast": {
+      "name": "Beauty and the Beast",
+      "description": "Discard cards for value, grow power counters, and chain Belle, Beast, and the Enchanted Objects into extra plays."
+    },
+    "nightmare_before_christmas": {
+      "name": "The Nightmare Before Christmas",
+      "description": "Use character modifiers for movement, power swings, restrictions, and after-scoring recursion."
+    },
+    "wreck_it_ralph": {
+      "name": "Wreck-It Ralph",
+      "description": "Play and break base modifiers to move characters, reshape bases, and force messy scoring turns."
     }
   },
   "tutorial": {
@@ -9761,6 +9782,258 @@
     "luchadors_senor_muchoslam_pod": {
       "name": "El Sagrado",
       "abilityText": "Place an action from your discard pile into your hand. Talent: Play an action as an extra action on another player's minion."
+    },
+    "aladdin_carpet": {
+      "name": "Carpet",
+      "abilityText": "Talent: Move this character and up to two of your other characters here to another base."
+    },
+    "aladdin_palace_guard": {
+      "name": "Palace Guard",
+      "abilityText": "Talent: Discard an action to place a +1 power counter on each of your Palace Guards here."
+    },
+    "aladdin_abu": {
+      "name": "Abu",
+      "abilityText": "Place an action from your discard pile on top of your deck."
+    },
+    "aladdin_genie": {
+      "name": "Genie",
+      "abilityText": "Talent: Search your deck and/or discard pile for a copy of Wish, reveal it, and place it into your hand. Shuffle your deck if you searched it."
+    },
+    "aladdin_rajah": {
+      "name": "Rajah",
+      "abilityText": "Talent: Discard an action to give this character +2 power until the end of the turn. Special: Before this base scores, you may use this character’s talent."
+    },
+    "aladdin_jasmine": {
+      "name": "Jasmine",
+      "abilityText": "Talent: Discard an action to play an extra action."
+    },
+    "aladdin_aladdin": {
+      "name": "Aladdin",
+      "abilityText": "Search your deck and/or discard pile for The Lamp, reveal it, and draw it. Shuffle your deck if you searched it. Talent: Reveal cards from your deck until you reveal an action. Draw it and shuffle the rest into your deck."
+    },
+    "aladdin_a_friend_like_me": {
+      "name": "A Friend Like Me",
+      "effectText": "Reveal the top four cards of your deck. Draw all actions and shuffle the rest into your deck."
+    },
+    "aladdin_cave_of_wonders": {
+      "name": "Cave of Wonders",
+      "effectText": "Place an action from your discard pile into your hand."
+    },
+    "aladdin_jafar": {
+      "name": "Jafar",
+      "effectText": "Each other player discards an action from their hand or reveals their hand to show it has no actions. You may play one of the discarded actions or an action from your hand as an extra action."
+    },
+    "aladdin_magic_carpet_ride": {
+      "name": "Magic Carpet Ride",
+      "effectText": "Search your deck, hand, and/or discard pile for Carpet, shuffle your deck if you searched it, and play Carpet as an extra character."
+    },
+    "aladdin_street_rat": {
+      "name": "Street Rat",
+      "effectText": "Play an action from another player’s discard pile as an extra action."
+    },
+    "aladdin_the_lamp": {
+      "name": "The Lamp",
+      "effectText": "Search your deck and/or discard pile for Genie, reveal it and draw it. Shuffle your deck if you searched it. Place this card on the bottom of your deck."
+    },
+    "aladdin_wish": {
+      "name": "Wish",
+      "effectText": "If you have Genie in play, choose one effect and place this card into the box: Play two extra non-Wish cards; Give a character +5 power until the end of the turn; Draw four cards."
+    },
+    "beauty_and_the_beast_enchanted_objects": {
+      "name": "Enchanted Objects",
+      "abilityText": "Special: After you discard this card from your hand, you may play it as an extra character. Use only one Enchanted Objects ability per turn."
+    },
+    "beauty_and_the_beast_cogsworth": {
+      "name": "Cogsworth",
+      "abilityText": "Talent: Discard a card to play an extra action."
+    },
+    "beauty_and_the_beast_lumiere": {
+      "name": "Lumiere",
+      "abilityText": "Talent: Discard a card to play an extra character of power 3 or less here."
+    },
+    "beauty_and_the_beast_mrs_potts_and_chip": {
+      "name": "Mrs. Potts and Chip",
+      "abilityText": "Talent: Discard a card to draw a card."
+    },
+    "beauty_and_the_beast_beast": {
+      "name": "Beast",
+      "abilityText": "If Belle is here, place a +1 power counter on it and on this card. Talent: Discard a card to place a +1 power counter on this card."
+    },
+    "beauty_and_the_beast_belle": {
+      "name": "Belle",
+      "abilityText": "If Beast is here, you may draw up to three cards. Talent: Draw a card, OR discard a card."
+    },
+    "beauty_and_the_beast_be_our_guest": {
+      "name": "Be Our Guest",
+      "effectText": "Base modifier. Talent: If you have discarded a card from your hand this turn, draw a card."
+    },
+    "beauty_and_the_beast_break_the_curse": {
+      "name": "Break the Curse",
+      "effectText": "Choose a base. Each of your characters currently there gains +1 power until the end of the turn. Special: After you discard this card from your hand, you may play it as an extra action."
+    },
+    "beauty_and_the_beast_discover_the_library": {
+      "name": "Discover the Library",
+      "effectText": "Draw two cards, then discard a card. Special: After you discard this card from your hand, you may play it as an extra action."
+    },
+    "beauty_and_the_beast_ever_a_surprise": {
+      "name": "Ever a Surprise",
+      "effectText": "Shuffle up to two characters from your discard pile into your deck. Special: After you discard this card from your hand, you may play it as an extra action."
+    },
+    "beauty_and_the_beast_gaston": {
+      "name": "Gaston",
+      "effectText": "Base modifier. Ongoing: This base’s breakpoint is increased by 5. On each player’s turn, that player may discard two cards to destroy this card."
+    },
+    "beauty_and_the_beast_petals_of_the_rose": {
+      "name": "Petals of the Rose",
+      "effectText": "Base modifier. Ongoing: After you discard one or more cards from your hand, you may look at the top two cards of your deck. Place them on the top and/or bottom of your deck in any order."
+    },
+    "beauty_and_the_beast_this_provincial_town": {
+      "name": "This Provincial Town",
+      "effectText": "Play an extra character of power 3 or less. Then you may discard a card to place a +1 power counter on it."
+    },
+    "nightmare_before_christmas_jack_skellington": {
+      "name": "Jack Skellington",
+      "abilityText": "Place a character modifier from your discard pile into your hand. Ongoing: After you play a character modifier, you may place a +1 power counter on a character, OR you may draw a card."
+    },
+    "nightmare_before_christmas_halloween_town_folks": {
+      "name": "Halloween Town Folks",
+      "abilityText": "Reveal the top three cards of your deck. If there are any character modifiers, draw one. Place the rest on the top and/or bottom of your deck in any order."
+    },
+    "nightmare_before_christmas_lock_shock_and_barrel": {
+      "name": "Lock, Shock & Barrel",
+      "abilityText": "Special: Before this base scores, you may play a character modifier on a character here as an extra action."
+    },
+    "nightmare_before_christmas_the_mayor_of_halloween_town": {
+      "name": "The Mayor of Halloween Town",
+      "abilityText": "Ongoing: If you control a character modifier here, your characters here have +1 power."
+    },
+    "nightmare_before_christmas_dr_finkelstein": {
+      "name": "Dr. Finkelstein",
+      "abilityText": "Talent: Move a character modifier from one character to another."
+    },
+    "nightmare_before_christmas_sally": {
+      "name": "Sally",
+      "abilityText": "Talent: Play a character modifier as an extra action."
+    },
+    "nightmare_before_christmas_zero": {
+      "name": "Zero",
+      "abilityText": "Ongoing: This character has +3 power if you control any character modifiers here. Special: After this base scores, return this character to your hand instead of the discard pile and you may play it on another base as an extra character."
+    },
+    "nightmare_before_christmas_christmas_will_be_ours": {
+      "name": "Christmas Will Be Ours!",
+      "effectText": "Look at another player’s hand. You may play an action there or in your hand as an extra action. If it is owned by another player, return it to their hand at the end of the turn no matter where it is (except the box)."
+    },
+    "nightmare_before_christmas_ghostly_presents": {
+      "name": "Ghostly Presents",
+      "effectText": "Character modifier. Ongoing: If you control this character, immediately destroy this card and play an extra character of power 3 or less. Otherwise, its controller cannot play characters of power 3 or less here."
+    },
+    "nightmare_before_christmas_jack_o_lantern_in_the_box": {
+      "name": "Jack-O’lantern-in-the-Box",
+      "effectText": "Character modifier. Ongoing: If you control this character, draw an additional card before the end of your turn; otherwise, this character’s controller may not add additional cards to their hand during their turn."
+    },
+    "nightmare_before_christmas_monster_garland": {
+      "name": "Monster Garland",
+      "effectText": "Character modifier. Ongoing: If you control this character, it has +3 power; otherwise, it has -2 power."
+    },
+    "nightmare_before_christmas_oogie_boogie": {
+      "name": "Oogie Boogie",
+      "effectText": "Character modifier. You may move this character to another base. Ongoing: This character has 0 power and its abilities are cancelled. Destroy this card if another character here has power 5 or more."
+    },
+    "nightmare_before_christmas_sandy_claws_costume": {
+      "name": "Sandy Claws Costume",
+      "effectText": "Character modifier. Ongoing: This character has +1 power for each character modifier you control. Special: After this base scores, return this character to its owner’s hand and place this card on the bottom of your deck."
+    },
+    "nightmare_before_christmas_winter_surprise": {
+      "name": "Winter Surprise",
+      "effectText": "Play a character modifier from your discard pile as an extra action. Shuffle this card into your deck."
+    },
+    "nightmare_before_christmas_zombie_duck_toy": {
+      "name": "Zombie Duck Toy",
+      "effectText": "Character modifier. Special: When this base scores, if you control this character, you gain 1 VP more; otherwise, its controller gains 1 VP less."
+    },
+    "wreck_it_ralph_sugar_rush_racer": {
+      "name": "Sugar Rush Racer",
+      "abilityText": "Ongoing: After you play a base modifier, you may move this character to or from that base to give it +1 power until the end of the turn."
+    },
+    "wreck_it_ralph_sergeant_calhoun": {
+      "name": "Sergeant Calhoun",
+      "abilityText": "Talent: If you have a base modifier here, your other characters currently here gain +1 power until the end of the turn."
+    },
+    "wreck_it_ralph_vanellope_von_schweetz": {
+      "name": "Vanellope Von Schweetz",
+      "abilityText": "Talent: Move this character to another base and place a +1 power counter on it."
+    },
+    "wreck_it_ralph_fix_it_felix_jr": {
+      "name": "Fix-It Felix Jr.",
+      "abilityText": "Place a base modifier from your discard pile into your hand. Talent: Place a base modifier here on top of its owner’s deck."
+    },
+    "wreck_it_ralph_wreck_it_ralph": {
+      "name": "Wreck-It Ralph",
+      "abilityText": "Talent: Play a base modifier here as an extra action, OR destroy a base modifier here."
+    },
+    "wreck_it_ralph_cy_bug_infestation": {
+      "name": "Cy-Bug Infestation",
+      "effectText": "Base modifier. Talent: Destroy this card and this base. Starting with the player to your left, each player chooses a base and moves all their cards here to there. Replace the base normally."
+    },
+    "wreck_it_ralph_escape_pod": {
+      "name": "Escape Pod",
+      "effectText": "Move up to two of your cards from one base to another base. Special: You may play this before a base scores; move one of your cards from the scoring base instead of two."
+    },
+    "wreck_it_ralph_i_m_gonna_wreck_it": {
+      "name": "I’m Gonna Wreck It!",
+      "effectText": "Base modifier. Ongoing: This base’s breakpoint is reduced by 3. Talent: This base’s abilities are cancelled until the start of your next turn."
+    },
+    "wreck_it_ralph_kart_bakery": {
+      "name": "Kart Bakery",
+      "effectText": "Base modifier. Talent: If you have a character here, draw a card."
+    },
+    "wreck_it_ralph_king_candy": {
+      "name": "King Candy",
+      "effectText": "Base modifier. Talent: You may move this card to another base. Choose a character at this card’s base. Until the start of your next turn, the abilities of character modifiers on it are cancelled and power counters on it do not add to its power."
+    },
+    "wreck_it_ralph_mints_eruption": {
+      "name": "Mints Eruption",
+      "effectText": "Choose a base. Swap it with a base in the discard pile. All cards from the original base remain."
+    },
+    "wreck_it_ralph_research_lab_beacon": {
+      "name": "Research Lab Beacon",
+      "effectText": "Base modifier. Ongoing: If there are four or more characters here, destroy this card. Talent: Name a faction. Move all characters of that faction to here."
+    },
+    "wreck_it_ralph_sugar_rush": {
+      "name": "Sugar Rush",
+      "effectText": "Base modifier. Talent: Move up to two of your characters from here to another base or from another base to here. They each gain +1 power until the end of the turn."
+    },
+    "base_agrabah_bazaar": {
+      "name": "Agrabah Bazaar",
+      "abilityText": "On your turn, you may discard an action card to place up to two +1 power counters total on your characters here."
+    },
+    "base_sultans_palace": {
+      "name": "Sultan’s Palace",
+      "abilityText": "After the first time you play a character here each turn, draw a card."
+    },
+    "base_enchanted_castle": {
+      "name": "Enchanted Castle",
+      "abilityText": "After the first time you discard a card from your hand during your turn, place a +1 power counter on one of your characters here."
+    },
+    "base_gastons_tavern": {
+      "name": "Gaston’s Tavern",
+      "abilityText": "On your turn, you may discard a card to play an extra character of power 3 or less here."
+    },
+    "base_halloween_town": {
+      "name": "Halloween Town",
+      "abilityText": "After this base scores, each player may shuffle any number of their modifiers on characters here into their owner’s decks."
+    },
+    "base_spiral_hill": {
+      "name": "Spiral Hill",
+      "abilityText": "After this base scores, each player with a character here may return a character modifier from here or their discard pile to their hand."
+    },
+    "base_the_dump": {
+      "name": "The Dump",
+      "abilityText": "When a base modifier on another base goes to the discard pile, move it to here instead. After this base scores, each player may return one of their base modifiers here to its owner’s hand."
+    },
+    "base_the_power_strip": {
+      "name": "The Power Strip",
+      "abilityText": "On your turn, you may move one of your characters to or from this base."
     }
   },
   "debug": {

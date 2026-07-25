@@ -801,6 +801,8 @@ export interface SmashUpCore {
     /** 疯狂牌库（克苏鲁扩展，defId 列表） */
     madnessDeck?: string[];
     cardsPlayedThisTurn?: number;
+    /** 本回合每位玩家从手牌弃牌的数量。TURN_STARTED 时清空。 */
+    cardsDiscardedFromHandThisTurn?: Record<PlayerId, number>;
     powerCountersPlacedOnMinionsThisTurn?: number;
     /** 本回合被消灭的随从记录（用于 cthulhu_furthering_the_cause 等能力判定，并阻止过期移动把它们从弃牌堆拉回场上） */
     turnDestroyedMinions?: { uid: string; defId: string; baseIndex: number; owner: string; controller?: string }[];

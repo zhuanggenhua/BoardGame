@@ -939,6 +939,42 @@
           "mime": "image/webp"
         }
       }
+    },
+    "base/compressed/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "2cbbc4ed8b68ed678774883d3088c7c93997de68dc6a68721cdadabfd7c9aca7",
+          "bytes": 1534842,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/disney_bases": {
+      "variants": {
+        "jpg": {
+          "sha256": "d0a91b1dff2831eb77ff25f7eee8845ee29e37f942ebc7c6ad9855267c1037b1",
+          "bytes": 1253348,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "cards/compressed/disney": {
+      "variants": {
+        "webp": {
+          "sha256": "37bc0c782fcb2839f9155b610681768a1b6bf233257107cc60c671ded035c2e3",
+          "bytes": 7904230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/disney": {
+      "variants": {
+        "png": {
+          "sha256": "d156b6428665ffc1f4182cc955fd7aa7d35d7638e0e6d593e238a9b3b02674cc",
+          "bytes": 39745874,
+          "mime": "image/png"
+        }
+      }
     }
   }
 }

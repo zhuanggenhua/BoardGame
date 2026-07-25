@@ -76,6 +76,8 @@ export const SMASHUP_ATLAS_IDS = {
     KUNG_FU_FIGHTERS_POD_CARDS: 'smashup:kung-fu-fighters-pod-cards',
     RUSSIAN_FAIRY_TALES_POD_CARDS: 'smashup:russian-fairy-tales-pod-cards',
     ANANSI_TALES_POD_CARDS: 'smashup:anansi-tales-pod-cards',
+    DISNEY_CARDS: 'smashup:disney-cards',
+    DISNEY_BASES: 'smashup:disney-bases',
 } as const;
 
 export const SMASHUP_CARD_BACK = {
@@ -101,6 +103,10 @@ export const SMASHUP_FACTION_IDS = {
     KREE_POD: 'kree_pod',
     MASTERS_OF_EVIL_POD: 'masters_of_evil_pod',
     SINISTER_SIX_POD: 'sinister_six_pod',
+    ALADDIN: 'aladdin',
+    BEAUTY_AND_THE_BEAST: 'beauty_and_the_beast',
+    NIGHTMARE_BEFORE_CHRISTMAS: 'nightmare_before_christmas',
+    WRECK_IT_RALPH: 'wreck_it_ralph',
     ALIENS: 'aliens',
     ASTROKNIGHTS: 'astroknights',
     ANCIENT_EGYPTIANS: 'ancient_egyptians',
@@ -273,6 +279,10 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.KREE_POD]: '克里 (POD版)',
     [SMASHUP_FACTION_IDS.MASTERS_OF_EVIL_POD]: '邪恶大师 (POD版)',
     [SMASHUP_FACTION_IDS.SINISTER_SIX_POD]: '邪恶六人组 (POD版)',
+    [SMASHUP_FACTION_IDS.ALADDIN]: '阿拉丁',
+    [SMASHUP_FACTION_IDS.BEAUTY_AND_THE_BEAST]: '美女与野兽',
+    [SMASHUP_FACTION_IDS.NIGHTMARE_BEFORE_CHRISTMAS]: '圣诞夜惊魂',
+    [SMASHUP_FACTION_IDS.WRECK_IT_RALPH]: '无敌破坏王',
     [SMASHUP_FACTION_IDS.ASTROKNIGHTS]: '宇宙武士',
     [SMASHUP_FACTION_IDS.PIRATES]: '海盗',
     [SMASHUP_FACTION_IDS.PIRATES_POD]: '海盗 (POD版)',

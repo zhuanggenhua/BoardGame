@@ -9502,6 +9502,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "2cbbc4ed8b68ed678774883d3088c7c93997de68dc6a68721cdadabfd7c9aca7",
+          "bytes": 1534842,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/huluwawa_bases": {
       "variants": {
         "webp": {
@@ -9580,6 +9589,15 @@
           "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
           "bytes": 560560,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/disney_bases": {
+      "variants": {
+        "jpg": {
+          "sha256": "d0a91b1dff2831eb77ff25f7eee8845ee29e37f942ebc7c6ad9855267c1037b1",
+          "bytes": 1253348,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -9750,6 +9768,15 @@
         "webp": {
           "sha256": "b8a029374b872cc17efa1d4f5475dc01183f7a27a246be7f1fac5b843ef4c98a",
           "bytes": 887820,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/disney": {
+      "variants": {
+        "webp": {
+          "sha256": "37bc0c782fcb2839f9155b610681768a1b6bf233257107cc60c671ded035c2e3",
+          "bytes": 7904230,
           "mime": "image/webp"
         }
       }
@@ -9985,6 +10012,15 @@
           "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
           "bytes": 1110284,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/disney": {
+      "variants": {
+        "png": {
+          "sha256": "d156b6428665ffc1f4182cc955fd7aa7d35d7638e0e6d593e238a9b3b02674cc",
+          "bytes": 39745874,
+          "mime": "image/png"
         }
       }
     },

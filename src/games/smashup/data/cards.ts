@@ -126,6 +126,10 @@ import { GRIMMS_FAIRY_TALES_BASES, GRIMMS_FAIRY_TALES_CARDS } from './factions/g
 import { RUSSIAN_FAIRY_TALES_BASES, RUSSIAN_FAIRY_TALES_CARDS } from './factions/russian_fairy_tales';
 import { ANCIENT_INCAS_BASES, ANCIENT_INCAS_CARDS } from './factions/ancient_incas';
 import { GEEKS_CARDS } from './factions/geeks';
+import { ALADDIN_BASES, ALADDIN_CARDS } from './factions/aladdin';
+import { BEAUTY_AND_THE_BEAST_BASES, BEAUTY_AND_THE_BEAST_CARDS } from './factions/beauty_and_the_beast';
+import { NIGHTMARE_BEFORE_CHRISTMAS_BASES, NIGHTMARE_BEFORE_CHRISTMAS_CARDS } from './factions/nightmare_before_christmas';
+import { WRECK_IT_RALPH_BASES, WRECK_IT_RALPH_CARDS } from './factions/wreck_it_ralph';
 import {
     DISCO_DANCERS_CARDS,
     KUNG_FU_FIGHTERS_CARDS,
@@ -315,6 +319,10 @@ registerCards(GRIMMS_FAIRY_TALES_CARDS);
 registerCards(RUSSIAN_FAIRY_TALES_CARDS);
 registerCards(ANCIENT_INCAS_CARDS);
 registerCards(GEEKS_CARDS);
+registerCards(ALADDIN_CARDS);
+registerCards(BEAUTY_AND_THE_BEAST_CARDS);
+registerCards(NIGHTMARE_BEFORE_CHRISTMAS_CARDS);
+registerCards(WRECK_IT_RALPH_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
 registerCards(VIGILANTES_POD_CARDS);
@@ -1405,6 +1413,10 @@ registerBases(ANANSI_TALES_BASES);
 registerBases(GRIMMS_FAIRY_TALES_BASES);
 registerBases(RUSSIAN_FAIRY_TALES_BASES);
 registerBases(ANCIENT_INCAS_BASES);
+registerBases(ALADDIN_BASES);
+registerBases(BEAUTY_AND_THE_BEAST_BASES);
+registerBases(NIGHTMARE_BEFORE_CHRISTMAS_BASES);
+registerBases(WRECK_IT_RALPH_BASES);
 
 registerPodBaseSkeletons();
 
