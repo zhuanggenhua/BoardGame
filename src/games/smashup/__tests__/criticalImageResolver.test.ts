@@ -226,6 +226,22 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical.filter(path => path === 'smashup/base/disney_bases')).toHaveLength(1);
     });
 
+    it('Disney Four Factions 四派系会共享预热独立 Disney 卡图与基地 atlas', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['big_hero_6', 'frozen'],
+                '1': ['lion_king', 'mulan'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/disney_four_factions');
+        expect(result.critical).toContain('smashup/base/disney_four_faction_bases');
+        expect(result.critical.filter(path => path === 'smashup/cards/disney_four_factions')).toHaveLength(1);
+        expect(result.critical.filter(path => path === 'smashup/base/disney_four_faction_bases')).toHaveLength(1);
+    });
+
     it('fairies 会命中 Pretty Pretty card atlas 与共享 Pretty Pretty base atlas', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

@@ -1999,6 +1999,22 @@
     "wreck_it_ralph": {
       "name": "Wreck-It Ralph",
       "description": "Play and break base modifiers to move characters, reshape bases, and force messy scoring turns."
+    },
+    "big_hero_6": {
+      "name": "Big Hero 6",
+      "description": "Build teamwork around Microbots, +1 power counters, and tech upgrades to surge at key bases."
+    },
+    "frozen": {
+      "name": "Frozen",
+      "description": "Use freezing control, protection, and partner synergies to reshape scoring tempo."
+    },
+    "lion_king": {
+      "name": "The Lion King",
+      "description": "Turn Mufasa in the discard pile into legacy payoffs, +1 power counters, and Pride Rock momentum."
+    },
+    "mulan": {
+      "name": "Mulan",
+      "description": "Train your board with +1 power counters, discipline, and scoring-window disruption."
     }
   },
   "tutorial": {
@@ -10034,6 +10050,278 @@
     "base_the_power_strip": {
       "name": "The Power Strip",
       "abilityText": "On your turn, you may move one of your characters to or from this base."
+    },
+    "big_hero_6_microbot_swarm": {
+      "name": "Microbot Swarm",
+      "abilityText": "Place a Microbot Swarm from your discard pile into your hand. Talent: Place a +1 power counter on this card."
+    },
+    "big_hero_6_baymax": {
+      "name": "Baymax",
+      "abilityText": "Ongoing: Your other characters here are not affected by other players' cards. Special: After this base scores, if this character has a power counter, move another of your characters from here to another base."
+    },
+    "big_hero_6_fred_frederickson_iv": {
+      "name": "Fred Frederickson IV",
+      "abilityText": "Talent: Draw a card. Then if this character has any power counters, you may give another character here -2 power until the start of your next turn."
+    },
+    "big_hero_6_go_go_tomago": {
+      "name": "Go Go Tomago",
+      "abilityText": "Talent: Move this character to another base. If this character has a power counter, you may also move another of your characters from here to the same base."
+    },
+    "big_hero_6_hiro_hamada": {
+      "name": "Hiro Hamada",
+      "abilityText": "Talent: Place a +1 power counter on one of your characters here, or move any number of power counters from one of your characters to another."
+    },
+    "big_hero_6_honey_lemon": {
+      "name": "Honey Lemon",
+      "abilityText": "Talent: Destroy a base action or character upgrade here. If this character has any power counters, you may play an extra action instead."
+    },
+    "big_hero_6_wasabi": {
+      "name": "Wasabi",
+      "abilityText": "Talent: This character gains +1 power until the end of the turn, or gains +1 power for each +1 power counter on it, up to +5."
+    },
+    "big_hero_6_control_mask": {
+      "name": "Control Mask",
+      "effectText": "Play on a character that is not Microbot Swarm. Search your deck for a Microbot Swarm, reveal it, place it into your hand, and shuffle. Talent: Play a Microbot Swarm as an extra character, or move any number of Microbot Swarms between here and another base."
+    },
+    "big_hero_6_control_the_swarm": {
+      "name": "Control the Swarm",
+      "effectText": "Place a +1 power counter on each of your characters without power counters, or move any number of power counters among your characters."
+    },
+    "big_hero_6_microbot_maker": {
+      "name": "Microbot Maker",
+      "effectText": "Play on a base. Place a +1 power counter on each of your characters here. Talent: Place a +1 power counter on one of your characters here."
+    },
+    "big_hero_6_new_student": {
+      "name": "New Student",
+      "effectText": "Play a character of power 3 or less as an extra character, then place a +1 power counter on it."
+    },
+    "big_hero_6_team_effort": {
+      "name": "Team Effort",
+      "effectText": "Choose a base. Draw a card for each of your characters there with a power counter."
+    },
+    "big_hero_6_upgrades": {
+      "name": "Upgrades",
+      "effectText": "Place two +1 power counters on one of your characters. Play an extra action."
+    },
+    "big_hero_6_version_2_0": {
+      "name": "Version 2.0",
+      "effectText": "Choose a base. Each of your characters there with a power counter gains +2 power until the end of the turn."
+    },
+    "big_hero_6_yokai": {
+      "name": "Yokai",
+      "effectText": "Play on a base. Ongoing: Characters here without power counters have -1 power. Special: After this base scores, you may move one +1 power counter from each of your characters here to another character."
+    },
+    "frozen_snowgie": {
+      "name": "Snowgie",
+      "abilityText": "Choose a character here. It gains +1 power until the end of the turn."
+    },
+    "frozen_marshmallow": {
+      "name": "Marshmallow",
+      "abilityText": "Ongoing: Other players' characters here have -1 power."
+    },
+    "frozen_olaf": {
+      "name": "Olaf",
+      "abilityText": "Move one of your characters here to another base. Draw a card."
+    },
+    "frozen_sven": {
+      "name": "Sven",
+      "abilityText": "You may place a character of power 4 or less from your discard pile into your hand."
+    },
+    "frozen_anna": {
+      "name": "Anna",
+      "abilityText": "Ongoing: If Kristoff is here, this character is not affected by other players' cards."
+    },
+    "frozen_kristoff": {
+      "name": "Kristoff",
+      "abilityText": "Ongoing: If Anna is here, this character has +2 power."
+    },
+    "frozen_elsa": {
+      "name": "Elsa",
+      "abilityText": "Talent: Choose a base. Each other player's character there has -1 power until the end of the turn."
+    },
+    "frozen_act_of_true_love": {
+      "name": "Act of True Love",
+      "effectText": "Choose one of your characters. It is not affected by other players' cards until the end of the turn. Draw a card."
+    },
+    "frozen_big_summer_blowout": {
+      "name": "Big Summer Blowout",
+      "effectText": "Choose a base. Draw a card for each of your characters there."
+    },
+    "frozen_do_you_want_to_build_a_snowman": {
+      "name": "Do You Want to Build a Snowman?",
+      "effectText": "Search your deck and/or discard pile for up to two Snowgies, reveal them, and place them into your hand. Shuffle your deck."
+    },
+    "frozen_frozen_port": {
+      "name": "Frozen Port",
+      "effectText": "Play on a base. Ongoing: Other players cannot move characters to or from here."
+    },
+    "frozen_hans_westergaard": {
+      "name": "Hans Westergaard",
+      "effectText": "Choose a base. Destroy a character there of power 3 or less."
+    },
+    "frozen_let_it_go": {
+      "name": "Let It Go",
+      "effectText": "Return one of your characters to your hand. Play an extra action."
+    },
+    "frozen_lock_the_gates": {
+      "name": "Lock the Gates",
+      "effectText": "Play on a base. Ongoing: Other players cannot play characters of power 3 or less here."
+    },
+    "frozen_reindeers_are_better_than_people": {
+      "name": "Reindeers Are Better Than People",
+      "effectText": "Choose one of your characters. It gains +2 power until the end of the turn. If Sven is in play, it gains +4 power instead."
+    },
+    "lion_king_lion_cub": {
+      "name": "Lion Cub",
+      "abilityText": "Special: When this card goes to the discard pile from a base, search your deck for a character of power 4 or less, reveal it, and place it into your hand. Shuffle your deck."
+    },
+    "lion_king_rafiki": {
+      "name": "Rafiki",
+      "abilityText": "Place a character of power 2 or less from your discard pile into your hand."
+    },
+    "lion_king_timon_and_pumbaa": {
+      "name": "Timon and Pumbaa",
+      "abilityText": "Discard cards from the top of your deck until you discard Hakuna Matata. Place it into your hand and put the other discarded cards into your discard pile."
+    },
+    "lion_king_zazu": {
+      "name": "Zazu",
+      "abilityText": "Choose another character here. It gains +2 power until the end of the turn. If Mufasa is in your discard pile, draw a card instead."
+    },
+    "lion_king_nala": {
+      "name": "Nala",
+      "abilityText": "If Mufasa is in your discard pile, you may place a +1 power counter on this character."
+    },
+    "lion_king_simba": {
+      "name": "Simba",
+      "abilityText": "If Mufasa is in your discard pile, draw a card and place a +1 power counter on this character."
+    },
+    "lion_king_mufasa": {
+      "name": "Mufasa",
+      "abilityText": "Special: When this card goes to the discard pile from a base, place two +1 power counters on one of your characters."
+    },
+    "lion_king_circle_of_life": {
+      "name": "Circle of Life",
+      "effectText": "Play on a character. Ongoing: After that character goes to the discard pile from a base, you may play a character of power 3 or less as an extra character."
+    },
+    "lion_king_hakuna_matata": {
+      "name": "Hakuna Matata",
+      "effectText": "Draw two cards. If Timon and Pumbaa is in your discard pile, you may place it into your hand."
+    },
+    "lion_king_he_lives_in_you": {
+      "name": "He Lives in You",
+      "effectText": "Play on a base. Ongoing: If Mufasa is in your discard pile, you gain +2 power here; otherwise you gain +1 power here."
+    },
+    "lion_king_hyenas_den": {
+      "name": "Hyena's Den",
+      "effectText": "Play on a base. Ongoing: If Mufasa is in your discard pile, you gain +2 power here. Special: After this base scores, if Mufasa is in your discard pile, you may move one of your characters from here to another base."
+    },
+    "lion_king_just_cant_wait_to_be_king": {
+      "name": "Just Can't Wait to Be King",
+      "effectText": "Place two +1 power counters on one of your characters. If Mufasa is in your discard pile, place four counters instead."
+    },
+    "lion_king_scar": {
+      "name": "Scar",
+      "effectText": "Destroy another player's character of power 5 or less, or destroy one of your characters to draw cards."
+    },
+    "lion_king_the_hyenas": {
+      "name": "The Hyenas",
+      "effectText": "Destroy a character of power 3 or less. If Mufasa is in your discard pile, draw a card, then you may play an extra action."
+    },
+    "lion_king_wildebeest_stampede": {
+      "name": "Wildebeest Stampede",
+      "effectText": "Destroy one of your characters. Search your deck for a character, reveal it, shuffle, then play it as an extra character."
+    },
+    "mulan_cri_kee": {
+      "name": "Cri-Kee",
+      "abilityText": "If you have another character here, you may play a character of power 3 or less as an extra character."
+    },
+    "mulan_mushu": {
+      "name": "Mushu",
+      "abilityText": "You may place a +1 power counter on another character here."
+    },
+    "mulan_chien_po": {
+      "name": "Chien Po",
+      "abilityText": "Ongoing: Your characters here are not affected by other players' cards. Once per turn after you place a +1 power counter here, draw a card."
+    },
+    "mulan_ling": {
+      "name": "Ling",
+      "abilityText": "You may play a character of power 2 or less here as an extra character. Once per turn after you place a +1 power counter here, draw a card."
+    },
+    "mulan_yao": {
+      "name": "Yao",
+      "abilityText": "You may destroy a character here of power 2 or less. Once per turn after you place a +1 power counter here, draw a card."
+    },
+    "mulan_li_shang": {
+      "name": "Li Shang",
+      "abilityText": "Place a +1 power counter on another of your characters here."
+    },
+    "mulan_mulan": {
+      "name": "Mulan",
+      "abilityText": "If you placed a +1 power counter this turn, you may play an extra action or draw a card."
+    },
+    "mulan_avalanche": {
+      "name": "Avalanche",
+      "effectText": "Choose a base. Discard a card to place all characters there of power 3 or less into their owners' discard piles."
+    },
+    "mulan_be_a_man": {
+      "name": "Be a Man",
+      "effectText": "Play on a base. Place a +1 power counter on up to two characters here."
+    },
+    "mulan_call_up_new_recruits": {
+      "name": "Call Up New Recruits",
+      "effectText": "Play a character of power 4 or less as an extra character, or draw two cards."
+    },
+    "mulan_dragon_cannon": {
+      "name": "Dragon Cannon",
+      "effectText": "Destroy a character of power 3 or less."
+    },
+    "mulan_family_sword": {
+      "name": "Family Sword",
+      "effectText": "Play on one of your characters. Ongoing: That character has +3 power."
+    },
+    "mulan_group_training": {
+      "name": "Group Training",
+      "effectText": "Place a +1 power counter on each of your characters."
+    },
+    "mulan_prepare_to_fight": {
+      "name": "Prepare to Fight",
+      "effectText": "Place two +1 power counters on one of your characters. Draw a card."
+    },
+    "mulan_shan_yu": {
+      "name": "Shan Yu",
+      "effectText": "Special: Before a base scores, destroy a character there whose power is less than or equal to the power of one of your characters there."
+    },
+    "base_sfit_robotics_lab": {
+      "name": "SFIT Robotics Lab",
+      "abilityText": "After one of your characters here gains a power counter, draw a card."
+    },
+    "base_krei_tech": {
+      "name": "Krei Tech",
+      "abilityText": "Each character here with a power counter has +1 power."
+    },
+    "base_ice_palace": {
+      "name": "Ice Palace",
+      "abilityText": "Other players' characters here have -1 power."
+    },
+    "base_arendelle": {
+      "name": "Arendelle",
+      "abilityText": "The player with the most characters here gains 1 extra VP."
+    },
+    "base_jungle_paradise": {
+      "name": "Jungle Paradise",
+      "abilityText": "After one of your characters goes from here to the discard pile, you may place a +1 power counter on one of your characters."
+    },
+    "base_pride_rock": {
+      "name": "Pride Rock",
+      "abilityText": "If Mufasa is in your discard pile, you gain +2 power here."
+    },
+    "base_training_camp": {
+      "name": "Training Camp",
+      "abilityText": "After the first time you place a +1 power counter here each turn, draw a card."
+    },
+    "base_forbidden_city": {
+      "name": "Forbidden City",
+      "abilityText": "Your characters here with +1 power counters are not affected by other players' cards."
     }
   },
   "debug": {

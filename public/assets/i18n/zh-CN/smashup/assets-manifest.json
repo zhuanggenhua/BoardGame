@@ -975,6 +975,42 @@
           "mime": "image/png"
         }
       }
+    },
+    "cards/compressed/disney_four_factions": {
+      "variants": {
+        "webp": {
+          "sha256": "d40f52dcbb015bfa2cee1a657d6fd8549f2e8b1640acb5355b5b8abe2c34cd3c",
+          "bytes": 8103102,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/disney_four_factions": {
+      "variants": {
+        "png": {
+          "sha256": "4e28237e91b60a3a4faa48aa57b6c0404574cdd372017fa5104781219e1216b0",
+          "bytes": 41387810,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/compressed/disney_four_faction_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/disney_four_faction_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
     }
   }
 }

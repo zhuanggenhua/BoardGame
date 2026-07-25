@@ -68,6 +68,7 @@ import { registerAnansiTalesAbilities } from './anansi_tales';
 import { registerGrimmsFairyTalesAbilities, registerGrimmsFairyTalesInteractionHandlers } from './grimms_fairy_tales';
 import { registerRussianFairyTalesAbilities, registerRussianFairyTalesInteractionHandlers } from './russian_fairy_tales';
 import { registerAncientIncasAbilities, registerAncientIncasInteractionHandlers } from './ancient_incas';
+import { registerDisneyFourFactionsAbilities } from './disney_four_factions';
 import { registerAladdinAbilities } from './aladdin';
 import { registerBeautyAndTheBeastAbilities } from './beauty_and_the_beast';
 import { registerNightmareBeforeChristmasAbilities } from './nightmare_before_christmas';
@@ -214,6 +215,7 @@ export function initAllAbilities(): void {
     registerRussianFairyTalesInteractionHandlers();
     registerAncientIncasAbilities();
     registerAncientIncasInteractionHandlers();
+    registerDisneyFourFactionsAbilities();
     registerAladdinAbilities();
     registerBeautyAndTheBeastAbilities();
     registerNightmareBeforeChristmasAbilities();

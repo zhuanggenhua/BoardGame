@@ -71,6 +71,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.RUSSIAN_FAIRY_TALES_POD_CARDS, kind: 'card', image: 'smashup/cards/russian_fairy_tales_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.ANANSI_TALES_POD_CARDS, kind: 'card', image: 'smashup/cards/anansi_tales_pod', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.DISNEY_CARDS, kind: 'card', image: 'smashup/cards/disney', grid: { rows: 6, cols: 10 } },
+    { id: SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_CARDS, kind: 'card', image: 'smashup/cards/disney_four_factions', grid: { rows: 6, cols: 10 } },
 
     { id: SMASHUP_ATLAS_IDS.BASE1, kind: 'base', image: 'smashup/base/base1', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE2, kind: 'base', image: 'smashup/base/base2', grid: { rows: 2, cols: 4 } },
@@ -91,6 +92,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_BASES, kind: 'base', image: 'smashup/base/huluwawa_bases', grid: { rows: 1, cols: 2 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_BASES, kind: 'base', image: 'smashup/base/paladin_bases', grid: { rows: 1, cols: 2 } },
     { id: SMASHUP_ATLAS_IDS.DISNEY_BASES, kind: 'base', image: 'smashup/base/disney_bases', grid: { rows: 4, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_BASES, kind: 'base', image: 'smashup/base/disney_four_faction_bases', grid: { rows: 4, cols: 4 } },
 ];
 
 const atlasById = new Map(SMASHUP_ATLAS_DEFINITIONS.map((atlas) => [atlas.id, atlas] as const));

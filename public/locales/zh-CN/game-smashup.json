@@ -1982,6 +1982,22 @@
     "wreck_it_ralph": {
       "name": "无敌破坏王",
       "description": "用基地修正牌改写基地、移动角色并破坏场面，围绕基地控制和修正牌循环。"
+    },
+    "big_hero_6": {
+      "name": "超能陆战队",
+      "description": "用微型机器群、+1 力量标记和科技装备强化团队，在关键基地形成协同爆发。"
+    },
+    "frozen": {
+      "name": "冰雪奇缘",
+      "description": "通过冻结、保护和伙伴联动掌控基地，让冰雪魔法改变计分节奏。"
+    },
+    "lion_king": {
+      "name": "狮子王",
+      "description": "围绕弃牌堆中的木法沙、+1 力量标记和传承效果，让荣耀石上的家族羁绊不断回响。"
+    },
+    "mulan": {
+      "name": "花木兰",
+      "description": "用训练、+1 力量标记和战场纪律保护队伍，再以单于等计分窗口改变战局。"
     }
   },
   "tutorial": {
@@ -10017,6 +10033,278 @@
     "base_the_power_strip": {
       "name": "电源插排",
       "abilityText": "你的回合中，你可以将你的一个角色移入或移出此基地。"
+    },
+    "big_hero_6_microbot_swarm": {
+      "name": "微型机器群",
+      "abilityText": "将一张微型机器群从你的弃牌堆置入你的手牌。天赋：在此牌上放置一枚 +1 力量标记。"
+    },
+    "big_hero_6_baymax": {
+      "name": "大白",
+      "abilityText": "持续：你在这里的其他角色不能被其他玩家的牌影响。特殊：这个基地计分后，如果此角色拥有力量标记，移动你在这里的另一个角色到另一个基地。"
+    },
+    "big_hero_6_fred_frederickson_iv": {
+      "name": "弗雷德IV世",
+      "abilityText": "天赋：抽 1 张牌。然后如果此角色拥有任意力量标记，你可以令这里另一个角色获得 -2 力量，直到你的下个回合开始。"
+    },
+    "big_hero_6_go_go_tomago": {
+      "name": "神行御姐",
+      "abilityText": "天赋：将此角色移动到另一个基地。如果此角色拥有力量标记，你可以同时将你在这里的另一个角色移动到同一基地。"
+    },
+    "big_hero_6_hiro_hamada": {
+      "name": "小宏",
+      "abilityText": "天赋：在你在这里的一个角色上放置一枚 +1 力量标记，或将任意数量的力量标记从你的一个角色移动到另一个角色。"
+    },
+    "big_hero_6_honey_lemon": {
+      "name": "哈妮柠檬",
+      "abilityText": "天赋：摧毁这里的一个基地行动或角色装备。如果此角色拥有任意力量标记，你可以改为打出一个额外行动。"
+    },
+    "big_hero_6_wasabi": {
+      "name": "芥末无疆",
+      "abilityText": "天赋：直到回合结束，此角色获得 +1 力量；或其每有一枚 +1 力量标记便获得 +1 力量，最多 +5。"
+    },
+    "big_hero_6_control_mask": {
+      "name": "控制面具",
+      "effectText": "对一个不是微型机器群的角色打出。搜索你的牌库寻找一张微型机器群，展示它并将其置入手牌，然后洗牌。天赋：将一张微型机器群作为额外角色打出，或在这里与另一个基地之间移动任意数量的微型机器群。"
+    },
+    "big_hero_6_control_the_swarm": {
+      "name": "控制机器群",
+      "effectText": "在你每个没有力量标记的角色上放置一枚 +1 力量标记，或在你的角色之间移动任意数量的力量标记。"
+    },
+    "big_hero_6_microbot_maker": {
+      "name": "微型机器制造者",
+      "effectText": "对一个基地打出。在你在这里的每个角色上放置一枚 +1 力量标记。天赋：在你在这里的一个角色上放置一枚 +1 力量标记。"
+    },
+    "big_hero_6_new_student": {
+      "name": "新来的学生",
+      "effectText": "打出一个力量 3 或更低的角色作为额外角色，然后在其上放置一枚 +1 力量标记。"
+    },
+    "big_hero_6_team_effort": {
+      "name": "团队的努力",
+      "effectText": "选择一个基地。你在那里每有一个拥有力量标记的角色，便抽 1 张牌。"
+    },
+    "big_hero_6_upgrades": {
+      "name": "升级",
+      "effectText": "在你的一个角色上放置两枚 +1 力量标记。打出一个额外行动。"
+    },
+    "big_hero_6_version_2_0": {
+      "name": "版本2.0",
+      "effectText": "选择一个基地。你在那里每个拥有力量标记的角色直到回合结束获得 +2 力量。"
+    },
+    "big_hero_6_yokai": {
+      "name": "幽灵",
+      "effectText": "对一个基地打出。持续：这里没有力量标记的角色获得 -1 力量。特殊：这个基地计分后，你可以从这里每个你的角色上移动一枚 +1 力量标记到另一个角色上。"
+    },
+    "frozen_snowgie": {
+      "name": "迷你雪人",
+      "abilityText": "选择这里的一个角色。该角色直到回合结束获得 +1 力量。"
+    },
+    "frozen_marshmallow": {
+      "name": "棉花糖",
+      "abilityText": "持续：这里的其他玩家角色获得 -1 力量。"
+    },
+    "frozen_olaf": {
+      "name": "雪宝",
+      "abilityText": "将一个你在这里的角色移动到另一个基地。抽 1 张牌。"
+    },
+    "frozen_sven": {
+      "name": "斯文",
+      "abilityText": "你可以从你的弃牌堆将一张力量 4 或更低的角色置入手牌。"
+    },
+    "frozen_anna": {
+      "name": "安娜",
+      "abilityText": "持续：如果克里斯托弗在这里，此角色不能被其他玩家的牌影响。"
+    },
+    "frozen_kristoff": {
+      "name": "克里斯托弗",
+      "abilityText": "持续：如果安娜在这里，此角色获得 +2 力量。"
+    },
+    "frozen_elsa": {
+      "name": "艾莎",
+      "abilityText": "天赋：选择一个基地。那里每个其他玩家的角色直到回合结束获得 -1 力量。"
+    },
+    "frozen_act_of_true_love": {
+      "name": "真爱的行为",
+      "effectText": "选择你的一个角色。它直到回合结束不能被其他玩家的牌影响。抽 1 张牌。"
+    },
+    "frozen_big_summer_blowout": {
+      "name": "夏天大盛宴",
+      "effectText": "选择一个基地。你在那里每有一个角色，便抽 1 张牌。"
+    },
+    "frozen_do_you_want_to_build_a_snowman": {
+      "name": "你想和我堆个雪人吗？",
+      "effectText": "从你的牌库和/或弃牌堆中寻找至多两张迷你雪人，将它们展示并置入手牌。然后洗牌。"
+    },
+    "frozen_frozen_port": {
+      "name": "冻结的港口",
+      "effectText": "对一个基地打出。持续：其他玩家不能将角色移入或移出这里。"
+    },
+    "frozen_hans_westergaard": {
+      "name": "汉斯·韦斯特加德",
+      "effectText": "选择一个基地。摧毁那里一个力量 3 或更低的角色。"
+    },
+    "frozen_let_it_go": {
+      "name": "放手吧",
+      "effectText": "将你的一个角色返回手牌。打出一个额外行动。"
+    },
+    "frozen_lock_the_gates": {
+      "name": "锁上大门",
+      "effectText": "对一个基地打出。持续：其他玩家不能在这里打出力量 3 或更低的角色。"
+    },
+    "frozen_reindeers_are_better_than_people": {
+      "name": "驯鹿的心地比人好",
+      "effectText": "选择你的一个角色。它直到回合结束获得 +2 力量；如果斯文在场，改为 +4 力量。"
+    },
+    "lion_king_lion_cub": {
+      "name": "幼狮",
+      "abilityText": "特殊：当此牌从基地进入弃牌堆时，从你的牌库搜寻一张力量 4 或更低的角色，将其展示并置入手牌。然后洗牌。"
+    },
+    "lion_king_rafiki": {
+      "name": "拉飞奇",
+      "abilityText": "从你的弃牌堆将一张力量 2 或更低的角色置入手牌。"
+    },
+    "lion_king_timon_and_pumbaa": {
+      "name": "丁满和彭彭",
+      "abilityText": "从你的牌库顶弃牌，直到弃掉一张哈库拉·马塔塔。将其置入手牌，并将其余弃掉的牌置入弃牌堆。"
+    },
+    "lion_king_zazu": {
+      "name": "沙祖",
+      "abilityText": "选择这里另一个角色。它直到回合结束获得 +2 力量。如果木法沙在你的弃牌堆，改为抽 1 张牌。"
+    },
+    "lion_king_nala": {
+      "name": "娜娜",
+      "abilityText": "如果木法沙在你的弃牌堆，你可以在此角色上放置一枚 +1 力量标记。"
+    },
+    "lion_king_simba": {
+      "name": "辛巴",
+      "abilityText": "如果木法沙在你的弃牌堆，抽 1 张牌并在此角色上放置一枚 +1 力量标记。"
+    },
+    "lion_king_mufasa": {
+      "name": "木法沙",
+      "abilityText": "特殊：当此牌从基地进入弃牌堆时，在你的一个角色上放置两枚 +1 力量标记。"
+    },
+    "lion_king_circle_of_life": {
+      "name": "生命的循环",
+      "effectText": "对一个角色打出。持续：当该角色从基地进入弃牌堆后，你可以打出一张力量 3 或更低的角色作为额外角色。"
+    },
+    "lion_king_hakuna_matata": {
+      "name": "哈库拉·马塔塔",
+      "effectText": "抽 2 张牌。如果丁满和彭彭在你的弃牌堆，你可以将其置入手牌。"
+    },
+    "lion_king_he_lives_in_you": {
+      "name": "他活在你心中",
+      "effectText": "对一个基地打出。持续：如果木法沙在你的弃牌堆，你在这里获得 +2 力量；否则你在这里获得 +1 力量。"
+    },
+    "lion_king_hyenas_den": {
+      "name": "鬣狗巢穴",
+      "effectText": "对一个基地打出。持续：如果木法沙在你的弃牌堆，你在这里获得 +2 力量。特殊：这个基地计分后，如果木法沙在你的弃牌堆，你可以将你的一个角色从这里移动到另一个基地。"
+    },
+    "lion_king_just_cant_wait_to_be_king": {
+      "name": "迫不及待想成为国王",
+      "effectText": "在你的一个角色上放置两枚 +1 力量标记。如果木法沙在你的弃牌堆，改为放置四枚。"
+    },
+    "lion_king_scar": {
+      "name": "刀疤",
+      "effectText": "摧毁另一位玩家一个力量 5 或更低的角色，或摧毁你的一个角色以抽牌。"
+    },
+    "lion_king_the_hyenas": {
+      "name": "鬣狗",
+      "effectText": "摧毁一个力量 3 或更低的角色。如果木法沙在你的弃牌堆，抽 1 张牌，然后你可以打出一个额外行动。"
+    },
+    "lion_king_wildebeest_stampede": {
+      "name": "牛羚踩踏",
+      "effectText": "摧毁你的一个角色。从你的牌库搜寻一个角色，展示它，洗牌，然后将其作为额外角色打出。"
+    },
+    "mulan_cri_kee": {
+      "name": "克里基",
+      "abilityText": "如果这里有另一个你的角色，你可以打出一张力量 3 或更低的角色作为额外角色。"
+    },
+    "mulan_mushu": {
+      "name": "木须",
+      "abilityText": "你可以在这里另一个角色上放置一枚 +1 力量标记。"
+    },
+    "mulan_chien_po": {
+      "name": "金宝",
+      "abilityText": "持续：你的这里角色不能被其他玩家的牌影响。每回合一次，当你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "mulan_ling": {
+      "name": "宁",
+      "abilityText": "你可以将一张力量 2 或更低的角色作为额外角色打到这里。每回合一次，当你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "mulan_yao": {
+      "name": "尧",
+      "abilityText": "你可以摧毁这里一个力量 2 或更低的角色。每回合一次，当你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "mulan_li_shang": {
+      "name": "李翔",
+      "abilityText": "在这里另一个你的角色上放置一枚 +1 力量标记。"
+    },
+    "mulan_mulan": {
+      "name": "木兰",
+      "abilityText": "如果你本回合放置过 +1 力量标记，你可以打出一个额外行动或抽 1 张牌。"
+    },
+    "mulan_avalanche": {
+      "name": "雪崩",
+      "effectText": "选择一个基地。弃 1 张牌，将那里所有力量 3 或更低的角色置入其拥有者的弃牌堆。"
+    },
+    "mulan_be_a_man": {
+      "name": "成为一个男人",
+      "effectText": "对一个基地打出。在这里至多两个角色上各放置一枚 +1 力量标记。"
+    },
+    "mulan_call_up_new_recruits": {
+      "name": "招收新兵",
+      "effectText": "打出一张力量 4 或更低的角色作为额外角色，或抽 2 张牌。"
+    },
+    "mulan_dragon_cannon": {
+      "name": "飞龙巨炮",
+      "effectText": "摧毁一个力量 3 或更低的角色。"
+    },
+    "mulan_family_sword": {
+      "name": "家族之剑",
+      "effectText": "对你的一个角色打出。持续：该角色获得 +3 力量。"
+    },
+    "mulan_group_training": {
+      "name": "集体训练",
+      "effectText": "在你的每个角色上放置一枚 +1 力量标记。"
+    },
+    "mulan_prepare_to_fight": {
+      "name": "准备战斗",
+      "effectText": "在你的一个角色上放置两枚 +1 力量标记。抽 1 张牌。"
+    },
+    "mulan_shan_yu": {
+      "name": "单于",
+      "effectText": "特殊：基地计分前，摧毁那里一个力量不高于你在那里一个角色力量的角色。"
+    },
+    "base_sfit_robotics_lab": {
+      "name": "旧京山理工机器人实验室",
+      "abilityText": "当你在这里的角色获得力量标记后，抽 1 张牌。"
+    },
+    "base_krei_tech": {
+      "name": "克雷科技",
+      "abilityText": "这里每个拥有力量标记的角色都获得 +1 力量。"
+    },
+    "base_ice_palace": {
+      "name": "冰宫",
+      "abilityText": "其他玩家在这里的角色获得 -1 力量。"
+    },
+    "base_arendelle": {
+      "name": "阿伦黛尔",
+      "abilityText": "在这里拥有最多角色的玩家额外获得 1 VP。"
+    },
+    "base_jungle_paradise": {
+      "name": "丛林乐园",
+      "abilityText": "当你的一个角色从这里进入弃牌堆后，你可以在你的一个角色上放置一枚 +1 力量标记。"
+    },
+    "base_pride_rock": {
+      "name": "荣耀石",
+      "abilityText": "如果木法沙在你的弃牌堆，你在这里获得 +2 力量。"
+    },
+    "base_training_camp": {
+      "name": "训练营",
+      "abilityText": "每回合第一次你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "base_forbidden_city": {
+      "name": "紫禁城",
+      "abilityText": "这里你的拥有 +1 力量标记的角色不能被其他玩家的牌影响。"
     }
   },
   "debug": {
