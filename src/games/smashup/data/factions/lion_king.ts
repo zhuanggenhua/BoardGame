@@ -3,7 +3,7 @@ import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const FACTION = SMASHUP_FACTION_IDS.LION_KING;
 const CARD_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_CARDS;
-const BASE_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_BASES;
+const BASE_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_BASES;
 
 export const LION_KING_MINIONS: MinionCardDef[] = [
     { id: 'lion_king_lion_cub', type: 'minion', name: '幼狮', nameEn: 'Lion Cub', faction: FACTION, power: 2, abilityTags: ['special'], count: 4, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 30 } },

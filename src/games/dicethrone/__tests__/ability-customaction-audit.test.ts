@@ -278,8 +278,7 @@ describe('CustomAction 覆盖完整性审计', () => {
         'gunslinger-card-high-noon-resolve',
         'samurai-card-you-should-be-ashamed-resolve',
         'artificer-synth-inflict-nanobomb-selected',
-        // 战术家：战争贩子结算中临时追加进攻投掷；地毯式轰炸选目标后回调伤害结算
-        'zhanshujia-war-monger-extra-offensive-roll',
+        // 战术家：地毯式轰炸选目标后回调伤害结算
         'zhanshujia-carpet-bombing-target-damage',
     ]);
 

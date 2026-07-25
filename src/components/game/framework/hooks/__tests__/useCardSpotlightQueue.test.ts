@@ -203,4 +203,61 @@ describe('useCardSpotlightQueue', () => {
             ]);
         });
     });
+
+    it('resetting an already empty queue keeps the same state reference', async () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                EventStreamRollbackContext.Provider,
+                { value: { watermark: null, seq: 0, reconcileSeq: 0 } satisfies EventStreamRollbackValue },
+                children,
+            );
+
+        const newerEntry = createEntry(5, {
+            type: 'ACTION_PLAYED',
+            payload: {
+                playerId: '1',
+                defId: 'alien_probe',
+            },
+            timestamp: 5000,
+        } as GameEvent);
+        const restoredOlderEntry = createEntry(4, {
+            type: 'ACTION_PLAYED',
+            payload: {
+                playerId: '1',
+                defId: 'alien_abduction',
+            },
+            timestamp: 4000,
+        } as GameEvent);
+
+        let renderCount = 0;
+        const { result, rerender } = renderHook(
+            ({ entries }: { entries: EventStreamEntry[] }) => {
+                renderCount += 1;
+                const spotlight = useCardSpotlightQueue<{ defId: string }>({
+                    entries,
+                    triggerEventTypes: ['ACTION_PLAYED'],
+                    extractCard: (event) => {
+                        const payload = event.payload as { playerId?: string; defId?: string };
+                        return payload.playerId && payload.defId
+                            ? { playerId: payload.playerId, cardData: { defId: payload.defId } }
+                            : null;
+                    },
+                });
+                return { ...spotlight, renderCount };
+            },
+            {
+                initialProps: { entries: [newerEntry] },
+                wrapper,
+            },
+        );
+
+        await act(async () => {});
+        const renderCountBeforeReset = result.current.renderCount;
+
+        rerender({ entries: [restoredOlderEntry] });
+        await act(async () => {});
+
+        expect(result.current.queue).toEqual([]);
+        expect(result.current.renderCount).toBe(renderCountBeforeReset + 1);
+    });
 });

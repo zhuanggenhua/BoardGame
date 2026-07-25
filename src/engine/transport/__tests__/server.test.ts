@@ -23731,6 +23731,156 @@ describe('GameTransportServer（离座与重连）', () => {
         }));
     });
 
+    it('Dice Throne watchdog 在 AI active 的 offensiveRoll 只剩推进阶段时，不应误报 blocker_persisted', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const random = createQueuedRandom([2, 2, 2, 3, 6, 6, 6, 1, 1]);
+        const state = createHeroMatchup('paladin', 'barbarian')(['0', '1'], random);
+
+        state.sys.phase = 'offensiveRoll';
+        state.sys.turnNumber = 0;
+        state.core.activePlayerId = '1';
+        state.core.currentPlayerIndex = 1;
+        state.core.rollCount = 1;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = null;
+        state.core.activatingAbilityId = undefined;
+        state.core.players['1'].hand = [];
+
+        await storage.createMatch('match-watchdog-dicethrone-offensive-advance-legal-only', {
+            initialState: {
+                G: state,
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'dicethrone',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'baseline' },
+                },
+            }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch');
+        resolutionSpy
+            .mockResolvedValueOnce({
+                kind: 'action',
+                resolution: {
+                    playerId: '1',
+                    attemptKey: 'watchdog-dicethrone-offensive-advance-phase',
+                    source: 'local-ai',
+                    action: {
+                        actionId: 'phase:advance:offensiveRoll:main2',
+                        kind: 'advance-phase',
+                        label: '推进到 main2',
+                        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                    },
+                },
+            })
+            .mockResolvedValue({
+                kind: 'idle',
+                idleReason: 'no-action',
+            });
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [diceThroneEngineConfig],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+                onlineAiRecoveryFailureReportThreshold: 1,
+                onlineAiFeedbackReporter: feedbackReporter,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                runOnlineAiRecoverySequence: (
+                    match: any,
+                    tracker: any,
+                    candidate: any,
+                    progressMarkerBeforeRecovery: string,
+                    seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai'; policyId?: string }>,
+                ) => Promise<void>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                ) => Promise<boolean>;
+            };
+
+            const match = await serverInternal.loadMatch('match-watchdog-dicethrone-offensive-advance-legal-only');
+            const candidate = {
+                playerId: '1',
+                reason: 'active-turn-legal-only',
+                legalActionOnly: true,
+                fingerprintHint: 'active-turn-legal-only:1:offensiveRoll',
+                resolution: {
+                    playerId: '1',
+                    attemptKey: 'force-end-turn:1:active-turn-legal-only:1:offensiveRoll',
+                    source: 'local-ai',
+                    action: {
+                        actionId: 'force-end-turn:active-turn-legal-only:1:offensiveRoll',
+                        kind: 'force-end-turn',
+                        label: '服务端代 AI 执行合法动作',
+                        commands: [],
+                    },
+                },
+            };
+            const progressMarker = buildAiProgressMarker(match.state, {
+                engineConfig: diceThroneEngineConfig,
+                gameId: 'dicethrone',
+            });
+            const tracker = {
+                key: `1:active-turn-legal-only:${(server as any).buildOnlineAiRecoveryFingerprint(
+                    match,
+                    candidate,
+                    progressMarker,
+                )}`,
+                firstSeenAt: Date.now(),
+                autoSubmittedAt: Date.now(),
+                lastReportedFailureReason: null,
+                failureCount: 0,
+            };
+            (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+            await serverInternal.runOnlineAiRecoverySequence(
+                match,
+                tracker,
+                candidate,
+                progressMarker,
+                {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'baseline' },
+                },
+            );
+
+            expect(executeSpy.mock.calls[0]?.[1]).toBe('1');
+            expect(executeSpy.mock.calls[0]?.[2]).toBe('ADVANCE_PHASE');
+            expect(match.state.sys.phase).not.toBe('offensiveRoll');
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-dicethrone-offensive-advance-legal-only',
+                playerId: '1',
+                incidentKind: 'force-end-turn-success',
+                status: 'resolved',
+            }));
+            expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-dicethrone-offensive-advance-legal-only',
+                incidentKind: 'force-end-turn-failed',
+                reason: expect.stringContaining('blocker_persisted'),
+            }));
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
     it('online AI watchdog 遇到同一 AI 的链式可见交互时，应在单次恢复序列内持续消费直到收口', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

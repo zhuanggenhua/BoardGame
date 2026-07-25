@@ -178,6 +178,91 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
   );
 }
 
+export function acknowledgePendingCardResolutions(core: BetrayalCore): BetrayalCore {
+  let nextCore = core;
+  let safety = 0;
+  while ((nextCore.pendingCardResolutionQueue ?? []).length > 0) {
+    if (safety >= 20) {
+      throw new Error("山屋测试夹具确认牌面队列超过安全上限");
+    }
+    const pendingResolution = nextCore.pendingCardResolutionQueue[0]!;
+    nextCore = applyBetrayalCommand(
+      nextCore,
+      BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+      pendingResolution.playerId,
+      { resolutionId: pendingResolution.id },
+    );
+    safety += 1;
+  }
+  return nextCore;
+}
+
+function findFixtureExplorer(
+  core: BetrayalCore,
+  playerId: string,
+): BetrayalCore["currentExplorer"] {
+  const explorer = [core.currentExplorer, ...core.otherExplorers].find(
+    (candidate) => candidate.playerId === playerId,
+  );
+  if (!explorer) {
+    throw new Error(`山屋测试夹具缺少玩家 ${playerId}`);
+  }
+  return explorer;
+}
+
+function lethalTraitsForPendingDamage(
+  core: BetrayalCore,
+  lethalTrait: BetrayalTraitKey = "might",
+): BetrayalTraitKey[] {
+  const pending = core.pendingDamageAllocation;
+  if (!pending) {
+    throw new Error("expected pending damage allocation");
+  }
+  const primaryTrait = pending.allowedTraits.includes(lethalTrait)
+    ? lethalTrait
+    : pending.allowedTraits[0];
+  if (!primaryTrait) {
+    throw new Error("pending damage allocation has no allowed traits");
+  }
+  const explorer = findFixtureExplorer(core, pending.playerId);
+  const orderedTraits = [
+    primaryTrait,
+    ...pending.allowedTraits.filter((trait) => trait !== primaryTrait),
+  ];
+  const traits: BetrayalTraitKey[] = [];
+  let remaining = pending.amount;
+  for (const trait of orderedTraits) {
+    if (remaining <= 0) {
+      break;
+    }
+    const track = explorer.traitTracks[trait];
+    const floorPosition = pending.allowSkull
+      ? track.skullPosition
+      : track.criticalPosition;
+    const assignableSteps = Math.max(0, track.position - floorPosition);
+    const take = Math.min(remaining, assignableSteps);
+    traits.push(...Array.from({ length: take }, () => trait));
+    remaining -= take;
+  }
+  return traits;
+}
+
+function resolvePendingDamageAllocation(
+  core: BetrayalCore,
+  lethalTrait: BetrayalTraitKey = "might",
+): BetrayalCore {
+  const pending = core.pendingDamageAllocation;
+  if (!pending) {
+    return core;
+  }
+  return applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+    pending.playerId,
+    { traits: lethalTraitsForPendingDamage(core, lethalTrait) },
+  );
+}
+
 export function setScenarioTestTurnMovement(
   core: BetrayalCore,
   amount: number,
@@ -322,6 +407,7 @@ export function createFirstScenarioHauntCore(
     100,
     hauntTriggerRandom,
   );
+  core = acknowledgePendingCardResolutions(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
 
   setScenarioTestTurnMovement(core, 6);
@@ -336,6 +422,7 @@ export function createFirstScenarioHauntCore(
     100,
     hauntTriggerRandom,
   );
+  core = acknowledgePendingCardResolutions(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
 
   setScenarioTestTurnMovement(core, 6);
@@ -356,6 +443,7 @@ export function createFirstScenarioHauntCore(
     100,
     hauntTriggerRandom,
   );
+  core = acknowledgePendingCardResolutions(core);
 
   setScenarioTestTurnMovement(core, 6);
   return core;
@@ -440,6 +528,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     100,
     hauntSuccessRandom,
   );
+  core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
   setScenarioTestTurnMovement(core, 6);
@@ -571,6 +660,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
     100,
     hauntProgressRandom,
   );
+  core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
   setScenarioTestTurnMovement(core, 6);
@@ -1036,6 +1126,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     100,
     traitorWinRandom,
   );
+  core = resolvePendingDamageAllocation(core);
 
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
@@ -1047,6 +1138,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
     100,
     traitorWinRandom,
   );
+  core = resolvePendingDamageAllocation(core);
 
   return core;
 }
@@ -1117,6 +1209,7 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
     100,
     traitorWinRandom,
   );
+  core = resolvePendingDamageAllocation(core);
 
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
@@ -1199,6 +1292,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
   );
+  core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   core = applyBetrayalCommand(
     core,
@@ -1245,6 +1339,7 @@ export function createJackSpiritMovementRollReadyCore(): BetrayalCore {
     100,
     createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1, 1, 1),
   );
+  core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
   return applyBetrayalCommand(
     core,

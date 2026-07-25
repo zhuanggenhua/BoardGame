@@ -3,7 +3,7 @@ import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const FACTION = SMASHUP_FACTION_IDS.BIG_HERO_6;
 const CARD_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_CARDS;
-const BASE_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_BASES;
+const BASE_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_BASES;
 
 export const BIG_HERO_6_MINIONS: MinionCardDef[] = [
     { id: 'big_hero_6_microbot_swarm', type: 'minion', name: '微型机器群', nameEn: 'Microbot Swarm', faction: FACTION, power: 2, abilityTags: ['onPlay', 'talent'], activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }], count: 4, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 0 } },

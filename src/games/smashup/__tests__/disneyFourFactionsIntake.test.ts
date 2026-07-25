@@ -137,7 +137,7 @@ function assertDisneyBasePreview(
 ): void {
     expect(def.previewRef).toEqual({
         type: 'atlas',
-        atlasId: SMASHUP_ATLAS_IDS.DISNEY_BASES,
+        atlasId: SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_BASES,
         index: expected.index,
     });
     expect(def.breakpoint).toBe(expected.breakpoint);
@@ -157,9 +157,9 @@ describe('SmashUp Disney 四派系 intake 静态合同', () => {
                 grid: { rows: 6, cols: 10 },
             },
             {
-                id: SMASHUP_ATLAS_IDS.DISNEY_BASES,
+                id: SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_BASES,
                 kind: 'base',
-                image: 'smashup/base/disney_bases',
+                image: 'smashup/base/disney_four_faction_bases',
                 grid: { rows: 4, cols: 4 },
             },
         ]));

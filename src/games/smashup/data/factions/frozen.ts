@@ -3,7 +3,7 @@ import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const FACTION = SMASHUP_FACTION_IDS.FROZEN;
 const CARD_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_CARDS;
-const BASE_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_BASES;
+const BASE_ATLAS = SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_BASES;
 
 export const FROZEN_MINIONS: MinionCardDef[] = [
     { id: 'frozen_snowgie', type: 'minion', name: '迷你雪人', nameEn: 'Snowgie', faction: FACTION, power: 2, abilityTags: ['onPlay'], count: 4, previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 15 } },

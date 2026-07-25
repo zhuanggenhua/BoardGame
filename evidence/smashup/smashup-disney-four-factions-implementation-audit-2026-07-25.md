@@ -71,8 +71,8 @@
 | --- | --- | --- | --- |
 | `public/assets/i18n/zh-CN/smashup/cards/disney_four_factions.png` | `4888 x 4096` | - | `passed` |
 | `public/assets/i18n/zh-CN/smashup/cards/compressed/disney_four_factions.webp` | - | `4888 x 4096` | `passed: not downsampled` |
-| `public/assets/i18n/zh-CN/smashup/base/disney_bases.webp` | `3840 x 2160` | - | `passed` |
-| `public/assets/i18n/zh-CN/smashup/base/compressed/disney_bases.webp` | - | `3840 x 2160` | `passed: not downsampled` |
+| `public/assets/i18n/zh-CN/smashup/base/disney_four_faction_bases.webp` | `3840 x 2160` | - | `passed` |
+| `public/assets/i18n/zh-CN/smashup/base/compressed/disney_four_faction_bases.webp` | - | `3840 x 2160` | `passed: not downsampled` |
 
 ## L2 / L3 代表性玩法证据
 
@@ -127,12 +127,12 @@
 命令：
 
 ```powershell
-node scripts/assets/upload-to-server.js --check --asset-prefix i18n/zh-CN/smashup/cards/compressed/disney_four_factions --asset-prefix i18n/zh-CN/smashup/base/compressed/disney_bases
+node scripts/assets/upload-to-server.js --check --asset-prefix i18n/zh-CN/smashup/cards/compressed/disney_four_factions --asset-prefix i18n/zh-CN/smashup/base/compressed/disney_four_faction_bases
 ```
 
 结果：`passed`，只命中 2 个对象：
 
-- `official/i18n/zh-CN/smashup/base/compressed/disney_bases.webp`，`1261136 bytes`，`md5=7ac1390a0dbf7d15ba9a2615ae24bbaa`
+- `official/i18n/zh-CN/smashup/base/compressed/disney_four_faction_bases.webp`，`1261136 bytes`，`md5=7ac1390a0dbf7d15ba9a2615ae24bbaa`
 - `official/i18n/zh-CN/smashup/cards/compressed/disney_four_factions.webp`，`8103102 bytes`，`md5=1c9bf55534a3e6a7bcbf13c2320df038`
 
 ### 实际上传
@@ -140,7 +140,7 @@ node scripts/assets/upload-to-server.js --check --asset-prefix i18n/zh-CN/smashu
 命令：
 
 ```powershell
-node scripts/assets/upload-to-server.js --asset-prefix i18n/zh-CN/smashup/cards/compressed/disney_four_factions --asset-prefix i18n/zh-CN/smashup/base/compressed/disney_bases
+node scripts/assets/upload-to-server.js --asset-prefix i18n/zh-CN/smashup/cards/compressed/disney_four_factions --asset-prefix i18n/zh-CN/smashup/base/compressed/disney_four_faction_bases
 ```
 
 结果：`blocked`，命令等待约 15 分钟后仍未返回，被超时中断。
@@ -155,7 +155,7 @@ node scripts/assets/upload-to-server.js --asset-prefix i18n/zh-CN/smashup/cards/
 | URL | HEAD 状态 |
 | --- | --- |
 | `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/disney_four_factions.webp` | `404 Not Found` |
-| `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/base/compressed/disney_bases.webp` | `404 Not Found` |
+| `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/base/compressed/disney_four_faction_bases.webp` | `404 Not Found` |
 
 ### SSH 阻塞归因
 
