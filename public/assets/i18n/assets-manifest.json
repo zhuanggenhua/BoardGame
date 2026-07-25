@@ -13452,6 +13452,78 @@
           "mime": "image/webp"
         }
       }
+    },
+    "en/smashup/cards/explorers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "82a3c99ebb7aa5a57c521607af09d9ea790a605f0a96de3a36b7947d13f683fa",
+          "bytes": 6223028,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/star_roamers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "285ab1ad04096c2616cabbd301b87c3d46467a1c9a1327ea01ceeab11a176305",
+          "bytes": 5711799,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/vigilantes_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fb88983da554fbef5e0308b43b25e40bb3c344d653b437ebe570529487e111c4",
+          "bytes": 7775772,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/luchadors_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a0c1df6b6c99f47df59e2eae7bbf6abd7f6755746c31ee8c0800c3a21a4775e4",
+          "bytes": 6191722,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/explorers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "b3fab24752d42c0c3892bedd7c0ee7398738b8cb4323fed6480df8944f9da033",
+          "bytes": 1734512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/star_roamers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "991dcb7f93c04f5c9306be0e362339373dbd62397027921d6ac077f8b6bbeee7",
+          "bytes": 1310110,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/vigilantes_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "8595ba2d8acf58a85665ccc5044b45323ee45c74aa80f509b169a6c6ced8065a",
+          "bytes": 1883692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/luchadors_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "34b381ec25a80a0903483711c728d5fa1ddd82abaec3885b0bf7e8112ef60561",
+          "bytes": 1606662,
+          "mime": "image/webp"
+        }
+      }
     }
   },
   "id": "i18n",
