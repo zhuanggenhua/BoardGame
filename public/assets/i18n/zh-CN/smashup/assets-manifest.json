@@ -831,6 +831,42 @@
           "mime": "image/webp"
         }
       }
+    },
+    "cards/compressed/marvel_villains_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "1b6b83736dbde9cd99a5f6268ad02ddae618e5d04147a7fb06a9c1fb6e167b24",
+          "bytes": 6320664,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/marvel_wave_one_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "f410e6bf194e873884a78fb097619e0997bf12c83e199b785d05f8a7f129099a",
+          "bytes": 6257536,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/marvel_villains_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
+          "bytes": 34711937,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/marvel_wave_one_pod": {
+      "variants": {
+        "png": {
+          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
+          "bytes": 35943625,
+          "mime": "image/png"
+        }
+      }
     }
   }
 }

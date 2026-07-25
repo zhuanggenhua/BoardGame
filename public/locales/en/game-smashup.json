@@ -1924,6 +1924,38 @@
     "luchadors": {
       "name": "Luchadors",
       "description": "Play Set-Up actions on enemy minions, then cash those setups in for draw, control, and scoring tricks."
+    },
+    "avengers_pod": {
+      "name": "Avengers (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Avengers."
+    },
+    "shield_pod": {
+      "name": "S.H.I.E.L.D. (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as S.H.I.E.L.D."
+    },
+    "spider_verse_pod": {
+      "name": "Spider-Verse (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Spider-Verse."
+    },
+    "ultimates_pod": {
+      "name": "Ultimates (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Ultimates."
+    },
+    "hydra_pod": {
+      "name": "Hydra (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Hydra."
+    },
+    "kree_pod": {
+      "name": "Kree (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Kree."
+    },
+    "masters_of_evil_pod": {
+      "name": "Masters of Evil (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Masters of Evil."
+    },
+    "sinister_six_pod": {
+      "name": "Sinister Six (POD)",
+      "description": "POD card-art edition with separate card and base identities and the same gameplay as Sinister Six."
     }
   },
   "tutorial": {
@@ -9035,6 +9067,454 @@
     "base_the_squared_circle": {
       "name": "The Squared Circle",
       "abilityText": "After the first time you play a minion here each turn, you may place a random action from your discard pile into your hand."
+    },
+    "avengers_black_widow_pod": {
+      "name": "Black Widow",
+      "abilityText": "You may destroy a character here of power 5 or less."
+    },
+    "avengers_captain_america_pod": {
+      "name": "Captain America",
+      "abilityText": "Talent: Each of your other characters here gains +1 power until the end of the turn."
+    },
+    "avengers_hawkeye_pod": {
+      "name": "Hawkeye",
+      "abilityText": "Draw three cards. Discard two cards."
+    },
+    "avengers_hulk_pod": {
+      "name": "Hulk",
+      "abilityText": "Talent: This character gains +2 power until the end of the turn."
+    },
+    "avengers_iron_man_pod": {
+      "name": "Iron Man",
+      "abilityText": "Talent: Move this character and up to one of your other characters from here to another base."
+    },
+    "avengers_thor_pod": {
+      "name": "Thor",
+      "abilityText": "Search your deck and/or discard pile for Mjolnir, reveal it, and draw it. If you searched your deck, shuffle it. Talent: Move Mjolnir from one character to another."
+    },
+    "avengers_assemble_pod": {
+      "name": "Avengers Assemble",
+      "abilityText": "Shuffle up to two characters from your discard pile into your deck.",
+      "effectText": "Shuffle up to two characters from your discard pile into your deck."
+    },
+    "avengers_caps_shield_pod": {
+      "name": "Cap's Shield",
+      "abilityText": "Character attachment. Ongoing: Your characters here are unaffected by other players' spells. If that character is Captain America, they each also gain +1 power.",
+      "effectText": "Character attachment. Ongoing: Your characters here are unaffected by other players' spells. If that character is Captain America, they each also gain +1 power."
+    },
+    "avengers_hawkeyes_arrows_pod": {
+      "name": "Hawkeye's Arrows",
+      "abilityText": "Reveal cards from the top of your deck until you reveal two spells. Draw one spell, then shuffle the rest into your deck. If Hawkeye is in play, you may play the drawn card as an extra spell.",
+      "effectText": "Reveal cards from the top of your deck until you reveal two spells. Draw one spell, then shuffle the rest into your deck. If Hawkeye is in play, you may play the drawn card as an extra spell."
+    },
+    "avengers_hulk_smash_pod": {
+      "name": "Hulk Smash",
+      "abilityText": "Choose a base. Destroy any number of base artifacts on that base. If Hulk is here, you may destroy this base and all attachments on it, then reveal the top card of the base deck to replace it. All characters remain on the new base.",
+      "effectText": "Choose a base. Destroy any number of base artifacts on that base. If Hulk is here, you may destroy this base and all attachments on it, then reveal the top card of the base deck to replace it. All characters remain on the new base."
+    },
+    "avengers_jarvis_pod": {
+      "name": "J.A.R.V.I.S.",
+      "abilityText": "Base artifact. Talent: Draw a card. Discard a card.",
+      "effectText": "Base artifact. Talent: Draw a card. Discard a card."
+    },
+    "avengers_mjolnir_pod": {
+      "name": "Mjolnir",
+      "abilityText": "Character attachment. Ongoing: If Mjolnir is attached to Thor, it has +2 power. Otherwise, it has -2 power.",
+      "effectText": "Character attachment. Ongoing: If Mjolnir is attached to Thor, it has +2 power. Otherwise, it has -2 power."
+    },
+    "avengers_modular_tech_pod": {
+      "name": "Modular Tech",
+      "abilityText": "Move one of your attachments from one character to another, or an artifact from one base to another. Play an extra spell.",
+      "effectText": "Move one of your attachments from one character to another, or an artifact from one base to another. Play an extra spell."
+    },
+    "avengers_repulsor_boots_pod": {
+      "name": "Repulsor Boots",
+      "abilityText": "Move one of your characters to another base. Special: Before a base scores, you may play this card to move Iron Man.",
+      "effectText": "Move one of your characters to another base. Special: Before a base scores, you may play this card to move Iron Man."
+    },
+    "avengers_strategize_pod": {
+      "name": "Strategize",
+      "abilityText": "Look at the top four cards of your deck. Put two on top of your deck in any order. Put the rest on the bottom of your deck.",
+      "effectText": "Look at the top four cards of your deck. Put two on top of your deck in any order. Put the rest on the bottom of your deck."
+    },
+    "avengers_tactical_advantage_pod": {
+      "name": "Tactical Advantage",
+      "abilityText": "Choose a character. It gains +3 power until the end of the turn.",
+      "effectText": "Choose a character. It gains +3 power until the end of the turn."
+    },
+    "avengers_thunder_and_lightning_pod": {
+      "name": "Thunder and Lightning",
+      "abilityText": "Destroy a character of power 3 or less.",
+      "effectText": "Destroy a character of power 3 or less."
+    },
+    "avengers_widows_bite_pod": {
+      "name": "Widow's Bite",
+      "abilityText": "Special: Play before a base scores. Each other player's character here gets -1 power until the end of the turn. If Black Widow is here, she gains +2 power until the end of the turn.",
+      "effectText": "Special: Play before a base scores. Each other player's character here gets -1 power until the end of the turn. If Black Widow is here, she gains +2 power until the end of the turn."
+    },
+    "shield_nick_fury_pod": {
+      "name": "Nick Fury",
+      "abilityText": "You may play an extra character here."
+    },
+    "shield_maria_hill_pod": {
+      "name": "Maria Hill",
+      "abilityText": "Ongoing: After you play another character here, this character gains +1 power until the end of the turn."
+    },
+    "shield_phil_coulson_pod": {
+      "name": "Phil Coulson",
+      "abilityText": "You may play an extra character of power 2 or less here."
+    },
+    "shield_agent_pod": {
+      "name": "S.H.I.E.L.D. Agent",
+      "abilityText": "Ongoing: If another of your characters is here, this character gains +1 power."
+    },
+    "shield_entry_point_pod": {
+      "name": "Entry Point",
+      "abilityText": "Play an extra character.",
+      "effectText": "Play an extra character."
+    },
+    "shield_mission_debriefing_pod": {
+      "name": "Mission Debriefing",
+      "abilityText": "Choose a base. Draw a card for each of your characters there.",
+      "effectText": "Choose a base. Draw a card for each of your characters there."
+    },
+    "shield_proving_ground_pod": {
+      "name": "Proving Ground",
+      "abilityText": "Base artifact. Talent: Play a character of power 3 or less here as an extra character.",
+      "effectText": "Base artifact. Talent: Play a character of power 3 or less here as an extra character."
+    },
+    "shield_reassignment_pod": {
+      "name": "Reassignment",
+      "abilityText": "Choose a base. Move up to two of your characters from other bases to here.",
+      "effectText": "Choose a base. Move up to two of your characters from other bases to here."
+    },
+    "shield_rescue_mission_pod": {
+      "name": "Rescue Mission",
+      "abilityText": "Special: After a base scores, shuffle all of your characters there into their owners' decks, then draw a card.",
+      "effectText": "Special: After a base scores, shuffle all of your characters there into their owners' decks, then draw a card."
+    },
+    "shield_superior_firepower_pod": {
+      "name": "Superior Firepower",
+      "abilityText": "Destroy a base artifact or a character of power 3 or less.",
+      "effectText": "Destroy a base artifact or a character of power 3 or less."
+    },
+    "shield_troop_drop_pod": {
+      "name": "Troop Drop",
+      "abilityText": "Play an extra character of power 3 or less.",
+      "effectText": "Play an extra character of power 3 or less."
+    },
+    "shield_together_pod": {
+      "name": "Together",
+      "abilityText": "Each character you currently have in play gains +1 power until the end of the turn.",
+      "effectText": "Each character you currently have in play gains +1 power until the end of the turn."
+    },
+    "spider_verse_spider_man_pod": {
+      "name": "Spider-Man",
+      "abilityText": "Ongoing: After you play a card with a special ability, this character gains +1 power until the end of the turn."
+    },
+    "spider_verse_ghost_spider_pod": {
+      "name": "Ghost-Spider",
+      "abilityText": "Look at the top three cards of your deck, draw one of them, then return the rest to the top and/or bottom of your deck in any order."
+    },
+    "spider_verse_miles_morales_pod": {
+      "name": "Miles Morales",
+      "abilityText": "Special: Before a base scores, if you have a character there, you may play this character there and give it -1 power until the end of the turn."
+    },
+    "spider_verse_spider_man_2099_pod": {
+      "name": "Spider-Man 2099",
+      "abilityText": "Ongoing: This character cannot be destroyed by other players' cards."
+    },
+    "spider_verse_great_responsibility_pod": {
+      "name": "...Comes Great Responsibility",
+      "abilityText": "Play an extra character. Special: Before a base where you have a character scores, you may play it. Play an extra character here; it gets -1 power until the end of the turn.",
+      "effectText": "Play an extra character. Special: Before a base where you have a character scores, you may play it. Play an extra character here; it gets -1 power until the end of the turn."
+    },
+    "spider_verse_spider_reflexes_pod": {
+      "name": "Spider Reflexes",
+      "abilityText": "Look at the top three cards of your deck, draw one of them, then put the rest on the top and/or bottom of your deck in any order. You may play an extra spell.",
+      "effectText": "Look at the top three cards of your deck, draw one of them, then put the rest on the top and/or bottom of your deck in any order. You may play an extra spell."
+    },
+    "spider_verse_spider_sense_pod": {
+      "name": "Spider-Sense",
+      "abilityText": "Draw two cards. Special: You may play this after a base where you have a character scores.",
+      "effectText": "Draw two cards. Special: You may play this after a base where you have a character scores."
+    },
+    "spider_verse_bond_pod": {
+      "name": "Spider-Verse Bond",
+      "abilityText": "Character attachment. Ongoing: This character gains +1 power for each of your other characters here.",
+      "effectText": "Character attachment. Ongoing: This character gains +1 power for each of your other characters here."
+    },
+    "spider_verse_view_from_above_pod": {
+      "name": "The View From Above",
+      "abilityText": "Say \"character\" or \"spell\". Reveal cards from the top of your deck until you reveal a card of that type, then draw it. Shuffle the rest back into your deck.",
+      "effectText": "Say \"character\" or \"spell\". Reveal cards from the top of your deck until you reveal a card of that type, then draw it. Shuffle the rest back into your deck."
+    },
+    "spider_verse_webbed_up_pod": {
+      "name": "Webbed Up",
+      "abilityText": "Character attachment. Ongoing: This character gets -2 power and then its ability is canceled.",
+      "effectText": "Character attachment. Ongoing: This character gets -2 power and then its ability is canceled."
+    },
+    "spider_verse_with_great_power_pod": {
+      "name": "With Great Power...",
+      "abilityText": "A character gains +3 power until the end of the turn. Special: Before a base scores, you may play this card. A character here gains +2 power instead of +3.",
+      "effectText": "A character gains +3 power until the end of the turn. Special: Before a base scores, you may play this card. A character here gains +2 power instead of +3."
+    },
+    "spider_verse_friendly_neighborhood_hero_pod": {
+      "name": "Your Friendly Neighborhood Hero",
+      "abilityText": "Special: After a base scores, put one of your characters on top of its owner's deck.",
+      "effectText": "Special: After a base scores, put one of your characters on top of its owner's deck."
+    },
+    "ultimates_captain_marvel_pod": {
+      "name": "Captain Marvel",
+      "abilityText": "Talent: Move this character to another base. Your other characters currently there each gain +1 power until the end of the turn."
+    },
+    "ultimates_spectrum_pod": {
+      "name": "Spectrum",
+      "abilityText": "Talent: Move this character to another base."
+    },
+    "ultimates_america_chavez_pod": {
+      "name": "America Chavez",
+      "abilityText": "Ongoing: After another character enters or leaves this base, this character gains +1 power until the end of the turn."
+    },
+    "ultimates_blue_marvel_pod": {
+      "name": "Blue Marvel",
+      "abilityText": "Ongoing: After this character moves to another base, it gains +1 power until the end of the turn."
+    },
+    "ultimates_aid_from_allies_pod": {
+      "name": "Aid from Allies",
+      "abilityText": "Base artifact. Draw a card. Ongoing: After you move one or more characters here, draw a card.",
+      "effectText": "Base artifact. Draw a card. Ongoing: After you move one or more characters here, draw a card."
+    },
+    "ultimates_coordinated_attack_pod": {
+      "name": "Coordinated Attack",
+      "abilityText": "Choose a base. Move up to three of your characters from other bases there. Each of them gains +1 power until the end of the turn.",
+      "effectText": "Choose a base. Move up to three of your characters from other bases there. Each of them gains +1 power until the end of the turn."
+    },
+    "ultimates_cosmic_knowledge_pod": {
+      "name": "Cosmic Knowledge",
+      "abilityText": "Place any number of cards from your hand on the bottom of your deck, then draw one more card than the number you placed.",
+      "effectText": "Place any number of cards from your hand on the bottom of your deck, then draw one more card than the number you placed."
+    },
+    "ultimates_first_to_arrive_pod": {
+      "name": "First to Arrive",
+      "abilityText": "Play an extra character at a base where you have no characters.",
+      "effectText": "Play an extra character at a base where you have no characters."
+    },
+    "ultimates_heroic_landing_pod": {
+      "name": "Heroic Landing",
+      "abilityText": "Move any number of your characters to other bases.",
+      "effectText": "Move any number of your characters to other bases."
+    },
+    "ultimates_lift_and_carry_pod": {
+      "name": "Lift and Carry",
+      "abilityText": "Move a character to another base.",
+      "effectText": "Move a character to another base."
+    },
+    "ultimates_power_and_speed_pod": {
+      "name": "Power and Speed",
+      "abilityText": "One of your characters gains +2 power until the end of the turn. You may move it to another base.",
+      "effectText": "One of your characters gains +2 power until the end of the turn. You may move it to another base."
+    },
+    "ultimates_scramble_pod": {
+      "name": "Scramble",
+      "abilityText": "Move one of your characters to another base. Special: You may play this before scoring.",
+      "effectText": "Move one of your characters to another base. Special: You may play this before scoring."
+    },
+    "hydra_red_skull_pod": {
+      "name": "Red Skull",
+      "abilityText": "Ongoing: After one of your characters is destroyed, draw a card. Talent: Destroy one of your characters to draw a card."
+    },
+    "hydra_baron_strucker_pod": {
+      "name": "Baron Strucker",
+      "abilityText": "Talent: Destroy one of your characters. After it is destroyed, move up to two of your characters from other bases to here."
+    },
+    "hydra_madame_hydra_pod": {
+      "name": "Madame Hydra",
+      "abilityText": "Talent: Destroy one of your characters to give this character +2 power until the end of the turn."
+    },
+    "hydra_arnim_zola_pod": {
+      "name": "Arnim Zola",
+      "abilityText": "Ongoing: This character has +1 power for each of your other characters here with a printed power of 2 or less."
+    },
+    "hydra_hydra_agent_pod": {
+      "name": "Hydra Agent",
+      "abilityText": "Ongoing: After this character is destroyed, play up to two extra characters of power 2 or less here."
+    },
+    "hydra_fanatical_devotion_pod": {
+      "name": "Fanatical Devotion",
+      "effectText": "Base modifier. Ongoing: Your characters here each have +2 power if one or more of your characters have been destroyed here this turn."
+    },
+    "hydra_hail_hydra_pod": {
+      "name": "Hail Hydra!",
+      "effectText": "Destroy one of your characters to draw cards equal to its power."
+    },
+    "hydra_hour_of_destiny_pod": {
+      "name": "Hour of Destiny",
+      "effectText": "Search your deck for up to two characters of power 2 or less, reveal them, and draw them. Then shuffle your deck."
+    },
+    "hydra_reactivate_agents_pod": {
+      "name": "Reactivate Agents",
+      "effectText": "Place up to two characters of 2 power or less from your discard pile into your hand."
+    },
+    "hydra_secret_reserves_pod": {
+      "name": "Secret Reserves",
+      "effectText": "Shuffle any number of characters of power 2 or less from your discard pile into your deck."
+    },
+    "hydra_two_more_shall_take_its_place_pod": {
+      "name": "Two More Shall Take Its Place",
+      "effectText": "Destroy one of your characters. After it is destroyed, play up to two characters of power 2 or less as extra characters onto that base."
+    },
+    "kree_supreme_intelligence_pod": {
+      "name": "Supreme Intelligence",
+      "abilityText": "Ongoing: After you play an action, one of your other characters gains +1 power until the end of the turn."
+    },
+    "kree_minn_erva_pod": {
+      "name": "Minn-Erva",
+      "abilityText": "Draw two cards."
+    },
+    "kree_ronan_the_accuser_pod": {
+      "name": "Ronan the Accuser",
+      "abilityText": "You may play an extra action."
+    },
+    "kree_kree_sentry_pod": {
+      "name": "Kree Sentry",
+      "abilityText": "Ongoing: This character has +2 power if you have played two or more actions this turn."
+    },
+    "kree_battle_rage_pod": {
+      "name": "Battle Rage",
+      "effectText": "One of your characters gains +2 power until the end of the turn. Draw a card."
+    },
+    "kree_call_for_backup_pod": {
+      "name": "Call for Backup",
+      "effectText": "Draw two cards."
+    },
+    "kree_it_begins_pod": {
+      "name": "It Begins",
+      "effectText": "One of your characters gains +1 power until the end of the turn. Draw a card. You may play an extra action."
+    },
+    "kree_prepare_to_engage_pod": {
+      "name": "Prepare to Engage",
+      "effectText": "Reveal the top five cards of your deck. Place up to two revealed actions into your hand and shuffle the rest into your deck."
+    },
+    "kree_proven_methods_pod": {
+      "name": "Proven Methods",
+      "effectText": "Place up to two actions from your discard pile on top of your deck in any order."
+    },
+    "kree_relentless_attack_pod": {
+      "name": "Relentless Attack",
+      "effectText": "Character modifier. Talent: Play an extra action."
+    },
+    "kree_righteous_fury_pod": {
+      "name": "Righteous Fury",
+      "effectText": "Character modifier. Ongoing: This character has +3 power."
+    },
+    "kree_speed_up_pod": {
+      "name": "Speed Up",
+      "effectText": "Play up to two extra actions."
+    },
+    "masters_of_evil_baron_zemo_pod": {
+      "name": "Baron Zemo",
+      "abilityText": "Ongoing: After this base scores, gain 1 VP and place this character on the bottom of its owner's deck."
+    },
+    "masters_of_evil_ulysses_klaw_pod": {
+      "name": "Ulysses Klaw",
+      "abilityText": "Draw a card for every 4 VP you have."
+    },
+    "masters_of_evil_black_mamba_pod": {
+      "name": "Black Mamba",
+      "abilityText": "Ongoing: This character has +1 power for every 4 VP you have."
+    },
+    "masters_of_evil_absorbing_man_pod": {
+      "name": "Absorbing Man",
+      "abilityText": "Talent: Destroy this character and another Absorbing Man to gain 1 VP."
+    },
+    "masters_of_evil_a_portent_of_doom_pod": {
+      "name": "A Portent of Doom",
+      "effectText": "Base modifier. Play on a base with no player’s characters. Special: When this base scores, if you have 1 or more power here gain 1 VP."
+    },
+    "masters_of_evil_acceptable_losses_pod": {
+      "name": "Acceptable Losses",
+      "effectText": "Destroy one of your characters of power 4 or more to gain 1 VP."
+    },
+    "masters_of_evil_ball_and_chain_pod": {
+      "name": "Ball and Chain",
+      "effectText": "Character modifier. Ongoing: This character has +2 power and cannot be destroyed by other players’ cards."
+    },
+    "masters_of_evil_convergence_pod": {
+      "name": "Convergence",
+      "effectText": "Move one of your characters to another base. After it is moved, if you have four or more characters at that base, gain 1 VP."
+    },
+    "masters_of_evil_gain_the_upper_hand_pod": {
+      "name": "Gain the Upper Hand",
+      "effectText": "Destroy a character of power 3 or less."
+    },
+    "masters_of_evil_indestructible_form_pod": {
+      "name": "Indestructible Form",
+      "effectText": "Base modifier. Ongoing: Your characters here cannot be destroyed by other players’ cards."
+    },
+    "masters_of_evil_sonic_shockwave_pod": {
+      "name": "Sonic Shockwave",
+      "effectText": "Destroy another player’s character with less power than your total power at its base. After it is destroyed, if that character had 5 or more power, gain 1 VP."
+    },
+    "masters_of_evil_world_domination_pod": {
+      "name": "World Domination",
+      "effectText": "Base modifier. Talent: One of your characters here gains +2 power until the end of the turn. Ongoing: After this base scores, move this action to another base."
+    },
+    "sinister_six_doctor_octopus_pod": {
+      "name": "Doctor Octopus",
+      "abilityText": "Ongoing: At the start of your turn, you may reduce this base’s breakpoint by 4 until the end of the turn."
+    },
+    "sinister_six_mysterio_pod": {
+      "name": "Mysterio",
+      "abilityText": "Talent: Play a base modifier here as an extra action OR draw a card."
+    },
+    "sinister_six_green_goblin_pod": {
+      "name": "Green Goblin",
+      "abilityText": "Talent: Reduce this base’s breakpoint by 3 until the end of the turn."
+    },
+    "sinister_six_vulture_pod": {
+      "name": "Vulture",
+      "abilityText": "You may place a base modifier from your discard pile on top of your deck."
+    },
+    "sinister_six_electro_pod": {
+      "name": "Electro",
+      "abilityText": "Ongoing: This base’s breakpoint is reduced by 2."
+    },
+    "sinister_six_sandman_pod": {
+      "name": "Sandman",
+      "abilityText": "Ongoing: This character has +2 power if the breakpoint here is 19 or less."
+    },
+    "sinister_six_ambush_pod": {
+      "name": "Ambush",
+      "effectText": "Reduce a base’s breakpoint by 4 until the end of the turn."
+    },
+    "sinister_six_cover_the_exits_pod": {
+      "name": "Cover the Exits",
+      "effectText": "Base modifier. Ongoing: Your characters here have +1 power. After this base scores, if its breakpoint was 19 or less, shuffle up to two of your characters here into their owners’ deck."
+    },
+    "sinister_six_incite_panic_pod": {
+      "name": "Incite Panic",
+      "effectText": "Base modifier. Ongoing: Other players’ characters here have -1 power. If the breakpoint here is 19 or less, other players cannot use Special abilities while this base is scoring."
+    },
+    "sinister_six_move_the_goods_pod": {
+      "name": "Move the Goods",
+      "effectText": "Move a base modifier from one base to another. Special: You may play this after a base scores."
+    },
+    "sinister_six_my_master_plan_pod": {
+      "name": "My Master Plan",
+      "effectText": "Base modifier. Talent: If the breakpoint here is 19 or less, draw a card."
+    },
+    "sinister_six_pressure_from_all_sides_pod": {
+      "name": "Pressure from All Sides",
+      "effectText": "Base modifier. Talent: Reduce this base’s breakpoint by 1 for each character on it until the end of the turn."
+    },
+    "sinister_six_reroute_the_power_pod": {
+      "name": "Reroute the Power",
+      "effectText": "Base modifier. Talent: If the breakpoint here is 19 or less, give one of your characters here +3 power until the start of your next turn."
+    },
+    "sinister_six_witness_our_superiority_pod": {
+      "name": "Witness Our Superiority",
+      "effectText": "Base modifier. Ongoing: This base’s abilities are cancelled."
     }
   },
   "debug": {
