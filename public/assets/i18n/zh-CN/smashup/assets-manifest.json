@@ -94,6 +94,15 @@
         }
       }
     },
+    "base/compressed/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/compressed/international_incident_bases": {
       "variants": {
         "webp": {
@@ -162,6 +171,15 @@
         "webp": {
           "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
           "bytes": 560560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
           "mime": "image/webp"
         }
       }
@@ -333,6 +351,15 @@
         "webp": {
           "sha256": "b8a029374b872cc17efa1d4f5475dc01183f7a27a246be7f1fac5b843ef4c98a",
           "bytes": 887820,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/disney_four_factions": {
+      "variants": {
+        "webp": {
+          "sha256": "d40f52dcbb015bfa2cee1a657d6fd8549f2e8b1640acb5355b5b8abe2c34cd3c",
+          "bytes": 8103102,
           "mime": "image/webp"
         }
       }
@@ -559,6 +586,15 @@
           "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
           "bytes": 1110284,
           "mime": "image/webp"
+        }
+      }
+    },
+    "cards/disney_four_factions": {
+      "variants": {
+        "png": {
+          "sha256": "4e28237e91b60a3a4faa48aa57b6c0404574cdd372017fa5104781219e1216b0",
+          "bytes": 41387810,
+          "mime": "image/png"
         }
       }
     },

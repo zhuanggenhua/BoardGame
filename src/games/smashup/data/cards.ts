@@ -120,6 +120,10 @@ import {
     TRUCKERS_CARDS,
     VIGILANTES_CARDS,
 } from './factions/zhongguo';
+import { BIG_HERO_6_BASES, BIG_HERO_6_CARDS } from './factions/big_hero_6';
+import { FROZEN_BASES, FROZEN_CARDS } from './factions/frozen';
+import { LION_KING_BASES, LION_KING_CARDS } from './factions/lion_king';
+import { MULAN_BASES, MULAN_CARDS } from './factions/mulan';
 
 // ============================================================================
 // 注册表
@@ -296,6 +300,10 @@ registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
 registerCards(TRUCKERS_CARDS);
 registerCards(DISCO_DANCERS_CARDS);
+registerCards(BIG_HERO_6_CARDS);
+registerCards(FROZEN_CARDS);
+registerCards(LION_KING_CARDS);
+registerCards(MULAN_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 registerCards(TITAN_CARD_DEFS);
@@ -1381,6 +1389,10 @@ registerBases(ANANSI_TALES_BASES);
 registerBases(GRIMMS_FAIRY_TALES_BASES);
 registerBases(RUSSIAN_FAIRY_TALES_BASES);
 registerBases(ANCIENT_INCAS_BASES);
+registerBases(BIG_HERO_6_BASES);
+registerBases(FROZEN_BASES);
+registerBases(LION_KING_BASES);
+registerBases(MULAN_BASES);
 
 registerPodBaseSkeletons();
 

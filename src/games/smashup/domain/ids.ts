@@ -66,6 +66,8 @@ export const SMASHUP_ATLAS_IDS = {
     ALL_STARS_POD_CARDS: 'smashup:all-stars-pod-cards',
     PROMOS_SHEEP_ALL_STARS_CARDS: 'smashup:promos-sheep-all-stars-cards',
     TORNADOS_POD_CARDS: 'smashup:tornados-pod-cards',
+    DISNEY_FOUR_FACTION_CARDS: 'smashup:disney-four-faction-cards',
+    DISNEY_BASES: 'smashup:disney-bases',
 } as const;
 
 export const SMASHUP_CARD_BACK = {
@@ -196,6 +198,10 @@ export const SMASHUP_FACTION_IDS = {
     SUPERHEROES_POD: 'superheroes_pod',
     MISKATONIC_UNIVERSITY_POD: 'miskatonic_university_pod',
     NINJAS_POD: 'ninjas_pod',
+    BIG_HERO_6: 'big_hero_6',
+    FROZEN: 'frozen',
+    LION_KING: 'lion_king',
+    MULAN: 'mulan',
 } as const;
 
 const POD_SUFFIX = '_pod';
@@ -353,6 +359,10 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.STAR_ROAMERS]: '星际旅者',
     [SMASHUP_FACTION_IDS.TIME_TRAVELERS]: '时间旅行者',
     [SMASHUP_FACTION_IDS.TIME_TRAVELERS_POD]: '时间旅行者 (POD版)',
+    [SMASHUP_FACTION_IDS.BIG_HERO_6]: '超能陆战队',
+    [SMASHUP_FACTION_IDS.FROZEN]: '冰雪奇缘',
+    [SMASHUP_FACTION_IDS.LION_KING]: '狮子王',
+    [SMASHUP_FACTION_IDS.MULAN]: '花木兰',
 };
 
 FACTION_DISPLAY_NAMES[SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD] = '古埃及人 (POD版)';

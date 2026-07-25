@@ -5998,14 +5998,9 @@
     "zh-CN/dicethrone/images/artificial/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
-          "bytes": 720,
+          "sha256": "0df23aa8f4032900736ebb80c5a20a31dab87f9fdb80485349ff4b875e88c328",
+          "bytes": 771,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "310d228f74c8bba1d08197d22f2058ccd77c734b09e2779abab42ef536131a07",
-          "bytes": 637977,
-          "mime": "image/png"
         }
       }
     },
@@ -6498,14 +6493,9 @@
     "zh-CN/dicethrone/images/cursed/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
-          "bytes": 604,
+          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
+          "bytes": 647,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
-          "bytes": 317204,
-          "mime": "image/png"
         }
       }
     },
@@ -7610,14 +7600,9 @@
     "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
-          "bytes": 370,
+          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
+          "bytes": 397,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
-          "bytes": 135997,
-          "mime": "image/png"
         }
       }
     },
@@ -9502,6 +9487,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/huluwawa_bases": {
       "variants": {
         "webp": {
@@ -9579,6 +9573,15 @@
         "webp": {
           "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
           "bytes": 560560,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
           "mime": "image/webp"
         }
       }
@@ -9750,6 +9753,15 @@
         "webp": {
           "sha256": "b8a029374b872cc17efa1d4f5475dc01183f7a27a246be7f1fac5b843ef4c98a",
           "bytes": 887820,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/disney_four_factions": {
+      "variants": {
+        "webp": {
+          "sha256": "d40f52dcbb015bfa2cee1a657d6fd8549f2e8b1640acb5355b5b8abe2c34cd3c",
+          "bytes": 8103102,
           "mime": "image/webp"
         }
       }
@@ -9985,6 +9997,15 @@
           "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
           "bytes": 1110284,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/disney_four_factions": {
+      "variants": {
+        "png": {
+          "sha256": "4e28237e91b60a3a4faa48aa57b6c0404574cdd372017fa5104781219e1216b0",
+          "bytes": 41387810,
+          "mime": "image/png"
         }
       }
     },
@@ -10579,6 +10600,60 @@
           "sha256": "fdc7fecd22ce6416ca59d67104936c7289b4eb89cfa64c35f82595f652e76b92",
           "bytes": 108480,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "9d8d7d269e252078dddbb5527f27b099a5e72a98c60b2220574b0d364e7b0037",
+          "bytes": 1372856,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "d0fddf484d720c05e471c2446de8d07d13f721b30e51e6071294bd3e4889b112",
+          "bytes": 2062610,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "29b3f824407bb93a5e29ce1990a20bb72ddd17dac90d341ad441529962a4c77b",
+          "bytes": 295994,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "e9df6ad384612addbb6fe2a7498cbc6b1ca932cf8e946aef3b2f94edc4f5f396",
+          "bytes": 125230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/hero": {
+      "variants": {
+        "png": {
+          "sha256": "b246838720c39409b537e74184bb55d6d04256e656fe4498020c00f1be53041a",
+          "bytes": 2583575,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "64d48aee3bc19702de8e0f49367961a2d851fa50624ddb901aa1f410c0b55196",
+          "bytes": 242959,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -13198,60 +13273,6 @@
           "sha256": "9c7b5fdee4de1c811e3fdb86db195953aba22024ba4d4794ed16fcf5dbf4bbdd",
           "bytes": 295968,
           "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/cards": {
-      "variants": {
-        "jpg": {
-          "sha256": "9d8d7d269e252078dddbb5527f27b099a5e72a98c60b2220574b0d364e7b0037",
-          "bytes": 1372856,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/compressed/cards": {
-      "variants": {
-        "webp": {
-          "sha256": "d0fddf484d720c05e471c2446de8d07d13f721b30e51e6071294bd3e4889b112",
-          "bytes": 2062610,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/compressed/hero": {
-      "variants": {
-        "webp": {
-          "sha256": "29b3f824407bb93a5e29ce1990a20bb72ddd17dac90d341ad441529962a4c77b",
-          "bytes": 295994,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/compressed/tip": {
-      "variants": {
-        "webp": {
-          "sha256": "e9df6ad384612addbb6fe2a7498cbc6b1ca932cf8e946aef3b2f94edc4f5f396",
-          "bytes": 125230,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/hero": {
-      "variants": {
-        "png": {
-          "sha256": "b246838720c39409b537e74184bb55d6d04256e656fe4498020c00f1be53041a",
-          "bytes": 2583575,
-          "mime": "image/png"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/tip": {
-      "variants": {
-        "jpg": {
-          "sha256": "64d48aee3bc19702de8e0f49367961a2d851fa50624ddb901aa1f410c0b55196",
-          "bytes": 242959,
-          "mime": "image/jpeg"
         }
       }
     }
