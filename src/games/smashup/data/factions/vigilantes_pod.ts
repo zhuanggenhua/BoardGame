@@ -57,8 +57,6 @@ export const VIGILANTES_POD_ACTIONS: ActionCardDef[] = [
         abilityTags: ['ongoing', 'special'],
         specialTiming: 'beforeScoring',
         specialNeedsBase: true,
-        responseWindowTiming: 'beforeScoring',
-        responseWindowNeedsBase: true,
         count: 1,
         previewRef: { type: 'atlas', atlasId: VIGILANTES_POD_ATLAS, index: 4 },
     },
