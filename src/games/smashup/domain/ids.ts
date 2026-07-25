@@ -69,13 +69,14 @@ export const SMASHUP_ATLAS_IDS = {
     ALL_STARS_POD_CARDS: 'smashup:all-stars-pod-cards',
     PROMOS_SHEEP_ALL_STARS_CARDS: 'smashup:promos-sheep-all-stars-cards',
     TORNADOS_POD_CARDS: 'smashup:tornados-pod-cards',
+    KUNG_FU_FIGHTERS_POD_CARDS: 'smashup:kung-fu-fighters-pod-cards',
+    RUSSIAN_FAIRY_TALES_POD_CARDS: 'smashup:russian-fairy-tales-pod-cards',
+    ANANSI_TALES_POD_CARDS: 'smashup:anansi-tales-pod-cards',
+    EXCELLENT_MOVIES_TEENS_CARDS: 'smashup:excellent-movies-teens-cards',
     EXPLORERS_POD_CARDS: 'smashup:explorers-pod-cards',
     STAR_ROAMERS_POD_CARDS: 'smashup:star-roamers-pod-cards',
     VIGILANTES_POD_CARDS: 'smashup:vigilantes-pod-cards',
     LUCHADORS_POD_CARDS: 'smashup:luchadors-pod-cards',
-    KUNG_FU_FIGHTERS_POD_CARDS: 'smashup:kung-fu-fighters-pod-cards',
-    RUSSIAN_FAIRY_TALES_POD_CARDS: 'smashup:russian-fairy-tales-pod-cards',
-    ANANSI_TALES_POD_CARDS: 'smashup:anansi-tales-pod-cards',
     DISNEY_CARDS: 'smashup:disney-cards',
     DISNEY_FOUR_FACTION_CARDS: 'smashup:disney-four-faction-cards',
     DISNEY_FOUR_FACTION_BASES: 'smashup:disney-four-faction-bases',
@@ -89,7 +90,9 @@ export const SMASHUP_CARD_BACK = {
 } as const;
 
 export const SMASHUP_FACTION_IDS = {
+    ACTION_HEROES: 'action_heroes',
     AVENGERS: 'avengers',
+    BACKTIMERS: 'backtimers',
     SHIELD: 'shield',
     SPIDER_VERSE: 'spider_verse',
     ULTIMATES: 'ultimates',
@@ -186,12 +189,14 @@ export const SMASHUP_FACTION_IDS = {
     STAR_ROAMERS: 'star_roamers',
     STAR_ROAMERS_POD: 'star_roamers_pod',
     SUPER_SPIES: 'super_spies',
+    TEENS: 'teens',
     TIME_TRAVELERS: 'time_travelers',
     TIME_TRAVELERS_POD: 'time_travelers_pod',
     TRICKSTERS: 'tricksters',
     TRICKSTERS_POD: 'tricksters_pod',
     VIKINGS: 'vikings',
     VIKINGS_POD: 'vikings_pod',
+    WRAITHRUSTLERS: 'wraithrustlers',
     WIZARDS: 'wizards',
     WIZARDS_POD: 'wizards_pod',
     ZOMBIES: 'zombies',
@@ -206,6 +211,7 @@ export const SMASHUP_FACTION_IDS = {
     MINIONS_OF_CTHULHU_POD: 'minions_of_cthulhu_pod',
     ELDER_THINGS: 'elder_things',
     ELDER_THINGS_POD: 'elder_things_pod',
+    EXTRAMORPHS: 'extramorphs',
     INNSMOUTH: 'innsmouth',
     INNSMOUTH_POD: 'innsmouth_pod',
     MISKATONIC_UNIVERSITY: 'miskatonic_university',
@@ -273,7 +279,9 @@ export function isSmashUpFactionImplementationInProgress(factionId: string): boo
 
 /** 派系中文显示名（domain 层使用，避免依赖 i18n） */
 export const FACTION_DISPLAY_NAMES: Record<string, string> = {
+    [SMASHUP_FACTION_IDS.ACTION_HEROES]: '动作英雄',
     [SMASHUP_FACTION_IDS.AVENGERS]: '复仇者',
+    [SMASHUP_FACTION_IDS.BACKTIMERS]: '返时者',
     [SMASHUP_FACTION_IDS.AVENGERS_POD]: '复仇者 (POD版)',
     [SMASHUP_FACTION_IDS.SHIELD]: '神盾局',
     [SMASHUP_FACTION_IDS.SHIELD_POD]: '神盾局 (POD版)',
@@ -378,6 +386,7 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD]: '克苏鲁仆从 (POD版)',
     [SMASHUP_FACTION_IDS.ELDER_THINGS]: '远古物种',
     [SMASHUP_FACTION_IDS.ELDER_THINGS_POD]: '远古物种 (POD版)',
+    [SMASHUP_FACTION_IDS.EXTRAMORPHS]: '异形变体',
     [SMASHUP_FACTION_IDS.INNSMOUTH]: '印斯茅斯',
     [SMASHUP_FACTION_IDS.INNSMOUTH_POD]: '印斯茅斯 (POD版)',
     [SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY]: '米斯卡塔尼克',
@@ -404,9 +413,11 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.NINJAS_POD]: '忍者 (POD版)',
     [SMASHUP_FACTION_IDS.SUPER_SPIES]: '超级间谍',
     [SMASHUP_FACTION_IDS.STAR_ROAMERS]: '星际旅者',
+    [SMASHUP_FACTION_IDS.TEENS]: '青少年',
     [SMASHUP_FACTION_IDS.STAR_ROAMERS_POD]: '星际旅者 (POD版)',
     [SMASHUP_FACTION_IDS.TIME_TRAVELERS]: '时间旅行者',
     [SMASHUP_FACTION_IDS.TIME_TRAVELERS_POD]: '时间旅行者 (POD版)',
+    [SMASHUP_FACTION_IDS.WRAITHRUSTLERS]: '怨灵捕手',
 };
 
 FACTION_DISPLAY_NAMES[SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS_POD] = '古埃及人 (POD版)';

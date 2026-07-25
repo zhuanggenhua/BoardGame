@@ -11,6 +11,7 @@ type BuildActionPlayedEventParams = {
     isExtraAction?: boolean;
     fromBuried?: boolean;
     fromDiscard?: boolean;
+    fromStored?: boolean;
     targetBaseIndex?: number;
     targetMinionUid?: string;
     sourceCommandType?: string;
@@ -26,6 +27,7 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
         isExtraAction,
         fromBuried,
         fromDiscard,
+        fromStored,
         targetBaseIndex,
         targetMinionUid,
         sourceCommandType,
@@ -41,6 +43,7 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
             ...(isExtraAction ? { isExtraAction: true } : {}),
             ...(fromBuried ? { fromBuried: true } : {}),
             ...(fromDiscard ? { fromDiscard: true } : {}),
+            ...(fromStored ? { fromStored: true } : {}),
             ...(targetBaseIndex !== undefined
                 ? {
                     targetBaseIndex,

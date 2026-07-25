@@ -41,6 +41,7 @@ export type PendingActionResolution = {
     targetBaseIndex?: number;
     targetMinionUid?: string;
     fromDiscard?: boolean;
+    fromStored?: boolean;
     nextResponderOffset: number;
     resolutionKind: PendingActionResolutionKind;
     cancelTargetActionInstanceId?: string;
@@ -86,6 +87,7 @@ export function createPendingActionResolution(params: {
     targetBaseIndex?: number;
     targetMinionUid?: string;
     fromDiscard?: boolean;
+    fromStored?: boolean;
     now: number;
     resolutionKind?: PendingActionResolutionKind;
     cancelTarget?: PendingActionResolution;
@@ -99,6 +101,7 @@ export function createPendingActionResolution(params: {
         ...(params.targetBaseIndex !== undefined ? { targetBaseIndex: params.targetBaseIndex } : {}),
         ...(params.targetMinionUid ? { targetMinionUid: params.targetMinionUid } : {}),
         ...(params.fromDiscard ? { fromDiscard: true } : {}),
+        ...(params.fromStored ? { fromStored: true } : {}),
         nextResponderOffset: 0,
         resolutionKind: params.resolutionKind ?? 'normal',
         ...(params.cancelTarget
