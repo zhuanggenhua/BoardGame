@@ -308,6 +308,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const playerDisplayOrder = playerView.orderedPlayerIds;
     const playerNames = playerView.playerNames;
     const [isNonEssentialUiHidden, setIsNonEssentialUiHidden] = useState(false);
+    const lastSyncedSelectedFactionsSignatureRef = useRef('');
     
     // 响应式布局配置
     const playerCount = playerDisplayOrder.length || coreTurnOrder.length || 2;
@@ -398,6 +399,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     allFactions.push(...player.factions);
                 }
             }
+            const signature = Array.from(new Set(allFactions)).sort().join('|');
+            if (signature === lastSyncedSelectedFactionsSignatureRef.current) {
+                return;
+            }
+            lastSyncedSelectedFactionsSignatureRef.current = signature;
             setSelectedFactions(allFactions);
         }
     }, [phase, corePlayers, setSelectedFactions]);

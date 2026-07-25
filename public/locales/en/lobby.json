@@ -2065,19 +2065,27 @@
           "scenes": {
             "trickster_leprechaun": {
               "label": "Leprechaun",
-              "description": "Ongoing: destroy minions with lower power than itself"
+              "description": "Ongoing: destroy minions with lower power than itself",
+              "effect": "Destroy",
+              "result": "Gnome leaves play"
             },
             "trickster_flame_trap": {
               "label": "Flame Trap",
-              "description": "Ongoing: destroy minions with power 2 or less that enter the base"
+              "description": "Ongoing: destroy minions with power 2 or less that enter the base",
+              "effect": "Trap hits",
+              "result": "Imp is destroyed"
             },
             "ninja_assassination": {
               "label": "Assassination",
-              "description": "Destroy a minion with power 3 or less"
+              "description": "Destroy a minion with power 3 or less",
+              "effect": "Destroy",
+              "result": "Imp goes to discard"
             },
             "bear_cavalry_high_ground": {
               "label": "High Ground",
-              "description": "Ongoing: your minions have +1 power"
+              "description": "Ongoing: your minions have +1 power",
+              "effect": "Buff",
+              "result": "+1 power"
             }
           },
           "preview": {
@@ -2088,6 +2096,7 @@
               "gnome": "Gnome",
               "imp": "Imp"
             },
+            "effect_label": "Effect",
             "minions_hint": "Mock minions on the base",
             "idle_hint": "Click a card name to preview"
           }

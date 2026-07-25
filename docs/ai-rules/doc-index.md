@@ -5,7 +5,8 @@
 | 场景 / 行为 | 必须阅读的文档 | 关注重点 |
 | :--- | :--- | :--- |
 | **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-action-log.md` § 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
-| **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` + `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` | 压缩指令、正式对局素材禁止降采样、扫描参数、清单校验、图片链路/裁剪规范、正式素材优先、禁止未授权用占位/自绘替代、关键图片预加载、音频运行时合同 |
+| **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` + `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` | 压缩指令、正式对局素材禁止降采样、扫描参数、清单校验、图片链路/裁剪规范、正式素材优先、缺关键素材必须请求素材或锁定补源路径、禁止未授权用占位/自绘替代、关键图片预加载、音频运行时合同 |
+| **参考图生成 Three.js / img2threejs 程序化模型** (图生模型、参考图重建、书本/棋盘/道具 3D 资产原型) | `.codex/skill/img2threejs-reconstruction/SKILL.md` + `docs/ai-rules/asset-pipeline.md` | 先读官方/案例仓库，再拆参考图结构、材质和几何策略；参考图是建模蓝图，不是整面贴图；默认先落 `temp/` 原型，未授权不得改正式游戏代码 |
 | **需求交接式安全图片处理 / 视觉子代理 / OCR / 图集裁图核对** (图片文字读取、卡图/房间图规则录入、图片验收、读图卡死后继续任务) | `.codex/skill/safe-image-reading/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 主线程把用户当前需求、业务对象、图片需要补足的字段/判断点和结果用途交给短子代理或本地 OCR；录入需求返回官方原文、原子子句、结构化规则字段并写入 evidence/真相表；验收/对比需求只返回是否满足用户预期、失败点和最小证据；不得返回 base64/markdown 图片，也不得产出无关过程说明 |
 | **新增派系 / 新英雄 / 新角色** (从素材做到可玩、含录入/资源/机制/审计/E2E) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 这是新增批次的默认入口；先走项目 skill，再按 `gameId` 进入专项 workflow；默认包含对象级全面审计、evidence 留档与真实入口 E2E，不需要等用户额外提醒 |
 | **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.codex/skill/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现 |
@@ -13,11 +14,12 @@
 | **国际化资源架构** (i18n 路径/符号链接/locale) | `docs/i18n-asset-architecture.md` | 方案 B2 架构、符号链接设置、未来迁移计划 |
 | **修改 DiceThrone** (文案/资源) | `docs/games/dicethrone/dicethrone-i18n.md` | 翻译 Key 结构、Scheme A 取图函数 |
 | **环境配置 / 部署** (端口/同域代理) | `docs/deploy.md` | 端口映射、环境变量、Nginx 参数 |
-| **协作者接入 Figma MCP** (Codex / OpenClaw 缺少 Figma 工具、首次授权、凭据失效、重启后仍不可用) | `docs/infra/figma-mcp.md` | 仓库脚本是唯一真相源；默认只补配置，显式 `-Login` 才重授权；`CODEX_HOME` 只存每人自己的配置和凭据 |
+| **协作者接入 Open Design** (需要设计 MCP、本地 AI 设计工具、设计稿 / 视觉方案工作流) | `docs/infra/open-design.md` | Open Design 是当前默认设计入口；优先接 `od mcp install codex/openclaw`；`CODEX_HOME` 默认 `D:\codex-home` |
 | **Android App 打包 / 上传 / 原生更新 / OTA / 网站下载入口** | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/android-app-build.md` | 先分 OTA 还是 native；release 必须正式壳；本地 build 不算完成；发布后必须回查 `latest.json` 并直接下载线上 APK 验 `appId/appName`；不要把“更新下载入口”误升格成“必须部署网站” |
 | **移动端素材包下载/清理/校验失败** (增量校验失败、本地临时文件校验失败、清理并重下仍失败) | `.codex/skill/android-app-release/SKILL.md` + `docs/mobile-release.md` + `docs/ai-rules/asset-pipeline.md` | 先回到真实移动素材包链路，锁 H5 清理、服务层安装模式、原生桥参数和原生日志；清理重下必须证明下一次安装已切完整 ZIP，发布 OTA 后必须下载线上 OTA zip 反查修复代码，缺少原始失败位点日志时不得宣称彻底修好 |
 | **本地联机测试** (单人同步调试) | `docs/test-mode.md` | 测试模式开关及其对视角的影响 |
 | **编写或修复测试** (Vitest/Playwright) | `docs/automated-testing.md` | 测试库配置、错误码命名规范 |
+| **分支 / worktree 清理与跨游戏改动归属** (删错分支、清理工作树、把某游戏修到另一游戏分支、入口找错) | `docs/ai-rules/worktree-branch-target-lock.md` + `.codex/skill/git-operations/SKILL.md` | 先锁用户点名对象、实际 branch/worktree、当前执行现场、游戏归属和删改影响；清理前必须先报目标侧相对保留侧多出来什么，不得用反向差异或全量清单干扰判断；游戏 A 的修复落在游戏 B 分支默认停止 |
 | **处理线上反馈 / 回写反馈状态** (open/in_progress/resolved/closed、修完立刻回写、区分反馈状态与部署状态) | `.codex/skill/feedback-closeout/SKILL.md` | `.codex/skill/feedback-closeout/SKILL.md` 是唯一规范真相源；只有实际需要 SSH/Mongo 入口时，再从 skill 路由到 `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md` |
 | **修改反馈提交入口 / 登录态 / 匿名提交** (`POST /feedback`、反馈弹窗、可选 JWT、失效 token) | `docs/ai-rules/feedback-system.md` | 玩家提交反馈是公共通道；登录只用于绑定用户和反馈积分，缺失/失效登录态必须按匿名提交继续，不得卡住反馈 |
 | **处理不可复现反馈 / 证据式收口** (线上已恢复、当前复现不了、需要判断是否继续深挖) | `docs/automated-testing.md` | 先回原始入口和原环境核对；区分“当前未复现原症状”和“当前证据显示该入口无异常”；除非用户明确要求，否则可按证据收口 |
@@ -43,7 +45,7 @@
 | **粒子特效开发** (Canvas 2D 引擎) | `docs/particle-engine.md` | API、预设字段、性能优化、视觉质量规则、新增检查清单 |
 | **新增棋盘特效** (FX 系统) | `docs/ai-rules/animation-effects.md` § 引擎级 FX 系统 | FxRegistry 注册、FxBus push/pushSequence、FxRenderer 适配器、新增流程 |
 | **动画数值时序** (HP/damage 跳变) | `docs/ai-rules/engine-visual-events.md` § 动画表现与逻辑分离规范 | `useVisualStateBuffer` 冻结/释放、`FxLayer.onEffectImpact`、新游戏接入流程 |
-| **卡牌 / 技能展示型特写** (需要玩家阅读/复盘/确认的卡牌展示、对手进攻技能或升级卡展示) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 + `docs/ai-rules/ui-ux.md` § 对手卡牌 / 技能展示型特写不得瞬时退场 | `useCardSpotlightQueue` + `CardSpotlightQueue` 只用于阅读/复盘/确认型展示；普通出牌动效、飞牌、飘字、分数飞行和大杀四方行动卡打出展示继续走 FX / animation 自动退场，不得升级成“看清后可关闭” |
+| **卡牌 / 技能展示型特写** (瞬时反馈、短暂展示、阻塞阅读 / 复盘 / 确认型展示的分流) | `docs/ai-rules/engine-visual-events.md` § 卡牌特写队列 + `docs/ai-rules/ui-ux.md` § 特写生命周期必须按语义分流 | `useCardSpotlightQueue` + `CardSpotlightQueue` 只用于阅读/复盘/确认型展示；大杀四方行动卡打出展示继续走 FX / animation 自动退场；DiceThrone 自建卡牌短展示保留 3 秒自动关闭；小黑屋连续发现牌 / 骰盘展示队列要逐个读完再关闭；“看清后可关闭”这类 AI 过程话术不得进入玩家 UI，也不得据此改生命周期 |
 | **多步骤特效编排** (序列特效) | `docs/ai-rules/animation-effects.md` § 序列特效 + `docs/ai-rules/engine-visual-events.md` | pushSequence API、delayAfter、cancelSequence、适用场景 |
 | **新增/审查游戏机制实现** (技能/Token/事件卡/被动/主动开发或全面审查) | `docs/ai-rules/description-to-implementation-audit.md` + `docs/ai-rules/engine-systems.md` | 新增或主动审查机制时，先锁权威描述并拆成原子断言；逐交互链检查定义、注册、执行、状态、消耗、验证、UI、i18n、测试。玩家反馈的规则 bug 优先走上方规则 bug 修复 workflow |
 | **修改 DiceThrone 共享攻击结算** (`targetingRoll` / `withDamage` / `postDamage` / `ATTACK_RESOLVED`) | `docs/games/dicethrone/attack-settlement-invariants.md` + `docs/games/dicethrone/token-active-use-custom-action.md` | 主伤害单次落地、攻击后续选择不得重放主攻击、奖励骰与攻击后续选择语义拆分；Token 主动使用依赖 custom action 时必须显式声明 |
@@ -66,7 +68,7 @@
 | **根 AGENTS 该写到什么粒度** (渐进式披露 / 路由优先 / 只保留触发入口) | `docs/ai-rules/document-consolidation.md` + 本文件 | 根文件只保留“何时触发、先看哪里、哪些红线不能越过”；细节下沉到二级文档 |
 | **向用户索要保留/合并/真相源拍板** (是不是二选一、能不能都保留、哪边先翻正) | `.codex/skill/merge-decision-package/SKILL.md` + `AGENTS.md` §1.1 | 先回答能不能都保留；按正式实现/候选实现/过程材料拆开；结论先行，用户只需决定一句话 |
 | **UI/UX 设计** (配色/组件/动效) | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` + `D:\codex-home\skills\ui-ux-pro-max\SKILL.md` + `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-animation-patterns.md` | 复杂 UI 先走 Design I/O 链路产出设计声明、执行契约和 evaluator；再用全局 `ui-ux-pro-max` 与 BoardGame overlay 补设计系统、组件规则、动画触发合同与验收口径 |
-| **UI 审计 / 玩家视角验收 / 没过继续重构** (看图后判断好不好用、反复低级 UI 错误、不能只靠 E2E 绿灯) | `docs/ai-rules/ui-change-gates.md` § `UI 审计闭环` + `docs/ai-rules/ui-ux.md` + `D:\codex-home\skills\ui-ux-pro-max\SKILL.md` | 必须基于当前真实入口整屏截图照填审计表；任一项失败就保持 `in_progress`，回同一位点重构、重截图、重审计；最终必须说清玩家第一眼会怎么行动 |
+| **UI 审计 / 玩家视角验收 / 没过继续重构** (看图后判断好不好用、反复低级 UI 错误、不能只靠 E2E 绿灯) | `D:\codex-home\skills\ui-audit-loop\SKILL.md` + `docs/ai-rules/ui-change-gates.md` § `UI 审计闭环` + `docs/ai-rules/ui-ux.md` + `D:\codex-home\skills\ui-ux-pro-max\SKILL.md` | 必须基于当前真实入口整屏截图照填审计表；素材空占位、小字动作入口、热区小于 44px、玩家不知道点哪里都直接判 `REVISE`；任一项失败就保持 `in_progress`，回同一位点重构、重截图、重审计；最终必须说清玩家第一眼会怎么行动 |
 | **新游戏位图设计稿 / 设计批准门禁** (先看图、先出 PNG/JPG/WebP、批准后才进骨架/前端) | `D:\codex-home\skills\ui-design-pipeline\SKILL.md` + `.codex/skill/boardgame-ui-imagegen/SKILL.md` + `.codex/skill/create-new-game/SKILL.md` | 阶段 0 锁定规则/素材/布局真相源后，先用 Design I/O 产出新游戏 UI 声明与 evaluator；设计稿默认是图片不是页面；Step1 结构、Step2 布局收敛、Step3 风格、Step4 分界面逐步批准；设计稿未批前不得启动服务、不得写运行页；前端实现必须等骨架完成 |
 | **游戏主交互槽位 / 手牌区 / waiting / prompt / rail 抢位** (主交互被挤压、双主焦点、来源家族、交互壳层重排) | `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/ui-responsive-layout.md` + `design-system/game-ui/MASTER.md` + `D:\codex-home\skills\ui-ux-pro-max\SKILL.md` | 先写 `主交互槽位五联单`；来源家族必须能回查到真实文件/截图；验收必须证明主交互槽位前中后不漂移、临时 UI 不侵入主槽位、页面没有双主焦点 |
 | **显示游戏实施状态** (`statusTag` / `under_construction` / 实施中横幅) | `docs/framework/frontend.md` § 实施中状态横幅 | 游戏目录、详情缩略图、选角卡面等用户可见入口，只要展示“实施中”，必须复用共享斜条组件 `ImplementationStatusRibbon`，禁止降级成普通标签/小字提示 |
@@ -76,8 +78,8 @@
 | **生图设计稿 → 实现设计稿** (AI 生成 UI mockup 后按图实现/复刻) | `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/ui-ux.md` | 真实内容盘点、禁止无中生有、目标稿复看、关键几何比例量测、E2E 截图证据 |
 | **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-responsive-layout.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
 | **大规模 UI 改动** (新页面/重做布局/新游戏UI) | 先 `D:\codex-home\skills\ui-design-pipeline\SKILL.md`，再全局 `ui-ux-pro-max --design-system` 与 `design-system/` | 先锁 spec/domain/design/components/craft/template/evaluator，再生成或更新具体设计系统；见 §UI/UX 规范 → §0. 大规模 UI 改动前置流程 |
-| **游戏内 UI 交互** (按钮/面板/指示器) | `design-system/game-ui/MASTER.md` | 交互原则、反馈规范、动画时长、状态清晰 |
-| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单 / AI 过程话术不得上屏) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md` | 总原则在 `MASTER.md`；“看清后可关闭”这类给 AI 或测试人员的验收话术不得进入玩家 UI；具体承接方式按来源家族选型；单游戏 workflow 只引用入口，不重复维护正文 |
+| **游戏内 UI 交互** (按钮/面板/指示器) | `design-system/game-ui/MASTER.md` + `D:\codex-home\skills\ui-audit-loop\SKILL.md` | 交互原则、反馈规范、动画时长、状态清晰；动作控件不得做成小字提示，必须像按钮或可点对象并满足触控/反馈门槛 |
+| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单 / AI 过程话术不得进入玩家 UI) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md` | 总原则在 `MASTER.md`；“看清后可关闭”这类给 AI 或测试人员的验收话术不得进入玩家 UI；具体承接方式按来源家族选型；单游戏 workflow 只引用入口，不重复维护正文 |
 | **选择成熟交互来源家族** (prompt / waiting / 手牌区 / 右侧 rail / setup 壳层) | `design-system/game-ui/source-families.md` | 先从批准家族中选型；复用仓内成熟不变量；找不到家族前不得发明正式交互模式 |
 | **游戏 UI 风格选择** | `design-system/styles/` | arcade-3d（街机立体）、tactical-clean（战术简洁）、classic-parchment（经典羊皮纸） |
 | **创建临时文件 / 清理根目录** (Bug 分析/测试脚本/Wiki 数据) | `docs/temp-files-management.md` | 临时文件分类规则、目录结构、.gitignore 规则、开发规范 |

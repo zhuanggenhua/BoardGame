@@ -5035,8 +5035,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-1-front": {
       "variants": {
         "webp": {
-          "sha256": "82ef4b60d4d995ff400fe074248298ba72aff6346b23e66c3e2046fbe0da9078",
-          "bytes": 14034,
+          "sha256": "dc73d7cdb23816878c595e3795874c1db1b92239873d7ef43a6ed4ad7b6b7bac",
+          "bytes": 14158,
           "mime": "image/webp"
         }
       }
@@ -5053,8 +5053,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-2-front": {
       "variants": {
         "webp": {
-          "sha256": "34eb647625536f450981319153e195a65681127b39098771645f6f58cb4d3071",
-          "bytes": 10824,
+          "sha256": "9e34c6328f366d8f69703ce87058ba654f1d2d1fa3d784f925b7d0ad7c87d3fb",
+          "bytes": 11040,
           "mime": "image/webp"
         }
       }
@@ -5071,8 +5071,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-3-front": {
       "variants": {
         "webp": {
-          "sha256": "7892c4a5a4081455392bd750c6e3b2281527054142ade5281a5f95677dafbba5",
-          "bytes": 9822,
+          "sha256": "514a223918980fd46f15063114f9b4cb612d3662fd1c83a25ccef6ddb90753bc",
+          "bytes": 10198,
           "mime": "image/webp"
         }
       }
@@ -5089,8 +5089,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-4-front": {
       "variants": {
         "webp": {
-          "sha256": "087849a2a3f2b35b15c7b5681c32f0f5124cfb4b96b4edfe6b7343d73d1a38e9",
-          "bytes": 9960,
+          "sha256": "9d813c20441958ebf4b26fb963a75ec45777b8da22433fe42de38ef00fc34d36",
+          "bytes": 10186,
           "mime": "image/webp"
         }
       }
@@ -5107,8 +5107,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-5-front": {
       "variants": {
         "webp": {
-          "sha256": "094a4906b932ffe26cdfcdff4340d7b18d44efd45bb8163d70e03f6da27d7be8",
-          "bytes": 11176,
+          "sha256": "aa94f62286f8a7ef29c51af3c26c9c63e7b4157d1c0d411901b6fdbe01d88ab8",
+          "bytes": 10620,
           "mime": "image/webp"
         }
       }
@@ -5125,8 +5125,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-6-front": {
       "variants": {
         "webp": {
-          "sha256": "165e56070b55c2ddba0f58fb2dfd3104a15bfb07af1f843f8520aa6201a653d9",
-          "bytes": 9982,
+          "sha256": "5406ac6720f9e161224c97f232986cd934505cb6c254994159d967ed54b55d59",
+          "bytes": 10398,
           "mime": "image/webp"
         }
       }
@@ -5161,8 +5161,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-1-front": {
       "variants": {
         "png": {
-          "sha256": "d2648e23b1fa987821347bbf7d1530a9cd7ba695a03828a3603e35821d9094c1",
-          "bytes": 67773,
+          "sha256": "6364c5032220dfeec908946dbb51bca24c4ec5cd10206e49691c67e58ee5315d",
+          "bytes": 67785,
           "mime": "image/png"
         }
       }
@@ -5179,8 +5179,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-2-front": {
       "variants": {
         "png": {
-          "sha256": "adba223a7256f72b24e7c88d59e5a3f17e2cf45ff90f0881c759c91d1c214e3c",
-          "bytes": 53019,
+          "sha256": "59e43146100148560c0b56e1e92fe77458d4ea4cc1abec27451863c0e152a01c",
+          "bytes": 53014,
           "mime": "image/png"
         }
       }
@@ -5197,8 +5197,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-3-front": {
       "variants": {
         "png": {
-          "sha256": "d3c274f70529d8fab17585d13332c5727dd49d0326555e94e81265aaa039febb",
-          "bytes": 51032,
+          "sha256": "298e532d59207eca0b5f9187d8b95f4fce6e75fef186ce311697a8cb86e2320f",
+          "bytes": 50987,
           "mime": "image/png"
         }
       }
@@ -5215,8 +5215,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-4-front": {
       "variants": {
         "png": {
-          "sha256": "59478b635346a4a30d44e8ad41c737c0676dde386acbe9f6aa48f54621814d75",
-          "bytes": 50819,
+          "sha256": "e94854111150c88347b26f92b6212290fc43d1553af7a0d3c8773ff2ec110076",
+          "bytes": 50828,
           "mime": "image/png"
         }
       }
@@ -5233,8 +5233,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-5-front": {
       "variants": {
         "png": {
-          "sha256": "85460eba7db37fde0cffd98105b4f8b05fa3b1e5e9563828d5a64652adb08476",
-          "bytes": 52458,
+          "sha256": "f2c05926208c208f6312a0d2a6ca7ffb71d5d62b796ffff44f1cf1c820ad9f3d",
+          "bytes": 52559,
           "mime": "image/png"
         }
       }
@@ -5251,8 +5251,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-6-front": {
       "variants": {
         "png": {
-          "sha256": "f950f2163757f0f28c6c7e2d9908d334be173f6a2c6e50b3ba7bf865eb8f0be3",
-          "bytes": 51008,
+          "sha256": "49c8bbd267bc7083fc363e8b1d49559ebdc9c7f3e6f07a1aa4404872c10921e8",
+          "bytes": 51056,
           "mime": "image/png"
         }
       }
@@ -10582,6 +10582,60 @@
         }
       }
     },
+    "zh-CN/summonerwars/hero/yongheng/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "9d8d7d269e252078dddbb5527f27b099a5e72a98c60b2220574b0d364e7b0037",
+          "bytes": 1372856,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "d0fddf484d720c05e471c2446de8d07d13f721b30e51e6071294bd3e4889b112",
+          "bytes": 2062610,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "29b3f824407bb93a5e29ce1990a20bb72ddd17dac90d341ad441529962a4c77b",
+          "bytes": 295994,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "e9df6ad384612addbb6fe2a7498cbc6b1ca932cf8e946aef3b2f94edc4f5f396",
+          "bytes": 125230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/hero": {
+      "variants": {
+        "png": {
+          "sha256": "b246838720c39409b537e74184bb55d6d04256e656fe4498020c00f1be53041a",
+          "bytes": 2583575,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "64d48aee3bc19702de8e0f49367961a2d851fa50624ddb901aa1f410c0b55196",
+          "bytes": 242959,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "zh-CN/summonerwars/thumbnails/compressed/cover": {
       "variants": {
         "webp": {
@@ -11545,6 +11599,15 @@
         }
       }
     },
+    "zh-CN/the-gang/chips/compressed/exit-chip": {
+      "variants": {
+        "webp": {
+          "sha256": "bcbc29cae5c9ac06c97ca8bd4bf6d7536f86697cdf689d2d291cd35b09cb69c0",
+          "bytes": 82078,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/the-gang/chips/compressed/round-1-white-0": {
       "variants": {
         "webp": {
@@ -11866,6 +11929,15 @@
           "sha256": "b1453cb31856fc16bfde36225f13e8ad65d706518707939339ec6ccab5fdb4b3",
           "bytes": 83188,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/exit-chip": {
+      "variants": {
+        "png": {
+          "sha256": "04a4b7bce7052aa7b5ceba62cd014f3618275192df0908a9a7c6071ba76e6332",
+          "bytes": 312464,
+          "mime": "image/png"
         }
       }
     },
@@ -13201,57 +13273,39 @@
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/cards": {
-      "variants": {
-        "jpg": {
-          "sha256": "9d8d7d269e252078dddbb5527f27b099a5e72a98c60b2220574b0d364e7b0037",
-          "bytes": 1372856,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/compressed/cards": {
+    "zh-CN/smashup/cards/compressed/marvel_villains_pod": {
       "variants": {
         "webp": {
-          "sha256": "d0fddf484d720c05e471c2446de8d07d13f721b30e51e6071294bd3e4889b112",
-          "bytes": 2062610,
+          "sha256": "1b6b83736dbde9cd99a5f6268ad02ddae618e5d04147a7fb06a9c1fb6e167b24",
+          "bytes": 6320664,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/compressed/hero": {
+    "zh-CN/smashup/cards/compressed/marvel_wave_one_pod": {
       "variants": {
         "webp": {
-          "sha256": "29b3f824407bb93a5e29ce1990a20bb72ddd17dac90d341ad441529962a4c77b",
-          "bytes": 295994,
+          "sha256": "f410e6bf194e873884a78fb097619e0997bf12c83e199b785d05f8a7f129099a",
+          "bytes": 6257536,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/compressed/tip": {
-      "variants": {
-        "webp": {
-          "sha256": "e9df6ad384612addbb6fe2a7498cbc6b1ca932cf8e946aef3b2f94edc4f5f396",
-          "bytes": 125230,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/hero": {
+    "zh-CN/smashup/cards/marvel_villains_pod": {
       "variants": {
         "png": {
-          "sha256": "b246838720c39409b537e74184bb55d6d04256e656fe4498020c00f1be53041a",
-          "bytes": 2583575,
+          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
+          "bytes": 34711937,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/tip": {
+    "zh-CN/smashup/cards/marvel_wave_one_pod": {
       "variants": {
-        "jpg": {
-          "sha256": "64d48aee3bc19702de8e0f49367961a2d851fa50624ddb901aa1f410c0b55196",
-          "bytes": 242959,
-          "mime": "image/jpeg"
+        "png": {
+          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
+          "bytes": 35943625,
+          "mime": "image/png"
         }
       }
     },

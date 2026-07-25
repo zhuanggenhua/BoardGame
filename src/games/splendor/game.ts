@@ -17,6 +17,7 @@ const ACTION_ALLOWLIST = [
     'BUY_RESERVED_CARD',
     'DISCARD_GEMS_TO_LIMIT',
     'CHOOSE_NOBLE',
+    'PASS_TURN',
 ] as const;
 
 const SP_NS = 'game-splendor';
@@ -203,6 +204,14 @@ export function formatSplendorActionEntry({
                 segments: [i18nSeg('actionLog.chooseNoble', { noble: noble?.name ?? payload.nobleId })],
             };
         }
+        case 'PASS_TURN':
+            return {
+                id: `${command.type}-${command.playerId}-${timestamp}`,
+                timestamp,
+                actorId: command.playerId,
+                kind: command.type,
+                segments: [i18nSeg('actionLog.passTurn')],
+            };
         case 'HOST_START_GAME':
             return null;
         default:
@@ -239,6 +248,7 @@ export const engineConfig = createGameEngine<SplendorCore, SplendorCommand, Sple
         'BUY_RESERVED_CARD',
         'DISCARD_GEMS_TO_LIMIT',
         'CHOOSE_NOBLE',
+        'PASS_TURN',
     ],
 });
 

@@ -758,6 +758,8 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
         offensiveRollAttemptsThisTurn: undefined,
         offensiveRollAttackMadeThisTurn: undefined,
         lastSoldCardId: undefined,
+        pendingAttack: null,
+        pendingDamage: undefined,
     };
 };
 

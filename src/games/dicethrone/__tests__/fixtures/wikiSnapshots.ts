@@ -302,7 +302,7 @@ export const PALADIN_ABILITY_SNAPSHOTS: WikiAbilitySnapshot[] = [
   { heroId: 'paladin', abilityId: 'holy-light', level: 2, wikiName: 'Holy Light II', wikiDescription: 'Heal 2 per Heart rolled. Roll 3 dice: Sword gain Crit, Helm gain Protect, Heart draw 1, Pray gain 2 CP.', wikiHeal: 2, wikiTrigger: '2 Hearts' },
 
   // --- Vengeance ---
-  { heroId: 'paladin', abilityId: 'vengeance', level: 1, wikiName: 'Retribution', wikiDescription: 'Gain 1 Retribution. Gain 2 CP.', wikiTrigger: '3 Helms + 1 Pray' },
+  { heroId: 'paladin', abilityId: 'vengeance', level: 1, wikiName: 'Retribution', wikiDescription: 'Gain 1 Retribution. Gain 3 CP.', wikiTrigger: '3 Helms + 1 Pray' },
   { heroId: 'paladin', abilityId: 'vengeance', level: 2, wikiName: 'Retribution II', wikiDescription: 'Vengeance (all 4 symbols): Gain 1 Retribution, heal 1, deal 3 unblockable damage. Retribution II (3 Helms + 1 Pray): Give any player 1 Retribution, gain 4 CP.', wikiTrigger: 'All 4 symbols / 3 Helms + 1 Pray', wikiTags: ['unblockable'] },
 
   // --- Righteous Prayer ---

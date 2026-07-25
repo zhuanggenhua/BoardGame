@@ -2,6 +2,8 @@
 
 > 2026-06-06 当前有效口径：本文现在记录的是战术家 / 咒缚海盗这两名新英雄的最终 closeout 结论与对象级证据入口。历史段落仍保留用于追踪问题如何被收掉，但当前阅读必须以前部“完成态矩阵 / 最终 gate 矩阵 / 修订记录”的最新口径为准，不再把中前段历史 hold 直接当成当前状态。
 
+> 2026-07-23 战争贩子规则修订：回到战术家玩家面板图面复核后，确认旧文档里“基础战争贩子按面结算后全分支额外进攻 / postDamage 统一触发额外进攻”的结论失效。当前合同为：基础战争贩子军刀分支写入 5 点攻击伤害并进入可防御攻击结算，旗帜分支只获得 4 战术优势，只有勋章分支抽 1 张牌并立即进入额外进攻投掷阶段；`战争贩子 II` 同样只有勋章分支触发额外进攻。
+
 ## 2026-06-06 最终 closeout 结论
 
 > 本节直接回答这两名新英雄当前是不是已经完成、目录徽标是不是已经摘掉、以及“规则都实施了吗 / 技能是不是要重录 / 审计也是吗”的最终答案。
@@ -115,7 +117,7 @@
 | D2 边界完整 | 部分通过 | 2v2 对手筛选、至多/跳过路径已覆盖；真实入口开局与手牌 atlas 已覆盖，复杂交互 L3 仍未逐项覆盖 |
 | D3 数据流闭环 | 部分通过 | 定义/注册/执行/状态/i18n/测试/E2E/上传链已闭环；复杂交互 UI 未逐项 L3/L4 |
 | D5 交互完整 | 部分通过 | 战略防御、地毯式轰炸、无情诅咒、送你们去喂鱼、赎金、瞭望台、啜呼、深海潜行、干票大的、占得上风、起锚、虚张声势、诱饵、战争贩子 II、开拓战场 II、抽筋剥皮、死亡印记、诅咒卡牌、封舱、分点给我、亡灵之爪、诅咒金币、火药桶均有 L2 交互证据；真实 UI 已覆盖选角、开局、手牌 atlas、战略防御、送你们去喂鱼正向施桶链 + 有合法目标时的 skip 否定链、手牌选择、瞭望台三分支、作战室奖励骰展示、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势弯刀 / 战利品抽 2 / 骷髅施加火药桶三分支、诱饵真实攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰展示、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、开拓战场 II 大顺主分支变体选择链、`战略转移 II` 侦察分支、`摇鼓运动 II` 间接接敌分支、`开拓战场 II` 全面封锁分支、`反制措施 II / III` 升级防御链、`包夹侧翼 II` 升级主链、`埋伏` 即时手牌链、4 人地毯式轰炸双敌目标链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、深海潜行完整攻击入口、4 人无情诅咒 `targetingRoll / preDefense` 火药桶正向选择链 + 不施加否定链、诅咒卡牌自伤抽牌分支、封舱弃手重抽链、分点给我单目标火药桶链、亡灵之爪诅咒金币追加直伤链、诅咒金币维持阶段掉血链、火药桶维持阶段爆炸链，以及 `休战` 挂在攻击者身上后仍会真实建立攻击链、打开防御阶段并在收口时把伤害归零的消费链；其余复杂交互仍待逐项 L3 |
-| D8 时序正确 | 部分通过 | 紧缚阶段清理、休战清理、战争贩子额外进攻、战争贩子 II 勋章额外进攻、咒缚未发起攻击追踪有 L2；真实入口已补 `紧缚` 的 `64-66` 额外投掷 `1CP` 门禁与 phase exit 清理链、`休战` 的 `174-176` “攻击链正常建立 -> 防御阶段打开 -> 收口后清理状态”时序链，以及战争贩子 II 奖励骰代表链与勋章专门链，领域层也已补“先触发额外攻击、后于防御阶段收口时切回 offensiveRoll”的最小时序合同 |
+| D8 时序正确 | 部分通过 | 紧缚阶段清理、休战清理、战争贩子勋章分支额外进攻、战争贩子 II 勋章分支额外进攻、咒缚未发起攻击追踪有 L2；真实入口已补 `紧缚` 的 `64-66` 额外投掷 `1CP` 门禁与 phase exit 清理链、`休战` 的 `174-176` “攻击链正常建立 -> 防御阶段打开 -> 收口后清理状态”时序链，以及战争贩子 II 奖励骰代表链与勋章专门链；2026-07-23 已把基础战争贩子旧“全分支额外进攻”结论降级为失效，只保留勋章分支额外进攻合同 |
 | D11/D12 消耗与写入对称 | 部分通过 | 战术优势消耗、CP 支付/偷取/获得、卡牌扣费后结算已覆盖代表链；战术优势真实入口 `60-63` 已证明 token 消耗与 `bind` 转移写入对称；`184-185` 已补 `埋伏` 的 `支付 1CP -> 战术优势写到 2 -> 源卡进入弃牌堆`，`177-183` 已补 `反制措施 II / III` 与 `包夹侧翼 II` 的升级参数写入对称链 |
 | D14 清理完整 | 部分通过 | 紧缚、休战等阶段清理已有 L2，且 `紧缚` 已补 `64-66` 真实入口 phase exit 清理链，`休战` 已补 `174-176` 真实攻击消费后 `Guest parley 1 -> 0` 的 phase exit 清理链；其它 UI/pending 清理待 E2E |
 | D15 UI 状态同步 | 部分通过 | 已有真实 host/guest 截图证明战术家与咒缚海盗选角、玩家板、提示板、HUD、手牌 atlas 可见；战略防御、送你们去喂鱼正向施桶链与 skip 否定链、手牌选择、瞭望台三分支、作战室奖励骰、占得上风勋章分支、起锚骷髅分支与默认抽牌分支、虚张声势弯刀 / 战利品抽 2 / 骷髅施加火药桶三分支、诱饵攻击修正链、赎金跨玩家双步选择链、啜呼目标选择与奖励骰分支、干票大的奖励骰、战争贩子 II 奖励骰代表链、战争贩子 II 勋章专门链、开拓战场 II 变体选择 + 防御链、`战略转移 II` 侦察分支变体选择 + 收口、`摇鼓运动 II` 间接接敌分支前后状态、`开拓战场 II` 全面封锁分支前后状态、`反制措施 II / III` 升级防御窗口、`包夹侧翼 II` 升级主链前后状态、`埋伏` 打牌前后手牌/战术优势状态、4 人地毯式轰炸双敌目标链、抽筋剥皮奖励骰代表链、死亡印记奖励骰代表链、两条防御响应链、`伴装撤退 / 脱战` 真实防御响应手牌链、深海潜行完整攻击入口、4 人无情诅咒 `targetingRoll / preDefense` 火药桶正向选择链与不施加否定链、诅咒卡牌选择弹窗、封舱弃手重抽前后手牌状态、分点给我前后火药桶状态、亡灵之爪前后 HP/诅咒金币状态、诅咒金币维持阶段前后 HP/状态保留，以及火药桶维持阶段前后 HP/状态移除已有交互 UI 截图链；其余复杂交互仍待逐项 L3 |
@@ -149,8 +151,8 @@
 | 军刀突刺 II | 伤害提升；三同值施加紧缚 | `SABRE_THRUST_2`、custom action | 真实入口截图 100-102 已证明升级场景下 `fist` 槽位会解析为 `sabre-thrust-2-3`，点击后需由 Host 推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host HP=50 / Guest HP=45 / Guest bind=1`，说明升级后的 `5` 点伤害与“三同值施加紧缚”已经在真实 UI 中闭环；当前剩余只回到 `4/5` 军刀参数链与升级家族 `L4` 判等 | L2 / 对象级 L3 | passed |
 | 地毯式轰炸 | 获得战术优势；两名不同对手受附属伤害 | `zhanshujia-carpet-bombing-targets` | 机制测试；真实入口截图 80-81 证明 4 人链会先进入 `targetingRoll`，完成目标骰确认后再进入双敌 `selectPlayer` 覆盖层，且只列敌队 `P1 / P3`、结算后 `player0Hp=46 / player2Hp=46 / player3Hp=50`；当前剩余已收敛为与升级版/双敌共享链的 `L4` 判等，而不是基础对象仍缺真实入口 | L2 / 对象级 L3 | passed |
 | 地毯式轰炸 II | 主分支 + 旗帜 4 分支 | `CARPET_BOMBING_2` | 4 人真实入口截图 80-81 已证明主分支会先经过 `targetingRoll` 与双敌 `selectPlayer` 覆盖层；真实入口截图 103-104 已证明升级场景下 `chi` 槽位会解析为 `carpet-bombing-2-strategy`，点击后不会创建 `pendingAttack`，而是直接完成 `Host 战术优势=3` 与 `抽 2 张牌`，且 `战略防御！ / 占得上风！` 会真实进入手牌区；当前剩余已收敛为“其它升级分支能否与基础版/已证分支合法复用”的 `L4` 登记 | L2 / 对象级 L3 | passed |
-| 战争贩子 | 奖励骰分支；攻击收口后额外进攻投掷阶段 | `zhanshujia-war-monger-extra-offensive-roll` | 机制测试；真实入口截图 78-79 已证明 Host 会先进入基础战争贩子的奖励骰覆盖层，并在关闭覆盖层、由 Guest 完成防御收口后真实回到额外进攻 `offensiveRoll`；分支断言同时覆盖：勋章时抽 1 张 `战略防御`，旗帜时战术优势从 `1 -> 5`，其余分支时 Guest HP 从 `50 -> 45`；当前剩余已收敛为额外进攻 family 的更高层 `L4` 复用登记，而不是对象本体缺真实收口 | L2 / 对象级 L3 | passed |
-| 战争贩子 II | 勋章抽牌并触发额外进攻投掷阶段 | `zhanshujia-war-monger-2-roll` + `extraAttackInProgress.phaseEntered` | 机制测试；真实入口截图 29-30 证明奖励骰覆盖层可见，截图 35 证明 Guest 防御收口后 Host 真实进入额外进攻 `offensiveRoll`；当前已至少拿到勋章专门链的对象级直证，剩余收敛为“其它分支是否可与基础版合法复用同一额外进攻 family”的 `L4` 登记 | L2 / 勋章专门链 L3 | passed |
+| 战争贩子 | 奖励骰三分支；只有勋章分支立即进入额外进攻投掷阶段 | `zhanshujia-war-monger-roll` + `zhanshujia-war-monger-attack-damage` | 2026-07-23 回图确认旧“全分支额外进攻”证据失效。当前机制测试锁定：军刀分支只写入 5 点攻击伤害，先进入防御投掷并允许防伤/减伤结算；旗帜分支只获得战术优势；勋章分支抽 1 张牌、把本次攻击改为不可防御的 0 伤害并触发 `EXTRA_ATTACK_TRIGGERED`，不会打开防御投掷 | L2 | passed |
+| 战争贩子 II | 勋章抽牌并触发额外进攻投掷阶段 | `zhanshujia-war-monger-2-roll` + `extraAttackInProgress.phaseEntered` | 2026-07-23 修订：勋章分支不应进入防御投掷。当前机制测试证明奖励骰为勋章时生成 `CARD_DRAWN`、`PENDING_ATTACK_UPDATED({ damage: 0, isDefendable: false })` 与 `EXTRA_ATTACK_TRIGGERED`；旧“Guest 防御收口后 Host 进入额外进攻”的截图说明只能作为历史截图名保留，不再作为规则时序证据 | L2 | passed |
 | 摇鼓运动 | 施加紧缚并造成 7 | `abilities.ts` | 真实入口截图 165-167 已证明 `lotus` 槽位在 `3 军刀 + 2 勋章` 盘面下会解析为 `drum-movement`，点击后自然推进到 Guest `human-still-wet-behind-ears` 防御阶段；在全战利品防御骰下，服务器断言 `Host 战术优势=0 / Guest bind=1 / Guest HP=43`，说明基础版 `bind + 7 damage` 已在真实 UI 中闭环 | L2 / 对象级 L3 | passed |
 | 摇鼓运动 II | 主分支获得战术优势+紧缚+伤害；间接分支战术优势+不可防御伤害 | `DRUM_MOVEMENT_2` | 真实入口截图 88-90 已证明 `lotus` 槽位在 `3 军刀 + 2 勋章` 盘面下会直接解析为 `drum-movement-2-main`，点击后需由 Host 推进到 Guest `still-wet-behind-ears` 防御阶段；把 Guest 防御骰固定成全战利品面后，服务器断言 `Host 战术优势=1 / Guest bind=1 / Guest HP=43`，说明主分支 `grantToken + bind + 7 damage` 已在真实 UI 中闭环。2026-06-06 新增截图 `210-212` 又证明在另一组盘面下，同一 `lotus` 槽位会直接解析为 `drum-movement-2-indirect`，并真实收口到 `Host 战术优势=2 / Guest HP=48 / Guest bind=0`。当前剩余已收敛为与基础版/主分支的变体 family `L4` 判等 | L2 / 对象级 L3 | passed |
 | 包夹侧翼 | 小顺获得战术优势并造成 6 | `FLANKING` | 真实入口截图 171-173 已证明 `combo` 槽位在小顺子盘面下会解析为 `flanking`，点击后自然推进到 Guest `human-still-wet-behind-ears` 防御阶段；在全战利品防御骰下，服务器断言 `Host 战术优势=1 / Guest HP=44`，说明基础版 `grantToken + 6 damage` 已在真实 UI 中闭环 | L2 / 对象级 L3 | passed |
@@ -401,7 +403,7 @@
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应逐张把其余战术家升级牌写入对应升级槽位"` | 1 passed（2026-06-06；截图 `186-201` 逐张覆盖 `反制措施 III / 反制措施 II / 战略转移 II / 开拓战场 II / 包夹侧翼 II / 摇鼓运动 II / 地毯式轰炸 II / 军刀突刺 II` 的真实手牌打出与升级槽位写入） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示紧缚在额外投掷中的 CP 门禁与阶段清理"` | 1 passed（2026-06-03；本轮复核再次证明 `64-66` 真实入口链可用，旧的环境阻断结论已过时） |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 39 passed（2026-06-03；这是当时版本的阶段性整跑结果，后续已被更晚的整跑事实取代） |
-| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算战争贩子的奖励骰分支与额外进攻阶段"` | 1 passed（2026-06-03；截图 78-79 覆盖基础战争贩子奖励骰展示与防御收口后的额外进攻阶段） |
+| `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts "真实入口应展示并结算战争贩子的奖励骰分支与额外进攻阶段"` | 历史测试名保留；2026-07-23 回图后，旧截图 78-79 只能作为奖励骰覆盖层历史证据，不能再证明“基础战争贩子全分支防御收口后额外进攻”。当前回归以机制测试中的军刀可防御、勋章不防御并额外进攻断言为准 |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 历史上曾 `26 passed`（2026-06-02 20:54）且也曾因 runtime 波动全量 `skipped`；这些都已不是当前事实。2026-06-06 中段一度也出现过“命令超时前只看到前 70 条”的假象，但那同样不是当前业务 blocker；最新权威整跑已更新为 `80 passed (20.3m)` |
 | `node scripts/infra/run-e2e-single.mjs default e2e/dicethrone/zhanshujia-cursed-pirate-intake.e2e.ts` | 80 passed（2026-06-06；当前最新整份 intake 权威整跑，说明 human 面尾段、维持阶段链与 4 人链都已并回 full-file，当前不再存在“整跑仍红”或“full-file 未证实”的 blocker） |
 | `run-e2e-single.mjs` 并行定点执行 | 不可作为当前默认验证方式：并行会稳定撞 `.tmp/e2e-preflight-cache.json` 的 `EBUSY`，应串行跑相关定点用例 |
@@ -498,7 +500,7 @@
 | `28-guest-hefty-loot-applied.png` | 关闭覆盖层后，服务器状态断言咒缚海盗 CP 回到 5、手牌补到 2、干票大的进入弃牌堆，证明战利品分支真实收口 |
 | `29-host-war-monger-2-bonus-die-branch.png` | Host 真实通过玩家板 `sky` 槽位触发战争贩子 II 后进入奖励骰覆盖层，截图保留真实入口奖励骰展示证据 |
 | `30-host-war-monger-2-branch-applied.png` | 关闭覆盖层后，服务器状态按实际 `pendingAttack.extraRoll.value` 分支收口；截图保留代表性分支结算后的棋盘状态 |
-| `35-host-war-monger-2-medal-extra-attack.png` | Guest 完成本次防御收口后，Host 真实回到额外进攻 `offensiveRoll`；截图保留战争贩子 II 勋章分支已进入额外进攻阶段的专门证据 |
+| `35-host-war-monger-2-medal-extra-attack.png` | 历史截图名保留；2026-07-23 现行合同中战争贩子 II 勋章分支不应经过防御投掷。该截图不能再作为“Guest 防御收口后进入额外进攻”的规则证据，当前以机制测试的不可防御 0 伤害 + `EXTRA_ATTACK_TRIGGERED` 断言为准 |
 | `31-guest-flay-bonus-dice.png` | Guest 真实打出抽筋剥皮后进入 5 骰奖励骰覆盖层，截图保留真实入口奖励骰展示证据 |
 | `32-guest-flay-branch-applied.png` | 关闭覆盖层后，服务器状态按实际弯刀数收口；截图保留代表性分支结算后的棋盘状态，并可回指 bonus damage 与火药桶落点 |
 | `33-guest-marked-for-death-bonus-dice.png` | Guest 真实通过玩家板 `marked-for-death` 槽位触发死亡印记后进入 4 骰奖励骰覆盖层，截图保留真实入口奖励骰展示证据 |
@@ -545,7 +547,7 @@
 | `76-host-war-monger-upgrade-card-before-play.png` | Host 真实主阶段持有 `战争贩子 II` 升级牌，`sky` 槽位仍显示基础 `war-monger`，且 `data-upgrade-card-interactive=false`；截图保留升级前手牌与槽位入口状态 |
 | `77-host-war-monger-upgrade-card-applied.png` | Host 打出升级牌后，服务器断言 `abilityLevels['war-monger']=2`、`upgradeCardByAbilityId['war-monger'].cardId='upgrade-zhanshujia-war-monger-2'`、CP `5 -> 3`、手牌归 0、弃牌堆仍为空，且槽位已切为 `data-upgrade-card-interactive=true`；截图保留升级后槽位 UI 状态 |
 | `78-host-war-monger-bonus-die-branch.png` | Host 真实通过玩家板 `sky` 槽位触发基础战争贩子后进入奖励骰覆盖层；截图保留本体奖励骰展示证据 |
-| `79-host-war-monger-extra-attack-phase.png` | Guest 完成防御收口后，Host 真实回到额外进攻 `offensiveRoll`；截图保留基础战争贩子已进入额外进攻阶段的对象级证据 |
+| `79-host-war-monger-extra-attack-phase.png` | 历史截图说明已失效：不能再作为“基础战争贩子防御收口后必进额外进攻”的证据。2026-07-23 现行合同只允许勋章分支额外进攻；军刀分支应先进入防御并按防伤/减伤后结算攻击伤害 |
 | `80-player2-carpet-bombing-target-choice.png` | 战术家在 4 人真实入口里完成 `targetingRoll` 与必要的目标归属选择后，真实进入 `selectPlayer` 双敌覆盖层；截图保留仅敌队 `P1 / P3` 可选、队友 `P4` 不在候选中的证据 |
 | `81-player2-carpet-bombing-applied.png` | 战术家确认 `P1 / P3` 后，服务器断言 `teamA=46`、`player0Hp=46`、`player2Hp=46`、`player3Hp=50` 且交互清空；截图保留双敌目标链收口后的棋盘状态 |
 | `82-host-sabre-thrust-offensive-entry.png` | Host 在真实 3 军刀盘面下，`fist` 槽位显示 `data-base-ability-id="sabre-thrust"` 与 `data-resolved-ability-id="sabre-thrust-3"`，且可点击；截图保留军刀突刺对象级真实攻击入口证据 |
@@ -734,7 +736,7 @@
 | 对象/子 family | 当前可确认的触发/展示 seam | 当前可确认的共享消费者/收口 | 当前可以合法复用的边界 | 当前仍不能外推的差异 |
 | --- | --- | --- | --- | --- |
 | `作战室 / 占得上风` | 都是主阶段手牌单骰奖励，真实入口都会进入奖励骰覆盖层，且都不会创建 `pendingAttack` | `作战室` 经 `zhanshujia-war-room-roll` 生成 `BONUS_DIE_ROLLED -> TOKEN_GRANTED(ceil(d6/2)) -> displayOnlySettlement`；`占得上风` 则经通用 `rollDie` 在勋章时 `grantToken(4)`、否则 `drawCard(1)` | 只能把“主阶段单骰奖励牌会打开/关闭 bonus overlay 并立即收口、不进入攻击链”视为同一 L4 壳 | 不能把 `ceil(d6/2)` 的战术优势公式外推到 `占得上风`，也不能把 `default draw 1` 外推回 `作战室` |
-| `战争贩子` | 玩家板 `sky` 槽位触发后走通用 `rollDie conditionalEffects` 奖励骰链 | 三个分支分别落到 `bonusDamage 5 / 战术优势 +4 / draw 1`，随后无论分支如何都经 `zhanshujia-war-monger-extra-offensive-roll` 在 `postDamage` 创建额外进攻 | 可以把“基础版 war-monger 的额外进攻来自统一 postDamage seam”登记为对象内 L4 | 不能把它与 `战争贩子 II` 视作同一 consumer；II 的额外进攻不再是全分支共享的 postDamage 结果 |
+| `战争贩子` | 玩家板 `sky` 槽位触发后走 `zhanshujia-war-monger-roll` 奖励骰链 | 三个分支分别落到 `pendingAttack.damage=5` 并由 `withDamage` 攻击伤害结算、`战术优势 +4`、`draw 1 + EXTRA_ATTACK_TRIGGERED`；只有勋章分支额外进攻 | 可以把“基础版 war-monger 的奖励骰 overlay 与三分支消费已接线”登记为对象内 L4 候选 | 不能再把基础版额外进攻登记为统一 postDamage seam，也不能把勋章额外进攻外推到军刀/旗帜 |
 | `战争贩子 II` | 玩家板同一 `sky` 槽位，但奖励骰已整体改走 `zhanshujia-war-monger-2-roll` customAction；真实入口已锁定 overlay 与勋章专门链 | customAction 内三分支分别是 `6 伤害 / +3 战术优势 / 抽 1 + EXTRA_ATTACK_TRIGGERED`，最后统一 `createDisplayOnlySettlement` | 可以把“II 的三个结果都由同一 customAction + displayOnlySettlement 收口”视为对象内 L4 | 不能把 II 直接外推回基础版，也不能把“勋章会进额外攻击”外推成刀/旗也共享同一额外阶段 |
 | `脱战` | 真实防御窗口中的单骰奖励骰覆盖层；不会回到主阶段，也不会进入额外进攻 | 三分支分别落到 `bonusDamage 2 / grantDamageShield 3 / grantToken(PROTECT)`，都在 defense response 内即时收口 | 可以把“防御响应单骰奖励牌已打通三类消费者”登记为对象内 L4 | 不能把它和 `作战室 / 占得上风` 或 `战争贩子` 家族合并，因为 phase、目标与消费者都不同 |
 | 战术家奖励骰总口径 | family 级未收口 | 可以确认“战术家单骰奖励对象的 overlay 打开/关闭与基本收口”早已不是 blocker | 真正未收口的是：哪几类消费者可以按同一主阶段/防御/额外进攻 family 合法复用，哪几类仍需独立保留 |
@@ -754,7 +756,7 @@
 | 子 family | 当前实现判断 | 当前仍需 completion audit 的真实原因 | 当前不得再写的误报 |
 | --- | --- | --- | --- |
 | `作战室 / 占得上风` | 主阶段单骰奖励壳已稳定：overlay 打开/关闭、立即收口、且不建立攻击链 | 剩余是 `ceil(d6/2)` 战术优势、`grantToken(4)`、`draw 1` 这些 downstream consumer 如何分 family 留档，不是奖励骰 UI 或单骰派发没实现 | 不得再写成“作战室/占得上风仍缺奖励骰真实链” |
-| `战争贩子` | 基础版奖励骰与 `postDamage -> EXTRA_ATTACK_TRIGGERED` 已共同形成完整 family，实现上不是空壳 | 剩余是它与 `战争贩子 II` 是否能共享同一奖励骰 family verdict；当前问题是分层，不是未实施 | 不得再写成“战争贩子额外进攻还只是理论合同” |
+| `战争贩子` | 基础版奖励骰三分支已各自落地：军刀进入可防御攻击伤害，旗帜获得战术优势，勋章抽牌并触发额外进攻 | 剩余是它与 `战争贩子 II` 的分支消费者边界如何封版；当前问题是分层，不是未实施 | 不得再写成“战争贩子全分支额外进攻”或“基础版额外进攻来自统一 postDamage seam” |
 | `战争贩子 II` | `zhanshujia-war-monger-2-roll` 已把刀/旗/勋章三分支与 `displayOnlySettlement` 统一收口，勋章专门链也有真实入口 | 剩余是 II 的三分支与基础版 family 的差异封版，不是 customAction 未完成 | 不得再写成“战争贩子 II 奖励骰只有 overlay，没有真实消费者” |
 | `脱战` | 防御阶段单骰奖励壳已经证明能分叉到 `damage / shield / protect` 三类消费者 | 剩余是它与主阶段奖励骰对象之间的 phase 边界登记，不是对象本体缺实现 | 不得再写成“脱战奖励骰仍只停在展示层” |
 
