@@ -8,6 +8,7 @@ import type { GameManifestEntry } from '../../../games/manifest.types';
 import type { LocalMatchPreferences } from '../../../engine/ai';
 import { FANTASY_REALMS_MANIFEST } from '../../../games/fantasyrealms/manifest';
 import { QIDAHEN_MANIFEST } from '../../../games/qidahen/manifest';
+import { THE_GANG_MANIFEST } from '../../../games/the-gang/manifest';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -70,6 +71,24 @@ const gameManifest: GameManifestEntry = {
 };
 
 describe('CreateRoomModal AI default state', () => {
+    it('纸牌帮没有保存偏好时默认按四人创建房间', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: THE_GANG_MANIFEST,
+            initialPreferences: null,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            numPlayers: 4,
+        }));
+    });
+
     it('没有保存偏好时，创建房间 AI 默认关闭', () => {
         render(createElement(CreateRoomModal, {
             isOpen: true,

@@ -3386,8 +3386,7 @@
       "effects": {
         "gainTa1": "获得 1 战术优势。",
         "bonusRoll": "投 1 骰：军刀造成 5 点伤害；旗帜获得 4 战术优势；勋章抽 1 张牌。",
-        "resolveSabreDamage": "若军刀分支命中，结算该攻击伤害。",
-        "extraOffensiveRoll": "立即进入额外进攻投掷阶段。"
+        "resolveSabreDamage": "若军刀分支命中，结算该攻击伤害。"
       }
     },
     "war-monger-2": {

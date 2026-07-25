@@ -40,6 +40,10 @@ const HUNTING_KNIFE_SELECTOR_SCREENSHOT = `${EVIDENCE_DIR}/08-砍刀攻击武器
 const HUNTING_KNIFE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/09-砍刀攻击武器-目标高亮.jpg`;
 const HUNTING_KNIFE_ATTACK_DICE_SCREENSHOT = `${EVIDENCE_DIR}/10-砍刀攻击武器-攻击投骰.jpg`;
 const HUNTING_KNIFE_ATTACK_FEEDBACK_SCREENSHOT = `${EVIDENCE_DIR}/11-砍刀攻击武器-攻击反馈.jpg`;
+const ATTACK_WEAPON_DISABLED_REASONS_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-攻击武器禁用原因完整链路');
+const ATTACK_WEAPON_DISABLED_REASONS_READY_SCREENSHOT = `${ATTACK_WEAPON_DISABLED_REASONS_EVIDENCE_DIR}/01-攻击前武器选择状态.jpg`;
+const ATTACK_WEAPON_DISABLED_REASONS_TARGET_SCREENSHOT = `${ATTACK_WEAPON_DISABLED_REASONS_EVIDENCE_DIR}/02-选择砍刀后目标高亮.jpg`;
+const ATTACK_WEAPON_DISABLED_REASONS_FEEDBACK_SCREENSHOT = `${ATTACK_WEAPON_DISABLED_REASONS_EVIDENCE_DIR}/03-砍刀攻击后反馈.jpg`;
 const UNARMED_ATTACK_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-无武器攻击完整链路');
 const UNARMED_ATTACK_READY_SCREENSHOT = `${UNARMED_ATTACK_EVIDENCE_DIR}/01-无武器攻击前牌桌可操作.jpg`;
 const UNARMED_ATTACK_DEFAULT_SCREENSHOT = `${UNARMED_ATTACK_EVIDENCE_DIR}/02-无武器直接攻击提示可见.jpg`;
@@ -274,6 +278,22 @@ const createUnarmedAttackCore = () => {
     core.latestDiscovery = null;
     core.latestDiscoveryOwnerPlayerId = null;
     core.recentRoll = null;
+    return core;
+};
+
+const createAttackWeaponDisabledReasonsCore = () => {
+    const core = createHuntingKnifeAttackCore();
+    core.currentExplorer = {
+        ...core.currentExplorer,
+        inventory: [
+            { id: 'hunting-knife', name: '砍刀', kind: 'item' },
+            { id: 'dagger', name: '匕首', kind: 'omen' },
+            { id: 'ring', name: '指环', kind: 'omen' },
+        ],
+    };
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.turnStartInventoryCardIds = ['hunting-knife', 'ring'];
+    core.usedCardIdsThisTurn = ['ring'];
     return core;
 };
 
@@ -668,6 +688,75 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, HUNTING_KNIFE_ATTACK_FEEDBACK_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-hunting-knife-attack', diagnostics }]);
+    });
+
+    test('攻击武器禁用原因真实链路：保留刚获得和已使用武器但只允许可用武器攻击', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-attack-weapon-disabled-reasons');
+
+        const injectedCore = createAttackWeaponDisabledReasonsCore();
+        expect(injectedCore.currentExplorer.inventory.map((card) => card.id)).toEqual(['hunting-knife', 'dagger', 'ring']);
+        expect(injectedCore.turnStartInventoryCardIds).toEqual(['hunting-knife', 'ring']);
+        expect(injectedCore.usedCardIdsThisTurn).toEqual(['ring']);
+        await injectCore(page, injectedCore);
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-inventory-section')).toContainText('砍刀');
+        await expect(page.getByTestId('betrayal-inventory-section')).toContainText('匕首');
+        await expect(page.getByTestId('betrayal-inventory-section')).toContainText('指环');
+        await expect(page.getByTestId('betrayal-attack-weapon-selector')).toBeVisible();
+        await expect(page.getByTestId('betrayal-attack-weapon-none')).toHaveClass(/underline/);
+
+        const huntingKnifeOption = page.getByTestId('betrayal-attack-weapon-option-hunting-knife');
+        await expect(huntingKnifeOption).toHaveAttribute('data-attack-weapon-can-use', 'true');
+        await expect(page.getByTestId('betrayal-attack-weapon-hunting-knife')).toBeEnabled();
+
+        const daggerOption = page.getByTestId('betrayal-attack-weapon-option-dagger');
+        await expect(daggerOption).toHaveAttribute('data-attack-weapon-can-use', 'false');
+        await expect(daggerOption).toHaveAttribute('data-action-disabled-reason', '本回合新获得的武器不能立刻使用。');
+        await expect(page.getByTestId('betrayal-attack-weapon-dagger')).toBeDisabled();
+        await expect(page.getByTestId('betrayal-attack-weapon-dagger-disabled-reason')).toContainText('本回合新获得的武器不能立刻使用');
+
+        const ringOption = page.getByTestId('betrayal-attack-weapon-option-ring');
+        await expect(ringOption).toHaveAttribute('data-attack-weapon-can-use', 'false');
+        await expect(ringOption).toHaveAttribute('data-action-disabled-reason', '这把武器本回合已经使用。');
+        await expect(page.getByTestId('betrayal-attack-weapon-ring')).toBeDisabled();
+        await expect(page.getByTestId('betrayal-attack-weapon-ring-disabled-reason')).toContainText('这把武器本回合已经使用');
+        await saveScreenshot(page, ATTACK_WEAPON_DISABLED_REASONS_READY_SCREENSHOT);
+
+        await page.getByTestId('betrayal-attack-weapon-hunting-knife').click();
+        await expect(page.getByTestId('betrayal-attack-weapon-hunting-knife')).toHaveClass(/underline/);
+        await expect(page.getByTestId('betrayal-attack-weapon-dagger')).toBeDisabled();
+        await expect(page.getByTestId('betrayal-attack-weapon-ring')).toBeDisabled();
+        await enterAttackTargeting(page);
+
+        const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
+        await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        await saveScreenshot(page, ATTACK_WEAPON_DISABLED_REASONS_TARGET_SCREENSHOT);
+
+        await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
+        await traitorToken.click();
+
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用砍刀');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText('使用匕首');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText('使用指环');
+        const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
+        await expect(attackRollPanel).toBeVisible();
+        await expect(attackRollPanel).toContainText('攻击投骰');
+        await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
+        await expectVisiblePhysicalDiceBox(attackRollPanel);
+        await waitForPhysicalDiceSettled(attackRollPanel);
+        await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 4 });
+        await saveScreenshot(page, ATTACK_WEAPON_DISABLED_REASONS_FEEDBACK_SCREENSHOT);
+
+        const afterAttack = await readWeaponAttackState(page);
+        expect(afterAttack.recentRoll?.kind).toBe('attackRoll');
+        expect(afterAttack.recentRoll?.attack?.weaponCardId).toBe('hunting-knife');
+        expect(afterAttack.usedCardIdsThisTurn).toContain('hunting-knife');
+        expect(afterAttack.usedCardIdsThisTurn).toContain('ring');
+        expect(afterAttack.usedCardIdsThisTurn).not.toContain('dagger');
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-attack-weapon-disabled-reasons', diagnostics }]);
     });
 
     test('弩远程视线代表链：真实页面选择弩后连线并高亮视线内叛徒', async ({ page, context }) => {

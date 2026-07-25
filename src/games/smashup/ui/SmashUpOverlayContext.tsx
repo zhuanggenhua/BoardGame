@@ -63,6 +63,12 @@ const SmashUpOverlayContext = createContext<SmashUpOverlayContextValue>({
     setSelectedFactions: () => undefined,
 });
 
+function areFactionSetsEqual(prev: Set<string>, next: string[]): boolean {
+    const nextSet = new Set(next);
+    if (prev.size !== nextSet.size) return false;
+    return Array.from(nextSet).every(factionId => prev.has(factionId));
+}
+
 export function SmashUpOverlayProvider({ children }: { children: ReactNode }) {
     const { user, token } = useAuth();
     const [preference, setPreference] = useState<SmashUpPreference>(() => readLocalPreference());
@@ -134,7 +140,9 @@ export function SmashUpOverlayProvider({ children }: { children: ReactNode }) {
     }, [user, token]);
 
     const setSelectedFactions = useCallback((factions: string[]) => {
-        setSelectedFactionsState(new Set(factions));
+        setSelectedFactionsState(prev => (
+            areFactionSetsEqual(prev, factions) ? prev : new Set(factions)
+        ));
     }, []);
 
     return (
