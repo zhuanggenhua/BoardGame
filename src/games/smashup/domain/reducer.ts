@@ -177,10 +177,14 @@ function executeCommand(
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
             const player = core.players[command.playerId];
-            const fromDiscard = command.payload.fromDiscard;
-            const card = fromDiscard
-                ? player.discard.find(c => c.uid === command.payload.cardUid)!
-                : player.hand.find(c => c.uid === command.payload.cardUid)!;
+            const fromDiscard = command.payload.fromDiscard === true;
+            const fromStored = command.payload.fromStored === true;
+            const card = fromStored
+                ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
+                : fromDiscard
+                    ? player.discard.find(c => c.uid === command.payload.cardUid)!
+                    : player.hand.find(c => c.uid === command.payload.cardUid)!;
+            if (!card) return state;
             const minionDef = getMinionDef(card.defId);
             const reactionWindow = getSmashUpReactionWindowContext(state);
             const baseIndex = command.payload.baseIndex;
@@ -199,10 +203,12 @@ function executeCommand(
                     baseDefId: core.bases[baseIndex].defId,
                     power: basePower,
                     fromDiscard: fromDiscard || undefined,
+                    fromStored: fromStored || undefined,
                     ...(fromDiscard ? (() => {
                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
                         return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
                     })() : {}),
+                    ...(fromStored ? { consumesNormalLimit: false } : {}),
                     // meFirst 响应窗口中打出 beforeScoringPlayable 随从不消耗正常额度
                     ...(reactionWindow?.windowType === 'meFirst' && (() => {
                         if (minionDef?.beforeScoringPlayable) return true;
@@ -260,7 +266,10 @@ function executeCommand(
 
             const player = workingState.core.players[command.playerId];
             const fromDiscard = command.payload.fromDiscard === true;
-            const card = (fromDiscard
+            const fromStored = command.payload.fromStored === true;
+            const card = (fromStored
+                ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
+                : fromDiscard
                 ? player.discard.find(c => c.uid === command.payload.cardUid)
                 : player.hand.find(c => c.uid === command.payload.cardUid))!;
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
@@ -274,7 +283,9 @@ function executeCommand(
                 ownerId: card.owner,
                 targetBaseIndex: command.payload.targetBaseIndex,
                 targetMinionUid: command.payload.targetMinionUid,
+                isExtraAction: fromStored || undefined,
                 fromDiscard,
+                fromStored,
                 sourceCommandType: command.type,
                 timestamp: now,
             });
@@ -288,6 +299,7 @@ function executeCommand(
                 targetBaseIndex: command.payload.targetBaseIndex,
                 targetMinionUid: command.payload.targetMinionUid,
                 fromDiscard,
+                fromStored,
                 now,
             });
             const counterWindowState = maybeQueueActionCounterWindow(workingState, pendingResolution, now);

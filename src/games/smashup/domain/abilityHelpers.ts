@@ -1600,6 +1600,7 @@ export function grantExtraAction(
         specialActionWindow?: 'meFirst' | 'afterScoring';
         restrictToCardUid?: string;
         restrictToCardDefId?: string;
+        restrictToBaseModifier?: boolean;
     },
 ): LimitModifiedEvent {
     return {
@@ -1615,6 +1616,7 @@ export function grantExtraAction(
             ...(options?.specialActionWindow ? { specialActionWindow: options.specialActionWindow } : {}),
             ...(options?.restrictToCardUid ? { restrictToCardUid: options.restrictToCardUid } : {}),
             ...(options?.restrictToCardDefId ? { restrictToCardDefId: options.restrictToCardDefId } : {}),
+            ...(options?.restrictToBaseModifier ? { restrictToBaseModifier: true } : {}),
         },
         timestamp: now,
     };
@@ -1703,6 +1705,7 @@ export function grantContextualExtraAction(
         restrictToMinionUid?: string;
         restrictToCardUid?: string;
         restrictToCardDefId?: string;
+        restrictToBaseModifier?: boolean;
     },
 ): LimitModifiedEvent {
     return grantExtraAction(ctx.playerId, reason, ctx.now, {
@@ -1711,6 +1714,7 @@ export function grantContextualExtraAction(
         restrictToMinionUid: options?.restrictToMinionUid,
         restrictToCardUid: options?.restrictToCardUid,
         restrictToCardDefId: options?.restrictToCardDefId,
+        restrictToBaseModifier: options?.restrictToBaseModifier,
     });
 }
 

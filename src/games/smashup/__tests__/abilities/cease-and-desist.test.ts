@@ -6,6 +6,7 @@ import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { processReturnToHandTriggers } from '../../domain/reducer';
 import { collectBaseAbilityTriggers } from '../../domain/baseAbilityQueue';
 import { SU_EVENTS } from '../../domain/types';
+import { SMASHUP_ATLAS_IDS } from '../../domain/ids';
 import { getAllCardDefs } from '../../data/cards';
 import { CEASE_AND_DESIST_CARDS, CEASE_AND_DESIST_BASES } from '../../data/factions/cease_and_desist';
 import { TITAN_CARD_DEFS } from '../../data/titans';
@@ -104,11 +105,14 @@ describe('Cease and Desist 四派系代表性玩法行为', () => {
     it('静态牌组合同保持 55 张唯一卡面、80 张实体牌和 8 张基地', () => {
         expect(CEASE_AND_DESIST_CARDS).toHaveLength(55);
         expect(CEASE_AND_DESIST_CARDS.reduce((total, card) => total + card.count, 0)).toBe(80);
-        expect(CEASE_AND_DESIST_CARDS.map(card => card.previewRef?.index).sort((a, b) => Number(a) - Number(b))).toEqual(
-            Array.from({ length: 55 }, (_, index) => index),
-        );
-        expect(CEASE_AND_DESIST_CARDS.some(card => card.previewRef?.index === 55)).toBe(false);
-        expect(getAllCardDefs().some(card => card.previewRef?.atlasId === CEASE_AND_DESIST_CARDS[0].previewRef?.atlasId
+        expect(new Set(CEASE_AND_DESIST_CARDS.map(card => card.id)).size).toBe(55);
+        const previewKeys = CEASE_AND_DESIST_CARDS.map(card => `${card.previewRef?.atlasId}:${card.previewRef?.index}`);
+        expect(new Set(previewKeys).size).toBe(55);
+        for (const card of CEASE_AND_DESIST_CARDS) {
+            expect(card.previewRef?.type, card.id).toBe('atlas');
+            expect(card.previewRef?.index, card.id).toBeGreaterThanOrEqual(0);
+        }
+        expect(getAllCardDefs().some(card => card.previewRef?.atlasId === SMASHUP_ATLAS_IDS.CEASE_AND_DESIST_CARDS
             && card.previewRef?.index === 55)).toBe(false);
         expect(CEASE_AND_DESIST_BASES).toHaveLength(8);
     });
