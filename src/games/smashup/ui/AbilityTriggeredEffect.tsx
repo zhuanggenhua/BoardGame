@@ -1,9 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Skull, Sparkles, Trophy, Zap } from 'lucide-react';
 import i18next from 'i18next';
-import { CardPreview } from '../../../components/common/media/CardPreview';
-import { UI_Z_INDEX, type CardPreviewRef } from '../../../core';
+import { ShatterEffect, type ShatterImageSource } from '../../../components/common/animations/ShatterEffect';
+import { CardPreview, getCardAtlasStyle } from '../../../components/common/media/CardPreview';
+import { getCardAtlasSource } from '../../../components/common/media/cardAtlasRegistry';
+import {
+  getLocalizedAssetPath,
+  getOptimizedImageUrls,
+  getResolvedImageCandidateUrl,
+  getRuntimeImageCandidateUrls,
+  UI_Z_INDEX,
+  type CardPreviewRef,
+} from '../../../core';
 import type { FxRendererProps } from '../../../engine/fx';
 import { getCardDef, resolveCardName } from '../data/cards';
 
@@ -150,6 +159,23 @@ function rgba(hex: string, alpha: number) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+function resolveShatterImageSource(previewRef: CardPreviewRef | undefined, locale: string): ShatterImageSource | undefined {
+  if (!previewRef || previewRef.type !== 'atlas') return undefined;
+  const source = getCardAtlasSource(previewRef.atlasId, locale);
+  if (!source) return undefined;
+  const style = getCardAtlasStyle(previewRef.index, source.config);
+  const candidateUrls = getRuntimeImageCandidateUrls(source.image, locale);
+  const url = getResolvedImageCandidateUrl(candidateUrls, source.image, locale)
+    || candidateUrls[0]
+    || getOptimizedImageUrls(getLocalizedAssetPath(source.image, locale)).webp;
+  if (!url) return undefined;
+  return {
+    url,
+    bgSize: String(style.backgroundSize ?? '100% 100%'),
+    bgPosition: String(style.backgroundPosition ?? '0% 0%'),
+  };
+}
+
 function curvePoint(source: ScreenPoint, target: ScreenPoint, t: number): ScreenPoint {
   const c1 = { left: source.left + 112, top: source.top - 150 };
   const c2 = { left: target.left - 144, top: target.top - 126 };
@@ -221,6 +247,13 @@ function AbilityArcCanvas({
 
     const sourcePoint = { left: sourceLeft, top: sourceTop };
     const targetPoint = { left: targetLeft, top: targetTop };
+    const vectorX = targetPoint.left - sourcePoint.left;
+    const vectorY = targetPoint.top - sourcePoint.top;
+    const vectorLength = Math.max(1, Math.hypot(vectorX, vectorY));
+    const pathSourcePoint = {
+      left: sourcePoint.left + (vectorX / vectorLength) * 84,
+      top: sourcePoint.top + (vectorY / vectorLength) * 84,
+    };
     let rafId = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const durationMs = totalDurationS * 1000;
@@ -235,24 +268,25 @@ function AbilityArcCanvas({
     };
 
     const draw = (now: number) => {
-      const progress = clamp01((now - startTime) / durationMs);
+      const elapsedMs = now - startTime;
+      const progress = clamp01(elapsedMs / durationMs);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
       ctx.globalCompositeOperation = 'lighter';
 
-      const wake = easeOutCubic(clamp01(progress / 0.18));
-      const wakeFade = 1 - clamp01((progress - 0.24) / 0.3);
+      const wake = easeOutCubic(clamp01(elapsedMs / 420));
+      const wakeFade = 1 - clamp01((elapsedMs - 620) / 560);
       if (wakeFade > 0) {
         drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 58 + wake * 58, tone.accent, 0.38 * wakeFade);
         drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 18 + wake * 18, '#ffffff', 0.26 * wakeFade);
       }
 
-      const travel = easeInOutCubic(clamp01((progress - 0.08) / 0.52));
-      if (travel > 0 && progress < 0.82) {
+      const travel = easeInOutCubic(clamp01((elapsedMs - 170) / 980));
+      if (travel > 0 && elapsedMs < 1900) {
         const head = clamp01(travel);
-        const tail = clamp01(head - 0.56);
-        const headPoint = curvePoint(sourcePoint, targetPoint, head);
-        const gradient = ctx.createLinearGradient(sourcePoint.left, sourcePoint.top, targetPoint.left, targetPoint.top);
+        const tail = 0;
+        const headPoint = curvePoint(pathSourcePoint, targetPoint, head);
+        const gradient = ctx.createLinearGradient(pathSourcePoint.left, pathSourcePoint.top, targetPoint.left, targetPoint.top);
         gradient.addColorStop(0, rgba(tone.accent, 0));
         gradient.addColorStop(0.28, rgba(tone.accent, 0.92));
         gradient.addColorStop(0.62, 'rgba(255,255,255,1)');
@@ -261,19 +295,19 @@ function AbilityArcCanvas({
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.beginPath();
-        drawCurveSegment(ctx, sourcePoint, targetPoint, tail, head);
+        drawCurveSegment(ctx, pathSourcePoint, targetPoint, tail, head);
         ctx.strokeStyle = rgba(tone.accent, 0.22);
         ctx.lineWidth = actionKind === 'destroy' ? 12 : 10;
         ctx.stroke();
 
         ctx.beginPath();
-        drawCurveSegment(ctx, sourcePoint, targetPoint, tail, head);
+        drawCurveSegment(ctx, pathSourcePoint, targetPoint, tail, head);
         ctx.strokeStyle = gradient;
         ctx.lineWidth = actionKind === 'destroy' ? 3.2 : 2.6;
         ctx.stroke();
 
         ctx.beginPath();
-        drawCurveSegment(ctx, sourcePoint, targetPoint, Math.max(tail, head - 0.2), head);
+        drawCurveSegment(ctx, pathSourcePoint, targetPoint, Math.max(tail, head - 0.2), head);
         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
         ctx.lineWidth = actionKind === 'destroy' ? 1.5 : 1.2;
         ctx.stroke();
@@ -284,15 +318,15 @@ function AbilityArcCanvas({
         for (let i = 0; i < 7; i += 1) {
           const localT = clamp01(head - i * 0.07);
           if (localT <= tail) continue;
-          const p = curvePoint(sourcePoint, targetPoint, localT);
+          const p = curvePoint(pathSourcePoint, targetPoint, localT);
           const size = Math.max(2.2, 6 - i * 0.45);
           drawGlowOrb(ctx, p.left, p.top, size * 2.4, tone.accent, 0.2);
           drawGlowOrb(ctx, p.left, p.top, size, '#ffffff', 0.2);
         }
       }
 
-      const impact = easeOutCubic(clamp01((progress - 0.4) / 0.28));
-      const impactFade = 1 - clamp01((progress - 0.66) / 0.28);
+      const impact = easeOutCubic(clamp01((elapsedMs - 980) / 460));
+      const impactFade = 1 - clamp01((elapsedMs - 1380) / 600);
       if (impact > 0 && impactFade > 0) {
         drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 30 + impact * 52, tone.accent, 0.28 * impactFade);
         drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 12 + impact * 24, '#ffffff', 0.24 * impactFade);
@@ -303,7 +337,7 @@ function AbilityArcCanvas({
         ctx.stroke();
       }
 
-      const burst = clamp01((progress - 0.43) / 0.34);
+      const burst = clamp01((elapsedMs - 980) / 650);
       if (burst > 0 && burst < 1) {
         const fade = 1 - burst;
         for (let i = 0; i < particleCount; i += 1) {
@@ -383,45 +417,69 @@ function ActionGlyph({ actionKind, accent, delayS }: { actionKind: AbilityAction
 function CardSplitEffect({
   targetCardPreview,
   resolvedTargetName,
+  shatterImageSource,
 }: {
   targetCardPreview: CardPreviewRef | undefined;
   resolvedTargetName: string | undefined;
+  shatterImageSource: ShatterImageSource | undefined;
 }) {
-  if (!targetCardPreview) return null;
+  const [shatterActive, setShatterActive] = useState(false);
+  const shatterKey = shatterImageSource
+    ? `${shatterImageSource.url}|${shatterImageSource.bgSize}|${shatterImageSource.bgPosition}`
+    : '';
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShatterActive(true), 960);
+    return () => window.clearTimeout(timer);
+  }, [shatterKey, targetCardPreview]);
 
   return (
     <div
       className="absolute inset-0 pointer-events-none"
       data-testid="smashup-triggered-fx-card-split"
     >
-      {CARD_SPLIT_PIECES.map((piece, i) => (
-        <motion.div
-          key={`card-split-${i}`}
-          className="absolute inset-0 overflow-hidden rounded-lg shadow-[0_12px_26px_rgba(0,0,0,0.42)]"
-          style={{ clipPath: piece.clipPath, transformOrigin: '50% 50%' }}
-          initial={{ opacity: 0, x: 0, y: 0, rotate: 0, scale: 1 }}
-          animate={{
-            opacity: [0, 1, 1, 0],
-            x: [0, 0, piece.x, piece.x * 1.18],
-            y: [0, 0, piece.y, piece.y * 1.12],
-            rotate: [0, 0, piece.rotate, piece.rotate * 1.28],
-            scale: [1, 1, 0.92, 0.62],
-            filter: [
-              'brightness(1.35) saturate(1.1)',
-              'brightness(1.12) saturate(1)',
-              'brightness(0.72) saturate(0.7)',
-              'brightness(0.36) saturate(0.3)',
-            ],
-          }}
-          transition={{ duration: 1.25, delay: 1.04 + piece.delay, times: [0, 0.18, 0.68, 1], ease: 'easeOut' }}
-        >
-          <CardPreview
-            previewRef={targetCardPreview}
-            className="h-full w-full"
-            title={resolvedTargetName}
-          />
-        </motion.div>
-      ))}
+      {shatterImageSource && shatterActive ? (
+        <ShatterEffect
+          active
+          intensity="strong"
+          cols={4}
+          rows={3}
+          imageSource={shatterImageSource}
+          quality="full"
+        />
+      ) : null}
+      {shatterImageSource || !targetCardPreview ? null : (
+        <>
+          {CARD_SPLIT_PIECES.map((piece, i) => (
+            <motion.div
+              key={`card-split-${i}`}
+              className="absolute inset-0 overflow-hidden rounded-lg shadow-[0_12px_26px_rgba(0,0,0,0.42)]"
+              style={{ clipPath: piece.clipPath, transformOrigin: '50% 50%' }}
+              initial={{ opacity: 0, x: 0, y: 0, rotate: 0, scale: 1 }}
+              animate={{
+                opacity: [0, 1, 1, 0],
+                x: [0, 0, piece.x, piece.x * 1.18],
+                y: [0, 0, piece.y, piece.y * 1.12],
+                rotate: [0, 0, piece.rotate, piece.rotate * 1.28],
+                scale: [1, 1, 0.92, 0.62],
+                filter: [
+                  'brightness(1.35) saturate(1.1)',
+                  'brightness(1.12) saturate(1)',
+                  'brightness(0.72) saturate(0.7)',
+                  'brightness(0.36) saturate(0.3)',
+                ],
+              }}
+              transition={{ duration: 1.25, delay: 1.04 + piece.delay, times: [0, 0.18, 0.68, 1], ease: 'easeOut' }}
+            >
+              <CardPreview
+                previewRef={targetCardPreview}
+                className="h-full w-full"
+                title={resolvedTargetName}
+              />
+            </motion.div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -433,6 +491,7 @@ function TargetImpact({
   resolvedTargetName,
   renderCardBody,
   compactCardBody,
+  shatterImageSource,
 }: {
   actionKind: AbilityActionKind;
   tone: ReturnType<typeof resolveAbilityTone>;
@@ -440,6 +499,7 @@ function TargetImpact({
   resolvedTargetName: string | undefined;
   renderCardBody: boolean;
   compactCardBody: boolean;
+  shatterImageSource: ShatterImageSource | undefined;
 }) {
   const shards = useMemo(() => Array.from({ length: SHARD_COUNT }, (_, i) => {
     const angle = (Math.PI * 2 * i) / SHARD_COUNT - Math.PI / 2;
@@ -473,7 +533,7 @@ function TargetImpact({
   return (
     <motion.div
       className={renderCardBody
-        ? `relative ${compactCardBody ? 'h-[142px] w-[100px]' : 'h-[168px] w-[118px]'} rounded-xl bg-slate-900 ${compactCardBody ? 'shadow-[0_16px_34px_rgba(0,0,0,0.42)]' : tone.cardRing}`
+        ? `relative ${compactCardBody ? 'h-[136px] w-[96px]' : 'h-[168px] w-[118px]'} rounded-xl bg-slate-900 ${compactCardBody ? 'shadow-[0_16px_34px_rgba(0,0,0,0.42)]' : tone.cardRing}`
         : 'relative h-[164px] w-[164px] rounded-[28px]'}
       initial={{ opacity: 0, scale: 0.82, rotate: 0, y: 12 }}
       animate={targetMotion}
@@ -515,6 +575,7 @@ function TargetImpact({
             <CardSplitEffect
               targetCardPreview={targetCardPreview}
               resolvedTargetName={resolvedTargetName}
+              shatterImageSource={shatterImageSource}
             />
           )}
         </>
@@ -632,6 +693,12 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
   const resolvedTargetName = targetLabel || (targetDefId ? (resolveCardName(targetDef, t) || targetDefId) : undefined);
   const sourceCardPreview = sourcePreviewRef ?? def?.previewRef;
   const targetCardPreview = targetPreviewRef ?? targetDef?.previewRef;
+  const targetAtlasPreview = targetCardPreview?.type === 'atlas'
+    ? targetCardPreview
+    : targetDef?.previewRef?.type === 'atlas'
+      ? targetDef.previewRef
+      : undefined;
+  const targetShatterSource = resolveShatterImageSource(targetAtlasPreview, i18next.language || 'zh-CN');
 
   const viewport = getViewportSize();
   const targetPos = explicitTargetPosition ?? { left: viewport.width / 2, top: viewport.height * 0.36 };
@@ -728,6 +795,7 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
           resolvedTargetName={resolvedTargetName}
           renderCardBody={renderTargetCardBody}
           compactCardBody={compactTargetCardBody}
+          shatterImageSource={targetShatterSource}
         />
         <ActionGlyph actionKind={actionKind} accent={tone.accent} delayS={impactDelayS} />
         {resolvedTargetName && renderTargetLabel && (

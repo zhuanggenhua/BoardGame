@@ -297,6 +297,29 @@ function getElementCenter(element: HTMLElement | null) {
   return { left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 };
 }
 
+function hasRenderedCardImage(element: HTMLElement | null) {
+  return Boolean(element?.querySelector('[data-card-atlas-img="true"], img[src]'));
+}
+
+function waitForPreviewCardImages(sourceElement: HTMLElement | null, targetElement: HTMLElement | null) {
+  const startedAt = performance.now();
+  const timeoutMs = 3600;
+  return new Promise<void>((resolve) => {
+    const tick = () => {
+      if (hasRenderedCardImage(sourceElement) && hasRenderedCardImage(targetElement)) {
+        resolve();
+        return;
+      }
+      if (performance.now() - startedAt >= timeoutMs) {
+        resolve();
+        return;
+      }
+      window.setTimeout(tick, 50);
+    };
+    tick();
+  });
+}
+
 export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
   const { t } = useTranslation('lobby');
   const fxBus = useFxBus(smashUpFxRegistry);
@@ -330,13 +353,17 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
       window.setTimeout(resolve, sceneChanged ? 360 : 40);
     });
 
-    void paintDelay.then(() => {
+    void paintDelay.then(async () => {
+      if (triggerRunRef.current !== runId) return;
+      const sourceElement = sourceRef.current;
+      const targetElement = targetRefs.current[nextScene.targetSlot] ?? null;
+      await waitForPreviewCardImages(sourceElement, targetElement);
       if (triggerRunRef.current !== runId) return;
       requestAnimationFrame(() => {
         if (triggerRunRef.current !== runId) return;
         const nextPoints = {
-          sourcePosition: getElementCenter(sourceRef.current),
-          targetPosition: getElementCenter(targetRefs.current[nextScene.targetSlot] ?? null),
+          sourcePosition: getElementCenter(sourceElement),
+          targetPosition: getElementCenter(targetElement),
         };
         requestAnimationFrame(() => {
           if (triggerRunRef.current !== runId) return;

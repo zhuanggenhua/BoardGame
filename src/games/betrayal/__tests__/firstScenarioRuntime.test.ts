@@ -2585,7 +2585,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { trait: 'sanity' },
             100,
-            createBetrayalScriptedRandom(2, 2),
+            createBetrayalScriptedRandom(1, 1),
         );
 
         expect(core.latestDiscovery?.detail).toContain('神志检定 0');
@@ -2619,7 +2619,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { accept: true },
             100,
-            createBetrayalScriptedRandom(2, 2),
+            createBetrayalScriptedRandom(1, 1),
         );
 
         expect(core.phase).toBe('preHaunt');
@@ -5224,7 +5224,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { accept: false },
             100,
-            createBetrayalScriptedRandom(2, 2),
+            createBetrayalScriptedRandom(1, 1),
         );
 
         expect(core.phase).toBe('preHaunt');
@@ -6478,7 +6478,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { roomId: 'ground-north' },
             100,
-            createBetrayalScriptedRandom(2, 2),
+            createBetrayalScriptedRandom(1, 1),
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 0');
@@ -6623,7 +6623,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { roomId: 'ground-north' },
             100,
-            createBetrayalScriptedRandom(2, 2),
+            createBetrayalScriptedRandom(1, 1),
         );
 
         expect(core.latestDiscovery?.detail).toContain('力量检定 0');
@@ -9119,7 +9119,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { roomId: 'ground-north' },
             100,
-            createBetrayalScriptedRandom(2, 2),
+            createBetrayalScriptedRandom(1, 1),
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 0');

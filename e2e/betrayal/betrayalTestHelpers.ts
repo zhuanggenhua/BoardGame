@@ -20,6 +20,7 @@ import {
   createBetrayalScriptedRandom,
   createCorpseLootReadyCore,
   createDogTradeReadyCore,
+  createDustHauntCore,
   createDustFeverishAttackReadyCore,
   createDustFeverishNaturalMonsterTurnBeforeRollCore,
   createExchangeReadyCore,
@@ -889,6 +890,37 @@ function setBetrayalE2ETraitTrack(
   if (core.currentExplorer.playerId === playerId) {
     core.currentExplorerTraits = { ...core.currentExplorer.traits };
   }
+}
+
+export function createDustEndTurnDamageAllocationRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore();
+  core = focusBetrayalE2EExplorer(core, "1");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === "0"
+      ? { ...explorer, roomId: "ground-north" }
+      : { ...explorer, roomId: "entrance-hall" },
+  );
+  for (const trait of BETRAYAL_E2E_TRAIT_KEYS) {
+    setBetrayalE2ETraitTrack(
+      core,
+      "1",
+      trait,
+      Array.from({ length: 16 }, () => 4),
+      14,
+      14,
+    );
+  }
+  if (core.scenarioRuntime.dust) {
+    core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  }
+  syncBetrayalE2ECurrentExplorer(core);
+  core.activePlayerId = null;
+  core.recommendedAction = "endTurn";
+  return dismissBetrayalE2EBlockingOverlays(core);
 }
 
 function dismissBetrayalE2EBlockingOverlays(core: BetrayalCore): BetrayalCore {

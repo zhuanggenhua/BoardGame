@@ -34,7 +34,7 @@
 | ---: | --- | --- | --- | --- | --- |
 | 1 | 堆积如柴 2：赤红杰克归来 | NONE / A Splash of Crimson | 作祟揭秘者 | `representative-slices-with-natural-jack-spirit-turn` | 子账本已建；已补非致死攻击伤害分配、杰克之灵路径 / 攻击代表链，以及叛徒死亡后上一名英雄结束回合自然进入杰克之灵速度 3 移动骰真实入口代表链；仍缺完整英雄 / 叛徒合同、逐边界回归和完整终局 / 驱魔 / 复活排列 |
 | 2 | Friends Forever | Cursed! / Ring | 隐藏叛徒 | `source-mapped-contract-pending` | 建子账本 |
-| 3 | The Dust | NONE / A Vial of Dust | 隐藏叛徒 | `feverish-natural-monster-turn-representative` | 子账本已建；已补死亡叛徒变狂热病患后自然进入速度 5 移动骰、真实房间移动、攻击同房英雄和回合交接代表链；仍缺感染交换全排列、隐藏编号完整可见性、研究 / 治愈全路径 UI、同时胜负政策和完整终局回归 |
+| 3 | The Dust | NONE / A Vial of Dust | 隐藏叛徒 | `feverish-and-end-turn-damage-representatives` | 子账本已建；已补死亡叛徒变狂热病患后自然进入速度 5 移动骰、真实房间移动、攻击同房英雄和回合交接代表链；已补回合末未交换疾病时进入 2 骰一般伤害分配、玩家确认后交接、隐藏叛徒确认分配后才变狂热病患的代表链；仍缺感染交换全排列、隐藏编号完整可见性、研究 / 治愈全路径 UI、同时胜负政策和完整终局回归 |
 | 4 | Free the Realtor | For Sale / Dog | 无叛徒 | `source-mapped-contract-pending` | 建子账本 |
 | 5 | Blood from a Stone | Paranormal Investigators / Mask | 无叛徒 | `setup-player-choice-multi-placement-multi-gaze-and-natural-monster-turn-representative-slices` | 子账本已建；已补 setup 自动全量放置、视线外房间不足时玩家点击真实房间补放石像、缺口为 2 时同房重复补放、石像小天使视线移动、英雄进入新视线伤害、怪物回合结束凝视伤害首名英雄和多英雄连续分配真实入口、揭秘者结束英雄回合后自然进入石像小天使怪物回合并在凝视收口后交给下一玩家、“玩躲猫猫”成功成对移除代表链、失败伤害分配真实入口，以及移除最后两只后的英雄胜利 / 全部英雄死亡后的作祟胜利真实入口终局；仍缺逐作祟边界回归和其它自然怪物回合全排列 |
 | 6 | Inheritance | A Mysterious Invitation / Dagger | 隐藏叛徒 | `source-mapped-contract-pending` | 建子账本 |

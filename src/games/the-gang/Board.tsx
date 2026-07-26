@@ -2127,6 +2127,11 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
             ...(localBottomHandRankHint ? { bottom: localBottomHandRankHint } : {}),
         }
         : undefined;
+    const middleCenterStyle = twoHandChipSelectionLayout
+        ? { transform: 'translateY(clamp(1.25rem, 3vh, 1.75rem))' }
+        : !handSwapLayout && core.communityCards.length > 0
+            ? { transform: 'translateY(clamp(1.5rem, 2.6vh, 1.75rem))' }
+            : undefined;
 
     const playerNames = buildPlayerDisplayNameMap(
         core.playerIds,
@@ -2303,7 +2308,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
                 <HudPortal>
                     <div
-                        className="pointer-events-none fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] z-50 flex flex-col items-start gap-1.5 min-[901px]:gap-2 lg:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:left-[max(1rem,env(safe-area-inset-left))]"
+                        className="pointer-events-none fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] z-50 flex flex-col items-start gap-1.5 sm:flex-row sm:items-end min-[901px]:gap-2 lg:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:left-[max(1rem,env(safe-area-inset-left))] lg:flex-col lg:items-start"
                         data-bgg-zone="utility-dock"
                         data-testid="the-gang-utility-dock"
                     >
@@ -2399,9 +2404,9 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     ? 'flex-col gap-3 lg:gap-5'
                                     : handSwapLayout
                                     ? 'flex-row flex-wrap gap-4 lg:gap-5'
-                                    : 'flex-col gap-3 lg:gap-6 min-[1180px]:flex-row min-[1180px]:gap-8',
+                                    : 'flex-col gap-3 lg:gap-6',
                             ].join(' ')}
-                            style={twoHandChipSelectionLayout ? { transform: 'translateY(clamp(1.25rem, 3vh, 1.75rem))' } : undefined}
+                            style={middleCenterStyle}
                             data-bgg-zone="middle-center"
                         >
                             <div
@@ -2455,7 +2460,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                                     'pointer-events-none flex flex-nowrap justify-center',
                                     handSwapLayout
                                         ? 'w-auto max-w-[24rem] gap-2 lg:max-w-[30rem] lg:gap-3 xl:max-w-[34rem]'
-                                        : 'w-full max-w-[48rem] gap-3 lg:max-w-[72rem] lg:gap-5 min-[1180px]:max-w-[40rem] xl:max-w-[80rem]',
+                                        : 'w-full max-w-[48rem] gap-3 lg:max-w-[72rem] lg:gap-5 xl:max-w-[80rem]',
                                 ].join(' ')}
                                 data-bgg-zone="card-river"
                                 aria-label={t('board.communityCardsSlot')}

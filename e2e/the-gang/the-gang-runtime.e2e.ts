@@ -1293,7 +1293,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
-        await expectUtilityDockLayout(page, 'row');
+        await expectUtilityDockLayout(page, 'column');
         await expectMiddleCenterVerticallyCentered(page, '桌面1366工具入口关闭态中央排');
         const rulesPanel = page.getByTestId('the-gang-rules-config');
         await expect(rulesPanel).toBeVisible();
@@ -2799,7 +2799,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
-        await expectUtilityDockLayout(page, 'row');
+        await expectUtilityDockLayout(page, 'column');
         await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-hand-rank-nameplate-toggle')).toHaveCount(0);
         await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeVisible();

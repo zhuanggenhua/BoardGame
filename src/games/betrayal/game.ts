@@ -4880,7 +4880,7 @@ export function resolveBloodFromStoneMonsterTurnStatus(
 function startBloodFromStoneMonsterTurnAfterPlayerIfNeeded(
     core: BetrayalCore,
     previousPlayerId: string,
-    timestamp: number,
+    _timestamp: number,
 ): BetrayalCore {
     const status = resolveBloodFromStoneMonsterTurnStatus(core);
     if (

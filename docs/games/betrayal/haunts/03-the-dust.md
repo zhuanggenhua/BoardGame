@@ -1,6 +1,6 @@
 # 作祟 3 交互子账本：The Dust
 
-> 状态：`contract-ready-with-feverish-natural-turn-representative`。已有狂热病患自然怪物回合代表链，不能等同于完整支持。
+> 状态：`contract-ready-with-feverish-and-end-turn-damage-representatives`。已有狂热病患自然怪物回合、未交换疾病回合末伤害分配代表链，不能等同于完整支持。
 
 ## 1. 源段锁定
 
@@ -83,4 +83,8 @@ Feverish 属性：力量 6、速度 5、神志 3、知识 3；在作祟揭秘者
 - 领域测试：`node scripts\infra\vitest-cli-safe.mjs run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts --configLoader native -t "狂热病患|灰尘"`，11 passed / 265 skipped。
 - 真实入口 E2E：`node scripts\infra\run-e2e-single.mjs ci e2e\betrayal\the-dust-feverish-natural-monster-turn.e2e.ts "狂热病患"`，2 passed。
 - 截图核验证据：`evidence/betrayal-the-dust-feverish-natural-monster-turn/e2e-test.md`。
+- 已验证代表链：当前探索者本回合没有通过“控制冲动”或同房结束回合规则交换疾病标记时，结束回合会进入来源为“灰尘冲动”的 2 骰一般伤害分配；受伤玩家确认分配后才交给下一名玩家；隐藏叛徒因该伤害死亡时，确认分配后才变成狂热病患。
+- 领域测试：`node scripts\infra\vitest-cli-safe.mjs run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts --configLoader native -t "灰尘剧本回合内没有交换|灰尘隐藏叛徒因未交换"`，2 passed / 276 skipped。
+- 真实入口 E2E：`node scripts\infra\run-e2e-single.mjs ci e2e\betrayal\the-dust-end-turn-damage-allocation.e2e.ts "灰尘"`，1 passed。
+- 截图核验证据：`evidence/betrayal-the-dust-end-turn-damage-allocation/e2e-test.md`。
 - 仍需补：感染交换全排列、隐藏编号完整可见性、研究 / 治愈全路径 UI、同时胜负政策、完整英雄治愈胜利和全员感染 / 死亡叛徒怪物化路径回归。
