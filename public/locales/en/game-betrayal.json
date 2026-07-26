@@ -134,7 +134,8 @@
       "traitorStatusLose": "Repelled",
       "hauntStatusWin": "Prevails",
       "completedStamp": "Complete",
-      "endingNarrationLabel": "Ending Reading"
+      "endingNarrationLabel": "Ending Reading",
+      "endingSourceStatus": "Non-original summary / temporary adaptation"
     },
     "hud": {
       "phaseLabel": "Phase",
@@ -378,7 +379,7 @@
       "hauntRiskStarted": "The haunt has begun",
       "hauntRiskPhasePreHaunt": "Before haunt",
       "hauntRiskPhaseHaunt": "Haunt",
-      "hauntRevealPlayerTitle": "Haunt begins",
+      "hauntRevealPlayerTitle": "Public Reveal: Haunt begins",
       "hauntRevealLead": "The scenario has changed. You can open the scenario book.",
       "hauntRevealSource": "Scenario {{scenarioCard}} / trigger {{omen}} / haunt {{number}}",
       "hauntRevealDismiss": "Close",
@@ -416,6 +417,7 @@
       "readerStatusPublicBook": "Scenario Dossier",
       "readerStatusHeroBook": "Hero Scenario Book",
       "readerStatusTraitorBook": "Traitor Scenario Book",
+      "readerSourceStatus": "Non-original summary / temporary adaptation",
       "readerPageLabel": "Page",
       "readerPageAria": "Current page {{mobile}}, desktop spread {{desktop}}",
       "readerPrev": "Previous",
@@ -825,6 +827,11 @@
       "nextExplorerWithTargets": "{{explorer}} is now active and can move to {{targets}}",
       "decksEmpty": "No explorable deck remains",
       "noExploreSlots": "No unrevealed room slot is available right now"
+    },
+    "monster": {
+      "status": {
+        "stunned": "Stunned"
+      }
     }
   },
   "errors": {

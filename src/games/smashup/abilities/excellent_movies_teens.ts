@@ -3,6 +3,7 @@ import {
     createSimpleChoice,
     queueInteraction,
     type PromptOption,
+    type SimpleChoiceConfig,
 } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerSimpleAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
@@ -100,14 +101,16 @@ function queuePrompt<T>(
     options: PromptOption<T>[],
     now: number,
     targetType: 'button' | 'base' | 'minion' | 'generic',
+    titleKey?: string,
     continuationContext?: Record<string, unknown>,
+    titleParams?: SimpleChoiceConfig['titleParams'],
 ): MatchState<SmashUpCore> {
     const interaction = createSimpleChoice(
         `${sourceId}_${now}`,
         playerId,
         title,
         options,
-        { sourceId, targetType },
+        { sourceId, targetType, titleKey, titleParams },
     );
     return queueInteraction(matchState, {
         ...interaction,
@@ -148,19 +151,23 @@ function queueActionHeroesPushingChoice(
             {
                 id: 'counters',
                 label: '+2 指示物',
+                labelKey: 'ui.action_heroes_pushing_the_limit_counters_option',
                 value: { mode: 'counters', ...current },
                 displayMode: 'button' as const,
             },
             {
                 id: 'draw',
                 label: '抽 1 张牌',
+                labelKey: 'ui.action_heroes_pushing_the_limit_draw_option',
                 value: { mode: 'draw', ...current },
                 displayMode: 'button' as const,
             },
         ],
         now,
         'button',
+        'ui.action_heroes_pushing_the_limit_title',
         { remainingCandidates: remaining },
+        { base: baseLabel },
     );
 }
 
@@ -185,7 +192,7 @@ function queueKickboxbroStoredActionPrompt(
         'action_heroes_kickboxbro_play_stored',
         '踢拳兄弟：选择一张储存行动作为额外行动打出',
         [
-            createSkipOption('跳过（不打出储存行动）'),
+            createSkipOption('跳过（不打出储存行动）', 'ui.action_heroes_kickboxbro_play_stored_skip_option'),
             ...storedActions.map((card, index) => ({
                 id: `stored-action-${index}`,
                 label: cardName(card.defId),
@@ -194,6 +201,7 @@ function queueKickboxbroStoredActionPrompt(
         ],
         now,
         'generic',
+        'ui.action_heroes_kickboxbro_play_stored_title',
         { kickboxbroUid, sourceBaseIndex },
     );
 }
@@ -259,7 +267,7 @@ function actionHeroesFriendsThroughEternity(ctx: AbilityContext): AbilityResult 
     if (options.length === 0) return { events: [] };
     return {
         events: [],
-        matchState: queuePrompt(ctx.matchState, ctx.playerId, ctx.defId, '永恒挚友：弃一张牌以获得两个额外行动', options, ctx.now, 'generic'),
+        matchState: queuePrompt(ctx.matchState, ctx.playerId, ctx.defId, '永恒挚友：弃一张牌以获得两个额外行动', options, ctx.now, 'generic', 'ui.action_heroes_friends_through_eternity_title'),
     };
 }
 
@@ -276,7 +284,7 @@ function actionHeroesGetToTheChoppa(ctx: AbilityContext): AbilityResult {
         ctx.state,
     );
     if (options.length === 0) return { events: [] };
-    const matchState = queuePrompt(ctx.matchState, ctx.playerId, ctx.defId, '快上直升机：选择移动目的基地', options, ctx.now, 'base', {
+    const matchState = queuePrompt(ctx.matchState, ctx.playerId, ctx.defId, '快上直升机：选择移动目的基地', options, ctx.now, 'base', 'ui.action_heroes_get_to_the_choppa_title', {
         minionUid: minion.uid,
         minionDefId: minion.defId,
         fromBaseIndex: sourceBaseIndex,
@@ -296,7 +304,7 @@ function actionHeroesHostageRescue(ctx: AbilityContext): AbilityResult {
     }));
     return {
         events: [inspectDeck(ctx.playerId, ctx.playerId, player.deck.length, ctx.defId, ctx.now)],
-        matchState: queuePrompt(ctx.matchState, ctx.playerId, ctx.defId, '人质救援：选择一张随从置于牌库顶', options, ctx.now, 'generic'),
+        matchState: queuePrompt(ctx.matchState, ctx.playerId, ctx.defId, '人质救援：选择一张随从置于牌库顶', options, ctx.now, 'generic', 'ui.action_heroes_hostage_rescue_title'),
     };
 }
 
@@ -337,6 +345,7 @@ function actionHeroesTheRightPerson(ctx: AbilityContext): AbilityResult {
             buildBaseTargetOptions(candidates, ctx.state),
             ctx.now,
             'base',
+            'ui.action_heroes_the_right_person_title',
         ),
     };
 }
@@ -369,6 +378,7 @@ function actionHeroesWalkAwaySlowly(ctx: AbilityContext): AbilityResult {
             }),
             ctx.now,
             'minion',
+            'ui.action_heroes_walk_away_slowly_title',
         ),
     };
 }
@@ -389,6 +399,7 @@ function actionHeroesWarbro(ctx: AbilityContext): AbilityResult {
             buildBaseTargetOptions(candidates, ctx.state),
             ctx.now,
             'base',
+            'ui.action_heroes_warbro_title',
         ),
     };
 }
@@ -416,7 +427,7 @@ function actionHeroesKickboxbroTurnEnd(ctx: TriggerContext): TriggerResult {
     const player = ctx.state.players[ctx.sourceControllerId];
     if (!player || player.hand.length === 0) return { events: [] };
     const options = [
-        createSkipOption('跳过（不储存手牌）'),
+        createSkipOption('跳过（不储存手牌）', 'ui.action_heroes_kickboxbro_store_skip_option'),
         ...player.hand.map((card, index) => ({
             id: `store-${index}`,
             label: cardName(card.defId),
@@ -433,6 +444,7 @@ function actionHeroesKickboxbroTurnEnd(ctx: TriggerContext): TriggerResult {
             options,
             ctx.now,
             'generic',
+            'ui.action_heroes_kickboxbro_store_title',
             {
                 kickboxbroUid: ctx.sourceCardUid,
                 kickboxbroDefId: 'action_heroes_kickboxbro',
@@ -815,6 +827,7 @@ function queueBacktimersMinionCounterPrompt(
     playerId: PlayerId,
     sourceId: string,
     title: string,
+    titleKey: string,
     now: number,
 ): MatchState<SmashUpCore> | undefined {
     const options = buildBacktimersOwnMinionCounterOptions(matchState.core, playerId);
@@ -824,9 +837,10 @@ function queueBacktimersMinionCounterPrompt(
         playerId,
         sourceId,
         title,
-        [createSkipOption('跳过（不放置力量指示物）'), ...options],
+        [createSkipOption('跳过（不放置力量指示物）', 'ui.backtimers_minion_counter_skip_option'), ...options],
         now,
         'minion',
+        titleKey,
     );
 }
 
@@ -834,7 +848,7 @@ function backtimersStoreHandCard(
     ctx: AbilityContext,
     stasisCounters: number,
     sourceId: string,
-    options: { may?: boolean; title?: string } = {},
+    options: { may?: boolean; title?: string; titleKey?: string } = {},
 ): AbilityResult {
     const cardOptions = ctx.state.players[ctx.playerId]?.hand
         .filter(card => card.uid !== ctx.cardUid)
@@ -844,7 +858,7 @@ function backtimersStoreHandCard(
             value: { cardUid: card.uid, stasisCounters },
         })) ?? [];
     const promptOptions = [
-        ...(options.may ? [createSkipOption('跳过（不置入停滞）')] : []),
+        ...(options.may ? [createSkipOption('跳过（不置入停滞）', 'ui.backtimers_store_skip_option')] : []),
         ...cardOptions,
     ];
     if (promptOptions.length === 0 || (options.may && promptOptions.length === 1)) return { events: [] };
@@ -858,6 +872,7 @@ function backtimersStoreHandCard(
             promptOptions,
             ctx.now,
             'generic',
+            options.titleKey ?? 'ui.backtimers_store_title',
             { sourceId, stasisCounters },
         ),
     };
@@ -876,7 +891,7 @@ function backtimersZanyProfTurnStart(ctx: TriggerContext): TriggerResult {
     const stasisCards = getBacktimersStasisCards(ctx.state, ctx.sourceControllerId);
     if (stasisCards.length === 0) return { events: [] };
     const options = [
-        createSkipOption('跳过（不调整停滞指示物）'),
+        createSkipOption('跳过（不调整停滞指示物）', 'ui.backtimers_zany_prof_skip_option'),
         ...stasisCards
             .filter(card => (card.counters ?? 0) > 0)
             .map((card, index) => ({
@@ -900,6 +915,7 @@ function backtimersZanyProfTurnStart(ctx: TriggerContext): TriggerResult {
             options,
             ctx.now,
             'generic',
+            'ui.backtimers_zany_prof_title',
         ),
     };
 }
@@ -988,6 +1004,7 @@ function registerBacktimers(): void {
     registerSimpleAbility('backtimers_alex_p_mcglide', 'onPlay', ctx => backtimersStoreHandCard(ctx, 2, ctx.defId, {
         may: true,
         title: '亚历克斯：选择一张手牌置入停滞',
+        titleKey: 'ui.backtimers_alex_p_mcglide_store_title',
     }));
     registerSimpleAbility('backtimers_alex_p_mcglide', 'talent', ctx => {
         if (!hasBacktimersLastStasisCounterRemovedThisTurn(ctx.state, ctx.playerId)) return { events: [] };
@@ -996,6 +1013,7 @@ function registerBacktimers(): void {
             ctx.playerId,
             'backtimers_alex_p_mcglide_counter',
             '亚历克斯：选择一个己方随从放置 +1 力量指示物',
+            'ui.backtimers_alex_p_mcglide_counter_title',
             ctx.now,
         );
         return promptState ? { events: [], matchState: promptState } : { events: [] };

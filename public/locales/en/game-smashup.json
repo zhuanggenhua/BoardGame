@@ -1355,7 +1355,27 @@
     "aladdin_wish_skip_option": "Do not use Wish",
     "aladdin_wish_extra_cards_option": "Play an extra character and an extra action",
     "aladdin_wish_power_option": "Give a character +5 power this turn",
-    "aladdin_wish_draw_option": "Draw four cards"
+    "aladdin_wish_draw_option": "Draw four cards",
+    "action_heroes_pushing_the_limit_title": "Pushing the Limit: choose counters or draw at {{base}}",
+    "action_heroes_pushing_the_limit_counters_option": "+2 counters",
+    "action_heroes_pushing_the_limit_draw_option": "Draw 1 card",
+    "action_heroes_kickboxbro_play_stored_title": "Kickboxbro: choose a stored action to play as an extra action",
+    "action_heroes_kickboxbro_play_stored_skip_option": "Skip (do not play a stored action)",
+    "action_heroes_friends_through_eternity_title": "Friends Through Eternity: discard a card to gain two extra actions",
+    "action_heroes_get_to_the_choppa_title": "Get to the Choppa!: choose a destination base",
+    "action_heroes_hostage_rescue_title": "Hostage Rescue: choose a minion to place on top of your deck",
+    "action_heroes_the_right_person_title": "The Right Person: choose a base where you have no minions to gain an extra minion",
+    "action_heroes_walk_away_slowly_title": "Walk Away... Slowly: choose one of your minions to return to hand",
+    "action_heroes_warbro_title": "Warbro: choose another base where you have exactly one minion",
+    "action_heroes_kickboxbro_store_title": "Kickboxbro: choose a card from your hand to store under this card",
+    "action_heroes_kickboxbro_store_skip_option": "Skip (do not store a card)",
+    "backtimers_minion_counter_skip_option": "Skip (do not place a power counter)",
+    "backtimers_store_title": "Backtimers: choose a card from your hand to place in stasis",
+    "backtimers_store_skip_option": "Skip (do not place a card in stasis)",
+    "backtimers_zany_prof_title": "Zany Prof: adjust stasis counters on one stasis card",
+    "backtimers_zany_prof_skip_option": "Skip (do not adjust stasis counters)",
+    "backtimers_alex_p_mcglide_store_title": "Alex: choose a card from your hand to place in stasis",
+    "backtimers_alex_p_mcglide_counter_title": "Alex: choose one of your minions to place a +1 power counter"
   },
   "mechanics": {
     "madness": {

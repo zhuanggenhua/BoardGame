@@ -1,6 +1,6 @@
 # 作祟 3 交互子账本：The Dust
 
-> 状态：`contract-ready-with-feverish-and-end-turn-damage-representatives`。已有狂热病患自然怪物回合、未交换疾病回合末伤害分配代表链，不能等同于完整支持。
+> 状态：`contract-ready-with-feverish-end-turn-damage-and-forced-exchange-representatives`。已有狂热病患自然怪物回合、未交换疾病回合末伤害分配、同房结束回合强制交换疾病代表链，不能等同于完整支持。
 
 ## 1. 源段锁定
 
@@ -87,4 +87,8 @@ Feverish 属性：力量 6、速度 5、神志 3、知识 3；在作祟揭秘者
 - 领域测试：`node scripts\infra\vitest-cli-safe.mjs run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts --configLoader native -t "灰尘剧本回合内没有交换|灰尘隐藏叛徒因未交换"`，2 passed / 276 skipped。
 - 真实入口 E2E：`node scripts\infra\run-e2e-single.mjs ci e2e\betrayal\the-dust-end-turn-damage-allocation.e2e.ts "灰尘"`，1 passed。
 - 截图核验证据：`evidence/betrayal-the-dust-end-turn-damage-allocation/e2e-test.md`。
-- 仍需补：感染交换全排列、隐藏编号完整可见性、研究 / 治愈全路径 UI、同时胜负政策、完整英雄治愈胜利和全员感染 / 死亡叛徒怪物化路径回归。
+- 已验证代表链：当前探索者结束回合时若与多名探索者同房，会逐个与同房探索者随机交换 1 个疾病标记；多次交换按最新疾病标记状态顺序结算，不会因为第一次交换后引用旧 token 而跳过后续交换；发生同房强制交换后不会进入“灰尘冲动”伤害分配；编号 1 的中间持有人和最终持有人都会永久成为叛徒；进入下一名玩家新回合后本回合交换记录清空。
+- 领域测试：`node scripts\infra\vitest-cli-safe.mjs run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts --configLoader native -t "灰尘剧本回合结束会逐个|灰尘剧本回合内没有交换|灰尘隐藏叛徒因未交换"`，3 passed / 276 skipped。
+- 真实入口 E2E：`node scripts\infra\run-e2e-single.mjs ci e2e\betrayal\the-dust-forced-sickness-exchange.e2e.ts "强制交换"`，1 passed。
+- 截图核验证据：`evidence/betrayal-the-dust-forced-sickness-exchange/e2e-test.md`。
+- 仍需补：主动“控制冲动”同意 / 拒绝全路径、寻找治愈线索 / 治愈失败交换、隐藏编号完整可见性、研究 / 治愈全路径 UI、同时胜负政策、完整英雄治愈胜利和全员感染 / 死亡叛徒怪物化路径回归。

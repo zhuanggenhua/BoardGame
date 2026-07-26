@@ -62,13 +62,14 @@ E2E、截图、单测、typecheck 或页面可交互只证明资源消费链路�
 
 ### 正式线上素材只发布运行时交付物（强制）
 
-正式服务器素材源、移动素材包、file-index、服务器活动版本 `current` 都只能包含运行时交付物：
+正式媒体对象只能发布运行时交付物；小型索引 / 清单文件按它的消费入口单独判断：
 
 - 图片只允许 `compressed/` 目录下的 `.webp`。
 - 音频只允许 `compressed/` 目录下的 `.ogg`。
 - 允许直接发布的非媒体运行时对象仅限 `.svg`、运行时 `.json` 配置、OTA / 原生包 / 移动包所需的 `.zip`、`.apk`。
 - `.png/.jpg/.jpeg/.mp3/.wav` 只能作为本地源素材留在资源树中用于重新压缩，不得进入 `assets-manifest.json` 递归得到的服务器活动集合、Android file-index 或 ZIP。
 - 如果 `assets-manifest.json` 同时记录了源图片变体和压缩变体，正式发布裁剪必须忽略源图片变体，只把压缩运行时变体纳入服务器 `current`。
+- `assets-manifest.json` 这类小清单默认是构建 / OTA / App 包内索引和发布计划输入，不等同于必须通过服务器素材上传脚本发布的媒体对象。只有明确把某个清单作为服务器活动根、远端 package manifest、file-index 或 runtime fetch 对象时，它才必须进入对应远端链路并做正文 / 哈希回查。
 
 如果发现线上 `current`、移动包或 file-index 中出现源 PNG/JPG/WAV/MP3，结论必须写成“发布门禁失效 / 正式素材链路污染”，不得把它说成“素材比较大”或“服务器带宽问题”。
 
@@ -354,30 +355,40 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 适用于任意游戏的图片、音频、atlas、裁图、图标、提示板切片等运行时资源。
 
+先分清三类对象，再决定验收入口：
+
+| 对象类型 | 例子 | 默认动作 | 验收口径 |
+| --- | --- | --- | --- |
+| 运行时媒体对象 | `compressed/*.webp`、`compressed/*.ogg` | 发布到服务器素材主源或移动素材包 | 公开 URL / 包内文件返回本次大小、哈希或 `200` |
+| 包内小索引 | `assets-manifest.json`、构建注入的资源索引 | 随 Web / OTA / App 包交付；不默认作为服务器上传对象 | 包内文件存在，且它引用的运行时媒体对象已发布 |
+| 远端清单 / 发布包索引 | OTA `latest.json`、移动包 manifest、远端 fetch 的 manifest | 作为远端 JSON 发布 | 远端正文、大小、SHA-256 与本次产物一致 |
+
 ### 服务器主源（强制）
 
 1. **公开资源域名和协作者入口保持不变**：正式资源仍通过现有命令发布，运行时仍使用 `https://assets.easyboardgame.top/official/...`。不得要求协作者改成服务器 IP、隐藏源域名或另一套上传命令。
 2. **服务器是发布与在线下载主源**：发布脚本通过受限 SSH 将本批对象写入新 release，完成路径、大小和哈希校验后原子切换 `/home/admin/storage/assets/current`。所有 `official/**` 公网读取首先使用该活动版本。
 3. **禁止对象存储回退和灾备队列**：服务器切换成功后不再生成对象存储灾备队列；对象存储不可用、凭据缺失或容量问题不得参与正式发布判断，也不得把服务器回滚到旧远端对象状态。
 4. **发布完成必须验证本次服务器对象**：大型 bundle / APK / 游戏包必须返回 `X-Asset-Source: server`，且 `Content-Length` 与本次产物一致；file-index / latest manifest 等小型 JSON 必须从服务器读取正文并校验本次 SHA-256。旧同路径对象、旧缓存或 `server-error` 都不能作为本次发布成功证据。
-5. **服务器活动集合必须闭合到真实对象**：所有 `official/**/assets-manifest.json` 都是普通素材根，必须按 `basePrefix + files 键 + variants 扩展名` 展开真实对象；移动包 `file-index.files[].path` 必须映射为 `official/<path>`。OTA、游戏包和原生安装包仍只保留当前公开清单递归引用对象，不复制历史全集。活动集合默认上限为 4GiB，切换后必须至少保留 5GiB 磁盘空闲。
+5. **服务器活动集合只闭合“已发布到服务器的活动根”**：已经存在于服务器 `current` 的 `official/**/assets-manifest.json`、OTA/latest manifest、移动包 manifest 和 file-index 都必须按自身合同展开到真实运行时对象；但不能反向推断“本地每个 `assets-manifest.json` 都必须上传到服务器”。如果清单只随 Web / OTA / App 包交付，就按包内清单验收；服务器侧只验对应 `compressed/*.webp` / `compressed/*.ogg` / 远端运行时对象。
 6. **公开链路验证最多等待 30 分钟**：服务器原子切换完成后，发布脚本等待公开 URL 返回 `X-Asset-Source: server`，默认上限为 30 分钟（`BG_ASSET_SERVER_PROPAGATION_TIMEOUT_MS=1800000`）。该等待只处理 Tunnel、Worker 或缓存传播；URL 类型、目标结构、预期大小或摘要无效时必须首轮立即失败，禁止进入传播重试。
 
 ### 上传收口
 
-1. **录入或资源改动完成后，AI 必须主动上传**：只要本轮改动涉及运行时资源新增、替换、移动或裁图派生，就必须主动执行 manifest 重建、`assets:check` / `assets:upload` 或等价上传流程，不等待用户额外提醒。
+1. **录入或资源改动完成后，AI 必须主动上传运行时媒体对象**：只要本轮改动涉及 `compressed/*.webp`、`compressed/*.ogg`、远端运行时 `.svg/.json`、移动包或 OTA 包新增 / 替换 / 移动，就必须主动执行本地清单重建或校验、`assets:check` / `assets:upload` 或等价发布流程，不等待用户额外提醒。这里的“上传”默认指服务器需要的运行时对象；包内小清单是否上传取决于它的消费入口。
 2. **没有远端回查不算完成**：上传后至少抽查 1 个主资源 URL 和 1-3 个代表性裁图 / 子资源 URL，确认远端返回 `200`。
-3. **本地存在不代表交付完成**：即使本地文件、manifest、代码引用都已齐全，只要默认资源基址仍指向官方资源域名，就必须把服务器主源状态作为最终完成判据。
-4. **改本地资源不是修复完成（强制）**：当 Web、Android、线上反馈或用户明确说明“资源用的是官方资源包 / CDN / 服务器资源主源”时，`public/assets/**` 文件替换、压缩 WebP、manifest 改哈希、合成验收图都只能算“本地准备 / 预验证”。最终修复对象必须是服务器资源主源对象或重新发布后的游戏资源包；没有上传和远端回查，禁止回复“资源已修好”“线上会生效”“手机会吃到新图”。
-5. **本地验收图只证明坐标/裁切，不证明资源链生效**：用本地图片生成的截图、contact sheet、实叠图、E2E 截图，只能证明当前工作区渲染逻辑或素材内容本身；如果运行时默认从官方资源域名或已安装包取资源，还必须用最终请求 URL、资源包 manifest、服务器主源哈希或真机下载后的文件哈希回查。禁止拿本地截图替代服务器资源/包链路验收。
-6. **最终汇报必须拆开本地与远端状态**：涉及运行时资源时，收口回复必须分别说明：本地文件是否已改、manifest 是否已更新、服务器资源主源是否已发布、线上/手机/资源包是否已验证。任一项未完成都要明确标为“未完成/有风险”，不得把本地完成混成整体完成。
+3. **本地存在不代表交付完成**：即使本地文件、包内 manifest、代码引用都已齐全，只要运行时媒体对象默认从官方资源域名读取，就必须把服务器主源对象状态作为最终完成判据。
+4. **改本地资源不是修复完成（强制）**：当 Web、Android、线上反馈或用户明确说明“资源用的是官方资源包 / CDN / 服务器资源主源”时，`public/assets/**` 文件替换、压缩 WebP、manifest 改哈希、合成验收图都只能算“本地准备 / 预验证”。最终修复对象必须是服务器资源主源对象或重新发布后的游戏资源包；没有对象上传和远端回查，禁止回复“资源已修好”“线上会生效”“手机会吃到新图”。
+5. **本地验收图只证明坐标/裁切，不证明资源链生效**：用本地图片生成的截图、contact sheet、实叠图、E2E 截图，只能证明当前工作区渲染逻辑或素材内容本身；如果运行时默认从官方资源域名或已安装包取资源，还必须用最终请求 URL、包内 manifest / file-index、服务器主源哈希或真机下载后的文件哈希回查。禁止拿本地截图替代服务器资源/包链路验收。
+6. **最终汇报必须拆开本地、包内索引与远端对象状态**：涉及运行时资源时，收口回复必须分别说明：本地文件是否已改、包内 / OTA / App 可见 manifest 或 file-index 是否已更新、服务器运行时对象是否已发布、线上/手机/资源包是否已验证。任一项未完成都要明确标为“未完成/有风险”，不得把本地完成混成整体完成。
 7. **`git ignore` 与服务器发布是两回事**：文件是否被 Git 忽略，只影响它会不会自动进入提交，不影响它是不是运行时资源。只要资源已经放进 `public/assets/**` 且代码/manifest 会引用它，就仍然必须按资源流程重建 manifest、发布到服务器资源主源并做远端回查；**禁止**把“文件被 ignore 了”当成可以不上传、不中断收口的理由。
 8. **上传失败必须显式告知用户**：如果因为 `.env` / `.env.example` 缺失、权限不足、脚本报错、网络失败或用户明确要求暂不上传而没有完成上传，最终汇报必须明确写出“未上传资源列表 + 原因 + 当前运行态风险”，禁止省略。
 9. **`远程有图` 或 `E2E 截图里有图` 不等于本地资源链已闭环**：如果用户问的是“本地为什么看不到素材”“为什么当前实现还在依赖远端”“为什么换机/离线会丢图”，必须回到 `public/assets/i18n/<locale>/<gameId>/`、压缩产物、manifest 和最终请求路径逐项核对；禁止只因为远端 `200` 或截图里最终显示出了图片，就跳过本地正式资源树检查。
 10. **带路径过滤上传时 0 个对象必须视为失败**：`assets:check` / `assets:upload -- --asset-prefix <path>` 只能作为“本地发布计划”检查，不能当远端验证。若指定了 `--asset-prefix`，输出 0 个待发布对象必须立即中断并修正路径；禁止把 0 对象成功退出解释成“已经传过 / 没有变化”。文件级前缀优先写完整相对路径（例如 `i18n/zh-CN/smashup/cards/compressed/foo.webp`），也允许使用已被脚本支持的同名无扩展名前缀，但必须先看到对应 `待发布: official/...` 行。
-11. **发布 manifest 前必须做清单闭合回查**：只要本轮新增、移动或重建了 `assets-manifest.json`，不能只抽查单张图；必须展开该 manifest 的运行时对象引用（`basePrefix + files 键 + variants 扩展名`，源 PNG/JPG/WAV/MP3 除外），对新增或变更涉及的 `compressed/*.webp` / `compressed/*.ogg` / 运行时 JSON/SVG 做远端 `HEAD 200` 或等价服务器活动集合校验。发现任一缺失对象时，先补发缺失对象，再发布 manifest / 刷新 App file-index。
-12. **游戏级 manifest 的 `basePrefix` 必须匹配清单实际目录**：位于 `public/assets/i18n/zh-CN/<gameId>/assets-manifest.json` 的清单必须发布到 `official/i18n/zh-CN/<gameId>/`，不得继续引用旧的 `official/<gameId>/`。上传或刷新 Android file-index 前，必须校验所有本地 `assets-manifest.json` 的 `basePrefix` 与所在目录一致；否则服务器活动清单会递归追到旧路径并在发布阶段失败或线上缺图。
-13. **该规则不分游戏**：`dicethrone`、`smashup`、`summonerwars` 以及后续新游戏都按同一口径执行。
+11. **更新包内 manifest 前必须做清单闭合回查**：只要本轮新增、移动或重建了 `assets-manifest.json`，不能只抽查单张图；必须展开该 manifest 的运行时对象引用（`basePrefix + files 键 + variants 扩展名`，源 PNG/JPG/WAV/MP3 除外），对新增或变更涉及的 `compressed/*.webp` / `compressed/*.ogg` / 远端运行时 JSON/SVG 做远端 `HEAD 200` 或等价服务器对象校验。发现任一缺失对象时，先补发缺失对象，再更新包内 manifest / 刷新 App file-index。
+12. **只有远端消费的 manifest 才作为远端发布对象**：如果某个 `assets-manifest.json` 只随 Web / OTA / App 包交付，它的验收点是包内文件和由它引用的服务器运行时对象，不要求通过 `assets:upload` 单独发布同名远端 JSON；如果它被发布到服务器 `official/**/assets-manifest.json` 作为活动根或被客户端远端 fetch，就必须同时发布清单正文并确保所有引用对象已闭合。
+13. **游戏级 manifest 的 `basePrefix` 必须匹配清单实际目录**：位于 `public/assets/i18n/zh-CN/<gameId>/assets-manifest.json` 的清单必须指向 `official/i18n/zh-CN/<gameId>/`，不得继续引用旧的 `official/<gameId>/`。上传运行时对象、刷新 Android file-index 或打包前，必须校验本轮相关 `assets-manifest.json` 的 `basePrefix` 与所在目录一致；否则包内索引会指到旧路径并导致线上缺图。
+14. **关联游戏刷新，而不是全站重做**：资源发布后的缓存刷新 / 入口回查必须按本轮变更前缀锁定关联游戏（例如 `i18n/zh-CN/smashup/**` 只归 Smash Up）。如果服务器因 `current` symlink 或同路径 JSON 缓存需要 reload `boardgame-asset-origin.service`，可执行一次轻量 reload，但汇报口径必须写成“刷新关联游戏资源入口缓存”，不得说成全站重新发布或把无关游戏纳入验收。
+15. **该规则不分游戏**：`dicethrone`、`smashup`、`summonerwars` 以及后续新游戏都按同一口径执行。
 
 ### 远端对象与 App 素材包的单一内容真相（强制）
 
@@ -398,16 +409,17 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 2. **默认校验也是增量校验**：`npm run assets:validate` 只校验“manifest 已登记且本地也存在”的资源是否一致；manifest 中已有但本地缺失的远端资源条目允许保留，本地存在但未登记的其他任务资源/目录也不阻断。
 3. **全量重建必须显式使用 full 模式**：只有确认当前工作树已经下载完整资源镜像时，才允许执行 `npm run assets:manifest:full` 或 `npm run assets:validate:full`。full 模式会把 manifest 当成本地目录快照处理，本地缺失的条目会被删除/判错。
 4. **运行时索引必须吃 manifest**：构建/开发注入的语言化图片索引必须同时读取本地文件与 `assets-manifest.json`；本地缺图但 manifest 已登记的远端资源应进入候选链，并在本地 `/assets` 不可用时使用官方资源域名。
-5. **资源交付仍必须远端回查**：增量 manifest 只解决协作者不必下载全量资源的问题，不替代服务器资源主源发布和 200/hash 回查。
-6. **嵌套语言目录清单必须用对应 root 重建**：如果需要单独重建 `public/assets/i18n/<locale>/<gameId>/assets-manifest.json`，必须使用该语言根作为 `--root`（例如 `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id smashup`），确保 `basePrefix` 指向 `official/i18n/<locale>/<gameId>/`。禁止用旧根或手工编辑留下 `official/<gameId>/` 前缀。
-7. **manifest 前缀漂移必须有测试守住**：修复或新增 manifest 生成/发布链路时，必须有测试覆盖“本地素材清单 `basePrefix` 匹配清单所在目录”和“服务器活动集合能按清单展开到真实对象”。不能只靠当轮人工检查。
+5. **manifest 是索引合同，不自动等于上传对象**：`assets-manifest.json` 的主要职责是让构建、协作者、App 包和发布计划知道“有哪些资源、路径和哈希”；它是否作为服务器远端 JSON 发布，取决于运行时或发布器是否真的远端读取该文件。
+6. **资源交付仍必须远端回查**：增量 manifest 只解决协作者不必下载全量资源和包内索引生成问题，不替代服务器运行时对象发布和 200/hash 回查。
+7. **嵌套语言目录清单必须用对应 root 重建**：如果需要单独重建 `public/assets/i18n/<locale>/<gameId>/assets-manifest.json`，必须使用该语言根作为 `--root`（例如 `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id smashup`），确保 `basePrefix` 指向 `official/i18n/<locale>/<gameId>/`。禁止用旧根或手工编辑留下 `official/<gameId>/` 前缀。
+8. **manifest 前缀漂移必须有测试守住**：修复或新增 manifest 生成/发布链路时，必须有测试覆盖“本地素材清单 `basePrefix` 匹配清单所在目录”和“由该清单引用的服务器运行时对象能被公开 URL 命中”。只有确实把该 manifest 作为服务器活动根时，才要求测试覆盖服务器活动集合递归展开。
 
 ### 故障排查
 
 1. **先查对应任务 worktree，不查错工作区**：如果问题来自某个任务分支 / 独立 `git worktree`，必须先到该 worktree 下核对 `public/assets/`、`assets-manifest.json` 与相关代码引用，禁止只在当前根工作区下判断“文件是否存在”。
 2. **先核对运行时真实请求路径**：图片运行时会自动补 `i18n/<locale>/` 与 `compressed/`，排查 404 时必须以最终请求 URL 为准，而不是只看源码里的相对路径。
 3. **裁切图也必须满足 `compressed/` 约定**：凡是运行时通过 `OptimizedImage` / `CardPreview` / `getOptimizedImageUrls()` 加载的裁切图，实际可访问文件必须位于对应目录的 `compressed/` 子目录；仅有 `crops/foo.webp` 而没有 `crops/compressed/foo.webp`，视为资源不完整。
-4. **上传前先重建清单**：资源目录有新增/移动后，先执行默认增量 `npm run assets:manifest`，再发布到服务器资源主源；只有完整资源维护任务才使用 full 模式。
+4. **上传前先重建 / 校验本地清单以找运行时对象**：资源目录有新增/移动后，先执行默认增量 `npm run assets:manifest` 或等价校验，确认新增运行时对象和 `basePrefix`；随后发布服务器需要的运行时对象。只有完整资源维护任务才使用 full 模式。
 5. **上传脚本入口**：当前正式入口是 `npm run assets:upload` / `npm run assets:check`，底层调用 `scripts/assets/upload-to-server.js`。排查“为什么本机能传/不能传”时，必须先确认服务器发布脚本、受限 SSH 配置和目标服务器活动目录。
 6. **出现“多叠一层整图/四角异常”先查叠层来源（通用规则）**：优先用 DevTools 选中异常区域，检查上层元素是否存在整图覆盖；查看 **计算后** `opacity/visibility/filter/transform` 是否被脚本改写；必要时用 `elementsFromPoint()` 或逐层禁用 DOM 来定位真正的上层来源。该步骤必须在调整裁剪/圆角/纹理之前完成。
 

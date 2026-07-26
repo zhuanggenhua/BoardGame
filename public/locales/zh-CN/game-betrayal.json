@@ -134,7 +134,8 @@
       "traitorStatusLose": "败退",
       "hauntStatusWin": "达成",
       "completedStamp": "完成",
-      "endingNarrationLabel": "结局朗读"
+      "endingNarrationLabel": "结局朗读",
+      "endingSourceStatus": "非原文摘要 / 临时整理"
     },
     "hud": {
       "phaseLabel": "阶段",
@@ -379,7 +380,7 @@
       "hauntRiskStarted": "作祟已开始",
       "hauntRiskPhasePreHaunt": "作祟前",
       "hauntRiskPhaseHaunt": "作祟中",
-      "hauntRevealPlayerTitle": "作祟开始",
+      "hauntRevealPlayerTitle": "公开揭示：作祟开始",
       "hauntRevealLead": "剧本发生变化，可以打开剧本查阅。",
       "hauntRevealSource": "剧本卡 {{scenarioCard}} / 触发 {{omen}} / 作祟 {{number}}",
       "hauntRevealDismiss": "关闭",
@@ -417,6 +418,7 @@
       "readerStatusPublicBook": "剧本档案",
       "readerStatusHeroBook": "英雄剧本书",
       "readerStatusTraitorBook": "叛徒剧本书",
+      "readerSourceStatus": "非原文摘要 / 临时整理",
       "readerPageLabel": "页数",
       "readerPageAria": "当前页 {{mobile}}，桌面双页 {{desktop}}",
       "readerPrev": "上一页",
@@ -826,6 +828,11 @@
       "nextExplorerWithTargets": "轮到{{explorer}}，可前往{{targets}}",
       "decksEmpty": "当前没有可探索的牌堆",
       "noExploreSlots": "这一局面暂时没有可翻出的房间"
+    },
+    "monster": {
+      "status": {
+        "stunned": "击晕"
+      }
     }
   },
   "errors": {

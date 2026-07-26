@@ -1197,11 +1197,13 @@ function ExplorerFigureToken({
 function MonsterBoardToken({
   monster,
   locale,
+  t,
   quietFrame = false,
   status = "active",
 }: {
   monster: BetrayalMonsterSummary;
   locale: string;
+  t: ReturnType<typeof useTranslation>["t"];
   quietFrame?: boolean;
   status?: BetrayalMonsterStatusKind;
 }) {
@@ -1253,7 +1255,7 @@ function MonsterBoardToken({
           className="pointer-events-none absolute -bottom-1 left-1/2 z-20 -translate-x-1/2 rounded-[4px] border border-[rgba(212,224,221,0.62)] bg-[rgba(9,14,14,0.94)] px-1.5 py-0.5 text-[8px] font-black leading-none tracking-[0.08em] text-[#dce7e2] shadow-[0_3px_8px_rgba(0,0,0,0.38)]"
           data-testid={`betrayal-monster-board-token-status-${monster.id}`}
         >
-          击晕
+          {t("board.monster.status.stunned")}
         </span>
       ) : null}
     </span>
@@ -5309,6 +5311,13 @@ function EndgameScreen({
                   >
                     <div className="text-[12px] font-bold tracking-[0.3em] text-[#3a2a19]">
                       {t("board.endgame.endingNarrationLabel")}
+                    </div>
+                    <div
+                      data-testid="betrayal-endgame-ending-source-status"
+                      data-scenario-source-status="adapted-summary"
+                      className="mt-1 text-[10px] font-bold uppercase tracking-[0.20em] text-[#6d4c28]"
+                    >
+                      {t("board.endgame.endingSourceStatus")}
                     </div>
                     <p className="mx-auto mt-2 max-w-[560px] text-[15px] font-semibold leading-[1.55] text-[#352a1e]">
                       {t(endgameNarrationKey)}
@@ -14590,6 +14599,7 @@ export default function BetrayalBoard({
                                             <MonsterBoardToken
                                               monster={monster}
                                               locale={effectiveLocale}
+                                              t={t}
                                               quietFrame={
                                                 isHauntGuideMonsterTarget
                                               }
@@ -16514,6 +16524,13 @@ export default function BetrayalBoard({
                     <span data-testid="betrayal-scenario-reader-header-progress">
                       {referenceScenarioSpreadIndex + 1}/
                       {referenceScenarioSpreadCount}
+                    </span>
+                    <span
+                      data-testid="betrayal-scenario-reader-source-status"
+                      data-scenario-source-status="adapted-summary"
+                      className="mt-1 block text-[10px] uppercase tracking-[0.10em] text-[#e0b870]"
+                    >
+                      {t("board.scenario.readerSourceStatus")}
                     </span>
                   </div>
                 </div>

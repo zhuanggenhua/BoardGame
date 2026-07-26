@@ -1338,7 +1338,27 @@
     "aladdin_wish_skip_option": "不使用许愿",
     "aladdin_wish_extra_cards_option": "额外打出一张角色和一张战术",
     "aladdin_wish_power_option": "一个角色本回合 +5 力量",
-    "aladdin_wish_draw_option": "抽四张牌"
+    "aladdin_wish_draw_option": "抽四张牌",
+    "action_heroes_pushing_the_limit_title": "逼近极限：{{base}} 选择指示物或抽牌",
+    "action_heroes_pushing_the_limit_counters_option": "+2 指示物",
+    "action_heroes_pushing_the_limit_draw_option": "抽 1 张牌",
+    "action_heroes_kickboxbro_play_stored_title": "踢拳兄弟：选择一张储存行动作为额外行动打出",
+    "action_heroes_kickboxbro_play_stored_skip_option": "跳过（不打出储存行动）",
+    "action_heroes_friends_through_eternity_title": "永恒挚友：弃一张牌以获得两个额外行动",
+    "action_heroes_get_to_the_choppa_title": "快上直升机：选择移动目的基地",
+    "action_heroes_hostage_rescue_title": "人质救援：选择一张随从置于牌库顶",
+    "action_heroes_the_right_person_title": "合适的人选：选择一个你没有随从的基地以获得额外随从",
+    "action_heroes_walk_away_slowly_title": "慢慢走开：选择一个己方随从返回手牌",
+    "action_heroes_warbro_title": "战争兄弟：选择另一个仅有你一个随从的基地",
+    "action_heroes_kickboxbro_store_title": "踢拳兄弟：选择一张手牌储存在本牌下",
+    "action_heroes_kickboxbro_store_skip_option": "跳过（不储存手牌）",
+    "backtimers_minion_counter_skip_option": "跳过（不放置力量指示物）",
+    "backtimers_store_title": "返时者：选择一张手牌置入停滞",
+    "backtimers_store_skip_option": "跳过（不置入停滞）",
+    "backtimers_zany_prof_title": "疯狂博士：调整一张停滞牌的停滞指示物",
+    "backtimers_zany_prof_skip_option": "跳过（不调整停滞指示物）",
+    "backtimers_alex_p_mcglide_store_title": "亚历克斯：选择一张手牌置入停滞",
+    "backtimers_alex_p_mcglide_counter_title": "亚历克斯：选择一个己方随从放置 +1 力量指示物"
   },
   "mechanics": {
     "madness": {
@@ -10327,91 +10347,91 @@
       "abilityText": "这里你的拥有 +1 力量标记的角色不能被其他玩家的牌影响。"
     },
     "action_heroes_commandbro": {
-      "name": "Commandbro",
+      "name": "突击兄弟",
       "abilityText": "持续：在你的回合结束时，若这是你在此处唯一的佣兵，抓 1 张牌。"
     },
     "action_heroes_gracie_brones": {
-      "name": "Gracie Brones",
+      "name": "格蕾西·布朗斯",
       "abilityText": "持续：在你的回合开始时，若这是你在此处唯一的佣兵，你可以在此佣兵上放置 1 个 +1 战力标记；此佣兵直到回合结束额外获得等同于其 +1 战力标记数量的战力。"
     },
     "action_heroes_kickboxbro": {
-      "name": "Kickboxbro",
+      "name": "踢拳兄弟",
       "abilityText": "持续：在你的回合结束时，你可以将 1 张手牌储存于此牌下方。天赋：将储存在此牌下方的 1 张行动作为额外行动打出。特殊：本基地计分前，若这是你在此处唯一的佣兵，你可以使用此佣兵的天赋。"
     },
     "action_heroes_robobro": {
-      "name": "Robobro",
+      "name": "机械兄弟",
       "abilityText": "持续：另一位玩家打出或移动一个佣兵到此处后，你可以在此佣兵上放置 1 个 +1 战力标记。"
     },
     "action_heroes_rumbro": {
-      "name": "Rumbro",
+      "name": "乱斗兄弟",
       "abilityText": "持续：你的回合中，若这是你在此处唯一的佣兵，本基地临界点降低 4。"
     },
     "action_heroes_warbro": {
-      "name": "Warbro",
+      "name": "战争兄弟",
       "abilityText": "天赋：选择另一个你恰好有 1 个佣兵的基地，其临界点降低 3 直到回合结束。"
     },
     "action_heroes_all_out_of_bubblegum": {
-      "name": "All Out of Bubblegum",
+      "name": "泡泡糖用完了",
       "effectText": "令你的 1 个佣兵获得 +2 战力直到回合结束。若它是你在该基地唯一的佣兵，你可以打出 1 张额外行动。"
     },
     "action_heroes_collateral_damage": {
-      "name": "Collateral Damage",
+      "name": "附带伤害",
       "effectText": "选择一个基地，其临界点降低 5 直到回合结束。"
     },
     "action_heroes_final_stand": {
-      "name": "Final Stand",
+      "name": "最后一搏",
       "effectText": "特殊：在一个你恰好有 1 个佣兵的基地计分前打出。摧毁其他每位玩家各自控制的 1 个印制力量 3 或更低的佣兵。"
     },
     "action_heroes_friends_through_eternity": {
-      "name": "Friends Through Eternity",
+      "name": "永恒挚友",
       "effectText": "弃 1 张牌，以打出 2 张额外行动。"
     },
     "action_heroes_get_to_the_choppa": {
-      "name": "Get to the Choppa!",
+      "name": "快上直升机！",
       "effectText": "将你的 1 个佣兵从一个基地移动到另一个基地。若它是你在目的基地唯一的佣兵，你可以打出 1 张额外行动。"
     },
     "action_heroes_hostage_rescue": {
-      "name": "Hostage Rescue",
+      "name": "人质救援",
       "effectText": "从你的牌库中检索 1 张佣兵，并将其置于你的牌库顶。"
     },
     "action_heroes_lone_wolf": {
-      "name": "Lone Wolf",
+      "name": "独狼",
       "effectText": "打出到一个佣兵上。持续：此佣兵 +2 战力。若它是你在此处唯一的佣兵，改为 +4 战力。"
     },
     "action_heroes_pushing_the_limit": {
-      "name": "Pushing the Limit",
+      "name": "突破极限",
       "effectText": "你每有一个恰好有 1 个佣兵的基地，选择在该佣兵上放置 2 个 +1 战力标记，或抓 1 张牌。"
     },
     "action_heroes_slo_mo_attack": {
-      "name": "Slo-Mo Attack",
+      "name": "慢动作攻击",
       "effectText": "打出到一个基地上。天赋：若你在此处恰好有 1 个佣兵，本基地临界点降低 3 直到回合结束。持续：你在此处的佣兵不受其他玩家行动影响。"
     },
     "action_heroes_the_right_person": {
-      "name": "The Right Person",
+      "name": "正确人选",
       "effectText": "在一个你没有佣兵的基地打出 1 个额外佣兵。打出 1 张额外行动。"
     },
     "action_heroes_walk_away_slowly": {
-      "name": "Walk Away... Slowly",
+      "name": "慢慢走开……",
       "effectText": "特殊：一个基地计分后打出。将你在那里的 1 个佣兵返回其拥有者手牌。"
     },
     "backtimers_sidelined_girlfriend": {
-      "name": "Sidelined Girlfriend",
+      "name": "被晾在一边的女友",
       "abilityText": "你可以在此牌上放置 1 个停滞标记。特殊：从此牌移除停滞标记后，你可以在基地上你的 1 个佣兵上放置 1 个 +1 战力标记。当你从停滞中打出此牌时，将其作为额外佣兵打出，并在其上放置 1 个 +1 战力标记。"
     },
     "backtimers_lifelong_bully": {
-      "name": "Lifelong Bully",
+      "name": "终身恶霸",
       "abilityText": "为你停滞中的 1 张牌添加 1 个停滞标记；或查看你牌库顶 2 张牌，你可以在其中 1 张上放置 2 个停滞标记，并将其余牌以任意顺序放回。"
     },
     "backtimers_zany_prof": {
-      "name": "Zany Prof",
+      "name": "古怪教授",
       "abilityText": "持续：在你的回合开始时，你可以从你停滞中的 1 张牌上移除 1 个停滞标记，或为其添加 1 个停滞标记。"
     },
     "backtimers_alex_p_mcglide": {
-      "name": "Alex P. McGlide",
+      "name": "亚历克斯·P·麦格莱德",
       "abilityText": "你可以将 2 个停滞标记放置到你手牌中的 1 张牌上。天赋：若本回合有牌移除了其最后一个停滞标记，你可以在你的 1 个佣兵上放置 1 个 +1 战力标记。"
     },
     "backtimers_back_from_the_future": {
-      "name": "Back From the Future",
+      "name": "从未来回来",
       "effectText": "展示你牌库顶 3 张牌。你可以在其中 1 张上放置 2 个停滞标记。将其余牌以任意顺序放回。"
     },
     "backtimers_99_mph": {
@@ -10419,215 +10439,215 @@
       "effectText": "在你手牌中的 1 张牌上放置 2 个停滞标记。抓 1 张牌。"
     },
     "backtimers_future_almanac": {
-      "name": "Future Almanac?",
+      "name": "未来年鉴？",
       "effectText": "在此牌上放置 3 个停滞标记。特殊：从此牌移除停滞标记后，抓 1 张牌。当你从停滞中打出此牌时，弃置它。"
     },
     "backtimers_lightning_strike": {
-      "name": "Lightning Strike",
+      "name": "闪电击",
       "effectText": "在此牌上放置 2 个停滞标记。特殊：当你从其他牌上移除停滞标记时，你可以将它们放到此牌上。你的回合中，你可以消耗 1 次行动打出额度，使一个基地临界点降低此牌上停滞标记数量的数值（最多 5）直到回合结束，并弃置此牌。当你从停滞中打出此牌时，弃置它。"
     },
     "backtimers_will_have_to_do": {
-      "name": "Will Have to Do",
+      "name": "将就一下",
       "effectText": "在你的佣兵上合计放置至多 2 个 +1 战力标记；或从你停滞中的牌上合计移除至多 2 个停滞标记。"
     },
     "backtimers_help_from_the_past": {
-      "name": "Help From the Past",
+      "name": "来自过去的帮助",
       "effectText": "在此牌上放置 3 个停滞标记。特殊：当此牌进入停滞时，将你弃牌堆中的 1 张牌储存在其下方。当你从停滞中打出此牌时，弃置它，并且你可以将储存在其下方的 1 张牌作为额外牌打出。"
     },
     "backtimers_letter_from_another_time": {
-      "name": "Letter From Another Time",
+      "name": "来自异时的信",
       "effectText": "在此牌上放置 3 个停滞标记。特殊：当此牌进入停滞时，从你的牌库中检索 1 张牌并储存在此牌下方。当你从停滞中打出此牌时，弃置它，并且你可以将储存在其下方的 1 张牌作为额外牌打出。"
     },
     "backtimers_disrupt_the_space_time_continuum": {
-      "name": "Disrupt the Space-Time Continuum",
+      "name": "扰乱时空连续体",
       "effectText": "选择你手牌中至多 2 张牌。在每张被选牌上放置等同于所选牌数量的停滞标记。"
     },
     "extramorphs_chestbreaker": {
-      "name": "Chestbreaker",
+      "name": "破胸者",
       "abilityText": "天赋：若此佣兵在本回合开始时位于基地上，将其置于你的牌库底；选择力量 3 或 4，并从你的牌库顶将该力量的 1 个佣兵作为额外佣兵打到此处。"
     },
     "extramorphs_extradrone": {
-      "name": "Extradrone",
+      "name": "异形工蜂",
       "abilityText": "你可以将此处另一位玩家力量 3 或更低的 1 个佣兵移动到另一个基地；若如此做，你可以将此佣兵移动到该基地。若此佣兵是从牌库顶打出的，在其上放置 1 个 +1 战力标记。"
     },
     "extramorphs_alien_life_form": {
-      "name": "Alien Life Form",
+      "name": "外星生命体",
       "abilityText": "你可以摧毁此处力量 3 或更低的 1 个佣兵。若此佣兵是从牌库顶打出的，在其上放置 2 个 +1 战力标记。天赋：从此佣兵上移除 1 个 +1 战力标记，将其移动到另一个基地。"
     },
     "extramorphs_hive_queen": {
-      "name": "Hive Queen",
-      "abilityText": "你可以从你的牌库和/或弃牌堆中检索 1 张 Egg Field 并将其加入手牌。天赋：直到你的下个回合开始，在你有 Egg Field 的基地上，其他玩家的佣兵 -1 战力。"
+      "name": "蜂巢女王",
+      "abilityText": "你可以从你的牌库和/或弃牌堆中检索 1 张 卵场 并将其加入手牌。天赋：直到你的下个回合开始，在你有 卵场 的基地上，其他玩家的佣兵 -1 战力。"
     },
     "extramorphs_close_encounters": {
-      "name": "Close Encounters",
+      "name": "近距离接触",
       "effectText": "抓 1 张牌。你可以将你手牌中的 1 张牌置于你的牌库顶。打出 1 张额外行动。"
     },
     "extramorphs_distress_call": {
-      "name": "Distress Call",
+      "name": "求救信号",
       "effectText": "将 1 个佣兵移动到另一个基地。"
     },
     "extramorphs_egg_field": {
-      "name": "Egg Field",
-      "effectText": "打出到一个基地上。你可以从你的手牌、牌库和/或弃牌堆中检索 1 张 Head Grabber，并将其作为额外行动打到此处力量 3 或更低的 1 个佣兵上。天赋：从你的牌库顶将力量 2 或更低的 1 个佣兵作为额外佣兵打到此处。"
+      "name": "卵场",
+      "effectText": "打出到一个基地上。你可以从你的手牌、牌库和/或弃牌堆中检索 1 张 抱头虫，并将其作为额外行动打到此处力量 3 或更低的 1 个佣兵上。天赋：从你的牌库顶将力量 2 或更低的 1 个佣兵作为额外佣兵打到此处。"
     },
     "extramorphs_five_by_five": {
-      "name": "Five by Five",
+      "name": "五乘五",
       "effectText": "抓 5 张牌，然后将你手牌中的 5 张牌以任意顺序置于你的牌库顶。"
     },
     "extramorphs_game_over_dude": {
-      "name": "Game Over, Dude!",
+      "name": "完蛋了，伙计！",
       "effectText": "选择一个基地和一个小于 5 的力量数值。从你的牌库顶将该力量的 1 个佣兵作为额外佣兵打到那里。"
     },
     "extramorphs_head_grabber": {
-      "name": "Head Grabber",
+      "name": "抱头虫",
       "effectText": "打出到一个力量 3 或更低的佣兵上。天赋：若此牌在你的佣兵上，或本回合开始时此牌在一个佣兵上，摧毁该佣兵；选择力量 4 或更低的一个数值，然后从你的牌库顶将该力量的 1 个佣兵作为额外佣兵打到此处。"
     },
     "extramorphs_nuke_it_from_orbit": {
-      "name": "Nuke It From Orbit",
+      "name": "从轨道核平",
       "effectText": "打出到一个基地上。天赋：若此牌在本回合开始时位于基地上，摧毁此基地及其上的所有其他牌。正常补充新基地。将此牌放入盒中。"
     },
     "extramorphs_time_to_go": {
-      "name": "Time to Go",
+      "name": "该走了",
       "effectText": "将你弃牌堆中至多 3 张牌洗入你的牌库。"
     },
     "teens_brain": {
-      "name": "Brain",
-      "abilityText": "若此处有 Slacker，你可以打出 1 张额外行动。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以抓 1 张牌。"
+      "name": "学霸",
+      "abilityText": "若此处有 懒散者，你可以打出 1 张额外行动。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以抓 1 张牌。"
     },
     "teens_jock": {
-      "name": "Jock",
-      "abilityText": "若此处有 Prep，在此佣兵上放置 2 个 +1 战力标记。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以在此佣兵上放置 1 个 +1 战力标记。"
+      "name": "运动健将",
+      "abilityText": "若此处有 优等生，在此佣兵上放置 2 个 +1 战力标记。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以在此佣兵上放置 1 个 +1 战力标记。"
     },
     "teens_prep": {
-      "name": "Prep",
-      "abilityText": "若此处有 Brain，你可以从你的牌库中检索 1 个力量 3 的佣兵并将其加入手牌。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以令你的 1 个佣兵 +2 战力直到回合结束。"
+      "name": "优等生",
+      "abilityText": "若此处有 学霸，你可以从你的牌库中检索 1 个力量 3 的佣兵并将其加入手牌。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以令你的 1 个佣兵 +2 战力直到回合结束。"
     },
     "teens_rebel": {
-      "name": "Rebel",
-      "abilityText": "若此处有 Jock，你可以在此处打出 1 个力量 3 且不是 Rebel 的额外佣兵。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以将你的 1 个佣兵移动到另一个基地。"
+      "name": "叛逆者",
+      "abilityText": "若此处有 运动健将，你可以在此处打出 1 个力量 3 且不是 叛逆者 的额外佣兵。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以将你的 1 个佣兵移动到另一个基地。"
     },
     "teens_slacker": {
-      "name": "Slacker",
-      "abilityText": "若此处有 Rebel，将你的至多 2 个佣兵移动到其他基地。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以将你弃牌堆中的 1 张牌置于你的牌库底。"
+      "name": "懒散者",
+      "abilityText": "若此处有 叛逆者，将你的至多 2 个佣兵移动到其他基地。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以将你弃牌堆中的 1 张牌置于你的牌库底。"
     },
     "teens_abe_frohman": {
-      "name": "Abe Frohman",
+      "name": "艾布·弗罗曼",
       "effectText": "打出到你的 1 个佣兵上。天赋：直到你的下个回合开始，此佣兵也拥有你拥有的每个其他佣兵的相同名称。使用此佣兵的能力不计为使用其他佣兵的能力。"
     },
     "teens_babysitter": {
-      "name": "Babysitter",
+      "name": "保姆",
       "effectText": "打出到你的 1 个佣兵上。持续：你在此处的佣兵不能被其他玩家的能力影响。"
     },
     "teens_booty_trap": {
-      "name": "Booty Trap",
+      "name": "战利品陷阱",
       "effectText": "打出到一个基地上。持续：在你将一个印制力量 3 的佣兵打出或移动到此基地后，抓 1 张牌。"
     },
     "teens_brunch_bunch": {
-      "name": "Brunch Bunch",
+      "name": "早午餐帮",
       "effectText": "选择一个基地。你在那里的印制力量 3 的佣兵每有一个名称，你可以选择一个不同效果：将你的 1 个佣兵移动到那里；抓 1 张牌；在那里打出 1 个力量 3 的额外佣兵；令那里的 1 个佣兵 +2 战力直到回合结束；将你弃牌堆中的 1 张牌置于你的牌库底。"
     },
     "teens_explosion_at_school": {
-      "name": "Explosion at School",
+      "name": "学校爆炸",
       "effectText": "将你弃牌堆中任意数量名称不同的力量 3 佣兵洗入你的牌库，并抓 1 张牌。"
     },
     "teens_new_kid": {
-      "name": "New Kid",
+      "name": "新同学",
       "effectText": "从你的牌库中检索 1 个力量 3 的佣兵，并将其作为额外佣兵打出。"
     },
     "teens_principals_office": {
-      "name": "Principal's Office",
+      "name": "校长办公室",
       "effectText": "将你的 1 个佣兵返回你的手牌。你可以将 1 个印制力量 3 的佣兵作为额外佣兵打出。"
     },
     "teens_strange_science": {
-      "name": "Strange Science",
+      "name": "奇怪科学",
       "effectText": "从你的弃牌堆将 1 个力量 3 的佣兵作为额外佣兵打出。"
     },
     "wraithrustlers_watson": {
-      "name": "Watson",
+      "name": "沃森",
       "abilityText": "你可以摧毁本基地上你的 1 张行动；或从你的牌库顶展示牌，直到展示出 1 张怨灵，将其加入手牌，并将其余牌洗入你的牌库。"
     },
     "wraithrustlers_roy": {
-      "name": "Roy",
+      "name": "罗伊",
       "abilityText": "你可以将你的 1 张行动从另一个基地转移到此处。持续：若本回合此处有怨灵被摧毁，此佣兵 +2 战力。"
     },
     "wraithrustlers_ellen": {
-      "name": "Ellen",
+      "name": "艾伦",
       "abilityText": "天赋：摧毁本基地上你的 1 张行动，使本基地临界点降低 3 直到回合结束。持续：此处有怨灵被摧毁后，你可以打出 1 张额外行动。"
     },
     "wraithrustlers_funkman": {
-      "name": "Funkman",
+      "name": "芬克曼",
       "abilityText": "持续：在你摧毁 1 张行动后，令该行动所在基地上你的每个佣兵 +1 战力直到回合结束，或抓 1 张牌。特殊：一个基地计分前，你可以将其上的 1 张行动转移到另一个基地。"
     },
     "wraithrustlers_ancient_sumerian_god": {
-      "name": "Ancient Sumerian God",
+      "name": "古苏美尔神",
       "effectText": "怨灵。打出到一个基地上。天赋：将你弃牌堆中 1 张可以打到基地上的行动储存在此牌下方。持续：本基地临界点增加 3。当此牌离场时，你每有一个基地，可以将此牌下方储存的 1 张行动作为额外行动打到那里。"
     },
     "wraithrustlers_demon_dogs": {
-      "name": "Demon Dogs",
+      "name": "恶魔犬",
       "effectText": "怨灵。打出到一个基地上。你可以将你手牌或弃牌堆中 1 个力量 3 或更低的佣兵储存在此牌下方。持续：本基地临界点增加 3。此牌被摧毁后，你可以将其下方储存的 1 个佣兵作为额外佣兵打出。"
     },
     "wraithrustlers_ectoplasm_one": {
-      "name": "Ectoplasm One",
+      "name": "灵质一号",
       "effectText": "打出到一个基地上。天赋：将此行动转移到另一个基地，以将你的 1 个佣兵从此处移动到那里。若你移动了佣兵，你可以摧毁新基地上的 1 张行动。"
     },
     "wraithrustlers_librarian_haunt": {
-      "name": "Librarian Haunt",
+      "name": "图书馆怨灵",
       "effectText": "怨灵。打出到一个基地上。持续：本基地临界点增加 3。此牌被摧毁后，抓 3 张牌。"
     },
     "wraithrustlers_resurgence": {
-      "name": "Resurgence",
+      "name": "复苏",
       "effectText": "选择一个基地上的 1 张行动。摧毁它，或将其转移到另一个基地。特殊：你可以在一个基地计分前打出此牌。"
     },
     "wraithrustlers_slimy": {
-      "name": "Slimy",
+      "name": "黏糊怪",
       "effectText": "怨灵。打出到一个基地上。持续：本基地临界点增加 3。此牌被摧毁后，你在此处的每个佣兵 +2 战力直到回合结束。"
     },
     "wraithrustlers_the_tools_and_the_talent": {
-      "name": "The Tools and The Talent",
+      "name": "工具与天赋",
       "effectText": "从你的牌库中检索 1 张牌并将其置于你的牌库顶。"
     },
     "wraithrustlers_unlicensed_nuclear_accelerator": {
-      "name": "Unlicensed Nuclear Accelerator",
+      "name": "无证核加速器",
       "effectText": "打出到一个佣兵上。持续：此佣兵 +2 战力。天赋：摧毁本基地上你的 1 张行动，在此佣兵上放置 1 个 +1 战力标记。"
     },
     "base_building_rooftop": {
-      "name": "Building Rooftop",
+      "name": "大楼屋顶",
       "abilityText": "临界点 20 - VP：3/1/1 - 在你的回合开始时，若你在此处恰好有 1 个佣兵，你可以使本基地临界点降低该佣兵的战力直到回合结束。本基地计分时，每位在此处恰好有 1 个佣兵的玩家获得 1 VP。"
     },
     "base_jungle_camp": {
-      "name": "Jungle Camp",
+      "name": "丛林营地",
       "abilityText": "临界点 20 - VP：3/2/1 - 本基地计分后，获胜者可以将其在此处的 1 个佣兵返回手牌。"
     },
     "base_alternate_present": {
-      "name": "Alternate Present",
+      "name": "另一个现在",
       "abilityText": "临界点 20 - VP：4/2/2 - 每回合你第一次在此处打出佣兵后，你可以在手牌中的 1 张牌上放置 2 个停滞标记。"
     },
     "base_time_traveling_car": {
-      "name": "Time-Traveling Car",
+      "name": "时间旅行车",
       "abilityText": "临界点 22 - VP：3/2/1 - 本基地计分后，获胜者可以在其此处的 1 个佣兵或行动上放置 2 个停滞标记。"
     },
     "base_ancient_crashed_ship": {
-      "name": "Ancient Crashed Ship",
+      "name": "古老坠船",
       "abilityText": "临界点 21 - VP：4/2/1 - 在你从手牌以外的任何区域将佣兵打到此处后，在该佣兵上放置 1 个 +1 战力标记。"
     },
     "base_brood_hive": {
-      "name": "Brood Hive",
+      "name": "育巢",
       "abilityText": "临界点 22 - VP：4/2/1 - 本基地计分前，从当前玩家左手边的玩家开始，每位在此处有佣兵的玩家可以从其牌库顶将 1 个额外佣兵打到此处。"
     },
     "base_cabin_in_the_woods": {
-      "name": "Cabin in the Woods",
+      "name": "林中小屋",
       "abilityText": "临界点 24 - VP：4/3/1 - 若你在此处至少有 2 个佣兵，你在此处的每个佣兵 +2 战力。"
     },
     "base_montridge_high": {
-      "name": "Montridge High",
+      "name": "蒙特里奇高中",
       "abilityText": "临界点 20 - VP：4/2/1 - 在你将佣兵打到此处后，在此处你的 1 个不同名称的佣兵上放置 1 个 +1 标记。"
     },
     "base_rooftop_portal": {
-      "name": "Rooftop Portal",
+      "name": "屋顶传送门",
       "abilityText": "临界点 22 - VP：5/3/2 - 每回合一次，在你摧毁此处的 1 张牌后，抓 1 张牌。"
     },
     "base_wraithrustlers_hq": {
-      "name": "Wraithrustlers HQ",
+      "name": "怨灵捕手总部",
       "abilityText": "临界点 20 - VP：4/2/1 - 获胜者在其下个回合可以打出 1 张额外行动或 1 个额外佣兵。"
     }
   },

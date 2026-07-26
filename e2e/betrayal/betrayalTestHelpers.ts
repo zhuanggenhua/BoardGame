@@ -923,6 +923,53 @@ export function createDustEndTurnDamageAllocationRuntimeCore(): BetrayalCore {
   return dismissBetrayalE2EBlockingOverlays(core);
 }
 
+export function createDustForcedSicknessExchangeRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2", "3"]);
+  core = focusBetrayalE2EExplorer(core, "1");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "0" || explorer.playerId === "2") {
+      return { ...explorer, roomId: "hallway" };
+    }
+    return { ...explorer, roomId: "entrance-hall" };
+  });
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘强制交换夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.sicknessTokensByPlayerId = {
+    "0": [
+      { id: "sickness-0-a", value: 1 },
+      { id: "sickness-0-b", value: 7 },
+      { id: "sickness-0-c", value: 8 },
+    ],
+    "1": [
+      { id: "sickness-1-a", value: 4 },
+      { id: "sickness-1-b", value: 5 },
+      { id: "sickness-1-c", value: 6 },
+    ],
+    "2": [
+      { id: "sickness-2-a", value: 9 },
+      { id: "sickness-2-b", value: 10 },
+      { id: "sickness-2-c", value: 11 },
+    ],
+    "3": [
+      { id: "sickness-3-a", value: 12 },
+      { id: "sickness-3-b", value: 13 },
+      { id: "sickness-3-c", value: 14 },
+    ],
+  };
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["0"];
+  core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  syncBetrayalE2ECurrentExplorer(core);
+  core.activePlayerId = null;
+  core.recommendedAction = "endTurn";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
 function dismissBetrayalE2EBlockingOverlays(core: BetrayalCore): BetrayalCore {
   core.latestDiscovery = null;
   core.latestDiscoveryOwnerPlayerId = null;

@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Skull, Sparkles, Trophy, Zap } from 'lucide-react';
 import i18next from 'i18next';
 import { ShatterEffect, type ShatterImageSource } from '../../../components/common/animations/ShatterEffect';
-import { CardPreview, getCardAtlasStyle } from '../../../components/common/media/CardPreview';
+import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardAtlasSource } from '../../../components/common/media/cardAtlasRegistry';
 import {
   getLocalizedAssetPath,
@@ -14,50 +14,12 @@ import {
   type CardPreviewRef,
 } from '../../../core';
 import type { FxRendererProps } from '../../../engine/fx';
+import { computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
 import { getCardDef, resolveCardName } from '../data/cards';
 
 type ScreenPoint = { left: number; top: number };
 export type AbilityHighlightTone = 'info' | 'danger' | 'buff' | 'score';
 type AbilityActionKind = 'destroy' | 'buff' | 'score' | 'info';
-
-const SHARD_COUNT = 9;
-const CARD_SPLIT_PIECES = [
-  {
-    clipPath: 'polygon(0 0, 54% 0, 46% 46%, 0 40%)',
-    x: -54,
-    y: -38,
-    rotate: -18,
-    delay: 0,
-  },
-  {
-    clipPath: 'polygon(54% 0, 100% 0, 100% 45%, 46% 46%)',
-    x: 56,
-    y: -42,
-    rotate: 16,
-    delay: 0.04,
-  },
-  {
-    clipPath: 'polygon(0 40%, 46% 46%, 44% 100%, 0 100%)',
-    x: -46,
-    y: 52,
-    rotate: 13,
-    delay: 0.08,
-  },
-  {
-    clipPath: 'polygon(46% 46%, 100% 45%, 100% 100%, 44% 100%)',
-    x: 52,
-    y: 54,
-    rotate: -15,
-    delay: 0.12,
-  },
-  {
-    clipPath: 'polygon(37% 18%, 68% 18%, 61% 61%, 45% 78%, 46% 46%)',
-    x: 4,
-    y: -72,
-    rotate: 8,
-    delay: 0.02,
-  },
-] as const;
 
 function useStableComplete(onComplete: () => void): () => void {
   const ref = useRef(onComplete);
@@ -163,7 +125,7 @@ function resolveShatterImageSource(previewRef: CardPreviewRef | undefined, local
   if (!previewRef || previewRef.type !== 'atlas') return undefined;
   const source = getCardAtlasSource(previewRef.atlasId, locale);
   if (!source) return undefined;
-  const style = getCardAtlasStyle(previewRef.index, source.config);
+  const style = computeSpriteStyle(previewRef.index, source.config);
   const candidateUrls = getRuntimeImageCandidateUrls(source.image, locale);
   const url = getResolvedImageCandidateUrl(candidateUrls, source.image, locale)
     || candidateUrls[0]
@@ -258,7 +220,7 @@ function AbilityArcCanvas({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const durationMs = totalDurationS * 1000;
     const startTime = performance.now();
-    const particleCount = actionKind === 'destroy' ? 24 : 18;
+    const particleCount = actionKind === 'destroy' ? 12 : 10;
 
     const resize = () => {
       canvas.width = Math.ceil(window.innerWidth * dpr);
@@ -274,14 +236,14 @@ function AbilityArcCanvas({
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
       ctx.globalCompositeOperation = 'lighter';
 
-      const wake = easeOutCubic(clamp01(elapsedMs / 420));
-      const wakeFade = 1 - clamp01((elapsedMs - 620) / 560);
+      const wake = easeOutCubic(clamp01(elapsedMs / 360));
+      const wakeFade = 1 - clamp01((elapsedMs - 540) / 520);
       if (wakeFade > 0) {
-        drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 58 + wake * 58, tone.accent, 0.38 * wakeFade);
-        drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 18 + wake * 18, '#ffffff', 0.26 * wakeFade);
+        drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 38 + wake * 28, tone.accent, 0.16 * wakeFade);
+        drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 12 + wake * 10, '#ffffff', 0.14 * wakeFade);
       }
 
-      const travel = easeInOutCubic(clamp01((elapsedMs - 170) / 980));
+      const travel = easeInOutCubic(clamp01((elapsedMs - 230) / 920));
       if (travel > 0 && elapsedMs < 1900) {
         const head = clamp01(travel);
         const tail = 0;
@@ -296,53 +258,47 @@ function AbilityArcCanvas({
         ctx.lineJoin = 'round';
         ctx.beginPath();
         drawCurveSegment(ctx, pathSourcePoint, targetPoint, tail, head);
-        ctx.strokeStyle = rgba(tone.accent, 0.22);
-        ctx.lineWidth = actionKind === 'destroy' ? 12 : 10;
+        ctx.strokeStyle = rgba(tone.accent, 0.12);
+        ctx.lineWidth = actionKind === 'destroy' ? 4.4 : 3.8;
         ctx.stroke();
 
         ctx.beginPath();
         drawCurveSegment(ctx, pathSourcePoint, targetPoint, tail, head);
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = actionKind === 'destroy' ? 3.2 : 2.6;
+        ctx.lineWidth = actionKind === 'destroy' ? 1.8 : 1.5;
         ctx.stroke();
 
         ctx.beginPath();
         drawCurveSegment(ctx, pathSourcePoint, targetPoint, Math.max(tail, head - 0.2), head);
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-        ctx.lineWidth = actionKind === 'destroy' ? 1.5 : 1.2;
+        ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+        ctx.lineWidth = 0.7;
         ctx.stroke();
 
-        drawGlowOrb(ctx, headPoint.left, headPoint.top, actionKind === 'destroy' ? 18 : 15, tone.accent, 0.48);
-        drawGlowOrb(ctx, headPoint.left, headPoint.top, actionKind === 'destroy' ? 7 : 6, '#ffffff', 0.5);
+        drawGlowOrb(ctx, headPoint.left, headPoint.top, actionKind === 'destroy' ? 8 : 7, tone.accent, 0.34);
+        drawGlowOrb(ctx, headPoint.left, headPoint.top, 2.8, '#ffffff', 0.42);
 
-        for (let i = 0; i < 7; i += 1) {
-          const localT = clamp01(head - i * 0.07);
+        for (let i = 0; i < 4; i += 1) {
+          const localT = clamp01(head - i * 0.09);
           if (localT <= tail) continue;
           const p = curvePoint(pathSourcePoint, targetPoint, localT);
-          const size = Math.max(2.2, 6 - i * 0.45);
-          drawGlowOrb(ctx, p.left, p.top, size * 2.4, tone.accent, 0.2);
-          drawGlowOrb(ctx, p.left, p.top, size, '#ffffff', 0.2);
+          const size = Math.max(1.1, 2.6 - i * 0.35);
+          drawGlowOrb(ctx, p.left, p.top, size * 1.8, tone.accent, 0.12);
         }
       }
 
-      const impact = easeOutCubic(clamp01((elapsedMs - 980) / 460));
-      const impactFade = 1 - clamp01((elapsedMs - 1380) / 600);
+      const impact = easeOutCubic(clamp01((elapsedMs - 1120) / 360));
+      const impactFade = 1 - clamp01((elapsedMs - 1420) / 560);
       if (impact > 0 && impactFade > 0) {
-        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 30 + impact * 52, tone.accent, 0.28 * impactFade);
-        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 12 + impact * 24, '#ffffff', 0.24 * impactFade);
-        ctx.strokeStyle = rgba(tone.accent, 0.3 * impactFade);
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(targetPoint.left, targetPoint.top, 24 + impact * 56, 0, Math.PI * 2);
-        ctx.stroke();
+        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 24 + impact * 34, tone.accent, 0.18 * impactFade);
+        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 8 + impact * 15, '#ffffff', 0.16 * impactFade);
       }
 
-      const burst = clamp01((elapsedMs - 980) / 650);
+      const burst = clamp01((elapsedMs - 1120) / 540);
       if (burst > 0 && burst < 1) {
         const fade = 1 - burst;
         for (let i = 0; i < particleCount; i += 1) {
           const angle = (Math.PI * 2 * i) / particleCount + ((i % 5) - 2) * 0.09;
-          const distance = (actionKind === 'destroy' ? 64 : 52) * easeOutCubic(burst) * (0.58 + (i % 7) * 0.07);
+          const distance = (actionKind === 'destroy' ? 52 : 42) * easeOutCubic(burst) * (0.58 + (i % 7) * 0.07);
           const x = targetPoint.left + Math.cos(angle) * distance;
           const y = targetPoint.top + Math.sin(angle) * distance;
           const radius = (i % 3 === 0 ? 2.5 : 1.8) * (0.65 + fade);
@@ -415,13 +371,11 @@ function ActionGlyph({ actionKind, accent, delayS }: { actionKind: AbilityAction
 }
 
 function CardSplitEffect({
-  targetCardPreview,
-  resolvedTargetName,
   shatterImageSource,
+  onShatterStart,
 }: {
-  targetCardPreview: CardPreviewRef | undefined;
-  resolvedTargetName: string | undefined;
   shatterImageSource: ShatterImageSource | undefined;
+  onShatterStart: () => void;
 }) {
   const [shatterActive, setShatterActive] = useState(false);
   const shatterKey = shatterImageSource
@@ -431,7 +385,7 @@ function CardSplitEffect({
   useEffect(() => {
     const timer = window.setTimeout(() => setShatterActive(true), 960);
     return () => window.clearTimeout(timer);
-  }, [shatterKey, targetCardPreview]);
+  }, [shatterKey]);
 
   return (
     <div
@@ -442,44 +396,17 @@ function CardSplitEffect({
         <ShatterEffect
           active
           intensity="strong"
-          cols={4}
-          rows={3}
+          cols={5}
+          rows={4}
           imageSource={shatterImageSource}
           quality="full"
+          spreadScale={1.18}
+          durationScale={1.6}
+          fadePower={1.12}
+          minScale={0.72}
+          onStart={onShatterStart}
         />
       ) : null}
-      {shatterImageSource || !targetCardPreview ? null : (
-        <>
-          {CARD_SPLIT_PIECES.map((piece, i) => (
-            <motion.div
-              key={`card-split-${i}`}
-              className="absolute inset-0 overflow-hidden rounded-lg shadow-[0_12px_26px_rgba(0,0,0,0.42)]"
-              style={{ clipPath: piece.clipPath, transformOrigin: '50% 50%' }}
-              initial={{ opacity: 0, x: 0, y: 0, rotate: 0, scale: 1 }}
-              animate={{
-                opacity: [0, 1, 1, 0],
-                x: [0, 0, piece.x, piece.x * 1.18],
-                y: [0, 0, piece.y, piece.y * 1.12],
-                rotate: [0, 0, piece.rotate, piece.rotate * 1.28],
-                scale: [1, 1, 0.92, 0.62],
-                filter: [
-                  'brightness(1.35) saturate(1.1)',
-                  'brightness(1.12) saturate(1)',
-                  'brightness(0.72) saturate(0.7)',
-                  'brightness(0.36) saturate(0.3)',
-                ],
-              }}
-              transition={{ duration: 1.25, delay: 1.04 + piece.delay, times: [0, 0.18, 0.68, 1], ease: 'easeOut' }}
-            >
-              <CardPreview
-                previewRef={targetCardPreview}
-                className="h-full w-full"
-                title={resolvedTargetName}
-              />
-            </motion.div>
-          ))}
-        </>
-      )}
     </div>
   );
 }
@@ -501,25 +428,16 @@ function TargetImpact({
   compactCardBody: boolean;
   shatterImageSource: ShatterImageSource | undefined;
 }) {
-  const shards = useMemo(() => Array.from({ length: SHARD_COUNT }, (_, i) => {
-    const angle = (Math.PI * 2 * i) / SHARD_COUNT - Math.PI / 2;
-    const distance = 42 + (i % 3) * 18;
-    return {
-      x: Math.cos(angle) * distance,
-      y: Math.sin(angle) * distance,
-      rotate: angle * 58,
-      size: 6 + (i % 3) * 3,
-    };
-  }), []);
+  const [hideDestroyedCard, setHideDestroyedCard] = useState(false);
 
   const targetMotion = actionKind === 'destroy'
     ? {
-      opacity: renderCardBody ? [0, 1, 1, 1, 0] : [0, 1, 1, 0.8, 0],
+      opacity: renderCardBody ? [0, 1, 1, 1, 0.36] : [0, 1, 1, 0.8, 0],
       scale: renderCardBody ? [0.92, 1.08, 1, 1.02, 0.98] : [0.82, 1.02, 1, 1.04, 0.96],
       rotate: renderCardBody ? [0, 0, -2, 1, 0] : [0, 0, -4, 5, 4],
       y: renderCardBody ? [8, 0, 0, 0, 6] : [12, 0, 0, 6, 12],
       filter: renderCardBody
-        ? ['brightness(1)', 'brightness(1.18)', 'brightness(1.06)', 'brightness(0.9)', 'brightness(0.58)']
+        ? ['brightness(1)', 'brightness(1.18)', 'brightness(1.08)', 'brightness(1)', 'brightness(0.82)']
         : ['grayscale(0) brightness(1)', 'grayscale(0) brightness(1.1)', 'grayscale(0.75) brightness(0.72)', 'grayscale(1) brightness(0.48)', 'grayscale(1) brightness(0.36)'],
     }
     : {
@@ -545,14 +463,20 @@ function TargetImpact({
           <motion.div
             className="absolute inset-0 overflow-hidden rounded-lg"
             animate={actionKind === 'destroy'
-              ? {
+              ? hideDestroyedCard ? {
+                opacity: 0,
+                scale: 1.02,
+                filter: 'brightness(0.9) saturate(0.8)',
+              } : {
                 opacity: [1, 1, 0, 0],
-                scale: [1, 1.03, 0.98, 0.96],
-                filter: ['brightness(1)', 'brightness(1.18)', 'brightness(0.64) saturate(0.72)', 'brightness(0.42) saturate(0.4)'],
+                scale: [1, 1.03, 1.02, 1.02],
+                filter: ['brightness(1)', 'brightness(1.2)', 'brightness(1.1) saturate(0.95)', 'brightness(1) saturate(0.9)'],
               }
               : { opacity: 1, scale: 1, filter: 'brightness(1)' }}
             transition={actionKind === 'destroy'
-              ? { duration: 1.02, delay: 0.9, times: [0, 0.34, 0.58, 1], ease: 'easeOut' }
+              ? hideDestroyedCard
+                ? { duration: 0.08, ease: 'easeOut' }
+                : { duration: 1.42, delay: 0.72, times: [0, 0.38, 0.78, 1], ease: 'easeOut' }
               : { duration: 0.2 }}
           >
             {targetCardPreview ? (
@@ -573,9 +497,11 @@ function TargetImpact({
           </motion.div>
           {actionKind === 'destroy' && (
             <CardSplitEffect
-              targetCardPreview={targetCardPreview}
-              resolvedTargetName={resolvedTargetName}
+              key={shatterImageSource
+                ? `${shatterImageSource.url}|${shatterImageSource.bgSize}|${shatterImageSource.bgPosition}`
+                : 'no-shatter-source'}
               shatterImageSource={shatterImageSource}
+              onShatterStart={() => setHideDestroyedCard(true)}
             />
           )}
         </>
@@ -590,22 +516,6 @@ function TargetImpact({
             transition={{ duration: 1.6, delay: 0.56, times: [0, 0.16, 0.36, 0.76, 1], ease: 'easeOut' }}
             data-testid="smashup-triggered-fx-destroy-wash"
           />
-          {shards.map((shard, i) => (
-            <motion.span
-              key={`shard-${i}`}
-              className="absolute left-1/2 top-1/2 rounded-sm bg-red-200 shadow-[0_0_12px_rgba(254,202,202,0.9)]"
-              style={{ width: shard.size, height: shard.size * 1.7 }}
-              initial={{ opacity: 0, x: '-50%', y: '-50%', rotate: 0, scale: 0.2 }}
-              animate={{
-                opacity: [0, 1, 0],
-                x: `calc(-50% + ${shard.x}px)`,
-                y: `calc(-50% + ${shard.y}px)`,
-                rotate: shard.rotate,
-                scale: [0.2, 1, 0.4],
-              }}
-              transition={{ duration: 0.82, delay: 0.92 + i * 0.015, ease: 'easeOut' }}
-            />
-          ))}
         </>
       )}
 
@@ -797,7 +707,9 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
           compactCardBody={compactTargetCardBody}
           shatterImageSource={targetShatterSource}
         />
-        <ActionGlyph actionKind={actionKind} accent={tone.accent} delayS={impactDelayS} />
+        {actionKind !== 'destroy' && (
+          <ActionGlyph actionKind={actionKind} accent={tone.accent} delayS={impactDelayS} />
+        )}
         {resolvedTargetName && renderTargetLabel && (
           <motion.div
             className="mx-auto mt-2 max-w-[150px] truncate rounded-md border border-white/18 bg-slate-950/70 px-2 py-0.5 text-center text-[13px] font-black leading-none text-white/90 shadow-lg"

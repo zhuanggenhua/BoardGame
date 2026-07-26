@@ -3554,6 +3554,64 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.endgameResult?.winners.sort()).toEqual(['0', '1']);
     });
 
+    it('灰尘剧本回合结束会逐个与同房探索者强制交换疾病标记且不会触发冲动伤害', () => {
+        let core = createDustHauntCore(['0', '1', '2', '3']);
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => {
+            if (explorer.playerId === '0' || explorer.playerId === '2') {
+                return { ...explorer, roomId: 'hallway' };
+            }
+            return { ...explorer, roomId: 'entrance-hall' };
+        });
+        core.scenarioRuntime.dust!.sicknessTokensByPlayerId = {
+            '0': [
+                { id: 'sickness-0-a', value: 1 },
+                { id: 'sickness-0-b', value: 7 },
+                { id: 'sickness-0-c', value: 8 },
+            ],
+            '1': [
+                { id: 'sickness-1-a', value: 4 },
+                { id: 'sickness-1-b', value: 5 },
+                { id: 'sickness-1-c', value: 6 },
+            ],
+            '2': [
+                { id: 'sickness-2-a', value: 9 },
+                { id: 'sickness-2-b', value: 10 },
+                { id: 'sickness-2-c', value: 11 },
+            ],
+            '3': [
+                { id: 'sickness-3-a', value: 12 },
+                { id: 'sickness-3-b', value: 13 },
+                { id: 'sickness-3-c', value: 14 },
+            ],
+        };
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = [];
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(),
+        );
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.currentPlayer).toBe('2');
+        expect(core.phase).toBe('haunt');
+        expect(core.activityLog[0]?.text).toContain('交换了 2 次疾病标记');
+        expect(core.activityLog[0]?.text).not.toContain('没有交换疾病标记');
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds).toEqual([]);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['0', '1', '2']);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([4, 7, 8]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([9, 5, 6]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']?.map((token) => token.value)).toEqual([1, 10, 11]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['3']?.map((token) => token.value)).toEqual([12, 13, 14]);
+    });
+
     it('灰尘剧本回合内没有交换疾病时，回合结束进入一般伤害分配并在确认后交接', () => {
         let core = createDustHauntCore();
         activateTestExplorer(core, '1');

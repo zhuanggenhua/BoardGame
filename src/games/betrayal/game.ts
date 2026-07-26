@@ -6181,10 +6181,15 @@ function resolveDustEndTurn(core: BetrayalCore, random: RandomFn): BetrayalDustE
     }
     const previewDust = cloneDustRuntimeState(dust);
     const sameRoomExplorers = resolveSameRoomLivingExplorers(core, core.currentExplorer.roomId, core.currentExplorer.playerId);
-    const swaps = sameRoomExplorers
-        .map((target) => resolveDustSicknessSwap(previewDust, core.currentExplorer.playerId, target.playerId, random))
-        .filter((swap): swap is BetrayalDustSicknessSwapResult => Boolean(swap));
-    swaps.forEach((swap) => applyDustSicknessSwap(previewDust, swap));
+    const swaps: BetrayalDustSicknessSwapResult[] = [];
+    for (const target of sameRoomExplorers) {
+        const swap = resolveDustSicknessSwap(previewDust, core.currentExplorer.playerId, target.playerId, random);
+        if (!swap) {
+            continue;
+        }
+        swaps.push(swap);
+        applyDustSicknessSwap(previewDust, swap);
+    }
     const alreadyExchanged = dust.exchangedSicknessThisTurnPlayerIds.includes(core.currentExplorer.playerId);
     if (swaps.length > 0 || alreadyExchanged) {
         return { swaps };
