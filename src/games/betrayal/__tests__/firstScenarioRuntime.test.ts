@@ -12,7 +12,10 @@ import {
     createFirstScenarioReadyToExorciseCore,
     createFirstScenarioReadyToLearnAboutJackCore,
     createFirstScenarioReadyToStudyExorcismCore,
+    createDustFeverishAttackReadyCore,
+    createDustFeverishNaturalMonsterTurnBeforeRollCore,
     createJackSpiritReviveReadyCore,
+    createJackSpiritNaturalMonsterTurnBeforeRollCore,
     createJackSpiritMovementRollReadyCore,
     createJackSpiritPostReviveAttackReadyCore,
     createFirstScenarioReadyToTraitorVictoryCore,
@@ -45,7 +48,10 @@ import {
     resolveBetrayalMonsterActionPanel,
     resolveBetrayalMonsterActionSet,
     resolveBetrayalMonsterActionSets,
+    resolveBetrayalNormalMonsterAttackTargets,
+    createBetrayalMonsterFromDefinition,
     createBetrayalMonsterMovementRollGroupResult,
+    getBetrayalMonsterDefinition,
     resolveBetrayalMonsterMovementGroups,
     resolveBetrayalMonsterMovementRollGroupPreview,
     resolveBetrayalMonsterDamageOutcome,
@@ -55,6 +61,10 @@ import {
     resolveBetrayalMonsterTurnStartResolutionPreview,
     resolveBetrayalMonsterTurnStartStatus,
     resolveBetrayalMonsterTurnRuntimeState,
+    resolveBloodFromStonePeekabooOptions,
+    resolveBloodFromStoneSetupPlacementPlan,
+    resolveBloodFromStoneMonsterTurnEndPreview,
+    resolveBloodFromStoneMonsterTurnStatus,
     resolveBetrayalNumberTracks,
     resolveBetrayalOmenCount,
     resolveBetrayalRoomDrawResolution,
@@ -132,6 +142,19 @@ function activateTestExplorer(core: BetrayalCore, playerId: string): void {
     core.turnStartInventoryCardIds = active.inventory.map((card) => card.id);
 }
 
+function activateBloodFromStoneMonsterTurn(core: BetrayalCore, controllerPlayerId = '0'): void {
+    activateTestExplorer(core, controllerPlayerId);
+    core.scenarioRuntime.hauntCardNumber = 5;
+    core.scenarioRuntime.traitorPlayerId = null;
+    core.scenarioRuntime.bloodFromStone = {
+        monsterTurnAfterPlayerId: controllerPlayerId,
+        activeMonsterTurn: true,
+        monsterTurnControllerPlayerId: controllerPlayerId,
+    };
+    core.activePlayerId = controllerPlayerId;
+    core.recommendedAction = 'endTurn';
+}
+
 function setTestExplorerTraits(
     core: BetrayalCore,
     playerId: string,
@@ -192,6 +215,18 @@ function setHighCapacityPhysicalDamageTracks(
     const values = Array.from({ length: position + 2 }, () => value);
     setTestTraitTrack(core, playerId, 'might', values, position, position);
     setTestTraitTrack(core, playerId, 'speed', values, position, position);
+}
+
+function setHighCapacityGeneralDamageTracks(
+    core: BetrayalCore,
+    playerId: string,
+    value = 4,
+    position = 14,
+): void {
+    const values = Array.from({ length: position + 2 }, () => value);
+    for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+        setTestTraitTrack(core, playerId, trait, values, position, position);
+    }
 }
 
 function traitTrackPosition(core: BetrayalCore, playerId: string, trait: BetrayalTraitKey): number {
@@ -432,6 +467,112 @@ function createHelpingHandsHauntCore(playerIds: string[] = ['0', '1', '2']): Bet
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+}
+
+function discoverBloodFromStoneOutOfSightTestRooms(core: BetrayalCore): void {
+    setDiscoveredTestRoom(core, 'ground-north', {
+        name: '北侧房间',
+        hint: '顽石之血 setup 测试用视线外房间。',
+        tags: ['测试', '一层'],
+        discoveryReward: null,
+        visualId: 'study',
+    });
+    setDiscoveredTestRoom(core, 'ground-south', {
+        name: '南侧房间',
+        hint: '顽石之血 setup 测试用视线外房间。',
+        tags: ['测试', '一层'],
+        discoveryReward: null,
+        visualId: 'gallery',
+    });
+}
+
+function seedBloodFromStoneTrigger(core: BetrayalCore): void {
+    core.proposedScenarioCardId = 'blood-from-a-stone';
+    core.drawOrder = ['omen'];
+    core.possessionOrderByKind.omen = [
+        { id: 'mask', name: 'Mask', kind: 'omen' },
+    ];
+    core.currentExplorer.inventory = [
+        { id: 'omen-book', name: '书本', kind: 'omen' },
+        { id: 'dog', name: '狗', kind: 'omen' },
+        { id: 'skull', name: '头骨', kind: 'omen' },
+        { id: 'ring', name: '指环', kind: 'omen' },
+    ];
+    core.currentExplorerInventory = [...core.currentExplorer.inventory];
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+}
+
+function createBloodFromStoneTriggeredWithAutoPlacementCore(): BetrayalCore {
+    let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    discoverBloodFromStoneOutOfSightTestRooms(core);
+    seedBloodFromStoneTrigger(core);
+
+    core = applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.EXPLORE_ROOM,
+        '0',
+        { roomId: 'ground-east' },
+        100,
+        createBetrayalScriptedRandom(3, 3, 3, 3, 3),
+    );
+
+    return core;
+}
+
+function createBloodFromStoneManualPlacementGapCore(): BetrayalCore {
+    const core = createStartedFirstScenarioCore(['0', '1', '2']);
+    seedBloodFromStoneTrigger(core);
+    core.rooms = core.rooms.map((room) => (
+        room.id === 'upper-west'
+            ? {
+                ...room,
+                state: 'unexplored',
+                name: '未探索',
+            }
+            : room
+    ));
+    core.phase = 'haunt';
+    core.scenarioRuntime.hauntTriggered = true;
+    core.scenarioRuntime.hauntCardNumber = 5;
+    core.scenarioRuntime.hauntRevealerPlayerId = '0';
+    core.scenarioRuntime.traitorPlayerId = null;
+    core.scenarioRuntime.hauntTraitorResolution = {
+        hauntCardNumber: 5,
+        policy: 'no-traitor',
+        traitorPlayerId: null,
+        teamModel: 'no-traitor',
+        reasonLabel: '无叛徒',
+        candidatePlayerIds: [],
+        excludedPlayerIds: [],
+        tieBreak: 'none',
+        representativeOnly: false,
+    };
+    core.scenarioRuntime.hauntFirstPlayerResolution = {
+        hauntCardNumber: 5,
+        policy: 'left-of-revealer',
+        anchorPlayerId: '0',
+        nextPlayerId: '1',
+        reasonLabel: '作祟揭秘者左侧玩家先行动',
+        representativeOnly: false,
+    };
+    core.scenarioRuntime.nextHauntPlayerId = '1';
+    core.scenarioRuntime.hauntSetupQueue = [];
+    core.scenarioRuntime.hauntResolutionRepresentativeOnly = false;
+    return core;
+}
+
+function createBloodFromStoneMultiGapManualPlacementCore(): BetrayalCore {
+    const core = createBloodFromStoneManualPlacementGapCore();
+    core.rooms = core.rooms.map((room) => (
+        room.id === 'basement-landing'
+            ? {
+                ...room,
+                state: 'unexplored',
+                name: '未探索',
+            }
+            : room
+    ));
+    return core;
 }
 
 function createHelpingHandsExplorerAttackCore(): BetrayalCore {
@@ -2444,7 +2585,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { trait: 'sanity' },
             100,
-            createBetrayalScriptedRandom(1, 1),
+            createBetrayalScriptedRandom(2, 2),
         );
 
         expect(core.latestDiscovery?.detail).toContain('神志检定 0');
@@ -2478,7 +2619,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { accept: true },
             100,
-            createBetrayalScriptedRandom(1, 1),
+            createBetrayalScriptedRandom(2, 2),
         );
 
         expect(core.phase).toBe('preHaunt');
@@ -3003,6 +3144,310 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+    it('顽石之血触发 setup 时每名探索者脚下放 1 个石像小天使，额外石像优先放在英雄视线外', () => {
+        const core = createBloodFromStoneTriggeredWithAutoPlacementCore();
+
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntCardNumber).toBe(5);
+        expect(core.scenarioRuntime.traitorPlayerId).toBeNull();
+        expect(core.scenarioRuntime.hauntFirstPlayerResolution).toMatchObject({
+            policy: 'left-of-revealer',
+            anchorPlayerId: '0',
+            nextPlayerId: '1',
+        });
+
+        const stoneCherubs = core.monsters.filter((monster) => monster.definitionId === 'blood-from-stone-stone-cherub');
+        expect(stoneCherubs).toHaveLength(6);
+        expect(stoneCherubs.find((monster) => monster.id === 'stone-cherub-explorer-0')?.roomId).toBe('ground-east');
+        expect(stoneCherubs.find((monster) => monster.id === 'stone-cherub-explorer-1')?.roomId).toBe('entrance-hall');
+        expect(stoneCherubs.find((monster) => monster.id === 'stone-cherub-explorer-2')?.roomId).toBe('entrance-hall');
+
+        const plan = resolveBloodFromStoneSetupPlacementPlan(core);
+        expect(plan).toMatchObject({
+            active: true,
+            additionalStoneCherubCount: 3,
+            totalRequiredStoneCherubCount: 6,
+            placedStoneCherubCount: 6,
+            pendingPlayerChoiceCount: 0,
+            canFullyAutoPlace: true,
+        });
+        expect(plan.explorerPlacements.map((placement) => placement.monsterId)).toEqual([
+            'stone-cherub-explorer-0',
+            'stone-cherub-explorer-1',
+            'stone-cherub-explorer-2',
+        ]);
+        expect(plan.automaticExtraPlacements).toHaveLength(3);
+        const heroRoomIds = [core.currentExplorer, ...core.otherExplorers].map((explorer) => explorer.roomId);
+        for (const placement of plan.automaticExtraPlacements) {
+            expect(heroRoomIds.every((roomId) => !isBetrayalRoomInLineOfSight(core, roomId, placement.roomId))).toBe(true);
+        }
+
+        expect(resolveBetrayalHauntSetupProgress(core)).toMatchObject({
+            hauntCardNumber: 5,
+            totalCount: 5,
+            resolvedCount: 4,
+            manualCheckCount: 1,
+            manualCheckEntryIds: ['monster-card-left-of-revealer'],
+        });
+        expect(core.scenarioRuntime.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId['1'])
+            .toContain('stone-cherub-explorer-1');
+    });
+
+    it('顽石之血会在揭秘者结束回合后自然进入石像小天使怪物回合，并在凝视收口后进入下一玩家', () => {
+        let core = createBloodFromStoneTriggeredWithAutoPlacementCore();
+        for (const playerId of ['0', '1', '2']) {
+            setHighCapacityGeneralDamageTracks(core, playerId);
+        }
+
+        expect(core.currentPlayer).toBe('1');
+        expect(resolveBloodFromStoneMonsterTurnStatus(core)).toMatchObject({
+            active: false,
+            controllerPlayerId: '0',
+            monsterTurnAfterPlayerId: '0',
+        });
+        expect(resolveBetrayalMonsterActionPanel(core)).toMatchObject({
+            active: false,
+            reason: '等待揭秘者结束回合后开始石像小天使怪物回合。',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        expect(core.currentPlayer).toBe('2');
+        expect(resolveBloodFromStoneMonsterTurnStatus(core).active).toBe(false);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '2', {});
+        expect(core.currentPlayer).toBe('0');
+        expect(resolveBloodFromStoneMonsterTurnStatus(core).active).toBe(false);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        expect(core.currentPlayer).toBe('0');
+        expect(resolveBloodFromStoneMonsterTurnStatus(core)).toMatchObject({
+            active: true,
+            controllerPlayerId: '0',
+            monsterTurnAfterPlayerId: '0',
+        });
+        expect(resolveBetrayalMonsterActionPanel(core).active).toBe(true);
+        expect(core.activityLog[0]?.text).toContain('石像小天使怪物回合开始');
+
+        const stoneCherubIds = core.monsters
+            .filter((monster) => monster.definitionId === 'blood-from-stone-stone-cherub')
+            .map((monster) => monster.id);
+        core.scenarioRuntime.monsterTurn = {
+            ...core.scenarioRuntime.monsterTurn,
+            resolvedStartMonsterIds: stoneCherubIds,
+            skippedMonsterIdsThisTurn: stoneCherubIds,
+            attackedMonsterIdsThisTurn: [],
+            movementRollsByGroupId: {},
+            moveRemainingById: {},
+        };
+
+        expect(resolveBloodFromStoneMonsterTurnEndPreview(core)).toMatchObject({
+            active: true,
+            canEnd: true,
+            controllerPlayerId: '0',
+            nextPlayerId: '1',
+        });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN,
+            '0',
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1, 1, 1, 1, 1),
+        );
+
+        let pendingDamageSafety = 0;
+        while (core.pendingDamageAllocation) {
+            const playerId = core.pendingDamageAllocation.playerId;
+            core = applyBetrayalCommand(
+                core,
+                BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+                playerId,
+                { traits: repeatTraitsForPendingDamage(core, ['might', 'speed', 'knowledge', 'sanity']) },
+            );
+            pendingDamageSafety += 1;
+            expect(pendingDamageSafety).toBeLessThan(10);
+        }
+
+        expect(core.currentPlayer).toBe('1');
+        expect(resolveBloodFromStoneMonsterTurnStatus(core)).toMatchObject({
+            active: false,
+            controllerPlayerId: '0',
+            monsterTurnAfterPlayerId: '0',
+        });
+        expect(resolveBetrayalMonsterActionPanel(core)).toMatchObject({
+            active: false,
+            reason: '等待揭秘者结束回合后开始石像小天使怪物回合。',
+        });
+    });
+
+    it('顽石之血额外石像视线外房间不足时必须留下玩家选房缺口', () => {
+        const core = createBloodFromStoneManualPlacementGapCore();
+
+        const plan = resolveBloodFromStoneSetupPlacementPlan(core);
+        expect(plan).toMatchObject({
+            active: true,
+            additionalStoneCherubCount: 3,
+            totalRequiredStoneCherubCount: 6,
+            placedStoneCherubCount: 5,
+            pendingPlayerChoiceCount: 1,
+            canFullyAutoPlace: false,
+        });
+        expect(plan.automaticExtraPlacements.map((placement) => placement.roomId)).toEqual([
+            'upper-landing',
+            'basement-landing',
+        ]);
+        expect(plan.playerChoiceCandidateRoomIds).toEqual(expect.arrayContaining([
+            'entrance-hall',
+            'hallway',
+            'grand-staircase',
+            'upper-landing',
+            'basement-landing',
+        ]));
+
+        const progress = resolveBetrayalHauntSetupProgress(core);
+        expect(progress).toMatchObject({
+            hauntCardNumber: 5,
+            status: 'manual-check-required',
+            manualCheckEntryIds: ['place-additional-stone-cherubs', 'monster-card-left-of-revealer'],
+        });
+
+        const preview = resolveBetrayalHauntSetupCommandPreviews(core);
+        const additionalPlacement = preview.previews.find((item) => item.entryId === 'place-additional-stone-cherubs');
+        expect(additionalPlacement).toMatchObject({
+            action: 'place-monster-tokens',
+            targetMonsterIds: ['stone-cherub-extra-1', 'stone-cherub-extra-2'],
+            targetRoomIds: ['upper-landing', 'basement-landing'],
+            canConfirmFromCurrentState: false,
+            requiresManualConfirmation: true,
+            contractGaps: ['formal-command', 'ui-confirmation', 'token-placement-command', 'room-selection'],
+        });
+        expect(additionalPlacement?.evidence.join(' ')).toContain('还剩 1 个必须由玩家在屋内合法房间中选择放置');
+    });
+
+    it('顽石之血额外石像补放必须选择刚好数量的已发现房间', () => {
+        let core = createBloodFromStoneManualPlacementGapCore();
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS,
+                '0',
+                { roomIds: [] },
+            ),
+        )).toMatchObject({
+            valid: false,
+            error: '必须选择 1 个房间来补放石像小天使。',
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS,
+                '0',
+                { roomIds: ['upper-west'] },
+            ),
+        )).toMatchObject({
+            valid: false,
+            error: '石像小天使只能补放到屋内已发现房间。',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS,
+            '0',
+            { roomIds: ['entrance-hall'] },
+        );
+
+        const placedStoneCherub = core.monsters.find((monster) => monster.id === 'stone-cherub-extra-3');
+        expect(placedStoneCherub).toMatchObject({
+            definitionId: 'blood-from-stone-stone-cherub',
+            roomId: 'entrance-hall',
+        });
+
+        const plan = resolveBloodFromStoneSetupPlacementPlan(core);
+        expect(plan.pendingPlayerChoiceCount).toBe(0);
+        expect(plan.playerChoicePlacements).toEqual([
+            expect.objectContaining({
+                monsterId: 'stone-cherub-extra-3',
+                roomId: 'entrance-hall',
+                source: 'extra-player-choice',
+            }),
+        ]);
+        expect(resolveBetrayalHauntSetupProgress(core)).toMatchObject({
+            hauntCardNumber: 5,
+            manualCheckEntryIds: ['monster-card-left-of-revealer'],
+        });
+    });
+
+    it('顽石之血额外石像多缺口时允许把多个石像补放到同一已发现房间', () => {
+        let core = createBloodFromStoneMultiGapManualPlacementCore();
+
+        const planBefore = resolveBloodFromStoneSetupPlacementPlan(core);
+        expect(planBefore).toMatchObject({
+            active: true,
+            additionalStoneCherubCount: 3,
+            totalRequiredStoneCherubCount: 6,
+            placedStoneCherubCount: 4,
+            pendingPlayerChoiceCount: 2,
+            canFullyAutoPlace: false,
+        });
+        expect(planBefore.automaticExtraPlacements.map((placement) => placement.roomId)).toEqual([
+            'upper-landing',
+        ]);
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS,
+                '0',
+                { roomIds: ['entrance-hall'] },
+            ),
+        )).toMatchObject({
+            valid: false,
+            error: '必须选择 2 个房间来补放石像小天使。',
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS,
+                '0',
+                { roomIds: ['entrance-hall', 'entrance-hall'] },
+            ),
+        )).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS,
+            '0',
+            { roomIds: ['entrance-hall', 'entrance-hall'] },
+        );
+
+        expect(core.monsters.filter(
+            (monster) =>
+                monster.definitionId === 'blood-from-stone-stone-cherub' &&
+                monster.roomId === 'entrance-hall' &&
+                (monster.id === 'stone-cherub-extra-2' || monster.id === 'stone-cherub-extra-3'),
+        )).toHaveLength(2);
+        expect(resolveBloodFromStoneSetupPlacementPlan(core)).toMatchObject({
+            pendingPlayerChoiceCount: 0,
+            playerChoicePlacements: [
+                expect.objectContaining({
+                    monsterId: 'stone-cherub-extra-2',
+                    roomId: 'entrance-hall',
+                    source: 'extra-player-choice',
+                }),
+                expect.objectContaining({
+                    monsterId: 'stone-cherub-extra-3',
+                    roomId: 'entrance-hall',
+                    source: 'extra-player-choice',
+                }),
+            ],
+        });
+        expect(resolveBetrayalHauntSetupProgress(core)).toMatchObject({
+            hauntCardNumber: 5,
+            manualCheckEntryIds: ['monster-card-left-of-revealer'],
+        });
+    });
+
     it('灰尘剧本寻找解药成功会在当前恶兆板块放置研究标记', () => {
         let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
         setTestExplorerTraits(core, '1', { knowledge: 3 });
@@ -3107,6 +3552,102 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.endgameResult?.hauntId).toBe('the-dust');
         expect(core.endgameResult?.outcome).toBe('traitor');
         expect(core.endgameResult?.winners.sort()).toEqual(['0', '1']);
+    });
+
+    it('灰尘剧本回合内没有交换疾病时，回合结束进入一般伤害分配并在确认后交接', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'ground-north' }
+                : { ...explorer, roomId: 'entrance-hall' }
+        ));
+        setHighCapacityGeneralDamageTracks(core, '1');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(2, 2),
+        );
+
+        expect(core.currentPlayer).toBe('1');
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '灰尘冲动',
+            playerId: '1',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowSkull: true,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            nextPlayerId: '2',
+        });
+        expect(core.activityLog[0]?.text).toContain('本回合没有交换疾病标记');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+        );
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.currentPlayer).toBe('2');
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds).toEqual([]);
+    });
+
+    it('灰尘隐藏叛徒因未交换疾病伤害死亡时，分配确认后才变成狂热病患', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'ground-north' }
+                : { ...explorer, roomId: 'entrance-hall' }
+        ));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(2, 2),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '灰尘冲动',
+            playerId: '1',
+            damageKind: 'general',
+            amount: 2,
+            allowSkull: true,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+        );
+
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
     });
 
     it('灰尘剧本发出疾病交换请求后不会重新展示上一次投骰结果', () => {
@@ -3634,6 +4175,616 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+    it('官方怪物定义会驱动石像小天使的固定属性、不可攻击、不会攻击和视线内不移动口径', () => {
+        const definition = getBetrayalMonsterDefinition('blood-from-stone-stone-cherub');
+        expect(definition).toMatchObject({
+            name: '石像小天使',
+            hauntNumber: 5,
+            traits: {
+                might: 8,
+                speed: 4,
+                sanity: 8,
+                knowledge: 8,
+            },
+            canAttack: false,
+            canBeAttacked: false,
+            canBeStunned: false,
+        });
+
+        const core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = [];
+        core.currentExplorer.roomId = 'entrance-hall';
+        core.otherExplorers = core.otherExplorers.map((explorer) => ({
+            ...explorer,
+            roomId: 'entrance-hall',
+        }));
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = [
+            createBetrayalMonsterFromDefinition(
+                'blood-from-stone-stone-cherub',
+                'stone-cherub-1',
+                'entrance-hall',
+            ),
+        ];
+        activateBloodFromStoneMonsterTurn(core, '0');
+
+        const status = resolveBetrayalMonsterStatuses(core)
+            .find((item) => item.monsterId === 'stone-cherub-1');
+        expect(status).toMatchObject({
+            name: '石像小天使',
+            canAttack: false,
+            canBeAttacked: false,
+            canBeStunned: false,
+            defaultAttackTrait: 'might',
+            traits: {
+                might: 8,
+                speed: 4,
+                sanity: 8,
+                knowledge: 8,
+                usesTraitTrack: false,
+            },
+        });
+        expect(status?.ruleNotes).toContain('该怪物不能被普通攻击。');
+        expect(status?.ruleNotes).toContain('该怪物规则明确不会发动攻击。');
+
+        expect(resolveBetrayalMonsterDamageOutcome(core, 'stone-cherub-1', {
+            damageAmount: 2,
+            damageTrait: 'might',
+        })).toMatchObject({
+            kind: 'resisted',
+            previousStatus: 'active',
+            nextStatus: 'active',
+            canBeStunned: false,
+            logLabel: '石像小天使不能被攻击',
+        });
+
+        const actionSet = resolveBetrayalMonsterActionSet(core, 'stone-cherub-1');
+        expect(actionSet).toMatchObject({
+            name: '石像小天使',
+            canMove: false,
+            canAttack: false,
+            usesNormalAttackRules: false,
+            reason: '石像小天使在英雄视线内开始怪物回合，本回合不移动。',
+        });
+        const panel = resolveBetrayalMonsterActionPanel(core);
+        expect(panel.movementGroupIds).not.toContain('石像小天使:4');
+        expect(panel.slots.find((slot) => slot.id === 'attack:stone-cherub-1')).toMatchObject({
+            enabled: false,
+            defaultAttackTrait: 'might',
+        });
+    });
+
+    it('石像小天使从非视线房间移动到任一英雄视线后会立即停止', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = [];
+        activateBloodFromStoneMonsterTurn(core, '0');
+        core.currentExplorer.roomId = 'entrance-hall';
+        core.otherExplorers = core.otherExplorers.map((explorer) => ({
+            ...explorer,
+            roomId: 'entrance-hall',
+        }));
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = [
+            createBetrayalMonsterFromDefinition(
+                'blood-from-stone-stone-cherub',
+                'stone-cherub-1',
+                'ground-north',
+            ),
+        ];
+        core.scenarioRuntime.monsterTurn = {
+            ...core.scenarioRuntime.monsterTurn,
+            resolvedStartMonsterIds: ['stone-cherub-1'],
+            skippedMonsterIdsThisTurn: [],
+            attackedMonsterIdsThisTurn: [],
+            movementRollsByGroupId: {},
+            moveRemainingById: {
+                'stone-cherub-1': 3,
+            },
+        };
+
+        expect(isBetrayalRoomInLineOfSight(core, 'ground-north', 'entrance-hall')).toBe(false);
+        expect(isBetrayalRoomInLineOfSight(core, 'hallway', 'entrance-hall')).toBe(true);
+        expect(resolveBetrayalMonsterMovementGroups(core).map((group) => group.groupId))
+            .toContain('石像小天使:4');
+        expect(resolveBetrayalMonsterMoveTargetRooms(core, 'stone-cherub-1').map((room) => room.id))
+            .toEqual(['hallway']);
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, '0', {
+                monsterId: 'stone-cherub-1',
+                roomId: 'hallway',
+            }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, '0', {
+            monsterId: 'stone-cherub-1',
+            roomId: 'hallway',
+        });
+
+        expect(core.monsters.find((monster) => monster.id === 'stone-cherub-1')?.roomId)
+            .toBe('hallway');
+        expect(resolveBetrayalMonsterTurnRuntimeState(core).moveRemainingById['stone-cherub-1'])
+            .toBe(0);
+        expect(resolveBetrayalMonsterMoveTargetRooms(core, 'stone-cherub-1')).toEqual([]);
+        expect(resolveBetrayalMonsterActionSet(core, 'stone-cherub-1')).toMatchObject({
+            canMove: false,
+            canAttack: false,
+            reason: '石像小天使在英雄视线内开始怪物回合，本回合不移动。',
+        });
+    });
+
+
+    it('英雄进入本回合开始时未在自己视线内的石像小天使视线时受 2 骰一般伤害且每回合最多一次', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = [];
+        activateTestExplorer(core, '0');
+        findTestExplorer(core, '0').roomId = 'ground-north';
+        core.activeRoomId = 'ground-north';
+        core.currentExplorerRoomId = 'ground-north';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        setScenarioTestTurnMovement(core, 6);
+        setHighCapacityGeneralDamageTracks(core, '0');
+        core.monsters = [
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-1', 'entrance-hall'),
+        ];
+        core.scenarioRuntime.bloodFromStoneTurnStartVisibleStoneCherubIdsByPlayerId = { '0': [] };
+        core.scenarioRuntime.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn = [];
+
+        expect(isBetrayalRoomInLineOfSight(core, 'ground-north', 'entrance-hall')).toBe(false);
+        expect(isBetrayalRoomInLineOfSight(core, 'hallway', 'entrance-hall')).toBe(true);
+        expect(resolveMoveTargetRooms(core).map((room) => room.id)).toContain('hallway');
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+            '0',
+            { roomId: 'hallway' },
+            100,
+            createBetrayalScriptedRandom(2, 3),
+        );
+
+        expect(core.currentExplorer.roomId).toBe('hallway');
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '石像小天使新视线伤害',
+            playerId: '0',
+            damageKind: 'general',
+            amount: 3,
+            originalAmount: 3,
+            allowSkull: true,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+        });
+        expect(core.scenarioRuntime.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn).toContain('0');
+        expect(core.activityLog[0]?.text).toContain('进入石像小天使新视线');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed', 'knowledge', 'sanity']) },
+        );
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'entrance-hall' }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+            '0',
+            { roomId: 'entrance-hall' },
+            101,
+            createBetrayalScriptedRandom(3, 3),
+        );
+
+        expect(core.currentExplorer.roomId).toBe('entrance-hall');
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.scenarioRuntime.bloodFromStoneNewLineOfSightDamagePlayerIdsThisTurn)
+            .toEqual(['0']);
+    });
+    it('石像小天使怪物回合结束时按每名英雄视线内石像数量排队分配一般伤害', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = [];
+        activateBloodFromStoneMonsterTurn(core, '0');
+        findTestExplorer(core, '0').roomId = 'entrance-hall';
+        findTestExplorer(core, '1').roomId = 'entrance-hall';
+        findTestExplorer(core, '2').roomId = 'basement-landing';
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        setHighCapacityGeneralDamageTracks(core, '0');
+        setHighCapacityGeneralDamageTracks(core, '1');
+        core.monsters = [
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-1', 'entrance-hall'),
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-2', 'hallway'),
+        ];
+        core.scenarioRuntime.monsterTurn = {
+            ...core.scenarioRuntime.monsterTurn,
+            resolvedStartMonsterIds: ['stone-cherub-1', 'stone-cherub-2'],
+            skippedMonsterIdsThisTurn: ['stone-cherub-1', 'stone-cherub-2'],
+            attackedMonsterIdsThisTurn: [],
+            movementRollsByGroupId: {},
+            moveRemainingById: {},
+        };
+
+        expect(resolveBloodFromStoneMonsterTurnEndPreview(core)).toMatchObject({
+            active: true,
+            canEnd: true,
+            controllerPlayerId: '0',
+            nextPlayerId: '1',
+            visibleStoneCherubCountsByPlayerId: {
+                '0': 2,
+                '1': 2,
+            },
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN, '0', {}),
+        )).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN,
+            '0',
+            {},
+            100,
+            createBetrayalScriptedRandom(3, 2, 2, 1),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '石像小天使凝视',
+            playerId: '0',
+            damageKind: 'general',
+            amount: 3,
+            originalAmount: 3,
+            allowSkull: true,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+        });
+        expect(core.pendingDamageAllocation?.nextDamageAllocations).toHaveLength(1);
+        expect(core.pendingDamageAllocation?.nextDamageAllocations?.[0]).toMatchObject({
+            playerId: '1',
+            amount: 1,
+            nextPlayerId: '1',
+            turnLogText: expect.stringContaining('轮到'),
+        });
+        expect(core.activityLog[0]?.text).toContain('视线内有 2 个石像小天使');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed', 'knowledge', 'sanity']) },
+        );
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: '1',
+            amount: 1,
+            sourceTitle: '石像小天使凝视',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed', 'knowledge', 'sanity']) },
+        );
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.currentPlayer).toBe('1');
+    });
+
+    it('石像小天使凝视伤害会排除死亡英雄和不在视线内的英雄', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = ['1'];
+        activateBloodFromStoneMonsterTurn(core, '0');
+        findTestExplorer(core, '0').roomId = 'entrance-hall';
+        findTestExplorer(core, '1').roomId = 'entrance-hall';
+        findTestExplorer(core, '2').roomId = 'ground-north';
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        setHighCapacityGeneralDamageTracks(core, '0');
+        core.monsters = [
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-1', 'entrance-hall'),
+        ];
+        core.scenarioRuntime.monsterTurn = {
+            ...core.scenarioRuntime.monsterTurn,
+            resolvedStartMonsterIds: ['stone-cherub-1'],
+            skippedMonsterIdsThisTurn: ['stone-cherub-1'],
+            attackedMonsterIdsThisTurn: [],
+            movementRollsByGroupId: {},
+            moveRemainingById: {},
+        };
+
+        expect(isBetrayalRoomInLineOfSight(core, 'ground-north', 'entrance-hall')).toBe(false);
+        expect(resolveBloodFromStoneMonsterTurnEndPreview(core)).toMatchObject({
+            canEnd: true,
+            nextPlayerId: '2',
+            visibleStoneCherubCountsByPlayerId: { '0': 1 },
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN,
+            '0',
+            {},
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: '0',
+            amount: 2,
+        });
+        expect(core.pendingDamageAllocation?.nextDamageAllocations ?? []).toEqual([]);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed', 'knowledge', 'sanity']) },
+        );
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.currentPlayer).toBe('2');
+    });
+
+    it('英雄持有镜子玩躲猫猫时知识检定获得 +2，成功后移除同房和视线内两只石像小天使', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = [];
+        activateTestExplorer(core, '0');
+        const hero = findTestExplorer(core, '0');
+        hero.roomId = 'entrance-hall';
+        setTestTraitTrack(core, '0', 'knowledge', [1, 1, 1], 1, 1);
+        hero.inventory = [{ id: 'mirror', name: 'Mirror', kind: 'item' }];
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = [
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-same-room', 'entrance-hall'),
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-in-sight', 'hallway'),
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-spared', 'basement-landing'),
+        ];
+
+        expect(isBetrayalRoomInLineOfSight(core, 'entrance-hall', 'hallway')).toBe(true);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.PLAY_PEEKABOO, '0', {
+                sameRoomMonsterId: 'stone-cherub-same-room',
+                lineOfSightMonsterId: 'stone-cherub-in-sight',
+            }),
+        )).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.PLAY_PEEKABOO,
+            '0',
+            {
+                sameRoomMonsterId: 'stone-cherub-same-room',
+                lineOfSightMonsterId: 'stone-cherub-in-sight',
+            },
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.monsters.map((monster) => monster.id)).toEqual(['stone-cherub-spared']);
+        expect(core.usedCardIdsThisTurn).toContain('play-peekaboo');
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '玩躲猫猫',
+            trait: 'knowledge',
+            passiveBonus: 2,
+            latestLabel: '移除石像小天使',
+        });
+        expect(core.activityLog[0]?.text).toContain('玩躲猫猫成功');
+    });
+
+    it('玩躲猫猫移除最后两只石像小天使后英雄立即胜利', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = [];
+        activateTestExplorer(core, '0');
+        const hero = findTestExplorer(core, '0');
+        hero.roomId = 'entrance-hall';
+        setTestTraitTrack(core, '0', 'knowledge', [1, 1, 1], 1, 1);
+        hero.inventory = [{ id: 'mirror', name: 'Mirror', kind: 'item' }];
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = [
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-same-room', 'entrance-hall'),
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-in-sight', 'hallway'),
+        ];
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.PLAY_PEEKABOO,
+            '0',
+            {
+                sameRoomMonsterId: 'stone-cherub-same-room',
+                lineOfSightMonsterId: 'stone-cherub-in-sight',
+            },
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.monsters).toEqual([]);
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'blood-from-a-stone',
+            hauntTitle: '顽石之血',
+            outcome: 'survivors',
+            winners: ['0', '1', '2'],
+            traitorPlayerId: '',
+            survivorsEscaped: ['0', '1', '2'],
+        });
+    });
+
+    it('英雄玩躲猫猫失败时进入 2 骰一般伤害分配，且本回合不能再次使用', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = [];
+        activateTestExplorer(core, '0');
+        const hero = findTestExplorer(core, '0');
+        hero.roomId = 'entrance-hall';
+        hero.inventory = [];
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        setHighCapacityGeneralDamageTracks(core, '0');
+        setTestTraitTrack(core, '0', 'knowledge', Array.from({ length: 16 }, () => 1), 14, 14);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = [
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-same-room', 'entrance-hall'),
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-in-sight', 'hallway'),
+        ];
+
+        expect(resolveBloodFromStonePeekabooOptions(core, '0')).toMatchObject([{
+            sameRoomMonsterId: 'stone-cherub-same-room',
+            lineOfSightMonsterId: 'stone-cherub-in-sight',
+        }]);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.PLAY_PEEKABOO, '0', {
+                sameRoomMonsterId: 'stone-cherub-same-room',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: expect.stringContaining('必须选择同房间石像小天使和视线内另一只石像小天使'),
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.PLAY_PEEKABOO,
+            '0',
+            {
+                sameRoomMonsterId: 'stone-cherub-same-room',
+                lineOfSightMonsterId: 'stone-cherub-in-sight',
+            },
+            100,
+            createBetrayalScriptedRandom(1, 3, 2),
+        );
+
+        expect(core.monsters.map((monster) => monster.id))
+            .toEqual(['stone-cherub-same-room', 'stone-cherub-in-sight']);
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '玩躲猫猫',
+            playerId: '0',
+            damageKind: 'general',
+            amount: 3,
+            originalAmount: 3,
+            allowSkull: true,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+        });
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '玩躲猫猫',
+            trait: 'knowledge',
+            passiveBonus: 0,
+            latestLabel: '一般伤害',
+        });
+        expect(core.activityLog[0]?.text).toContain('玩躲猫猫失败');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed', 'knowledge', 'sanity']) },
+        );
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.PLAY_PEEKABOO, '0', {
+                sameRoomMonsterId: 'stone-cherub-same-room',
+                lineOfSightMonsterId: 'stone-cherub-in-sight',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: expect.stringContaining('本回合已经使用'),
+        });
+    });
+
+    it('顽石之血中全部英雄死亡时作祟失败并进入终局', () => {
+        let core = createFirstScenarioHauntCore();
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.deadExplorerPlayerIds = ['1', '2'];
+        activateTestExplorer(core, '0');
+        const hero = findTestExplorer(core, '0');
+        hero.roomId = 'entrance-hall';
+        hero.inventory = [];
+        core.activeRoomId = 'entrance-hall';
+        core.currentExplorerRoomId = 'entrance-hall';
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '0', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = [
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-same-room', 'entrance-hall'),
+            createBetrayalMonsterFromDefinition('blood-from-stone-stone-cherub', 'stone-cherub-in-sight', 'hallway'),
+        ];
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.PLAY_PEEKABOO,
+            '0',
+            {
+                sameRoomMonsterId: 'stone-cherub-same-room',
+                lineOfSightMonsterId: 'stone-cherub-in-sight',
+            },
+            100,
+            createBetrayalScriptedRandom(1, 3, 3),
+        );
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '玩躲猫猫',
+            playerId: '0',
+            amount: 4,
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed', 'knowledge', 'sanity']) },
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'blood-from-a-stone',
+            hauntTitle: '顽石之血',
+            outcome: 'haunt',
+            winners: [],
+            traitorPlayerId: '',
+            survivorsEscaped: [],
+        });
+    });
+
     it('怪物受伤正式命令复用通用结果并写入可持久化怪物状态', () => {
         let core = createMagicCameraHauntCore('1');
         activateTestExplorer(core, '2');
@@ -4073,7 +5224,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { accept: false },
             100,
-            createBetrayalScriptedRandom(1, 1),
+            createBetrayalScriptedRandom(2, 2),
         );
 
         expect(core.phase).toBe('preHaunt');
@@ -4480,6 +5631,201 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+    it('同类型普通怪物共用一次移动骰但逐只独立消耗移动额度', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        activateTestExplorer(core, traitorId);
+        const monsterIds = ['test-normal-monster-a', 'test-normal-monster-b'];
+        const roomId = 'entrance-hall';
+        core.currentExplorer.roomId = roomId;
+        core.otherExplorers = core.otherExplorers.map((explorer) => ({ ...explorer, roomId }));
+        core.activeRoomId = roomId;
+        core.currentExplorerRoomId = roomId;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = monsterIds.map((id) => ({
+            id,
+            name: '测试怪物',
+            portraitAsset: 'betrayal/monsters/spirit',
+            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            roomId,
+            might: 4,
+            speed: 1,
+            sanity: 4,
+            knowledge: 4,
+            damage: 1,
+        }));
+        const groupId = '测试怪物:1';
+        expect(resolveBetrayalMonsterMovementGroups(core)).toEqual([
+            expect.objectContaining({
+                groupId,
+                monsterIds,
+                diceCount: 1,
+                rollOnceForGroup: true,
+                minimumMoveAllowance: 1,
+            }),
+        ]);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            traitorId,
+            { groupId },
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+
+        let monsterTurn = resolveBetrayalMonsterTurnRuntimeState(core);
+        expect(monsterTurn.movementRollsByGroupId[groupId]).toMatchObject({
+            monsterIds,
+            dice: [2],
+            moveAllowance: 2,
+        });
+        expect(monsterTurn.moveRemainingById).toMatchObject({
+            [monsterIds[0]!]: 2,
+            [monsterIds[1]!]: 2,
+        });
+        const targetRoom = resolveBetrayalMonsterMoveTargetRooms(core, monsterIds[0]!)[0];
+        expect(targetRoom).toBeDefined();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
+            traitorId,
+            { monsterId: monsterIds[0]!, roomId: targetRoom!.id },
+        );
+        monsterTurn = resolveBetrayalMonsterTurnRuntimeState(core);
+        expect(core.monsters.find((monster) => monster.id === monsterIds[0])?.roomId).toBe(targetRoom!.id);
+        expect(core.monsters.find((monster) => monster.id === monsterIds[1])?.roomId).toBe(roomId);
+        expect(monsterTurn.moveRemainingById).toMatchObject({
+            [monsterIds[0]!]: 0,
+            [monsterIds[1]!]: 2,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, traitorId, {
+                monsterId: monsterIds[1]!,
+                roomId: targetRoom!.id,
+            }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
+            traitorId,
+            { monsterId: monsterIds[1]!, roomId: targetRoom!.id },
+        );
+        monsterTurn = resolveBetrayalMonsterTurnRuntimeState(core);
+        expect(core.monsters.find((monster) => monster.id === monsterIds[1])?.roomId).toBe(targetRoom!.id);
+        expect(monsterTurn.moveRemainingById).toMatchObject({
+            [monsterIds[0]!]: 0,
+            [monsterIds[1]!]: 0,
+        });
+    });
+
+    it('多类型普通怪物移动骰组会分开掷骰并在第一组完成后继续开放第二组', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        activateTestExplorer(core, traitorId);
+        const roomId = 'entrance-hall';
+        core.currentExplorer.roomId = roomId;
+        core.otherExplorers = core.otherExplorers.map((explorer) => ({ ...explorer, roomId }));
+        core.activeRoomId = roomId;
+        core.currentExplorerRoomId = roomId;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.monsters = [
+            {
+                id: 'test-slow-monster',
+                name: '慢速怪物',
+                portraitAsset: 'betrayal/monsters/spirit',
+                tokenAsset: 'betrayal/tokens/monsters/ghost',
+                roomId,
+                might: 4,
+                speed: 1,
+                sanity: 4,
+                knowledge: 4,
+                damage: 1,
+            },
+            {
+                id: 'test-fast-monster',
+                name: '快速怪物',
+                portraitAsset: 'betrayal/monsters/spirit',
+                tokenAsset: 'betrayal/tokens/monsters/ghost',
+                roomId,
+                might: 4,
+                speed: 2,
+                sanity: 4,
+                knowledge: 4,
+                damage: 1,
+            },
+        ];
+        expect(resolveBetrayalMonsterMovementGroups(core).map((group) => group.groupId)).toEqual([
+            '慢速怪物:1',
+            '快速怪物:2',
+        ]);
+        let panel = resolveBetrayalMonsterActionPanel(core);
+        expect(panel.slots.find((slot) => slot.id === 'movement-roll:慢速怪物:1')).toMatchObject({
+            kind: 'movement-roll',
+            enabled: true,
+        });
+        expect(panel.slots.find((slot) => slot.id === 'movement-roll:快速怪物:2')).toMatchObject({
+            kind: 'movement-roll',
+            enabled: true,
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            traitorId,
+            { groupId: '慢速怪物:1' },
+            100,
+            createBetrayalScriptedRandom(3),
+        );
+
+        let monsterTurn = resolveBetrayalMonsterTurnRuntimeState(core);
+        expect(monsterTurn.movementRollsByGroupId['慢速怪物:1']).toMatchObject({
+            monsterIds: ['test-slow-monster'],
+            moveAllowance: 2,
+        });
+        expect(monsterTurn.movementRollsByGroupId['快速怪物:2']).toBeUndefined();
+        panel = resolveBetrayalMonsterActionPanel(core);
+        expect(panel.slots.find((slot) => slot.id === 'movement-roll:慢速怪物:1')).toMatchObject({
+            enabled: false,
+            reason: '该怪物移动骰组本回合已掷骰。',
+        });
+        expect(panel.slots.find((slot) => slot.id === 'movement-roll:快速怪物:2')).toMatchObject({
+            enabled: true,
+            reason: null,
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            traitorId,
+            { groupId: '快速怪物:2' },
+            100,
+            createBetrayalScriptedRandom(3, 3),
+        );
+
+        monsterTurn = resolveBetrayalMonsterTurnRuntimeState(core);
+        expect(monsterTurn.movementRollsByGroupId['快速怪物:2']).toMatchObject({
+            monsterIds: ['test-fast-monster'],
+            dice: [2, 2],
+            moveAllowance: 4,
+        });
+        panel = resolveBetrayalMonsterActionPanel(core);
+        expect(panel.slots.find((slot) => slot.kind === 'movement-roll' && slot.enabled)).toBeUndefined();
+        expect(panel.slots.find((slot) => slot.id === 'move:test-slow-monster')).toMatchObject({
+            enabled: true,
+            moveRemaining: 2,
+        });
+        expect(panel.slots.find((slot) => slot.id === 'move:test-fast-monster')).toMatchObject({
+            enabled: true,
+            moveRemaining: 4,
+        });
+    });
+
     it('怪物正式移动命令会消耗移动额度并写回目标房间', () => {
         let core = createMagicCameraHauntCore('1');
         activateTestExplorer(core, '1');
@@ -4541,6 +5887,39 @@ describe('Betrayal first scenario runtime', () => {
             error: '该怪物本回合没有剩余移动额度。',
         });
         expect(core.activityLog.some((entry) => entry.text.includes('幻影摄影师') && entry.text.includes('移动到'))).toBe(true);
+    });
+
+    it('杰克之灵通过通用怪物移动命令移动时会同步专用房间状态', () => {
+        let core = createJackSpiritMovementRollReadyCore();
+        const movementGroup = resolveBetrayalMonsterMovementGroups(core)
+            .find((group) => group.monsterIds.includes('jack-spirit'));
+        expect(movementGroup).toBeDefined();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            '2',
+            { groupId: movementGroup!.groupId },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3),
+        );
+
+        const targetRoom = resolveBetrayalMonsterMoveTargetRooms(core, 'jack-spirit')
+            .find((room) => room.id === 'basement-landing');
+        expect(targetRoom).toBeDefined();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM,
+            '2',
+            { monsterId: 'jack-spirit', roomId: targetRoom!.id },
+        );
+
+        expect(core.monsters.find((monster) => monster.id === 'jack-spirit')?.roomId).toBe('basement-landing');
+        expect(core.scenarioRuntime.jackSpiritRoomId).toBe('basement-landing');
+        expect(core.scenarioRuntime.jackSpiritHasMovedSinceRelease).toBe(true);
+        expect(core.activeRoomId).toBe('basement-landing');
+        expect(resolveBetrayalMonsterTurnRuntimeState(core).moveRemainingById['jack-spirit']).toBeGreaterThanOrEqual(0);
     });
 
     it('怪物移动分组读模型不会给击晕或已杀死怪物分配移动骰组', () => {
@@ -4626,7 +6005,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(activeActionSet).toMatchObject({
             status: 'active',
             canAttack: true,
-            defaultAttackTrait: 'might',
+            defaultAttackTrait: 'sanity',
         });
     });
 
@@ -4657,8 +6036,201 @@ describe('Betrayal first scenario runtime', () => {
         });
         expect(attackSlot).toMatchObject({
             enabled: false,
-            defaultAttackTrait: 'might',
+            defaultAttackTrait: 'sanity',
         });
+    });
+
+    it('普通怪物攻击目标读模型只列出同房存活英雄并可走正式命令', () => {
+        const core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const [aliveHeroId, deadHeroId] = core.playerIds.filter((playerId) => playerId !== traitorId);
+        expect(aliveHeroId).toBeDefined();
+        expect(deadHeroId).toBeDefined();
+        const roomId = 'entrance-hall';
+        core.monsters = [{
+            id: 'test-normal-monster',
+            name: '测试怪物',
+            portraitAsset: 'betrayal/monsters/spirit',
+            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            roomId,
+            might: 4,
+            speed: 3,
+            sanity: 4,
+            knowledge: 4,
+            damage: 1,
+        }];
+        findTestExplorer(core, traitorId).roomId = roomId;
+        findTestExplorer(core, aliveHeroId!).roomId = roomId;
+        findTestExplorer(core, deadHeroId!).roomId = roomId;
+        core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId!];
+
+        const targets = resolveBetrayalNormalMonsterAttackTargets(core, 'test-normal-monster');
+
+        expect(targets).toMatchObject({
+            monsterId: 'test-normal-monster',
+            monsterName: '测试怪物',
+            roomId,
+            defaultAttackTrait: 'might',
+            targetPlayerIds: [aliveHeroId],
+            usesNormalAttackRules: true,
+            canResolveWithExistingCommand: true,
+            reason: null,
+            contractGaps: [],
+        });
+        expect(targets?.targetPlayerIds).not.toContain(traitorId);
+        expect(targets?.targetPlayerIds).not.toContain(deadHeroId);
+        expect(targets?.targetLabels).toEqual([findTestExplorer(core, aliveHeroId!).displayName]);
+    });
+
+    it('普通怪物正式攻击命令只允许同房存活英雄目标', () => {
+        const core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const [aliveHeroId, deadHeroId] = core.playerIds.filter((playerId) => playerId !== traitorId);
+        expect(aliveHeroId).toBeDefined();
+        expect(deadHeroId).toBeDefined();
+        const monsterId = 'test-normal-monster';
+        const roomId = 'entrance-hall';
+        core.monsters = [{
+            id: monsterId,
+            name: '测试怪物',
+            portraitAsset: 'betrayal/monsters/spirit',
+            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            roomId,
+            might: 4,
+            speed: 3,
+            sanity: 4,
+            knowledge: 4,
+            damage: 1,
+        }];
+        findTestExplorer(core, traitorId).roomId = roomId;
+        findTestExplorer(core, aliveHeroId!).roomId = roomId;
+        findTestExplorer(core, deadHeroId!).roomId = roomId;
+        core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId!];
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+                monsterId,
+                targetPlayerId: aliveHeroId,
+            }),
+        )).toMatchObject({ valid: true });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+                monsterId,
+                targetPlayerId: traitorId,
+            }),
+        )).toMatchObject({ valid: false });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+                monsterId,
+                targetPlayerId: deadHeroId,
+            }),
+        )).toMatchObject({ valid: false });
+
+        findTestExplorer(core, aliveHeroId!).roomId = 'hallway';
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, core.currentPlayer, {
+                monsterId,
+                targetPlayerId: aliveHeroId,
+            }),
+        )).toMatchObject({ valid: false });
+    });
+
+    it('普通怪物正式攻击会进入攻击骰盘、待分配伤害并关闭该怪物攻击槽', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const targetHeroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
+        const monsterId = 'test-normal-monster';
+        const roomId = 'entrance-hall';
+        core.monsters = [{
+            id: monsterId,
+            name: '测试怪物',
+            portraitAsset: 'betrayal/monsters/spirit',
+            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            roomId,
+            might: 4,
+            speed: 3,
+            sanity: 4,
+            knowledge: 4,
+            damage: 1,
+        }];
+        findTestExplorer(core, targetHeroId).roomId = roomId;
+        setHighCapacityPhysicalDamageTracks(core, targetHeroId);
+        const heroPhysicalPositionBefore = traitTrackPositionTotal(core, targetHeroId, ['might', 'speed']);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+            core.currentPlayer,
+            { monsterId, targetPlayerId: targetHeroId },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1, 1, 1),
+        );
+
+        expect(core.recentRoll).toMatchObject({
+            kind: 'attackRoll',
+            sourceTitle: '测试怪物攻击',
+            playerId: core.currentPlayer,
+            attack: {
+                target: 'hero',
+                defenderPlayerId: targetHeroId,
+                damageKind: 'physical',
+            },
+        });
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            playerId: targetHeroId,
+            damageKind: 'physical',
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(core.scenarioRuntime.monsterTurn.attackedMonsterIdsThisTurn).toContain(monsterId);
+        expect(traitTrackPositionTotal(core, targetHeroId, ['might', 'speed'])).toBe(heroPhysicalPositionBefore);
+        expect(resolveBetrayalMonsterActionPanel(core).slots.find((slot) => slot.id === `attack:${monsterId}`)).toMatchObject({
+            enabled: false,
+            reason: '该怪物本回合已经攻击过。',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            targetHeroId,
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
+        );
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(traitTrackPositionTotal(core, targetHeroId, ['might', 'speed'])).toBeLessThan(heroPhysicalPositionBefore);
+    });
+
+    it('杰克之灵普通攻击目标读模型复用现有攻击命令并排除叛徒和死亡英雄', () => {
+        const core = createJackSpiritMovementRollReadyCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const [aliveHeroId, deadHeroId] = core.playerIds.filter((playerId) => playerId !== traitorId);
+        expect(aliveHeroId).toBeDefined();
+        expect(deadHeroId).toBeDefined();
+        const roomId = core.scenarioRuntime.jackSpiritRoomId!;
+        findTestExplorer(core, traitorId).roomId = roomId;
+        findTestExplorer(core, aliveHeroId!).roomId = roomId;
+        findTestExplorer(core, deadHeroId!).roomId = roomId;
+        core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId!];
+
+        const targets = resolveBetrayalNormalMonsterAttackTargets(core, 'jack-spirit');
+
+        expect(targets).toMatchObject({
+            monsterId: 'jack-spirit',
+            monsterName: '杰克之灵',
+            roomId,
+            defaultAttackTrait: 'might',
+            targetPlayerIds: [aliveHeroId],
+            usesNormalAttackRules: true,
+            canResolveWithExistingCommand: true,
+            reason: null,
+            contractGaps: [],
+        });
+        expect(targets?.targetPlayerIds).not.toContain(traitorId);
+        expect(targets?.targetPlayerIds).not.toContain(deadHeroId);
     });
 
     it('怪物动作槽读模型会先要求掷移动骰，掷完后才开放移动目标', () => {
@@ -4707,10 +6279,10 @@ describe('Betrayal first scenario runtime', () => {
         expect(moveSlot?.targetRoomIds.length).toBeGreaterThan(0);
         expect(afterRoll.contractGaps).toContain('path-preview-ui');
         expect(afterRoll.slots.find((slot) => slot.id === `attack:${monsterId}`)).toMatchObject({
-            command: BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            command: BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK,
             enabled: true,
-            defaultAttackTrait: 'might',
-            contractGaps: ['attack-target-ui', 'scenario-specific-attack'],
+            defaultAttackTrait: 'sanity',
+            contractGaps: ['attack-target-ui'],
         });
     });
 
@@ -4906,7 +6478,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { roomId: 'ground-north' },
             100,
-            createBetrayalScriptedRandom(1, 1),
+            createBetrayalScriptedRandom(2, 2),
         );
 
         expect(core.latestDiscovery?.detail).toContain('知识检定 0');
@@ -5051,7 +6623,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { roomId: 'ground-north' },
             100,
-            createBetrayalScriptedRandom(1, 1),
+            createBetrayalScriptedRandom(2, 2),
         );
 
         expect(core.latestDiscovery?.detail).toContain('力量检定 0');
@@ -7547,7 +9119,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { roomId: 'ground-north' },
             100,
-            createBetrayalScriptedRandom(1, 1),
+            createBetrayalScriptedRandom(2, 2),
         );
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 0');
@@ -9512,6 +11084,43 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.monsters.find((monster) => monster.id === 'jack-spirit')?.roomId).toBe('basement-landing');
     });
 
+    it('上一名英雄结束回合时，会自然进入死叛徒的杰克之灵速度移动骰', () => {
+        let core = createJackSpiritNaturalMonsterTurnBeforeRollCore();
+
+        expect(core.currentPlayer).toBe('1');
+        expect(core.scenarioRuntime.traitorPlayerId).toBe('2');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('2');
+        expect(core.scenarioRuntime.jackSpiritReleased).toBe(true);
+        const jackSpiritRoomId = core.scenarioRuntime.jackSpiritRoomId;
+        expect(jackSpiritRoomId).toBeTruthy();
+        expect(core.recentRoll).toBeNull();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(2, 2, 1),
+        );
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.currentExplorer.playerId).toBe('2');
+        expect(core.activeRoomId).toBe(jackSpiritRoomId);
+        expect(core.activeRoomId).toBe(core.scenarioRuntime.jackSpiritRoomId);
+        expect(core.movesRemaining).toBe(2);
+        expect(core.recentRoll).toMatchObject({
+            kind: 'monsterMoveRoll',
+            trait: 'speed',
+            dice: [1, 1, 0],
+        });
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' }),
+        ).valid).toBe(true);
+    });
+
     it('杰克之灵控制回合不能使用持有物、兔脚、交易或搜刮尸体', () => {
         const core = createJackSpiritMovementRollReadyCore();
         expect(core.currentPlayer).toBe('2');
@@ -9551,6 +11160,92 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+
+    it('上一名探索者结束回合时，会自然进入死叛徒的狂热病患速度移动骰并能交接回合', () => {
+        let core = createDustFeverishNaturalMonsterTurnBeforeRollCore();
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.scenarioRuntime.hauntCardNumber).toBe(3);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('0');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-0')?.roomId).toBe('hallway');
+        expect(core.recentRoll).toBeNull();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '2',
+            {},
+            100,
+            createBetrayalScriptedRandom(2, 2, 1, 1, 1),
+        );
+
+        expect(core.currentPlayer).toBe('0');
+        expect(core.currentExplorer.playerId).toBe('0');
+        expect(core.activeRoomId).toBe('hallway');
+        expect(core.movesRemaining).toBe(2);
+        expect(core.recentRoll).toMatchObject({
+            kind: 'monsterMoveRoll',
+            trait: 'speed',
+            dice: [1, 1, 0, 0, 0],
+        });
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'entrance-hall' }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'entrance-hall' });
+        expect(core.monsters.find((monster) => monster.id === 'feverish-0')?.roomId).toBe('entrance-hall');
+        expect(core.activeRoomId).toBe('entrance-hall');
+        expect(core.movesRemaining).toBe(1);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        expect(core.currentPlayer).toBe('1');
+        expect(core.recentRoll).toBeNull();
+    });
+
+    it('狂热病患动作槽可从怪物攻击入口攻击同房英雄', () => {
+        let core = createDustFeverishAttackReadyCore();
+        const actionPanel = resolveBetrayalMonsterActionPanel(core);
+        const attackSlot = actionPanel.slots.find((slot) => (
+            slot.kind === 'attack'
+            && slot.monsterId === 'feverish-0'
+        ));
+
+        expect(core.currentPlayer).toBe('0');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
+        expect(attackSlot).toMatchObject({
+            enabled: true,
+            command: BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, '0', {
+                monsterId: 'feverish-0',
+                targetPlayerId: '1',
+            }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+            '0',
+            {
+                monsterId: 'feverish-0',
+                targetPlayerId: '1',
+            },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1, 1, 1, 1),
+        );
+
+        expect(core.recentRoll).toMatchObject({
+            kind: 'attackRoll',
+            sourceTitle: '狂热病患攻击',
+        });
+        expect(core.scenarioRuntime.monsterTurn.attackedMonsterIdsThisTurn).toContain('feverish-0');
+        expect(core.pendingDamageAllocation?.playerId).toBe('1');
+    });
 
     it('狂热病患控制回合同样不能使用持有物、兔脚、交易或搜刮尸体', () => {
         const core = createFeverishControlReadyCore();

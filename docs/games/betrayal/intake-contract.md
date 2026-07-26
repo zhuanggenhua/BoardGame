@@ -17,6 +17,9 @@
 | 英文规则书文本 | 上一条镜像的可读 Markdown | `docs/games/betrayal/sources/official/betrayal-3e-rulebook-en.md` | 英文对照源 | 已抽取成 13 页文本 |
 | 英文求生者剧本书 | 求生者侧剧本文档 | `docs/games/betrayal/sources/official/betrayal-3e-secrets-of-survival-en.md` | 英文对照源 | 已抽取成 60 页文本 |
 | 英文叛徒剧本书 | 叛徒侧剧本文档 | `docs/games/betrayal/sources/official/betrayal-3e-traitors-tome-en.md` | 英文对照源 | 已抽取成 60 页文本 |
+| 中文规则 PDF | 用户补充的 `小黑屋规则翻译v1.1.pdf` 转换结果 | `docs/games/betrayal/sources/legacy-zh/betrayal-2e-rulebook-zh-v1.1/betrayal-2e-rulebook-zh-v1.1.md` | 旧版中文对照源 | 有中文文本层与 24 页页面图，出现“第二版工作人员”，不作为 3e 权威源 |
+| 中文求生者 Word | 用户补充的 `求生秘诀_原版v1.2.docx` 转换结果 | `docs/games/betrayal/sources/legacy-zh/betrayal-legacy-secrets-of-survival-zh-v1.2.md` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
+| 中文叛徒 Word | 用户补充的 `奸徒手册_基础版精编校对v1.0.docx` 转换结果 | `docs/games/betrayal/sources/legacy-zh/betrayal-legacy-traitors-tome-zh-v1.0.md` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
 
 ## 3. PDF 处理结论
 
@@ -31,7 +34,7 @@
 | 07 | `httpssteamusercontent...1EDD.PDF` | 9.34 MB | `pdf-07.md` 为空 | 扫描型，待 OCR |
 | 08 | `httpssteamusercontent...DC2F.PDF` | 6.22 MB | `pdf-08.md` 为空 | 扫描型，待 OCR |
 
-当前结论：本地 PDF 不能直接转成可读规则文本，后续应走 OCR 或人工录入，不允许把空 Markdown 当规则真相源。
+当前结论：早期本地 PDF 不能直接转成可读规则文本，后续应走 OCR 或人工录入，不允许把空 Markdown 当规则真相源。用户后续补充的中文 PDF 已可读，但版本口径是旧版中文对照，不覆盖当前 3e 官方规则源。
 
 补充：英文规则书、求生者剧本书、叛徒剧本书都已经转成可读 Markdown，可作为当前对照源；Hasbro 说明页的文本镜像抓取仍被对端拒绝，暂不影响本轮 intake 结论。
 
@@ -137,6 +140,7 @@
 - 楼层总览图与房屋楼层板
 - 预兆正面 atlas 已确认，且当前运行时默认预兆对象族已收敛到 atlas 对应的 9 张真实预兆
 - 扫描 PDF 对应的规则书、剧本书、参考书具体分工
+- 剧本书 / 作祟文案 / 分阵营秘密阅读 / 开局朗读 / 结局朗读的玩家可见正文仍需回到已锁定原文或正式翻译原文后才能标 `locked`；当前整理稿、规则书口吻改写或目标摘要不能作为正式剧本原文。
 - 剩余探索者 token、其它怪物 token、状态 token 仍需逐类审查；不得再笼统写成“头像/模型/局部标记图待确认”
 - 其它物品正面仍需逐格确认；未确认前只允许在玩家 UI 显示对象名 + 类别 + 牌背临时承接，缺素材原因必须写入资源审计材料并进入补源/索要素材链路，不得作为完成态
 
@@ -144,4 +148,5 @@
 
 1. 先把当前候选资源从 `public/assets/betrayal/` 迁到 `public/assets/i18n/zh-CN/betrayal/`，并重新生成 manifest。
 2. 再从大拼版图中裁出房间板块、楼层板和可能的起始房间。
-3. 最后补 OCR/人工录入，把规则、剧本和参考卡转成结构化文字合同。
+3. 再按 `docs/ai-rules/data-entry.md` 的原文展示门禁，分别锁定规则书正文、求生者剧本书、叛徒剧本书、作祟开局、分阵营秘密阅读和结局朗读的原文来源；没有逐字原文或正式翻译原文时只能标 `blocked / disputed`，不得用摘要冒充剧本书正文。
+4. 最后补 OCR/人工录入，把规则、剧本和参考卡转成结构化文字合同。

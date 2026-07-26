@@ -20,8 +20,11 @@ import {
   createBetrayalScriptedRandom,
   createCorpseLootReadyCore,
   createDogTradeReadyCore,
+  createDustFeverishAttackReadyCore,
+  createDustFeverishNaturalMonsterTurnBeforeRollCore,
   createExchangeReadyCore,
   createFirstScenarioHauntCore,
+  createJackSpiritNaturalMonsterTurnBeforeRollCore,
   createJackSpiritMovementRollReadyCore,
   createJackSpiritReviveReadyCore,
   createJackSpiritPostReviveAttackReadyCore,
@@ -746,12 +749,24 @@ export function createJackSpiritReviveReadyRuntimeCore(): BetrayalCore {
   return createJackSpiritReviveReadyCore();
 }
 
+export function createJackSpiritNaturalMonsterTurnBeforeRollRuntimeCore(): BetrayalCore {
+  return createJackSpiritNaturalMonsterTurnBeforeRollCore();
+}
+
 export function createJackSpiritMovementRollReadyRuntimeCore(): BetrayalCore {
   return createJackSpiritMovementRollReadyCore();
 }
 
 export function createJackSpiritPostReviveAttackReadyRuntimeCore(): BetrayalCore {
   return createJackSpiritPostReviveAttackReadyCore();
+}
+
+export function createDustFeverishNaturalMonsterTurnBeforeRollRuntimeCore(): BetrayalCore {
+  return createDustFeverishNaturalMonsterTurnBeforeRollCore();
+}
+
+export function createDustFeverishAttackReadyRuntimeCore(): BetrayalCore {
+  return createDustFeverishAttackReadyCore();
 }
 
 const BETRAYAL_E2E_TRAIT_KEYS: BetrayalTraitKey[] = [
@@ -882,6 +897,88 @@ function dismissBetrayalE2EBlockingOverlays(core: BetrayalCore): BetrayalCore {
   core.pendingEventChoice = null;
   core.recentRoll = null;
   return core;
+}
+
+function isMagicCameraE2ECard(card: { id: string; name: string }): boolean {
+  return card.id === "camera" || card.name === "魔法相机";
+}
+
+function removeMagicCameraFromE2EExplorer(
+  explorer: BetrayalCore["currentExplorer"],
+): BetrayalCore["currentExplorer"] {
+  return {
+    ...explorer,
+    inventory: explorer.inventory.filter((card) => !isMagicCameraE2ECard(card)),
+  };
+}
+
+export function createMagicCameraHauntRuntimeCore(
+  cameraOwnerPlayerId: string | null = "1",
+): BetrayalCore {
+  let core = createStartedFirstScenarioCore(["0", "1", "2"]);
+  const magicCameraEvent = BETRAYAL_DISCOVERY_POOLS.events.find(
+    (event) => event.name === "说“茄子”！",
+  );
+  if (!magicCameraEvent) {
+    throw new Error("山屋 E2E 夹具缺少作祟 33 事件：说“茄子”！");
+  }
+
+  core.drawOrder = ["event"];
+  core.eventOrder = [magicCameraEvent];
+  core.currentExplorer = removeMagicCameraFromE2EExplorer(core.currentExplorer);
+  core.otherExplorers = core.otherExplorers.map(removeMagicCameraFromE2EExplorer);
+  core.currentExplorer.inventory = [
+    ...core.currentExplorer.inventory,
+    { id: "omen-book", name: "书本", kind: "omen" },
+    { id: "dog", name: "狗", kind: "omen" },
+    { id: "mask", name: "面具", kind: "omen" },
+  ];
+  if (cameraOwnerPlayerId === "0") {
+    core.currentExplorer.inventory = [
+      ...core.currentExplorer.inventory,
+      { id: "camera", name: "魔法相机", kind: "item" },
+    ];
+  }
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
+    ...card,
+  }));
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.otherExplorers = core.otherExplorers.map((explorer) =>
+    explorer.playerId === cameraOwnerPlayerId
+      ? {
+          ...explorer,
+          inventory: [
+            ...explorer.inventory,
+            { id: "camera", name: "魔法相机", kind: "item" },
+          ],
+        }
+      : explorer,
+  );
+  if (!cameraOwnerPlayerId) {
+    core.possessionOrderByKind.item = [
+      { id: "camera", name: "魔法相机", kind: "item" },
+      ...core.possessionOrderByKind.item.filter(
+        (card) => !isMagicCameraE2ECard(card),
+      ),
+    ];
+  }
+
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
+    roomId: "hallway",
+  });
+  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, "0", {
+    roomId: "ground-north",
+  });
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+    "0",
+    { accept: true },
+    100,
+    createBetrayalScriptedRandom(3, 3, 3),
+  );
+  core.recommendedAction = "use";
+  return dismissBetrayalE2EBlockingOverlays(core);
 }
 
 function createHelpingHandsHauntRuntimeCore(

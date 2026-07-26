@@ -7,7 +7,8 @@
 - 当前执行现场：`D:\gongzuo\webgame\BoardGame`
 - 分支：`main`
 - 用户本地图片是本轮主真相源，优先用于资源命名、对象识别和后续实现合同。
-- 用户本地 PDF 都是扫描型 PDF，现有自动抽取只能得到空文本，暂时不能直接当“可读规则文本”。
+- 用户早期本地 PDF 多数是扫描型 PDF，现有自动抽取只能得到空文本，暂时不能直接当“可读规则文本”。
+- 用户后续补充的中文规则 PDF 和两个 Word 已接入 `docs/games/betrayal/sources/legacy-zh/`，但它们是旧版 / 基础版中文对照源，不覆盖当前 3e 官方规则真相。
 - 已经从 `Mods\Images` 中挑出 59 个可直接进入运行时的明确资源。
 - 首批运行时资源已经同步到 `public/assets/i18n/zh-CN/betrayal/`；`public/assets/betrayal/` 继续保留为 intake 暂存层，不删旧入口。
 
@@ -19,6 +20,7 @@
 - 英文规则书文本：`docs/games/betrayal/sources/official/betrayal-3e-rulebook-en.md`
 - 英文求生者剧本书文本：`docs/games/betrayal/sources/official/betrayal-3e-secrets-of-survival-en.md`
 - 英文叛徒剧本书文本：`docs/games/betrayal/sources/official/betrayal-3e-traitors-tome-en.md`
+- 中文旧版对照源：`docs/games/betrayal/sources/legacy-zh/`
 - 首轮 intake 合同：`docs/games/betrayal/intake-contract.md`
 - foundation 实施映射：`docs/games/betrayal/foundation-implementation-map.md`
 - 正式资源迁移清单：`docs/games/betrayal/resource-migration-plan.md`

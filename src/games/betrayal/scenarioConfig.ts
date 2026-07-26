@@ -1,3 +1,5 @@
+import type { BetrayalMonsterDefinitionId } from './domain/monsterDefinitions';
+
 export type BetrayalTraitKey = 'might' | 'speed' | 'knowledge' | 'sanity';
 export type BetrayalInventoryKind = 'item' | 'omen';
 export type BetrayalDeckKind = 'event' | 'item' | 'omen';
@@ -10,7 +12,7 @@ export type BetrayalScenarioCardId =
     | 'blood-from-a-stone'
     | 'inheritance';
 export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'contract-pending';
-export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo';
+export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo' | 'haunt';
 export type BetrayalTraitorSelectionPolicy = 'last-explorer' | 'current-explorer';
 export type BetrayalSurvivorSelectionPolicy = 'all-non-traitor' | 'current-explorer-only';
 export type BetrayalRoomFloor = 'ground' | 'upper' | 'basement';
@@ -317,6 +319,7 @@ export function isBetrayalEventRuntimeSupported(event: BetrayalEventSeed): boole
 
 export interface BetrayalMonsterSeed {
     id: string;
+    definitionId?: BetrayalMonsterDefinitionId;
     name: string;
     portraitAsset: string;
     tokenAsset?: string;
@@ -1926,23 +1929,14 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
         runtimePreview: {
             monsters: [
                 {
-                    id: 'werewolf',
-                    name: '狼人',
-                    portraitAsset: 'betrayal/monsters/werewolf',
-                    tokenAsset: 'betrayal/tokens/monsters/werewolf',
-                    roomId: 'grand-staircase',
-                    might: 5,
-                    speed: 4,
-                    damage: 2,
-                },
-                {
-                    id: 'spirit',
-                    name: '幽灵',
+                    id: 'jack-spirit',
+                    definitionId: 'crimson-jack-spirit',
+                    name: '杰克之灵',
                     portraitAsset: 'betrayal/monsters/spirit',
                     tokenAsset: 'betrayal/tokens/monsters/ghost',
                     roomId: 'upper-landing',
-                    might: 4,
-                    speed: 5,
+                    might: 5,
+                    speed: 3,
                     damage: 1,
                 },
             ],

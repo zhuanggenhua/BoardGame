@@ -77,7 +77,7 @@
       left: 366px;
       right: 366px;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       align-items: start;
       text-align: center;
       font-size: 15px;
@@ -93,8 +93,8 @@
     .score {
       position: absolute;
       z-index: 21;
-      top: 36px;
-      right: 372px;
+      top: 18px;
+      right: 22px;
       display: flex;
       align-items: center;
       gap: 18px;
@@ -109,7 +109,7 @@
       z-index: 22;
       top: 16px;
       right: 16px;
-      display: flex;
+      display: none;
       align-items: center;
       gap: 12px;
       width: 320px;
@@ -304,6 +304,8 @@
 
     .tools {
       display: flex;
+      flex-direction: column;
+      align-items: flex-start;
       gap: 8px;
       margin-top: 7px;
     }
@@ -414,7 +416,6 @@
     </p>
 
     <section class="players" aria-label="玩家">
-      <span>玩家 1</span>
       <span>玩家 2</span>
       <span>玩家 3</span>
     </section>
@@ -470,4 +471,3 @@
   </main>
 </body>
 </html>
-

@@ -2303,7 +2303,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
 
                 <HudPortal>
                     <div
-                        className="pointer-events-none fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] z-50 flex flex-col items-start gap-1.5 sm:flex-row sm:items-end min-[901px]:gap-2 lg:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:left-[max(1rem,env(safe-area-inset-left))]"
+                        className="pointer-events-none fixed bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.5rem,env(safe-area-inset-left))] z-50 flex flex-col items-start gap-1.5 min-[901px]:gap-2 lg:bottom-[max(1rem,env(safe-area-inset-bottom))] lg:left-[max(1rem,env(safe-area-inset-left))]"
                         data-bgg-zone="utility-dock"
                         data-testid="the-gang-utility-dock"
                     >
@@ -2330,18 +2330,19 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                     </div>
                 </HudPortal>
 
-                <header className="relative z-10 flex shrink-0 items-center justify-end gap-2 lg:gap-3">
-                    <div className="sr-only" data-tutorial-id="the-gang-title">
-                        <p>{t('title.secondary')}</p>
-                        <h1>{t('title.primary')}</h1>
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-3 text-[0.7rem] font-black tracking-[0.08em] lg:gap-4 lg:text-sm xl:text-base" data-tutorial-id="the-gang-score-track">
+                <div className="sr-only" data-tutorial-id="the-gang-title">
+                    <p>{t('title.secondary')}</p>
+                    <h1>{t('title.primary')}</h1>
+                </div>
+
+                <HudPortal>
+                    <div className="pointer-events-none fixed right-[max(0.875rem,env(safe-area-inset-right))] top-[max(0.75rem,env(safe-area-inset-top))] z-50 flex max-w-[min(42rem,calc(100vw-1.75rem))] flex-wrap justify-end gap-3 text-[0.7rem] font-black tracking-[0.08em] lg:right-[max(1.375rem,env(safe-area-inset-right))] lg:top-[max(1.125rem,env(safe-area-inset-top))] lg:gap-4 lg:text-sm xl:text-base" data-tutorial-id="the-gang-score-track">
                         <span className="text-amber-100">{t('board.heistNumber', { heist: core.heistNumber })}</span>
                         <SuccessTrack successes={core.successes} />
                         <AlarmTrack failures={core.failures} />
                         <TableReminderBadges config={core.rules.config} />
                     </div>
-                </header>
+                </HudPortal>
 
                 <section
                     className={[

@@ -2,7 +2,12 @@ import { mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { BETRAYAL_DISCOVERY_POOLS } from '../../src/games/betrayal/scenarioConfig';
-import { BETRAYAL_COMMANDS, type BetrayalCore } from '../../src/games/betrayal/game';
+import {
+    BETRAYAL_COMMANDS,
+    resolveBetrayalMonsterMovementGroups,
+    type BetrayalCore,
+    type BetrayalMonsterMovementRollGroupResult,
+} from '../../src/games/betrayal/game';
 import {
     applyBetrayalCommand,
     createBetrayalScriptedRandom,
@@ -426,6 +431,45 @@ const createCrossbowLineOfSightAttackCore = () => {
     return core;
 };
 
+const completeMonsterPreparationForAttackSlot = (
+    core: BetrayalCore,
+    monsterId: string,
+): void => {
+    const movementGroup = resolveBetrayalMonsterMovementGroups(core)
+        .find((group) => group.monsterIds.includes(monsterId));
+    if (!movementGroup) {
+        throw new Error(`找不到 ${monsterId} 的怪物移动骰组`);
+    }
+    const movementResult: BetrayalMonsterMovementRollGroupResult = {
+        groupId: movementGroup.groupId,
+        monsterName: movementGroup.monsterName,
+        monsterIds: [...movementGroup.monsterIds],
+        playerId: core.currentExplorer.playerId,
+        speed: movementGroup.speed,
+        diceCount: movementGroup.diceCount,
+        dice: Array.from({ length: movementGroup.diceCount }, () => 0),
+        total: 0,
+        moveAllowance: 0,
+        rollOnceForGroup: true,
+        minimumMoveAllowance: movementGroup.minimumMoveAllowance,
+    };
+    core.scenarioRuntime.monsterTurn = {
+        ...core.scenarioRuntime.monsterTurn,
+        resolvedStartMonsterIds: Array.from(new Set([
+            ...core.scenarioRuntime.monsterTurn.resolvedStartMonsterIds,
+            ...movementGroup.monsterIds,
+        ])),
+        movementRollsByGroupId: {
+            ...core.scenarioRuntime.monsterTurn.movementRollsByGroupId,
+            [movementGroup.groupId]: movementResult,
+        },
+        moveRemainingById: {
+            ...core.scenarioRuntime.monsterTurn.moveRemainingById,
+            ...Object.fromEntries(movementGroup.monsterIds.map((id) => [id, 0])),
+        },
+    };
+};
+
 const createPhantomPhotographerLineOfSightAttackCore = () => {
     const eventCard = BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！');
     if (!eventCard) {
@@ -506,11 +550,13 @@ const createPhantomPhotographerLineOfSightAttackCore = () => {
     core.activeRoomId = core.currentExplorer.roomId;
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
     core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    core.turnEndedByDiscovery = false;
     core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
     core.usedCardIdsThisTurn = [];
     core.recentRoll = null;
     core.latestDiscovery = null;
     core.latestDiscoveryOwnerPlayerId = null;
+    completeMonsterPreparationForAttackSlot(core, monsterId);
     return core;
 };
 
@@ -832,12 +878,24 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
             phantomRoomId: 'grand-staircase',
         });
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('betrayal-action-use')).toHaveAttribute('data-haunt-primary-action-kind', 'use');
-        await expect(page.getByTestId('betrayal-action-use')).toHaveAttribute('data-haunt-primary-action-mode', 'execute');
-        await expect(page.getByTestId('betrayal-action-cue')).toContainText('摄影师攻击');
-        await expect(page.getByTestId('betrayal-room-monster-grand-staircase-phantom-photographer-1')).toBeVisible();
-
+        const monsterAttackAction = page.getByTestId('betrayal-action-monsterAttack');
+        await expect(monsterAttackAction).toBeVisible();
+        await expect(monsterAttackAction).toContainText('幻影摄影师攻击');
+        const phantomPhotographerToken = page.getByTestId('betrayal-room-monster-grand-staircase-phantom-photographer-1');
+        await expect(phantomPhotographerToken).toBeVisible();
         const targetHeroToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
+        await expect(targetHeroToken).toBeVisible();
+        await expect(targetHeroToken).not.toHaveAttribute('data-direct-target', 'true');
+        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-bottom-teammate-2')).not.toContainText('摄影师攻击');
+        await saveScreenshot(page, PHANTOM_PHOTOGRAPHER_READY_SCREENSHOT);
+
+        await monsterAttackAction.click();
+        await expect(monsterAttackAction).toContainText('取消攻击');
+        await expect(page.getByTestId('betrayal-action-cue')).toContainText('幻影摄影师');
+        await expect(phantomPhotographerToken).toHaveAttribute('data-direct-target', 'true');
+        await phantomPhotographerToken.click();
         await expect(targetHeroToken).toHaveAttribute('data-direct-target', 'true');
         const targetHeroOutline = page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2');
         await expect(targetHeroOutline).toHaveAttribute('data-highlight-shape', 'pentagon');
@@ -850,14 +908,10 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-kind', 'phantom-photographer');
         await expect(lineOfSightLine.locator('line')).toHaveCount(2);
         await expect(lineOfSightLine.locator('circle')).toHaveCount(1);
-        await saveScreenshot(page, PHANTOM_PHOTOGRAPHER_READY_SCREENSHOT);
-
-        await targetHeroToken.click();
-        await expect(targetHeroOutline).toHaveClass(/border-\[#ffe08a\]/);
         await saveScreenshot(page, PHANTOM_PHOTOGRAPHER_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0]);
-        await page.getByTestId('betrayal-action-use').click();
+        await targetHeroToken.click();
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('幻影摄影师');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('精神伤害');

@@ -476,6 +476,75 @@ async function expectMiddleRoundFullState(page: Page) {
     await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
 }
 
+async function expectLocalSingleHandChipsOutsideHand(page: Page, label: string) {
+    const geometry = await page.evaluate(() => {
+        const readRectByTestId = (testId: string) => {
+            const node = document.querySelector(`[data-testid="${testId}"]`);
+            if (!node) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                left: rect.left,
+            };
+        };
+        const hand = readRectByTestId('the-gang-local-hand-top-cards');
+        const rail = document.querySelector('[data-testid="the-gang-local-hand-top-chip-rail"]') as HTMLElement | null;
+        const tokenRects = Array.from(rail?.querySelectorAll(
+            '[data-bgg-zone="hand-current-chip"], [data-bgg-zone="hand-chips-previous"], [data-bgg-zone="exit-chip-badge-token"]',
+        ) ?? []).map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                left: rect.left,
+            };
+        });
+        const intersects = (
+            a: NonNullable<typeof hand>,
+            b: (typeof tokenRects)[number],
+        ) => (
+            a.left < b.right
+            && a.right > b.left
+            && a.top < b.bottom
+            && a.bottom > b.top
+        );
+        const sortedTokens = [...tokenRects].sort((left, right) => left.left - right.left);
+        const firstCenterY = sortedTokens.length > 0 ? (sortedTokens[0].top + sortedTokens[0].bottom) / 2 : 0;
+        const style = rail ? getComputedStyle(rail) : null;
+        return {
+            hasHand: !!hand,
+            hasRail: !!rail,
+            tokenCount: tokenRects.length,
+            tokensOutsideRightOfHand: !!hand && tokenRects.length > 0 && tokenRects.every((token) => (
+                token.left >= hand.right + 2
+                && Math.abs(token.top - hand.top) <= 4
+                && !intersects(hand, token)
+            )),
+            tokensArrangedHorizontally: sortedTokens.length > 0 && sortedTokens.every((token, index) => {
+                const centerY = (token.top + token.bottom) / 2;
+                const previous = sortedTokens[index - 1];
+                return Math.abs(centerY - firstCenterY) <= 4
+                    && (!previous || token.left >= previous.left);
+            }),
+            railHasNoBorder: !!style
+                && style.borderTopWidth === '0px'
+                && style.borderRightWidth === '0px'
+                && style.borderBottomWidth === '0px'
+                && style.borderLeftWidth === '0px',
+        };
+    });
+
+    expect(geometry.hasHand, `${label}：必须能定位本地单副手牌`).toBe(true);
+    expect(geometry.hasRail, `${label}：自己筹码必须挂在本地手牌旁，而不是回到上方玩家席位`).toBe(true);
+    expect(geometry.tokenCount, `${label}：必须至少显示一枚自己的手牌筹码`).toBeGreaterThan(0);
+    expect(geometry.tokensOutsideRightOfHand, `${label}：自己筹码必须在手牌右侧外部，不能压住牌面`).toBe(true);
+    expect(geometry.tokensArrangedHorizontally, `${label}：自己多枚筹码必须横向排列，不能竖向挤占手牌`).toBe(true);
+    expect(geometry.railHasNoBorder, `${label}：自己筹码挂载区不能有额外边框`).toBe(true);
+}
+
 type TheGangHarnessState = {
     core?: {
         playerIds?: string[];
@@ -2418,7 +2487,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.locator('[data-bgg-zone="card-river"]')).toHaveCount(1);
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).toBeVisible();
         await expect(page.locator('[data-bgg-zone="hand-chips"]')).toHaveCount(0);
-        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(6);
+        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(5);
         await game.screenshot('桌面6人满人数首轮可操作状态', testInfo);
 
         await startHeistFromSetup(page);
@@ -2428,6 +2497,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 5);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+        await expectLocalSingleHandChipsOutsideHand(page, '桌面6人单副手牌全员筹码已选');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await game.screenshot('桌面6人满人数全员筹码已选', testInfo);
     });
@@ -2593,6 +2663,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+        await expectLocalSingleHandChipsOutsideHand(page, '移动横屏单副手牌全员筹码已选');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expect(page.getByTestId('the-gang-progress-vote-dots')).toBeVisible();
         await expectHudActionLogAndUndoAvailable(page);
@@ -2761,6 +2832,8 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
+        await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+        await expectLocalSingleHandChipsOutsideHand(page, '桌面单副手牌首轮全员筹码已选');
         await game.screenshot('桌面首轮全员筹码已选', testInfo);
 
         await confirmProgressForAllPlayers(page, '下一轮');

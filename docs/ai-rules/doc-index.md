@@ -6,10 +6,10 @@
 | :--- | :--- | :--- |
 | **新增/修改 ActionLog 伤害来源标注** (breakdown/来源显示) | `docs/ai-rules/engine-action-log.md` § 伤害来源标注 | 实现 `DamageSourceResolver`，调用 `buildDamageBreakdownSegment` 或 `buildDamageSourceAnnotation`，禁止手写 breakdown 构建逻辑 |
 | **处理资源** (图片/音频/图集/清单) | `docs/tools.md` + `docs/ai-rules/asset-pipeline.md` + `docs/ai-rules/critical-image-preload.md` + `docs/ai-rules/audio-assets.md` | 压缩指令、正式对局素材禁止降采样、扫描参数、清单校验、图片链路/裁剪规范、正式素材优先、缺关键素材必须请求素材或锁定补源路径、禁止未授权用占位/自绘替代、关键图片预加载、音频运行时合同 |
-| **参考图生成 Three.js / img2threejs 程序化模型** (图生模型、参考图重建、书本/棋盘/道具 3D 资产原型) | `.codex/skill/img2threejs-reconstruction/SKILL.md` + `docs/ai-rules/asset-pipeline.md` | 先读官方/案例仓库，再拆参考图结构、材质和几何策略；参考图是建模蓝图，不是整面贴图；默认先落 `temp/` 原型，未授权不得改正式游戏代码 |
+| **参考图生成 Three.js / img2threejs 程序化模型** (图生模型、参考图重建、书本/棋盘/道具 3D 资产原型) | `.codex/skill/img2threejs-reconstruction/SKILL.md` + `docs/ai-rules/asset-pipeline.md` | 先读官方/案例仓库，再建立“参考图区域 -> 模型部件/材质”追踪表；参考图是建模蓝图，不是整面贴图，也不能脱离参考图做泛主题模型；默认先落 `temp/` 原型，未授权不得改正式游戏代码 |
 | **需求交接式安全图片处理 / 视觉子代理 / OCR / 图集裁图核对** (图片文字读取、卡图/房间图规则录入、图片验收、读图卡死后继续任务) | `.codex/skill/safe-image-reading/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 主线程把用户当前需求、业务对象、图片需要补足的字段/判断点和结果用途交给短子代理或本地 OCR；录入需求返回官方原文、原子子句、结构化规则字段并写入 evidence/真相表；验收/对比需求只返回是否满足用户预期、失败点和最小证据；不得返回 base64/markdown 图片，也不得产出无关过程说明 |
 | **新增派系 / 新英雄 / 新角色** (从素材做到可玩、含录入/资源/机制/审计/E2E) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` | 这是新增批次的默认入口；先走项目 skill，再按 `gameId` 进入专项 workflow；默认包含对象级全面审计、evidence 留档与真实入口 E2E，不需要等用户额外提醒 |
-| **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.codex/skill/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现 |
+| **录入业务数据** (图片/规则书/Wiki/截图 → 名称/描述/数值/类型/索引/文案) | `.codex/skill/data-entry-workflow/SKILL.md` + `docs/ai-rules/data-entry.md` | 先通过 skill 进入通用门禁，再按 gameId 路由到专用 workflow；覆盖真相源锁定、核对契约、零猜测 OCR、图片索引录入、先文档后实现；剧本书、开局/结局朗读、分阵营秘密阅读等玩家可见长文必须过原文锁定门禁 |
 | **录入 DiceThrone 角色** (新英雄/单角色图片 intake、裁图、卡牌/Token/骰面录入) | `.codex/skill/add-new-faction/SKILL.md` + `.codex/skill/data-entry-workflow/SKILL.md` + `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` | Dice Throne 新英雄默认先走两个项目 skill，再进入英雄 intake workflow；对象级审计、manifest、服务器素材主源回查、规则文档与代码同步属于同一交付 |
 | **国际化资源架构** (i18n 路径/符号链接/locale) | `docs/i18n-asset-architecture.md` | 方案 B2 架构、符号链接设置、未来迁移计划 |
 | **修改 DiceThrone** (文案/资源) | `docs/games/dicethrone/dicethrone-i18n.md` | 翻译 Key 结构、Scheme A 取图函数 |
@@ -79,7 +79,7 @@
 | **Home V2 移动横屏首页/详情/弹窗** (Home V2 书本界面、移动端专用首页、详情页、纸面弹窗) | `docs/ai-rules/home-v2-design.md` + `docs/ai-rules/generated-design-implementation.md` + `docs/ai-rules/ui-change-gates.md` + `docs/ai-rules/ui-ux.md` + `docs/ai-rules/ui-responsive-layout.md` | `artifacts/home-v2-design/` 目标稿优先、移动 CSS 视口、书页构图、详情页缩略图/描述/账本密度、纸面弹窗统一 |
 | **大规模 UI 改动** (新页面/重做布局/新游戏UI) | 先 `D:\codex-home\skills\ui-design-pipeline\SKILL.md`，再全局 `ui-ux-pro-max --design-system` 与 `design-system/` | 先锁 spec/domain/design/components/craft/template/evaluator，再生成或更新具体设计系统；见 §UI/UX 规范 → §0. 大规模 UI 改动前置流程 |
 | **游戏内 UI 交互** (按钮/面板/指示器) | `design-system/game-ui/MASTER.md` + `D:\codex-home\skills\ui-audit-loop\SKILL.md` | 交互原则、反馈规范、动画时长、状态清晰；动作控件不得做成小字提示，必须像按钮或可点对象并满足触控/反馈门槛 |
-| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单 / AI 过程话术不得进入玩家 UI) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md` | 总原则在 `MASTER.md`；“看清后可关闭”这类给 AI 或测试人员的验收话术不得进入玩家 UI；具体承接方式按来源家族选型；单游戏 workflow 只引用入口，不重复维护正文 |
+| **玩家可见文案 / 能力横幅** (规则原文、提示文案、验收清单 / AI 过程话术不得进入玩家 UI) | `design-system/game-ui/MASTER.md` §4.11 + `design-system/game-ui/source-families.md`；若涉及剧本书/规则书原文展示，还必须读 `docs/ai-rules/data-entry.md` | 总原则在 `MASTER.md`；“看清后可关闭”这类给 AI 或测试人员的验收话术不得进入玩家 UI；剧本书、开局/结局朗读等原文阅读入口必须使用已锁定原文或正式翻译原文，摘要只能做辅助提示；具体承接方式按来源家族选型 |
 | **选择成熟交互来源家族** (prompt / waiting / 手牌区 / 右侧 rail / setup 壳层) | `design-system/game-ui/source-families.md` | 先从批准家族中选型；复用仓内成熟不变量；找不到家族前不得发明正式交互模式 |
 | **游戏 UI 风格选择** | `design-system/styles/` | arcade-3d（街机立体）、tactical-clean（战术简洁）、classic-parchment（经典羊皮纸） |
 | **创建临时文件 / 清理根目录** (Bug 分析/测试脚本/Wiki 数据) | `docs/temp-files-management.md` | 临时文件分类规则、目录结构、.gitignore 规则、开发规范 |

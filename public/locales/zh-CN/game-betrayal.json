@@ -33,6 +33,10 @@
     "resolveMonsterTurnStart": "玩家 {{player}} 结算怪物回合开始",
     "rollMonsterMovementGroup": "玩家 {{player}} 为怪物移动掷骰",
     "moveMonster": "玩家 {{player}} 移动怪物",
+    "monsterAttackHero": "玩家 {{player}} 让怪物攻击英雄",
+    "playPeekaboo": "玩家 {{player}} 玩躲猫猫",
+    "endBloodFromStoneMonsterTurn": "玩家 {{player}} 结束石像小天使怪物回合",
+    "placeBloodFromStoneExtraStoneCherubs": "玩家 {{player}} 补放石像小天使",
     "moveTrollHand": "玩家 {{player}} 移动巨魔手",
     "trollHandAttack": "玩家 {{player}} 让巨魔手发动攻击",
     "trollHandCombinedAttack": "玩家 {{player}} 让巨魔手合击",
@@ -108,6 +112,7 @@
       "title": "剧本结果",
       "survivors": "幸存者",
       "traitor": "叛徒",
+      "haunt": "作祟",
       "resultLabel": "结果",
       "rewardsLabel": "奖励",
       "statsLabel": "统计",
@@ -122,11 +127,14 @@
       "defeat": "失败",
       "survivorsEscaped": "幸存者逃脱",
       "traitorSucceeded": "叛徒得逞",
+      "hauntSucceeded": "作祟吞没探索者",
       "survivorsStatusWin": "逃脱",
       "survivorsStatusLose": "败北",
       "traitorStatusWin": "得胜",
       "traitorStatusLose": "败退",
-      "completedStamp": "完成"
+      "hauntStatusWin": "达成",
+      "completedStamp": "完成",
+      "endingNarrationLabel": "结局朗读"
     },
     "hud": {
       "phaseLabel": "阶段",
@@ -243,6 +251,12 @@
       "turnHintExplore": "可翻：{{floor}}",
       "turnHintDiscoveryEndTurn": "探索完成，结束回合",
       "turnHintHold": "暂留本房间",
+      "turnHintBloodFromStoneSetupPlacement": "还需选 {{count}} 间",
+      "turnHintBloodFromStoneSetupPlacementReady": "已选 {{count}} 间",
+      "bloodFromStoneSetupPlacementRemaining": "还需补放 {{count}} 只",
+      "bloodFromStoneSetupPlacementSelected": "已选 {{selected}}/{{total}}",
+      "bloodFromStoneSetupPlacementTarget": "补放到{{room}}",
+      "bloodFromStoneSetupPlacementRoomToken": "×{{count}}",
       "focusMoveTarget": "下一站：{{room}}",
       "focusMoveMode": "只剩：{{room}}",
       "focusTradeTarget": "交易给：{{player}}",
@@ -258,6 +272,7 @@
       "focusAttackDust": "攻击灰尘",
       "focusTakePhoto": "拍摄{{player}}，提升{{trait}}",
       "focusSmashMagicCamera": "砸毁魔法相机",
+      "focusPlayPeekaboo": "玩躲猫猫",
       "focusPhantomPhotographerAttack": "摄影师攻击{{player}}",
       "focusHelpingHandsTrollAttack": "巨魔手攻击{{player}}",
       "focusHelpingHandsTrollCombinedAttack": "巨魔手合击{{player}}",
@@ -290,6 +305,7 @@
       "actionCueAttackDust": "现在：点攻击灰尘",
       "actionCueTakePhoto": "现在：点拍照夺取{{player}}的本质",
       "actionCueSmashMagicCamera": "现在：点砸毁魔法相机",
+      "actionCuePlayPeekaboo": "现在：点两只石像小天使",
       "actionCuePhantomPhotographerAttack": "现在：点摄影师攻击{{player}}",
       "actionCueHelpingHandsTrollAttack": "现在：点巨魔手攻击{{player}}",
       "actionCueHelpingHandsTrollCombinedAttack": "现在：点巨魔手合击{{player}}",
@@ -298,6 +314,10 @@
       "actionCueHelpingHandsEndMonsterTurn": "现在：结束巨魔手回合",
       "actionCueMonsterMoveMode": "现在：点{{monster}}可去的绿色房间",
       "actionCueMonsterMoveSingle": "现在：点{{room}}移动{{monster}}",
+      "actionCueMonsterAttackMode": "现在：点{{monster}}可攻击的英雄",
+      "actionCueMonsterAttackSingle": "现在：点{{player}}让{{monster}}攻击",
+      "actionCueBloodFromStoneSetupPlacement": "现在：点金色房间，还需{{count}}间",
+      "actionCueBloodFromStoneSetupPlacementConfirm": "现在：确认补放",
       "helpingHandsRewardTitle": "伤害或偷牌",
       "helpingHandsRewardChoose": "对{{player}}：造成{{damage}}伤害或偷牌",
       "helpingHandsRewardWaiting": "等待{{player}}选择奖励",
@@ -311,6 +331,9 @@
       "helpingHandsTrollMoveToken": "移动",
       "helpingHandsTrollMoveTarget": "{{monster}}移动到{{room}}",
       "monsterMoveToken": "移动",
+      "monsterAttackToken": "攻击",
+      "playPeekabooSameRoomToken": "同房",
+      "playPeekabooLineOfSightToken": "视线",
       "monsterMoveTarget": "{{monster}}移动到{{room}}",
       "helpingHandsTrollNoMoveTarget": "暂无可移动房间",
       "helpingHandsTrollNoAttackTarget": "暂无同房目标",
@@ -323,6 +346,8 @@
       "localCueAttackAnyHero": "点目标英雄开战",
       "localCueExchangeSickness": "点队友交换疾病",
       "localCueExchangeSicknessTarget": "点{{player}}交换疾病",
+      "localCuePlayPeekabooSameRoom": "点同房石像",
+      "localCuePlayPeekabooLineOfSight": "点视线内石像",
       "actionCueDiscoveryEndTurn": "现在：点结束回合",
       "actionCueEndTurn": "现在：点结束回合",
       "actionCueEndTurnRoomEffect": "现在：结束回合并处理房间效果",
@@ -357,7 +382,8 @@
       "hauntRevealPlayerTitle": "作祟开始",
       "hauntRevealLead": "剧本发生变化，可以打开剧本查阅。",
       "hauntRevealSource": "剧本卡 {{scenarioCard}} / 触发 {{omen}} / 作祟 {{number}}",
-      "hauntRevealDismiss": "关闭"
+      "hauntRevealDismiss": "关闭",
+      "hauntRevealOpenScenario": "阅读开局"
     },
     "feedback": {
       "label": "刚发生",
@@ -388,6 +414,9 @@
       "readerLead": "以下内容按官方《生存秘笈》和《叛徒之书》的对应作祟整理成中文规则书口吻。英雄要查明杰克的秘密、布置驱魔法阵，并在杰克之灵现身后完成驱魔；叛徒则要猎杀所有英雄。",
       "readerCaseLabel": "档案编号",
       "readerStatusLabel": "状态",
+      "readerStatusPublicBook": "剧本档案",
+      "readerStatusHeroBook": "英雄剧本书",
+      "readerStatusTraitorBook": "叛徒剧本书",
       "readerPageLabel": "页数",
       "readerPageAria": "当前页 {{mobile}}，桌面双页 {{desktop}}",
       "readerPrev": "上一页",
@@ -457,7 +486,9 @@
           "monsterLabel": "杰克之灵",
           "monster": "叛徒死亡时，在距离尸体最远、且带预兆符号的房间放置杰克之灵。杰克之灵是怪物，可以移动和攻击英雄。\n\n如果杰克之灵回到叛徒尸体所在房间，叛徒恢复并重新回到场上。",
           "endingLabel": "胜负判定",
-          "ending": "英雄胜利：杰克之灵被驱散，幸存者逃离山屋。\n\n叛徒胜利：所有英雄死亡，赤红杰克的故事继续留在山屋里。"
+          "ending": "英雄胜利：杰克之灵被驱散，幸存者逃离山屋。\n\n叛徒胜利：所有英雄死亡，赤红杰克的故事继续留在山屋里。",
+          "endingSurvivors": "一道闪光、一缕烟雾，还有一丝硫磺味之后，杰克之灵消失了。你们希望自己再也不会见到他。",
+          "endingTraitor": "吹起轻快的口哨吧。你的朋友们已经被切成碎片，而你终于可以安心回到这座老房子里居住。"
         }
       },
       "dust": {
@@ -483,7 +514,37 @@
           "traitorLabel": "灰尘路线",
           "traitor": "被灰尘控制的探索者要拖慢研究、传播疾病，并让英雄无法安全完成治愈。\n\n如果你是灰尘路线，优先靠近英雄、交换或制造压力，让治愈窗口变得更危险。",
           "endingLabel": "胜负判定",
-          "ending": "英雄胜利：完成治愈后，灰尘被压制，幸存者摆脱疾病。\n\n灰尘胜利：疾病彻底吞没探索者，山屋里只剩下灰雾和咳嗽声。"
+          "ending": "英雄胜利：完成治愈后，灰尘被压制，幸存者摆脱疾病。\n\n灰尘胜利：疾病彻底吞没探索者，山屋里只剩下灰雾和咳嗽声。",
+          "endingSurvivors": "完成治愈后，灰尘被压制，幸存者终于摆脱了那层钻进骨缝里的灰雾。",
+          "endingTraitor": "疾病彻底吞没了探索者，山屋里只剩下灰雾、咳嗽声，以及不肯散去的低语。"
+        }
+      },
+      "bloodFromStone": {
+        "title": "顽石之血",
+        "objective": "英雄要让所有石像小天使彼此对视并消失；作祟用石像凝视拖垮英雄。",
+        "heroGoal": "移动、诱导并玩躲猫猫，移除所有石像小天使。",
+        "traitorGoal": "本作祟没有固定叛徒；石像小天使和宅邸共同威胁所有英雄。",
+        "nextFallback": "移动到石像旁或进入石像视线",
+        "progress": {
+          "cherubs": "石像小天使",
+          "peekaboo": "玩躲猫猫",
+          "gaze": "凝视伤害"
+        },
+        "reader": {
+          "prologueLabel": "石头像活了",
+          "prologue": "屋里的雕像不再只是摆设。你每次转身，它们似乎都离你更近一点；你一眨眼，石头脸上的笑意就变得更深。",
+          "setupLabel": "开局记录",
+          "setup": "翻开第5号作祟《顽石之血》后，宅邸中会出现石像小天使。它们不是普通敌人，不能按常规攻击解决。\n\n代表链目前已接入石像小天使的移动、视线伤害和玩躲猫猫；全量开局放置仍在规则补齐清单中。",
+          "heroesLabel": "英雄手册",
+          "heroes": "英雄的目标是让所有石像小天使消失。英雄可在同房间有一只石像小天使、且视线内还有另一只石像小天使时玩躲猫猫。\n\n玩躲猫猫进行知识检定；持有镜子时获得加成。成功会移除这两只石像小天使，失败会承受一般伤害。",
+          "specialLabel": "视线与躲猫猫",
+          "special": "石像小天使进入英雄视线时会造成威胁；怪物回合结束时，英雄视线内的石像数量也会排队造成凝视伤害。\n\n英雄需要利用房间位置和视线，把两只石像小天使配成可消失的一组。",
+          "monsterLabel": "石像小天使",
+          "monster": "石像小天使不会像普通怪物一样被攻击解决。它们会朝英雄移动，但如果已经在英雄视线内，本轮不会继续移动。\n\n它们的危险来自位置和视线，而不是一次普通攻击。",
+          "endingLabel": "胜负判定",
+          "ending": "英雄胜利：最后一对石像小天使消失，幸存者逃离山屋。\n\n作祟胜利：所有英雄死亡，宅邸被石像小天使占据。",
+          "endingSurvivors": "最后两只石像小天使彼此对望，裂缝从石翼蔓延到笑脸。碎石落地后，宅邸终于安静下来。",
+          "endingHaunt": "当最后一名英雄倒下，石像小天使重新摆回原位。它们的笑容比你们进屋时更像真人。"
         }
       },
       "helpingHands": {
@@ -511,7 +572,9 @@
           "traitorLabel": "自由混战边界",
           "traitor": "本作祟没有固定叛徒或隐藏阵营。奇异护符持有人、巨魔手位置和怪物控制者都是公开信息。",
           "endingLabel": "胜负判定",
-          "ending": "胜利：你持有奇异护符，且其他探索者全部死亡。\n\n如果奇异护符换手，巨魔手控制权立即随当前持有人变化。"
+          "ending": "胜利：你持有奇异护符，且其他探索者全部死亡。\n\n如果奇异护符换手，巨魔手控制权立即随当前持有人变化。",
+          "endingSurvivors": "奇异护符仍在你手中。墙里的手安静下来，仿佛这座房子终于承认了新的主人。",
+          "endingTraitor": "奇异护符落入最后的赢家手里，其他探索者已经没有机会再从墙中伸出的手下逃走。"
         }
       },
       "magicCamera": {
@@ -540,7 +603,9 @@
           "traitorLabel": "叛徒手册",
           "traitor": "叛徒要用魔法相机拍下英雄，夺走所有本质。相机被毁前，叛徒应保护相机并利用幻影摄影师压迫英雄。",
           "endingLabel": "胜负判定",
-          "ending": "英雄胜利：魔法相机被砸毁，被困在照片里的本质得以回归。\n\n叛徒胜利：所有英雄本质被夺走，照片中的影子取代了他们。"
+          "ending": "英雄胜利：魔法相机被砸毁，被困在照片里的本质得以回归。\n\n叛徒胜利：所有英雄本质被夺走，照片中的影子取代了他们。",
+          "endingSurvivors": "魔法相机碎裂后，被困在照片里的本质终于回到身体里。阴影退去，快门声也停止了。",
+          "endingTraitor": "最后一张照片定格时，英雄的本质已经全被夺走。相纸里的影子抬起头，代替他们走出了画面。"
         }
       }
     },
@@ -569,8 +634,14 @@
       "rollMonsterMovement": "{{monster}}移动骰",
       "moveMonster": "移动{{monster}}",
       "cancelMonsterMove": "取消移动",
+      "attackMonster": "{{monster}}攻击",
+      "cancelMonsterAttack": "取消攻击",
       "roomEffectMysticElevator": "神秘电梯",
       "endHelpingHandsMonsterTurn": "结束巨魔手回合",
+      "endBloodFromStoneMonsterTurn": "结束石像小天使回合",
+      "placeBloodFromStoneStoneCherubs": "选择石像房间",
+      "cancelBloodFromStoneStoneCherubPlacement": "取消补放",
+      "confirmBloodFromStoneStoneCherubPlacement": "确认补放",
       "endTurn": "结束回合",
       "endTurnRoomEffect": "结束回合"
     },
@@ -599,8 +670,10 @@
       "rabbitFoot": "选择要重掷的骰子",
       "rerollDie": "重掷第 {{index}} 颗骰子",
       "explore": "探索",
+      "exploreDeclaration": "探索声明",
       "holySymbol": "圣符",
       "idol": "雕像",
+      "traitorPower": "叛徒能力",
       "traitorEventSkip": "跳过事件",
       "mask": "面具"
     },

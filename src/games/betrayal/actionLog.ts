@@ -148,6 +148,14 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.rollMonsterMovementGroup', { player: actor })]);
         case BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM:
             return entry(command, state, [i18nSeg('actionLog.moveMonster', { player: actor })]);
+        case BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO:
+            return entry(command, state, [i18nSeg('actionLog.monsterAttackHero', { player: actor })]);
+        case BETRAYAL_COMMANDS.PLAY_PEEKABOO:
+            return entry(command, state, [i18nSeg('actionLog.playPeekaboo', { player: actor })]);
+        case BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN:
+            return entry(command, state, [i18nSeg('actionLog.endBloodFromStoneMonsterTurn', { player: actor })]);
+        case BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS:
+            return entry(command, state, [i18nSeg('actionLog.placeBloodFromStoneExtraStoneCherubs', { player: actor })]);
         case BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND:
             return entry(command, state, [i18nSeg('actionLog.moveTrollHand', { player: actor })]);
         case BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK:

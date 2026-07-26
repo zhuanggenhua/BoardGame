@@ -33,6 +33,10 @@
     "resolveMonsterTurnStart": "Player {{player}} resolved the start of a monster turn",
     "rollMonsterMovementGroup": "Player {{player}} rolled for monster movement",
     "moveMonster": "Player {{player}} moved a monster",
+    "monsterAttackHero": "Player {{player}} sent a monster to attack a hero",
+    "playPeekaboo": "Player {{player}} played Peekaboo",
+    "endBloodFromStoneMonsterTurn": "Player {{player}} ended the Stone Cherub monster turn",
+    "placeBloodFromStoneExtraStoneCherubs": "Player {{player}} placed extra Stone Cherubs",
     "moveTrollHand": "Player {{player}} moved a Troll Hand",
     "trollHandAttack": "Player {{player}} sent a Troll Hand to attack",
     "trollHandCombinedAttack": "Player {{player}} sent the Troll Hands to combine their attack",
@@ -108,6 +112,7 @@
       "title": "Scenario Result",
       "survivors": "Survivors",
       "traitor": "Traitor",
+      "haunt": "Haunt",
       "resultLabel": "Result",
       "rewardsLabel": "Rewards",
       "statsLabel": "Stats",
@@ -122,11 +127,14 @@
       "defeat": "Defeat",
       "survivorsEscaped": "Survivors Escaped",
       "traitorSucceeded": "Traitor Prevails",
+      "hauntSucceeded": "The Haunt Prevails",
       "survivorsStatusWin": "Escaped",
       "survivorsStatusLose": "Defeated",
       "traitorStatusWin": "Victorious",
       "traitorStatusLose": "Repelled",
-      "completedStamp": "Complete"
+      "hauntStatusWin": "Prevails",
+      "completedStamp": "Complete",
+      "endingNarrationLabel": "Ending Reading"
     },
     "hud": {
       "phaseLabel": "Phase",
@@ -242,6 +250,12 @@
       "turnHintExplore": "Reveal: {{floor}}",
       "turnHintDiscoveryEndTurn": "Discovery complete: end turn",
       "turnHintHold": "Stay in this room",
+      "turnHintBloodFromStoneSetupPlacement": "{{count}} rooms left",
+      "turnHintBloodFromStoneSetupPlacementReady": "{{count}} rooms picked",
+      "bloodFromStoneSetupPlacementRemaining": "{{count}} Cherubs left",
+      "bloodFromStoneSetupPlacementSelected": "{{selected}}/{{total}} picked",
+      "bloodFromStoneSetupPlacementTarget": "Place in {{room}}",
+      "bloodFromStoneSetupPlacementRoomToken": "x{{count}}",
       "focusMoveTarget": "Next: {{room}}",
       "focusMoveMode": "Only left: {{room}}",
       "focusTradeTarget": "Trade with: {{player}}",
@@ -257,6 +271,7 @@
       "focusAttackDust": "Attack the Dust",
       "focusTakePhoto": "Photograph {{player}}, raise {{trait}}",
       "focusSmashMagicCamera": "Smash the Magic Camera",
+      "focusPlayPeekaboo": "Play Peekaboo",
       "focusPhantomPhotographerAttack": "Photographer attacks {{player}}",
       "focusHelpingHandsTrollAttack": "Troll Hand attacks {{player}}",
       "focusHelpingHandsTrollCombinedAttack": "Troll Hands attack {{player}}",
@@ -289,6 +304,7 @@
       "actionCueAttackDust": "Now: attack the Dust",
       "actionCueTakePhoto": "Now: photograph {{player}} to steal Essence",
       "actionCueSmashMagicCamera": "Now: smash the Magic Camera",
+      "actionCuePlayPeekaboo": "Now: tap two Stone Cherubs",
       "actionCuePhantomPhotographerAttack": "Now: attack {{player}} with a Photographer",
       "actionCueHelpingHandsTrollAttack": "Now: make a Troll Hand attack {{player}}",
       "actionCueHelpingHandsTrollCombinedAttack": "Now: make both Troll Hands attack {{player}}",
@@ -297,6 +313,10 @@
       "actionCueHelpingHandsEndMonsterTurn": "Now: end the Troll Hand turn",
       "actionCueMonsterMoveMode": "Now: tap a green room for {{monster}}",
       "actionCueMonsterMoveSingle": "Now: move {{monster}} to {{room}}",
+      "actionCueMonsterAttackMode": "Now: tap a hero {{monster}} can attack",
+      "actionCueMonsterAttackSingle": "Now: tap {{player}} for {{monster}} to attack",
+      "actionCueBloodFromStoneSetupPlacement": "Now: tap gold rooms, {{count}} left",
+      "actionCueBloodFromStoneSetupPlacementConfirm": "Now: confirm placement",
       "helpingHandsRewardTitle": "Damage or Steal",
       "helpingHandsRewardChoose": "Against {{player}}: deal {{damage}} damage or steal",
       "helpingHandsRewardWaiting": "Waiting for {{player}} to choose",
@@ -310,6 +330,9 @@
       "helpingHandsTrollMoveToken": "Move",
       "helpingHandsTrollMoveTarget": "Move {{monster}} to {{room}}",
       "monsterMoveToken": "Move",
+      "monsterAttackToken": "Attack",
+      "playPeekabooSameRoomToken": "Same tile",
+      "playPeekabooLineOfSightToken": "Line of sight",
       "monsterMoveTarget": "Move {{monster}} to {{room}}",
       "helpingHandsTrollNoMoveTarget": "No reachable room",
       "helpingHandsTrollNoAttackTarget": "No same-room target",
@@ -322,6 +345,8 @@
       "localCueAttackAnyHero": "Tap target hero to fight",
       "localCueExchangeSickness": "Tap teammate to exchange",
       "localCueExchangeSicknessTarget": "Tap {{player}} to exchange",
+      "localCuePlayPeekabooSameRoom": "Tap same-tile Cherub",
+      "localCuePlayPeekabooLineOfSight": "Tap line-of-sight Cherub",
       "actionCueDiscoveryEndTurn": "Now: tap End Turn",
       "actionCueEndTurn": "Now: tap End Turn",
       "actionCueEndTurnRoomEffect": "Now: end the turn and resolve the room effect",
@@ -356,7 +381,8 @@
       "hauntRevealPlayerTitle": "Haunt begins",
       "hauntRevealLead": "The scenario has changed. You can open the scenario book.",
       "hauntRevealSource": "Scenario {{scenarioCard}} / trigger {{omen}} / haunt {{number}}",
-      "hauntRevealDismiss": "Close"
+      "hauntRevealDismiss": "Close",
+      "hauntRevealOpenScenario": "Read Opening"
     },
     "feedback": {
       "label": "Latest",
@@ -387,6 +413,9 @@
       "readerLead": "This dossier becomes the active scenario after the haunt begins. It covers the hero rules, traitor rules, and Jack's Spirit: heroes investigate Jack and prepare circles, the traitor hunts heroes, and Jack's Spirit takes over after the traitor falls.",
       "readerCaseLabel": "File",
       "readerStatusLabel": "Status",
+      "readerStatusPublicBook": "Scenario Dossier",
+      "readerStatusHeroBook": "Hero Scenario Book",
+      "readerStatusTraitorBook": "Traitor Scenario Book",
       "readerPageLabel": "Page",
       "readerPageAria": "Current page {{mobile}}, desktop spread {{desktop}}",
       "readerPrev": "Previous",
@@ -456,7 +485,9 @@
           "monsterLabel": "Jack's Spirit",
           "monster": "When the traitor dies, place Jack's Spirit on the farthest Omen-symbol tile from the corpse. Jack's Spirit is a monster that moves and attacks heroes.\n\nIf Jack's Spirit returns to the traitor corpse tile, the traitor heals and returns to play.",
           "endingLabel": "Win Conditions",
-          "ending": "Heroes win when Jack's Spirit is exorcised and the survivors escape.\n\nThe traitor wins when every hero is dead and Crimson Jack's story remains in the house."
+          "ending": "Heroes win when Jack's Spirit is exorcised and the survivors escape.\n\nThe traitor wins when every hero is dead and Crimson Jack's story remains in the house.",
+          "endingSurvivors": "A flash of light, a puff of smoke, and the smell of brimstone remain as Jack's Spirit vanishes. You hope you never see him again.",
+          "endingTraitor": "Whistle a happy tune. Your friends are cut to pieces, and you can finally settle back into the old house."
         }
       },
       "dust": {
@@ -482,7 +513,37 @@
           "traitorLabel": "Dust Route",
           "traitor": "Explorers controlled by the Dust should delay research, spread sickness, and make cure attempts dangerous.\n\nStay close to heroes, force exchanges, and keep pressure on cure rooms.",
           "endingLabel": "Win Conditions",
-          "ending": "Heroes win when the Dust is cured and survivors break the sickness.\n\nThe Dust wins when sickness overtakes the explorers and only gray haze remains."
+          "ending": "Heroes win when the Dust is cured and survivors break the sickness.\n\nThe Dust wins when sickness overtakes the explorers and only gray haze remains.",
+          "endingSurvivors": "With the cure complete, the Dust is suppressed and the survivors finally shake loose the gray haze that had sunk into their bones.",
+          "endingTraitor": "Sickness overtakes the explorers. Only gray haze, coughing, and whispers remain in the house."
+        }
+      },
+      "bloodFromStone": {
+        "title": "Blood from a Stone",
+        "objective": "Heroes make every Stone Cherub face another and vanish; the Haunt wears heroes down with staring stone.",
+        "heroGoal": "Move, bait, and play Peekaboo to remove every Stone Cherub.",
+        "traitorGoal": "No fixed traitor: the Stone Cherubs and the house threaten every hero.",
+        "nextFallback": "Move beside a Cherub or into a Cherub's line of sight",
+        "progress": {
+          "cherubs": "Stone Cherubs",
+          "peekaboo": "Peekaboo",
+          "gaze": "Gaze damage"
+        },
+        "reader": {
+          "prologueLabel": "The Stone Moves",
+          "prologue": "The statues are no longer decorations. Each time you turn away, they seem a little closer; each blink makes their stone smiles sharper.",
+          "setupLabel": "Opening Record",
+          "setup": "After Haunt 5, Blood from a Stone, Stone Cherubs enter the house. They are not normal enemies and cannot be solved through ordinary attacks.\n\nThe representative chain currently covers Cherub movement, line-of-sight damage, and Peekaboo. Full setup placement remains on the rule completion list.",
+          "heroesLabel": "Hero Manual",
+          "heroes": "Heroes must make every Stone Cherub disappear. A hero may play Peekaboo when one Stone Cherub is on the same tile and another Stone Cherub is in line of sight.\n\nPeekaboo is a Knowledge check; a Mirror helps. Success removes those two Cherubs. Failure causes general damage.",
+          "specialLabel": "Sight and Peekaboo",
+          "special": "Stone Cherubs threaten heroes through line of sight. At the end of the monster turn, each hero also suffers queued gaze damage for Cherubs they can see.\n\nHeroes need to use room position and line of sight to pair Cherubs into disappearing groups.",
+          "monsterLabel": "Stone Cherubs",
+          "monster": "Stone Cherubs are not defeated through ordinary attacks. They move toward heroes, but if they already begin in a hero's line of sight, they do not move that turn.\n\nTheir danger is position and sight, not a normal attack.",
+          "endingLabel": "Win Conditions",
+          "ending": "Heroes win when the last pair of Stone Cherubs vanishes and the survivors escape.\n\nThe Haunt wins when every hero is dead and the Stone Cherubs claim the house.",
+          "endingSurvivors": "The final two Stone Cherubs stare at each other as cracks split their wings and smiles. When the rubble settles, the house is finally quiet.",
+          "endingHaunt": "When the last hero falls, the Stone Cherubs return to their places. Their smiles look more human than when you entered."
         }
       },
       "helpingHands": {
@@ -510,7 +571,9 @@
           "traitorLabel": "Free-for-All Boundary",
           "traitor": "This haunt has no fixed traitor and no hidden team. The Strange Amulet holder, Troll Hand locations, and monster controller are public.",
           "endingLabel": "Win Conditions",
-          "ending": "You win when you hold the Strange Amulet and every other explorer is dead.\n\nIf the Strange Amulet changes hands, Troll Hand control changes immediately."
+          "ending": "You win when you hold the Strange Amulet and every other explorer is dead.\n\nIf the Strange Amulet changes hands, Troll Hand control changes immediately.",
+          "endingSurvivors": "The Strange Amulet is still in your hand. The hands in the walls fall quiet, as if the house has accepted its new owner.",
+          "endingTraitor": "The Strange Amulet ends with the final winner. The other explorers have no more chances to escape the hands in the walls."
         }
       },
       "magicCamera": {
@@ -539,7 +602,9 @@
           "traitorLabel": "Traitor Manual",
           "traitor": "The traitor uses the Magic Camera to photograph heroes and capture all Essence. Protect the camera and use phantom photographers until every Essence is taken.",
           "endingLabel": "Win Conditions",
-          "ending": "Heroes win when the Magic Camera is smashed and trapped Essence returns.\n\nThe traitor wins when every hero Essence is captured and the shadows replace them."
+          "ending": "Heroes win when the Magic Camera is smashed and trapped Essence returns.\n\nThe traitor wins when every hero Essence is captured and the shadows replace them.",
+          "endingSurvivors": "When the Magic Camera shatters, the trapped Essence returns to the bodies it belonged to. The shadows retreat, and the shutter falls silent.",
+          "endingTraitor": "When the last photograph develops, every hero's Essence is gone. The shadows in the prints look up and walk out in their place."
         }
       }
     },
@@ -568,8 +633,14 @@
       "rollMonsterMovement": "{{monster}} Movement",
       "moveMonster": "Move {{monster}}",
       "cancelMonsterMove": "Cancel Move",
+      "attackMonster": "{{monster}} Attack",
+      "cancelMonsterAttack": "Cancel Attack",
       "roomEffectMysticElevator": "Mystic Elevator",
       "endHelpingHandsMonsterTurn": "End Troll Hand Turn",
+      "endBloodFromStoneMonsterTurn": "End Stone Cherub Turn",
+      "placeBloodFromStoneStoneCherubs": "Pick Cherub Rooms",
+      "cancelBloodFromStoneStoneCherubPlacement": "Cancel Placement",
+      "confirmBloodFromStoneStoneCherubPlacement": "Confirm Placement",
       "endTurn": "End Turn",
       "endTurnRoomEffect": "End Turn"
     },
@@ -598,8 +669,10 @@
       "rabbitFoot": "Choose a die to reroll",
       "rerollDie": "Reroll die {{index}}",
       "explore": "Explore",
+      "exploreDeclaration": "Explore Declaration",
       "holySymbol": "Holy Symbol",
       "idol": "Idol",
+      "traitorPower": "Traitor Power",
       "traitorEventSkip": "Skip Event",
       "mask": "Mask"
     },

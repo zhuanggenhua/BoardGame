@@ -108,6 +108,57 @@ const confirmPendingRoomPlacement = async (page: Page) => {
     await expect(placementPanel).toHaveCount(0);
 };
 
+const expectNearViewportCenter = async (
+    page: Page,
+    testId: string,
+    maxDeltaPx = 24,
+) => {
+    const metrics = await page.evaluate((targetTestId) => {
+        const elements = Array.from(document.querySelectorAll(`[data-testid="${targetTestId}"]`));
+        const viewportCenterX = window.innerWidth / 2;
+        const rects = elements.map((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            const visible = rect.width > 0
+                && rect.height > 0
+                && style.visibility !== 'hidden'
+                && style.display !== 'none'
+                && Number(style.opacity) !== 0;
+            const centerX = rect.left + rect.width / 2;
+            return {
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+                centerX,
+                deltaX: Math.abs(centerX - viewportCenterX),
+                visible,
+                text: element.textContent?.trim() ?? '',
+            };
+        });
+        const visibleRects = rects.filter((rect) => rect.visible);
+        const nearestVisibleRect = visibleRects
+            .sort((a, b) => a.deltaX - b.deltaX)[0] ?? null;
+        return {
+            viewportWidth: window.innerWidth,
+            viewportCenterX,
+            rects,
+            nearestVisibleRect,
+        };
+    }, testId);
+    expect(
+        metrics.nearestVisibleRect,
+        `${testId} 必须有可见元素以检查居中位置：${JSON.stringify(metrics)}`,
+    ).toBeTruthy();
+    if (!metrics.nearestVisibleRect) {
+        return;
+    }
+    expect(
+        metrics.nearestVisibleRect.deltaX,
+        `${testId} 应接近视口中心：${JSON.stringify(metrics)}`,
+    ).toBeLessThanOrEqual(maxDeltaPx);
+};
+
 const waitForInjectedTraitorHauntCore = async (page: Page, targetRoomId: string) => {
     const readStatus = async () => page.evaluate((expectedRoomId) => {
             const core = (window as Window & {
@@ -196,6 +247,7 @@ test.describe('山屋惊魂作祟后探索', () => {
         await expect(skipEventButton).toContainText('跳过事件');
         await expect(skipEventButton).toHaveClass(/min-h-\[44px\]/);
         await expect(skipEventButton).not.toHaveClass(/bg-transparent/);
+        await expectNearViewportCenter(page, 'betrayal-explore-option-traitor-event-skip');
         await saveScreenshot(page, HAUNT_TRAITOR_READY_SCREENSHOT);
 
         await skipEventButton.click();

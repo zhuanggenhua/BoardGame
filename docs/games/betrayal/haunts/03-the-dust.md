@@ -1,6 +1,6 @@
 # 作祟 3 交互子账本：The Dust
 
-> 状态：`contract-ready-needs-implementation-audit`。已有代表链不能等同于完整支持。
+> 状态：`contract-ready-with-feverish-natural-turn-representative`。已有狂热病患自然怪物回合代表链，不能等同于完整支持。
 
 ## 1. 源段锁定
 
@@ -79,7 +79,8 @@ Feverish 属性：力量 6、速度 5、神志 3、知识 3；在作祟揭秘者
 
 ## 10. 验证
 
-- 单测：秘密疾病分发人数规则；曾持有编号 1 永久叛徒；研究 token 加值；未交换回合末受伤；叛徒死亡生成 Feverish。
-- 页面测试：隐藏编号只对本人可见；研究房间动作；控制冲动双方确认。
-- E2E：覆盖英雄治愈胜利和全员感染 / 死亡叛徒怪物化路径。
-
+- 已验证代表链：死亡叛徒变狂热病患后，上一名探索者结束回合会自然进入该死亡叛徒的狂热病患速度移动骰；狂热病患可移动到真实相邻房间，结束后交给下一名玩家；狂热病患动作槽可攻击同房英雄。
+- 领域测试：`node scripts\infra\vitest-cli-safe.mjs run src\games\betrayal\__tests__\firstScenarioRuntime.test.ts --configLoader native -t "狂热病患|灰尘"`，11 passed / 265 skipped。
+- 真实入口 E2E：`node scripts\infra\run-e2e-single.mjs ci e2e\betrayal\the-dust-feverish-natural-monster-turn.e2e.ts "狂热病患"`，2 passed。
+- 截图核验证据：`evidence/betrayal-the-dust-feverish-natural-monster-turn/e2e-test.md`。
+- 仍需补：感染交换全排列、隐藏编号完整可见性、研究 / 治愈全路径 UI、同时胜负政策、完整英雄治愈胜利和全员感染 / 死亡叛徒怪物化路径回归。
