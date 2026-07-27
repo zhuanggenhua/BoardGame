@@ -53,7 +53,7 @@ import {
     VP_TO_WIN,
     getCurrentPlayerId,
 } from './types';
-import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './ongoingModifiers';
+import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getRealtimeScoringEligibleBaseIndices, getScoringEligibleBaseIndices } from './ongoingModifiers';
 import { collectTriggers, fireTriggerForSource, getModifiedBaseVp, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent, isBaseScoringSuppressed } from './ongoingEffects';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import {
@@ -384,7 +384,7 @@ function buildBaseRankings(
 }
 
 function getLockedScoringBaseIndices(core: SmashUpCore): number[] {
-    return getScoringEligibleBaseIndices(core);
+    return getRealtimeScoringEligibleBaseIndices(core);
 }
 
 function ensureScoreBasesSession(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
@@ -396,6 +396,24 @@ function ensureScoreBasesSession(state: MatchState<SmashUpCore>): MatchState<Sma
         return state;
     }
     return setScoringSession(state, createScoringSession(state.core, lockedIndices));
+}
+
+function refreshPendingScoringBaseRefs(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
+    const session = getScoringSession(state);
+    if (!session || session.currentBaseRef) {
+        return state;
+    }
+    const liveRefs = getRealtimeScoringEligibleBaseIndices(state.core)
+        .map((baseIndex) => createScoringBaseRef(state.core, baseIndex))
+        .filter((baseRef): baseRef is SmashUpScoringBaseRef => !!baseRef)
+        .filter((baseRef) => !session.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)));
+
+    return updateScoringSession(state, (currentSession) => currentSession
+        ? {
+            ...currentSession,
+            lockedBaseRefs: liveRefs,
+        }
+        : currentSession);
 }
 
 function buildMultiBaseScoringInteraction(
@@ -497,35 +515,17 @@ function finalizeCurrentScoringBase(
     );
     const completedSession = getScoringSession(completedState);
     if (completedSession) {
-        const discoveredEligibleRefs = getScoringEligibleBaseIndices(postDeferredCore)
+        const liveEligibleRefs = getRealtimeScoringEligibleBaseIndices(postDeferredCore)
             .map((baseIndex) => createScoringBaseRef({ ...postDeferredCore }, baseIndex))
             .filter((baseRef): baseRef is SmashUpScoringBaseRef => !!baseRef)
-            .filter((baseRef) => !completedSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
-            .filter((baseRef) => !completedSession.lockedBaseRefs.some((lockedRef) => isSameScoringBaseRef(lockedRef, baseRef)));
+            .filter((baseRef) => !completedSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)));
 
-        if (discoveredEligibleRefs.length > 0) {
-            completedState = updateScoringSession(completedState, (currentSession) => currentSession
-                ? {
-                    ...currentSession,
-                    lockedBaseRefs: [...currentSession.lockedBaseRefs, ...discoveredEligibleRefs],
-                }
-                : currentSession);
-
-            const futureState = { ...completedState, core: postDeferredCore };
-            const futureSession = getScoringSession(futureState);
-            const remainingLockedIndices = futureSession
-                ? futureSession.lockedBaseRefs
-                    .filter((baseRef) => !futureSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
-                    .map((baseRef) => resolveScoringBaseRefSlotIndex(futureState, baseRef))
-                    .filter((baseIndex): baseIndex is number => baseIndex !== undefined)
-                : [];
-
-            events.push({
-                type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
-                payload: { baseIndices: remainingLockedIndices },
-                timestamp: now,
-            } as SmashUpEvent);
-        }
+        completedState = updateScoringSession(completedState, (currentSession) => currentSession
+            ? {
+                ...currentSession,
+                lockedBaseRefs: liveEligibleRefs,
+            }
+            : currentSession);
     }
     const awaitingReduceState = {
         ...completedState,
@@ -626,6 +626,28 @@ export function scoreOneBase(
             }
             : session,
         );
+    }
+    const currentBaseSelectedForScoring = !!(
+        ms
+        && currentBaseRef
+        && isSameScoringBaseRef(getScoringSession(ms)?.currentBaseRef, currentBaseRef)
+    );
+    if (
+        currentBaseSelectedForScoring
+        && (
+            !Array.isArray(core.scoringEligibleBaseIndices)
+            || core.scoringEligibleBaseIndices.length !== 1
+            || core.scoringEligibleBaseIndices[0] !== baseIndex
+        )
+    ) {
+        const currentBaseLockEvent = {
+            type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
+            payload: { baseIndices: [baseIndex] },
+            timestamp: now,
+        } as unknown as SmashUpEvent;
+        events.push(currentBaseLockEvent);
+        core = reduce(core, currentBaseLockEvent);
+        ms = { ...ms, core };
     }
     let newBaseDeck = baseDeck;
 
@@ -739,10 +761,11 @@ export function scoreOneBase(
     }
     const effectiveBreakpointAfterBefore = getEffectiveBreakpoint(updatedCore, baseIndex);
     const totalPowerAfterBefore = getTotalEffectivePowerOnBase(updatedCore, updatedBaseAfterBefore, baseIndex);
-    const lockedAtScoreBasesEnter = updatedCore.scoringEligibleBaseIndices?.includes(baseIndex) ?? false;
-    // 规则（Wiki Phase 3 Step 4）：进入 scoreBases 阶段时达到 breakpoint 的基地会被锁定，
-    // 即便在 Me First! / beforeScoring 链路中力量被压到 breakpoint 以下，仍应继续计分。
-    if (!lockedAtScoreBasesEnter && totalPowerAfterBefore < effectiveBreakpointAfterBefore) {
+    const selectedBaseLocked = currentBaseSelectedForScoring
+        || (updatedCore.scoringEligibleBaseIndices?.includes(baseIndex) ?? false);
+    // 规则：只有已经被选择并开始结算的当前基地，即使 beforeScoring 链路中力量
+    // 被压到 breakpoint 以下，也会继续完成本次计分。
+    if (!selectedBaseLocked && totalPowerAfterBefore < effectiveBreakpointAfterBefore) {
         if (ms) ms = { ...ms, core: updatedCore };
         return { events, newBaseDeck: baseDeck, matchState: ms };
     }
@@ -1695,6 +1718,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             }
 
             if (!currentSession.currentBaseRef) {
+                currentState = refreshPendingScoringBaseRefs(currentState);
                 const remainingBaseRefs = getRemainingScoringBaseRefs(currentState);
 
                 if (remainingBaseRefs.length === 0) {
@@ -1996,19 +2020,11 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 timestamp: now,
             } as GameEvent);
 
-            const eligibleIndices = getScoringEligibleBaseIndices(core);
+            const eligibleIndices = getRealtimeScoringEligibleBaseIndices(core);
             currentMatchState = eligibleIndices.length > 0
                 ? setScoringSession(currentMatchState, createScoringSession(core, eligibleIndices))
                 : clearScoringSession(currentMatchState);
             hasSysUpdate = true;
-
-            if (eligibleIndices.length > 0) {
-                events.push({
-                    type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
-                    payload: { baseIndices: eligibleIndices },
-                    timestamp: now,
-                } as GameEvent);
-            }
 
             return { events, updatedState: currentMatchState } as PhaseEnterResult;
         }
