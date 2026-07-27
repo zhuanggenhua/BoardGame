@@ -135,7 +135,9 @@
       "hauntStatusWin": "Prevails",
       "completedStamp": "Complete",
       "endingNarrationLabel": "Ending Reading",
-      "endingSourceStatus": "Non-original summary / temporary adaptation"
+      "endingSourceStatus": "Non-original summary / temporary adaptation",
+      "endingSourceStatusOfficial": "Official If You Win text / formal translation",
+      "continueToReport": "View Result Report"
     },
     "hud": {
       "phaseLabel": "Phase",
@@ -241,6 +243,11 @@
       "sicknessExchangeDecline": "Decline",
       "hauntDustProgressResearchValue": "{{count}} rooms",
       "hauntDustProgressSicknessValue": "{{count}} tokens",
+      "hauntDustProgressOwnSicknessLabel": "Your Sickness",
+      "hauntDustProgressOwnSicknessUnknown": "?",
+      "hauntDustProgressPermanentInfectionLabel": "Permanent Infection",
+      "hauntDustProgressPermanentInfectionYes": "Yes",
+      "hauntDustProgressPermanentInfectionNo": "No",
       "hauntDustProgressExchangeAvailable": "ready",
       "hauntDustProgressExchangeUnavailable": "same room needed",
       "selected": "Selected",
@@ -422,6 +429,9 @@
       "readerPageAria": "Current page {{mobile}}, desktop spread {{desktop}}",
       "readerPrev": "Previous",
       "readerNext": "Next",
+      "readerContinue": "Continue",
+      "cinematicTerminalPrologue": "Prologue",
+      "cinematicTerminalEnd": "The End",
       "reader": {
         "prologueLabel": "House Signs",
         "prologue": "Crimson traces return through the old house. Books, wall cracks, and dark rooms all point to one name: Jack.\n\nAs the explorers speak about the old killer, one companion's smile changes. The haunt is revealed: the explorer who revealed the haunt is the traitor.",
@@ -460,7 +470,12 @@
         "available": "Available",
         "waiting": "Waiting",
         "yes": "Released",
-        "no": "Not yet"
+        "no": "Not yet",
+        "setupHandoffLabel": "Opening Handoff",
+        "confirmResearchTokens": "Confirm research tokens",
+        "confirmMonsterReference": "Confirm monster card",
+        "researchTokensReady": "Research tokens ready",
+        "setupConfirmed": "Setup confirmed"
       },
       "crimsonJack": {
         "title": "Crimson Jack Returns",
@@ -516,8 +531,8 @@
           "traitor": "Explorers controlled by the Dust should delay research, spread sickness, and make cure attempts dangerous.\n\nStay close to heroes, force exchanges, and keep pressure on cure rooms.",
           "endingLabel": "Win Conditions",
           "ending": "Heroes win when the Dust is cured and survivors break the sickness.\n\nThe Dust wins when sickness overtakes the explorers and only gray haze remains.",
-          "endingSurvivors": "With the cure complete, the Dust is suppressed and the survivors finally shake loose the gray haze that had sunk into their bones.",
-          "endingTraitor": "Sickness overtakes the explorers. Only gray haze, coughing, and whispers remain in the house."
+          "endingSurvivors": "You plunge a makeshift syringe into your arm, and your cough quickly ceases. You stop seeing red, but the dust particles continue to float throughout the house. You’d best leave quickly, before your immunity wears off.",
+          "endingTraitor": "The feverish rush out of the house to wreak havoc upon the town. Dust to dust."
         }
       },
       "bloodFromStone": {
@@ -751,6 +766,7 @@
       "exorcismCircle": "Exorcism Circle",
       "sickness": "Sickness Token",
       "researchToken": "Research Token",
+      "researchTokenShort": "R",
       "essence": "Essence"
     },
     "players": {

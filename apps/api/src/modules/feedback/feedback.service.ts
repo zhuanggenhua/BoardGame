@@ -84,6 +84,7 @@ export class FeedbackService {
     async createSystem(dto: CreateSystemFeedbackDto): Promise<Feedback> {
         const source = this.normalizeSource(dto.source, 'unknown');
         const gameId = this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName);
+        const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
         if (this.shouldAggregateSystemFeedback(dto, source, gameId)) {
             return this.createOrUpdateAggregatedSystemFeedback(dto, source, gameId);
         }
@@ -92,6 +93,7 @@ export class FeedbackService {
             source,
             reporterType: FeedbackReporterType.SYSTEM,
             gameId,
+            ...(resolvedMethod ? { resolvedMethod } : {}),
         });
     }
 
@@ -374,6 +376,27 @@ export class FeedbackService {
         }
         const normalized = value.trim();
         return normalized || undefined;
+    }
+
+    private resolveSystemFeedbackResolvedMethod(dto: CreateSystemFeedbackDto): string | undefined {
+        if (dto.status !== FeedbackStatus.RESOLVED) {
+            return undefined;
+        }
+        return this.normalizeResolvedMethod(dto.resolvedMethod)
+            ?? this.buildDefaultSystemResolvedMethod(dto);
+    }
+
+    private buildDefaultSystemResolvedMethod(dto: CreateSystemFeedbackDto): string {
+        const incidentKind = this.normalizeWatchdogAutoReportFamily(
+            dto.autoReportKind ?? dto.errorContext?.name,
+        );
+        if (incidentKind === 'legal-action-recovered') {
+            return '系统已自动找到可执行操作并继续推进该 AI 座位，对局没有停在该步骤。';
+        }
+        if (incidentKind === 'force-end-turn') {
+            return '系统已自动推进停滞的 AI 座位，让对局继续进行。';
+        }
+        return '系统已自动恢复这次在线 AI 步骤，对局已继续运行。';
     }
 
     private isPublicAutoFeedbackSource(source?: string | null): boolean {
@@ -706,11 +729,13 @@ export class FeedbackService {
         const now = new Date();
         const aggregationPlan = this.buildWatchdogAggregationPlan(dto, source, gameId, now);
         if (!aggregationPlan) {
+            const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
             return this.feedbackModel.create({
                 ...dto,
                 source,
                 reporterType: FeedbackReporterType.SYSTEM,
                 gameId,
+                ...(resolvedMethod ? { resolvedMethod } : {}),
             });
         }
         if (!lockAcquired) {
@@ -769,11 +794,13 @@ export class FeedbackService {
 
         if (!existing) {
             try {
+                const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
                 const created = await this.feedbackModel.create({
                     ...dto,
                     source,
                     reporterType: FeedbackReporterType.SYSTEM,
                     gameId,
+                    ...(resolvedMethod ? { resolvedMethod } : {}),
                     incidentKey: aggregationKey,
                     aggregationKey,
                     aggregationActiveKey,
@@ -796,11 +823,13 @@ export class FeedbackService {
                 ).exec();
                 if (releasedClosedDoc) {
                     try {
+                        const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
                         const created = await this.feedbackModel.create({
                             ...dto,
                             source,
                             reporterType: FeedbackReporterType.SYSTEM,
                             gameId,
+                            ...(resolvedMethod ? { resolvedMethod } : {}),
                             incidentKey: aggregationKey,
                             aggregationKey,
                             aggregationActiveKey,
@@ -829,6 +858,11 @@ export class FeedbackService {
 
         const mergedSeverity = this.pickMoreSevereSeverity(existing.severity, dto.severity) as typeof existing.severity;
         const mergedStatus = this.resolveAggregatedSystemStatus(existing.status, dto.status);
+        const mergedResolvedMethod = mergedStatus === FeedbackStatus.RESOLVED
+            ? this.normalizeResolvedMethod(dto.resolvedMethod)
+                ?? this.normalizeResolvedMethod(existing.resolvedMethod)
+                ?? this.buildDefaultSystemResolvedMethod(dto)
+            : undefined;
         const updated = await this.feedbackModel.findOneAndUpdate(
             { _id: existing._id, status: { $ne: FeedbackStatus.CLOSED } },
             {
@@ -837,6 +871,7 @@ export class FeedbackService {
                     type: dto.type ?? existing.type,
                     severity: mergedSeverity,
                     status: mergedStatus,
+                    ...(mergedResolvedMethod ? { resolvedMethod: mergedResolvedMethod } : {}),
                     source,
                     reporterType: FeedbackReporterType.SYSTEM,
                     gameId,

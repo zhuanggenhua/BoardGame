@@ -23,6 +23,8 @@
     "customDeckSummoner": "Summoner: {{name}}",
     "editDeck": "Edit Deck",
     "newDeck": "New Deck",
+    "previousPage": "Previous faction page",
+    "nextPage": "Next faction page",
     "loadingDecks": "Loading decks...",
     "loadDeckFailed": "Failed to load deck, please try again"
   },

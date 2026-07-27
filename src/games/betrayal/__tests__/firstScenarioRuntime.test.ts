@@ -61,6 +61,7 @@ import {
     resolveBetrayalMonsterTurnStartResolutionPreview,
     resolveBetrayalMonsterTurnStartStatus,
     resolveBetrayalMonsterTurnRuntimeState,
+    resolveCorpseLootTargets,
     resolveBloodFromStonePeekabooOptions,
     resolveBloodFromStoneSetupPlacementPlan,
     resolveBloodFromStoneMonsterTurnEndPreview,
@@ -92,6 +93,7 @@ import {
     DEFAULT_BETRAYAL_SCENARIO_CARD_ID,
     isBetrayalEventRuntimeSupported,
     type BetrayalTraitKey,
+    type BetrayalUseEffectSeed,
 } from '../scenarioConfig';
 import { resolvePossessionAtlasVisual } from '../possessionAtlas';
 import { BETRAYAL_ROOM_TILE_VISUALS } from '../roomAtlas';
@@ -182,6 +184,49 @@ function setTestExplorerTraits(
     ));
 }
 
+function setTestExplorerInventory(
+    core: BetrayalCore,
+    playerId: string,
+    inventory: BetrayalCore['currentExplorer']['inventory'],
+    availableAtTurnStart = true,
+): void {
+    const nextInventory = inventory.map((card) => ({ ...card }));
+    if (core.currentExplorer.playerId === playerId) {
+        core.currentExplorer.inventory = nextInventory;
+        core.currentExplorerInventory = nextInventory.map((card) => ({ ...card }));
+        if (availableAtTurnStart) {
+            core.turnStartInventoryCardIds = nextInventory.map((card) => card.id);
+        }
+        return;
+    }
+
+    core.otherExplorers = core.otherExplorers.map((explorer) => (
+        explorer.playerId === playerId
+            ? { ...explorer, inventory: nextInventory.map((card) => ({ ...card })) }
+            : explorer
+    ));
+}
+
+function setTestRoomDiscoveryDeck(
+    core: BetrayalCore,
+    deck: BetrayalCore['roomDiscoveryDeck'],
+): void {
+    const clonedDeck = deck.map((entry) => ({
+        floor: entry.floor,
+        room: {
+            ...entry.room,
+            tags: [...entry.room.tags],
+            doorways: [...entry.room.doorways],
+        },
+    }));
+    core.roomDiscoveryDeck = clonedDeck;
+    core.roomDiscoveryOrderByFloor = {
+        ground: clonedDeck.filter((entry) => entry.floor === 'ground').map((entry) => ({ ...entry.room })),
+        upper: clonedDeck.filter((entry) => entry.floor === 'upper').map((entry) => ({ ...entry.room })),
+        basement: clonedDeck.filter((entry) => entry.floor === 'basement').map((entry) => ({ ...entry.room })),
+    };
+}
+
 function setTestTraitTrack(
     core: BetrayalCore,
     playerId: string,
@@ -258,6 +303,127 @@ function repeatTraitsForPendingDamage(
 ): BetrayalTraitKey[] {
     const amount = core.pendingDamageAllocation?.amount ?? 0;
     return Array.from({ length: amount }, (_, index) => traits[index % traits.length]!);
+}
+
+function acknowledgeSingleEventEffectResolution(
+    core: BetrayalCore,
+    cardName: string,
+    expectedTextFragment: string,
+): BetrayalCore {
+    expect(core.pendingCardResolutionQueue).toHaveLength(1);
+    expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+        deckKind: 'event',
+        cardName,
+        stepKind: 'event-effect',
+        text: expect.stringContaining(expectedTextFragment),
+        index: 1,
+        total: 1,
+    });
+    expect(BetrayalDomain.validate(
+        { core, sys: {} as never },
+        createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, core.currentPlayer, {}),
+    )).toMatchObject({
+        valid: false,
+        error: '请先确认当前翻牌结算。',
+    });
+    const nextCore = acknowledgePendingCardResolutions(core);
+    expect(nextCore.pendingCardResolutionQueue).toEqual([]);
+    return nextCore;
+}
+
+function acknowledgeAnyPendingCardResolutions(core: BetrayalCore): BetrayalCore {
+    if (core.pendingCardResolutionQueue.length === 0) {
+        return core;
+    }
+    const nextCore = acknowledgePendingCardResolutions(core);
+    expect(nextCore.pendingCardResolutionQueue).toEqual([]);
+    return nextCore;
+}
+
+type BetrayalEventDeathRiskTag = 'damage' | 'directTraitLoss';
+
+function collectEventDeathRiskTags(
+    effect: BetrayalUseEffectSeed | undefined,
+    tags = new Set<BetrayalEventDeathRiskTag>(),
+): Set<BetrayalEventDeathRiskTag> {
+    if (!effect) {
+        return tags;
+    }
+
+    switch (effect.mode) {
+        case 'generalDamage':
+        case 'generalDamageChoice':
+        case 'rolledDamage':
+            tags.add('damage');
+            break;
+        case 'trait':
+        case 'chosenTrait':
+            if (effect.amount < 0) {
+                tags.add('directTraitLoss');
+            }
+            break;
+        case 'allTraitChecks':
+            if (effect.failAmount > 0) {
+                tags.add('directTraitLoss');
+            }
+            collectEventDeathRiskTags(effect.allPassEffect, tags);
+            break;
+        case 'compound':
+            for (const childEffect of effect.effects) {
+                collectEventDeathRiskTags(childEffect, tags);
+            }
+            break;
+        case 'optionalEventRoll':
+            for (const branch of effect.roll.branches) {
+                collectEventDeathRiskTags(branch.effect, tags);
+            }
+            break;
+        case 'chooseTraitRoll':
+            for (const branch of effect.branches) {
+                collectEventDeathRiskTags(branch.effect, tags);
+            }
+            break;
+        case 'optionalHauntRoll':
+            collectEventDeathRiskTags(effect.failureEffect, tags);
+            collectEventDeathRiskTags(effect.skippedOrStartedEffect, tags);
+            break;
+        default:
+            break;
+    }
+
+    return tags;
+}
+
+function collectEventTemplateDeathRiskTags(event: typeof BETRAYAL_DISCOVERY_POOLS.events[number]): string[] {
+    const tags = collectEventDeathRiskTags(event.effect);
+    for (const branch of event.roll?.branches ?? []) {
+        collectEventDeathRiskTags(branch.effect, tags);
+    }
+    return [...tags].sort();
+}
+
+function collectRuntimePossessionCards(): Array<BetrayalCore['currentExplorer']['inventory'][number]> {
+    const cards = [
+        ...BETRAYAL_DISCOVERY_POOLS.possessions.item,
+        ...BETRAYAL_DISCOVERY_POOLS.possessions.omen,
+        ...Object.values(BETRAYAL_SCENARIO_CONFIGS['first-scenario'].startingInventoryByExplorerId).flat(),
+    ];
+    const byId = new Map<string, BetrayalCore['currentExplorer']['inventory'][number]>();
+    for (const card of cards) {
+        if (!byId.has(card.id)) {
+            byId.set(card.id, card);
+        }
+    }
+    return [...byId.values()];
+}
+
+function createPossessionCoverageCore(): BetrayalCore {
+    const core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core.phase = 'haunt';
+    core.currentExplorer.inventory = collectRuntimePossessionCards().map((card) => ({ ...card }));
+    core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+    core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+    return core;
 }
 
 function setDiscoveredTestRoom(
@@ -345,7 +511,7 @@ function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCor
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
+    core = applyBetrayalCommand(
         core,
         BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
         '0',
@@ -353,6 +519,7 @@ function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCor
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+    return acknowledgePendingCardResolutions(core);
 }
 
 function createFeverishControlReadyCore(): BetrayalCore {
@@ -432,7 +599,7 @@ function createMagicCameraHauntCore(cameraOwnerPlayerId: string | null = '1'): B
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
+    core = applyBetrayalCommand(
         core,
         BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
         '0',
@@ -440,6 +607,7 @@ function createMagicCameraHauntCore(cameraOwnerPlayerId: string | null = '1'): B
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+    return acknowledgePendingCardResolutions(core);
 }
 
 function createHelpingHandsHauntCore(playerIds: string[] = ['0', '1', '2']): BetrayalCore {
@@ -459,7 +627,7 @@ function createHelpingHandsHauntCore(playerIds: string[] = ['0', '1', '2']): Bet
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
-    return applyBetrayalCommand(
+    core = applyBetrayalCommand(
         core,
         BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
         '0',
@@ -467,6 +635,7 @@ function createHelpingHandsHauntCore(playerIds: string[] = ['0', '1', '2']): Bet
         100,
         createBetrayalScriptedRandom(3, 3, 3),
     );
+    return acknowledgePendingCardResolutions(core);
 }
 
 function discoverBloodFromStoneOutOfSightTestRooms(core: BetrayalCore): void {
@@ -516,7 +685,7 @@ function createBloodFromStoneTriggeredWithAutoPlacementCore(): BetrayalCore {
         createBetrayalScriptedRandom(3, 3, 3, 3, 3),
     );
 
-    return core;
+    return acknowledgePendingCardResolutions(core);
 }
 
 function createBloodFromStoneManualPlacementGapCore(): BetrayalCore {
@@ -632,6 +801,88 @@ function placeCurrentExplorerInDustResearchRoom(
             : room
     ));
     return core;
+}
+
+function seedDustFailedActionExchangeTokens(core: BetrayalCore): void {
+    if (!core.scenarioRuntime.dust) {
+        throw new Error('灰尘失败行动交换测试缺少 dust 运行态');
+    }
+    core.scenarioRuntime.dust.sicknessTokensByPlayerId = {
+        '0': [
+            { id: 'sickness-0-a', value: 7 },
+            { id: 'sickness-0-b', value: 8 },
+            { id: 'sickness-0-c', value: 9 },
+        ],
+        '1': [
+            { id: 'sickness-1-a', value: 4 },
+            { id: 'sickness-1-b', value: 5 },
+            { id: 'sickness-1-c', value: 6 },
+        ],
+        '2': [
+            { id: 'sickness-2-a', value: 12 },
+            { id: 'sickness-2-b', value: 13 },
+            { id: 'sickness-2-c', value: 14 },
+        ],
+        '3': [
+            { id: 'sickness-3-a', value: 1 },
+            { id: 'sickness-3-b', value: 10 },
+            { id: 'sickness-3-c', value: 11 },
+        ],
+    };
+    core.scenarioRuntime.dust.permanentTraitorPlayerIds = ['3'];
+    core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+    core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+    core.scenarioRuntime.deadExplorerPlayerIds = ['2'];
+    core.currentExplorer.roomId = 'ground-north';
+    core.activeRoomId = 'ground-north';
+    core.otherExplorers = core.otherExplorers.map((explorer) => {
+        if (explorer.playerId === '0') {
+            return { ...explorer, roomId: 'entrance-hall' };
+        }
+        if (explorer.playerId === '2') {
+            return { ...explorer, roomId: 'hallway' };
+        }
+        if (explorer.playerId === '3') {
+            return { ...explorer, roomId: 'upper-landing' };
+        }
+        return explorer;
+    });
+}
+
+function seedDustControlImpulsesTokens(core: BetrayalCore): void {
+    if (!core.scenarioRuntime.dust) {
+        throw new Error('灰尘控制冲动测试缺少 dust 运行态');
+    }
+    activateTestExplorer(core, '1');
+    core.currentExplorer.roomId = 'hallway';
+    core.activeRoomId = 'hallway';
+    core.otherExplorers = core.otherExplorers.map((explorer) => {
+        if (explorer.playerId === '0') {
+            return { ...explorer, roomId: 'hallway' };
+        }
+        return { ...explorer, roomId: 'entrance-hall' };
+    });
+    core.scenarioRuntime.dust.sicknessTokensByPlayerId = {
+        '0': [
+            { id: 'sickness-0-a', value: 1 },
+            { id: 'sickness-0-b', value: 7 },
+            { id: 'sickness-0-c', value: 8 },
+        ],
+        '1': [
+            { id: 'sickness-1-a', value: 4 },
+            { id: 'sickness-1-b', value: 5 },
+            { id: 'sickness-1-c', value: 6 },
+        ],
+        '2': [
+            { id: 'sickness-2-a', value: 9 },
+            { id: 'sickness-2-b', value: 10 },
+            { id: 'sickness-2-c', value: 11 },
+        ],
+    };
+    core.scenarioRuntime.dust.permanentTraitorPlayerIds = ['0'];
+    core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+    core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+    core.scenarioRuntime.deadExplorerPlayerIds = [];
 }
 
 describe('Betrayal first scenario runtime', () => {
@@ -832,6 +1083,7 @@ describe('Betrayal first scenario runtime', () => {
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+        core = acknowledgeAnyPendingCardResolutions(core);
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
         expect(core.pendingDamageAllocation).toMatchObject({
             sourceTitle: '火炉房',
@@ -878,6 +1130,7 @@ describe('Betrayal first scenario runtime', () => {
 
         preHauntCore = applyBetrayalCommand(preHauntCore, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         preHauntCore = applyBetrayalCommand(preHauntCore, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+        preHauntCore = acknowledgeAnyPendingCardResolutions(preHauntCore);
         preHauntCore = applyBetrayalCommand(preHauntCore, BETRAYAL_COMMANDS.END_TURN, '0', {});
         preHauntCore = applyBetrayalCommand(
             preHauntCore,
@@ -935,23 +1188,40 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestRoomDrawResolution?.selectedRoom?.name).toBe(expectedFirstUpperRoom.name);
         expect(core.latestRoomDrawResolution?.buriedRoomTiles.every((room) => room.floor !== 'upper')).toBe(true);
         expect(core.currentExplorer.inventory.at(-1)?.name).toBe('匕首');
-        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue).toHaveLength(2);
         expect(core.pendingCardResolutionQueue[0]).toMatchObject({
             deckKind: 'omen',
             cardName: '匕首',
             stepKind: 'drawn-card',
             index: 1,
-            total: 1,
+            total: 2,
         });
+        expect(core.pendingCardResolutionQueue[1]).toMatchObject({
+            deckKind: 'omen',
+            cardName: '匕首',
+            stepKind: 'haunt-roll',
+            index: 2,
+            total: 2,
+        });
+        expect(core.pendingCardResolutionQueue[1]?.text).toContain('作祟检定');
 
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
         )).toMatchObject({
             valid: false,
-            error: '请先确认刚抽到的物品或预兆。',
+            error: '请先确认当前翻牌结算。',
         });
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            stepKind: 'haunt-roll',
+            index: 2,
+            total: 2,
+        });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
@@ -1412,6 +1682,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         expect(core.rooms.find((room) => room.id === 'ground-north')?.name).toBe('火炉房');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
@@ -1466,6 +1737,33 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.rooms.find((room) => room.id === 'ground-north')?.name).toBe('礼拜堂');
         expect(core.currentExplorer.traits.sanity).toBe(sanityBefore + 1);
+        expect(core.pendingCardResolutionQueue).toHaveLength(2);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            cardName: '房间效果：礼拜堂，神志 +1',
+            stepKind: 'room-effect',
+            text: '房间效果：礼拜堂，神志 +1',
+            index: 1,
+            total: 2,
+        });
+        expect(core.pendingCardResolutionQueue[0]?.deckKind).toBeUndefined();
+        expect(core.pendingCardResolutionQueue[1]).toMatchObject({
+            deckKind: 'event',
+            stepKind: 'event-effect',
+            index: 2,
+            total: 2,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        core = acknowledgeAnyPendingCardResolutions(core);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        ).valid).toBe(true);
     });
 
     it('盔甲会把承受的物理伤害降低 1 点', () => {
@@ -1484,6 +1782,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         expect(core.rooms.find((room) => room.id === 'ground-north')?.name).toBe('火炉房');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
@@ -1504,6 +1803,7 @@ describe('Betrayal first scenario runtime', () => {
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+        core = acknowledgeAnyPendingCardResolutions(core);
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
         const lockedMight = BetrayalDomain.validate(
@@ -1579,6 +1879,176 @@ describe('Betrayal first scenario runtime', () => {
         expect(supportedEventNames).toContain('大宅饿了');
         expect(core.eventOrder.map((event) => event.name).sort()).toEqual(supportedEventNames.sort());
         expect(core.eventOrder.map((event) => event.name)).toContain('大宅饿了');
+        expect(core.deckCounts.event).toBe(supportedEventNames.length);
+        expect(core.deckCounts.event).toBe(core.eventOrder.length);
+    });
+
+    it('当前 23 张事件牌都登记了灰尘死亡保护风险分类', () => {
+        const expectedRiskTagsByEventName: Record<string, string[]> = {
+            标本剥制: ['damage'],
+            '说“茄子”！': [],
+            外星几何: ['directTraitLoss'],
+            小丑房间: ['damage'],
+            '咬一口！': ['damage'],
+            吊死鬼: ['directTraitLoss'],
+            电话铃声: ['damage'],
+            小机器人: ['damage'],
+            嘎吱的木门: [],
+            脑状食品: ['damage', 'directTraitLoss'],
+            上古旧宅: ['damage'],
+            肉质苔癣: ['damage'],
+            夜幕众星: ['directTraitLoss'],
+            一抹鲜红: ['damage'],
+            一瓶微尘: ['directTraitLoss'],
+            大宅饿了: [],
+            一条秘密通道: ['directTraitLoss'],
+            最深的壁橱: ['damage'],
+            磁带播放器: ['damage'],
+            '在你背后！': ['damage'],
+            '蜘蛛！': ['directTraitLoss'],
+            一种怪异的感觉: ['directTraitLoss'],
+            葬礼: ['directTraitLoss'],
+        };
+        const actualRiskTagsByEventName = Object.fromEntries(
+            BETRAYAL_DISCOVERY_POOLS.events.map((event) => [
+                event.name,
+                collectEventTemplateDeathRiskTags(event),
+            ]),
+        );
+
+        expect(Object.keys(expectedRiskTagsByEventName)).toEqual(
+            BETRAYAL_DISCOVERY_POOLS.events.map((event) => event.name),
+        );
+        expect(actualRiskTagsByEventName).toEqual(expectedRiskTagsByEventName);
+    });
+
+    it('当前运行持有牌全集覆盖发现牌池和开局额外持有牌，并登记主动/武器能力', () => {
+        const discoveryCardIds = new Set([
+            ...BETRAYAL_DISCOVERY_POOLS.possessions.item,
+            ...BETRAYAL_DISCOVERY_POOLS.possessions.omen,
+        ].map((card) => card.id));
+        const runtimeCards = collectRuntimePossessionCards();
+        const core = createPossessionCoverageCore();
+        const attackWeaponCardIds = new Set(resolveAttackWeaponCardStatuses(core).map((status) => status.card.id));
+        const actualCoverage = Object.fromEntries(runtimeCards.map((card) => [
+            card.id,
+            {
+                name: card.name,
+                kind: card.kind,
+                activeUseMode: resolveUseEffect(card)?.mode ?? null,
+                attackWeapon: attackWeaponCardIds.has(card.id),
+            },
+        ]));
+
+        expect(BETRAYAL_DISCOVERY_POOLS.possessions.item).toHaveLength(12);
+        expect(BETRAYAL_DISCOVERY_POOLS.possessions.omen).toHaveLength(9);
+        expect(runtimeCards.map((card) => card.id)).toEqual([
+            'camera',
+            'medical-kit',
+            'holy-water',
+            'flashlight',
+            'radio',
+            'map',
+            'strange-amulet',
+            'rope',
+            'lockpick-tool',
+            'hunting-knife',
+            'notebook',
+            'manuscript',
+            'omen-book',
+            'dog',
+            'mask',
+            'skull',
+            'holy-symbol',
+            'armor',
+            'idol',
+            'ring',
+            'dagger',
+            'lantern',
+            'journal',
+        ]);
+        expect(runtimeCards.filter((card) => !discoveryCardIds.has(card.id)).map((card) => card.name)).toEqual(['灯笼', '日记']);
+        expect(actualCoverage).toEqual({
+            camera: { name: '魔法相机', kind: 'item', activeUseMode: null, attackWeapon: false },
+            'medical-kit': { name: '急救包', kind: 'item', activeUseMode: 'healTraits', attackWeapon: false },
+            'holy-water': { name: '奇怪的药品', kind: 'item', activeUseMode: 'healTraits', attackWeapon: false },
+            flashlight: { name: '手电筒', kind: 'item', activeUseMode: null, attackWeapon: false },
+            radio: { name: '头戴耳机', kind: 'item', activeUseMode: null, attackWeapon: false },
+            map: { name: '地图', kind: 'item', activeUseMode: 'placeExplorer', attackWeapon: false },
+            'strange-amulet': { name: '奇异护符', kind: 'item', activeUseMode: null, attackWeapon: false },
+            rope: { name: '兔脚', kind: 'item', activeUseMode: null, attackWeapon: false },
+            'lockpick-tool': { name: '骨制钥匙', kind: 'item', activeUseMode: null, attackWeapon: false },
+            'hunting-knife': { name: '砍刀', kind: 'item', activeUseMode: null, attackWeapon: true },
+            notebook: { name: '笔记本', kind: 'item', activeUseMode: 'placeExplorer', attackWeapon: false },
+            manuscript: { name: '手稿', kind: 'item', activeUseMode: 'placeExplorer', attackWeapon: false },
+            'omen-book': { name: '书本', kind: 'omen', activeUseMode: 'nextNonCombatTraitReplacement', attackWeapon: false },
+            dog: { name: '狗', kind: 'omen', activeUseMode: null, attackWeapon: false },
+            mask: { name: '面具', kind: 'omen', activeUseMode: 'moveOthersInRoom', attackWeapon: false },
+            skull: { name: '头骨', kind: 'omen', activeUseMode: null, attackWeapon: false },
+            'holy-symbol': { name: '圣符', kind: 'omen', activeUseMode: null, attackWeapon: false },
+            armor: { name: '盔甲', kind: 'omen', activeUseMode: null, attackWeapon: false },
+            idol: { name: '雕像', kind: 'omen', activeUseMode: null, attackWeapon: false },
+            ring: { name: '指环', kind: 'omen', activeUseMode: null, attackWeapon: true },
+            dagger: { name: '匕首', kind: 'omen', activeUseMode: null, attackWeapon: true },
+            lantern: { name: '灯笼', kind: 'item', activeUseMode: null, attackWeapon: false },
+            journal: { name: '日记', kind: 'item', activeUseMode: 'placeExplorer', attackWeapon: false },
+        });
+    });
+
+    it('当前运行持有牌均登记灰尘交叉规则分类', () => {
+        const expectedDustCrossingsByCardId = {
+            camera: ['nonCombatKnowledgeReplacement', 'dustDeathBurial'],
+            'medical-kit': ['turnStartActiveUseLimit', 'healTraits', 'dustDeathBurial'],
+            'holy-water': ['turnStartActiveUseLimit', 'healTraits', 'dustDeathBurial'],
+            flashlight: ['eventTraitExtraDice', 'dustDeathBurial'],
+            radio: ['mentalDamageReduction', 'dustDeathBurial'],
+            map: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+            'strange-amulet': ['otherHauntSetupItem', 'dustDeathBurial'],
+            rope: ['rabbitFootReroll', 'dustDeathBurial'],
+            'lockpick-tool': ['skeletonKeyMove', 'dustDeathBurial'],
+            'hunting-knife': ['attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            notebook: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+            manuscript: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+            'omen-book': ['passiveKnowledgeBonus', 'turnStartActiveUseLimit', 'bookNonCombatReplacement', 'dustDeathBurial'],
+            dog: ['passiveSpeedBonus', 'dogTrade', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            mask: ['passiveSpeedBonus', 'turnStartActiveUseLimit', 'moveOthersInRoom', 'dustDeathBurial'],
+            skull: ['passiveKnowledgeBonus', 'deathPrevention', 'rabbitFootDeathWindow', 'dustDeathBurial'],
+            'holy-symbol': ['passiveSanityBonus', 'holySymbolDiscoveryReplacement', 'dustDeathBurial'],
+            armor: ['physicalDamageReduction', 'dustDeathBurial'],
+            idol: ['passiveMightBonus', 'idolEventSkip', 'dustDeathBurial'],
+            ring: ['passiveSanityBonus', 'attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            dagger: ['attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            lantern: ['eventTraitExtraDice', 'dustDeathBurial'],
+            journal: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+        };
+        const runtimeCards = collectRuntimePossessionCards();
+
+        expect(Object.keys(expectedDustCrossingsByCardId)).toEqual(runtimeCards.map((card) => card.id));
+        expect(expectedDustCrossingsByCardId).toEqual({
+            camera: ['nonCombatKnowledgeReplacement', 'dustDeathBurial'],
+            'medical-kit': ['turnStartActiveUseLimit', 'healTraits', 'dustDeathBurial'],
+            'holy-water': ['turnStartActiveUseLimit', 'healTraits', 'dustDeathBurial'],
+            flashlight: ['eventTraitExtraDice', 'dustDeathBurial'],
+            radio: ['mentalDamageReduction', 'dustDeathBurial'],
+            map: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+            'strange-amulet': ['otherHauntSetupItem', 'dustDeathBurial'],
+            rope: ['rabbitFootReroll', 'dustDeathBurial'],
+            'lockpick-tool': ['skeletonKeyMove', 'dustDeathBurial'],
+            'hunting-knife': ['attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            notebook: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+            manuscript: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+            'omen-book': ['passiveKnowledgeBonus', 'turnStartActiveUseLimit', 'bookNonCombatReplacement', 'dustDeathBurial'],
+            dog: ['passiveSpeedBonus', 'dogTrade', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            mask: ['passiveSpeedBonus', 'turnStartActiveUseLimit', 'moveOthersInRoom', 'dustDeathBurial'],
+            skull: ['passiveKnowledgeBonus', 'deathPrevention', 'rabbitFootDeathWindow', 'dustDeathBurial'],
+            'holy-symbol': ['passiveSanityBonus', 'holySymbolDiscoveryReplacement', 'dustDeathBurial'],
+            armor: ['physicalDamageReduction', 'dustDeathBurial'],
+            idol: ['passiveMightBonus', 'idolEventSkip', 'dustDeathBurial'],
+            ring: ['passiveSanityBonus', 'attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            dagger: ['attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
+            lantern: ['eventTraitExtraDice', 'dustDeathBurial'],
+            journal: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
+        });
     });
 
     it('大宅饿了作祟检定成功会进入剧本12官方开局切片', () => {
@@ -1799,6 +2269,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.eventOrder.map((event) => event.name)).toEqual(['第二张测试事件', '第一张测试事件']);
         expect(core.deckCounts.event).toBe(eventDeckBefore);
         expect(core.discardCounts.event).toBe(0);
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '1', { roomId: 'ground-east' });
@@ -1843,6 +2314,78 @@ describe('Betrayal first scenario runtime', () => {
         expect(viewForPlayer1.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([2, 3, 5]);
         expect(viewForPlayer1.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([null, null, null]);
         expect(core.scenarioRuntime.dust.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([2, 3, 5]);
+    });
+
+    it('剧本3死亡保护回看也只允许本人看到自己的疾病标记数字', () => {
+        const core = createStartedFirstScenarioCore(['0', '1']);
+        core.scenarioRuntime.dust = {
+            sicknessTokensByPlayerId: {
+                '0': [
+                    { id: 'sickness-0-a', value: 1 },
+                    { id: 'sickness-0-b', value: 4 },
+                    { id: 'sickness-0-c', value: 8 },
+                ],
+                '1': [
+                    { id: 'sickness-1-a', value: 2 },
+                    { id: 'sickness-1-b', value: 3 },
+                    { id: 'sickness-1-c', value: 5 },
+                ],
+            },
+            permanentTraitorPlayerIds: ['0'],
+            researchRoomIds: [],
+            exchangedSicknessThisTurnPlayerIds: [],
+            feverishPlayerIds: [],
+        };
+        core.recentRoll = {
+            id: 'death-prevention-dust-privacy',
+            kind: 'deathPrevention',
+            playerId: '1',
+            sourceTitle: '头骨死亡保护',
+            dice: [2, 1],
+            passiveBonus: 0,
+            latestLabel: '阻止死亡',
+            deathPrevention: {
+                cardId: 'skull',
+                minTotal: 5,
+                damageKind: 'physical',
+                damageAmount: 1,
+                traitsBeforeDamage: { ...core.currentExplorer.traits },
+                scenarioRuntimeBeforeDefeat: {
+                    ...core.scenarioRuntime,
+                    dust: {
+                        sicknessTokensByPlayerId: {
+                            '0': [
+                                { id: 'before-sickness-0-a', value: 1 },
+                                { id: 'before-sickness-0-b', value: 4 },
+                                { id: 'before-sickness-0-c', value: 8 },
+                            ],
+                            '1': [
+                                { id: 'before-sickness-1-a', value: 2 },
+                                { id: 'before-sickness-1-b', value: 3 },
+                                { id: 'before-sickness-1-c', value: 5 },
+                            ],
+                        },
+                        permanentTraitorPlayerIds: ['0'],
+                        researchRoomIds: [],
+                        exchangedSicknessThisTurnPlayerIds: [],
+                        feverishPlayerIds: [],
+                    },
+                },
+                monstersBeforeDefeat: core.monsters.map((monster) => ({ ...monster })),
+            },
+            consumedRabbitFootCardIds: [],
+        };
+
+        const viewForPlayer1 = BetrayalDomain.playerView?.(core, '1') as BetrayalCore;
+        const deathPreventionDust = viewForPlayer1.recentRoll?.deathPrevention?.scenarioRuntimeBeforeDefeat.dust;
+
+        expect(viewForPlayer1.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([2, 3, 5]);
+        expect(viewForPlayer1.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([null, null, null]);
+        expect(viewForPlayer1.scenarioRuntime.dust?.permanentTraitorPlayerIds).toEqual([]);
+        expect(deathPreventionDust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([2, 3, 5]);
+        expect(deathPreventionDust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([null, null, null]);
+        expect(deathPreventionDust?.permanentTraitorPlayerIds).toEqual([]);
+        expect(core.recentRoll.deathPrevention?.scenarioRuntimeBeforeDefeat.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([1, 4, 8]);
     });
 
     it('标本剥制按官方锁定文本执行力量检定成功和失败分支', () => {
@@ -1944,6 +2487,58 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('失去 1 点速度');
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.currentExplorer.traits.speed).toBe(3);
+    });
+
+    it('即时事件效果进入翻牌确认队列，确认前不能结束回合', () => {
+        let core = createStartedFirstScenarioCore(['0', '1']);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '外星几何')!];
+        core.currentExplorer.traits.knowledge = 3;
+        core.currentExplorer.traits.speed = 4;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-north' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3),
+        );
+
+        expect(core.latestDiscovery?.title).toBe('外星几何');
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => ({
+            kind: step.kind,
+            text: step.text,
+        }))).toEqual([
+            { kind: 'event-effect', text: '事件效果：知识检定 7：获得 1 点知识；知识 +1' },
+        ]);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '外星几何',
+            stepKind: 'event-effect',
+            index: 1,
+            total: 1,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+
+        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        ).valid).toBe(true);
     });
 
     it('小丑房间支持无事发生分支与精神伤害分支', () => {
@@ -2402,6 +2997,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).not.toContain('知识 +1');
         expect(core.pendingEventChoice?.sourceTitle).toBe('肉质苔癣');
         expect(core.pendingEventChoice?.effect.mode).toBe('chosenTrait');
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([2, 2]);
@@ -2415,6 +3011,36 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.pendingEventChoice).toBeNull();
         expect(core.latestDiscovery?.detail).toContain('知识 +1');
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => ({
+            kind: step.kind,
+            text: step.text,
+        }))).toEqual([
+            { kind: 'event-effect', text: '事件效果：知识 +1' },
+        ]);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '肉质苔癣',
+            stepKind: 'event-effect',
+            text: '事件效果：知识 +1',
+            index: 1,
+            total: 1,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        ).valid).toBe(true);
         expect(core.currentExplorer.traits.knowledge).toBe(5);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([2, 2]);
@@ -2547,6 +3173,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.recentRoll?.kind).toBe('eventTraitCheck');
         expect(core.recentRoll?.trait).toBe('knowledge');
+        core = acknowledgeSingleEventEffectResolution(core, '夜幕众星', '知识 +1');
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2570,6 +3197,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('速度 -1');
         expect(core.currentExplorer.traits.speed).toBe(3);
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '夜幕众星', '速度 -1');
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2593,6 +3221,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('治疗神志');
         expect(core.currentExplorer.traits.sanity).toBe(sanityTemplateValue);
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '夜幕众星', '治疗神志');
     });
 
     it('一抹鲜红按官方锁定文本支持可选作祟检定、速度奖励和跳过伤害', () => {
@@ -2628,6 +3257,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traitTracks.speed.position).toBe(speedPositionBeforeScarletReward + 1);
         expect(core.currentExplorer.traits.speed).toBe(4);
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '一抹鲜红', '速度 +1');
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -2649,6 +3279,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('受到 1 颗骰子的物理伤害');
         expect(core.currentExplorer.traits.might + core.currentExplorer.traits.speed).toBe(mightBeforeSkip + speedBeforeSkip - 1);
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '一抹鲜红', '物理伤害');
     });
 
     it('一抹鲜红作祟检定成功会复用正式 haunt 触发链路', () => {
@@ -2944,6 +3575,32 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.summary).toBe('跳过作祟检定');
         expect(core.latestDiscovery?.detail).toContain('力量 -1');
         expect(core.latestDiscovery?.detail).toContain('神志 +1');
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => ({
+            kind: step.kind,
+            text: step.text,
+        }))).toEqual([
+            { kind: 'event-effect', text: '事件效果：力量 -1；神志 +1' },
+        ]);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '一瓶微尘',
+            stepKind: 'event-effect',
+            text: '事件效果：力量 -1；神志 +1',
+            index: 1,
+            total: 1,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.traits.might).toBe(3);
         expect(core.currentExplorer.traits.sanity).toBe(5);
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -3099,7 +3756,115 @@ describe('Betrayal first scenario runtime', () => {
             alreadyApplied: false,
             canConfirmFromCurrentState: false,
             requiresManualConfirmation: true,
-            contractGaps: ['formal-command', 'ui-confirmation', 'token-placement-command', 'room-selection'],
+            contractGaps: ['token-placement-command', 'room-selection'],
+        });
+    });
+
+    it('灰尘 setup 可以正式确认怪物参考卡和研究 token 池并更新队列进度', () => {
+        const core = createDustHauntCore();
+
+        const confirmed = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY,
+            '1',
+            { entryId: 'prepare-research-tokens' },
+        );
+
+        expect(confirmed.scenarioRuntime.hauntSetupQueue.find((entry) => entry.id === 'prepare-research-tokens')).toMatchObject({
+            status: 'resolved',
+        });
+        expect(resolveBetrayalHauntSetupProgress(confirmed)).toMatchObject({
+            status: 'manual-check-required',
+            totalCount: 5,
+            resolvedCount: 4,
+            manualCheckCount: 1,
+            manualCheckEntryIds: ['monster-card-left-of-revealer'],
+            needsFormalConfirmationCommand: true,
+        });
+
+        const confirmedPreview = resolveBetrayalHauntSetupCommandPreviews(confirmed);
+        expect(confirmedPreview).toMatchObject({
+            status: 'manual-check-required',
+            readyCount: 4,
+            manualCheckCount: 1,
+            manualCheckEntryIds: ['monster-card-left-of-revealer'],
+        });
+        expect(confirmedPreview.previews.find((preview) => preview.entryId === 'prepare-research-tokens')).toMatchObject({
+            alreadyApplied: true,
+            canConfirmFromCurrentState: true,
+            requiresManualConfirmation: false,
+            contractGaps: ['token-placement-command', 'room-selection'],
+        });
+        expect(confirmed.activityLog[0]?.text).toContain('确认已准备 8 个研究 token');
+
+        const fullyConfirmed = applyBetrayalCommand(
+            confirmed,
+            BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY,
+            '1',
+            { entryId: 'monster-card-left-of-revealer' },
+        );
+        expect(resolveBetrayalHauntSetupProgress(fullyConfirmed)).toMatchObject({
+            status: 'resolved',
+            totalCount: 5,
+            resolvedCount: 5,
+            manualCheckCount: 0,
+            manualCheckEntryIds: [],
+            needsFormalConfirmationCommand: false,
+        });
+        expect(resolveBetrayalHauntSetupCommandPreviews(fullyConfirmed)).toMatchObject({
+            status: 'ready',
+            readyCount: 5,
+            manualCheckCount: 0,
+            manualCheckEntryIds: [],
+        });
+        expect(fullyConfirmed.activityLog[0]?.text).toContain('确认怪物参考卡已放在作祟揭秘者左侧');
+    });
+
+    it('灰尘 setup 确认命令拒绝无效、非灰尘和重复确认', () => {
+        expect(BetrayalDomain.validate(
+            { core: createStartedFirstScenarioCore(), sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY, '0', {
+                entryId: 'prepare-research-tokens',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '当前还未进入 haunt 阶段。',
+        });
+
+        expect(BetrayalDomain.validate(
+            { core: createDustHauntCore(), sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY, '1', {
+                entryId: 'unknown-entry' as never,
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '当前 setup 队列没有这个条目。',
+        });
+
+        expect(BetrayalDomain.validate(
+            { core: createHelpingHandsHauntCore(), sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY, '1', {
+                entryId: 'monster-card-left-of-revealer',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '当前只支持确认灰尘 setup 条目。',
+        });
+
+        const confirmed = applyBetrayalCommand(
+            createDustHauntCore(),
+            BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY,
+            '1',
+            { entryId: 'prepare-research-tokens' },
+        );
+        expect(BetrayalDomain.validate(
+            { core: confirmed, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY, '1', {
+                entryId: 'prepare-research-tokens',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '该 setup 条目已经确认。',
         });
     });
 
@@ -3464,7 +4229,82 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.dust?.researchRoomIds).toContain('ground-north');
         expect(core.usedCardIdsThisTurn).toContain('search-for-cure');
         expect(core.recentRoll?.latestLabel).toBe('放置研究标记');
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '寻找解药',
+            dice: [2, 2, 2],
+            passiveBonus: 0,
+        });
         expect(core.recommendedAction).toBe('endTurn');
+    });
+
+    it('灰尘剧本寻找解药失败会跳过死亡玩家并与左侧存活玩家随机交换疾病标记', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(['0', '1', '2', '3']), 'omen');
+        activateTestExplorer(core, '1');
+        seedDustFailedActionExchangeTokens(core);
+        setTestExplorerTraits(core, '1', { knowledge: 3 });
+        const researchRoomIdsBefore = [...core.scenarioRuntime.dust!.researchRoomIds];
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.dust?.researchRoomIds).toEqual(researchRoomIdsBefore);
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '寻找解药',
+            latestLabel: '交换疾病标记',
+            dice: [0, 0, 0],
+        });
+        expect(core.activityLog[0]?.text).toContain('与左侧玩家随机交换了疾病标记');
+        expect(core.usedCardIdsThisTurn).toContain('search-for-cure');
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds.sort()).toEqual(['1', '3']);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['1', '3']);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([7, 8, 9]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([1, 5, 6]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']?.map((token) => token.value)).toEqual([12, 13, 14]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['3']?.map((token) => token.value)).toEqual([4, 10, 11]);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.currentPlayer).toBe('3');
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds).toEqual([]);
+    });
+
+    it('灰尘剧本寻找解药失败后若所有存活者都永久感染则叛徒胜利', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(['0', '1', '2', '3']), 'omen');
+        activateTestExplorer(core, '1');
+        seedDustFailedActionExchangeTokens(core);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0', '2'];
+        setTestExplorerTraits(core, '1', { knowledge: 3 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+        });
+        expect(core.endgameResult?.winners.sort()).toEqual(['1', '3']);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds.sort()).toEqual(['0', '2']);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['1', '3']);
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '寻找解药',
+            latestLabel: '交换疾病标记',
+            dice: [0, 0, 0],
+        });
     });
 
     it('灰尘剧本治愈灰尘成功会进入英雄胜利终局', () => {
@@ -3485,9 +4325,795 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.endgameResult?.hauntId).toBe('the-dust');
         expect(core.endgameResult?.outcome).toBe('survivors');
         expect(core.endgameResult?.winners).toEqual(['1', '2']);
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '治愈灰尘',
+            latestLabel: '治愈成功',
+            dice: [2, 2, 2, 2, 2],
+            passiveBonus: 4,
+        });
     });
 
-    it('灰尘终局读模型会标记胜利文本和同时达成政策仍缺合同', () => {
+    it('灰尘剧本治愈灰尘可选择任意属性并按多个研究标记加值', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway', 'entrance-hall'];
+        setTestExplorerTraits(core, '1', {
+            might: 6,
+            speed: 4,
+            knowledge: 2,
+            sanity: 2,
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CURE_THE_DUST,
+            '1',
+            { trait: 'speed' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('the-dust');
+        expect(core.endgameResult?.outcome).toBe('survivors');
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '治愈灰尘',
+            latestLabel: '治愈成功',
+            trait: 'speed',
+            rollLabel: '速度检定',
+            dice: [2, 2, 2, 2],
+            passiveBonus: 6,
+        });
+    });
+
+    it.each([
+        { card: { id: 'omen-book', name: '书本', kind: 'omen' as const }, trait: 'knowledge' as const },
+        { card: { id: 'skull', name: '头骨', kind: 'omen' as const }, trait: 'knowledge' as const },
+        { card: { id: 'dog', name: '狗', kind: 'omen' as const }, trait: 'speed' as const },
+        { card: { id: 'mask', name: '面具', kind: 'omen' as const }, trait: 'speed' as const },
+        { card: { id: 'holy-symbol', name: '圣符', kind: 'omen' as const }, trait: 'sanity' as const },
+        { card: { id: 'ring', name: '指环', kind: 'omen' as const }, trait: 'sanity' as const },
+        { card: { id: 'idol', name: '雕像', kind: 'omen' as const }, trait: 'might' as const },
+    ] as const)('灰尘治愈灰尘会计算$card.name的被动检定加值并叠加研究标记', ({ card, trait }) => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        activateTestExplorer(core, '1');
+        core = placeCurrentExplorerInDustResearchRoom(core, 'omen');
+        core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway', 'entrance-hall'];
+        setTestExplorerTraits(core, '1', { [trait]: 4 } as Partial<Record<BetrayalTraitKey, number>>);
+        setTestExplorerInventory(core, '1', [card]);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CURE_THE_DUST,
+            '1',
+            { trait },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '治愈灰尘',
+            latestLabel: '治愈成功',
+            trait,
+            dice: [2, 2, 2, 2],
+            passiveBonus: 7,
+        });
+    });
+
+    it('灰尘寻找解药会消费书本的下一次非战斗检定替换', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        activateTestExplorer(core, '1');
+        core = placeCurrentExplorerInDustResearchRoom(core, 'omen');
+        setTestExplorerTraits(core, '1', {
+            knowledge: 5,
+            sanity: 2,
+        });
+        setTestExplorerInventory(core, '1', [{ id: 'omen-book', name: '书本', kind: 'omen' }]);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '1', { cardId: 'omen-book' });
+
+        expect(core.nextNonCombatTraitReplacement).toMatchObject({
+            playerId: '1',
+            sourceCardId: 'omen-book',
+            replacementTrait: 'knowledge',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+            '1',
+            { trait: 'sanity' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3),
+        );
+
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '寻找解药',
+            latestLabel: '放置研究标记',
+            trait: 'sanity',
+            dice: [2, 2, 2, 2, 2],
+            passiveBonus: 0,
+        });
+        expect(core.nextNonCombatTraitReplacement).toBeNull();
+        expect(core.usedCardIdsThisTurn).toEqual(expect.arrayContaining(['omen-book', 'search-for-cure']));
+    });
+
+    it('灰尘寻找解药的知识检定会使用魔法相机改看更高的神志', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
+        activateTestExplorer(core, '1');
+        core = placeCurrentExplorerInDustResearchRoom(core, 'omen');
+        setTestExplorerTraits(core, '1', {
+            knowledge: 1,
+            sanity: 5,
+        });
+        setTestExplorerInventory(core, '1', [{ id: 'camera', name: '魔法相机', kind: 'item' }]);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3),
+        );
+
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '寻找解药',
+            latestLabel: '放置研究标记',
+            trait: 'knowledge',
+            dice: [2, 2, 2, 2, 2],
+            passiveBonus: 0,
+        });
+        expect(core.scenarioRuntime.dust?.researchRoomIds).toContain('ground-north');
+    });
+
+    it('灰尘阶段继续探索事件时，手电筒和灯笼仍只给事件属性检定额外骰', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        setTestTraitTrack(core, '1', 'knowledge', [1, 2, 3, 4], 1, 1);
+        setTestExplorerInventory(core, '1', [
+            { id: 'flashlight', name: '手电筒', kind: 'item' },
+            { id: 'lantern', name: '灯笼', kind: 'item' },
+        ]);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '灰尘中的灯光',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    { min: 10, label: '照亮灰尘，获得 1 点知识', effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' } },
+                    { min: 0, label: '看不清灰尘，失去 1 点知识', effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' } },
+                ],
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '灰尘中的灯光',
+        });
+        expect(core.latestDiscovery?.detail).toContain('知识检定 12');
+        expect(core.recentRoll).toMatchObject({
+            kind: 'eventTraitCheck',
+            sourceTitle: '灰尘中的灯光',
+            trait: 'knowledge',
+            dice: [2, 2, 2, 2, 2, 2],
+            passiveBonus: 0,
+        });
+
+        const flashlightUse = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', { cardId: 'flashlight' }),
+        );
+        const lanternUse = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', { cardId: 'lantern' }),
+        );
+        expect(flashlightUse.valid).toBe(false);
+        expect(lanternUse.valid).toBe(false);
+    });
+
+    it('灰尘阶段的物理和精神伤害仍会先应用盔甲与头戴耳机减伤', () => {
+        let armorCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(armorCore, '1', 'ground-north');
+        setDiscoveredTestRoom(armorCore, 'ground-north', {
+            name: '火炉房',
+            hint: '在此结束回合会受到房间伤害。',
+            tags: ['伤害'],
+            discoveryReward: null,
+            visualId: 'furnaceRoom',
+            endTurnEffect: 'physicalDamage1',
+        });
+        setTestExplorerInventory(armorCore, '1', [{ id: 'armor', name: '盔甲', kind: 'omen' }]);
+        armorCore.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        armorCore.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = ['1'];
+        setTestTraitTrack(armorCore, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(armorCore, '1', 'speed', [1], 0, 0);
+
+        armorCore = applyBetrayalCommand(armorCore, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+        expect(armorCore.pendingDamageAllocation).toBeNull();
+        expect(armorCore.currentPlayer).toBe('2');
+        expect(armorCore.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(armorCore.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+
+        let radioCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(radioCore, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(radioCore, 6);
+        setTestTraitTrack(radioCore, '1', 'knowledge', [1], 0, 0);
+        setTestTraitTrack(radioCore, '1', 'sanity', [1], 0, 0);
+        setTestExplorerInventory(radioCore, '1', [{ id: 'radio', name: '头戴耳机', kind: 'item' }]);
+        radioCore.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        radioCore.drawOrder = ['event'];
+        radioCore.eventOrder = [{
+            name: '灰尘噪音',
+            effect: { mode: 'rolledDamage', damageKind: 'mental', dice: 1, recommendedAction: 'endTurn' },
+        }];
+        radioCore.deckCounts.event = radioCore.eventOrder.length;
+        const targetRoomId = resolveExplorableRoomSlots(radioCore)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        radioCore = applyBetrayalCommand(
+            radioCore,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(2),
+        );
+
+        expect(radioCore.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '灰尘噪音',
+        });
+        expect(findTestExplorer(radioCore, '1').traits).toMatchObject({
+            knowledge: 1,
+            sanity: 1,
+        });
+        expect(radioCore.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(radioCore.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+    });
+
+    it('灰尘永久感染但仍存活的探索者可以用狗请求交易，狂热病患禁用另有怪物回合守卫', () => {
+        let core = createDustHauntCore(['0', '1', '2']);
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'upper-landing', inventory: [] }
+                : explorer
+        ));
+        setTestExplorerInventory(core, '1', [
+            { id: 'dog', name: '狗', kind: 'omen' },
+            { id: 'medical-kit', name: '急救包', kind: 'item' },
+        ]);
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+
+        const dogTrade = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.TRADE_POSSESSION, '1', {
+                useDog: true,
+                targetPlayerId: '0',
+                cardIds: ['medical-kit'],
+            }),
+        );
+        expect(dogTrade.valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.TRADE_POSSESSION, '1', {
+            useDog: true,
+            targetPlayerId: '0',
+            cardIds: ['medical-kit'],
+        });
+        expect(core.pendingTradeAgreement).toMatchObject({
+            playerId: '1',
+            targetPlayerId: '0',
+            cardIds: ['medical-kit'],
+            useDog: true,
+            sourceCardId: 'dog',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT, '0', { accept: true });
+
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['dog']);
+        expect(findTestExplorer(core, '0').inventory.map((card) => card.id)).toEqual(['medical-kit']);
+        expect(core.usedCardIdsThisTurn).toContain('dog');
+        expect(core.tradeUsedThisTurnPlayerIds).toContain('1');
+    });
+
+    it('灰尘阶段继续探索时圣符仍可埋葬第一张板块并继续发现下一张', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'upper-landing');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [
+            {
+                name: '滑落阶梯',
+                text: '脚下阶梯突然松动。失去 1 点速度。',
+                effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+            },
+        ];
+        const collapsedRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'collapsedRoom')!;
+        const mysticElevator = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'mysticElevator')!;
+        setTestRoomDiscoveryDeck(core, [
+            { floor: 'upper', room: collapsedRoom },
+            { floor: 'upper', room: mysticElevator },
+        ]);
+        setTestExplorerInventory(core, '1', [{ id: 'holy-symbol', name: '圣符', kind: 'omen' }]);
+        const speedBeforeExplore = core.currentExplorer.traits.speed;
+
+        const holySymbolExplore = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '1', { roomId: 'upper-north', useHolySymbol: true }),
+        );
+        expect(holySymbolExplore.valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: 'upper-north', useHolySymbol: true },
+            100,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.rooms.find((room) => room.id === 'upper-north')?.visualId).toBe('mysticElevator');
+        expect(core.latestDiscovery?.title).toBe('滑落阶梯');
+        expect(core.currentExplorer.traits.speed).toBe(speedBeforeExplore - 1);
+        expect(core.activityLog[0]?.text).toContain('圣符埋葬倒塌房间');
+        expect(core.activityLog[0]?.text).toContain('继续发现神秘电梯');
+    });
+
+    it('灰尘阶段继续探索事件符号时雕像仍可跳过事件且不结算事件效果', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [
+            {
+                name: '阴影扑面',
+                text: '阴影扑向你。失去 1 点力量。',
+                effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+            },
+        ];
+        setTestExplorerInventory(core, '1', [{ id: 'idol', name: '雕像', kind: 'omen' }]);
+        const mightBefore = core.currentExplorer.traits.might;
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        const idolExplore = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '1', { roomId: targetRoomId, useIdol: true }),
+        );
+        expect(idolExplore.valid).toBe(true);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '1', { roomId: targetRoomId!, useIdol: true });
+
+        expect(core.latestDiscovery?.kind).toBe('event');
+        expect(core.latestDiscovery?.summary).toBe('已用雕像跳过');
+        expect(core.latestDiscovery?.detail).toContain('没有抽取或结算事件卡');
+        expect(core.currentExplorer.traits.might).toBe(mightBefore);
+        expect(core.activityLog[0]?.text).toContain('使用雕像跳过了事件：阴影扑面');
+    });
+
+    it('灰尘阶段骨制钥匙仍可穿墙移动到已发现相邻板块，但不能发现新房间', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'upper-landing');
+        setScenarioTestTurnMovement(core, 2);
+        setTestExplorerInventory(core, '1', [{ id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' }]);
+        core.rooms = core.rooms.map((room) => {
+            if (room.id === 'upper-landing') {
+                return {
+                    ...room,
+                    doorways: room.doorways.filter((doorway) => doorway.connectsToRoomId !== 'upper-west'),
+                };
+            }
+            if (room.id === 'upper-west') {
+                return {
+                    ...room,
+                    doorways: room.doorways.filter((doorway) => doorway.connectsToRoomId !== 'upper-landing'),
+                };
+            }
+            return room;
+        });
+
+        const normalMove = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'upper-west' }),
+        );
+        const undiscoveredMove = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', {
+                roomId: 'upper-north',
+                useSkeletonKey: true,
+            }),
+        );
+        expect(normalMove.valid).toBe(false);
+        expect(undiscoveredMove.valid).toBe(false);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+            '1',
+            { roomId: 'upper-west', useSkeletonKey: true },
+            100,
+            createBetrayalScriptedRandom(2),
+        );
+
+        expect(core.currentExplorer.roomId).toBe('upper-west');
+        expect(core.movesRemaining).toBe(1);
+        expect(core.currentExplorer.inventory).toEqual([{ id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' }]);
+        expect(core.activityLog[0]?.text).toContain('使用骨制钥匙穿过墙壁');
+    });
+
+    it('灰尘阶段主动治疗类持有牌仍按回合开始限制埋葬并治疗', () => {
+        let holyWaterCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(holyWaterCore, '1', 'entrance-hall');
+        setTestExplorerInventory(holyWaterCore, '1', [{ id: 'holy-water', name: '奇怪的药品', kind: 'item' }]);
+        setTestTraitTrack(holyWaterCore, '1', 'might', [1, 2, 3, 4, 5], 1, 3);
+        setTestTraitTrack(holyWaterCore, '1', 'speed', [1, 1, 2, 3, 4], 1, 3);
+
+        holyWaterCore = applyBetrayalCommand(holyWaterCore, BETRAYAL_COMMANDS.USE_POSSESSION, '1', { cardId: 'holy-water' });
+
+        expect(holyWaterCore.currentExplorer.traits.might).toBe(4);
+        expect(holyWaterCore.currentExplorer.traits.speed).toBe(3);
+        expect(holyWaterCore.currentExplorer.inventory).toEqual([]);
+        expect(holyWaterCore.usedCardIdsThisTurn).toContain('holy-water');
+        expect(holyWaterCore.activityLog[0]?.text).toContain('埋葬奇怪的药品');
+
+        let medicalKitCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(medicalKitCore, '1', 'hallway');
+        setTestExplorerInventory(medicalKitCore, '1', [{ id: 'medical-kit', name: '急救包', kind: 'item' }]);
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(medicalKitCore, '1', trait, [1, 2, 3, 4], 0, 2);
+        }
+
+        medicalKitCore = applyBetrayalCommand(medicalKitCore, BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+            cardId: 'medical-kit',
+            targetPlayerId: '1',
+        });
+
+        expect(medicalKitCore.currentExplorer.traits).toMatchObject({
+            might: 3,
+            speed: 3,
+            knowledge: 3,
+            sanity: 3,
+        });
+        expect(medicalKitCore.currentExplorer.inventory).toEqual([]);
+        expect(medicalKitCore.usedCardIdsThisTurn).toContain('medical-kit');
+        expect(medicalKitCore.activityLog[0]?.text).toContain('埋葬急救包');
+
+        const newlyGainedCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(newlyGainedCore, '1', 'hallway');
+        setTestExplorerInventory(newlyGainedCore, '1', [{ id: 'medical-kit', name: '急救包', kind: 'item' }], false);
+
+        const newlyGainedValidation = BetrayalDomain.validate(
+            { core: newlyGainedCore, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', { cardId: 'medical-kit', targetPlayerId: '1' }),
+        );
+        expect(newlyGainedValidation.valid).toBe(false);
+        if (!newlyGainedValidation.valid) {
+            expect(newlyGainedValidation.error).toContain('本回合新获得的持有物不能立刻使用');
+        }
+    });
+
+    it('灰尘阶段主动持有牌不能把死亡探索者当治疗或面具目标', () => {
+        const medicalKitCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(medicalKitCore, '1', 'hallway');
+        setTestExplorerInventory(medicalKitCore, '1', [{ id: 'medical-kit', name: '急救包', kind: 'item' }]);
+        medicalKitCore.otherExplorers = medicalKitCore.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'hallway' }
+                : explorer
+        ));
+        medicalKitCore.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+
+        const healDeadTarget = BetrayalDomain.validate(
+            { core: medicalKitCore, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+                cardId: 'medical-kit',
+                targetPlayerId: '0',
+            }),
+        );
+        expect(healDeadTarget.valid).toBe(false);
+        if (!healDeadTarget.valid) {
+            expect(healDeadTarget.error).toContain('急救包只能治疗自己或同板块的另一位探索者');
+        }
+
+        const maskCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(maskCore, '1', 'hallway');
+        setTestExplorerInventory(maskCore, '1', [{ id: 'mask', name: '面具', kind: 'omen' }]);
+        maskCore.otherExplorers = maskCore.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'hallway' }
+                : { ...explorer, roomId: 'upper-landing' }
+        ));
+        maskCore.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+
+        const moveDeadTarget = BetrayalDomain.validate(
+            { core: maskCore, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+                cardId: 'mask',
+                targetRoomIdsByTokenId: { '0': 'entrance-hall' },
+            }),
+        );
+        expect(moveDeadTarget.valid).toBe(false);
+        if (!moveDeadTarget.valid) {
+            expect(moveDeadTarget.error).toContain('当前板块没有可被面具移动的其他角色或怪物');
+        }
+    });
+
+    it('灰尘阶段面具有多个同房目标时必须逐个指定已发现相邻方向', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'hallway');
+        setTestExplorerInventory(core, '1', [{ id: 'mask', name: '面具', kind: 'omen' }]);
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0' || explorer.playerId === '2'
+                ? { ...explorer, roomId: 'hallway' }
+                : explorer
+        ));
+        core.monsters = [{
+            id: 'feverish-patient-1',
+            name: '狂热病患',
+            portraitAsset: 'betrayal/monsters/feverish-patient',
+            tokenAsset: 'betrayal/tokens/monsters/feverish-patient',
+            roomId: 'hallway',
+            might: 4,
+            speed: 5,
+            damage: 1,
+        }];
+
+        const missingTargetDirection = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+                cardId: 'mask',
+                targetRoomIdsByTokenId: {
+                    '0': 'entrance-hall',
+                    'feverish-patient-1': 'grand-staircase',
+                },
+            }),
+        );
+        expect(missingTargetDirection.valid).toBe(false);
+        if (!missingTargetDirection.valid) {
+            expect(missingTargetDirection.error).toContain('面具只能把同板块其他角色移动到已发现的相邻板块');
+        }
+
+        const extraTargetDirection = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+                cardId: 'mask',
+                targetRoomIdsByTokenId: {
+                    '0': 'entrance-hall',
+                    '2': 'grand-staircase',
+                    'ghost-target': 'entrance-hall',
+                    'feverish-patient-1': 'entrance-hall',
+                },
+            }),
+        );
+        expect(extraTargetDirection.valid).toBe(false);
+        if (!extraTargetDirection.valid) {
+            expect(extraTargetDirection.error).toContain('面具只能把同板块其他角色移动到已发现的相邻板块');
+        }
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+            cardId: 'mask',
+            targetRoomIdsByTokenId: {
+                '0': 'entrance-hall',
+                '2': 'grand-staircase',
+                'feverish-patient-1': 'entrance-hall',
+            },
+        });
+
+        expect(core.currentExplorer.roomId).toBe('hallway');
+        expect(core.otherExplorers.find((explorer) => explorer.playerId === '0')?.roomId).toBe('entrance-hall');
+        expect(core.otherExplorers.find((explorer) => explorer.playerId === '2')?.roomId).toBe('grand-staircase');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-patient-1')?.roomId).toBe('entrance-hall');
+        expect(core.currentExplorer.inventory).toEqual([{ id: 'mask', name: '面具', kind: 'omen' }]);
+        expect(core.usedCardIdsThisTurn).toContain('mask');
+        expect(core.activityLog[0]?.text).toContain('使用面具');
+    });
+
+    it.each([
+        ['medical-kit', '急救包', 'item'],
+        ['holy-water', '奇怪的药品', 'item'],
+        ['map', '地图', 'item'],
+        ['notebook', '笔记本', 'item'],
+        ['manuscript', '手稿', 'item'],
+        ['omen-book', '书本', 'omen'],
+        ['mask', '面具', 'omen'],
+        ['journal', '日记', 'item'],
+    ] as const)('灰尘阶段主动持有牌「%s」沿用回合开始和已用限制', (cardId, cardName, kind) => {
+        const availableCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(availableCore, '1', 'hallway');
+        setTestExplorerInventory(availableCore, '1', [{ id: cardId, name: cardName, kind }]);
+
+        expect(resolveBetrayalPossessionSpecialActionStatus(availableCore, cardId)).toMatchObject({
+            active: true,
+            canUse: true,
+            usedThisTurn: false,
+            availableAtTurnStart: true,
+            receivedThisTurn: false,
+            reason: null,
+        });
+
+        const newlyGainedCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(newlyGainedCore, '1', 'hallway');
+        setTestExplorerInventory(newlyGainedCore, '1', [{ id: cardId, name: cardName, kind }], false);
+        newlyGainedCore.turnStartInventoryCardIds = newlyGainedCore.turnStartInventoryCardIds.filter((id) => id !== cardId);
+
+        expect(resolveBetrayalPossessionSpecialActionStatus(newlyGainedCore, cardId)).toMatchObject({
+            active: true,
+            canUse: false,
+            availableAtTurnStart: false,
+            reason: '本回合新获得的持有物不能立刻使用。',
+        });
+
+        const usedCore = createDustHauntCore();
+        placeActiveTestExplorerInRoom(usedCore, '1', 'hallway');
+        setTestExplorerInventory(usedCore, '1', [{ id: cardId, name: cardName, kind }]);
+        usedCore.usedCardIdsThisTurn = [cardId];
+
+        expect(resolveBetrayalPossessionSpecialActionStatus(usedCore, cardId)).toMatchObject({
+            active: true,
+            canUse: false,
+            usedThisTurn: true,
+            reason: '该持有物本回合已经使用。',
+        });
+    });
+
+    it.each([
+        ['map', '地图'],
+        ['notebook', '笔记本'],
+        ['journal', '日记'],
+        ['manuscript', '手稿'],
+    ] as const)('灰尘阶段%s仍可埋葬并把探索者放置到已发现板块', (cardId, cardName) => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setTestExplorerInventory(core, '1', [{ id: cardId, name: cardName, kind: 'item' }]);
+
+        const undiscoveredTarget = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+                cardId,
+                targetRoomId: 'upper-north',
+            }),
+        );
+        expect(undiscoveredTarget.valid).toBe(false);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+            cardId,
+            targetRoomId: 'upper-landing',
+        });
+
+        expect(core.currentExplorer.roomId).toBe('upper-landing');
+        expect(core.activeRoomId).toBe('upper-landing');
+        expect(core.currentExplorer.inventory).toEqual([]);
+        expect(core.usedCardIdsThisTurn).toContain(cardId);
+        expect(core.activityLog[0]?.text).toContain(`埋葬${cardName}`);
+    });
+
+    it('灰尘阶段面具仍可移动同房目标到已发现相邻板块且不能发现新房间', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'hallway');
+        setTestExplorerInventory(core, '1', [{ id: 'mask', name: '面具', kind: 'omen' }]);
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? { ...explorer, roomId: 'hallway' }
+                : { ...explorer, roomId: 'upper-landing' }
+        ));
+
+        const undiscoveredTarget = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+                cardId: 'mask',
+                targetRoomId: 'upper-north',
+            }),
+        );
+        expect(undiscoveredTarget.valid).toBe(false);
+        if (!undiscoveredTarget.valid) {
+            expect(undiscoveredTarget.error).toContain('已发现的相邻板块');
+        }
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '1', {
+            cardId: 'mask',
+            targetRoomId: 'entrance-hall',
+        });
+
+        expect(core.currentExplorer.roomId).toBe('hallway');
+        expect(core.otherExplorers.find((explorer) => explorer.playerId === '0')?.roomId).toBe('entrance-hall');
+        expect(core.currentExplorer.inventory).toEqual([{ id: 'mask', name: '面具', kind: 'omen' }]);
+        expect(core.usedCardIdsThisTurn).toContain('mask');
+        expect(core.activityLog[0]?.text).toContain('使用面具');
+    });
+
+    it('灰尘剧本治愈灰尘失败会按研究加值计算并与左侧存活玩家交换疾病标记', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(['0', '1', '2', '3']), 'omen');
+        activateTestExplorer(core, '1');
+        seedDustFailedActionExchangeTokens(core);
+        core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway'];
+        setTestExplorerTraits(core, '1', { knowledge: 4 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CURE_THE_DUST,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '治愈灰尘',
+            latestLabel: '治愈失败',
+            dice: [0, 0, 0, 0],
+            passiveBonus: 4,
+        });
+        expect(core.activityLog[0]?.text).toContain('尝试治愈灰尘失败');
+        expect(core.activityLog[0]?.text).toContain('与左侧玩家随机交换了疾病标记');
+        expect(core.usedCardIdsThisTurn).toContain('cure-the-dust');
+        expect(core.scenarioRuntime.dust?.researchRoomIds).toEqual(['ground-north', 'hallway']);
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds.sort()).toEqual(['1', '3']);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['1', '3']);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([7, 8, 9]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([1, 5, 6]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']?.map((token) => token.value)).toEqual([12, 13, 14]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['3']?.map((token) => token.value)).toEqual([4, 10, 11]);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.currentPlayer).toBe('3');
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds).toEqual([]);
+    });
+
+    it('灰尘剧本治愈灰尘失败后若所有存活者都永久感染则叛徒胜利', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(['0', '1', '2', '3']), 'omen');
+        activateTestExplorer(core, '1');
+        seedDustFailedActionExchangeTokens(core);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0', '2'];
+        core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway'];
+        setTestExplorerTraits(core, '1', { knowledge: 4 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CURE_THE_DUST,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+        });
+        expect(core.endgameResult?.winners.sort()).toEqual(['1', '3']);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds.sort()).toEqual(['0', '2']);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['1', '3']);
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '治愈灰尘',
+            latestLabel: '治愈失败',
+            dice: [0, 0, 0, 0],
+            passiveBonus: 4,
+        });
+    });
+
+    it('灰尘终局读模型会标记 If You Win 文本可用和场景专属同时政策', () => {
         let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(), 'omen');
         core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway'];
         setTestExplorerTraits(core, '1', { knowledge: 5 });
@@ -3511,17 +5137,84 @@ describe('Betrayal first scenario runtime', () => {
             winningSideLabel: '英雄',
             winnerPlayerIds: ['1', '2'],
             ifYouWinTextId: 'the-dust.survivors.if-you-win',
-            ifYouWinTextStatus: 'representative-only',
-            ifYouWinTextAvailable: false,
-            needsIfYouWinTextSource: true,
-            simultaneousCompletionPolicyStatus: 'missing-contract',
-            tiePolicyStatus: 'missing-contract',
+            ifYouWinTextStatus: 'available',
+            ifYouWinTextAvailable: true,
+            needsIfYouWinTextSource: false,
+            simultaneousCompletionPolicyStatus: 'scenario-specific',
+            tiePolicyStatus: 'scenario-specific',
             representativeOnly: true,
         });
         expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
-            'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。',
-            '同时达成、平局或共享胜利处理仍需逐作祟合同接入。',
+            '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。',
+            '灰尘按当前完成的结算事件收口：治愈成功立即英雄胜利；全员感染或死亡只在交换、伤害或死亡事件结算后触发叛徒胜利。',
         ]));
+        expect(endgame.ruleNotes).not.toEqual(expect.arrayContaining([
+            'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。',
+        ]));
+    });
+
+    it('灰尘叛徒终局读模型同样标记 If You Win 文本可用', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(['0', '1', '2', '3']), 'omen');
+        activateTestExplorer(core, '1');
+        seedDustFailedActionExchangeTokens(core);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0', '2'];
+        setTestExplorerTraits(core, '1', { knowledge: 3 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.SEARCH_FOR_CURE,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        const endgame = resolveBetrayalEndgameReadModel(core);
+
+        expect(endgame).toMatchObject({
+            active: true,
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winningSideLabel: '叛徒',
+            ifYouWinTextId: 'the-dust.traitor.if-you-win',
+            ifYouWinTextStatus: 'available',
+            ifYouWinTextAvailable: true,
+            needsIfYouWinTextSource: false,
+            simultaneousCompletionPolicyStatus: 'scenario-specific',
+            tiePolicyStatus: 'scenario-specific',
+            representativeOnly: true,
+        });
+        expect([...endgame.winnerPlayerIds].sort()).toEqual(['1', '3']);
+        expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
+            '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。',
+        ]));
+    });
+
+    it('灰尘治愈成功会按当前行动收口，不被临界叛徒胜利状态覆盖', () => {
+        let core = placeCurrentExplorerInDustResearchRoom(createDustHauntCore(['0', '1', '2', '3']), 'omen');
+        activateTestExplorer(core, '1');
+        core.scenarioRuntime.dust!.researchRoomIds = ['ground-north', 'hallway'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['0', '3'];
+        core.scenarioRuntime.deadExplorerPlayerIds = ['2'];
+        setTestExplorerTraits(core, '1', { knowledge: 5 });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.CURE_THE_DUST,
+            '1',
+            { trait: 'knowledge' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult?.hauntId).toBe('the-dust');
+        expect(core.endgameResult?.outcome).toBe('survivors');
+        expect(core.endgameResult?.winners).toEqual(['1']);
+        expect(core.recentRoll).toMatchObject({
+            sourceTitle: '治愈灰尘',
+            latestLabel: '治愈成功',
+        });
     });
 
     it('灰尘剧本同意交换后若所有存活者都成为叛徒则叛徒胜利', () => {
@@ -3552,6 +5245,72 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.endgameResult?.hauntId).toBe('the-dust');
         expect(core.endgameResult?.outcome).toBe('traitor');
         expect(core.endgameResult?.winners.sort()).toEqual(['0', '1']);
+    });
+
+    it('灰尘剧本控制冲动同意后会随机交换疾病标记并记录本回合已交换', () => {
+        let core = createDustHauntCore(['0', '1', '2']);
+        seedDustControlImpulsesTokens(core);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE,
+            '1',
+            { targetPlayerId: '0' },
+        );
+        expect(core.activePlayerId).toBe('0');
+        expect(core.scenarioRuntime.dust?.pendingSicknessExchange).toMatchObject({
+            requesterPlayerId: '1',
+            targetPlayerId: '0',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE,
+            '0',
+            { accept: true },
+            100,
+            createBetrayalScriptedRandom(0, 0),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.activePlayerId).toBeNull();
+        expect(core.scenarioRuntime.dust?.pendingSicknessExchange).toBeUndefined();
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([4, 7, 8]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([1, 5, 6]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']?.map((token) => token.value)).toEqual([9, 10, 11]);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['0', '1']);
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds.sort()).toEqual(['0', '1']);
+        expect(core.activityLog[0]?.text).toContain('同意了');
+    });
+
+    it('灰尘剧本控制冲动被拒绝后不会交换疾病标记或记录本回合已交换', () => {
+        let core = createDustHauntCore(['0', '1', '2']);
+        seedDustControlImpulsesTokens(core);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.REQUEST_SICKNESS_EXCHANGE,
+            '1',
+            { targetPlayerId: '0' },
+        );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_SICKNESS_EXCHANGE,
+            '0',
+            { accept: false },
+            100,
+            createBetrayalScriptedRandom(0, 0),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.activePlayerId).toBeNull();
+        expect(core.scenarioRuntime.dust?.pendingSicknessExchange).toBeUndefined();
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['0']?.map((token) => token.value)).toEqual([1, 7, 8]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([4, 5, 6]);
+        expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']?.map((token) => token.value)).toEqual([9, 10, 11]);
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds).toEqual(['0']);
+        expect(core.scenarioRuntime.dust?.exchangedSicknessThisTurnPlayerIds).toEqual([]);
+        expect(core.activityLog[0]?.text).toContain('拒绝了');
     });
 
     it('灰尘剧本回合结束会逐个与同房探索者强制交换疾病标记且不会触发冲动伤害', () => {
@@ -3610,6 +5369,63 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['1']?.map((token) => token.value)).toEqual([9, 5, 6]);
         expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['2']?.map((token) => token.value)).toEqual([1, 10, 11]);
         expect(core.scenarioRuntime.dust?.sicknessTokensByPlayerId['3']?.map((token) => token.value)).toEqual([12, 13, 14]);
+    });
+
+    it('灰尘剧本同房强制交换后若所有存活者都永久感染则叛徒胜利', () => {
+        let core = createDustHauntCore(['0', '1', '2', '3']);
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => {
+            if (explorer.playerId === '0' || explorer.playerId === '2') {
+                return { ...explorer, roomId: 'hallway' };
+            }
+            return { ...explorer, roomId: 'entrance-hall' };
+        });
+        core.scenarioRuntime.deadExplorerPlayerIds = ['3'];
+        core.scenarioRuntime.dust!.sicknessTokensByPlayerId = {
+            '0': [
+                { id: 'sickness-0-a', value: 1 },
+                { id: 'sickness-0-b', value: 7 },
+                { id: 'sickness-0-c', value: 8 },
+            ],
+            '1': [
+                { id: 'sickness-1-a', value: 4 },
+                { id: 'sickness-1-b', value: 5 },
+                { id: 'sickness-1-c', value: 6 },
+            ],
+            '2': [
+                { id: 'sickness-2-a', value: 9 },
+                { id: 'sickness-2-b', value: 10 },
+                { id: 'sickness-2-c', value: 11 },
+            ],
+            '3': [
+                { id: 'sickness-3-a', value: 12 },
+                { id: 'sickness-3-b', value: 13 },
+                { id: 'sickness-3-c', value: 14 },
+            ],
+        };
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = [];
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(),
+        );
+
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['0', '1', '2'],
+        });
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['0', '1', '2']);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(['3']);
     });
 
     it('灰尘剧本回合内没有交换疾病时，回合结束进入一般伤害分配并在确认后交接', () => {
@@ -3706,6 +5522,3930 @@ describe('Betrayal first scenario runtime', () => {
             name: '狂热病患',
             roomId: 'hallway',
         });
+    });
+
+    it('灰尘冲动一般伤害分到骷髅时，头骨成功会阻止死亡且不生成狂热病患', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-general-skull-success',
+            playerId: '1',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 2,
+            damageTraits: ['might', 'speed'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.endgameResult).toBeNull();
+    });
+
+    it('灰尘冲动回合末触发头骨时，先展示死亡保护投掷，确认后才交给下一名玩家', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-general-skull-turn-handoff',
+            playerId: '1',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+            nextPlayerId: '2',
+            turnLogText: '轮到杰登·琼斯',
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1),
+        );
+
+        expect(core.currentPlayer).toBe('1');
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            nextPlayerId: '2',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '1', {});
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.recentRoll).toBeNull();
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+    });
+
+    it('灰尘冲动一般伤害分到骷髅时，头骨失败后才变狂热病患', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-general-skull-failed',
+            playerId: '1',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 2,
+            damageTraits: ['might', 'speed'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+    });
+
+    it.each([
+        {
+            label: '物理攻击伤害',
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            allowedTraits: ['might', 'speed'] as BetrayalTraitKey[],
+            assignedTraits: ['might', 'speed'] as BetrayalTraitKey[],
+        },
+        {
+            label: '精神攻击伤害',
+            sourceTitle: '精神攻击',
+            damageKind: 'mental',
+            allowedTraits: ['knowledge', 'sanity'] as BetrayalTraitKey[],
+            assignedTraits: ['knowledge', 'sanity'] as BetrayalTraitKey[],
+        },
+        {
+            label: '一般伤害',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[],
+            assignedTraits: ['might', 'speed'] as BetrayalTraitKey[],
+        },
+    ] as const)('灰尘永久叛徒受到$label时，头骨成功阻止狂热病患化，失败才生成狂热病患', ({
+        sourceTitle,
+        damageKind,
+        allowedTraits,
+        assignedTraits,
+    }) => {
+        const createCoreWithPendingDamage = () => {
+            const core = createDustHauntCore();
+            activateTestExplorer(core, '1');
+            core.currentExplorer.roomId = 'hallway';
+            core.activeRoomId = 'hallway';
+            core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+            core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+            core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+            for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+                setTestTraitTrack(core, '1', trait, [1], 0, 0);
+            }
+            core.currentExplorerTraits = { ...core.currentExplorer.traits };
+            core.pendingDamageAllocation = {
+                id: `dust-skull-${damageKind}`,
+                playerId: '1',
+                sourceTitle,
+                damageKind,
+                amount: 2,
+                originalAmount: 2,
+                allowedTraits: [...allowedTraits],
+                allowSkull: true,
+                traitsBeforeDamage: { ...core.currentExplorer.traits },
+            };
+            return core;
+        };
+
+        let protectedCore = createCoreWithPendingDamage();
+        protectedCore = applyBetrayalCommand(
+            protectedCore,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: [...assignedTraits] },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1),
+        );
+
+        expect(protectedCore.recentRoll?.kind).toBe('deathPrevention');
+        expect(protectedCore.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(protectedCore.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind,
+            damageAmount: 2,
+            damageTraits: assignedTraits,
+        });
+        expect(protectedCore.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(protectedCore.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(protectedCore.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+
+        let failedCore = createCoreWithPendingDamage();
+        failedCore = applyBetrayalCommand(
+            failedCore,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: [...assignedTraits] },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        expect(failedCore.recentRoll?.kind).toBe('deathPrevention');
+        expect(failedCore.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(failedCore.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind,
+            damageAmount: 2,
+            damageTraits: assignedTraits,
+        });
+        expect(failedCore.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(failedCore.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(failedCore.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+    });
+
+    it('灰尘永久叛徒头骨失败生成狂热病患后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'map', name: '地图', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-skull-rabbit-foot-reroll-success',
+            playerId: '1',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull', 'rope', 'map']);
+    });
+
+    it('灰尘永久叛徒头骨失败生成狂热病患后，兔脚重掷仍失败会保持死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'first-aid-kit', name: '急救包', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-skull-rabbit-foot-reroll-failure',
+            playerId: '1',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+        expect(findTestExplorer(core, '1').inventory).toEqual([]);
+        expect(core.currentExplorerInventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+    });
+
+    it('灰尘死亡本会满足叛徒终局时，兔脚窗口先于终局结算', () => {
+        const createCoreWithTerminalDeathPrevention = () => {
+            const core = createDustHauntCore();
+            activateTestExplorer(core, '1');
+            core.currentExplorer.roomId = 'hallway';
+            core.activeRoomId = 'hallway';
+            core.currentExplorer.inventory = [
+                { id: 'skull', name: '头骨', kind: 'omen' },
+                { id: 'rope', name: '兔脚', kind: 'item' },
+            ];
+            core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+            core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+            core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+            core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+            for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+                setTestTraitTrack(core, '1', trait, [1], 0, 0);
+            }
+            core.currentExplorerTraits = { ...core.currentExplorer.traits };
+            core.pendingDamageAllocation = {
+                id: 'dust-terminal-skull-rabbit-foot-window',
+                playerId: '1',
+                sourceTitle: '灰尘冲动',
+                damageKind: 'general',
+                amount: 2,
+                originalAmount: 2,
+                allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                allowSkull: true,
+                traitsBeforeDamage: { ...core.currentExplorer.traits },
+            };
+            return core;
+        };
+
+        let protectedCore = createCoreWithTerminalDeathPrevention();
+        protectedCore = applyBetrayalCommand(
+            protectedCore,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(protectedCore.phase).toBe('haunt');
+        expect(protectedCore.endgameResult).toBeNull();
+        expect(protectedCore.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(protectedCore.recentRoll?.kind).toBe('deathPrevention');
+        expect(protectedCore.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(BetrayalDomain.validate(
+            { core: protectedCore, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        protectedCore = applyBetrayalCommand(
+            protectedCore,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(protectedCore.phase).toBe('haunt');
+        expect(protectedCore.endgameResult).toBeNull();
+        expect(protectedCore.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(protectedCore.recentRoll?.latestLabel).toBe('阻止死亡');
+
+        let failedCore = createCoreWithTerminalDeathPrevention();
+        failedCore = applyBetrayalCommand(
+            failedCore,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+        failedCore = applyBetrayalCommand(
+            failedCore,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(failedCore.phase).toBe('endgame');
+        expect(failedCore.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(failedCore.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(failedCore.recentRoll?.latestLabel).toBe('正常死亡');
+    });
+
+    it('灰尘兔脚成功回滚终局死亡后，后续再次死亡才触发叛徒胜利', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-terminal-rabbit-foot-success-first-death',
+            playerId: '1',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 1 }),
+        ).valid).toBe(false);
+
+        core.pendingDamageAllocation = {
+            id: 'dust-terminal-rabbit-foot-second-death',
+            playerId: '1',
+            sourceTitle: '灰尘后续伤害',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            102,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+    });
+
+    it('灰尘兔脚成功回滚永久叛徒狂热病患后，最后非叛徒死亡才触发叛徒胜利', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        setTestTraitTrack(core, '2', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '2', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-traitor-rabbit-foot-success-first-death',
+            playerId: '1',
+            sourceTitle: '灰尘冲动',
+            damageKind: 'general',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id).sort()).toEqual(['rope', 'skull']);
+
+        const lastExplorer = findTestExplorer(core, '2');
+        core.pendingDamageAllocation = {
+            id: 'dust-traitor-rabbit-foot-last-hero-death',
+            playerId: '2',
+            sourceTitle: '灰尘后续伤害',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...lastExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '2',
+            { traits: ['might', 'speed'] },
+            102,
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['1'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '2']));
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+    });
+
+    it('灰尘普通攻击致死会先等待伤害分配，确认后才变狂热病患并触发叛徒胜利', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '0');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? { ...explorer, roomId: 'hallway' }
+                : { ...explorer, roomId: 'entrance-hall' }
+        ));
+        core.scenarioRuntime.deadExplorerPlayerIds = ['2'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['0', '1'];
+        setTestTraitTrack(core, '0', 'might', [2], 0, 0);
+        setTestTraitTrack(core, '1', 'might', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'speed', [1, 1, 1], 1, 1);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '1',
+            amount: 4,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(['2']);
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.endgameResult).toBeNull();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['0'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['1', '2']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+    });
+
+    it('灰尘阶段攻击武器仍按回合开始和已用限制参与攻击并禁止交易', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '0');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? { ...explorer, roomId: 'hallway' }
+                : explorer
+        ));
+        setTestExplorerInventory(core, '0', [{ id: 'hunting-knife', name: '砍刀', kind: 'item' }]);
+        setTestTraitTrack(core, '0', 'might', [2], 0, 0);
+        setHighCapacityPhysicalDamageTracks(core, '1');
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: 'hunting-knife' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1),
+        );
+
+        expect(core.usedCardIdsThisTurn).toEqual(expect.arrayContaining(['haunt-attack', 'hunting-knife']));
+        expect(core.activityLog[0]?.text).toContain('使用砍刀');
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '1',
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
+        );
+
+        const tradeUsedWeapon = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.TRADE_POSSESSION, '0', {
+                cardId: 'hunting-knife',
+                targetPlayerId: '1',
+            }),
+        );
+        expect(tradeUsedWeapon.valid).toBe(false);
+        expect(tradeUsedWeapon.error).toContain('本回合已经使用过的持有物不能交易');
+    });
+
+    it('灰尘阶段武器攻击永久感染者致死后仍生成狂热病患并掩埋遗物', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '0');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? {
+                    ...explorer,
+                    roomId: 'hallway',
+                    inventory: [{ id: 'ring', name: '指环', kind: 'omen' }],
+                }
+                : explorer
+        ));
+        setTestExplorerInventory(core, '0', [{ id: 'hunting-knife', name: '砍刀', kind: 'item' }]);
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '0', 'might', [2], 0, 0);
+        setTestTraitTrack(core, '1', 'might', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'speed', [1, 1, 1], 1, 1);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: 'hunting-knife' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1),
+        );
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '1',
+            allowSkull: true,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+        );
+
+        const defeatedTraitor = findTestExplorer(core, '1');
+        expect(core.phase).toBe('haunt');
+        expect(core.usedCardIdsThisTurn).toEqual(expect.arrayContaining(['haunt-attack', 'hunting-knife']));
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+        expect(defeatedTraitor.inventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+    });
+
+    it.each([
+        {
+            card: { id: 'hunting-knife', name: '砍刀', kind: 'item' as const },
+            damageKind: 'physical' as const,
+            lethalTrait: 'might' as const,
+            rollPips: [3, 3, 1],
+        },
+        {
+            card: { id: 'dagger', name: '匕首', kind: 'omen' as const },
+            damageKind: 'physical' as const,
+            lethalTrait: 'might' as const,
+            rollPips: [3, 3, 3, 3, 1],
+        },
+        {
+            card: { id: 'ring', name: '指环', kind: 'omen' as const },
+            damageKind: 'mental' as const,
+            lethalTrait: 'sanity' as const,
+            rollPips: [3, 3, 1],
+        },
+    ])('灰尘阶段当前攻击武器「$card.name」致死都会生成狂热病患并掩埋遗物', ({
+        card,
+        damageKind,
+        lethalTrait,
+        rollPips,
+    }) => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '0');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? {
+                    ...explorer,
+                    roomId: 'hallway',
+                    inventory: [{ id: 'map', name: '地图', kind: 'item' }],
+                }
+                : explorer
+        ));
+        setTestExplorerInventory(core, '0', [card]);
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '0', 'might', [2], 0, 0);
+        setTestTraitTrack(core, '0', 'speed', [2, 3, 3], 2, 0);
+        setTestTraitTrack(core, '0', 'sanity', [2], 0, 0);
+        setTestTraitTrack(core, '1', 'might', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'speed', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'knowledge', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'sanity', [1, 1, 1], 1, 1);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: card.id },
+            100,
+            createBetrayalScriptedRandom(...rollPips),
+        );
+
+        expect(core.usedCardIdsThisTurn).toEqual(expect.arrayContaining(['haunt-attack', card.id]));
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind,
+            playerId: '1',
+            allowSkull: true,
+        });
+        expect(findTestExplorer(core, '1').inventory.map((item) => item.id)).toEqual(['map']);
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: lethalTraitsForPendingDamage(core, lethalTrait) },
+        );
+
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+        expect(findTestExplorer(core, '1').inventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+    });
+
+    it.each([
+        {
+            card: { id: 'hunting-knife', name: '砍刀', kind: 'item' as const },
+            damageKind: 'physical' as const,
+            lethalTrait: 'might' as const,
+            rollPips: [3, 3, 1],
+        },
+        {
+            card: { id: 'dagger', name: '匕首', kind: 'omen' as const },
+            damageKind: 'physical' as const,
+            lethalTrait: 'might' as const,
+            rollPips: [3, 3, 3, 3, 1],
+        },
+        {
+            card: { id: 'ring', name: '指环', kind: 'omen' as const },
+            damageKind: 'mental' as const,
+            lethalTrait: 'sanity' as const,
+            rollPips: [3, 3, 1],
+        },
+    ])('灰尘阶段攻击武器「$card.name」触发头骨失败后，兔脚成功会回滚狂热病患化且不掩埋遗物', ({
+        card,
+        damageKind,
+        lethalTrait,
+        rollPips,
+    }) => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '0');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? {
+                    ...explorer,
+                    roomId: 'hallway',
+                    inventory: [
+                        { id: 'skull', name: '头骨', kind: 'omen' },
+                        { id: 'rope', name: '兔脚', kind: 'item' },
+                        { id: 'map', name: '地图', kind: 'item' },
+                    ],
+                }
+                : explorer
+        ));
+        setTestExplorerInventory(core, '0', [card]);
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '0', 'might', [2], 0, 0);
+        setTestTraitTrack(core, '0', 'speed', [2, 3, 3], 2, 0);
+        setTestTraitTrack(core, '0', 'sanity', [2], 0, 0);
+        setTestTraitTrack(core, '1', 'might', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'speed', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'knowledge', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'sanity', [1, 1, 1], 1, 1);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: card.id },
+            100,
+            createBetrayalScriptedRandom(...rollPips),
+        );
+        expect(core.pendingDamageAllocation).toMatchObject({
+            damageKind,
+            playerId: '1',
+            allowSkull: true,
+        });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: lethalTraitsForPendingDamage(core, lethalTrait) },
+            101,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeDefined();
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            102,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(findTestExplorer(core, '1').inventory.map((inventoryCard) => inventoryCard.id)).toEqual(['skull', 'rope', 'map']);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+        expect(core.usedCardIdsThisTurn).toEqual(expect.arrayContaining([card.id, 'rope']));
+    });
+
+    it.each([
+        {
+            card: { id: 'hunting-knife', name: '砍刀', kind: 'item' as const },
+            damageKind: 'physical' as const,
+            lethalTrait: 'might' as const,
+            rollPips: [3, 3, 1],
+        },
+        {
+            card: { id: 'dagger', name: '匕首', kind: 'omen' as const },
+            damageKind: 'physical' as const,
+            lethalTrait: 'might' as const,
+            rollPips: [3, 3, 3, 3, 1],
+        },
+        {
+            card: { id: 'ring', name: '指环', kind: 'omen' as const },
+            damageKind: 'mental' as const,
+            lethalTrait: 'sanity' as const,
+            rollPips: [3, 3, 1],
+        },
+    ])('灰尘阶段攻击武器「$card.name」触发头骨失败后，兔脚仍失败会保持狂热病患化并掩埋遗物', ({
+        card,
+        damageKind,
+        lethalTrait,
+        rollPips,
+    }) => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '0');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '1'
+                ? {
+                    ...explorer,
+                    roomId: 'hallway',
+                    inventory: [
+                        { id: 'skull', name: '头骨', kind: 'omen' },
+                        { id: 'rope', name: '兔脚', kind: 'item' },
+                        { id: 'map', name: '地图', kind: 'item' },
+                    ],
+                }
+                : explorer
+        ));
+        setTestExplorerInventory(core, '0', [card]);
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '0', 'might', [2], 0, 0);
+        setTestTraitTrack(core, '0', 'speed', [2, 3, 3], 2, 0);
+        setTestTraitTrack(core, '0', 'sanity', [2], 0, 0);
+        setTestTraitTrack(core, '1', 'might', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'speed', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'knowledge', [1, 1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'sanity', [1, 1, 1], 1, 1);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '0',
+            { target: 'hero', targetPlayerId: '1', weaponCardId: card.id },
+            100,
+            createBetrayalScriptedRandom(...rollPips),
+        );
+        expect(core.pendingDamageAllocation).toMatchObject({
+            damageKind,
+            playerId: '1',
+            allowSkull: true,
+        });
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: lethalTraitsForPendingDamage(core, lethalTrait) },
+            101,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+        expect(findTestExplorer(core, '1').inventory.map((inventoryCard) => inventoryCard.id)).toEqual(['skull', 'rope', 'map']);
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            102,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+        expect(findTestExplorer(core, '1').inventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+        expect(core.usedCardIdsThisTurn).toEqual(expect.arrayContaining([card.id, 'rope']));
+    });
+
+    it('灰尘永久叛徒因普通攻击伤害死亡时也会变成狂热病患', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-ordinary-attack-lethal',
+            playerId: '1',
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+        );
+
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+    });
+
+    it('灰尘永久叛徒死亡变狂热病患时会掩埋物品和预兆，尸体不可搜刮', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'map', name: '地图', kind: 'item' },
+            { id: 'omen-book', name: '书本', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-dead-traitor-buries-possessions',
+            playerId: '1',
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+        );
+
+        const deadTraitor = findTestExplorer(core, '1');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(deadTraitor.inventory).toEqual([]);
+        expect(core.currentExplorerInventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+        const corpse = resolveBetrayalDeathStateSummary(core).corpses.find((item) => item.playerId === '1');
+        expect(corpse).toMatchObject({
+            itemCount: 0,
+            omenCount: 0,
+            canBeLootedByCurrentExplorer: false,
+            lootableCardIds: [],
+        });
+    });
+
+    it('灰尘非叛徒死亡时不会掩埋遗物，尸体仍可被同房探索者搜刮', () => {
+        let core = createDustHauntCore();
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds).not.toContain('1');
+
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'map', name: '地图', kind: 'item' },
+            { id: 'omen-book', name: '书本', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-dead-non-traitor-keeps-corpse-loot',
+            playerId: '1',
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+        );
+
+        const deadNonTraitor = findTestExplorer(core, '1');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(deadNonTraitor.inventory.map((card) => card.id)).toEqual(['map', 'omen-book']);
+
+        activateTestExplorer(core, '2');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).toContain('1');
+        const corpseBeforeLoot = resolveBetrayalDeathStateSummary(core).corpses.find((item) => item.playerId === '1');
+        expect(corpseBeforeLoot).toMatchObject({
+            itemCount: 1,
+            omenCount: 1,
+            canBeLootedByCurrentExplorer: true,
+            lootableCardIds: ['map', 'omen-book'],
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.LOOT_CORPSE, '2', {
+            sourcePlayerId: '1',
+            cardId: 'map',
+        });
+
+        const looter = findTestExplorer(core, '2');
+        const corpseAfterLoot = resolveBetrayalDeathStateSummary(core).corpses.find((item) => item.playerId === '1');
+        expect(looter.inventory.map((card) => card.id)).toContain('map');
+        expect(corpseAfterLoot).toMatchObject({
+            inventory: [{ id: 'omen-book', name: '书本', kind: 'omen' }],
+            itemCount: 0,
+            omenCount: 1,
+            lootedThisTurn: true,
+            canBeLootedByCurrentExplorer: false,
+            lootableCardIds: [],
+        });
+        expect(core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn).toContain('1');
+    });
+
+    it('灰尘永久叛徒最终死亡变狂热病患时会掩埋全部 23 张运行持有牌', () => {
+        const buriedCardNames: string[] = [];
+
+        for (const card of collectRuntimePossessionCards()) {
+            let core = createDustHauntCore();
+            activateTestExplorer(core, '1');
+            core.currentExplorer.roomId = 'hallway';
+            core.activeRoomId = 'hallway';
+            core.currentExplorer.inventory = [{ ...card }];
+            core.currentExplorerInventory = core.currentExplorer.inventory.map((inventoryCard) => ({ ...inventoryCard }));
+            core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+            setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+            setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            core.currentExplorerTraits = { ...core.currentExplorer.traits };
+            core.pendingDamageAllocation = {
+                id: `dust-buries-${card.id}`,
+                playerId: '1',
+                sourceTitle: '攻击',
+                damageKind: 'physical',
+                amount: 2,
+                originalAmount: 2,
+                allowedTraits: ['might', 'speed'],
+                allowSkull: true,
+                traitsBeforeDamage: { ...core.currentExplorer.traits },
+            };
+
+            core = applyBetrayalCommand(
+                core,
+                BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+                '1',
+                { traits: ['might', 'speed'] },
+                100,
+                createBetrayalScriptedRandom(1, 1, 1),
+            );
+
+            const deadTraitor = findTestExplorer(core, '1');
+            const corpse = resolveBetrayalDeathStateSummary(core).corpses.find((item) => item.playerId === '1');
+            buriedCardNames.push(card.name);
+            expect(core.scenarioRuntime.deadExplorerPlayerIds, card.name).toContain('1');
+            expect(core.scenarioRuntime.dust?.feverishPlayerIds, card.name).toContain('1');
+            expect(deadTraitor.inventory, card.name).toEqual([]);
+            expect(core.currentExplorerInventory, card.name).toEqual([]);
+            expect(resolveCorpseLootTargets(core).map((target) => target.playerId), card.name).not.toContain('1');
+            expect(corpse, card.name).toMatchObject({
+                itemCount: 0,
+                omenCount: 0,
+                canBeLootedByCurrentExplorer: false,
+                lootableCardIds: [],
+            });
+        }
+
+        expect(buriedCardNames).toEqual([
+            '魔法相机',
+            '急救包',
+            '奇怪的药品',
+            '手电筒',
+            '头戴耳机',
+            '地图',
+            '奇异护符',
+            '兔脚',
+            '骨制钥匙',
+            '砍刀',
+            '笔记本',
+            '手稿',
+            '书本',
+            '狗',
+            '面具',
+            '头骨',
+            '圣符',
+            '盔甲',
+            '雕像',
+            '指环',
+            '匕首',
+            '灯笼',
+            '日记',
+        ]);
+    });
+
+    it('灰尘永久叛徒因作祟后火炉房伤害死亡时也会变成狂热病患', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房',
+            hint: '在此结束回合会受到房间伤害。',
+            tags: ['伤害'],
+            discoveryReward: null,
+            visualId: 'furnaceRoom',
+            endTurnEffect: 'physicalDamage1',
+        });
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '火炉房',
+            damageKind: 'physical',
+            playerId: '1',
+            amount: 1,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            nextPlayerId: '2',
+        });
+        expect(core.currentPlayer).toBe('1');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '1', { traits: ['might'] });
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.pendingDamageAllocation).toBeNull();
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'ground-north',
+        });
+        expect(core.endgameResult).toBeNull();
+    });
+
+    it('灰尘火炉房伤害本会触发叛徒终局时，兔脚成功会先回滚死亡并交接回合', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房',
+            hint: '在此结束回合会受到房间伤害。',
+            tags: ['伤害'],
+            discoveryReward: null,
+            visualId: 'furnaceRoom',
+            endTurnEffect: 'physicalDamage1',
+        });
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '火炉房',
+            damageKind: 'physical',
+            playerId: '1',
+            amount: 1,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            nextPlayerId: '2',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.currentPlayer).toBe('1');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(['0']);
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '1', {});
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.recentRoll).toBeNull();
+        expect(core.endgameResult).toBeNull();
+    });
+
+    it('灰尘火炉房伤害本会触发叛徒终局时，兔脚仍失败会触发叛徒胜利', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房',
+            hint: '在此结束回合会受到房间伤害。',
+            tags: ['伤害'],
+            discoveryReward: null,
+            visualId: 'furnaceRoom',
+            endTurnEffect: 'physicalDamage1',
+        });
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '火炉房',
+            damageKind: 'physical',
+            playerId: '1',
+            amount: 1,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            nextPlayerId: '2',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.currentPlayer).toBe('1');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘永久叛徒因作祟后倒塌房间坠落伤害死亡时也会变成狂热病患', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'upper-north');
+        setDiscoveredTestRoom(core, 'upper-north', {
+            name: '倒塌房间',
+            hint: '速度检定失败会坠落到地下室起始点。',
+            tags: ['上层', '伤害'],
+            discoveryReward: null,
+            visualId: 'collapsedRoom',
+            endTurnEffect: 'speedCheckFallToBasement',
+        });
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 3),
+        );
+
+        expect(core.currentPlayer).toBe('1');
+        expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
+        expect(core.recentRoll?.roomEndTurn).toMatchObject({
+            roomName: '倒塌房间',
+            nextPlayerId: '2',
+            previousDestinationRoomId: 'basement-landing',
+            previousPhysicalDamage: 2,
+        });
+        expect(core.pendingDamageAllocation).toBeNull();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '1', {});
+
+        expect(core.currentPlayer).toBe('1');
+        expect(core.recentRoll).toBeNull();
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '倒塌房间',
+            damageKind: 'physical',
+            playerId: '1',
+            amount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            nextPlayerId: '2',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, '1', {
+            traits: ['might', 'speed'],
+        });
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'basement-landing',
+        });
+        expect(core.endgameResult).toBeNull();
+    });
+
+    it('灰尘倒塌房间坠落伤害本会触发叛徒终局时，兔脚成功会先回滚死亡并保留坠落位置', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'upper-north');
+        setDiscoveredTestRoom(core, 'upper-north', {
+            name: '倒塌房间',
+            hint: '速度检定失败会坠落到地下室起始点。',
+            tags: ['上层', '伤害'],
+            discoveryReward: null,
+            visualId: 'collapsedRoom',
+            endTurnEffect: 'speedCheckFallToBasement',
+        });
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 3),
+        );
+
+        expect(core.currentPlayer).toBe('1');
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
+        expect(core.recentRoll?.roomEndTurn).toMatchObject({
+            roomName: '倒塌房间',
+            nextPlayerId: '2',
+            previousDestinationRoomId: 'basement-landing',
+            previousPhysicalDamage: 2,
+        });
+        expect(core.pendingDamageAllocation).toBeNull();
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '1', {});
+
+        expect(core.currentPlayer).toBe('1');
+        expect(core.recentRoll).toBeNull();
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '倒塌房间',
+            damageKind: 'physical',
+            playerId: '1',
+            amount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            nextPlayerId: '2',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            101,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.currentPlayer).toBe('1');
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            102,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.currentPlayer).toBe('1');
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(['0']);
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '1', {});
+
+        expect(core.currentPlayer).toBe('2');
+        expect(core.currentExplorer.playerId).toBe('2');
+        expect(core.otherExplorers.find((explorer) => explorer.playerId === '1')?.roomId).toBe('basement-landing');
+        expect(core.recentRoll).toBeNull();
+        expect(core.endgameResult).toBeNull();
+    });
+
+    it('灰尘倒塌房间坠落伤害本会触发叛徒终局时，兔脚仍失败会保留坠落位置并触发叛徒胜利', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'upper-north');
+        setDiscoveredTestRoom(core, 'upper-north', {
+            name: '倒塌房间',
+            hint: '速度检定失败会坠落到地下室起始点。',
+            tags: ['上层', '伤害'],
+            discoveryReward: null,
+            visualId: 'collapsedRoom',
+            endTurnEffect: 'speedCheckFallToBasement',
+        });
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+        core.scenarioRuntime.dust!.exchangedSicknessThisTurnPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.END_TURN,
+            '1',
+            {},
+            100,
+            createBetrayalScriptedRandom(1, 3),
+        );
+
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.recentRoll?.kind).toBe('roomEndTurnTraitCheck');
+        expect(core.recentRoll?.roomEndTurn).toMatchObject({
+            roomName: '倒塌房间',
+            nextPlayerId: '2',
+            previousDestinationRoomId: 'basement-landing',
+            previousPhysicalDamage: 2,
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '1', {});
+
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '倒塌房间',
+            damageKind: 'physical',
+            playerId: '1',
+            amount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            nextPlayerId: '2',
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+            101,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            102,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(core.currentExplorer.roomId).toBe('basement-landing');
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘永久叛徒因事件一般伤害死亡时也会变成狂热病患', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingEventChoice = {
+            id: 'dust-event-general-damage-lethal',
+            playerId: '1',
+            sourceTitle: '事件一般伤害',
+            effect: {
+                mode: 'generalDamageChoice',
+                amount: 1,
+                allowedTraits: ['might'],
+                recommendedAction: 'endTurn',
+            },
+        };
+
+        const validation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '1', { traits: ['might'] }),
+        );
+        expect(validation).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '1',
+            { traits: ['might'] },
+        );
+
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+        expect(core.endgameResult).toBeNull();
+    });
+
+    it('灰尘真实事件副作用致死后若所有探索者都已是叛徒或死亡则叛徒胜利', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '标本剥制')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1', '2'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '标本剥制',
+        });
+        expect(core.latestDiscovery?.detail).toContain('受到 1 点物理伤害');
+        expect(core.latestDiscovery?.detail).toContain('放置障碍物');
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
+    });
+
+    it('灰尘真实事件副作用致死本会终局时，兔脚成功会先回滚死亡并保留副作用', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '标本剥制')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2, 1),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '标本剥制',
+        });
+        expect(core.latestDiscovery?.detail).toContain('受到 1 点物理伤害');
+        expect(core.latestDiscovery?.detail).toContain('放置障碍物');
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 2 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 2 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(['0']);
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘真实事件副作用致死本会终局时，兔脚仍失败会保留副作用并触发叛徒胜利', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '标本剥制')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['2'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2, 1),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 2 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 2 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens ?? []).toContain('obstacle');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘事件一般伤害分到骷髅时也触发头骨死亡保护', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingEventChoice = {
+            id: 'dust-event-general-damage-skull-success',
+            playerId: '1',
+            sourceTitle: '事件一般伤害',
+            effect: {
+                mode: 'generalDamageChoice',
+                amount: 1,
+                allowedTraits: ['might'],
+                recommendedAction: 'endTurn',
+            },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '1',
+            { traits: ['might'] },
+            100,
+            createBetrayalScriptedRandom(3, 3, 1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 1,
+            damageTraits: ['might'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.endgameResult).toBeNull();
+    });
+
+    it('灰尘事件一般伤害分到骷髅时，头骨失败后才变狂热病患', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingEventChoice = {
+            id: 'dust-event-general-damage-skull-failed',
+            playerId: '1',
+            sourceTitle: '事件一般伤害',
+            effect: {
+                mode: 'generalDamageChoice',
+                amount: 1,
+                allowedTraits: ['might'],
+                recommendedAction: 'endTurn',
+            },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '1',
+            { traits: ['might'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 1,
+            damageTraits: ['might'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+    });
+
+    it('灰尘事件一般伤害头骨失败后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'first-aid-kit', name: '急救包', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingEventChoice = {
+            id: 'dust-event-general-damage-skull-rabbit-foot-success',
+            playerId: '1',
+            sourceTitle: '事件一般伤害',
+            effect: {
+                mode: 'generalDamageChoice',
+                amount: 1,
+                allowedTraits: ['might'],
+                recommendedAction: 'endTurn',
+            },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '1',
+            { traits: ['might'] },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull', 'rope', 'first-aid-kit']);
+    });
+
+    it('灰尘事件一般伤害头骨失败后，兔脚重掷仍失败会保持死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'first-aid-kit', name: '急救包', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingEventChoice = {
+            id: 'dust-event-general-damage-skull-rabbit-foot-failed',
+            playerId: '1',
+            sourceTitle: '事件一般伤害',
+            effect: {
+                mode: 'generalDamageChoice',
+                amount: 1,
+                allowedTraits: ['might'],
+                recommendedAction: 'endTurn',
+            },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '1',
+            { traits: ['might'] },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: 'hallway',
+        });
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+        expect(findTestExplorer(core, '1').inventory).toEqual([]);
+        expect(core.currentExplorerInventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+    });
+
+    it('灰尘直接降属性事件扣到骷髅时也触发头骨死亡保护', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '直接灰尘降属性',
+            text: '阴影扑向你。失去 1 点力量。',
+            effect: {
+                mode: 'trait',
+                trait: 'might',
+                amount: -1,
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '直接灰尘降属性',
+        });
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 1,
+            damageTraits: ['might'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it('灰尘直接降属性事件头骨失败后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '直接灰尘降属性',
+            text: '阴影扑向你。失去 1 点力量。',
+            effect: {
+                mode: 'trait',
+                trait: 'might',
+                amount: -1,
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘脑状食品中档失去神志扣到骷髅时也触发头骨死亡保护', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '脑状食品')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1, 2], 0, 0);
+        setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '脑状食品',
+        });
+        expect(core.latestDiscovery?.detail).toContain('力量检定 1');
+        expect(core.latestDiscovery?.detail).toContain('获得 1 点速度并失去 1 点神志');
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 1,
+            damageTraits: ['sanity'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it('灰尘脑状食品头骨失败后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '脑状食品')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1, 2], 0, 0);
+        setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it.each([
+        {
+            eventName: '外星几何',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            },
+            randoms: [1, 2, 2, 2],
+            expectedDetail: '失去 1 点速度',
+            expectedDamageTraits: ['speed'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '蜘蛛！',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1, 2], 0, 0);
+            },
+            randoms: [3, 2, 2, 2],
+            expectedDetail: '获得 1 点速度并失去 1 点神志',
+            expectedDamageTraits: ['sanity'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '一种怪异的感觉',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+            },
+            randoms: [1, 1, 2, 2, 2],
+            expectedDetail: '失去 1 点力量',
+            expectedDamageTraits: ['might'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '葬礼',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'sanity', [2], 0, 0);
+            },
+            randoms: [2, 2, 2, 2, 2],
+            expectedDetail: '失去 1 点神志',
+            expectedDamageTraits: ['sanity'] as BetrayalTraitKey[],
+        },
+    ] as const)('灰尘真实直接失去属性事件「$eventName」扣到骷髅时触发头骨死亡保护', ({
+        eventName,
+        setupTracks,
+        randoms,
+        expectedDetail,
+        expectedDamageTraits,
+    }) => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === eventName)!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setupTracks(core);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(...randoms),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: eventName,
+        });
+        expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: expectedDamageTraits.length,
+            damageTraits: expectedDamageTraits,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it.each([
+        {
+            eventName: '夜幕众星',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'speed', [4], 0, 0);
+            },
+            exploreRandoms: [] as const,
+            choicePayload: { trait: 'speed' },
+            choiceRandoms: [2, 2, 2, 2, 2, 2, 2],
+            expectedDetail: '失去 1 点所选属性',
+            expectedDamageTraits: ['speed'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '一瓶微尘',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1, 2], 0, 0);
+            },
+            exploreRandoms: [] as const,
+            choicePayload: { accept: false },
+            choiceRandoms: [2, 2, 2],
+            expectedDetail: '力量 -1',
+            expectedDamageTraits: ['might'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '一条秘密通道',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'knowledge', [4], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+            },
+            exploreRandoms: [1, 1, 1, 1],
+            choicePayload: { targetRoomId: 'basement-landing' },
+            choiceRandoms: [2, 2, 2],
+            expectedDetail: '神志 -1',
+            expectedDamageTraits: ['sanity'] as BetrayalTraitKey[],
+        },
+    ] as const)('灰尘真实选择型直接失去属性事件「$eventName」结算后触发头骨死亡保护', ({
+        eventName,
+        setupTracks,
+        exploreRandoms,
+        choicePayload,
+        choiceRandoms,
+        expectedDetail,
+        expectedDamageTraits,
+    }) => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === eventName)!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setupTracks(core);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(...exploreRandoms),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: eventName,
+        });
+        expect(core.pendingEventChoice?.sourceTitle).toBe(eventName);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '1',
+            choicePayload,
+            101,
+            createBetrayalScriptedRandom(...choiceRandoms),
+        );
+
+        expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: expectedDamageTraits.length,
+            damageTraits: expectedDamageTraits,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it.each([
+        {
+            eventName: '标本剥制',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            },
+            randoms: [1, 2, 2, 2],
+            expectedDetail: '受到 1 点物理伤害',
+            expectedDamageAmount: 1,
+            expectedDamageTraits: ['might', 'speed'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '小丑房间',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+            },
+            randoms: [1, 2, 2, 2],
+            expectedDetail: '受到 2 点精神伤害',
+            expectedDamageAmount: 2,
+            expectedDamageTraits: ['knowledge', 'sanity'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '咬一口！',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            },
+            randoms: [1, 2, 2, 2],
+            expectedDetail: '受到 3 点物理伤害',
+            expectedDamageAmount: 3,
+            expectedDamageTraits: ['might', 'speed'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '磁带播放器',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+            },
+            randoms: [1, 2, 2, 2],
+            expectedDetail: '受到 1 点精神伤害',
+            expectedDamageAmount: 1,
+            expectedDamageTraits: ['knowledge', 'sanity'] as BetrayalTraitKey[],
+        },
+        {
+            eventName: '在你背后！',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            },
+            randoms: [1, 2, 2, 2],
+            expectedDetail: '受到 1 点物理伤害',
+            expectedDamageAmount: 1,
+            expectedDamageTraits: ['might', 'speed'] as BetrayalTraitKey[],
+        },
+    ] as const)('灰尘真实一般伤害事件「$eventName」扣到骷髅时触发头骨死亡保护', ({
+        eventName,
+        setupTracks,
+        randoms,
+        expectedDetail,
+        expectedDamageAmount,
+        expectedDamageTraits,
+    }) => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === eventName)!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setupTracks(core);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(...randoms),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: eventName,
+        });
+        expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: expectedDamageAmount,
+            damageTraits: expectedDamageTraits,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it.each([
+        {
+            caseName: '电话铃声精神伤害',
+            eventName: '电话铃声',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+            },
+            exploreRandoms: [2, 1, 3, 2, 2, 2],
+            choicePayload: undefined,
+            choiceRandoms: [] as const,
+            expectedDetail: '受到一颗骰子的精神伤害',
+            expectedDamageKind: 'mental' as const,
+            expectedDamageAmount: 2,
+        },
+        {
+            caseName: '电话铃声物理伤害',
+            eventName: '电话铃声',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            },
+            exploreRandoms: [1, 1, 3, 3, 2, 2, 2],
+            choicePayload: undefined,
+            choiceRandoms: [] as const,
+            expectedDetail: '受到两颗骰子的物理伤害',
+            expectedDamageKind: 'physical' as const,
+            expectedDamageAmount: 4,
+        },
+        {
+            caseName: '小机器人物理伤害',
+            eventName: '小机器人',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            },
+            exploreRandoms: [1, 3, 2, 2, 2],
+            choicePayload: undefined,
+            choiceRandoms: [] as const,
+            expectedDetail: '受到一颗骰子的物理伤害',
+            expectedDamageKind: 'physical' as const,
+            expectedDamageAmount: 2,
+        },
+        {
+            caseName: '最深的壁橱物理伤害',
+            eventName: '最深的壁橱',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+            },
+            exploreRandoms: [1, 3, 2, 2, 2],
+            choicePayload: undefined,
+            choiceRandoms: [] as const,
+            expectedDetail: '受到一颗骰子的物理伤害',
+            expectedDamageKind: 'physical' as const,
+            expectedDamageAmount: 2,
+        },
+        {
+            caseName: '肉质苔癣精神伤害',
+            eventName: '肉质苔癣',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+            },
+            exploreRandoms: [] as const,
+            choicePayload: { accept: true },
+            choiceRandoms: [1, 1, 3, 2, 2, 2],
+            expectedDetail: '受到一颗骰子的精神伤害',
+            expectedDamageKind: 'mental' as const,
+            expectedDamageAmount: 2,
+        },
+        {
+            caseName: '一抹鲜红物理伤害',
+            eventName: '一抹鲜红',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+            },
+            exploreRandoms: [] as const,
+            choicePayload: { accept: false },
+            choiceRandoms: [3, 2, 2, 2],
+            expectedDetail: '受到 1 颗骰子的物理伤害',
+            expectedDamageKind: 'physical' as const,
+            expectedDamageAmount: 2,
+        },
+    ] as const)('灰尘真实掷骰伤害事件「$caseName」扣到骷髅时触发头骨死亡保护', ({
+        eventName,
+        setupTracks,
+        exploreRandoms,
+        choicePayload,
+        choiceRandoms,
+        expectedDetail,
+        expectedDamageKind,
+        expectedDamageAmount,
+    }) => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === eventName)!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setupTracks(core);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(...exploreRandoms),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: eventName,
+        });
+
+        if (choicePayload) {
+            expect(core.pendingEventChoice?.sourceTitle).toBe(eventName);
+            core = applyBetrayalCommand(
+                core,
+                BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+                '1',
+                choicePayload,
+                101,
+                createBetrayalScriptedRandom(...choiceRandoms),
+            );
+        }
+
+        expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: expectedDamageKind,
+            damageAmount: expectedDamageAmount,
+            damageTraits: [],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: core.currentExplorer.roomId,
+        });
+    });
+
+    it.each([
+        {
+            caseName: '最深的壁橱精神伤害',
+            eventName: '最深的壁橱',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'speed', [2], 0, 0);
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+            },
+            exploreRandoms: [2, 1, 2, 2, 2],
+            choicePayload: undefined,
+            choiceRandoms: [] as const,
+            expectedDetail: '受到 1 点精神伤害',
+            expectedDamageAmount: 1,
+            expectedDamageTraits: ['knowledge', 'sanity'] as BetrayalTraitKey[],
+        },
+        {
+            caseName: '脑状食品底档通用伤害',
+            eventName: '脑状食品',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+            },
+            exploreRandoms: [1],
+            choicePayload: { traits: ['might', 'knowledge'] as BetrayalTraitKey[] },
+            choiceRandoms: [2, 2, 2],
+            expectedDetail: '通用伤害 2（力量、知识）',
+            expectedDamageAmount: 2,
+            expectedDamageTraits: ['might', 'knowledge'] as BetrayalTraitKey[],
+        },
+        {
+            caseName: '上古旧宅地面通用伤害',
+            eventName: '上古旧宅',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'might', [3], 0, 0);
+            },
+            exploreRandoms: [] as const,
+            choicePayload: { trait: 'might' as const, targetRoomId: 'hallway', traits: ['might'] as BetrayalTraitKey[] },
+            choiceRandoms: [2, 2, 2, 2, 2, 2],
+            expectedDetail: '通用伤害 1（力量）',
+            expectedDamageAmount: 1,
+            expectedDamageTraits: ['might'] as BetrayalTraitKey[],
+        },
+        {
+            caseName: '上古旧宅地下精神伤害',
+            eventName: '上古旧宅',
+            setupTracks: (core: BetrayalCore) => {
+                setTestTraitTrack(core, '1', 'speed', [2], 0, 0);
+                setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+                setTestTraitTrack(core, '1', 'sanity', [1], 0, 0);
+            },
+            exploreRandoms: [] as const,
+            choicePayload: { trait: 'speed' as const, targetRoomId: 'basement-landing' },
+            choiceRandoms: [1, 1, 2, 2, 2],
+            expectedDetail: '受到 1 点精神伤害',
+            expectedDamageAmount: 1,
+            expectedDamageTraits: ['knowledge', 'sanity'] as BetrayalTraitKey[],
+        },
+    ] as const)('灰尘真实复合/选择伤害事件「$caseName」扣到骷髅时触发头骨死亡保护', ({
+        eventName,
+        setupTracks,
+        exploreRandoms,
+        choicePayload,
+        choiceRandoms,
+        expectedDetail,
+        expectedDamageAmount,
+        expectedDamageTraits,
+    }) => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === eventName)!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setupTracks(core);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(...exploreRandoms),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: eventName,
+        });
+
+        if (choicePayload) {
+            expect(core.pendingEventChoice?.sourceTitle).toBe(eventName);
+            core = applyBetrayalCommand(
+                core,
+                BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+                '1',
+                choicePayload,
+                101,
+                createBetrayalScriptedRandom(...choiceRandoms),
+            );
+        }
+
+        expect(core.latestDiscovery?.detail).toContain(expectedDetail);
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: expectedDamageAmount,
+            damageTraits: expectedDamageTraits,
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: core.currentExplorer.roomId,
+        });
+    });
+
+    it('灰尘吊死鬼全属性检定失败扣到骷髅时也触发头骨死亡保护', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '吊死鬼')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as const) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1, 1, 1, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '吊死鬼',
+        });
+        expect(core.recentAllTraitCheck?.results.every((result) => !result.passed)).toBe(true);
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 4,
+            damageTraits: ['might', 'speed', 'knowledge', 'sanity'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it('灰尘固定属性事件一般伤害分到骷髅时，头骨失败后才变狂热病患', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '固定灰尘伤害',
+            text: '固定扣减力量。',
+            effect: {
+                mode: 'generalDamage',
+                amount: 1,
+                traits: ['might'],
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '固定灰尘伤害',
+        });
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 1,
+            damageTraits: ['might'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it('灰尘固定属性事件一般伤害头骨失败后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '固定灰尘伤害',
+            text: '固定扣减力量。',
+            effect: {
+                mode: 'generalDamage',
+                amount: 1,
+                traits: ['might'],
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘掷骰事件物理伤害扣到骷髅时，头骨失败后才变狂热病患', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '掷骰灰尘伤害',
+            text: '掷骰造成物理伤害。',
+            effect: {
+                mode: 'rolledDamage',
+                dice: 1,
+                damageKind: 'physical',
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(3, 2, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '掷骰灰尘伤害',
+        });
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'physical',
+        });
+        expect(core.recentRoll?.deathPrevention?.damageAmount).toBeGreaterThanOrEqual(1);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it('灰尘掷骰事件物理伤害头骨失败后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '掷骰灰尘伤害',
+            text: '掷骰造成物理伤害。',
+            effect: {
+                mode: 'rolledDamage',
+                dice: 1,
+                damageKind: 'physical',
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(3, 2, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘掷骰事件精神伤害扣到骷髅时，头骨失败后才变狂热病患', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '掷骰灰尘精神伤害',
+            text: '掷骰造成精神伤害。',
+            effect: {
+                mode: 'rolledDamage',
+                dice: 1,
+                damageKind: 'mental',
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(3, 2, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '掷骰灰尘精神伤害',
+        });
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'mental',
+        });
+        expect(core.recentRoll?.deathPrevention?.damageAmount).toBeGreaterThanOrEqual(1);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+    });
+
+    it('灰尘掷骰事件精神伤害头骨失败后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '掷骰灰尘精神伤害',
+            text: '掷骰造成精神伤害。',
+            effect: {
+                mode: 'rolledDamage',
+                dice: 1,
+                damageKind: 'mental',
+                recommendedAction: 'endTurn',
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(3, 2, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘复合事件内嵌一般伤害扣到骷髅时，头骨失败后才变狂热病患', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '复合灰尘伤害',
+            text: '先造成伤害，再放置障碍物。',
+            effect: {
+                mode: 'compound',
+                recommendedAction: 'endTurn',
+                effects: [
+                    {
+                        mode: 'generalDamage',
+                        amount: 1,
+                        traits: ['might'],
+                        recommendedAction: 'endTurn',
+                    },
+                    {
+                        mode: 'placeObstacleToken',
+                        recommendedAction: 'endTurn',
+                    },
+                ],
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [{ id: 'skull', name: '头骨', kind: 'omen' }];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '复合灰尘伤害',
+        });
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 1,
+            damageTraits: ['might'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens).toContain('obstacle');
+    });
+
+    it('灰尘复合事件内嵌一般伤害头骨失败后，兔脚重掷成功会回滚死亡和狂热病患化', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '复合灰尘伤害',
+            text: '先造成伤害，再放置障碍物。',
+            effect: {
+                mode: 'compound',
+                recommendedAction: 'endTurn',
+                effects: [
+                    {
+                        mode: 'generalDamage',
+                        amount: 1,
+                        traits: ['might'],
+                        recommendedAction: 'endTurn',
+                    },
+                    {
+                        mode: 'placeObstacleToken',
+                        recommendedAction: 'endTurn',
+                    },
+                ],
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens).toContain('obstacle');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(3),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).not.toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toBeUndefined();
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens).toContain('obstacle');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘复合事件内嵌一般伤害头骨失败后，兔脚仍失败会保留副作用并掩埋遗物', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [{
+            name: '复合灰尘伤害',
+            text: '先造成伤害，再放置障碍物。',
+            effect: {
+                mode: 'compound',
+                recommendedAction: 'endTurn',
+                effects: [
+                    {
+                        mode: 'generalDamage',
+                        amount: 1,
+                        traits: ['might'],
+                        recommendedAction: 'endTurn',
+                    },
+                    {
+                        mode: 'placeObstacleToken',
+                        recommendedAction: 'endTurn',
+                    },
+                ],
+            },
+        }];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'map', name: '地图', kind: 'item' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens).toContain('obstacle');
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual(['skull', 'rope', 'map']);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+        expect(core.rooms.find((room) => room.id === targetRoomId)?.markerTokens).toContain('obstacle');
+        expect(findTestExplorer(core, '1').inventory).toEqual([]);
+        expect(core.currentExplorerInventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((corpse) => corpse.playerId)).not.toContain('1');
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘直接失去属性事件头骨失败后，兔脚仍失败会掩埋非武器遗物且不可搜刮', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '外星几何')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'map', name: '地图', kind: 'item' },
+            { id: 'omen-book', name: '书本', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 2, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '外星几何',
+        });
+        expect(core.latestDiscovery?.detail).toContain('失去 1 点速度');
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'general',
+            damageAmount: 1,
+            damageTraits: ['speed'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual([
+            'skull',
+            'rope',
+            'map',
+            'omen-book',
+        ]);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        const corpse = resolveBetrayalDeathStateSummary(core).corpses.find((item) => item.playerId === '1');
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+        expect(findTestExplorer(core, '1').inventory).toEqual([]);
+        expect(core.currentExplorerInventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((target) => target.playerId)).not.toContain('1');
+        expect(corpse).toMatchObject({
+            itemCount: 0,
+            omenCount: 0,
+            canBeLootedByCurrentExplorer: false,
+            lootableCardIds: [],
+        });
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘掷骰伤害事件头骨失败后，兔脚仍失败会掩埋非武器遗物且不可搜刮', () => {
+        let core = createDustHauntCore();
+        placeActiveTestExplorerInRoom(core, '1', 'entrance-hall');
+        setScenarioTestTurnMovement(core, 6);
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '小机器人')!];
+        core.deckCounts.event = core.eventOrder.length;
+        core.currentExplorer.inventory = [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+            { id: 'first-aid-kit', name: '急救包', kind: 'item' },
+            { id: 'mask', name: '面具', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1'];
+        setTestTraitTrack(core, '1', 'knowledge', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'might', [1], 0, 0);
+        setTestTraitTrack(core, '1', 'speed', [1], 0, 0);
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
+        expect(targetRoomId).toBeTruthy();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '1',
+            { roomId: targetRoomId! },
+            100,
+            createBetrayalScriptedRandom(1, 3, 2, 2, 2),
+        );
+
+        expect(core.latestDiscovery).toMatchObject({
+            kind: 'event',
+            title: '小机器人',
+        });
+        expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害');
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.recentRoll?.deathPrevention).toMatchObject({
+            cardId: 'skull',
+            damageKind: 'physical',
+            damageAmount: 2,
+            damageTraits: [],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(findTestExplorer(core, '1').inventory.map((card) => card.id)).toEqual([
+            'skull',
+            'rope',
+            'first-aid-kit',
+            'mask',
+        ]);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, '1', { cardId: 'rope', dieIndex: 0 }),
+        ).valid).toBe(true);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_RABBIT_FOOT,
+            '1',
+            { cardId: 'rope', dieIndex: 0 },
+            101,
+            createBetrayalScriptedRandom(1),
+        );
+
+        const corpse = resolveBetrayalDeathStateSummary(core).corpses.find((item) => item.playerId === '1');
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('1');
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
+        expect(core.monsters.find((monster) => monster.id === 'feverish-1')).toMatchObject({
+            name: '狂热病患',
+            roomId: targetRoomId,
+        });
+        expect(findTestExplorer(core, '1').inventory).toEqual([]);
+        expect(core.currentExplorerInventory).toEqual([]);
+        expect(resolveCorpseLootTargets(core).map((target) => target.playerId)).not.toContain('1');
+        expect(corpse).toMatchObject({
+            itemCount: 0,
+            omenCount: 0,
+            canBeLootedByCurrentExplorer: false,
+            lootableCardIds: [],
+        });
+        expect(core.usedCardIdsThisTurn).toContain('rope');
+    });
+
+    it('灰尘普通伤害死亡后若所有探索者都已是叛徒或死亡则叛徒胜利', () => {
+        let core = createDustHauntCore();
+        activateTestExplorer(core, '1');
+        core.currentExplorer.roomId = 'hallway';
+        core.activeRoomId = 'hallway';
+        core.scenarioRuntime.deadExplorerPlayerIds = ['0'];
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['1', '2'];
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            setTestTraitTrack(core, '1', trait, [1], 0, 0);
+        }
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+        core.pendingDamageAllocation = {
+            id: 'dust-ordinary-damage-completes-traitors',
+            playerId: '1',
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...core.currentExplorer.traits },
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: ['might', 'speed'] },
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.feverishPlayerIds).toContain('1');
     });
 
     it('灰尘剧本发出疾病交换请求后不会重新展示上一次投骰结果', () => {
@@ -5260,6 +11000,59 @@ describe('Betrayal first scenario runtime', () => {
         expect(findTestExplorer(fallbackCore, '0').inventory.some((card) => card.name === '魔法相机')).toBe(true);
     });
 
+    it('大宅饿了跳过作祟检定后会把属性奖励纳入翻牌确认队列', () => {
+        let core = createStartedFirstScenarioCore();
+        core.drawOrder = ['event'];
+        core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '大宅饿了')!];
+        core.currentExplorer.traits.knowledge = 4;
+        core.currentExplorerTraits = { ...core.currentExplorer.traits };
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+
+        expect(core.latestDiscovery?.title).toBe('大宅饿了');
+        expect(core.pendingEventChoice?.sourceTitle).toBe('大宅饿了');
+        expect(core.turnEndedByDiscovery).toBe(false);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
+            '0',
+            { accept: false, trait: 'knowledge' },
+        );
+
+        expect(core.latestDiscovery?.summary).toBe('跳过作祟检定');
+        expect(core.latestDiscovery?.detail).toContain('知识 +1');
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => ({
+            kind: step.kind,
+            text: step.text,
+        }))).toEqual([
+            { kind: 'event-effect', text: '事件效果：知识 +1' },
+        ]);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '大宅饿了',
+            stepKind: 'event-effect',
+            text: '事件效果：知识 +1',
+            index: 1,
+            total: 1,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
+        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(core.turnEndedByDiscovery).toBe(true);
+    });
+
     it('说“茄子”！跳过作祟检定仍按事件失败分支抽物品', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -5287,6 +11080,32 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.phase).toBe('preHaunt');
         expect(core.latestDiscovery?.detail).toContain('抽取一张物品卡');
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => ({
+            kind: step.kind,
+            text: step.text,
+        }))).toEqual([
+            { kind: 'event-effect', text: '事件效果：抽取一张物品卡' },
+        ]);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '说“茄子”！',
+            stepKind: 'event-effect',
+            text: '事件效果：抽取一张物品卡',
+            index: 1,
+            total: 1,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.inventory.at(-1)?.name).toBe('魔法相机');
         expect(core.turnEndedByDiscovery).toBe(true);
     });
@@ -6610,6 +12429,24 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traitTracks.speed.position).toBe(speedPositionBeforeChoice + 1);
         expect(core.currentExplorer.traits.speed).toBe(4);
         expect(core.turnEndedByDiscovery).toBe(true);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '脑状食品',
+            stepKind: 'event-effect',
+            text: '事件效果：速度 +1',
+            index: 1,
+            total: 1,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        core = acknowledgePendingCardResolutions(core);
+        expect(core.pendingCardResolutionQueue).toEqual([]);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
         expect(core.currentPlayer).toBe('1');
@@ -6707,6 +12544,15 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.latestDiscovery?.detail).toContain('通用伤害 2（力量、知识）');
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '脑状食品',
+            stepKind: 'event-effect',
+            text: '事件效果：通用伤害 2（力量、知识）',
+            index: 1,
+            total: 1,
+        });
         expect(core.turnEndedByDiscovery).toBe(true);
     });
 
@@ -6805,6 +12651,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('放置到上层起始点');
         expect(core.currentExplorer.roomId).toBe('upper-landing');
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '上古旧宅', '放置到上层起始点');
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -6859,6 +12706,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.might).toBe(3);
         expect(core.currentExplorer.traits.speed).toBe(4);
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '上古旧宅', '通用伤害 1（力量）');
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -6911,6 +12759,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '上古旧宅', '精神伤害');
     });
 
     it('吊死鬼按官方锁定文本执行四项属性连续检定', () => {
@@ -7011,6 +12860,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.speed).toBe(3);
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.currentExplorer.traits.sanity).toBe(3);
+        core = acknowledgeSingleEventEffectResolution(core, '吊死鬼', '知识 +1');
     });
 
     it('一条秘密通道按官方锁定文本放置秘密通道标志物并选择第二目标板块', () => {
@@ -7065,6 +12915,25 @@ describe('Betrayal first scenario runtime', () => {
         expect(resolveMoveTargetRooms(core).map((room) => room.id)).toContain('basement-landing');
 
         core.movesRemaining = 1;
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '一条秘密通道',
+            stepKind: 'event-effect',
+            text: expect.stringContaining('秘密通道'),
+            index: 1,
+            total: 1,
+        });
+        const moveBeforeAcknowledgingSecretPassage = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' }),
+        );
+        expect(moveBeforeAcknowledgingSecretPassage.valid).toBe(false);
+        if (!moveBeforeAcknowledgingSecretPassage.valid) {
+            expect(moveBeforeAcknowledgingSecretPassage.error).toContain('请先确认当前翻牌结算');
+        }
+        core = acknowledgePendingCardResolutions(core);
+        expect(core.pendingCardResolutionQueue).toEqual([]);
         const sameTurnSecretPassageMove = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' }),
@@ -7116,6 +12985,17 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.rooms.find((room) => room.id === 'hallway')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.turnEndedByDiscovery).toBe(true);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '一条秘密通道',
+            stepKind: 'event-effect',
+            text: expect.stringContaining('秘密通道'),
+            index: 1,
+            total: 1,
+        });
+        core = acknowledgePendingCardResolutions(core);
+        expect(core.pendingCardResolutionQueue).toEqual([]);
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -7153,6 +13033,17 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.rooms.find((room) => room.id === 'basement-landing')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.turnEndedByDiscovery).toBe(true);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'event',
+            cardName: '一条秘密通道',
+            stepKind: 'event-effect',
+            text: expect.stringContaining('秘密通道'),
+            index: 1,
+            total: 1,
+        });
+        core = acknowledgePendingCardResolutions(core);
+        expect(core.pendingCardResolutionQueue).toEqual([]);
     });
 
     it('蜘蛛按官方锁定文本选择属性并放置到相邻板块', () => {
@@ -7214,6 +13105,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.roomId).toBe('hallway');
         expect(core.latestDiscovery?.detail).toContain('速度 +1');
         expect(core.latestDiscovery?.detail).toContain('放置到门厅');
+        core = acknowledgeSingleEventEffectResolution(core, '蜘蛛！', '速度 +1');
 
         core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
@@ -7245,6 +13137,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.speed).toBe(5);
         expect(core.currentExplorer.traits.sanity).toBe(3);
         expect(core.turnEndedByDiscovery).toBe(true);
+        core = acknowledgeSingleEventEffectResolution(core, '蜘蛛！', '神志 -1');
     });
 
     it('盔甲和头戴耳机不会阻挡通用伤害', () => {
@@ -7395,6 +13288,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'basement-east' });
         expect(core.rooms.find((room) => room.id === 'basement-east')?.name).toBe('洗衣滑槽');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
@@ -7414,6 +13308,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'basement-east' });
         expect(core.rooms.find((room) => room.id === 'basement-east')?.name).toBe('密道楼梯');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = {
             ...core,
@@ -7482,6 +13377,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
         expect(core.rooms.find((room) => room.id === 'ground-north')?.name).toBe('舞厅');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = {
             ...core,
@@ -7495,6 +13391,7 @@ describe('Betrayal first scenario runtime', () => {
         };
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('长廊');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = {
             ...core,
@@ -7552,6 +13449,118 @@ describe('Betrayal first scenario runtime', () => {
         expect(junkRoom?.markerTokens).toContain('obstacle');
     });
 
+    it('当前所有房间文字直接效果都会先进入翻牌确认队列', () => {
+        const cases = [
+            {
+                floor: 'ground' as const,
+                visualId: 'chapel',
+                targetRoomId: 'ground-north',
+                expectedRoomName: '礼拜堂',
+                expectedText: '房间效果：礼拜堂，神志 +1',
+                moveToFloor(core: BetrayalCore): BetrayalCore {
+                    return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+                },
+            },
+            {
+                floor: 'upper' as const,
+                visualId: 'library',
+                targetRoomId: 'upper-north',
+                expectedRoomName: '图书馆',
+                expectedText: '房间效果：图书馆，知识 +1',
+                moveToFloor(core: BetrayalCore): BetrayalCore {
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+                    return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+                },
+            },
+            {
+                floor: 'upper' as const,
+                visualId: 'study',
+                targetRoomId: 'upper-north',
+                expectedRoomName: '书房',
+                expectedText: '房间效果：书房，知识 +1',
+                moveToFloor(core: BetrayalCore): BetrayalCore {
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+                    return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+                },
+            },
+            {
+                floor: 'upper' as const,
+                visualId: 'gymnasium',
+                targetRoomId: 'upper-north',
+                expectedRoomName: '体育馆',
+                expectedText: '房间效果：体育馆，速度 +1',
+                moveToFloor(core: BetrayalCore): BetrayalCore {
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+                    return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+                },
+            },
+            {
+                floor: 'basement' as const,
+                visualId: 'larder',
+                targetRoomId: 'basement-east',
+                expectedRoomName: '储物间',
+                expectedText: '房间效果：储物间，力量 +1',
+                moveToFloor(core: BetrayalCore): BetrayalCore {
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+                    return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+                },
+            },
+            {
+                floor: 'basement' as const,
+                visualId: 'junkRoom',
+                targetRoomId: 'basement-east',
+                expectedRoomName: '杂物间',
+                expectedText: '房间效果：杂物间，放置障碍物标记',
+                moveToFloor(core: BetrayalCore): BetrayalCore {
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+                    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+                    return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+                },
+            },
+        ];
+
+        for (const testCase of cases) {
+            let core = createStartedFirstScenarioCore();
+            core.drawOrder = ['item'];
+            const roomTemplate = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor[testCase.floor]
+                .find((room) => room.visualId === testCase.visualId)!;
+            core.roomDiscoveryOrderByFloor[testCase.floor] = [roomTemplate];
+
+            core = testCase.moveToFloor(core);
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: testCase.targetRoomId });
+
+            expect(core.rooms.find((room) => room.id === testCase.targetRoomId)?.name).toBe(testCase.expectedRoomName);
+            expect(core.latestDiscovery?.resolutionSteps?.[0]).toMatchObject({
+                kind: 'room-effect',
+                text: testCase.expectedText,
+            });
+            expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+                stepKind: 'room-effect',
+                cardName: testCase.expectedText,
+                text: testCase.expectedText,
+                index: 1,
+            });
+            expect(core.pendingCardResolutionQueue[0]?.deckKind).toBeUndefined();
+            expect(BetrayalDomain.validate(
+                { core, sys: {} as never },
+                createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+            )).toMatchObject({
+                valid: false,
+                error: '请先确认当前翻牌结算。',
+            });
+
+            core = acknowledgeAnyPendingCardResolutions(core);
+            expect(BetrayalDomain.validate(
+                { core, sys: {} as never },
+                createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+            ).valid).toBe(true);
+        }
+    });
+
     it('离开带障碍物标记的房间需要 2 点移动', () => {
         let core = createStartedFirstScenarioCore();
         core.roomDiscoveryOrderByFloor.basement = [
@@ -7562,6 +13571,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'basement-east' });
+        core = acknowledgeAnyPendingCardResolutions(core);
         core.turnEndedByDiscovery = false;
 
         core.movesRemaining = 1;
@@ -7874,7 +13884,7 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
         )).toMatchObject({
             valid: false,
-            error: '请先确认刚抽到的物品或预兆。',
+            error: '请先确认当前翻牌结算。',
         });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
@@ -7909,6 +13919,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('倒塌房间');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = applyBetrayalCommand(
             core,
@@ -7985,6 +13996,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('倒塌房间');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = applyBetrayalCommand(
             core,
@@ -8043,6 +14055,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('倒塌房间');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         const explorerBefore = { ...core.currentExplorer };
         const mightBefore = core.currentExplorer.traits.might;
@@ -8096,6 +14109,7 @@ describe('Betrayal first scenario runtime', () => {
             core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
             core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
             core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
+            core = acknowledgeAnyPendingCardResolutions(core);
 
             const mightBefore = core.currentExplorer.traits.might;
             const speedBefore = core.currentExplorer.traits.speed;
@@ -8627,6 +14641,7 @@ describe('Betrayal first scenario runtime', () => {
         core.turnEndedByDiscovery = false;
         core.movesRemaining = 2;
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('神秘电梯');
+        core = acknowledgeAnyPendingCardResolutions(core);
         expect(resolveBetrayalRoomSpecialActionStatus(core)).toMatchObject({
             sourceId: 'mysticElevator',
             canUse: true,
@@ -8691,6 +14706,7 @@ describe('Betrayal first scenario runtime', () => {
         core.turnEndedByDiscovery = false;
         core.movesRemaining = 2;
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('神秘电梯');
+        core = acknowledgeAnyPendingCardResolutions(core);
 
         core = applyBetrayalCommand(
             core,
@@ -8777,7 +14793,7 @@ describe('Betrayal first scenario runtime', () => {
         );
         expect(pendingCardUseValidation.valid).toBe(false);
         if (!pendingCardUseValidation.valid) {
-            expect(pendingCardUseValidation.error).toContain('请先确认刚抽到的物品或预兆');
+            expect(pendingCardUseValidation.error).toContain('请先确认当前翻牌结算');
         }
 
         core = acknowledgePendingCardResolutions(core);
@@ -10611,6 +16627,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {}, 100, lowHauntRoll);
+        core = acknowledgeAnyPendingCardResolutions(core);
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'hallway' });
@@ -10814,10 +16831,12 @@ describe('Betrayal first scenario runtime', () => {
                 effect: { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
             },
         ];
-        core.roomDiscoveryOrderByFloor.upper = [
-            BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'mysticElevator')!,
-            BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'collapsedRoom')!,
-        ];
+        const collapsedRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'collapsedRoom')!;
+        const mysticElevator = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'mysticElevator')!;
+        setTestRoomDiscoveryDeck(core, [
+            { floor: 'upper', room: collapsedRoom },
+            { floor: 'upper', room: mysticElevator },
+        ]);
         core.currentExplorer.inventory = [
             { id: 'holy-symbol', name: '圣符', kind: 'omen' },
         ];
@@ -11032,7 +17051,17 @@ describe('Betrayal first scenario runtime', () => {
         );
         expect(moveAfterDiscovery.valid).toBe(false);
         if (!moveAfterDiscovery.valid) {
-            expect(moveAfterDiscovery.error).toContain('回合已经结束');
+            expect(moveAfterDiscovery.error).toContain('请先确认当前翻牌结算');
+        }
+
+        core = acknowledgeAnyPendingCardResolutions(core);
+        const moveAfterResolution = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'frontier-upper-north-west' }),
+        );
+        expect(moveAfterResolution.valid).toBe(false);
+        if (!moveAfterResolution.valid) {
+            expect(moveAfterResolution.error).toContain('回合已经结束');
         }
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
@@ -11303,6 +17332,51 @@ describe('Betrayal first scenario runtime', () => {
         });
         expect(core.scenarioRuntime.monsterTurn.attackedMonsterIdsThisTurn).toContain('feverish-0');
         expect(core.pendingDamageAllocation?.playerId).toBe('1');
+    });
+
+    it('狂热病患怪物攻击击倒最后一名非叛徒后触发灰尘叛徒胜利', () => {
+        let core = createDustFeverishAttackReadyCore();
+        core.scenarioRuntime.dust!.permanentTraitorPlayerIds = ['0', '2'];
+        setTestTraitTrack(core, '1', 'might', [1, 1], 1, 1);
+        setTestTraitTrack(core, '1', 'speed', [1, 1], 1, 1);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+            '0',
+            {
+                monsterId: 'feverish-0',
+                targetPlayerId: '1',
+            },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3, 1, 1, 1, 1),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.pendingDamageAllocation).toMatchObject({
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            playerId: '1',
+            allowSkull: true,
+        });
+        expect(core.endgameResult).toBeNull();
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '1',
+            { traits: lethalTraitsForPendingDamage(core, 'might') },
+        );
+
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({
+            hauntId: 'the-dust',
+            outcome: 'traitor',
+            winners: ['2'],
+        });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toEqual(expect.arrayContaining(['0', '1']));
+        expect(core.scenarioRuntime.dust?.permanentTraitorPlayerIds.sort()).toEqual(['0', '2']);
+        expect(core.scenarioRuntime.monsterTurn.attackedMonsterIdsThisTurn).toContain('feverish-0');
     });
 
     it('狂热病患控制回合同样不能使用持有物、兔脚、交易或搜刮尸体', () => {
@@ -12482,5 +18556,75 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.scenarioRuntime.hauntTriggerLabel).toBe('A Splash of Crimson');
         expect(core.scenarioRuntime.hauntResolutionMatchedTrigger).toBe(true);
         expect(core.scenarioRuntime.hauntResolutionRepresentativeOnly).toBe(false);
+    });
+
+    it('普通预兆触发作祟后仍保留翻牌确认队列，确认前不能继续行动', () => {
+        let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.drawOrder = ['omen'];
+        core.possessionOrderByKind.omen = [
+            { id: 'omen-crimson-splash', name: 'A Splash of Crimson', kind: 'omen' },
+        ];
+        core.currentExplorer.inventory = [
+            { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
+        ];
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
+            ...explorer,
+            inventory: [
+                { id: `omen-${index + 1}`, name: `预兆${index + 1}`, kind: 'omen' },
+            ],
+        }));
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.EXPLORE_ROOM,
+            '0',
+            { roomId: 'ground-east' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3),
+        );
+
+        expect(core.phase).toBe('haunt');
+        expect(core.scenarioRuntime.hauntTriggered).toBe(true);
+        expect(core.latestDiscovery?.kind).toBe('omen');
+        expect(core.pendingCardResolutionQueue).toHaveLength(2);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            deckKind: 'omen',
+            cardName: 'A Splash of Crimson',
+            stepKind: 'drawn-card',
+            index: 1,
+            total: 2,
+        });
+        expect(core.pendingCardResolutionQueue[1]).toMatchObject({
+            deckKind: 'omen',
+            cardName: 'A Splash of Crimson',
+            stepKind: 'haunt-roll',
+            index: 2,
+            total: 2,
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, core.currentPlayer, {
+                roomId: 'hallway',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
+        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
+            stepKind: 'haunt-roll',
+            index: 2,
+            total: 2,
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
+            resolutionId: core.pendingCardResolutionQueue[0]!.id,
+        });
+        expect(core.pendingCardResolutionQueue).toEqual([]);
     });
 });

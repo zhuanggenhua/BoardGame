@@ -51,8 +51,10 @@ import type {
   BetrayalDiscoverySummary,
   BetrayalExplorerSummary,
   BetrayalHauntRevealProtocol,
+  BetrayalHauntSetupQueueEntryId,
   BetrayalHauntSpecialActionId,
   BetrayalHauntSpecialActionStatus,
+  BetrayalHauntTokenInstanceSummary,
   BetrayalHelpingHandsTrollHandAttackOption,
   BetrayalInventoryCard,
   BetrayalMonsterActionSlot,
@@ -89,9 +91,12 @@ import {
   resolveHelpingHandsTrollHandAttackOptions,
   resolveHelpingHandsTrollHandMoveOptions,
   resolveBetrayalAttackTargetPlayerIds,
+  resolveBetrayalEndgameReadModel,
   resolveBetrayalHauntRisk,
   resolveBetrayalHauntRevealProtocol,
+  resolveBetrayalHauntSetupCommandPreviews,
   resolveBetrayalHauntSpecialActionStatus,
+  resolveBetrayalHauntTokenInstances,
   resolveBetrayalMonsterActionPanel,
   resolveBetrayalNormalMonsterAttackTargets,
   resolveBetrayalMonsterStatuses,
@@ -163,6 +168,15 @@ const isChineseLocale = (locale: string) =>
 
 type ScenarioReaderAudience = "all" | "heroes" | "traitor";
 type ScenarioReaderScope = "all" | "heroes" | "traitor";
+
+const SCENARIO_READER_RULE_HANDOFF_SECTION_IDS = new Set(["setup"]);
+const SCENARIO_READER_CINEMATIC_SECTION_IDS = new Set(["prologue"]);
+
+const splitCinematicNarrationText = (text: string) =>
+  text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 
 const formatScenarioCardTitle = (
   candidate: BetrayalScenarioCardCandidate,
@@ -367,12 +381,32 @@ function filterScenarioSectionsByScope(
   sections: ScenarioReaderSection[],
   scope: ScenarioReaderScope,
 ): ScenarioReaderSection[] {
+  const immersiveSections = sections.filter(
+    (section) =>
+      !SCENARIO_READER_RULE_HANDOFF_SECTION_IDS.has(section.id) &&
+      !SCENARIO_READER_CINEMATIC_SECTION_IDS.has(section.id),
+  );
   if (scope === "all") {
-    return sections;
+    return immersiveSections;
   }
-  return sections.filter(
+  return immersiveSections.filter(
     (section) =>
       section.audiences.includes("all") || section.audiences.includes(scope),
+  );
+}
+
+function findScenarioOpeningNarrationSection(
+  dossier: HauntDossier,
+  scope: ScenarioReaderScope,
+): ScenarioReaderSection | null {
+  return (
+    dossier.sections.find(
+      (section) =>
+        SCENARIO_READER_CINEMATIC_SECTION_IDS.has(section.id) &&
+        (scope === "all" ||
+          section.audiences.includes("all") ||
+          section.audiences.includes(scope)),
+    ) ?? null
   );
 }
 
@@ -445,6 +479,8 @@ type PreviewState = {
   selectedMaskTargetRoomIdsByTokenId: Record<string, string>;
   activeMaskTargetTokenId: string | null;
   selectedEventTrait: BetrayalTraitKey | null;
+  selectedDustSearchTrait: BetrayalTraitKey | null;
+  selectedDustCureTrait: BetrayalTraitKey | null;
   selectedEventTargetRoomId: string | null;
   selectedEventDamageTraits: BetrayalTraitKey[];
   selectedDamageAllocationTraits: BetrayalTraitKey[];
@@ -855,6 +891,8 @@ function createInitialPreviewState(_core: BetrayalCore): PreviewState {
     selectedMaskTargetRoomIdsByTokenId: {},
     activeMaskTargetTokenId: null,
     selectedEventTrait: null,
+    selectedDustSearchTrait: null,
+    selectedDustCureTrait: null,
     selectedEventTargetRoomId: null,
     selectedEventDamageTraits: [],
     selectedDamageAllocationTraits: [],
@@ -2412,18 +2450,31 @@ function CharacterSelectScreen({
     },
     [],
   );
-  const scenarioReaderPages = React.useMemo(
-    () => buildScenarioReaderPages(),
-    [],
+  const scenarioReaderDossier = HAUNT_DOSSIERS.crimsonJack;
+  const scenarioReaderOpeningSection = findScenarioOpeningNarrationSection(
+    scenarioReaderDossier,
+    "all",
   );
-  const scenarioReaderSpreadCount = Math.max(
+  const scenarioReaderPages = buildScenarioReaderPages(
+    scenarioReaderDossier,
+    "all",
+  );
+  const scenarioReaderBookSpreadCount = Math.max(
     1,
     Math.ceil(scenarioReaderPages.length / 2),
   );
+  const scenarioReaderHasOpeningStage = Boolean(scenarioReaderOpeningSection);
+  const scenarioReaderSpreadCount =
+    scenarioReaderBookSpreadCount + (scenarioReaderHasOpeningStage ? 1 : 0);
+  const isScenarioReaderOpeningStage =
+    scenarioReaderHasOpeningStage && scenarioReaderSpreadIndex === 0;
+  const scenarioReaderBookSpreadIndex = scenarioReaderHasOpeningStage
+    ? Math.max(0, scenarioReaderSpreadIndex - 1)
+    : scenarioReaderSpreadIndex;
   const scenarioReaderLeftPage =
-    scenarioReaderPages[scenarioReaderSpreadIndex * 2] ?? null;
+    scenarioReaderPages[scenarioReaderBookSpreadIndex * 2] ?? null;
   const scenarioReaderRightPage =
-    scenarioReaderPages[scenarioReaderSpreadIndex * 2 + 1] ?? null;
+    scenarioReaderPages[scenarioReaderBookSpreadIndex * 2 + 1] ?? null;
   const canTurnScenarioReaderBack = scenarioReaderSpreadIndex > 0;
   const canTurnScenarioReaderForward =
     scenarioReaderSpreadIndex < scenarioReaderSpreadCount - 1;
@@ -3033,36 +3084,64 @@ function CharacterSelectScreen({
                 role="dialog"
                 aria-modal="true"
                 data-testid="betrayal-scenario-reader-dialog"
-                className="pointer-events-auto fixed inset-0 grid place-items-center bg-[radial-gradient(circle_at_50%_12%,rgba(96,67,29,0.34),rgba(2,6,5,0.9)_52%,rgba(0,0,0,0.96))] px-3 py-3"
+                className={`pointer-events-auto fixed inset-0 grid ${
+                  isScenarioReaderOpeningStage
+                    ? "place-items-stretch bg-black p-0"
+                    : "place-items-center bg-[radial-gradient(circle_at_50%_12%,rgba(96,67,29,0.34),rgba(2,6,5,0.9)_52%,rgba(0,0,0,0.96))] px-3 py-3"
+                }`}
                 style={{ zIndex: SCENARIO_READER_MODAL_Z_INDEX }}
                 onClick={handleScenarioReaderClose}
               >
                 <article
                   data-testid="betrayal-scenario-detail-panel"
-                  className="relative flex max-h-[calc(100vh-18px)] w-full max-w-[1120px] flex-col overflow-hidden border border-[#9a7b46] bg-[linear-gradient(135deg,rgba(52,34,20,0.98),rgba(18,14,10,0.99)_48%,rgba(5,7,6,0.99))] text-[#3a2414] shadow-[0_34px_90px_rgba(0,0,0,0.72)]"
+                  className={`relative flex w-full flex-col overflow-hidden ${
+                    isScenarioReaderOpeningStage
+                      ? "h-screen max-h-none max-w-none border-0 bg-black text-[#f5e6c7] shadow-none"
+                      : "max-h-[calc(100vh-18px)] max-w-[1120px] border border-[#9a7b46] bg-[linear-gradient(135deg,rgba(52,34,20,0.98),rgba(18,14,10,0.99)_48%,rgba(5,7,6,0.99))] text-[#3a2414] shadow-[0_34px_90px_rgba(0,0,0,0.72)]"
+                  }`}
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="pointer-events-none absolute inset-2 border border-[rgba(214,191,129,0.14)]" />
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_5%,rgba(216,171,88,0.16),transparent_34%)]" />
-                  <button
-                    type="button"
-                    data-testid="betrayal-scenario-reader-close"
-                    onClick={handleScenarioReaderClose}
-                    aria-label={t("board.characterSelect.hideScenarioDetails")}
-                    className={`${isPhoneLandscapeLayout ? "relative ml-auto mr-2 mt-2 h-11 w-11 px-0" : "absolute right-3 top-3 min-h-11 min-w-11 px-3"} z-20 inline-flex cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.82)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] shadow-[0_8px_24px_rgba(0,0,0,0.38)] transition hover:border-[#e2c57e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e]`}
-                  >
-                    {isPhoneLandscapeLayout ? (
-                      <X size={18} aria-hidden="true" />
-                    ) : (
-                      t("board.characterSelect.hideScenarioDetails")
-                    )}
-                  </button>
+                  {isScenarioReaderOpeningStage ? null : (
+                    <button
+                      type="button"
+                      data-testid="betrayal-scenario-reader-close"
+                      onClick={handleScenarioReaderClose}
+                      aria-label={t("board.characterSelect.hideScenarioDetails")}
+                      className={`${isPhoneLandscapeLayout ? "relative ml-auto mr-2 mt-2 h-11 w-11 px-0" : "absolute right-3 top-3 min-h-11 min-w-11 px-3"} z-20 inline-flex cursor-pointer items-center justify-center border border-[rgba(214,191,129,0.42)] bg-[rgba(18,23,18,0.82)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[#e2c57e] shadow-[0_8px_24px_rgba(0,0,0,0.38)] transition hover:border-[#e2c57e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e2c57e]`}
+                    >
+                      {isPhoneLandscapeLayout ? (
+                        <X size={18} aria-hidden="true" />
+                      ) : (
+                        t("board.characterSelect.hideScenarioDetails")
+                      )}
+                    </button>
+                  )}
                   <div
-                    className={`relative min-h-0 px-2 ${isPhoneLandscapeLayout ? "pb-2" : "py-2 lg:px-3 lg:py-3"}`}
+                    className={`relative min-h-0 ${
+                      isScenarioReaderOpeningStage
+                        ? "h-full p-0"
+                        : `px-2 ${isPhoneLandscapeLayout ? "pb-2" : "py-2 lg:px-3 lg:py-3"}`
+                    }`}
                   >
                     <div
-                      data-testid="betrayal-scenario-book"
-                      className={`relative mx-auto grid w-full max-w-[1120px] grid-cols-2 overflow-hidden border border-[#5a371a] bg-[#2a170d] shadow-[0_26px_62px_rgba(0,0,0,0.58),inset_0_0_0_1px_rgba(236,196,117,0.18)] transition-[transform,opacity,filter] duration-300 ease-out ${isPhoneLandscapeLayout ? "h-[calc(100vh-78px)] min-h-0 p-[5px]" : "h-[min(84vh,760px)] min-h-[360px] p-[7px] lg:h-[min(86vh,780px)]"} ${
+                      data-testid={
+                        isScenarioReaderOpeningStage
+                          ? "betrayal-scenario-opening-stage"
+                          : "betrayal-scenario-book"
+                      }
+                      className={`relative mx-auto w-full overflow-hidden transition-[transform,opacity,filter] duration-300 ease-out ${
+                        isScenarioReaderOpeningStage
+                          ? "h-full max-w-none bg-black"
+                          : "grid grid-cols-2 border border-[#5a371a] bg-[#2a170d] shadow-[0_26px_62px_rgba(0,0,0,0.58),inset_0_0_0_1px_rgba(236,196,117,0.18)]"
+                      } ${
+                        isScenarioReaderOpeningStage
+                          ? "min-h-full p-0"
+                          : isPhoneLandscapeLayout
+                            ? "h-[calc(100vh-78px)] min-h-0 p-[5px]"
+                            : "h-[min(84vh,760px)] min-h-[360px] p-[7px] lg:h-[min(86vh,780px)]"
+                      } ${
                         scenarioReaderTurnDirection === "forward"
                           ? "translate-x-1 opacity-95 brightness-110"
                           : scenarioReaderTurnDirection === "back"
@@ -3070,11 +3149,42 @@ function CharacterSelectScreen({
                             : "translate-x-0 opacity-100 brightness-100"
                       }`}
                     >
-                      <div className="pointer-events-none absolute inset-[7px] bg-[linear-gradient(90deg,rgba(53,30,14,0)_0%,rgba(52,30,15,0)_47%,rgba(52,30,15,0.74)_50%,rgba(255,236,187,0.10)_51%,rgba(52,30,15,0)_54%,rgba(52,30,15,0)_100%)]" />
-                      <ScenarioBookTurnSheet
-                        direction={scenarioReaderTurnDirection}
-                      />
-                      {[scenarioReaderLeftPage, scenarioReaderRightPage].map(
+                      {isScenarioReaderOpeningStage &&
+                      scenarioReaderOpeningSection ? (
+                        <CinematicNarrationPanel
+                          testId="betrayal-scenario-opening-cinematic"
+                          label={t(scenarioReaderOpeningSection.labelKey)}
+                          text={t(scenarioReaderOpeningSection.bodyKey)}
+                          variant="opening"
+                          presentation="stage"
+                          sourceStatus={t("board.scenario.readerSourceStatus")}
+                          sourceStatusTestId="betrayal-scenario-opening-source-status"
+                          compact={isPhoneLandscapeLayout}
+                          actionSlot={
+                            <button
+                              type="button"
+                              data-testid="betrayal-scenario-reader-next-zone"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleScenarioReaderTurn("forward");
+                              }}
+                              disabled={!canTurnScenarioReaderForward}
+                              aria-label={t("board.scenario.readerContinue")}
+                              className="inline-flex min-h-11 min-w-[144px] cursor-pointer items-center justify-center gap-2 border border-[rgba(242,207,130,0.42)] bg-[rgba(8,10,9,0.82)] px-6 text-[12px] font-black uppercase tracking-[0.22em] text-[#f5e6c7] shadow-[0_16px_38px_rgba(0,0,0,0.58)] transition hover:border-[#f2cf82] hover:bg-[rgba(18,20,16,0.92)] disabled:opacity-35"
+                            >
+                              {t("board.scenario.readerContinue")}
+                              <ChevronRight size={16} aria-hidden="true" />
+                            </button>
+                          }
+                          className="h-full min-h-full"
+                        />
+                      ) : (
+                        <>
+                          <div className="pointer-events-none absolute inset-[7px] bg-[linear-gradient(90deg,rgba(53,30,14,0)_0%,rgba(52,30,15,0)_47%,rgba(52,30,15,0.74)_50%,rgba(255,236,187,0.10)_51%,rgba(52,30,15,0)_54%,rgba(52,30,15,0)_100%)]" />
+                          <ScenarioBookTurnSheet
+                            direction={scenarioReaderTurnDirection}
+                          />
+                          {[scenarioReaderLeftPage, scenarioReaderRightPage].map(
                         (page, sideIndex) => {
                           if (!page) {
                             return (
@@ -3157,32 +3267,64 @@ function CharacterSelectScreen({
                                       className={`grid ${isPhoneLandscapeLayout ? "gap-2" : "gap-4 lg:gap-5"}`}
                                     >
                                       {(page.sections ?? []).map(
-                                        (section, sectionIndex) => (
-                                          <section
-                                            key={section.id}
-                                            data-testid={`betrayal-scenario-book-section-${section.id}`}
-                                            className={`border-l-4 ${isPhoneLandscapeLayout ? "pl-2" : "pl-3"} ${section.accentClass}`}
-                                          >
-                                            <div
-                                              className={`${isPhoneLandscapeLayout ? "text-[8px]" : "text-[10px]"} font-bold uppercase tracking-[0.2em] text-[#7d5129]`}
-                                              aria-hidden="true"
+                                        (section, sectionIndex) => {
+                                          const isCinematicSection =
+                                            SCENARIO_READER_CINEMATIC_SECTION_IDS.has(
+                                              section.id,
+                                            );
+
+                                          return (
+                                            <section
+                                              key={section.id}
+                                              data-testid={`betrayal-scenario-book-section-${section.id}`}
+                                              data-cinematic-narration={
+                                                isCinematicSection
+                                                  ? "opening"
+                                                  : undefined
+                                              }
+                                              className={
+                                                isCinematicSection
+                                                  ? "min-h-[260px]"
+                                                  : `border-l-4 ${isPhoneLandscapeLayout ? "pl-2" : "pl-3"} ${section.accentClass}`
+                                              }
                                             >
-                                              {String(
-                                                sectionIndex + 1,
-                                              ).padStart(2, "0")}
-                                            </div>
-                                            <h3
-                                              className={`${isPhoneLandscapeLayout ? "mt-0.5 text-[14px]" : "mt-1 text-[21px] lg:text-[25px]"} font-black tracking-[0.05em] text-[#3b2211]`}
-                                            >
-                                              {t(section.labelKey)}
-                                            </h3>
-                                            <p
-                                              className={`${isPhoneLandscapeLayout ? "mt-1 text-[11px] leading-[1.4]" : "mt-2 text-[15px] leading-7 lg:text-[16px] lg:leading-7"} whitespace-pre-line font-medium text-[#4e321c]`}
-                                            >
-                                              {t(section.bodyKey)}
-                                            </p>
-                                          </section>
-                                        ),
+                                              {isCinematicSection ? (
+                                                <CinematicNarrationPanel
+                                                  label={t(section.labelKey)}
+                                                  text={t(section.bodyKey)}
+                                                  variant="opening"
+                                                  compact={isPhoneLandscapeLayout}
+                                                  className={
+                                                    isPhoneLandscapeLayout
+                                                      ? "min-h-[248px]"
+                                                      : "min-h-[410px]"
+                                                  }
+                                                />
+                                              ) : (
+                                                <>
+                                                  <div
+                                                    className={`${isPhoneLandscapeLayout ? "text-[8px]" : "text-[10px]"} font-bold uppercase tracking-[0.2em] text-[#7d5129]`}
+                                                    aria-hidden="true"
+                                                  >
+                                                    {String(
+                                                      sectionIndex + 1,
+                                                    ).padStart(2, "0")}
+                                                  </div>
+                                                  <h3
+                                                    className={`${isPhoneLandscapeLayout ? "mt-0.5 text-[14px]" : "mt-1 text-[21px] lg:text-[25px]"} font-black tracking-[0.05em] text-[#3b2211]`}
+                                                  >
+                                                    {t(section.labelKey)}
+                                                  </h3>
+                                                  <p
+                                                    className={`${isPhoneLandscapeLayout ? "mt-1 text-[11px] leading-[1.4]" : "mt-2 text-[15px] leading-7 lg:text-[16px] lg:leading-7"} whitespace-pre-line font-medium text-[#4e321c]`}
+                                                  >
+                                                    {t(section.bodyKey)}
+                                                  </p>
+                                                </>
+                                              )}
+                                            </section>
+                                          );
+                                        },
                                       )}
                                     </div>
                                   </div>
@@ -3202,29 +3344,35 @@ function CharacterSelectScreen({
                           );
                         },
                       )}
+                        </>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      data-testid="betrayal-scenario-reader-prev-zone"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleScenarioReaderTurn("back");
-                      }}
-                      disabled={!canTurnScenarioReaderBack}
-                      aria-label={t("board.scenario.readerPrev")}
-                      className="absolute bottom-3 left-3 top-3 z-10 w-[calc(50%_-_12px)] cursor-w-resize bg-transparent disabled:pointer-events-none"
-                    />
-                    <button
-                      type="button"
-                      data-testid="betrayal-scenario-reader-next-zone"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleScenarioReaderTurn("forward");
-                      }}
-                      disabled={!canTurnScenarioReaderForward}
-                      aria-label={t("board.scenario.readerNext")}
-                      className="absolute bottom-3 right-3 top-3 z-10 w-[calc(50%_-_12px)] cursor-e-resize bg-transparent disabled:pointer-events-none"
-                    />
+                    {isScenarioReaderOpeningStage ? null : (
+                      <button
+                        type="button"
+                        data-testid="betrayal-scenario-reader-prev-zone"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleScenarioReaderTurn("back");
+                        }}
+                        disabled={!canTurnScenarioReaderBack}
+                        aria-label={t("board.scenario.readerPrev")}
+                        className="absolute bottom-3 left-3 top-3 z-10 w-[calc(50%_-_12px)] cursor-w-resize bg-transparent disabled:pointer-events-none"
+                      />
+                    )}
+                    {isScenarioReaderOpeningStage ? null : (
+                      <button
+                        type="button"
+                        data-testid="betrayal-scenario-reader-next-zone"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleScenarioReaderTurn("forward");
+                        }}
+                        disabled={!canTurnScenarioReaderForward}
+                        aria-label={t("board.scenario.readerNext")}
+                        className="absolute bottom-3 right-3 top-3 z-10 w-[calc(50%_-_12px)] cursor-e-resize bg-transparent disabled:pointer-events-none"
+                      />
+                    )}
                   </div>
                 </article>
               </div>
@@ -3242,6 +3390,35 @@ const TRAIT_LABEL_LOCAL: Record<BetrayalTraitKey, string> = {
   knowledge: "知识",
   sanity: "神志",
 };
+
+const DUST_SEARCH_TRAIT_CHOICES: readonly BetrayalTraitKey[] = [
+  "knowledge",
+  "sanity",
+];
+const DUST_CURE_TRAIT_CHOICES: readonly BetrayalTraitKey[] = [
+  "might",
+  "speed",
+  "knowledge",
+  "sanity",
+];
+
+function isDustTraitChoice(
+  choices: readonly BetrayalTraitKey[],
+  trait: BetrayalTraitKey | null,
+): trait is BetrayalTraitKey {
+  return Boolean(trait && choices.includes(trait));
+}
+
+function resolveHighestTraitChoice(
+  traits: Record<BetrayalTraitKey, number>,
+  choices: readonly BetrayalTraitKey[],
+): BetrayalTraitKey {
+  return choices.reduce(
+    (bestTrait, trait) =>
+      traits[trait] > traits[bestTrait] ? trait : bestTrait,
+    choices[0] ?? "knowledge",
+  );
+}
 
 const TRAIT_TONE_CLASS: Record<
   BetrayalTraitKey,
@@ -3967,6 +4144,218 @@ function BetrayalHauntRevealCue({
           {t("board.status.hauntRevealDismiss")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function CinematicNarrationPanel({
+  label,
+  text,
+  variant,
+  compact = false,
+  presentation = "panel",
+  sourceStatus,
+  sourceStatusTestId,
+  actionSlot,
+  testId,
+  className = "",
+}: {
+  label: string;
+  text: string;
+  variant: "opening" | "ending-survivors" | "ending-traitor" | "ending-haunt";
+  compact?: boolean;
+  presentation?: "panel" | "stage";
+  sourceStatus?: string;
+  sourceStatusTestId?: string;
+  actionSlot?: React.ReactNode;
+  testId?: string;
+  className?: string;
+}) {
+  const { t } = useTranslation("game-betrayal");
+  const lines = splitCinematicNarrationText(text);
+  const isStage = presentation === "stage";
+
+  return (
+    <div
+      data-testid={testId}
+      data-cinematic-narration={variant}
+      data-cinematic-stage={isStage ? "standalone" : undefined}
+      className={`betrayal-cinematic-narration relative flex min-h-full overflow-hidden bg-[#030506] text-[#f5e6c7] ${
+        isStage
+          ? "border-y border-[rgba(242,207,130,0.42)] shadow-[0_24px_90px_rgba(0,0,0,0.66),inset_0_0_0_1px_rgba(255,224,143,0.06),inset_0_0_72px_rgba(214,155,65,0.12)]"
+          : "border border-[rgba(222,184,92,0.44)] shadow-[0_18px_46px_rgba(0,0,0,0.42),inset_0_0_0_1px_rgba(255,224,143,0.08)]"
+      } ${
+        compact ? "px-3 py-4" : "px-8 py-8"
+      } ${className}`}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(126,95,48,0.28),rgba(10,12,10,0.42)_36%,rgba(0,0,0,0.94)_76%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.16] [background-image:repeating-linear-gradient(90deg,rgba(255,240,182,0.12)_0_1px,transparent_1px_7px),repeating-linear-gradient(0deg,rgba(255,255,255,0.08)_0_1px,transparent_1px_11px)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[18%] bg-[linear-gradient(180deg,rgba(0,0,0,0.98),rgba(0,0,0,0.64),transparent)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[26%] bg-[linear-gradient(0deg,rgba(0,0,0,0.98),rgba(0,0,0,0.72),transparent)]" />
+      <div className="pointer-events-none absolute inset-x-[8%] top-[14%] h-px bg-[linear-gradient(90deg,transparent,rgba(242,207,130,0.52),transparent)]" />
+      <div className="pointer-events-none absolute inset-x-[12%] bottom-[16%] h-px bg-[linear-gradient(90deg,transparent,rgba(242,207,130,0.36),transparent)]" />
+      <div className="pointer-events-none absolute left-4 top-4 h-5 w-5 border-l border-t border-[rgba(242,207,130,0.52)]" />
+      <div className="pointer-events-none absolute right-4 top-4 h-5 w-5 border-r border-t border-[rgba(242,207,130,0.52)]" />
+      <div className="pointer-events-none absolute bottom-4 left-4 h-5 w-5 border-b border-l border-[rgba(242,207,130,0.42)]" />
+      <div className="pointer-events-none absolute bottom-4 right-4 h-5 w-5 border-b border-r border-[rgba(242,207,130,0.42)]" />
+
+      <div className="relative z-10 flex min-h-full w-full flex-col justify-between text-center">
+        <div>
+          <div
+            className={`font-black uppercase text-[#d8b15b] drop-shadow-[0_0_12px_rgba(228,173,76,0.32)] ${
+              compact
+                ? "text-[9px] tracking-[0.28em]"
+                : "text-[11px] tracking-[0.42em]"
+            }`}
+          >
+            {label}
+          </div>
+          {sourceStatus ? (
+            <div
+              data-testid={sourceStatusTestId}
+              data-scenario-source-status="adapted-summary"
+              className={`mt-2 font-bold uppercase text-[#b98c49] ${
+                compact
+                  ? "text-[8px] tracking-[0.18em]"
+                  : "text-[10px] tracking-[0.24em]"
+              }`}
+            >
+              {sourceStatus}
+            </div>
+          ) : null}
+        </div>
+
+        <div
+          className={`mx-auto flex min-h-0 max-w-[680px] flex-1 flex-col justify-center ${
+            compact ? "gap-2 py-3" : "gap-4 py-8"
+          }`}
+        >
+          {lines.map((line, index) => (
+            <p
+              key={`${line}-${index}`}
+              className={`betrayal-cinematic-narration__line mx-auto text-balance font-semibold text-[#fff2cd] shadow-black [text-shadow:0_2px_6px_rgba(0,0,0,0.92),0_0_18px_rgba(240,197,104,0.18)] ${
+                compact
+                  ? "max-w-[92%] text-[14px] leading-[1.55]"
+                  : "max-w-[92%] text-[21px] leading-[1.75]"
+              }`}
+              style={{ animationDelay: `${120 + index * 130}ms` }}
+            >
+              {line}
+            </p>
+          ))}
+        </div>
+
+        <div
+          className={`relative z-10 flex flex-col items-center ${
+            compact ? "gap-2 pb-1" : "gap-3 pb-2"
+          }`}
+        >
+          <div
+            aria-hidden="true"
+            data-testid="betrayal-cinematic-terminal-mark"
+            className={`font-black uppercase text-[#8f7140] ${
+              compact
+                ? "text-[8px] tracking-[0.22em]"
+                : "text-[9px] tracking-[0.32em]"
+            }`}
+          >
+            {t(
+              variant.startsWith("ending")
+                ? "board.scenario.cinematicTerminalEnd"
+                : "board.scenario.cinematicTerminalPrologue",
+            )}
+          </div>
+          {actionSlot ? (
+            <div
+              data-testid="betrayal-cinematic-action-slot"
+              className="pointer-events-auto flex w-full justify-center px-2"
+            >
+              {actionSlot}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HauntSetupHandoffCard({
+  caseLabel,
+  title,
+  text,
+  actions = [],
+  statusLabel,
+  compact = false,
+}: {
+  caseLabel: string;
+  title: string;
+  text: string;
+  actions?: Array<{ id: string; label: string; onAction: () => void }>;
+  statusLabel?: string;
+  compact?: boolean;
+}) {
+  const paragraphs = text
+    .split(/\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  return (
+    <div
+      data-testid="betrayal-haunt-setup-handoff"
+      data-haunt-handoff-kind="setup"
+      className={`rounded-[7px] border border-[rgba(211,179,109,0.34)] bg-[linear-gradient(180deg,rgba(42,31,18,0.72),rgba(15,13,10,0.68))] shadow-[0_10px_20px_rgba(0,0,0,0.16)] ${
+        compact ? "px-2.5 py-2" : "mt-3 px-2.5 py-2"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span
+          data-testid="betrayal-haunt-setup-handoff-label"
+          className="text-[9px] font-black uppercase tracking-[0.16em] text-[#d6b56d]"
+        >
+          {title}
+        </span>
+        <span className="shrink-0 rounded-[4px] border border-[rgba(211,179,109,0.18)] bg-[rgba(211,179,109,0.08)] px-1.5 py-0.5 text-[9px] font-bold text-[#f7df9d]">
+          {caseLabel}
+        </span>
+      </div>
+      <div
+        data-testid="betrayal-haunt-setup-handoff-text"
+        className="mt-1.5 space-y-1 text-[10px] font-semibold leading-tight text-[#eadbb0]"
+      >
+        {paragraphs.map((paragraph, index) => (
+          <p key={`${paragraph}-${index}`}>{paragraph}</p>
+        ))}
+      </div>
+      {actions.length > 0 || statusLabel ? (
+        <div className="mt-2 flex items-center justify-between gap-2">
+          {statusLabel ? (
+            <span
+              data-testid="betrayal-haunt-setup-status"
+              className="rounded-[4px] border border-[rgba(211,179,109,0.2)] bg-[rgba(211,179,109,0.08)] px-2 py-1 text-[10px] font-black text-[#ffe2a0]"
+            >
+              {statusLabel}
+            </span>
+          ) : (
+            <span />
+          )}
+          <div className="flex flex-wrap justify-end gap-1.5">
+            {actions.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                data-testid={`betrayal-haunt-setup-confirm-${action.id}`}
+                className="rounded-[5px] border border-[#cda15c] bg-[rgba(205,161,92,0.18)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[#ffe2a0] hover:bg-[rgba(205,161,92,0.28)]"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  action.onAction();
+                }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -5016,13 +5405,6 @@ function EndgameScreen({
     core.rooms.filter((room) => room.state === "discovered").length;
   const omensDrawnCount = result?.stats.omensDrawn ?? 0;
   const eventsDrawnCount = result?.stats.eventsDrawn ?? 0;
-  const shouldShowEndgameRecentRoll =
-    Boolean(core.recentRoll) &&
-    !(
-      core.recentRoll?.kind === "hauntActionTraitCheck" &&
-      core.recentRoll.sourceTitle === "驱魔" &&
-      core.recentRoll.trait === "sanity"
-    );
   const endgameNarrationKey = `board.haunts.${endgameDossier.id}.reader.${
     result?.outcome === "haunt"
       ? "endingHaunt"
@@ -5030,6 +5412,39 @@ function EndgameScreen({
         ? "endingTraitor"
         : "endingSurvivors"
   }`;
+  const endgameNarrationVariant =
+    result?.outcome === "haunt"
+      ? "ending-haunt"
+      : result?.outcome === "traitor"
+        ? "ending-traitor"
+        : "ending-survivors";
+  const endgameNarrationIdentity = `${endgameDossier.id}:${result?.outcome ?? "unknown"}:${result?.traitorPlayerId ?? "none"}`;
+  const [endingNarrationOpen, setEndingNarrationOpen] =
+    React.useState(true);
+  const endgameReadModel = resolveBetrayalEndgameReadModel(core);
+  const endgameSourceStatusKey =
+    endgameReadModel.ifYouWinTextStatus === "available"
+      ? "board.endgame.endingSourceStatusOfficial"
+      : "board.endgame.endingSourceStatus";
+
+  React.useEffect(() => {
+    setEndingNarrationOpen(true);
+  }, [endgameNarrationIdentity]);
+
+  React.useEffect(() => {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+    if (!endingNarrationOpen) {
+      return undefined;
+    }
+    const root = document.documentElement;
+    const attrName = "data-betrayal-cinematic-stage";
+    root.setAttribute(attrName, "true");
+    return () => {
+      root.removeAttribute(attrName);
+    };
+  }, [endingNarrationOpen]);
 
   return (
     <div
@@ -5045,6 +5460,34 @@ function EndgameScreen({
         ].join(","),
       }}
     >
+      {endingNarrationOpen ? (
+        <section
+          data-testid="betrayal-endgame-ending-stage"
+          className="relative flex h-full min-h-full w-full flex-col overflow-hidden bg-black"
+        >
+          <CinematicNarrationPanel
+            testId="betrayal-endgame-ending-narration"
+            label={t("board.endgame.endingNarrationLabel")}
+            text={t(endgameNarrationKey)}
+            variant={endgameNarrationVariant}
+            presentation="stage"
+            sourceStatus={t(endgameSourceStatusKey)}
+            sourceStatusTestId="betrayal-endgame-ending-source-status"
+            actionSlot={
+              <button
+                type="button"
+                data-testid="betrayal-endgame-ending-continue"
+                onClick={() => setEndingNarrationOpen(false)}
+                className="inline-flex min-h-11 min-w-[168px] items-center justify-center gap-2 border border-[rgba(242,207,130,0.42)] bg-[rgba(8,10,9,0.82)] px-6 text-[12px] font-black uppercase tracking-[0.22em] text-[#f5e6c7] shadow-[0_16px_38px_rgba(0,0,0,0.58)] transition hover:border-[#f2cf82] hover:bg-[rgba(18,20,16,0.92)]"
+              >
+                {t("board.endgame.continueToReport")}
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            }
+            className="h-full min-h-full w-full"
+          />
+        </section>
+      ) : (
       <div className="mx-auto flex h-full min-h-full w-full max-w-[1760px] p-3 md:p-4">
         <div className="relative flex min-h-full w-full flex-col overflow-hidden border border-[#876a3c] bg-[rgba(9,15,13,0.95)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
           <div className="pointer-events-none absolute inset-0 border border-[rgba(216,191,129,0.14)]" />
@@ -5237,13 +5680,6 @@ function EndgameScreen({
             <section className="relative flex min-h-0 flex-col items-center justify-start gap-3 px-3">
               <div className="pointer-events-none absolute left-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
               <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.22),rgba(214,191,129,0.22),transparent)]" />
-              {shouldShowEndgameRecentRoll && core.recentRoll ? (
-                <RecentRollPanel
-                  roll={core.recentRoll}
-                  className="relative z-10 w-full max-w-[520px]"
-                  effectiveLocale={effectiveLocale}
-                />
-              ) : null}
               <div className="relative w-full max-w-[728px] border border-[#aa864b] bg-[linear-gradient(180deg,rgba(54,40,22,0.98),rgba(28,21,14,0.99))] p-[9px] shadow-[0_22px_48px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(226,185,102,0.12)]">
                 <div className="pointer-events-none absolute inset-1 border border-[rgba(226,185,102,0.28)]" />
                 <div className="pointer-events-none absolute inset-[5px] border border-[rgba(54,38,18,0.86)]" />
@@ -5257,6 +5693,7 @@ function EndgameScreen({
                 </div>
 
                 <div
+                  data-testid="betrayal-endgame-result-report"
                   className="relative overflow-hidden border border-[#6f5935] px-5 pb-4 pt-4 text-[#2c2419] shadow-[inset_0_0_0_1px_rgba(255,238,198,0.1)]"
                   style={{
                     backgroundImage: [
@@ -5303,25 +5740,6 @@ function EndgameScreen({
                       <span className="h-1.5 w-1.5 rotate-45 border border-[rgba(73,49,24,0.78)] bg-[rgba(133,108,68,0.24)]" />
                       <span className="h-px w-20 bg-[linear-gradient(90deg,rgba(73,49,24,0.78),transparent)]" />
                     </div>
-                  </div>
-
-                  <div
-                    data-testid="betrayal-endgame-ending-narration"
-                    className="relative mt-4 border-y border-[#6f5d3d] bg-[rgba(62,43,22,0.12)] px-5 py-3 text-center"
-                  >
-                    <div className="text-[12px] font-bold tracking-[0.3em] text-[#3a2a19]">
-                      {t("board.endgame.endingNarrationLabel")}
-                    </div>
-                    <div
-                      data-testid="betrayal-endgame-ending-source-status"
-                      data-scenario-source-status="adapted-summary"
-                      className="mt-1 text-[10px] font-bold uppercase tracking-[0.20em] text-[#6d4c28]"
-                    >
-                      {t("board.endgame.endingSourceStatus")}
-                    </div>
-                    <p className="mx-auto mt-2 max-w-[560px] text-[15px] font-semibold leading-[1.55] text-[#352a1e]">
-                      {t(endgameNarrationKey)}
-                    </p>
                   </div>
 
                   <div className="mt-4 grid grid-cols-[1fr_1fr] gap-0">
@@ -5532,6 +5950,7 @@ function EndgameScreen({
           </main>
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -5563,6 +5982,18 @@ export default function BetrayalBoard({
   const viewerPlayerId = String(
     playerID ?? baseCore.currentPlayer ?? baseCore.playerIds[0] ?? "0",
   );
+  const displayBaseCore = React.useMemo<BetrayalCore>(() => {
+    const playerViewCore = BetrayalDomain.playerView?.(
+      baseCore,
+      viewerPlayerId,
+    ) as Partial<BetrayalCore> | undefined;
+    if (!playerViewCore) {
+      return baseCore;
+    }
+    return isBetrayalCore(playerViewCore)
+      ? playerViewCore
+      : { ...baseCore, ...playerViewCore };
+  }, [baseCore, viewerPlayerId]);
   const isGameOver = Boolean(G?.sys?.gameover) || baseCore.phase === "endgame";
   useGameAudio({
     config: BETRAYAL_AUDIO_CONFIG,
@@ -5615,23 +6046,23 @@ export default function BetrayalBoard({
     runtimeViewport.width <= 1023 &&
     runtimeViewport.width > runtimeViewport.height;
   const isExorciseRollReview =
-    baseCore.recentRoll?.kind === "hauntActionTraitCheck" &&
-    baseCore.recentRoll.sourceTitle === "驱魔" &&
-    baseCore.recentRoll.trait === "sanity" &&
-    confirmedExorciseRollId !== baseCore.recentRoll.id;
+    displayBaseCore.recentRoll?.kind === "hauntActionTraitCheck" &&
+    displayBaseCore.recentRoll.sourceTitle === "驱魔" &&
+    displayBaseCore.recentRoll.trait === "sanity" &&
+    confirmedExorciseRollId !== displayBaseCore.recentRoll.id;
   const isEndgameExorciseRollReview =
-    baseCore.phase === "endgame" && isExorciseRollReview;
+    displayBaseCore.phase === "endgame" && isExorciseRollReview;
   const core = React.useMemo<BetrayalCore>(
     () =>
       isEndgameExorciseRollReview
         ? {
-            ...baseCore,
+            ...displayBaseCore,
             phase: "haunt",
             recommendedAction: "endTurn",
             endgameResult: null,
           }
-        : baseCore,
-    [baseCore, isEndgameExorciseRollReview],
+        : displayBaseCore,
+    [displayBaseCore, isEndgameExorciseRollReview],
   );
   const turnStartSpeedForHud = Number.isFinite(core.turnStartSpeed)
     ? core.turnStartSpeed
@@ -5679,6 +6110,27 @@ export default function BetrayalBoard({
   const activeHauntCaseLabel = t("board.haunts.goalCard.caseNo", {
     number: activeHauntDossier.cardNumber,
   });
+  const activeHauntSetupSection =
+    activeHauntDossier.sections.find((section) => section.id === "setup") ??
+    null;
+  const activeHauntSetupText = activeHauntSetupSection
+    ? t(activeHauntSetupSection.bodyKey)
+    : "";
+  const hauntSetupCommandPreviews = React.useMemo(
+    () => resolveBetrayalHauntSetupCommandPreviews(core),
+    [core],
+  );
+  const dustSetupConfirmationPreviews = React.useMemo(
+    () =>
+      hauntSetupCommandPreviews.hauntCardNumber === 3
+        ? hauntSetupCommandPreviews.previews.filter(
+            (preview) =>
+              preview.entryId === "monster-card-left-of-revealer" ||
+              preview.entryId === "prepare-research-tokens",
+          )
+        : [],
+    [hauntSetupCommandPreviews],
+  );
   const scenarioReaderScope = resolveScenarioReaderScope(core, viewerPlayerId);
   const scenarioReaderScopeLabel =
     scenarioReaderScope === "traitor"
@@ -5688,21 +6140,51 @@ export default function BetrayalBoard({
         : t("board.scenario.readerStatusPublicBook");
   const scenarioReferenceButtonLabel = t("board.scenario.button");
   const scenarioReferenceAccessibleLabel = `${activeHauntCaseLabel} / ${activeHauntTitle}`;
-  const referenceScenarioPages = React.useMemo(
-    () => buildScenarioReaderPages(activeHauntDossier, scenarioReaderScope),
-    [activeHauntDossier, scenarioReaderScope],
+  const referenceScenarioOpeningSection = findScenarioOpeningNarrationSection(
+    activeHauntDossier,
+    scenarioReaderScope,
   );
-  const referenceScenarioSpreadCount = Math.max(
+  const referenceScenarioPages = buildScenarioReaderPages(
+    activeHauntDossier,
+    scenarioReaderScope,
+  );
+  const referenceScenarioBookSpreadCount = Math.max(
     1,
     Math.ceil(referenceScenarioPages.length / 2),
   );
+  const referenceScenarioHasOpeningStage = Boolean(
+    referenceScenarioOpeningSection,
+  );
+  const referenceScenarioSpreadCount =
+    referenceScenarioBookSpreadCount +
+    (referenceScenarioHasOpeningStage ? 1 : 0);
+  const isReferenceScenarioOpeningStage =
+    referenceScenarioHasOpeningStage && referenceScenarioSpreadIndex === 0;
+  const referenceScenarioBookSpreadIndex = referenceScenarioHasOpeningStage
+    ? Math.max(0, referenceScenarioSpreadIndex - 1)
+    : referenceScenarioSpreadIndex;
   const referenceScenarioLeftPage =
-    referenceScenarioPages[referenceScenarioSpreadIndex * 2] ?? null;
+    referenceScenarioPages[referenceScenarioBookSpreadIndex * 2] ?? null;
   const referenceScenarioRightPage =
-    referenceScenarioPages[referenceScenarioSpreadIndex * 2 + 1] ?? null;
+    referenceScenarioPages[referenceScenarioBookSpreadIndex * 2 + 1] ?? null;
   const canTurnReferenceScenarioBack = referenceScenarioSpreadIndex > 0;
   const canTurnReferenceScenarioForward =
     referenceScenarioSpreadIndex < referenceScenarioSpreadCount - 1;
+
+  React.useEffect(() => {
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+    if (!(scenarioReaderOpen && isReferenceScenarioOpeningStage)) {
+      return undefined;
+    }
+    const root = document.documentElement;
+    const attrName = "data-betrayal-cinematic-stage";
+    root.setAttribute(attrName, "true");
+    return () => {
+      root.removeAttribute(attrName);
+    };
+  }, [isReferenceScenarioOpeningStage, scenarioReaderOpen]);
 
   React.useEffect(() => {
     setPreviewState((previousState) => {
@@ -5843,6 +6325,30 @@ export default function BetrayalBoard({
     },
     [dispatch],
   );
+  const confirmDustSetupEntry = React.useCallback((entryId: BetrayalHauntSetupQueueEntryId) => {
+    dispatchCommand(BETRAYAL_COMMANDS.CONFIRM_HAUNT_SETUP_ENTRY, {
+      entryId,
+    });
+  }, [dispatchCommand]);
+  const dustHauntSetupActions = React.useMemo(
+    () =>
+      dustSetupConfirmationPreviews
+        .filter((preview) => preview.requiresManualConfirmation)
+        .map((preview) => ({
+          id: preview.entryId,
+          label:
+            preview.entryId === "monster-card-left-of-revealer"
+              ? t("board.haunts.goalCard.confirmMonsterReference")
+              : t("board.haunts.goalCard.confirmResearchTokens"),
+          onAction: () => confirmDustSetupEntry(preview.entryId),
+        })),
+    [confirmDustSetupEntry, dustSetupConfirmationPreviews, t],
+  );
+  const dustHauntSetupStatusLabel =
+    dustSetupConfirmationPreviews.length > 0 &&
+    dustSetupConfirmationPreviews.every((preview) => preview.alreadyApplied)
+      ? t("board.haunts.goalCard.setupConfirmed")
+      : undefined;
   const applyOptimisticPreviewAfterCommand = React.useCallback(
     <Type extends keyof BetrayalCommandMap>(
       type: Type,
@@ -6933,6 +7439,22 @@ export default function BetrayalBoard({
       )
     : null;
   const dustRuntime = core.scenarioRuntime.dust ?? null;
+  const dustResearchTokensByRoomId = React.useMemo(() => {
+    const tokensByRoomId = new Map<string, BetrayalHauntTokenInstanceSummary[]>();
+    for (const token of resolveBetrayalHauntTokenInstances(core)) {
+      if (
+        !token.roomId ||
+        token.visibility !== "public" ||
+        !token.id.startsWith("dust-research-token-")
+      ) {
+        continue;
+      }
+      const roomTokens = tokensByRoomId.get(token.roomId) ?? [];
+      roomTokens.push(token);
+      tokensByRoomId.set(token.roomId, roomTokens);
+    }
+    return tokensByRoomId;
+  }, [core]);
   const isDustHauntActive = Boolean(
     core.phase === "haunt" &&
     core.scenarioRuntime.hauntCardNumber === 3 &&
@@ -6991,6 +7513,20 @@ export default function BetrayalBoard({
     : null;
   const pendingTradeAgreement = core.pendingTradeAgreement;
   const pendingSicknessExchange = dustRuntime?.pendingSicknessExchange ?? null;
+  const viewerDustSicknessValues = React.useMemo(
+    () =>
+      (dustRuntime?.sicknessTokensByPlayerId[viewerPlayerId] ?? []).map(
+        (token) =>
+          token.value === null
+            ? t("board.status.hauntDustProgressOwnSicknessUnknown")
+            : String(token.value),
+      ),
+    [dustRuntime, t, viewerPlayerId],
+  );
+  const viewerPermanentInfectionValue =
+    dustRuntime?.permanentTraitorPlayerIds.includes(viewerPlayerId)
+      ? t("board.status.hauntDustProgressPermanentInfectionYes")
+      : t("board.status.hauntDustProgressPermanentInfectionNo");
   const dustProgressItems = React.useMemo(() => {
     if (!isDustHauntActive || !dustRuntime) {
       return [];
@@ -7013,6 +7549,22 @@ export default function BetrayalBoard({
           count: currentExplorerSicknessCount,
         }),
       },
+      ...(viewerDustSicknessValues.length > 0
+        ? [
+            {
+              id: "own-sickness",
+              label: t("board.status.hauntDustProgressOwnSicknessLabel"),
+              value: viewerDustSicknessValues.join(" / "),
+            },
+            {
+              id: "permanent-infection",
+              label: t(
+                "board.status.hauntDustProgressPermanentInfectionLabel",
+              ),
+              value: viewerPermanentInfectionValue,
+            },
+          ]
+        : []),
       {
         id: "exchange",
         label: t("board.haunts.dust.progress.exchange"),
@@ -7027,6 +7579,8 @@ export default function BetrayalBoard({
     isDustHauntActive,
     isDustSicknessExchangeAvailable,
     t,
+    viewerDustSicknessValues,
+    viewerPermanentInfectionValue,
   ]);
   const pendingTradeRequester = pendingTradeAgreement
     ? (allExplorers.find(
@@ -7170,6 +7724,13 @@ export default function BetrayalBoard({
       selectedDogTradeCardIds.length > 0 ||
       selectedTradeReturnCardIds.length > 0),
   );
+  const hasTradeDraftSelection =
+    selectedTradeGiveCardIds.length > 0 ||
+    selectedDogTradeCardIds.length > 0 ||
+    selectedTradeReturnCardIds.length > 0 ||
+    Boolean(selectedCorpseLootTarget);
+  const shouldStartDustSicknessExchange =
+    isDustSicknessExchangeAvailable && !hasTradeDraftSelection;
   const shouldShowInlineTradeConfirm = Boolean(
     !pendingTradeAgreement &&
     !pendingSicknessExchange &&
@@ -7315,7 +7876,7 @@ export default function BetrayalBoard({
             player: selectedDustTargetName,
           })
         : t("board.status.sicknessExchangeChoose")
-      : isDustSicknessExchangeAvailable
+      : shouldStartDustSicknessExchange
         ? t("board.status.sicknessExchangeTargetsAvailable", {
             count: dustSameRoomLivingTargets.length,
           })
@@ -7371,7 +7932,7 @@ export default function BetrayalBoard({
           })
         : t("board.status.sicknessExchangeChoose");
     }
-    if (isDustSicknessExchangeAvailable) {
+    if (shouldStartDustSicknessExchange) {
       return t("board.status.sicknessExchangeStart");
     }
     if (pendingTradeAgreement) {
@@ -7481,7 +8042,7 @@ export default function BetrayalBoard({
     Boolean(pendingTradeAgreement) ||
     Boolean(pendingSicknessExchange) ||
     Boolean(helpingHandsPendingReward) ||
-    isDustSicknessExchangeAvailable ||
+    shouldStartDustSicknessExchange ||
     core.recommendedAction !== "trade" ||
     Boolean(selectedCorpseLootTarget) ||
     hasCorpseLootTargets ||
@@ -8075,21 +8636,26 @@ export default function BetrayalBoard({
         disabledReason: resolveHauntSpecialActionDisabledReason(status),
       };
     };
-    const dustSearchTrait =
-      core.currentExplorer.traits.knowledge >=
-      core.currentExplorer.traits.sanity
-        ? ("knowledge" as const)
-        : ("sanity" as const);
-    const dustCureTrait = (
-      ["might", "speed", "knowledge", "sanity"] as BetrayalTraitKey[]
-    ).reduce(
-      (bestTrait, trait) =>
-        core.currentExplorer.traits[trait] >
-        core.currentExplorer.traits[bestTrait]
-          ? trait
-          : bestTrait,
-      "knowledge" as BetrayalTraitKey,
+    const defaultDustSearchTrait = resolveHighestTraitChoice(
+      core.currentExplorer.traits,
+      DUST_SEARCH_TRAIT_CHOICES,
     );
+    const dustSearchTrait = isDustTraitChoice(
+      DUST_SEARCH_TRAIT_CHOICES,
+      previewState.selectedDustSearchTrait,
+    )
+      ? previewState.selectedDustSearchTrait
+      : defaultDustSearchTrait;
+    const defaultDustCureTrait = resolveHighestTraitChoice(
+      core.currentExplorer.traits,
+      DUST_CURE_TRAIT_CHOICES,
+    );
+    const dustCureTrait = isDustTraitChoice(
+      DUST_CURE_TRAIT_CHOICES,
+      previewState.selectedDustCureTrait,
+    )
+      ? previewState.selectedDustCureTrait
+      : defaultDustCureTrait;
     const canAttackTraitor =
       !isTraitor &&
       !isDead &&
@@ -8289,6 +8855,8 @@ export default function BetrayalBoard({
     magicCameraPhotoTarget,
     magicCameraPhotoTrait,
     matchData,
+    previewState.selectedDustCureTrait,
+    previewState.selectedDustSearchTrait,
     shouldPauseHauntBoardActions,
     t,
   ]);
@@ -8296,6 +8864,31 @@ export default function BetrayalBoard({
     hauntActionContext && "disabledReason" in hauntActionContext
       ? (hauntActionContext.disabledReason ?? null)
       : null;
+  const dustHauntTraitSelector = (() => {
+    if (hauntActionContext?.actionKind !== "use") {
+      return null;
+    }
+    const selectedTrait =
+      (hauntActionContext.payload as { trait?: BetrayalTraitKey } | undefined)
+        ?.trait ?? null;
+    if (hauntActionContext.hauntSpecialActionId === "search-for-cure") {
+      return {
+        actionId: "search-for-cure" as const,
+        choices: DUST_SEARCH_TRAIT_CHOICES,
+        selectedTrait,
+        testIdPrefix: "betrayal-dust-search-trait",
+      };
+    }
+    if (hauntActionContext.hauntSpecialActionId === "cure-the-dust") {
+      return {
+        actionId: "cure-the-dust" as const,
+        choices: DUST_CURE_TRAIT_CHOICES,
+        selectedTrait,
+        testIdPrefix: "betrayal-dust-cure-trait",
+      };
+    }
+    return null;
+  })();
   const hauntTargetGuide: HauntTargetGuide | null = React.useMemo(() => {
     if (core.phase !== "haunt" || shouldPauseHauntBoardActions) {
       return null;
@@ -8773,6 +9366,7 @@ export default function BetrayalBoard({
   );
   const shouldAutoReturnAfterLatestDiscovery = Boolean(
     !pendingEventChoice &&
+      (core.pendingCardResolutionQueue?.length ?? 0) === 0 &&
       core.turnEndedByDiscovery &&
       isSpiderAdjacentRoomResolutionDiscovery(core.latestDiscovery) &&
       !latestDiscoveryHasActionableRollModifier,
@@ -8866,6 +9460,10 @@ export default function BetrayalBoard({
     () => buildDiscoveryResolutionSteps(latestDiscovery),
     [latestDiscovery],
   );
+  const shouldShowLatestDiscoveryResolutionSteps =
+    Boolean(
+      latestDiscovery?.resolutionSteps?.some((step) => step.text.trim().length > 0),
+    ) || latestDiscoveryDetailSteps.length > 1;
   const latestDiscoveryKindLabel = latestDiscovery
     ? {
         event: t("board.discovery.eventCard"),
@@ -9023,8 +9621,8 @@ export default function BetrayalBoard({
       return;
     }
     if (
-      core.recentRoll.kind === "roomEndTurnTraitCheck" &&
-      core.recentRoll.roomEndTurn?.nextPlayerId
+      core.recentRoll.roomEndTurn?.nextPlayerId ||
+      core.recentRoll.deathPrevention?.nextPlayerId
     ) {
       dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, {});
     }
@@ -9963,6 +10561,23 @@ export default function BetrayalBoard({
     [],
   );
 
+  const handleSelectDustHauntTrait = React.useCallback(
+    (actionId: "search-for-cure" | "cure-the-dust", trait: BetrayalTraitKey) => {
+      setPreviewState((previousState) => ({
+        ...previousState,
+        selectedDustSearchTrait:
+          actionId === "search-for-cure"
+            ? trait
+            : previousState.selectedDustSearchTrait,
+        selectedDustCureTrait:
+          actionId === "cure-the-dust"
+            ? trait
+            : previousState.selectedDustCureTrait,
+      }));
+    },
+    [],
+  );
+
   const handleUseAction = () => {
     if (core.phase === "haunt" && hauntActionContext?.actionKind === "use") {
       dispatchCommand(
@@ -9974,6 +10589,8 @@ export default function BetrayalBoard({
         ...previousState,
         interactionMode: "default",
         selectedMonsterAttackMonsterId: null,
+        selectedDustSearchTrait: null,
+        selectedDustCureTrait: null,
       }));
       return;
     }
@@ -10014,7 +10631,7 @@ export default function BetrayalBoard({
     if (hasPendingPlayerAgreement) {
       return;
     }
-    if (isDustSicknessExchangeAvailable) {
+    if (shouldStartDustSicknessExchange) {
       setPreviewState((previousState) => ({
         ...previousState,
         selectedTradeTargetPlayerId: null,
@@ -10894,18 +11511,18 @@ export default function BetrayalBoard({
       id: "trade",
       label: hasCorpseLootTargets
         ? t("board.actions.loot")
-        : isDustSicknessExchangeAvailable
+        : tradeSelectionReady && !hasPendingPlayerAgreement
+          ? t("board.actions.sendTradeRequest")
+          : shouldStartDustSicknessExchange
           ? isDustSicknessExchangeMode
             ? t("board.actions.cancelSicknessExchange")
             : t("board.actions.exchangeSickness")
-          : tradeSelectionReady && !hasPendingPlayerAgreement
-            ? t("board.actions.sendTradeRequest")
             : t("board.actions.trade"),
       disabled: hasCorpseLootTargets
         ? hasPendingPlayerAgreement
         : hasPendingPlayerAgreement
           ? true
-          : isDustSicknessExchangeAvailable
+          : shouldStartDustSicknessExchange
             ? false
             : hasUsedTradeThisTurn ||
               !hasAnyTradeSelectableCards ||
@@ -11867,6 +12484,7 @@ export default function BetrayalBoard({
                   {visibleDustProgressItems.map((item) => (
                     <span
                       key={item.id}
+                      data-testid={`betrayal-dust-progress-item-${item.id}`}
                       className="inline-flex min-h-[28px] items-center gap-1 rounded-[6px] bg-[rgba(211,179,109,0.16)] px-2 py-0.5"
                     >
                       <span className="text-[#efe1b5]">{item.label}</span>
@@ -12694,7 +13312,7 @@ export default function BetrayalBoard({
                         />
                       ) : null}
                     </div>
-                    {latestDiscoveryDetailSteps.length > 1 ? (
+                    {shouldShowLatestDiscoveryResolutionSteps ? (
                       <ol
                         data-testid="betrayal-discovery-resolution-steps"
                         className={`grid w-full max-w-[min(760px,calc(100vw-2rem))] gap-1.5 rounded-[10px] border border-[rgba(214,181,109,0.26)] bg-[rgba(12,14,11,0.70)] p-2.5 text-left shadow-[0_12px_26px_rgba(0,0,0,0.22)] ${
@@ -13363,6 +13981,7 @@ export default function BetrayalBoard({
                 (tradeStatusCueState && core.recommendedAction !== "trade") ||
                 useDogTrade ||
                 selectedCorpseLootTarget ||
+                Boolean(dustHauntTraitSelector) ||
                 (hauntActionContext?.actionKind?.startsWith("attack-") &&
                   attackWeaponCardStatuses.length > 0) ||
                 (selectedInventoryUseEffectMode === "healTraits" &&
@@ -13417,6 +14036,42 @@ export default function BetrayalBoard({
                     >
                       {tradeStatusCueState.label}
                     </span>
+                  ) : null}
+                  {dustHauntTraitSelector ? (
+                    <div
+                      data-testid="betrayal-dust-trait-selector"
+                      data-action-id={dustHauntTraitSelector.actionId}
+                      className="inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
+                    >
+                      <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">
+                        {t("board.sections.traits")}
+                      </span>
+                      {dustHauntTraitSelector.choices.map((trait) => {
+                        const isSelected =
+                          dustHauntTraitSelector.selectedTrait === trait;
+                        return (
+                          <button
+                            key={trait}
+                            type="button"
+                            onClick={() =>
+                              handleSelectDustHauntTrait(
+                                dustHauntTraitSelector.actionId,
+                                trait,
+                              )
+                            }
+                            data-testid={`${dustHauntTraitSelector.testIdPrefix}-${trait}`}
+                            data-selected={isSelected ? "true" : "false"}
+                            className={`min-h-[26px] rounded-none border px-1 text-[11px] font-semibold shadow-none transition ${
+                              isSelected
+                                ? TRAIT_CHOICE_TONE_CLASS[trait].selected
+                                : TRAIT_CHOICE_TONE_CLASS[trait].idle
+                            }`}
+                          >
+                            {TRAIT_LABEL_LOCAL[trait]}
+                          </button>
+                        );
+                      })}
+                    </div>
                   ) : null}
                   {selectedInventoryUseEffectMode === "placeExplorer" &&
                   inventoryTargetRooms.length > 0 ? (
@@ -13807,6 +14462,8 @@ export default function BetrayalBoard({
                       const isActive = room.id === core.activeRoomId;
                       const occupants = roomOccupants[room.id] ?? [];
                       const monsters = roomMonsters[room.id] ?? [];
+                      const dustResearchRoomTokens =
+                        dustResearchTokensByRoomId.get(room.id) ?? [];
                       const isDiscovered = room.state === "discovered";
                       const isReachableRoom = moveTargetRoomIds.has(room.id);
                       const isSkeletonKeyMoveTarget =
@@ -14253,6 +14910,25 @@ export default function BetrayalBoard({
                                   draggable={false}
                                 />
                               </span>
+                            ) : null}
+                            {dustResearchRoomTokens.length > 0 ? (
+                              <div
+                                data-testid={`betrayal-room-haunt-token-layer-${room.id}`}
+                                className="pointer-events-none absolute bottom-2 right-2 z-20 flex max-w-[84px] flex-wrap justify-end gap-1"
+                              >
+                                {dustResearchRoomTokens.map((token) => (
+                                  <span
+                                    key={token.id}
+                                    data-testid={`betrayal-room-haunt-token-${room.id}-${token.id}`}
+                                    data-token-kind={token.kind}
+                                    data-token-status={token.status ?? undefined}
+                                    title={token.label}
+                                    className="grid h-7 min-w-7 place-items-center rounded-full border border-[#d8c477] bg-[radial-gradient(circle_at_35%_28%,rgba(255,249,190,0.95),rgba(177,142,68,0.92)_52%,rgba(53,37,18,0.94))] px-1 text-[10px] font-black leading-none text-[#211407] shadow-[0_0_0_1px_rgba(20,12,5,0.88),0_0_14px_rgba(238,220,126,0.48)]"
+                                  >
+                                    {t("board.hauntTokens.researchTokenShort")}
+                                  </span>
+                                ))}
+                              </div>
                             ) : null}
                           </button>
 
@@ -15316,7 +15992,8 @@ export default function BetrayalBoard({
                       {visibleDustProgressItems.map((item) => (
                         <span
                           key={item.id}
-                            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[7px] bg-[rgba(211,179,109,0.16)] px-3 py-1"
+                          data-testid={`betrayal-dust-progress-item-${item.id}`}
+                          className="inline-flex min-h-[36px] items-center gap-1.5 rounded-[7px] bg-[rgba(211,179,109,0.16)] px-3 py-1"
                         >
                           <span className="text-[#efe1b5]">{item.label}</span>
                           <span className="text-[#f6ffc4]">{item.value}</span>
@@ -16119,6 +16796,16 @@ export default function BetrayalBoard({
                 </div>
               </div>
 
+              {core.phase === "haunt" && activeHauntSetupSection ? (
+                <HauntSetupHandoffCard
+                  caseLabel={activeHauntCaseLabel}
+                  title={t("board.haunts.goalCard.setupHandoffLabel")}
+                  text={activeHauntSetupText}
+                  actions={dustHauntSetupActions}
+                  statusLabel={dustHauntSetupStatusLabel}
+                />
+              ) : null}
+
               <div className="mt-5 flex items-center gap-2">
                 <div className="h-px flex-1 bg-[linear-gradient(90deg,transparent,rgba(196,162,101,0.24))]" />
                 <div className="text-[11px] uppercase tracking-[0.24em] text-[#c4a265]">
@@ -16439,7 +17126,11 @@ export default function BetrayalBoard({
               ? "betrayal-scenario-reader-dialog"
               : "betrayal-reference-overlay"
           }
-          overlayClassName="bg-[rgba(3,6,5,0.82)] p-3 md:p-6"
+          overlayClassName={
+            scenarioReaderOpen && isReferenceScenarioOpeningStage
+              ? "bg-black p-0"
+              : "bg-[rgba(3,6,5,0.82)] p-3 md:p-6"
+          }
           containerClassName="rounded-none overflow-visible bg-transparent"
           zIndex={
             scenarioReaderOpen
@@ -16451,14 +17142,19 @@ export default function BetrayalBoard({
             className="pointer-events-auto relative"
             style={
               scenarioReaderOpen
-                ? {
-                    width: isPhoneLandscapeLayout
-                      ? "min(96vw, 900px)"
-                      : SCENARIO_REFERENCE_BOOK_FRAME_WIDTH,
-                    height: isPhoneLandscapeLayout
-                      ? "min(94vh, 420px)"
-                      : SCENARIO_REFERENCE_BOOK_FRAME_HEIGHT,
-                  }
+                ? isReferenceScenarioOpeningStage
+                  ? {
+                      width: "100vw",
+                      height: "100vh",
+                    }
+                  : {
+                      width: isPhoneLandscapeLayout
+                        ? "min(96vw, 900px)"
+                        : SCENARIO_REFERENCE_BOOK_FRAME_WIDTH,
+                      height: isPhoneLandscapeLayout
+                        ? "min(94vh, 420px)"
+                        : SCENARIO_REFERENCE_BOOK_FRAME_HEIGHT,
+                    }
                 : {
                     width: REFERENCE_CARD_FRAME_WIDTH,
                     aspectRatio: `${BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO} / 1`,
@@ -16478,29 +17174,41 @@ export default function BetrayalBoard({
                 </button>
               </div>
             ) : null}
-            <button
-              type="button"
-              onClick={closeReferenceOverlay}
-              data-testid={
-                scenarioReaderOpen
-                  ? "betrayal-scenario-reader-close"
-                  : "betrayal-reference-close"
-              }
-              className="absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] bg-[rgba(9,13,12,0.84)] px-4 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
-            >
-              {scenarioReaderOpen
-                ? t("board.characterSelect.hideScenarioDetails")
-                : t("board.reference.close")}
-            </button>
+            {scenarioReaderOpen && isReferenceScenarioOpeningStage ? null : (
+              <button
+                type="button"
+                onClick={closeReferenceOverlay}
+                data-testid={
+                  scenarioReaderOpen
+                    ? "betrayal-scenario-reader-close"
+                    : "betrayal-reference-close"
+                }
+                className="absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] bg-[rgba(9,13,12,0.84)] px-4 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
+              >
+                {scenarioReaderOpen
+                  ? t("board.characterSelect.hideScenarioDetails")
+                  : t("board.reference.close")}
+              </button>
+            )}
             {scenarioReaderOpen ? (
               <div
                 data-testid="betrayal-scenario-objective-page"
                 data-reference-page="scenario"
                 data-scenario-reader-scope={scenarioReaderScope}
-                className={`relative flex h-full w-full flex-col overflow-hidden border border-[#7b633d] bg-[linear-gradient(180deg,rgba(31,24,15,0.98),rgba(10,12,9,0.98))] text-[#f3e0b4] shadow-[0_24px_56px_rgba(0,0,0,0.44)] ${isPhoneLandscapeLayout ? "p-3" : "p-5"}`}
+                className={`relative flex h-full w-full flex-col overflow-hidden text-[#f3e0b4] ${
+                  isReferenceScenarioOpeningStage
+                    ? "border border-transparent bg-transparent p-0 shadow-none"
+                    : `border border-[#7b633d] bg-[linear-gradient(180deg,rgba(31,24,15,0.98),rgba(10,12,9,0.98))] shadow-[0_24px_56px_rgba(0,0,0,0.44)] ${isPhoneLandscapeLayout ? "p-3" : "p-5"}`
+                }`}
               >
                 <div
-                  className={`flex items-start justify-between gap-4 border-b border-[rgba(211,179,109,0.24)] pr-32 ${isPhoneLandscapeLayout ? "pb-2" : "pb-3"}`}
+                  className={`flex items-start justify-between gap-4 border-b border-[rgba(211,179,109,0.24)] pr-32 ${
+                    isReferenceScenarioOpeningStage
+                      ? "sr-only"
+                      : isPhoneLandscapeLayout
+                        ? "pb-2"
+                        : "pb-3"
+                  }`}
                 >
                   <div>
                     <div
@@ -16535,8 +17243,16 @@ export default function BetrayalBoard({
                   </div>
                 </div>
                 <div
-                  data-testid="betrayal-scenario-book"
-                  className={`relative grid min-h-0 flex-1 grid-cols-2 overflow-hidden transition-[transform,opacity,filter] duration-300 ease-out ${isPhoneLandscapeLayout ? "mt-2 gap-2" : "mt-4 gap-3"} ${
+                  data-testid={
+                    isReferenceScenarioOpeningStage
+                      ? "betrayal-scenario-opening-stage"
+                      : "betrayal-scenario-book"
+                  }
+                  className={`relative min-h-0 flex-1 overflow-hidden transition-[transform,opacity,filter] duration-300 ease-out ${
+                    isReferenceScenarioOpeningStage
+                      ? "mt-0"
+                      : `grid grid-cols-2 ${isPhoneLandscapeLayout ? "mt-2 gap-2" : "mt-4 gap-3"}`
+                  } ${
                     referenceScenarioTurnDirection === "forward"
                       ? "translate-x-1 opacity-95 brightness-110"
                       : referenceScenarioTurnDirection === "back"
@@ -16544,10 +17260,51 @@ export default function BetrayalBoard({
                         : "translate-x-0 opacity-100 brightness-100"
                   }`}
                 >
-                  <ScenarioBookTurnSheet
-                    direction={referenceScenarioTurnDirection}
-                  />
-                  {[referenceScenarioLeftPage, referenceScenarioRightPage].map(
+                  {isReferenceScenarioOpeningStage &&
+                  referenceScenarioOpeningSection ? (
+                    <CinematicNarrationPanel
+                      testId="betrayal-scenario-opening-cinematic"
+                      label={t(referenceScenarioOpeningSection.labelKey)}
+                      text={t(referenceScenarioOpeningSection.bodyKey)}
+                      variant="opening"
+                      presentation="stage"
+                      sourceStatus={t("board.scenario.readerSourceStatus")}
+                      sourceStatusTestId="betrayal-scenario-opening-source-status"
+                      compact={isPhoneLandscapeLayout}
+                      actionSlot={
+                        <>
+                          <span
+                            data-testid="betrayal-scenario-reader-footer-progress"
+                            className="sr-only"
+                          >
+                            {referenceScenarioSpreadIndex + 1}/
+                            {referenceScenarioSpreadCount}
+                          </span>
+                          <button
+                            type="button"
+                            data-testid="betrayal-scenario-reader-next-zone"
+                            onClick={() =>
+                              handleReferenceScenarioTurn("forward")
+                            }
+                            disabled={!canTurnReferenceScenarioForward}
+                            className="inline-flex min-h-11 min-w-[144px] items-center justify-center gap-2 border border-[rgba(242,207,130,0.42)] bg-[rgba(8,10,9,0.82)] px-6 text-[12px] font-black uppercase tracking-[0.22em] text-[#f5e6c7] shadow-[0_16px_38px_rgba(0,0,0,0.58)] transition hover:border-[#f2cf82] hover:bg-[rgba(18,20,16,0.92)] disabled:opacity-35"
+                          >
+                            {t("board.scenario.readerContinue")}
+                            <ChevronRight size={16} aria-hidden="true" />
+                          </button>
+                        </>
+                      }
+                      className="h-full min-h-full"
+                    />
+                  ) : (
+                    <>
+                      <ScenarioBookTurnSheet
+                        direction={referenceScenarioTurnDirection}
+                      />
+                      {[
+                        referenceScenarioLeftPage,
+                        referenceScenarioRightPage,
+                      ].map(
                     (page, sideIndex) => (
                       <section
                         key={page?.id ?? `blank-${sideIndex}`}
@@ -16575,24 +17332,56 @@ export default function BetrayalBoard({
                               <div
                                 className={`grid min-h-full content-center ${isPhoneLandscapeLayout ? "gap-2 py-5" : "gap-6 px-3 py-10"}`}
                               >
-                                {(page.sections ?? []).map((section) => (
-                                  <section
-                                    key={section.id}
-                                    data-testid={`betrayal-scenario-book-section-${section.id}`}
-                                    className={`border-l-4 ${isPhoneLandscapeLayout ? "pl-2" : "pl-4"} ${section.accentClass}`}
-                                  >
-                                    <h3
-                                      className={`${isPhoneLandscapeLayout ? "text-[14px]" : "text-[22px]"} font-black tracking-[0.03em] text-[#3b2211]`}
+                                {(page.sections ?? []).map((section) => {
+                                  const isCinematicSection =
+                                    SCENARIO_READER_CINEMATIC_SECTION_IDS.has(
+                                      section.id,
+                                    );
+
+                                  return (
+                                    <section
+                                      key={section.id}
+                                      data-testid={`betrayal-scenario-book-section-${section.id}`}
+                                      data-cinematic-narration={
+                                        isCinematicSection
+                                          ? "opening"
+                                          : undefined
+                                      }
+                                      className={
+                                        isCinematicSection
+                                          ? "min-h-[250px]"
+                                          : `border-l-4 ${isPhoneLandscapeLayout ? "pl-2" : "pl-4"} ${section.accentClass}`
+                                      }
                                     >
-                                      {t(section.labelKey)}
-                                    </h3>
-                                    <p
-                                      className={`${isPhoneLandscapeLayout ? "mt-1 text-[11px] leading-[1.45]" : "mt-3 text-[15px] leading-7"} whitespace-pre-line font-medium text-[#4e321c]`}
-                                    >
-                                      {t(section.bodyKey)}
-                                    </p>
-                                  </section>
-                                ))}
+                                      {isCinematicSection ? (
+                                        <CinematicNarrationPanel
+                                          label={t(section.labelKey)}
+                                          text={t(section.bodyKey)}
+                                          variant="opening"
+                                          compact={isPhoneLandscapeLayout}
+                                          className={
+                                            isPhoneLandscapeLayout
+                                              ? "min-h-[232px]"
+                                              : "min-h-[390px]"
+                                          }
+                                        />
+                                      ) : (
+                                        <>
+                                          <h3
+                                            className={`${isPhoneLandscapeLayout ? "text-[14px]" : "text-[22px]"} font-black tracking-[0.03em] text-[#3b2211]`}
+                                          >
+                                            {t(section.labelKey)}
+                                          </h3>
+                                          <p
+                                            className={`${isPhoneLandscapeLayout ? "mt-1 text-[11px] leading-[1.45]" : "mt-3 text-[15px] leading-7"} whitespace-pre-line font-medium text-[#4e321c]`}
+                                          >
+                                            {t(section.bodyKey)}
+                                          </p>
+                                        </>
+                                      )}
+                                    </section>
+                                  );
+                                })}
                               </div>
                             </div>
                           </div>
@@ -16600,38 +17389,42 @@ export default function BetrayalBoard({
                       </section>
                     ),
                   )}
+                    </>
+                  )}
                 </div>
-                <div
-                  className={`flex items-center justify-between border-t border-[rgba(211,179,109,0.24)] text-[12px] font-semibold text-[#d5c5a2] ${isPhoneLandscapeLayout ? "mt-2 pt-2" : "mt-3 pt-3"}`}
-                >
-                  <button
-                    type="button"
-                    data-testid="betrayal-scenario-reader-prev-zone"
-                    onClick={() => handleReferenceScenarioTurn("back")}
-                    disabled={!canTurnReferenceScenarioBack}
-                    className="inline-flex min-h-11 min-w-[112px] items-center justify-center gap-2 rounded-[5px] border border-[rgba(211,179,109,0.22)] bg-[rgba(9,13,12,0.84)] px-4 text-[#f3e0b4] transition hover:bg-[rgba(22,31,27,0.92)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.84)]"
+                {isReferenceScenarioOpeningStage ? null : (
+                  <div
+                    className={`flex items-center justify-between border-t border-[rgba(211,179,109,0.24)] text-[12px] font-semibold text-[#d5c5a2] ${isPhoneLandscapeLayout ? "mt-2 pt-2" : "mt-3 pt-3"}`}
                   >
-                    <ChevronLeft size={16} aria-hidden="true" />
-                    {t("board.scenario.readerPrev")}
-                  </button>
-                  <span
-                    data-testid="betrayal-scenario-reader-footer-progress"
-                    className="sr-only"
-                  >
-                    {referenceScenarioSpreadIndex + 1}/
-                    {referenceScenarioSpreadCount}
-                  </span>
-                  <button
-                    type="button"
-                    data-testid="betrayal-scenario-reader-next-zone"
-                    onClick={() => handleReferenceScenarioTurn("forward")}
-                    disabled={!canTurnReferenceScenarioForward}
-                    className="inline-flex min-h-11 min-w-[112px] items-center justify-center gap-2 rounded-[5px] border border-[rgba(211,179,109,0.22)] bg-[rgba(9,13,12,0.84)] px-4 text-[#f3e0b4] transition hover:bg-[rgba(22,31,27,0.92)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.84)]"
-                  >
-                    {t("board.scenario.readerNext")}
-                    <ChevronRight size={16} aria-hidden="true" />
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      data-testid="betrayal-scenario-reader-prev-zone"
+                      onClick={() => handleReferenceScenarioTurn("back")}
+                      disabled={!canTurnReferenceScenarioBack}
+                      className="inline-flex min-h-11 min-w-[112px] items-center justify-center gap-2 rounded-[5px] border border-[rgba(211,179,109,0.22)] bg-[rgba(9,13,12,0.84)] px-4 text-[#f3e0b4] transition hover:bg-[rgba(22,31,27,0.92)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.84)]"
+                    >
+                      <ChevronLeft size={16} aria-hidden="true" />
+                      {t("board.scenario.readerPrev")}
+                    </button>
+                    <span
+                      data-testid="betrayal-scenario-reader-footer-progress"
+                      className="sr-only"
+                    >
+                      {referenceScenarioSpreadIndex + 1}/
+                      {referenceScenarioSpreadCount}
+                    </span>
+                    <button
+                      type="button"
+                      data-testid="betrayal-scenario-reader-next-zone"
+                      onClick={() => handleReferenceScenarioTurn("forward")}
+                      disabled={!canTurnReferenceScenarioForward}
+                      className="inline-flex min-h-11 min-w-[112px] items-center justify-center gap-2 rounded-[5px] border border-[rgba(211,179,109,0.22)] bg-[rgba(9,13,12,0.84)] px-4 text-[#f3e0b4] transition hover:bg-[rgba(22,31,27,0.92)] disabled:opacity-35 disabled:hover:bg-[rgba(9,13,12,0.84)]"
+                    >
+                      {t("board.scenario.readerNext")}
+                      <ChevronRight size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <OptimizedImage

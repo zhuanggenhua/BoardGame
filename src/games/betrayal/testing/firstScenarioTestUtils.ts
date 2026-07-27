@@ -490,7 +490,7 @@ export function createDustHauntCore(
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, "0", {
     roomId: "ground-north",
   });
-  return applyBetrayalCommand(
+  core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
     "0",
@@ -498,6 +498,7 @@ export function createDustHauntCore(
     100,
     createBetrayalScriptedRandom(3, 3, 3),
   );
+  return acknowledgePendingCardResolutions(core);
 }
 
 export function createDustFeverishControlReadyCore(

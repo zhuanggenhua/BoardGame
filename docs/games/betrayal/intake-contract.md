@@ -17,9 +17,9 @@
 | 英文规则书文本 | 上一条镜像的可读 Markdown | `docs/games/betrayal/sources/official/betrayal-3e-rulebook-en.md` | 英文对照源 | 已抽取成 13 页文本 |
 | 英文求生者剧本书 | 求生者侧剧本文档 | `docs/games/betrayal/sources/official/betrayal-3e-secrets-of-survival-en.md` | 英文对照源 | 已抽取成 60 页文本 |
 | 英文叛徒剧本书 | 叛徒侧剧本文档 | `docs/games/betrayal/sources/official/betrayal-3e-traitors-tome-en.md` | 英文对照源 | 已抽取成 60 页文本 |
-| 中文规则 PDF | 用户补充的 `小黑屋规则翻译v1.1.pdf` 转换结果 | `docs/games/betrayal/sources/legacy-zh/betrayal-2e-rulebook-zh-v1.1/betrayal-2e-rulebook-zh-v1.1.md` | 旧版中文对照源 | 有中文文本层与 24 页页面图，出现“第二版工作人员”，不作为 3e 权威源 |
-| 中文求生者 Word | 用户补充的 `求生秘诀_原版v1.2.docx` 转换结果 | `docs/games/betrayal/sources/legacy-zh/betrayal-legacy-secrets-of-survival-zh-v1.2.md` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
-| 中文叛徒 Word | 用户补充的 `奸徒手册_基础版精编校对v1.0.docx` 转换结果 | `docs/games/betrayal/sources/legacy-zh/betrayal-legacy-traitors-tome-zh-v1.0.md` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
+| 中文规则 PDF | 用户补充的 `小黑屋规则翻译v1.1.pdf` 转换结果 | `src/games/betrayal/rule/legacy-zh/betrayal-2e-rulebook-zh-v1.1/betrayal-2e-rulebook-zh-v1.1.md`；归档镜像在 `docs/games/betrayal/sources/legacy-zh/` | 旧版中文对照源 | 有中文文本层与 24 页页面图，出现“第二版工作人员”，不作为 3e 权威源 |
+| 中文求生者 Word | 用户补充的 `求生秘诀_原版v1.2.docx` 转换结果 | `src/games/betrayal/rule/legacy-zh/betrayal-legacy-secrets-of-survival-zh-v1.2.md`；归档镜像在 `docs/games/betrayal/sources/legacy-zh/` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
+| 中文叛徒 Word | 用户补充的 `奸徒手册_基础版精编校对v1.0.docx` 转换结果 | `src/games/betrayal/rule/legacy-zh/betrayal-legacy-traitors-tome-zh-v1.0.md`；归档镜像在 `docs/games/betrayal/sources/legacy-zh/` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
 
 ## 3. PDF 处理结论
 

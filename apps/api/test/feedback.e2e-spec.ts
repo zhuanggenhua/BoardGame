@@ -466,6 +466,7 @@ describe('Feedback Module (e2e)', () => {
         expect(okRes.body.reporterType).toBe('system');
         expect(okRes.body.source).toBe('online-ai-watchdog');
         expect(okRes.body.status).toBe('resolved');
+        expect(okRes.body.resolvedMethod).toBe('系统已自动恢复这次在线 AI 步骤，对局已继续运行。');
     });
 
     it('online-ai-watchdog 相同根因的系统反馈应聚合到同一条记录并累计次数', async () => {
@@ -516,11 +517,13 @@ describe('Feedback Module (e2e)', () => {
         expect(second.body.latestIncidentKey).toBe('tracker-b');
         expect(second.body.occurrenceCount).toBe(2);
         expect(second.body.status).toBe('resolved');
+        expect(second.body.resolvedMethod).toBe('系统已自动推进停滞的 AI 座位，让对局继续进行。');
 
         const docs = await feedbackModel.find({ source: 'online-ai-watchdog' }).lean();
         expect(docs).toHaveLength(1);
         expect(docs[0].occurrenceCount).toBe(2);
         expect(docs[0].latestIncidentKey).toBe('tracker-b');
+        expect(docs[0].resolvedMethod).toBe('系统已自动推进停滞的 AI 座位，让对局继续进行。');
     });
 
     it('online-ai-watchdog 并发同 key 上报时 occurrenceCount 应精确累加且仅保留一个 canonical', async () => {

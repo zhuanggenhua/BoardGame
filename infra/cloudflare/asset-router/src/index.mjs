@@ -7,16 +7,40 @@ const FORWARDED_REQUEST_HEADERS = [
     'range',
 ];
 
+const CACHEABLE_MEDIA_EXTENSIONS = new Set([
+    '.webp',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.svg',
+    '.ogg',
+]);
+
 const resolveTimeoutMs = (value) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1500;
+};
+
+const resolveMediaCacheTtlSeconds = (request) => {
+    const url = new URL(request.url);
+    if (request.method !== 'GET' && request.method !== 'HEAD') return null;
+    if (request.headers.has('Range')) return null;
+
+    const pathname = url.pathname.toLowerCase();
+    const extension = pathname.includes('.')
+        ? pathname.slice(pathname.lastIndexOf('.'))
+        : '';
+    if (!CACHEABLE_MEDIA_EXTENSIONS.has(extension)) return null;
+
+    return url.searchParams.has('v') ? 31536000 : 86400;
 };
 
 const applySharedHeaders = (headers, source) => {
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set(
         'Access-Control-Expose-Headers',
-        'Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified, X-Asset-Source',
+        'Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified, X-Asset-Cache-Policy, X-Asset-Source',
     );
     headers.set('Accept-Ranges', 'bytes');
     headers.set('X-Asset-Source', source);
@@ -64,11 +88,25 @@ const fetchOrigin = async (request, env, fetchImpl) => {
         () => controller.abort('origin response timeout'),
         resolveTimeoutMs(env.ORIGIN_TIMEOUT_MS),
     );
+    const mediaCacheTtl = resolveMediaCacheTtlSeconds(request);
+    const fetchOptions = {
+        signal: controller.signal,
+    };
+
+    if (mediaCacheTtl !== null) {
+        fetchOptions.cf = {
+            cacheEverything: true,
+            cacheTtlByStatus: {
+                '200-299': mediaCacheTtl,
+                '300-399': 60,
+                '400-499': 30,
+                '500-599': 0,
+            },
+        };
+    }
 
     try {
-        return await fetchImpl(buildOriginRequest(request, env), {
-            signal: controller.signal,
-        });
+        return await fetchImpl(buildOriginRequest(request, env), fetchOptions);
     } finally {
         clearTimeout(timer);
     }
@@ -80,6 +118,10 @@ const withServerSource = (request, response) => {
     headers.delete('CDN-Cache-Control');
     headers.delete('Cloudflare-CDN-Cache-Control');
     applySharedHeaders(headers, source);
+    const mediaCacheTtl = resolveMediaCacheTtlSeconds(request);
+    if (mediaCacheTtl !== null) {
+        headers.set('X-Asset-Cache-Policy', `edge-media; ttl=${mediaCacheTtl}`);
+    }
     return new Response(request.method === 'HEAD' ? null : response.body, {
         status: response.status,
         statusText: response.statusText,

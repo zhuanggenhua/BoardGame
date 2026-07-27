@@ -3,14 +3,14 @@
  * 
  * 测试覆盖：
  * - 正确加载自定义牌组列表
- * - 4列网格布局保持不变
+ * - 阵营选择区按 2x4 槽位分页
  * - 卡片顺序正确（默认阵营 → 自定义牌组（最多1个） → "+"按钮）
  * - "+"按钮始终显示（有牌组时显示"更多"，无牌组时显示"新建"）
  * - 选择自定义牌组后状态更新
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FactionSelection } from '../FactionSelectionAdapter';
 import type { SavedDeckSummary } from '../../../../api/custom-deck';
 import type { TFunction } from 'i18next';
@@ -43,18 +43,18 @@ vi.mock('../../../../contexts/ToastContext', () => ({
 
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, onClick, style }: any) => (
-      <div className={className} onClick={onClick} style={style}>
+    div: ({ children, className, onClick, style, initial, animate, exit, transition, whileHover, whileTap, layoutId, ...rest }: any) => (
+      <div {...rest} className={className} onClick={onClick} style={style}>
         {children}
       </div>
     ),
-    button: ({ children, className, onClick, style }: any) => (
-      <button className={className} onClick={onClick} style={style}>
+    button: ({ children, className, onClick, style, initial, animate, exit, transition, whileHover, whileTap, layoutId, ...rest }: any) => (
+      <button {...rest} className={className} onClick={onClick} style={style}>
         {children}
       </button>
     ),
-    h1: ({ children, className, style }: any) => (
-      <h1 className={className} style={style}>{children}</h1>
+    h1: ({ children, className, style, initial, animate, exit, transition, whileHover, whileTap, layoutId, ...rest }: any) => (
+      <h1 {...rest} className={className} style={style}>{children}</h1>
     ),
   },
   AnimatePresence: ({ children }: any) => <>{children}</>,
@@ -265,12 +265,49 @@ describe('FactionSelection', () => {
     });
   });
 
-  it('应该保持 4 列网格布局', () => {
+  it('应该按 2x4 槽位显示第一页阵营与牌组入口', () => {
     const { container } = render(<FactionSelection {...defaultProps} />);
     
-    // 查找网格容器
-    const gridContainer = container.querySelector('.grid-cols-4');
+    const gridContainer = screen.getByTestId('sw-faction-grid');
+    const pagerContainer = screen.getByTestId('sw-faction-pager');
+    expect(pagerContainer.getAttribute('style')).toContain('calc(var(--sw-selection-inline-unit) * 72)');
+    expect(pagerContainer.getAttribute('style')).toContain('clamp(44px');
     expect(gridContainer).toBeInTheDocument();
+    expect(gridContainer).toHaveClass('grid-cols-4');
+    expect(gridContainer).toHaveAttribute('data-grid-capacity', '8');
+    expect(gridContainer).toHaveAttribute('data-page', '1');
+    expect(gridContainer).toHaveAttribute('data-page-count', '2');
+    expect(container.querySelectorAll('[data-testid^="sw-faction-card-"][data-faction-id]').length).toBe(7);
+    expect(screen.queryAllByTestId('sw-faction-grid-placeholder')).toHaveLength(0);
+    expect(screen.getByTestId('sw-custom-deck-entry')).toBeInTheDocument();
+    expect(Array.from(gridContainer.children).at(-1)).toBe(screen.getByTestId('sw-custom-deck-entry'));
+    expect(screen.queryByTestId('sw-faction-card-huijin')).not.toBeInTheDocument();
+  });
+
+  it('应该通过左右翻页按钮切换后续阵营', () => {
+    render(<FactionSelection {...defaultProps} />);
+
+    const previousButton = screen.getByTestId('sw-faction-page-prev');
+    const nextButton = screen.getByTestId('sw-faction-page-next');
+
+    expect(previousButton).toBeDisabled();
+    expect(nextButton).not.toBeDisabled();
+    expect(screen.queryByTestId('sw-faction-card-huijin')).not.toBeInTheDocument();
+
+    fireEvent.click(nextButton);
+
+    expect(screen.getByTestId('sw-faction-grid')).toHaveAttribute('data-page', '2');
+    expect(screen.getByTestId('sw-faction-card-huijin')).toBeInTheDocument();
+    expect(screen.queryByTestId('sw-faction-card-necromancer')).not.toBeInTheDocument();
+    expect(screen.getByTestId('sw-custom-deck-entry')).toBeInTheDocument();
+    expect(screen.queryAllByTestId('sw-faction-grid-placeholder')).toHaveLength(4);
+    expect(Array.from(screen.getByTestId('sw-faction-grid').children)).toHaveLength(8);
+    expect(Array.from(screen.getByTestId('sw-faction-grid').children).at(-1)).toBe(screen.getByTestId('sw-custom-deck-entry'));
+
+    fireEvent.click(screen.getByTestId('sw-faction-page-prev'));
+
+    expect(screen.getByTestId('sw-faction-grid')).toHaveAttribute('data-page', '1');
+    expect(screen.getByTestId('sw-faction-card-necromancer')).toBeInTheDocument();
   });
 
   it('应该在加载牌组列表失败时显示错误提示', async () => {

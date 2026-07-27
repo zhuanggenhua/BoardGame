@@ -1,10 +1,11 @@
+// @asset-pipeline-allow
+// Canvas split effect uses AssetLoader/CardPreview-resolved URLs, then draws a transient card snapshot.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Skull, Sparkles, Trophy, Zap } from 'lucide-react';
+import { Plus, Sparkles, Trophy, Zap } from 'lucide-react';
 import i18next from 'i18next';
-import { ShatterEffect, type ShatterImageSource } from '../../../components/common/animations/ShatterEffect';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import { getCardAtlasSource } from '../../../components/common/media/cardAtlasRegistry';
+import { getCardAtlasSource, getLazyRegistration } from '../../../components/common/media/cardAtlasRegistry';
 import {
   getLocalizedAssetPath,
   getOptimizedImageUrls,
@@ -14,7 +15,7 @@ import {
   type CardPreviewRef,
 } from '../../../core';
 import type { FxRendererProps } from '../../../engine/fx';
-import { computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
+import { computeSpriteStyle, type SpriteAtlasConfig, type SpriteAtlasFrame } from '../../../engine/primitives/spriteAtlas';
 import { getCardDef, resolveCardName } from '../data/cards';
 
 type ScreenPoint = { left: number; top: number };
@@ -87,16 +88,27 @@ function resolveAbilityTone(tone: AbilityHighlightTone | undefined, actionKind: 
     };
   }
   return {
-    accent: '#38bdf8',
-    accentSoft: 'rgba(56,189,248,0.20)',
-    glow: 'rgba(56,189,248,0.4)',
-    cardRing: 'shadow-[0_0_40px_rgba(56,189,248,0.5)]',
-    orb: 'from-sky-100 via-cyan-300 to-amber-200',
-    targetTint: 'rgba(12,74,110,0.36)',
+    accent: '#fbbf24',
+    accentSoft: 'rgba(251,191,36,0.20)',
+    glow: 'rgba(251,191,36,0.4)',
+    cardRing: 'shadow-[0_0_40px_rgba(251,191,36,0.5)]',
+    orb: 'from-amber-100 via-amber-300 to-yellow-100',
+    targetTint: 'rgba(120,83,39,0.30)',
   };
 }
 
-type AbilityTone = ReturnType<typeof resolveAbilityTone>;
+type AtlasGrid = { rows: number; cols: number };
+type SplitAtlasFrame = {
+  index: number;
+  config?: SpriteAtlasConfig;
+  grid?: AtlasGrid;
+};
+type SplitImageSource = {
+  url: string;
+  bgSize: string;
+  bgPosition: string;
+  atlasFrame?: SplitAtlasFrame;
+};
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const easeOutCubic = (value: number) => 1 - (1 - value) ** 3;
@@ -121,47 +133,49 @@ function rgba(hex: string, alpha: number) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function resolveShatterImageSource(previewRef: CardPreviewRef | undefined, locale: string): ShatterImageSource | undefined {
+function resolveShatterImageSource(previewRef: CardPreviewRef | undefined, locale: string): SplitImageSource | undefined {
   if (!previewRef || previewRef.type !== 'atlas') return undefined;
   const source = getCardAtlasSource(previewRef.atlasId, locale);
-  if (!source) return undefined;
-  const style = computeSpriteStyle(previewRef.index, source.config);
-  const candidateUrls = getRuntimeImageCandidateUrls(source.image, locale);
-  const url = getResolvedImageCandidateUrl(candidateUrls, source.image, locale)
+  const lazy = source ? undefined : getLazyRegistration(previewRef.atlasId);
+  const image = source?.image ?? lazy?.image;
+  if (!image) return undefined;
+  const style = source ? computeSpriteStyle(previewRef.index, source.config) : undefined;
+  const candidateUrls = getRuntimeImageCandidateUrls(image, locale);
+  const url = getResolvedImageCandidateUrl(candidateUrls, image, locale)
     || candidateUrls[0]
-    || getOptimizedImageUrls(getLocalizedAssetPath(source.image, locale)).webp;
+    || getOptimizedImageUrls(getLocalizedAssetPath(image, locale)).webp;
   if (!url) return undefined;
   return {
     url,
-    bgSize: String(style.backgroundSize ?? '100% 100%'),
-    bgPosition: String(style.backgroundPosition ?? '0% 0%'),
+    bgSize: String(style?.backgroundSize ?? '100% 100%'),
+    bgPosition: String(style?.backgroundPosition ?? '0% 0%'),
+    atlasFrame: {
+      index: previewRef.index,
+      config: source?.config,
+      grid: lazy?.grid,
+    },
   };
 }
 
-function curvePoint(source: ScreenPoint, target: ScreenPoint, t: number): ScreenPoint {
-  const c1 = { left: source.left + 112, top: source.top - 150 };
-  const c2 = { left: target.left - 144, top: target.top - 126 };
-  const mt = 1 - t;
+function linePoint(source: ScreenPoint, target: ScreenPoint, t: number): ScreenPoint {
+  const clamped = clamp01(t);
   return {
-    left: mt ** 3 * source.left + 3 * mt ** 2 * t * c1.left + 3 * mt * t ** 2 * c2.left + t ** 3 * target.left,
-    top: mt ** 3 * source.top + 3 * mt ** 2 * t * c1.top + 3 * mt * t ** 2 * c2.top + t ** 3 * target.top,
+    left: source.left + (target.left - source.left) * clamped,
+    top: source.top + (target.top - source.top) * clamped,
   };
 }
 
-function drawCurveSegment(
+function drawLineSegment(
   ctx: CanvasRenderingContext2D,
   source: ScreenPoint,
   target: ScreenPoint,
   from: number,
   to: number,
 ) {
-  const steps = Math.max(2, Math.ceil((to - from) * 80));
-  for (let i = 0; i <= steps; i += 1) {
-    const t = from + ((to - from) * i) / steps;
-    const p = curvePoint(source, target, clamp01(t));
-    if (i === 0) ctx.moveTo(p.left, p.top);
-    else ctx.lineTo(p.left, p.top);
-  }
+  const start = linePoint(source, target, from);
+  const end = linePoint(source, target, to);
+  ctx.moveTo(start.left, start.top);
+  ctx.lineTo(end.left, end.top);
 }
 
 function drawGlowOrb(
@@ -182,17 +196,35 @@ function drawGlowOrb(
   ctx.fill();
 }
 
+function drawRoundedRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
 function AbilityArcCanvas({
   sourcePos,
   targetPos,
-  tone,
-  actionKind,
   totalDurationS,
 }: {
   sourcePos: ScreenPoint;
   targetPos: ScreenPoint;
-  tone: AbilityTone;
-  actionKind: AbilityActionKind;
   totalDurationS: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -220,7 +252,6 @@ function AbilityArcCanvas({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const durationMs = totalDurationS * 1000;
     const startTime = performance.now();
-    const particleCount = actionKind === 'destroy' ? 12 : 10;
 
     const resize = () => {
       canvas.width = Math.ceil(window.innerWidth * dpr);
@@ -234,80 +265,49 @@ function AbilityArcCanvas({
       const progress = clamp01(elapsedMs / durationMs);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalCompositeOperation = 'source-over';
 
-      const wake = easeOutCubic(clamp01(elapsedMs / 360));
-      const wakeFade = 1 - clamp01((elapsedMs - 540) / 520);
-      if (wakeFade > 0) {
-        drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 38 + wake * 28, tone.accent, 0.16 * wakeFade);
-        drawGlowOrb(ctx, sourcePoint.left, sourcePoint.top, 12 + wake * 10, '#ffffff', 0.14 * wakeFade);
-      }
-
-      const travel = easeInOutCubic(clamp01((elapsedMs - 230) / 920));
-      if (travel > 0 && elapsedMs < 1900) {
-        const head = clamp01(travel);
-        const tail = 0;
-        const headPoint = curvePoint(pathSourcePoint, targetPoint, head);
+      const lineReveal = easeInOutCubic(clamp01((elapsedMs - 170) / 420));
+      const lineFade = 1 - clamp01((elapsedMs - 1120) / 520);
+      if (lineReveal > 0 && lineFade > 0) {
+        const head = clamp01(lineReveal);
+        const alpha = lineFade * (0.68 + 0.32 * head);
+        const selectionColor = SELECTION_LINE_COLOR;
+        const lineEndPoint = linePoint(pathSourcePoint, targetPoint, head);
         const gradient = ctx.createLinearGradient(pathSourcePoint.left, pathSourcePoint.top, targetPoint.left, targetPoint.top);
-        gradient.addColorStop(0, rgba(tone.accent, 0));
-        gradient.addColorStop(0.28, rgba(tone.accent, 0.92));
-        gradient.addColorStop(0.62, 'rgba(255,255,255,1)');
-        gradient.addColorStop(1, rgba(tone.accent, 0.94));
+        gradient.addColorStop(0, rgba(selectionColor, 0));
+        gradient.addColorStop(0.12, rgba(selectionColor, 0.78 * alpha));
+        gradient.addColorStop(0.54, `rgba(255,255,255,${0.88 * alpha})`);
+        gradient.addColorStop(1, rgba(selectionColor, 0.95 * alpha));
 
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        ctx.globalCompositeOperation = 'lighter';
         ctx.beginPath();
-        drawCurveSegment(ctx, pathSourcePoint, targetPoint, tail, head);
-        ctx.strokeStyle = rgba(tone.accent, 0.12);
-        ctx.lineWidth = actionKind === 'destroy' ? 4.4 : 3.8;
+        drawLineSegment(ctx, pathSourcePoint, targetPoint, 0, head);
+        ctx.strokeStyle = rgba(selectionColor, 0.34 * alpha);
+        ctx.lineWidth = 8;
         ctx.stroke();
 
         ctx.beginPath();
-        drawCurveSegment(ctx, pathSourcePoint, targetPoint, tail, head);
+        drawLineSegment(ctx, pathSourcePoint, targetPoint, 0, head);
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = actionKind === 'destroy' ? 1.8 : 1.5;
+        ctx.lineWidth = 3.4;
         ctx.stroke();
 
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.setLineDash([7, 10]);
+        ctx.lineDashOffset = -elapsedMs / 48;
         ctx.beginPath();
-        drawCurveSegment(ctx, pathSourcePoint, targetPoint, Math.max(tail, head - 0.2), head);
-        ctx.strokeStyle = 'rgba(255,255,255,0.72)';
-        ctx.lineWidth = 0.7;
+        drawLineSegment(ctx, pathSourcePoint, targetPoint, 0, head);
+        ctx.strokeStyle = `rgba(255,255,255,${0.58 * alpha})`;
+        ctx.lineWidth = 1.6;
         ctx.stroke();
+        ctx.setLineDash([]);
 
-        drawGlowOrb(ctx, headPoint.left, headPoint.top, actionKind === 'destroy' ? 8 : 7, tone.accent, 0.34);
-        drawGlowOrb(ctx, headPoint.left, headPoint.top, 2.8, '#ffffff', 0.42);
-
-        for (let i = 0; i < 4; i += 1) {
-          const localT = clamp01(head - i * 0.09);
-          if (localT <= tail) continue;
-          const p = curvePoint(pathSourcePoint, targetPoint, localT);
-          const size = Math.max(1.1, 2.6 - i * 0.35);
-          drawGlowOrb(ctx, p.left, p.top, size * 1.8, tone.accent, 0.12);
-        }
-      }
-
-      const impact = easeOutCubic(clamp01((elapsedMs - 1120) / 360));
-      const impactFade = 1 - clamp01((elapsedMs - 1420) / 560);
-      if (impact > 0 && impactFade > 0) {
-        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 24 + impact * 34, tone.accent, 0.18 * impactFade);
-        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 8 + impact * 15, '#ffffff', 0.16 * impactFade);
-      }
-
-      const burst = clamp01((elapsedMs - 1120) / 540);
-      if (burst > 0 && burst < 1) {
-        const fade = 1 - burst;
-        for (let i = 0; i < particleCount; i += 1) {
-          const angle = (Math.PI * 2 * i) / particleCount + ((i % 5) - 2) * 0.09;
-          const distance = (actionKind === 'destroy' ? 52 : 42) * easeOutCubic(burst) * (0.58 + (i % 7) * 0.07);
-          const x = targetPoint.left + Math.cos(angle) * distance;
-          const y = targetPoint.top + Math.sin(angle) * distance;
-          const radius = (i % 3 === 0 ? 2.5 : 1.8) * (0.65 + fade);
-          drawGlowOrb(ctx, x, y, radius * 3.2, tone.accent, 0.12 * fade);
-          ctx.fillStyle = i % 4 === 0 ? `rgba(255,255,255,${0.88 * fade})` : rgba(tone.accent, 0.76 * fade);
-          ctx.beginPath();
-          ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        drawGlowOrb(ctx, lineEndPoint.left, lineEndPoint.top, 14, selectionColor, 0.26 * alpha);
+        drawGlowOrb(ctx, lineEndPoint.left, lineEndPoint.top, 4.6, '#ffffff', 0.34 * alpha);
+        drawGlowOrb(ctx, targetPoint.left, targetPoint.top, 23 + 6 * head, selectionColor, 0.14 * alpha);
       }
 
       ctx.globalCompositeOperation = 'source-over';
@@ -323,7 +323,7 @@ function AbilityArcCanvas({
       window.cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [actionKind, sourceLeft, sourceTop, targetLeft, targetTop, tone.accent, totalDurationS]);
+  }, [sourceLeft, sourceTop, targetLeft, targetTop, totalDurationS]);
 
   return (
     <canvas
@@ -336,11 +336,8 @@ function AbilityArcCanvas({
 }
 
 function ActionGlyph({ actionKind, accent, delayS }: { actionKind: AbilityActionKind; accent: string; delayS: number }) {
-  const isDestroy = actionKind === 'destroy';
-  const common = { size: isDestroy ? 20 : 42, strokeWidth: isDestroy ? 2.2 : 2.6 };
-  const icon = actionKind === 'destroy'
-    ? <Skull {...common} />
-    : actionKind === 'buff'
+  const common = { size: 42, strokeWidth: 2.6 };
+  const icon = actionKind === 'buff'
       ? <Plus {...common} />
       : actionKind === 'score'
         ? <Trophy {...common} />
@@ -348,21 +345,17 @@ function ActionGlyph({ actionKind, accent, delayS }: { actionKind: AbilityAction
 
   return (
     <motion.div
-      className={`absolute flex items-center justify-center bg-slate-950/78 text-white shadow-2xl ${
-        isDestroy ? 'h-9 w-9 rounded-full' : 'h-20 w-20 rounded-[22px]'
-      }`}
+      className="absolute flex h-20 w-20 items-center justify-center rounded-[22px] bg-slate-950/78 text-white shadow-2xl"
       style={{
-        left: isDestroy ? '64%' : '50%',
-        top: isDestroy ? '32%' : '50%',
-        marginLeft: isDestroy ? -18 : -40,
-        marginTop: isDestroy ? -18 : -40,
-        boxShadow: isDestroy ? `0 0 18px ${accent}` : `0 0 34px ${accent}, inset 0 0 18px ${accent}`,
+        left: '50%',
+        top: '50%',
+        marginLeft: -40,
+        marginTop: -40,
+        boxShadow: `0 0 34px ${accent}, inset 0 0 18px ${accent}`,
       }}
       initial={{ opacity: 0, scale: 0.35, rotate: -18 }}
-      animate={isDestroy
-        ? { opacity: [0, 0.92, 0.88, 0], scale: [0.35, 1.08, 1, 0.82], rotate: [-10, 4, 0, 0] }
-        : { opacity: [0, 1, 1, 0.88, 0], scale: [0.35, 1.22, 1, 1.08, 1.34], rotate: [-18, 7, 0, 0, 18] }}
-      transition={{ duration: isDestroy ? 1.45 : 2.2, times: isDestroy ? [0, 0.22, 0.72, 1] : [0, 0.14, 0.42, 0.78, 1], delay: delayS + (isDestroy ? 0.42 : 0), ease: 'easeOut' }}
+      animate={{ opacity: [0, 1, 1, 0.88, 0], scale: [0.35, 1.22, 1, 1.08, 1.34], rotate: [-18, 7, 0, 0, 18] }}
+      transition={{ duration: 2.2, times: [0, 0.14, 0.42, 0.78, 1], delay: delayS, ease: 'easeOut' }}
       data-testid="smashup-triggered-fx-action-glyph"
     >
       {icon}
@@ -370,41 +363,383 @@ function ActionGlyph({ actionKind, accent, delayS }: { actionKind: AbilityAction
   );
 }
 
+const TWO_PIECE_SPLIT_DELAY_MS = 960;
+const TWO_PIECE_SPLIT_DURATION_MS = 1160;
+const TWO_PIECE_INITIAL_SPLIT_PROGRESS = 0.08;
+const SELECTION_LINE_COLOR = '#fbbf24';
+
+function parseCardImageDrawStyle(
+  bgSize: string,
+  bgPos: string,
+  containerW: number,
+  containerH: number,
+  imgNatW: number,
+  imgNatH: number,
+): { drawW: number; drawH: number; drawX: number; drawY: number } {
+  let drawW = imgNatW;
+  let drawH = imgNatH;
+  if (bgSize) {
+    const parts = bgSize.split(/\s+/);
+    const parseSize = (value: string, ref: number, imageDim: number) => {
+      if (value === 'auto') return imageDim;
+      if (value.endsWith('%')) return ref * Number.parseFloat(value) / 100;
+      return Number.parseFloat(value) || imageDim;
+    };
+    drawW = parseSize(parts[0], containerW, imgNatW);
+    drawH = parts[1] ? parseSize(parts[1], containerH, imgNatH) : drawH * (drawW / imgNatW);
+  }
+
+  let drawX = 0;
+  let drawY = 0;
+  if (bgPos) {
+    const parts = bgPos.split(/\s+/);
+    const parsePos = (value: string, containerDim: number, imageDim: number) => {
+      if (value.endsWith('%')) {
+        const pct = Number.parseFloat(value) / 100;
+        return (containerDim - imageDim) * pct;
+      }
+      return Number.parseFloat(value) || 0;
+    };
+    drawX = parsePos(parts[0], containerW, drawW);
+    drawY = parts[1] ? parsePos(parts[1], containerH, drawH) : 0;
+  }
+  return { drawW, drawH, drawX, drawY };
+}
+
+function isFrameAtlasConfig(atlas: SpriteAtlasConfig): atlas is { imageW: number; imageH: number; frames: SpriteAtlasFrame[] } {
+  return 'frames' in atlas;
+}
+
+function resolveAtlasFrameCrop(
+  atlasFrame: SplitAtlasFrame | undefined,
+  imgNatW: number,
+  imgNatH: number,
+): SpriteAtlasFrame | undefined {
+  if (!atlasFrame || imgNatW < 1 || imgNatH < 1) return undefined;
+
+  if (atlasFrame.config) {
+    const { config } = atlasFrame;
+    const scaleX = config.imageW > 0 ? imgNatW / config.imageW : 1;
+    const scaleY = config.imageH > 0 ? imgNatH / config.imageH : 1;
+    let frame: SpriteAtlasFrame | undefined;
+
+    if (isFrameAtlasConfig(config)) {
+      const frames = config.frames;
+      if (frames.length > 0) {
+        frame = frames[atlasFrame.index % frames.length] ?? frames[0];
+      }
+    } else {
+      const total = Math.max(1, config.rows * config.cols);
+      const safeIndex = ((atlasFrame.index % total) + total) % total;
+      const col = safeIndex % config.cols;
+      const row = Math.floor(safeIndex / config.cols);
+      frame = {
+        x: config.colStarts[col] ?? config.colStarts[0] ?? 0,
+        y: config.rowStarts[row] ?? config.rowStarts[0] ?? 0,
+        width: config.colWidths[col] ?? config.colWidths[0] ?? config.imageW,
+        height: config.rowHeights[row] ?? config.rowHeights[0] ?? config.imageH,
+      };
+    }
+
+    if (!frame) return undefined;
+    return {
+      x: frame.x * scaleX,
+      y: frame.y * scaleY,
+      width: frame.width * scaleX,
+      height: frame.height * scaleY,
+    };
+  }
+
+  if (atlasFrame.grid) {
+    const total = Math.max(1, atlasFrame.grid.rows * atlasFrame.grid.cols);
+    const safeIndex = ((atlasFrame.index % total) + total) % total;
+    const col = safeIndex % atlasFrame.grid.cols;
+    const row = Math.floor(safeIndex / atlasFrame.grid.cols);
+    const width = imgNatW / atlasFrame.grid.cols;
+    const height = imgNatH / atlasFrame.grid.rows;
+    return { x: col * width, y: row * height, width, height };
+  }
+
+  return undefined;
+}
+
+function createFallbackCardSnapshot(width: number, height: number, label?: string): HTMLCanvasElement {
+  const snapshot = document.createElement('canvas');
+  snapshot.width = Math.max(1, Math.round(width));
+  snapshot.height = Math.max(1, Math.round(height));
+  const ctx = snapshot.getContext('2d');
+  if (!ctx) return snapshot;
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, '#fff7ed');
+  gradient.addColorStop(0.42, '#f1f5f9');
+  gradient.addColorStop(1, '#fecdd3');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  drawRoundedRectPath(ctx, 2, 2, width - 4, height - 4, Math.max(8, width * 0.08));
+  ctx.strokeStyle = 'rgba(30,41,59,0.42)';
+  ctx.lineWidth = Math.max(2, width * 0.028);
+  ctx.stroke();
+  const art = ctx.createLinearGradient(width * 0.12, height * 0.12, width * 0.88, height * 0.68);
+  art.addColorStop(0, '#fde68a');
+  art.addColorStop(0.52, '#fb7185');
+  art.addColorStop(1, '#312e81');
+  drawRoundedRectPath(ctx, width * 0.12, height * 0.12, width * 0.76, height * 0.52, Math.max(5, width * 0.05));
+  ctx.fillStyle = art;
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.beginPath();
+  ctx.arc(width * 0.64, height * 0.28, width * 0.18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(15,23,42,0.82)';
+  drawRoundedRectPath(ctx, width * 0.1, height * 0.74, width * 0.8, height * 0.17, Math.max(5, width * 0.045));
+  ctx.fill();
+  if (label) {
+    ctx.fillStyle = 'rgba(255,255,255,0.94)';
+    ctx.font = `700 ${Math.max(11, Math.round(width * 0.13))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label.slice(0, 8), width / 2, height * 0.87, width * 0.86);
+  }
+  return snapshot;
+}
+
+function createCardSnapshotFromImageSource(
+  src: SplitImageSource | undefined,
+  width: number,
+  height: number,
+  fallbackLabel?: string,
+): Promise<HTMLCanvasElement> {
+  return new Promise((resolve) => {
+    if (!src || width < 1 || height < 1) {
+      resolve(createFallbackCardSnapshot(width, height, fallbackLabel));
+      return;
+    }
+
+    const snapshot = document.createElement('canvas');
+    snapshot.width = Math.max(1, Math.round(width));
+    snapshot.height = Math.max(1, Math.round(height));
+    const ctx = snapshot.getContext('2d');
+    if (!ctx) {
+      resolve(createFallbackCardSnapshot(width, height, fallbackLabel));
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      const crop = resolveAtlasFrameCrop(src.atlasFrame, img.naturalWidth, img.naturalHeight);
+      if (crop) {
+        ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, width, height);
+      } else {
+        const { drawW, drawH, drawX, drawY } = parseCardImageDrawStyle(
+          src.bgSize,
+          src.bgPosition,
+          width,
+          height,
+          img.naturalWidth,
+          img.naturalHeight,
+        );
+        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      }
+      resolve(snapshot);
+    };
+    img.onerror = () => resolve(createFallbackCardSnapshot(width, height, fallbackLabel));
+    img.src = src.url;
+  });
+}
+
+function drawSplitPiece(
+  ctx: CanvasRenderingContext2D,
+  snapshot: HTMLCanvasElement,
+  points: Array<[number, number]>,
+  fractureEdge: [[number, number], [number, number]],
+  width: number,
+  height: number,
+  translateX: number,
+  translateY: number,
+  rotateRad: number,
+  alpha: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(width / 2 + translateX, height / 2 + translateY);
+  ctx.rotate(rotateRad);
+  ctx.translate(-width / 2, -height / 2);
+
+  ctx.beginPath();
+  points.forEach(([x, y], index) => {
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.shadowColor = 'rgba(0,0,0,0.34)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 8;
+  ctx.fillStyle = 'rgba(15,23,42,0.12)';
+  ctx.fill();
+  ctx.clip();
+  ctx.shadowColor = 'transparent';
+  ctx.drawImage(snapshot, 0, 0, width, height);
+
+  const [[edgeStartX, edgeStartY], [edgeEndX, edgeEndY]] = fractureEdge;
+  const dx = edgeEndX - edgeStartX;
+  const dy = edgeEndY - edgeStartY;
+  const edgeLength = Math.max(1, Math.hypot(dx, dy));
+  const normalX = -dy / edgeLength;
+  const normalY = dx / edgeLength;
+
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = 'rgba(15,23,42,0.26)';
+  ctx.beginPath();
+  ctx.moveTo(edgeStartX, edgeStartY);
+  for (let i = 0; i <= 8; i += 1) {
+    const t = i / 8;
+    const chip = ((i % 2 === 0 ? 1 : -1) * (2.5 + (i % 3) * 1.6));
+    ctx.lineTo(edgeStartX + dx * t + normalX * chip, edgeStartY + dy * t + normalY * chip);
+  }
+  ctx.lineTo(edgeEndX, edgeEndY);
+  ctx.lineTo(edgeEndX + normalX * 14, edgeEndY + normalY * 14);
+  ctx.lineTo(edgeStartX + normalX * 14, edgeStartY + normalY * 14);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i += 1) {
+    const t = (i + 0.42) / 9;
+    const sparkX = edgeStartX + dx * t + normalX * ((i % 3) - 1) * 3.2;
+    const sparkY = edgeStartY + dy * t + normalY * ((i % 4) - 1.5) * 2.4;
+    drawGlowOrb(ctx, sparkX, sparkY, 5.4 + (i % 2) * 2.4, '#ff174f', 0.12 * alpha);
+    ctx.fillStyle = `rgba(255,246,246,${0.32 * alpha})`;
+    ctx.beginPath();
+    ctx.arc(sparkX, sparkY, 1.2 + (i % 3) * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.restore();
+}
+
 function CardSplitEffect({
   shatterImageSource,
+  fallbackLabel,
   onShatterStart,
 }: {
-  shatterImageSource: ShatterImageSource | undefined;
+  shatterImageSource: SplitImageSource | undefined;
+  fallbackLabel: string | undefined;
   onShatterStart: () => void;
 }) {
-  const [shatterActive, setShatterActive] = useState(false);
+  const [splitActive, setSplitActive] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onSplitStartRef = useRef(onShatterStart);
+  const imageSourceRef = useRef(shatterImageSource);
   const shatterKey = shatterImageSource
     ? `${shatterImageSource.url}|${shatterImageSource.bgSize}|${shatterImageSource.bgPosition}`
     : '';
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShatterActive(true), 960);
+    onSplitStartRef.current = onShatterStart;
+    imageSourceRef.current = shatterImageSource;
+  }, [onShatterStart, shatterImageSource]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSplitActive(true), TWO_PIECE_SPLIT_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [shatterKey]);
 
+  useEffect(() => {
+    if (!splitActive || typeof window === 'undefined') return undefined;
+    const canvas = canvasRef.current;
+    const container = canvas?.parentElement;
+    const parent = container?.parentElement;
+    if (!canvas || !parent) return undefined;
+
+    let cancelled = false;
+    let rafId = 0;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const parentW = Math.max(1, parent.offsetWidth);
+    const parentH = Math.max(1, parent.offsetHeight);
+    const overflow = Math.max(64, Math.round(Math.max(parentW, parentH) * 0.34));
+    const canvasW = parentW + overflow * 2;
+    const canvasH = parentH + overflow * 2;
+
+    canvas.width = Math.ceil(canvasW * dpr);
+    canvas.height = Math.ceil(canvasH * dpr);
+    canvas.style.width = `${canvasW}px`;
+    canvas.style.height = `${canvasH}px`;
+    canvas.style.left = `${-overflow}px`;
+    canvas.style.top = `${-overflow}px`;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return undefined;
+
+    createCardSnapshotFromImageSource(imageSourceRef.current, parentW, parentH, fallbackLabel).then((snapshot) => {
+      if (cancelled) return;
+      const startTime = performance.now();
+      const splitLeftY = parentH * 0.42;
+      const splitRightY = parentH * 0.64;
+      const topPiece: Array<[number, number]> = [
+        [0, 0],
+        [parentW, 0],
+        [parentW, splitRightY],
+        [0, splitLeftY],
+      ];
+      const bottomPiece: Array<[number, number]> = [
+        [0, splitLeftY],
+        [parentW, splitRightY],
+        [parentW, parentH],
+        [0, parentH],
+      ];
+
+      const drawFrame = (progress: number) => {
+        const visibleProgress = TWO_PIECE_INITIAL_SPLIT_PROGRESS
+          + (1 - TWO_PIECE_INITIAL_SPLIT_PROGRESS) * progress;
+        const splitProgress = easeOutCubic(clamp01(visibleProgress));
+        const fade = 1 - easeOutCubic(clamp01((progress - 0.74) / 0.26)) * 0.55;
+        const topX = -72 * splitProgress;
+        const bottomX = 78 * splitProgress;
+        const topY = -64 * splitProgress;
+        const bottomY = 82 * splitProgress;
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, canvasW, canvasH);
+        ctx.save();
+        ctx.translate(overflow, overflow);
+        drawSplitPiece(ctx, snapshot, topPiece, [[parentW, splitRightY], [0, splitLeftY]], parentW, parentH, topX, topY, -0.18 * splitProgress, fade);
+        drawSplitPiece(ctx, snapshot, bottomPiece, [[0, splitLeftY], [parentW, splitRightY]], parentW, parentH, bottomX, bottomY, 0.2 * splitProgress, fade);
+        ctx.restore();
+      };
+
+      drawFrame(0);
+      onSplitStartRef.current();
+
+      const draw = (now: number) => {
+        const elapsedMs = now - startTime;
+        const progress = clamp01(elapsedMs / TWO_PIECE_SPLIT_DURATION_MS);
+        drawFrame(progress);
+
+        if (progress < 1) {
+          rafId = window.requestAnimationFrame(draw);
+        }
+      };
+
+      rafId = window.requestAnimationFrame(draw);
+    });
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [fallbackLabel, splitActive, shatterKey]);
+
   return (
     <div
-      className="absolute inset-0 pointer-events-none"
+      className="absolute inset-0 z-20 overflow-visible pointer-events-none"
       data-testid="smashup-triggered-fx-card-split"
+      data-split-pieces="2"
     >
-      {shatterImageSource && shatterActive ? (
-        <ShatterEffect
-          active
-          intensity="strong"
-          cols={5}
-          rows={4}
-          imageSource={shatterImageSource}
-          quality="full"
-          spreadScale={1.18}
-          durationScale={1.6}
-          fadePower={1.12}
-          minScale={0.72}
-          onStart={onShatterStart}
+      {splitActive ? (
+        <canvas
+          ref={canvasRef}
+          className="absolute pointer-events-none"
+          data-testid="smashup-triggered-fx-card-two-piece-canvas"
         />
       ) : null}
     </div>
@@ -426,7 +761,7 @@ function TargetImpact({
   resolvedTargetName: string | undefined;
   renderCardBody: boolean;
   compactCardBody: boolean;
-  shatterImageSource: ShatterImageSource | undefined;
+  shatterImageSource: SplitImageSource | undefined;
 }) {
   const [hideDestroyedCard, setHideDestroyedCard] = useState(false);
 
@@ -451,7 +786,7 @@ function TargetImpact({
   return (
     <motion.div
       className={renderCardBody
-        ? `relative ${compactCardBody ? 'h-[136px] w-[96px]' : 'h-[168px] w-[118px]'} rounded-xl bg-slate-900 ${compactCardBody ? 'shadow-[0_16px_34px_rgba(0,0,0,0.42)]' : tone.cardRing}`
+        ? `relative ${compactCardBody ? 'h-[136px] w-[96px]' : 'h-[168px] w-[118px]'} rounded-xl ${actionKind === 'destroy' ? 'bg-transparent' : 'bg-slate-900'} ${actionKind === 'destroy' ? '' : compactCardBody ? 'shadow-[0_16px_34px_rgba(0,0,0,0.42)]' : tone.cardRing}`
         : 'relative h-[164px] w-[164px] rounded-[28px]'}
       initial={{ opacity: 0, scale: 0.82, rotate: 0, y: 12 }}
       animate={targetMotion}
@@ -462,6 +797,7 @@ function TargetImpact({
         <>
           <motion.div
             className="absolute inset-0 overflow-hidden rounded-lg"
+            style={{ visibility: actionKind === 'destroy' && hideDestroyedCard ? 'hidden' : 'visible' }}
             animate={actionKind === 'destroy'
               ? hideDestroyedCard ? {
                 opacity: 0,
@@ -475,7 +811,7 @@ function TargetImpact({
               : { opacity: 1, scale: 1, filter: 'brightness(1)' }}
             transition={actionKind === 'destroy'
               ? hideDestroyedCard
-                ? { duration: 0.08, ease: 'easeOut' }
+                ? { duration: 0.04, ease: 'linear' }
                 : { duration: 1.42, delay: 0.72, times: [0, 0.38, 0.78, 1], ease: 'easeOut' }
               : { duration: 0.2 }}
           >
@@ -501,21 +837,10 @@ function TargetImpact({
                 ? `${shatterImageSource.url}|${shatterImageSource.bgSize}|${shatterImageSource.bgPosition}`
                 : 'no-shatter-source'}
               shatterImageSource={shatterImageSource}
+              fallbackLabel={resolvedTargetName}
               onShatterStart={() => setHideDestroyedCard(true)}
             />
           )}
-        </>
-      )}
-
-      {actionKind === 'destroy' && (
-        <>
-          <motion.div
-            className="absolute inset-[-14px] rounded-[24px] bg-[radial-gradient(circle,rgba(255,255,255,0.11)_0%,rgba(248,113,113,0.18)_36%,rgba(15,23,42,0.20)_70%,transparent_100%)]"
-            initial={{ opacity: 0, scale: 0.72 }}
-            animate={{ opacity: [0, 0.12, 0.46, 0.38, 0], scale: [0.72, 1.02, 1.08, 1.02, 0.98] }}
-            transition={{ duration: 1.6, delay: 0.56, times: [0, 0.16, 0.36, 0.76, 1], ease: 'easeOut' }}
-            data-testid="smashup-triggered-fx-destroy-wash"
-          />
         </>
       )}
 
@@ -547,8 +872,8 @@ function TargetImpact({
 /**
  * 大杀四方能力触发动效。
  *
- * 视觉语法：来源卡牌先醒目抬起，能量沿轨迹打到目标，目标对象在冲击帧发生
- * 消灭/增益/得分等可见变化。文字只保留对象名，不承担解释效果的职责。
+ * 视觉语法：来源卡牌缩放表示能力生效，直线表示本次选择的目标，
+ * 目标卡牌两块分裂表示销毁。文字只保留对象名，不承担解释效果的职责。
  */
 export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
   const stableComplete = useStableComplete(onComplete);
@@ -573,14 +898,17 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
 
   const impactFired = useRef(false);
   useEffect(() => {
+    const impactDelayMs = actionKind === 'destroy'
+      ? Math.min(980, totalDurationMs * 0.36)
+      : Math.min(1350, totalDurationMs * 0.42);
     const timer = window.setTimeout(() => {
       if (!impactFired.current) {
         impactFired.current = true;
         onImpact();
       }
-    }, Math.min(1350, totalDurationMs * 0.42));
+    }, impactDelayMs);
     return () => window.clearTimeout(timer);
-  }, [onImpact, totalDurationMs]);
+  }, [actionKind, onImpact, totalDurationMs]);
 
   useEffect(() => {
     if (!shouldRender) return;
@@ -618,15 +946,15 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
   const renderTargetCardBody = !explicitTargetPosition || actionKind === 'destroy';
   const renderTargetLabel = !explicitTargetPosition;
   const compactTargetCardBody = !!explicitTargetPosition;
-  const impactDelayS = Math.min(1.35, totalDurationS * 0.42);
+  const impactDelayS = actionKind === 'destroy'
+    ? Math.min(0.96, totalDurationS * 0.36)
+    : Math.min(1.35, totalDurationS * 0.42);
 
   return (
     <>
       <AbilityArcCanvas
         sourcePos={sourcePos}
         targetPos={targetPos}
-        tone={tone}
-        actionKind={actionKind}
         totalDurationS={totalDurationS}
       />
 
@@ -670,14 +998,16 @@ export const SmashUpAbilityTriggeredEffect: React.FC<FxRendererProps> = ({ event
                 </div>
               )
             )}
-            <motion.div
-              className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-amber-400 text-slate-950 shadow-[0_0_22px_rgba(251,191,36,0.82)]"
-              initial={{ scale: 0, rotate: -24 }}
-              animate={{ scale: [0, 1.26, 1], rotate: [-24, 14, 6] }}
-              transition={{ delay: 0.08, duration: 0.42, ease: [0.34, 1.56, 0.64, 1] }}
-            >
-              <Zap size={18} fill="currentColor" strokeWidth={1.5} />
-            </motion.div>
+            {renderSourceCardBody && (
+              <motion.div
+                className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-amber-400 text-slate-950 shadow-[0_0_22px_rgba(251,191,36,0.82)]"
+                initial={{ scale: 0, rotate: -24 }}
+                animate={{ scale: [0, 1.26, 1], rotate: [-24, 14, 6] }}
+                transition={{ delay: 0.08, duration: 0.42, ease: [0.34, 1.56, 0.64, 1] }}
+              >
+                <Zap size={18} fill="currentColor" strokeWidth={1.5} />
+              </motion.div>
+            )}
           </div>
           {renderSourceCardBody && (
             <div className="max-w-[150px] truncate rounded-md border border-amber-300/55 bg-slate-950/82 px-2.5 py-1 text-center text-[15px] font-black leading-none text-amber-100 shadow-xl">

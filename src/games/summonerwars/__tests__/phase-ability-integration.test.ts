@@ -11,7 +11,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { PHASE_START_ABILITIES, PHASE_END_ABILITIES } from '../domain/flowHooks';
-import { resolveAbilityEffects, resolveEffect } from '../domain/abilityResolver';
+import { resolveAbilityEffects } from '../domain/abilityResolver';
 import { abilityRegistry } from '../domain/abilities';
 import { SW_EVENTS } from '../domain/types';
 import type { SummonerWarsCore, BoardUnit, UnitCard, GamePhase } from '../domain/types';
@@ -66,7 +66,7 @@ function placeTestUnit(
     owner,
     position: { row, col },
     damage: 0,
-    boosts: 2, // 给充能以满足 ice_shards 等条件
+    boosts: abilityId === 'mogu_burst' ? 3 : 2, // 给充能以满足 ice_shards / mogu_burst 等条件
     hasMoved: false,
     hasAttacked: false,
   };
@@ -96,6 +96,11 @@ function collectPhaseAbilityIds(): { id: string; phase: GamePhase; timing: 'star
 
 describe('阶段触发技能集成测试 - ABILITY_TRIGGERED 事件 payload 完整性', () => {
   const phaseAbilities = collectPhaseAbilityIds();
+  const phaseStartEquivalentSystemConsumers = new Set([
+    // 永恒议会「探寻」来自持续事件，当前由 systems.ts 监听 PHASE_CHANGED 后创建确认/跳过抓牌交互。
+    // 它不走棋盘单位 PHASE_START_ABILITIES，但必须显式登记为等价阶段开始消费链，避免被误判为漏审灰区。
+    'yongheng_search',
+  ]);
 
   it.each(phaseAbilities)(
     '$id（$phase 阶段$timing）的 ABILITY_TRIGGERED 事件必须包含 sourcePosition',
@@ -185,6 +190,26 @@ describe('阶段触发技能集成测试 - ABILITY_TRIGGERED 事件 payload 完�
         }
       }
     }
+  });
+
+  it('所有 onPhaseEnd 技能都必须显式登记到 PHASE_END_ABILITIES', () => {
+    const declared = new Set(Object.values(PHASE_END_ABILITIES).flat());
+    const missing = abilityRegistry.getAll()
+      .filter(def => def.trigger === 'onPhaseEnd')
+      .map(def => def.id)
+      .filter(id => !declared.has(id));
+
+    expect(missing, `onPhaseEnd 技能未接入真实阶段退出链：${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('所有 onPhaseStart 技能都必须登记到 PHASE_START_ABILITIES 或声明等价系统消费链', () => {
+    const declared = new Set(Object.values(PHASE_START_ABILITIES).flat());
+    const missing = abilityRegistry.getAll()
+      .filter(def => def.trigger === 'onPhaseStart')
+      .map(def => def.id)
+      .filter(id => !declared.has(id) && !phaseStartEquivalentSystemConsumers.has(id));
+
+    expect(missing, `onPhaseStart 技能未接入真实阶段进入链或等价系统消费链：${missing.join(', ')}`).toEqual([]);
   });
 });
 

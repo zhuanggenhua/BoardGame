@@ -210,7 +210,9 @@ const expectBggTableAnchors = () => {
     expect(document.querySelector('[data-bgg-zone="vaults-alarms-zone"]')).toBeInTheDocument();
     expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).toBeInTheDocument();
     expect(document.querySelector('[data-bgg-zone="player-tokens"]')).toBeInTheDocument();
-    expect(document.querySelector('[data-bgg-zone="hand-chips"]')).toBeInTheDocument();
+    expect(
+        document.querySelector('[data-bgg-zone="player-current-token"], [data-bgg-zone="player-token"], [data-bgg-zone="hand-chips"]'),
+    ).toBeInTheDocument();
 };
 
 const buildFourPlayerTwoHandFinalRoundCore = () => {
@@ -465,6 +467,24 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveTextContent('board.singleHand');
         expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveTextContent('三条');
         expect(screen.queryByTestId('the-gang-local-hand-bottom-rank')).not.toBeInTheDocument();
+    });
+
+    test('单副手牌自己的当前筹码挂在一副手牌上方', () => {
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const withLocalChip = reduceCommand(startHeistCore(initial), {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 2,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+
+        renderBoardForCore(withLocalChip);
+
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
+        expect(screen.queryByTestId('the-gang-player-chip-strip-0')).not.toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-top-chip-rail').querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
     });
 
     test('手牌调换阶段点击上下真实手牌后才能确认，也可以跳过', () => {

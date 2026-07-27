@@ -467,6 +467,7 @@ function HandCardRows({
                                     playerId={chipOwnerId}
                                     handSlot={row.slot}
                                     variant="attached"
+                                    attachedPlacement={hasSecondaryRows ? 'right' : 'above'}
                                     testId={`${testIdPrefix}-${row.slot}-chip-rail`}
                                 />
                             ) : null}
@@ -1794,6 +1795,7 @@ function HandChipRail({
     playerId,
     handSlot,
     variant,
+    attachedPlacement = 'right',
     showLabel = false,
     showEmpty = false,
     canTakeCurrentChip = false,
@@ -1806,6 +1808,7 @@ function HandChipRail({
     playerId: string;
     handSlot: HandSlot;
     variant: 'attached' | 'player';
+    attachedPlacement?: 'above' | 'right';
     showLabel?: boolean;
     showEmpty?: boolean;
     canTakeCurrentChip?: boolean;
@@ -1837,7 +1840,9 @@ function HandChipRail({
 
     const isAttached = variant === 'attached';
     const chipHolderClass = isAttached
-        ? 'pointer-events-none absolute left-full top-0 z-20 ml-1 flex flex-nowrap items-start justify-start gap-0.5 lg:ml-1.5 lg:gap-1'
+        ? attachedPlacement === 'above'
+            ? 'pointer-events-none absolute left-1/2 top-0 z-20 flex -translate-x-1/2 -translate-y-[calc(100%+0.35rem)] flex-nowrap items-start justify-center gap-0.5 lg:gap-1'
+            : 'pointer-events-none absolute left-full top-0 z-20 ml-1 flex flex-nowrap items-start justify-start gap-0.5 lg:ml-1.5 lg:gap-1'
         : 'flex min-h-7 w-full items-center justify-between gap-1 px-1.5 py-0.5 lg:min-h-8 lg:px-2';
     const chipListClass = isAttached
         ? 'flex flex-nowrap items-center justify-center gap-0.5 lg:gap-1'
@@ -2129,9 +2134,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         : undefined;
     const middleCenterStyle = twoHandChipSelectionLayout
         ? { transform: 'translateY(clamp(1.25rem, 3vh, 1.75rem))' }
-        : !handSwapLayout && core.communityCards.length > 0
-            ? { transform: 'translateY(clamp(1.5rem, 2.6vh, 1.75rem))' }
-            : undefined;
+        : undefined;
 
     const playerNames = buildPlayerDisplayNameMap(
         core.playerIds,

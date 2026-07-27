@@ -80,6 +80,51 @@ test('源站成功时保留响应并标识 server', async () => {
     assert.equal(await response.text(), 'origin-body');
 });
 
+test('版本化媒体资源请求源站时启用边缘缓存', async () => {
+    let fetchOptions;
+    const router = createAssetRouter({
+        fetchImpl: async (_request, options) => {
+            fetchOptions = options;
+            return new Response('image-body', { status: 200 });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/i18n/en/smashup/cards/compressed/vigilantes_pod.webp?v=c98a24a2'),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('X-Asset-Cache-Policy'), 'edge-media; ttl=31536000');
+    assert.equal(fetchOptions.cf.cacheEverything, true);
+    assert.equal(fetchOptions.cf.cacheTtlByStatus['200-299'], 31536000);
+    assert.equal(fetchOptions.cf.cacheTtlByStatus['500-599'], 0);
+});
+
+test('Range 分片请求不启用边缘媒体缓存', async () => {
+    let fetchOptions;
+    const router = createAssetRouter({
+        fetchImpl: async (_request, options) => {
+            fetchOptions = options;
+            return new Response('partial', {
+                status: 206,
+                headers: { 'Content-Range': 'bytes 0-0/10' },
+            });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets.example.test/official/i18n/en/smashup/cards/compressed/vigilantes_pod.webp?v=c98a24a2', {
+            headers: { Range: 'bytes=0-0' },
+        }),
+        createEnv(),
+    );
+
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.has('X-Asset-Cache-Policy'), false);
+    assert.equal(fetchOptions.cf, undefined);
+});
+
 test('源站 404 不再回退对象存储', async () => {
     const router = createAssetRouter({
         fetchImpl: async () => new Response('missing', { status: 404 }),

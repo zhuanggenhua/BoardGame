@@ -135,7 +135,9 @@
       "hauntStatusWin": "达成",
       "completedStamp": "完成",
       "endingNarrationLabel": "结局朗读",
-      "endingSourceStatus": "非原文摘要 / 临时整理"
+      "endingSourceStatus": "非原文摘要 / 临时整理",
+      "endingSourceStatusOfficial": "官方 If You Win 原文 / 正式翻译",
+      "continueToReport": "查看结果报告"
     },
     "hud": {
       "phaseLabel": "阶段",
@@ -242,6 +244,11 @@
       "sicknessExchangeDecline": "拒绝",
       "hauntDustProgressResearchValue": "{{count}}处",
       "hauntDustProgressSicknessValue": "{{count}}枚",
+      "hauntDustProgressOwnSicknessLabel": "你的疾病",
+      "hauntDustProgressOwnSicknessUnknown": "?",
+      "hauntDustProgressPermanentInfectionLabel": "永久感染",
+      "hauntDustProgressPermanentInfectionYes": "是",
+      "hauntDustProgressPermanentInfectionNo": "否",
       "hauntDustProgressExchangeAvailable": "可用",
       "hauntDustProgressExchangeUnavailable": "需同房",
       "selected": "已选",
@@ -423,6 +430,9 @@
       "readerPageAria": "当前页 {{mobile}}，桌面双页 {{desktop}}",
       "readerPrev": "上一页",
       "readerNext": "下一页",
+      "readerContinue": "继续",
+      "cinematicTerminalPrologue": "序章",
+      "cinematicTerminalEnd": "终幕",
       "reader": {
         "prologueLabel": "山屋异象",
         "prologue": "父母过去常拿赤红杰克吓唬孩子：“别在外面待得太晚，不然赤红杰克会来抓你。”\n\n当你们说起这名连环杀手的恶行时，一个同伴的嘴角掠过不自然的笑意，你的脊背顿时发凉。看来，有人曾在天黑后留在外面……揭示作祟的探索者就是叛徒。",
@@ -461,7 +471,12 @@
         "available": "可执行",
         "waiting": "待满足",
         "yes": "已出现",
-        "no": "未出现"
+        "no": "未出现",
+        "setupHandoffLabel": "开局承接",
+        "confirmResearchTokens": "确认研究标记",
+        "confirmMonsterReference": "确认怪物参考卡",
+        "researchTokensReady": "研究标记已备",
+        "setupConfirmed": "开局设置已确认"
       },
       "crimsonJack": {
         "title": "赤红杰克归来",
@@ -517,8 +532,8 @@
           "traitor": "被灰尘控制的探索者要拖慢研究、传播疾病，并让英雄无法安全完成治愈。\n\n如果你是灰尘路线，优先靠近英雄、交换或制造压力，让治愈窗口变得更危险。",
           "endingLabel": "胜负判定",
           "ending": "英雄胜利：完成治愈后，灰尘被压制，幸存者摆脱疾病。\n\n灰尘胜利：疾病彻底吞没探索者，山屋里只剩下灰雾和咳嗽声。",
-          "endingSurvivors": "完成治愈后，灰尘被压制，幸存者终于摆脱了那层钻进骨缝里的灰雾。",
-          "endingTraitor": "疾病彻底吞没了探索者，山屋里只剩下灰雾、咳嗽声，以及不肯散去的低语。"
+          "endingSurvivors": "你把临时做成的注射器扎进手臂，咳嗽很快停了下来。你不再眼前发红，但灰尘颗粒仍在屋内漂浮。最好趁免疫力消退前赶快离开。",
+          "endingTraitor": "狂热病患冲出房屋，在镇上肆虐。尘归尘，土归土。"
         }
       },
       "bloodFromStone": {
@@ -752,6 +767,7 @@
       "exorcismCircle": "驱魔圈",
       "sickness": "疾病标记",
       "researchToken": "研究标记",
+      "researchTokenShort": "研",
       "essence": "本质"
     },
     "players": {

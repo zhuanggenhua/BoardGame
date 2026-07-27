@@ -25491,6 +25491,9 @@ describe('GameTransportServer（离座与重连）', () => {
                 source: 'online-ai-watchdog',
                 autoReportKind: event.incidentKind,
                 status: 'resolved',
+                resolvedMethod: event.incidentKind === 'legal-action-recovered'
+                    ? '系统已自动找到可执行操作并继续推进该 AI 座位，对局没有停在该步骤。'
+                    : '系统已自动推进停滞的 AI 座位，让对局继续进行。',
                 incidentKey: event.trackerKey,
                 gameName: 'dicethrone',
                 clientContext: expect.objectContaining({

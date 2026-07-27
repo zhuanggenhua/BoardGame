@@ -23,6 +23,8 @@
     "customDeckSummoner": "召唤师：{{name}}",
     "editDeck": "编辑牌组",
     "newDeck": "新建牌组",
+    "previousPage": "上一页阵营",
+    "nextPage": "下一页阵营",
     "loadingDecks": "加载牌组中…",
     "loadDeckFailed": "加载牌组失败，请重试"
   },

@@ -247,22 +247,21 @@ const FakeMinionSlot = React.forwardRef<HTMLDivElement, {
     data-testid={`smashup-triggered-preview-minion-${slotKey}`}
     className={`relative isolate h-[136px] w-[96px] shrink-0 rounded-lg border ${color} flex flex-col items-center justify-center overflow-hidden text-[8px] shadow-lg transition-[border-color,box-shadow,transform] ${
       reacting && actionKind === 'destroy'
-        ? 'border-red-200/35 shadow-[0_16px_36px_rgba(15,23,42,0.72)]'
+        ? 'border-red-200/20 shadow-[0_16px_36px_rgba(15,23,42,0.64)]'
         : active
           ? 'border-amber-200/30 shadow-[0_0_18px_rgba(251,191,36,0.16)]'
           : ''
     }`}
     animate={reacting && actionKind === 'destroy'
       ? {
-        opacity: [1, 1, 0.72, 0.2],
-        scale: [1, 1.18, 0.92, 0.58],
-        rotate: [0, -7, 11, 18],
-        y: [0, -12, 10, 34],
+        opacity: [1, 1, 0],
+        scale: [1, 1, 0.98],
+        rotate: [0, 0, 0, 0],
+        y: [0, 0, 0, 0],
         filter: [
           'grayscale(0) brightness(1)',
-          'grayscale(0) brightness(1.35)',
-          'grayscale(0.8) brightness(0.55)',
-          'grayscale(1) brightness(0.22) blur(1.4px)',
+          'grayscale(0) brightness(1)',
+          'grayscale(0.2) brightness(0.74)',
         ],
       }
       : reacting && actionKind === 'buff'
@@ -273,7 +272,9 @@ const FakeMinionSlot = React.forwardRef<HTMLDivElement, {
         }
         : { opacity: 1, scale: 1, rotate: 0, y: 0, filter: 'grayscale(0) brightness(1)' }}
     transition={reacting
-      ? { duration: actionKind === 'destroy' ? 1.9 : 1.05, delay: actionKind === 'destroy' ? 0.9 : 0.84, ease: 'easeOut' }
+      ? actionKind === 'destroy'
+        ? { duration: 0.08, delay: 0.62, times: [0, 1], ease: 'linear' }
+        : { duration: 1.05, delay: 0.84, ease: 'easeOut' }
       : { duration: 0.22, ease: 'easeOut' }}
   >
     <CardPreview
@@ -298,15 +299,18 @@ function getElementCenter(element: HTMLElement | null) {
 }
 
 function hasRenderedCardImage(element: HTMLElement | null) {
-  return Boolean(element?.querySelector('[data-card-atlas-img="true"], img[src]'));
+  if (!element) return false;
+  if (element.querySelector('.atlas-shimmer')) return false;
+  const images = Array.from(element.querySelectorAll<HTMLImageElement>('[data-card-atlas-img="true"], img[src]'));
+  return images.some(img => img.complete && img.naturalWidth > 16 && img.naturalHeight > 16);
 }
 
-function waitForPreviewCardImages(sourceElement: HTMLElement | null, targetElement: HTMLElement | null) {
+function waitForPreviewCardImages(sourceElement: HTMLElement | null, targetElements: Array<HTMLElement | null>) {
   const startedAt = performance.now();
-  const timeoutMs = 3600;
+  const timeoutMs = 12000;
   return new Promise<void>((resolve) => {
     const tick = () => {
-      if (hasRenderedCardImage(sourceElement) && hasRenderedCardImage(targetElement)) {
+      if (hasRenderedCardImage(sourceElement) && targetElements.every(hasRenderedCardImage)) {
         resolve();
         return;
       }
@@ -357,7 +361,7 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
       if (triggerRunRef.current !== runId) return;
       const sourceElement = sourceRef.current;
       const targetElement = targetRefs.current[nextScene.targetSlot] ?? null;
-      await waitForPreviewCardImages(sourceElement, targetElement);
+      await waitForPreviewCardImages(sourceElement, MINION_SLOTS.map((_, index) => targetRefs.current[index] ?? null));
       if (triggerRunRef.current !== runId) return;
       requestAnimationFrame(() => {
         if (triggerRunRef.current !== runId) return;
@@ -444,14 +448,14 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
             className="relative h-[224px] w-[160px] rounded-xl"
             animate={activeKey > 0
               ? {
-                y: [0, -14, -9, -2],
-                scale: [1, 1.08, 1.04, 1.01],
-                rotate: [0, -1.5, 1, 0],
-                filter: ['brightness(1)', 'brightness(1.22)', 'brightness(1.1)', 'brightness(1.04)'],
+                y: [0, -8, -8, -2, 0],
+                scale: [1, 1.18, 1.1, 1.04, 1],
+                rotate: [0, -1.2, 0.8, 0, 0],
+                filter: ['brightness(1)', 'brightness(1.28)', 'brightness(1.16)', 'brightness(1.06)', 'brightness(1)'],
               }
               : { y: 0, scale: 1, rotate: 0, filter: 'brightness(1)' }}
             transition={activeKey > 0
-              ? { duration: 1.45, times: [0, 0.18, 0.62, 1], ease: 'easeOut' }
+              ? { duration: 1.12, times: [0, 0.18, 0.48, 0.78, 1], ease: 'easeOut' }
               : { duration: 0.24, ease: 'easeOut' }}
           >
             <div className="absolute inset-0 overflow-hidden rounded-xl border border-slate-200/25 bg-slate-800 shadow-[0_20px_52px_rgba(0,0,0,0.5)]">
@@ -466,12 +470,10 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
 
         {/* 右侧：模拟基地场景 */}
         <div className="relative flex flex-col items-center gap-1.5">
-          {/* 基地标题 */}
-          <div className="rounded-full border border-slate-700/80 bg-slate-950/70 px-3 py-1 text-[12px] font-bold text-slate-400">
+          <div className="rounded-full bg-slate-950/36 px-3 py-1 text-[12px] font-bold text-slate-500/80">
             {t('devtools.effectPreview.gameplay.ability_triggered.preview.base_title')}
           </div>
-          {/* 随从区 */}
-          <div className="flex gap-3 rounded-2xl border border-slate-700/60 bg-slate-800/58 p-4 shadow-[inset_0_0_36px_rgba(0,0,0,0.28)]">
+          <div className="flex gap-3 p-2">
             {MINION_SLOTS.map((slot, i) => (
               <FakeMinionSlot
                 key={slot.key}

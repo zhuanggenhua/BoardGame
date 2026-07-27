@@ -12,9 +12,10 @@
 
 import { ActionHandlerRegistry } from '../../../engine/primitives/actionRegistry';
 import type { GameEvent } from '../../../engine/types';
-import type { AbilityContext } from './abilityResolver';
+import { getEffectiveLife, type AbilityContext } from './abilityResolver';
 import { SW_EVENTS } from './types';
 import {
+    getAdjacentCells,
     getUnitAt,
     isCellEmpty,
     manhattanDistance,
@@ -147,6 +148,36 @@ swCustomActionRegistry.register('mogu_infection_replace', ({ ctx, timestamp }) =
         timestamp,
     }];
 });
+
+// --- 莫古：玛硕达“腐坏”阶段结束自伤，存活时给相邻友军充能 ---
+swCustomActionRegistry.register('mogu_decay', ({ ctx, timestamp }) => {
+    const events: GameEvent[] = [{
+        type: SW_EVENTS.UNIT_DAMAGED,
+        payload: {
+            position: ctx.sourcePosition,
+            damage: 1,
+            reason: 'mogu_decay',
+            sourceAbilityId: 'mogu_decay',
+            sourcePlayerId: ctx.ownerId,
+        },
+        timestamp,
+    }];
+
+    const survivesDecay = ctx.sourceUnit.damage + 1 < getEffectiveLife(ctx.sourceUnit, ctx.state);
+    if (!survivesDecay) return events;
+
+    const targetPosition = getAdjacentCells(ctx.sourcePosition)
+        .find((position) => getUnitAt(ctx.state, position)?.owner === ctx.ownerId);
+    if (targetPosition) {
+        events.push({
+            type: SW_EVENTS.UNIT_CHARGED,
+            payload: { position: targetPosition, delta: 2, sourceAbilityId: 'mogu_decay' },
+            timestamp,
+        });
+    }
+
+    return events;
+}, { categories: ['damage', 'charge'] });
 
 // --- 莫古：菌袍疫病体“菌化变异”替换自身 ---
 swCustomActionRegistry.register('mogu_fungal_mutation_replace', ({ ctx, timestamp }) => {
