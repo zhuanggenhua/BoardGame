@@ -2051,8 +2051,8 @@ export interface RevealHandEvent extends GameEvent<typeof SU_EVENTS.REVEAL_HAND>
     payload: {
         /** 被查看的玩家（单人或多人） */
         targetPlayerId: string | string[];
-        /** 查看者 */
-        viewerPlayerId: string;
+        /** 查看者（'all' = 所有人，PlayerId = 指定玩家） */
+        viewerPlayerId: string | 'all';
         /** 被展示的卡牌列表 */
         cards: { uid: string; defId: string }[];
         /** 触发展示的玩家（viewerPlayerId='all' 时由此玩家关闭展示） */

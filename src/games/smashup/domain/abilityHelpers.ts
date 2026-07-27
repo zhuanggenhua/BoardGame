@@ -1145,7 +1145,7 @@ export function shuffleBaseDeck(
 /** 生成展示手牌事件 */
 export function revealHand(
     targetPlayerId: PlayerId | PlayerId[],
-    viewerPlayerId: PlayerId,
+    viewerPlayerId: PlayerId | 'all',
     cards: { uid: string; defId: string }[],
     reason: string,
     now: number,
