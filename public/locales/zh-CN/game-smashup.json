@@ -203,6 +203,42 @@
     "mythic_horses_friendship_power_top_title": "友谊之力：是否将这张行动放到牌库顶？",
     "mythic_horses_friendship_power_top_option": "放到牌库顶",
     "mythic_horses_friendship_power_discard_option": "留在弃牌堆",
+    "diy_clowns_banana_peel_title": "香蕉皮：选择来源基地",
+    "diy_clowns_banana_peel_minions_title": "香蕉皮：选择至多两个要移动的己方随从",
+    "diy_clowns_banana_peel_base_title": "香蕉皮：选择目标基地",
+    "diy_clowns_clown_car_title": "小丑车：选择要移动到此基地的己方随从",
+    "diy_clowns_clown_pyramid_title": "小丑金字塔：选择获得 +2 力量的己方随从",
+    "diy_clowns_colorful_scarf_title": "彩色围巾：选择要转移的行动",
+    "diy_clowns_confetti_bucket_title": "五彩纸屑桶：选择要返回手牌的仆从",
+    "diy_clowns_pie_in_the_face_title": "馅饼砸脸：选择一个对手弃置行动",
+    "diy_clowns_clown_girl_title": "小丑女：选择要打出的额外行动",
+    "diy_clowns_mcdonald_clown_title": "麦当劳小丑：选择一张展示的行动加入手牌",
+    "base_diy_clowns_circus_tent_title": "马戏篷：是否弃掉展示的行动牌？",
+    "base_diy_clowns_circus_tent_discard_option": "弃掉行动牌",
+    "base_diy_clowns_circus_tent_keep_option": "放回牌库顶",
+    "diy_killers_chacha_choose_minion_title": "恰-恰-恰 哈-哈-哈：选择要移动的己方仆从",
+    "diy_killers_chacha_choose_base_title": "恰-恰-恰 哈-哈-哈：选择目标基地",
+    "diy_killers_cha_cha_cha_ha_ha_ha_followup_followup_title": "选择后续效果",
+    "diy_killers_followup_deck_top_option": "放到牌库顶",
+    "diy_killers_followup_extra_action_option": "打出一个额外行动",
+    "diy_killers_good_boy_title": "他是个好孩子!：选择要回收的仆从",
+    "diy_killers_is_it_over_title": "结束了?：选择要回收并额外打出的附着行动",
+    "diy_killers_signature_search_title": "杀人狂：选择是否抽取签名装备",
+    "diy_killers_oh_no_title": "哦 不！！！：选择获得 +3 力量的己方仆从",
+    "diy_killers_laundry_room_destroy_title": "躲藏在洗衣间：选择是否摧毁附着的仆从",
+    "diy_killers_laundry_room_escape_title": "躲藏在洗衣间：弃置并移动该仆从，或让其面临摧毁",
+    "diy_killers_savage_attack_title": "野蛮攻击：选择要摧毁的印刷力量 3 或以下仆从",
+    "diy_killers_savage_attack_boost_title": "野蛮攻击：选择获得 +3 力量的杀人狂",
+    "diy_killers_machete_title": "大砍刀：选择移动目标基地",
+    "diy_killers_freddy_krueger_destroy_title": "弗莱迪·克鲁格：选择是否摧毁力量 1 或以下的仆从",
+    "diy_killers_clawed_glove_title": "爪子手套：选择获得 -1 力量的仆从",
+    "diy_killers_pinhead_title": "钉子头：转移行动或摧毁带有地狱魔盒的仆从",
+    "diy_killers_leatherface_destroy_title": "人皮脸：选择是否摧毁力量 3 或以下的仆从",
+    "diy_killers_jason_destroy_title": "杰森：选择是否摧毁力量 3 或以下的仆从",
+    "diy_killers_chainsaw_move_title": "电锯：选择是否移动宿主",
+    "diy_killers_michael_myers_title": "麦克尔·麦尔斯：选择是否摧毁印刷力量 3 或以下的仆从",
+    "base_diy_killers_camp_crystal_lake_power_title": "水晶湖营地：选择获得力量的仆从",
+    "base_diy_killers_camp_crystal_lake_destroy_title": "水晶湖营地：选择是否摧毁这里的仆从",
     "reaction_choose_mandatory_title": "选择先结算的强制效果",
     "reaction_choose_optional_title": "选择一个反应动作",
     "titan_reaction_click_prompt": "点击高亮泰坦执行效果，或选择跳过",
@@ -1906,6 +1942,14 @@
     "all_stars": {
       "name": "全明星",
       "description": "从经典派系精选的全明星阵容，专注抽牌、弃牌堆回收和额外出牌。"
+    },
+    "diy_killers": {
+      "name": "杀人狂",
+      "description": "围绕摧毁、临时力量和恐怖片式反击节奏的 DIY 派系；当前已完成静态接入，完整牌效仍在实施中。"
+    },
+    "diy_clowns": {
+      "name": "小丑",
+      "description": "通过弃牌堆额外行动、抽牌和恶作剧式节奏展开的 DIY 派系；当前已完成静态接入，完整牌效仍在实施中。"
     },
     "rock_stars": {
       "name": "摇滚明星",
@@ -9145,6 +9189,150 @@
     "base_ringside": {
       "name": "擂台边",
       "abilityText": "在你打出一个直接影响这里另一位玩家随从的行动后，抽 1 张牌。"
+    },
+    "diy_killers_leatherface": {
+      "name": "人皮脸",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取电锯。\n持续：每回合一次，你放置一枚+1力量指示器到这个仆从身上后，你可以摧毁这里的一个力量3或更少的仆从。"
+    },
+    "diy_killers_freddy_krueger": {
+      "name": "弗莱迪·克鲁格",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取爪子手套。\n天赋：直到你的下个回合开始，这里其他玩家的仆从获得-1力量。你可以摧毁这里的一个力量1或更少的仆从。"
+    },
+    "diy_killers_jason": {
+      "name": "杰森",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取大砍刀。\n持续：每回合一次，这个仆从移动后，你可以摧毁那里的一个力量3或更少的仆从并获得+2力量直到回合结束。"
+    },
+    "diy_killers_michael_myers": {
+      "name": "麦克尔·麦尔斯",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取柯克船长面具。\n特殊：这个基地计分前，你可以摧毁这里的一个印刷力量3或更少的仆从。"
+    },
+    "diy_killers_pinhead": {
+      "name": "钉子头",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取地狱魔盒。\n天赋：转移一个你的行动到另一个仆从身上，或摧毁一个身上有地狱魔盒的仆从。"
+    },
+    "diy_killers_captain_kirk_mask": {
+      "name": "柯克船长面具",
+      "effectText": "打出到你的仆从身上。\n持续：这里的一个或更多仆从被摧毁后，这个仆从获得被摧毁仆从的总力量直到回合结束。"
+    },
+    "diy_killers_savage_attack": {
+      "name": "野蛮攻击",
+      "effectText": "你可以在一个你有仆从的基地摧毁一个印刷力量3或更少的仆从，然后你可以让那里的一个杀人狂获得+3力量直到回合结束。"
+    },
+    "diy_killers_cha_cha_cha_ha_ha_ha": {
+      "name": "恰-恰-恰 哈-哈-哈",
+      "effectText": "移动一个你的仆从。你可以放置这张牌到你的牌库顶代替进入弃牌堆，或打出一个额外的行动。"
+    },
+    "diy_killers_chainsaw": {
+      "name": "电锯",
+      "effectText": "打出到你的仆从身上。\n持续：你的回合开始时，放置一枚+1力量指示器到这个仆从身上。一个仆从被摧毁后，你可以移动这个仆从到那个基地或从那个基地移动到另一个基地。"
+    },
+    "diy_killers_clawed_glove": {
+      "name": "爪子手套",
+      "effectText": "打出到你的仆从身上。\n天赋：这里的一个仆从获得-1力量直到你的下个回合开始。\n持续：这里的一个或更多仆从被摧毁后，放置一枚+1力量指示器到这个仆从身上。"
+    },
+    "diy_killers_good_boy": {
+      "name": "他是个好孩子!",
+      "effectText": "从你的弃牌堆放置一个仆从到你的手上，然后打出一个额外的行动。"
+    },
+    "diy_killers_laundry_room": {
+      "name": "躲藏在洗衣间",
+      "effectText": "打出到其他玩家的仆从身上。打出一个额外的行动。\n持续：一个杀人狂打出或移动到这里后，除非它的控制者丢弃一张手牌然后移动这个仆从到一个没有杀人狂的基地，否则你可以摧毁这个仆从。"
+    },
+    "diy_killers_improvised_weapon": {
+      "name": "简易武器",
+      "effectText": "从你的牌库抽一张打出在仆从身上的行动。你可以打出它作为额外的行动；在回合结束时摧毁它。"
+    },
+    "diy_killers_machete": {
+      "name": "大砍刀",
+      "effectText": "打出到你的仆从身上。\n天赋：移动这个仆从到一个有其他玩家仆从的基地。\n持续：这里的一个或更多仆从被摧毁后，你这里的每个仆从获得+1力量直到回合结束。在回合结束时，如果这个仆从本回合摧毁过一个仆从，返回这张牌到你的手上。"
+    },
+    "diy_killers_oh_no": {
+      "name": "哦 不！！！",
+      "effectText": "一个你的仆从获得+3力量直到回合结束。\n特殊：你摧毁其他玩家的仆从后，你可以打出这张牌作为额外的行动。"
+    },
+    "diy_killers_origin_story": {
+      "name": "起源故事",
+      "effectText": "从你的牌库顶抽一个仆从，或如果你没有杀人狂在游戏中，从你的牌库顶抽一个杀人狂。打出一个额外的行动。"
+    },
+    "diy_killers_hell_puzzle_box": {
+      "name": "地狱魔盒",
+      "effectText": "打出到你的仆从身上。\n持续：如果这个仆从不是你控制，取消它的能力。一个或更多个仆从被摧毁后，抽一张牌。"
+    },
+    "diy_killers_is_it_over": {
+      "name": "结束了?",
+      "effectText": "从你的弃牌堆抽一个打出在仆从身上的行动。你可以打出它作为额外的行动。"
+    },
+    "base_diy_killers_camp_crystal_lake": {
+      "name": "水晶湖营地",
+      "abilityText": "你摧毁这里的一个仆从后，这里的一个仆从获得被摧毁仆从的总力量直到回合结束。每回合一次，你打出一张牌后，你可以摧毁这里一个力量不大于你在这个基地的牌的数量的仆从。"
+    },
+    "base_diy_killers_nightmare_world": {
+      "name": "梦魇世界",
+      "abilityText": "这个基地计分前，摧毁这里力量最小的仆从。如果有多个力量最小的仆从，摧毁所有这些仆从。"
+    },
+    "diy_clowns_slapstick_clown": {
+      "name": "滑稽小丑",
+      "abilityText": "持续：你可以从你的弃牌堆打出一张标准行动来代替你的通常行动打出，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_mrs_clown": {
+      "name": "小丑夫人",
+      "abilityText": "持续：每回合一次，你打出一个行动后，你可以抽一张牌。"
+    },
+    "diy_clowns_dancing_clown": {
+      "name": "跳舞小丑",
+      "abilityText": "天赋：如果你的弃牌堆有至少两个标准行动，随机选择它们中的一个，你可以打出它作为额外的行动，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_mcdonald_clown": {
+      "name": "麦当劳小丑",
+      "abilityText": "展示你牌库顶的牌直到展示出两张行动。抽取一张然后丢弃另一张。重洗剩下的进你的牌库。"
+    },
+    "diy_clowns_silent_clown": {
+      "name": "沉默小丑",
+      "abilityText": "如果你这回合还未打出过行动，你可以选择你弃牌堆中的一张标准行动，打出它作为额外的行动，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_clown_girl": {
+      "name": "小丑女",
+      "abilityText": "你可以搜索你的牌库来寻找一张行动牌，然后丢弃它。"
+    },
+    "diy_clowns_banana_peel": {
+      "name": "香蕉皮",
+      "effectText": "移动至多两个你的仆从从一个基地到另一个基地。如果这张牌是从弃牌堆打出的，你可以打出一个额外的行动。"
+    },
+    "diy_clowns_clown_car": {
+      "name": "小丑车",
+      "effectText": "从你的弃牌堆重洗至多两张牌到你的牌库。如果这张牌是从弃牌堆打出的，你可以打出一个额外的行动。"
+    },
+    "diy_clowns_jack_in_the_box": {
+      "name": "惊吓盒",
+      "effectText": "打出一个力量3或更少的额外仆从。如果这张牌是从弃牌堆打出的，你能打出的仆从力量改为4或更少。"
+    },
+    "diy_clowns_clown_pyramid": {
+      "name": "小丑金字塔",
+      "effectText": "这个基地上的每个你的仆从让你这里的一个仆从获得+1力量直到回合结束。你可以打出一个额外的行动。"
+    },
+    "diy_clowns_colorful_scarf": {
+      "name": "彩色围巾",
+      "effectText": "抽两张牌。如果这张牌是从弃牌堆打出的，你可以丢弃一张牌来额外抽一张牌。"
+    },
+    "diy_clowns_confetti_bucket": {
+      "name": "五彩纸屑桶",
+      "effectText": "丢弃至多四张手牌，然后抽取等量的牌。"
+    },
+    "diy_clowns_juggling": {
+      "name": "杂耍",
+      "effectText": "每个玩家查看他牌库顶的三张牌，丢弃其中一张行动或展示它们证明没有行动，然后以相同的顺序返回它们。"
+    },
+    "diy_clowns_pie_in_the_face": {
+      "name": "馅饼砸脸",
+      "effectText": "一个你的仆从获得+2力量直到回合结束。如果这张牌是从弃牌堆打出的，改为这个仆从获得+4力量代替。"
+    },
+    "base_diy_clowns_clown_academy": {
+      "name": "小丑学院",
+      "abilityText": "每回合你第一次打出仆从到这里后，你可以从你的弃牌堆随机放置一张标准行动到你的手上。"
+    },
+    "base_diy_clowns_circus_tent": {
+      "name": "马戏篷",
+      "abilityText": "你打出一个仆从到这里后，展示你牌库顶的牌。如果它是行动牌你可以丢弃它，否则返回它。"
     },
     "base_the_squared_circle": {
       "name": "方形擂台",

@@ -432,6 +432,7 @@ export function resolvePendingActionExecution(
             baseIndex,
             targetBaseIndex: pending.targetBaseIndex,
             targetMinionUid: pending.targetMinionUid,
+            fromDiscard: pending.fromDiscard === true,
             random,
             now,
         };

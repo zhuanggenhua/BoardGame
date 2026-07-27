@@ -60,6 +60,10 @@ export const SMASHUP_ATLAS_IDS = {
     INTERNATIONAL_INCIDENT_BASES: 'smashup:international-incident-bases',
     WHAT_WERE_WE_THINKING_CARDS: 'smashup:what-were-we-thinking-cards',
     WHAT_WERE_WE_THINKING_BASES: 'smashup:what-were-we-thinking-bases',
+    DIY_KILLERS_CARDS: 'smashup:diy-killers-cards',
+    DIY_KILLERS_BASES: 'smashup:diy-killers-bases',
+    DIY_CLOWNS_CARDS: 'smashup:diy-clowns-cards',
+    DIY_CLOWNS_BASES: 'smashup:diy-clowns-bases',
     HULUWAWA_CARDS: 'smashup:huluwawa-cards',
     PALADIN_CARDS: 'smashup:paladin-cards',
     HULUWAWA_TITAN: 'smashup:huluwawa-titan',
@@ -141,6 +145,8 @@ export const SMASHUP_FACTION_IDS = {
     TRUCKERS: 'truckers',
     DISCO_DANCERS: 'disco_dancers',
     HULUWAWA: 'huluwawa',
+    DIY_KILLERS: 'diy_killers',
+    DIY_CLOWNS: 'diy_clowns',
     KITTY_CATS: 'kitty_cats',
     KITTY_CATS_POD: 'kitty_cats_pod',
     MYTHIC_HORSES: 'mythic_horses',
@@ -263,6 +269,8 @@ export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>();
 export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.HULUWAWA,
     SMASHUP_FACTION_IDS.PALADINS,
+    SMASHUP_FACTION_IDS.DIY_KILLERS,
+    SMASHUP_FACTION_IDS.DIY_CLOWNS,
 ]);
 
 export function isSmashUpDiyFaction(factionId: string | null | undefined): boolean {
@@ -321,6 +329,8 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.TRUCKERS]: '卡车车神',
     [SMASHUP_FACTION_IDS.DISCO_DANCERS]: '迪厅舞王',
     [SMASHUP_FACTION_IDS.HULUWAWA]: '葫芦娃',
+    [SMASHUP_FACTION_IDS.DIY_KILLERS]: '杀人狂',
+    [SMASHUP_FACTION_IDS.DIY_CLOWNS]: '小丑',
     [SMASHUP_FACTION_IDS.KITTY_CATS]: '猫咪',
     [SMASHUP_FACTION_IDS.KITTY_CATS_POD]: '猫咪 (POD版)',
     [SMASHUP_FACTION_IDS.MYTHIC_HORSES]: '小马',

@@ -13758,6 +13758,78 @@
           "mime": "image/webp"
         }
       }
+    },
+    "zh-CN/smashup/base/compressed/diy_clowns_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "5918fb7166b393388cdbe8614ac2f7812e5a6e390c49f281af189e3ed2a14851",
+          "bytes": 487418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/diy_killers_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "7285f0152fee32a672611af3df22dc648b76df9ccd0694e6aae17941237fb08b",
+          "bytes": 482650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/diy_clowns_bases": {
+      "variants": {
+        "png": {
+          "sha256": "fce66e379485e0a3dd6d21468c40218677a13bdd697d7c37e356506e80b732b8",
+          "bytes": 2871712,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/diy_killers_bases": {
+      "variants": {
+        "png": {
+          "sha256": "d7425df575c029fa85c4bdf2727c5c709dc672435a8cba8a19fac82d429a176e",
+          "bytes": 2862123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/diy_clowns": {
+      "variants": {
+        "webp": {
+          "sha256": "c2888bb67bd2478fddd11278b8b677f753405a6abbff2570889172864dab5f75",
+          "bytes": 4664140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/diy_killers": {
+      "variants": {
+        "webp": {
+          "sha256": "21d750563dc60f8db69f4c50da5b387df0c4ad723d7c4259a1abf0dc5b641c73",
+          "bytes": 4870398,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/diy_clowns": {
+      "variants": {
+        "png": {
+          "sha256": "1a5a08ea1b67781e17c6e14c21db6dd2c946cf297faacd77778a5fd6a9e947b3",
+          "bytes": 23916659,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/diy_killers": {
+      "variants": {
+        "png": {
+          "sha256": "8dc9089f8230d725ed7f44a25074ba3c8ee65e3d5df5891af64dcd26283e3186",
+          "bytes": 26436318,
+          "mime": "image/png"
+        }
+      }
     }
   },
   "id": "i18n",
