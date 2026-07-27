@@ -69,6 +69,11 @@ import { KITTY_CATS_CARDS } from './factions/kitty_cats';
 import { KITTY_CATS_POD_CARDS } from './factions/kitty_cats_pod';
 import { MYTHIC_HORSES_CARDS } from './factions/mythic_horses';
 import { MYTHIC_HORSES_POD_CARDS } from './factions/mythic_horses_pod';
+import { NEW_GOBLINS_BASES, NEW_GOBLINS_CARDS } from './factions/new_goblins';
+import {
+    NEW_ROUND_TABLE_KNIGHTS_BASES,
+    NEW_ROUND_TABLE_KNIGHTS_CARDS,
+} from './factions/new_round_table_knights';
 import { PALADIN_CARDS } from './factions/paladins';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { PRINCESSES_POD_CARDS } from './factions/princesses_pod';
@@ -247,6 +252,8 @@ registerCards(KITTY_CATS_CARDS);
 registerCards(KITTY_CATS_POD_CARDS);
 registerCards(MYTHIC_HORSES_CARDS);
 registerCards(MYTHIC_HORSES_POD_CARDS);
+registerCards(NEW_ROUND_TABLE_KNIGHTS_CARDS);
+registerCards(NEW_GOBLINS_CARDS);
 registerCards(PALADIN_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(PRINCESSES_POD_CARDS);
@@ -1381,6 +1388,8 @@ registerBases(ANANSI_TALES_BASES);
 registerBases(GRIMMS_FAIRY_TALES_BASES);
 registerBases(RUSSIAN_FAIRY_TALES_BASES);
 registerBases(ANCIENT_INCAS_BASES);
+registerBases(NEW_ROUND_TABLE_KNIGHTS_BASES);
+registerBases(NEW_GOBLINS_BASES);
 
 registerPodBaseSkeletons();
 

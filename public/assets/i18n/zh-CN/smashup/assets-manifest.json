@@ -103,6 +103,24 @@
         }
       }
     },
+    "base/compressed/new_goblins_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "59d5772ad03db29b90fd0f995487b1ac3eba88c4482a82f14829c67cbcb2d7c3",
+          "bytes": 421638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/new_round_table_knights_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "1f74fe28a409ba144b2820861c8185511ae6a21907a4679bab43d9272fdb8f16",
+          "bytes": 443064,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/compressed/paladin_bases": {
       "variants": {
         "webp": {
@@ -171,6 +189,24 @@
         "png": {
           "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
           "bytes": 30275972,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/new_goblins_bases": {
+      "variants": {
+        "png": {
+          "sha256": "de25f5e7efe8e7edc26d0ba3a23b1ab4803cfbc3c21f4674d3de16a9e541a257",
+          "bytes": 2778756,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/new_round_table_knights_bases": {
+      "variants": {
+        "png": {
+          "sha256": "3afd85778effdf3442c1ce2b6a9269b709269d486c31c5aa6c23d7299beaa99a",
+          "bytes": 2679470,
           "mime": "image/png"
         }
       }
@@ -427,6 +463,24 @@
         }
       }
     },
+    "cards/compressed/new_goblins": {
+      "variants": {
+        "webp": {
+          "sha256": "f8c7fa5279f96638a307a82dcd524d6534018dead71b2bd87d9ffcdfb0c5182f",
+          "bytes": 4029816,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/new_round_table_knights": {
+      "variants": {
+        "webp": {
+          "sha256": "f8ee8f98e823c96792138ee787b94daa74ddb019c3052054490fd7ef70d6fc03",
+          "bytes": 5265048,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/paladin_cards": {
       "variants": {
         "webp": {
@@ -603,6 +657,24 @@
         "png": {
           "sha256": "1d0e1bdfc79005ae2fdac697c4d5ac47f5b00bb219e707c1e44258a4986d95e1",
           "bytes": 36067834,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/new_goblins": {
+      "variants": {
+        "png": {
+          "sha256": "8136163f1799bb828e1c0c06b3e7a78f2f1e87858e94aff0e57ef138fef601b6",
+          "bytes": 18409367,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/new_round_table_knights": {
+      "variants": {
+        "png": {
+          "sha256": "ae94250d829759bc88863b8099fcf48f710bfcc2f66a15029e956acfcddb0cc9",
+          "bytes": 30567071,
           "mime": "image/png"
         }
       }
