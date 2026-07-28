@@ -1360,20 +1360,7 @@ export function getEffectiveBreakpoint(
     return Math.max(0, baseDef.breakpoint + total + tempDelta);
 }
 
-/**
- * 获取当前计分阶段中 eligible 的基地索引列表（单一查询入口）。
- *
- * 规则（Wiki Phase 3 Step 4）：一旦基地在进入 scoreBases 阶段时达到 breakpoint，
- * 即使 Me First! 响应窗口中力量被降低到 breakpoint 以下，该基地仍然必定计分。
- *
- * - 如果 `core.scoringEligibleBaseIndices` 存在（进入阶段时锁定），直接返回。
- * - 否则实时计算（正常流程不应走到这里，仅作为安全回退）。
- */
-export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
-    if (Array.isArray(state.scoringEligibleBaseIndices)) {
-        return normalizeScoringEligibleBaseIndices(state.scoringEligibleBaseIndices);
-    }
-    // 回退：实时计算
+export function getRealtimeScoringEligibleBaseIndices(state: SmashUpCore): number[] {
     const indices: number[] = [];
     for (let i = 0; i < state.bases.length; i++) {
         const base = state.bases[i];
@@ -1386,6 +1373,19 @@ export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
         }
     }
     return normalizeScoringEligibleBaseIndices(indices);
+}
+
+/**
+ * 获取当前可计分基地索引。
+ *
+ * `scoringEligibleBaseIndices` 只用于当前已选择基地/旧快照兼容；正常计分链应使用
+ * getRealtimeScoringEligibleBaseIndices 重新检查桌面，而不是锁定阶段开始时的全部基地。
+ */
+export function getScoringEligibleBaseIndices(state: SmashUpCore): number[] {
+    if (Array.isArray(state.scoringEligibleBaseIndices)) {
+        return normalizeScoringEligibleBaseIndices(state.scoringEligibleBaseIndices);
+    }
+    return getRealtimeScoringEligibleBaseIndices(state);
 }
 
 export function normalizeScoringEligibleBaseIndices(indices: readonly number[]): number[] {
