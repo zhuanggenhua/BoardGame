@@ -4713,6 +4713,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const beforeChoiceCore = await readCurrentCore(page);
     expect(beforeChoiceCore.pendingEventChoice?.sourceTitle).toBe("一抹鲜红");
     expect(beforeChoiceCore.currentExplorer.traits.speed).toBe(4);
+    const speedTrackPositionBefore =
+      beforeChoiceCore.currentExplorer.traitTracks.speed.position;
     await saveScreenshot(
       page,
       `${screenshotBase}-03-事件牌翻出可选择作祟检定.jpg`,
@@ -4779,7 +4781,12 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(settledRollTotal).toBeLessThan(
       afterSettleCore.scenarioRuntime.hauntRollThreshold,
     );
-    expect(afterSettleCore.currentExplorer.traits.speed).toBe(5);
+    expect(afterSettleCore.currentExplorer.traitTracks.speed.position).toBe(
+      speedTrackPositionBefore + 1,
+    );
+    expect(afterSettleCore.currentExplorerTraits.speed).toBe(
+      afterSettleCore.currentExplorer.traits.speed,
+    );
     expect(afterSettleCore.recentRoll?.sourceTitle).toBe("一抹鲜红");
     await saveScreenshot(page, `${screenshotBase}-05-速度奖励结算结果可见.jpg`);
 
@@ -5017,7 +5024,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
       0,
     );
-    await expect(page.getByTestId("betrayal-action-explore")).toBeDisabled();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toHaveCount(0);
@@ -6349,7 +6355,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
       0,
     );
-    await expect(page.getByTestId("betrayal-action-explore")).toBeDisabled();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toHaveCount(0);
@@ -6360,6 +6365,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(closedCore.turnEndedByDiscovery).toBe(true);
     await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await saveScreenshot(page, `${screenshotBase}-06-关闭后.jpg`);
 
     await page.getByTestId("betrayal-action-endTurn").click();
@@ -6523,17 +6529,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
+    const spiderDiscoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(
-      page.getByTestId("betrayal-discovery-panel"),
-      "PC 蜘蛛点选最终房间后不应再打开只含返回牌桌的结果特写",
-    ).toHaveCount(0);
+      spiderDiscoveryPanel,
+      "PC 蜘蛛点选最终房间后应进入事件效果确认队列，而不是直接丢失结算承接",
+    ).toBeVisible();
+    await expect(spiderDiscoveryPanel).toHaveAttribute(
+      "aria-label",
+      /事件牌 蜘蛛！/,
+    );
+    await expect(spiderDiscoveryPanel).toContainText("事件效果");
+    await expect(spiderDiscoveryPanel).toContainText("确认 1/1");
     await expect(
-      page.getByTestId("betrayal-discovery-continue"),
-      "PC 蜘蛛点选最终房间后不应要求再点一次返回牌桌",
-    ).toHaveCount(0);
+      spiderDiscoveryPanel.getByTestId("betrayal-discovery-continue"),
+    ).toHaveAttribute("data-pending-card-resolution-step", "1/1");
+    await saveScreenshot(page, `${screenshotBase}-05-点击门厅后事件效果确认.jpg`);
+    await dismissDiscoveryPanel(page);
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-05-点击门厅后直接回牌桌.jpg`);
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    await saveScreenshot(page, `${screenshotBase}-06-关闭后回牌桌.jpg`);
     const pcSettledCore = await readCurrentCore(page);
     expect(pcSettledCore.pendingEventChoice).toBeNull();
     expect(

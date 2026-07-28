@@ -25301,6 +25301,127 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
+    it('online AI watchdog 的同一合法动作连续命令失败达到上限后，不应无限重试同一命令', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-legal-action-failure-repeat-limit', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'playCards',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'watchdog-smashup-play-action-failure',
+                source: 'local-ai',
+                action: {
+                    actionId: 'play-action:winter-surprise',
+                    kind: 'play-action',
+                    label: '打出 冬季惊喜',
+                    commands: [{ type: 'su:play_action', payload: { cardUid: 'winter-surprise' } }],
+                },
+            },
+        });
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [createEngineConfigWithId('smashup')],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+                onlineAiRecoveryFailureReportThreshold: 1,
+                onlineAiRecoveryRepeatedAttemptLimit: 3,
+                onlineAiFeedbackReporter: feedbackReporter,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                runOnlineAiRecoveryTick: () => Promise<void>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                    options?: { suppressBroadcast?: boolean },
+                ) => Promise<boolean>;
+            };
+
+            const match = await serverInternal.loadMatch('match-watchdog-legal-action-failure-repeat-limit');
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
+                expect(playerID).toBe('1');
+                if (commandType === 'su:play_action') {
+                    expect(payload).toEqual({ cardUid: 'winter-surprise' });
+                    activeMatch.lastCommandFailureReason = 'pipeline_error: winter surprise event shape';
+                    return false;
+                }
+                if (commandType === 'ADVANCE_PHASE') {
+                    activeMatch.state = {
+                        ...activeMatch.state,
+                        core: {
+                            ...activeMatch.state.core,
+                            activePlayerId: '0',
+                            currentPlayerIndex: 0,
+                        },
+                        sys: {
+                            ...activeMatch.state.sys,
+                            phase: 'draw',
+                            turnNumber: 5,
+                            eventStream: {
+                                ...(activeMatch.state.sys?.eventStream ?? {}),
+                                nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                            },
+                        },
+                    };
+                    return true;
+                }
+                throw new Error(`Unexpected command: ${commandType}`);
+            });
+
+            const runRecoveryCycle = async (): Promise<void> => {
+                await serverInternal.runOnlineAiRecoveryTick();
+                await serverInternal.runOnlineAiRecoveryTick();
+                await nextTick();
+                await nextTick();
+            };
+
+            await runRecoveryCycle();
+            await runRecoveryCycle();
+            await runRecoveryCycle();
+            await runRecoveryCycle();
+
+            expect(executeSpy.mock.calls.map(([, , commandType]) => commandType)).toEqual([
+                'su:play_action',
+                'su:play_action',
+                'su:play_action',
+                'ADVANCE_PHASE',
+            ]);
+            expect(match.state.sys.phase).toBe('draw');
+            expect(match.state.core.activePlayerId).toBe('0');
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-legal-action-failure-repeat-limit',
+                incidentKind: 'repeated-recovery-force-unblocked',
+                reason: expect.stringContaining('active-turn:repeat-limit-force-unblock:3/3:commands=ADVANCE_PHASE'),
+            }));
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
     it('online AI watchdog 在 SmashUp playCards 的合法动作无进展时，应 fallback 到 ADVANCE_PHASE 收口', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

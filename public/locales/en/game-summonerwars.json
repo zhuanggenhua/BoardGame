@@ -669,6 +669,7 @@
       "mindCapture": "Mind Capture: choose control or damage",
       "iceShards": "Ice Shards: resolves automatically at Attack phase start",
       "feedBeast": "Feed Beast: choose a victim or self-destruct",
+      "moguDecayTarget": "Decay: choose an adjacent friendly unit",
       "moguParasite": "Parasite: choose charge spending or damage",
       "huijinCallGuardsTarget": "Call Guards: choose a friendly common unit on the board",
       "huijinCallGuardsPosition": "Call Guards: choose an adjacent space",

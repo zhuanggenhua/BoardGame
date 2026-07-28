@@ -258,6 +258,40 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(afterSpiral.players['0'].discard).toEqual([]);
     });
 
+    it('“冬季惊喜”从弃牌堆取回角色修正牌后给出额外行动并回牌库底', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('winter-surprise', 'nightmare_before_christmas_winter_surprise', 'action', '0')],
+                    deck: [makeCard('deck-a', 'aladdin_wish', 'action', '0')],
+                    discard: [makeCard('discard-mod', 'nightmare_before_christmas_monster_garland', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('nightmare_before_christmas_winter_surprise', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'winter-surprise',
+            defId: 'nightmare_before_christmas_winter_surprise',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 45,
+        });
+
+        expect(result.events.map(event => event.type)).toEqual([
+            SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
+            SU_EVENTS.LIMIT_MODIFIED,
+            SU_EVENTS.CARD_TO_DECK_BOTTOM,
+        ]);
+        const after = applyEvents(core, result.events);
+        expect(after.players['0'].hand.map(card => card.uid).sort()).toEqual(['discard-mod']);
+        expect(after.players['0'].deck.map(card => card.uid)).toEqual(['deck-a', 'winter-surprise']);
+        expect(after.players['0'].discard).toEqual([]);
+    });
+
     it('“不断的惊喜”把最多两张角色牌从弃牌堆洗入牌库', () => {
         const core = makeState({
             players: {

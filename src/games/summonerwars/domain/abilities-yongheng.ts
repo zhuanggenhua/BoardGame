@@ -1,8 +1,9 @@
 /**
  * 召唤师战争 - 永恒议会技能定义
  *
- * 本文件先登记永恒议会所有卡面能力 ID 与触发时机。
- * 具体机制按录入合同逐项接入，未接执行器的能力保留 effects: []，避免伪装为已实现。
+ * 本文件登记永恒议会所有卡面能力 ID 与触发时机。effects: [] 不等于一律未实现：
+ * 部分被动/旁路消费能力由 systems、yonghengMechanics、abilityResolver 等运行时链路落地。
+ * 新增空 effects 能力时必须在 entity-chain-integrity.test.ts 的证据映射中分类。
  */
 
 import type { AbilityDef } from './abilities';

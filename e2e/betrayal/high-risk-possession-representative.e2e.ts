@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { resolve } from 'path';
+import { type BetrayalCore } from '../../src/games/betrayal/game';
 import { BETRAYAL_DISCOVERY_POOLS } from '../../src/games/betrayal/scenarioConfig';
 import {
     createFirstScenarioHauntCore,
@@ -20,9 +21,18 @@ import {
     waitForPhysicalDiceSettled,
 } from './betrayalTestHelpers';
 
-const EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-high-risk-possession-representatives');
-const ARMORY_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/01-器械库-发现砍刀并进入持有区.png`;
-const ARMORY_INVENTORY_SCREENSHOT = `${EVIDENCE_DIR}/02-器械库-关闭发现后持有区砍刀.png`;
+const ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-item-discovery-confirmation');
+const ARMORY_PLACEMENT_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/01-器械库-确认房间朝向.jpg`;
+const ARMORY_DISCOVERY_FIRST_STEP_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/02-器械库-发现确认1-房间获得武器.jpg`;
+const ARMORY_DISCOVERY_SECOND_STEP_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/03-器械库-发现确认2-展示后掩埋.jpg`;
+const ARMORY_DISCOVERY_THIRD_STEP_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/04-器械库-发现确认3-符号抽牌入持有区.jpg`;
+const ARMORY_INVENTORY_SCREENSHOT = `${ITEM_DISCOVERY_CONFIRMATION_EVIDENCE_DIR}/05-器械库-确认完毕回牌桌持有区.jpg`;
+const ORDINARY_ITEM_DISCOVERY_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-ordinary-item-discovery-confirmation');
+const ORDINARY_ITEM_PLACEMENT_SCREENSHOT = `${ORDINARY_ITEM_DISCOVERY_EVIDENCE_DIR}/01-厨房-确认房间朝向.jpg`;
+const ORDINARY_ITEM_DISCOVERY_SCREENSHOT = `${ORDINARY_ITEM_DISCOVERY_EVIDENCE_DIR}/02-厨房-物品发现确认.jpg`;
+const ORDINARY_ITEM_INVENTORY_SCREENSHOT = `${ORDINARY_ITEM_DISCOVERY_EVIDENCE_DIR}/03-厨房-确认完毕回牌桌持有区.jpg`;
+const ORDINARY_ITEM_MATRIX_FIRST_CARD_SCREENSHOT = `${ORDINARY_ITEM_DISCOVERY_EVIDENCE_DIR}/04-当前12张物品矩阵-首张发现确认.jpg`;
+const ORDINARY_ITEM_MATRIX_DONE_SCREENSHOT = `${ORDINARY_ITEM_DISCOVERY_EVIDENCE_DIR}/05-当前12张物品矩阵-末张确认后持有区.jpg`;
 const SKULL_FULL_CHAIN_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-头骨死亡保护完整链路');
 const SKULL_PREVENT_READY_SCREENSHOT = `${SKULL_FULL_CHAIN_EVIDENCE_DIR}/01-头骨阻止死亡-攻击前牌桌可操作.jpg`;
 const SKULL_PREVENT_TARGET_SCREENSHOT = `${SKULL_FULL_CHAIN_EVIDENCE_DIR}/02-头骨阻止死亡-叛徒目标高亮.jpg`;
@@ -47,6 +57,11 @@ const SKULL_DEATH_RANDOM_QUEUE = [
     0.01, 0.99, 0.99, 0.99, 0.99, 0.01, 0.01, 0.01,
 ];
 
+type ItemDiscoveryCard = BetrayalCore['possessionOrderByKind']['item'][number];
+
+const CURRENT_ITEM_DISCOVERY_CARDS: ItemDiscoveryCard[] =
+    BETRAYAL_DISCOVERY_POOLS.possessions.item.map((item) => ({ ...item }));
+
 const openBetrayalPage = async (page: Page, context: Parameters<typeof initBetrayalContext>[0], label: string) => {
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(page, label);
@@ -54,33 +69,6 @@ const openBetrayalPage = async (page: Page, context: Parameters<typeof initBetra
     await page.goto('/play/betrayal', { waitUntil: 'domcontentloaded' });
     await waitForBetrayalPageReady(page);
     return diagnostics;
-};
-
-const dismissDiscoveryPanelIfVisible = async (page: Page) => {
-    const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
-    if (!await discoveryPanel.isVisible({ timeout: 800 }).catch(() => false)) {
-        return;
-    }
-
-    const blankPoint = await discoveryPanel.evaluate((panel) => {
-        const panelRect = panel.getBoundingClientRect();
-        const content = panel.querySelector('[data-testid="betrayal-discovery-panel-content"]');
-        const contentRect = content?.getBoundingClientRect();
-        const candidates = [
-            { x: panelRect.left + 16, y: panelRect.top + 16 },
-            { x: panelRect.right - 16, y: panelRect.top + 16 },
-            { x: panelRect.left + 16, y: panelRect.bottom - 16 },
-            { x: panelRect.right - 16, y: panelRect.bottom - 16 },
-        ];
-        return candidates.find((point) => !contentRect || (
-            point.x < contentRect.left
-            || point.x > contentRect.right
-            || point.y < contentRect.top
-            || point.y > contentRect.bottom
-        )) ?? { x: panelRect.left + 8, y: panelRect.top + 8 };
-    });
-    await page.mouse.click(blankPoint.x, blankPoint.y);
-    await expect(discoveryPanel).toBeHidden();
 };
 
 const createArmoryDiscoveryCore = () => {
@@ -102,6 +90,98 @@ const createArmoryDiscoveryCore = () => {
     core.currentExplorerInventory = [];
     return core;
 };
+
+const createOrdinaryItemDiscoveryCore = (
+    itemCard: ItemDiscoveryCard =
+        CURRENT_ITEM_DISCOVERY_CARDS.find((card) => card.id === 'flashlight') ??
+        ({ id: 'flashlight', name: '手电筒', kind: 'item' } satisfies ItemDiscoveryCard),
+) => {
+    const core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core.drawOrder = ['item'];
+    core.roomDiscoveryOrderByFloor.ground = [
+        BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'kitchen')!,
+    ];
+    core.possessionOrderByKind.item = [
+        { ...itemCard },
+    ];
+    core.deckCounts.item = core.possessionOrderByKind.item.length;
+    core.currentExplorer = {
+        ...core.currentExplorer,
+        roomId: 'hallway',
+        inventory: [],
+    };
+    core.activeRoomId = 'hallway';
+    core.currentExplorerInventory = [];
+    return core;
+};
+
+type OrdinaryItemDiscoveryState = {
+    latestDiscoveryTitle?: string | null;
+    latestDiscoveryKind?: string | null;
+    currentInventory?: Array<{
+        id?: string;
+        name?: string;
+        kind?: string;
+    }>;
+    pendingSteps?: Array<{
+        stepKind?: string;
+        index?: number;
+        total?: number;
+        cardName?: string;
+    }>;
+    rejected?: { commandType?: string; error?: string } | null;
+};
+
+const readOrdinaryItemDiscoveryState = async (
+    page: Page,
+): Promise<OrdinaryItemDiscoveryState> =>
+    page.evaluate(() => {
+        const holder = window as typeof window & {
+            __BG_TEST_HARNESS__?: {
+                state?: {
+                    get?: () => {
+                        core?: {
+                            currentExplorer?: {
+                                inventory?: Array<{
+                                    id?: string;
+                                    name?: string;
+                                    kind?: string;
+                                }>;
+                            };
+                            latestDiscovery?: {
+                                title?: string;
+                                kind?: string;
+                            } | null;
+                            pendingCardResolutionQueue?: Array<{
+                                stepKind?: string;
+                                index?: number;
+                                total?: number;
+                                cardName?: string;
+                            }>;
+                        };
+                    };
+                };
+            };
+            __BG_LAST_COMMAND_REJECTED__?: { commandType?: string; error?: string } | null;
+        };
+        const core = holder.__BG_TEST_HARNESS__?.state?.get?.()?.core;
+        return {
+            latestDiscoveryTitle: core?.latestDiscovery?.title ?? null,
+            latestDiscoveryKind: core?.latestDiscovery?.kind ?? null,
+            currentInventory: core?.currentExplorer?.inventory?.map((card) => ({
+                id: card.id,
+                name: card.name,
+                kind: card.kind,
+            })) ?? [],
+            pendingSteps: core?.pendingCardResolutionQueue?.map((step) => ({
+                stepKind: step.stepKind,
+                index: step.index,
+                total: step.total,
+                cardName: step.cardName,
+            })) ?? [],
+            rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
+        };
+    });
 
 const createSkullDeathPreventionAttackReadyCore = () => {
     const core = createFirstScenarioHauntCore();
@@ -243,6 +323,134 @@ const exerciseSkullDeathProtectionFromRealAttack = async (
 };
 
 test.describe('山屋惊魂高风险持有物代表链', () => {
+    test('普通物品符号房间发现抽牌：真实页面显示单步获得物品确认', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-ordinary-item-discovery');
+
+        await injectCore(page, createOrdinaryItemDiscoveryCore());
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await page.getByTestId('betrayal-action-explore').click();
+        await page.getByTestId('betrayal-room-ground-north').click();
+
+        const placementPanel = page.getByTestId('betrayal-room-placement-panel');
+        await expect(placementPanel).toBeVisible();
+        await expect(placementPanel).toContainText('厨房');
+        await expect(page.getByTestId('betrayal-room-placement-preview')).toBeVisible();
+        await saveScreenshot(page, ORDINARY_ITEM_PLACEMENT_SCREENSHOT);
+
+        await page.getByTestId('betrayal-room-placement-confirm').click();
+
+        const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+        await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
+        await expect(discoveryPanel).toHaveAttribute('aria-label', /物品牌 手电筒/);
+        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('已加入持有区');
+        await expect(discoveryPanel).toContainText('手电筒');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(1);
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('已加入持有区');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('手电筒');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/1');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到厨房');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('拿到了手电筒');
+        await expect(page.locator('[data-testid="betrayal-inventory-flashlight-0"]')).toBeVisible();
+        await saveScreenshot(page, ORDINARY_ITEM_DISCOVERY_SCREENSHOT);
+
+        await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await expect(discoveryPanel).toHaveCount(0);
+        await expect(page.locator('[data-testid="betrayal-inventory-flashlight-0"]')).toBeVisible();
+        const deckLedger = page.getByTestId('betrayal-deck-resolution-ledger');
+        await expect(deckLedger).toHaveAttribute('data-discovery-kind', 'item');
+        await expect(deckLedger).toHaveAttribute('data-discovery-title', '手电筒');
+        await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(1);
+        await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step').first()).toContainText('手电筒');
+        await saveScreenshot(page, ORDINARY_ITEM_INVENTORY_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-ordinary-item-discovery', diagnostics }]);
+    });
+
+    test('当前12张物品在普通物品符号房间发现时均显示单步确认并进入持有区', async ({ page, context }) => {
+        test.setTimeout(300000);
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-ordinary-item-discovery-matrix');
+
+        for (const [index, itemCard] of CURRENT_ITEM_DISCOVERY_CARDS.entries()) {
+            await injectCore(page, createOrdinaryItemDiscoveryCore(itemCard));
+            await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+            await page.getByTestId('betrayal-action-explore').click();
+            await page.getByTestId('betrayal-room-ground-north').click();
+
+            const placementPanel = page.getByTestId('betrayal-room-placement-panel');
+            await expect(placementPanel, `物品「${itemCard.name}」发现前应先确认厨房朝向`).toBeVisible();
+            await expect(placementPanel).toContainText('厨房');
+            await page.getByTestId('betrayal-room-placement-confirm').click();
+
+            const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+            await expect(discoveryPanel, `物品「${itemCard.name}」应显示发现确认面板`).toBeVisible({
+                timeout: 30000,
+            });
+            await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`物品牌 ${itemCard.name}`));
+            await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('已加入持有区');
+            await expect(discoveryPanel).toContainText(itemCard.name);
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(1);
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText(
+                '已加入持有区',
+            );
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText(
+                itemCard.name,
+            );
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/1');
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
+                'data-pending-card-resolution-step',
+                '1/1',
+            );
+            await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到厨房');
+            await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(`拿到了${itemCard.name}`);
+            await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(itemCard.name);
+            await expect.poll(() => readOrdinaryItemDiscoveryState(page)).toMatchObject({
+                latestDiscoveryTitle: itemCard.name,
+                latestDiscoveryKind: 'item',
+                pendingSteps: [
+                    { stepKind: 'drawn-card', index: 1, total: 1, cardName: itemCard.name },
+                ],
+                rejected: null,
+            });
+
+            if (index === 0) {
+                await saveScreenshot(page, ORDINARY_ITEM_MATRIX_FIRST_CARD_SCREENSHOT);
+            }
+
+            await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+            await expect(discoveryPanel).toHaveCount(0);
+            await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(itemCard.name);
+            const deckLedger = page.getByTestId('betrayal-deck-resolution-ledger');
+            await expect(deckLedger).toHaveAttribute('data-discovery-kind', 'item');
+            await expect(deckLedger).toHaveAttribute('data-discovery-title', itemCard.name);
+            await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(1);
+            await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step').first()).toContainText(
+                itemCard.name,
+            );
+            await expect.poll(async () => {
+                const state = await readOrdinaryItemDiscoveryState(page);
+                return Boolean(
+                    state.currentInventory?.some((card) => (
+                        card.kind === 'item' &&
+                        card.id?.startsWith(itemCard.id) &&
+                        card.name === itemCard.name
+                    )),
+                );
+            }).toBe(true);
+            await expect.poll(() => readOrdinaryItemDiscoveryState(page)).toMatchObject({
+                pendingSteps: [],
+                rejected: null,
+            });
+
+            if (index === CURRENT_ITEM_DISCOVERY_CARDS.length - 1) {
+                await saveScreenshot(page, ORDINARY_ITEM_MATRIX_DONE_SCREENSHOT);
+            }
+        }
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-ordinary-item-discovery-matrix', diagnostics }]);
+    });
+
     test('器械库代表房间发现抽牌：真实页面显示砍刀并进入持有区', async ({ page, context }) => {
         test.setTimeout(120000);
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-high-risk-armory-discovery');
@@ -252,16 +460,53 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         await page.getByTestId('betrayal-action-explore').click();
         await page.getByTestId('betrayal-room-ground-north').click();
 
-        const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
-        await expect(discoveryPanel).toHaveAttribute('aria-label', /物品牌 砍刀/);
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('已加入持有区');
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到器械库');
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('拿到了砍刀');
-        await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toBeVisible();
-        await saveScreenshot(page, ARMORY_DISCOVERY_SCREENSHOT);
+        const placementPanel = page.getByTestId('betrayal-room-placement-panel');
+        await expect(placementPanel).toBeVisible();
+        await expect(placementPanel).toContainText('器械库');
+        await expect(page.getByTestId('betrayal-room-placement-preview')).toBeVisible();
+        await saveScreenshot(page, ARMORY_PLACEMENT_SCREENSHOT);
 
-        await dismissDiscoveryPanelIfVisible(page);
+        await page.getByTestId('betrayal-room-placement-confirm').click();
+
+        const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+        await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
+        await expect(discoveryPanel).toHaveAttribute('aria-label', /物品牌 急救包/);
+        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('器械库获得砍刀');
+        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('展示后埋葬急救包');
+        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('已加入持有区');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(3);
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('器械库获得砍刀');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText('展示后埋葬急救包');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(2)).toContainText('已加入持有区');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(2)).toContainText('急救包');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到器械库');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('拿到了砍刀、急救包');
         await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toBeVisible();
+        await expect(page.locator('[data-testid="betrayal-inventory-medical-kit-0"]')).toBeVisible();
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/3');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/3');
+        await saveScreenshot(page, ARMORY_DISCOVERY_FIRST_STEP_SCREENSHOT);
+
+        await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await expect(discoveryPanel).toBeVisible();
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 2/3');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '2/3');
+        await saveScreenshot(page, ARMORY_DISCOVERY_SECOND_STEP_SCREENSHOT);
+
+        await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await expect(discoveryPanel).toBeVisible();
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 3/3');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '3/3');
+        await saveScreenshot(page, ARMORY_DISCOVERY_THIRD_STEP_SCREENSHOT);
+
+        await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await expect(discoveryPanel).toHaveCount(0);
+        await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toBeVisible();
+        await expect(page.locator('[data-testid="betrayal-inventory-medical-kit-0"]')).toBeVisible();
+        const deckLedger = page.getByTestId('betrayal-deck-resolution-ledger');
+        await expect(deckLedger).toHaveAttribute('data-discovery-kind', 'item');
+        await expect(deckLedger).toHaveAttribute('data-discovery-title', '急救包');
+        await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(3);
         await saveScreenshot(page, ARMORY_INVENTORY_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-high-risk-armory-discovery', diagnostics }]);

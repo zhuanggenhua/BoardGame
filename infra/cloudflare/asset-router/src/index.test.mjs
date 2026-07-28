@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAssetRouter } from './index.mjs';
 
-const createEnv = () => ({
+const createEnv = (overrides = {}) => ({
     ORIGIN_BASE_URL: 'https://origin.example.test',
     ORIGIN_TIMEOUT_MS: '1500',
     ORIGIN_TOKEN: 'test-token',
+    ...overrides,
 });
 
 test('大型发布路径必须请求服务器源', async () => {
@@ -75,9 +76,35 @@ test('源站成功时保留响应并标识 server', async () => {
 
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('X-Asset-Source'), 'server');
+    assert.equal(response.headers.get('X-Asset-Origin-Route'), 'tunnel');
     assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
     assert.equal(response.headers.has('CDN-Cache-Control'), false);
     assert.equal(await response.text(), 'origin-body');
+});
+
+test('配置直连 canary 时请求公网专用回源端口', async () => {
+    let requestedOriginUrl = '';
+    let fetchOptions;
+    const router = createAssetRouter({
+        fetchImpl: async (request, options) => {
+            requestedOriginUrl = request.url;
+            fetchOptions = options;
+            return new Response('direct-origin-body', { status: 200 });
+        },
+    });
+
+    const response = await router(
+        new Request('https://assets-canary.example.test/official/common/image.webp'),
+        createEnv({
+            ORIGIN_DIRECT_BASE_URL: 'http://203.0.113.10:8080',
+            ORIGIN_DIRECT_HOSTNAMES: 'assets-canary.example.test',
+        }),
+    );
+
+    assert.equal(requestedOriginUrl, 'http://203.0.113.10:8080/official/common/image.webp');
+    assert.equal(fetchOptions.cf.resolveOverride, undefined);
+    assert.equal(response.headers.get('X-Asset-Origin-Route'), 'direct');
+    assert.equal(await response.text(), 'direct-origin-body');
 });
 
 test('版本化媒体资源请求源站时启用边缘缓存', async () => {

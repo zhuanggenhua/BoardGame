@@ -2570,6 +2570,7 @@ export class GameTransportServer {
             failureCount: tracker.failureCount + 1,
         };
         this.onlineAiRecoveryTrackers.set(match.matchID, nextTracker);
+        const repeatedAttempt = this.recordOnlineAiRepeatedRecoveryAttempt(match.matchID, tracker.key);
 
         logger.warn('[GameTransport] online-ai-watchdog failed', {
             matchID: match.matchID,
@@ -2579,6 +2580,8 @@ export class GameTransportServer {
             reason,
             phase: phaseLabel,
             failureCount: nextTracker.failureCount,
+            repeatedAttemptCount: repeatedAttempt.count,
+            repeatedAttemptLimit: this.onlineAiRecoveryRepeatedAttemptLimit,
             markerBefore: progressMarkerBeforeRecovery,
             markerAfter: buildAiProgressMarker(match.state, {
                 engineConfig: match.engineConfig,

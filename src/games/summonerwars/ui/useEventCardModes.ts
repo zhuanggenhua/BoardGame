@@ -13,7 +13,7 @@ import {
   getPlayerUnits, isCellEmpty, getAdjacentCells,
   manhattanDistance, isInStraightLine,
   getStructureAt, isValidCoord, getSummoner, findUnitPositionByInstanceId,
-  getValidShourenFreezeTargets, hasStableAbility, getUnitAt, getUnitAbilities,
+  getValidShourenFreezeTargets, getHuijinScorchTargets, hasStableAbility, getUnitAt, getUnitAbilities,
 } from '../domain/helpers';
 import { BOARD_ROWS, BOARD_COLS } from '../config/board';
 import { getBaseCardId, CARD_IDS, isMoguSporePlagueBodyCard } from '../domain/ids';
@@ -51,6 +51,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.GOBLIN_SNEAK,
   CARD_IDS.FROST_GLACIAL_SHIFT,
   CARD_IDS.SHOUREN_FREEZE,
+  CARD_IDS.HUIJIN_SCORCH,
 ]);
 
 export function requiresEventInteraction(cardId: string): boolean {
@@ -1087,6 +1088,12 @@ export function useEventCardModes({
       }
       case CARD_IDS.SHOUREN_FREEZE: {
         const targets = getValidShourenFreezeTargets(core, myPlayerId as '0' | '1');
+        if (targets.length === 0) break;
+        activated = true;
+        break;
+      }
+      case CARD_IDS.HUIJIN_SCORCH: {
+        const targets = getHuijinScorchTargets(core, myPlayerId as '0' | '1');
         if (targets.length === 0) break;
         activated = true;
         break;

@@ -28,7 +28,7 @@ import { getYonghengPostProcessEvents } from './yonghengMechanics';
  * 需要玩家确认的阶段结束技能（"你可以"/"may" 语义）
  * 这些技能在 onPhaseExit 中只产生通知事件，需要玩家确认后通过 ACTIVATE_ABILITY 执行
  */
-const CONFIRMABLE_PHASE_END_ABILITIES = new Set(['feed_beast', 'mogu_parasite', 'huijin_call_guards']);
+const CONFIRMABLE_PHASE_END_ABILITIES = new Set(['feed_beast', 'mogu_decay', 'mogu_parasite', 'huijin_call_guards']);
 const PHASE_START_ABILITIES_REQUIRING_AVAILABILITY_CHECK = new Set(['ice_shards']);
 
 /**

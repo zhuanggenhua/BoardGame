@@ -36,11 +36,37 @@ const resolveMediaCacheTtlSeconds = (request) => {
     return url.searchParams.has('v') ? 31536000 : 86400;
 };
 
+const parseHostnameList = (value = '') => value
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+
+const resolveOriginConfig = (request, env) => {
+    const incomingHost = new URL(request.url).hostname.toLowerCase();
+    const directHostnames = parseHostnameList(env.ORIGIN_DIRECT_HOSTNAMES);
+    const directEnabled = Boolean(env.ORIGIN_DIRECT_BASE_URL)
+        && (directHostnames.includes('*') || directHostnames.includes(incomingHost));
+
+    if (!directEnabled) {
+        return {
+            baseUrl: env.ORIGIN_BASE_URL,
+            resolveOverride: '',
+            route: 'tunnel',
+        };
+    }
+
+    return {
+        baseUrl: env.ORIGIN_DIRECT_BASE_URL,
+        resolveOverride: env.ORIGIN_DIRECT_RESOLVE_OVERRIDE || '',
+        route: 'direct',
+    };
+};
+
 const applySharedHeaders = (headers, source) => {
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set(
         'Access-Control-Expose-Headers',
-        'Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified, X-Asset-Cache-Policy, X-Asset-Source',
+        'Accept-Ranges, Content-Length, Content-Range, ETag, Last-Modified, X-Asset-Cache-Policy, X-Asset-Origin-Route, X-Asset-Source',
     );
     headers.set('Accept-Ranges', 'bytes');
     headers.set('X-Asset-Source', source);
@@ -61,9 +87,9 @@ const buildCorsPreflightResponse = (request) => {
     return new Response(null, { status: 204, headers });
 };
 
-const buildOriginRequest = (request, env) => {
+const buildOriginRequest = (request, env, originConfig = resolveOriginConfig(request, env)) => {
     const incomingUrl = new URL(request.url);
-    const originUrl = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, env.ORIGIN_BASE_URL);
+    const originUrl = new URL(`${incomingUrl.pathname}${incomingUrl.search}`, originConfig.baseUrl);
     const headers = new Headers();
 
     for (const name of FORWARDED_REQUEST_HEADERS) {
@@ -89,6 +115,7 @@ const fetchOrigin = async (request, env, fetchImpl) => {
         resolveTimeoutMs(env.ORIGIN_TIMEOUT_MS),
     );
     const mediaCacheTtl = resolveMediaCacheTtlSeconds(request);
+    const originConfig = resolveOriginConfig(request, env);
     const fetchOptions = {
         signal: controller.signal,
     };
@@ -104,20 +131,27 @@ const fetchOrigin = async (request, env, fetchImpl) => {
             },
         };
     }
+    if (originConfig.resolveOverride) {
+        fetchOptions.cf = {
+            ...(fetchOptions.cf || {}),
+            resolveOverride: originConfig.resolveOverride,
+        };
+    }
 
     try {
-        return await fetchImpl(buildOriginRequest(request, env), fetchOptions);
+        return await fetchImpl(buildOriginRequest(request, env, originConfig), fetchOptions);
     } finally {
         clearTimeout(timer);
     }
 };
 
-const withServerSource = (request, response) => {
+const withServerSource = (request, response, env) => {
     const source = response.status >= 500 ? 'server-error' : 'server';
     const headers = new Headers(response.headers);
     headers.delete('CDN-Cache-Control');
     headers.delete('Cloudflare-CDN-Cache-Control');
     applySharedHeaders(headers, source);
+    headers.set('X-Asset-Origin-Route', resolveOriginConfig(request, env).route);
     const mediaCacheTtl = resolveMediaCacheTtlSeconds(request);
     if (mediaCacheTtl !== null) {
         headers.set('X-Asset-Cache-Policy', `edge-media; ttl=${mediaCacheTtl}`);
@@ -142,10 +176,11 @@ export const createAssetRouter = ({ fetchImpl = fetch } = {}) => async (request,
     }
 
     try {
-        return withServerSource(request, await fetchOrigin(request, env, fetchImpl));
+        return withServerSource(request, await fetchOrigin(request, env, fetchImpl), env);
     } catch {
         const headers = new Headers({ 'Cache-Control': 'no-store' });
         applySharedHeaders(headers, 'server-error');
+        headers.set('X-Asset-Origin-Route', resolveOriginConfig(request, env).route);
         return new Response('Asset origin unavailable', { status: 502, headers });
     }
 };

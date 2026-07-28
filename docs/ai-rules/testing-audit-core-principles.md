@@ -143,7 +143,7 @@
 | --- | --- | --- | --- |
 | 真相源语义 | 图片/规则/用户故事到底要求什么？时机、目标、伤害/资源/状态数字是什么？是否已拆成 `C1/C2/C3...` 子句？ | 图片、规则书、录入核对、用户故事、子句表 | 只按旧实现猜；把图片上的主阶段牌录成投掷修正；整张卡一行 pass 导致漏掉第二句。 |
 | 子句实现映射 | 每个子句分别落在哪个字段、handler、resolver、reducer、UI 入口或清理逻辑？ | 数据定义、command schema、validator、handler、pipeline、reducer、UI | 只实现主效果，漏掉“改为打出”“否则放回”“每回合一次”“其余任意顺序”。 |
-| 静态定义 | `type/timing/trigger/effects/cost/tags/previewRef` 是否能独立解释对象行为？ | 数据定义、注册表、i18n、图集索引 | 运行时靠旁路硬编码，定义层是空壳或错误时机。 |
+| 静态定义 | `type/timing/trigger/effects/cost/tags/previewRef` 是否能独立解释对象行为？若 `effects: []` 但运行时已由 helper / execute / abilityResolver / systems 旁路消费，是否已有“旁路消费证据映射”？ | 数据定义、注册表、i18n、图集索引、旁路消费者证据表 | 运行时靠旁路硬编码，定义层是空壳或错误时机；或把空效果简单误判为未实现，漏掉实际消费者。 |
 | 候选生成 | 什么时候出现在可用列表？骰面/阶段/资源/状态条件是否完整？AI legal-actions、auto-continue/watchdog 是否消费同一合法动作真相？ | rules/helper/canActivate/validator、AI legal-actions、auto-continue/watchdog | UI 高亮条件和 reducer 接受条件不一致；AI 只看到 `advance-phase` 并提前结束阶段。 |
 | 入口与贴图 | 玩家点哪里？图像槽位、按钮、卡牌、token 与对象 ID 是否一一对应？ | UI 组件、slot mapping、data-testid、截图 | 新对象素材规格不同却复用旧槽位；打 A 显示成 B。 |
 | 命令与执行 | 点击/打出后发什么命令？handler 是否消费同一个对象 ID？ | command payload、move、handler、reducer | 点击 prompt 成功但最终执行的是另一个能力。 |

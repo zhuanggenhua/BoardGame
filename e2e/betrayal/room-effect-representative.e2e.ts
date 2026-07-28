@@ -26,6 +26,7 @@ import {
 const EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-room-effect-representatives');
 const CHAPEL_BEFORE_SCREENSHOT = `${EVIDENCE_DIR}/01-礼拜堂-发现前属性栏.png`;
 const CHAPEL_AFTER_SCREENSHOT = `${EVIDENCE_DIR}/02-礼拜堂-发现后神志加点.png`;
+const DIRECT_ROOM_EFFECT_MATRIX_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/betrayal-room-effect-confirmation-matrix');
 const FURNACE_HINT_SCREENSHOT = `${EVIDENCE_DIR}/03-火炉房-结束回合前提示.png`;
 const FURNACE_RESOLVED_SCREENSHOT = `${EVIDENCE_DIR}/04-火炉房-结算后反馈.png`;
 const JUNK_OBSTACLE_SCREENSHOT = `${EVIDENCE_DIR}/05-杂物间-障碍标记.png`;
@@ -406,6 +407,113 @@ const switchRoomMapToFloor = async (page: Page, floor: 'upper' | 'ground' | 'bas
     await expect(page.getByTestId(`betrayal-room-floor-${floor}`)).toBeVisible();
 };
 
+type DirectRoomEffectCase = {
+    floor: 'upper' | 'ground' | 'basement';
+    visualId: string;
+    targetRoomId: string;
+    expectedRoomName: string;
+    expectedText: string;
+    screenshotStem: string;
+    moveToFloor(core: BetrayalCore): BetrayalCore;
+};
+
+const directRoomEffectCases: DirectRoomEffectCase[] = [
+    {
+        floor: 'ground',
+        visualId: 'chapel',
+        targetRoomId: 'ground-north',
+        expectedRoomName: '礼拜堂',
+        expectedText: '房间效果：礼拜堂，神志 +1',
+        screenshotStem: '01-礼拜堂-房间效果确认',
+        moveToFloor(core) {
+            return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        },
+    },
+    {
+        floor: 'upper',
+        visualId: 'library',
+        targetRoomId: 'upper-north',
+        expectedRoomName: '图书馆',
+        expectedText: '房间效果：图书馆，知识 +1',
+        screenshotStem: '02-图书馆-房间效果确认',
+        moveToFloor(core) {
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+            return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        },
+    },
+    {
+        floor: 'upper',
+        visualId: 'study',
+        targetRoomId: 'upper-north',
+        expectedRoomName: '书房',
+        expectedText: '房间效果：书房，知识 +1',
+        screenshotStem: '03-书房-房间效果确认',
+        moveToFloor(core) {
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+            return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        },
+    },
+    {
+        floor: 'upper',
+        visualId: 'gymnasium',
+        targetRoomId: 'upper-north',
+        expectedRoomName: '体育馆',
+        expectedText: '房间效果：体育馆，速度 +1',
+        screenshotStem: '04-体育馆-房间效果确认',
+        moveToFloor(core) {
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+            return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        },
+    },
+    {
+        floor: 'basement',
+        visualId: 'larder',
+        targetRoomId: 'basement-east',
+        expectedRoomName: '储物间',
+        expectedText: '房间效果：储物间，力量 +1',
+        screenshotStem: '05-储物间-房间效果确认',
+        moveToFloor(core) {
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+            return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+        },
+    },
+    {
+        floor: 'basement',
+        visualId: 'junkRoom',
+        targetRoomId: 'basement-east',
+        expectedRoomName: '杂物间',
+        expectedText: '房间效果：杂物间，放置障碍物标记',
+        screenshotStem: '06-杂物间-房间效果确认',
+        moveToFloor(core) {
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+            return applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
+        },
+    },
+];
+
+const createDirectRoomEffectDiscoveryCore = (testCase: DirectRoomEffectCase): BetrayalCore => {
+    let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core.drawOrder = ['item'];
+    const roomTemplate = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor[testCase.floor]
+        .find((room) => room.visualId === testCase.visualId);
+    if (!roomTemplate) {
+        throw new Error(`山屋 E2E 夹具缺少房间：${testCase.expectedRoomName}`);
+    }
+    core.roomDiscoveryOrderByFloor[testCase.floor] = [roomTemplate];
+    core = testCase.moveToFloor(core);
+    return applyBetrayalCommand(
+        core,
+        BETRAYAL_COMMANDS.EXPLORE_ROOM,
+        '0',
+        { roomId: testCase.targetRoomId },
+    );
+};
+
 test.describe('山屋惊魂房间效果代表链', () => {
     test('礼拜堂代表发现加点 family：真实页面显示属性变化和发现反馈', async ({ page, context }) => {
         test.setTimeout(120000);
@@ -432,6 +540,31 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await saveScreenshot(page, CHAPEL_AFTER_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-room-effect-chapel', diagnostics }]);
+    });
+
+    test('当前全部直接房间文字效果：真实页面第一步均进入房间效果确认队列', async ({ page, context }) => {
+        test.setTimeout(180000);
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-room-effect-confirmation-matrix');
+
+        for (const testCase of directRoomEffectCases) {
+            await injectCore(page, createDirectRoomEffectDiscoveryCore(testCase));
+            await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+            const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+            await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
+            const firstResolutionStep = discoveryPanel.getByTestId('betrayal-discovery-resolution-step').first();
+            await expect(firstResolutionStep).toContainText(testCase.expectedText);
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText(/确认 1\/\d+/);
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
+                'data-pending-card-resolution-step',
+                /^1\/\d+$/,
+            );
+            await saveScreenshot(
+                page,
+                `${DIRECT_ROOM_EFFECT_MATRIX_EVIDENCE_DIR}/${testCase.screenshotStem}.jpg`,
+            );
+        }
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-room-effect-confirmation-matrix', diagnostics }]);
     });
 
     test('火炉房代表停留效果 family：真实页面提示结束回合伤害并结算反馈', async ({ page, context }) => {

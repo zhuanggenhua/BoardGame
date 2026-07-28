@@ -20,7 +20,16 @@ import {
     getValidSummonPositions,
     getSummoner,
 } from '../domain/helpers';
-import { createInitializedCore, placeTestUnit, resetInstanceCounter } from './test-helpers';
+import {
+    createInitializedCore,
+    createPromptResponseCommand,
+    getPromptOptionIdForTargetPosition,
+    getPromptOptionIds,
+    getPromptSwType,
+    hasActivePrompt,
+    placeTestUnit,
+    resetInstanceCounter,
+} from './test-helpers';
 import { engineConfig } from '../game';
 
 const aiTestRandom = {
@@ -1855,7 +1864,7 @@ describe('召唤师战争本地 AI', () => {
         });
     });
 
-    it('ADVANCE_PHASE 离开移动阶段时应结算腐坏自伤与相邻友军充能', () => {
+    it('ADVANCE_PHASE 离开移动阶段时应先结算腐坏自伤，再等待玩家指定相邻友军充能', () => {
         const core = createInitializedCore(['0', '1'], aiTestRandom, {
             faction0: 'mogu',
             faction1: 'paladin',
@@ -1913,13 +1922,116 @@ describe('召唤师战争本地 AI', () => {
         );
 
         expect(result.success).toBe(true);
-        expect(result.state.core.phase).toBe('build');
+        expect(result.state.core.phase).toBe('move');
+        expect(result.state.sys.flowHalted).toBe(true);
         expect(result.state.core.board[decayUnit.position.row][decayUnit.position.col].unit?.damage).toBe(1);
-        expect(result.state.core.board[ally.position.row][ally.position.col].unit?.boosts).toBe(2);
+        expect(result.state.core.board[ally.position.row][ally.position.col].unit?.boosts ?? 0).toBe(0);
+        expect(hasActivePrompt(result.state)).toBe(true);
+        expect(getPromptSwType(result.state)).toBe('mogu_decay_select_target');
+        const allyOptionId = getPromptOptionIdForTargetPosition(
+            result.state,
+            'mogu_decay_target',
+            ally.position,
+        );
+        expect(allyOptionId).toBeTruthy();
+        expect(getPromptOptionIds(result.state)).toContain('skip');
         expect(result.events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED
             && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(true);
         expect(result.events.some(e => e.type === SW_EVENTS.UNIT_CHARGED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(false);
+
+        const picked = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            result.state,
+            createPromptResponseCommand(result.state, '0', allyOptionId!),
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(picked.success).toBe(true);
+        expect(hasActivePrompt(picked.state)).toBe(false);
+        expect(picked.state.core.board[ally.position.row][ally.position.col].unit?.boosts).toBe(2);
+        expect(picked.events.some(e => e.type === SW_EVENTS.UNIT_CHARGED
             && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(true);
+
+        const advanced = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            picked.state,
+            { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} },
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.phase).toBe('build');
+        expect(advanced.state.sys.flowHalted).toBe(false);
+    });
+
+    it('ADVANCE_PHASE 进入移动阶段时灰烬野兽野火击杀的单位应立刻离场', () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'huijin',
+            faction1: 'necromancer',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        for (let row = 0; row < BOARD_ROWS; row += 1) {
+            for (let col = 0; col < BOARD_COLS; col += 1) {
+                core.board[row][col].unit = undefined;
+                core.board[row][col].structure = undefined;
+            }
+        }
+        placeTestUnit(core, { row: 4, col: 4 }, {
+            card: {
+                id: 'test-huijin-ash-beast',
+                cardType: 'unit',
+                name: '测试灰烬野兽',
+                unitClass: 'common',
+                faction: 'huijin',
+                strength: 3,
+                life: 3,
+                cost: 2,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: ['huijin_wildfire'],
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        const enemy = placeTestUnit(core, { row: 4, col: 5 }, {
+            card: {
+                id: 'test-fragile-enemy',
+                cardType: 'unit',
+                name: '测试脆弱敌方士兵',
+                unitClass: 'common',
+                faction: 'necromancer',
+                strength: 1,
+                life: 1,
+                cost: 1,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: [],
+                deckSymbols: [],
+            },
+            owner: '1',
+        });
+        const sys = createInitialSystemState(['0', '1'], engineConfig.systems as any);
+        sys.phase = 'summon';
+
+        const result = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            { core, sys } as any,
+            { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} },
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.phase).toBe('move');
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'huijin_wildfire')).toBe(true);
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_DESTROYED
+            && (e.payload as { instanceId?: string }).instanceId === enemy.instanceId)).toBe(true);
+        expect(result.state.core.board[enemy.position.row][enemy.position.col].unit).toBeUndefined();
     });
 
     it('ADVANCE_PHASE 离开魔力阶段时应结算爆裂并触发菌化变异', () => {

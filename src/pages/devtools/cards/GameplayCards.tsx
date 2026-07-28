@@ -172,35 +172,129 @@ export const BaseCaptureCard: React.FC<PreviewCardProps> = ({ iconColor }) => {
 // 触发器激活特效
 // ============================================================================
 
-/** 预设的触发器场景（含卡图引用和中文名，不依赖 i18n） */
-const TRIGGER_SCENES = [
+type TriggerActionKind =
+  | 'destroy'
+  | 'buff'
+  | 'move'
+  | 'return'
+  | 'discard';
+type PreviewZoneKey = 'baseA' | 'baseB' | 'hand' | 'discard' | 'emptySlot';
+type TriggerStep = {
+  actionKind: TriggerActionKind;
+  targetKey: 'minion' | PreviewZoneKey;
+  targetSlot?: number;
+  resultKey?: PreviewZoneKey;
+  targetDefId?: string;
+  targetPreviewRef?: CardPreviewRef;
+  effectLabel: string;
+  highlightTone?: 'info' | 'danger' | 'buff';
+  durationMs?: number;
+};
+type TriggerScene = {
+  id: string;
+  defId: string;
+  labelKey: string;
+  previewRef: CardPreviewRef;
+  actionKind: TriggerActionKind;
+  targetKey: TriggerStep['targetKey'];
+  targetSlot?: number;
+  resultKey?: PreviewZoneKey;
+  targetDefId?: string;
+  targetPreviewRef?: CardPreviewRef;
+  effectLabel: string;
+  highlightTone?: TriggerStep['highlightTone'];
+  steps?: TriggerStep[];
+};
+
+/** 预设的触发器场景（按钮只选案例，动效本体回答来源/路径/结果） */
+const TRIGGER_SCENES: readonly TriggerScene[] = [
   {
+    id: 'destroy_leprechaun',
     defId: 'trickster_leprechaun',
     labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.trickster_leprechaun.label',
     previewRef: buildSmashUpPreviewRef('trickster_leprechaun'),
+    targetKey: 'minion',
     targetSlot: 1,
-    actionKind: 'destroy' as const,
+    actionKind: 'destroy',
+    effectLabel: '消灭',
+    highlightTone: 'danger',
   },
   {
-    defId: 'trickster_flame_trap',
-    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.trickster_flame_trap.label',
-    previewRef: buildSmashUpPreviewRef('trickster_flame_trap'),
-    targetSlot: 2,
-    actionKind: 'destroy' as const,
-  },
-  {
-    defId: 'ninja_assassination',
-    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.ninja_assassination.label',
-    previewRef: buildSmashUpPreviewRef('ninja_assassination'),
-    targetSlot: 2,
-    actionKind: 'destroy' as const,
-  },
-  {
-    defId: 'bear_cavalry_high_ground',
-    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.bear_cavalry_high_ground.label',
-    previewRef: buildSmashUpPreviewRef('bear_cavalry_high_ground'),
+    id: 'buff_power',
+    defId: 'cowboys_quick_draw',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.buff_power.label',
+    previewRef: buildSmashUpPreviewRef('cowboys_quick_draw'),
+    targetKey: 'minion',
     targetSlot: 0,
-    actionKind: 'buff' as const,
+    actionKind: 'buff',
+    effectLabel: '力量提升',
+    highlightTone: 'buff',
+  },
+  {
+    id: 'move_minion',
+    defId: 'shield_reassignment',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.move_minion.label',
+    previewRef: buildSmashUpPreviewRef('shield_reassignment'),
+    targetKey: 'minion',
+    targetSlot: 0,
+    resultKey: 'emptySlot',
+    actionKind: 'move',
+    effectLabel: '移动',
+    highlightTone: 'info',
+  },
+  {
+    id: 'return_to_hand',
+    defId: 'alien_scout',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.return_to_hand.label',
+    previewRef: buildSmashUpPreviewRef('alien_scout'),
+    targetKey: 'minion',
+    targetSlot: 1,
+    resultKey: 'hand',
+    actionKind: 'return',
+    effectLabel: '返回手牌',
+    highlightTone: 'info',
+  },
+  {
+    id: 'discard_card',
+    defId: 'super_spies_discards_are_forever',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.discard_card.label',
+    previewRef: buildSmashUpPreviewRef('super_spies_discards_are_forever'),
+    targetKey: 'minion',
+    targetSlot: 2,
+    resultKey: 'discard',
+    actionKind: 'discard',
+    effectLabel: '弃置',
+    highlightTone: 'danger',
+  },
+  {
+    id: 'chain_trigger',
+    defId: 'bear_cavalry_high_ground_pod',
+    labelKey: 'devtools.effectPreview.gameplay.ability_triggered.scenes.chain_trigger.label',
+    previewRef: buildSmashUpPreviewRef('bear_cavalry_high_ground_pod'),
+    targetKey: 'minion',
+    targetSlot: 0,
+    actionKind: 'buff',
+    effectLabel: '连环触发',
+    highlightTone: 'buff',
+    steps: [
+      {
+        actionKind: 'buff',
+        targetKey: 'minion',
+        targetSlot: 0,
+        effectLabel: '力量提升',
+        highlightTone: 'buff',
+        durationMs: 1750,
+      },
+      {
+        actionKind: 'discard',
+        targetKey: 'minion',
+        targetSlot: 2,
+        resultKey: 'discard',
+        effectLabel: '弃置',
+        highlightTone: 'danger',
+        durationMs: 1900,
+      },
+    ],
   },
 ] as const;
 
@@ -231,6 +325,20 @@ const MINION_SLOTS = [
   },
 ] as const;
 
+type PreviewPhase = 'wake' | 'impact' | 'settle';
+type RunningPreview = {
+  runId: number;
+  sceneId: string;
+  stepIndex: number;
+  actionKind: TriggerActionKind;
+  targetKey: TriggerStep['targetKey'];
+  targetSlot?: number;
+  resultKey?: PreviewZoneKey;
+  phase: PreviewPhase;
+  moveDx: number;
+  moveDy: number;
+};
+
 /** 模拟基地场景中的随从卡槽 */
 const FakeMinionSlot = React.forwardRef<HTMLDivElement, {
   slotKey: string;
@@ -239,58 +347,126 @@ const FakeMinionSlot = React.forwardRef<HTMLDivElement, {
   color: string;
   previewRef: CardPreviewRef;
   active: boolean;
-  reacting: boolean;
-  actionKind: 'destroy' | 'buff';
-}>(({ slotKey, label, power, color, previewRef, active, reacting, actionKind }, ref) => (
-  <motion.div
-    ref={ref}
-    data-testid={`smashup-triggered-preview-minion-${slotKey}`}
-    className={`relative isolate h-[136px] w-[96px] shrink-0 rounded-lg border ${color} flex flex-col items-center justify-center overflow-hidden text-[8px] shadow-lg transition-[border-color,box-shadow,transform] ${
-      reacting && actionKind === 'destroy'
-        ? 'border-red-200/20 shadow-[0_16px_36px_rgba(15,23,42,0.64)]'
-        : active
-          ? 'border-amber-200/30 shadow-[0_0_18px_rgba(251,191,36,0.16)]'
-          : ''
-    }`}
-    animate={reacting && actionKind === 'destroy'
-      ? {
-        opacity: [1, 1, 0],
-        scale: [1, 1, 0.98],
-        rotate: [0, 0, 0, 0],
-        y: [0, 0, 0, 0],
-        filter: [
-          'grayscale(0) brightness(1)',
-          'grayscale(0) brightness(1)',
-          'grayscale(0.2) brightness(0.74)',
-        ],
-      }
-      : reacting && actionKind === 'buff'
+  running: RunningPreview | null;
+}>(({ slotKey, label, power, color, previewRef, active, running }, ref) => {
+  const reacting = running?.targetKey === 'minion' && running.targetSlot !== undefined
+    && MINION_SLOTS[running.targetSlot]?.key === slotKey;
+  const actionKind = running?.actionKind;
+  const moving = reacting && (actionKind === 'move' || actionKind === 'return' || actionKind === 'discard');
+  const buffed = reacting && actionKind === 'buff' && running.phase !== 'wake';
+  const hiddenByResult = reacting
+    && (actionKind === 'destroy' || actionKind === 'discard' || actionKind === 'return' || actionKind === 'move')
+    && running.phase === 'settle';
+
+  return (
+    <motion.div
+      ref={ref}
+      data-testid={`smashup-triggered-preview-minion-${slotKey}`}
+      className={`relative isolate h-[136px] w-[96px] shrink-0 rounded-lg border ${color} flex flex-col items-center justify-center overflow-visible text-[8px] shadow-lg transition-[border-color,box-shadow,transform] ${
+        reacting && actionKind === 'destroy'
+          ? 'border-red-200/20 shadow-[0_16px_36px_rgba(15,23,42,0.64)]'
+          : active
+            ? 'border-amber-200/30 shadow-[0_0_18px_rgba(251,191,36,0.16)]'
+            : ''
+      }`}
+      animate={reacting && actionKind === 'destroy'
         ? {
-          scale: [1, 1.12, 1.02, 1],
-          y: [0, -8, -4, 0],
-          filter: ['brightness(1)', 'brightness(1.25)', 'brightness(1.12)', 'brightness(1)'],
+          opacity: [1, 1, 0],
+          scale: [1, 1, 0.98],
+          rotate: [0, 0, 0],
+          x: 0,
+          y: 0,
+          filter: [
+            'grayscale(0) brightness(1)',
+            'grayscale(0) brightness(1)',
+            'grayscale(0.2) brightness(0.74)',
+          ],
         }
-        : { opacity: 1, scale: 1, rotate: 0, y: 0, filter: 'grayscale(0) brightness(1)' }}
-    transition={reacting
-      ? actionKind === 'destroy'
-        ? { duration: 0.08, delay: 0.62, times: [0, 1], ease: 'linear' }
-        : { duration: 1.05, delay: 0.84, ease: 'easeOut' }
-      : { duration: 0.22, ease: 'easeOut' }}
-  >
-    <CardPreview
-      previewRef={previewRef}
-      className="absolute inset-0 h-full w-full opacity-[0.94]"
-      title={label}
-    />
-    <div className="absolute inset-x-0 bottom-0 bg-slate-950/82 px-1.5 py-1 text-center">
-      <span className="block truncate font-bold text-white/90">{label}</span>
-    </div>
-    <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full border border-amber-100 bg-amber-400 text-[11px] font-black text-slate-950 shadow">
-      {power}
-    </span>
-  </motion.div>
-));
+        : moving
+          ? {
+            opacity: [1, running.phase === 'wake' ? 1 : 0.38, running.phase === 'settle' ? 0.08 : 0.22],
+            scale: [1, 1.03, 0.94],
+            x: 0,
+            y: [0, -4, 0],
+            rotate: [0, actionKind === 'discard' ? 2 : -1, 0],
+            filter: [
+              'brightness(1)',
+              'brightness(1.12)',
+              actionKind === 'discard' ? 'grayscale(0.7) brightness(0.7)' : 'brightness(0.82)',
+            ],
+          }
+          : reacting && actionKind === 'buff'
+            ? {
+              scale: [1, 1.12, 1.02, 1],
+              y: [0, -8, -4, 0],
+              filter: ['brightness(1)', 'brightness(1.25)', 'brightness(1.12)', 'brightness(1)'],
+            }
+            : { opacity: 1, scale: 1, rotate: 0, x: 0, y: 0, filter: 'grayscale(0) brightness(1)' }}
+      transition={reacting
+        ? actionKind === 'destroy'
+          ? { duration: 0.08, delay: 0.62, times: [0, 1], ease: 'linear' }
+          : moving
+            ? { duration: 0.72, delay: running.phase === 'wake' ? 0.72 : 0, ease: 'easeOut' }
+            : { duration: 1.05, delay: 0.84, ease: 'easeOut' }
+        : { duration: 0.22, ease: 'easeOut' }}
+    >
+      <div className="absolute inset-0 overflow-hidden rounded-lg">
+        <CardPreview
+          previewRef={previewRef}
+          className="absolute inset-0 h-full w-full opacity-[0.94]"
+          title={label}
+        />
+        <div className="absolute inset-x-0 bottom-0 bg-slate-950/82 px-1.5 py-1 text-center">
+          <span className="block truncate font-bold text-white/90">{label}</span>
+        </div>
+      </div>
+      {hiddenByResult ? (
+        <div className="absolute inset-0 rounded-lg bg-slate-950/50" />
+      ) : null}
+      <span className={`absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full border px-1 text-[11px] font-black text-slate-950 shadow ${
+        buffed ? 'border-white bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.75)]' : 'border-amber-100 bg-amber-400'
+      }`}>
+        {buffed ? power + 1 : power}
+      </span>
+    </motion.div>
+  );
+});
 FakeMinionSlot.displayName = 'FakeMinionSlot';
+
+const PreviewZone = React.forwardRef<HTMLDivElement, {
+  zoneKey: PreviewZoneKey;
+  label: string;
+  variant: 'base' | 'hand' | 'discard' | 'empty';
+  active?: boolean;
+  children?: React.ReactNode;
+}>(({ zoneKey, label, variant, active, children }, ref) => {
+  const baseClasses = {
+    base: 'h-[96px] w-[190px] rounded-xl border border-amber-300/30 bg-amber-950/18',
+    hand: 'h-[86px] w-[120px] rounded-xl border border-slate-300/30 bg-slate-950/34',
+    discard: 'h-[86px] w-[72px] rounded-lg border border-rose-300/35 bg-rose-950/24',
+    empty: 'h-[136px] w-[96px] rounded-lg border border-dashed border-slate-400/35 bg-slate-950/24',
+  }[variant];
+
+  return (
+    <motion.div
+      ref={ref}
+      data-testid={`smashup-triggered-preview-zone-${zoneKey}`}
+      className={`relative flex shrink-0 items-center justify-center overflow-visible ${baseClasses} ${
+        active ? 'shadow-[0_0_22px_rgba(251,191,36,0.22)]' : ''
+      }`}
+      animate={active
+        ? { scale: [1, 1.04, 1], filter: ['brightness(1)', 'brightness(1.22)', 'brightness(1)'] }
+        : { scale: 1, filter: 'brightness(1)' }}
+      transition={{ duration: 1.1, ease: 'easeOut' }}
+    >
+      <span className="absolute left-2 top-1 text-[10px] font-black uppercase tracking-[0.14em] text-white/50">
+        {label}
+      </span>
+      {children}
+    </motion.div>
+  );
+});
+PreviewZone.displayName = 'PreviewZone';
 
 function getElementCenter(element: HTMLElement | null) {
   if (!element) return undefined;
@@ -330,27 +506,78 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
   const [activeKey, setActiveKey] = useState(0);
   const [presetIdx, setPresetIdx] = useState(0);
   const [queuedPreviewIdx, setQueuedPreviewIdx] = useState<number | null>(null);
-  const { stats, startMeasure } = useEffectTrigger(2000);
-  const previewCompleteTimerRef = useRef<number | null>(null);
+  const [running, setRunning] = useState<RunningPreview | null>(null);
+  const { stats, startMeasure } = useEffectTrigger(2600);
+  const previewTimersRef = useRef<number[]>([]);
   const triggerRunRef = useRef(0);
   const sourceRef = useRef<HTMLDivElement | null>(null);
   const targetRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const zoneRefs = useRef<Partial<Record<PreviewZoneKey, HTMLDivElement | null>>>({});
+
+  const clearPreviewTimers = useCallback(() => {
+    previewTimersRef.current.forEach(timer => window.clearTimeout(timer));
+    previewTimersRef.current = [];
+  }, []);
+
+  const setZoneRef = useCallback((key: PreviewZoneKey) => (node: HTMLDivElement | null) => {
+    zoneRefs.current[key] = node;
+  }, []);
+
+  const getTargetElement = useCallback((step: TriggerStep) => {
+    if (step.targetKey === 'minion') {
+      return step.targetSlot === undefined ? null : targetRefs.current[step.targetSlot] ?? null;
+    }
+    return zoneRefs.current[step.targetKey] ?? null;
+  }, []);
+
+  const getResultElement = useCallback((step: TriggerStep) => (
+    step.resultKey ? zoneRefs.current[step.resultKey] ?? null : null
+  ), []);
+
+  const resolveStepTarget = useCallback((step: TriggerStep) => {
+    if (step.targetKey === 'minion' && step.targetSlot !== undefined) {
+      const slot = MINION_SLOTS[step.targetSlot];
+      if (slot) {
+        return {
+          targetDefId: step.targetDefId ?? slot.defId,
+          targetLabel: t(slot.labelKey),
+          targetPreviewRef: step.targetPreviewRef ?? slot.previewRef,
+        };
+      }
+    }
+    return {
+      targetDefId: step.targetDefId,
+      targetLabel: undefined,
+      targetPreviewRef: step.targetPreviewRef,
+    };
+  }, [t]);
+
+  const toSingleStep = useCallback((scene: TriggerScene): TriggerStep => ({
+    actionKind: scene.actionKind,
+    targetKey: scene.targetKey,
+    targetSlot: scene.targetSlot,
+    resultKey: scene.resultKey,
+    targetDefId: scene.targetDefId,
+    targetPreviewRef: scene.targetPreviewRef,
+    effectLabel: scene.effectLabel,
+    highlightTone: scene.highlightTone,
+  }), []);
+
+  const scheduleTimer = useCallback((delayMs: number, fn: () => void) => {
+    const timer = window.setTimeout(fn, delayMs);
+    previewTimersRef.current.push(timer);
+  }, []);
 
   useEffect(() => () => {
-    if (previewCompleteTimerRef.current !== null) {
-      window.clearTimeout(previewCompleteTimerRef.current);
-    }
-  }, []);
+    clearPreviewTimers();
+  }, [clearPreviewTimers]);
 
   const playPreview = useCallback((nextIdx: number, sceneChanged: boolean) => {
     const nextScene = TRIGGER_SCENES[nextIdx];
-    const nextTarget = MINION_SLOTS[nextScene.targetSlot];
     const runId = triggerRunRef.current + 1;
     triggerRunRef.current = runId;
-    if (previewCompleteTimerRef.current !== null) {
-      window.clearTimeout(previewCompleteTimerRef.current);
-      previewCompleteTimerRef.current = null;
-    }
+    clearPreviewTimers();
+    setRunning(null);
     setActiveKey(0);
 
     const paintDelay = new Promise<void>((resolve) => {
@@ -360,43 +587,118 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
     void paintDelay.then(async () => {
       if (triggerRunRef.current !== runId) return;
       const sourceElement = sourceRef.current;
-      const targetElement = targetRefs.current[nextScene.targetSlot] ?? null;
       await waitForPreviewCardImages(sourceElement, MINION_SLOTS.map((_, index) => targetRefs.current[index] ?? null));
       if (triggerRunRef.current !== runId) return;
+
       requestAnimationFrame(() => {
-        if (triggerRunRef.current !== runId) return;
-        const nextPoints = {
-          sourcePosition: getElementCenter(sourceElement),
-          targetPosition: getElementCenter(targetElement),
-        };
         requestAnimationFrame(() => {
           if (triggerRunRef.current !== runId) return;
-          setActiveKey(k => k + 1);
-          if (nextPoints.sourcePosition && nextPoints.targetPosition) {
-            fxBus.push(SU_FX.ABILITY_TRIGGERED, { space: 'screen' }, {
-              sourceDefId: nextScene.defId,
-              sourceLabel: t(nextScene.labelKey),
-              sourcePosition: nextPoints.sourcePosition,
-              sourcePreviewRef: nextScene.previewRef,
-              targetDefId: nextTarget.defId,
-              targetLabel: t(nextTarget.labelKey),
-              targetPosition: nextPoints.targetPosition,
-              targetPreviewRef: nextTarget.previewRef,
-              actionKind: nextScene.actionKind,
-              effectLabel: nextScene.actionKind === 'destroy' ? '消灭' : '力量提升',
-              highlightTone: nextScene.actionKind === 'destroy' ? 'danger' : 'buff',
-              durationMs: ABILITY_TRIGGERED_PREVIEW_DURATION_MS,
+          const sourcePosition = getElementCenter(sourceElement);
+          if (!sourcePosition) return;
+
+          const sceneSteps = nextScene.steps ?? [toSingleStep(nextScene)];
+          const fxSteps: Array<{
+            cue: typeof SU_FX.ABILITY_TRIGGERED;
+            ctx: { space: 'screen' };
+            params: Record<string, unknown>;
+            delayAfter?: number;
+          }> = [];
+          let elapsedMs = 0;
+
+          sceneSteps.forEach((step, stepIndex) => {
+            const targetElement = getTargetElement(step);
+            const resultElement = getResultElement(step);
+            const targetPosition = getElementCenter(targetElement);
+            if (!targetPosition) return;
+            const resultPosition = getElementCenter(resultElement);
+            const stepDurationMs = step.durationMs ?? (sceneSteps.length > 1 ? 1800 : ABILITY_TRIGGERED_PREVIEW_DURATION_MS);
+            const delayAfter = stepIndex < sceneSteps.length - 1 ? 180 : 0;
+            const settleDelayMs = sceneSteps.length > 1
+              ? Math.max(1280, stepDurationMs - 420)
+              : Math.min(2350, Math.max(1700, stepDurationMs * 0.52));
+            const moveDx = resultPosition ? resultPosition.left - targetPosition.left : 0;
+            const moveDy = resultPosition ? resultPosition.top - targetPosition.top : 0;
+            const targetInfo = resolveStepTarget(step);
+
+            fxSteps.push({
+              cue: SU_FX.ABILITY_TRIGGERED,
+              ctx: { space: 'screen' },
+              params: {
+                sourceDefId: nextScene.defId,
+                sourceLabel: t(nextScene.labelKey),
+                sourcePosition,
+                sourcePreviewRef: nextScene.previewRef,
+                targetDefId: targetInfo.targetDefId,
+                targetLabel: targetInfo.targetLabel,
+                targetPosition,
+                targetPreviewRef: targetInfo.targetPreviewRef,
+                resultPosition,
+                actionKind: step.actionKind,
+                effectLabel: step.effectLabel,
+                highlightTone: step.highlightTone,
+                durationMs: stepDurationMs,
+              },
+              delayAfter,
             });
+
+            scheduleTimer(elapsedMs, () => {
+              if (triggerRunRef.current !== runId) return;
+              setActiveKey(k => k + 1);
+              setRunning({
+                runId,
+                sceneId: nextScene.id,
+                stepIndex,
+                actionKind: step.actionKind,
+                targetKey: step.targetKey,
+                targetSlot: step.targetSlot,
+                resultKey: step.resultKey,
+                phase: 'wake',
+                moveDx,
+                moveDy,
+              });
+            });
+            scheduleTimer(elapsedMs + Math.min(880, stepDurationMs * 0.42), () => {
+              setRunning(current => current?.runId === runId && current.stepIndex === stepIndex
+                ? { ...current, phase: 'impact' }
+                : current);
+            });
+            scheduleTimer(elapsedMs + settleDelayMs, () => {
+              setRunning(current => current?.runId === runId && current.stepIndex === stepIndex
+                ? { ...current, phase: 'settle' }
+                : current);
+            });
+
+            elapsedMs += stepDurationMs + delayAfter;
+          });
+
+          if (fxSteps.length === 0) return;
+          if (fxSteps.length === 1) {
+            const [onlyStep] = fxSteps;
+            fxBus.push(onlyStep.cue, onlyStep.ctx, onlyStep.params);
+          } else {
+            fxBus.pushSequence(fxSteps);
           }
-          previewCompleteTimerRef.current = window.setTimeout(() => {
+
+          scheduleTimer(elapsedMs + 120, () => {
+            if (triggerRunRef.current !== runId) return;
+            setRunning(null);
             setActiveKey(0);
-            previewCompleteTimerRef.current = null;
-          }, ABILITY_TRIGGERED_PREVIEW_DURATION_MS);
+          });
           startMeasure();
         });
       });
     });
-  }, [fxBus, startMeasure, t]);
+  }, [
+    clearPreviewTimers,
+    fxBus,
+    getResultElement,
+    getTargetElement,
+    resolveStepTarget,
+    scheduleTimer,
+    startMeasure,
+    t,
+    toSingleStep,
+  ]);
 
   useEffect(() => {
     if (queuedPreviewIdx === null) return undefined;
@@ -420,6 +722,14 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
   }, [playPreview, presetIdx]);
 
   const scene = TRIGGER_SCENES[presetIdx];
+  const activeTargetSlot = running?.targetSlot ?? (scene.targetKey === 'minion' ? scene.targetSlot : undefined);
+  const zoneActive = (key: PreviewZoneKey) => running?.targetKey === key || running?.resultKey === key;
+  const runningTargetSlot = running?.targetSlot !== undefined ? MINION_SLOTS[running.targetSlot] : undefined;
+  const runningTargetPreviewRef = runningTargetSlot?.previewRef ?? scene.targetPreviewRef;
+  const runningTargetLabel = runningTargetSlot ? t(runningTargetSlot.labelKey) : t(scene.labelKey);
+  const showMovedCard = running?.actionKind === 'move' && running.phase === 'settle' && runningTargetPreviewRef;
+  const showReturnedCard = running?.actionKind === 'return' && running.phase === 'settle' && runningTargetPreviewRef;
+  const showDiscardedCard = running?.actionKind === 'discard' && running.phase === 'settle' && runningTargetPreviewRef;
 
   return (
     <EffectCard
@@ -430,66 +740,172 @@ export const AbilityTriggeredCard: React.FC<PreviewCardProps> = ({ iconColor }) 
       buttons={<>
         {TRIGGER_SCENES.map((s, i) => (
           <TriggerButton
-            key={s.defId}
+            key={s.id}
             label={t(s.labelKey)}
             onClick={() => trigger(i)}
             color={i === presetIdx ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-slate-600 hover:bg-slate-500'}
-            testId={`smashup-triggered-preview-scene-${s.defId}`}
+            testId={`smashup-triggered-preview-scene-${s.id}`}
           />
         ))}
       </>}
     >
-      <div className="absolute inset-0 flex items-center justify-center gap-[clamp(24px,6vw,96px)] bg-[radial-gradient(circle_at_50%_45%,rgba(120,83,39,0.18),transparent_52%)] p-6">
-        {/* 左侧：触发源卡牌（带卡图） */}
-        <div className="relative flex flex-col items-center gap-1.5 shrink-0">
-          <motion.div
-            ref={sourceRef}
-            data-testid="smashup-triggered-preview-source-card"
-            className="relative h-[224px] w-[160px] rounded-xl"
-            animate={activeKey > 0
-              ? {
-                y: [0, -8, -8, -2, 0],
-                scale: [1, 1.18, 1.1, 1.04, 1],
-                rotate: [0, -1.2, 0.8, 0, 0],
-                filter: ['brightness(1)', 'brightness(1.28)', 'brightness(1.16)', 'brightness(1.06)', 'brightness(1)'],
-              }
-              : { y: 0, scale: 1, rotate: 0, filter: 'brightness(1)' }}
-            transition={activeKey > 0
-              ? { duration: 1.12, times: [0, 0.18, 0.48, 0.78, 1], ease: 'easeOut' }
-              : { duration: 0.24, ease: 'easeOut' }}
-          >
-            <div className="absolute inset-0 overflow-hidden rounded-xl border border-slate-200/25 bg-slate-800 shadow-[0_20px_52px_rgba(0,0,0,0.5)]">
-              <CardPreview
-                previewRef={scene.previewRef}
-                className="h-full w-full"
-                title={t(scene.labelKey)}
-              />
-            </div>
-          </motion.div>
-        </div>
-
-        {/* 右侧：模拟基地场景 */}
-        <div className="relative flex flex-col items-center gap-1.5">
-          <div className="rounded-full bg-slate-950/36 px-3 py-1 text-[12px] font-bold text-slate-500/80">
-            {t('devtools.effectPreview.gameplay.ability_triggered.preview.base_title')}
+      <div className="absolute inset-0 overflow-hidden bg-[radial-gradient(circle_at_50%_42%,rgba(120,83,39,0.18),transparent_54%)] px-5 py-4">
+        <div className="grid h-full min-h-[330px] grid-cols-[145px_minmax(0,1fr)] items-center gap-4">
+          <div className="relative flex flex-col items-center gap-2">
+            <motion.div
+              ref={sourceRef}
+              data-testid="smashup-triggered-preview-source-card"
+              className="relative h-[202px] w-[144px] rounded-xl"
+              animate={activeKey > 0
+                ? {
+                  y: [0, -8, -8, -2, 0],
+                  scale: [1, 1.18, 1.1, 1.04, 1],
+                  rotate: [0, -1.2, 0.8, 0, 0],
+                  filter: ['brightness(1)', 'brightness(1.28)', 'brightness(1.16)', 'brightness(1.06)', 'brightness(1)'],
+                }
+                : { y: 0, scale: 1, rotate: 0, filter: 'brightness(1)' }}
+              transition={activeKey > 0
+                ? { duration: 1.12, times: [0, 0.18, 0.48, 0.78, 1], ease: 'easeOut' }
+                : { duration: 0.24, ease: 'easeOut' }}
+            >
+              <div className="absolute inset-0 overflow-hidden rounded-xl border border-slate-200/25 bg-slate-800 shadow-[0_20px_52px_rgba(0,0,0,0.5)]">
+                <CardPreview
+                  previewRef={scene.previewRef}
+                  className="h-full w-full"
+                  title={t(scene.labelKey)}
+                />
+              </div>
+            </motion.div>
           </div>
-          <div className="flex gap-3 p-2">
-            {MINION_SLOTS.map((slot, i) => (
-              <FakeMinionSlot
-                key={slot.key}
-                ref={(node) => {
-                  targetRefs.current[i] = node;
-                }}
-                slotKey={slot.key}
-                label={t(slot.labelKey)}
-                power={slot.power}
-                color={slot.color}
-                previewRef={slot.previewRef}
-                active={i === scene.targetSlot}
-                reacting={activeKey > 0 && i === scene.targetSlot}
-                actionKind={scene.actionKind}
-              />
-            ))}
+
+          <div className="relative flex min-w-0 items-center justify-center gap-7">
+            <div className="flex flex-col items-center gap-2">
+              <PreviewZone
+                ref={setZoneRef('baseA')}
+                zoneKey="baseA"
+                label={t('devtools.effectPreview.gameplay.ability_triggered.preview.base_title')}
+                variant="base"
+                active={zoneActive('baseA')}
+              >
+                <span className="text-2xl font-black text-amber-100">20</span>
+              </PreviewZone>
+              <div className="flex gap-3 p-1">
+                {MINION_SLOTS.map((slot, i) => (
+                  <FakeMinionSlot
+                    key={slot.key}
+                    ref={(node) => {
+                      targetRefs.current[i] = node;
+                    }}
+                    slotKey={slot.key}
+                    label={t(slot.labelKey)}
+                    power={slot.power}
+                    color={slot.color}
+                    previewRef={slot.previewRef}
+                    active={i === activeTargetSlot}
+                    running={running}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <PreviewZone
+                ref={setZoneRef('baseB')}
+                zoneKey="baseB"
+                label={t('devtools.effectPreview.gameplay.ability_triggered.preview.zones.second_base')}
+                variant="base"
+                active={zoneActive('baseB')}
+              >
+                <span className="text-2xl font-black text-slate-100">18</span>
+              </PreviewZone>
+              <div className="flex items-center gap-3">
+                <PreviewZone
+                  ref={setZoneRef('emptySlot')}
+                  zoneKey="emptySlot"
+                  label={t('devtools.effectPreview.gameplay.ability_triggered.preview.zones.empty_slot')}
+                  variant="empty"
+                  active={zoneActive('emptySlot')}
+                >
+                  {showMovedCard ? (
+                    <motion.div
+                      className="absolute inset-0 overflow-hidden rounded-lg"
+                      initial={{ opacity: 0, scale: 0.72 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.32, delay: 0.12 }}
+                      data-testid="smashup-triggered-preview-moved-card"
+                    >
+                      <CardPreview
+                        previewRef={runningTargetPreviewRef}
+                        className="h-full w-full"
+                        title={runningTargetLabel}
+                      />
+                    </motion.div>
+                  ) : (
+                    <div className="h-[74px] w-[52px] rounded-md border border-dashed border-white/18 bg-slate-950/28" />
+                  )}
+                </PreviewZone>
+                <div className="flex flex-col gap-3">
+                  <PreviewZone
+                    ref={setZoneRef('hand')}
+                    zoneKey="hand"
+                    label={t('devtools.effectPreview.gameplay.ability_triggered.preview.zones.hand')}
+                    variant="hand"
+                    active={zoneActive('hand')}
+                  >
+                    {[0, 1, 2].map(index => (
+                      <div
+                        key={index}
+                        className="absolute h-[58px] w-[42px] rounded border border-white/35 bg-[linear-gradient(135deg,#78350f,#d97706_52%,#fde68a)] shadow"
+                        style={{
+                          left: 23 + index * 22,
+                          top: 22 - Math.abs(index - 1) * 2,
+                          transform: `rotate(${(index - 1) * 7}deg)`,
+                        }}
+                      />
+                    ))}
+                    {showReturnedCard ? (
+                      <motion.div
+                        className="absolute right-3 top-3 h-[58px] w-[42px] overflow-hidden rounded border border-white/55 shadow-[0_0_20px_rgba(251,191,36,0.38)]"
+                        initial={{ opacity: 0, scale: 0.78, rotate: 8 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 2 }}
+                        transition={{ duration: 0.28, ease: 'easeOut' }}
+                        data-testid="smashup-triggered-preview-returned-card"
+                      >
+                        <CardPreview
+                          previewRef={runningTargetPreviewRef}
+                          className="h-full w-full"
+                          title={runningTargetLabel}
+                        />
+                      </motion.div>
+                    ) : null}
+                  </PreviewZone>
+                  <PreviewZone
+                    ref={setZoneRef('discard')}
+                    zoneKey="discard"
+                    label={t('devtools.effectPreview.gameplay.ability_triggered.preview.zones.discard')}
+                    variant="discard"
+                    active={zoneActive('discard')}
+                  >
+                    <div className="h-[58px] w-[42px] rotate-[-9deg] rounded border border-rose-100/35 bg-slate-800 shadow" />
+                    {showDiscardedCard ? (
+                      <motion.div
+                        className="absolute left-[15px] top-[14px] h-[58px] w-[42px] overflow-hidden rounded border border-rose-100/45 shadow-[0_0_18px_rgba(251,113,133,0.4)]"
+                        initial={{ opacity: 0, scale: 0.8, rotate: -12 }}
+                        animate={{ opacity: 0.92, scale: 1, rotate: -8, filter: 'grayscale(0.55) brightness(0.78)' }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        data-testid="smashup-triggered-preview-discarded-card"
+                      >
+                        <CardPreview
+                          previewRef={runningTargetPreviewRef}
+                          className="h-full w-full"
+                          title={runningTargetLabel}
+                        />
+                      </motion.div>
+                    ) : null}
+                  </PreviewZone>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

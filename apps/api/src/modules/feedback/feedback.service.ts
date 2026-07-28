@@ -31,6 +31,11 @@ const ALLOWED_USER_SOURCES = new Set([
 ]);
 const LEGACY_WATCHDOG_SOURCE = 'online-ai-watchdog';
 const WATCHDOG_AGGREGATION_SOURCE = 'online-ai-watchdog';
+const INFRA_CPU_WATCH_SOURCE = 'infra-cpu-watch';
+const SYSTEM_AGGREGATION_SOURCES = new Set([
+    WATCHDOG_AGGREGATION_SOURCE,
+    INFRA_CPU_WATCH_SOURCE,
+]);
 export const WATCHDOG_AGGREGATION_WINDOW_MS = 6 * 60 * 60 * 1000;
 export const WATCHDOG_RECENT_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
 export const WATCHDOG_MAX_RECENT_RECORDS = 100;
@@ -433,7 +438,7 @@ export class FeedbackService {
         source: string,
         gameId?: string,
     ): boolean {
-        if (source !== WATCHDOG_AGGREGATION_SOURCE) {
+        if (!SYSTEM_AGGREGATION_SOURCES.has(source)) {
             return false;
         }
         return Boolean(gameId && (dto.autoReportKind || dto.errorContext?.name));
@@ -504,7 +509,7 @@ export class FeedbackService {
         autoReportFamily: string,
     ): string {
         const value = dto.errorContext?.message
-            ?? dto.content.replace(/^\[system\]\[online-ai-watchdog\]\s+/i, '');
+            ?? dto.content.replace(/^\[system\]\[[^\]]+\]\s+/i, '');
         if (typeof value !== 'string') {
             return 'unknown';
         }

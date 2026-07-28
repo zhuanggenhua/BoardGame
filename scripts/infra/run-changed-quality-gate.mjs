@@ -1232,6 +1232,20 @@ function collectCommands(files, baseRef, affectsTypecheck) {
         'native',
       ],
     });
+    commands.push({
+      label: 'SmashUp ability event shape contract',
+      reason: 'SmashUp 能力/helper 改动，检查单事件 helper 不得直接用于数组展开',
+      command: process.execPath,
+      args: [
+        ...VITEST_SAFE_ENTRY,
+        'run',
+        'src/games/smashup/__tests__/abilityEventShapeContract.test.ts',
+        '--config',
+        'vitest.config.core.ts',
+        '--configLoader',
+        'native',
+      ],
+    });
   }
 
   if (isPrePushMode) {

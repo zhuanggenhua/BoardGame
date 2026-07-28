@@ -17529,6 +17529,20 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     ? cloneMagicCameraRuntimeState(nextCore.scenarioRuntime.magicCamera)
                     : undefined,
             };
+            const recentMonsterMoveRoll = monsterMovementRoll
+                ? {
+                    id: `monster-move-${monsterMovementRoll.monsterId}-${event.timestamp}`,
+                    kind: 'monsterMoveRoll' as const,
+                    playerId: monsterMovementRoll.playerId,
+                    sourceTitle: `${monsterMovementRoll.monsterName}移动`,
+                    trait: 'speed' as const,
+                    rollLabel: `速度 ${monsterMovementRoll.speed}`,
+                    dice: [...monsterMovementRoll.dice],
+                    passiveBonus: 0,
+                    latestLabel: `可移动 ${monsterMovementRoll.moveAllowance} 间`,
+                    consumedRabbitFootCardIds: [],
+                }
+                : null;
             const activityCore = {
                 ...nextCore,
                 scenarioRuntime: resetScenarioRuntime,
@@ -17553,7 +17567,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 highlightedDeckKind: null,
                 pendingTradeAgreement: null,
                 activePlayerId: null,
-                recentRoll: null,
+                recentRoll: recentMonsterMoveRoll,
                 activityLog: revived.revived
                     ? appendActivity(
                         {

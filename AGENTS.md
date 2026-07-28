@@ -22,7 +22,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 > 本文档定义 AI 编程助手在本项目中的行为规范、开发流程和质量标准。
 > **坚持"强制优先、结果导向、可审计"，所有流程需可追溯。**
 > **以当前对话为主，当我说继续指的都是当前对话的任务，除非指明否则不关心其他对话的修改**
-> **涉及设计工具 / 设计稿 / 视觉方案任务时，默认走 Open Design：读 `docs/infra/open-design.md`，使用 `scripts/infra/setup-open-design.ps1` 或 `npm run setup:design:mcp` 接入；不得恢复旧设计工具 OAuth 或旧 MCP 接入。**
+> **涉及设计工具 / 视觉方案协作时，Open Design 只是当前设计工具接入口：读 `docs/infra/open-design.md`，使用 `scripts/infra/setup-open-design.ps1` 或 `npm run setup:design:mcp` 接入；不得恢复旧设计工具 OAuth 或旧 MCP 接入。用户要“设计稿 / 视觉稿 / 效果图”时，交付物与准入仍按 `docs/ai-rules/doc-index.md` 中“新游戏位图设计稿 / 设计批准门禁”执行：先读规则真相源与素材矩阵，位图稿经 AI 图面核验通过后才进入人工验收；不得用 Open Design artifact、HTML 预览或运行页截图替代设计稿。**
 
 #### 当前对话事实边界（强制）
 

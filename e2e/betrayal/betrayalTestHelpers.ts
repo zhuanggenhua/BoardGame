@@ -12,6 +12,7 @@ import {
   type BetrayalCommandMap,
   type BetrayalCore,
   type BetrayalTraitKey,
+  createBetrayalMonsterFromDefinition,
   createBetrayalMonsterEncounterCore,
 } from "../../src/games/betrayal/game";
 import { BETRAYAL_DISCOVERY_POOLS } from "../../src/games/betrayal/scenarioConfig";
@@ -751,6 +752,96 @@ export function createCorpseLootReadyRuntimeCore(): BetrayalCore {
   return createCorpseLootReadyCore();
 }
 
+export function createDustNonTraitorCorpseLootRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "2");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: [],
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "1") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [
+          { id: "map", name: "地图", kind: "item" },
+          { id: "omen-book", name: "书本", kind: "omen" },
+        ],
+      };
+    }
+    if (explorer.playerId === "0") {
+      return { ...explorer, roomId: "entrance-hall" };
+    }
+    return explorer;
+  });
+  core.scenarioRuntime.deadExplorerPlayerIds = ["1"];
+  core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = [];
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘非叛徒搜尸夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["0"];
+  core.scenarioRuntime.dust.feverishPlayerIds =
+    core.scenarioRuntime.dust.feverishPlayerIds.filter((id) => id !== "1");
+  core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  core.pendingTradeAgreement = null;
+  core.pendingDamageAllocation = null;
+  core.usedCardIdsThisTurn = [];
+  syncBetrayalE2ECurrentExplorer(core);
+  core.activePlayerId = null;
+  core.recommendedAction = "trade";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
+export function createDustDeadTraitorBurialNoLootRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "2");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: [],
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "1") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [],
+      };
+    }
+    if (explorer.playerId === "0") {
+      return { ...explorer, roomId: "entrance-hall" };
+    }
+    return explorer;
+  });
+  core.scenarioRuntime.deadExplorerPlayerIds = ["1"];
+  core.scenarioRuntime.corpseLootedByPlayerIdsThisTurn = [];
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘死亡叛徒掩埋夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["1"];
+  core.scenarioRuntime.dust.feverishPlayerIds = ["1"];
+  core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  core.monsters = [
+    ...core.monsters.filter((monster) => monster.id !== "feverish-1"),
+    createBetrayalMonsterFromDefinition(
+      "dust-feverish-patient",
+      "feverish-1",
+      "hallway",
+    ),
+  ];
+  core.pendingTradeAgreement = null;
+  core.pendingDamageAllocation = null;
+  core.usedCardIdsThisTurn = [];
+  syncBetrayalE2ECurrentExplorer(core);
+  core.activePlayerId = null;
+  core.recommendedAction = "trade";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
 export function createJackSpiritReviveReadyRuntimeCore(): BetrayalCore {
   return createJackSpiritReviveReadyCore();
 }
@@ -954,6 +1045,71 @@ export function createDustOrdinaryAttackDeathRuntimeCore(): BetrayalCore {
   return dismissBetrayalE2EBlockingOverlays(core);
 }
 
+export type DustAttackWeaponE2ECardId = "hunting-knife" | "dagger" | "ring";
+
+const DUST_ATTACK_WEAPON_E2E_CARDS: Record<
+  DustAttackWeaponE2ECardId,
+  BetrayalCore["currentExplorer"]["inventory"][number]
+> = {
+  "hunting-knife": { id: "hunting-knife", name: "砍刀", kind: "item" },
+  dagger: { id: "dagger", name: "匕首", kind: "omen" },
+  ring: { id: "ring", name: "指环", kind: "omen" },
+};
+
+export function createDustAttackWeaponDeathRuntimeCore(
+  weaponCardId: DustAttackWeaponE2ECardId,
+): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "0");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: [DUST_ATTACK_WEAPON_E2E_CARDS[weaponCardId]],
+  };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
+    ...card,
+  }));
+  core.turnStartInventoryCardIds = [weaponCardId];
+  core.usedCardIdsThisTurn = core.usedCardIdsThisTurn.filter(
+    (id) => id !== "haunt-attack" && id !== weaponCardId,
+  );
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "1") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [{ id: "map", name: "地图", kind: "item" }],
+      };
+    }
+    return { ...explorer, roomId: "entrance-hall" };
+  });
+  core.scenarioRuntime.deadExplorerPlayerIds = ["2"];
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘武器攻击致死夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["0", "1"];
+  setBetrayalE2ETraitTrack(core, "0", "might", [2], 0, 0);
+  setBetrayalE2ETraitTrack(core, "0", "speed", [2, 3, 3], 2, 2);
+  setBetrayalE2ETraitTrack(core, "0", "sanity", [2], 0, 0);
+  const physicalDeathPosition = weaponCardId === "dagger" ? 7 : 4;
+  const mentalDeathPosition = 3;
+  const physicalDeathTrack = Array.from(
+    { length: physicalDeathPosition + 1 },
+    () => 1,
+  );
+  const mentalDeathTrack = Array.from(
+    { length: mentalDeathPosition + 1 },
+    () => 1,
+  );
+  setBetrayalE2ETraitTrack(core, "1", "might", physicalDeathTrack, physicalDeathPosition, physicalDeathPosition);
+  setBetrayalE2ETraitTrack(core, "1", "speed", physicalDeathTrack, physicalDeathPosition, physicalDeathPosition);
+  setBetrayalE2ETraitTrack(core, "1", "knowledge", mentalDeathTrack, mentalDeathPosition, mentalDeathPosition);
+  setBetrayalE2ETraitTrack(core, "1", "sanity", mentalDeathTrack, mentalDeathPosition, mentalDeathPosition);
+  syncBetrayalE2ECurrentExplorer(core);
+  core.recommendedAction = "use";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
 export function createDustRoomDamageDeathRuntimeCore(): BetrayalCore {
   let core = createDustHauntCore(["0", "1", "2"]);
   core = focusBetrayalE2EExplorer(core, "1");
@@ -1038,6 +1194,117 @@ export function createDustSkullDeathPreventionFailedRuntimeCore(): BetrayalCore 
   return core;
 }
 
+export function createDustRabbitFootDeathBurialRuntimeCore(): BetrayalCore {
+  const core = createDustSkullDeathPreventionBaseRuntimeCore();
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    inventory: [
+      { id: "skull", name: "头骨", kind: "omen" },
+      { id: "rope", name: "兔脚", kind: "item" },
+      { id: "map", name: "地图", kind: "item" },
+    ],
+  };
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘兔脚死亡回滚夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["1"];
+  syncBetrayalE2ECurrentExplorer(core);
+  return core;
+}
+
+export type DustActivePossessionE2ECardId =
+  | "medical-kit"
+  | "holy-water"
+  | "map"
+  | "notebook"
+  | "journal"
+  | "manuscript"
+  | "omen-book"
+  | "mask";
+
+export const DUST_ACTIVE_POSSESSION_E2E_CARDS: Record<
+  DustActivePossessionE2ECardId,
+  BetrayalCore["currentExplorer"]["inventory"][number]
+> = {
+  "medical-kit": { id: "medical-kit", name: "急救包", kind: "item" },
+  "holy-water": { id: "holy-water", name: "奇怪的药品", kind: "item" },
+  map: { id: "map", name: "地图", kind: "item" },
+  notebook: { id: "notebook", name: "笔记本", kind: "item" },
+  journal: { id: "journal", name: "日记", kind: "item" },
+  manuscript: { id: "manuscript", name: "手稿", kind: "item" },
+  "omen-book": { id: "omen-book", name: "书本", kind: "omen" },
+  mask: { id: "mask", name: "面具", kind: "omen" },
+};
+
+export function createDustActivePossessionRuntimeCore(
+  cardIds: DustActivePossessionE2ECardId[] = [
+    "medical-kit",
+    "holy-water",
+    "map",
+    "notebook",
+    "journal",
+    "manuscript",
+    "omen-book",
+    "mask",
+  ],
+): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "1");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "hallway",
+    inventory: cardIds.map((cardId) => ({
+      ...DUST_ACTIVE_POSSESSION_E2E_CARDS[cardId],
+    })),
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "0") {
+      return {
+        ...explorer,
+        roomId: "hallway",
+        inventory: [],
+      };
+    }
+    if (explorer.playerId === "2") {
+      return {
+        ...explorer,
+        roomId: "upper-landing",
+        inventory: [],
+      };
+    }
+    return { ...explorer, inventory: [] };
+  });
+  for (const playerId of ["0", "1"]) {
+    for (const trait of BETRAYAL_E2E_TRAIT_KEYS) {
+      setBetrayalE2ETraitTrack(core, playerId, trait, [1, 2, 3, 4, 5], 1, 3);
+    }
+  }
+  if (!core.scenarioRuntime.dust) {
+    throw new Error("山屋灰尘主动持有牌夹具缺少 dust 运行态");
+  }
+  core.scenarioRuntime.dust.permanentTraitorPlayerIds = ["0"];
+  core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+  core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  core.monsters = [
+    ...core.monsters.filter(
+      (monster) => monster.id !== "feverish-active-possession-1",
+    ),
+    createBetrayalMonsterFromDefinition(
+      "dust-feverish-patient",
+      "feverish-active-possession-1",
+      "hallway",
+    ),
+  ];
+  core.pendingTradeAgreement = null;
+  core.pendingDamageAllocation = null;
+  core.pendingCardResolutionQueue = [];
+  core.usedCardIdsThisTurn = [];
+  core.activePlayerId = null;
+  core.recommendedAction = "use";
+  syncBetrayalE2ECurrentExplorer(core);
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
 export function createDustForcedSicknessExchangeRuntimeCore(): BetrayalCore {
   let core = createDustHauntCore(["0", "1", "2", "3"]);
   core = focusBetrayalE2EExplorer(core, "1");
@@ -1082,6 +1349,40 @@ export function createDustForcedSicknessExchangeRuntimeCore(): BetrayalCore {
   syncBetrayalE2ECurrentExplorer(core);
   core.activePlayerId = null;
   core.recommendedAction = "endTurn";
+  return dismissBetrayalE2EBlockingOverlays(core);
+}
+
+export function createDustDogTradeSicknessSplitRuntimeCore(): BetrayalCore {
+  let core = createDustHauntCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "1");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: "entrance-hall",
+    inventory: [
+      { id: "dog", name: "狗", kind: "omen" },
+      { id: "medical-kit", name: "急救包", kind: "item" },
+      { id: "map", name: "地图", kind: "item" },
+    ],
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => {
+    if (explorer.playerId === "0") {
+      return { ...explorer, roomId: "upper-landing", inventory: [] };
+    }
+    if (explorer.playerId === "2") {
+      return { ...explorer, roomId: "entrance-hall", inventory: [] };
+    }
+    return { ...explorer, inventory: [] };
+  });
+  if (core.scenarioRuntime.dust) {
+    core.scenarioRuntime.dust.exchangedSicknessThisTurnPlayerIds = [];
+    core.scenarioRuntime.dust.pendingSicknessExchange = undefined;
+  }
+  core.activePlayerId = null;
+  core.pendingTradeAgreement = null;
+  core.pendingCardResolutionQueue = [];
+  core.usedCardIdsThisTurn = [];
+  core.recommendedAction = "trade";
+  syncBetrayalE2ECurrentExplorer(core);
   return dismissBetrayalE2EBlockingOverlays(core);
 }
 

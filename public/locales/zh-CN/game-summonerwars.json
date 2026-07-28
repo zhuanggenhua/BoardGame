@@ -498,6 +498,7 @@
       "mindCapture": "心灵捕获：选择控制或造成伤害",
       "iceShards": "寒冰碎屑：攻击阶段开始自动结算",
       "feedBeast": "喂养巨食兽：选择吞噬目标或自毁",
+      "moguDecayTarget": "腐坏：选择相邻友方单位",
       "moguParasite": "寄生：选择消耗充能或受到伤害",
       "huijinCallGuardsTarget": "召集护卫：选择场上的友方士兵",
       "huijinCallGuardsPosition": "召集护卫：选择召唤师相邻空格",

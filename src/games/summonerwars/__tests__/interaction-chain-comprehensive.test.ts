@@ -16,17 +16,15 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { abilityRegistry } from '../domain/abilities';
-import type { AbilityDef } from '../domain/abilities';
 import { abilityExecutorRegistry } from '../domain/executors';
-import { swCustomActionRegistry } from '../domain/customActionHandlers';
-import { createInitializedCore, placeTestUnit, generateInstanceId, resetInstanceCounter } from './test-helpers';
+import { createInitializedCore, generateInstanceId, resetInstanceCounter } from './test-helpers';
 import { executeCommand } from '../domain/execute';
 import { validateCommand } from '../domain/validate';
 import { SummonerWarsDomain } from '../domain';
 import { SW_COMMANDS, SW_EVENTS } from '../domain/types';
 import type { SummonerWarsCore, PlayerId, CellCoord, BoardUnit, UnitCard, StructureCard, EventCard } from '../domain/types';
 import type { RandomFn, MatchState } from '../../../engine/types';
-import { getUnitAt, isCellEmpty, getPlayerUnits, manhattanDistance } from '../domain/helpers';
+import { getUnitAt } from '../domain/helpers';
 import { CARD_IDS } from '../domain/ids';
 import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
@@ -102,13 +100,6 @@ function exec(core: SummonerWarsCore, cmd: string, payload: Record<string, unkno
 function validate(core: SummonerWarsCore, cmd: string, payload: Record<string, unknown>, playerId?: string) {
   const state = { core } as MatchState<SummonerWarsCore>;
   return validateCommand(state, { type: cmd, payload, playerId });
-}
-
-/** 验证+执行：先验证，通过后执行 */
-function validateAndExec(core: SummonerWarsCore, cmd: string, payload: Record<string, unknown>, random?: RandomFn) {
-  const result = validate(core, cmd, payload);
-  if (!result.valid) return [];
-  return exec(core, cmd, payload, random);
 }
 
 const interactionSystems = [
@@ -312,6 +303,92 @@ function getSwCurrentType(state: MatchState<SummonerWarsCore>): string | undefin
 }
 
 describe('SummonerWars 系统交互桥接回归', () => {
+  it('[huijin_scorch] 灼烧应选择召唤师2格内任意士兵或英雄，包含友方单位', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'huijin', faction1: 'necromancer' });
+    clearRect(core, [0, 1, 2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+    core.players['0'].magic = 0;
+    core.players['0'].hand = [{
+      id: CARD_IDS.HUIJIN_SCORCH,
+      cardType: 'event',
+      name: '灼烧',
+      eventType: 'common',
+      faction: 'huijin',
+      cost: 0,
+      playPhase: 'move',
+      effect: '测试',
+      deckSymbols: [],
+    } as EventCard];
+
+    putUnit(core, { row: 4, col: 2 }, mkUnit('huijin-summoner-test', {
+      faction: 'huijin',
+      unitClass: 'summoner',
+      name: '玛达莉雅女王',
+      life: 12,
+    }), '0');
+    const friendlyCommon = putUnit(core, { row: 4, col: 3 }, mkUnit('friendly-common-target', {
+      faction: 'huijin',
+      unitClass: 'common',
+      name: '友方士兵',
+      life: 3,
+    }), '0');
+    const enemyChampion = putUnit(core, { row: 2, col: 2 }, mkUnit('enemy-champion-target', {
+      faction: 'necromancer',
+      unitClass: 'champion',
+      name: '敌方英雄',
+      life: 5,
+    }), '1');
+    const farCommon = putUnit(core, { row: 0, col: 0 }, mkUnit('far-common-target', {
+      faction: 'necromancer',
+      unitClass: 'common',
+      name: '超距士兵',
+      life: 3,
+    }), '1');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], interactionSystems),
+    };
+
+    const requested = runPipeline(state, {
+      type: SW_COMMANDS.REQUEST_EVENT_INTERACTION,
+      playerId: '0',
+      payload: { cardId: CARD_IDS.HUIJIN_SCORCH },
+    });
+    expect(requested.success).toBe(true);
+    state = requested.state;
+    expect(getSwCurrentType(state)).toBe('event_target');
+
+    const current = state.sys.interaction.current;
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const targetOptionPositions = options
+      .map(option => (option.value as { targetPosition?: CellCoord } | undefined)?.targetPosition)
+      .filter((position): position is CellCoord => !!position);
+    expect(targetOptionPositions).toContainEqual(friendlyCommon.position);
+    expect(targetOptionPositions).toContainEqual(enemyChampion.position);
+    expect(targetOptionPositions).not.toContainEqual({ row: 4, col: 2 });
+    expect(targetOptionPositions).not.toContainEqual(farCommon.position);
+
+    const friendlyOptionId = options.find((option) => {
+      const value = option.value as { targetPosition?: CellCoord } | undefined;
+      return value?.targetPosition?.row === friendlyCommon.position.row
+        && value.targetPosition.col === friendlyCommon.position.col;
+    })?.id;
+    expect(friendlyOptionId).toBeTruthy();
+
+    const picked = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: friendlyOptionId },
+    });
+
+    expect(picked.success).toBe(true);
+    expect(getUnitAt(picked.state.core, friendlyCommon.position)?.damage).toBe(2);
+    expect(picked.state.core.players['0'].discard.some(card => card.id === CARD_IDS.HUIJIN_SCORCH)).toBe(true);
+  });
+
   it('[fortress_power] 攻击后选牌交互应完整收口到手牌/弃牌堆最终状态', () => {
     resetInstanceCounter();
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'paladin', faction1: 'necromancer' });
@@ -4262,6 +4339,225 @@ describe('验证层有效性门控', () => {
     expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
     expect(getUnitAt(repeatedExit.state.core, beast.position)?.boosts).toBe(0);
     expect(getUnitAt(repeatedExit.state.core, beast.position)?.damage).toBe(0);
+  });
+
+  it('[mogu_decay] 移动阶段结束应先自伤，再由玩家选择相邻友方单位充能', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'mogu', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+
+    const maShuoDa = putUnit(core, { row: 4, col: 3 }, mkUnit('mogu-ma-shuo-da-decay-l4', {
+      abilities: ['mogu_decay'],
+      faction: 'mogu',
+      unitClass: 'champion',
+      name: '玛硕达',
+      life: 6,
+    }), '0');
+    const ally = putUnit(core, { row: 4, col: 4 }, mkUnit('mogu-decay-ally-l4', {
+      faction: 'mogu',
+      name: '相邻友方单位',
+    }), '0');
+    const enemy = putUnit(core, { row: 3, col: 3 }, mkUnit('mogu-decay-enemy-l4', {
+      faction: 'necromancer',
+      name: '相邻敌方单位',
+    }), '1');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const phaseExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(phaseExit.success).toBe(true);
+    state = phaseExit.state;
+    expect(state.core.phase).toBe('move');
+    expect(getSwCurrentType(state)).toBe('mogu_decay_select_target');
+    expect(getUnitAt(state.core, maShuoDa.position)?.damage).toBe(1);
+    expect(getUnitAt(state.core, ally.position)?.boosts ?? 0).toBe(0);
+
+    const current = state.sys.interaction.current;
+    expect(current?.kind).toBe('simple-choice');
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    const targetOptions = options.filter((option) => {
+      const value = option.value as { action?: string } | undefined;
+      return value?.action === 'mogu_decay_target';
+    });
+    expect(targetOptions).toHaveLength(1);
+    const allyOptionId = targetOptions.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.targetPosition?.row === ally.position.row
+        && value.targetPosition.col === ally.position.col;
+    })?.id;
+    expect(allyOptionId).toBe(`unit:${ally.instanceId}`);
+    expect(targetOptions.some((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.targetPosition?.row === enemy.position.row
+        && value.targetPosition.col === enemy.position.col;
+    })).toBe(false);
+    expect(options.some(option => option.id === 'skip')).toBe(true);
+
+    const picked = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: allyOptionId },
+    });
+    expect(picked.success).toBe(true);
+    state = picked.state;
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(state.core, ally.position)?.boosts).toBe(2);
+    expect(picked.events.some(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && (e.payload as Record<string, unknown>).sourceAbilityId === 'mogu_decay'
+    )).toBe(true);
+
+    const repeatedExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(repeatedExit.success).toBe(true);
+    expect(repeatedExit.state.core.phase).toBe('build');
+    expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
+  });
+
+  it('[mogu_decay] 合法相邻友方存在时跳过不应充能，并可继续阶段', () => {
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'mogu', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+
+    const maShuoDa = putUnit(core, { row: 4, col: 3 }, mkUnit('mogu-ma-shuo-da-decay-skip-l4', {
+      abilities: ['mogu_decay'],
+      faction: 'mogu',
+      unitClass: 'champion',
+      name: '玛硕达',
+      life: 6,
+    }), '0');
+    const ally = putUnit(core, { row: 4, col: 4 }, mkUnit('mogu-decay-ally-skip-l4', {
+      faction: 'mogu',
+      name: '相邻友方单位',
+    }), '0');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const phaseExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(phaseExit.success).toBe(true);
+    state = phaseExit.state;
+    expect(getSwCurrentType(state)).toBe('mogu_decay_select_target');
+    expect(getUnitAt(state.core, maShuoDa.position)?.damage).toBe(1);
+
+    const current = state.sys.interaction.current;
+    const skipped = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: 'skip' },
+    });
+    expect(skipped.success).toBe(true);
+    state = skipped.state;
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(state.core, ally.position)?.boosts ?? 0).toBe(0);
+    expect(skipped.events.some(e =>
+      e.type === SW_EVENTS.UNIT_CHARGED
+      && (e.payload as Record<string, unknown>).sourceAbilityId === 'mogu_decay'
+    )).toBe(false);
+
+    const repeatedExit = runGamePipeline(state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(repeatedExit.success).toBe(true);
+    expect(repeatedExit.state.core.phase).toBe('build');
+    expect(repeatedExit.state.sys.interaction.current).toBeUndefined();
+  });
+
+  it('[mogu_decay] 无相邻友方或自伤死亡时不应留下目标选择交互', () => {
+    const noTargetCore = createInitializedCore(['0', '1'], testRandom(), { faction0: 'mogu', faction1: 'necromancer' });
+    clearRect(noTargetCore, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    noTargetCore.phase = 'move';
+    noTargetCore.currentPlayer = '0';
+    const noTargetMaShuoDa = putUnit(noTargetCore, { row: 4, col: 3 }, mkUnit('mogu-ma-shuo-da-decay-no-target-l4', {
+      abilities: ['mogu_decay'],
+      faction: 'mogu',
+      unitClass: 'champion',
+      name: '玛硕达',
+      life: 6,
+    }), '0');
+    putUnit(noTargetCore, { row: 4, col: 4 }, mkUnit('mogu-decay-only-enemy-l4', {
+      faction: 'necromancer',
+      name: '相邻敌方单位',
+    }), '1');
+
+    const noTarget = runGamePipeline({
+      core: noTargetCore,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    }, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(noTarget.success).toBe(true);
+    expect(noTarget.state.core.phase).toBe('move');
+    expect(noTarget.state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(noTarget.state.core, noTargetMaShuoDa.position)?.damage).toBe(1);
+    const noTargetContinued = runGamePipeline(noTarget.state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(noTargetContinued.success).toBe(true);
+    expect(noTargetContinued.state.core.phase).toBe('build');
+    expect(noTargetContinued.state.sys.interaction.current).toBeUndefined();
+
+    const deathCore = createInitializedCore(['0', '1'], testRandom(), { faction0: 'mogu', faction1: 'necromancer' });
+    clearRect(deathCore, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    deathCore.phase = 'move';
+    deathCore.currentPlayer = '0';
+    const dyingMaShuoDa = putUnit(deathCore, { row: 4, col: 3 }, mkUnit('mogu-ma-shuo-da-decay-dies-l4', {
+      abilities: ['mogu_decay'],
+      faction: 'mogu',
+      unitClass: 'champion',
+      name: '玛硕达',
+      life: 1,
+    }), '0');
+    const adjacentAlly = putUnit(deathCore, { row: 4, col: 4 }, mkUnit('mogu-decay-adjacent-ally-after-death-l4', {
+      faction: 'mogu',
+      name: '相邻友方单位',
+    }), '0');
+
+    const died = runGamePipeline({
+      core: deathCore,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    }, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(died.success).toBe(true);
+    expect(died.state.core.phase).toBe('move');
+    expect(died.state.sys.interaction.current).toBeUndefined();
+    expect(getUnitAt(died.state.core, dyingMaShuoDa.position)).toBeUndefined();
+    expect(getUnitAt(died.state.core, adjacentAlly.position)?.boosts ?? 0).toBe(0);
+    const deathContinued = runGamePipeline(died.state, {
+      type: SW_COMMANDS.END_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(deathContinued.success).toBe(true);
+    expect(deathContinued.state.core.phase).toBe('build');
+    expect(deathContinued.state.sys.interaction.current).toBeUndefined();
   });
 
   it('[huijin_call_guards] 真实结束阶段应先选择场上友方士兵，再放置到相邻空格', () => {

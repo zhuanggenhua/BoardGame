@@ -966,7 +966,10 @@ function cloneRecentRollForDiscoveryDisplay(
 function buildLatestDiscoveryDisplayEntry(
   core: BetrayalCore,
 ): LatestDiscoveryDisplayEntry | null {
-  if (isHauntScenarioOpeningDiscovery(core)) {
+  if (
+    isHauntScenarioOpeningDiscovery(core) &&
+    (core.pendingCardResolutionQueue?.length ?? 0) === 0
+  ) {
     return null;
   }
   const baseKey = buildLatestDiscoveryKey(core);
@@ -1909,6 +1912,10 @@ function resolveInventoryRulesSummary(
     );
   if (effectId === "flashlight" || effectId === "lantern")
     passiveLabels.push("事件属性检定额外投 2 骰");
+  if (effectId === "strange-amulet")
+    passiveLabels.push("援手作祟中决定胜利并控制巨魔手");
+  if (effectId === "rope")
+    passiveLabels.push("可重掷刚刚的投骰结果");
   if (effectId === "armor") passiveLabels.push("受到物理伤害 -1");
   if (effectId === "radio") passiveLabels.push("受到精神伤害 -1");
   if (effectId === "lockpick-tool")
@@ -6070,6 +6077,10 @@ export default function BetrayalBoard({
   const [latestDiscoveryQueue, setLatestDiscoveryQueue] = React.useState<
     LatestDiscoveryDisplayEntry[]
   >([]);
+  const [
+    dismissedHauntRevealDiscoveryKey,
+    setDismissedHauntRevealDiscoveryKey,
+  ] = React.useState<string | null>(null);
   const dismissedLatestDiscoveryKeysRef = React.useRef<Set<string>>(
     new Set(),
   );
@@ -8590,7 +8601,7 @@ export default function BetrayalBoard({
       hauntRevealProtocol.active &&
       hauntOpeningDiscoveryForActionPause &&
       hauntRevealDiscoveryKeyForActionPause !==
-        previewState.dismissedLatestDiscoveryKey,
+        dismissedHauntRevealDiscoveryKey,
   );
   const hauntActionContext = React.useMemo(() => {
     if (core.phase !== "haunt" || shouldPauseHauntBoardActions) {
@@ -9230,6 +9241,13 @@ export default function BetrayalBoard({
     if (!nextEntry) {
       return;
     }
+    const nextEntryBaseKey = buildLatestDiscoveryKey(core);
+    if (
+      isHauntScenarioOpeningDiscovery(core) &&
+      nextEntryBaseKey !== dismissedHauntRevealDiscoveryKey
+    ) {
+      return;
+    }
     if (
       nextEntry.key === previewState.dismissedLatestDiscoveryKey ||
       dismissedLatestDiscoveryKeysRef.current.has(nextEntry.key)
@@ -9254,7 +9272,11 @@ export default function BetrayalBoard({
       }
       return [...previousQueue, nextEntry];
     });
-  }, [core, previewState.dismissedLatestDiscoveryKey]);
+  }, [
+    core,
+    dismissedHauntRevealDiscoveryKey,
+    previewState.dismissedLatestDiscoveryKey,
+  ]);
   const latestDiscoveryEntry = latestDiscoveryQueue[0] ?? null;
   const latestDiscovery = latestDiscoveryEntry?.discovery ?? null;
   const latestDiscoveryRecentRoll = latestDiscoveryEntry?.recentRoll ?? null;
@@ -9347,7 +9369,7 @@ export default function BetrayalBoard({
     core.scenarioRuntime.hauntTriggered &&
     hauntRevealProtocol.active &&
     hauntOpeningDiscovery &&
-    hauntRevealDiscoveryKey !== previewState.dismissedLatestDiscoveryKey,
+    hauntRevealDiscoveryKey !== dismissedHauntRevealDiscoveryKey,
   );
   const visibleDustProgressItems = shouldShowHauntRevealCue
     ? []
@@ -9599,20 +9621,30 @@ export default function BetrayalBoard({
     if (!hauntRevealDiscoveryKey) {
       return;
     }
-    dismissedLatestDiscoveryKeysRef.current.add(hauntRevealDiscoveryKey);
-    setLatestDiscoveryQueue((previousQueue) =>
-      previousQueue.filter((entry) => entry.key !== hauntRevealDiscoveryKey),
-    );
+    const nextDiscoveryEntry = buildLatestDiscoveryDisplayEntry(core);
+    setDismissedHauntRevealDiscoveryKey(hauntRevealDiscoveryKey);
+    if (nextDiscoveryEntry) {
+      setLatestDiscoveryQueue((previousQueue) => {
+        const existingIndex = previousQueue.findIndex(
+          (entry) => entry.key === nextDiscoveryEntry.key,
+        );
+        if (existingIndex >= 0) {
+          return previousQueue.map((entry, index) =>
+            index === existingIndex ? nextDiscoveryEntry : entry,
+          );
+        }
+        return [nextDiscoveryEntry, ...previousQueue];
+      });
+    }
     setPreviewState((previousState) => ({
       ...previousState,
-      dismissedLatestDiscoveryKey: hauntRevealDiscoveryKey,
       dismissedRecentRollId:
         core.recentRoll?.sourceTitle === hauntOpeningDiscovery?.title
           ? (core.recentRoll.id ?? previousState.dismissedRecentRollId)
           : previousState.dismissedRecentRollId,
     }));
   }, [
-    core.recentRoll,
+    core,
     hauntOpeningDiscovery?.title,
     hauntRevealDiscoveryKey,
   ]);
@@ -9680,13 +9712,6 @@ export default function BetrayalBoard({
               })
             : t("board.status.turnHintHold");
   const roomFocusState = (() => {
-    if (hauntActionContext?.actionKind === "use") {
-      return {
-        label: hauntActionContext.label,
-        actionKind: "use" as const,
-        roomId: core.activeRoomId,
-      };
-    }
     if (
       core.recommendedAction === "use" &&
       selectedInventoryCard &&
@@ -9698,6 +9723,13 @@ export default function BetrayalBoard({
         }),
         actionKind: "use" as const,
         roomId: null,
+      };
+    }
+    if (hauntActionContext?.actionKind === "use") {
+      return {
+        label: hauntActionContext.label,
+        actionKind: "use" as const,
+        roomId: core.activeRoomId,
       };
     }
     return null;
@@ -9783,6 +9815,11 @@ export default function BetrayalBoard({
         });
       }
       return t("board.status.actionCueBloodFromStoneSetupPlacementConfirm");
+    }
+    if (selectedInventoryCard && !selectedCardUsedThisTurn) {
+      return t("board.status.actionCueUseCard", {
+        card: selectedInventoryCard.name,
+      });
     }
     if (hauntActionDisabledReason) {
       return hauntActionDisabledReason;
@@ -10579,7 +10616,12 @@ export default function BetrayalBoard({
   );
 
   const handleUseAction = () => {
-    if (core.phase === "haunt" && hauntActionContext?.actionKind === "use") {
+    const cardId = selectedInventoryCard?.id;
+    if (
+      !cardId &&
+      core.phase === "haunt" &&
+      hauntActionContext?.actionKind === "use"
+    ) {
       dispatchCommand(
         hauntActionContext.commandType,
         hauntActionContext.payload ?? {},
@@ -10594,7 +10636,6 @@ export default function BetrayalBoard({
       }));
       return;
     }
-    const cardId = selectedInventoryCard?.id;
     if (!cardId) {
       return;
     }
@@ -11476,11 +11517,11 @@ export default function BetrayalBoard({
     return t("board.status.roomEffectUnavailable");
   })();
   const visibleActionDisabledReason = (() => {
-    if (core.phase === "haunt" && hauntActionDisabledReason) {
-      return hauntActionDisabledReason;
-    }
     if (selectedInventoryCard && selectedCardUseDisabled) {
       return selectedCardUseDisabledReason;
+    }
+    if (core.phase === "haunt" && hauntActionDisabledReason) {
+      return hauntActionDisabledReason;
     }
     if (
       shouldShowRoomEffectAction &&
@@ -11532,17 +11573,17 @@ export default function BetrayalBoard({
     {
       id: "use",
       label:
-        core.phase === "haunt" && hauntActionContext
+        core.phase === "haunt" && hauntActionContext && !selectedInventoryCard
           ? hauntActionContext.label
           : t("board.actions.use"),
       disabled: hasPendingPlayerAgreement
         ? true
-        : core.phase === "haunt" && hauntActionContext
+        : core.phase === "haunt" && hauntActionContext && !selectedInventoryCard
           ? Boolean(hauntActionDisabledReason)
           : core.currentExplorerInventory.length === 0 ||
             selectedCardUseDisabled,
       description:
-        core.phase === "haunt" && hauntActionContext
+        core.phase === "haunt" && hauntActionContext && !selectedInventoryCard
           ? (hauntActionDisabledReason ?? undefined)
           : selectedCardUseDisabled
             ? (selectedCardUseDisabledReason ?? undefined)
@@ -11784,7 +11825,7 @@ export default function BetrayalBoard({
     explore: handleExploreAction,
     trade: handleTradeAction,
     use:
-      core.phase === "haunt" && hauntActionContext
+      core.phase === "haunt" && hauntActionContext && !selectedInventoryCard
         ? handleHauntPrimaryAction
         : handleUseAction,
     roomEffect: handleRoomEffectAction,
@@ -16503,7 +16544,9 @@ export default function BetrayalBoard({
                         action.id === "endTurn" &&
                         Boolean(roomEndTurnEffectHint);
                       const isHauntPrimaryButton =
-                        core.phase === "haunt" && action.id === "use";
+                        core.phase === "haunt" &&
+                        action.id === "use" &&
+                        !selectedInventoryCard;
                       const isHauntTargetCancelButton =
                         action.id === "cancelTarget";
                       const hauntPrimaryActionMode = isHauntTargetCancelButton
@@ -17174,22 +17217,20 @@ export default function BetrayalBoard({
                 </button>
               </div>
             ) : null}
-            {scenarioReaderOpen && isReferenceScenarioOpeningStage ? null : (
-              <button
-                type="button"
-                onClick={closeReferenceOverlay}
-                data-testid={
-                  scenarioReaderOpen
-                    ? "betrayal-scenario-reader-close"
-                    : "betrayal-reference-close"
-                }
-                className="absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] bg-[rgba(9,13,12,0.84)] px-4 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
-              >
-                {scenarioReaderOpen
-                  ? t("board.characterSelect.hideScenarioDetails")
-                  : t("board.reference.close")}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={closeReferenceOverlay}
+              data-testid={
+                scenarioReaderOpen
+                  ? "betrayal-scenario-reader-close"
+                  : "betrayal-reference-close"
+              }
+              className="absolute right-3 top-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-[5px] bg-[rgba(9,13,12,0.84)] px-4 text-xs font-medium text-[#f3e0b4] shadow-[0_8px_22px_rgba(0,0,0,0.32)] transition hover:bg-[rgba(22,31,27,0.92)]"
+            >
+              {scenarioReaderOpen
+                ? t("board.characterSelect.hideScenarioDetails")
+                : t("board.reference.close")}
+            </button>
             {scenarioReaderOpen ? (
               <div
                 data-testid="betrayal-scenario-objective-page"
@@ -17833,7 +17874,9 @@ export default function BetrayalBoard({
                     const isRoomEndTurnEffectAction =
                       action.id === "endTurn" && Boolean(roomEndTurnEffectHint);
                     const isHauntPrimaryButton =
-                      core.phase === "haunt" && action.id === "use";
+                      core.phase === "haunt" &&
+                      action.id === "use" &&
+                      !selectedInventoryCard;
                     const isHauntTargetCancelButton =
                       action.id === "cancelTarget";
                     const hauntPrimaryActionMode = isHauntTargetCancelButton
