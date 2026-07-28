@@ -880,7 +880,7 @@ function registerPolynesianVoyagersModifiers(): void {
         },
     ]);
 
-    registerCustomBreakpointModifiers([
+    registerBreakpointModifiers([
         {
             sourceDefId: 'base_tropical_paradise',
             modifier: (ctx) => {
