@@ -13254,6 +13254,24 @@
           "mime": "image/jpeg"
         }
       }
+    },
+    "zh-CN/smashup/cards/compressed/polynesian_voyagers": {
+      "variants": {
+        "webp": {
+          "sha256": "989403c1366435feb89daf70bfd1618e7b5df4b79f1a0774feeced06882c5389",
+          "bytes": 1765534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/polynesian_voyagers": {
+      "variants": {
+        "png": {
+          "sha256": "97299d31a0a98eba7e00411e75a612ad8cf3611fb1c25fec3349a73901b677d8",
+          "bytes": 11247201,
+          "mime": "image/png"
+        }
+      }
     }
   },
   "id": "i18n",

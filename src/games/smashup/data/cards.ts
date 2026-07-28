@@ -113,6 +113,7 @@ import { ANANSI_TALES_BASES, ANANSI_TALES_CARDS } from './factions/anansi_tales'
 import { GRIMMS_FAIRY_TALES_BASES, GRIMMS_FAIRY_TALES_CARDS } from './factions/grimms_fairy_tales';
 import { RUSSIAN_FAIRY_TALES_BASES, RUSSIAN_FAIRY_TALES_CARDS } from './factions/russian_fairy_tales';
 import { ANCIENT_INCAS_BASES, ANCIENT_INCAS_CARDS } from './factions/ancient_incas';
+import { POLYNESIAN_VOYAGERS_BASES, POLYNESIAN_VOYAGERS_CARDS } from './factions/polynesian_voyagers';
 import { GEEKS_CARDS } from './factions/geeks';
 import {
     DISCO_DANCERS_CARDS,
@@ -291,6 +292,7 @@ registerCards(ANANSI_TALES_CARDS);
 registerCards(GRIMMS_FAIRY_TALES_CARDS);
 registerCards(RUSSIAN_FAIRY_TALES_CARDS);
 registerCards(ANCIENT_INCAS_CARDS);
+registerCards(POLYNESIAN_VOYAGERS_CARDS);
 registerCards(GEEKS_CARDS);
 registerCards(KUNG_FU_FIGHTERS_CARDS);
 registerCards(VIGILANTES_CARDS);
@@ -1381,6 +1383,7 @@ registerBases(ANANSI_TALES_BASES);
 registerBases(GRIMMS_FAIRY_TALES_BASES);
 registerBases(RUSSIAN_FAIRY_TALES_BASES);
 registerBases(ANCIENT_INCAS_BASES);
+registerBases(POLYNESIAN_VOYAGERS_BASES);
 
 registerPodBaseSkeletons();
 

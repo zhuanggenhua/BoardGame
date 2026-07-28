@@ -1923,6 +1923,10 @@
     "luchadors": {
       "name": "Luchadors",
       "description": "Play Set-Up actions on enemy minions, then cash those setups in for draw, control, and scoring tricks."
+    },
+    "polynesian_voyagers": {
+      "name": "Polynesian Voyagers",
+      "description": "Expand across new bases with tattoos, wayfinding moves, and +1 power counters on isolated footholds."
     }
   },
   "tutorial": {
@@ -9034,6 +9038,66 @@
     "base_the_squared_circle": {
       "name": "The Squared Circle",
       "abilityText": "After the first time you play a minion here each turn, you may place a random action from your discard pile into your hand."
+    },
+    "polynesian_voyagers_growth_of_the_tribes": {
+      "name": "Growth of the Tribes",
+      "effectText": "Choose a base where you have no minions. You may play an extra minion there or move one of your minions there."
+    },
+    "polynesian_voyagers_knowledge_of_the_tribes": {
+      "name": "Knowledge of the Tribes",
+      "effectText": "Draw a card for each base where you have a minion."
+    },
+    "polynesian_voyagers_moai": {
+      "name": "Mo'ai",
+      "abilityText": "Ongoing: Other players cannot move their minions to this base or move this minion to another base."
+    },
+    "polynesian_voyagers_tiki": {
+      "name": "Tiki",
+      "abilityText": "Ongoing: If this minion has an action on it, it has +2 power."
+    },
+    "polynesian_voyagers_wayfinder": {
+      "name": "Wayfinder",
+      "abilityText": "Talent: Move this minion to a base where you have no minions and place a +1 power counter on it."
+    },
+    "polynesian_voyagers_maui": {
+      "name": "Maui",
+      "abilityText": "Play up to two cards from the top of the base deck. Talent: Move one of your minions to a base where you have no minions."
+    },
+    "polynesian_voyagers_ocean_tattoo": {
+      "name": "Ocean Tattoo",
+      "effectText": "Play on one of your minions at a base with no other players' minions. Talent: Move this minion to another base and place a +1 power counter on it."
+    },
+    "polynesian_voyagers_tattoo_artist": {
+      "name": "Tattoo Artist",
+      "effectText": "Search your deck and/or discard pile for an action that can be played on a minion. Put it into your hand, or play it as an extra action."
+    },
+    "polynesian_voyagers_unity_of_the_tribes": {
+      "name": "Unity of the Tribes",
+      "effectText": "Choose a base where you have a minion. At each base where you have at least one minion, each of your minions has +2 power until end of turn."
+    },
+    "polynesian_voyagers_volcanic_uprising": {
+      "name": "Volcanic Uprising",
+      "effectText": "Play the top card of the base deck. Then you may move one of your minions there. Or destroy a base with no players' minions and replace it with two bases."
+    },
+    "polynesian_voyagers_shark_tattoo": {
+      "name": "Shark Tattoo",
+      "effectText": "Play on one of your minions. Place a +1 power counter on it. Ongoing: At the start of your turn, if this is your only minion here, place a +1 power counter on it."
+    },
+    "polynesian_voyagers_sun_tattoo": {
+      "name": "Sun Tattoo",
+      "effectText": "Play on one of your minions. Ongoing: This minion has +2 power. Special: After a base scores, you may play this on one of your minions there with no actions on it and move that minion to another base instead of discarding this card."
+    },
+    "base_island_chain": {
+      "name": "Island Chain",
+      "abilityText": "After this base scores, play the top card of the base deck as an extra base."
+    },
+    "base_island_peak": {
+      "name": "Island Peak",
+      "abilityText": "At the start of your turn, if you have exactly one minion here, place a +1 power counter on it."
+    },
+    "base_tropical_paradise": {
+      "name": "Tropical Paradise",
+      "abilityText": "If each player has one or more minions here, this base's starting breakpoint is 0."
     }
   },
   "debug": {
