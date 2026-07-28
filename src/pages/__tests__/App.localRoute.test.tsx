@@ -4,6 +4,10 @@ import type { PropsWithChildren, ReactNode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const toastViewportMock = vi.hoisted(() => ({
+    module: { ToastViewport: () => null } as Record<string, unknown>,
+}));
+
 const PassThrough = ({ children }: PropsWithChildren) => <>{children}</>;
 const NullComponent = () => null;
 
@@ -81,7 +85,7 @@ vi.mock('../../components/system/PcWebMascot', () => ({ PcWebMascot: NullCompone
 vi.mock('../../components/common/MobileOrientationGuard', () => ({ MobileOrientationGuard: PassThrough }));
 vi.mock('../../components/system/GlobalHUD', () => ({ GlobalHUD: NullComponent }));
 vi.mock('../../components/system/ModalStackRoot', () => ({ ModalStackRoot: NullComponent }));
-vi.mock('../../components/system/ToastViewport', () => ({ ToastViewport: NullComponent }));
+vi.mock('../../components/system/ToastViewport', () => toastViewportMock.module);
 
 const runtimeState = {
     nativeAndroid: false,
@@ -135,6 +139,8 @@ describe('App local route', () => {
         vi.useRealTimers();
         runtimeState.nativeAndroid = false;
         runtimeState.nativeMobile = false;
+        toastViewportMock.module = { ToastViewport: NullComponent };
+        vi.resetModules();
     });
 
     it('命中 /play/:gameId/local 时应渲染 LocalMatchRoom，而不是回退到 TestMatchRoom', async () => {
@@ -161,5 +167,17 @@ describe('App local route', () => {
         await waitFor(() => {
             expect(screen.getByTestId('android-back-navigation-bridge')).toBeInTheDocument();
         }, { timeout: 1000 });
+    });
+
+    it('ToastViewport 模块缺少导出时应降级为空组件，避免打断首页渲染', async () => {
+        vi.resetModules();
+        toastViewportMock.module = {};
+
+        const { loadToastViewportModule } = await import('../../App');
+        const LoadedToastViewport = (await loadToastViewportModule()).default;
+
+        render(<LoadedToastViewport />);
+
+        expect(document.body.textContent).toBe('');
     });
 });

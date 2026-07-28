@@ -5,8 +5,8 @@
 import { describe, it, expect } from 'vitest';
 import { FLOW_COMMANDS } from '../../../engine';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
-import { SummonerWarsDomain, SW_COMMANDS } from '../domain';
-import type { SummonerWarsCore, GamePhase, PlayerId, UnitCard, EventCard } from '../domain/types';
+import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
+import type { SummonerWarsCore, GamePhase, PlayerId, UnitCard, EventCard, FactionId } from '../domain/types';
 import { buildAiDecisionContext, resolveNextLocalAiAction } from '../../../engine/ai';
 import { buildSummonerWarsAiLegalActions, summonerWarsAiRuntime } from '../ai';
 import { abilityRegistry } from '../domain/abilities';
@@ -20,7 +20,16 @@ import {
     getValidSummonPositions,
     getSummoner,
 } from '../domain/helpers';
-import { createInitializedCore, placeTestUnit, resetInstanceCounter } from './test-helpers';
+import {
+    createInitializedCore,
+    createPromptResponseCommand,
+    getPromptOptionIdForTargetPosition,
+    getPromptOptionIds,
+    getPromptSwType,
+    hasActivePrompt,
+    placeTestUnit,
+    resetInstanceCounter,
+} from './test-helpers';
 import { engineConfig } from '../game';
 
 const aiTestRandom = {
@@ -29,6 +38,50 @@ const aiTestRandom = {
     range: (min: number) => min,
     shuffle: <T>(arr: T[]) => [...arr],
 };
+
+type SummonPhaseEventAiCase = {
+    faction: FactionId;
+    cardId: string;
+    baseId: string;
+    name: string;
+    eventType: EventCard['eventType'];
+    effect: string;
+};
+
+const underConstructionSummonPhaseEventAiCases: SummonPhaseEventAiCase[] = [
+    {
+        faction: 'huijin',
+        cardId: 'huijin-phoenix-soul-0',
+        baseId: CARD_IDS.HUIJIN_PHOENIX_SOUL,
+        name: '凤凰之魂',
+        eventType: 'legendary',
+        effect: '持续。每当一个友方单位的技能以攻击之外的方式对敌方单位造成伤害时，额外造成 1 点伤害。',
+    },
+    {
+        faction: 'yongheng',
+        cardId: 'yongheng-insight-0',
+        baseId: CARD_IDS.YONGHENG_INSIGHT,
+        name: '洞察',
+        eventType: 'common',
+        effect: '持续。每当你抓取一张或更多卡牌时，将本事件充能。',
+    },
+    {
+        faction: 'yongheng',
+        cardId: 'yongheng-search-0',
+        baseId: CARD_IDS.YONGHENG_SEARCH,
+        name: '探寻',
+        eventType: 'common',
+        effect: '持续。在你的移动、建造和攻击阶段开始时，你可以抓取一张卡牌。',
+    },
+    {
+        faction: 'yongheng',
+        cardId: 'yongheng-mental-invasion-0',
+        baseId: CARD_IDS.YONGHENG_MENTAL_INVASION,
+        name: '心念侵袭',
+        eventType: 'common',
+        effect: '持续。每当你在自己的回合中抓取一张或更多卡牌时，你可以指定你的召唤师 2 个区格以内的一个敌方士兵或英雄为目标。',
+    },
+];
 
 function createModerateThreatAttackCore(): SummonerWarsCore {
     const core = createInitializedCore(['0', '1'], aiTestRandom);
@@ -1810,6 +1863,547 @@ describe('召唤师战争本地 AI', () => {
             payload: {},
         });
     });
+
+    it('ADVANCE_PHASE 离开移动阶段时应先结算腐坏自伤，再等待玩家指定相邻友军充能', () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'mogu',
+            faction1: 'paladin',
+        });
+        core.phase = 'move';
+        core.currentPlayer = '0';
+        for (let row = 0; row < BOARD_ROWS; row += 1) {
+            for (let col = 0; col < BOARD_COLS; col += 1) {
+                core.board[row][col].unit = undefined;
+                core.board[row][col].structure = undefined;
+            }
+        }
+        const decayUnit = placeTestUnit(core, { row: 4, col: 3 }, {
+            card: {
+                id: 'test-mogu-decay',
+                cardType: 'unit',
+                name: '测试玛硕达',
+                unitClass: 'champion',
+                faction: 'mogu',
+                strength: 3,
+                life: 6,
+                cost: 5,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: ['mogu_decay'],
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        const ally = placeTestUnit(core, { row: 4, col: 4 }, {
+            card: {
+                id: 'test-decay-ally',
+                cardType: 'unit',
+                name: '测试友方单位',
+                unitClass: 'common',
+                faction: 'mogu',
+                strength: 1,
+                life: 3,
+                cost: 1,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        const sys = createInitialSystemState(['0', '1'], engineConfig.systems as any);
+        sys.phase = 'move';
+
+        const result = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            { core, sys } as any,
+            { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} },
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.phase).toBe('move');
+        expect(result.state.sys.flowHalted).toBe(true);
+        expect(result.state.core.board[decayUnit.position.row][decayUnit.position.col].unit?.damage).toBe(1);
+        expect(result.state.core.board[ally.position.row][ally.position.col].unit?.boosts ?? 0).toBe(0);
+        expect(hasActivePrompt(result.state)).toBe(true);
+        expect(getPromptSwType(result.state)).toBe('mogu_decay_select_target');
+        const allyOptionId = getPromptOptionIdForTargetPosition(
+            result.state,
+            'mogu_decay_target',
+            ally.position,
+        );
+        expect(allyOptionId).toBeTruthy();
+        expect(getPromptOptionIds(result.state)).toContain('skip');
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(true);
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_CHARGED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(false);
+
+        const picked = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            result.state,
+            createPromptResponseCommand(result.state, '0', allyOptionId!),
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(picked.success).toBe(true);
+        expect(hasActivePrompt(picked.state)).toBe(false);
+        expect(picked.state.core.board[ally.position.row][ally.position.col].unit?.boosts).toBe(2);
+        expect(picked.events.some(e => e.type === SW_EVENTS.UNIT_CHARGED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(true);
+
+        const advanced = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            picked.state,
+            { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} },
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(advanced.success).toBe(true);
+        expect(advanced.state.core.phase).toBe('build');
+        expect(advanced.state.sys.flowHalted).toBe(false);
+    });
+
+    it('ADVANCE_PHASE 进入移动阶段时灰烬野兽野火击杀的单位应立刻离场', () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'huijin',
+            faction1: 'necromancer',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        for (let row = 0; row < BOARD_ROWS; row += 1) {
+            for (let col = 0; col < BOARD_COLS; col += 1) {
+                core.board[row][col].unit = undefined;
+                core.board[row][col].structure = undefined;
+            }
+        }
+        placeTestUnit(core, { row: 4, col: 4 }, {
+            card: {
+                id: 'test-huijin-ash-beast',
+                cardType: 'unit',
+                name: '测试灰烬野兽',
+                unitClass: 'common',
+                faction: 'huijin',
+                strength: 3,
+                life: 3,
+                cost: 2,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: ['huijin_wildfire'],
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        const enemy = placeTestUnit(core, { row: 4, col: 5 }, {
+            card: {
+                id: 'test-fragile-enemy',
+                cardType: 'unit',
+                name: '测试脆弱敌方士兵',
+                unitClass: 'common',
+                faction: 'necromancer',
+                strength: 1,
+                life: 1,
+                cost: 1,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: [],
+                deckSymbols: [],
+            },
+            owner: '1',
+        });
+        const sys = createInitialSystemState(['0', '1'], engineConfig.systems as any);
+        sys.phase = 'summon';
+
+        const result = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            { core, sys } as any,
+            { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} },
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.phase).toBe('move');
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'huijin_wildfire')).toBe(true);
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_DESTROYED
+            && (e.payload as { instanceId?: string }).instanceId === enemy.instanceId)).toBe(true);
+        expect(result.state.core.board[enemy.position.row][enemy.position.col].unit).toBeUndefined();
+    });
+
+    it('ADVANCE_PHASE 离开魔力阶段时应结算爆裂并触发菌化变异', () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'mogu',
+            faction1: 'paladin',
+        });
+        core.phase = 'magic';
+        core.currentPlayer = '0';
+        for (let row = 0; row < BOARD_ROWS; row += 1) {
+            for (let col = 0; col < BOARD_COLS; col += 1) {
+                core.board[row][col].unit = undefined;
+                core.board[row][col].structure = undefined;
+            }
+        }
+        const body = placeTestUnit(core, { row: 4, col: 3 }, {
+            card: {
+                id: 'test-mogu-spore-body',
+                cardType: 'unit',
+                name: '测试菌袍疫病体',
+                unitClass: 'common',
+                faction: 'mogu',
+                strength: 1,
+                life: 3,
+                cost: 1,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: ['mogu_burst', 'mogu_fungal_mutation'],
+                deckSymbols: [],
+            },
+            owner: '0',
+            boosts: 3,
+        });
+        const beast: UnitCard = {
+            id: 'test-mogu-fungal-beast',
+            cardType: 'unit',
+            name: '测试菌化野兽',
+            unitClass: 'common',
+            faction: 'mogu',
+            strength: 2,
+            life: 4,
+            cost: 2,
+            attackType: 'melee',
+            attackRange: 1,
+            abilities: ['mogu_infection'],
+            deckSymbols: [],
+        };
+        core.players['0'].discard.push(beast);
+        const sys = createInitialSystemState(['0', '1'], engineConfig.systems as any);
+        sys.phase = 'magic';
+
+        const result = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any, systemsConfig: engineConfig.systemsConfig },
+            { core, sys } as any,
+            { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} },
+            aiTestRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.state.core.phase).toBe('draw');
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_DESTROYED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_burst')).toBe(true);
+        expect(result.events.some(e => e.type === SW_EVENTS.UNIT_SUMMONED
+            && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_fungal_mutation')).toBe(true);
+        expect(result.state.core.board[body.position.row][body.position.col].unit?.card.id).toBe(beast.id);
+    });
+
+    it('牌库为空时复活死灵仍应作为召唤阶段 AI 合法动作，不应只剩结束阶段', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'necromancer',
+            faction1: 'paladin',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        core.players['0'].deck = [];
+        core.players['0'].hand = [];
+        core.players['0'].discard = [{
+            id: 'discard-ai-undead',
+            cardType: 'unit',
+            name: '测试可复活亡灵',
+            unitClass: 'common',
+            faction: 'necromancer',
+            strength: 1,
+            life: 2,
+            cost: 0,
+            attackType: 'melee',
+            attackRange: 1,
+            abilities: [],
+            deckSymbols: [],
+        }];
+        const summoner = getSummoner(core, '0');
+        expect(summoner).toBeTruthy();
+        const targetPosition = { row: summoner!.position.row - 1, col: summoner!.position.col };
+        core.board[targetPosition.row][targetPosition.col].unit = undefined;
+        core.board[targetPosition.row][targetPosition.col].structure = undefined;
+        const sys = createInitialSystemState(['0', '1'], []);
+
+        const actions = buildSummonerWarsAiLegalActions({
+            playerId: '0',
+            state: { core, sys },
+        });
+        const reviveAction = actions.find((action) =>
+            action.kind === 'activate-ability' && action.metadata?.abilityId === 'revive_undead');
+
+        expect(reviveAction).toBeDefined();
+        expect(reviveAction?.commands[0]).toEqual({
+            type: SW_COMMANDS.ACTIVATE_ABILITY,
+            payload: {
+                abilityId: 'revive_undead',
+                sourceUnitId: summoner!.instanceId,
+                targetCardId: 'discard-ai-undead',
+                targetPosition,
+            },
+        });
+        expect(actions.filter((action) => action.kind !== 'advance-phase').length).toBeGreaterThan(0);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state: { core, sys },
+            matchId: 'local:summonerwars-revive-undead-empty-deck',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+        expect(resolution?.action.kind).toBe('activate-ability');
+        expect(resolution?.action.metadata?.abilityId).toBe('revive_undead');
+    });
+
+    it('牌库为空且召唤卡需要额外目标时，召唤阶段 AI 不应只剩结束阶段', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'necromancer',
+            faction1: 'paladin',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        core.players['0'].deck = [];
+        core.players['0'].magic = 5;
+        core.players['0'].hand = [{
+            id: 'test-fire-sacrifice-card',
+            cardType: 'unit',
+            name: '测试火祀召唤单位',
+            unitClass: 'champion',
+            faction: 'necromancer',
+            strength: 3,
+            life: 5,
+            cost: 2,
+            attackType: 'melee',
+            attackRange: 1,
+            abilities: ['fire_sacrifice_summon'],
+            deckSymbols: [],
+        }];
+        for (let row = 0; row < BOARD_ROWS; row += 1) {
+            for (let col = 0; col < BOARD_COLS; col += 1) {
+                core.board[row][col].unit = undefined;
+            }
+        }
+        const sacrifice = placeTestUnit(core, { row: 5, col: 2 }, {
+            card: {
+                id: 'test-fire-sacrifice-ally',
+                cardType: 'unit',
+                name: '测试祭品',
+                unitClass: 'common',
+                faction: 'necromancer',
+                strength: 1,
+                life: 2,
+                cost: 0,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        const sys = createInitialSystemState(['0', '1'], []);
+
+        const actions = buildSummonerWarsAiLegalActions({
+            playerId: '0',
+            state: { core, sys },
+        });
+        const summonAction = actions.find((action) =>
+            action.kind === 'summon-unit'
+            && action.metadata?.summonMode === 'fire_sacrifice_summon');
+
+        expect(summonAction).toBeDefined();
+        expect(summonAction?.commands[0]).toEqual({
+            type: SW_COMMANDS.SUMMON_UNIT,
+            payload: {
+                cardId: 'test-fire-sacrifice-card',
+                position: sacrifice.position,
+                sacrificeUnitId: sacrifice.instanceId,
+            },
+        });
+        expect(actions.filter((action) => action.kind !== 'advance-phase').length).toBeGreaterThan(0);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state: { core, sys },
+            matchId: 'local:summonerwars-fire-sacrifice-empty-deck',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+        expect(resolution?.action.kind).toBe('summon-unit');
+        expect(resolution?.action.metadata?.summonMode).toBe('fire_sacrifice_summon');
+    });
+
+    it('牌库为空且最终形态需要替换目标时，召唤阶段 AI 不应只剩结束阶段', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'mogu',
+            faction1: 'paladin',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        core.players['0'].deck = [];
+        core.players['0'].magic = 5;
+        core.players['0'].hand = [{
+            id: 'test-mogu-final-form-card',
+            cardType: 'unit',
+            name: '测试最终形态单位',
+            unitClass: 'champion',
+            faction: 'mogu',
+            strength: 5,
+            life: 13,
+            cost: 3,
+            attackType: 'melee',
+            attackRange: 1,
+            abilities: ['mogu_final_form'],
+            deckSymbols: [],
+        }];
+        for (let row = 0; row < BOARD_ROWS; row += 1) {
+            for (let col = 0; col < BOARD_COLS; col += 1) {
+                core.board[row][col].unit = undefined;
+                core.board[row][col].structure = undefined;
+            }
+        }
+        const replacement = placeTestUnit(core, { row: 5, col: 2 }, {
+            card: {
+                id: 'mogu-fungal-beast',
+                cardType: 'unit',
+                name: '测试菌化野兽',
+                unitClass: 'common',
+                faction: 'mogu',
+                strength: 3,
+                life: 5,
+                cost: 3,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+            boosts: 5,
+        });
+        const sys = createInitialSystemState(['0', '1'], []);
+
+        const actions = buildSummonerWarsAiLegalActions({
+            playerId: '0',
+            state: { core, sys },
+        });
+        const summonAction = actions.find((action) =>
+            action.kind === 'summon-unit'
+            && action.metadata?.summonMode === 'mogu_final_form');
+
+        expect(summonAction).toBeDefined();
+        expect(summonAction?.commands[0]).toEqual({
+            type: SW_COMMANDS.SUMMON_UNIT,
+            payload: {
+                cardId: 'test-mogu-final-form-card',
+                position: replacement.position,
+                sacrificeUnitId: replacement.instanceId,
+            },
+        });
+        expect(actions.filter((action) => action.kind !== 'advance-phase').length).toBeGreaterThan(0);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state: { core, sys },
+            matchId: 'local:summonerwars-mogu-final-form-empty-deck',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+        expect(resolution?.action.kind).toBe('summon-unit');
+        expect(resolution?.action.metadata?.summonMode).toBe('mogu_final_form');
+    });
+
+    it('牌库为空且手牌有狂热菌菇时，召唤阶段 AI 不应只剩结束阶段', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'mogu',
+            faction1: 'paladin',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        core.players['0'].deck = [];
+        core.players['0'].hand = [{
+            id: 'mogu-fanatical-fungus-0',
+            cardType: 'event',
+            faction: 'mogu',
+            name: '测试狂热菌菇',
+            eventType: 'common',
+            playPhase: 'summon',
+            cost: 0,
+            isActive: true,
+            effect: '持续。在你移动一个单位之后，可以将其充能。',
+            deckSymbols: [],
+        }];
+        const sys = createInitialSystemState(['0', '1'], []);
+
+        const actions = buildSummonerWarsAiLegalActions({
+            playerId: '0',
+            state: { core, sys },
+        });
+        const eventAction = actions.find((action) =>
+            action.kind === 'play-event' && action.metadata?.baseId === 'mogu-fanatical-fungus');
+
+        expect(eventAction).toBeDefined();
+        expect(eventAction?.commands[0]).toEqual({
+            type: SW_COMMANDS.PLAY_EVENT,
+            payload: { cardId: 'mogu-fanatical-fungus-0' },
+        });
+        expect(actions.filter((action) => action.kind !== 'advance-phase').length).toBeGreaterThan(0);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state: { core, sys },
+            matchId: 'local:summonerwars-mogu-event-empty-deck',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+        expect(resolution?.action.kind).toBe('play-event');
+        expect(resolution?.action.metadata?.baseId).toBe('mogu-fanatical-fungus');
+    });
+
+    it.each(underConstructionSummonPhaseEventAiCases)(
+        '实施中派系牌库为空且手牌有 $name 时，召唤阶段 AI 不应只剩结束阶段',
+        ({ faction, cardId, baseId, name, eventType, effect }) => {
+            const core = createInitializedCore(['0', '1'], aiTestRandom, {
+                faction0: faction,
+                faction1: 'paladin',
+            });
+            core.phase = 'summon';
+            core.currentPlayer = '0';
+            core.players['0'].deck = [];
+            core.players['0'].hand = [{
+                id: cardId,
+                cardType: 'event',
+                faction,
+                name,
+                eventType,
+                playPhase: 'summon',
+                cost: 0,
+                isActive: true,
+                effect,
+                deckSymbols: [],
+            }];
+            const sys = createInitialSystemState(['0', '1'], []);
+
+            const actions = buildSummonerWarsAiLegalActions({
+                playerId: '0',
+                state: { core, sys },
+            });
+            const eventAction = actions.find((action) =>
+                action.kind === 'play-event' && action.metadata?.baseId === baseId);
+
+            expect(eventAction).toBeDefined();
+            expect(eventAction?.commands[0]).toEqual({
+                type: SW_COMMANDS.PLAY_EVENT,
+                payload: { cardId },
+            });
+            expect(actions.filter((action) => action.kind !== 'advance-phase').length).toBeGreaterThan(0);
+        },
+    );
 
     it('flowHalted 的阶段结束技能应优先暴露交互选项，不回落普通阶段动作', () => {
         const core = createInitializedCore(['0', '1'], aiTestRandom, {

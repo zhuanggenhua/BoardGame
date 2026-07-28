@@ -47,7 +47,7 @@ afterEach(() => {
 });
 
 describe('CardSpotlightOverlay', () => {
-    it('卡牌阅读特写不会被旧的自动关闭延迟收走，只能由明确关闭动作收口', () => {
+    it('自建卡牌短展示保留 3 秒自动关闭合同，但不靠内容点击关闭', () => {
         vi.useFakeTimers();
         const onClose = vi.fn();
 
@@ -70,13 +70,17 @@ describe('CardSpotlightOverlay', () => {
             />,
         );
 
-        act(() => {
-            vi.advanceTimersByTime(5000);
-        });
-
-        expect(onClose).not.toHaveBeenCalled();
-
         fireEvent.click(document.querySelector('[data-testid="card-spotlight-overlay"]') as Element);
         expect(onClose).not.toHaveBeenCalled();
+
+        act(() => {
+            vi.advanceTimersByTime(2999);
+        });
+        expect(onClose).not.toHaveBeenCalled();
+
+        act(() => {
+            vi.advanceTimersByTime(1);
+        });
+        expect(onClose).toHaveBeenCalledWith('watch-out-1000');
     });
 });

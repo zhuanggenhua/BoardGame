@@ -1,0 +1,4 @@
+interface:
+  display_name: "Img2ThreeJS 参考图重建"
+  short_description: "用参考图追踪表约束 BoardGame Three.js 程序化模型"
+  default_prompt: "按 BoardGame 项目流程，先建立参考图区域到模型部件/材质的追踪表，再生成可验收的 Three.js 程序化模型原型。"

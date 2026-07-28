@@ -466,6 +466,7 @@ describe('Feedback Module (e2e)', () => {
         expect(okRes.body.reporterType).toBe('system');
         expect(okRes.body.source).toBe('online-ai-watchdog');
         expect(okRes.body.status).toBe('resolved');
+        expect(okRes.body.resolvedMethod).toBe('系统已自动恢复这次在线 AI 步骤，对局已继续运行。');
     });
 
     it('online-ai-watchdog 相同根因的系统反馈应聚合到同一条记录并累计次数', async () => {
@@ -516,11 +517,68 @@ describe('Feedback Module (e2e)', () => {
         expect(second.body.latestIncidentKey).toBe('tracker-b');
         expect(second.body.occurrenceCount).toBe(2);
         expect(second.body.status).toBe('resolved');
+        expect(second.body.resolvedMethod).toBe('系统已自动推进停滞的 AI 座位，让对局继续进行。');
 
         const docs = await feedbackModel.find({ source: 'online-ai-watchdog' }).lean();
         expect(docs).toHaveLength(1);
         expect(docs[0].occurrenceCount).toBe(2);
         expect(docs[0].latestIncidentKey).toBe('tracker-b');
+        expect(docs[0].resolvedMethod).toBe('系统已自动推进停滞的 AI 座位，让对局继续进行。');
+    });
+
+    it('infra-cpu-watch 相同 CPU 高水位系统反馈应聚合到同一条记录并累计次数', async () => {
+        const payloadA = {
+            content: '[system][infra-cpu-watch] game-server CPU sustained high: average=91.00% highSamples=3/3 threshold=80% decision=dry-run restarted=no',
+            source: 'infra-cpu-watch',
+            type: 'bug',
+            severity: 'high',
+            status: 'open',
+            autoReportKind: 'cpu-sustained-high',
+            incidentKey: 'infra-cpu-watch:test-host:boardgame-game-server:80:a',
+            gameName: 'infra',
+            clientContext: {
+                gameId: 'infra',
+                route: 'host-cpu-watch',
+                mode: 'production',
+            },
+            errorContext: {
+                source: 'infra-cpu-watch',
+                name: 'cpu-sustained-high',
+                message: 'sustained_high_cpu',
+            },
+        };
+        const payloadB = {
+            ...payloadA,
+            content: '[system][infra-cpu-watch] game-server CPU sustained high: average=96.00% highSamples=3/3 threshold=80% decision=restarted restarted=yes',
+            incidentKey: 'infra-cpu-watch:test-host:boardgame-game-server:80:b',
+            stateSnapshot: JSON.stringify({
+                averageCpu: 96,
+                evidenceFile: '/home/admin/BoardGame/logs/game-server-cpu-watch/sample.txt',
+            }),
+        };
+
+        const first = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(payloadA)
+            .expect(201);
+
+        const second = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(payloadB)
+            .expect(201);
+
+        expect(second.body._id).toBe(first.body._id);
+        expect(second.body.incidentKey).toContain('system-feedback:infra-cpu-watch:infra:host-cpu-watch:production:cpu-sustained-high:sustained_high_cpu');
+        expect(second.body.latestIncidentKey).toBe('infra-cpu-watch:test-host:boardgame-game-server:80:b');
+        expect(second.body.occurrenceCount).toBe(2);
+        expect(second.body.status).toBe('open');
+
+        const docs = await feedbackModel.find({ source: 'infra-cpu-watch' }).lean();
+        expect(docs).toHaveLength(1);
+        expect(docs[0].occurrenceCount).toBe(2);
+        expect(docs[0].stateSnapshot).toContain('"averageCpu":96');
     });
 
     it('online-ai-watchdog 并发同 key 上报时 occurrenceCount 应精确累加且仅保留一个 canonical', async () => {
@@ -808,6 +866,57 @@ describe('Feedback Module (e2e)', () => {
         expect(second.body._id).toBe(first.body._id);
         expect(second.body.status).toBe('open');
         expect(second.body.occurrenceCount).toBe(2);
+    });
+
+    it('online-ai-watchdog 已 resolved 的失败聚合项，不应被旧线上重复失败上报重新打开', async () => {
+        const payload = {
+            content: '[system][online-ai-watchdog] force-end-turn-failed active-turn:follow-up-advance:legal_action_unavailable',
+            source: 'online-ai-watchdog',
+            type: 'bug',
+            severity: 'high',
+            autoReportKind: 'force-end-turn-failed',
+            incidentKey: 'resolved-failure-tracker-a',
+            gameName: 'splendor',
+            clientContext: {
+                gameId: 'splendor',
+                route: 'server-watchdog',
+                mode: 'online',
+            },
+            errorContext: {
+                source: 'online-ai-watchdog',
+                name: 'force-end-turn-failed',
+                message: 'active-turn:follow-up-advance:legal_action_unavailable',
+            },
+        };
+
+        const first = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(payload)
+            .expect(201);
+
+        await feedbackModel.findByIdAndUpdate(first.body._id, {
+            status: 'resolved',
+            resolvedMethod: '已按领域动作修复，等待发布链路带到线上',
+        });
+
+        const second = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                ...payload,
+                incidentKey: 'resolved-failure-tracker-b',
+            })
+            .expect(201);
+
+        expect(second.body._id).toBe(first.body._id);
+        expect(second.body.status).toBe('resolved');
+        expect(second.body.occurrenceCount).toBe(2);
+        expect(second.body.latestIncidentKey).toBe('resolved-failure-tracker-b');
+
+        const docs = await feedbackModel.find({ source: 'online-ai-watchdog' }).lean();
+        expect(docs).toHaveLength(1);
+        expect(docs[0].status).toBe('resolved');
     });
 
     it('online-ai-watchdog 超出去重窗口后应新建新的 canonical 记录', async () => {

@@ -47,9 +47,11 @@ export function appendResolvedActionAbility(params: {
     defId: string;
     random: RandomFn;
     timestamp: number;
-    baseIndex: number;
+    baseIndex?: number;
+    targetBaseIndex?: number;
     targetMinionUid?: string;
     handSizeAfterPlay?: number;
+    fromDiscard?: boolean;
 }): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const executor = getPlayedActionExecutor(params.defId);
     if (!executor) {
@@ -71,17 +73,20 @@ export function appendResolvedActionAbility(params: {
         };
     }
 
+    const baseIndex = params.baseIndex ?? params.targetBaseIndex ?? 0;
     const abilityCtx: AbilityContext = {
         state: simCore,
         matchState: { ...params.state, core: simCore },
         playerId: params.playerId,
         cardUid: params.cardUid,
         defId: params.defId,
-        baseIndex: params.baseIndex,
+        baseIndex,
+        targetBaseIndex: params.targetBaseIndex,
         targetMinionUid: params.targetMinionUid,
         random: params.random,
         now: params.timestamp,
         handSizeAfterPlay: params.handSizeAfterPlay ?? (simCore.players[params.playerId]?.hand.length ?? 0),
+        fromDiscard: params.fromDiscard === true,
     };
     const result = executor(abilityCtx);
     params.events.push(...result.events);

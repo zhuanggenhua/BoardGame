@@ -44,6 +44,37 @@ const runUploadCheck = (...args: string[]) => {
     };
 };
 
+const createNpmUploadLifecycleEnv = () => {
+    const env = { ...process.env };
+    for (const key of Object.keys(env)) {
+        if (key.toLowerCase() === 'npm_lifecycle_event') {
+            delete env[key];
+        }
+    }
+    env.npm_lifecycle_event = 'assets:upload';
+    return env;
+};
+
+const runUploadFromNpmLifecycle = (...args: string[]) => {
+    const result = spawnSync(
+        process.execPath,
+        [
+            path.join(process.cwd(), 'scripts', 'assets', 'upload-to-server.js'),
+            ...args,
+        ],
+        {
+            cwd: process.cwd(),
+            encoding: 'utf8',
+            env: createNpmUploadLifecycleEnv(),
+        },
+    );
+
+    return {
+        status: result.status,
+        output: `${result.stdout}\n${result.stderr}`,
+    };
+};
+
 const walkFiles = (dirPath: string, entries: string[] = []) => {
     for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
         const fullPath = path.join(dirPath, entry.name);
@@ -79,7 +110,11 @@ const sourceAssetExtensions = new Set([
 ]);
 
 const temporaryAssetNamePattern = /(^|[/._ -])(?:temp|tmp|bak|backup|old|copy|副本|临时|测试|test)([/._ -]|$)/i;
-const smashUpPodAtlasRelativePathPattern = /^i18n\/en\/smashup\/(?:cards|pod-assets)\/compressed\/(tts_atlas_[^/]+)\.webp$/;
+const smashUpEnglishAtlasRelativePathPattern = /^i18n\/en\/smashup\/(?:base|cards|pod-assets|taitan)\/compressed\/[^/]+\.webp$/;
+const smashUpZhCnAtlasRelativePathPattern = /^i18n\/zh-CN\/smashup\/(?:base|cards|taitan)(?:\/[^/]+)?\/compressed\/[^/]+\.webp$/;
+const smashUpZhCnAndroidPackageAtlasPaths = new Set([
+    'i18n/zh-CN/smashup/cards/compressed/longzu.webp',
+]);
 const legacyDiceThroneEmoteCompressedPaths = new Set([
     'i18n/zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1.webp',
     'i18n/zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1.webp',
@@ -219,10 +254,15 @@ const getSmashUpPodAtlasRuntimePackagePaths = (() => {
     };
 })();
 
-const isPublishableSmashUpPodAtlasPath = (relativePath: string) => {
+const isPublishableSmashUpAtlasPath = (relativePath: string) => {
     const normalized = relativePath.replace(/\\/g, '/');
-    if (!smashUpPodAtlasRelativePathPattern.test(normalized)) return true;
-    return getSmashUpPodAtlasRuntimePackagePaths().has(normalized);
+    if (smashUpEnglishAtlasRelativePathPattern.test(normalized)) {
+        return getSmashUpPodAtlasRuntimePackagePaths().has(normalized);
+    }
+    if (smashUpZhCnAtlasRelativePathPattern.test(normalized)) {
+        return smashUpZhCnAndroidPackageAtlasPaths.has(normalized) || normalized.endsWith('_pod.webp');
+    }
+    return true;
 };
 
 const isCompressedDeliveryPath = (relativePath: string, gameId?: string) => {
@@ -240,7 +280,7 @@ const isCompressedDeliveryPath = (relativePath: string, gameId?: string) => {
         return true;
     }
 
-    if (gameId === 'smashup' && !isPublishableSmashUpPodAtlasPath(normalized)) {
+    if (gameId === 'smashup' && !isPublishableSmashUpAtlasPath(normalized)) {
         return false;
     }
 
@@ -346,6 +386,17 @@ describe('upload-to-server 路径过滤', () => {
         expect(result.output).toContain('检查完成：待发布 1 个对象');
     });
 
+    it('裸路径参数应作为路径过滤处理，避免 npm 参数转发异常时变成全量发布', () => {
+        const result = runUploadCheck(
+            'i18n/zh-CN/smashup/cards/compressed/marvel_villains',
+        );
+
+        expect(result.status).toBe(0);
+        expect(result.output).toContain('路径过滤：i18n/zh-CN/smashup/cards/compressed/marvel_villains');
+        expect(result.output).toContain('待发布: official/i18n/zh-CN/smashup/cards/compressed/marvel_villains.webp');
+        expect(result.output).toContain('检查完成：待发布 1 个对象');
+    });
+
     it('带路径过滤但没有可发布对象时应失败，避免误以为已经上传', () => {
         const result = runUploadCheck(
             '--asset-prefix',
@@ -354,6 +405,24 @@ describe('upload-to-server 路径过滤', () => {
 
         expect(result.status).not.toBe(0);
         expect(result.output).toContain('路径过滤没有匹配到可发布对象');
+    });
+
+    it('裸路径参数没有可发布对象时应失败，避免回退成全量发布', () => {
+        const result = runUploadCheck(
+            'i18n/zh-CN/smashup/cards/compressed/not-a-real-card-atlas',
+        );
+
+        expect(result.status).not.toBe(0);
+        expect(result.output).toContain('路径过滤没有匹配到可发布对象');
+    });
+
+    it('npm 参数转发异常时应拒绝执行，避免检查命令误变成真实发布', () => {
+        const result = runUploadFromNpmLifecycle(
+            'i18n/zh-CN/smashup/cards/compressed/marvel_villains',
+        );
+
+        expect(result.status).not.toBe(0);
+        expect(result.output).toContain('检测到 npm 未把 --asset-prefix/--check 正确传给上传脚本');
     });
 });
 
@@ -483,8 +552,12 @@ describe('Android 游戏包素材内容', () => {
         expect(smashUpPackageFiles).toContain('i18n/zh-CN/smashup/cards/compressed/tornados_pod.webp');
         expect(smashUpPackageFiles).toContain('i18n/en/smashup/cards/compressed/tts_atlas_0b888d02fd.webp');
         expect(smashUpPackageFiles).toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0157978c57.webp');
+        expect(smashUpPackageFiles).not.toContain('i18n/zh-CN/smashup/cards/compressed/disney.webp');
+        expect(smashUpPackageFiles).not.toContain('i18n/zh-CN/smashup/taitan/compressed/taitan1.webp');
         expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/cards/compressed/tts_atlas_0157978c57.webp');
         expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/pod-assets/compressed/tts_atlas_0b888d02fd.webp');
+        expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/cards/compressed/anansi_tales_pod.webp');
+        expect(smashUpPackageFiles).not.toContain('i18n/en/smashup/taitan/compressed/taitan1.webp');
         expect(smashUpPackageFiles).not.toContain('smashup/cards/compressed/marvel_wave_one.webp');
         expect(smashUpPackageFiles).not.toContain('smashup/cards/compressed/cease_and_desist.webp');
         expect(smashUpPackageFiles).not.toContain('smashup/base/compressed/cease_and_desist.webp');

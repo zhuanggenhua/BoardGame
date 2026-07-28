@@ -908,6 +908,34 @@ test.describe('SummonerWars Mogu faction entry', () => {
       await waitForPhase(hostPage, 'move');
       await hostGame.screenshot('mogu-decay-chain-before-move-end', testInfo);
 
+      const endPhaseButton = hostPage.getByTestId('sw-end-phase');
+      await expect(endPhaseButton).toBeVisible({ timeout: 8000 });
+      await expect(endPhaseButton).toBeEnabled({ timeout: 8000 });
+      await endPhaseButton.click();
+      await hostPage.waitForTimeout(300);
+
+      const currentDecayInteraction = async () => {
+        const state = await getMatchState(matchId, hostPage) as {
+          sys?: { interaction?: { current?: { data?: { sw?: { type?: string } } } } };
+        };
+        return state.sys?.interaction?.current?.data?.sw?.type ?? null;
+      };
+      if (await currentDecayInteraction() !== 'mogu_decay_select_target') {
+        await expect(endPhaseButton).toBeEnabled({ timeout: 8000 });
+        await endPhaseButton.click();
+      }
+
+      await expect.poll(currentDecayInteraction, { timeout: 10000 }).toBe('mogu_decay_select_target');
+      await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/腐坏|Decay/i);
+
+      await clickBoardElement(hostPage, `[data-testid="sw-unit-${prepared.bodyPosition.row}-${prepared.bodyPosition.col}"]`);
+      await expect.poll(async () => {
+        const state = await getMatchState(matchId, hostPage) as {
+          sys?: { interaction?: { current?: unknown } };
+        };
+        return state.sys?.interaction?.current ?? null;
+      }, { timeout: 10000 }).toBeNull();
+
       await endPhaseAndWaitFor(hostPage, 'build');
       await expect.poll(async () => {
         const state = await readCoreState(hostPage) as SummonerWarsCore;

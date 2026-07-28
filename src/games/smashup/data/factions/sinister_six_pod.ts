@@ -1,0 +1,22 @@
+import type { CardDef } from '../../domain/types';
+import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
+
+const FACTION = SMASHUP_FACTION_IDS.SINISTER_SIX_POD;
+const ATLAS = SMASHUP_ATLAS_IDS.MARVEL_VILLAINS_POD_CARDS;
+
+export const SINISTER_SIX_POD_CARDS: CardDef[] = [
+    { id: 'sinister_six_doctor_octopus_pod', type: 'minion', name: '章鱼博士', nameEn: 'Doctor Octopus', faction: FACTION, power: 4, abilityTags: ['ongoing'], count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 35 } },
+    { id: 'sinister_six_mysterio_pod', type: 'minion', name: '神秘客', nameEn: 'Mysterio', faction: FACTION, power: 4, abilityTags: ['talent'], activatableAbilities: [{ kind: 'talent', zone: 'board' }], count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 36 } },
+    { id: 'sinister_six_green_goblin_pod', type: 'minion', name: '绿魔', nameEn: 'Green Goblin', faction: FACTION, power: 3, abilityTags: ['talent'], activatableAbilities: [{ kind: 'talent', zone: 'board' }], count: 2, previewRef: { type: 'atlas', atlasId: ATLAS, index: 37 } },
+    { id: 'sinister_six_vulture_pod', type: 'minion', name: '秃鹫', nameEn: 'Vulture', faction: FACTION, power: 3, abilityTags: ['onPlay'], count: 2, previewRef: { type: 'atlas', atlasId: ATLAS, index: 38 } },
+    { id: 'sinister_six_electro_pod', type: 'minion', name: '电王', nameEn: 'Electro', faction: FACTION, power: 2, abilityTags: ['ongoing'], count: 2, previewRef: { type: 'atlas', atlasId: ATLAS, index: 39 } },
+    { id: 'sinister_six_sandman_pod', type: 'minion', name: '沙人', nameEn: 'Sandman', faction: FACTION, power: 2, abilityTags: ['ongoing'], count: 2, previewRef: { type: 'atlas', atlasId: ATLAS, index: 40 } },
+    { id: 'sinister_six_ambush_pod', type: 'action', subtype: 'standard', name: '伏击', nameEn: 'Ambush', faction: FACTION, abilityTags: ['onPlay'], playNeedsBase: true, count: 2, previewRef: { type: 'atlas', atlasId: ATLAS, index: 41 } },
+    { id: 'sinister_six_cover_the_exits_pod', type: 'action', subtype: 'ongoing', name: '隐藏出口', nameEn: 'Cover the Exits', faction: FACTION, abilityTags: ['ongoing'], ongoingTarget: 'base', playNeedsBase: true, count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 42 } },
+    { id: 'sinister_six_incite_panic_pod', type: 'action', subtype: 'ongoing', name: '煽动恐慌', nameEn: 'Incite Panic', faction: FACTION, abilityTags: ['ongoing'], ongoingTarget: 'base', playNeedsBase: true, count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 43 } },
+    { id: 'sinister_six_move_the_goods_pod', type: 'action', subtype: 'standard', name: '移动货物', nameEn: 'Move the Goods', faction: FACTION, abilityTags: ['onPlay', 'special'], responseWindowTiming: 'afterScoring', count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 44 } },
+    { id: 'sinister_six_my_master_plan_pod', type: 'action', subtype: 'ongoing', name: '我的总计划', nameEn: 'My Master Plan', faction: FACTION, abilityTags: ['talent'], activatableAbilities: [{ kind: 'talent', zone: 'board' }], ongoingTarget: 'base', playNeedsBase: true, count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 45 } },
+    { id: 'sinister_six_pressure_from_all_sides_pod', type: 'action', subtype: 'ongoing', name: '四面楚歌', nameEn: 'Pressure from All Sides', faction: FACTION, abilityTags: ['talent'], activatableAbilities: [{ kind: 'talent', zone: 'board' }], ongoingTarget: 'base', playNeedsBase: true, count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 46 } },
+    { id: 'sinister_six_reroute_the_power_pod', type: 'action', subtype: 'ongoing', name: '改变力量', nameEn: 'Reroute the Power', faction: FACTION, abilityTags: ['talent'], activatableAbilities: [{ kind: 'talent', zone: 'board' }], ongoingTarget: 'base', playNeedsBase: true, count: 2, previewRef: { type: 'atlas', atlasId: ATLAS, index: 47 } },
+    { id: 'sinister_six_witness_our_superiority_pod', type: 'action', subtype: 'ongoing', name: '见证我们的优势', nameEn: 'Witness Our Superiority', faction: FACTION, abilityTags: ['ongoing'], ongoingTarget: 'base', playNeedsBase: true, count: 1, previewRef: { type: 'atlas', atlasId: ATLAS, index: 48 } },
+];

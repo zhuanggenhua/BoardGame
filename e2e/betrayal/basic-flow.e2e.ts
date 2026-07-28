@@ -157,10 +157,10 @@ test.describe("山屋惊魂基本流程", () => {
       scenarioReaderDialog.getByTestId(
         "betrayal-scenario-book-page-crimsonJack-dossier-1",
       ),
-    ).toContainText("开局记录");
+    ).not.toContainText("开局记录");
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-2",
+        "betrayal-scenario-book-page-crimsonJack-dossier-1",
       ),
     ).toContainText("英雄手册");
     await expect(
@@ -168,6 +168,14 @@ test.describe("山屋惊魂基本流程", () => {
         "betrayal-scenario-book-page-crimsonJack-dossier-2",
       ),
     ).toContainText("驱魔法阵");
+    await expect(
+      scenarioReaderDialog.getByTestId(
+        "betrayal-scenario-book-page-crimsonJack-dossier-2",
+      ),
+    ).toContainText("叛徒手册");
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-setup"),
+    ).toHaveCount(0);
     await expect(
       scenarioReaderDialog.getByTestId(
         "betrayal-scenario-reader-page-label-desktop-left",
@@ -204,11 +212,6 @@ test.describe("山屋惊魂基本流程", () => {
       ),
     ).toHaveText("03");
     await expect(scenarioReaderNextZone).toBeDisabled();
-    await expect(
-      scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-3",
-      ),
-    ).toContainText("叛徒手册");
     await expect(
       scenarioReaderDialog.getByTestId(
         "betrayal-scenario-book-page-crimsonJack-dossier-3",
@@ -515,10 +518,10 @@ test.describe("山屋惊魂基本流程", () => {
       mobileScenarioReaderDialog.getByTestId(
         "betrayal-scenario-book-page-crimsonJack-dossier-1",
       ),
-    ).toContainText("开局记录");
+    ).not.toContainText("开局记录");
     await expect(
       mobileScenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-2",
+        "betrayal-scenario-book-page-crimsonJack-dossier-1",
       ),
     ).toContainText("英雄手册");
     await expect(
@@ -526,6 +529,16 @@ test.describe("山屋惊魂基本流程", () => {
         "betrayal-scenario-book-page-crimsonJack-dossier-2",
       ),
     ).toContainText("驱魔法阵");
+    await expect(
+      mobileScenarioReaderDialog.getByTestId(
+        "betrayal-scenario-book-page-crimsonJack-dossier-2",
+      ),
+    ).toContainText("叛徒手册");
+    await expect(
+      mobileScenarioReaderDialog.getByTestId(
+        "betrayal-scenario-book-section-setup",
+      ),
+    ).toHaveCount(0);
     await expect(
       mobileScenarioReaderDialog.getByTestId(
         "betrayal-scenario-reader-page-label-desktop-left",

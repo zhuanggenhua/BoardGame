@@ -587,7 +587,31 @@ export function executePipeline<
             // 无错误：命令被系统消费。此时需要：
             // 1) 将系统产生的非 SYS_ 事件写入 core（含事件拦截/替换）
             // 2) 仍然执行 afterEvents hooks（例如：打开响应窗口、记录日志）
-            const reduced = reduceEventsToCore(domain, currentState.core, preCommandEvents);
+            let preCommandEventsToReduce = preCommandEvents;
+            if (domain.postProcessSystemEvents && preCommandEvents.length > 0) {
+                const validEvents = preCommandEvents.filter((e) => e && e.type);
+                const domainEvents = validEvents.filter((e) => !e.type.startsWith('SYS_'));
+                if (domainEvents.length > 0) {
+                    const processResult = domain.postProcessSystemEvents(
+                        currentState.core,
+                        domainEvents as unknown as TEvent[],
+                        effectiveRandom,
+                        currentState,
+                    );
+                    const processed = Array.isArray(processResult)
+                        ? processResult as unknown as GameEvent[]
+                        : processResult.events as unknown as GameEvent[];
+                    const newMatchState = !Array.isArray(processResult) ? processResult.matchState : undefined;
+                    const sysOnlyEvents = validEvents.filter((e) => e.type.startsWith('SYS_'));
+                    preCommandEventsToReduce = [...sysOnlyEvents, ...processed];
+                    if (newMatchState) {
+                        currentState = { ...currentState, sys: newMatchState.sys };
+                        ctx.state = currentState;
+                    }
+                }
+            }
+
+            const reduced = reduceEventsToCore(domain, currentState.core, preCommandEventsToReduce);
             if (reduced.core !== currentState.core) {
                 currentState = { ...currentState, core: reduced.core };
                 ctx.state = currentState;

@@ -336,6 +336,95 @@ function registerPrincessesModifiers(): void {
     ]);
 }
 
+function countControlledCharacterModifiers(state: SmashUpCore, playerId: string, baseIndex?: number): number {
+    let count = 0;
+    for (let index = 0; index < state.bases.length; index += 1) {
+        if (baseIndex !== undefined && index !== baseIndex) continue;
+        for (const minion of state.bases[index].minions) {
+            for (const action of minion.attachedActions) {
+                const def = getCardDef(action.defId);
+                if (def?.type !== 'action' || def.subtype !== 'ongoing' || def.ongoingTarget !== 'minion') continue;
+                if (isCardSuppressed(state, action.uid)) continue;
+                if (getActionControllerId(action) === playerId) count += 1;
+            }
+        }
+    }
+    return count;
+}
+
+function registerDisneyModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'nightmare_before_christmas_the_mayor_of_halloween_town',
+            compute: (ctx, helpers) => {
+                const hasMayor = helpers.countMinionsOnBaseMatchingRuntimeDefId(
+                    ctx,
+                    'nightmare_before_christmas_the_mayor_of_halloween_town',
+                    { controllerId: ctx.minion.controller },
+                ) > 0;
+                if (!hasMayor) return 0;
+                return countControlledCharacterModifiers(ctx.state, ctx.minion.controller, ctx.baseIndex) > 0 ? 1 : 0;
+            },
+        },
+        {
+            sourceDefId: 'nightmare_before_christmas_zero',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'nightmare_before_christmas_zero')) return 0;
+                return countControlledCharacterModifiers(ctx.state, ctx.minion.controller, ctx.baseIndex) > 0 ? 3 : 0;
+            },
+        },
+        {
+            sourceDefId: 'nightmare_before_christmas_monster_garland',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.sumMinionAttachmentsMatchingRuntimeDefId(
+                ctx,
+                'nightmare_before_christmas_monster_garland',
+                action => (getActionControllerId(action) === ctx.minion.controller ? 3 : -2),
+            ),
+        },
+        {
+            sourceDefId: 'nightmare_before_christmas_sandy_claws_costume',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.sumMinionAttachmentsMatchingRuntimeDefId(
+                ctx,
+                'nightmare_before_christmas_sandy_claws_costume',
+                action => countControlledCharacterModifiers(ctx.state, getActionControllerId(action)),
+            ),
+        },
+        {
+            sourceDefId: 'nightmare_before_christmas_oogie_boogie',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.sumMinionAttachmentsMatchingRuntimeDefId(
+                ctx,
+                'nightmare_before_christmas_oogie_boogie',
+                () => -(ctx.minion.basePower + (ctx.minion.powerCounters ?? 0) + ctx.minion.powerModifier + (ctx.minion.tempPowerModifier ?? 0)),
+            ),
+        },
+        {
+            sourceDefId: 'wreck_it_ralph_king_candy',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx) => (
+                ctx.minion.metadata?.kingCandyCounterSuppressedBy
+                    ? -(ctx.minion.powerCounters ?? 0)
+                    : 0
+            ),
+        },
+    ]);
+
+    registerCustomBreakpointModifiers([
+        {
+            sourceDefId: 'beauty_and_the_beast_gaston',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countBaseOngoingsMatchingRuntimeDefId(ctx, 'beauty_and_the_beast_gaston') * 5,
+        },
+        {
+            sourceDefId: 'wreck_it_ralph_i_m_gonna_wreck_it',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => helpers.countBaseOngoingsMatchingRuntimeDefId(ctx, 'wreck_it_ralph_i_m_gonna_wreck_it') * -3,
+        },
+    ]);
+}
+
 function registerYuanhouModifiers(): void {
     const getHighestPrintedPower = (state: SmashUpCore): number => {
         let highestPrintedPower = 0;
@@ -774,6 +863,35 @@ function registerWhatWereWeThinkingModifiers(): void {
     ]);
 }
 
+function registerPolynesianVoyagersModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'polynesian_voyagers_tiki',
+            compute: (ctx, helpers) => (
+                helpers.matchesRuntimeDefId(ctx.minion.defId, 'polynesian_voyagers_tiki')
+                    && (ctx.minion.attachedActions?.length ?? 0) > 0
+                    ? 2
+                    : 0
+            ),
+        },
+        {
+            sourceDefId: 'polynesian_voyagers_sun_tattoo',
+            compute: (ctx) => ctx.minion.attachedActions.some(action => action.defId === 'polynesian_voyagers_sun_tattoo') ? 2 : 0,
+        },
+    ]);
+
+    registerBreakpointModifiers([
+        {
+            sourceDefId: 'base_tropical_paradise',
+            modifier: (ctx) => {
+                if (ctx.base.defId !== 'base_tropical_paradise') return 0;
+                const playersWithMinions = new Set(ctx.base.minions.map(minion => minion.controller));
+                return ctx.state.turnOrder.every(playerId => playersWithMinions.has(playerId)) ? -20 : 0;
+            },
+        },
+    ]);
+}
+
 function registerHalfTheBattleModifiers(): void {
     registerCustomPowerModifiers([
         {
@@ -810,6 +928,7 @@ export function registerAllOngoingModifiers(): void {
     registerWorldChampsModifiers();
     registerFairiesModifiers();
     registerPrincessesModifiers();
+    registerDisneyModifiers();
     registerKaijuModifiers();
     registerKittyCatsModifiers();
     registerMythicHorsesModifiers();
@@ -822,5 +941,6 @@ export function registerAllOngoingModifiers(): void {
     registerZhongguoModifiers();
     registerInternationalIncidentModifiers();
     registerWhatWereWeThinkingModifiers();
+    registerPolynesianVoyagersModifiers();
     registerHalfTheBattleModifiers();
 }

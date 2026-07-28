@@ -795,6 +795,14 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     }
 }
 
+html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="fab-menu"],
+html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid^="fab-sheet-"],
+html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid^="fab-tooltip-"],
+html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="debug-toggle-container"],
+html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="debug-panel"] {
+    display: none !important;
+}
+
 @media (max-width: 1023px) and (max-height: 500px) and (orientation: landscape) {
     [data-game-ui="the-gang"][data-the-gang-two-hand="true"][data-the-gang-phase="chip-selection"] [data-bgg-zone="middle-zone"] {
         align-items: flex-start;
@@ -1430,6 +1438,26 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     animation: betrayal-haunt-reveal-slash 920ms cubic-bezier(0.12, 0.86, 0.24, 1) 80ms both;
 }
 
+.betrayal-cinematic-narration::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 18% 30%, rgba(255, 231, 151, 0.18) 0 1px, transparent 1px),
+        radial-gradient(circle at 72% 66%, rgba(255, 231, 151, 0.12) 0 1px, transparent 1px),
+        linear-gradient(100deg, transparent 0%, rgba(255, 234, 174, 0.08) 45%, transparent 64%);
+    background-size: 96px 112px, 132px 118px, 100% 100%;
+    mix-blend-mode: screen;
+    opacity: 0.55;
+}
+
+.betrayal-cinematic-narration__line {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    animation: betrayal-cinematic-subtitle-in 680ms cubic-bezier(0.18, 0.86, 0.22, 1) both;
+}
+
 @keyframes betrayal-attack-impact-float {
     0% {
         opacity: 0;
@@ -1492,13 +1520,35 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     }
 }
 
+@keyframes betrayal-cinematic-subtitle-in {
+    0% {
+        opacity: 0.96;
+        letter-spacing: 0.025em;
+        transform: translate3d(0, 2px, 0);
+        filter: blur(0);
+    }
+
+    45% {
+        opacity: 1;
+        filter: blur(0);
+    }
+
+    100% {
+        opacity: 1;
+        letter-spacing: 0.02em;
+        transform: translate3d(0, 0, 0);
+        filter: blur(0);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .betrayal-attack-impact-surface,
     .betrayal-attack-impact-flash,
     .betrayal-attack-impact-slash,
     .betrayal-attack-impact-floating,
     .betrayal-haunt-reveal-cue,
-    .betrayal-haunt-reveal-cue__slash {
+    .betrayal-haunt-reveal-cue__slash,
+    .betrayal-cinematic-narration__line {
         animation-duration: 1ms !important;
         animation-delay: 0ms !important;
     }

@@ -1,7 +1,8 @@
 import { expect, test } from '../framework/fixtures';
-import type { Locator, Page } from '@playwright/test';
+import type { Browser, BrowserContext, Locator, Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { createGuestId, getGameServerBaseURL, joinMatchViaAPI, seedMatchCredentials } from '../helpers/common';
 import { THE_GANG_CHALLENGES } from '../../src/games/the-gang/domain/expansions';
 
 const THE_GANG_GAME_ID = 'the-gang';
@@ -56,6 +57,21 @@ const THE_GANG_TWO_HAND_RANK_SCREENSHOT_PATH = join(
     THE_GANG_HAND_RANK_HINTS_EVIDENCE_DIR,
     '02-两副手牌上下当前牌型提示.jpg',
 );
+const THE_GANG_SINGLE_HAND_CHIP_LAYOUT_EVIDENCE_DIR = join(
+    process.cwd(),
+    'test-results',
+    'evidence-screenshots',
+    'the-gang',
+    'single-hand-chip-layout-current',
+);
+const THE_GANG_SINGLE_HAND_CHIP_LAYOUT_SCREENSHOT_PATH = join(
+    THE_GANG_SINGLE_HAND_CHIP_LAYOUT_EVIDENCE_DIR,
+    '01-先拿筹码后自己的筹码在一副手牌上方.jpg',
+);
+const THE_GANG_SINGLE_HAND_CHIP_LAYOUT_PRESSURE_SCREENSHOT_PATH = join(
+    THE_GANG_SINGLE_HAND_CHIP_LAYOUT_EVIDENCE_DIR,
+    '02-压力态-第4轮满公共牌自己的筹码在一副手牌上方且无遮挡.jpg',
+);
 const THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR = join(
     process.cwd(),
     'evidence',
@@ -64,6 +80,26 @@ const THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR = join(
 const THE_GANG_TWO_HAND_PC_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '01-PC四人两副手牌8个筹码槽和下手选中.jpg',
+);
+const THE_GANG_TWO_HAND_ONLINE_PC_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '10-联机真实房间四人两副手牌8个筹码.jpg',
+);
+const THE_GANG_TWO_HAND_LOBBY_PC_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '11-大厅创建四人两副手牌8个筹码.jpg',
+);
+const THE_GANG_TWO_HAND_HOME_V2_PC_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '12-书本大厅首次创建四人两副手牌8个筹码.jpg',
+);
+const THE_GANG_TWO_HAND_HOME_V2_EXIT_CHIPS_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '13-书本大厅四人两副手牌第4轮2个撤离筹码.jpg',
+);
+const THE_GANG_TWO_HAND_HOME_V2_EXIT_CHIPS_TAKEN_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '14-书本大厅四人两副手牌第4轮撤离筹码已贴到手牌.jpg',
 );
 const THE_GANG_TWO_HAND_MOBILE_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
@@ -88,6 +124,17 @@ const THE_GANG_TWO_HAND_RULES_MOBILE_SCREENSHOT_PATH = join(
 const THE_GANG_IMPLEMENTED_CHALLENGE_COUNT = Object.values(THE_GANG_CHALLENGES)
     .filter((challenge) => challenge.runtimeStatus === 'implemented')
     .length;
+
+type TheGangWorkerPorts = {
+    gameServer: number;
+    apiServer: number;
+};
+
+type TheGangOnlinePlayer = {
+    context?: BrowserContext;
+    page: Page;
+    playerId: string;
+};
 
 async function chooseVisibleChip(page: Page, chipLabel: string) {
     await page.getByRole('button', { name: chipLabel }).click();
@@ -135,17 +182,35 @@ async function chooseChipsForSeats(page: Page, playerCount: number) {
     await chooseRoundChipsByCommand(page, chipsByPlayer);
 }
 
-async function chooseTwoHandChipsForSeats(page: Page, playerCount: number) {
-    await ensureHeistStartedByCommand(page);
+function getTwoHandChipValues(playerCount: number) {
     const chipSlots = playerCount * 2;
-    const chipValues = [
+    return [
         ...Array.from({ length: Math.min(chipSlots, 8) }, (_, index) => index + 1),
         ...Array.from({ length: Math.max(0, chipSlots - 8) }, () => 0),
     ];
+}
+
+async function chooseTwoHandChipsForSeats(page: Page, playerCount: number) {
+    await ensureHeistStartedByCommand(page);
+    const chipValues = getTwoHandChipValues(playerCount);
     let chipIndex = 0;
     for (let seatIndex = 0; seatIndex < playerCount; seatIndex += 1) {
         for (const handSlot of ['top', 'bottom'] as const) {
             await dispatchTheGangCommand(page, String(seatIndex), 'TAKE_CHIP', {
+                chip: chipValues[chipIndex],
+                handSlot,
+            });
+            chipIndex += 1;
+        }
+    }
+}
+
+async function chooseTwoHandChipsForOnlinePlayers(players: TheGangOnlinePlayer[]) {
+    const chipValues = getTwoHandChipValues(players.length);
+    let chipIndex = 0;
+    for (const player of players) {
+        for (const handSlot of ['top', 'bottom'] as const) {
+            await dispatchTheGangCommand(player.page, player.playerId, 'TAKE_CHIP', {
                 chip: chipValues[chipIndex],
                 handSlot,
             });
@@ -181,6 +246,61 @@ async function confirmProgressForSeats(page: Page, buttonName: string, playerCou
     for (let seatIndex = 1; seatIndex < playerCount; seatIndex += 1) {
         await dispatchTheGangCommand(page, String(seatIndex), commandType);
     }
+}
+
+async function confirmProgressForOnlinePlayers(players: TheGangOnlinePlayer[], buttonName: string) {
+    const commandType = await commandTypeForProgressButton(buttonName);
+    const hostPage = players[0]?.page;
+    if (!hostPage) {
+        throw new Error('纸牌帮联机推进缺少房主页面');
+    }
+    await hostPage.getByRole('button', { name: buttonName }).click();
+    if (players.length > 1) {
+        await expect(hostPage.getByTestId('the-gang-progress-vote-dots').first().locator('[data-approved="true"]')).toHaveCount(1);
+        await expect(hostPage.getByRole('button', { name: '等待确认', exact: true })).toBeDisabled();
+    }
+    for (const player of players.slice(1)) {
+        await dispatchTheGangCommand(player.page, player.playerId, commandType);
+    }
+}
+
+async function confirmHandSwapForOnlinePlayers(
+    observerPage: Page,
+    players: TheGangOnlinePlayer[],
+    currentRound: number,
+    nextRound: number,
+) {
+    await expect
+        .poll(async () => {
+            const state = await getTheGangState(observerPage);
+            return {
+                phase: state?.core?.phase,
+                round: state?.core?.round,
+            };
+        }, { message: `等待第 ${currentRound} 轮进入真实联机两副手牌调换确认` })
+        .toEqual({
+            phase: 'hand-swap',
+            round: currentRound,
+        });
+
+    for (const player of players) {
+        await dispatchTheGangCommand(player.page, player.playerId, 'CONFIRM_HAND_SWAP');
+    }
+
+    await expect
+        .poll(async () => {
+            const state = await getTheGangState(observerPage);
+            return {
+                pendingKind: state?.core?.pendingProgress?.kind,
+                phase: state?.core?.phase,
+                round: state?.core?.round,
+            };
+        }, { message: `等待真实联机两副手牌调换确认后进入第 ${nextRound} 轮` })
+        .toEqual({
+            pendingKind: undefined,
+            phase: 'chip-selection',
+            round: nextRound,
+        });
 }
 
 async function expectChipRound(page: Page, chipPrefix: string) {
@@ -361,18 +481,186 @@ async function captureRulesModalLayoutEvidence(page: Page, screenshotPath: strin
 
 async function expectMiddleRoundFullState(page: Page) {
     await expect(page.locator('[data-bgg-zone="hand-chips-previous"]')).toHaveCount(3);
-    await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(9);
-    await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+    await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(6);
+    await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
     await expectAvailableChipButtons(page, '红筹码', []);
     await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
     await expectImagesLoaded(page, '[data-bgg-zone="hand-chips-previous"] img', 3);
-    await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 9);
-    await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
+    await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 6);
+    await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
     await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+}
+
+async function expectLocalSingleHandChipsAttachedToLocalHand(page: Page, label: string) {
+    const geometry = await page.evaluate(() => {
+        const readRectByTestId = (testId: string) => {
+            const node = document.querySelector(`[data-testid="${testId}"]`);
+            if (!node) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                left: rect.left,
+            };
+        };
+        const hand = readRectByTestId('the-gang-local-hand-top-cards');
+        const topZone = document.querySelector('[data-bgg-zone="top-zone"]') as HTMLElement | null;
+        const playerStrip = document.querySelector('[data-testid="the-gang-player-chip-strip-0"]') as HTMLElement | null;
+        const rail = document.querySelector('[data-testid="the-gang-local-hand-top-chip-rail"]') as HTMLElement | null;
+        const tokenRects = Array.from(rail?.querySelectorAll(
+            '[data-bgg-zone="hand-current-chip"], [data-bgg-zone="hand-chips-previous"], [data-bgg-zone="exit-chip-badge-token"]',
+        ) ?? []).map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                left: rect.left,
+            };
+        });
+        const intersects = (
+            a: NonNullable<typeof hand>,
+            b: (typeof tokenRects)[number],
+        ) => (
+            a.left < b.right
+            && a.right > b.left
+            && a.top < b.bottom
+            && a.bottom > b.top
+        );
+        const sortedTokens = [...tokenRects].sort((left, right) => left.left - right.left);
+        const firstCenterY = sortedTokens.length > 0 ? (sortedTokens[0].top + sortedTokens[0].bottom) / 2 : 0;
+        const style = rail ? getComputedStyle(rail) : null;
+        const playerStripTokenCount = playerStrip?.querySelectorAll(
+            '[data-bgg-zone="player-current-token"], [data-bgg-zone="player-token"], [data-bgg-zone="exit-chip-badge-token"]',
+        ).length ?? 0;
+        return {
+            hasHand: !!hand,
+            hasTopZone: !!topZone,
+            hasRail: !!rail,
+            hasLocalPlayerStrip: !!playerStrip,
+            tokenCount: tokenRects.length,
+            playerStripTokenCount,
+            topZoneContainsLocalPlayer: topZone?.textContent?.includes('玩家 1') ?? false,
+            tokensAboveHand: !!hand && tokenRects.length > 0 && tokenRects.every((token) => {
+                const tokenCenterX = (token.left + token.right) / 2;
+                return token.bottom <= hand.top + 2
+                    && tokenCenterX >= hand.left
+                    && tokenCenterX <= hand.right
+                    && !intersects(hand, token);
+            }),
+            tokensArrangedHorizontally: sortedTokens.length > 0 && sortedTokens.every((token, index) => {
+                const centerY = (token.top + token.bottom) / 2;
+                const previous = sortedTokens[index - 1];
+                return Math.abs(centerY - firstCenterY) <= 6
+                    && (!previous || token.left >= previous.left);
+            }),
+            railIsAbsolute: style?.position === 'absolute',
+            railHasNoBorder: !!style
+                && style.borderTopWidth === '0px'
+                && style.borderRightWidth === '0px'
+                && style.borderBottomWidth === '0px'
+                && style.borderLeftWidth === '0px',
+        };
+    });
+
+    expect(geometry.hasHand, `${label}：必须能定位本地单副手牌`).toBe(true);
+    expect(geometry.hasTopZone, `${label}：必须能定位顶部玩家区`).toBe(true);
+    expect(geometry.topZoneContainsLocalPlayer, `${label}：顶部玩家区不应显示本地玩家 1`).toBe(false);
+    expect(geometry.hasLocalPlayerStrip, `${label}：本地玩家不能在顶部玩家面板生成筹码条`).toBe(false);
+    expect(geometry.playerStripTokenCount, `${label}：顶部玩家面板不能残留玩家 1 的筹码`).toBe(0);
+    expect(geometry.hasRail, `${label}：必须存在挂在本地手牌上的筹码轨`).toBe(true);
+    expect(geometry.tokenCount, `${label}：本地手牌上方必须至少显示一枚自己的筹码`).toBeGreaterThan(0);
+    expect(geometry.tokensAboveHand, `${label}：自己的筹码必须在一副手牌上方居中显示，不能跑到顶部玩家列表或手牌右侧外贴`).toBe(true);
+    expect(geometry.tokensArrangedHorizontally, `${label}：自己的多枚筹码必须横向排列，不能竖向挤占手牌`).toBe(true);
+    expect(geometry.railIsAbsolute, `${label}：本地筹码轨必须绝对定位贴附手牌，不能在手牌上方另占一行`).toBe(true);
+    expect(geometry.railHasNoBorder, `${label}：自己筹码挂载区不能有额外边框`).toBe(true);
+}
+
+async function expectSingleHandChipLayoutPressureState(page: Page, label: string) {
+    await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(2);
+    await expect(page.locator('[data-bgg-zone="top-zone"]')).not.toContainText('玩家 1');
+    await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(6);
+    await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
+    await expect(page.locator('[data-bgg-zone="hand-chips-previous"]')).toHaveCount(3);
+    await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
+    await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
+    await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 6);
+    await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
+    await expectImagesLoaded(page, '[data-bgg-zone="hand-chips-previous"] img', 3);
+    await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+    await expect(page.getByRole('button', { name: '摊牌' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
+    await expect(page.locator('[data-bgg-zone="utility-dock"]')).toBeVisible();
+    await expect(page.locator('[data-tutorial-id="the-gang-score-track"]')).toBeVisible();
+    await expect(page.locator('[data-bgg-zone="vaults-alarms-zone"]')).toBeVisible();
+    await expect(page.locator('[data-bgg-zone="action-dock"]')).toBeVisible();
+
+    const geometry = await page.evaluate(() => {
+        const readRect = (selector: string) => {
+            const node = document.querySelector(selector);
+            if (!node) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+                bottom: rect.bottom,
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+            };
+        };
+        const intersects = (
+            a: ReturnType<typeof readRect>,
+            b: ReturnType<typeof readRect>,
+        ) => (
+            !!a && !!b
+            && a.left < b.right
+            && a.right > b.left
+            && a.top < b.bottom
+            && a.bottom > b.top
+        );
+        const chipRail = readRect('[data-testid="the-gang-local-hand-top-chip-rail"]');
+        const handCards = readRect('[data-testid="the-gang-local-hand-top-cards"]');
+        const cardRiver = readRect('[data-bgg-zone="card-river"]');
+        const actionDock = readRect('[data-bgg-zone="action-dock"]');
+        const utilityDock = readRect('[data-bgg-zone="utility-dock"]');
+        const scoreTrack = readRect('[data-tutorial-id="the-gang-score-track"]');
+        const topZone = readRect('[data-bgg-zone="top-zone"]');
+        return {
+            hasChipRail: !!chipRail,
+            hasHandCards: !!handCards,
+            hasCardRiver: !!cardRiver,
+            hasActionDock: !!actionDock,
+            hasUtilityDock: !!utilityDock,
+            hasScoreTrack: !!scoreTrack,
+            hasTopZone: !!topZone,
+            chipRailOverlapsActionDock: intersects(chipRail, actionDock),
+            chipRailOverlapsCardRiver: intersects(chipRail, cardRiver),
+            chipRailOverlapsHandCards: intersects(chipRail, handCards),
+            chipRailOverlapsScoreTrack: intersects(chipRail, scoreTrack),
+            chipRailOverlapsTopZone: intersects(chipRail, topZone),
+            chipRailOverlapsUtilityDock: intersects(chipRail, utilityDock),
+            utilityDockOverlapsHandCards: intersects(utilityDock, handCards),
+        };
+    });
+
+    expect(geometry.hasChipRail, `${label}：必须存在自己的手牌筹码轨`).toBe(true);
+    expect(geometry.hasHandCards, `${label}：必须存在自己的手牌`).toBe(true);
+    expect(geometry.hasCardRiver, `${label}：压力态必须包含公共牌区`).toBe(true);
+    expect(geometry.hasActionDock, `${label}：压力态必须包含主操作按钮区`).toBe(true);
+    expect(geometry.hasUtilityDock, `${label}：压力态必须包含左下工具入口`).toBe(true);
+    expect(geometry.hasScoreTrack, `${label}：压力态必须包含右上状态条`).toBe(true);
+    expect(geometry.hasTopZone, `${label}：压力态必须包含顶部玩家区`).toBe(true);
+    expect(geometry.chipRailOverlapsHandCards, `${label}：自己的筹码不能遮住手牌牌面`).toBe(false);
+    expect(geometry.chipRailOverlapsCardRiver, `${label}：自己的筹码不能遮住公共牌`).toBe(false);
+    expect(geometry.chipRailOverlapsActionDock, `${label}：自己的筹码不能遮住主操作按钮`).toBe(false);
+    expect(geometry.chipRailOverlapsUtilityDock, `${label}：自己的筹码不能遮住左下工具入口`).toBe(false);
+    expect(geometry.chipRailOverlapsScoreTrack, `${label}：自己的筹码不能遮住右上状态条`).toBe(false);
+    expect(geometry.chipRailOverlapsTopZone, `${label}：自己的筹码不能回到顶部玩家区`).toBe(false);
 }
 
 type TheGangHarnessState = {
     core?: {
+        playerIds?: string[];
         heistStarted?: boolean;
         currentRoundChips?: Record<string, unknown>;
         communityCards?: unknown[];
@@ -390,6 +678,7 @@ type TheGangHarnessState = {
         };
         players?: Record<string, {
             pocketCards?: unknown[];
+            secondaryPocketCards?: unknown[];
             communityCards?: unknown[];
             toolCards?: string[];
             specialistCards?: string[];
@@ -506,6 +795,237 @@ async function expectExactChipButtonCounts(page: Page, chipPrefix: string, expec
     for (const [chip, count] of expectedCounts.entries()) {
         await expect(tokenPile.getByRole('button', { name: `${chipPrefix} ${chip} 星`, exact: true })).toHaveCount(count);
     }
+}
+
+async function createOnlineTheGangMatch(page: Page, playerCount: number) {
+    const guestId = createGuestId('the-gang-twohand');
+    const response = await page.request.post(`${getGameServerBaseURL()}/games/${THE_GANG_GAME_ID}/create`, {
+        data: {
+            numPlayers: playerCount,
+            playerName: `纸牌帮E2E-${guestId.slice(-4)}`,
+            setupData: {
+                guestId,
+                ownerKey: `guest:${guestId}`,
+                ownerType: 'guest',
+            },
+        },
+    });
+    expect(response.ok(), `纸牌帮 ${playerCount} 人联机房间创建失败：${response.status()}`).toBe(true);
+
+    const data = (await response.json().catch(() => null)) as {
+        matchID?: string;
+        ownerPlayerID?: string;
+        ownerCredentials?: string;
+    } | null;
+    expect(data?.matchID, '纸牌帮联机建房响应缺少 matchID').toBeTruthy();
+    expect(data?.ownerCredentials, '纸牌帮联机建房响应缺少房主凭证').toBeTruthy();
+    if (!data?.matchID || !data.ownerCredentials) {
+        throw new Error('纸牌帮联机房间创建响应不完整');
+    }
+
+    await page.addInitScript((nextGuestId) => {
+        localStorage.setItem('guest_id', nextGuestId);
+        try {
+            sessionStorage.setItem('guest_id', nextGuestId);
+        } catch {
+            // ignore
+        }
+        document.cookie = `bg_guest_id=${encodeURIComponent(nextGuestId)}; path=/; SameSite=Lax`;
+    }, guestId);
+    await seedMatchCredentials(
+        page,
+        THE_GANG_GAME_ID,
+        data.matchID,
+        data.ownerPlayerID ?? '0',
+        data.ownerCredentials,
+    );
+
+    return {
+        guestId,
+        matchId: data.matchID,
+        playerId: data.ownerPlayerID ?? '0',
+    };
+}
+
+async function openOnlineTheGangMatch(page: Page, matchId: string, playerId = '0') {
+    await page.goto(`/play/${THE_GANG_GAME_ID}/match/${matchId}?playerID=${playerId}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 45_000,
+    });
+    await page.waitForFunction(
+        () => (window as TheGangTestWindow).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+        { timeout: 30_000, polling: 200 },
+    );
+    await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible({ timeout: 30_000 });
+}
+
+async function openHomeV2TheGangDetails(page: Page) {
+    await page.goto('/dev/home-v2-preview', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+    await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30_000 });
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+        const theGangCard = page.locator('[data-game-id="the-gang"]').first();
+        if (await theGangCard.count()) {
+            await expect(theGangCard).toBeVisible({ timeout: 10_000 });
+            await theGangCard.click();
+            await expect(page.getByTestId('home-v2-create-room-button')).toBeVisible({ timeout: 20_000 });
+            return;
+        }
+
+        const nextPage = page.getByTestId('home-v2-catalog-next-page');
+        await expect(nextPage).toBeVisible({ timeout: 10_000 });
+        if (await nextPage.isDisabled()) {
+            break;
+        }
+        await nextPage.click();
+        await page.waitForTimeout(120);
+    }
+
+    throw new Error('HomeV2 书本大厅未找到纸牌帮入口');
+}
+
+async function createHomeV2FourPlayerTwoHandMatch(page: Page) {
+    const playerCount = 4;
+    const chipValues = Array.from({ length: playerCount * 2 }, (_, index) => index + 1);
+    const expectedPlayerIds = Array.from({ length: playerCount }, (_, index) => String(index));
+
+    await page.addInitScript(() => {
+        localStorage.removeItem('local_ai_match_preferences:the-gang');
+    });
+
+    await openHomeV2TheGangDetails(page);
+    await page.getByTestId('home-v2-create-room-button').click();
+    const createRoomModal = page.locator('[data-testid="create-room-modal"]:visible').last();
+    await expect(createRoomModal).toBeVisible({ timeout: 10_000 });
+    const confirmCreateRoom = page.locator('[data-testid="create-room-confirm-button"]:visible').last();
+    await expect(confirmCreateRoom).toBeVisible();
+    await expect(confirmCreateRoom).toBeEnabled();
+    await confirmCreateRoom.evaluate((button) => {
+        if (!(button instanceof HTMLButtonElement)) {
+            throw new Error('确认创建按钮节点不是 button');
+        }
+        button.click();
+    });
+    await expect
+        .poll(() => page.url(), { message: '等待书本大厅创建纸牌帮房间后进入在线对局', timeout: 90_000 })
+        .toMatch(/\/play\/the-gang\/match\//u);
+    await page.waitForFunction(
+        () => (window as TheGangTestWindow).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+        { timeout: 30_000, polling: 200 },
+    );
+    await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible({ timeout: 30_000 });
+    await expect
+        .poll(async () => {
+            const state = await getTheGangState(page);
+            return state?.core?.playerIds ?? [];
+        }, { message: '等待书本大厅首次创建的纸牌帮房间按四人进入 runtime' })
+        .toEqual(expectedPlayerIds);
+
+    await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
+    await page.getByTestId('the-gang-rule-toggle-twoHand').click();
+    await expect(page.getByTestId('the-gang-rule-toggle-twoHand')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: '确认设置' }).click();
+    await expect
+        .poll(async () => {
+            const state = await getTheGangState(page);
+            return {
+                playerIds: state?.core?.playerIds ?? [],
+                twoHand: state?.core?.rules?.config?.twoHand,
+                handSwap: state?.core?.rules?.config?.handSwap,
+                topCards: state?.core?.players?.['0']?.pocketCards?.length ?? 0,
+                bottomCards: state?.core?.players?.['0']?.secondaryPocketCards?.length ?? 0,
+            };
+        }, { message: '等待书本大厅四人房间的两副手牌配置生效' })
+        .toEqual({
+            playerIds: expectedPlayerIds,
+            twoHand: true,
+            handSwap: true,
+            topCards: 2,
+        bottomCards: 2,
+    });
+
+    const matchId = page.url().match(/\/play\/the-gang\/match\/([^/?#]+)/u)?.[1];
+    if (!matchId) {
+        throw new Error(`书本大厅创建纸牌帮房间后无法从 URL 提取 matchId：${page.url()}`);
+    }
+
+    return { chipValues, expectedPlayerIds, matchId, playerCount };
+}
+
+async function initializeTheGangOnlineContext(context: BrowserContext, workerPorts: TheGangWorkerPorts) {
+    await context.addInitScript(() => {
+        (window as Window & {
+            __E2E_TEST_MODE__?: boolean;
+            __E2E_SKIP_IMAGE_GATE__?: boolean;
+        }).__E2E_TEST_MODE__ = true;
+        (window as Window & {
+            __E2E_TEST_MODE__?: boolean;
+            __E2E_SKIP_IMAGE_GATE__?: boolean;
+        }).__E2E_SKIP_IMAGE_GATE__ = true;
+        localStorage.setItem('bg_locale_preference', 'zh-CN');
+        localStorage.setItem('i18nextLng', 'zh-CN');
+        localStorage.setItem('tutorial_skip', '1');
+        localStorage.setItem('audio_muted', 'true');
+        localStorage.setItem('audio_master_volume', '0');
+        localStorage.setItem('audio_sfx_volume', '0');
+        localStorage.setItem('audio_bgm_volume', '0');
+    });
+    await context.addInitScript((ports) => {
+        (window as Window & {
+            __E2E_WORKER_PORTS__?: TheGangWorkerPorts;
+            __FORCE_GAME_SERVER_URL__?: string;
+            __FORCE_API_SERVER_URL__?: string;
+        }).__E2E_WORKER_PORTS__ = ports;
+        (window as Window & {
+            __FORCE_GAME_SERVER_URL__?: string;
+        }).__FORCE_GAME_SERVER_URL__ = `http://127.0.0.1:${ports.gameServer}`;
+        (window as Window & {
+            __FORCE_API_SERVER_URL__?: string;
+        }).__FORCE_API_SERVER_URL__ = `http://127.0.0.1:${ports.apiServer}`;
+    }, workerPorts);
+}
+
+async function createTheGangOnlinePlayerPage(args: {
+    browser: Browser;
+    baseURL: string | undefined;
+    workerPorts: TheGangWorkerPorts;
+    matchId: string;
+    playerId: string;
+}) {
+    const context = await args.browser.newContext({ baseURL: args.baseURL });
+    await initializeTheGangOnlineContext(context, args.workerPorts);
+    const playerPage = await context.newPage();
+    const guestId = createGuestId(`the-gang-seat-${args.playerId}`);
+    const credentials = await joinMatchViaAPI(
+        playerPage,
+        THE_GANG_GAME_ID,
+        args.matchId,
+        args.playerId,
+        `纸牌帮E2E-${args.playerId}`,
+        guestId,
+    );
+    if (!credentials) {
+        await context.close().catch(() => {});
+        throw new Error(`纸牌帮真实玩家 ${args.playerId} 加入房间失败`);
+    }
+
+    await seedMatchCredentials(context, THE_GANG_GAME_ID, args.matchId, args.playerId, credentials);
+    await playerPage.goto(`/play/${THE_GANG_GAME_ID}/match/${args.matchId}?playerID=${args.playerId}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 90_000,
+    });
+    await playerPage.waitForFunction(
+        () => (window as TheGangTestWindow).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+        { timeout: 30_000, polling: 200 },
+    );
+    await expect(playerPage.getByRole('heading', { name: '纸牌帮' })).toBeVisible({ timeout: 30_000 });
+
+    return {
+        context,
+        page: playerPage,
+        playerId: args.playerId,
+    };
 }
 
 async function openFabMenu(page: Page) {
@@ -643,10 +1163,13 @@ async function expectMiddleCenterVerticallyCentered(
         const tokenPile = readRect('[data-bgg-zone="token-pile"]');
         const cardRiver = readRect('[data-bgg-zone="card-river"]');
         if (!topZone || !handZone || !middleCenter || !tokenPile || !cardRiver) return null;
+        const cardCount = document.querySelectorAll('[data-bgg-zone="card-river"] img').length;
+        const tokenPileImageCount = document.querySelectorAll('[data-bgg-zone="token-pile"] img').length;
         const availableTop = topZone.bottom;
         const availableBottom = handZone.top;
-        const contentTop = Math.min(tokenPile.top, cardRiver.top);
-        const contentBottom = Math.max(tokenPile.bottom, cardRiver.bottom);
+        const tokenPileForLayout = tokenPileImageCount > 0 ? tokenPile : cardRiver;
+        const contentTop = Math.min(tokenPileForLayout.top, cardRiver.top);
+        const contentBottom = Math.max(tokenPileForLayout.bottom, cardRiver.bottom);
         const targetCenter = (availableTop + availableBottom) / 2;
         const contentCenter = (contentTop + contentBottom) / 2;
         const tokenCenter = (tokenPile.top + tokenPile.bottom) / 2;
@@ -666,8 +1189,6 @@ async function expectMiddleCenterVerticallyCentered(
             && a.top < b.bottom
             && a.bottom > b.top
         );
-        const cardCount = document.querySelectorAll('[data-bgg-zone="card-river"] img').length;
-        const tokenPileImageCount = document.querySelectorAll('[data-bgg-zone="token-pile"] img').length;
         return {
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
@@ -745,6 +1266,11 @@ async function expectMiddleCenterVerticallyCentered(
         expect(balanceRatio, `${label}：筹码排和公共牌排必须共同围绕同一中线构成一个中区组合，不能只验一个合并盒子；几何数据 ${metricsPath} ${metricsDetail}`).toBeGreaterThanOrEqual(0.35);
         expect(balanceRatio, `${label}：筹码排和公共牌排必须共同围绕同一中线构成一个中区组合，不能只验一个合并盒子；几何数据 ${metricsPath} ${metricsDetail}`).toBeLessThanOrEqual(2.85);
     }
+}
+
+async function expectSingleHandMiddleCenterNotManuallyShifted(page: Page, label: string) {
+    const transform = await page.locator('[data-bgg-zone="middle-center"]').evaluate((node) => getComputedStyle(node).transform);
+    expect(transform, `${label}：单副手牌公共牌阶段不能继承两副手牌中区下移 transform`).toBe('none');
 }
 
 test.describe('The Gang 测试入口与代表态截图', () => {
@@ -885,7 +1411,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
-        await expectUtilityDockLayout(page, 'row');
+        await expectUtilityDockLayout(page, 'column');
         await expectMiddleCenterVerticallyCentered(page, '桌面1366工具入口关闭态中央排');
         const rulesPanel = page.getByTestId('the-gang-rules-config');
         await expect(rulesPanel).toBeVisible();
@@ -1209,10 +1735,535 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(singleHandRank).toContainText(/^手牌：/u);
         await expect(singleHandRank).toHaveAttribute('data-rank-label', /.+/u);
         await expect(page.getByTestId('the-gang-local-hand-bottom-rank')).toHaveCount(0);
+        await expectSingleHandMiddleCenterNotManuallyShifted(page, '桌面单副手牌公共牌出现后');
+        await expectLocalSingleHandChipsAttachedToLocalHand(page, '桌面单副手牌公共牌出现后');
 
         await mkdir(THE_GANG_HAND_RANK_HINTS_EVIDENCE_DIR, { recursive: true });
         await page.screenshot({ path: THE_GANG_SINGLE_HAND_RANK_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
         await game.screenshot('桌面单副手牌当前牌型提示', testInfo);
+    });
+
+    test('桌面端单副手牌先拿筹码后自己的筹码显示在一副手牌上方', async ({ game, page }, testInfo) => {
+        test.setTimeout(90000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        await game.openTestGame(THE_GANG_GAME_ID, {
+            players: 3,
+            seed: 'the-gang-single-hand-chip-layout-e2e',
+            seat1: 'human',
+            seat2: 'human',
+            seat3: 'human',
+        }, 30000);
+
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+        await startHeistFromSetup(page);
+        await chooseAllPlayerChips(page, '白筹码');
+        await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
+        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(2);
+        await expect(page.locator('[data-bgg-zone="top-zone"]')).not.toContainText('玩家 1');
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
+        await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
+        await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+        await expectLocalSingleHandChipsAttachedToLocalHand(page, '桌面单副手牌先拿筹码后');
+
+        await mkdir(THE_GANG_SINGLE_HAND_CHIP_LAYOUT_EVIDENCE_DIR, { recursive: true });
+        await page.screenshot({ path: THE_GANG_SINGLE_HAND_CHIP_LAYOUT_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
+        await game.screenshot('桌面单副手牌先拿筹码后自己的筹码在一副手牌上方', testInfo);
+
+        await confirmProgressForSeats(page, '下一轮', 3);
+        await expectChipRound(page, '黄筹码');
+        await chooseAllPlayerChips(page, '黄筹码');
+        await confirmProgressForSeats(page, '下一轮', 3);
+        await expectChipRound(page, '橙筹码');
+        await chooseAllPlayerChips(page, '橙筹码');
+        await confirmProgressForSeats(page, '下一轮', 3);
+        await expectChipRound(page, '红筹码');
+        await chooseVisibleChip(page, '红筹码 2 星');
+        await chooseRoundChipsByCommand(page, { 1: 1, 2: 3 });
+        await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
+        await expectMiddleRoundFullState(page);
+        await expectSingleHandMiddleCenterNotManuallyShifted(page, '桌面单副手牌第4轮压力态');
+        await expectLocalSingleHandChipsAttachedToLocalHand(page, '桌面单副手牌第4轮压力态');
+        await expectSingleHandChipLayoutPressureState(page, '桌面单副手牌第4轮压力态');
+        await page.screenshot({
+            path: THE_GANG_SINGLE_HAND_CHIP_LAYOUT_PRESSURE_SCREENSHOT_PATH,
+            fullPage: false,
+            type: 'jpeg',
+            quality: 90,
+        });
+        await game.screenshot('桌面单副手牌压力态自己的筹码在一副手牌上方且无遮挡', testInfo);
+    });
+
+    test('联机真实房间四人两副手牌开始抢劫后正好显示8个白筹码', async ({ game, page }, testInfo) => {
+        test.setTimeout(120000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        const playerCount = 4;
+        const chipValues = Array.from({ length: playerCount * 2 }, (_, index) => index + 1);
+        const expectedPlayerIds = Array.from({ length: playerCount }, (_, index) => String(index));
+        const { matchId, playerId } = await createOnlineTheGangMatch(page, playerCount);
+
+        await openOnlineTheGangMatch(page, matchId, playerId);
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    playerIds: state?.core?.playerIds ?? [],
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                };
+            }, { message: '等待纸牌帮联机四人房间真实 runtime 就绪' })
+            .toEqual({
+                playerIds: expectedPlayerIds,
+                twoHand: false,
+            });
+
+        const rulesPanel = page.getByTestId('the-gang-rules-config');
+        await rulesPanel.getByRole('button', { name: '扩展' }).click();
+        await page.getByTestId('the-gang-rule-toggle-twoHand').click();
+        await expect(page.getByTestId('the-gang-rule-toggle-twoHand')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByRole('button', { name: '确认设置' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    playerIds: state?.core?.playerIds ?? [],
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                    handSwap: state?.core?.rules?.config?.handSwap,
+                    topCards: state?.core?.players?.['0']?.pocketCards?.length ?? 0,
+                    bottomCards: state?.core?.players?.['0']?.secondaryPocketCards?.length ?? 0,
+                };
+            }, { message: '等待联机四人两副手牌配置进入真实 runtime' })
+            .toEqual({
+                playerIds: expectedPlayerIds,
+                twoHand: true,
+                handSwap: true,
+                topCards: 2,
+                bottomCards: 2,
+            });
+
+        await startHeistFromSetup(page);
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    playerIds: state?.core?.playerIds ?? [],
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                    heistStarted: state?.core?.heistStarted,
+                };
+            }, { message: '等待联机四人两副手牌开始抢劫' })
+            .toEqual({
+                playerIds: expectedPlayerIds,
+                twoHand: true,
+                heistStarted: true,
+            });
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
+        await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', chipValues.length);
+        await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
+        await page.screenshot({ path: THE_GANG_TWO_HAND_ONLINE_PC_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
+        await game.screenshot('联机真实房间四人两副手牌8个白筹码', testInfo);
+    });
+
+    test('大厅真实创建四人房间即使旧偏好是三人两副手牌也显示8个白筹码', async ({ game, page }, testInfo) => {
+        test.setTimeout(150000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        const playerCount = 4;
+        const chipValues = Array.from({ length: playerCount * 2 }, (_, index) => index + 1);
+        const expectedPlayerIds = Array.from({ length: playerCount }, (_, index) => String(index));
+        await page.addInitScript(() => {
+            localStorage.setItem('local_ai_match_preferences:the-gang', JSON.stringify({
+                numPlayers: 3,
+                minimumActionDelayMs: 1000,
+                seatControllers: {
+                    0: { type: 'human' },
+                    1: { type: 'human' },
+                    2: { type: 'human' },
+                },
+                setupSelections: {},
+            }));
+        });
+
+        await page.goto('/?game=the-gang&homeStyle=classic', { waitUntil: 'domcontentloaded', timeout: 45_000 });
+        await page.getByTestId('game-details-open-create-room').waitFor({ state: 'visible', timeout: 45_000 });
+        await page.getByTestId('game-details-open-create-room').click();
+        const createRoomModal = page.getByTestId('create-room-modal').last();
+        await expect(createRoomModal).toBeVisible({ timeout: 10_000 });
+        await createRoomModal.getByRole('button', { name: '4人', exact: true }).click();
+        await expect(createRoomModal.getByRole('button', { name: '4人', exact: true })).toHaveClass(/bg-parchment-base-text|bg-\[#875b3b\]/u);
+        await createRoomModal.getByTestId('create-room-confirm-button').click();
+        await page.waitForURL(/\/play\/the-gang\/match\//u, { timeout: 90_000 });
+        await page.waitForFunction(
+            () => (window as TheGangTestWindow).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+            { timeout: 30_000, polling: 200 },
+        );
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible({ timeout: 30_000 });
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return state?.core?.playerIds ?? [];
+            }, { message: '等待大厅创建的纸牌帮房间按四人进入 runtime' })
+            .toEqual(expectedPlayerIds);
+
+        await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
+        await page.getByTestId('the-gang-rule-toggle-twoHand').click();
+        await expect(page.getByTestId('the-gang-rule-toggle-twoHand')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByRole('button', { name: '确认设置' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    playerIds: state?.core?.playerIds ?? [],
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                    handSwap: state?.core?.rules?.config?.handSwap,
+                    topCards: state?.core?.players?.['0']?.pocketCards?.length ?? 0,
+                    bottomCards: state?.core?.players?.['0']?.secondaryPocketCards?.length ?? 0,
+                };
+            }, { message: '等待大厅创建四人房间的两副手牌配置生效' })
+            .toEqual({
+                playerIds: expectedPlayerIds,
+                twoHand: true,
+                handSwap: true,
+                topCards: 2,
+                bottomCards: 2,
+            });
+
+        await startHeistFromSetup(page);
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
+        await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', chipValues.length);
+        await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
+        await page.screenshot({ path: THE_GANG_TWO_HAND_LOBBY_PC_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
+        await game.screenshot('大厅创建四人两副手牌8个白筹码', testInfo);
+    });
+
+    test('书本大厅首次创建纸牌帮房间默认四人两副手牌显示8个白筹码', async ({ game, page }, testInfo) => {
+        test.setTimeout(180000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        const playerCount = 4;
+        const chipValues = Array.from({ length: playerCount * 2 }, (_, index) => index + 1);
+        const expectedPlayerIds = Array.from({ length: playerCount }, (_, index) => String(index));
+        await page.addInitScript(() => {
+            localStorage.removeItem('local_ai_match_preferences:the-gang');
+        });
+
+        await openHomeV2TheGangDetails(page);
+        await page.getByTestId('home-v2-create-room-button').click();
+        const createRoomModal = page.locator('[data-testid="create-room-modal"]:visible').last();
+        await expect(createRoomModal).toBeVisible({ timeout: 10_000 });
+        const confirmCreateRoom = page.locator('[data-testid="create-room-confirm-button"]:visible').last();
+        await expect(confirmCreateRoom).toBeVisible();
+        await expect(confirmCreateRoom).toBeEnabled();
+        await confirmCreateRoom.evaluate((button) => {
+            if (!(button instanceof HTMLButtonElement)) {
+                throw new Error('确认创建按钮节点不是 button');
+            }
+            button.click();
+        });
+        await expect
+            .poll(() => page.url(), { message: '等待书本大厅创建纸牌帮房间后进入在线对局', timeout: 90_000 })
+            .toMatch(/\/play\/the-gang\/match\//u);
+        await page.waitForFunction(
+            () => (window as TheGangTestWindow).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+            { timeout: 30_000, polling: 200 },
+        );
+        await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible({ timeout: 30_000 });
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return state?.core?.playerIds ?? [];
+            }, { message: '等待书本大厅首次创建的纸牌帮房间按四人进入 runtime' })
+            .toEqual(expectedPlayerIds);
+
+        await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
+        await page.getByTestId('the-gang-rule-toggle-twoHand').click();
+        await expect(page.getByTestId('the-gang-rule-toggle-twoHand')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByRole('button', { name: '确认设置' }).click();
+        await expect
+            .poll(async () => {
+                const state = await getTheGangState(page);
+                return {
+                    playerIds: state?.core?.playerIds ?? [],
+                    twoHand: state?.core?.rules?.config?.twoHand,
+                    handSwap: state?.core?.rules?.config?.handSwap,
+                    topCards: state?.core?.players?.['0']?.pocketCards?.length ?? 0,
+                    bottomCards: state?.core?.players?.['0']?.secondaryPocketCards?.length ?? 0,
+                };
+            }, { message: '等待书本大厅四人房间的两副手牌配置生效' })
+            .toEqual({
+                playerIds: expectedPlayerIds,
+                twoHand: true,
+                handSwap: true,
+                topCards: 2,
+                bottomCards: 2,
+            });
+
+        await startHeistFromSetup(page);
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
+        await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', chipValues.length);
+        await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
+        await page.screenshot({ path: THE_GANG_TWO_HAND_HOME_V2_PC_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
+        await game.screenshot('书本大厅首次创建四人两副手牌8个白筹码', testInfo);
+    });
+
+    test('书本大厅四人两副手牌第4轮显示2个撤离筹码', async ({ browser, game, page, workerPorts }, testInfo) => {
+        test.setTimeout(240000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        const { chipValues, expectedPlayerIds, matchId, playerCount } = await createHomeV2FourPlayerTwoHandMatch(page);
+        const chipSlotCount = chipValues.length;
+        const guestPlayers: TheGangOnlinePlayer[] = [];
+        const onlinePlayers: TheGangOnlinePlayer[] = [
+            { page, playerId: '0' },
+        ];
+
+        try {
+            for (let seatIndex = 1; seatIndex < playerCount; seatIndex += 1) {
+                const player = await createTheGangOnlinePlayerPage({
+                    browser,
+                    baseURL: testInfo.project.use.baseURL as string | undefined,
+                    workerPorts,
+                    matchId,
+                    playerId: String(seatIndex),
+                });
+                guestPlayers.push(player);
+                onlinePlayers.push(player);
+            }
+
+            await expect
+                .poll(async () => {
+                    const state = await getTheGangState(page);
+                    return {
+                        playerIds: state?.core?.playerIds ?? [],
+                        twoHand: state?.core?.rules?.config?.twoHand,
+                    };
+                }, { message: '等待四个真实玩家页面连入同一个纸牌帮房间' })
+                .toEqual({
+                    playerIds: expectedPlayerIds,
+                    twoHand: true,
+                });
+
+            await startHeistFromSetup(page);
+            for (const [roundIndex, chipPrefix] of (['白筹码', '黄筹码', '橙筹码'] as const).entries()) {
+                const currentRound = roundIndex + 1;
+                await expectExactChipButtonCounts(page, chipPrefix, chipValues);
+                await chooseTwoHandChipsForOnlinePlayers(onlinePlayers);
+                await expectCurrentRoundChips(page, chipSlotCount);
+                await confirmProgressForOnlinePlayers(onlinePlayers, '下一轮');
+                await confirmHandSwapForOnlinePlayers(page, onlinePlayers, currentRound, currentRound + 1);
+            }
+
+            await expect
+                .poll(async () => {
+                    const state = await getTheGangState(page);
+                    return {
+                        playerIds: state?.core?.playerIds ?? [],
+                        twoHand: state?.core?.rules?.config?.twoHand,
+                        phase: state?.core?.phase,
+                        round: state?.core?.round,
+                        communityCards: state?.core?.communityCards?.length ?? 0,
+                        currentChipOwners: Object.keys(state?.core?.currentRoundChips ?? {}).length,
+                        exitChipOwners: state?.core?.currentRoundExitChipOwners?.length ?? 0,
+                    };
+                }, { message: '等待书本大厅四人两副手牌真实进入第4轮撤离筹码阶段' })
+                .toEqual({
+                    playerIds: expectedPlayerIds,
+                    twoHand: true,
+                    phase: 'chip-selection',
+                    round: 4,
+                    communityCards: 5,
+                    currentChipOwners: 0,
+                    exitChipOwners: 0,
+                });
+
+            const tokenPile = page.locator('[data-bgg-zone="token-pile"]');
+            await expect(tokenPile.locator('button[aria-label^="红筹码"]')).toHaveCount(chipSlotCount);
+            for (const chip of chipValues) {
+                await expect(tokenPile.getByRole('button', { name: `红筹码 ${chip} 星`, exact: true })).toHaveCount(1);
+            }
+
+            const exitChipRow = page.getByTestId('the-gang-exit-chip-row');
+            await expect(exitChipRow).toBeVisible();
+            await expect(exitChipRow).toHaveAttribute('aria-label', '撤离筹码，共 2 枚');
+            await expect(page.locator('[data-testid^="the-gang-exit-chip-button-"]')).toHaveCount(2);
+            await expect(page.getByTestId('the-gang-exit-chip-button-1')).toBeVisible();
+            await expect(page.getByTestId('the-gang-exit-chip-button-2')).toBeVisible();
+            await expect(page.getByTestId('the-gang-exit-chip-button-3')).toHaveCount(0);
+            await expectImagesLoaded(page, '[data-bgg-zone="exit-chip-token"] img', 2);
+            const exitChipSources = await page.locator('[data-bgg-zone="exit-chip-token"] img')
+                .evaluateAll((nodes) => nodes.map((node) => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src));
+            expect(exitChipSources.every((src) => src.includes('exit-chip'))).toBe(true);
+            await expect(exitChipRow).not.toContainText('撤离');
+
+            await chooseTwoHandChipsForOnlinePlayers(onlinePlayers);
+            await expectCurrentRoundChips(page, chipSlotCount);
+            await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(chipSlotCount - 2);
+            await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(2);
+            await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(playerCount - 1);
+            await expect(page.getByTestId('the-gang-player-chip-strip-0')).toHaveCount(0);
+            await expect(page.getByTestId('the-gang-local-hand-top-chip-rail')).toBeVisible();
+            await expect(page.getByTestId('the-gang-local-hand-bottom-chip-rail')).toBeVisible();
+            await expect(page.getByTestId('the-gang-player-chip-row-1-top')).toBeVisible();
+            await expect(page.getByTestId('the-gang-player-chip-row-1-bottom')).toBeVisible();
+            const topRankText = await page.getByTestId('the-gang-local-hand-top-rank').innerText();
+            const bottomRankText = await page.getByTestId('the-gang-local-hand-bottom-rank').innerText();
+            expect(topRankText).not.toMatch(/^上手：/u);
+            expect(bottomRankText).not.toMatch(/^下手：/u);
+            expect(topRankText).not.toMatch(/上手：上手/u);
+            expect(bottomRankText).not.toMatch(/下手：下手/u);
+            await expect(page.getByTestId('the-gang-exit-chip-button-1')).toBeEnabled();
+            await expect(page.getByTestId('the-gang-exit-chip-button-2')).toBeEnabled();
+            await expect(page.getByRole('button', { name: '摊牌' })).toBeDisabled();
+            const attachedChipGeometry = await page.evaluate(() => {
+                const readRect = (testId: string) => {
+                    const node = document.querySelector(`[data-testid="${testId}"]`);
+                    if (!node) return null;
+                    const rect = node.getBoundingClientRect();
+                    return {
+                        top: rect.top,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                        left: rect.left,
+                    };
+                };
+                const readRectBySelector = (selector: string) => {
+                    const node = document.querySelector(selector);
+                    if (!node) return null;
+                    const rect = node.getBoundingClientRect();
+                    return {
+                        top: rect.top,
+                        right: rect.right,
+                        bottom: rect.bottom,
+                        left: rect.left,
+                    };
+                };
+                const readRailStyle = (testId: string) => {
+                    const node = document.querySelector(`[data-testid="${testId}"]`);
+                    if (!node) return null;
+                    const style = window.getComputedStyle(node);
+                    return {
+                        borderTopWidth: style.borderTopWidth,
+                        borderRightWidth: style.borderRightWidth,
+                        borderBottomWidth: style.borderBottomWidth,
+                        borderLeftWidth: style.borderLeftWidth,
+                    };
+                };
+                const topHand = readRect('the-gang-local-hand-top-cards');
+                const bottomHand = readRect('the-gang-local-hand-bottom-cards');
+                const cardRiver = readRectBySelector('[data-bgg-zone="card-river"]');
+                const readTokenRects = (testId: string) => {
+                    const rail = document.querySelector(`[data-testid="${testId}"]`);
+                    const tokens = Array.from(rail?.querySelectorAll('[data-bgg-zone="hand-current-chip"], [data-bgg-zone="exit-chip-badge-token"]') ?? []);
+                    return tokens.map((node) => {
+                        const rect = node.getBoundingClientRect();
+                        return {
+                            top: rect.top,
+                            right: rect.right,
+                            bottom: rect.bottom,
+                            left: rect.left,
+                        };
+                    });
+                };
+                const toBandRect = (tokens: ReturnType<typeof readTokenRects>) => {
+                    if (tokens.length === 0) return null;
+                    return {
+                        top: Math.min(...tokens.map((rect) => rect.top)),
+                        right: Math.max(...tokens.map((rect) => rect.right)),
+                        bottom: Math.max(...tokens.map((rect) => rect.bottom)),
+                        left: Math.min(...tokens.map((rect) => rect.left)),
+                    };
+                };
+                const topTokenRects = readTokenRects('the-gang-local-hand-top-chip-rail');
+                const bottomTokenRects = readTokenRects('the-gang-local-hand-bottom-chip-rail');
+                const topTokenBand = toBandRect(topTokenRects);
+                const bottomTokenBand = toBandRect(bottomTokenRects);
+                const topRailStyle = readRailStyle('the-gang-local-hand-top-chip-rail');
+                const bottomRailStyle = readRailStyle('the-gang-local-hand-bottom-chip-rail');
+                const opponentTopRailStyle = readRailStyle('the-gang-player-chip-row-1-top');
+                const opponentBottomRailStyle = readRailStyle('the-gang-player-chip-row-1-bottom');
+                const intersects = (
+                    a: NonNullable<ReturnType<typeof readRect>>,
+                    b: NonNullable<ReturnType<typeof readRect>>,
+                ) => (
+                    a.left < b.right
+                    && a.right > b.left
+                    && a.top < b.bottom
+                    && a.bottom > b.top
+                );
+                const tokensOutsideRightOfHand = (
+                    hand: ReturnType<typeof readRect>,
+                    tokens: ReturnType<typeof readTokenRects>,
+                ) => !!hand && tokens.length > 0 && tokens.every((token) => (
+                    token.left >= hand.right + 2
+                    && Math.abs(token.top - hand.top) <= 4
+                    && !intersects(token, hand)
+                ));
+                const tokensArrangedHorizontally = (tokens: ReturnType<typeof readTokenRects>) => {
+                    if (tokens.length <= 1) return tokens.length === 1;
+                    const sorted = [...tokens].sort((left, right) => left.left - right.left);
+                    const firstCenterY = (sorted[0].top + sorted[0].bottom) / 2;
+                    return sorted.every((token, index) => {
+                        const centerY = (token.top + token.bottom) / 2;
+                        const previous = sorted[index - 1];
+                        return Math.abs(centerY - firstCenterY) <= 4
+                            && (!previous || token.left >= previous.left);
+                    });
+                };
+                const hasClearVerticalGap = (
+                    upper: ReturnType<typeof readRectBySelector>,
+                    lower: ReturnType<typeof readRect>,
+                ) => !!upper && !!lower && upper.bottom <= lower.top - 8;
+                const noBorder = (style: ReturnType<typeof readRailStyle>) => !!style
+                    && style.borderTopWidth === '0px'
+                    && style.borderRightWidth === '0px'
+                    && style.borderBottomWidth === '0px'
+                    && style.borderLeftWidth === '0px';
+                return {
+                    topTokensOutsideRightOfHand: tokensOutsideRightOfHand(topHand, topTokenRects),
+                    bottomTokensOutsideRightOfHand: tokensOutsideRightOfHand(bottomHand, bottomTokenRects),
+                    topTokensArrangedHorizontally: tokensArrangedHorizontally(topTokenRects),
+                    bottomTokensArrangedHorizontally: tokensArrangedHorizontally(bottomTokenRects),
+                    riverHasClearGapAboveTopHand: hasClearVerticalGap(cardRiver, topHand),
+                    riverHasClearGapAboveTopHandToken: hasClearVerticalGap(cardRiver, topTokenBand),
+                    riverHasClearGapAboveBottomHandToken: hasClearVerticalGap(cardRiver, bottomTokenBand),
+                    topRailHasNoBorder: noBorder(topRailStyle),
+                    bottomRailHasNoBorder: noBorder(bottomRailStyle),
+                    opponentTopRailHasNoBorder: noBorder(opponentTopRailStyle),
+                    opponentBottomRailHasNoBorder: noBorder(opponentBottomRailStyle),
+                };
+            });
+            expect(attachedChipGeometry.topTokensOutsideRightOfHand).toBe(true);
+            expect(attachedChipGeometry.bottomTokensOutsideRightOfHand).toBe(true);
+            expect(attachedChipGeometry.topTokensArrangedHorizontally).toBe(true);
+            expect(attachedChipGeometry.bottomTokensArrangedHorizontally).toBe(true);
+            expect(attachedChipGeometry.riverHasClearGapAboveTopHand).toBe(true);
+            expect(attachedChipGeometry.riverHasClearGapAboveTopHandToken).toBe(true);
+            expect(attachedChipGeometry.riverHasClearGapAboveBottomHandToken).toBe(true);
+            expect(attachedChipGeometry.topRailHasNoBorder).toBe(true);
+            expect(attachedChipGeometry.bottomRailHasNoBorder).toBe(true);
+            expect(attachedChipGeometry.opponentTopRailHasNoBorder).toBe(true);
+            expect(attachedChipGeometry.opponentBottomRailHasNoBorder).toBe(true);
+            await expectMiddleCenterVerticallyCentered(page, '书本大厅四人两副手牌第4轮撤离筹码满载布局', {
+                requireTokenPile: true,
+            });
+            await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
+            await page.screenshot({ path: THE_GANG_TWO_HAND_HOME_V2_EXIT_CHIPS_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
+            await game.screenshot('书本大厅四人两副手牌第4轮2个撤离筹码', testInfo);
+
+            await dispatchTheGangCommand(page, '0', 'TAKE_EXIT_CHIP', { handSlot: 'top' });
+            await dispatchTheGangCommand(onlinePlayers[1].page, '1', 'TAKE_EXIT_CHIP', { handSlot: 'bottom' });
+            await expect
+                .poll(async () => {
+                    const state = await getTheGangState(page);
+                    return state?.core?.currentRoundExitChipOwners ?? [];
+                }, { message: '等待两枚撤离筹码被拿走并同步到当前轮状态' })
+                .toEqual(['0:top', '1:bottom']);
+            await expect(page.getByTestId('the-gang-exit-chip-row')).toHaveCount(0);
+            await expect(page.locator('[data-bgg-zone="exit-chip-token"] img')).toHaveCount(0);
+            await expect(page.getByTestId('the-gang-local-hand-top-chip-rail').locator('[data-bgg-zone="exit-chip-badge-token"] img')).toHaveCount(1);
+            await expect(page.getByTestId('the-gang-player-chip-row-1-bottom').locator('[data-bgg-zone="exit-chip-badge-token"] img')).toHaveCount(1);
+            await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
+            await expectMiddleCenterVerticallyCentered(page, '书本大厅四人两副手牌第4轮撤离筹码贴手牌后布局');
+            await page.screenshot({ path: THE_GANG_TWO_HAND_HOME_V2_EXIT_CHIPS_TAKEN_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
+            await game.screenshot('书本大厅四人两副手牌第4轮撤离筹码已贴到手牌', testInfo);
+        } finally {
+            await Promise.all(guestPlayers.map((player) => player.context?.close().catch(() => {})));
+        }
     });
 
     test('桌面端两副手牌投票后进入手牌调换阶段并可交换上下手牌', async ({ game, page }, testInfo) => {
@@ -1220,6 +2271,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await page.setViewportSize({ width: 1366, height: 768 });
         const playerCount = 4;
         const chipSlotCount = playerCount * 2;
+        const chipValues = Array.from({ length: chipSlotCount }, (_, index) => index + 1);
         await game.openTestGame(THE_GANG_GAME_ID, {
             players: playerCount,
             seed: 'the-gang-twohand-hand-swap-e2e',
@@ -1257,7 +2309,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             });
 
         await startHeistFromSetup(page);
-        await expectChipRoundForPlayerCount(page, '白筹码', chipSlotCount);
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
         await expect(page.getByTestId('the-gang-chip-hand-selector')).toBeVisible();
         await expect(page.getByTestId('the-gang-chip-hand-selector-top')).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByTestId('the-gang-chip-hand-selector-bottom')).toHaveAttribute('aria-pressed', 'false');
@@ -1303,7 +2355,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         for (let seatIndex = 1; seatIndex < playerCount; seatIndex += 1) {
             await dispatchTheGangCommand(page, String(seatIndex), 'CONFIRM_HAND_SWAP');
         }
-        await expectChipRoundForPlayerCount(page, '黄筹码', chipSlotCount);
+        await expectExactChipButtonCounts(page, '黄筹码', chipValues);
         await expect
             .poll(async () => {
                 const state = await getTheGangState(page);
@@ -1330,17 +2382,20 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toBeVisible();
         await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeDisabled();
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 3);
-        await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', chipSlotCount);
-        await expect(page.locator('[data-bgg-zone="token-pile-current-chip"]')).toHaveCount(chipSlotCount);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(chipSlotCount);
+        await expect(page.locator('[data-bgg-zone="token-pile"] img')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="token-pile-current-chip"]')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(chipSlotCount - 2);
+        await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(2);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', chipSlotCount - 2);
+        await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 2);
         await expect(page.getByTestId('the-gang-local-hand-top')).toBeVisible();
         await expect(page.getByTestId('the-gang-local-hand-bottom')).toBeVisible();
-        await expect(page.getByTestId('the-gang-local-hand-top').locator('img')).toHaveCount(2);
-        await expect(page.getByTestId('the-gang-local-hand-bottom').locator('img')).toHaveCount(2);
+        await expect(page.locator('[data-testid^="the-gang-local-hand-top-card-"] img')).toHaveCount(2);
+        await expect(page.locator('[data-testid^="the-gang-local-hand-bottom-card-"] img')).toHaveCount(2);
         await expect(page.getByTestId('the-gang-local-hand-top-rank')).toBeVisible();
-        await expect(page.getByTestId('the-gang-local-hand-top-rank')).toContainText(/^上手：/u);
         await expect(page.getByTestId('the-gang-local-hand-bottom-rank')).toBeVisible();
-        await expect(page.getByTestId('the-gang-local-hand-bottom-rank')).toContainText(/^下手：/u);
+        expect(await page.getByTestId('the-gang-local-hand-top-rank').innerText()).not.toMatch(/^上手：/u);
+        expect(await page.getByTestId('the-gang-local-hand-bottom-rank').innerText()).not.toMatch(/^下手：/u);
         const opponentHandImageCount = await page
             .locator('[data-testid^="the-gang-opponent-hand-"][data-testid$="-rows"] img')
             .count();
@@ -1351,9 +2406,8 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
         await expect(page.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
         await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeEnabled();
-        await expectMiddleCenterVerticallyCentered(page, '桌面两副手牌调换阶段中央筹码与公共牌满载', {
+        await expectMiddleCenterVerticallyCentered(page, '桌面两副手牌调换阶段公共牌与手牌筹码轨布局', {
             allowSideBySideTokenPile: true,
-            requireTokenPile: true,
         });
 
         const handSwapMetrics = await page.evaluate(() => {
@@ -1390,18 +2444,20 @@ test.describe('The Gang 测试入口与代表态截图', () => {
                 cardRiverCount: document.querySelectorAll('[data-bgg-zone="card-river"] img').length,
                 tokenPileCurrentChipCount: document.querySelectorAll('[data-bgg-zone="token-pile-current-chip"]').length,
                 playerCurrentTokenCount: document.querySelectorAll('[data-bgg-zone="player-current-token"]').length,
-                handTopCount: document.querySelectorAll('[data-testid="the-gang-local-hand-top"] img').length,
-                handBottomCount: document.querySelectorAll('[data-testid="the-gang-local-hand-bottom"] img').length,
+                handTopCardCount: document.querySelectorAll('[data-testid^="the-gang-local-hand-top-card-"] img').length,
+                handBottomCardCount: document.querySelectorAll('[data-testid^="the-gang-local-hand-bottom-card-"] img').length,
+                handCurrentChipCount: document.querySelectorAll('[data-bgg-zone="hand-current-chip"]').length,
                 tokenOverlapsHand: intersects(tokenPile, handGroup),
                 cardRiverOverlapsHand: intersects(cardRiver, handGroup),
                 actionDockOverlapsCardRiver: intersects(actionDock, cardRiver),
             };
         });
         expect(handSwapMetrics.cardRiverCount).toBe(3);
-        expect(handSwapMetrics.tokenPileCurrentChipCount).toBe(chipSlotCount);
-        expect(handSwapMetrics.playerCurrentTokenCount).toBe(chipSlotCount);
-        expect(handSwapMetrics.handTopCount).toBe(2);
-        expect(handSwapMetrics.handBottomCount).toBe(2);
+        expect(handSwapMetrics.tokenPileCurrentChipCount).toBe(0);
+        expect(handSwapMetrics.playerCurrentTokenCount).toBe(chipSlotCount - 2);
+        expect(handSwapMetrics.handTopCardCount).toBe(2);
+        expect(handSwapMetrics.handBottomCardCount).toBe(2);
+        expect(handSwapMetrics.handCurrentChipCount).toBe(2);
         expect(handSwapMetrics.tokenOverlapsHand).toBe(false);
         expect(handSwapMetrics.cardRiverOverlapsHand).toBe(false);
         expect(handSwapMetrics.actionDockOverlapsCardRiver).toBe(false);
@@ -1601,21 +2657,22 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-hand-rank-nameplate-toggle')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-hotseat-switcher')).toHaveCount(0);
-        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(6);
+        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(5);
         await expectChipRoundForPlayerCount(page, '白筹码', 6);
         await expect(page.locator('[data-bgg-zone="card-river"]')).toHaveCount(1);
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).toBeVisible();
-        await expect(page.locator('[data-bgg-zone="hand-chips"]')).toHaveCount(1);
-        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(6);
+        await expect(page.locator('[data-bgg-zone="hand-chips"]')).toHaveCount(0);
+        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(5);
         await game.screenshot('桌面6人满人数首轮可操作状态', testInfo);
 
         await startHeistFromSetup(page);
         await chooseChipsForSeats(page, 6);
         await expectCurrentRoundChips(page, 6);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(6);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(5);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 6);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 5);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+        await expectLocalSingleHandChipsAttachedToLocalHand(page, '桌面6人单副手牌全员筹码已选');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await game.screenshot('桌面6人满人数全员筹码已选', testInfo);
     });
@@ -1777,10 +2834,11 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await dispatchTheGangCommand(page, '1', 'TAKE_CHIP', { chip: 2 });
         await dispatchTheGangCommand(page, '2', 'TAKE_CHIP', { chip: 3 });
         await expectCurrentRoundChips(page, 3);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+        await expectLocalSingleHandChipsAttachedToLocalHand(page, '移动横屏单副手牌全员筹码已选');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
         await expect(page.getByTestId('the-gang-progress-vote-dots')).toBeVisible();
         await expectHudActionLogAndUndoAvailable(page);
@@ -1792,6 +2850,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await page.setViewportSize({ width: 812, height: 375 });
         const playerCount = 4;
         const chipSlotCount = playerCount * 2;
+        const chipValues = Array.from({ length: chipSlotCount }, (_, index) => index + 1);
         await game.openTestGame(THE_GANG_GAME_ID, {
             players: playerCount,
             seed: 'the-gang-mobile-twohand-eight-chips-e2e',
@@ -1829,7 +2888,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             });
 
         await startHeistFromSetup(page);
-        await expectChipRoundForPlayerCount(page, '白筹码', chipSlotCount);
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
         await expect(page.getByTestId('the-gang-chip-hand-selector')).toBeVisible();
         await page.getByTestId('the-gang-chip-hand-selector-bottom').click();
         await expect(page.getByTestId('the-gang-chip-hand-selector-bottom')).toHaveAttribute('aria-pressed', 'true');
@@ -1838,7 +2897,6 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', chipSlotCount);
         await expectMiddleCenterVerticallyCentered(page, '移动横屏四人两副手牌8个筹码槽', {
             allowSideBySideTokenPile: true,
-            requireTokenPile: true,
         });
         await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
         await page.screenshot({ path: THE_GANG_TWO_HAND_MOBILE_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
@@ -1851,21 +2909,20 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         for (let seatIndex = 0; seatIndex < playerCount; seatIndex += 1) {
             await dispatchTheGangCommand(page, String(seatIndex), 'CONFIRM_HAND_SWAP');
         }
-        await expectChipRoundForPlayerCount(page, '黄筹码', chipSlotCount);
+        await expectExactChipButtonCounts(page, '黄筹码', chipValues);
 
         await chooseTwoHandChipsForSeats(page, playerCount);
         await expectCurrentRoundChips(page, chipSlotCount);
         await confirmProgressForSeats(page, '下一轮', playerCount);
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toBeVisible();
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 3);
-        await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', chipSlotCount);
+        await expect(page.locator('[data-bgg-zone="token-pile"] img')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeDisabled();
         await page.getByTestId('the-gang-local-hand-top-card-0').click();
         await page.getByTestId('the-gang-local-hand-bottom-card-1').click();
         await expect(page.getByTestId('the-gang-confirm-hand-swap')).toBeEnabled();
         await expectMiddleCenterVerticallyCentered(page, '移动横屏四人两副手牌调换阶段公共牌无遮挡', {
             allowSideBySideTokenPile: true,
-            requireTokenPile: true,
         });
         await page.screenshot({ path: THE_GANG_TWO_HAND_MOBILE_HAND_SWAP_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
         await game.screenshot('移动横屏两副手牌调换阶段公共牌无遮挡', testInfo);
@@ -1891,15 +2948,15 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await expect(page.locator('[data-bgg-zone="token-pile"]')).toBeInViewport();
         await expect(page.locator('[data-bgg-zone="hand-cards"]')).toBeInViewport();
         await expectMiddleCenterVerticallyCentered(page, '移动竖屏首轮中央排');
-        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(3);
-        await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('玩家 1');
+        await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveCount(2);
+        await expect(page.locator('[data-bgg-zone="top-zone"]')).not.toContainText('玩家 1');
         await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('AI 2 号位');
         await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('AI 3 号位');
         await expect(page.locator('[data-bgg-zone="top-zone"] [data-bgg-zone="opponent-cards"] img')).toHaveCount(0);
-        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="player-tokens"]')).toHaveCount(2);
         await expect(page.getByTestId('the-gang-hotseat-switcher')).not.toBeVisible();
         await expect(page.getByTestId('the-gang-showdown-hotseat-switcher')).toHaveCount(0);
-        await expect(page.locator('[data-bgg-zone="top-zone"]')).toContainText('玩家 1');
+        await expect(page.locator('[data-bgg-zone="top-zone"]')).not.toContainText('玩家 1');
         await expect(page.locator('[data-bgg-zone="hand-groupzone"]')).not.toContainText('玩家 1');
 
         await game.screenshot('移动竖屏横屏优先下仍保留关键牌桌区域', testInfo);
@@ -1917,7 +2974,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }, 30000);
 
         await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
-        await expectUtilityDockLayout(page, 'row');
+        await expectUtilityDockLayout(page, 'column');
         await expect(page.getByTestId('the-gang-current-hand-rank')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-hand-rank-nameplate-toggle')).toHaveCount(0);
         await expect(page.locator('[data-tutorial-id="the-gang-hand-rank-reference"]')).toBeVisible();
@@ -1948,8 +3005,11 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await chooseAllPlayerChips(page, '白筹码');
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
+        await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
+        await expectLocalSingleHandChipsAttachedToLocalHand(page, '桌面单副手牌首轮全员筹码已选');
         await game.screenshot('桌面首轮全员筹码已选', testInfo);
 
         await confirmProgressForAllPlayers(page, '下一轮');
@@ -2021,7 +3081,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await page.getByRole('button', { name: '白筹码 1 星' }).click();
         await expectCurrentRoundChips(page, 3);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await expectAvailableChipButtons(page, '白筹码', []);
         await expect(page.getByRole('button', { name: '下一轮' })).toBeEnabled();

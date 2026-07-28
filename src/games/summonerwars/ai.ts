@@ -30,7 +30,7 @@ import { SummonerWarsDomain } from './domain';
 import { abilityRegistry } from './domain/abilities';
 import { PHASE_END_ABILITIES } from './domain/flowHooks';
 import { getActivatableAbilities, canActivateAbility } from './domain/abilityHelpers';
-import { CARD_IDS, getBaseCardId } from './domain/ids';
+import { CARD_IDS, getBaseCardId, isMoguFungalBeastCard, isUndeadCard } from './domain/ids';
 import {
     BOARD_COLS,
     BOARD_ROWS,
@@ -1536,6 +1536,51 @@ const buildActivatedAbilityActions = (
                 abilityDef,
             });
 
+            if (abilityId === 'revive_undead') {
+                const undeadDiscardUnits = state.core.players[playerId].discard
+                    .filter((card): card is UnitCard => card.cardType === 'unit' && isUndeadCard(card));
+                const emptyAdjacentPositions = getAdjacentCells(unit.position)
+                    .filter((position) => isCellEmpty(state.core, position));
+
+                for (const card of undeadDiscardUnits) {
+                    for (const position of emptyAdjacentPositions) {
+                        appendAction(actions, state, playerId, {
+                            actionId: createAiLegalActionId(
+                                'activate-ability',
+                                unit.instanceId,
+                                abilityId,
+                                card.id,
+                                position.row,
+                                position.col,
+                            ),
+                            kind: 'activate-ability',
+                            label: `发动技能 ${abilityDef.name} → ${card.name}`,
+                            commands: [{
+                                type: SW_COMMANDS.ACTIVATE_ABILITY,
+                                payload: {
+                                    abilityId,
+                                    sourceUnitId: unit.instanceId,
+                                    targetCardId: card.id,
+                                    targetPosition: position,
+                                },
+                            }],
+                            metadata: withAiActionStrategyTags({
+                                ...semantics.metadata,
+                                sourceUnitId: unit.instanceId,
+                                sourcePosition: unit.position,
+                                targetCardId: card.id,
+                                targetCardName: card.name,
+                                targetPosition: position,
+                                reviveFromDiscard: true,
+                                selfDamage: 2,
+                                keepValue: getCardKeepValue(card),
+                            }, ['ability-tempo', 'board-control']),
+                        });
+                    }
+                }
+                continue;
+            }
+
             if (!abilityDef.requiresTargetSelection) {
                 appendAction(actions, state, playerId, {
                     actionId: createAiLegalActionId('activate-ability', unit.instanceId, abilityId),
@@ -1691,6 +1736,95 @@ const buildSummonActions = (
 
     for (const card of player.hand) {
         if (card.cardType !== 'unit') continue;
+        const cardAbilities = card.abilities ?? [];
+        if (cardAbilities.includes('fire_sacrifice_summon')) {
+            const sacrificeTargets = getPlayerUnits(state.core, playerId)
+                .filter((unit) => unit.card.unitClass !== 'summoner');
+
+            for (const sacrifice of sacrificeTargets) {
+                const distanceToEnemySummoner = enemySummoner ? manhattanDistance(sacrifice.position, enemySummoner.position) : 99;
+                const distanceToOwnSummoner = ownSummoner ? manhattanDistance(sacrifice.position, ownSummoner.position) : 99;
+                const centerScore = getCenterScore(sacrifice.position);
+                appendAction(actions, state, playerId, {
+                    actionId: createAiLegalActionId('summon-unit', card.id, 'fire-sacrifice', sacrifice.instanceId),
+                    kind: 'summon-unit',
+                    label: `召唤 ${card.name} → 牺牲 ${sacrifice.card.name}`,
+                    commands: [{
+                        type: SW_COMMANDS.SUMMON_UNIT,
+                        payload: {
+                            cardId: card.id,
+                            position: sacrifice.position,
+                            sacrificeUnitId: sacrifice.instanceId,
+                        },
+                    }],
+                    metadata: withAiActionStrategyTags({
+                        cardId: card.id,
+                        cardName: card.name,
+                        cost: card.cost,
+                        strength: card.strength,
+                        life: card.life,
+                        position: sacrifice.position,
+                        centerScore,
+                        distanceToEnemySummoner,
+                        distanceToOwnSummoner,
+                        sacrificeUnitId: sacrifice.instanceId,
+                        sacrificePosition: sacrifice.position,
+                        sacrificeCardName: sacrifice.card.name,
+                        sacrificeKeepValue: getCardKeepValue(sacrifice.card),
+                        summonMode: 'fire_sacrifice_summon',
+                        remainingLife: threat.remainingLife,
+                        directThreatDamage: threat.directThreatDamage,
+                        nearbyEnemyPressure: threat.nearbyEnemyPressure,
+                    }, ['ability-tempo', 'board-control']),
+                });
+            }
+            continue;
+        }
+
+        if (cardAbilities.includes('mogu_final_form')) {
+            const replacementTargets = getPlayerUnits(state.core, playerId)
+                .filter((unit) => isMoguFungalBeastCard(unit.card) && (unit.boosts ?? 0) >= 5);
+
+            for (const replacement of replacementTargets) {
+                const distanceToEnemySummoner = enemySummoner ? manhattanDistance(replacement.position, enemySummoner.position) : 99;
+                const distanceToOwnSummoner = ownSummoner ? manhattanDistance(replacement.position, ownSummoner.position) : 99;
+                const centerScore = getCenterScore(replacement.position);
+                appendAction(actions, state, playerId, {
+                    actionId: createAiLegalActionId('summon-unit', card.id, 'mogu-final-form', replacement.instanceId),
+                    kind: 'summon-unit',
+                    label: `召唤 ${card.name} → 替换 ${replacement.card.name}`,
+                    commands: [{
+                        type: SW_COMMANDS.SUMMON_UNIT,
+                        payload: {
+                            cardId: card.id,
+                            position: replacement.position,
+                            sacrificeUnitId: replacement.instanceId,
+                        },
+                    }],
+                    metadata: withAiActionStrategyTags({
+                        cardId: card.id,
+                        cardName: card.name,
+                        cost: card.cost,
+                        strength: card.strength,
+                        life: card.life,
+                        position: replacement.position,
+                        centerScore,
+                        distanceToEnemySummoner,
+                        distanceToOwnSummoner,
+                        sacrificeUnitId: replacement.instanceId,
+                        sacrificePosition: replacement.position,
+                        sacrificeCardName: replacement.card.name,
+                        sacrificeKeepValue: getCardKeepValue(replacement.card),
+                        summonMode: 'mogu_final_form',
+                        remainingLife: threat.remainingLife,
+                        directThreatDamage: threat.directThreatDamage,
+                        nearbyEnemyPressure: threat.nearbyEnemyPressure,
+                    }, ['ability-tempo', 'board-control']),
+                });
+            }
+            continue;
+        }
+
         const summonPositions = getAiValidSummonPositions(state.core, playerId, card);
         for (const position of summonPositions) {
             const distanceToEnemySummoner = enemySummoner ? manhattanDistance(position, enemySummoner.position) : 99;

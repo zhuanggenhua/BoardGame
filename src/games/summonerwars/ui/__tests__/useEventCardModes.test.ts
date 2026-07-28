@@ -6,4 +6,8 @@ describe('事件卡 UI 交互路由', () => {
   it('冻结应从手牌进入系统目标选择，而不是直接无目标打出', () => {
     expect(requiresEventInteraction(`${CARD_IDS.SHOUREN_FREEZE}-0-1`)).toBe(true);
   });
+
+  it('灼烧应从手牌进入系统目标选择，而不是直接无目标打出', () => {
+    expect(requiresEventInteraction(`${CARD_IDS.HUIJIN_SCORCH}-0-1`)).toBe(true);
+  });
 });

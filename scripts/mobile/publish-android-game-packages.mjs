@@ -53,7 +53,11 @@ const LEGACY_DICETHRONE_EMOTE_COMPRESSED_PATHS = new Set([
 const LEGACY_SMASHUP_ATLAS_CONFIG_PATHS = new Set([
     'atlas-configs/smashup/2833984701.json',
 ]);
-const SMASHUP_POD_ATLAS_RELATIVE_PATH_PATTERN = /^i18n\/en\/smashup\/(?:cards|pod-assets)\/compressed\/(tts_atlas_[^/]+)\.webp$/;
+const SMASHUP_ENGLISH_ATLAS_RELATIVE_PATH_PATTERN = /^i18n\/en\/smashup\/(?:base|cards|pod-assets|taitan)\/compressed\/[^/]+\.webp$/;
+const SMASHUP_ZH_CN_ATLAS_RELATIVE_PATH_PATTERN = /^i18n\/zh-CN\/smashup\/(?:base|cards|taitan)(?:\/[^/]+)?\/compressed\/[^/]+\.webp$/;
+const SMASHUP_ZH_CN_ANDROID_PACKAGE_ATLAS_PATHS = new Set([
+    'i18n/zh-CN/smashup/cards/compressed/longzu.webp',
+]);
 const STABLE_ZIP_DATE = new Date('2024-01-01T00:00:00.000Z');
 const tempZipRoot = path.join(tmpdir(), 'boardgame-mobile-packages');
 const runId = `${process.pid}-${Date.now()}`;
@@ -213,11 +217,15 @@ const loadSmashUpPodAtlasRuntimePackagePaths = (() => {
     };
 })();
 
-const isPublishableSmashUpPodAtlasPath = (relativePath) => {
+const isPublishableSmashUpAtlasPath = (relativePath) => {
     const normalized = relativePath.replace(/\\/g, '/');
-    const match = normalized.match(SMASHUP_POD_ATLAS_RELATIVE_PATH_PATTERN);
-    if (!match) return true;
-    return loadSmashUpPodAtlasRuntimePackagePaths().has(normalized);
+    if (SMASHUP_ENGLISH_ATLAS_RELATIVE_PATH_PATTERN.test(normalized)) {
+        return loadSmashUpPodAtlasRuntimePackagePaths().has(normalized);
+    }
+    if (SMASHUP_ZH_CN_ATLAS_RELATIVE_PATH_PATTERN.test(normalized)) {
+        return SMASHUP_ZH_CN_ANDROID_PACKAGE_ATLAS_PATHS.has(normalized) || normalized.endsWith('_pod.webp');
+    }
+    return true;
 };
 
 const shouldIncludeInGamePackage = (relativePath, gameId) => {
@@ -246,7 +254,7 @@ const shouldIncludeInGamePackage = (relativePath, gameId) => {
         return true;
     }
 
-    if (gameId === 'smashup' && !isPublishableSmashUpPodAtlasPath(normalized)) {
+    if (gameId === 'smashup' && !isPublishableSmashUpAtlasPath(normalized)) {
         return false;
     }
 

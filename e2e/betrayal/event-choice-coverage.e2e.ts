@@ -42,8 +42,6 @@ const MAGIC_CAMERA_HAUNT_OWNER_EVIDENCE_DIR =
   "evidence/山屋惊魂-魔法相机作祟归属完整链路";
 const OMEN_BOOK_EVIDENCE_DIR = "evidence/山屋惊魂-书本非战斗检定替代完整链路";
 const DUST_HAUNT_EVIDENCE_DIR = "evidence/山屋惊魂-灰尘作祟完整链路";
-const HUNGRY_HOUSE_HAUNT_EVIDENCE_DIR =
-  "evidence/山屋惊魂-大宅饿了作祟setup与攻击代表态";
 
 type EventChoiceCase = {
   title: string;
@@ -382,7 +380,7 @@ async function expectHauntGoalCardAndScenarioBook(
   const goalCard = page.getByTestId("betrayal-haunt-goal-card");
   await expect(
     goalCard,
-    "作祟剧本书自动打开后，左侧不得重复显示第二张作祟目标卡",
+    "作祟牌桌不得重复显示第二张作祟目标卡",
   ).toHaveCount(0);
   await expect(
     page.getByTestId("betrayal-haunt-goal-open-book"),
@@ -401,8 +399,15 @@ async function expectHauntGoalCardAndScenarioBook(
   );
   await expect(
     scenarioReaderDialog,
-    "新作祟触发时必须自动打开对应剧本书",
+    "新作祟触发时不应自动打开剧本书；剧本书应由玩家从牌桌入口打开",
+  ).toHaveCount(0);
+  const openScenarioButton = page.getByTestId("betrayal-open-scenario");
+  await expect(
+    openScenarioButton,
+    "作祟牌桌必须保留可手动查阅剧本书的入口",
   ).toBeVisible();
+  await openScenarioButton.click();
+  await expect(scenarioReaderDialog).toBeVisible();
   await expect(scenarioReaderDialog).toContainText(
     `剧本${options.cardNumber}查阅`,
   );
@@ -3294,7 +3299,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 2 });
     await expect(
       page.getByTestId("betrayal-event-choice-confirm"),
-    ).toBeEnabled();
+      "肉质苔癣投骰后只剩属性奖励选择，不应再要求额外确认按钮",
+    ).toHaveCount(0);
     for (const trait of ["might", "speed", "knowledge", "sanity"]) {
       await expect(
         page.getByTestId(`betrayal-event-choice-trait-${trait}`),
@@ -3352,10 +3358,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
 
     await page.getByTestId("betrayal-event-choice-trait-knowledge").click();
-    await expect(
-      page.getByTestId("betrayal-event-choice-confirm"),
-    ).not.toBeDisabled();
-    await page.getByTestId("betrayal-event-choice-confirm").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();
@@ -3691,9 +3693,22 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     ).toHaveLength(3);
     await expect(
       page.getByTestId("betrayal-scenario-reader-dialog"),
-      "灰尘作祟触发后必须先自动打开剧本书，而不是点击背后的返回牌桌按钮",
-    ).toBeVisible();
+      "灰尘作祟触发后不应自动打开剧本书；牌桌只保留公开读法提示，setup 队列不上前景",
+    ).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
+    await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-haunt-reveal-cue")).toBeVisible();
+    await expect(page.getByTestId("betrayal-dust-progress-strip")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-action-use")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-action-trade")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-attack-weapon-selector")).toHaveCount(0);
+    await expect(page.getByText("攻击灰尘")).toHaveCount(0);
+    await expect(page.getByText("交换疾病")).toHaveCount(0);
     await saveScreenshot(page, `${screenshotBase}-03-作祟成功进入灰尘.jpg`);
+    await page.getByTestId("betrayal-haunt-reveal-return-to-board").click();
+    await expect(page.getByTestId("betrayal-haunt-reveal-cue")).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-dust-progress-strip")).toBeVisible();
+    await saveScreenshot(page, `${screenshotBase}-03a-作祟揭示返回牌桌后显示灰尘进度.jpg`);
 
     const dustActionCore = await readCurrentCore(page);
     const hallwayAfterHaunt = dustActionCore.rooms.find(
@@ -4014,10 +4029,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "betrayal-event-choice-大宅饿了-完整链路",
     );
     const screenshotBase = `${EVIDENCE_DIR}/大宅饿了-完整链路`;
-    const hungryHouse = eventByName("大宅饿了");
+    const helpingHandsEvent = eventByName("大宅饿了");
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
-    core.eventOrder = [hungryHouse];
+    core.eventOrder = [helpingHandsEvent];
     core.currentExplorer = {
       ...core.currentExplorer,
       traits: {
@@ -4225,587 +4240,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-event-choice-大宅饿了-完整链路", diagnostics },
-    ]);
-  });
-
-  test.skip("12 号错挂待迁移：旧大宅饿了触发剧本12代表链不得继续作为正式验收", async ({
-    page,
-  }) => {
-    test.setTimeout(180000);
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    const diagnostics = attachPageDiagnostics(
-      page,
-      "betrayal-event-choice-大宅饿了作祟setup与攻击代表态",
-    );
-    await page.goto(
-      "/play/betrayal?players=3&seat0=human&seat1=human&seat2=human&playerID=0",
-      { waitUntil: "commit", timeout: 30000 },
-    );
-    await page
-      .waitForLoadState("domcontentloaded", { timeout: 5000 })
-      .catch(() => undefined);
-    await waitForBetrayalPageReady(page);
-    const screenshotBase = `${HUNGRY_HOUSE_HAUNT_EVIDENCE_DIR}/大宅饿了-作祟setup与攻击代表态`;
-    const hungryHouseEvent = eventByName("大宅饿了");
-    const core = createRuntimeCore();
-    core.drawOrder = ["event"];
-    core.eventOrder = [hungryHouseEvent];
-    core.currentExplorer = {
-      ...core.currentExplorer,
-      traits: {
-        ...core.currentExplorer.traits,
-        might: 5,
-        speed: 5,
-        knowledge: 5,
-        sanity: 5,
-      },
-      inventory: [
-        { id: "omen-book", name: "书本", kind: "omen" },
-        { id: "dog", name: "狗", kind: "omen" },
-        { id: "mask", name: "面具", kind: "omen" },
-      ],
-    };
-    core.currentExplorerTraits = { ...core.currentExplorer.traits };
-    core.currentExplorerInventory = [...core.currentExplorer.inventory];
-
-    const focusExplorer = (
-      targetCore: BetrayalCore,
-      playerId: string,
-      roomId: string,
-      traits: Partial<Record<BetrayalTraitKey, number>> = {},
-    ) => {
-      const explorers = [
-        targetCore.currentExplorer,
-        ...targetCore.otherExplorers,
-      ];
-      const actor = explorers.find(
-        (explorer) => explorer.playerId === playerId,
-      );
-      if (!actor) {
-        throw new Error(`大宅饿了 E2E 缺少玩家 ${playerId}`);
-      }
-      targetCore.currentPlayer = playerId;
-      targetCore.activePlayerId = null;
-      targetCore.currentExplorer = {
-        ...actor,
-        roomId,
-        traits: {
-          ...actor.traits,
-          ...traits,
-        },
-      };
-      targetCore.otherExplorers = explorers
-        .filter((explorer) => explorer.playerId !== playerId)
-        .map((explorer) => ({ ...explorer }));
-      targetCore.activeRoomId = roomId;
-      targetCore.currentExplorerTraits = {
-        ...targetCore.currentExplorer.traits,
-      };
-      targetCore.currentExplorerInventory = [
-        ...targetCore.currentExplorer.inventory,
-      ];
-      targetCore.turnStartInventoryCardIds =
-        targetCore.currentExplorer.inventory.map((card) => card.id);
-      targetCore.usedCardIdsThisTurn = [];
-      targetCore.movesRemaining = 4;
-      targetCore.recommendedAction = "use";
-      targetCore.pendingEventChoice = null;
-      targetCore.latestDiscovery = null;
-      targetCore.latestDiscoveryOwnerPlayerId = null;
-      targetCore.turnEndedByDiscovery = false;
-      targetCore.recentRoll = null;
-    };
-
-    await injectCore(page, core);
-    await expect(page.getByTestId("betrayal-board")).toBeVisible({
-      timeout: 30000,
-    });
-    await page.getByTestId("betrayal-action-move").click();
-    await page.getByTestId("betrayal-room-hallway").click();
-    await page.getByTestId("betrayal-action-explore").click();
-    await expect(
-      page.getByTestId("betrayal-room-explore-target-ground-north"),
-    ).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-01-选择未知房间.jpg`);
-
-    await page.getByTestId("betrayal-room-ground-north").click();
-    await expect(page.getByTestId("betrayal-room-placement-panel")).toBeVisible();
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-01a-确认房间朝向放置事件房.jpg`,
-    );
-    await page.getByTestId("betrayal-room-placement-confirm").click();
-    const eventChoicePanel = page.getByTestId("betrayal-event-choice-panel");
-    await expect(eventChoicePanel).toHaveAttribute("aria-label", "大宅饿了");
-    await expect(
-      page.getByTestId("betrayal-event-choice-confirm"),
-    ).toContainText("进行作祟检定");
-    await page.getByTestId("betrayal-event-choice-trait-knowledge").click();
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-02-事件牌翻出选择作祟检定.jpg`,
-    );
-
-    const preHauntCore = await readCurrentCore(page);
-    const preHauntExplorerRoomId = preHauntCore.currentExplorer.roomId;
-
-    await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99]);
-    await page.getByTestId("betrayal-event-choice-confirm").click();
-    await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
-    await expect(
-      page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("剧本12");
-    await expect(page.getByTestId("betrayal-recent-roll-panel")).toContainText(
-      "翻开作祟剧本12",
-    );
-    await expect
-      .poll(
-        async () => {
-          const nextCore = await readCurrentCore(page);
-          return {
-            phase: nextCore.phase,
-            hauntCardNumber: nextCore.scenarioRuntime.hauntCardNumber,
-            hasHungryHouse: Boolean(nextCore.scenarioRuntime.hungryHouse),
-          };
-        },
-        {
-          message: "大宅饿了作祟检定成功后必须进入剧本12",
-          timeout: 10000,
-        },
-      )
-      .toMatchObject({
-        phase: "haunt",
-        hauntCardNumber: 12,
-        hasHungryHouse: true,
-      });
-    await saveScreenshot(page, `${screenshotBase}-03-作祟成功进入剧本12.jpg`);
-
-    const hauntCore = await readCurrentCore(page);
-    const hungryHouse = hauntCore.scenarioRuntime.hungryHouse;
-    if (!hungryHouse) {
-      throw new Error("大宅饿了 E2E 未建立 hungryHouse 运行态");
-    }
-    const hauntRevealer = [
-      hauntCore.currentExplorer,
-      ...hauntCore.otherExplorers,
-    ].find((explorer) => explorer.playerId === "0");
-    expect(
-      hauntRevealer?.roomId,
-      "剧本12 setup 只放置仪式房、裂隙和邪教徒；不得把触发作祟的玩家瞬移到仪式房",
-    ).toBe(preHauntExplorerRoomId);
-    expect(
-      hauntRevealer?.roomId,
-      "仪式房出现后，玩家只有走到仪式房才应进入攻击邪教徒代表态",
-    ).not.toBe(hungryHouse.ritualRoomId);
-    await expect(
-      page.getByTestId("betrayal-scenario-reader-dialog"),
-      "大宅饿了作祟触发后必须先自动打开剧本书，而不是点击背后的返回牌桌按钮",
-    ).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-hungry-house-status"),
-    ).toContainText("饥饿刻度");
-    await expectHauntGoalCardAndScenarioBook(page, {
-      cardNumber: 12,
-      title: "大宅饿了",
-      goalTexts: ["剧本12", "饥饿刻度", "仪式房", "裂隙"],
-      bookTexts: [
-        "剧本12查阅",
-        "大宅饿了",
-        "饥饿刻度",
-        "裂隙",
-        "献给大宅",
-        "尸体",
-      ],
-      nextBookTexts: ["大宅路线", "幸存者胜利"],
-      screenshotPath: `${screenshotBase}-03a-大宅饿了目标卡打开剧本书.jpg`,
-    });
-    await expectMobileHauntScenarioBook(page, {
-      headerText: "剧本12查阅",
-      firstPageTexts: ["大宅饿了", "饥饿刻度", "裂隙", "献给大宅"],
-      lastPageTexts: ["大宅路线", "幸存者胜利"],
-      firstScreenshotPath: `${screenshotBase}-03b-移动横屏大宅饿了剧本首页.jpg`,
-      lastScreenshotPath: `${screenshotBase}-03c-移动横屏大宅饿了剧本末页.jpg`,
-      closedScreenshotPath: `${screenshotBase}-03d-移动横屏关闭剧本回牌桌.jpg`,
-    });
-    await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(page.getByTestId("betrayal-room-floor-ground")).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-03e-自然setup后玩家仍在触发房间.jpg`,
-    );
-
-    const targetCultistIds = hungryHouse.cultistIds.slice(0, 3);
-    const primaryCultistId = targetCultistIds[0]!;
-    const cultistId = targetCultistIds[1] ?? primaryCultistId;
-    const attackCore = await readCurrentCore(page);
-    // 代表态：真实游戏里玩家需要自己移动到仪式房；这里注入位置只用于覆盖攻击邪教徒 UI。
-    focusExplorer(attackCore, "0", hungryHouse.ritualRoomId, {
-      might: 6,
-      sanity: 6,
-    });
-    attackCore.monsters = attackCore.monsters.map((monster) =>
-      hungryHouse.cultistIds.includes(monster.id)
-        ? { ...monster, roomId: hungryHouse.ritualRoomId }
-        : monster,
-    );
-    await injectCore(page, attackCore);
-    await page.getByTestId("betrayal-room-floor-down").click();
-    await expect(
-      page.getByTestId("betrayal-room-floor-basement"),
-    ).toHaveAttribute("aria-pressed", "true");
-    const cultistToken = page.getByTestId(
-      `betrayal-room-monster-${hungryHouse.ritualRoomId}-${cultistId}`,
-    );
-    const cultistTargetAffordances = page.locator(
-      `[data-testid^="betrayal-room-monster-target-affordance-${hungryHouse.ritualRoomId}-"]`,
-    );
-    await expect(page.getByTestId("betrayal-action-use")).toContainText(
-      "攻击邪教徒",
-    );
-    await page.getByTestId("betrayal-action-use").click();
-    await expect(page.getByTestId("betrayal-action-use")).toContainText(
-      "任意邪教徒",
-    );
-    await expect(page.getByTestId("betrayal-action-use")).toContainText(
-      "选择任意邪教徒发起攻击",
-    );
-    await expect(page.getByTestId("betrayal-action-use")).toBeDisabled();
-    await expect(page.getByTestId("betrayal-action-cue")).toContainText(
-      "任意邪教徒",
-    );
-    const visibleHauntTargetCancel = page.locator(
-      '[data-testid="betrayal-haunt-target-cancel"]:visible',
-    );
-    await expect(visibleHauntTargetCancel).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-open-scenario"),
-      "目标选择态仍必须保留可回看的作祟剧本入口，不能把周边 UI 清空",
-    ).toBeVisible();
-    await visibleHauntTargetCancel.click();
-    await expect(
-      page.getByTestId(
-        `betrayal-room-monster-target-cue-${hungryHouse.ritualRoomId}-${primaryCultistId}`,
-      ),
-    ).toHaveCount(0);
-    await expect(cultistTargetAffordances).toHaveCount(0);
-    await expect(
-      page.locator(
-        `[data-testid^="betrayal-room-monster-target-identity-${hungryHouse.ritualRoomId}-"]`,
-      ),
-    ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-action-use")).toContainText(
-      "攻击邪教徒",
-    );
-    await page.getByTestId("betrayal-action-use").click();
-    const cultistTargetCue = page.getByTestId(
-      `betrayal-room-monster-target-cue-${hungryHouse.ritualRoomId}`,
-    );
-    await expect(cultistTargetAffordances).toHaveCount(targetCultistIds.length);
-    await expect(cultistTargetCue).toBeVisible();
-    await expect(cultistTargetCue).toContainText("选择邪教徒发起攻击");
-    const cultistTargetBoxes: Array<{
-      id: string;
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    }> = [];
-    for (const targetCultistId of targetCultistIds) {
-      const targetCultistToken = page.getByTestId(
-        `betrayal-room-monster-${hungryHouse.ritualRoomId}-${targetCultistId}`,
-      );
-      const targetAffordance = page.getByTestId(
-        `betrayal-room-monster-target-affordance-${hungryHouse.ritualRoomId}-${targetCultistId}`,
-      );
-      const targetIdentity = page.getByTestId(
-        `betrayal-room-monster-target-identity-${hungryHouse.ritualRoomId}-${targetCultistId}`,
-      );
-      await expect(targetCultistToken).toHaveAttribute(
-        "data-direct-target",
-        "true",
-      );
-      await expect(targetCultistToken).toHaveAttribute(
-        "data-haunt-target-hitbox",
-        "true",
-      );
-      await expect(targetCultistToken).toHaveAttribute(
-        "data-token-asset",
-        `betrayal/tokens/monsters/small-monster-${targetCultistId.replace("cultist-", "")}-front`,
-      );
-      await expect(
-        targetCultistToken.locator('[data-token-placeholder="cultist"]'),
-      ).toHaveCount(0);
-      await expect(targetCultistToken.locator("img")).toHaveAttribute(
-        "data-debug-current-src",
-        new RegExp(
-          `tokens/monsters/compressed/small-monster-${targetCultistId.replace("cultist-", "")}-front\\.webp`,
-        ),
-      );
-      await expect(targetAffordance).toHaveAttribute(
-        "data-haunt-target-affordance",
-        "true",
-      );
-      await expect(targetIdentity).toBeVisible();
-      await expect(targetIdentity).toContainText("邪教徒");
-      await expect(targetAffordance).toHaveCSS(
-        "background-color",
-        "rgba(0, 0, 0, 0)",
-      );
-      const cultistTargetBox = await targetCultistToken.boundingBox();
-      if (!cultistTargetBox) {
-        throw new Error("邪教徒目标必须有可量到的点击热区");
-      }
-      expect(cultistTargetBox.width).toBeGreaterThanOrEqual(44);
-      expect(cultistTargetBox.height).toBeGreaterThanOrEqual(44);
-      cultistTargetBoxes.push({ id: targetCultistId, ...cultistTargetBox });
-      const affordanceBox = await targetAffordance.boundingBox();
-      if (!affordanceBox) {
-        throw new Error("邪教徒目标必须有可量到的无文字视觉提示");
-      }
-      expect(affordanceBox.width).toBeGreaterThanOrEqual(44);
-      expect(affordanceBox.height).toBeGreaterThanOrEqual(44);
-      expect(affordanceBox.width).toBeLessThanOrEqual(60);
-      expect(affordanceBox.height).toBeLessThanOrEqual(60);
-      const identityBox = await targetIdentity.boundingBox();
-      if (!identityBox) {
-        throw new Error("邪教徒目标必须有可量到的身份标签");
-      }
-      expect(identityBox.width).toBeLessThanOrEqual(58);
-      expect(identityBox.height).toBeLessThanOrEqual(16);
-      expect(
-        identityBox.y,
-        "身份标签必须贴在 token 下沿，不能遮住 token 中央图面",
-      ).toBeGreaterThanOrEqual(
-        cultistTargetBox.y + cultistTargetBox.height * 0.68,
-      );
-    }
-    await expect(
-      page.locator(
-        `[data-testid^="betrayal-room-monster-target-identity-${hungryHouse.ritualRoomId}-"]`,
-      ),
-    ).toHaveCount(targetCultistIds.length);
-    await expect(
-      page.getByTestId(
-        `betrayal-haunt-target-room-spotlight-${hungryHouse.ritualRoomId}`,
-      ),
-      "目标选择态不能再给房间叠独立 spotlight 外框，主提示必须贴在 token 本体上",
-    ).toHaveCount(0);
-    await expect(
-      page.locator('[data-testid^="betrayal-room-monster-target-cue-"]'),
-    ).toHaveCount(1);
-    const sortedCultistTargetBoxes = [...cultistTargetBoxes].sort(
-      (left, right) => left.x - right.x,
-    );
-    for (let index = 1; index < sortedCultistTargetBoxes.length; index += 1) {
-      const previous = sortedCultistTargetBoxes[index - 1]!;
-      const current = sortedCultistTargetBoxes[index]!;
-      expect(
-        current.x,
-        `${previous.id} 与 ${current.id} 的目标热区不能横向重叠`,
-      ).toBeGreaterThanOrEqual(previous.x + previous.width);
-      expect(
-        Math.abs(
-          current.y + current.height / 2 - (previous.y + previous.height / 2),
-        ),
-        "三个邪教徒目标必须横向并列，不能再挤成竖列",
-      ).toBeLessThanOrEqual(12);
-    }
-    await expect(page.getByTestId("betrayal-left-status-rail")).toBeVisible();
-    await expect(page.getByTestId("betrayal-inventory-section")).toBeVisible();
-    await expect(page.getByTestId("betrayal-status-rail")).toBeVisible();
-    await expect(page.getByTestId("betrayal-phase-chip")).toBeVisible();
-    await expect(page.getByTestId("betrayal-status-chip")).toBeVisible();
-    const targetModeRoomMetrics = await page.evaluate(() => {
-      const roomShells = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          '[data-testid^="betrayal-room-shell-"]',
-        ),
-      );
-      return {
-        visibleRooms: roomShells.filter((room) => {
-          const rect = room.getBoundingClientRect();
-          return rect.width > 40 && rect.height > 40;
-        }).length,
-        dimmedRooms: roomShells.filter((room) => {
-          const button = room.querySelector<HTMLElement>(
-            '[data-haunt-target-dimmed="true"]',
-          );
-          const rect = room.getBoundingClientRect();
-          return Boolean(button) && rect.width > 40 && rect.height > 40;
-        }).length,
-      };
-    });
-    expect(
-      targetModeRoomMetrics.visibleRooms,
-      "目标选择态不能把牌桌主体过滤到只剩目标房间",
-    ).toBeGreaterThan(1);
-    expect(
-      targetModeRoomMetrics.dimmedRooms,
-      "目标选择态应保留非目标房间作为暗化背景，而不是清空地图",
-    ).toBeGreaterThanOrEqual(1);
-    await expect(
-      page.getByTestId("betrayal-haunt-command-banner"),
-      "目标选择态不得恢复旧作祟横幅",
-    ).toHaveCount(0);
-    const targetFocusMetrics = await page.evaluate((roomId) => {
-      const targetShell = document.querySelector<HTMLElement>(
-        `[data-testid="betrayal-room-shell-${roomId}"]`,
-      )!;
-      const targetRoom = document.querySelector<HTMLElement>(
-        `[data-testid="betrayal-room-${roomId}"]`,
-      )!;
-      const roomGrid = document.querySelector<HTMLElement>(
-        '[data-testid="betrayal-room-grid"]',
-      )!;
-      const roomShells = Array.from(
-        document.querySelectorAll<HTMLElement>(
-          '[data-testid^="betrayal-room-shell-"]',
-        ),
-      );
-      const otherRoom = roomShells.find((room) => {
-        const testId = room.dataset.testid ?? "";
-        const rect = room.getBoundingClientRect();
-        return (
-          !testId.endsWith(`-${roomId}`) && rect.width > 40 && rect.height > 40
-        );
-      });
-      const targetRoomRect = targetRoom.getBoundingClientRect();
-      const targetShellRect = targetShell.getBoundingClientRect();
-      const otherRoomRect = otherRoom?.getBoundingClientRect() ?? null;
-      return {
-        roomWidth: targetRoomRect.width,
-        roomHeight: targetRoomRect.height,
-        shellWidth: targetShellRect.width,
-        shellHeight: targetShellRect.height,
-        otherShellWidth: otherRoomRect?.width ?? 0,
-        otherShellHeight: otherRoomRect?.height ?? 0,
-        inlineLeft: targetShell.style.left,
-        inlineTop: targetShell.style.top,
-        inlineWidth: targetShell.style.width,
-        inlineHeight: targetShell.style.height,
-        inlineTransform: targetShell.style.transform,
-        targetingMode: roomGrid.dataset.hauntTargetingMode ?? "",
-      };
-    }, hungryHouse.ritualRoomId);
-    expect(targetFocusMetrics.targetingMode).toBe("true");
-    expect(
-      targetFocusMetrics.inlineLeft,
-      "目标选择态不能把仪式房间改成 left: 50% 的居中特写",
-    ).not.toBe("50%");
-    expect(
-      targetFocusMetrics.inlineTop,
-      "目标选择态不能把仪式房间改成 top: 52%/58% 的居中特写",
-    ).not.toMatch(/^5[28]%$/);
-    expect(
-      targetFocusMetrics.inlineTransform,
-      "目标选择态不能把仪式房间 translate 到屏幕中央",
-    ).not.toContain("translate(-50%");
-    expect(targetFocusMetrics.inlineWidth).toBe("184px");
-    expect(targetFocusMetrics.inlineHeight).toBe("184px");
-    expect(
-      targetFocusMetrics.shellWidth,
-      "目标选择态下目标房间不能比普通房间明显放大",
-    ).toBeLessThanOrEqual(targetFocusMetrics.otherShellWidth * 1.15);
-    expect(
-      targetFocusMetrics.shellHeight,
-      "目标选择态下目标房间不能比普通房间明显放大",
-    ).toBeLessThanOrEqual(targetFocusMetrics.otherShellHeight * 1.15);
-    expect(
-      targetFocusMetrics.roomWidth,
-      "目标选择态下可点击房间不能变成 400px 级别的特写舞台",
-    ).toBeLessThan(260);
-    expect(
-      targetFocusMetrics.roomHeight,
-      "目标选择态下可点击房间不能变成 400px 级别的特写舞台",
-    ).toBeLessThan(260);
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-04a-代表态已走到仪式房高亮邪教徒目标.jpg`,
-    );
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-04-代表态已走到仪式房邪教徒可被攻击.jpg`,
-    );
-
-    await setHarnessRandomQueue(
-      page,
-      [0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0, 0, 0, 0, 0],
-    );
-    await cultistToken.click();
-    await expect(
-      page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("邪教徒变成可献祭的尸体");
-    await expect
-      .poll(
-        async () => {
-          const nextCore = await readCurrentCore(page);
-          return nextCore.scenarioRuntime.hungryHouse?.cultistCorpseRoomIds[
-            cultistId
-          ];
-        },
-        {
-          message: "攻击邪教徒后必须在仪式房留下可搬运尸体",
-          timeout: 10000,
-        },
-      )
-      .toBe(hungryHouse.ritualRoomId);
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-05-代表态击倒邪教徒后尸体已生成.jpg`,
-    );
-
-    const pickupCore = await readCurrentCore(page);
-    // 代表态：保持玩家在仪式房，覆盖搬起尸体动作入口。
-    focusExplorer(pickupCore, "0", hungryHouse.ritualRoomId, { sanity: 6 });
-    await injectCore(page, pickupCore);
-    await expect(
-      page.getByTestId("betrayal-action-use"),
-      "搬起邪教徒尸体必须由底部作祟动作入口承接",
-    ).toBeVisible();
-    await expect(page.getByTestId("betrayal-action-use")).toContainText(
-      "搬起邪教徒尸体",
-    );
-    await page.getByTestId("betrayal-action-use").click();
-    await expect(
-      page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("搬起了邪教徒尸体");
-    await expect(
-      page.getByTestId("betrayal-hungry-house-status"),
-    ).toContainText("携带：邪教徒尸体");
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-06-代表态在仪式房搬起邪教徒尸体.jpg`,
-    );
-
-    const feedCore = await readCurrentCore(page);
-    // 代表态：真实游戏里玩家需要把尸体带到裂隙；这里注入位置只用于覆盖献祭动作入口。
-    focusExplorer(feedCore, "0", hungryHouse.chasmRoomId, { sanity: 6 });
-    await injectCore(page, feedCore);
-    await expect(
-      page.getByTestId("betrayal-action-use"),
-      "献给大宅必须由底部作祟动作入口承接",
-    ).toBeVisible();
-    await setHarnessRandomQueue(page, [0.99, 0.99, 0.99, 0.99, 0.99, 0.99]);
-    await expect(page.getByTestId("betrayal-action-use")).toContainText(
-      "献给大宅",
-    );
-    await page.getByTestId("betrayal-action-use").click();
-    await expect(
-      page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("大宅的饥饿减弱到 2");
-    await expect(
-      page.getByTestId("betrayal-hungry-house-status"),
-    ).toContainText("2");
-    await saveScreenshot(
-      page,
-      `${screenshotBase}-07-代表态已到裂隙献祭推进饥饿刻度.jpg`,
-    );
-
-    assertNoFatalFrontendErrors([
-      { label: "betrayal-event-choice-大宅饿了作祟setup与攻击代表态", diagnostics },
     ]);
   });
   test("说茄子真实链路从探索翻牌到作祟失败抽物品关闭", async ({ page }) => {
@@ -5279,6 +4713,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const beforeChoiceCore = await readCurrentCore(page);
     expect(beforeChoiceCore.pendingEventChoice?.sourceTitle).toBe("一抹鲜红");
     expect(beforeChoiceCore.currentExplorer.traits.speed).toBe(4);
+    const speedTrackPositionBefore =
+      beforeChoiceCore.currentExplorer.traitTracks.speed.position;
     await saveScreenshot(
       page,
       `${screenshotBase}-03-事件牌翻出可选择作祟检定.jpg`,
@@ -5345,7 +4781,12 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(settledRollTotal).toBeLessThan(
       afterSettleCore.scenarioRuntime.hauntRollThreshold,
     );
-    expect(afterSettleCore.currentExplorer.traits.speed).toBe(5);
+    expect(afterSettleCore.currentExplorer.traitTracks.speed.position).toBe(
+      speedTrackPositionBefore + 1,
+    );
+    expect(afterSettleCore.currentExplorerTraits.speed).toBe(
+      afterSettleCore.currentExplorer.traits.speed,
+    );
     expect(afterSettleCore.recentRoll?.sourceTitle).toBe("一抹鲜红");
     await saveScreenshot(page, `${screenshotBase}-05-速度奖励结算结果可见.jpg`);
 
@@ -5583,7 +5024,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
       0,
     );
-    await expect(page.getByTestId("betrayal-action-explore")).toBeDisabled();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toHaveCount(0);
@@ -6915,7 +6355,6 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(page.getByTestId("betrayal-event-choice-panel")).toHaveCount(
       0,
     );
-    await expect(page.getByTestId("betrayal-action-explore")).toBeDisabled();
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-south"),
     ).toHaveCount(0);
@@ -6926,6 +6365,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(closedCore.turnEndedByDiscovery).toBe(true);
     await expect(page.getByTestId("betrayal-action-rail")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-endTurn")).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await saveScreenshot(page, `${screenshotBase}-06-关闭后.jpg`);
 
     await page.getByTestId("betrayal-action-endTurn").click();
@@ -7089,17 +6529,26 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
 
     await page.getByTestId("betrayal-room-hallway").click();
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
+    const spiderDiscoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(
-      page.getByTestId("betrayal-discovery-panel"),
-      "PC 蜘蛛点选最终房间后不应再打开只含返回牌桌的结果特写",
-    ).toHaveCount(0);
+      spiderDiscoveryPanel,
+      "PC 蜘蛛点选最终房间后应进入事件效果确认队列，而不是直接丢失结算承接",
+    ).toBeVisible();
+    await expect(spiderDiscoveryPanel).toHaveAttribute(
+      "aria-label",
+      /事件牌 蜘蛛！/,
+    );
+    await expect(spiderDiscoveryPanel).toContainText("事件效果");
+    await expect(spiderDiscoveryPanel).toContainText("确认 1/1");
     await expect(
-      page.getByTestId("betrayal-discovery-continue"),
-      "PC 蜘蛛点选最终房间后不应要求再点一次返回牌桌",
-    ).toHaveCount(0);
+      spiderDiscoveryPanel.getByTestId("betrayal-discovery-continue"),
+    ).toHaveAttribute("data-pending-card-resolution-step", "1/1");
+    await saveScreenshot(page, `${screenshotBase}-05-点击门厅后事件效果确认.jpg`);
+    await dismissDiscoveryPanel(page);
     await expect(page.getByTestId("betrayal-board")).toBeVisible();
     await expect(page.getByTestId("betrayal-room-hallway")).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-05-点击门厅后直接回牌桌.jpg`);
+    await expect(page.getByTestId("betrayal-discovery-panel")).toHaveCount(0);
+    await saveScreenshot(page, `${screenshotBase}-06-关闭后回牌桌.jpg`);
     const pcSettledCore = await readCurrentCore(page);
     expect(pcSettledCore.pendingEventChoice).toBeNull();
     expect(

@@ -887,6 +887,15 @@ export function findSystemAbilityUnitOptionByPosition(
     }) ?? null;
   }
 
+  if (abilityMode.abilityId === 'mogu_decay' && swInteraction.type === 'mogu_decay_select_target') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
+      return value?.action === 'mogu_decay_target'
+        && value.targetPosition?.row === position.row
+        && value.targetPosition?.col === position.col;
+    }) ?? null;
+  }
+
   if (abilityMode.abilityId === 'yongheng_mental_invasion' && swInteraction.type === 'yongheng_mental_invasion') {
     return swInteraction.options.find((option) => {
       const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
@@ -973,6 +982,7 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'telekinesis_instead'
       || abilityMode.abilityId === 'high_telekinesis_instead'
       || abilityMode.abilityId === 'mogu_blood_infusion'
+      || abilityMode.abilityId === 'mogu_decay'
       || abilityMode.abilityId === 'huijin_call_guards'
       || abilityMode.abilityId === 'huijin_ram'
       || abilityMode.abilityId === 'huijin_quick_shot'
@@ -1151,6 +1161,14 @@ export function deriveSystemAbilityMode(
   if (swInteraction.type === 'huijin_call_guards_select_target') {
     return {
       abilityId: 'huijin_call_guards',
+      step: 'selectUnit',
+      sourceUnitId: meta.sourceUnitId,
+    };
+  }
+
+  if (swInteraction.type === 'mogu_decay_select_target') {
+    return {
+      abilityId: 'mogu_decay',
       step: 'selectUnit',
       sourceUnitId: meta.sourceUnitId,
     };

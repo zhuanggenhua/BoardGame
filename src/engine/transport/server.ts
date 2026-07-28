@@ -245,6 +245,7 @@ type OnlineAiRecoveryFeedbackPayload = {
         | 'legal-action-recovered';
     severity: 'medium' | 'high';
     status?: 'open' | 'resolved';
+    resolvedMethod?: string;
     reason: string;
     trackerKey: string;
     progressMarker: string;
@@ -264,6 +265,18 @@ type CommandFailureFeedbackPayload = {
     progressMarker: string;
     stateSnapshot: string;
     actionLog?: string;
+};
+
+const buildOnlineAiRecoveryResolvedMethod = (
+    payload: Pick<OnlineAiRecoveryFeedbackPayload, 'incidentKind'>,
+): string => {
+    if (payload.incidentKind === 'legal-action-recovered') {
+        return '系统已自动找到可执行操作并继续推进该 AI 座位，对局没有停在该步骤。';
+    }
+    if (payload.incidentKind === 'force-end-turn-success') {
+        return '系统已自动推进停滞的 AI 座位，让对局继续进行。';
+    }
+    return '系统已自动恢复这次在线 AI 步骤，对局已继续运行。';
 };
 
 const UNSATISFIABLE_INTERACTION_REASONS = new Set([
@@ -2557,6 +2570,7 @@ export class GameTransportServer {
             failureCount: tracker.failureCount + 1,
         };
         this.onlineAiRecoveryTrackers.set(match.matchID, nextTracker);
+        const repeatedAttempt = this.recordOnlineAiRepeatedRecoveryAttempt(match.matchID, tracker.key);
 
         logger.warn('[GameTransport] online-ai-watchdog failed', {
             matchID: match.matchID,
@@ -2566,6 +2580,8 @@ export class GameTransportServer {
             reason,
             phase: phaseLabel,
             failureCount: nextTracker.failureCount,
+            repeatedAttemptCount: repeatedAttempt.count,
+            repeatedAttemptLimit: this.onlineAiRecoveryRepeatedAttemptLimit,
             markerBefore: progressMarkerBeforeRecovery,
             markerAfter: buildAiProgressMarker(match.state, {
                 engineConfig: match.engineConfig,
@@ -3710,6 +3726,9 @@ export class GameTransportServer {
             type: 'bug',
             severity: payload.severity,
             ...(payload.status ? { status: payload.status } : {}),
+            ...(payload.status === 'resolved'
+                ? { resolvedMethod: payload.resolvedMethod || buildOnlineAiRecoveryResolvedMethod(payload) }
+                : {}),
             source: 'online-ai-watchdog',
             autoReportKind: payload.incidentKind,
             incidentKey: payload.trackerKey,

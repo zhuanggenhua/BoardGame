@@ -67,6 +67,10 @@ export function getAbilityModeBannerFallbackText(
     return t('interaction.sw.huijinQuickShot');
   }
 
+  if (abilityMode.abilityId === 'mogu_decay' && abilityMode.step === 'selectUnit') {
+    return t('interaction.sw.moguDecayTarget');
+  }
+
   const yonghengBannerKey = YONGHENG_BANNER_KEYS[abilityMode.abilityId]?.[abilityMode.step];
   if (yonghengBannerKey) {
     return t(yonghengBannerKey);

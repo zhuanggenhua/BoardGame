@@ -201,6 +201,7 @@ function resolveWarMongerRollByConfig(
         state,
         timestamp,
         random,
+        action,
     }: CustomActionContext,
     config: WarMongerRollConfig,
 ): DiceThroneEvent[] {
@@ -273,7 +274,7 @@ function resolveWarMongerRollByConfig(
             state,
             timestamp: timestamp + 2,
             random,
-            action: { type: 'custom', target: 'self', customActionId: 'zhanshujia-war-monger-extra-offensive-roll' },
+            action,
             ctx: {
                 attackerId,
                 defenderId: targetId,
@@ -626,9 +627,6 @@ export function registerZhanshujiaCustomActions(): void {
     });
     registerCustomActionHandler('zhanshujia-high-ground-cap-up-and-fill', increaseTacticalAdvantageLimitAndFill, {
         categories: ['token', 'resource'],
-    });
-    registerCustomActionHandler('zhanshujia-war-monger-extra-offensive-roll', triggerWarMongerExtraOffensiveRoll, {
-        categories: ['other'],
     });
     registerCustomActionHandler('zhanshujia-war-monger-roll', resolveWarMongerRoll, {
         categories: ['damage', 'token', 'card', 'other'],

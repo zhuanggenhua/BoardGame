@@ -1,3 +1,37 @@
+## Session: 2026-07-27 作祟 3「灰尘」规则补漏实现
+
+- **Status:** active-rule-gap-implementation
+- 2026-07-27 +08：按用户纠偏重锁目标：当前不是“山屋惊魂全面端到端出图 / 全游戏重做”，而是作祟 3「灰尘」在当前剧本和当前已接入卡牌范围内的规则补漏实现。端到端截图只作为玩家可见规则的验收手段，不能替代领域规则覆盖。
+- 2026-07-27 +08：当前正式计划入口已改为 `docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md` 和本文件顶部会话；旧 `山屋惊魂可玩性全面重审计` 段落降为历史背景，不再自动接管本轮任务。
+- 2026-07-27 +08：当前已确认的下一步实现顺序是：先继续补 `通用发现结算队列产品化`，把即时事件效果、选择型事件效果和房间文字逐步纳入结构化确认队列；再补灰尘终局边界矩阵；随后回到当前持有牌 / 攻击武器 / 主动牌的玩家可见 UI 与 E2E 缺口。
+- 2026-07-27 +08：已完成的事实只能按专项计划里的状态汇报：预兆发现已拆成“获得预兆 + 作祟检定”两步确认；灰尘两个 setup 人工确认项已落到正式命令和牌桌按钮；这些都不能外推成“完整规则完成”。
+- 2026-07-27 +08：按用户纠偏补齐基础规则证据口径。用户点名的四项不是“都没做”：开局五张剧本卡选择 / 共同确认、属性轨按位置步进且重复数值不吞位置、作祟风险按全员预兆数量展示、探索放置面板由玩家旋转并把所选新房间朝向交给正式探索命令，当前均已有定向领域或 Board 证据。新增房间朝向 Board 单条 1 passed / 106 skipped；基础规则领域组合 6 passed / 403 skipped；基础规则 Board 组合 6 passed / 101 skipped；`Board.foundation.test.tsx` ESLint 0 errors。边界：这是基础规则补证，不代表灰尘作祟、所有卡牌或完整真实页面 E2E 完成。
+- 2026-07-27 +08：补齐普通预兆触发作祟后的发现确认队列规则。原缺口是作祟触发会清掉“获得预兆 / 作祟检定”两步确认，且作祟阶段没有先放行合法翻牌确认命令；现在作祟触发后仍保留两步确认，确认前后续移动会被“请先确认当前翻牌结算”拦截，由翻牌玩家按顺序确认后才清空队列。验证：单条领域 1 passed / 409 skipped；周边组合 3 passed / 407 skipped；`npx eslint src/games/betrayal/game.ts src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors，保留 `game.ts` 既有 5 个 unused warnings。边界：这是普通预兆触发作祟后的确认时序，不代表完整真实页面 E2E 或通用发现结算队列全部完成。
+- 2026-07-27 +08：完成作祟测试夹具的新发现确认时序适配。灰尘、魔法相机、援手和顽石之血等 ready core 不再假设作祟触发后队列被清空，而是先确认翻牌 / 事件效果队列，再进入后续作祟动作断言。验证：灰尘 / 魔法相机 / 援手 / 顽石之血定向组 146 passed / 264 skipped；整份 `firstScenarioRuntime.test.ts` 410 passed；`npx eslint src/games/betrayal/game.ts src/games/betrayal/__tests__/firstScenarioRuntime.test.ts src/games/betrayal/testing/firstScenarioTestUtils.ts` 0 errors，保留 `game.ts` 既有 5 个 unused warnings。边界：这是领域回归和夹具合同收口，不代表真实页面 E2E 或灰尘全部规则完成。
+- 2026-07-27 +08：本轮继续推进 `通用发现结算队列产品化` 的事件效果切片。已把无需后续玩家选择的即时事件效果写入 `pendingCardResolutionQueue`，确认前会拦截结束回合；Board 发现面板会显示单条“事件效果”确认步骤和 `确认 1/1`。验证：领域组合回归 3 passed / 393 skipped；Board 组合回归 3 passed / 101 skipped；ESLint 0 errors，保留 `game.ts` 既有 5 个 unused warnings。边界：该条只覆盖即时事件效果，不能把通用发现结算队列整体标成完成。
+- 2026-07-27 +08：继续补 `通用发现结算队列产品化` 的选择型事件代表链。《肉质苔癣》完成玩家选择并选择知识奖励后，会写入“事件效果：知识 +1”确认步骤；《一瓶微尘》跳过作祟检定并结算原事件效果后，会写入“事件效果：力量 -1；神志 +1”确认步骤。两者确认前都拦截结束回合，Board 发现面板显示 `事件效果 / 确认 1/1` 并可确认关闭。验证：领域组合回归 3 passed / 394 skipped；Board 组合回归 3 passed / 102 skipped，退出码 0，保留既有 3000 端口连接噪声；ESLint 0 errors，保留 `game.ts` 既有 5 个 unused warnings。边界：这是两条选择型事件代表链，不代表所有选择型事件或更多房间文字已完成。
+- 2026-07-27 +08：继续补 `通用发现结算队列产品化` 的更多选择型事件代表链。《大宅饿了》跳过作祟并选择知识奖励后，会写入“事件效果：知识 +1”确认步骤；《说“茄子”！》跳过作祟并抽取物品后，会写入“事件效果：抽取一张物品卡”确认步骤。两者确认前都拦截结束回合，Board 发现面板显示 `事件效果 / 确认 1/1` 并可确认关闭。验证：领域定向 3 passed / 395 skipped；Board 定向 2 passed / 103 skipped，退出码 0，保留既有 3000 端口连接噪声；ESLint 0 errors。边界：选择型事件确认代表链从 2 条扩到 4 条，但仍不代表全部选择型事件或更多房间文字已完成。
+- 2026-07-27 +08：继续推进 `灰尘终局边界矩阵` 的兔脚死亡保护优先级切片。已补规则行为：灰尘永久叛徒死亡若本会触发叛徒终局，但仍有可用兔脚死亡保护重掷窗口，先保留兔脚响应；兔脚成功回滚死亡 / 狂热病患化且不终局，兔脚仍失败或窗口确认后才触发叛徒终局。验证：单条领域 1 passed / 396 skipped；周边回归 12 passed / 385 skipped；ESLint 0 errors，保留 `game.ts` 既有 5 个 unused warnings。边界：这只是终局矩阵的一条代表链，不代表终局矩阵完成。
+- 2026-07-27 +08：补齐发现确认队列新时序对旧领域回归的适配。旧房间效果 / 作祟检定 / 动态探索测试现在会在翻牌后先确认 `pendingCardResolutionQueue`，再继续结束回合、房间效果、移动或作祟断言；动态探索测试同步证明“确认前先被翻牌结算拦截，确认后才按回合已结束拦截”。验证：失败组定向 8 passed / 390 skipped；整份 `firstScenarioRuntime.test.ts` 398 passed；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是测试合同和回归稳定性收口，不代表 P1 通用发现结算队列全部完成。
+- 2026-07-27 +08：继续补 `通用发现结算队列产品化` 的房间文字直接效果代表链。礼拜堂发现时会先写入“房间效果：礼拜堂，神志 +1”确认步骤，再继续同房间事件符号的事件效果确认；房间效果步骤的牌堆类型现在为空，不再被事件牌名 / 事件牌堆标签污染。Board 发现面板显示 `确认 1/2 -> 确认 2/2`，关闭后账本里第一步为 `room-effect`、第二步为 `event-effect`。验证：领域定向 2 passed / 396 skipped；整份 `firstScenarioRuntime.test.ts` 398 passed；Board 定向 2 passed / 104 skipped，退出码 0，保留既有 3000 端口连接噪声；`npm run typecheck` 通过；ESLint 0 errors，保留 `game.ts` 既有 5 个 unused warnings。边界：这是礼拜堂 + 同房间事件效果代表链，不代表所有房间文字直接效果完成。
+- 2026-07-27 +08：继续补 `通用发现结算队列产品化` 的房间文字直接效果领域矩阵。本轮新增覆盖当前全部直接房间文字效果：礼拜堂、图书馆、书房、体育馆、储物间、杂物间都会先写入 `room-effect` 翻牌确认队列；房间效果步骤牌堆类型为空，不继承同房间事件 / 物品 / 预兆牌堆标签；确认前结束回合会被“请先确认当前翻牌结算”拦截，确认后继续原规则。验证：新增矩阵定向 1 passed / 398 skipped；房间文字组合 9 passed / 390 skipped；整份 `firstScenarioRuntime.test.ts` 399 passed；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是领域合同扩展，不等于所有房间文字 UI / E2E 或通用发现结算队列全部完成。
+- 2026-07-27 +08：按当前数据重新核对选择型事件范围。当前事件池中会进入玩家选择的事件共 11 张：《说“茄子”！》《吊死鬼》《脑状食品》《上古旧宅》《肉质苔癣》《夜幕众星》《一抹鲜红》《一瓶微尘》《大宅饿了》《一条秘密通道》《蜘蛛！》。这些已有领域测试覆盖最终事件效果进入确认队列；定向标题组回归 7 passed / 392 skipped，整份领域仍为 399 passed。边界：这是领域覆盖和账本修正，不代表每张选择型事件都已有完整真实页面 E2E。
+- 2026-07-27 +08：继续补 `通用发现结算队列产品化` 的《蜘蛛！》玩家可见代表链。此前 Board 在选速度 / 神志后点击真实相邻房间本体，会因“自动回牌桌”特例直接隐藏发现面板；现在该特例会先检查 `pendingCardResolutionQueue` 为空，若事件效果仍待确认，则保留发现面板。《蜘蛛！》真实页面链路现在是“神志检定 -> 选择速度或神志 -> 点击真实相邻房间本体提交 -> 显示事件效果步骤与 `确认 1/1` -> 确认后回牌桌”。验证：Board 单条 1 passed / 105 skipped；Board 待选事件确认组 14 passed / 92 skipped；领域单条 1 passed / 398 skipped；ESLint 0 errors。边界：这是《蜘蛛！》Board 代表链，不等于 11 张选择型事件全部完整 E2E。
+- 2026-07-27 +08：继续补 `通用发现结算队列产品化` 的当前 11 张选择型事件 Board 确认合同。已在 Board 测试里锁住《说“茄子”！》《吊死鬼》《脑状食品》《上古旧宅》《肉质苔癣》《夜幕众星》《一抹鲜红》《一瓶微尘》《大宅饿了》《一条秘密通道》《蜘蛛！》完成玩家选择后都保留发现面板，显示 `事件效果 / 确认 1/1`，确认后才关闭；《蜘蛛！》仍保持点击真实相邻房间本体提交。验证：Board 定向 14 passed / 92 skipped；`npx eslint src/games/betrayal/__tests__/Board.foundation.test.tsx` 0 errors；保留既有 3000 端口连接噪声。边界：这是玩家可见确认合同，不等于 11 张逐张完整真实页面 E2E。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的狂热病患怪物攻击切片。新增领域测试锁住：狂热病患从怪物攻击入口击倒最后一名非叛徒时，攻击后先进入受伤方伤害分配，不提前终局；伤害确认后才按“所有探索者都成为叛徒或死亡”进入灰尘叛徒胜利，赢家只包含仍存活的永久叛徒。验证：单条 1 passed / 399 skipped；终局周边回归 9 passed / 391 skipped；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是狂热病患怪物攻击这一条代表链，不代表全部怪物伤害或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的真实事件副作用切片。新增领域测试锁住：《标本剥制》真实事件分支会先结算放置障碍物和物理伤害；若该事件伤害击倒临界永久叛徒并使“所有探索者都成为叛徒或死亡”成立，系统保留障碍物副作用、生成狂热病患，并触发灰尘叛徒胜利，赢家只包含仍存活的永久叛徒。验证：单条 1 passed / 400 skipped；终局周边回归 10 passed / 391 skipped；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是《标本剥制》真实事件副作用死亡这一条代表链，不代表全部事件副作用、全部死亡来源或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的兔脚成功后继切片。新增领域测试锁住：最后一名非叛徒死亡本会触发灰尘叛徒胜利时，兔脚成功会回滚死亡并保持作祟继续；同一角色后续再次死亡且兔脚已用不可再响应时，才按“所有探索者都成为叛徒或死亡”触发灰尘叛徒胜利。验证：单条 1 passed / 401 skipped；终局周边组合 11 passed / 391 skipped；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是兔脚成功回滚后的后继死亡代表链，不代表全部兔脚回滚组合或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的永久叛徒狂热病患回滚切片。新增领域测试锁住：永久叛徒死亡并生成临时狂热病患后，若兔脚成功回滚死亡，系统会移除该狂热病患、恢复该永久叛徒存活、保留其持有物且不提前终局；之后最后一名非叛徒再死亡时，才按“所有探索者都成为叛徒或死亡”触发灰尘叛徒胜利。验证：单条 1 passed / 402 skipped；终局周边组合 12 passed / 391 skipped；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是永久叛徒临时狂热病患被兔脚成功回滚后的终局后继代表链，不代表全部兔脚回滚组合、全部狂热病患来源或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的真实事件副作用 + 兔脚成功切片。新增领域测试锁住：《标本剥制》真实事件分支先放置障碍物并造成物理伤害；若该伤害击倒最后一名非叛徒、本会触发“所有探索者都成为叛徒或死亡”的灰尘叛徒胜利，但仍处于可用兔脚死亡保护窗口内，则先停留在作祟阶段等待兔脚；兔脚成功后回滚死亡、不生成狂热病患、不提前终局，同时保留障碍物副作用。验证：单条 1 passed / 403 skipped；终局周边组合 13 passed / 391 skipped；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是《标本剥制》事件副作用 + 兔脚成功这一条代表链，不代表全部事件副作用、全部兔脚回滚组合或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的真实事件副作用 + 兔脚仍失败切片。新增领域测试锁住：《标本剥制》真实事件分支已经放置障碍物并击倒最后一名非叛徒、本会触发灰尘叛徒胜利时，系统先等待兔脚；若兔脚重掷仍失败，则保留死亡、保留障碍物副作用、不生成非叛徒狂热病患，并在窗口结算后触发叛徒胜利。验证：单条 1 passed / 404 skipped；终局周边组合 14 passed / 391 skipped；整份 `firstScenarioRuntime.test.ts` 405 passed；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是《标本剥制》事件副作用 + 兔脚仍失败这一条代表链，不代表全部事件副作用、全部兔脚回滚组合或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的房间伤害 + 兔脚成功切片。新增领域测试锁住：火炉房回合末物理伤害若击倒最后一名非叛徒、本会触发灰尘叛徒胜利时，系统先等待兔脚；兔脚成功后回滚死亡、不生成狂热病患、不提前终局，并且玩家仍可确认回合结束，正常交接到下一名玩家。验证：单条 1 passed / 405 skipped；终局周边组合 15 passed / 391 skipped；整份 `firstScenarioRuntime.test.ts` 406 passed；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是火炉房房间伤害 + 兔脚成功这一条代表链，不代表全部房间伤害、全部兔脚回滚组合或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的房间副作用 + 兔脚成功切片。新增领域测试锁住：倒塌房间结束回合速度检定失败后，玩家先坠落到地下室起始点，再进入坠落物理伤害分配；若该伤害击倒最后一名非叛徒、本会触发灰尘叛徒胜利时，系统先等待兔脚；兔脚成功后只回滚死亡和终局，不回滚已经发生的坠落位置，并可继续确认回合结束交接。验证：单条 1 passed / 406 skipped；终局周边组合 16 passed / 391 skipped；整份 `firstScenarioRuntime.test.ts` 407 passed；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是倒塌房间坠落伤害 + 兔脚成功这一条代表链，不代表全部房间伤害、全部兔脚回滚组合或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的房间副作用 + 兔脚仍失败切片。新增领域测试锁住：倒塌房间结束回合速度检定失败后，玩家先坠落到地下室起始点，再进入坠落物理伤害分配；若该伤害击倒最后一名非叛徒、本会触发灰尘叛徒胜利时，系统先等待兔脚；兔脚仍失败后保留死亡、保留已经发生的坠落位置、不生成非叛徒狂热病患，并在兔脚窗口结束后触发叛徒胜利。验证：单条 1 passed / 407 skipped；终局周边组合 17 passed / 391 skipped；整份 `firstScenarioRuntime.test.ts` 408 passed；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是倒塌房间坠落伤害 + 兔脚仍失败这一条代表链，不代表全部房间伤害、全部兔脚回滚组合或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `灰尘终局边界矩阵` 的房间伤害 + 兔脚仍失败切片。新增领域测试锁住：火炉房回合末物理伤害若击倒最后一名非叛徒、本会触发灰尘叛徒胜利时，系统先等待兔脚；兔脚仍失败后保留死亡、不生成非叛徒狂热病患，并在兔脚窗口结束后触发叛徒胜利。验证：单条 1 passed / 408 skipped；终局周边组合 18 passed / 391 skipped；整份 `firstScenarioRuntime.test.ts` 409 passed；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 0 errors。边界：这是火炉房房间伤害 + 兔脚仍失败这一条代表链，不代表全部房间伤害、全部兔脚回滚组合或灰尘终局矩阵完成。
+- 2026-07-27 +08：继续补 `当前 23 张运行持有牌玩家可见链路` 的攻击武器 Board 切片。本轮把匕首和指环真实页面 Board 测试从“只证明攻击命令传入”补强为“选择武器并等待受伤方分配伤害”，分别断言匕首显示物理伤害、力量 / 速度分配，指环显示精神伤害、知识 / 神志分配；砍刀原有等待伤害分配断言和攻击武器禁用原因断言一并复跑。验证：Board 定向 4 passed / 102 skipped，退出码 0，保留既有 3000 端口连接噪声。边界：这是三张当前攻击武器的 Board 可见代表链，不代表完整真实页面 E2E、主动牌交易 / 埋葬 UI 或全部兔脚回滚组合完成。
+
+---
+
 ## Session: 2026-07-14 山屋惊魂可玩性全面重审计
 
 - **Status:** in-progress-with-btr01-btr02-btr04-btr06-btr07-e2e-passed
@@ -11328,3 +11362,16 @@
 - 已同步 OpenSpec 5.7，并复跑最终门禁：
   - `openspec validate add-summonerwars-shouren-faction --strict --no-interactive`：通过。
   - `python D:\codex-home\skills\task-completion-guard\scripts\check_completion.py --state temp\summonerwars-shouren-task.json`：`COMPLETE`。
+
+## 2026-07-27 07:46 +08 山屋惊魂灰尘补漏：非叛徒死亡搜尸反向边界
+
+- 当前任务口径已重锁为作祟 3「灰尘」规则补漏，不是全面端到端出图。
+- 本轮新增领域断言：灰尘非叛徒死亡时不会触发死亡叛徒专属掩埋和狂热病患化，尸体保留物品 / 预兆，同房间存活探索者仍可按通用搜尸规则拿走 1 件。
+- 已同步账本：
+  - `docs/games/betrayal/workflows/betrayal-dust-rule-gap-plan-2026-07-26.md`
+  - `docs/games/betrayal/haunts/03-the-dust.md`
+- 已完成验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "灰尘非叛徒死亡时不会掩埋遗物"` 为 `1 passed / 410 skipped`。\n  - 整份 `firstScenarioRuntime.test.ts` 为 `411 passed`。\n  - `npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 为 0 errors。
+- 当前结论：
+  - 这只证明非叛徒死亡的反向边界，避免把“死亡叛徒特殊规则”扩大到所有死亡探索者。
+  - 不代表灰尘全部规则、全部搜尸 UI / E2E、全部死亡来源全排列完成。

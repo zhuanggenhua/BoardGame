@@ -353,14 +353,14 @@ describe('卡牌展示系统', () => {
     });
 
     describe('疯狂卡平局规则', () => {
-        it('VP 相同时疯狂卡较少者胜', () => {
+        it('原始独占领先触发终局后，最终分相同时疯狂卡较少者胜', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': { id: '0', vp: 15, hand: [
                         { uid: 'm1', defId: 'special_madness', type: 'minion', owner: '0' },
                         { uid: 'm2', defId: 'special_madness', type: 'minion', owner: '0' },
                     ], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens', 'dinosaurs'] as [string, string] },
-                    '1': { id: '1', vp: 15, hand: [
+                    '1': { id: '1', vp: 14, hand: [
                         { uid: 'm3', defId: 'special_madness', type: 'minion', owner: '1' },
                     ], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['pirates', 'ninjas'] as [string, string] },
                 },
@@ -373,14 +373,69 @@ describe('卡牌展示系统', () => {
                 madnessDeck: [],
             };
 
-            // P0 有 2 张疯狂卡（扣 1 VP → 14），P1 有 1 张（扣 0 VP → 15）
-            // P1 分数更高直接胜出
+            // P0 原始 15 且独占领先，触发终局；P0 扣 1 后与 P1 同为 14，
+            // P1 疯狂卡更少，因此由 P1 获胜。
             const result = SmashUpDomain.isGameOver!(state);
             expect(result).toBeDefined();
             expect(result!.winner).toBe('1');
+            expect(result!.scores).toMatchObject({ '0': 14, '1': 14 });
         });
 
-        it('VP 和疯狂卡都相同时继续游戏', () => {
+        it('原始不足 15 的玩家可在疯狂卡扣分后击败原始领先者', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': { id: '0', vp: 15, hand: [
+                        { uid: 'm1', defId: 'special_madness', type: 'minion', owner: '0' },
+                        { uid: 'm2', defId: 'special_madness', type: 'minion', owner: '0' },
+                        { uid: 'm3', defId: 'special_madness', type: 'minion', owner: '0' },
+                        { uid: 'm4', defId: 'special_madness', type: 'minion', owner: '0' },
+                    ], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens', 'dinosaurs'] as [string, string] },
+                    '1': { id: '1', vp: 14, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['pirates', 'ninjas'] as [string, string] },
+                },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+                bases: [],
+                baseDeck: [],
+                turnNumber: 5,
+                nextUid: 100,
+                madnessDeck: [],
+            };
+
+            const result = SmashUpDomain.isGameOver!(state);
+            expect(result).toBeDefined();
+            expect(result!.winner).toBe('1');
+            expect(result!.scores).toMatchObject({ '0': 13, '1': 14 });
+        });
+
+        it('疯狂卡修正后完全同分且疯狂卡同样少时共享胜利', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': { id: '0', vp: 15, hand: [
+                        { uid: 'm1', defId: 'special_madness', type: 'minion', owner: '0' },
+                        { uid: 'm2', defId: 'special_madness', type: 'minion', owner: '0' },
+                        { uid: 'm3', defId: 'special_madness', type: 'minion', owner: '0' },
+                        { uid: 'm4', defId: 'special_madness', type: 'minion', owner: '0' },
+                    ], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens', 'dinosaurs'] as [string, string] },
+                    '1': { id: '1', vp: 13, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['pirates', 'ninjas'] as [string, string] },
+                    '2': { id: '2', vp: 13, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['wizards', 'zombies'] as [string, string] },
+                },
+                turnOrder: ['0', '1', '2'],
+                currentPlayerIndex: 0,
+                bases: [],
+                baseDeck: [],
+                turnNumber: 5,
+                nextUid: 100,
+                madnessDeck: [],
+            };
+
+            const result = SmashUpDomain.isGameOver!(state);
+            expect(result).toBeDefined();
+            expect(result!.winner).toBe('1');
+            expect(result!.winners).toEqual(['1', '2']);
+            expect(result!.scores).toMatchObject({ '0': 13, '1': 13, '2': 13 });
+        });
+
+        it('原始最高 VP 没有独占领先时继续游戏', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': { id: '0', vp: 15, hand: [

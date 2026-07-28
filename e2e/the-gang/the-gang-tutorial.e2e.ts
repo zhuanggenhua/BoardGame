@@ -310,7 +310,7 @@ test.describe('The Gang 教程 E2E', () => {
         expect(stolenTargetEntry, `必须有可被拿走的 AI 当前轮筹码: ${JSON.stringify(chipsBeforeSteal)}`).toBeDefined();
         const [stolenPlayerId, stolenChip] = stolenTargetEntry!;
 
-        await page.getByTestId(`the-gang-take-player-chip-${stolenPlayerId}`).click();
+        await page.getByTestId(`the-gang-take-player-chip-${stolenPlayerId}-single`).click();
         await expect
             .poll(
                 async () => (await getCurrentRoundChips(page))['0'],
@@ -379,13 +379,13 @@ test.describe('The Gang 教程 E2E', () => {
         await expect(page.locator('[data-tutorial-step="reveal-showdown"]')).toBeVisible();
         await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
         await expectTutorialCardDoesNotCoverTarget(page, 'the-gang-reveal-showdown');
-        await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(9);
-        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(3);
+        await expect(page.locator('[data-bgg-zone="player-token"]')).toHaveCount(6);
+        await expect(page.locator('[data-bgg-zone="player-current-token"]')).toHaveCount(2);
         await expect(page.locator('[data-bgg-zone="hand-chips-previous"]')).toHaveCount(3);
         await expect(page.locator('[data-bgg-zone="hand-current-chip"]')).toHaveCount(1);
         await expectImagesLoaded(page, '[data-bgg-zone="card-river"] img', 5);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 9);
-        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 3);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-token"] img', 6);
+        await expectImagesLoaded(page, '[data-bgg-zone="player-current-token"] img', 2);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-chips-previous"] img', 3);
         await expectImagesLoaded(page, '[data-bgg-zone="hand-current-chip"] img', 1);
         await game.screenshot('教程满元素待摊牌', testInfo);

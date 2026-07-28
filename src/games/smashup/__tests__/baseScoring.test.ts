@@ -203,7 +203,7 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
-        it('scoreOneBase 在并列第一时给并列玩家第二位分', () => {
+        it('scoreOneBase 在并列第一时给并列玩家第一位分，并跳过第二位', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
@@ -231,13 +231,13 @@ describe('基地记分与力量计算', () => {
 
             expect(scoredEvent).toBeDefined();
             expect(scoredEvent.payload.rankings).toEqual([
-                { playerId: '0', power: 10, vp: 2 },
-                { playerId: '1', power: 10, vp: 2 },
+                { playerId: '0', power: 10, vp: 4 },
+                { playerId: '1', power: 10, vp: 4 },
                 { playerId: '2', power: 6, vp: 1 },
             ]);
         });
 
-        it('scoreOneBase 在并列第二时给并列玩家第三位分', () => {
+        it('scoreOneBase 在并列第二时给并列玩家第二位分', () => {
             const state: SmashUpCore = {
                 players: {
                     '0': makePlayer('0'),
@@ -266,8 +266,104 @@ describe('基地记分与力量计算', () => {
             expect(scoredEvent).toBeDefined();
             expect(scoredEvent.payload.rankings).toEqual([
                 { playerId: '0', power: 12, vp: 4 },
-                { playerId: '1', power: 8, vp: 1 },
-                { playerId: '2', power: 8, vp: 1 },
+                { playerId: '1', power: 8, vp: 2 },
+                { playerId: '2', power: 8, vp: 2 },
+            ]);
+        });
+
+        it('scoreOneBase 在三人并列第一时给所有并列玩家第一位分', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
+                    '2': makePlayer('2', { factions: [SMASHUP_FACTION_IDS.WIZARDS, SMASHUP_FACTION_IDS.ZOMBIES] }),
+                },
+                turnOrder: ['0', '1', '2'],
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        { uid: 'p0', defId: 'd1', controller: '0', owner: '0', basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'p1', defId: 'd2', controller: '1', owner: '1', basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'p2', defId: 'd3', controller: '2', owner: '2', basePower: 10, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
+
+            expect(scoredEvent).toBeDefined();
+            expect(scoredEvent.payload.rankings).toEqual([
+                { playerId: '0', power: 10, vp: 4 },
+                { playerId: '1', power: 10, vp: 4 },
+                { playerId: '2', power: 10, vp: 4 },
+            ]);
+        });
+
+        it('scoreOneBase 对并列玩家逐个应用巨龙 VP 修正', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.DRAGONS, SMASHUP_FACTION_IDS.ALIENS] }),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        { uid: 'wyrm', defId: 'dragons_great_wyrm', controller: '0', owner: '0', basePower: 12, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'p1', defId: 'd2', controller: '1', owner: '1', basePower: 12, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
+
+            expect(scoredEvent).toBeDefined();
+            expect(scoredEvent.payload.rankings).toEqual([
+                { playerId: '0', power: 12, vp: 4 },
+                { playerId: '1', power: 12, vp: 3 },
+            ]);
+        });
+
+        it('scoreOneBase 对并列玩家逐个应用废墟 VP 修正', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.DRAGONS, SMASHUP_FACTION_IDS.ALIENS] }),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        { uid: 'p0', defId: 'd1', controller: '0', owner: '0', basePower: 12, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'p1', defId: 'd2', controller: '1', owner: '1', basePower: 12, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [makeBaseOngoing('ruins', 'dragons_ruins', '0')],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
+
+            expect(scoredEvent).toBeDefined();
+            expect(scoredEvent.payload.rankings).toEqual([
+                { playerId: '0', power: 12, vp: 4 },
+                { playerId: '1', power: 12, vp: 3 },
             ]);
         });
 
