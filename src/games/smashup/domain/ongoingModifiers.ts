@@ -1263,17 +1263,34 @@ export function getPlayerEffectivePowerOnBase(
             && !isCardSuppressed(state, action.uid),
     );
     const personalPenalty = opposingSirens + reefPenaltyPerMinion;
+    const wereUpYoureDown = base.metadata?.halfTheBattleWereUpYoureDown as {
+        sourcePlayerId?: PlayerId;
+        expiresOnTurnNumber?: number;
+        expiresOnPlayerId?: PlayerId;
+    } | undefined;
+    const wereUpYoureDownActive = Boolean(
+        wereUpYoureDown?.sourcePlayerId
+        && wereUpYoureDown.sourcePlayerId !== playerId
+        && (
+            typeof wereUpYoureDown.expiresOnTurnNumber !== 'number'
+            || state.turnNumber < wereUpYoureDown.expiresOnTurnNumber
+            || (
+                wereUpYoureDown.expiresOnPlayerId !== undefined
+                && currentPlayerId !== wereUpYoureDown.expiresOnPlayerId
+            )
+        ),
+    );
     const minionPower = base.minions
         .filter(m => m.controller === playerId)
         .reduce((sum, m) => {
-            const effectivePower = getEffectivePower(state, m, baseIndex);
+            const effectivePower = wereUpYoureDownActive ? m.basePower : getEffectivePower(state, m, baseIndex);
             let contribution = isMinionPowerContributionCancelled(state, m) ? 0 : effectivePower;
 
             const charmedTurn = Number(m.metadata?.mermaidsCharmedSuppressedTurn ?? -1);
             const charmedActive = charmedTurn === state.turnNumber;
             if (charmedActive || desertIslandActive) {
                 contribution = 0;
-            } else if (personalPenalty > 0) {
+            } else if (!wereUpYoureDownActive && personalPenalty > 0) {
                 contribution = Math.max(0, contribution - personalPenalty);
             }
 

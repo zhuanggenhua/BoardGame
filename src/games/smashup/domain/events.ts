@@ -86,6 +86,7 @@ export const SU_EVENTS = defineEvents({
   
   'su:minion_returned': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:minion_moved': { audio: 'immediate', sound: MOVE_KEY },
+  'su:minion_swapped': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:minion_control_changed': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:minion_metadata_updated': 'silent',
   'su:base_metadata_updated': 'silent',
@@ -186,6 +187,7 @@ export const SU_EVENT_TYPES = {
   STARTING_HAND_MULLIGAN_USED: SU_EVENTS['su:starting_hand_mulligan_used'].type,
   MINION_DESTROYED: SU_EVENTS['su:minion_destroyed'].type,
   MINION_MOVED: SU_EVENTS['su:minion_moved'].type,
+  MINION_SWAPPED: SU_EVENTS['su:minion_swapped'].type,
   MINION_CONTROL_CHANGED: SU_EVENTS['su:minion_control_changed'].type,
   MINION_METADATA_UPDATED: SU_EVENTS['su:minion_metadata_updated'].type,
   BASE_METADATA_UPDATED: SU_EVENTS['su:base_metadata_updated'].type,

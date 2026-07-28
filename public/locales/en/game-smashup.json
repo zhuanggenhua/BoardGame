@@ -1923,6 +1923,22 @@
     "luchadors": {
       "name": "Luchadors",
       "description": "Play Set-Up actions on enemy minions, then cash those setups in for draw, control, and scoring tricks."
+    },
+    "adolescent_epic_geckos": {
+      "name": "Adolescent Epic Geckos",
+      "description": "Extra-action specialists whose first action keeps the chain going and whose later actions become stronger."
+    },
+    "gi_gerald": {
+      "name": "G.I. Gerald",
+      "description": "Fusion-card specialists with many cards that can act as either minions or actions."
+    },
+    "rulers_of_the_cosmos": {
+      "name": "Rulers of the Cosmos",
+      "description": "Play-on-minion action specialists that grant, copy, transfer, and reuse talents."
+    },
+    "pearl_and_the_images": {
+      "name": "Pearl and the Images",
+      "description": "They raise other players' minion power to fuel their own counters, movement, and scoring pressure."
     }
   },
   "tutorial": {
@@ -9034,6 +9050,250 @@
     "base_the_squared_circle": {
       "name": "The Squared Circle",
       "abilityText": "After the first time you play a minion here each turn, you may place a random action from your discard pile into your hand."
+    },
+    "geckos_hokusai": {
+      "name": "Hokusai",
+      "abilityText": "You may place a +1 power counter on one of your minions. Talent: If you have played at least two actions this turn, for each base you may place a +1 power counter on a minion there."
+    },
+    "geckos_kandinsky": {
+      "name": "Kandinsky",
+      "abilityText": "This minion gains +1 power until the end of the turn. Talent: If you have played at least two actions this turn, give this minion +2 power until the end of the turn OR move another one of your minions to here."
+    },
+    "geckos_monet": {
+      "name": "Monet",
+      "abilityText": "Draw a card. Ongoing: Any time you can play an action, you may instead draw a card and trigger all abilities as though you had played an action."
+    },
+    "geckos_van_gogh": {
+      "name": "Van Gogh",
+      "abilityText": "You may shuffle a standard action from your discard pile into your deck. Ongoing: After you play a standard action, you may store it under this card. At the start of your turn or after you win this base, shuffle all cards stored under this card into your deck."
+    },
+    "geckos_june": {
+      "name": "June",
+      "abilityText": "If you have a minion of printed power 4 in play, you may swap it for one with a different name in your hand or deck; if not, you may draw one off the top of your deck."
+    },
+    "geckos_breaking_news": {
+      "name": "Breaking News",
+      "effectText": "Look at the top four cards of your deck. Draw one and return the rest in any order. If this is your first action played this turn, play an extra action."
+    },
+    "geckos_flip_kick": {
+      "name": "Flip Kick",
+      "effectText": "Draw a card. If this is your first action played this turn, play an extra action; if not, draw two more cards."
+    },
+    "geckos_gecko_blimp": {
+      "name": "Gecko Blimp",
+      "effectText": "If this is your first action played this turn, move one of your minions and play an extra action; if not, move any minion."
+    },
+    "geckos_gecko_power": {
+      "name": "Gecko Power",
+      "effectText": "Play on a minion. Talent: If you have played at least two other actions this turn, move this minion OR place a +1 power counter on it OR give it +2 power until the end of the turn."
+    },
+    "geckos_gecko_rap": {
+      "name": "Gecko Rap",
+      "effectText": "Swap one of your minions in play for one with a different name and equal or less power in your hand, deck or discard pile. If this is your first action played this turn, play an extra action; if not, place a +1 power counter on the new minion."
+    },
+    "geckos_lasagna_party": {
+      "name": "Lasagna Party",
+      "effectText": "Play an extra minion of power 2 or less. If this is your first action played this turn, play an extra action; if not, place two +1 power counters on a minion at that base."
+    },
+    "geckos_now_you_know_bullying": {
+      "name": "Now You Know: Bullying",
+      "effectText": "Move one of your minions. Special: After a base scores where you didn't win, you may play this card to return one of your minions there to your hand instead."
+    },
+    "geckos_masters_teachings": {
+      "name": "The Master's Teachings",
+      "effectText": "Place two +1 power counters on one of your minions. If this is your first action played this turn, play an extra action; if not, you may give that minion +2 power until the end of the turn."
+    },
+    "geckos_kc_smith": {
+      "name": "K.C. Smith",
+      "abilityText": "Minion: Play an extra action.|Action: Play an extra minion."
+    },
+    "gi_gerald_viscount": {
+      "name": "Viscount",
+      "abilityText": "Ongoing: Once per turn, after you play a fusion and use its Action ability, you may give this minion +2 power until the end of the turn OR place a +1 power counter on it."
+    },
+    "gi_gerald_go_gerald": {
+      "name": "Go, Gerald!",
+      "effectText": "Choose a base. Give each of your minions played there this turn +2 power until the end of the turn."
+    },
+    "gi_gerald_now_you_know_home_safety": {
+      "name": "Now You Know: Home Safety",
+      "effectText": "Play an extra minion of power 2 or less. If it is a fusion, you may also use its Action ability. Special: You may play this before a base scores to copy the Action ability of one of your fusions there instead."
+    },
+    "gi_gerald_mowat": {
+      "name": "M.O.W.A.T.",
+      "abilityText": "Minion: You may give another minion +1 power until the end of the turn.|Action: Give a minion +3 power until the end of the turn."
+    },
+    "gi_gerald_obstruction": {
+      "name": "Obstruction",
+      "abilityText": "Minion: Each of your minions here gains +1 power until the end of the turn.|Action: Place a minion of power 3 or less on the bottom of its owner's deck."
+    },
+    "gi_gerald_sawbones": {
+      "name": "Sawbones",
+      "abilityText": "Minion: Shuffle an action from your discard pile into your deck.|Action: Shuffle a minion from your discard pile into your deck."
+    },
+    "gi_gerald_ski_lift": {
+      "name": "Ski Lift",
+      "abilityText": "Minion: You may move one of your minions from another base to here.|Action: Move a minion."
+    },
+    "gi_gerald_can_do": {
+      "name": "Can-Do",
+      "abilityText": "Minion: You may play an extra minion of power 2 or less here, or an extra action.|Action: You may play an extra minion of power 2 or less, and an extra action."
+    },
+    "gi_gerald_mabel_lean": {
+      "name": "Mabel Lean",
+      "abilityText": "Minion: If this is your only minion here, you may place a +1 power counter on it.|Action: Play an extra minion of power 2 or less."
+    },
+    "gi_gerald_shellback": {
+      "name": "Shellback",
+      "abilityText": "Minion: You may return one of your non-Shellback fusions to your hand.|Action: Copy the Action ability on one of your other fusions in play."
+    },
+    "gi_gerald_dice_ninja": {
+      "name": "Dice Ninja",
+      "abilityText": "Minion: Draw a card.|Action: Draw two cards."
+    },
+    "gi_gerald_rosie": {
+      "name": "Rosie",
+      "abilityText": "Minion: You may place a +1 power counter on another minion here.|Action: Place two +1 power counters total on your minions."
+    },
+    "rulers_cosmos_gal_woman": {
+      "name": "Gal-Woman",
+      "abilityText": "Talent: Play an extra play-on-minion action from any player's discard pile. At the end of the turn, or when it leaves play, place it on the bottom of its owner's deck."
+    },
+    "rulers_cosmos_guy_man": {
+      "name": "Guy-Man",
+      "abilityText": "Talent: Copy the talent of another one of your minions."
+    },
+    "rulers_cosmos_andko": {
+      "name": "Andko",
+      "abilityText": "Talent: Play an extra action on a minion that does not have one on it."
+    },
+    "rulers_cosmos_man_with_arms": {
+      "name": "Man with Arms",
+      "abilityText": "Talent: If this minion has an action on it, it gains +2 power until the start of your next turn. Ongoing: Once per turn, when this minion would use a talent given by an action, it may instead use another of its talents an extra time."
+    },
+    "rulers_cosmos_frogga": {
+      "name": "Frogga",
+      "abilityText": "Draw a play-on-minion action off the top of your deck. Ongoing: When this minion leaves play, you may shuffle an action on it into your deck."
+    },
+    "rulers_cosmos_young_noble": {
+      "name": "Young Noble",
+      "abilityText": "Talent: If a Sword card is on this minion, swap this minion for a minion of power 5 or more from your hand, deck, or discard pile."
+    },
+    "rulers_cosmos_armor_of_battle": {
+      "name": "Armor of Battle",
+      "effectText": "Play on a minion. Ongoing: This minion has the ability: \"Talent: Increase the breakpoint of this base by 2 for each of your minions here with an action on it until the start of your next turn.\""
+    },
+    "rulers_cosmos_dolts_halfwits_fools_morons": {
+      "name": "Dolts, Halfwits, Fools, Morons!",
+      "effectText": "Transfer any number of actions on your minions to your other minions. Place a +1 power counter on each of your minions you transferred an action to."
+    },
+    "rulers_cosmos_fearless_friend": {
+      "name": "Fearless Friend",
+      "effectText": "Play on your minion. Ongoing: This minion has the ability: \"Talent: Move this minion.\""
+    },
+    "rulers_cosmos_magic_weapon": {
+      "name": "Magic Weapon",
+      "effectText": "Play on a minion. Ongoing: This minion has the ability: \"Talent: This minion gains +1 power until the start of your next turn for each player with a minion here OR if there is only one action on this minion, draw a card.\""
+    },
+    "rulers_cosmos_myaaah": {
+      "name": "MYAAAH!",
+      "effectText": "Return a play-on-minion action from one of your minions or from your discard pile to its owner's hand. Play it as an extra action."
+    },
+    "rulers_cosmos_mystic_transference": {
+      "name": "Mystic Transference",
+      "effectText": "Play on your minion. Ongoing: At the start of each other player's turn, choose one of your actions in play that gives a talent. This minion may copy that talent immediately. Talent: Transfer one of your actions between this minion and another of your minions."
+    },
+    "rulers_cosmos_now_you_know_toxic_waste": {
+      "name": "Now You Know: Toxic Waste",
+      "effectText": "Draw a play-on-minion action from your deck. Special: You may play this before a base scores to transfer an action from one of your minions to another instead; then you may use a talent on the minion the action was transferred to."
+    },
+    "rulers_cosmos_powerful_sword": {
+      "name": "Powerful Sword",
+      "effectText": "Play on your minion. Ongoing: This minion has the ability: \"Talent: This minion is not affected by other players' cards until the start of your next turn.\" Talent: Transfer another action from this minion to another of your minions."
+    },
+    "rulers_cosmos_sword_thats_powerful": {
+      "name": "Sword That's Powerful",
+      "effectText": "Play on your minion. Ongoing: This minion has the ability: \"Talent: Place a +1 power counter on this minion.\" If this minion's printed power is 5 or more, it has +2 power."
+    },
+    "pearl_images_pearl": {
+      "name": "Pearl",
+      "abilityText": "Talent: Draw a minion of power 2 or less off the top of your deck OR give a minion here +1 power until the end of the turn."
+    },
+    "pearl_images_crystal": {
+      "name": "Crystal",
+      "abilityText": "Talent: Place a +1 power counter on another player's minion to place a +1 power counter on one of your minions at the same base."
+    },
+    "pearl_images_ruby": {
+      "name": "Ruby",
+      "abilityText": "You may give all players' minions here +1 power until the end of the turn."
+    },
+    "pearl_images_topaz": {
+      "name": "Topaz",
+      "abilityText": "Ongoing: Once per turn, after the power of another player's minion increases, you may place a +1 power counter on this minion OR if you have a minion there, you may move this minion to there."
+    },
+    "pearl_images_alls_right_with_the_world": {
+      "name": "All's Right with the World",
+      "effectText": "Play on a base. Talent: Give all players' minions here +1 power until the end of the turn OR for each player, give one of their minions here +2 power until the end of the turn."
+    },
+    "pearl_images_dressing_room": {
+      "name": "Dressing Room",
+      "effectText": "Each player may draw a card. Draw a card for each player who does so, including yourself."
+    },
+    "pearl_images_jam_all_night_long": {
+      "name": "Jam All Night Long",
+      "effectText": "Play on a base. Talent: Choose a player to play an extra minion of power 2 or less here or reveal a hand with no such minions. Then, if you chose another player and they played a minion, you may draw a card or place a +1 power counter on a minion here."
+    },
+    "pearl_images_love_unites_us": {
+      "name": "Love Unites Us",
+      "effectText": "All players shuffle all minions of power 2 or less in their discard pile into their deck."
+    },
+    "pearl_images_now_you_know_bike_safety": {
+      "name": "Now You Know: Bike Safety",
+      "effectText": "Choose one of your minions on a base. Move that minion and another player's minion there to another base. Special: You may play this before a base scores; move the chosen minions to the scoring base."
+    },
+    "pearl_images_shes_got_the_power": {
+      "name": "She's Got the Power",
+      "effectText": "Play on a minion. Ongoing: Once per turn, after the power of another player's minion here increases, you may give this minion +3 power until the end of the turn."
+    },
+    "pearl_images_truly_outstanding": {
+      "name": "Truly Outstanding",
+      "effectText": "Place a +1 power counter on any number of other players' minions. For each one placed, you may place a +1 power counter on one of your minions."
+    },
+    "pearl_images_were_up_youre_down": {
+      "name": "We're Up, You're Down",
+      "effectText": "Choose a base. Until the start of your next turn, other players' minions there only add their printed power to their controllers' total. Special: You may play this before a base scores where you have the most minions. You must choose that base."
+    },
+    "base_sewer_hideout": {
+      "name": "Sewer Hideout",
+      "abilityText": "After your second action in a turn, you may place a +1 power counter on a minion here."
+    },
+    "base_technoball": {
+      "name": "Technoball",
+      "abilityText": "After the first time you play a minion here each turn, you may play an extra action."
+    },
+    "base_gi_geralds_base": {
+      "name": "G.I. Gerald's Base",
+      "abilityText": "Once per turn, after you play a minion here, you may draw a card and place a card from your hand on the bottom of your deck."
+    },
+    "base_uss_banner": {
+      "name": "USS Banner",
+      "abilityText": "On your turn, you may play an extra minion here of power 2 or less. If you control it at the end of the turn, place it on top of your deck."
+    },
+    "base_power_castle": {
+      "name": "Power Castle",
+      "abilityText": "Once per turn, after an action is played on or transferred to a minion here, you may place a +1 power counter on that minion."
+    },
+    "base_slime_pool": {
+      "name": "Slime Pool",
+      "abilityText": "Instead of your regular action play, you may play a play-on-minion action off the top of your deck on a minion here."
+    },
+    "base_concert_venue": {
+      "name": "Concert Venue",
+      "abilityText": "After the first time you play a minion here each turn, you may place a +1 power counter on it."
+    },
+    "base_recording_studio": {
+      "name": "Recording Studio",
+      "abilityText": "At the start of each turn, all players' minions here gain +1 power until the end of the turn."
     }
   },
   "debug": {

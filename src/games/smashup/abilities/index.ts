@@ -68,6 +68,7 @@ import { registerAnansiTalesAbilities } from './anansi_tales';
 import { registerGrimmsFairyTalesAbilities, registerGrimmsFairyTalesInteractionHandlers } from './grimms_fairy_tales';
 import { registerRussianFairyTalesAbilities, registerRussianFairyTalesInteractionHandlers } from './russian_fairy_tales';
 import { registerAncientIncasAbilities, registerAncientIncasInteractionHandlers } from './ancient_incas';
+import { registerHalfTheBattleAbilities } from './half_the_battle';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -210,6 +211,7 @@ export function initAllAbilities(): void {
     registerRussianFairyTalesInteractionHandlers();
     registerAncientIncasAbilities();
     registerAncientIncasInteractionHandlers();
+    registerHalfTheBattleAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

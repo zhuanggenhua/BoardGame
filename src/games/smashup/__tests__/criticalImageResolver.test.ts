@@ -159,6 +159,24 @@ describe('smashUpCriticalImageResolver', () => {
         expect(result.critical).toContain('smashup/base/what_were_we_thinking_bases');
     });
 
+    it('半场战争扩四派系会命中各自卡图与共享基地 atlas', () => {
+        const result = smashUpCriticalImageResolver(
+            makePlayingState({
+                '0': ['adolescent_epic_geckos', 'gi_gerald'],
+                '1': ['rulers_of_the_cosmos', 'pearl_and_the_images'],
+            }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('smashup/cards/half_the_battle_geckos');
+        expect(result.critical).toContain('smashup/cards/half_the_battle_gerald');
+        expect(result.critical).toContain('smashup/cards/half_the_battle_cosmos');
+        expect(result.critical).toContain('smashup/cards/half_the_battle_pearl_images');
+        expect(result.critical).toContain('smashup/base/half_the_battle_bases');
+        expect(result.critical.filter(path => path === 'smashup/base/half_the_battle_bases')).toHaveLength(1);
+    });
+
     it('Promo 绵羊与全明星共享预热同一张新卡图并命中 BASE4 基地图集', () => {
         const result = smashUpCriticalImageResolver(
             makePlayingState({

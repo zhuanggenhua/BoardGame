@@ -406,6 +406,8 @@ export interface BaseInPlay {
     ongoingActions: OngoingActionOnBase[];
     /** 埋葬卡列表（面朝下） */
     buriedCards?: BuriedCardOnBase[];
+    /** 额外元数据（用于临时基地级状态，如“我们上，你们下”） */
+    metadata?: Record<string, unknown>;
 }
 
 export type TitanLocation =
@@ -1211,6 +1213,11 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         fromBuried?: boolean;
         /** 从弃牌堆打出 */
         fromDiscard?: boolean;
+        /** 从弃牌堆打出的能力来源，用于 once/turn 与替代去向结算。 */
+        discardPlaySourceId?: string;
+        targetBaseIndex?: number;
+        targetType?: 'base' | 'minion';
+        targetMinionUid?: string;
     };
 }
 
@@ -1575,6 +1582,7 @@ export type SmashUpEvent =
     | AllFactionsSelectedEvent
     | MinionDestroyedEvent
     | MinionMovedEvent
+    | MinionSwappedEvent
     | MinionControlChangedEvent
     | MinionMetadataUpdatedEvent
     | BaseMetadataUpdatedEvent
@@ -1705,6 +1713,23 @@ export interface MinionMovedEvent extends GameEvent<typeof SU_EVENTS.MINION_MOVE
         sourceBaseIndex?: number;
         /** 同批移动标记；同一批内的随从不应互相见证彼此的移动。 */
         batchId?: string;
+        reason: string;
+    };
+}
+
+export type SmashUpSwapZone = 'hand' | 'deck' | 'discard';
+
+export interface MinionSwappedEvent extends GameEvent<typeof SU_EVENTS.MINION_SWAPPED> {
+    payload: {
+        playerId: PlayerId;
+        sourceMinionUid: string;
+        sourceMinionDefId: string;
+        sourceOwnerId: PlayerId;
+        sourceBaseIndex: number;
+        candidateCardUid: string;
+        candidateDefId: string;
+        candidateOwnerId: PlayerId;
+        candidateZone: SmashUpSwapZone;
         reason: string;
     };
 }

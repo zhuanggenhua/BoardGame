@@ -831,6 +831,96 @@
           "mime": "image/webp"
         }
       }
+    },
+    "base/half_the_battle_bases": {
+      "variants": {
+        "png": {
+          "sha256": "b2ebf074e8c1a0855ebe80a36a4f52462f0563879c39d1a8b02f4461d91c14fb",
+          "bytes": 10812801,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/compressed/half_the_battle_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "fd8047133071ede8778287a8e1849ba2c5f85c78640912aef608eb7dd71e65f4",
+          "bytes": 1710948,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/half_the_battle_cosmos": {
+      "variants": {
+        "png": {
+          "sha256": "585e59539514f2ba180c0e05e5c277e453ec0d5cc713835301bb756852248ec8",
+          "bytes": 24294207,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/half_the_battle_geckos": {
+      "variants": {
+        "png": {
+          "sha256": "59e0eb702c9e4ef3501280c3b013ab16a81c84529a565e0e04b6b14653834f36",
+          "bytes": 22800669,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/half_the_battle_gerald": {
+      "variants": {
+        "png": {
+          "sha256": "5674b78fa3b27177ec97d93a6d1450a260618966d56fd4e9c25b5bbf31d53ec9",
+          "bytes": 22101189,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/half_the_battle_pearl_images": {
+      "variants": {
+        "png": {
+          "sha256": "8a25cc8893363c33797c08f12d352c490aa336438ba5ca4bfefc77a6d0e96fde",
+          "bytes": 17679181,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_cosmos": {
+      "variants": {
+        "webp": {
+          "sha256": "23b9084f3ac4518e74e5047f67c43a9f5dbff27d8e2dc9baa60de1a1b5675657",
+          "bytes": 4299216,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_geckos": {
+      "variants": {
+        "webp": {
+          "sha256": "7ee82396fde206817b6c72d26e28b7e440ac3de18a88d52863051e9f425baae4",
+          "bytes": 4776586,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_gerald": {
+      "variants": {
+        "webp": {
+          "sha256": "d27c4a0eed0cb9a14921f5205bbc70f0111179bd2fc5a39264a2f495044482d2",
+          "bytes": 5157030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_pearl_images": {
+      "variants": {
+        "webp": {
+          "sha256": "e782a65443b551570eff12c8479f54f5bbe3c17368b0aee142164911a3ad99f2",
+          "bytes": 3935812,
+          "mime": "image/webp"
+        }
+      }
     }
   }
 }

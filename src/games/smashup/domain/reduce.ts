@@ -10,6 +10,7 @@ import type {
     ActionCounteredEvent,
     MinionDestroyedEvent,
     MinionMovedEvent,
+    MinionSwappedEvent,
     MinionControlChangedEvent,
     BaseMetadataUpdatedEvent,
     ActionDefBlockedThisTurnEvent,
@@ -389,6 +390,50 @@ function detachCardUidFromBases(
     };
 }
 
+type AttachedActionLeaveDestination = 'discard' | 'hand' | 'deckBottom';
+
+function isHalfTheBattleGalWomanTemporaryAction(attached: MinionOnBase['attachedActions'][number]): boolean {
+    return attached.metadata?.halfTheBattleGalWomanTemporary === true;
+}
+
+function attachedActionToCard(attached: MinionOnBase['attachedActions'][number]): CardInstance {
+    return {
+        uid: attached.uid,
+        defId: attached.defId,
+        type: 'action',
+        owner: attached.ownerId,
+    };
+}
+
+function placeAttachedActionLeavingPlay(
+    players: SmashUpCore['players'],
+    attached: MinionOnBase['attachedActions'][number],
+    defaultDestination: AttachedActionLeaveDestination,
+): SmashUpCore['players'] {
+    const owner = players[attached.ownerId];
+    if (!owner) return players;
+    const card = attachedActionToCard(attached);
+    const destination = isHalfTheBattleGalWomanTemporaryAction(attached)
+        ? 'deckBottom'
+        : defaultDestination;
+    if (destination === 'hand') {
+        return {
+            ...players,
+            [attached.ownerId]: { ...owner, hand: [...owner.hand, card] },
+        };
+    }
+    if (destination === 'deckBottom') {
+        return {
+            ...players,
+            [attached.ownerId]: { ...owner, deck: [...owner.deck, card] },
+        };
+    }
+    return {
+        ...players,
+        [attached.ownerId]: { ...owner, discard: [...owner.discard, card] },
+    };
+}
+
 // ============================================================================
 // reduce：事件 → 新状态（确定性）
 // ============================================================================
@@ -759,7 +804,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ACTION_PLAYED: {
-            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, ownerId } = event.payload as any;
+            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, ownerId, discardPlaySourceId } = event.payload as any;
             const player = state.players[playerId];
             const card = fromDiscard
                 ? player.discard.find(c => c.uid === cardUid)
@@ -811,6 +856,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         : sourceDiscard,
                     // Special 卡和额外行动不消耗行动额度
                     actionsPlayed: (isSpecial || isExtraAction) ? player.actionsPlayed : player.actionsPlayed + 1,
+                    usedDiscardPlayAbilities: fromDiscard && discardPlaySourceId
+                        ? Array.from(new Set([...(player.usedDiscardPlayAbilities ?? []), discardPlaySourceId]))
+                        : player.usedDiscardPlayAbilities,
                     extraCardsPlayedThisTurn: wasExtraActionPlay
                         ? (player.extraCardsPlayedThisTurn ?? 0) + 1
                         : player.extraCardsPlayedThisTurn,
@@ -1334,19 +1382,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             for (const m of scoredBase.minions) {
                 // Property 12: 随从附着的行动卡回各自所有者弃牌堆
                 for (const attached of m.attachedActions) {
-                    const attachedOwner = newPlayers[attached.ownerId];
-                    if (attachedOwner) {
-                        const attachedCard: CardInstance = {
-                            uid: attached.uid,
-                            defId: attached.defId,
-                            type: 'action',
-                            owner: attached.ownerId,
-                        };
-                        newPlayers = {
-                            ...newPlayers,
-                            [attached.ownerId]: { ...newPlayers[attached.ownerId], discard: [...newPlayers[attached.ownerId].discard, attachedCard] },
-                        };
-                    }
+                    newPlayers = placeAttachedActionLeavingPlay(newPlayers, attached, 'discard');
                 }
                 const returnedCard: CardInstance = {
                     uid: m.uid,
@@ -1937,6 +1973,20 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         };
                     }
                     const currentMetadata = current.metadata as Record<string, unknown> | undefined;
+                    const expiringGalWomanActions = current.attachedActions.filter(action =>
+                        action.metadata?.halfTheBattleGalWomanTemporary === true
+                        && action.metadata?.halfTheBattleGalWomanControllerId === playerId);
+                    if (expiringGalWomanActions.length > 0) {
+                        current = {
+                            ...current,
+                            attachedActions: current.attachedActions.filter(action =>
+                                !(action.metadata?.halfTheBattleGalWomanTemporary === true
+                                    && action.metadata?.halfTheBattleGalWomanControllerId === playerId)),
+                        };
+                        for (const attached of expiringGalWomanActions) {
+                            updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, attached, 'deckBottom');
+                        }
+                    }
                     const returnPlayerId = currentMetadata?.ittyCrittersReturnToDeckBottomPlayerId;
                     if (returnPlayerId !== playerId || current.controller !== playerId) {
                         return [current];
@@ -2640,6 +2690,111 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return { ...state, bases: removalResult.bases, buccaneerPodUsedUids };
         }
 
+        case SU_EVENTS.MINION_SWAPPED: {
+            const {
+                playerId,
+                sourceMinionUid,
+                sourceMinionDefId,
+                sourceOwnerId,
+                sourceBaseIndex,
+                candidateCardUid,
+                candidateDefId,
+                candidateOwnerId,
+                candidateZone,
+            } = (event as MinionSwappedEvent).payload;
+            const sourceBase = state.bases[sourceBaseIndex];
+            const sourceMinion = sourceBase?.minions.find(minion =>
+                minion.uid === sourceMinionUid
+                && minion.defId === sourceMinionDefId
+                && minion.controller === playerId);
+            const sourceOwner = state.players[sourceOwnerId];
+            const candidateOwner = state.players[candidateOwnerId];
+            if (!sourceMinion || !sourceOwner || !candidateOwner) return state;
+
+            const sourceCard: CardInstance = {
+                uid: sourceMinion.uid,
+                defId: sourceMinion.defId,
+                type: getCardDef(sourceMinion.defId)?.type ?? 'minion',
+                owner: sourceMinion.owner,
+            };
+
+            let candidateCard: CardInstance | undefined;
+            const removeCandidate = (cards: CardInstance[]): CardInstance[] => {
+                const index = cards.findIndex(card => card.uid === candidateCardUid && card.defId === candidateDefId);
+                if (index === -1) return cards;
+                candidateCard = cards[index];
+                return [...cards.slice(0, index), ...cards.slice(index + 1)];
+            };
+
+            const candidateHand = candidateZone === 'hand'
+                ? removeCandidate(candidateOwner.hand)
+                : candidateOwner.hand;
+            const candidateDeck = candidateZone === 'deck'
+                ? removeCandidate(candidateOwner.deck)
+                : candidateOwner.deck;
+            const candidateDiscard = candidateZone === 'discard'
+                ? removeCandidate(candidateOwner.discard)
+                : candidateOwner.discard;
+            if (!candidateCard) return state;
+
+            const detached = detachCardUidFromBases(state.bases, sourceMinionUid);
+            let updatedPlayers = { ...state.players };
+            const updateSourceOwnerZone = (player: PlayerState): PlayerState => {
+                if (candidateZone === 'hand') return { ...player, hand: [...player.hand, sourceCard] };
+                if (candidateZone === 'deck') return { ...player, deck: [...player.deck, sourceCard] };
+                return { ...player, discard: [...player.discard, sourceCard] };
+            };
+
+            if (sourceOwnerId === candidateOwnerId) {
+                const basePlayer: PlayerState = {
+                    ...candidateOwner,
+                    hand: candidateHand,
+                    deck: candidateDeck,
+                    discard: candidateDiscard,
+                };
+                updatedPlayers[sourceOwnerId] = updateSourceOwnerZone(basePlayer);
+            } else {
+                updatedPlayers[candidateOwnerId] = {
+                    ...candidateOwner,
+                    hand: candidateHand,
+                    deck: candidateDeck,
+                    discard: candidateDiscard,
+                };
+                updatedPlayers[sourceOwnerId] = updateSourceOwnerZone(sourceOwner);
+            }
+
+            for (const attached of detached.detachedFromRemovedMinions) {
+                updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, attached, 'discard');
+            }
+
+            const candidateMinionDef = getCardDef(candidateDefId);
+            const candidateMinion: MinionOnBase = {
+                uid: candidateCard.uid,
+                defId: candidateCard.defId,
+                controller: playerId,
+                owner: candidateCard.owner,
+                basePower: candidateMinionDef?.type === 'fusion'
+                    ? candidateMinionDef.minionPower
+                    : candidateMinionDef?.type === 'minion'
+                        ? candidateMinionDef.power
+                        : 0,
+                powerCounters: 0,
+                powerModifier: 0,
+                tempPowerModifier: 0,
+                talentUsed: false,
+                attachedActions: [],
+            };
+
+            return {
+                ...state,
+                bases: detached.bases.map((base, index) => {
+                    if (index !== sourceBaseIndex) return base;
+                    return { ...base, minions: [...base.minions, candidateMinion] };
+                }),
+                players: updatedPlayers,
+            };
+        }
+
         case SU_EVENTS.MINION_CONTROL_CHANGED: {
             const { minionUid, baseIndex, toControllerId } = (event as MinionControlChangedEvent).payload;
             const base = state.bases[baseIndex];
@@ -2996,10 +3151,15 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 }
             }
             // 从基地的 ongoingActions 或随从的 attachedActions 中移除
+            let detachedAttachedAction: MinionOnBase['attachedActions'][number] | undefined;
             const newBases = state.bases.map(base => {
                 const filteredOngoing = base.ongoingActions.filter(o => o.uid !== cardUid);
                 const filteredMinions = base.minions.map(m => {
-                    const hadAttachment = m.attachedActions.some(a => a.uid === cardUid);
+                    const matchedAttachment = m.attachedActions.find(a => a.uid === cardUid);
+                    if (!detachedAttachedAction && matchedAttachment) {
+                        detachedAttachedAction = matchedAttachment;
+                    }
+                    const hadAttachment = matchedAttachment !== undefined;
                     const filtered = m.attachedActions.filter(a => a.uid !== cardUid);
                     if (!hadAttachment) return { ...m, attachedActions: filtered };
                     const updated = { ...m, attachedActions: filtered };
@@ -3019,6 +3179,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const detachedOwner = state.players[ownerId];
             if (!detachedOwner) return { ...state, bases: newBases };
             const detachedCard: CardInstance = { uid: cardUid, defId, type: 'action', owner: ownerId };
+            if (detachedAttachedAction && isHalfTheBattleGalWomanTemporaryAction(detachedAttachedAction)) {
+                return {
+                    ...state,
+                    bases: newBases,
+                    players: placeAttachedActionLeavingPlay(state.players, detachedAttachedAction, 'discard'),
+                };
+            }
             if (clydeReturnControllerId) {
                 const receiver = state.players[clydeReturnControllerId];
                 if (receiver) {
@@ -3136,21 +3303,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             );
             if (uniqueDetached.length > 0) {
                 for (const attached of uniqueDetached) {
-                    const attachedOwner = updatedPlayers[attached.ownerId];
-                    if (!attachedOwner) continue;
-                    const attachedCard: CardInstance = {
-                        uid: attached.uid,
-                        defId: attached.defId,
-                        type: 'action',
-                        owner: attached.ownerId,
-                    };
-                    updatedPlayers = {
-                        ...updatedPlayers,
-                        [attached.ownerId]: {
-                            ...attachedOwner,
-                            discard: [...attachedOwner.discard, attachedCard],
-                        },
-                    };
+                    updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, attached, 'discard');
                 }
             }
 
@@ -3243,21 +3396,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             );
             if (uniqueDetached.length > 0) {
                 for (const a of uniqueDetached) {
-                    const p = updatedPlayers[a.ownerId];
-                    if (!p) continue;
-                    const detachedCard: CardInstance = {
-                        uid: a.uid,
-                        defId: a.defId,
-                        type: 'action',
-                        owner: a.ownerId,
-                    };
-                    updatedPlayers = {
-                        ...updatedPlayers,
-                        [a.ownerId]: {
-                            ...p,
-                            discard: [...p.discard, detachedCard],
-                        },
-                    };
+                    updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, a, 'discard');
                 }
             }
 
@@ -3375,21 +3514,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 new Map(detached.detachedFromRemovedMinions.map((attached) => [attached.uid, attached])).values(),
             );
             for (const attached of uniqueDetached) {
-                const attachedOwner = updatedPlayers[attached.ownerId];
-                if (!attachedOwner) continue;
-                const attachedCard: CardInstance = {
-                    uid: attached.uid,
-                    defId: attached.defId,
-                    type: 'action',
-                    owner: attached.ownerId,
-                };
-                updatedPlayers = {
-                    ...updatedPlayers,
-                    [attached.ownerId]: {
-                        ...attachedOwner,
-                        discard: [...attachedOwner.discard, attachedCard],
-                    },
-                };
+                updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, attached, 'discard');
             }
 
             return {

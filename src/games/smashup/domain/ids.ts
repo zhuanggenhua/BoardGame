@@ -58,6 +58,11 @@ export const SMASHUP_ATLAS_IDS = {
     INTERNATIONAL_INCIDENT_BASES: 'smashup:international-incident-bases',
     WHAT_WERE_WE_THINKING_CARDS: 'smashup:what-were-we-thinking-cards',
     WHAT_WERE_WE_THINKING_BASES: 'smashup:what-were-we-thinking-bases',
+    HALF_THE_BATTLE_GECKOS_CARDS: 'smashup:half-the-battle-geckos-cards',
+    HALF_THE_BATTLE_GERALD_CARDS: 'smashup:half-the-battle-gerald-cards',
+    HALF_THE_BATTLE_COSMOS_CARDS: 'smashup:half-the-battle-cosmos-cards',
+    HALF_THE_BATTLE_PEARL_IMAGES_CARDS: 'smashup:half-the-battle-pearl-images-cards',
+    HALF_THE_BATTLE_BASES: 'smashup:half-the-battle-bases',
     HULUWAWA_CARDS: 'smashup:huluwawa-cards',
     PALADIN_CARDS: 'smashup:paladin-cards',
     HULUWAWA_TITAN: 'smashup:huluwawa-titan',
@@ -105,6 +110,10 @@ export const SMASHUP_FACTION_IDS = {
     DRAGONS: 'dragons',
     DRAGONS_POD: 'dragons_pod',
     GEEKS: 'geeks',
+    ADOLESCENT_EPIC_GECKOS: 'adolescent_epic_geckos',
+    GI_GERALD: 'gi_gerald',
+    RULERS_OF_THE_COSMOS: 'rulers_of_the_cosmos',
+    PEARL_AND_THE_IMAGES: 'pearl_and_the_images',
     KUNG_FU_FIGHTERS: 'kung_fu_fighters',
     VIGILANTES: 'vigilantes',
     TRUCKERS: 'truckers',
@@ -222,7 +231,12 @@ export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): 
     return identities;
 }
 
-export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>();
+export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>([
+    SMASHUP_FACTION_IDS.ADOLESCENT_EPIC_GECKOS,
+    SMASHUP_FACTION_IDS.GI_GERALD,
+    SMASHUP_FACTION_IDS.RULERS_OF_THE_COSMOS,
+    SMASHUP_FACTION_IDS.PEARL_AND_THE_IMAGES,
+]);
 
 export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.HULUWAWA,
@@ -260,6 +274,10 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.DRAGONS]: '龙',
     [SMASHUP_FACTION_IDS.DRAGONS_POD]: '龙 (POD版)',
     [SMASHUP_FACTION_IDS.GEEKS]: '极客',
+    [SMASHUP_FACTION_IDS.ADOLESCENT_EPIC_GECKOS]: '忍者神龟',
+    [SMASHUP_FACTION_IDS.GI_GERALD]: '特种部队杰拉尔德',
+    [SMASHUP_FACTION_IDS.RULERS_OF_THE_COSMOS]: '宇宙的巨人希曼',
+    [SMASHUP_FACTION_IDS.PEARL_AND_THE_IMAGES]: '珍珠和幻像',
     [SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS]: '功夫斗士',
     [SMASHUP_FACTION_IDS.VIGILANTES]: '侠义义警',
     [SMASHUP_FACTION_IDS.TRUCKERS]: '卡车车神',
