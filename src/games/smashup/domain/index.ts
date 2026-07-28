@@ -117,6 +117,7 @@ type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
     _waitForScoreBasesInteractionReduce?: boolean;
     _waitForPostScoringReduce?: boolean;
     _ppseInputEventsReduced?: boolean;
+    _ppseImmediateStartTurnProcessed?: boolean;
     _processedTitanPositionEvents?: Set<string>;
     _processedTitanRemovedEvents?: Set<string>;
 };
@@ -3102,7 +3103,17 @@ function postProcessSystemEvents(
     }
 
     const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean(getSmashUpRuntimeSys(ms)._smashupStartTurnWindowActive);
-    if (!options?.skipImmediateStartTurnMinionTriggers && startTurnWindowActive) {
+    const immediateStartTurnAlreadyProcessed = !!getSmashUpRuntimeSys(ms)._ppseImmediateStartTurnProcessed;
+    if (immediateStartTurnAlreadyProcessed) {
+        ms = {
+            ...ms,
+            sys: {
+                ...ms.sys,
+                _ppseImmediateStartTurnProcessed: undefined,
+            } as SmashUpRuntimeSystemState,
+        };
+    }
+    if (!options?.skipImmediateStartTurnMinionTriggers && startTurnWindowActive && !immediateStartTurnAlreadyProcessed) {
         const immediate = processImmediateStartTurnMinionTriggers(
             state,
             finalEvents,
@@ -3114,6 +3125,13 @@ function postProcessSystemEvents(
         if (immediate.matchState) {
             ms = immediate.matchState;
         }
+        ms = {
+            ...ms,
+            sys: {
+                ...ms.sys,
+                _ppseImmediateStartTurnProcessed: true,
+            } as SmashUpRuntimeSystemState,
+        };
     }
 
     const hasStartTurnInteraction =
