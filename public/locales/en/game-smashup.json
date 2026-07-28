@@ -1925,12 +1925,12 @@
       "description": "Play Set-Up actions on enemy minions, then cash those setups in for draw, control, and scoring tricks."
     },
     "new_round_table_knights": {
-      "name": "New Round Table Knights",
-      "description": "A DIY faction built around base actions, movement, and high-power minion synergies. Gameplay abilities are still in progress."
+      "name": "Round Table Knights",
+      "description": "An official faction built around base actions, movement, and high-power minion synergies. Gameplay abilities are still in progress."
     },
     "new_goblins": {
-      "name": "New Goblins",
-      "description": "A DIY faction built around coin flips and +1 power counters. Coin-flip gameplay abilities are still in progress."
+      "name": "Goblins",
+      "description": "An official faction built around coin flips and +1 power counters. Coin-flip gameplay abilities are still in progress."
     }
   },
   "tutorial": {

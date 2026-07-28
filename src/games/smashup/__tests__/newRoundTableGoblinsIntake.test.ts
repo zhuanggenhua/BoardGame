@@ -10,10 +10,10 @@ import {
     getSmashUpAtlasImageById,
     SMASHUP_ATLAS_DEFINITIONS,
 } from '../domain/atlasCatalog';
-import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
+import { isSmashUpDiyFaction, SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { BaseCardDef, CardDef } from '../domain/types';
 import { smashUpCriticalImageResolver } from '../criticalImageResolver';
-import { isFactionImplementationInProgress } from '../ui/factionMeta';
+import { getVisibleFactionMetadata, isFactionImplementationInProgress } from '../ui/factionMeta';
 
 type FactionIntakeCase = {
     factionId: string;
@@ -130,7 +130,7 @@ function loadLocale(locale: 'zh-CN' | 'en') {
     };
 }
 
-describe('SmashUp DIY 新圆桌骑士 / 新哥布林 intake 静态合同', () => {
+describe('SmashUp 圆桌骑士 / 哥布林 intake 静态合同', () => {
     it('两个新图集的 grid 与运行时图片路径正确', () => {
         expect(SMASHUP_ATLAS_DEFINITIONS).toEqual(expect.arrayContaining([
             {
@@ -208,19 +208,26 @@ describe('SmashUp DIY 新圆桌骑士 / 新哥布林 intake 静态合同', () =>
         expect(resolved.critical).toContain('smashup/base/new_goblins_bases');
     });
 
-    it('两个 DIY 派系当前显式标记为实施中', () => {
+    it('两个正统派系不归入 DIY，并且当前显式标记为实施中', () => {
+        expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS)).toBe(false);
+        expect(isSmashUpDiyFaction(SMASHUP_FACTION_IDS.NEW_GOBLINS)).toBe(false);
         expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS)).toBe(true);
         expect(isFactionImplementationInProgress(SMASHUP_FACTION_IDS.NEW_GOBLINS)).toBe(true);
+
+        const visibleWithoutDiy = getVisibleFactionMetadata('zh-CN', ['titans'])
+            .map(meta => meta.id);
+        expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS);
+        expect(visibleWithoutDiy).toContain(SMASHUP_FACTION_IDS.NEW_GOBLINS);
     });
 
     it('中英文 locale 覆盖所有新增派系、卡牌与基地 key', () => {
         const zhCN = loadLocale('zh-CN');
         const en = loadLocale('en');
 
-        expect(zhCN.factions.new_round_table_knights?.name).toBe('新圆桌骑士');
-        expect(zhCN.factions.new_goblins?.name).toBe('新哥布林');
-        expect(en.factions.new_round_table_knights?.name).toBe('New Round Table Knights');
-        expect(en.factions.new_goblins?.name).toBe('New Goblins');
+        expect(zhCN.factions.new_round_table_knights?.name).toBe('圆桌骑士');
+        expect(zhCN.factions.new_goblins?.name).toBe('哥布林');
+        expect(en.factions.new_round_table_knights?.name).toBe('Round Table Knights');
+        expect(en.factions.new_goblins?.name).toBe('Goblins');
 
         const expectedCardAndBaseIds = NEW_FACTIONS.flatMap(fixture => [
             ...Object.keys(fixture.expectedCardIndexes),

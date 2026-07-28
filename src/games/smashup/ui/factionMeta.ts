@@ -186,7 +186,6 @@ export const FACTION_METADATA: FactionMeta[] = [
         descriptionKey: 'factions.new_round_table_knights.description',
         implementationStatus: 'in_progress',
         locales: ['zh-CN'],
-        expansion: 'diy',
     },
     {
         id: SMASHUP_FACTION_IDS.NEW_GOBLINS,
@@ -197,7 +196,6 @@ export const FACTION_METADATA: FactionMeta[] = [
         mechanicRule: POWER_COUNTER_MECHANIC_RULE,
         implementationStatus: 'in_progress',
         locales: ['zh-CN'],
-        expansion: 'diy',
     },
     { id: SMASHUP_FACTION_IDS.PALADINS, nameKey: 'factions.paladins.name', icon: Sword, color: '#2563eb', descriptionKey: 'factions.paladins.description', expansion: 'diy' },
     { id: SMASHUP_FACTION_IDS.PRINCESSES, nameKey: 'factions.princesses.name', icon: Wand2, color: '#f59eb8', descriptionKey: 'factions.princesses.description' },
