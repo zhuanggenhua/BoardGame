@@ -19,6 +19,8 @@ import {
     replaceDeferredPostScoringReplacementBase,
 } from './scoringSession';
 import type {
+    ActionCardDef,
+    FusionCardDef,
     SmashUpCore,
     SmashUpEvent,
     SmashUpReactionPhase,
@@ -27,10 +29,11 @@ import type {
     TriggerInstance,
 } from './types';
 import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId } from './types';
+import { getActionPlayTargetMode } from './playLegality';
 
-type ReactionChoiceValue =
+export type ReactionChoiceValue =
     | { kind: 'trigger'; triggerId: string }
-    | { kind: 'play_action'; playerId: PlayerId; cardUid: string; targetBaseIndex?: number }
+    | { kind: 'play_action'; playerId: PlayerId; cardUid: string; targetBaseIndex?: number; targetMinionUid?: string }
     | { kind: 'play_minion'; playerId: PlayerId; cardUid: string; baseIndex: number }
     | { kind: 'activate_special'; playerId: PlayerId; baseIndex: number; minionUid?: string; titanUid?: string }
     | { kind: 'pass' };
@@ -271,6 +274,12 @@ function clearSmashUpReactionSession(state: MatchState<SmashUpCore>): MatchState
 function buildReactionSourceNameLabel(defId: string): string {
     const source = getCardDef(defId) ?? getBaseDef(defId);
     return source ? `cards.${defId}.name` : defId;
+}
+
+function isActionLikeCardDef(def: unknown): def is ActionCardDef | FusionCardDef {
+    return !!def
+        && typeof def === 'object'
+        && (((def as { type?: string }).type === 'action') || ((def as { type?: string }).type === 'fusion'));
 }
 
 function buildTriggerLabel(trigger: TriggerInstance): string {
@@ -608,6 +617,7 @@ function buildPlayableCardOptions(
 
     for (const card of player.hand) {
         for (const targetBaseIndex of eligibleBaseIndices) {
+            const def = getCardDef(card.defId);
             const minionValidation = validate(probeState, {
                 type: SU_COMMANDS.PLAY_MINION,
                 playerId,
@@ -618,7 +628,6 @@ function buildPlayableCardOptions(
                 timestamp: now,
             } as any);
             if (minionValidation.valid) {
-                const def = getCardDef(card.defId);
                 options.push({
                     id: `play_minion:${card.uid}:${targetBaseIndex}`,
                     label: `${def?.name ?? card.defId} -> 基地 ${targetBaseIndex + 1}`,
@@ -637,33 +646,63 @@ function buildPlayableCardOptions(
                 });
             }
 
-            const actionValidation = validate(probeState, {
-                type: SU_COMMANDS.PLAY_ACTION,
-                playerId,
-                payload: {
-                    cardUid: card.uid,
-                    targetBaseIndex,
-                },
-                timestamp: now,
-            } as any);
-            if (actionValidation.valid) {
-                const def = getCardDef(card.defId);
-                options.push({
-                    id: `play_action:${card.uid}:${targetBaseIndex}`,
-                    label: `${def?.name ?? card.defId} -> 基地 ${targetBaseIndex + 1}`,
-                    labelKey: 'ui.reaction_choose_play_to_base',
-                    labelParams: {
-                        name: buildReactionSourceNameLabel(card.defId),
-                        baseNumber: targetBaseIndex + 1,
-                    },
-                    value: {
-                        kind: 'play_action',
+            if (isActionLikeCardDef(def) && getActionPlayTargetMode(def) === 'minion') {
+                const targetBase = probeState.core.bases[targetBaseIndex];
+                for (const targetMinion of targetBase?.minions ?? []) {
+                    const actionValidation = validate(probeState, {
+                        type: SU_COMMANDS.PLAY_ACTION,
                         playerId,
+                        payload: {
+                            cardUid: card.uid,
+                            targetBaseIndex,
+                            targetMinionUid: targetMinion.uid,
+                        },
+                        timestamp: now,
+                    } as any);
+                    if (!actionValidation.valid) continue;
+
+                    const targetDef = getCardDef(targetMinion.defId);
+                    options.push({
+                        id: `play_action:${card.uid}:${targetBaseIndex}:${targetMinion.uid}`,
+                        label: `${def.name ?? card.defId} -> ${targetDef?.name ?? targetMinion.defId}（基地 ${targetBaseIndex + 1}）`,
+                        value: {
+                            kind: 'play_action',
+                            playerId,
+                            cardUid: card.uid,
+                            targetBaseIndex,
+                            targetMinionUid: targetMinion.uid,
+                        },
+                        displayMode: 'button',
+                    });
+                }
+            } else {
+                const actionValidation = validate(probeState, {
+                    type: SU_COMMANDS.PLAY_ACTION,
+                    playerId,
+                    payload: {
                         cardUid: card.uid,
                         targetBaseIndex,
                     },
-                    displayMode: 'button',
-                });
+                    timestamp: now,
+                } as any);
+                if (actionValidation.valid) {
+                    options.push({
+                        id: `play_action:${card.uid}:${targetBaseIndex}`,
+                        label: `${def?.name ?? card.defId} -> 基地 ${targetBaseIndex + 1}`,
+                        labelKey: 'ui.reaction_choose_play_to_base',
+                        labelParams: {
+                            name: buildReactionSourceNameLabel(card.defId),
+                            baseNumber: targetBaseIndex + 1,
+                        },
+                        value: {
+                            kind: 'play_action',
+                            playerId,
+                            cardUid: card.uid,
+                            targetBaseIndex,
+                        },
+                        displayMode: 'button',
+                    });
+                }
             }
         }
 
@@ -822,7 +861,8 @@ function isSameReactionChoiceValue(left: ReactionChoiceValue, right: ReactionCho
         case 'play_action':
             return left.playerId === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).playerId
                 && left.cardUid === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).cardUid
-                && left.targetBaseIndex === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).targetBaseIndex;
+                && left.targetBaseIndex === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).targetBaseIndex
+                && left.targetMinionUid === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).targetMinionUid;
         case 'play_minion':
             return left.playerId === (right as Extract<ReactionChoiceValue, { kind: 'play_minion' }>).playerId
                 && left.cardUid === (right as Extract<ReactionChoiceValue, { kind: 'play_minion' }>).cardUid
@@ -1089,6 +1129,7 @@ function executeReactionCommand(
             payload: {
                 cardUid: value.cardUid,
                 ...(value.targetBaseIndex !== undefined ? { targetBaseIndex: value.targetBaseIndex } : {}),
+                ...(value.targetMinionUid ? { targetMinionUid: value.targetMinionUid } : {}),
             },
             timestamp: now,
         }

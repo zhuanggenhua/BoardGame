@@ -68,6 +68,7 @@ import { registerAnansiTalesAbilities } from './anansi_tales';
 import { registerGrimmsFairyTalesAbilities, registerGrimmsFairyTalesInteractionHandlers } from './grimms_fairy_tales';
 import { registerRussianFairyTalesAbilities, registerRussianFairyTalesInteractionHandlers } from './russian_fairy_tales';
 import { registerAncientIncasAbilities, registerAncientIncasInteractionHandlers } from './ancient_incas';
+import { registerPolynesianVoyagersAbilities } from './polynesian_voyagers';
 import { registerExcellentMoviesTeensAbilities } from './excellent_movies_teens';
 import { registerDiyKillersAbilities } from './diy_killers';
 import { registerDiyClownsAbilities } from './diy_clowns';
@@ -218,6 +219,7 @@ export function initAllAbilities(): void {
     registerRussianFairyTalesInteractionHandlers();
     registerAncientIncasAbilities();
     registerAncientIncasInteractionHandlers();
+    registerPolynesianVoyagersAbilities();
     registerExcellentMoviesTeensAbilities();
     registerDiyKillersAbilities();
     registerDiyClownsAbilities();

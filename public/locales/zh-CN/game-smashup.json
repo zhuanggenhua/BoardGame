@@ -2082,6 +2082,10 @@
     "wraithrustlers": {
       "name": "怨灵捕手",
       "description": "以怨灵行动附着基地、摧毁行动和转移行动制造节奏。"
+    },
+    "polynesian_voyagers": {
+      "name": "波利尼西亚航海者",
+      "description": "用纹身、航路和新基地扩张版图，在无人驻守的基地之间移动并堆叠力量指示物。"
     }
   },
   "tutorial": {
@@ -10837,6 +10841,66 @@
     "base_wraithrustlers_hq": {
       "name": "怨灵捕手总部",
       "abilityText": "临界点 20 - VP：4/2/1 - 获胜者在其下个回合可以打出 1 张额外行动或 1 个额外佣兵。"
+    },
+    "polynesian_voyagers_growth_of_the_tribes": {
+      "name": "部落的成长",
+      "effectText": "选择一个你没有随从的基地。你可以在那里额外打出一个随从，或将你的一个随从移动到那里。"
+    },
+    "polynesian_voyagers_knowledge_of_the_tribes": {
+      "name": "部落的知识",
+      "effectText": "你在每个有你随从的基地各抽一张牌。"
+    },
+    "polynesian_voyagers_moai": {
+      "name": "莫艾",
+      "abilityText": "持续：其他玩家不能将他们的随从移动到这个基地，也不能将此随从移动到其他基地。"
+    },
+    "polynesian_voyagers_tiki": {
+      "name": "蒂基",
+      "abilityText": "持续：若此随从上有行动，此随从获得 +2 力量。"
+    },
+    "polynesian_voyagers_wayfinder": {
+      "name": "寻路者",
+      "abilityText": "天赋：将此随从移动到一个你没有随从的基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_maui": {
+      "name": "毛伊人",
+      "abilityText": "将基地牌库顶至多两张牌打出。天赋：将你的一个随从移动到一个你没有随从的基地。"
+    },
+    "polynesian_voyagers_ocean_tattoo": {
+      "name": "海洋纹身",
+      "effectText": "打在一个没有其他玩家随从的基地上你的随从身上。天赋：将此随从移动到另一个基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_tattoo_artist": {
+      "name": "纹身艺术家",
+      "effectText": "从你的牌库和/或弃牌堆寻找一张可以打在随从上的行动，将其加入手牌，或作为额外行动打出。"
+    },
+    "polynesian_voyagers_unity_of_the_tribes": {
+      "name": "部落的统一",
+      "effectText": "选择一个有你随从的基地。每个有你至少一个随从的基地上，你的每个随从直到回合结束获得 +2 力量。"
+    },
+    "polynesian_voyagers_volcanic_uprising": {
+      "name": "火山爆发",
+      "effectText": "打出基地牌库顶牌。然后你可以将你的一个随从移动到那里。或者，摧毁一个没有玩家随从的基地，然后以两个基地取代它。"
+    },
+    "polynesian_voyagers_shark_tattoo": {
+      "name": "鲨鱼纹身",
+      "effectText": "打在你的一个随从身上。在其上放置一个 +1 力量指示物。持续：你的回合开始时，若这里只存在你一个随从，在此随从上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_sun_tattoo": {
+      "name": "太阳纹身",
+      "effectText": "打在你的一个随从身上。持续：此随从获得 +2 力量。特殊：基地计分后，你可以将此牌打在该基地上一个没有行动的你的随从身上，并将该随从移动到另一个基地，而不是放入弃牌堆。"
+    },
+    "base_island_chain": {
+      "name": "岛链",
+      "abilityText": "此基地计分后，打出基地牌库顶牌作为一个额外基地。"
+    },
+    "base_island_peak": {
+      "name": "岛峰",
+      "abilityText": "你的回合开始时，若你在这里正好有一个随从，在其上放置一个 +1 力量指示物。"
+    },
+    "base_tropical_paradise": {
+      "name": "热带天堂",
+      "abilityText": "若每位玩家在这里都有一个或更多随从，此基地的起始断点为 0。"
     }
   },
   "debug": {
