@@ -1236,6 +1236,10 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         fromDiscard?: boolean;
         /** 从暂存区打出 */
         fromStored?: boolean;
+        /** 从弃牌堆打出的能力来源，用于 once/turn 与替代去向结算。 */
+        discardPlaySourceId?: string;
+        /** false 表示不消耗常规行动额度。 */
+        consumesNormalLimit?: boolean;
         /** 行动目标基地（持续行动、特殊行动、目标随从行动均可携带） */
         targetBaseIndex?: number;
         targetType?: 'base' | 'minion';

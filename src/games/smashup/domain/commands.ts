@@ -25,6 +25,7 @@ import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
 import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility, type BaseAbilityContext } from './baseAbilities';
 import {
+    getActionPlayTargetMode,
     getActionPlayRestrictionError,
     validateActionPlaySemantics,
     validateDiscardMinionPlaySemantics,
@@ -735,9 +736,6 @@ export function validate(
             if (fromDiscard && fromStored) {
                 return { valid: false, error: '不能同时从弃牌堆和暂存区打出行动卡' };
             }
-            if (!fromStored && player.actionsPlayed >= player.actionLimit) {
-                return { valid: false, error: '本回合行动额度已用完' };
-            }
             const card = fromStored
                 ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
                 : fromDiscard
@@ -755,15 +753,21 @@ export function validate(
             }
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return { valid: false, error: '卡牌定义不存在' };
+            let discardActionPlay: ReturnType<typeof canPlayActionFromDiscard> | null = null;
             if (fromDiscard) {
                 const targetBaseIndex = command.payload.targetBaseIndex;
                 const targetMinionUid = command.payload.targetMinionUid;
-                if (typeof targetBaseIndex !== 'number' || !targetMinionUid) {
-                    return { valid: false, error: '从弃牌堆打出该行动需要选择合法的基地和随从目标' };
+                const targetMode = getActionPlayTargetMode(def);
+                if (targetMode !== 'none' && typeof targetBaseIndex !== 'number') {
+                    return { valid: false, error: '从弃牌堆打出该行动需要选择合法的基地目标' };
                 }
-                if (!canPlayActionFromDiscard(core, command.playerId, card.uid, targetBaseIndex, targetMinionUid)) {
+                discardActionPlay = canPlayActionFromDiscard(core, command.playerId, card.uid, targetBaseIndex, targetMinionUid);
+                if (!discardActionPlay) {
                     return { valid: false, error: '该行动当前不能从弃牌堆以该目标打出' };
                 }
+            }
+            if (!fromStored && player.actionsPlayed >= player.actionLimit && (!fromDiscard || discardActionPlay?.consumesNormalLimit !== false)) {
+                return { valid: false, error: '本回合行动额度已用完' };
             }
             return validateActionPlaySemantics(core, command.playerId, {
                 defId: card.defId,

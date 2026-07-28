@@ -12,6 +12,8 @@ type BuildActionPlayedEventParams = {
     fromBuried?: boolean;
     fromDiscard?: boolean;
     fromStored?: boolean;
+    discardPlaySourceId?: string;
+    consumesNormalLimit?: boolean;
     targetBaseIndex?: number;
     targetMinionUid?: string;
     sourceCommandType?: string;
@@ -28,6 +30,8 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
         fromBuried,
         fromDiscard,
         fromStored,
+        discardPlaySourceId,
+        consumesNormalLimit,
         targetBaseIndex,
         targetMinionUid,
         sourceCommandType,
@@ -44,6 +48,8 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
             ...(fromBuried ? { fromBuried: true } : {}),
             ...(fromDiscard ? { fromDiscard: true } : {}),
             ...(fromStored ? { fromStored: true } : {}),
+            ...(discardPlaySourceId ? { discardPlaySourceId } : {}),
+            ...(consumesNormalLimit === false ? { consumesNormalLimit: false } : {}),
             ...(targetBaseIndex !== undefined
                 ? {
                     targetBaseIndex,

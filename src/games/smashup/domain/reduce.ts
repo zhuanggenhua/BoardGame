@@ -775,7 +775,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ACTION_PLAYED: {
-            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, fromStored, ownerId } = event.payload as any;
+            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, fromStored, ownerId, discardPlaySourceId, consumesNormalLimit } = event.payload as any;
             const player = state.players[playerId];
             const card = fromStored
                 ? player.storedCards?.find(c => c.uid === cardUid)
@@ -822,6 +822,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     buriedCards: (b.buriedCards ?? []).filter(x => x.uid !== cardUid),
                 }))
                 : state.bases;
+            const newUsedAbilities = fromDiscard && discardPlaySourceId
+                ? Array.from(new Set([...(player.usedDiscardPlayAbilities ?? []), discardPlaySourceId]))
+                : player.usedDiscardPlayAbilities;
             const nextPlayers = {
                 ...state.players,
                 [playerId]: {
@@ -832,7 +835,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         ? targetDiscard
                         : sourceDiscard,
                     // Special 卡和额外行动不消耗行动额度
-                    actionsPlayed: (isSpecial || isExtraAction) ? player.actionsPlayed : player.actionsPlayed + 1,
+                    actionsPlayed: (isSpecial || isExtraAction || consumesNormalLimit === false) ? player.actionsPlayed : player.actionsPlayed + 1,
+                    usedDiscardPlayAbilities: newUsedAbilities,
                     actionCardsPlayedThisTurn: (player.actionCardsPlayedThisTurn ?? 0) + 1,
                     extraCardsPlayedThisTurn: wasExtraActionPlay
                         ? (player.extraCardsPlayedThisTurn ?? 0) + 1

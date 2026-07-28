@@ -227,6 +227,42 @@
     "mythic_horses_friendship_power_top_title": "Friendship Power: put this action on top of your deck?",
     "mythic_horses_friendship_power_top_option": "Put it on top of your deck",
     "mythic_horses_friendship_power_discard_option": "Leave it in the discard pile",
+    "diy_clowns_banana_peel_title": "Banana Peel: choose the source base",
+    "diy_clowns_banana_peel_minions_title": "Banana Peel: choose up to two of your minions to move",
+    "diy_clowns_banana_peel_base_title": "Banana Peel: choose the destination base",
+    "diy_clowns_clown_car_title": "Clown Car: choose one of your minions to move here",
+    "diy_clowns_clown_pyramid_title": "Clown Pyramid: choose one of your minions to gain +2 power",
+    "diy_clowns_colorful_scarf_title": "Colorful Scarf: choose an action to transfer",
+    "diy_clowns_confetti_bucket_title": "Confetti Bucket: choose a minion to return to hand",
+    "diy_clowns_pie_in_the_face_title": "Pie in the Face: choose an opponent to discard an action",
+    "diy_clowns_clown_girl_title": "Clown Girl: choose an extra action to play",
+    "diy_clowns_mcdonald_clown_title": "McDonald Clown: choose a revealed action to put into your hand",
+    "base_diy_clowns_circus_tent_title": "Circus Tent: discard the revealed action card?",
+    "base_diy_clowns_circus_tent_discard_option": "Discard the action",
+    "base_diy_clowns_circus_tent_keep_option": "Put it back on top",
+    "diy_killers_chacha_choose_minion_title": "Ch-Ch-Ch Ha-Ha-Ha: choose one of your minions to move",
+    "diy_killers_chacha_choose_base_title": "Ch-Ch-Ch Ha-Ha-Ha: choose the destination base",
+    "diy_killers_cha_cha_cha_ha_ha_ha_followup_followup_title": "Choose the follow-up effect",
+    "diy_killers_followup_deck_top_option": "Put on top of deck",
+    "diy_killers_followup_extra_action_option": "Play an extra action",
+    "diy_killers_good_boy_title": "He's a Good Boy!: choose a minion to recover",
+    "diy_killers_is_it_over_title": "Is It Over?: choose an attached action to recover and play as an extra action",
+    "diy_killers_signature_search_title": "Killer: choose whether to draw the signature equipment",
+    "diy_killers_oh_no_title": "Oh No!!!: choose one of your minions to gain +3 power",
+    "diy_killers_laundry_room_destroy_title": "Hiding in the Laundry Room: choose whether to destroy the attached minion",
+    "diy_killers_laundry_room_escape_title": "Hiding in the Laundry Room: discard and move this minion, or let it face destruction",
+    "diy_killers_savage_attack_title": "Savage Attack: choose a printed power 3 or less minion to destroy",
+    "diy_killers_savage_attack_boost_title": "Savage Attack: choose a Killer to gain +3 power",
+    "diy_killers_machete_title": "Machete: choose the destination base",
+    "diy_killers_freddy_krueger_destroy_title": "Freddy Krueger: choose whether to destroy a power 1 or less minion",
+    "diy_killers_clawed_glove_title": "Clawed Glove: choose a minion to get -1 power",
+    "diy_killers_pinhead_title": "Pinhead: transfer an action or destroy a minion with Hell Puzzle Box",
+    "diy_killers_leatherface_destroy_title": "Leatherface: choose whether to destroy a power 3 or less minion",
+    "diy_killers_jason_destroy_title": "Jason: choose whether to destroy a power 3 or less minion",
+    "diy_killers_chainsaw_move_title": "Chainsaw: choose whether to move the host",
+    "diy_killers_michael_myers_title": "Michael Myers: choose whether to destroy a printed power 3 or less minion",
+    "base_diy_killers_camp_crystal_lake_power_title": "Camp Crystal Lake: choose a minion to gain power",
+    "base_diy_killers_camp_crystal_lake_destroy_title": "Camp Crystal Lake: choose whether to destroy a minion here",
     "reaction_choose_mandatory_title": "Choose the mandatory effect to resolve first",
     "reaction_choose_optional_title": "Choose a reaction",
     "titan_reaction_click_prompt": "Click a highlighted titan to resolve it, or pass",
@@ -1923,6 +1959,14 @@
     "all_stars": {
       "name": "All-Stars",
       "description": "A classic-card all-star roster focused on card draw, discard recovery, and extra plays."
+    },
+    "diy_killers": {
+      "name": "Killers (DIY)",
+      "description": "DIY faction built around destroy effects, temporary power, and slasher-horror tempo. Static intake is wired; full gameplay handlers are still in progress."
+    },
+    "diy_clowns": {
+      "name": "Clowns (DIY)",
+      "description": "DIY faction built around discard-pile action plays, draws, and prank tempo. Static intake is wired; full gameplay handlers are still in progress."
     },
     "rock_stars": {
       "name": "Rock Stars",
@@ -9162,6 +9206,150 @@
     "base_ringside": {
       "name": "Ringside",
       "abilityText": "After you play an action that directly affects another player's minion here, draw a card."
+    },
+    "diy_killers_leatherface": {
+      "name": "Leatherface",
+      "abilityText": "You may draw Chainsaw from your deck or discard pile.\nOngoing: Once per turn, after you place a +1 power counter on this minion, you may destroy a minion of power 3 or less here."
+    },
+    "diy_killers_freddy_krueger": {
+      "name": "Freddy Krueger",
+      "abilityText": "You may draw Clawed Glove from your deck or discard pile.\nTalent: Until the start of your next turn, other players' minions here get -1 power. You may destroy a minion of power 1 or less here."
+    },
+    "diy_killers_jason": {
+      "name": "Jason",
+      "abilityText": "You may draw Machete from your deck or discard pile.\nOngoing: Once per turn, after this minion moves, you may destroy a minion of power 3 or less there and gain +2 power until the end of the turn."
+    },
+    "diy_killers_michael_myers": {
+      "name": "Michael Myers",
+      "abilityText": "You may draw Captain Kirk Mask from your deck or discard pile.\nSpecial: Before this base scores, you may destroy a minion with printed power 3 or less here."
+    },
+    "diy_killers_pinhead": {
+      "name": "Pinhead",
+      "abilityText": "You may draw Hell Puzzle Box from your deck or discard pile.\nTalent: Move one of your actions to another minion, OR destroy a minion with Hell Puzzle Box on it."
+    },
+    "diy_killers_captain_kirk_mask": {
+      "name": "Captain Kirk Mask",
+      "effectText": "Play on your minion.\nOngoing: After one or more minions here are destroyed, this minion gains the total power of the destroyed minions until the end of the turn."
+    },
+    "diy_killers_savage_attack": {
+      "name": "Savage Attack",
+      "effectText": "You may destroy a minion with printed power 3 or less at a base where you have a minion. Then you may have a Killer there gain +3 power until the end of the turn."
+    },
+    "diy_killers_cha_cha_cha_ha_ha_ha": {
+      "name": "Ch-Ch-Ch Ha-Ha-Ha",
+      "effectText": "Move one of your minions. You may place this card on top of your deck instead of into your discard pile, OR play an extra action."
+    },
+    "diy_killers_chainsaw": {
+      "name": "Chainsaw",
+      "effectText": "Play on your minion.\nOngoing: At the start of your turn, place a +1 power counter on this minion. After a minion is destroyed, you may move this minion to that base or from that base to another base."
+    },
+    "diy_killers_clawed_glove": {
+      "name": "Clawed Glove",
+      "effectText": "Play on your minion.\nTalent: A minion here gets -1 power until the start of your next turn.\nOngoing: After one or more minions here are destroyed, place a +1 power counter on this minion."
+    },
+    "diy_killers_good_boy": {
+      "name": "He's a Good Boy!",
+      "effectText": "Place a minion from your discard pile into your hand, then play an extra action."
+    },
+    "diy_killers_laundry_room": {
+      "name": "Hiding in the Laundry Room",
+      "effectText": "Play on another player's minion. Play an extra action.\nOngoing: After a Killer is played or moved here, unless its controller discards a card and then moves this minion to a base without a Killer, you may destroy this minion."
+    },
+    "diy_killers_improvised_weapon": {
+      "name": "Improvised Weapon",
+      "effectText": "Draw an action from your deck that is played on a minion. You may play it as an extra action; destroy it at the end of the turn."
+    },
+    "diy_killers_machete": {
+      "name": "Machete",
+      "effectText": "Play on your minion.\nTalent: Move this minion to a base with another player's minion.\nOngoing: After one or more minions here are destroyed, each of your minions here gains +1 power until the end of the turn. At the end of the turn, if this minion destroyed a minion this turn, return this card to your hand."
+    },
+    "diy_killers_oh_no": {
+      "name": "Oh No!!!",
+      "effectText": "One of your minions gains +3 power until the end of the turn.\nSpecial: After you destroy another player's minion, you may play this card as an extra action."
+    },
+    "diy_killers_origin_story": {
+      "name": "Origin Story",
+      "effectText": "Draw a minion from the top of your deck, or if you have no Killer in play, draw a Killer from the top of your deck. Play an extra action."
+    },
+    "diy_killers_hell_puzzle_box": {
+      "name": "Hell Puzzle Box",
+      "effectText": "Play on your minion.\nOngoing: If this minion is not controlled by you, cancel its ability. After one or more minions are destroyed, draw a card."
+    },
+    "diy_killers_is_it_over": {
+      "name": "Is It Over?",
+      "effectText": "Draw an action from your discard pile that is played on a minion. You may play it as an extra action."
+    },
+    "base_diy_killers_camp_crystal_lake": {
+      "name": "Camp Crystal Lake",
+      "abilityText": "After you destroy a minion here, a minion here gains the total power of the destroyed minion until the end of the turn. Once per turn, after you play a card, you may destroy a minion here with power no greater than the number of your cards at this base."
+    },
+    "base_diy_killers_nightmare_world": {
+      "name": "Nightmare World",
+      "abilityText": "Before this base scores, destroy the minion here with the lowest power. If multiple minions are tied for lowest power, destroy all of those minions."
+    },
+    "diy_clowns_slapstick_clown": {
+      "name": "Slapstick Clown",
+      "abilityText": "Ongoing: You may play a standard action from your discard pile instead of your regular action play, then place it on the bottom of your deck instead of into your hand or discard pile."
+    },
+    "diy_clowns_mrs_clown": {
+      "name": "Mrs. Clown",
+      "abilityText": "Ongoing: Once per turn, after you play an action, you may draw a card."
+    },
+    "diy_clowns_dancing_clown": {
+      "name": "Dancing Clown",
+      "abilityText": "Talent: If your discard pile has at least two standard actions, choose one of them at random. You may play it as an extra action, then place it on the bottom of your deck instead of into your hand or discard pile."
+    },
+    "diy_clowns_mcdonald_clown": {
+      "name": "McDonald's Clown",
+      "abilityText": "Reveal cards from the top of your deck until you reveal two actions. Draw one and discard the other. Shuffle the rest into your deck."
+    },
+    "diy_clowns_silent_clown": {
+      "name": "Silent Clown",
+      "abilityText": "If you have not played an action this turn, you may choose a standard action in your discard pile, play it as an extra action, then place it on the bottom of your deck instead of into your hand or discard pile."
+    },
+    "diy_clowns_clown_girl": {
+      "name": "Clown Girl",
+      "abilityText": "You may search your deck for an action card, then discard it."
+    },
+    "diy_clowns_banana_peel": {
+      "name": "Banana Peel",
+      "effectText": "Move up to two of your minions from one base to another base. If this card was played from your discard pile, you may play an extra action."
+    },
+    "diy_clowns_clown_car": {
+      "name": "Clown Car",
+      "effectText": "Shuffle up to two cards from your discard pile into your deck. If this card was played from your discard pile, you may play an extra action."
+    },
+    "diy_clowns_jack_in_the_box": {
+      "name": "Jack-in-the-Box",
+      "effectText": "Play an extra minion of power 3 or less. If this card was played from your discard pile, the minion you may play can be power 4 or less instead."
+    },
+    "diy_clowns_clown_pyramid": {
+      "name": "Clown Pyramid",
+      "effectText": "Each of your minions on this base lets one of your minions here gain +1 power until the end of the turn. You may play an extra action."
+    },
+    "diy_clowns_colorful_scarf": {
+      "name": "Colorful Scarf",
+      "effectText": "Draw two cards. If this card was played from your discard pile, you may discard a card to draw an extra card."
+    },
+    "diy_clowns_confetti_bucket": {
+      "name": "Confetti Bucket",
+      "effectText": "Discard up to four cards from your hand, then draw the same number of cards."
+    },
+    "diy_clowns_juggling": {
+      "name": "Juggling",
+      "effectText": "Each player looks at the top three cards of their deck, discards one action among them or reveals them to prove there are no actions, then returns them in the same order."
+    },
+    "diy_clowns_pie_in_the_face": {
+      "name": "Pie in the Face",
+      "effectText": "One of your minions gains +2 power until the end of the turn. If this card was played from your discard pile, that minion gains +4 power instead."
+    },
+    "base_diy_clowns_clown_academy": {
+      "name": "Clown Academy",
+      "abilityText": "After the first time each turn you play a minion here, you may randomly place a standard action from your discard pile into your hand."
+    },
+    "base_diy_clowns_circus_tent": {
+      "name": "Circus Tent",
+      "abilityText": "After you play a minion here, reveal the top card of your deck. If it is an action card, you may discard it; otherwise return it."
     },
     "base_the_squared_circle": {
       "name": "The Squared Circle",
