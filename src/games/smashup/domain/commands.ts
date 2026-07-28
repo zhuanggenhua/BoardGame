@@ -670,12 +670,14 @@ export function validate(
                 }
 
                 const targetBase = command.payload.targetBaseIndex;
+                const targetMinionUid = command.payload.targetMinionUid;
 
+                const targetMode = getActionPlayTargetMode(rDef);
                 const needsBase = actionLikeNeedsResponseWindowBase(rDef);
                 if (!canCardBePlayedInResponseWindowForMatchState(state, rCard, reactionWindow.windowType)) {
                     return { valid: false, error: '该行动卡当前没有可执行的响应目标' };
                 }
-                if (needsBase) {
+                if (needsBase || targetMode === 'minion') {
                     if (typeof targetBase !== 'number' || !Number.isInteger(targetBase)) {
                         return { valid: false, error: '该行动卡需要选择一个达标基地' };
                     }
@@ -708,6 +710,24 @@ export function validate(
                     }
                 } else if (targetBase !== undefined) {
                     return { valid: false, error: '该行动卡不需要基地目标' };
+                }
+
+                if (targetMode === 'minion') {
+                    if (!targetMinionUid) {
+                        return { valid: false, error: '该行动卡需要选择目标随从' };
+                    }
+                    const targetBaseIndex = targetBase as number;
+                    const semanticsValidation = validateActionPlaySemantics(core, command.playerId, {
+                        defId: rCard.defId,
+                        targetBaseIndex,
+                        targetMinionUid,
+                        effectiveHandSize: rPlayer.hand.length,
+                    });
+                    if (!semanticsValidation.valid) {
+                        return semanticsValidation;
+                    }
+                } else if (targetMinionUid !== undefined) {
+                    return { valid: false, error: '该行动卡不需要选择随从目标' };
                 }
 
                 return { valid: true };
