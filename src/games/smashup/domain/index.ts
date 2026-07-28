@@ -2262,63 +2262,28 @@ function isGameOver(state: SmashUpCore): GameOverResult | undefined {
         return undefined;
     }
 
-    if (isSmashUpTwoVsTwoMode(state)) {
-        const rawTeamTotals = getSmashUpRawTeamVpTotals(state);
-        const candidateTeams = Object.entries(rawTeamTotals)
-            .filter(([, total]) => total >= TEAM_VP_TO_WIN_2V2)
-            .map(([teamId]) => teamId as import('./types').SmashUpTeamId);
-        if (candidateTeams.length === 0) {
-            return undefined;
-        }
+    const rawScores = Object.fromEntries(
+        state.turnOrder.map((pid) => [pid, state.players[pid]?.vp ?? 0]),
+    ) as Record<PlayerId, number>;
+    const highestRawScore = Math.max(...Object.values(rawScores));
+    if (highestRawScore < VP_TO_WIN) return undefined;
+    const rawLeaders = state.turnOrder.filter(pid => rawScores[pid] === highestRawScore);
+    if (rawLeaders.length !== 1) return undefined;
 
-        const scores = getScores(state);
-        const teamScores = getSmashUpTeamScores(state, scores);
-
-        if (candidateTeams.length === 1) {
-            const winners = getSmashUpTeamMembers(state, candidateTeams[0]);
-            return {
-                winner: winners[0],
-                winners,
-                scores,
-            };
-        }
-
-        const sortedTeams = [...candidateTeams].sort((left, right) => teamScores[right] - teamScores[left]);
-        if (teamScores[sortedTeams[0]] > teamScores[sortedTeams[1]]) {
-            const winners = getSmashUpTeamMembers(state, sortedTeams[0]);
-            return {
-                winner: winners[0],
-                winners,
-                scores,
-            };
-        }
-
-        return undefined;
-    }
-    const winners = state.turnOrder.filter(pid => state.players[pid]?.vp >= VP_TO_WIN);
-    if (winners.length === 0) return undefined;
-
-    // 璁＄畻鍚柉鐙傚崱鎯╃綒鐨勬渶缁堝垎鏁?
     const scores = getScores(state);
-
-    if (winners.length === 1) {
-        return { winner: winners[0], scores };
+    if (state.madnessDeck === undefined) {
+        return { winner: rawLeaders[0], scores };
     }
 
-    const sorted = winners.sort((a, b) => scores[b] - scores[a]);
-    if (scores[sorted[0]] > scores[sorted[1]]) {
-        return { winner: sorted[0], scores };
-    }
+    const highestScore = Math.max(...state.turnOrder.map(pid => scores[pid] ?? 0));
+    const finalists = state.turnOrder.filter(pid => scores[pid] === highestScore);
+    if (finalists.length === 1) return { winner: finalists[0], scores };
 
-    if (state.madnessDeck !== undefined) {
-        const madnessA = countMadnessCardsForPlayer(state, sorted[0]);
-        const madnessB = countMadnessCardsForPlayer(state, sorted[1]);
-        if (madnessA !== madnessB) {
-            return { winner: madnessA < madnessB ? sorted[0] : sorted[1], scores };
-        }
-    }
+    const minMadness = Math.min(...finalists.map(pid => countMadnessCardsForPlayer(state, pid)));
+    const winners = finalists.filter(pid => countMadnessCardsForPlayer(state, pid) === minMadness);
+    if (winners.length === 1) return { winner: winners[0], scores };
 
-    return undefined;
+    return { winner: winners[0], winners, scores };
 }
 
 export function getScores(state: SmashUpCore): Record<PlayerId, number> {
