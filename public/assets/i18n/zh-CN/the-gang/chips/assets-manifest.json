@@ -4,6 +4,15 @@
   "id": "chips",
   "basePrefix": "official/i18n/zh-CN/the-gang/chips/",
   "files": {
+    "compressed/exit-chip": {
+      "variants": {
+        "webp": {
+          "sha256": "bcbc29cae5c9ac06c97ca8bd4bf6d7536f86697cdf689d2d291cd35b09cb69c0",
+          "bytes": 82078,
+          "mime": "image/webp"
+        }
+      }
+    },
     "compressed/round-1-white-0": {
       "variants": {
         "webp": {
@@ -325,6 +334,15 @@
           "sha256": "b1453cb31856fc16bfde36225f13e8ad65d706518707939339ec6ccab5fdb4b3",
           "bytes": 83188,
           "mime": "image/webp"
+        }
+      }
+    },
+    "exit-chip": {
+      "variants": {
+        "png": {
+          "sha256": "04a4b7bce7052aa7b5ceba62cd014f3618275192df0908a9a7c6071ba76e6332",
+          "bytes": 312464,
+          "mime": "image/png"
         }
       }
     },

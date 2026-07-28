@@ -81,6 +81,7 @@ import { fireTriggers, collectTriggers } from './ongoingEffects';
 import { getEffectivePower } from './ongoingModifiers';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { canPlayFromDiscard } from './discardPlayability';
+import { canPlayActionFromDiscard } from './discardActionPlayability';
 import { reduce } from './reduce';
 import { buildAffectRecords, type AffectRecord } from './affect';
 import { buildActionPlayedEvent } from './actionPlayEvent';
@@ -177,10 +178,14 @@ function executeCommand(
     switch (command.type) {
         case SU_COMMANDS.PLAY_MINION: {
             const player = core.players[command.playerId];
-            const fromDiscard = command.payload.fromDiscard;
-            const card = fromDiscard
-                ? player.discard.find(c => c.uid === command.payload.cardUid)!
-                : player.hand.find(c => c.uid === command.payload.cardUid)!;
+            const fromDiscard = command.payload.fromDiscard === true;
+            const fromStored = command.payload.fromStored === true;
+            const card = fromStored
+                ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
+                : fromDiscard
+                    ? player.discard.find(c => c.uid === command.payload.cardUid)!
+                    : player.hand.find(c => c.uid === command.payload.cardUid)!;
+            if (!card) return state;
             const minionDef = getMinionDef(card.defId);
             const reactionWindow = getSmashUpReactionWindowContext(state);
             const baseIndex = command.payload.baseIndex;
@@ -199,10 +204,12 @@ function executeCommand(
                     baseDefId: core.bases[baseIndex].defId,
                     power: basePower,
                     fromDiscard: fromDiscard || undefined,
+                    fromStored: fromStored || undefined,
                     ...(fromDiscard ? (() => {
                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
                         return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
                     })() : {}),
+                    ...(fromStored ? { consumesNormalLimit: false } : {}),
                     // meFirst 响应窗口中打出 beforeScoringPlayable 随从不消耗正常额度
                     ...(reactionWindow?.windowType === 'meFirst' && (() => {
                         if (minionDef?.beforeScoringPlayable) return true;
@@ -260,9 +267,21 @@ function executeCommand(
 
             const player = workingState.core.players[command.playerId];
             const fromDiscard = command.payload.fromDiscard === true;
-            const card = (fromDiscard
+            const fromStored = command.payload.fromStored === true;
+            const card = (fromStored
+                ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
+                : fromDiscard
                 ? player.discard.find(c => c.uid === command.payload.cardUid)
                 : player.hand.find(c => c.uid === command.payload.cardUid))!;
+            const discardActionPlay = fromDiscard
+                ? canPlayActionFromDiscard(
+                    core,
+                    command.playerId,
+                    card.uid,
+                    command.payload.targetBaseIndex,
+                    command.payload.targetMinionUid,
+                )
+                : null;
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             const events: SmashUpEvent[] = [];
             let updatedState: MatchState<SmashUpCore> | undefined;
@@ -274,7 +293,11 @@ function executeCommand(
                 ownerId: card.owner,
                 targetBaseIndex: command.payload.targetBaseIndex,
                 targetMinionUid: command.payload.targetMinionUid,
+                isExtraAction: fromStored || discardActionPlay?.consumesNormalLimit === false || undefined,
                 fromDiscard,
+                fromStored,
+                discardPlaySourceId: discardActionPlay?.sourceId,
+                consumesNormalLimit: discardActionPlay?.consumesNormalLimit,
                 sourceCommandType: command.type,
                 timestamp: now,
             });
@@ -288,6 +311,7 @@ function executeCommand(
                 targetBaseIndex: command.payload.targetBaseIndex,
                 targetMinionUid: command.payload.targetMinionUid,
                 fromDiscard,
+                fromStored,
                 now,
             });
             const counterWindowState = maybeQueueActionCounterWindow(workingState, pendingResolution, now);
@@ -298,6 +322,19 @@ function executeCommand(
 
             const resolution = resolvePendingActionExecution(workingState, pendingResolution, random, now);
             events.push(...resolution.events);
+            if (fromDiscard && discardActionPlay?.sourceId.startsWith('diy_clowns_')) {
+                events.push({
+                    type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                    payload: {
+                        cardUid: card.uid,
+                        defId: card.defId,
+                        ownerId: card.owner,
+                        sourcePlayerId: command.playerId,
+                        reason: discardActionPlay.sourceId,
+                    },
+                    timestamp: now,
+                } as CardToDeckBottomEvent);
+            }
             if (resolution.state !== workingState) {
                 updatedState = resolution.state;
             }

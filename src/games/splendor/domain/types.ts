@@ -67,6 +67,7 @@ export const SPLENDOR_COMMANDS = {
     BUY_RESERVED_CARD: 'BUY_RESERVED_CARD',
     DISCARD_GEMS_TO_LIMIT: 'DISCARD_GEMS_TO_LIMIT',
     CHOOSE_NOBLE: 'CHOOSE_NOBLE',
+    PASS_TURN: 'PASS_TURN',
 } as const;
 
 export type HostStartGameCommand = Command<typeof SPLENDOR_COMMANDS.HOST_START_GAME, Record<string, never>>;
@@ -105,6 +106,8 @@ export type ChooseNobleCommand = Command<typeof SPLENDOR_COMMANDS.CHOOSE_NOBLE, 
     nobleId: string;
 }>;
 
+export type PassTurnCommand = Command<typeof SPLENDOR_COMMANDS.PASS_TURN, Record<string, never>>;
+
 export type SplendorCommand =
     | HostStartGameCommand
     | TakeThreeDifferentGemsCommand
@@ -114,7 +117,8 @@ export type SplendorCommand =
     | BuyOpenCardCommand
     | BuyReservedCardCommand
     | DiscardGemsToLimitCommand
-    | ChooseNobleCommand;
+    | ChooseNobleCommand
+    | PassTurnCommand;
 
 export const SPLENDOR_EVENTS = {
     HOST_STARTED: 'HOST_STARTED',
@@ -161,4 +165,5 @@ export type SplendorCommandMap = Record<string, unknown> & {
     BUY_RESERVED_CARD: { cardId: string };
     DISCARD_GEMS_TO_LIMIT: { color: TokenColor };
     CHOOSE_NOBLE: { nobleId: string };
+    PASS_TURN: Record<string, never>;
 };

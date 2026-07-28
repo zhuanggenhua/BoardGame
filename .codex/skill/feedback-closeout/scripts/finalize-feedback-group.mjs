@@ -11,7 +11,9 @@ function parseArgs(argv) {
         summaryPath: '',
         feedbackId: '',
         status: '',
-        closeDuplicates: true,
+        updateDuplicates: true,
+        closedReason: '',
+        resolvedMethod: '',
     };
 
     const positional = [];
@@ -25,8 +27,16 @@ function parseArgs(argv) {
             options.token = argv[++index] || options.token;
             continue;
         }
+        if (arg === '--closed-reason') {
+            options.closedReason = argv[++index] || '';
+            continue;
+        }
+        if (arg === '--resolved-method') {
+            options.resolvedMethod = argv[++index] || '';
+            continue;
+        }
         if (arg === '--keep-duplicates-open') {
-            options.closeDuplicates = false;
+            options.updateDuplicates = false;
             continue;
         }
         positional.push(arg);
@@ -53,14 +63,20 @@ function normalizeBaseUrl(baseUrl) {
     return baseUrl.replace(/\/+$/, '');
 }
 
-async function updateFeedbackStatus(baseUrl, token, id, status) {
+async function updateFeedbackStatus(baseUrl, token, id, status, details = {}) {
+    const closedReason = typeof details.closedReason === 'string' ? details.closedReason.trim() : '';
+    const resolvedMethod = typeof details.resolvedMethod === 'string' ? details.resolvedMethod.trim() : '';
     const response = await fetch(`${baseUrl}/admin/feedback/${id}/status`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+            status,
+            ...(closedReason ? { closedReason } : {}),
+            ...(resolvedMethod ? { resolvedMethod } : {}),
+        }),
     });
 
     if (!response.ok) {
@@ -87,13 +103,17 @@ async function main() {
         throw new Error(`summary.json 中找不到代表项: ${options.feedbackId}`);
     }
 
-    const primary = await updateFeedbackStatus(baseUrl, options.token, options.feedbackId, options.status);
+    const details = {
+        closedReason: options.closedReason,
+        resolvedMethod: options.resolvedMethod,
+    };
+    const primary = await updateFeedbackStatus(baseUrl, options.token, options.feedbackId, options.status, details);
     const duplicateResults = [];
 
-    if (options.closeDuplicates) {
+    if (options.updateDuplicates) {
         const duplicateIds = Array.isArray(group.duplicateIds) ? group.duplicateIds : [];
         for (const duplicateId of duplicateIds) {
-            const updated = await updateFeedbackStatus(baseUrl, options.token, duplicateId, 'closed');
+            const updated = await updateFeedbackStatus(baseUrl, options.token, duplicateId, options.status, details);
             duplicateResults.push({
                 feedbackId: duplicateId,
                 status: updated.status,
@@ -106,7 +126,8 @@ async function main() {
         feedbackId: options.feedbackId,
         finalStatus: primary.status,
         duplicateCount: Array.isArray(group.duplicateIds) ? group.duplicateIds.length : 0,
-        closeDuplicates: options.closeDuplicates,
+        updateDuplicates: options.updateDuplicates,
+        duplicateFinalStatus: options.updateDuplicates ? options.status : null,
         duplicates: duplicateResults,
     };
 

@@ -35,6 +35,7 @@ describe('theGangCriticalImageResolver', () => {
         const setupResult = theGangCriticalImageResolver(undefined);
         expect(setupResult.critical).toEqual(expect.arrayContaining([
             'the-gang/cards/card-back',
+            'the-gang/chips/exit-chip',
             'the-gang/chips/round-1-white-0',
             'the-gang/chips/round-1-white-1',
             'the-gang/chips/round-1-white-8',
@@ -52,6 +53,7 @@ describe('theGangCriticalImageResolver', () => {
         expect(playingResult.critical).toEqual(expect.arrayContaining([
             'the-gang/cards/ace-spades',
             'the-gang/cards/two-clubs',
+            'the-gang/chips/exit-chip',
         ]));
         expect(playingResult.phaseKey).toBe('the-gang:playing:chip-selection:1:0');
     });

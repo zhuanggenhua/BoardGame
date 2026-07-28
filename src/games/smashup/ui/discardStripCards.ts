@@ -5,6 +5,7 @@ import type { DiscardSpecialOption } from '../domain/discardSpecialAbilities';
 export type DiscardStripCardMode =
     | 'interaction'
     | 'play_minion'
+    | 'play_action'
     | 'play_action_minion'
     | 'activate_special_base'
     | 'activate_special_minion';
@@ -70,7 +71,7 @@ export function buildDiscardStripCards(params: {
             uid: opt.card.uid,
             defId: opt.defId,
             label: opt.name,
-            mode: 'play_action_minion' as const,
+            mode: opt.targetMode === 'none' ? 'play_action' as const : 'play_action_minion' as const,
         })),
         ...discardSpecialOptions.map(opt => ({
             uid: opt.card.uid,

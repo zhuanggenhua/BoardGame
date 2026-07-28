@@ -315,6 +315,9 @@ export function execute(
             return [...base, ...turnClosureEvents(preview, playerId, now)];
         }
 
+        case 'PASS_TURN':
+            return turnClosureEvents(core, playerId, now);
+
         default:
             return [];
     }

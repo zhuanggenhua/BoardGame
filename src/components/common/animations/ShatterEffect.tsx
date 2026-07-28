@@ -35,6 +35,14 @@ export interface ShatterEffectProps {
   rows?: number;
   /** 特效质量档：reduced 保留碎裂表现，但降低移动端 DPR 和碎片数 */
   quality?: FxQuality;
+  /** 碎片扩散倍率，默认 1 */
+  spreadScale?: number;
+  /** 碎片可见时长倍率，默认 1 */
+  durationScale?: number;
+  /** 淡出曲线，数值越低碎片越久可见，默认 2 */
+  fadePower?: number;
+  /** 碎片结束时最小缩放，默认 0.5 */
+  minScale?: number;
   /**
    * 直接传入图片源（推荐）：跳过 DOM 截取，避免 CORS/异步问题
    * 当提供此 prop 时，不再从 [data-shatter-target] 截取
@@ -189,6 +197,10 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
   cols: colsProp,
   rows: rowsProp,
   quality = 'full',
+  spreadScale = 1,
+  durationScale = 1,
+  fadePower = 2,
+  minScale = 0.5,
   imageSource,
   onStart,
   onComplete,
@@ -295,8 +307,8 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
     const cy = offsetY + contentH / 2;
 
     const shards: Shard[] = [];
-    const speedMul = isStrong ? 1.6 : 1;
-    const lifeMul = isStrong ? 1.3 : 1;
+    const speedMul = (isStrong ? 1.6 : 1) * spreadScale;
+    const lifeMul = (isStrong ? 1.3 : 1) * durationScale;
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -352,8 +364,8 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
         s.rotation += s.rotationSpeed * dt;
 
         // 淡出 + 缩小（模拟碎片消散）
-        const alpha = s.life * s.life; // 二次衰减
-        const scale = 0.5 + s.life * 0.5; // 从 1.0 缩到 0.5
+        const alpha = s.life ** fadePower;
+        const scale = minScale + s.life * (1 - minScale);
         if (alpha < 0.01) { s.life = 0; continue; }
 
         ctx.save();
@@ -379,7 +391,7 @@ export const ShatterEffect: React.FC<ShatterEffectProps> = ({
 
     rafRef.current = requestAnimationFrame(loop);
   // imageSource 通过 imageSourceRef 访问，不放入依赖（对象引用不稳定）
-  }, [isStrong, cols, rows, quality]);
+  }, [durationScale, fadePower, isStrong, cols, minScale, rows, quality, spreadScale]);
 
   useEffect(() => {
     if (!active) return;

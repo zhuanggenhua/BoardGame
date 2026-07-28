@@ -6,7 +6,7 @@
   "workers_dev": true,
   "vars": {
     "ORIGIN_BASE_URL": "https://assets-origin.easyboardgame.top",
-    "ORIGIN_TIMEOUT_MS": "1500"
+    "ORIGIN_TIMEOUT_MS": "10000"
   },
   "observability": {
     "enabled": true,

@@ -19,6 +19,7 @@ const PLAYER_COLORS: Record<string, { bg: string; border: string; text: string; 
   '0': { bg: '#F43F5E', border: '#fb7185', text: 'white', glow: 'rgba(244,63,94,0.4)' },
   '1': { bg: '#3B82F6', border: '#60a5fa', text: 'white', glow: 'rgba(59,130,246,0.4)' },
 };
+const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
 
 const getPlayerShortLabel = (t: TFunction, pid: string) => t('player.short', {
   id: pid === '0' ? 1 : 2,
@@ -95,6 +96,7 @@ export const CustomDeckCard: React.FC<CustomDeckCardProps> = ({
           ? 'border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.4)]'
           : 'border-white/10 hover:border-amber-400/40 shadow-xl'
       )}
+      style={{ aspectRatio: String(SUMMONER_WARS_CARD_ASPECT_RATIO) }}
       onClick={onSelect}
     >
       {/* 召唤师卡牌精灵图 */}

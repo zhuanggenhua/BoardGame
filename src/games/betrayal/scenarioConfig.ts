@@ -1,3 +1,5 @@
+import type { BetrayalMonsterDefinitionId } from './domain/monsterDefinitions';
+
 export type BetrayalTraitKey = 'might' | 'speed' | 'knowledge' | 'sanity';
 export type BetrayalInventoryKind = 'item' | 'omen';
 export type BetrayalDeckKind = 'event' | 'item' | 'omen';
@@ -10,7 +12,7 @@ export type BetrayalScenarioCardId =
     | 'blood-from-a-stone'
     | 'inheritance';
 export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'contract-pending';
-export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo';
+export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo' | 'haunt';
 export type BetrayalTraitorSelectionPolicy = 'last-explorer' | 'current-explorer';
 export type BetrayalSurvivorSelectionPolicy = 'all-non-traitor' | 'current-explorer-only';
 export type BetrayalRoomFloor = 'ground' | 'upper' | 'basement';
@@ -317,6 +319,7 @@ export function isBetrayalEventRuntimeSupported(event: BetrayalEventSeed): boole
 
 export interface BetrayalMonsterSeed {
     id: string;
+    definitionId?: BetrayalMonsterDefinitionId;
     name: string;
     portraitAsset: string;
     tokenAsset?: string;
@@ -350,7 +353,6 @@ export interface BetrayalScenarioConfig {
     hauntTitle: string;
     hauntTriggerLabel: string;
     presentation: {
-        referenceTitle: string;
         runtimeObjective: string;
         hauntObjective: string;
     };
@@ -376,6 +378,20 @@ export interface BetrayalScenarioCardCandidate {
     implementationStatus: BetrayalScenarioCardImplementationStatus;
     implementedScenarioId?: BetrayalScenarioId;
     sourcePath: string;
+}
+
+export interface BetrayalHauntRevealResolution {
+    scenarioCardId: BetrayalScenarioCardId;
+    scenarioCardTitle: string;
+    scenarioCardLabel: string;
+    expectedTriggerOmenLabel: string;
+    triggeringOmenId: string | null;
+    triggeringOmenName: string;
+    hauntCardNumber: number;
+    implementationStatus: BetrayalScenarioCardImplementationStatus;
+    implementedScenarioId?: BetrayalScenarioId;
+    triggerMatchesScenarioCard: boolean;
+    representativeOnly: boolean;
 }
 
 export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCandidate[] = [
@@ -466,6 +482,43 @@ export function resolveImplementedScenarioIdForCard(
     candidateId: BetrayalScenarioCardId,
 ): BetrayalScenarioId | undefined {
     return getBetrayalScenarioCardCandidate(candidateId).implementedScenarioId;
+}
+
+function normalizeHauntLookupLabel(label: string): string {
+    return label.trim().toLocaleLowerCase();
+}
+
+export function resolveBetrayalHauntRevealResolution({
+    scenarioCardId,
+    triggeringOmen,
+    hauntCardNumberOverride,
+}: {
+    scenarioCardId?: BetrayalScenarioCardId | null;
+    triggeringOmen?: { id?: string | null; name?: string | null } | null;
+    hauntCardNumberOverride?: number;
+}): BetrayalHauntRevealResolution {
+    const candidate = scenarioCardId && isBetrayalScenarioCardId(scenarioCardId)
+        ? getBetrayalScenarioCardCandidate(scenarioCardId)
+        : getBetrayalScenarioCardCandidate(DEFAULT_BETRAYAL_SCENARIO_CARD_ID);
+    const triggeringOmenName = triggeringOmen?.name?.trim() || candidate.triggerOmenLabel;
+    const hauntCardNumber = hauntCardNumberOverride ?? candidate.hauntNumber;
+    const triggerMatchesScenarioCard = normalizeHauntLookupLabel(triggeringOmenName)
+        === normalizeHauntLookupLabel(candidate.triggerOmenLabel)
+        && hauntCardNumber === candidate.hauntNumber;
+
+    return {
+        scenarioCardId: candidate.id,
+        scenarioCardTitle: candidate.title,
+        scenarioCardLabel: candidate.scenarioCardLabel,
+        expectedTriggerOmenLabel: candidate.triggerOmenLabel,
+        triggeringOmenId: triggeringOmen?.id ?? null,
+        triggeringOmenName,
+        hauntCardNumber,
+        implementationStatus: candidate.implementationStatus,
+        implementedScenarioId: candidate.implementedScenarioId,
+        triggerMatchesScenarioCard,
+        representativeOnly: candidate.implementationStatus !== 'implemented' || !triggerMatchesScenarioCard,
+    };
 }
 
 export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
@@ -1828,7 +1881,6 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
         hauntTitle: 'Crimson Jack Returns',
         hauntTriggerLabel: 'A Splash of Crimson',
         presentation: {
-            referenceTitle: '首剧本查阅',
             runtimeObjective: '恶兆前探索',
             hauntObjective: '击倒叛徒，释放并驱魔杰克之灵',
         },
@@ -1877,23 +1929,14 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
         runtimePreview: {
             monsters: [
                 {
-                    id: 'werewolf',
-                    name: '狼人',
-                    portraitAsset: 'betrayal/monsters/werewolf',
-                    tokenAsset: 'betrayal/tokens/monsters/werewolf',
-                    roomId: 'grand-staircase',
-                    might: 5,
-                    speed: 4,
-                    damage: 2,
-                },
-                {
-                    id: 'spirit',
-                    name: '幽灵',
+                    id: 'jack-spirit',
+                    definitionId: 'crimson-jack-spirit',
+                    name: '杰克之灵',
                     portraitAsset: 'betrayal/monsters/spirit',
                     tokenAsset: 'betrayal/tokens/monsters/ghost',
                     roomId: 'upper-landing',
-                    might: 4,
-                    speed: 5,
+                    might: 5,
+                    speed: 3,
                     damage: 1,
                 },
             ],

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameManifestEntry } from '../../games/manifest.types';
-import { OptimizedImage } from '../common/media/OptimizedImage';
+import { OptimizedImage, SHIMMER_BG } from '../common/media/OptimizedImage';
 import { resolveGameDisplayName } from './gameDetailsContent';
 
 // 响应式缩略图组件：自适应父容器大小
@@ -72,17 +72,28 @@ type ManifestGameThumbnailProps = {
 export const ManifestGameThumbnail = ({ manifest }: ManifestGameThumbnailProps) => {
     const { t } = useTranslation('lobby');
     const [imgFailed, setImgFailed] = React.useState(false);
+    const [imgLoaded, setImgLoaded] = React.useState(false);
     const title = resolveGameDisplayName(manifest, t, manifest.id);
+
+    React.useEffect(() => {
+        setImgFailed(false);
+        setImgLoaded(false);
+    }, [manifest.id, manifest.thumbnailPath]);
 
     if (!manifest.thumbnailPath || imgFailed) {
         return <DefaultGameThumbnail titleKey={manifest.titleKey} icon={manifest.icon} fallbackId={manifest.id} />;
     }
     return (
-        <div className="w-full h-full relative overflow-hidden bg-parchment-cream">
+        <div
+            className="w-full h-full relative overflow-hidden bg-parchment-cream"
+            style={imgLoaded ? undefined : SHIMMER_BG}
+        >
             <OptimizedImage
                 src={manifest.thumbnailPath}
                 alt={title}
                 className="absolute inset-0 w-full h-full object-cover"
+                placeholder={false}
+                onLoad={() => setImgLoaded(true)}
                 onError={() => setImgFailed(true)}
             />
         </div>

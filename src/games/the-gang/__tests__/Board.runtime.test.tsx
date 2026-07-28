@@ -210,7 +210,9 @@ const expectBggTableAnchors = () => {
     expect(document.querySelector('[data-bgg-zone="vaults-alarms-zone"]')).toBeInTheDocument();
     expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).toBeInTheDocument();
     expect(document.querySelector('[data-bgg-zone="player-tokens"]')).toBeInTheDocument();
-    expect(document.querySelector('[data-bgg-zone="hand-chips"]')).toBeInTheDocument();
+    expect(
+        document.querySelector('[data-bgg-zone="player-current-token"], [data-bgg-zone="player-token"], [data-bgg-zone="hand-chips"]'),
+    ).toBeInTheDocument();
 };
 
 const buildFourPlayerTwoHandFinalRoundCore = () => {
@@ -428,12 +430,14 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByTestId('the-gang-local-hand-bottom')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-local-hand-top').querySelectorAll('img')).toHaveLength(2);
         expect(screen.getByTestId('the-gang-local-hand-bottom').querySelectorAll('img')).toHaveLength(2);
-        expect(screen.getByText('board.topHand')).toBeInTheDocument();
-        expect(screen.getByText('board.bottomHand')).toBeInTheDocument();
+        expect(screen.getAllByText('board.topHand').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('board.bottomHand').length).toBeGreaterThan(0);
         expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveAttribute('data-rank-label', '三条');
         expect(screen.getByTestId('the-gang-local-hand-bottom-rank')).toHaveAttribute('data-rank-label', '一对');
         expect(screen.getByTestId('the-gang-local-hand-top-rank')).toHaveTextContent('三条');
         expect(screen.getByTestId('the-gang-local-hand-bottom-rank')).toHaveTextContent('一对');
+        expect(screen.getByTestId('the-gang-local-hand-top-rank')).not.toHaveTextContent('board.topHand');
+        expect(screen.getByTestId('the-gang-local-hand-bottom-rank')).not.toHaveTextContent('board.bottomHand');
     });
 
     test('单副手牌也在本地手牌区显示当前牌型提示', () => {
@@ -465,6 +469,24 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.queryByTestId('the-gang-local-hand-bottom-rank')).not.toBeInTheDocument();
     });
 
+    test('单副手牌自己的当前筹码挂在一副手牌上方', () => {
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const withLocalChip = reduceCommand(startHeistCore(initial), {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 2,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+
+        renderBoardForCore(withLocalChip);
+
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
+        expect(screen.queryByTestId('the-gang-player-chip-strip-0')).not.toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-top-chip-rail').querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
+    });
+
     test('手牌调换阶段点击上下真实手牌后才能确认，也可以跳过', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
@@ -480,9 +502,12 @@ describe('The Gang Board 运行入口', () => {
                 },
             },
             currentRoundChips: {
-                0: 1,
-                1: 2,
-                2: 3,
+                '0:top': 1,
+                '0:bottom': 2,
+                '1:top': 3,
+                '1:bottom': 4,
+                '2:top': 5,
+                '2:bottom': 6,
             },
             players: {
                 ...initial.players,
@@ -521,7 +546,13 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.queryByTestId('the-gang-opponent-hand-1-rows')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-opponent-hand-2-rows')).not.toBeInTheDocument();
         expect(document.querySelectorAll('[data-bgg-zone="top-zone"] img[alt="board.cardBackAlt"]')).toHaveLength(0);
-        expect(document.querySelectorAll('[data-bgg-zone="token-pile-current-chip"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="token-pile-current-chip"]')).toHaveLength(0);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(4);
+        expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(2);
+        expect(screen.getByTestId('the-gang-local-hand-top-chip-rail')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-bottom-chip-rail')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-player-chip-row-1-top')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-player-chip-row-1-bottom')).toBeInTheDocument();
         for (const exposedCard of ['7♠', '6♠', '5♠', '9♥', '7♦', 'J♥', '8♠', '5♣']) {
             expect(screen.queryByRole('img', { name: exposedCard })).not.toBeInTheDocument();
         }
@@ -575,6 +606,18 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByTestId('the-gang-exit-chip-row')).toBeInTheDocument();
         expect(screen.getByTestId('the-gang-exit-chip-button-1')).not.toBeDisabled();
         expect(screen.getByTestId('the-gang-exit-chip-button-2')).not.toBeDisabled();
+        expect(document.querySelectorAll('[data-bgg-zone="exit-chip-token"] img')).toHaveLength(2);
+        expect(screen.getByTestId('the-gang-exit-chip-button-1')).not.toHaveTextContent('撤离');
+        expect(screen.getByTestId('the-gang-exit-chip-button-2')).not.toHaveTextContent('撤离');
+        expect(screen.queryByTestId('the-gang-player-chip-strip-0')).not.toBeInTheDocument();
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
+        expect(screen.getByTestId('the-gang-local-hand-top-chip-rail').querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
+        expect(screen.getByTestId('the-gang-local-hand-bottom-chip-rail').querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
+        expect(screen.getByTestId('the-gang-player-chip-row-1-top').querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(1);
+        expect(screen.getByTestId('the-gang-player-chip-row-1-bottom').querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(6);
+        expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(2);
         expect(screen.getByRole('button', { name: /board\.revealShowdown|摊牌/u })).toBeDisabled();
 
         fireEvent.click(screen.getByTestId('the-gang-exit-chip-button-1'));
@@ -597,8 +640,13 @@ describe('The Gang Board 运行入口', () => {
             />,
         );
 
-        expect(screen.getByTestId('the-gang-exit-chip-button-1')).toBeDisabled();
-        expect(screen.getByTestId('the-gang-exit-chip-button-2')).toBeDisabled();
+        expect(screen.queryByTestId('the-gang-exit-chip-row')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-exit-chip-button-1')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-exit-chip-button-2')).not.toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-local-hand-top-chip-rail').querySelectorAll('[data-testid="the-gang-exit-chip-badge"]')).toHaveLength(1);
+        expect(screen.getByTestId('the-gang-player-chip-row-1-bottom').querySelectorAll('[data-testid="the-gang-exit-chip-badge"]')).toHaveLength(1);
+        expect(screen.getByTestId('the-gang-local-hand-top-chip-rail').querySelectorAll('[data-bgg-zone="exit-chip-badge-token"] img')).toHaveLength(1);
+        expect(screen.getByTestId('the-gang-player-chip-row-1-bottom').querySelectorAll('[data-bgg-zone="exit-chip-badge-token"] img')).toHaveLength(1);
         expect(screen.getByRole('button', { name: /board\.revealShowdown|摊牌/u })).not.toBeDisabled();
     });
 
@@ -612,11 +660,11 @@ describe('The Gang Board 运行入口', () => {
         expect(readyForShowdown.roundHistory).toHaveLength(3);
         expect(Object.keys(readyForShowdown.currentRoundChips)).toHaveLength(3);
         expect(document.querySelectorAll('[data-bgg-zone="card-river"] img')).toHaveLength(5);
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
-        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
+        expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(2);
         expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
         expect(document.querySelectorAll('[data-bgg-zone="token-empty-slot"]')).toHaveLength(0);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('玩家 1');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
         expect(document.querySelector('[data-bgg-zone="hand-groupzone"]')).not.toHaveTextContent('玩家 1');
         expect(screen.queryByTestId('the-gang-current-hand-rank')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-hand-rank-nameplate-toggle')).not.toBeInTheDocument();
@@ -660,8 +708,8 @@ describe('The Gang Board 运行入口', () => {
         const { unmount } = renderBoardForCore(initial);
 
         expect(document.querySelector('[data-tutorial-id="the-gang-player-list"]')).toBeInTheDocument();
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
-        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('玩家 1');
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 3 号位');
         expect(document.querySelector('[data-testid="the-gang-hotseat-switcher"]')).not.toBeInTheDocument();
@@ -683,8 +731,9 @@ describe('The Gang Board 运行入口', () => {
         } as Parameters<typeof TheGangDomain.execute>[1]);
         renderBoardForCore(withOpponentChip);
 
-        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(3);
+        expect(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]')).toHaveLength(2);
         expect(document.querySelectorAll('[data-bgg-zone="player-current-token"]')).toHaveLength(1);
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('玩家 1');
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
     });
 

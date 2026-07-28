@@ -332,6 +332,11 @@ export class CreateSystemFeedbackDto {
     status?: FeedbackStatus;
 
     @IsString()
+    @IsOptional()
+    @MaxLength(500)
+    resolvedMethod?: string;
+
+    @IsString()
     @IsNotEmpty()
     @MaxLength(64)
     source!: string;

@@ -42,5 +42,8 @@ describe('ManifestGameThumbnail', () => {
         const html = renderToStaticMarkup(<ManifestGameThumbnail manifest={manifest} />);
         // 优化图片会自动指向 i18n/zh-CN/ 和 compressed/ 目录（webp）
         expect(html).toContain('src="/assets/i18n/zh-CN/demo/thumbnails/compressed/cover.webp"');
+        // 首页缩略图的加载态由外层扫光承接，真实 img 在加载成功前透明，避免露出浏览器原生失败图标/alt。
+        expect(html).toContain('img-shimmer');
+        expect(html).toContain('opacity:0');
     });
 });

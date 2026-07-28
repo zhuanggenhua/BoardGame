@@ -486,6 +486,17 @@ export function getBasePowerModifiers(
     const base = state.bases[baseIndex];
     let total = 0;
 
+    const baseEntry = basePowerModifiers.get(base.defId);
+    if (baseEntry && !isBaseAbilitySuppressed(state, baseIndex)) {
+        const filteredState = getSuppressionFilteredStateForSource(state, base.defId);
+        total += baseEntry.modifier({
+            state: filteredState,
+            baseIndex,
+            base: filteredState.bases[baseIndex] ?? base,
+            playerId,
+        });
+    }
+
     // 遍历基地上的所有 ongoing 行动卡
     for (const ongoing of base.ongoingActions) {
         if (isCardSuppressed(state, ongoing.uid)) continue;

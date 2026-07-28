@@ -181,6 +181,7 @@
     "hide_nonessential_controls_short": "隐",
     "me_first_title": "⚡ 先手响应！",
     "after_scoring_title": "计分后响应",
+    "paladins_devout_pastor_discard_title": "虔诚的牧师：选择一张手牌弃掉",
     "kitty_cats_hang_in_there_title": "坚持住：选择要移动到的其他基地",
     "kitty_cats_temporary_control_title": "猫咪：选择一个力量 {{maxPower}} 或以下的随从获得控制权直到回合结束",
     "kitty_cats_mr_grumpers_title": "坏脾气先生：选择一个随从直到回合结束 -2 力量",
@@ -202,6 +203,42 @@
     "mythic_horses_friendship_power_top_title": "友谊之力：是否将这张行动放到牌库顶？",
     "mythic_horses_friendship_power_top_option": "放到牌库顶",
     "mythic_horses_friendship_power_discard_option": "留在弃牌堆",
+    "diy_clowns_banana_peel_title": "香蕉皮：选择来源基地",
+    "diy_clowns_banana_peel_minions_title": "香蕉皮：选择至多两个要移动的己方随从",
+    "diy_clowns_banana_peel_base_title": "香蕉皮：选择目标基地",
+    "diy_clowns_clown_car_title": "小丑车：选择要移动到此基地的己方随从",
+    "diy_clowns_clown_pyramid_title": "小丑金字塔：选择获得 +2 力量的己方随从",
+    "diy_clowns_colorful_scarf_title": "彩色围巾：选择要转移的行动",
+    "diy_clowns_confetti_bucket_title": "五彩纸屑桶：选择要返回手牌的仆从",
+    "diy_clowns_pie_in_the_face_title": "馅饼砸脸：选择一个对手弃置行动",
+    "diy_clowns_clown_girl_title": "小丑女：选择要打出的额外行动",
+    "diy_clowns_mcdonald_clown_title": "麦当劳小丑：选择一张展示的行动加入手牌",
+    "base_diy_clowns_circus_tent_title": "马戏篷：是否弃掉展示的行动牌？",
+    "base_diy_clowns_circus_tent_discard_option": "弃掉行动牌",
+    "base_diy_clowns_circus_tent_keep_option": "放回牌库顶",
+    "diy_killers_chacha_choose_minion_title": "恰-恰-恰 哈-哈-哈：选择要移动的己方仆从",
+    "diy_killers_chacha_choose_base_title": "恰-恰-恰 哈-哈-哈：选择目标基地",
+    "diy_killers_cha_cha_cha_ha_ha_ha_followup_followup_title": "选择后续效果",
+    "diy_killers_followup_deck_top_option": "放到牌库顶",
+    "diy_killers_followup_extra_action_option": "打出一个额外行动",
+    "diy_killers_good_boy_title": "他是个好孩子!：选择要回收的仆从",
+    "diy_killers_is_it_over_title": "结束了?：选择要回收并额外打出的附着行动",
+    "diy_killers_signature_search_title": "杀人狂：选择是否抽取签名装备",
+    "diy_killers_oh_no_title": "哦 不！！！：选择获得 +3 力量的己方仆从",
+    "diy_killers_laundry_room_destroy_title": "躲藏在洗衣间：选择是否摧毁附着的仆从",
+    "diy_killers_laundry_room_escape_title": "躲藏在洗衣间：弃置并移动该仆从，或让其面临摧毁",
+    "diy_killers_savage_attack_title": "野蛮攻击：选择要摧毁的印刷力量 3 或以下仆从",
+    "diy_killers_savage_attack_boost_title": "野蛮攻击：选择获得 +3 力量的杀人狂",
+    "diy_killers_machete_title": "大砍刀：选择移动目标基地",
+    "diy_killers_freddy_krueger_destroy_title": "弗莱迪·克鲁格：选择是否摧毁力量 1 或以下的仆从",
+    "diy_killers_clawed_glove_title": "爪子手套：选择获得 -1 力量的仆从",
+    "diy_killers_pinhead_title": "钉子头：转移行动或摧毁带有地狱魔盒的仆从",
+    "diy_killers_leatherface_destroy_title": "人皮脸：选择是否摧毁力量 3 或以下的仆从",
+    "diy_killers_jason_destroy_title": "杰森：选择是否摧毁力量 3 或以下的仆从",
+    "diy_killers_chainsaw_move_title": "电锯：选择是否移动宿主",
+    "diy_killers_michael_myers_title": "麦克尔·麦尔斯：选择是否摧毁印刷力量 3 或以下的仆从",
+    "base_diy_killers_camp_crystal_lake_power_title": "水晶湖营地：选择获得力量的仆从",
+    "base_diy_killers_camp_crystal_lake_destroy_title": "水晶湖营地：选择是否摧毁这里的仆从",
     "reaction_choose_mandatory_title": "选择先结算的强制效果",
     "reaction_choose_optional_title": "选择一个反应动作",
     "titan_reaction_click_prompt": "点击高亮泰坦执行效果，或选择跳过",
@@ -1178,6 +1215,12 @@
     "ultimates_heroic_landing_source_title": "英雄登场：选择一个你的角色移动，或跳过结束",
     "ultimates_heroic_landing_destination_title": "英雄登场：选择目标基地",
     "ultimates_coordinated_attack_title": "协同攻击：选择至多三个其他基地的己方角色移动到此基地",
+    "ultimates_first_to_arrive_title": "最先到达：选择一个你没有角色的基地",
+    "hydra_hour_of_destiny_title": "命运之时：选择至多两个力量为 2 或更低的角色",
+    "hydra_reactivate_agents_title": "再次激活：选择至多两个力量为 2 或更低的角色",
+    "hydra_secret_reserves_title": "秘密储备：选择任意数量力量为 2 或更低的角色",
+    "kree_prepare_to_engage_title": "准备作战：选择至多两张展示出的战术",
+    "kree_proven_methods_title": "成熟的方法：选择至多两张弃牌堆中的战术",
     "spider_verse_deck_order_title": "将剩余牌按任意顺序放到牌库顶和/或牌库底",
     "spider_verse_deck_selection_title": "选择其中一张加入手牌",
     "spider_verse_view_from_above_minion_option": "角色",
@@ -1326,7 +1369,32 @@
     "sumo_wrestlers_yokozuna_move_option": "移动这里的其他玩家随从",
     "international_incident_skip_destroy_minion_option": "跳过（不消灭随从）",
     "international_incident_skip_discard_option": "跳过（不弃牌）",
-    "international_incident_skip_move_minion_option": "跳过（不移动随从）"
+    "international_incident_skip_move_minion_option": "跳过（不移动随从）",
+    "aladdin_wish_title": "许愿：选择一个效果",
+    "aladdin_wish_skip_option": "不使用许愿",
+    "aladdin_wish_extra_cards_option": "额外打出一张角色和一张战术",
+    "aladdin_wish_power_option": "一个角色本回合 +5 力量",
+    "aladdin_wish_draw_option": "抽四张牌",
+    "action_heroes_pushing_the_limit_title": "逼近极限：{{base}} 选择指示物或抽牌",
+    "action_heroes_pushing_the_limit_counters_option": "+2 指示物",
+    "action_heroes_pushing_the_limit_draw_option": "抽 1 张牌",
+    "action_heroes_kickboxbro_play_stored_title": "踢拳兄弟：选择一张储存行动作为额外行动打出",
+    "action_heroes_kickboxbro_play_stored_skip_option": "跳过（不打出储存行动）",
+    "action_heroes_friends_through_eternity_title": "永恒挚友：弃一张牌以获得两个额外行动",
+    "action_heroes_get_to_the_choppa_title": "快上直升机：选择移动目的基地",
+    "action_heroes_hostage_rescue_title": "人质救援：选择一张随从置于牌库顶",
+    "action_heroes_the_right_person_title": "合适的人选：选择一个你没有随从的基地以获得额外随从",
+    "action_heroes_walk_away_slowly_title": "慢慢走开：选择一个己方随从返回手牌",
+    "action_heroes_warbro_title": "战争兄弟：选择另一个仅有你一个随从的基地",
+    "action_heroes_kickboxbro_store_title": "踢拳兄弟：选择一张手牌储存在本牌下",
+    "action_heroes_kickboxbro_store_skip_option": "跳过（不储存手牌）",
+    "backtimers_minion_counter_skip_option": "跳过（不放置力量指示物）",
+    "backtimers_store_title": "返时者：选择一张手牌置入停滞",
+    "backtimers_store_skip_option": "跳过（不置入停滞）",
+    "backtimers_zany_prof_title": "疯狂博士：调整一张停滞牌的停滞指示物",
+    "backtimers_zany_prof_skip_option": "跳过（不调整停滞指示物）",
+    "backtimers_alex_p_mcglide_store_title": "亚历克斯：选择一张手牌置入停滞",
+    "backtimers_alex_p_mcglide_counter_title": "亚历克斯：选择一个己方随从放置 +1 力量指示物"
   },
   "mechanics": {
     "madness": {
@@ -1875,6 +1943,14 @@
       "name": "全明星",
       "description": "从经典派系精选的全明星阵容，专注抽牌、弃牌堆回收和额外出牌。"
     },
+    "diy_killers": {
+      "name": "杀人狂",
+      "description": "围绕摧毁、临时力量和恐怖片式反击节奏的 DIY 派系；当前已完成静态接入，完整牌效仍在实施中。"
+    },
+    "diy_clowns": {
+      "name": "小丑",
+      "description": "通过弃牌堆额外行动、抽牌和恶作剧式节奏展开的 DIY 派系；当前已完成静态接入，完整牌效仍在实施中。"
+    },
     "rock_stars": {
       "name": "摇滚明星",
       "description": "通过额外打出、检索和基地战力修正制造爆发；玩法仍在实现中。"
@@ -1906,6 +1982,106 @@
     "luchadors": {
       "name": "摔角手",
       "description": "把铺垫行动挂到对手随从上，再利用这些铺垫抽牌、控场和改写计分。"
+    },
+    "avengers_pod": {
+      "name": "复仇者 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与复仇者一致。"
+    },
+    "shield_pod": {
+      "name": "神盾局 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与神盾局一致。"
+    },
+    "spider_verse_pod": {
+      "name": "蜘蛛宇宙 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与蜘蛛宇宙一致。"
+    },
+    "ultimates_pod": {
+      "name": "终极战队 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与终极战队一致。"
+    },
+    "hydra_pod": {
+      "name": "九头蛇 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与九头蛇一致。"
+    },
+    "kree_pod": {
+      "name": "克里 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与克里一致。"
+    },
+    "masters_of_evil_pod": {
+      "name": "邪恶大师 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与邪恶大师一致。"
+    },
+    "sinister_six_pod": {
+      "name": "邪恶六人组 (POD版)",
+      "description": "使用 POD 卡图与独立卡牌/基地身份，玩法与邪恶六人组一致。"
+    },
+    "explorers_pod": {
+      "name": "探险家 (POD版)",
+      "description": "使用 POD 卡图与新版注册入口的探险家 POD 牌组。"
+    },
+    "star_roamers_pod": {
+      "name": "星际旅者 (POD版)",
+      "description": "使用 POD 卡图与新版注册入口的星际旅者 POD 牌组。"
+    },
+    "vigilantes_pod": {
+      "name": "侠义义警 (POD版)",
+      "description": "使用 POD 卡图与 POD 文案的侠义义警牌组；与基础版不同的规则已单独处理。"
+    },
+    "luchadors_pod": {
+      "name": "摔角手 (POD版)",
+      "description": "使用 POD 卡图与 POD 卡面名称的摔角手牌组。"
+    },
+    "aladdin": {
+      "name": "阿拉丁",
+      "description": "围绕神灯、许愿和额外出牌展开，通过检索关键牌、弃行动换收益和力量指示物制造爆发。"
+    },
+    "beauty_and_the_beast": {
+      "name": "美女与野兽",
+      "description": "通过弃牌触发、额外出牌和力量指示物滚雪球，依靠贝儿与野兽以及魔法物品连动。"
+    },
+    "nightmare_before_christmas": {
+      "name": "圣诞夜惊魂",
+      "description": "专注角色修正牌，移动、附着、压制与计分后回收，把礼物变成对手的麻烦。"
+    },
+    "wreck_it_ralph": {
+      "name": "无敌破坏王",
+      "description": "用基地修正牌改写基地、移动角色并破坏场面，围绕基地控制和修正牌循环。"
+    },
+    "big_hero_6": {
+      "name": "超能陆战队",
+      "description": "用微型机器群、+1 力量标记和科技装备强化团队，在关键基地形成协同爆发。"
+    },
+    "frozen": {
+      "name": "冰雪奇缘",
+      "description": "通过冻结、保护和伙伴联动掌控基地，让冰雪魔法改变计分节奏。"
+    },
+    "lion_king": {
+      "name": "狮子王",
+      "description": "围绕弃牌堆中的木法沙、+1 力量标记和传承效果，让荣耀石上的家族羁绊不断回响。"
+    },
+    "mulan": {
+      "name": "花木兰",
+      "description": "用训练、+1 力量标记和战场纪律保护队伍，再以单于等计分窗口改变战局。"
+    },
+    "action_heroes": {
+      "name": "动作英雄",
+      "description": "高战力单兵、单基地独行和临界点压低。"
+    },
+    "backtimers": {
+      "name": "返时者",
+      "description": "将牌送入停滞区，等待未来时点释放。"
+    },
+    "extramorphs": {
+      "name": "异形变体",
+      "description": "操纵牌库顶、孵化场和从牌库打出的随从。"
+    },
+    "teens": {
+      "name": "青少年",
+      "description": "围绕印制力量 3、不同名字和同伴连锁展开。"
+    },
+    "wraithrustlers": {
+      "name": "怨灵捕手",
+      "description": "以怨灵行动附着基地、摧毁行动和转移行动制造节奏。"
     },
     "polynesian_voyagers": {
       "name": "波利尼西亚航海者",
@@ -9018,9 +9194,1653 @@
       "name": "擂台边",
       "abilityText": "在你打出一个直接影响这里另一位玩家随从的行动后，抽 1 张牌。"
     },
+    "diy_killers_leatherface": {
+      "name": "人皮脸",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取电锯。\n持续：每回合一次，你放置一枚+1力量指示器到这个仆从身上后，你可以摧毁这里的一个力量3或更少的仆从。"
+    },
+    "diy_killers_freddy_krueger": {
+      "name": "弗莱迪·克鲁格",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取爪子手套。\n天赋：直到你的下个回合开始，这里其他玩家的仆从获得-1力量。你可以摧毁这里的一个力量1或更少的仆从。"
+    },
+    "diy_killers_jason": {
+      "name": "杰森",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取大砍刀。\n持续：每回合一次，这个仆从移动后，你可以摧毁那里的一个力量3或更少的仆从并获得+2力量直到回合结束。"
+    },
+    "diy_killers_michael_myers": {
+      "name": "麦克尔·麦尔斯",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取柯克船长面具。\n特殊：这个基地计分前，你可以摧毁这里的一个印刷力量3或更少的仆从。"
+    },
+    "diy_killers_pinhead": {
+      "name": "钉子头",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取地狱魔盒。\n天赋：转移一个你的行动到另一个仆从身上，或摧毁一个身上有地狱魔盒的仆从。"
+    },
+    "diy_killers_captain_kirk_mask": {
+      "name": "柯克船长面具",
+      "effectText": "打出到你的仆从身上。\n持续：这里的一个或更多仆从被摧毁后，这个仆从获得被摧毁仆从的总力量直到回合结束。"
+    },
+    "diy_killers_savage_attack": {
+      "name": "野蛮攻击",
+      "effectText": "你可以在一个你有仆从的基地摧毁一个印刷力量3或更少的仆从，然后你可以让那里的一个杀人狂获得+3力量直到回合结束。"
+    },
+    "diy_killers_cha_cha_cha_ha_ha_ha": {
+      "name": "恰-恰-恰 哈-哈-哈",
+      "effectText": "移动一个你的仆从。你可以放置这张牌到你的牌库顶代替进入弃牌堆，或打出一个额外的行动。"
+    },
+    "diy_killers_chainsaw": {
+      "name": "电锯",
+      "effectText": "打出到你的仆从身上。\n持续：你的回合开始时，放置一枚+1力量指示器到这个仆从身上。一个仆从被摧毁后，你可以移动这个仆从到那个基地或从那个基地移动到另一个基地。"
+    },
+    "diy_killers_clawed_glove": {
+      "name": "爪子手套",
+      "effectText": "打出到你的仆从身上。\n天赋：这里的一个仆从获得-1力量直到你的下个回合开始。\n持续：这里的一个或更多仆从被摧毁后，放置一枚+1力量指示器到这个仆从身上。"
+    },
+    "diy_killers_good_boy": {
+      "name": "他是个好孩子!",
+      "effectText": "从你的弃牌堆放置一个仆从到你的手上，然后打出一个额外的行动。"
+    },
+    "diy_killers_laundry_room": {
+      "name": "躲藏在洗衣间",
+      "effectText": "打出到其他玩家的仆从身上。打出一个额外的行动。\n持续：一个杀人狂打出或移动到这里后，除非它的控制者丢弃一张手牌然后移动这个仆从到一个没有杀人狂的基地，否则你可以摧毁这个仆从。"
+    },
+    "diy_killers_improvised_weapon": {
+      "name": "简易武器",
+      "effectText": "从你的牌库抽一张打出在仆从身上的行动。你可以打出它作为额外的行动；在回合结束时摧毁它。"
+    },
+    "diy_killers_machete": {
+      "name": "大砍刀",
+      "effectText": "打出到你的仆从身上。\n天赋：移动这个仆从到一个有其他玩家仆从的基地。\n持续：这里的一个或更多仆从被摧毁后，你这里的每个仆从获得+1力量直到回合结束。在回合结束时，如果这个仆从本回合摧毁过一个仆从，返回这张牌到你的手上。"
+    },
+    "diy_killers_oh_no": {
+      "name": "哦 不！！！",
+      "effectText": "一个你的仆从获得+3力量直到回合结束。\n特殊：你摧毁其他玩家的仆从后，你可以打出这张牌作为额外的行动。"
+    },
+    "diy_killers_origin_story": {
+      "name": "起源故事",
+      "effectText": "从你的牌库顶抽一个仆从，或如果你没有杀人狂在游戏中，从你的牌库顶抽一个杀人狂。打出一个额外的行动。"
+    },
+    "diy_killers_hell_puzzle_box": {
+      "name": "地狱魔盒",
+      "effectText": "打出到你的仆从身上。\n持续：如果这个仆从不是你控制，取消它的能力。一个或更多个仆从被摧毁后，抽一张牌。"
+    },
+    "diy_killers_is_it_over": {
+      "name": "结束了?",
+      "effectText": "从你的弃牌堆抽一个打出在仆从身上的行动。你可以打出它作为额外的行动。"
+    },
+    "base_diy_killers_camp_crystal_lake": {
+      "name": "水晶湖营地",
+      "abilityText": "你摧毁这里的一个仆从后，这里的一个仆从获得被摧毁仆从的总力量直到回合结束。每回合一次，你打出一张牌后，你可以摧毁这里一个力量不大于你在这个基地的牌的数量的仆从。"
+    },
+    "base_diy_killers_nightmare_world": {
+      "name": "梦魇世界",
+      "abilityText": "这个基地计分前，摧毁这里力量最小的仆从。如果有多个力量最小的仆从，摧毁所有这些仆从。"
+    },
+    "diy_clowns_slapstick_clown": {
+      "name": "滑稽小丑",
+      "abilityText": "持续：你可以从你的弃牌堆打出一张标准行动来代替你的通常行动打出，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_mrs_clown": {
+      "name": "小丑夫人",
+      "abilityText": "持续：每回合一次，你打出一个行动后，你可以抽一张牌。"
+    },
+    "diy_clowns_dancing_clown": {
+      "name": "跳舞小丑",
+      "abilityText": "天赋：如果你的弃牌堆有至少两个标准行动，随机选择它们中的一个，你可以打出它作为额外的行动，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_mcdonald_clown": {
+      "name": "麦当劳小丑",
+      "abilityText": "展示你牌库顶的牌直到展示出两张行动。抽取一张然后丢弃另一张。重洗剩下的进你的牌库。"
+    },
+    "diy_clowns_silent_clown": {
+      "name": "沉默小丑",
+      "abilityText": "如果你这回合还未打出过行动，你可以选择你弃牌堆中的一张标准行动，打出它作为额外的行动，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_clown_girl": {
+      "name": "小丑女",
+      "abilityText": "你可以搜索你的牌库来寻找一张行动牌，然后丢弃它。"
+    },
+    "diy_clowns_banana_peel": {
+      "name": "香蕉皮",
+      "effectText": "移动至多两个你的仆从从一个基地到另一个基地。如果这张牌是从弃牌堆打出的，你可以打出一个额外的行动。"
+    },
+    "diy_clowns_clown_car": {
+      "name": "小丑车",
+      "effectText": "从你的弃牌堆重洗至多两张牌到你的牌库。如果这张牌是从弃牌堆打出的，你可以打出一个额外的行动。"
+    },
+    "diy_clowns_jack_in_the_box": {
+      "name": "惊吓盒",
+      "effectText": "打出一个力量3或更少的额外仆从。如果这张牌是从弃牌堆打出的，你能打出的仆从力量改为4或更少。"
+    },
+    "diy_clowns_clown_pyramid": {
+      "name": "小丑金字塔",
+      "effectText": "这个基地上的每个你的仆从让你这里的一个仆从获得+1力量直到回合结束。你可以打出一个额外的行动。"
+    },
+    "diy_clowns_colorful_scarf": {
+      "name": "彩色围巾",
+      "effectText": "抽两张牌。如果这张牌是从弃牌堆打出的，你可以丢弃一张牌来额外抽一张牌。"
+    },
+    "diy_clowns_confetti_bucket": {
+      "name": "五彩纸屑桶",
+      "effectText": "丢弃至多四张手牌，然后抽取等量的牌。"
+    },
+    "diy_clowns_juggling": {
+      "name": "杂耍",
+      "effectText": "每个玩家查看他牌库顶的三张牌，丢弃其中一张行动或展示它们证明没有行动，然后以相同的顺序返回它们。"
+    },
+    "diy_clowns_pie_in_the_face": {
+      "name": "馅饼砸脸",
+      "effectText": "一个你的仆从获得+2力量直到回合结束。如果这张牌是从弃牌堆打出的，改为这个仆从获得+4力量代替。"
+    },
+    "base_diy_clowns_clown_academy": {
+      "name": "小丑学院",
+      "abilityText": "每回合你第一次打出仆从到这里后，你可以从你的弃牌堆随机放置一张标准行动到你的手上。"
+    },
+    "base_diy_clowns_circus_tent": {
+      "name": "马戏篷",
+      "abilityText": "你打出一个仆从到这里后，展示你牌库顶的牌。如果它是行动牌你可以丢弃它，否则返回它。"
+    },
     "base_the_squared_circle": {
       "name": "方形擂台",
       "abilityText": "每回合第一次你在这里打出随从后，你可以随机将你弃牌堆中的一个行动置入手牌。"
+    },
+    "avengers_black_widow_pod": {
+      "name": "黑寡妇",
+      "abilityText": "你可以摧毁一个在这里力量5或更少的角色。"
+    },
+    "avengers_captain_america_pod": {
+      "name": "美国队长",
+      "abilityText": "天赋：在这里的你的每个其他角色获得+1力量直到回合结束。"
+    },
+    "avengers_hawkeye_pod": {
+      "name": "鹰眼",
+      "abilityText": "抽三张牌。弃掉两张牌。"
+    },
+    "avengers_hulk_pod": {
+      "name": "浩克",
+      "abilityText": "天赋：这个角色获得+2力量直到回合结束。"
+    },
+    "avengers_iron_man_pod": {
+      "name": "钢铁侠",
+      "abilityText": "天赋：移动这个角色和至多一个你的其他角色从这里移动到其他基地。"
+    },
+    "avengers_thor_pod": {
+      "name": "索尔",
+      "abilityText": "搜索你的牌库和/或弃牌堆寻找雷神之锤，展示并抽取它。如果你搜索了牌库，重洗它。天赋：移动雷神之锤从一个角色到另一个角色。"
+    },
+    "avengers_assemble_pod": {
+      "name": "复仇者集结",
+      "abilityText": "重洗至多两名角色从你的弃牌堆到你的牌库。",
+      "effectText": "重洗至多两名角色从你的弃牌堆到你的牌库。"
+    },
+    "avengers_caps_shield_pod": {
+      "name": "美队的盾牌",
+      "abilityText": "角色装备。持续：你在这里的角色不受其他玩家法术的影响。如果该角色是美国队长，他们每人同时获得+1力量。",
+      "effectText": "角色装备。持续：你在这里的角色不受其他玩家法术的影响。如果该角色是美国队长，他们每人同时获得+1力量。"
+    },
+    "avengers_hawkeyes_arrows_pod": {
+      "name": "鹰眼箭",
+      "abilityText": "展示你牌库顶的牌直到你展示出两张法术。抽取一张法术然后把剩余的洗入你的牌库。如果鹰眼在游戏中，你可以打出抽取的牌作为额外法术。",
+      "effectText": "展示你牌库顶的牌直到你展示出两张法术。抽取一张法术然后把剩余的洗入你的牌库。如果鹰眼在游戏中，你可以打出抽取的牌作为额外法术。"
+    },
+    "avengers_hulk_smash_pod": {
+      "name": "浩克冲击",
+      "abilityText": "选择一个基地。摧毁任意数量该基地上的基地神器。如果浩克在这里，你可以摧毁这个基地和所有它上面的装备，然后翻开基地牌库顶的牌替换它。所有角色留在新基地。",
+      "effectText": "选择一个基地。摧毁任意数量该基地上的基地神器。如果浩克在这里，你可以摧毁这个基地和所有它上面的装备，然后翻开基地牌库顶的牌替换它。所有角色留在新基地。"
+    },
+    "avengers_jarvis_pod": {
+      "name": "J.A.R.V.I.S.",
+      "abilityText": "基地神器。天赋：抽一张牌。弃一张牌。",
+      "effectText": "基地神器。天赋：抽一张牌。弃一张牌。"
+    },
+    "avengers_mjolnir_pod": {
+      "name": "雷神锤",
+      "abilityText": "角色装备。持续：如果雷神锤由索尔装备，它+2力量。否则，它-2力量。",
+      "effectText": "角色装备。持续：如果雷神锤由索尔装备，它+2力量。否则，它-2力量。"
+    },
+    "avengers_modular_tech_pod": {
+      "name": "模块化技术",
+      "abilityText": "移动一个你的装备从一个角色身上到另一个角色身上，或一件神器从一个基地到另一个基地。打出一个额外的法术。",
+      "effectText": "移动一个你的装备从一个角色身上到另一个角色身上，或一件神器从一个基地到另一个基地。打出一个额外的法术。"
+    },
+    "avengers_repulsor_boots_pod": {
+      "name": "斥力靴",
+      "abilityText": "移动一个你的角色移动到另一个基地。特殊：你可以在一个基地计分前打出这张卡来移动钢铁侠。",
+      "effectText": "移动一个你的角色移动到另一个基地。特殊：你可以在一个基地计分前打出此牌来移动钢铁侠。"
+    },
+    "avengers_strategize_pod": {
+      "name": "战略部署",
+      "abilityText": "查看你牌库顶的四张牌。以任意顺序放置两张在你的牌库顶。其余的放在牌库底。",
+      "effectText": "查看你牌库顶的四张牌。以任意顺序放置两张在你的牌库顶。其余的放在牌库底。"
+    },
+    "avengers_tactical_advantage_pod": {
+      "name": "战术优势",
+      "abilityText": "选择一个角色获得+3力量直到回合结束。",
+      "effectText": "选择一个角色获得+3力量直到回合结束。"
+    },
+    "avengers_thunder_and_lightning_pod": {
+      "name": "雷霆闪电",
+      "abilityText": "摧毁一个力量3或更少的角色。",
+      "effectText": "摧毁一个力量3或更少的角色。"
+    },
+    "avengers_widows_bite_pod": {
+      "name": "蜘蛛之吻",
+      "abilityText": "特殊：一个基地计分前打出。其他玩家在这里的每个角色获得-1力量直到回合结束。如果黑寡妇在这里，她获得+2力量直到回合结束。",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。其他玩家在这里的每个角色获得-1力量直到回合结束。如果黑寡妇在这里，她获得+2力量直到回合结束。"
+    },
+    "shield_nick_fury_pod": {
+      "name": "尼克-弗瑞",
+      "abilityText": "你可以打出一个额外的角色到这里。"
+    },
+    "shield_maria_hill_pod": {
+      "name": "玛丽亚·希尔",
+      "abilityText": "持续：你在这里打出其他角色后，这个角色获得+1力量直到回合结束。"
+    },
+    "shield_phil_coulson_pod": {
+      "name": "菲尔·科尔森",
+      "abilityText": "你可以额外打出一个力量 2 或更低的角色到这里。"
+    },
+    "shield_agent_pod": {
+      "name": "神盾局探员",
+      "abilityText": "持续：如果有另一个你的角色在这里，这个角色获得+1力量。"
+    },
+    "shield_entry_point_pod": {
+      "name": "进入点",
+      "abilityText": "打出一个额外的角色。",
+      "effectText": "打出一个额外的角色。"
+    },
+    "shield_mission_debriefing_pod": {
+      "name": "任务汇报",
+      "abilityText": "选择一个基地。在那里每有一个你的角色就抽一张牌。",
+      "effectText": "选择一个基地。在那里每有一个你的角色就抽一张牌。"
+    },
+    "shield_proving_ground_pod": {
+      "name": "试验场",
+      "abilityText": "基地神器。天赋：在这里打出一个力量 3 或更低的角色作为额外角色。",
+      "effectText": "基地神器。天赋：在这里打出一个力量 3 或更低的角色作为额外角色。"
+    },
+    "shield_reassignment_pod": {
+      "name": "调任",
+      "abilityText": "选择一个基地。移动至多两个你的角色从其他基地到这里。",
+      "effectText": "选择一个基地。移动至多两个你的角色从其他基地到这里。"
+    },
+    "shield_rescue_mission_pod": {
+      "name": "救援任务",
+      "abilityText": "特殊：一个基地计分后，重洗你在那里的所有角色到他们拥有者的牌库然后抽一张牌。",
+      "effectText": "特殊：一个基地计分后，重洗你在那里的所有角色到他们拥有者的牌库然后抽一张牌。"
+    },
+    "shield_superior_firepower_pod": {
+      "name": "强大的火力",
+      "abilityText": "摧毁一个基地神器或一个力量 3 或更低的角色。",
+      "effectText": "摧毁一个基地神器或一个力量 3 或更低的角色。"
+    },
+    "shield_troop_drop_pod": {
+      "name": "空投部队",
+      "abilityText": "额外打出一个力量 3 或更低的角色。",
+      "effectText": "额外打出一个力量 3 或更低的角色。"
+    },
+    "shield_together_pod": {
+      "name": "并肩作战",
+      "abilityText": "每个你目前打出的角色都获得+1力量直到回合结束。",
+      "effectText": "每个你目前打出的角色都获得+1力量直到回合结束。"
+    },
+    "spider_verse_spider_man_pod": {
+      "name": "蜘蛛侠",
+      "abilityText": "持续：在你打出一张有特殊能力的牌后，这个角色获得+1力量，直到回合结束。"
+    },
+    "spider_verse_ghost_spider_pod": {
+      "name": "幽灵蜘蛛侠",
+      "abilityText": "查看你牌库顶的三张牌，抽取其中一张，然后以任意顺序返回剩下的到你的牌库顶和/或牌库底。"
+    },
+    "spider_verse_miles_morales_pod": {
+      "name": "迈尔斯·莫拉莱斯",
+      "abilityText": "特殊：在基地计分前，如果你有一个角色在那里，你可以在那里打出这个角色，并给予它-1力量，直到回合结束。"
+    },
+    "spider_verse_spider_man_2099_pod": {
+      "name": "蜘蛛侠2099",
+      "abilityText": "持续：此角色不能被其他玩家的牌所摧毁。"
+    },
+    "spider_verse_great_responsibility_pod": {
+      "name": "…责任越大",
+      "abilityText": "打出一个额外的角色。特殊：你可以在一个你拥有角色的基地计分前打出它。在这里打出一个额外的角色，它获得-1力量直到回合结束。",
+      "effectText": "打出一个额外的角色。特殊：你可以在一个你拥有角色的基地计分前打出此牌。在这里打出一个额外的角色，它获得-1力量直到回合结束。"
+    },
+    "spider_verse_spider_reflexes_pod": {
+      "name": "蜘蛛反应",
+      "abilityText": "查看你牌库顶的三张牌，抽取其中一张，然后将剩余的以任意顺序放在你的牌库顶和/或牌库底。你可以打出一个额外的法术。",
+      "effectText": "查看你牌库顶的三张牌，抽取其中一张，然后将剩余的以任意顺序放在你的牌库顶和/或牌库底。你可以打出一个额外的法术。"
+    },
+    "spider_verse_spider_sense_pod": {
+      "name": "蜘蛛感应",
+      "abilityText": "抽取两张牌。特殊：你可以在有你角色的基地计分后打出。",
+      "effectText": "抽取两张牌。特殊：你可以在有你角色的基地计分后打出。"
+    },
+    "spider_verse_bond_pod": {
+      "name": "蜘蛛侠-平行宇宙",
+      "abilityText": "角色装备。持续：每有一个你的其他角色在这里，这个角色获得+1力量。",
+      "effectText": "角色装备。持续：每有一个你的其他角色在这里，这个角色获得+1力量。"
+    },
+    "spider_verse_view_from_above_pod": {
+      "name": "高处不胜寒",
+      "abilityText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗回你的牌库。",
+      "effectText": "说“角色”或“法术”。展示你牌库顶的牌，直到展示出一张该类型的牌，然后抽取它。将剩下的牌洗回你的牌库。"
+    },
+    "spider_verse_webbed_up_pod": {
+      "name": "束缚",
+      "abilityText": "角色装备。持续：这个角色获得-2力量然后它的能力被取消。",
+      "effectText": "角色装备。持续：这个角色获得-2力量然后它的能力被取消。"
+    },
+    "spider_verse_with_great_power_pod": {
+      "name": "能力越大…",
+      "abilityText": "一个角色获得+3力量直到回合结束。特殊：你可以在一个基地计分前打出这张牌。一个在这里的角色获得+2力量代替+3。",
+      "effectText": "一个角色获得+3力量直到回合结束。特殊：你可以在一个基地计分前打出此牌。一个在这里的角色获得+2力量代替+3。"
+    },
+    "spider_verse_friendly_neighborhood_hero_pod": {
+      "name": "你的好邻居英雄",
+      "abilityText": "特殊：在基地计分后，将你的一个角色放在它的拥有者牌库顶。",
+      "effectText": "特殊：在基地计分后，将你的一个角色放在它的拥有者牌库顶。"
+    },
+    "ultimates_captain_marvel_pod": {
+      "name": "惊奇队长",
+      "abilityText": "天赋：把这个角色移动到另一个基地。你当前在那里的其他角色都获得+1力量，直到回合结束。"
+    },
+    "ultimates_spectrum_pod": {
+      "name": "光谱",
+      "abilityText": "天赋：把这个角色移动到另一个基地。"
+    },
+    "ultimates_america_chavez_pod": {
+      "name": "美国小姐",
+      "abilityText": "持续：在另一个角色进入或离开这个基地后，这个角色获得+1力量，直到本回合结束。"
+    },
+    "ultimates_blue_marvel_pod": {
+      "name": "蓝奇",
+      "abilityText": "持续：在这个角色移动到另一个基地后，它获得+1的力量，直到本回合结束。"
+    },
+    "ultimates_aid_from_allies_pod": {
+      "name": "盟国的援助",
+      "abilityText": "基地神器。抽一张牌。持续：当你把一个或多个角色移动到这里后，抽一张牌。",
+      "effectText": "基地神器。抽一张牌。持续：当你把一个或多个角色移动到这里后，抽一张牌。"
+    },
+    "ultimates_coordinated_attack_pod": {
+      "name": "协同攻击",
+      "abilityText": "选择一个基地。将你至多三个角色从其他基地移动到那里。他们每个人都获得+1力量，直到回合结束。",
+      "effectText": "选择一个基地。将你至多三个角色从其他基地移动到那里。他们每个人都获得+1力量，直到回合结束。"
+    },
+    "ultimates_cosmic_knowledge_pod": {
+      "name": "宇宙知识",
+      "abilityText": "放置任意数量你的手牌到牌库底，抽取比你放置多一张的牌。",
+      "effectText": "放置任意数量你的手牌到牌库底，抽取比你放置多一张的牌。"
+    },
+    "ultimates_first_to_arrive_pod": {
+      "name": "最先到达",
+      "abilityText": "在一个你没有角色的基地打出一个额外的角色。",
+      "effectText": "在一个你没有角色的基地打出一个额外的角色。"
+    },
+    "ultimates_heroic_landing_pod": {
+      "name": "英雄登场",
+      "abilityText": "将你的任意数量的角色移动到其他基地。",
+      "effectText": "将你的任意数量的角色移动到其他基地。"
+    },
+    "ultimates_lift_and_carry_pod": {
+      "name": "搬运",
+      "abilityText": "把一个角色移动到另一个基地。",
+      "effectText": "把一个角色移动到另一个基地。"
+    },
+    "ultimates_power_and_speed_pod": {
+      "name": "力量与速度",
+      "abilityText": "你的一个角色获得+2力量，直到回合结束。你可以将其移动到另一个基地。",
+      "effectText": "你的一个角色获得+2力量，直到回合结束。你可以将其移动到另一个基地。"
+    },
+    "ultimates_scramble_pod": {
+      "name": "争夺",
+      "abilityText": "把你的一个角色移动到另一个基地。特别：你可以在计分前打出。",
+      "effectText": "把你的一个角色移动到另一个基地。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "hydra_red_skull_pod": {
+      "name": "红骷髅",
+      "abilityText": "持续：在你的一个角色被摧毁后，抽一张牌。天赋：摧毁你的一个角色来抽一张牌。"
+    },
+    "hydra_baron_strucker_pod": {
+      "name": "斯特拉克男爵",
+      "abilityText": "天赋：摧毁你的一个角色。在它被摧毁后，将至多两个你的角色从其他基地移动到这里。"
+    },
+    "hydra_madame_hydra_pod": {
+      "name": "蝰蛇",
+      "abilityText": "天赋：摧毁你的一个角色，使此角色获得 +2 力量直到回合结束。"
+    },
+    "hydra_arnim_zola_pod": {
+      "name": "阿尼姆·佐拉",
+      "abilityText": "持续：这里你的每个其他印刷力量为 2 或更低的角色，使此角色获得 +1 力量。"
+    },
+    "hydra_hydra_agent_pod": {
+      "name": "九头蛇特工",
+      "abilityText": "持续：在此角色被摧毁后，在这里额外打出至多两个力量为 2 或更低的角色。"
+    },
+    "hydra_fanatical_devotion_pod": {
+      "name": "狂热的献身",
+      "effectText": "基地修正。持续：若本回合你有一个或更多角色在这里被摧毁，你在这里的每个角色获得 +2 力量。"
+    },
+    "hydra_hail_hydra_pod": {
+      "name": "九头蛇万岁!",
+      "effectText": "摧毁你的一个角色，按其力量值抽等量的牌。"
+    },
+    "hydra_hour_of_destiny_pod": {
+      "name": "命运之时",
+      "effectText": "从你的牌库搜寻至多两个力量为 2 或更低的角色，展示并抽取它们。然后洗牌。"
+    },
+    "hydra_reactivate_agents_pod": {
+      "name": "再次激活",
+      "effectText": "将至多两个力量为 2 或更低的角色从你的弃牌堆放入你的手牌。"
+    },
+    "hydra_secret_reserves_pod": {
+      "name": "秘密储备",
+      "effectText": "将任意数量力量为 2 或更低的角色从你的弃牌堆洗入你的牌库。"
+    },
+    "hydra_two_more_shall_take_its_place_pod": {
+      "name": "取而代之",
+      "effectText": "摧毁你的一个角色。在它被摧毁后，在该基地额外打出至多两个力量为 2 或更低的角色。"
+    },
+    "kree_supreme_intelligence_pod": {
+      "name": "至高智慧",
+      "abilityText": "持续：在你打出一张战术后，你的一个其他角色获得 +1 力量直到回合结束。"
+    },
+    "kree_minn_erva_pod": {
+      "name": "敏-尔瓦博士",
+      "abilityText": "抽两张牌。"
+    },
+    "kree_ronan_the_accuser_pod": {
+      "name": "指控者罗南",
+      "abilityText": "你可以额外打出一张战术。"
+    },
+    "kree_kree_sentry_pod": {
+      "name": "克里人哨兵",
+      "abilityText": "持续：若你本回合已打出两张或更多战术，此角色获得 +2 力量。"
+    },
+    "kree_battle_rage_pod": {
+      "name": "战斗怒吼",
+      "effectText": "你的一个角色获得 +2 力量直到回合结束。抽一张牌。"
+    },
+    "kree_call_for_backup_pod": {
+      "name": "呼叫支援",
+      "effectText": "抽两张牌。"
+    },
+    "kree_it_begins_pod": {
+      "name": "开始了",
+      "effectText": "你的一个角色获得 +1 力量直到回合结束。抽一张牌。你可以额外打出一张战术。"
+    },
+    "kree_prepare_to_engage_pod": {
+      "name": "准备作战",
+      "effectText": "展示你牌库顶的五张牌。将至多两张展示出的战术放入你的手牌，并将其余牌洗入你的牌库。"
+    },
+    "kree_proven_methods_pod": {
+      "name": "成熟的方法",
+      "effectText": "将至多两张战术从你的弃牌堆以任意顺序放到你的牌库顶。"
+    },
+    "kree_relentless_attack_pod": {
+      "name": "无情攻击",
+      "effectText": "角色修正。天赋：额外打出一张战术。"
+    },
+    "kree_righteous_fury_pod": {
+      "name": "正义之怒",
+      "effectText": "角色修正。持续：此角色获得 +3 力量。"
+    },
+    "kree_speed_up_pod": {
+      "name": "加速",
+      "effectText": "额外打出至多两张战术。"
+    },
+    "masters_of_evil_baron_zemo_pod": {
+      "name": "泽莫男爵",
+      "abilityText": "持续：在此基地计分后，获得 1 VP，并将此角色放到其拥有者牌库底。"
+    },
+    "masters_of_evil_ulysses_klaw_pod": {
+      "name": "克劳",
+      "abilityText": "你每有 4 VP，抽一张牌。"
+    },
+    "masters_of_evil_black_mamba_pod": {
+      "name": "黑曼巴",
+      "abilityText": "持续：你每有 4 VP，此角色获得 +1 力量。"
+    },
+    "masters_of_evil_absorbing_man_pod": {
+      "name": "吸收人",
+      "abilityText": "天赋：摧毁此角色和另一个吸收人，获得 1 VP。"
+    },
+    "masters_of_evil_a_portent_of_doom_pod": {
+      "name": "厄运之兆",
+      "effectText": "基地修正。打出到一个没有任何玩家角色的基地上。特殊：此基地计分时，若你在这里有 1 或更多力量，获得 1 VP。"
+    },
+    "masters_of_evil_acceptable_losses_pod": {
+      "name": "可接受的损失",
+      "effectText": "摧毁你的一个力量为 4 或更高的角色，获得 1 VP。"
+    },
+    "masters_of_evil_ball_and_chain_pod": {
+      "name": "链球",
+      "effectText": "角色修正。持续：此角色获得 +2 力量，且不能被其他玩家的牌摧毁。"
+    },
+    "masters_of_evil_convergence_pod": {
+      "name": "汇聚",
+      "effectText": "将你的一个角色移动到另一个基地。在它移动后，若你在该基地有四个或更多角色，获得 1 VP。"
+    },
+    "masters_of_evil_gain_the_upper_hand_pod": {
+      "name": "取得优势",
+      "effectText": "摧毁一个力量为 3 或更低的角色。"
+    },
+    "masters_of_evil_indestructible_form_pod": {
+      "name": "坚不可摧的形态",
+      "effectText": "基地修正。持续：你在这里的角色不能被其他玩家的牌摧毁。"
+    },
+    "masters_of_evil_sonic_shockwave_pod": {
+      "name": "音速冲击波",
+      "effectText": "摧毁另一个玩家的一个角色，其力量必须低于你在其所在基地的总力量。在它被摧毁后，若该角色力量为 5 或更高，获得 1 VP。"
+    },
+    "masters_of_evil_world_domination_pod": {
+      "name": "统治世界",
+      "effectText": "基地修正。天赋：你在这里的一个角色获得 +2 力量直到回合结束。持续：在此基地计分后，将此战术移动到另一个基地。"
+    },
+    "sinister_six_doctor_octopus_pod": {
+      "name": "章鱼博士",
+      "abilityText": "持续：在你的回合开始时，你可以使此基地的临界点降低 4，直到回合结束。"
+    },
+    "sinister_six_mysterio_pod": {
+      "name": "神秘客",
+      "abilityText": "天赋：在这里额外打出一张基地修正，或抽一张牌。"
+    },
+    "sinister_six_green_goblin_pod": {
+      "name": "绿魔",
+      "abilityText": "天赋：使此基地的临界点降低 3，直到回合结束。"
+    },
+    "sinister_six_vulture_pod": {
+      "name": "秃鹫",
+      "abilityText": "你可以将一张基地修正从你的弃牌堆放到你的牌库顶。"
+    },
+    "sinister_six_electro_pod": {
+      "name": "电王",
+      "abilityText": "持续：此基地的临界点降低 2。"
+    },
+    "sinister_six_sandman_pod": {
+      "name": "沙人",
+      "abilityText": "持续：若这里的临界点为 19 或更低，此角色获得 +2 力量。"
+    },
+    "sinister_six_ambush_pod": {
+      "name": "伏击",
+      "effectText": "使一个基地的临界点降低 4，直到回合结束。"
+    },
+    "sinister_six_cover_the_exits_pod": {
+      "name": "隐藏出口",
+      "effectText": "基地修正。持续：你在这里的角色获得 +1 力量。在此基地计分后，若其临界点为 19 或更低，将你在这里至多两个角色洗入其拥有者牌库。"
+    },
+    "sinister_six_incite_panic_pod": {
+      "name": "煽动恐慌",
+      "effectText": "基地修正。持续：其他玩家在这里的角色获得 -1 力量。若这里的临界点为 19 或更低，其他玩家在此基地计分时不能使用特殊能力。"
+    },
+    "sinister_six_move_the_goods_pod": {
+      "name": "移动货物",
+      "effectText": "将一张基地修正从一个基地移动到另一个基地。特殊：你可以在一个基地计分后打出这张牌。"
+    },
+    "sinister_six_my_master_plan_pod": {
+      "name": "我的总计划",
+      "effectText": "基地修正。天赋：若这里的临界点为 19 或更低，抽一张牌。"
+    },
+    "sinister_six_pressure_from_all_sides_pod": {
+      "name": "四面楚歌",
+      "effectText": "基地修正。天赋：此基地上每有一个角色，就使此基地临界点降低 1，直到回合结束。"
+    },
+    "sinister_six_reroute_the_power_pod": {
+      "name": "改变力量",
+      "effectText": "基地修正。天赋：若这里的临界点为 19 或更低，使你在这里的一个角色获得 +3 力量直到你的下个回合开始。"
+    },
+    "sinister_six_witness_our_superiority_pod": {
+      "name": "见证我们的优势",
+      "effectText": "基地修正。持续：此基地的能力被取消。"
+    },
+    "explorers_lost_city_pod": {
+      "name": "失落之城",
+      "effectText": "特殊：基地计分后，展示基地牌库顶的两张牌。选择一张替换已计分的基地，弃掉另一张。额外打出一个佣兵至新基地。"
+    },
+    "explorers_forgotten_horrors_pod": {
+      "name": "被遗忘的恐怖",
+      "effectText": "对基地打出。持续：在你打出佣兵至本基地或打出卡牌使你的佣兵移动至本基地后，抓一张牌并转移此牌至另一个基地。"
+    },
+    "explorers_fortune_and_glory_pod": {
+      "name": "财富与荣耀",
+      "effectText": "选择一个基地。你可以移动该基地上至多两个佣兵至另一个基地。"
+    },
+    "explorers_it_belongs_in_a_museum_pod": {
+      "name": "它该进博物馆",
+      "effectText": "选择两个处于不同基地的佣兵。将它们分别移动至对方的基地。"
+    },
+    "explorers_i_said_no_camels_pod": {
+      "name": "我说了不要骆驼！",
+      "effectText": "选择一个基地。该处你的每个佣兵各获得 +1 战力标记，或抓数量等于该处你的佣兵数的牌。"
+    },
+    "explorers_x_never_marks_the_spot_pod": {
+      "name": "X 从不标记地点",
+      "effectText": "移动你的每一个佣兵。"
+    },
+    "explorers_dr_livingstone_i_presume_pod": {
+      "name": "利文斯通医生，想必是你？",
+      "effectText": "选择一个佣兵。若其是该基地上的唯一佣兵，将其洗回其拥有者的牌库。"
+    },
+    "explorers_you_call_this_archaeology_pod": {
+      "name": "你管这叫考古？",
+      "effectText": "移动你的一个佣兵。特殊：可以在基地计分前或计分后打出。"
+    },
+    "explorers_glory_hound_pod": {
+      "name": "逐名猎犬",
+      "abilityText": "查看基地牌库顶的两张牌。将其中一张置于牌库底，另一张置于牌库顶。"
+    },
+    "explorers_crypt_looter_pod": {
+      "name": "古墓掠夺者",
+      "abilityText": "特殊：当有新的基地进场时，你可以额外打出此佣兵至该基地。"
+    },
+    "explorers_guide_pod": {
+      "name": "向导",
+      "abilityText": "持续：你的佣兵于某回合进行了第一次移动后，其获得 +1 战力直到该回合结束。"
+    },
+    "explorers_idaho_smith_pod": {
+      "name": "爱达荷·史密斯",
+      "abilityText": "你可以打出基地牌库顶的基地牌，并从本基地移动此佣兵和任意数量你的其他佣兵至该基地。"
+    },
+    "star_roamers_hyperspeed_10_pod": {
+      "name": "超高速运转",
+      "effectText": "选择一个基地。将那里的所有随从移动到同一个其他基地。"
+    },
+    "star_roamers_port_me_up_pod": {
+      "name": "传送我上船",
+      "effectText": "将你的一个随从返回其拥有者手牌。特殊：你可以在一个基地计分后打出此牌；该随从必须在计分基地上。"
+    },
+    "star_roamers_mass_teleport_pod": {
+      "name": "大规模传送",
+      "effectText": "每位玩家将自己的一个随从返回其拥有者手牌。"
+    },
+    "star_roamers_teleport_error_pod": {
+      "name": "传送事故",
+      "effectText": "选择一个随从。将它移动到另一个随机基地。"
+    },
+    "star_roamers_protector_fields_pod": {
+      "name": "防御力场",
+      "effectText": "打出到一个你有随从的基地上。持续：这里你的随从不受其他玩家的牌影响。"
+    },
+    "star_roamers_weird_new_worlds_pod": {
+      "name": "奇异新世界",
+      "effectText": "打出一个新基地。你可以在那里额外打出一个随从。"
+    },
+    "star_roamers_whiplash_maneuver_pod": {
+      "name": "鞭绳回旋",
+      "effectText": "打出到一个基地上。持续：若其他基地上你的任意随从将要返回你的手牌，你可以改为将它们移动到这里。"
+    },
+    "star_roamers_teleport_overflow_pod": {
+      "name": "传送超额",
+      "effectText": "将你的一个随从返回其拥有者手牌。从你的手牌展示任意数量同名随从，并将它们作为额外随从打出。"
+    },
+    "star_roamers_ensign_pod": {
+      "name": "炮灰",
+      "abilityText": "持续：当一名对手打出一张直接影响这里你的另一个随从的牌时，你可以改为让它影响此随从。"
+    },
+    "star_roamers_ships_engineer_pod": {
+      "name": "舰船工程师",
+      "abilityText": "持续：若你的另一个随从将要返回你的手牌，你可以改为将它移动到另一个基地。"
+    },
+    "star_roamers_medical_officer_pod": {
+      "name": "医疗指挥官",
+      "abilityText": "持续：当你的一个或多个其他随从将要返回你的手牌时，你可以抽一张牌来代替返回其中一个。"
+    },
+    "star_roamers_science_officer_pod": {
+      "name": "科学指挥官",
+      "abilityText": "天赋：将你一个力量 4 或以下的随从返回其拥有者手牌。额外打出一个不同名称的随从。"
+    },
+    "star_roamers_ships_captain_pod": {
+      "name": "舰长",
+      "abilityText": "从你的牌库搜寻一个随从，展示它，加入手牌并洗牌。若它力量为 3 或以下，将它作为额外随从打到这里。"
+    },
+    "vigilantes_make_my_day_pod": {
+      "name": "一天的快乐",
+      "effectText": "消灭有你随从的基地中一个印刷战力 3 或更低的随从。特殊：在你的回合，一个基地计分前可以打出此牌。"
+    },
+    "vigilantes_tough_it_out_pod": {
+      "name": "咬紧牙关",
+      "effectText": "打在一个随从上。持续：此随从 -3 战力且不能被消灭。在任意玩家回合开始时，你可以消灭此行动，使该随从直到你的回合结束 +3 战力。"
+    },
+    "vigilantes_scared_straight_pod": {
+      "name": "直面恐惧",
+      "effectText": "将有你随从的基地中另一位玩家的一个随从移动到另一个基地。若这是你本回合打出的第一个行动，你可以额外打出一个行动。"
+    },
+    "vigilantes_feeling_lucky_pod": {
+      "name": "觉得运气不错？",
+      "effectText": "打在另一位玩家的一个随从上。持续：此随从的控制者打出行动后，查看你牌库顶牌，并将其放在牌库顶或牌库底。特殊：此基地计分前，展示你牌库顶牌；若是行动，消灭此随从。"
+    },
+    "vigilantes_shrug_it_off_pod": {
+      "name": "不屑一顾",
+      "effectText": "打在一个基地上。天赋：直到你的回合开始，这里其他玩家的随从 -1 战力。"
+    },
+    "vigilantes_knocked_into_next_week_pod": {
+      "name": "打到穿越",
+      "effectText": "选择一个随从。将其洗回拥有者的牌库中。"
+    },
+    "vigilantes_lets_finish_this_pod": {
+      "name": "做个了断吧",
+      "effectText": "对基地打出。持续：在你的回合开始时，若此处有你的随从和其他玩家随从，将本基地的爆破点降为 0 至回合结束。"
+    },
+    "vigilantes_the_revenge_pod": {
+      "name": "复仇",
+      "effectText": "特殊：基地计分后你不是第一名时打出。移动该处你的一个随从至其他基地而不进入弃牌堆。"
+    },
+    "vigilantes_a_whole_lot_meaner_pod": {
+      "name": "凶恶百倍",
+      "effectText": "在你的一个随从上放置至多 3 个 +1 战力指示物。特殊：在一个你没有获胜的基地计分后，你可以从弃牌堆抓取此牌。"
+    },
+    "vigilantes_street_justice_pod": {
+      "name": "街头正义",
+      "effectText": "打在一个基地上。天赋：将你的一个随从移入或移出此基地；或者直到你的回合开始，在其他玩家回合中你在这里的随从 +2 战力。"
+    },
+    "vigilantes_who_loves_ya_baby_pod": {
+      "name": "谁爱你，小老弟？",
+      "effectText": "从你牌库顶展示一个 4 战力随从。抓取它，或将其作为额外随从打出。"
+    },
+    "vigilantes_jacky_bill_pod": {
+      "name": "杰基比尔",
+      "abilityText": "持续：当其他玩家打出战术后，你可以使此随从 +2 战力直至回合结束。"
+    },
+    "vigilantes_death_wisher_pod": {
+      "name": "猛龙怪客",
+      "abilityText": "特殊：此基地计分前，你可以消灭一个本回合打出或移动到此基地的随从。"
+    },
+    "vigilantes_shift_pod": {
+      "name": "铁杆神探",
+      "abilityText": "将你弃牌堆中至多 2 张随从置于你的牌库顶。"
+    },
+    "vigilantes_foxy_green_pod": {
+      "name": "狐狸翠",
+      "abilityText": "持续：当另一位玩家打出一张牌或使用天赋直接影响本基地中的随从时，放置 1 枚 +1 战力标记于此随从上。"
+    },
+    "vigilantes_brojak_pod": {
+      "name": "神探布洛杰克",
+      "abilityText": "持续：当有随从移动后，你可以移动此随从至同一个基地，并 +1 战力直至回合结束。"
+    },
+    "vigilantes_stoneford_pod": {
+      "name": "破萝飞龙",
+      "abilityText": "从你的牌库中搜索一张战术置于手牌。"
+    },
+    "vigilantes_dusty_henry_pod": {
+      "name": "瞌睡的亨利",
+      "abilityText": "你可以将这里一个战力 5 或以下的随从洗回其拥有者牌库。"
+    },
+    "luchadors_quick_set_up_pod": {
+      "name": "快速铺垫",
+      "effectText": "打在另一位玩家的一个随从上。你可以额外打出一个行动。"
+    },
+    "luchadors_smart_set_up_pod": {
+      "name": "聪明铺垫",
+      "effectText": "打在另一位玩家的一个随从上。持续：每回合第一次有随从打到这里后，抽 1 张牌。"
+    },
+    "luchadors_powerful_set_up_pod": {
+      "name": "强力铺垫",
+      "effectText": "打在另一位玩家的一个随从上。持续：你在这里的每个随从 +1 力量。"
+    },
+    "luchadors_pin_pod": {
+      "name": "压制",
+      "effectText": "打在一个带有你的行动的随从上。持续：此随从的能力被取消，且其力量不计入其控制者在这里的总力量。"
+    },
+    "luchadors_out_for_the_count_pod": {
+      "name": "点名出局",
+      "effectText": "选择一个其上有一个或多个你的行动的随从。将其中一个行动返回你的手牌。摧毁该随从。"
+    },
+    "luchadors_senor_muchoslam_vs_the_monsters_pod": {
+      "name": "圣徒大战怪物",
+      "effectText": "从你的弃牌堆中选择任意数量的行动。将其中一个可打在随从上的行动置入手牌，并将其余洗入你的牌库。"
+    },
+    "luchadors_reversal_pod": {
+      "name": "逆转",
+      "effectText": "特殊：在一个你没有领先的基地计分前，获得那里一个带有铺垫行动的随从控制权直到回合结束。摧毁该随从上任意数量你的行动。"
+    },
+    "luchadors_tag_team_pod": {
+      "name": "团队标记",
+      "effectText": "在一个你有随从的基地额外打出一个随从。"
+    },
+    "luchadors_cheap_pop_pod": {
+      "name": "廉价欢呼",
+      "effectText": "你的一个随从直到回合结束 +2 力量；如果那里有带铺垫行动的随从，改为 +4 力量。"
+    },
+    "luchadors_yellow_demon_pod": {
+      "name": "黄色恶魔",
+      "abilityText": "你可以从你的牌库和/或弃牌堆中搜寻一个铺垫行动并置入手牌。"
+    },
+    "luchadors_flor_loca_pod": {
+      "name": "火炬女郎",
+      "abilityText": "持续：若另一位玩家在这里的随从上有你的行动，此随从 +2 战力。"
+    },
+    "luchadors_capa_roja_pod": {
+      "name": "红披风",
+      "abilityText": "特殊：在此基地计分前，你可以摧毁这里每位其他玩家控制的一个印制力量 3 或以下的随从。"
+    },
+    "luchadors_senor_muchoslam_pod": {
+      "name": "圣徒",
+      "abilityText": "将你弃牌堆中的一个行动置入手牌。天赋：将一个行动作为额外行动打在另一位玩家的随从上。"
+    },
+    "aladdin_carpet": {
+      "name": "魔毯",
+      "abilityText": "天赋：将这个角色和这里至多两个你的其他角色移动到另一个基地。"
+    },
+    "aladdin_palace_guard": {
+      "name": "王宫守卫",
+      "abilityText": "天赋：弃掉一张行动牌，在这里每个你的王宫守卫上各放置一个 +1 力量指示物。"
+    },
+    "aladdin_abu": {
+      "name": "阿布",
+      "abilityText": "将你弃牌堆中的一张行动牌放到你的牌库顶。"
+    },
+    "aladdin_genie": {
+      "name": "灯神",
+      "abilityText": "天赋：从你的牌库和/或弃牌堆中检索一张“许愿”，展示并置入你的手牌。若你检索了牌库，则洗牌。"
+    },
+    "aladdin_rajah": {
+      "name": "拉贾",
+      "abilityText": "天赋：弃掉一张行动牌，使这个角色直到回合结束获得 +2 力量。特殊：这个基地计分前，你可以使用这个角色的天赋。"
+    },
+    "aladdin_jasmine": {
+      "name": "茉莉公主",
+      "abilityText": "天赋：弃掉一张行动牌，以额外行动打出一张行动牌。"
+    },
+    "aladdin_aladdin": {
+      "name": "阿拉丁",
+      "abilityText": "从你的牌库和/或弃牌堆中检索“神灯”，展示并抽取它。若你检索了牌库，则洗牌。天赋：从你的牌库展示牌，直到展示一张行动牌。抽取它，并将其余牌洗回牌库。"
+    },
+    "aladdin_a_friend_like_me": {
+      "name": "有我这样的朋友",
+      "effectText": "展示你牌库顶的四张牌。抽取其中所有行动牌，并将其余牌洗回你的牌库。"
+    },
+    "aladdin_cave_of_wonders": {
+      "name": "奇迹之洞",
+      "effectText": "将你弃牌堆中的一张行动牌置入你的手牌。"
+    },
+    "aladdin_jafar": {
+      "name": "贾方",
+      "effectText": "每个其他玩家弃掉其手牌中的一张行动牌，或展示手牌以证明其中没有行动牌。你可以将一张被弃掉的行动牌或你手牌中的一张行动牌作为额外行动打出。"
+    },
+    "aladdin_magic_carpet_ride": {
+      "name": "乘坐魔毯",
+      "effectText": "从你的牌库、手牌和/或弃牌堆中检索“魔毯”；若你检索了牌库，则洗牌；将“魔毯”作为额外角色打出。"
+    },
+    "aladdin_street_rat": {
+      "name": "街头老鼠",
+      "effectText": "将另一名玩家弃牌堆中的一张行动牌作为额外行动打出。"
+    },
+    "aladdin_the_lamp": {
+      "name": "神灯",
+      "effectText": "从你的牌库和/或弃牌堆中检索“灯神”，展示并抽取它。若你检索了牌库，则洗牌。将此牌放到你的牌库底。"
+    },
+    "aladdin_wish": {
+      "name": "许愿",
+      "effectText": "如果你有“灯神”在场，选择一个效果并将此牌放入盒中：打出两张额外的非“许愿”牌；使一个角色直到回合结束获得 +5 力量；抽四张牌。"
+    },
+    "beauty_and_the_beast_enchanted_objects": {
+      "name": "魔法物品",
+      "abilityText": "特殊：当你从手牌弃掉此牌后，你可以将它作为额外角色打出。每回合只能使用一次“魔法物品”的能力。"
+    },
+    "beauty_and_the_beast_cogsworth": {
+      "name": "葛士华",
+      "abilityText": "天赋：弃掉一张牌，以额外行动打出一张行动牌。"
+    },
+    "beauty_and_the_beast_lumiere": {
+      "name": "卢米亚",
+      "abilityText": "天赋：弃掉一张牌，在这里以额外角色打出一张力量 3 或以下的角色。"
+    },
+    "beauty_and_the_beast_mrs_potts_and_chip": {
+      "name": "茶煲太太和阿奇",
+      "abilityText": "天赋：弃掉一张牌，抽一张牌。"
+    },
+    "beauty_and_the_beast_beast": {
+      "name": "野兽",
+      "abilityText": "如果“贝儿”在这里，在她和此牌上各放置一个 +1 力量指示物。天赋：弃掉一张牌，在此牌上放置一个 +1 力量指示物。"
+    },
+    "beauty_and_the_beast_belle": {
+      "name": "贝儿",
+      "abilityText": "如果“野兽”在这里，你可以至多抽三张牌。天赋：抽一张牌，或弃掉一张牌。"
+    },
+    "beauty_and_the_beast_be_our_guest": {
+      "name": "我们的贵客",
+      "effectText": "基地修正。天赋：如果你本回合已从手牌弃过一张牌，抽一张牌。"
+    },
+    "beauty_and_the_beast_break_the_curse": {
+      "name": "打破诅咒",
+      "effectText": "选择一个基地。那里当前每个你的角色直到回合结束获得 +1 力量。特殊：当你从手牌弃掉此牌后，你可以将它作为额外行动打出。"
+    },
+    "beauty_and_the_beast_discover_the_library": {
+      "name": "发现图书馆",
+      "effectText": "抽两张牌，然后弃掉一张牌。特殊：当你从手牌弃掉此牌后，你可以将它作为额外行动打出。"
+    },
+    "beauty_and_the_beast_ever_a_surprise": {
+      "name": "不断的惊喜",
+      "effectText": "将你弃牌堆中至多两个角色洗入你的牌库。特殊：当你从手牌弃掉此牌后，你可以将它作为额外行动打出。"
+    },
+    "beauty_and_the_beast_gaston": {
+      "name": "加斯顿",
+      "effectText": "基地修正。持续：此基地的临界点增加 5。每名玩家的回合中，该玩家可以弃掉两张牌来消灭此牌。"
+    },
+    "beauty_and_the_beast_petals_of_the_rose": {
+      "name": "玫瑰花瓣",
+      "effectText": "基地修正。持续：当你从手牌弃掉一张或多张牌后，你可以查看你牌库顶两张牌。按任意顺序将它们放到牌库顶和/或底。"
+    },
+    "beauty_and_the_beast_this_provincial_town": {
+      "name": "遥远的小镇",
+      "effectText": "以额外角色打出一张力量 3 或以下的角色。然后你可以弃掉一张牌，在其上放置一个 +1 力量指示物。"
+    },
+    "nightmare_before_christmas_jack_skellington": {
+      "name": "杰克骷髅王",
+      "abilityText": "将你弃牌堆中的一张角色修正牌置入你的手牌。持续：当你打出一张角色修正牌后，你可以在一个角色上放置一个 +1 力量指示物，或抽一张牌。"
+    },
+    "nightmare_before_christmas_halloween_town_folks": {
+      "name": "万圣节镇的人们",
+      "abilityText": "展示你牌库顶三张牌。如果其中有角色修正牌，抽取一张。按任意顺序将其余牌放到你牌库顶和/或底。"
+    },
+    "nightmare_before_christmas_lock_shock_and_barrel": {
+      "name": "锁、震与桶",
+      "abilityText": "特殊：这个基地计分前，你可以在这里的一个角色上将一张角色修正牌作为额外行动打出。"
+    },
+    "nightmare_before_christmas_the_mayor_of_halloween_town": {
+      "name": "万圣节镇的市长",
+      "abilityText": "持续：如果你控制这里的一张角色修正牌，你在这里的角色获得 +1 力量。"
+    },
+    "nightmare_before_christmas_dr_finkelstein": {
+      "name": "芬克尔斯坦博士",
+      "abilityText": "天赋：将一张角色修正牌从一个角色移动到另一个角色上。"
+    },
+    "nightmare_before_christmas_sally": {
+      "name": "莎莉",
+      "abilityText": "天赋：将一张角色修正牌作为额外行动打出。"
+    },
+    "nightmare_before_christmas_zero": {
+      "name": "幽灵犬",
+      "abilityText": "持续：如果你控制这里的任意角色修正牌，此角色获得 +3 力量。特殊：此基地计分后，将此角色返回你的手牌而非弃牌堆，且你可以将它作为额外角色打出到另一个基地。"
+    },
+    "nightmare_before_christmas_christmas_will_be_ours": {
+      "name": "圣诞节将属于我们！",
+      "effectText": "查看另一名玩家的手牌。你可以将其中或你手牌中的一张行动牌作为额外行动打出。如果它由另一名玩家拥有，回合结束时无论它在哪里都返回其手牌（盒中除外）。"
+    },
+    "nightmare_before_christmas_ghostly_presents": {
+      "name": "幽灵礼物",
+      "effectText": "角色修正。持续：如果你控制此角色，立即消灭此牌并以额外角色打出一张力量 3 或以下的角色。否则，其控制者不能在这里打出力量 3 或以下的角色。"
+    },
+    "nightmare_before_christmas_jack_o_lantern_in_the_box": {
+      "name": "盒子里的杰克南瓜灯",
+      "effectText": "角色修正。持续：如果你控制此角色，你在回合结束前额外抽一张牌；否则，此角色的控制者在其回合中不能将额外牌加入手牌。"
+    },
+    "nightmare_before_christmas_monster_garland": {
+      "name": "怪物花环",
+      "effectText": "角色修正。持续：如果你控制此角色，它获得 +3 力量；否则它获得 -2 力量。"
+    },
+    "nightmare_before_christmas_oogie_boogie": {
+      "name": "乌基布基",
+      "effectText": "角色修正。你可以将此角色移动到另一个基地。持续：此角色力量为 0，且其能力被取消。如果这里有另一个力量 5 或以上的角色，则消灭此牌。"
+    },
+    "nightmare_before_christmas_sandy_claws_costume": {
+      "name": "圣诞老人服装",
+      "effectText": "角色修正。持续：你每控制一张角色修正牌，此角色获得 +1 力量。特殊：此基地计分后，将此角色返回其拥有者手牌，并将此牌放到你的牌库底。"
+    },
+    "nightmare_before_christmas_winter_surprise": {
+      "name": "冬季惊喜",
+      "effectText": "将你弃牌堆中的一张角色修正牌作为额外行动打出。将此牌洗入你的牌库。"
+    },
+    "nightmare_before_christmas_zombie_duck_toy": {
+      "name": "玩具僵尸鸭",
+      "effectText": "角色修正。特殊：此基地计分时，如果你控制此角色，你多获得 1 点 VP；否则其控制者少获得 1 点 VP。"
+    },
+    "wreck_it_ralph_sugar_rush_racer": {
+      "name": "甜蜜冲刺车手",
+      "abilityText": "持续：当你打出一张基地修正牌后，你可以将此角色移入或移出那个基地，使它直到回合结束获得 +1 力量。"
+    },
+    "wreck_it_ralph_sergeant_calhoun": {
+      "name": "卡尔霍恩军士",
+      "abilityText": "天赋：如果你在这里有基地修正牌，你这里的其他角色直到回合结束获得 +1 力量。"
+    },
+    "wreck_it_ralph_vanellope_von_schweetz": {
+      "name": "云妮洛普",
+      "abilityText": "天赋：将此角色移动到另一个基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "wreck_it_ralph_fix_it_felix_jr": {
+      "name": "快手阿修",
+      "abilityText": "将你弃牌堆中的一张基地修正牌置入你的手牌。天赋：将这里的一张基地修正牌放到其拥有者的牌库顶。"
+    },
+    "wreck_it_ralph_wreck_it_ralph": {
+      "name": "破坏王拉尔夫",
+      "abilityText": "天赋：在这里以额外行动打出一张基地修正牌，或消灭这里的一张基地修正牌。"
+    },
+    "wreck_it_ralph_cy_bug_infestation": {
+      "name": "赛博虫灾变",
+      "effectText": "基地修正。天赋：消灭此牌和此基地。从你左手边的玩家开始，每名玩家选择一个基地，并将他们在这里的所有牌移动到那里。正常替换此基地。"
+    },
+    "wreck_it_ralph_escape_pod": {
+      "name": "逃生舱",
+      "effectText": "将你至多两张牌从一个基地移动到另一个基地。特殊：你可以在一个基地计分前打出此牌；此时从计分基地移动你的一张牌，而不是两张。"
+    },
+    "wreck_it_ralph_i_m_gonna_wreck_it": {
+      "name": "我要破坏它！",
+      "effectText": "基地修正。持续：此基地的临界点降低 3。天赋：此基地的能力直到你下个回合开始前被取消。"
+    },
+    "wreck_it_ralph_kart_bakery": {
+      "name": "卡丁车面包房",
+      "effectText": "基地修正。天赋：如果你在这里有角色，抽一张牌。"
+    },
+    "wreck_it_ralph_king_candy": {
+      "name": "糖果国王",
+      "effectText": "基地修正。天赋：你可以将此牌移动到另一个基地。选择此牌所在基地的一个角色。直到你下个回合开始前，其上的角色修正牌能力被取消，且其力量指示物不增加其力量。"
+    },
+    "wreck_it_ralph_mints_eruption": {
+      "name": "薄荷喷发",
+      "effectText": "选择一个基地。将其与弃牌堆中的一个基地交换。原基地上的所有牌保留在原处。"
+    },
+    "wreck_it_ralph_research_lab_beacon": {
+      "name": "研究实验室信标",
+      "effectText": "基地修正。持续：如果这里有四个或更多角色，消灭此牌。天赋：指定一个派系。将该派系的所有角色移动到这里。"
+    },
+    "wreck_it_ralph_sugar_rush": {
+      "name": "甜蜜冲刺",
+      "effectText": "基地修正。天赋：将至多两个你的角色从这里移动到另一个基地，或从另一个基地移动到这里。它们各自直到回合结束获得 +1 力量。"
+    },
+    "base_agrabah_bazaar": {
+      "name": "阿格拉巴集市",
+      "abilityText": "你的回合中，你可以弃掉一张行动牌，在这里你的角色上合计放置至多两个 +1 力量指示物。"
+    },
+    "base_sultans_palace": {
+      "name": "苏丹皇宫",
+      "abilityText": "每回合第一次你在这里打出角色后，抽一张牌。"
+    },
+    "base_enchanted_castle": {
+      "name": "魔法城堡",
+      "abilityText": "你的回合中第一次从手牌弃掉一张牌后，在这里你的一个角色上放置一个 +1 力量指示物。"
+    },
+    "base_gastons_tavern": {
+      "name": "加斯顿酒馆",
+      "abilityText": "你的回合中，你可以弃掉一张牌，在这里以额外角色打出一张力量 3 或以下的角色。"
+    },
+    "base_halloween_town": {
+      "name": "万圣节镇",
+      "abilityText": "此基地计分后，每名玩家可以将这里任意数量、附着在角色上的自己的修正牌洗入其拥有者的牌库。"
+    },
+    "base_spiral_hill": {
+      "name": "螺旋山丘",
+      "abilityText": "此基地计分后，每个在这里有角色的玩家可以将这里或其弃牌堆中的一张角色修正牌返回手牌。"
+    },
+    "base_the_dump": {
+      "name": "垃圾场",
+      "abilityText": "当另一个基地上的基地修正牌进入弃牌堆时，改为将其移动到这里。此基地计分后，每名玩家可以将这里其一张基地修正牌返回其拥有者手牌。"
+    },
+    "base_the_power_strip": {
+      "name": "电源插排",
+      "abilityText": "你的回合中，你可以将你的一个角色移入或移出此基地。"
+    },
+    "big_hero_6_microbot_swarm": {
+      "name": "微型机器群",
+      "abilityText": "将一张微型机器群从你的弃牌堆置入你的手牌。天赋：在此牌上放置一枚 +1 力量标记。"
+    },
+    "big_hero_6_baymax": {
+      "name": "大白",
+      "abilityText": "持续：你在这里的其他角色不能被其他玩家的牌影响。特殊：这个基地计分后，如果此角色拥有力量标记，移动你在这里的另一个角色到另一个基地。"
+    },
+    "big_hero_6_fred_frederickson_iv": {
+      "name": "弗雷德IV世",
+      "abilityText": "天赋：抽 1 张牌。然后如果此角色拥有任意力量标记，你可以令这里另一个角色获得 -2 力量，直到你的下个回合开始。"
+    },
+    "big_hero_6_go_go_tomago": {
+      "name": "神行御姐",
+      "abilityText": "天赋：将此角色移动到另一个基地。如果此角色拥有力量标记，你可以同时将你在这里的另一个角色移动到同一基地。"
+    },
+    "big_hero_6_hiro_hamada": {
+      "name": "小宏",
+      "abilityText": "天赋：在你在这里的一个角色上放置一枚 +1 力量标记，或将任意数量的力量标记从你的一个角色移动到另一个角色。"
+    },
+    "big_hero_6_honey_lemon": {
+      "name": "哈妮柠檬",
+      "abilityText": "天赋：摧毁这里的一个基地行动或角色装备。如果此角色拥有任意力量标记，你可以改为打出一个额外行动。"
+    },
+    "big_hero_6_wasabi": {
+      "name": "芥末无疆",
+      "abilityText": "天赋：直到回合结束，此角色获得 +1 力量；或其每有一枚 +1 力量标记便获得 +1 力量，最多 +5。"
+    },
+    "big_hero_6_control_mask": {
+      "name": "控制面具",
+      "effectText": "对一个不是微型机器群的角色打出。搜索你的牌库寻找一张微型机器群，展示它并将其置入手牌，然后洗牌。天赋：将一张微型机器群作为额外角色打出，或在这里与另一个基地之间移动任意数量的微型机器群。"
+    },
+    "big_hero_6_control_the_swarm": {
+      "name": "控制机器群",
+      "effectText": "在你每个没有力量标记的角色上放置一枚 +1 力量标记，或在你的角色之间移动任意数量的力量标记。"
+    },
+    "big_hero_6_microbot_maker": {
+      "name": "微型机器制造者",
+      "effectText": "对一个基地打出。在你在这里的每个角色上放置一枚 +1 力量标记。天赋：在你在这里的一个角色上放置一枚 +1 力量标记。"
+    },
+    "big_hero_6_new_student": {
+      "name": "新来的学生",
+      "effectText": "打出一个力量 3 或更低的角色作为额外角色，然后在其上放置一枚 +1 力量标记。"
+    },
+    "big_hero_6_team_effort": {
+      "name": "团队的努力",
+      "effectText": "选择一个基地。你在那里每有一个拥有力量标记的角色，便抽 1 张牌。"
+    },
+    "big_hero_6_upgrades": {
+      "name": "升级",
+      "effectText": "在你的一个角色上放置两枚 +1 力量标记。打出一个额外行动。"
+    },
+    "big_hero_6_version_2_0": {
+      "name": "版本2.0",
+      "effectText": "选择一个基地。你在那里每个拥有力量标记的角色直到回合结束获得 +2 力量。"
+    },
+    "big_hero_6_yokai": {
+      "name": "幽灵",
+      "effectText": "对一个基地打出。持续：这里没有力量标记的角色获得 -1 力量。特殊：这个基地计分后，你可以从这里每个你的角色上移动一枚 +1 力量标记到另一个角色上。"
+    },
+    "frozen_snowgie": {
+      "name": "迷你雪人",
+      "abilityText": "选择这里的一个角色。该角色直到回合结束获得 +1 力量。"
+    },
+    "frozen_marshmallow": {
+      "name": "棉花糖",
+      "abilityText": "持续：这里的其他玩家角色获得 -1 力量。"
+    },
+    "frozen_olaf": {
+      "name": "雪宝",
+      "abilityText": "将一个你在这里的角色移动到另一个基地。抽 1 张牌。"
+    },
+    "frozen_sven": {
+      "name": "斯文",
+      "abilityText": "你可以从你的弃牌堆将一张力量 4 或更低的角色置入手牌。"
+    },
+    "frozen_anna": {
+      "name": "安娜",
+      "abilityText": "持续：如果克里斯托弗在这里，此角色不能被其他玩家的牌影响。"
+    },
+    "frozen_kristoff": {
+      "name": "克里斯托弗",
+      "abilityText": "持续：如果安娜在这里，此角色获得 +2 力量。"
+    },
+    "frozen_elsa": {
+      "name": "艾莎",
+      "abilityText": "天赋：选择一个基地。那里每个其他玩家的角色直到回合结束获得 -1 力量。"
+    },
+    "frozen_act_of_true_love": {
+      "name": "真爱的行为",
+      "effectText": "选择你的一个角色。它直到回合结束不能被其他玩家的牌影响。抽 1 张牌。"
+    },
+    "frozen_big_summer_blowout": {
+      "name": "夏天大盛宴",
+      "effectText": "选择一个基地。你在那里每有一个角色，便抽 1 张牌。"
+    },
+    "frozen_do_you_want_to_build_a_snowman": {
+      "name": "你想和我堆个雪人吗？",
+      "effectText": "从你的牌库和/或弃牌堆中寻找至多两张迷你雪人，将它们展示并置入手牌。然后洗牌。"
+    },
+    "frozen_frozen_port": {
+      "name": "冻结的港口",
+      "effectText": "对一个基地打出。持续：其他玩家不能将角色移入或移出这里。"
+    },
+    "frozen_hans_westergaard": {
+      "name": "汉斯·韦斯特加德",
+      "effectText": "选择一个基地。摧毁那里一个力量 3 或更低的角色。"
+    },
+    "frozen_let_it_go": {
+      "name": "放手吧",
+      "effectText": "将你的一个角色返回手牌。打出一个额外行动。"
+    },
+    "frozen_lock_the_gates": {
+      "name": "锁上大门",
+      "effectText": "对一个基地打出。持续：其他玩家不能在这里打出力量 3 或更低的角色。"
+    },
+    "frozen_reindeers_are_better_than_people": {
+      "name": "驯鹿的心地比人好",
+      "effectText": "选择你的一个角色。它直到回合结束获得 +2 力量；如果斯文在场，改为 +4 力量。"
+    },
+    "lion_king_lion_cub": {
+      "name": "幼狮",
+      "abilityText": "特殊：当此牌从基地进入弃牌堆时，从你的牌库搜寻一张力量 4 或更低的角色，将其展示并置入手牌。然后洗牌。"
+    },
+    "lion_king_rafiki": {
+      "name": "拉飞奇",
+      "abilityText": "从你的弃牌堆将一张力量 2 或更低的角色置入手牌。"
+    },
+    "lion_king_timon_and_pumbaa": {
+      "name": "丁满和彭彭",
+      "abilityText": "从你的牌库顶弃牌，直到弃掉一张哈库拉·马塔塔。将其置入手牌，并将其余弃掉的牌置入弃牌堆。"
+    },
+    "lion_king_zazu": {
+      "name": "沙祖",
+      "abilityText": "选择这里另一个角色。它直到回合结束获得 +2 力量。如果木法沙在你的弃牌堆，改为抽 1 张牌。"
+    },
+    "lion_king_nala": {
+      "name": "娜娜",
+      "abilityText": "如果木法沙在你的弃牌堆，你可以在此角色上放置一枚 +1 力量标记。"
+    },
+    "lion_king_simba": {
+      "name": "辛巴",
+      "abilityText": "如果木法沙在你的弃牌堆，抽 1 张牌并在此角色上放置一枚 +1 力量标记。"
+    },
+    "lion_king_mufasa": {
+      "name": "木法沙",
+      "abilityText": "特殊：当此牌从基地进入弃牌堆时，在你的一个角色上放置两枚 +1 力量标记。"
+    },
+    "lion_king_circle_of_life": {
+      "name": "生命的循环",
+      "effectText": "对一个角色打出。持续：当该角色从基地进入弃牌堆后，你可以打出一张力量 3 或更低的角色作为额外角色。"
+    },
+    "lion_king_hakuna_matata": {
+      "name": "哈库拉·马塔塔",
+      "effectText": "抽 2 张牌。如果丁满和彭彭在你的弃牌堆，你可以将其置入手牌。"
+    },
+    "lion_king_he_lives_in_you": {
+      "name": "他活在你心中",
+      "effectText": "对一个基地打出。持续：如果木法沙在你的弃牌堆，你在这里获得 +2 力量；否则你在这里获得 +1 力量。"
+    },
+    "lion_king_hyenas_den": {
+      "name": "鬣狗巢穴",
+      "effectText": "对一个基地打出。持续：如果木法沙在你的弃牌堆，你在这里获得 +2 力量。特殊：这个基地计分后，如果木法沙在你的弃牌堆，你可以将你的一个角色从这里移动到另一个基地。"
+    },
+    "lion_king_just_cant_wait_to_be_king": {
+      "name": "迫不及待想成为国王",
+      "effectText": "在你的一个角色上放置两枚 +1 力量标记。如果木法沙在你的弃牌堆，改为放置四枚。"
+    },
+    "lion_king_scar": {
+      "name": "刀疤",
+      "effectText": "摧毁另一位玩家一个力量 5 或更低的角色，或摧毁你的一个角色以抽牌。"
+    },
+    "lion_king_the_hyenas": {
+      "name": "鬣狗",
+      "effectText": "摧毁一个力量 3 或更低的角色。如果木法沙在你的弃牌堆，抽 1 张牌，然后你可以打出一个额外行动。"
+    },
+    "lion_king_wildebeest_stampede": {
+      "name": "牛羚踩踏",
+      "effectText": "摧毁你的一个角色。从你的牌库搜寻一个角色，展示它，洗牌，然后将其作为额外角色打出。"
+    },
+    "mulan_cri_kee": {
+      "name": "克里基",
+      "abilityText": "如果这里有另一个你的角色，你可以打出一张力量 3 或更低的角色作为额外角色。"
+    },
+    "mulan_mushu": {
+      "name": "木须",
+      "abilityText": "你可以在这里另一个角色上放置一枚 +1 力量标记。"
+    },
+    "mulan_chien_po": {
+      "name": "金宝",
+      "abilityText": "持续：你的这里角色不能被其他玩家的牌影响。每回合一次，当你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "mulan_ling": {
+      "name": "宁",
+      "abilityText": "你可以将一张力量 2 或更低的角色作为额外角色打到这里。每回合一次，当你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "mulan_yao": {
+      "name": "尧",
+      "abilityText": "你可以摧毁这里一个力量 2 或更低的角色。每回合一次，当你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "mulan_li_shang": {
+      "name": "李翔",
+      "abilityText": "在这里另一个你的角色上放置一枚 +1 力量标记。"
+    },
+    "mulan_mulan": {
+      "name": "木兰",
+      "abilityText": "如果你本回合放置过 +1 力量标记，你可以打出一个额外行动或抽 1 张牌。"
+    },
+    "mulan_avalanche": {
+      "name": "雪崩",
+      "effectText": "选择一个基地。弃 1 张牌，将那里所有力量 3 或更低的角色置入其拥有者的弃牌堆。"
+    },
+    "mulan_be_a_man": {
+      "name": "成为一个男人",
+      "effectText": "对一个基地打出。在这里至多两个角色上各放置一枚 +1 力量标记。"
+    },
+    "mulan_call_up_new_recruits": {
+      "name": "招收新兵",
+      "effectText": "打出一张力量 4 或更低的角色作为额外角色，或抽 2 张牌。"
+    },
+    "mulan_dragon_cannon": {
+      "name": "飞龙巨炮",
+      "effectText": "摧毁一个力量 3 或更低的角色。"
+    },
+    "mulan_family_sword": {
+      "name": "家族之剑",
+      "effectText": "对你的一个角色打出。持续：该角色获得 +3 力量。"
+    },
+    "mulan_group_training": {
+      "name": "集体训练",
+      "effectText": "在你的每个角色上放置一枚 +1 力量标记。"
+    },
+    "mulan_prepare_to_fight": {
+      "name": "准备战斗",
+      "effectText": "在你的一个角色上放置两枚 +1 力量标记。抽 1 张牌。"
+    },
+    "mulan_shan_yu": {
+      "name": "单于",
+      "effectText": "特殊：基地计分前，摧毁那里一个力量不高于你在那里一个角色力量的角色。"
+    },
+    "base_sfit_robotics_lab": {
+      "name": "旧京山理工机器人实验室",
+      "abilityText": "当你在这里的角色获得力量标记后，抽 1 张牌。"
+    },
+    "base_krei_tech": {
+      "name": "克雷科技",
+      "abilityText": "这里每个拥有力量标记的角色都获得 +1 力量。"
+    },
+    "base_ice_palace": {
+      "name": "冰宫",
+      "abilityText": "其他玩家在这里的角色获得 -1 力量。"
+    },
+    "base_arendelle": {
+      "name": "阿伦黛尔",
+      "abilityText": "在这里拥有最多角色的玩家额外获得 1 VP。"
+    },
+    "base_jungle_paradise": {
+      "name": "丛林乐园",
+      "abilityText": "当你的一个角色从这里进入弃牌堆后，你可以在你的一个角色上放置一枚 +1 力量标记。"
+    },
+    "base_pride_rock": {
+      "name": "荣耀石",
+      "abilityText": "如果木法沙在你的弃牌堆，你在这里获得 +2 力量。"
+    },
+    "base_training_camp": {
+      "name": "训练营",
+      "abilityText": "每回合第一次你在这里放置 +1 力量标记后，抽 1 张牌。"
+    },
+    "base_forbidden_city": {
+      "name": "紫禁城",
+      "abilityText": "这里你的拥有 +1 力量标记的角色不能被其他玩家的牌影响。"
+    },
+    "action_heroes_commandbro": {
+      "name": "突击兄弟",
+      "abilityText": "持续：在你的回合结束时，若这是你在此处唯一的佣兵，抓 1 张牌。"
+    },
+    "action_heroes_gracie_brones": {
+      "name": "格蕾西·布朗斯",
+      "abilityText": "持续：在你的回合开始时，若这是你在此处唯一的佣兵，你可以在此佣兵上放置 1 个 +1 战力标记；此佣兵直到回合结束额外获得等同于其 +1 战力标记数量的战力。"
+    },
+    "action_heroes_kickboxbro": {
+      "name": "踢拳兄弟",
+      "abilityText": "持续：在你的回合结束时，你可以将 1 张手牌储存于此牌下方。天赋：将储存在此牌下方的 1 张行动作为额外行动打出。特殊：本基地计分前，若这是你在此处唯一的佣兵，你可以使用此佣兵的天赋。"
+    },
+    "action_heroes_robobro": {
+      "name": "机械兄弟",
+      "abilityText": "持续：另一位玩家打出或移动一个佣兵到此处后，你可以在此佣兵上放置 1 个 +1 战力标记。"
+    },
+    "action_heroes_rumbro": {
+      "name": "乱斗兄弟",
+      "abilityText": "持续：你的回合中，若这是你在此处唯一的佣兵，本基地临界点降低 4。"
+    },
+    "action_heroes_warbro": {
+      "name": "战争兄弟",
+      "abilityText": "天赋：选择另一个你恰好有 1 个佣兵的基地，其临界点降低 3 直到回合结束。"
+    },
+    "action_heroes_all_out_of_bubblegum": {
+      "name": "泡泡糖用完了",
+      "effectText": "令你的 1 个佣兵获得 +2 战力直到回合结束。若它是你在该基地唯一的佣兵，你可以打出 1 张额外行动。"
+    },
+    "action_heroes_collateral_damage": {
+      "name": "附带伤害",
+      "effectText": "选择一个基地，其临界点降低 5 直到回合结束。"
+    },
+    "action_heroes_final_stand": {
+      "name": "最后一搏",
+      "effectText": "特殊：在一个你恰好有 1 个佣兵的基地计分前打出。摧毁其他每位玩家各自控制的 1 个印制力量 3 或更低的佣兵。"
+    },
+    "action_heroes_friends_through_eternity": {
+      "name": "永恒挚友",
+      "effectText": "弃 1 张牌，以打出 2 张额外行动。"
+    },
+    "action_heroes_get_to_the_choppa": {
+      "name": "快上直升机！",
+      "effectText": "将你的 1 个佣兵从一个基地移动到另一个基地。若它是你在目的基地唯一的佣兵，你可以打出 1 张额外行动。"
+    },
+    "action_heroes_hostage_rescue": {
+      "name": "人质救援",
+      "effectText": "从你的牌库中检索 1 张佣兵，并将其置于你的牌库顶。"
+    },
+    "action_heroes_lone_wolf": {
+      "name": "独狼",
+      "effectText": "打出到一个佣兵上。持续：此佣兵 +2 战力。若它是你在此处唯一的佣兵，改为 +4 战力。"
+    },
+    "action_heroes_pushing_the_limit": {
+      "name": "突破极限",
+      "effectText": "你每有一个恰好有 1 个佣兵的基地，选择在该佣兵上放置 2 个 +1 战力标记，或抓 1 张牌。"
+    },
+    "action_heroes_slo_mo_attack": {
+      "name": "慢动作攻击",
+      "effectText": "打出到一个基地上。天赋：若你在此处恰好有 1 个佣兵，本基地临界点降低 3 直到回合结束。持续：你在此处的佣兵不受其他玩家行动影响。"
+    },
+    "action_heroes_the_right_person": {
+      "name": "正确人选",
+      "effectText": "在一个你没有佣兵的基地打出 1 个额外佣兵。打出 1 张额外行动。"
+    },
+    "action_heroes_walk_away_slowly": {
+      "name": "慢慢走开……",
+      "effectText": "特殊：一个基地计分后打出。将你在那里的 1 个佣兵返回其拥有者手牌。"
+    },
+    "backtimers_sidelined_girlfriend": {
+      "name": "被晾在一边的女友",
+      "abilityText": "你可以在此牌上放置 1 个停滞标记。特殊：从此牌移除停滞标记后，你可以在基地上你的 1 个佣兵上放置 1 个 +1 战力标记。当你从停滞中打出此牌时，将其作为额外佣兵打出，并在其上放置 1 个 +1 战力标记。"
+    },
+    "backtimers_lifelong_bully": {
+      "name": "终身恶霸",
+      "abilityText": "为你停滞中的 1 张牌添加 1 个停滞标记；或查看你牌库顶 2 张牌，你可以在其中 1 张上放置 2 个停滞标记，并将其余牌以任意顺序放回。"
+    },
+    "backtimers_zany_prof": {
+      "name": "古怪教授",
+      "abilityText": "持续：在你的回合开始时，你可以从你停滞中的 1 张牌上移除 1 个停滞标记，或为其添加 1 个停滞标记。"
+    },
+    "backtimers_alex_p_mcglide": {
+      "name": "亚历克斯·P·麦格莱德",
+      "abilityText": "你可以将 2 个停滞标记放置到你手牌中的 1 张牌上。天赋：若本回合有牌移除了其最后一个停滞标记，你可以在你的 1 个佣兵上放置 1 个 +1 战力标记。"
+    },
+    "backtimers_back_from_the_future": {
+      "name": "从未来回来",
+      "effectText": "展示你牌库顶 3 张牌。你可以在其中 1 张上放置 2 个停滞标记。将其余牌以任意顺序放回。"
+    },
+    "backtimers_99_mph": {
+      "name": "99 MPH",
+      "effectText": "在你手牌中的 1 张牌上放置 2 个停滞标记。抓 1 张牌。"
+    },
+    "backtimers_future_almanac": {
+      "name": "未来年鉴？",
+      "effectText": "在此牌上放置 3 个停滞标记。特殊：从此牌移除停滞标记后，抓 1 张牌。当你从停滞中打出此牌时，弃置它。"
+    },
+    "backtimers_lightning_strike": {
+      "name": "闪电击",
+      "effectText": "在此牌上放置 2 个停滞标记。特殊：当你从其他牌上移除停滞标记时，你可以将它们放到此牌上。你的回合中，你可以消耗 1 次行动打出额度，使一个基地临界点降低此牌上停滞标记数量的数值（最多 5）直到回合结束，并弃置此牌。当你从停滞中打出此牌时，弃置它。"
+    },
+    "backtimers_will_have_to_do": {
+      "name": "将就一下",
+      "effectText": "在你的佣兵上合计放置至多 2 个 +1 战力标记；或从你停滞中的牌上合计移除至多 2 个停滞标记。"
+    },
+    "backtimers_help_from_the_past": {
+      "name": "来自过去的帮助",
+      "effectText": "在此牌上放置 3 个停滞标记。特殊：当此牌进入停滞时，将你弃牌堆中的 1 张牌储存在其下方。当你从停滞中打出此牌时，弃置它，并且你可以将储存在其下方的 1 张牌作为额外牌打出。"
+    },
+    "backtimers_letter_from_another_time": {
+      "name": "来自异时的信",
+      "effectText": "在此牌上放置 3 个停滞标记。特殊：当此牌进入停滞时，从你的牌库中检索 1 张牌并储存在此牌下方。当你从停滞中打出此牌时，弃置它，并且你可以将储存在其下方的 1 张牌作为额外牌打出。"
+    },
+    "backtimers_disrupt_the_space_time_continuum": {
+      "name": "扰乱时空连续体",
+      "effectText": "选择你手牌中至多 2 张牌。在每张被选牌上放置等同于所选牌数量的停滞标记。"
+    },
+    "extramorphs_chestbreaker": {
+      "name": "破胸者",
+      "abilityText": "天赋：若此佣兵在本回合开始时位于基地上，将其置于你的牌库底；选择力量 3 或 4，并从你的牌库顶将该力量的 1 个佣兵作为额外佣兵打到此处。"
+    },
+    "extramorphs_extradrone": {
+      "name": "异形工蜂",
+      "abilityText": "你可以将此处另一位玩家力量 3 或更低的 1 个佣兵移动到另一个基地；若如此做，你可以将此佣兵移动到该基地。若此佣兵是从牌库顶打出的，在其上放置 1 个 +1 战力标记。"
+    },
+    "extramorphs_alien_life_form": {
+      "name": "外星生命体",
+      "abilityText": "你可以摧毁此处力量 3 或更低的 1 个佣兵。若此佣兵是从牌库顶打出的，在其上放置 2 个 +1 战力标记。天赋：从此佣兵上移除 1 个 +1 战力标记，将其移动到另一个基地。"
+    },
+    "extramorphs_hive_queen": {
+      "name": "蜂巢女王",
+      "abilityText": "你可以从你的牌库和/或弃牌堆中检索 1 张 卵场 并将其加入手牌。天赋：直到你的下个回合开始，在你有 卵场 的基地上，其他玩家的佣兵 -1 战力。"
+    },
+    "extramorphs_close_encounters": {
+      "name": "近距离接触",
+      "effectText": "抓 1 张牌。你可以将你手牌中的 1 张牌置于你的牌库顶。打出 1 张额外行动。"
+    },
+    "extramorphs_distress_call": {
+      "name": "求救信号",
+      "effectText": "将 1 个佣兵移动到另一个基地。"
+    },
+    "extramorphs_egg_field": {
+      "name": "卵场",
+      "effectText": "打出到一个基地上。你可以从你的手牌、牌库和/或弃牌堆中检索 1 张 抱头虫，并将其作为额外行动打到此处力量 3 或更低的 1 个佣兵上。天赋：从你的牌库顶将力量 2 或更低的 1 个佣兵作为额外佣兵打到此处。"
+    },
+    "extramorphs_five_by_five": {
+      "name": "五乘五",
+      "effectText": "抓 5 张牌，然后将你手牌中的 5 张牌以任意顺序置于你的牌库顶。"
+    },
+    "extramorphs_game_over_dude": {
+      "name": "完蛋了，伙计！",
+      "effectText": "选择一个基地和一个小于 5 的力量数值。从你的牌库顶将该力量的 1 个佣兵作为额外佣兵打到那里。"
+    },
+    "extramorphs_head_grabber": {
+      "name": "抱头虫",
+      "effectText": "打出到一个力量 3 或更低的佣兵上。天赋：若此牌在你的佣兵上，或本回合开始时此牌在一个佣兵上，摧毁该佣兵；选择力量 4 或更低的一个数值，然后从你的牌库顶将该力量的 1 个佣兵作为额外佣兵打到此处。"
+    },
+    "extramorphs_nuke_it_from_orbit": {
+      "name": "从轨道核平",
+      "effectText": "打出到一个基地上。天赋：若此牌在本回合开始时位于基地上，摧毁此基地及其上的所有其他牌。正常补充新基地。将此牌放入盒中。"
+    },
+    "extramorphs_time_to_go": {
+      "name": "该走了",
+      "effectText": "将你弃牌堆中至多 3 张牌洗入你的牌库。"
+    },
+    "teens_brain": {
+      "name": "学霸",
+      "abilityText": "若此处有 懒散者，你可以打出 1 张额外行动。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以抓 1 张牌。"
+    },
+    "teens_jock": {
+      "name": "运动健将",
+      "abilityText": "若此处有 优等生，在此佣兵上放置 2 个 +1 战力标记。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以在此佣兵上放置 1 个 +1 战力标记。"
+    },
+    "teens_prep": {
+      "name": "优等生",
+      "abilityText": "若此处有 学霸，你可以从你的牌库中检索 1 个力量 3 的佣兵并将其加入手牌。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以令你的 1 个佣兵 +2 战力直到回合结束。"
+    },
+    "teens_rebel": {
+      "name": "叛逆者",
+      "abilityText": "若此处有 运动健将，你可以在此处打出 1 个力量 3 且不是 叛逆者 的额外佣兵。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以将你的 1 个佣兵移动到另一个基地。"
+    },
+    "teens_slacker": {
+      "name": "懒散者",
+      "abilityText": "若此处有 叛逆者，将你的至多 2 个佣兵移动到其他基地。持续：每回合一次，在你打出另一个力量 3 的佣兵后，你可以将你弃牌堆中的 1 张牌置于你的牌库底。"
+    },
+    "teens_abe_frohman": {
+      "name": "艾布·弗罗曼",
+      "effectText": "打出到你的 1 个佣兵上。天赋：直到你的下个回合开始，此佣兵也拥有你拥有的每个其他佣兵的相同名称。使用此佣兵的能力不计为使用其他佣兵的能力。"
+    },
+    "teens_babysitter": {
+      "name": "保姆",
+      "effectText": "打出到你的 1 个佣兵上。持续：你在此处的佣兵不能被其他玩家的能力影响。"
+    },
+    "teens_booty_trap": {
+      "name": "战利品陷阱",
+      "effectText": "打出到一个基地上。持续：在你将一个印制力量 3 的佣兵打出或移动到此基地后，抓 1 张牌。"
+    },
+    "teens_brunch_bunch": {
+      "name": "早午餐帮",
+      "effectText": "选择一个基地。你在那里的印制力量 3 的佣兵每有一个名称，你可以选择一个不同效果：将你的 1 个佣兵移动到那里；抓 1 张牌；在那里打出 1 个力量 3 的额外佣兵；令那里的 1 个佣兵 +2 战力直到回合结束；将你弃牌堆中的 1 张牌置于你的牌库底。"
+    },
+    "teens_explosion_at_school": {
+      "name": "学校爆炸",
+      "effectText": "将你弃牌堆中任意数量名称不同的力量 3 佣兵洗入你的牌库，并抓 1 张牌。"
+    },
+    "teens_new_kid": {
+      "name": "新同学",
+      "effectText": "从你的牌库中检索 1 个力量 3 的佣兵，并将其作为额外佣兵打出。"
+    },
+    "teens_principals_office": {
+      "name": "校长办公室",
+      "effectText": "将你的 1 个佣兵返回你的手牌。你可以将 1 个印制力量 3 的佣兵作为额外佣兵打出。"
+    },
+    "teens_strange_science": {
+      "name": "奇怪科学",
+      "effectText": "从你的弃牌堆将 1 个力量 3 的佣兵作为额外佣兵打出。"
+    },
+    "wraithrustlers_watson": {
+      "name": "沃森",
+      "abilityText": "你可以摧毁本基地上你的 1 张行动；或从你的牌库顶展示牌，直到展示出 1 张怨灵，将其加入手牌，并将其余牌洗入你的牌库。"
+    },
+    "wraithrustlers_roy": {
+      "name": "罗伊",
+      "abilityText": "你可以将你的 1 张行动从另一个基地转移到此处。持续：若本回合此处有怨灵被摧毁，此佣兵 +2 战力。"
+    },
+    "wraithrustlers_ellen": {
+      "name": "艾伦",
+      "abilityText": "天赋：摧毁本基地上你的 1 张行动，使本基地临界点降低 3 直到回合结束。持续：此处有怨灵被摧毁后，你可以打出 1 张额外行动。"
+    },
+    "wraithrustlers_funkman": {
+      "name": "芬克曼",
+      "abilityText": "持续：在你摧毁 1 张行动后，令该行动所在基地上你的每个佣兵 +1 战力直到回合结束，或抓 1 张牌。特殊：一个基地计分前，你可以将其上的 1 张行动转移到另一个基地。"
+    },
+    "wraithrustlers_ancient_sumerian_god": {
+      "name": "古苏美尔神",
+      "effectText": "怨灵。打出到一个基地上。天赋：将你弃牌堆中 1 张可以打到基地上的行动储存在此牌下方。持续：本基地临界点增加 3。当此牌离场时，你每有一个基地，可以将此牌下方储存的 1 张行动作为额外行动打到那里。"
+    },
+    "wraithrustlers_demon_dogs": {
+      "name": "恶魔犬",
+      "effectText": "怨灵。打出到一个基地上。你可以将你手牌或弃牌堆中 1 个力量 3 或更低的佣兵储存在此牌下方。持续：本基地临界点增加 3。此牌被摧毁后，你可以将其下方储存的 1 个佣兵作为额外佣兵打出。"
+    },
+    "wraithrustlers_ectoplasm_one": {
+      "name": "灵质一号",
+      "effectText": "打出到一个基地上。天赋：将此行动转移到另一个基地，以将你的 1 个佣兵从此处移动到那里。若你移动了佣兵，你可以摧毁新基地上的 1 张行动。"
+    },
+    "wraithrustlers_librarian_haunt": {
+      "name": "图书馆怨灵",
+      "effectText": "怨灵。打出到一个基地上。持续：本基地临界点增加 3。此牌被摧毁后，抓 3 张牌。"
+    },
+    "wraithrustlers_resurgence": {
+      "name": "复苏",
+      "effectText": "选择一个基地上的 1 张行动。摧毁它，或将其转移到另一个基地。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "wraithrustlers_slimy": {
+      "name": "黏糊怪",
+      "effectText": "怨灵。打出到一个基地上。持续：本基地临界点增加 3。此牌被摧毁后，你在此处的每个佣兵 +2 战力直到回合结束。"
+    },
+    "wraithrustlers_the_tools_and_the_talent": {
+      "name": "工具与天赋",
+      "effectText": "从你的牌库中检索 1 张牌并将其置于你的牌库顶。"
+    },
+    "wraithrustlers_unlicensed_nuclear_accelerator": {
+      "name": "无证核加速器",
+      "effectText": "打出到一个佣兵上。持续：此佣兵 +2 战力。天赋：摧毁本基地上你的 1 张行动，在此佣兵上放置 1 个 +1 战力标记。"
+    },
+    "base_building_rooftop": {
+      "name": "大楼屋顶",
+      "abilityText": "临界点 20 - VP：3/1/1 - 在你的回合开始时，若你在此处恰好有 1 个佣兵，你可以使本基地临界点降低该佣兵的战力直到回合结束。本基地计分时，每位在此处恰好有 1 个佣兵的玩家获得 1 VP。"
+    },
+    "base_jungle_camp": {
+      "name": "丛林营地",
+      "abilityText": "临界点 20 - VP：3/2/1 - 本基地计分后，获胜者可以将其在此处的 1 个佣兵返回手牌。"
+    },
+    "base_alternate_present": {
+      "name": "另一个现在",
+      "abilityText": "临界点 20 - VP：4/2/2 - 每回合你第一次在此处打出佣兵后，你可以在手牌中的 1 张牌上放置 2 个停滞标记。"
+    },
+    "base_time_traveling_car": {
+      "name": "时间旅行车",
+      "abilityText": "临界点 22 - VP：3/2/1 - 本基地计分后，获胜者可以在其此处的 1 个佣兵或行动上放置 2 个停滞标记。"
+    },
+    "base_ancient_crashed_ship": {
+      "name": "古老坠船",
+      "abilityText": "临界点 21 - VP：4/2/1 - 在你从手牌以外的任何区域将佣兵打到此处后，在该佣兵上放置 1 个 +1 战力标记。"
+    },
+    "base_brood_hive": {
+      "name": "育巢",
+      "abilityText": "临界点 22 - VP：4/2/1 - 本基地计分前，从当前玩家左手边的玩家开始，每位在此处有佣兵的玩家可以从其牌库顶将 1 个额外佣兵打到此处。"
+    },
+    "base_cabin_in_the_woods": {
+      "name": "林中小屋",
+      "abilityText": "临界点 24 - VP：4/3/1 - 若你在此处至少有 2 个佣兵，你在此处的每个佣兵 +2 战力。"
+    },
+    "base_montridge_high": {
+      "name": "蒙特里奇高中",
+      "abilityText": "临界点 20 - VP：4/2/1 - 在你将佣兵打到此处后，在此处你的 1 个不同名称的佣兵上放置 1 个 +1 标记。"
+    },
+    "base_rooftop_portal": {
+      "name": "屋顶传送门",
+      "abilityText": "临界点 22 - VP：5/3/2 - 每回合一次，在你摧毁此处的 1 张牌后，抓 1 张牌。"
+    },
+    "base_wraithrustlers_hq": {
+      "name": "怨灵捕手总部",
+      "abilityText": "临界点 20 - VP：4/2/1 - 获胜者在其下个回合可以打出 1 张额外行动或 1 个额外佣兵。"
     },
     "polynesian_voyagers_growth_of_the_tribes": {
       "name": "部落的成长",

@@ -25,7 +25,9 @@ import {
     getMinionPower,
     grantContextualExtraAction,
     grantContextualExtraMinion,
+    inspectDeck,
     modifyBreakpoint,
+    revealDeckTop,
     removePowerCounter,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
@@ -54,7 +56,7 @@ import {
     type SmashUpEvent,
     type TempPowerAddedEvent,
 } from '../domain/types';
-import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
+import { getEffectivePower, getPlayerEffectivePowerOnBase, registerPowerModifier } from '../domain/ongoingModifiers';
 import { getBaseDef, getCardDef } from '../data/cards';
 
 type ZhongguoPromptContext = {
@@ -905,8 +907,10 @@ function buildCardToDeckTopEvent(card: CardInstance, playerId: PlayerId, reason:
 type SimpleMinionEffectKind =
     | 'tempPower'
     | 'tempPowerDraw'
+    | 'destroy'
     | 'destroyDraw'
     | 'shuffleIntoDeck'
+    | 'addCounter'
     | 'addCounterDraw'
     | 'destroyOwnVp';
 
@@ -965,7 +969,7 @@ function resolveSimpleMinionEffect(
         };
     }
 
-    if (context.effectKind === 'destroyDraw') {
+    if (context.effectKind === 'destroy' || context.effectKind === 'destroyDraw') {
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: target.uid,
             minionDefId: target.defId,
@@ -981,7 +985,7 @@ function resolveSimpleMinionEffect(
         return {
             events: [
                 ...destroyEvents,
-                ...(destroyEvents.some(event => event.type === SU_EVENTS.MINION_DESTROYED)
+                ...(context.effectKind === 'destroyDraw' && destroyEvents.some(event => event.type === SU_EVENTS.MINION_DESTROYED)
                     ? buildStandardDrawEvents(state, context.playerId, 1, random, timestamp)
                     : []),
             ],
@@ -1002,7 +1006,7 @@ function resolveSimpleMinionEffect(
         };
     }
 
-    if (context.effectKind === 'addCounterDraw') {
+    if (context.effectKind === 'addCounter' || context.effectKind === 'addCounterDraw') {
         return {
             events: [
                 addPowerCounter(target.uid, selected.baseIndex, context.amount ?? 1, context.sourceDefId, timestamp, {
@@ -1010,7 +1014,9 @@ function resolveSimpleMinionEffect(
                     sourceDefId: context.sourceDefId,
                     sourceControllerId: context.playerId,
                 }),
-                ...buildStandardDrawEvents(state, context.playerId, 1, random, timestamp),
+                ...(context.effectKind === 'addCounterDraw'
+                    ? buildStandardDrawEvents(state, context.playerId, 1, random, timestamp)
+                    : []),
             ],
         };
     }
@@ -1059,7 +1065,7 @@ const simpleMinionEffectPromptProgram = createPromptProgram<SimpleMinionEffectCo
                 sourcePlayerId: context.playerId,
                 sourceDefId: context.sourceDefId,
                 sourceKind: 'action',
-                effectType: context.effectKind === 'destroyDraw' || context.effectKind === 'destroyOwnVp'
+                effectType: context.effectKind === 'destroy' || context.effectKind === 'destroyDraw' || context.effectKind === 'destroyOwnVp'
                     ? 'destroy'
                     : context.effectKind === 'shuffleIntoDeck'
                         ? 'move'
@@ -4007,6 +4013,71 @@ function vigilantesMakeMyDay(ctx: AbilityContext): AbilityResult {
     });
 }
 
+function vigilantesMakeMyDayPod(ctx: AbilityContext): AbilityResult {
+    const candidates = collectMinionsMatching(ctx.state, (minion, baseIndex) =>
+        hasOwnMinionOnBase(ctx.state, baseIndex, ctx.playerId)
+        && minion.basePower <= 3,
+    );
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'vigilantes_make_my_day_pod',
+        title: '一天的快乐 POD：选择要消灭的印刷战力 3 或更低随从',
+        candidates,
+        effectKind: 'destroy',
+    });
+}
+
+function vigilantesScaredStraightPod(ctx: AbilityContext): AbilityResult {
+    const candidates = collectMinionsMatching(ctx.state, (minion, baseIndex) =>
+        minion.controller !== ctx.playerId
+        && hasOwnMinionOnBase(ctx.state, baseIndex, ctx.playerId),
+    );
+    if (candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const isFirstCardPlayedThisTurn = (ctx.state.cardsPlayedThisTurn ?? 1) <= 1;
+    const result = executeAbilityProgram(moveOwnMinionPromptProgram, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        sourceDefId: 'vigilantes_scared_straight_pod',
+        title: '直面恐惧 POD：选择要移动的其他玩家随从',
+        candidates,
+        requireOwn: false,
+        extraActionAfter: isFirstCardPlayedThisTurn,
+    }));
+    return {
+        events: result.events,
+        matchState: result.matchState,
+    };
+}
+
+function vigilantesWhoLovesYaBabyPod(ctx: AbilityContext): AbilityResult {
+    const top = ctx.state.players[ctx.playerId]?.deck[0];
+    if (!top) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    const topDef = getCardDef(top.defId);
+    const revealEvents = [
+        inspectDeck(ctx.playerId, ctx.playerId, 1, 'vigilantes_who_loves_ya_baby_pod', ctx.now),
+        revealDeckTop(ctx.playerId, 'all', [{ uid: top.uid, defId: top.defId }], 1, 'vigilantes_who_loves_ya_baby_pod', ctx.now, ctx.playerId),
+    ];
+    if (topDef?.type !== 'minion' || topDef.power !== 4) {
+        return { events: revealEvents };
+    }
+    return {
+        events: [
+            ...revealEvents,
+            ...buildStandardDrawEvents(ctx.matchState, ctx.playerId, 1, ctx.random, ctx.now),
+        ],
+    };
+}
+
+function vigilantesAWholeLotMeanerPod(ctx: AbilityContext): AbilityResult {
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'vigilantes_a_whole_lot_meaner_pod',
+        title: '凶恶百倍 POD：选择你的一个随从放置 3 个 +1 战力标记',
+        candidates: collectOwnMinions(ctx.state, ctx.playerId),
+        effectKind: 'addCounter',
+        amount: 3,
+        allowSkip: true,
+    });
+}
+
 function vigilantesTheRevenge(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
@@ -4077,6 +4148,19 @@ function vigilantesDustyHenry(ctx: AbilityContext): AbilityResult {
     return runSimpleMinionEffect(ctx, {
         sourceDefId: 'vigilantes_dusty_henry',
         title: '瞌睡的亨利：选择本基地一个随从洗回牌库',
+        candidates,
+        effectKind: 'shuffleIntoDeck',
+        allowSkip: true,
+    });
+}
+
+function vigilantesDustyHenryPod(ctx: AbilityContext): AbilityResult {
+    const candidates = collectMinionsMatching(ctx.state, (minion, baseIndex) =>
+        baseIndex === ctx.baseIndex && minion.basePower <= 5,
+    );
+    return runSimpleMinionEffect(ctx, {
+        sourceDefId: 'vigilantes_dusty_henry_pod',
+        title: '瞌睡的亨利 POD：选择本基地一个印刷战力 5 或更低随从洗回牌库',
         candidates,
         effectKind: 'shuffleIntoDeck',
         allowSkip: true,
@@ -4851,11 +4935,23 @@ export function registerZhongguoAbilities(): void {
             };
         }),
     });
+    registerAbilityProgram('vigilantes_scared_straight_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesScaredStraightPod),
+    });
     registerAbilityProgram('vigilantes_who_loves_ya_baby', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesWhoLovesYaBaby),
     });
+    registerAbilityProgram('vigilantes_who_loves_ya_baby_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesWhoLovesYaBabyPod),
+    });
     registerAbilityProgram('vigilantes_a_whole_lot_meaner', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesAWholeLotMeaner),
+    });
+    registerAbilityProgram('vigilantes_a_whole_lot_meaner_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesAWholeLotMeanerPod),
+    });
+    registerAbilityProgram('vigilantes_a_whole_lot_meaner_pod', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesAWholeLotMeanerPod),
     });
     registerAbilityProgram('vigilantes_stoneford', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesStoneford),
@@ -4866,11 +4962,20 @@ export function registerZhongguoAbilities(): void {
     registerAbilityProgram('vigilantes_dusty_henry', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesDustyHenry),
     });
+    registerAbilityProgram('vigilantes_dusty_henry_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesDustyHenryPod),
+    });
     registerAbilityProgram('vigilantes_knocked_into_next_week', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesKnockedIntoNextWeek),
     });
     registerAbilityProgram('vigilantes_make_my_day', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesMakeMyDay),
+    });
+    registerAbilityProgram('vigilantes_make_my_day_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesMakeMyDayPod),
+    });
+    registerAbilityProgram('vigilantes_make_my_day_pod', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesMakeMyDayPod),
     });
     registerAbilityProgram('vigilantes_the_revenge', 'special', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vigilantesTheRevenge),
@@ -4884,6 +4989,9 @@ export function registerZhongguoAbilities(): void {
     registerProtection('vigilantes_street_justice', 'move', baseOwnMinionProtection('vigilantes_street_justice', new Set(['affect', 'destroy', 'move', 'action'])));
     registerProtection('vigilantes_street_justice', 'action', baseOwnMinionProtection('vigilantes_street_justice', new Set(['affect', 'destroy', 'move', 'action'])));
     registerProtection('vigilantes_tough_it_out', 'destroy', attachedActionProtection('vigilantes_tough_it_out'));
+    registerPowerModifier('vigilantes_tough_it_out_pod', (ctx) =>
+        -3 * ctx.minion.attachedActions.filter(action => action.defId === 'vigilantes_tough_it_out_pod').length, { variantPolicy: 'override' });
+    registerProtection('vigilantes_tough_it_out_pod', 'destroy', attachedActionProtection('vigilantes_tough_it_out_pod'));
     registerProtection('truckers_armored_truck', 'destroy', baseOwnMinionProtection('truckers_armored_truck', new Set(['destroy', 'move'])));
     registerProtection('truckers_armored_truck', 'move', baseOwnMinionProtection('truckers_armored_truck', new Set(['destroy', 'move'])));
 

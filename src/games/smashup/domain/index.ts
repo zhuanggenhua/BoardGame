@@ -117,6 +117,7 @@ type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
     _waitForScoreBasesInteractionReduce?: boolean;
     _waitForPostScoringReduce?: boolean;
     _ppseInputEventsReduced?: boolean;
+    _ppseImmediateStartTurnProcessedMinionUids?: string[];
     _processedTitanPositionEvents?: Set<string>;
     _processedTitanRemovedEvents?: Set<string>;
 };
@@ -2560,7 +2561,10 @@ function postProcessSystemEvents(
     events: SmashUpEvent[],
     random: RandomFn,
     matchState?: MatchState<SmashUpCore>,
-    options?: { skipImmediateStartTurnMinionTriggers?: boolean },
+    options?: {
+        skipImmediateStartTurnMinionTriggers?: boolean;
+        recordImmediateStartTurnProcessedMinionUids?: boolean;
+    },
 ): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
 
     const now = events.length > 0 && typeof events[0].timestamp === 'number' ? events[0].timestamp : 0;
@@ -3102,17 +3106,42 @@ function postProcessSystemEvents(
     }
 
     const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean(getSmashUpRuntimeSys(ms)._smashupStartTurnWindowActive);
+    const previouslyProcessedStartTurnMinionUids = new Set(
+        getSmashUpRuntimeSys(ms)._ppseImmediateStartTurnProcessedMinionUids ?? [],
+    );
+    if (previouslyProcessedStartTurnMinionUids.size > 0) {
+        ms = {
+            ...ms,
+            sys: {
+                ...ms.sys,
+                _ppseImmediateStartTurnProcessedMinionUids: undefined,
+            } as SmashUpRuntimeSystemState,
+        };
+    }
     if (!options?.skipImmediateStartTurnMinionTriggers && startTurnWindowActive) {
+        const processedPlayedUids = new Set(previouslyProcessedStartTurnMinionUids);
         const immediate = processImmediateStartTurnMinionTriggers(
             state,
             finalEvents,
             pid,
             random,
             ms,
+            processedPlayedUids,
         );
         finalEvents = immediate.events;
         if (immediate.matchState) {
             ms = immediate.matchState;
+        }
+        const newlyProcessedUids = Array.from(processedPlayedUids)
+            .filter(uid => !previouslyProcessedStartTurnMinionUids.has(uid));
+        if (options?.recordImmediateStartTurnProcessedMinionUids && newlyProcessedUids.length > 0) {
+            ms = {
+                ...ms,
+                sys: {
+                    ...ms.sys,
+                    _ppseImmediateStartTurnProcessedMinionUids: Array.from(processedPlayedUids),
+                } as SmashUpRuntimeSystemState,
+            };
         }
     }
 

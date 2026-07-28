@@ -1306,6 +1306,34 @@ export function executeCommand(
       const currentPhase = core.phase;
       const nextPhase = getNextPhase(currentPhase);
 
+      const movePhaseDecayUnits = currentPhase === 'move'
+        ? getPlayerUnits(core, playerId as PlayerId)
+          .filter(unit => getUnitAbilities(unit, core).includes('mogu_decay'))
+        : [];
+      const unresolvedDecayUnit = movePhaseDecayUnits.find(unit =>
+        !isPhaseEndAbilityResolved(state, 'mogu_decay', unit.instanceId),
+      );
+      if (unresolvedDecayUnit) {
+        events.push({
+          type: SW_EVENTS.UNIT_DAMAGED,
+          payload: {
+            position: unresolvedDecayUnit.position,
+            damage: 1,
+            reason: 'mogu_decay',
+            sourceAbilityId: 'mogu_decay',
+            sourcePlayerId: playerId,
+          },
+          timestamp,
+        });
+        events.push(createAbilityTriggeredEvent(
+          'mogu_decay',
+          unresolvedDecayUnit.instanceId,
+          unresolvedDecayUnit.position,
+          timestamp,
+        ));
+        break;
+      }
+
       const attackPhaseParasiteUnits = currentPhase === 'attack'
         ? getPlayerUnits(core, playerId as PlayerId)
           .filter(unit => getUnitAbilities(unit, core).includes('mogu_parasite'))
@@ -1370,39 +1398,6 @@ export function executeCommand(
           timestamp,
           phase: currentPhase,
         }));
-      }
-
-      if (currentPhase === 'move') {
-        for (const unit of getPlayerUnits(core, playerId as PlayerId)) {
-          if (!getUnitAbilities(unit, core).includes('mogu_decay')) continue;
-          events.push({
-            type: SW_EVENTS.UNIT_DAMAGED,
-            payload: {
-              position: unit.position,
-              damage: 1,
-              reason: 'mogu_decay',
-              sourceAbilityId: 'mogu_decay',
-              sourcePlayerId: playerId,
-            },
-            timestamp,
-          });
-          const decaySurvives = unit.damage + 1 < getEffectiveLife(unit, core);
-          if (!decaySurvives) continue;
-          const adjDirs = [
-            { row: -1, col: 0 }, { row: 1, col: 0 },
-            { row: 0, col: -1 }, { row: 0, col: 1 },
-          ];
-          const targetPos = adjDirs
-            .map(d => ({ row: unit.position.row + d.row, col: unit.position.col + d.col }))
-            .find(pos => isValidCoord(pos) && getUnitAt(core, pos)?.owner === playerId);
-          if (targetPos) {
-            events.push({
-              type: SW_EVENTS.UNIT_CHARGED,
-              payload: { position: targetPos, delta: 2, sourceAbilityId: 'mogu_decay' },
-              timestamp,
-            });
-          }
-        }
       }
 
       if (currentPhase === 'attack') {

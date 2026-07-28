@@ -153,6 +153,11 @@ public/**/*.webm
 !public/assets/i18n/zh-CN/smashup/base/compressed/what_were_we_thinking_bases.webp
 !public/assets/i18n/zh-CN/smashup/cards/polynesian_voyagers.png
 !public/assets/i18n/zh-CN/smashup/cards/compressed/polynesian_voyagers.webp
+# Smash Up《Disney Edition》四派系资源随本 PR 交付；正式发布走服务器素材主源回查。
+!public/assets/i18n/zh-CN/smashup/cards/disney.png
+!public/assets/i18n/zh-CN/smashup/cards/compressed/disney.webp
+!public/assets/i18n/zh-CN/smashup/base/disney_bases.jpg
+!public/assets/i18n/zh-CN/smashup/base/compressed/disney_bases.webp
 !public/assets/i18n/zh-CN/smashup/cards/culture_shock/
 !public/assets/i18n/zh-CN/smashup/cards/culture_shock/**
 !public/assets/i18n/zh-CN/smashup/base/polynesian_voyagers/

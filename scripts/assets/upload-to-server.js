@@ -7,6 +7,7 @@
  *   npm run assets:check              — 只检查本地待发布文件
  *   npm run assets:sync               — 发布并刷新安卓素材包；不删除服务器历史 release
  *   node scripts/assets/upload-to-server.js --asset-prefix i18n/zh-CN/summonerwars/hero/mogu
+ *   node scripts/assets/upload-to-server.js i18n/zh-CN/summonerwars/hero/mogu
  *                                      — 只检查/发布指定 public/assets 相对路径前缀
  *   node scripts/assets/upload-to-server.js --android-package-publish-plan <path...> — 预演安卓素材包刷新
  */
@@ -29,6 +30,7 @@ const checkOnly = process.env.CHECK_ONLY === '1' || process.argv.includes('--che
 const skipAndroidPackagePublish = process.env.SKIP_ANDROID_PACKAGE_PUBLISH === '1' || process.argv.includes('--skip-android-package-publish');
 const androidPackagePublishPlanArgIndex = process.argv.indexOf('--android-package-publish-plan');
 const uploadBatchSize = Number.parseInt(process.env.ASSET_UPLOAD_BATCH_SIZE || '200', 10);
+const npmLifecycleEvent = process.env.npm_lifecycle_event || process.env.NPM_LIFECYCLE_EVENT || '';
 
 function readRepeatedArg(name) {
   const values = [];
@@ -47,6 +49,36 @@ function readRepeatedArg(name) {
   return values;
 }
 
+function hasRepeatedArg(name) {
+  const flag = `--${name}`;
+  return process.argv.some((arg) => arg === flag || arg.startsWith(`${flag}=`));
+}
+
+function readPositionalAssetPrefixes() {
+  const values = [];
+  const args = process.argv.slice(2);
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--android-package-publish-plan') {
+      break;
+    }
+    if (arg === '--asset-prefix') {
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--asset-prefix=')) {
+      continue;
+    }
+    if (arg.startsWith('--')) {
+      continue;
+    }
+    values.push(arg);
+  }
+
+  return values;
+}
+
 function normalizeRelativePrefix(value) {
   return value
     .replace(/\\/g, '/')
@@ -56,7 +88,27 @@ function normalizeRelativePrefix(value) {
     .replace(/\/+$/, '');
 }
 
-const assetPrefixes = readRepeatedArg('asset-prefix').map(normalizeRelativePrefix).filter(Boolean);
+const repeatedAssetPrefixes = readRepeatedArg('asset-prefix');
+const positionalAssetPrefixes = readPositionalAssetPrefixes();
+const assetPrefixes = Array.from(new Set([
+  ...repeatedAssetPrefixes,
+  ...positionalAssetPrefixes,
+].map(normalizeRelativePrefix).filter(Boolean)));
+
+function assertSafeNpmArgumentForwarding() {
+  if (
+    npmLifecycleEvent.startsWith('assets:upload')
+    && positionalAssetPrefixes.length > 0
+    && !hasRepeatedArg('asset-prefix')
+  ) {
+    throw new Error(
+      '检测到 npm 未把 --asset-prefix/--check 正确传给上传脚本。'
+      + ' 为避免误把检查命令变成真实发布，请改用: '
+      + 'npm run assets:upload -- -- --check --asset-prefix <path>，'
+      + '或直接运行 node scripts/assets/upload-to-server.js --check --asset-prefix <path>。',
+    );
+  }
+}
 
 function matchesAssetPrefix(relativePath) {
   if (assetPrefixes.length === 0) return true;
@@ -258,6 +310,47 @@ function getAllFiles(dir, fileList = []) {
   return fileList;
 }
 
+function resolveScanRoots(assetsDir) {
+  if (assetPrefixes.length === 0) {
+    return [assetsDir];
+  }
+
+  const roots = new Set();
+  for (const prefix of assetPrefixes) {
+    const segments = prefix.split('/').filter(Boolean);
+    let candidate = join(assetsDir, ...segments);
+
+    if (existsSync(candidate)) {
+      roots.add(candidate);
+      continue;
+    }
+
+    // Prefixes without an extension can target a single file stem.
+    // Scan the nearest existing parent instead of the whole asset tree.
+    while (segments.length > 0) {
+      segments.pop();
+      candidate = join(assetsDir, ...segments);
+      if (existsSync(candidate)) {
+        roots.add(candidate);
+        break;
+      }
+    }
+  }
+
+  return roots.size > 0 ? Array.from(roots) : [assetsDir];
+}
+
+function getFilesFromScanRoot(scanRoot) {
+  const stat = statSync(scanRoot);
+  if (stat.isDirectory()) {
+    return getAllFiles(scanRoot);
+  }
+  if (stat.isFile()) {
+    return [scanRoot];
+  }
+  return [];
+}
+
 function shouldUpload(filePath) {
   const ext = extname(filePath).toLowerCase();
   if (DIRECT_ASSET_EXTS.has(ext)) {
@@ -275,6 +368,8 @@ function computeMD5(buffer) {
 }
 
 async function main() {
+  assertSafeNpmArgumentForwarding();
+
   if (androidPackagePublishPlanArgIndex >= 0) {
     const paths = process.argv.slice(androidPackagePublishPlanArgIndex + 1).filter((arg) => !arg.startsWith('--'));
     printAndroidPackagePublishPlan(paths);
@@ -286,7 +381,8 @@ async function main() {
     throw new Error(`本地素材目录不存在: ${assetsDir}`);
   }
 
-  const files = getAllFiles(assetsDir)
+  const files = resolveScanRoots(assetsDir)
+    .flatMap((scanRoot) => getFilesFromScanRoot(scanRoot))
     .filter((file) => matchesAssetPrefix(relative(assetsDir, file)))
     .filter(shouldUpload);
   const packageManagedGames = discoverPackageManagedGames();

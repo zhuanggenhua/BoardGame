@@ -60,7 +60,15 @@ test.describe("山屋惊魂第一剧本", () => {
     await expect(scenarioReaderDialog).toBeVisible();
     await expect(page.getByTestId("betrayal-reference-overlay")).toHaveCount(0);
     await expect(scenarioObjectivePage).toBeVisible();
-    await expect(scenarioObjectivePage).toContainText("剧本1查阅");
+    await expect(scenarioObjectivePage).toHaveAttribute(
+      "data-scenario-reader-scope",
+      "heroes",
+    );
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-reader-role"),
+    ).toContainText("英雄剧本书");
+    await expect(scenarioObjectivePage).toContainText("剧本1");
+    await expect(scenarioObjectivePage).not.toContainText(/剧本1查阅/);
     await expect(
       scenarioReaderDialog.getByTestId("betrayal-scenario-book"),
     ).toBeVisible();
@@ -93,12 +101,19 @@ test.describe("山屋惊魂第一剧本", () => {
       scenarioReaderDialog.getByTestId(
         "betrayal-scenario-book-page-crimsonJack-dossier-3",
       ),
-    ).toContainText("叛徒手册");
+    ).toContainText("驱魔法阵");
     await expect(
       scenarioReaderDialog.getByTestId(
-        "betrayal-scenario-book-page-crimsonJack-dossier-3",
+        "betrayal-scenario-book-page-crimsonJack-dossier-4",
       ),
-    ).toContainText("杰克之灵");
+    ).toContainText("胜负判定");
+    await expect(scenarioReaderDialog).not.toContainText("叛徒手册");
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-traitor"),
+    ).toHaveCount(0);
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-monster"),
+    ).toHaveCount(0);
     await expect(scenarioReaderNextZone).toBeDisabled();
     await saveScreenshot(page, SCENARIO_REFERENCE_BOTTOM_SCREENSHOT);
     await page.getByTestId("betrayal-scenario-reader-close").click();
@@ -156,6 +171,12 @@ test.describe("山屋惊魂第一剧本", () => {
     await page.getByTestId("betrayal-exorcise-roll-continue").click();
     const endgameScreen = page.getByTestId("betrayal-endgame-screen");
     await expect(endgameScreen).toBeVisible({ timeout: 30000 });
+    await expect(
+      endgameScreen.getByTestId("betrayal-endgame-ending-narration"),
+    ).toContainText("结局朗读");
+    await expect(
+      endgameScreen.getByTestId("betrayal-endgame-ending-narration"),
+    ).toContainText("杰克之灵消失");
     await expect(
       endgameScreen
         .getByRole("main")

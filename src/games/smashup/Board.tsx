@@ -308,6 +308,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const playerDisplayOrder = playerView.orderedPlayerIds;
     const playerNames = playerView.playerNames;
     const [isNonEssentialUiHidden, setIsNonEssentialUiHidden] = useState(false);
+    const lastSyncedSelectedFactionsSignatureRef = useRef('');
     
     // 响应式布局配置
     const playerCount = playerDisplayOrder.length || coreTurnOrder.length || 2;
@@ -398,6 +399,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     allFactions.push(...player.factions);
                 }
             }
+            const signature = Array.from(new Set(allFactions)).sort().join('|');
+            if (signature === lastSyncedSelectedFactionsSignatureRef.current) {
+                return;
+            }
+            lastSyncedSelectedFactionsSignatureRef.current = signature;
             setSelectedFactions(allFactions);
         }
     }, [phase, corePlayers, setSelectedFactions]);
@@ -2034,7 +2040,23 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setSelectedCardMode(null);
         return true;
     }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed, myPlayer, reactionWindow, t, validateImmediateActionPlay, toastCommandFeedback]);
-
+    const handleDiscardStripSelectCard = useCallback((cardUid: string | null) => {
+        if (!cardUid) {
+            setDiscardStripSelectedUid(null);
+            return;
+        }
+        const discardCard = discardStripCards.find(card => card.uid === cardUid);
+        if (discardCard?.mode === 'play_action') {
+            if (!isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)) {
+                playDeniedSound();
+                return;
+            }
+            dispatch(SU_COMMANDS.PLAY_ACTION, { cardUid, fromDiscard: true });
+            setDiscardStripSelectedUid(null);
+            return;
+        }
+        setDiscardStripSelectedUid(cardUid);
+    }, [discardStripCards, dispatch, isTutorialCommandAllowed]);
     const enterActionTargetSelection = useCallback((card: CardInstance, cardMode: 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion') => {
         if (cardMode !== 'action') {
             const { hasValidTargets, deployBlockReason } = getCardPlayTargetState(card, cardMode);
@@ -2180,6 +2202,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 return;
             }
             if (discardCard.mode === 'play_action_minion') {
+                if (discardStripAllowedMinionUids.size === 0) {
+                    dispatch(SU_COMMANDS.PLAY_ACTION, { cardUid: discardStripSelectedUid, targetBaseIndex: index, fromDiscard: true });
+                    setDiscardStripSelectedUid(null);
+                    return;
+                }
                 toast(t('ui.select_minion_hint'));
                 return;
             }
@@ -3952,7 +3979,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             playableCards={discardPanelCards.map(c => ({ uid: c.uid, defId: c.defId, label: c.label }))}
                             selectedUid={isDiscardCardPrompt ? null : discardStripSelectedUid}
                             selectedUids={isMultiDiscardCardSelect ? multiSelectedDiscardCardUids : undefined}
-                            onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : setDiscardStripSelectedUid}
+                            onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : handleDiscardStripSelectCard}
                             onConfirmSelection={isMultiDiscardCardSelect ? confirmDiscardCardPromptSelection : undefined}
                             confirmDisabled={isMultiDiscardCardSelect ? multiSelectedOptionIds.size < multiMinionConstraints.min : undefined}
                             minSelections={isMultiDiscardCardSelect ? multiMinionConstraints.min : undefined}
@@ -3968,8 +3995,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     if (selected?.mode === 'activate_special_minion') {
                                         return t('ui.select_minion_hint');
                                     }
+                                    if (selected?.mode === 'play_action') {
+                                        return t('ui.discard_action_play_direct_option');
+                                    }
                                     if (selected?.mode === 'play_action_minion') {
-                                        return t('ui.select_minion_hint');
+                                        return discardStripAllowedMinionUids.size === 0
+                                            ? t('ui.click_base_to_deploy')
+                                            : t('ui.select_minion_hint');
                                     }
                                     return t('ui.click_base_to_deploy');
                                 })()

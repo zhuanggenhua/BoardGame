@@ -56,7 +56,10 @@ type ReactionPostProcessor = (
     events: SmashUpEvent[],
     random: RandomFn,
     matchState?: MatchState<SmashUpCore>,
-    options?: { skipImmediateStartTurnMinionTriggers?: boolean },
+    options?: {
+        skipImmediateStartTurnMinionTriggers?: boolean;
+        recordImmediateStartTurnProcessedMinionUids?: boolean;
+    },
 ) => { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> };
 
 let reactionPostProcessor: ReactionPostProcessor | undefined;
@@ -1015,6 +1018,7 @@ function executeQueuedTrigger(
         },
         triggerEvents,
         random,
+        { recordImmediateStartTurnProcessedMinionUids: true },
     );
     const frameId = trigger.frameId ?? trigger.id;
     const hasRemainingFrameTriggers = (postProcessed.state.core.triggerQueue ?? []).some(
@@ -1033,6 +1037,10 @@ function applyReactionPostProcessing(
     state: MatchState<SmashUpCore>,
     rawEvents: SmashUpEvent[],
     random: RandomFn,
+    options?: {
+        skipImmediateStartTurnMinionTriggers?: boolean;
+        recordImmediateStartTurnProcessedMinionUids?: boolean;
+    },
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const postProcessed = reactionPostProcessor
         ? reactionPostProcessor(
@@ -1040,6 +1048,7 @@ function applyReactionPostProcessing(
             rawEvents,
             random,
             state,
+            options,
         )
         : {
             events: rawEvents,

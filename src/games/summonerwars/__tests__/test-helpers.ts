@@ -8,28 +8,38 @@ import { SummonerWarsDomain } from '../domain';
 import { SW_SELECTION_EVENTS } from '../domain/types';
 import type { SummonerWarsCore, FactionId, PlayerId, CellCoord, BoardUnit, UnitCard } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { createDeckByFactionId } from '../config/factions';
 import { generateInstanceId, resetInstanceCounter } from '../domain/utils';
 
-type PromptOptionView = { id: string };
+type PromptOptionValueView = {
+  action?: string;
+  targetPosition?: CellCoord;
+  skip?: boolean;
+  [key: string]: unknown;
+};
+type PromptOptionView = { id: string; value?: PromptOptionValueView };
 type SwPromptView = {
   options?: PromptOptionView[];
   sw?: { type?: string };
+  id: string;
+  playerId: PlayerId;
 };
 
-function activePrompt(state: MatchState<SummonerWarsCore>) {
-  return state.sys.interaction.current;
+function activePrompt(state: MatchState<SummonerWarsCore>): SwPromptView | undefined {
+  return asSimpleChoice(state.sys.interaction.current) as SwPromptView | undefined;
+}
+
+function promptOptions(state: MatchState<SummonerWarsCore>): PromptOptionView[] {
+  return activePrompt(state)?.options ?? [];
 }
 
 export function getPromptOptionIds(state: MatchState<SummonerWarsCore>): string[] {
-  const data = activePrompt(state)?.data as SwPromptView | undefined;
-  return (data?.options ?? []).map(option => option.id);
+  return promptOptions(state).map(option => option.id);
 }
 
 export function getPromptSwType(state: MatchState<SummonerWarsCore>): string | undefined {
-  const data = activePrompt(state)?.data as SwPromptView | undefined;
-  return data?.sw?.type;
+  return activePrompt(state)?.sw?.type;
 }
 
 export function getPromptPlayerId(state: MatchState<SummonerWarsCore>): PlayerId | undefined {
@@ -38,6 +48,23 @@ export function getPromptPlayerId(state: MatchState<SummonerWarsCore>): PlayerId
 
 export function hasActivePrompt(state: MatchState<SummonerWarsCore>): boolean {
   return Boolean(activePrompt(state));
+}
+
+export function hasPromptOptionId(state: MatchState<SummonerWarsCore>, optionId: string): boolean {
+  return promptOptions(state).some(option => option.id === optionId);
+}
+
+export function getPromptOptionIdForTargetPosition(
+  state: MatchState<SummonerWarsCore>,
+  action: string,
+  targetPosition: CellCoord,
+): string | undefined {
+  return promptOptions(state).find((option) => {
+    const value = option.value;
+    return value?.action === action
+      && value.targetPosition?.row === targetPosition.row
+      && value.targetPosition.col === targetPosition.col;
+  })?.id;
 }
 
 export function createPromptResponseCommand(

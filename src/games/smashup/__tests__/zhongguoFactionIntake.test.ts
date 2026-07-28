@@ -14,6 +14,7 @@ type ZhongguoFactionCase = {
     factionId: string;
     expectedCardCount: number;
     expectedDeckCopies: number;
+    expectedCardAtlasId: string;
     expectedCardIndexes: Record<string, number>;
     expectedBases: Record<string, { index: number; breakpoint: number; vpAwards: [number, number, number] }>;
 };
@@ -23,19 +24,20 @@ const ZHONGGUO_FACTIONS: ZhongguoFactionCase[] = [
         factionId: SMASHUP_FACTION_IDS.KUNG_FU_FIGHTERS,
         expectedCardCount: 12,
         expectedDeckCopies: 20,
+        expectedCardAtlasId: SMASHUP_ATLAS_IDS.KUNG_FU_FIGHTERS_POD_CARDS,
         expectedCardIndexes: {
-            kung_fu_fighters_fast_as_lightning: 0,
-            kung_fu_fighters_dragon_warrior: 1,
-            kung_fu_fighters_cricket: 2,
-            kung_fu_fighters_oh_hoh_hoh_hoah: 3,
-            kung_fu_fighters_everybody_knew_their_part: 4,
-            kung_fu_fighters_everybody_was_kung_fu_fighting: 5,
-            kung_fu_fighters_expert_timing: 6,
-            kung_fu_fighters_ancient_chinese_art: 7,
-            kung_fu_fighters_a_little_bit_frightening: 8,
-            kung_fu_fighters_drunken_master: 9,
-            kung_fu_fighters_lady_whirlwind: 10,
-            kung_fu_fighters_lets_get_it_on: 11,
+            kung_fu_fighters_fast_as_lightning: 8,
+            kung_fu_fighters_dragon_warrior: 19,
+            kung_fu_fighters_cricket: 10,
+            kung_fu_fighters_oh_hoh_hoh_hoah: 7,
+            kung_fu_fighters_everybody_knew_their_part: 6,
+            kung_fu_fighters_everybody_was_kung_fu_fighting: 0,
+            kung_fu_fighters_expert_timing: 1,
+            kung_fu_fighters_ancient_chinese_art: 2,
+            kung_fu_fighters_a_little_bit_frightening: 4,
+            kung_fu_fighters_drunken_master: 14,
+            kung_fu_fighters_lady_whirlwind: 17,
+            kung_fu_fighters_lets_get_it_on: 5,
         },
         expectedBases: {
             base_ancient_dojo: { index: 6, breakpoint: 25, vpAwards: [5, 4, 3] },
@@ -46,6 +48,7 @@ const ZHONGGUO_FACTIONS: ZhongguoFactionCase[] = [
         factionId: SMASHUP_FACTION_IDS.VIGILANTES,
         expectedCardCount: 18,
         expectedDeckCopies: 20,
+        expectedCardAtlasId: SMASHUP_ATLAS_IDS.CARDS13,
         expectedCardIndexes: {
             vigilantes_shrug_it_off: 12,
             vigilantes_scared_straight: 13,
@@ -75,6 +78,7 @@ const ZHONGGUO_FACTIONS: ZhongguoFactionCase[] = [
         factionId: SMASHUP_FACTION_IDS.TRUCKERS,
         expectedCardCount: 13,
         expectedDeckCopies: 20,
+        expectedCardAtlasId: SMASHUP_ATLAS_IDS.CARDS13,
         expectedCardIndexes: {
             truckers_fixin_to_fix_it: 30,
             truckers_dekotora: 31,
@@ -99,6 +103,7 @@ const ZHONGGUO_FACTIONS: ZhongguoFactionCase[] = [
         factionId: SMASHUP_FACTION_IDS.DISCO_DANCERS,
         expectedCardCount: 13,
         expectedDeckCopies: 20,
+        expectedCardAtlasId: SMASHUP_ATLAS_IDS.CARDS13,
         expectedCardIndexes: {
             disco_dancers_diva: 43,
             disco_dancers_get_down_tonight: 44,
@@ -121,10 +126,10 @@ const ZHONGGUO_FACTIONS: ZhongguoFactionCase[] = [
     },
 ];
 
-function assertZhongguoCardPreview(def: CardDef, expectedIndex: number): void {
+function assertZhongguoCardPreview(def: CardDef, expectedAtlasId: string, expectedIndex: number): void {
     expect(def.previewRef).toEqual({
         type: 'atlas',
-        atlasId: SMASHUP_ATLAS_IDS.CARDS13,
+        atlasId: expectedAtlasId,
         index: expectedIndex,
     });
 }
@@ -152,6 +157,12 @@ describe('SmashUp zhongguo 四派系 intake 静态合同', () => {
                 grid: { rows: 7, cols: 8 },
             },
             {
+                id: SMASHUP_ATLAS_IDS.KUNG_FU_FIGHTERS_POD_CARDS,
+                kind: 'card',
+                image: 'smashup/cards/kung_fu_fighters_pod',
+                grid: { rows: 4, cols: 5 },
+            },
+            {
                 id: SMASHUP_ATLAS_IDS.BASE10,
                 kind: 'base',
                 image: 'smashup/base/zhongguo',
@@ -160,7 +171,7 @@ describe('SmashUp zhongguo 四派系 intake 静态合同', () => {
         ]));
     });
 
-    it.each(ZHONGGUO_FACTIONS)('$factionId 卡牌数量、拷贝数与 cards13 图集索引正确', (fixture) => {
+    it.each(ZHONGGUO_FACTIONS)('$factionId 卡牌数量、拷贝数与卡图索引正确', (fixture) => {
         const defs = getFactionCards(fixture.factionId);
 
         expect(defs).toHaveLength(fixture.expectedCardCount);
@@ -169,7 +180,7 @@ describe('SmashUp zhongguo 四派系 intake 静态合同', () => {
         for (const [defId, index] of Object.entries(fixture.expectedCardIndexes)) {
             const def = defs.find((card) => card.id === defId);
             expect(def, `${defId} 应已注册`).toBeDefined();
-            assertZhongguoCardPreview(def as CardDef, index);
+            assertZhongguoCardPreview(def as CardDef, fixture.expectedCardAtlasId, index);
         }
     });
 
