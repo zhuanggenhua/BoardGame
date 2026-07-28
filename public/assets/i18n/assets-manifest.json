@@ -5035,8 +5035,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-1-front": {
       "variants": {
         "webp": {
-          "sha256": "82ef4b60d4d995ff400fe074248298ba72aff6346b23e66c3e2046fbe0da9078",
-          "bytes": 14034,
+          "sha256": "dc73d7cdb23816878c595e3795874c1db1b92239873d7ef43a6ed4ad7b6b7bac",
+          "bytes": 14158,
           "mime": "image/webp"
         }
       }
@@ -5053,8 +5053,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-2-front": {
       "variants": {
         "webp": {
-          "sha256": "34eb647625536f450981319153e195a65681127b39098771645f6f58cb4d3071",
-          "bytes": 10824,
+          "sha256": "9e34c6328f366d8f69703ce87058ba654f1d2d1fa3d784f925b7d0ad7c87d3fb",
+          "bytes": 11040,
           "mime": "image/webp"
         }
       }
@@ -5071,8 +5071,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-3-front": {
       "variants": {
         "webp": {
-          "sha256": "7892c4a5a4081455392bd750c6e3b2281527054142ade5281a5f95677dafbba5",
-          "bytes": 9822,
+          "sha256": "514a223918980fd46f15063114f9b4cb612d3662fd1c83a25ccef6ddb90753bc",
+          "bytes": 10198,
           "mime": "image/webp"
         }
       }
@@ -5089,8 +5089,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-4-front": {
       "variants": {
         "webp": {
-          "sha256": "087849a2a3f2b35b15c7b5681c32f0f5124cfb4b96b4edfe6b7343d73d1a38e9",
-          "bytes": 9960,
+          "sha256": "9d813c20441958ebf4b26fb963a75ec45777b8da22433fe42de38ef00fc34d36",
+          "bytes": 10186,
           "mime": "image/webp"
         }
       }
@@ -5107,8 +5107,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-5-front": {
       "variants": {
         "webp": {
-          "sha256": "094a4906b932ffe26cdfcdff4340d7b18d44efd45bb8163d70e03f6da27d7be8",
-          "bytes": 11176,
+          "sha256": "aa94f62286f8a7ef29c51af3c26c9c63e7b4157d1c0d411901b6fdbe01d88ab8",
+          "bytes": 10620,
           "mime": "image/webp"
         }
       }
@@ -5125,8 +5125,8 @@
     "zh-CN/betrayal/tokens/monsters/compressed/small-monster-6-front": {
       "variants": {
         "webp": {
-          "sha256": "165e56070b55c2ddba0f58fb2dfd3104a15bfb07af1f843f8520aa6201a653d9",
-          "bytes": 9982,
+          "sha256": "5406ac6720f9e161224c97f232986cd934505cb6c254994159d967ed54b55d59",
+          "bytes": 10398,
           "mime": "image/webp"
         }
       }
@@ -5161,8 +5161,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-1-front": {
       "variants": {
         "png": {
-          "sha256": "d2648e23b1fa987821347bbf7d1530a9cd7ba695a03828a3603e35821d9094c1",
-          "bytes": 67773,
+          "sha256": "6364c5032220dfeec908946dbb51bca24c4ec5cd10206e49691c67e58ee5315d",
+          "bytes": 67785,
           "mime": "image/png"
         }
       }
@@ -5179,8 +5179,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-2-front": {
       "variants": {
         "png": {
-          "sha256": "adba223a7256f72b24e7c88d59e5a3f17e2cf45ff90f0881c759c91d1c214e3c",
-          "bytes": 53019,
+          "sha256": "59e43146100148560c0b56e1e92fe77458d4ea4cc1abec27451863c0e152a01c",
+          "bytes": 53014,
           "mime": "image/png"
         }
       }
@@ -5197,8 +5197,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-3-front": {
       "variants": {
         "png": {
-          "sha256": "d3c274f70529d8fab17585d13332c5727dd49d0326555e94e81265aaa039febb",
-          "bytes": 51032,
+          "sha256": "298e532d59207eca0b5f9187d8b95f4fce6e75fef186ce311697a8cb86e2320f",
+          "bytes": 50987,
           "mime": "image/png"
         }
       }
@@ -5215,8 +5215,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-4-front": {
       "variants": {
         "png": {
-          "sha256": "59478b635346a4a30d44e8ad41c737c0676dde386acbe9f6aa48f54621814d75",
-          "bytes": 50819,
+          "sha256": "e94854111150c88347b26f92b6212290fc43d1553af7a0d3c8773ff2ec110076",
+          "bytes": 50828,
           "mime": "image/png"
         }
       }
@@ -5233,8 +5233,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-5-front": {
       "variants": {
         "png": {
-          "sha256": "85460eba7db37fde0cffd98105b4f8b05fa3b1e5e9563828d5a64652adb08476",
-          "bytes": 52458,
+          "sha256": "f2c05926208c208f6312a0d2a6ca7ffb71d5d62b796ffff44f1cf1c820ad9f3d",
+          "bytes": 52559,
           "mime": "image/png"
         }
       }
@@ -5251,8 +5251,8 @@
     "zh-CN/betrayal/tokens/monsters/small-monster-6-front": {
       "variants": {
         "png": {
-          "sha256": "f950f2163757f0f28c6c7e2d9908d334be173f6a2c6e50b3ba7bf865eb8f0be3",
-          "bytes": 51008,
+          "sha256": "49c8bbd267bc7083fc363e8b1d49559ebdc9c7f3e6f07a1aa4404872c10921e8",
+          "bytes": 51056,
           "mime": "image/png"
         }
       }
@@ -9502,6 +9502,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/disney_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "2cbbc4ed8b68ed678774883d3088c7c93997de68dc6a68721cdadabfd7c9aca7",
+          "bytes": 1534842,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/huluwawa_bases": {
       "variants": {
         "webp": {
@@ -9580,6 +9589,15 @@
           "sha256": "d39752ae24bd9424d3a82d82464ec834039adae31aaced437a9386ebad921931",
           "bytes": 560560,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/disney_bases": {
+      "variants": {
+        "jpg": {
+          "sha256": "d0a91b1dff2831eb77ff25f7eee8845ee29e37f942ebc7c6ad9855267c1037b1",
+          "bytes": 1253348,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -9750,6 +9768,15 @@
         "webp": {
           "sha256": "b8a029374b872cc17efa1d4f5475dc01183f7a27a246be7f1fac5b843ef4c98a",
           "bytes": 887820,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/disney": {
+      "variants": {
+        "webp": {
+          "sha256": "37bc0c782fcb2839f9155b610681768a1b6bf233257107cc60c671ded035c2e3",
+          "bytes": 7904230,
           "mime": "image/webp"
         }
       }
@@ -9985,6 +10012,15 @@
           "sha256": "d01093a8789e0f49a97071afe6ea8992308bc54ce679993191066612c6d97c7a",
           "bytes": 1110284,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/disney": {
+      "variants": {
+        "png": {
+          "sha256": "d156b6428665ffc1f4182cc955fd7aa7d35d7638e0e6d593e238a9b3b02674cc",
+          "bytes": 39745874,
+          "mime": "image/png"
         }
       }
     },
@@ -10579,6 +10615,60 @@
           "sha256": "fdc7fecd22ce6416ca59d67104936c7289b4eb89cfa64c35f82595f652e76b92",
           "bytes": 108480,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "9d8d7d269e252078dddbb5527f27b099a5e72a98c60b2220574b0d364e7b0037",
+          "bytes": 1372856,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "d0fddf484d720c05e471c2446de8d07d13f721b30e51e6071294bd3e4889b112",
+          "bytes": 2062610,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "29b3f824407bb93a5e29ce1990a20bb72ddd17dac90d341ad441529962a4c77b",
+          "bytes": 295994,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "e9df6ad384612addbb6fe2a7498cbc6b1ca932cf8e946aef3b2f94edc4f5f396",
+          "bytes": 125230,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/hero": {
+      "variants": {
+        "png": {
+          "sha256": "b246838720c39409b537e74184bb55d6d04256e656fe4498020c00f1be53041a",
+          "bytes": 2583575,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/yongheng/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "64d48aee3bc19702de8e0f49367961a2d851fa50624ddb901aa1f410c0b55196",
+          "bytes": 242959,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -11545,6 +11635,15 @@
         }
       }
     },
+    "zh-CN/the-gang/chips/compressed/exit-chip": {
+      "variants": {
+        "webp": {
+          "sha256": "bcbc29cae5c9ac06c97ca8bd4bf6d7536f86697cdf689d2d291cd35b09cb69c0",
+          "bytes": 82078,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/the-gang/chips/compressed/round-1-white-0": {
       "variants": {
         "webp": {
@@ -11866,6 +11965,15 @@
           "sha256": "b1453cb31856fc16bfde36225f13e8ad65d706518707939339ec6ccab5fdb4b3",
           "bytes": 83188,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/the-gang/chips/exit-chip": {
+      "variants": {
+        "png": {
+          "sha256": "04a4b7bce7052aa7b5ceba62cd014f3618275192df0908a9a7c6071ba76e6332",
+          "bytes": 312464,
+          "mime": "image/png"
         }
       }
     },
@@ -13201,57 +13309,543 @@
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/cards": {
-      "variants": {
-        "jpg": {
-          "sha256": "9d8d7d269e252078dddbb5527f27b099a5e72a98c60b2220574b0d364e7b0037",
-          "bytes": 1372856,
-          "mime": "image/jpeg"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/compressed/cards": {
+    "zh-CN/smashup/cards/compressed/marvel_villains_pod": {
       "variants": {
         "webp": {
-          "sha256": "d0fddf484d720c05e471c2446de8d07d13f721b30e51e6071294bd3e4889b112",
-          "bytes": 2062610,
+          "sha256": "1b6b83736dbde9cd99a5f6268ad02ddae618e5d04147a7fb06a9c1fb6e167b24",
+          "bytes": 6320664,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/compressed/hero": {
+    "zh-CN/smashup/cards/compressed/marvel_wave_one_pod": {
       "variants": {
         "webp": {
-          "sha256": "29b3f824407bb93a5e29ce1990a20bb72ddd17dac90d341ad441529962a4c77b",
-          "bytes": 295994,
+          "sha256": "f410e6bf194e873884a78fb097619e0997bf12c83e199b785d05f8a7f129099a",
+          "bytes": 6257536,
           "mime": "image/webp"
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/compressed/tip": {
-      "variants": {
-        "webp": {
-          "sha256": "e9df6ad384612addbb6fe2a7498cbc6b1ca932cf8e946aef3b2f94edc4f5f396",
-          "bytes": 125230,
-          "mime": "image/webp"
-        }
-      }
-    },
-    "zh-CN/summonerwars/hero/yongheng/hero": {
+    "zh-CN/smashup/cards/marvel_villains_pod": {
       "variants": {
         "png": {
-          "sha256": "b246838720c39409b537e74184bb55d6d04256e656fe4498020c00f1be53041a",
-          "bytes": 2583575,
+          "sha256": "fde8c2716bf91462b749800efc97043a9a032618a9f2fc42af9c736fb637ef03",
+          "bytes": 34711937,
           "mime": "image/png"
         }
       }
     },
-    "zh-CN/summonerwars/hero/yongheng/tip": {
+    "zh-CN/smashup/cards/marvel_wave_one_pod": {
       "variants": {
-        "jpg": {
-          "sha256": "64d48aee3bc19702de8e0f49367961a2d851fa50624ddb901aa1f410c0b55196",
-          "bytes": 242959,
-          "mime": "image/jpeg"
+        "png": {
+          "sha256": "e12f1a7b230666dd2731295bb856349c467badac63b6771e6e4e12f1c3ed599d",
+          "bytes": 35943625,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/astroknights_pod": {
+      "variants": {
+        "png": {
+          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
+          "bytes": 6565353,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/astroknights_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
+          "bytes": 1624082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/kung_fu_fighters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
+          "bytes": 5995300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/kung_fu_fighters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
+          "bytes": 1729742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/astroknights_pod": {
+      "variants": {
+        "png": {
+          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
+          "bytes": 6565353,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/astroknights_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
+          "bytes": 1624082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/kung_fu_fighters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
+          "bytes": 5995300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/kung_fu_fighters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
+          "bytes": 1729742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/explorers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "82a3c99ebb7aa5a57c521607af09d9ea790a605f0a96de3a36b7947d13f683fa",
+          "bytes": 6223028,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/star_roamers_pod": {
+      "variants": {
+        "png": {
+          "sha256": "285ab1ad04096c2616cabbd301b87c3d46467a1c9a1327ea01ceeab11a176305",
+          "bytes": 5711799,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/vigilantes_pod": {
+      "variants": {
+        "png": {
+          "sha256": "fb88983da554fbef5e0308b43b25e40bb3c344d653b437ebe570529487e111c4",
+          "bytes": 7775772,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/luchadors_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a0c1df6b6c99f47df59e2eae7bbf6abd7f6755746c31ee8c0800c3a21a4775e4",
+          "bytes": 6191722,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/explorers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "b3fab24752d42c0c3892bedd7c0ee7398738b8cb4323fed6480df8944f9da033",
+          "bytes": 1734512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/star_roamers_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "991dcb7f93c04f5c9306be0e362339373dbd62397027921d6ac077f8b6bbeee7",
+          "bytes": 1310110,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/vigilantes_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "8595ba2d8acf58a85665ccc5044b45323ee45c74aa80f509b169a6c6ced8065a",
+          "bytes": 1883692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/luchadors_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "34b381ec25a80a0903483711c728d5fa1ddd82abaec3885b0bf7e8112ef60561",
+          "bytes": 1606662,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/disney_four_factions": {
+      "variants": {
+        "webp": {
+          "sha256": "d40f52dcbb015bfa2cee1a657d6fd8549f2e8b1640acb5355b5b8abe2c34cd3c",
+          "bytes": 8103102,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/disney_four_factions": {
+      "variants": {
+        "png": {
+          "sha256": "4e28237e91b60a3a4faa48aa57b6c0404574cdd372017fa5104781219e1216b0",
+          "bytes": 41387810,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/disney_four_faction_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/disney_four_faction_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
+          "bytes": 1261136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/astroknights_pod": {
+      "variants": {
+        "png": {
+          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
+          "bytes": 6565353,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/astroknights_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
+          "bytes": 1624082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/kung_fu_fighters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
+          "bytes": 5995300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/kung_fu_fighters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
+          "bytes": 1729742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/anansi_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "a828ebf063d338a057877f487e9d04f778a3ff76060b644a94a3f835acdbfbdb",
+          "bytes": 6213661,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/anansi_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "6a6153d99941a1c34f820f763d22f5bc489c6193c107fe6adba6a861b545968d",
+          "bytes": 1645714,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/astroknights_pod": {
+      "variants": {
+        "png": {
+          "sha256": "802767737cbf0fea175ab2c3ee7efad82576035361518e3f3e027e306b02a761",
+          "bytes": 6565353,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/astroknights_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "cfbea40e7ef93190e812ea76bfc270d5d04ff6f4ed4ff84b81dff8b42fec17b2",
+          "bytes": 1624082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/kung_fu_fighters_pod": {
+      "variants": {
+        "png": {
+          "sha256": "60b85a212b0cbe9b52cd2a665f5be27e1591ed15e613345ee370cb3167b6b806",
+          "bytes": 5995300,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/kung_fu_fighters_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a8298d4adae34e726dfd08301959dd214639e8929b8cca0b331fee47b218ad",
+          "bytes": 1729742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/russian_fairy_tales_pod": {
+      "variants": {
+        "png": {
+          "sha256": "c8ec5256eed93594b1a6a298d6c62d9c70be69d56a79296bd8cffcdaeba710cc",
+          "bytes": 6438382,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/russian_fairy_tales_pod": {
+      "variants": {
+        "webp": {
+          "sha256": "a56263957139e0dad7714754ad2ada2e47aa5e2580452fd0733d69e09d4c8507",
+          "bytes": 1489418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/excellent_movies_teens": {
+      "variants": {
+        "png": {
+          "sha256": "62a150f66f95e4fafc84d5cfbc22dfe57783511d19ad4a7ea8f8e49948ab07ad",
+          "bytes": 57778043,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/excellent_movies_teens": {
+      "variants": {
+        "webp": {
+          "sha256": "9af400ebdd443dc5f0f8a03985ca14162e0211932b33fa534e807d56ccc47e2f",
+          "bytes": 5032252,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/diy_clowns_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "5918fb7166b393388cdbe8614ac2f7812e5a6e390c49f281af189e3ed2a14851",
+          "bytes": 487418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/diy_killers_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "7285f0152fee32a672611af3df22dc648b76df9ccd0694e6aae17941237fb08b",
+          "bytes": 482650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/diy_clowns_bases": {
+      "variants": {
+        "png": {
+          "sha256": "fce66e379485e0a3dd6d21468c40218677a13bdd697d7c37e356506e80b732b8",
+          "bytes": 2871712,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/diy_killers_bases": {
+      "variants": {
+        "png": {
+          "sha256": "d7425df575c029fa85c4bdf2727c5c709dc672435a8cba8a19fac82d429a176e",
+          "bytes": 2862123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/diy_clowns": {
+      "variants": {
+        "webp": {
+          "sha256": "c2888bb67bd2478fddd11278b8b677f753405a6abbff2570889172864dab5f75",
+          "bytes": 4664140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/diy_killers": {
+      "variants": {
+        "webp": {
+          "sha256": "21d750563dc60f8db69f4c50da5b387df0c4ad723d7c4259a1abf0dc5b641c73",
+          "bytes": 4870398,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/diy_clowns": {
+      "variants": {
+        "png": {
+          "sha256": "1a5a08ea1b67781e17c6e14c21db6dd2c946cf297faacd77778a5fd6a9e947b3",
+          "bytes": 23916659,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/diy_killers": {
+      "variants": {
+        "png": {
+          "sha256": "8dc9089f8230d725ed7f44a25074ba3c8ee65e3d5df5891af64dcd26283e3186",
+          "bytes": 26436318,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/polynesian_voyagers": {
+      "variants": {
+        "webp": {
+          "sha256": "989403c1366435feb89daf70bfd1618e7b5df4b79f1a0774feeced06882c5389",
+          "bytes": 1765534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/polynesian_voyagers": {
+      "variants": {
+        "png": {
+          "sha256": "97299d31a0a98eba7e00411e75a612ad8cf3611fb1c25fec3349a73901b677d8",
+          "bytes": 11247201,
+          "mime": "image/png"
         }
       }
     },

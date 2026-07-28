@@ -148,6 +148,21 @@ swCustomActionRegistry.register('mogu_infection_replace', ({ ctx, timestamp }) =
     }];
 });
 
+// --- 莫古：玛硕达“腐坏”阶段结束自伤；存活后的相邻友军充能由 InteractionSystem 等待玩家指定 ---
+swCustomActionRegistry.register('mogu_decay', ({ ctx, timestamp }) => {
+    return [{
+        type: SW_EVENTS.UNIT_DAMAGED,
+        payload: {
+            position: ctx.sourcePosition,
+            damage: 1,
+            reason: 'mogu_decay',
+            sourceAbilityId: 'mogu_decay',
+            sourcePlayerId: ctx.ownerId,
+        },
+        timestamp,
+    }];
+}, { categories: ['damage'] });
+
 // --- 莫古：菌袍疫病体“菌化变异”替换自身 ---
 swCustomActionRegistry.register('mogu_fungal_mutation_replace', ({ ctx, timestamp }) => {
     if (normalizeUnitBoosts(ctx.sourceUnit.boosts) < 3) return [];

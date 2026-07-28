@@ -34,6 +34,7 @@ import {
   getSummoner,
   getUnitAbilities,
   getValidShourenFreezeTargets,
+  getHuijinScorchTargets,
   isValidCoord,
   isInStraightLine,
 } from './helpers';
@@ -58,6 +59,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
   CARD_IDS.MOGU_RELEASE_SPORES,
   CARD_IDS.SHOUREN_FREEZE,
+  CARD_IDS.HUIJIN_SCORCH,
 ]);
 
 const hasAdjacentEmptyCell = (core: SummonerWarsCore, position: CellCoord): boolean => {
@@ -168,6 +170,9 @@ const hasValidEventInteractionTargets = (
     }
     case CARD_IDS.SHOUREN_FREEZE: {
       return getValidShourenFreezeTargets(core, playerId).length > 0;
+    }
+    case CARD_IDS.HUIJIN_SCORCH: {
+      return getHuijinScorchTargets(core, playerId).length > 0;
     }
     default:
       return false;
@@ -548,6 +553,15 @@ export function validateCommand(
           unit.position.row === targetPosition.row && unit.position.col === targetPosition.col
         ))) {
           return { valid: false, error: '冻结目标必须是召唤师3格内未充能的士兵或英雄' };
+        }
+      }
+      if (baseId === CARD_IDS.HUIJIN_SCORCH) {
+        const targetPosition = targets?.[0];
+        const validTargets = getHuijinScorchTargets(core, playerId);
+        if (!targetPosition || !validTargets.some(unit => (
+          unit.position.row === targetPosition.row && unit.position.col === targetPosition.col
+        ))) {
+          return { valid: false, error: '灼烧目标必须是召唤师2格内的士兵或英雄' };
         }
       }
       

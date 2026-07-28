@@ -56,6 +56,38 @@ async function waitForSelectionLayoutStable(page: Page) {
   await page.waitForTimeout(250);
 }
 
+async function waitForVisibleFactionCardsReady(page: Page) {
+  await page.waitForFunction(() => {
+    const grid = document.querySelector('[data-testid="sw-faction-grid"]');
+    if (!grid) {
+      return false;
+    }
+
+    const cards = Array.from(
+      grid.querySelectorAll<HTMLElement>('[data-testid^="sw-faction-card-"][data-faction-id]'),
+    );
+    if (cards.length === 0) {
+      return false;
+    }
+
+    return cards.every((card) => {
+      const cardOpacity = Number.parseFloat(window.getComputedStyle(card).opacity || '0');
+      const sprite = card.querySelector<HTMLElement>('[data-card-sprite="true"]');
+      const img = sprite?.querySelector<HTMLImageElement>('img');
+      const imageOpacity = img
+        ? Number.parseFloat(window.getComputedStyle(img).opacity || '0')
+        : 0;
+
+      return cardOpacity >= 0.98
+        && sprite?.getAttribute('data-image-loaded') === 'true'
+        && Boolean(img?.complete)
+        && (img?.naturalWidth ?? 0) > 0
+        && (img?.naturalHeight ?? 0) > 0
+        && imageOpacity >= 0.98;
+    });
+  }, { timeout: 15000 });
+}
+
 async function createStartedSelectionMatch(browser: Browser, baseURL: string | undefined) {
   const hostContext = await browser.newContext({ baseURL });
   await initSWContext(hostContext, '__sw_selection_turn_lock_host');
@@ -103,6 +135,192 @@ async function createStartedSelectionMatch(browser: Browser, baseURL: string | u
 
 test.describe('SummonerWars selection and turn-lock flows', () => {
   const MOBILE_LANDSCAPE_TIGHT_VIEWPORT = { width: 812, height: 375 } as const;
+
+  test('desktop faction selection uses 2x4 pagination controls', async ({ browser }, testInfo) => {
+    test.setTimeout(120000);
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+    const hostContext = await browser.newContext({
+      baseURL,
+      viewport: DESKTOP_REFERENCE_VIEWPORT,
+    });
+    await initSWContext(hostContext, '__sw_selection_pagination_host');
+    const hostPage = await hostContext.newPage();
+    const hostGame = new GameTestContext(hostPage);
+
+    try {
+      await hostPage.goto('/', { waitUntil: 'domcontentloaded' });
+      if (!(await ensureGameServerAvailable(hostPage))) {
+        test.skip(true, 'Game server unavailable');
+      }
+
+      const matchId = await createSWRoomViaAPI(hostPage);
+      if (!matchId) {
+        test.skip(true, 'Room creation failed');
+      }
+
+      await hostPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
+      await waitForFactionSelectionReady(hostPage);
+      await waitForSelectionLayoutStable(hostPage);
+
+      const grid = hostPage.getByTestId('sw-faction-grid');
+      await expect(grid).toHaveAttribute('data-grid-capacity', '8');
+      await expect(grid).toHaveAttribute('data-page', '1');
+      await expect(grid).toHaveAttribute('data-page-count', '2');
+      await expect(hostPage.getByTestId('sw-faction-page-prev')).toBeDisabled();
+      await expect(hostPage.getByTestId('sw-faction-page-next')).toBeEnabled();
+      await expect(getFactionCard(hostPage, 'huijin')).toHaveCount(0);
+
+      const firstPageLayout = await hostPage.evaluate(() => ({
+        factionCards: document.querySelectorAll('[data-testid^="sw-faction-card-"][data-faction-id]').length,
+        placeholders: document.querySelectorAll('[data-testid="sw-faction-grid-placeholder"]').length,
+        gridChildren: document.querySelector('[data-testid="sw-faction-grid"]')?.children.length ?? 0,
+        hasCustomDeckEntry: !!document.querySelector('[data-testid="sw-custom-deck-entry"]'),
+      }));
+      expect(firstPageLayout).toEqual({
+        factionCards: 7,
+        placeholders: 0,
+        gridChildren: 8,
+        hasCustomDeckEntry: true,
+      });
+
+      await waitForVisibleFactionCardsReady(hostPage);
+      const firstPagePaginationGeometry = await hostPage.evaluate(() => {
+        const stage = document.querySelector('[data-testid="sw-faction-stage"]') as HTMLElement | null;
+        const rectOf = (selector: string) => {
+          const node = document.querySelector(selector) as HTMLElement | null;
+          if (!node) return null;
+          const rect = node.getBoundingClientRect();
+          return {
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+            centerX: rect.left + rect.width / 2,
+            centerY: rect.top + rect.height / 2,
+            width: rect.width,
+            height: rect.height,
+          };
+        };
+
+        return {
+          viewportWidth: window.innerWidth,
+          inlineUnitPx: stage
+            ? Number.parseFloat(window.getComputedStyle(stage).getPropertyValue('--sw-selection-inline-unit') || '0')
+            : 0,
+          pagerRect: rectOf('[data-testid="sw-faction-pager"]'),
+          gridRect: rectOf('[data-testid="sw-faction-grid"]'),
+          previousButtonRect: rectOf('[data-testid="sw-faction-page-prev"]'),
+          nextButtonRect: rectOf('[data-testid="sw-faction-page-next"]'),
+        };
+      });
+      await hostGame.screenshot('selection-faction-pagination-page-1', testInfo);
+
+      await hostPage.getByTestId('sw-faction-page-next').click();
+
+      await expect(grid).toHaveAttribute('data-page', '2');
+      await expect(getFactionCard(hostPage, 'huijin')).toBeVisible();
+      await expect(getFactionCard(hostPage, 'necromancer')).toHaveCount(0);
+      await expect(hostPage.getByTestId('sw-custom-deck-entry')).toBeVisible();
+
+      const secondPageLayout = await hostPage.evaluate(() => ({
+        factionCards: document.querySelectorAll('[data-testid^="sw-faction-card-"][data-faction-id]').length,
+        placeholders: document.querySelectorAll('[data-testid="sw-faction-grid-placeholder"]').length,
+        gridChildren: document.querySelector('[data-testid="sw-faction-grid"]')?.children.length ?? 0,
+        hasCustomDeckEntry: !!document.querySelector('[data-testid="sw-custom-deck-entry"]'),
+      }));
+      expect(secondPageLayout.factionCards).toBeLessThanOrEqual(7);
+      expect(secondPageLayout.placeholders).toBeGreaterThan(0);
+      expect(secondPageLayout.gridChildren).toBe(8);
+      expect(secondPageLayout.hasCustomDeckEntry).toBe(true);
+
+      await waitForVisibleFactionCardsReady(hostPage);
+      const secondPagePaginationGeometry = await hostPage.evaluate(() => {
+        const stage = document.querySelector('[data-testid="sw-faction-stage"]') as HTMLElement | null;
+        const rectOf = (selector: string) => {
+          const node = document.querySelector(selector) as HTMLElement | null;
+          if (!node) return null;
+          const rect = node.getBoundingClientRect();
+          return {
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+            centerX: rect.left + rect.width / 2,
+            centerY: rect.top + rect.height / 2,
+            width: rect.width,
+            height: rect.height,
+          };
+        };
+
+        return {
+          viewportWidth: window.innerWidth,
+          inlineUnitPx: stage
+            ? Number.parseFloat(window.getComputedStyle(stage).getPropertyValue('--sw-selection-inline-unit') || '0')
+            : 0,
+          pagerRect: rectOf('[data-testid="sw-faction-pager"]'),
+          gridRect: rectOf('[data-testid="sw-faction-grid"]'),
+          previousButtonRect: rectOf('[data-testid="sw-faction-page-prev"]'),
+          nextButtonRect: rectOf('[data-testid="sw-faction-page-next"]'),
+        };
+      });
+      expect(firstPagePaginationGeometry.pagerRect).not.toBeNull();
+      expect(firstPagePaginationGeometry.gridRect).not.toBeNull();
+      expect(firstPagePaginationGeometry.previousButtonRect).not.toBeNull();
+      expect(firstPagePaginationGeometry.nextButtonRect).not.toBeNull();
+      expect(secondPagePaginationGeometry.pagerRect).not.toBeNull();
+      expect(secondPagePaginationGeometry.gridRect).not.toBeNull();
+      expect(secondPagePaginationGeometry.previousButtonRect).not.toBeNull();
+      expect(secondPagePaginationGeometry.nextButtonRect).not.toBeNull();
+      expect(Math.abs((firstPagePaginationGeometry.previousButtonRect?.centerX ?? 0) - (secondPagePaginationGeometry.previousButtonRect?.centerX ?? 0))).toBeLessThanOrEqual(1);
+      expect(Math.abs((firstPagePaginationGeometry.nextButtonRect?.centerX ?? 0) - (secondPagePaginationGeometry.nextButtonRect?.centerX ?? 0))).toBeLessThanOrEqual(1);
+      expect(Math.abs((firstPagePaginationGeometry.previousButtonRect?.centerY ?? 0) - (secondPagePaginationGeometry.previousButtonRect?.centerY ?? 0))).toBeLessThanOrEqual(1);
+      expect(Math.abs((firstPagePaginationGeometry.nextButtonRect?.centerY ?? 0) - (secondPagePaginationGeometry.nextButtonRect?.centerY ?? 0))).toBeLessThanOrEqual(1);
+      expect(Math.abs((firstPagePaginationGeometry.gridRect?.height ?? 0) - (secondPagePaginationGeometry.gridRect?.height ?? 0))).toBeLessThanOrEqual(1);
+      expect(Math.abs((firstPagePaginationGeometry.previousButtonRect?.left ?? 0) - (firstPagePaginationGeometry.pagerRect?.left ?? 0))).toBeLessThanOrEqual(2);
+      expect(Math.abs((firstPagePaginationGeometry.nextButtonRect?.right ?? 0) - (firstPagePaginationGeometry.pagerRect?.right ?? 0))).toBeLessThanOrEqual(2);
+      expect(Math.abs((secondPagePaginationGeometry.previousButtonRect?.left ?? 0) - (secondPagePaginationGeometry.pagerRect?.left ?? 0))).toBeLessThanOrEqual(2);
+      expect(Math.abs((secondPagePaginationGeometry.nextButtonRect?.right ?? 0) - (secondPagePaginationGeometry.pagerRect?.right ?? 0))).toBeLessThanOrEqual(2);
+      expect(firstPagePaginationGeometry.pagerRect?.width ?? 99999).toBeLessThanOrEqual(firstPagePaginationGeometry.viewportWidth * 0.84);
+      expect(secondPagePaginationGeometry.pagerRect?.width ?? 99999).toBeLessThanOrEqual(secondPagePaginationGeometry.viewportWidth * 0.84);
+      expect(firstPagePaginationGeometry.previousButtonRect?.right ?? 99999).toBeLessThanOrEqual((firstPagePaginationGeometry.gridRect?.left ?? 0) - 1);
+      expect(firstPagePaginationGeometry.nextButtonRect?.left ?? 0).toBeGreaterThanOrEqual((firstPagePaginationGeometry.gridRect?.right ?? 99999) + 1);
+      expect(secondPagePaginationGeometry.previousButtonRect?.right ?? 99999).toBeLessThanOrEqual((secondPagePaginationGeometry.gridRect?.left ?? 0) - 1);
+      expect(secondPagePaginationGeometry.nextButtonRect?.left ?? 0).toBeGreaterThanOrEqual((secondPagePaginationGeometry.gridRect?.right ?? 99999) + 1);
+      expect((firstPagePaginationGeometry.gridRect?.left ?? 0) - (firstPagePaginationGeometry.previousButtonRect?.right ?? 0)).toBeLessThanOrEqual(firstPagePaginationGeometry.inlineUnitPx * 2);
+      expect((firstPagePaginationGeometry.nextButtonRect?.left ?? 0) - (firstPagePaginationGeometry.gridRect?.right ?? 0)).toBeLessThanOrEqual(firstPagePaginationGeometry.inlineUnitPx * 2);
+      expect((secondPagePaginationGeometry.gridRect?.left ?? 0) - (secondPagePaginationGeometry.previousButtonRect?.right ?? 0)).toBeLessThanOrEqual(secondPagePaginationGeometry.inlineUnitPx * 2);
+      expect((secondPagePaginationGeometry.nextButtonRect?.left ?? 0) - (secondPagePaginationGeometry.gridRect?.right ?? 0)).toBeLessThanOrEqual(secondPagePaginationGeometry.inlineUnitPx * 2);
+
+      const bottomAlignment = await hostPage.evaluate(() => {
+        const rectOf = (selector: string) => {
+          const node = document.querySelector(selector) as HTMLElement | null;
+          if (!node) return null;
+          const rect = node.getBoundingClientRect();
+          return {
+            top: rect.top,
+            bottom: rect.bottom,
+            height: rect.height,
+          };
+        };
+
+        return {
+          lowerInnerRect: rectOf('[data-testid="sw-faction-lower-stage-inner"]'),
+          playerRailRect: rectOf('[data-testid="sw-faction-player-rail"]'),
+          rightClusterRect: rectOf('[data-testid="sw-faction-right-anchor-cluster"]'),
+        };
+      });
+      expect(bottomAlignment.lowerInnerRect).not.toBeNull();
+      expect(bottomAlignment.playerRailRect).not.toBeNull();
+      expect(bottomAlignment.rightClusterRect).not.toBeNull();
+      expect(Math.abs((bottomAlignment.playerRailRect?.bottom ?? 0) - (bottomAlignment.lowerInnerRect?.bottom ?? 0))).toBeLessThanOrEqual(2);
+      expect(Math.abs((bottomAlignment.rightClusterRect?.bottom ?? 0) - (bottomAlignment.lowerInnerRect?.bottom ?? 0))).toBeLessThanOrEqual(2);
+
+      await hostGame.screenshot('selection-faction-pagination-page-2', testInfo);
+    } finally {
+      await hostContext.close().catch(() => {});
+    }
+  });
 
   test('mobile landscape capped viewport keeps faction selection in strict 16:9 proportional scale', async ({ browser }, testInfo) => {
     test.setTimeout(120000);

@@ -23731,6 +23731,156 @@ describe('GameTransportServer（离座与重连）', () => {
         }));
     });
 
+    it('Dice Throne watchdog 在 AI active 的 offensiveRoll 只剩推进阶段时，不应误报 blocker_persisted', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const random = createQueuedRandom([2, 2, 2, 3, 6, 6, 6, 1, 1]);
+        const state = createHeroMatchup('paladin', 'barbarian')(['0', '1'], random);
+
+        state.sys.phase = 'offensiveRoll';
+        state.sys.turnNumber = 0;
+        state.core.activePlayerId = '1';
+        state.core.currentPlayerIndex = 1;
+        state.core.rollCount = 1;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.pendingAttack = null;
+        state.core.activatingAbilityId = undefined;
+        state.core.players['1'].hand = [];
+
+        await storage.createMatch('match-watchdog-dicethrone-offensive-advance-legal-only', {
+            initialState: {
+                G: state,
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'dicethrone',
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'baseline' },
+                },
+            }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch');
+        resolutionSpy
+            .mockResolvedValueOnce({
+                kind: 'action',
+                resolution: {
+                    playerId: '1',
+                    attemptKey: 'watchdog-dicethrone-offensive-advance-phase',
+                    source: 'local-ai',
+                    action: {
+                        actionId: 'phase:advance:offensiveRoll:main2',
+                        kind: 'advance-phase',
+                        label: '推进到 main2',
+                        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                    },
+                },
+            })
+            .mockResolvedValue({
+                kind: 'idle',
+                idleReason: 'no-action',
+            });
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [diceThroneEngineConfig],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+                onlineAiRecoveryFailureReportThreshold: 1,
+                onlineAiFeedbackReporter: feedbackReporter,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                runOnlineAiRecoverySequence: (
+                    match: any,
+                    tracker: any,
+                    candidate: any,
+                    progressMarkerBeforeRecovery: string,
+                    seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai'; policyId?: string }>,
+                ) => Promise<void>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                ) => Promise<boolean>;
+            };
+
+            const match = await serverInternal.loadMatch('match-watchdog-dicethrone-offensive-advance-legal-only');
+            const candidate = {
+                playerId: '1',
+                reason: 'active-turn-legal-only',
+                legalActionOnly: true,
+                fingerprintHint: 'active-turn-legal-only:1:offensiveRoll',
+                resolution: {
+                    playerId: '1',
+                    attemptKey: 'force-end-turn:1:active-turn-legal-only:1:offensiveRoll',
+                    source: 'local-ai',
+                    action: {
+                        actionId: 'force-end-turn:active-turn-legal-only:1:offensiveRoll',
+                        kind: 'force-end-turn',
+                        label: '服务端代 AI 执行合法动作',
+                        commands: [],
+                    },
+                },
+            };
+            const progressMarker = buildAiProgressMarker(match.state, {
+                engineConfig: diceThroneEngineConfig,
+                gameId: 'dicethrone',
+            });
+            const tracker = {
+                key: `1:active-turn-legal-only:${(server as any).buildOnlineAiRecoveryFingerprint(
+                    match,
+                    candidate,
+                    progressMarker,
+                )}`,
+                firstSeenAt: Date.now(),
+                autoSubmittedAt: Date.now(),
+                lastReportedFailureReason: null,
+                failureCount: 0,
+            };
+            (server as any).onlineAiRecoveryTrackers.set(match.matchID, tracker);
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+            await serverInternal.runOnlineAiRecoverySequence(
+                match,
+                tracker,
+                candidate,
+                progressMarker,
+                {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'baseline' },
+                },
+            );
+
+            expect(executeSpy.mock.calls[0]?.[1]).toBe('1');
+            expect(executeSpy.mock.calls[0]?.[2]).toBe('ADVANCE_PHASE');
+            expect(match.state.sys.phase).not.toBe('offensiveRoll');
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-dicethrone-offensive-advance-legal-only',
+                playerId: '1',
+                incidentKind: 'force-end-turn-success',
+                status: 'resolved',
+            }));
+            expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-dicethrone-offensive-advance-legal-only',
+                incidentKind: 'force-end-turn-failed',
+                reason: expect.stringContaining('blocker_persisted'),
+            }));
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
     it('online AI watchdog 遇到同一 AI 的链式可见交互时，应在单次恢复序列内持续消费直到收口', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -25151,6 +25301,127 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
+    it('online AI watchdog 的同一合法动作连续命令失败达到上限后，不应无限重试同一命令', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-legal-action-failure-repeat-limit', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'playCards',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'watchdog-smashup-play-action-failure',
+                source: 'local-ai',
+                action: {
+                    actionId: 'play-action:winter-surprise',
+                    kind: 'play-action',
+                    label: '打出 冬季惊喜',
+                    commands: [{ type: 'su:play_action', payload: { cardUid: 'winter-surprise' } }],
+                },
+            },
+        });
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [createEngineConfigWithId('smashup')],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+                onlineAiRecoveryFailureReportThreshold: 1,
+                onlineAiRecoveryRepeatedAttemptLimit: 3,
+                onlineAiFeedbackReporter: feedbackReporter,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                runOnlineAiRecoveryTick: () => Promise<void>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                    options?: { suppressBroadcast?: boolean },
+                ) => Promise<boolean>;
+            };
+
+            const match = await serverInternal.loadMatch('match-watchdog-legal-action-failure-repeat-limit');
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
+                expect(playerID).toBe('1');
+                if (commandType === 'su:play_action') {
+                    expect(payload).toEqual({ cardUid: 'winter-surprise' });
+                    activeMatch.lastCommandFailureReason = 'pipeline_error: winter surprise event shape';
+                    return false;
+                }
+                if (commandType === 'ADVANCE_PHASE') {
+                    activeMatch.state = {
+                        ...activeMatch.state,
+                        core: {
+                            ...activeMatch.state.core,
+                            activePlayerId: '0',
+                            currentPlayerIndex: 0,
+                        },
+                        sys: {
+                            ...activeMatch.state.sys,
+                            phase: 'draw',
+                            turnNumber: 5,
+                            eventStream: {
+                                ...(activeMatch.state.sys?.eventStream ?? {}),
+                                nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                            },
+                        },
+                    };
+                    return true;
+                }
+                throw new Error(`Unexpected command: ${commandType}`);
+            });
+
+            const runRecoveryCycle = async (): Promise<void> => {
+                await serverInternal.runOnlineAiRecoveryTick();
+                await serverInternal.runOnlineAiRecoveryTick();
+                await nextTick();
+                await nextTick();
+            };
+
+            await runRecoveryCycle();
+            await runRecoveryCycle();
+            await runRecoveryCycle();
+            await runRecoveryCycle();
+
+            expect(executeSpy.mock.calls.map(([, , commandType]) => commandType)).toEqual([
+                'su:play_action',
+                'su:play_action',
+                'su:play_action',
+                'ADVANCE_PHASE',
+            ]);
+            expect(match.state.sys.phase).toBe('draw');
+            expect(match.state.core.activePlayerId).toBe('0');
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-legal-action-failure-repeat-limit',
+                incidentKind: 'repeated-recovery-force-unblocked',
+                reason: expect.stringContaining('active-turn:repeat-limit-force-unblock:3/3:commands=ADVANCE_PHASE'),
+            }));
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
     it('online AI watchdog 在 SmashUp playCards 的合法动作无进展时，应 fallback 到 ADVANCE_PHASE 收口', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -25341,6 +25612,9 @@ describe('GameTransportServer（离座与重连）', () => {
                 source: 'online-ai-watchdog',
                 autoReportKind: event.incidentKind,
                 status: 'resolved',
+                resolvedMethod: event.incidentKind === 'legal-action-recovered'
+                    ? '系统已自动找到可执行操作并继续推进该 AI 座位，对局没有停在该步骤。'
+                    : '系统已自动推进停滞的 AI 座位，让对局继续进行。',
                 incidentKey: event.trackerKey,
                 gameName: 'dicethrone',
                 clientContext: expect.objectContaining({

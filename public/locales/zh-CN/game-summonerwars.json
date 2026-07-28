@@ -23,6 +23,8 @@
     "customDeckSummoner": "召唤师：{{name}}",
     "editDeck": "编辑牌组",
     "newDeck": "新建牌组",
+    "previousPage": "上一页阵营",
+    "nextPage": "下一页阵营",
     "loadingDecks": "加载牌组中…",
     "loadDeckFailed": "加载牌组失败，请重试"
   },
@@ -496,6 +498,7 @@
       "mindCapture": "心灵捕获：选择控制或造成伤害",
       "iceShards": "寒冰碎屑：攻击阶段开始自动结算",
       "feedBeast": "喂养巨食兽：选择吞噬目标或自毁",
+      "moguDecayTarget": "腐坏：选择相邻友方单位",
       "moguParasite": "寄生：选择消耗充能或受到伤害",
       "huijinCallGuardsTarget": "召集护卫：选择场上的友方士兵",
       "huijinCallGuardsPosition": "召集护卫：选择召唤师相邻空格",

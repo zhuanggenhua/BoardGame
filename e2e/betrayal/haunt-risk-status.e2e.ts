@@ -112,6 +112,8 @@ test.describe('山屋惊魂作祟风险条', () => {
         await expect(page.getByTestId('betrayal-action-explore')).toBeEnabled();
         await page.getByTestId('betrayal-action-explore').click();
         await page.getByTestId('betrayal-room-ground-north').click();
+        await expect(page.getByTestId('betrayal-room-placement-panel')).toBeVisible();
+        await page.getByTestId('betrayal-room-placement-confirm').click();
 
         await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible();
         await expect(page.getByTestId('betrayal-discovery-panel-content')).toContainText(/最后一张预兆|自动触发作祟|作祟/);

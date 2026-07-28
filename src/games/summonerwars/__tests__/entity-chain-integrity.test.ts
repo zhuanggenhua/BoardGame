@@ -12,6 +12,9 @@
  */
 
 import { abilityRegistry } from '../domain/abilities';
+import { MOGU_ABILITIES } from '../domain/abilities-mogu';
+import { HUIJIN_ABILITIES } from '../domain/abilities-huijin';
+import { YONGHENG_ABILITIES } from '../domain/abilities-yongheng';
 import { swCustomActionRegistry } from '../domain/customActionHandlers';
 import { abilityExecutorRegistry } from '../domain/executors';
 import type { AbilityDef, AbilityEffect } from '../domain/abilities';
@@ -117,7 +120,6 @@ const HANDLED_BY_COMMAND_FLOW = new Set([
     'speed_up_extra_move',    // → execute/helpers 移动增强
     'mogu_blood_bloom_charge', // → execute postProcessDeathChecks 后处理友方单位死亡
     'mogu_final_form_replace', // → execute SUMMON_UNIT 替换高充能菌化野兽
-    'mogu_decay',             // → execute END_PHASE 移动阶段结束处理
     'mogu_parasite',          // → execute END_PHASE 攻击阶段结束处理
     'shouren_blood_bond',     // → execute DECLARE_ATTACK afterAttack 按 special 数给召唤师充能
 ]);
@@ -147,6 +149,91 @@ const PASSIVE_EVIDENCE = new Map<string, { abilityId: string; consumedBy: string
 ]);
 
 const HANDLED_BY_PASSIVE = new Set(PASSIVE_EVIDENCE.keys());
+
+type EmptyEffectStatus = 'implemented-passthrough' | 'intentional-placeholder' | 'passive-static';
+
+interface EmptyEffectEvidence {
+    faction: '莫古' | '灰烬' | '永恒议会';
+    status: EmptyEffectStatus;
+    consumedBy: string;
+    evidence: string;
+}
+
+const UNDER_CONSTRUCTION_ABILITY_GROUPS = [
+    { faction: '莫古' as const, abilities: MOGU_ABILITIES },
+    { faction: '灰烬' as const, abilities: HUIJIN_ABILITIES },
+    { faction: '永恒议会' as const, abilities: YONGHENG_ABILITIES },
+];
+
+/**
+ * 实施中派系 effects: [] 能力的审计证据分类。
+ *
+ * D3/D33 规则：空 effects 只能说明 AbilityDef 声明层没有内联效果，
+ * 不能自动判定为未实现，也不能自动判定为完整闭环。
+ * 每个空 effects 能力必须显式登记运行时消费者或占位原因。
+ */
+const EMPTY_EFFECT_EVIDENCE = new Map<string, EmptyEffectEvidence>([
+    ['huijin_ember_summon', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.getValidSummonPositions / helpers.getSummonablePositions',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_ignite', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'abilityResolver.calculateEffectiveStrength',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_guard_master', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.getValidSummonPositions / helpers.getSummonablePositions',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_flame_breath', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.canAttackEnhanced + execute DECLARE_ATTACK',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_counterattack', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'execute DECLARE_ATTACK after-attack damage handling',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_shelter', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'execute DECLARE_ATTACK first-attack damage cap',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['huijin_born_of_flame', {
+        faction: '灰烬',
+        status: 'implemented-passthrough',
+        consumedBy: 'helpers.getValidSummonPositions / helpers.getSummonablePositions',
+        evidence: 'evidence/summonerwars/summonerwars-huijin-intake-2026-07-16.md',
+    }],
+    ['yongheng_continuance', {
+        faction: '永恒议会',
+        status: 'implemented-passthrough',
+        consumedBy: 'yonghengMechanics.interceptYonghengContinuanceEvent + systems interaction resolution',
+        evidence: 'evidence/summonerwars/summonerwars-yongheng-intake-2026-07-21.md',
+    }],
+    ['yongheng_punish', {
+        faction: '永恒议会',
+        status: 'implemented-passthrough',
+        consumedBy: 'yonghengMechanics.getYonghengPostProcessEvents + systems discard interaction',
+        evidence: 'evidence/summonerwars/summonerwars-yongheng-intake-2026-07-21.md',
+    }],
+    ['yongheng_scheme', {
+        faction: '永恒议会',
+        status: 'implemented-passthrough',
+        consumedBy: 'abilityResolver.calculateEffectiveStrength',
+        evidence: 'evidence/summonerwars/summonerwars-yongheng-intake-2026-07-21.md',
+    }],
+]);
 
 // ============================================================================
 // 辅助：从 AbilityDef 提取 custom actionId 引用
@@ -443,6 +530,67 @@ createEffectContractSuite<AbilityDef, AbilityEffect>({
             describeViolation: (e) => `reduceDamage value 不合法: ${JSON.stringify(e)}`,
         },
     ],
+});
+
+describe('实施中派系空 effects 能力证据分类', () => {
+    it('实施中派系 effects 为空的能力必须显式分类', () => {
+        const missing: string[] = [];
+        for (const group of UNDER_CONSTRUCTION_ABILITY_GROUPS) {
+            for (const def of group.abilities) {
+                if (def.effects.length > 0) continue;
+                if (!EMPTY_EFFECT_EVIDENCE.has(def.id)) {
+                    missing.push(`${group.faction}:${def.id}`);
+                }
+            }
+        }
+        expect(missing).toEqual([]);
+    });
+
+    it('空 effects 分类映射不能指向不存在或非空 effects 的能力', () => {
+        const defs = new Map<string, AbilityDef>();
+        for (const group of UNDER_CONSTRUCTION_ABILITY_GROUPS) {
+            for (const def of group.abilities) defs.set(def.id, def);
+        }
+
+        const violations: string[] = [];
+        for (const [abilityId, evidence] of EMPTY_EFFECT_EVIDENCE) {
+            const def = defs.get(abilityId);
+            if (!def) {
+                violations.push(`[${abilityId}] ${evidence.faction} 分类映射没有对应实施中能力定义`);
+                continue;
+            }
+            if (def.effects.length !== 0) {
+                violations.push(`[${abilityId}] ${evidence.faction} 已不是空 effects，应改走普通 effects/custom action 链审计`);
+            }
+            if (!evidence.consumedBy.trim()) {
+                violations.push(`[${abilityId}] 缺少运行时消费者说明`);
+            }
+            if (!evidence.evidence.trim()) {
+                violations.push(`[${abilityId}] 缺少 evidence 入口`);
+            }
+        }
+        expect(violations).toEqual([]);
+    });
+
+    it('已实现旁路消费能力不得被误分类为未实现占位', () => {
+        const implemented = [...EMPTY_EFFECT_EVIDENCE]
+            .filter(([, evidence]) => evidence.status === 'implemented-passthrough')
+            .map(([abilityId]) => abilityId)
+            .sort();
+
+        expect(implemented).toEqual([
+            'huijin_born_of_flame',
+            'huijin_counterattack',
+            'huijin_ember_summon',
+            'huijin_flame_breath',
+            'huijin_guard_master',
+            'huijin_ignite',
+            'huijin_shelter',
+            'yongheng_continuance',
+            'yongheng_punish',
+            'yongheng_scheme',
+        ].sort());
+    });
 });
 
 

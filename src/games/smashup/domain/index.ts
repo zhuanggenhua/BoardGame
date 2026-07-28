@@ -23,6 +23,8 @@ import type {
     AbilityFeedbackEvent,
     GamePhase,
     PlayerState,
+    CardInstance,
+    StoredCardInstance,
     BaseInPlay,
     TurnStartedEvent,
     TurnEndedEvent,
@@ -53,7 +55,7 @@ import {
     VP_TO_WIN,
     getCurrentPlayerId,
 } from './types';
-import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './ongoingModifiers';
+import { getEffectivePower, getTotalEffectivePowerOnBase, getEffectiveBreakpoint, getEffectivePowerBreakdown, getPlayerEffectivePowerOnBase, getRealtimeScoringEligibleBaseIndices, getScoringEligibleBaseIndices } from './ongoingModifiers';
 import { collectTriggers, fireTriggerForSource, getModifiedBaseVp, hasRegisteredTrigger, interceptEvent as ongoingInterceptEvent, isBaseScoringSuppressed } from './ongoingEffects';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import {
@@ -117,6 +119,7 @@ type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
     _waitForScoreBasesInteractionReduce?: boolean;
     _waitForPostScoringReduce?: boolean;
     _ppseInputEventsReduced?: boolean;
+    _ppseImmediateStartTurnProcessedMinionUids?: string[];
     _processedTitanPositionEvents?: Set<string>;
     _processedTitanRemovedEvents?: Set<string>;
 };
@@ -360,20 +363,15 @@ function buildBaseRankings(
             groupEnd += 1;
         }
 
-        const awardSlot = groupEnd;
+        const awardSlot = index;
         const printedVp = awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
-        const vp = getModifiedBaseVp(
-            core,
-            baseIndex,
-            sorted[index][0],
-            printedVp,
-        );
 
         for (let i = index; i <= groupEnd; i += 1) {
+            const playerId = sorted[i][0];
             rankings.push({
-                playerId: sorted[i][0],
+                playerId,
                 power,
-                vp,
+                vp: getModifiedBaseVp(core, baseIndex, playerId, printedVp),
             });
         }
 
@@ -384,7 +382,7 @@ function buildBaseRankings(
 }
 
 function getLockedScoringBaseIndices(core: SmashUpCore): number[] {
-    return getScoringEligibleBaseIndices(core);
+    return getRealtimeScoringEligibleBaseIndices(core);
 }
 
 function ensureScoreBasesSession(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
@@ -396,6 +394,24 @@ function ensureScoreBasesSession(state: MatchState<SmashUpCore>): MatchState<Sma
         return state;
     }
     return setScoringSession(state, createScoringSession(state.core, lockedIndices));
+}
+
+function refreshPendingScoringBaseRefs(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
+    const session = getScoringSession(state);
+    if (!session || session.currentBaseRef) {
+        return state;
+    }
+    const liveRefs = getRealtimeScoringEligibleBaseIndices(state.core)
+        .map((baseIndex) => createScoringBaseRef(state.core, baseIndex))
+        .filter((baseRef): baseRef is SmashUpScoringBaseRef => !!baseRef)
+        .filter((baseRef) => !session.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)));
+
+    return updateScoringSession(state, (currentSession) => currentSession
+        ? {
+            ...currentSession,
+            lockedBaseRefs: liveRefs,
+        }
+        : currentSession);
 }
 
 function buildMultiBaseScoringInteraction(
@@ -497,35 +513,17 @@ function finalizeCurrentScoringBase(
     );
     const completedSession = getScoringSession(completedState);
     if (completedSession) {
-        const discoveredEligibleRefs = getScoringEligibleBaseIndices(postDeferredCore)
+        const liveEligibleRefs = getRealtimeScoringEligibleBaseIndices(postDeferredCore)
             .map((baseIndex) => createScoringBaseRef({ ...postDeferredCore }, baseIndex))
             .filter((baseRef): baseRef is SmashUpScoringBaseRef => !!baseRef)
-            .filter((baseRef) => !completedSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
-            .filter((baseRef) => !completedSession.lockedBaseRefs.some((lockedRef) => isSameScoringBaseRef(lockedRef, baseRef)));
+            .filter((baseRef) => !completedSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)));
 
-        if (discoveredEligibleRefs.length > 0) {
-            completedState = updateScoringSession(completedState, (currentSession) => currentSession
-                ? {
-                    ...currentSession,
-                    lockedBaseRefs: [...currentSession.lockedBaseRefs, ...discoveredEligibleRefs],
-                }
-                : currentSession);
-
-            const futureState = { ...completedState, core: postDeferredCore };
-            const futureSession = getScoringSession(futureState);
-            const remainingLockedIndices = futureSession
-                ? futureSession.lockedBaseRefs
-                    .filter((baseRef) => !futureSession.completedBaseRefs.some((completedRef) => isSameScoringBaseRef(completedRef, baseRef)))
-                    .map((baseRef) => resolveScoringBaseRefSlotIndex(futureState, baseRef))
-                    .filter((baseIndex): baseIndex is number => baseIndex !== undefined)
-                : [];
-
-            events.push({
-                type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
-                payload: { baseIndices: remainingLockedIndices },
-                timestamp: now,
-            } as SmashUpEvent);
-        }
+        completedState = updateScoringSession(completedState, (currentSession) => currentSession
+            ? {
+                ...currentSession,
+                lockedBaseRefs: liveEligibleRefs,
+            }
+            : currentSession);
     }
     const awaitingReduceState = {
         ...completedState,
@@ -626,6 +624,28 @@ export function scoreOneBase(
             }
             : session,
         );
+    }
+    const currentBaseSelectedForScoring = !!(
+        ms
+        && currentBaseRef
+        && isSameScoringBaseRef(getScoringSession(ms)?.currentBaseRef, currentBaseRef)
+    );
+    if (
+        currentBaseSelectedForScoring
+        && (
+            !Array.isArray(core.scoringEligibleBaseIndices)
+            || core.scoringEligibleBaseIndices.length !== 1
+            || core.scoringEligibleBaseIndices[0] !== baseIndex
+        )
+    ) {
+        const currentBaseLockEvent = {
+            type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
+            payload: { baseIndices: [baseIndex] },
+            timestamp: now,
+        } as unknown as SmashUpEvent;
+        events.push(currentBaseLockEvent);
+        core = reduce(core, currentBaseLockEvent);
+        ms = { ...ms, core };
     }
     let newBaseDeck = baseDeck;
 
@@ -739,10 +759,11 @@ export function scoreOneBase(
     }
     const effectiveBreakpointAfterBefore = getEffectiveBreakpoint(updatedCore, baseIndex);
     const totalPowerAfterBefore = getTotalEffectivePowerOnBase(updatedCore, updatedBaseAfterBefore, baseIndex);
-    const lockedAtScoreBasesEnter = updatedCore.scoringEligibleBaseIndices?.includes(baseIndex) ?? false;
-    // 规则（Wiki Phase 3 Step 4）：进入 scoreBases 阶段时达到 breakpoint 的基地会被锁定，
-    // 即便在 Me First! / beforeScoring 链路中力量被压到 breakpoint 以下，仍应继续计分。
-    if (!lockedAtScoreBasesEnter && totalPowerAfterBefore < effectiveBreakpointAfterBefore) {
+    const selectedBaseLocked = currentBaseSelectedForScoring
+        || (updatedCore.scoringEligibleBaseIndices?.includes(baseIndex) ?? false);
+    // 规则：只有已经被选择并开始结算的当前基地，即使 beforeScoring 链路中力量
+    // 被压到 breakpoint 以下，也会继续完成本次计分。
+    if (!selectedBaseLocked && totalPowerAfterBefore < effectiveBreakpointAfterBefore) {
         if (ms) ms = { ...ms, core: updatedCore };
         return { events, newBaseDeck: baseDeck, matchState: ms };
     }
@@ -1695,6 +1716,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             }
 
             if (!currentSession.currentBaseRef) {
+                currentState = refreshPendingScoringBaseRefs(currentState);
                 const remainingBaseRefs = getRemainingScoringBaseRefs(currentState);
 
                 if (remainingBaseRefs.length === 0) {
@@ -1996,19 +2018,11 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                 timestamp: now,
             } as GameEvent);
 
-            const eligibleIndices = getScoringEligibleBaseIndices(core);
+            const eligibleIndices = getRealtimeScoringEligibleBaseIndices(core);
             currentMatchState = eligibleIndices.length > 0
                 ? setScoringSession(currentMatchState, createScoringSession(core, eligibleIndices))
                 : clearScoringSession(currentMatchState);
             hasSysUpdate = true;
-
-            if (eligibleIndices.length > 0) {
-                events.push({
-                    type: SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED,
-                    payload: { baseIndices: eligibleIndices },
-                    timestamp: now,
-                } as GameEvent);
-            }
 
             return { events, updatedState: currentMatchState } as PhaseEnterResult;
         }
@@ -2196,6 +2210,35 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
 // ============================================================================
 
+const HIDDEN_PRIVATE_CARD_DEF_ID = 'hidden_private_card';
+
+function maskPrivateCard(ownerId: PlayerId, zone: 'hand' | 'deck' | 'stored', index: number): CardInstance {
+    return {
+        uid: `hidden_${ownerId}_${zone}_${index}`,
+        defId: HIDDEN_PRIVATE_CARD_DEF_ID,
+        type: 'action',
+        owner: ownerId,
+    };
+}
+
+function maskStoredCard(ownerId: PlayerId, index: number): StoredCardInstance {
+    return {
+        ...maskPrivateCard(ownerId, 'stored', index),
+        storedByPlayerId: ownerId,
+        reason: HIDDEN_PRIVATE_CARD_DEF_ID,
+    };
+}
+
+function maskPlayerPrivateZones(player: PlayerState, playerId: PlayerId): PlayerState {
+    if (player.id === playerId) return player;
+    return {
+        ...player,
+        hand: player.hand.map((_, index) => maskPrivateCard(player.id, 'hand', index)),
+        deck: player.deck.map((_, index) => maskPrivateCard(player.id, 'deck', index)),
+        storedCards: player.storedCards?.map((_, index) => maskStoredCard(player.id, index)),
+    };
+}
+
 // ============================================================================
 
 function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore> {
@@ -2216,7 +2259,13 @@ function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore
             }),
         };
     });
-    return { bases: maskedBases };
+    const maskedPlayers = Object.fromEntries(
+        Object.entries(state.players).map(([id, player]) => [
+            id,
+            maskPlayerPrivateZones(player, playerId),
+        ]),
+    ) as SmashUpCore['players'];
+    return { bases: maskedBases, players: maskedPlayers };
 }
 
 // ============================================================================
@@ -2261,63 +2310,28 @@ function isGameOver(state: SmashUpCore): GameOverResult | undefined {
         return undefined;
     }
 
-    if (isSmashUpTwoVsTwoMode(state)) {
-        const rawTeamTotals = getSmashUpRawTeamVpTotals(state);
-        const candidateTeams = Object.entries(rawTeamTotals)
-            .filter(([, total]) => total >= TEAM_VP_TO_WIN_2V2)
-            .map(([teamId]) => teamId as import('./types').SmashUpTeamId);
-        if (candidateTeams.length === 0) {
-            return undefined;
-        }
+    const rawScores = Object.fromEntries(
+        state.turnOrder.map((pid) => [pid, state.players[pid]?.vp ?? 0]),
+    ) as Record<PlayerId, number>;
+    const highestRawScore = Math.max(...Object.values(rawScores));
+    if (highestRawScore < VP_TO_WIN) return undefined;
+    const rawLeaders = state.turnOrder.filter(pid => rawScores[pid] === highestRawScore);
+    if (rawLeaders.length !== 1) return undefined;
 
-        const scores = getScores(state);
-        const teamScores = getSmashUpTeamScores(state, scores);
-
-        if (candidateTeams.length === 1) {
-            const winners = getSmashUpTeamMembers(state, candidateTeams[0]);
-            return {
-                winner: winners[0],
-                winners,
-                scores,
-            };
-        }
-
-        const sortedTeams = [...candidateTeams].sort((left, right) => teamScores[right] - teamScores[left]);
-        if (teamScores[sortedTeams[0]] > teamScores[sortedTeams[1]]) {
-            const winners = getSmashUpTeamMembers(state, sortedTeams[0]);
-            return {
-                winner: winners[0],
-                winners,
-                scores,
-            };
-        }
-
-        return undefined;
-    }
-    const winners = state.turnOrder.filter(pid => state.players[pid]?.vp >= VP_TO_WIN);
-    if (winners.length === 0) return undefined;
-
-    // 璁＄畻鍚柉鐙傚崱鎯╃綒鐨勬渶缁堝垎鏁?
     const scores = getScores(state);
-
-    if (winners.length === 1) {
-        return { winner: winners[0], scores };
+    if (state.madnessDeck === undefined) {
+        return { winner: rawLeaders[0], scores };
     }
 
-    const sorted = winners.sort((a, b) => scores[b] - scores[a]);
-    if (scores[sorted[0]] > scores[sorted[1]]) {
-        return { winner: sorted[0], scores };
-    }
+    const highestScore = Math.max(...state.turnOrder.map(pid => scores[pid] ?? 0));
+    const finalists = state.turnOrder.filter(pid => scores[pid] === highestScore);
+    if (finalists.length === 1) return { winner: finalists[0], scores };
 
-    if (state.madnessDeck !== undefined) {
-        const madnessA = countMadnessCardsForPlayer(state, sorted[0]);
-        const madnessB = countMadnessCardsForPlayer(state, sorted[1]);
-        if (madnessA !== madnessB) {
-            return { winner: madnessA < madnessB ? sorted[0] : sorted[1], scores };
-        }
-    }
+    const minMadness = Math.min(...finalists.map(pid => countMadnessCardsForPlayer(state, pid)));
+    const winners = finalists.filter(pid => countMadnessCardsForPlayer(state, pid) === minMadness);
+    if (winners.length === 1) return { winner: winners[0], scores };
 
-    return undefined;
+    return { winner: winners[0], winners, scores };
 }
 
 export function getScores(state: SmashUpCore): Record<PlayerId, number> {
@@ -2560,7 +2574,10 @@ function postProcessSystemEvents(
     events: SmashUpEvent[],
     random: RandomFn,
     matchState?: MatchState<SmashUpCore>,
-    options?: { skipImmediateStartTurnMinionTriggers?: boolean },
+    options?: {
+        skipImmediateStartTurnMinionTriggers?: boolean;
+        recordImmediateStartTurnProcessedMinionUids?: boolean;
+    },
 ): { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> } {
 
     const now = events.length > 0 && typeof events[0].timestamp === 'number' ? events[0].timestamp : 0;
@@ -3102,17 +3119,42 @@ function postProcessSystemEvents(
     }
 
     const startTurnWindowActive = ms.sys.phase === 'startTurn' || Boolean(getSmashUpRuntimeSys(ms)._smashupStartTurnWindowActive);
+    const previouslyProcessedStartTurnMinionUids = new Set(
+        getSmashUpRuntimeSys(ms)._ppseImmediateStartTurnProcessedMinionUids ?? [],
+    );
+    if (previouslyProcessedStartTurnMinionUids.size > 0) {
+        ms = {
+            ...ms,
+            sys: {
+                ...ms.sys,
+                _ppseImmediateStartTurnProcessedMinionUids: undefined,
+            } as SmashUpRuntimeSystemState,
+        };
+    }
     if (!options?.skipImmediateStartTurnMinionTriggers && startTurnWindowActive) {
+        const processedPlayedUids = new Set(previouslyProcessedStartTurnMinionUids);
         const immediate = processImmediateStartTurnMinionTriggers(
             state,
             finalEvents,
             pid,
             random,
             ms,
+            processedPlayedUids,
         );
         finalEvents = immediate.events;
         if (immediate.matchState) {
             ms = immediate.matchState;
+        }
+        const newlyProcessedUids = Array.from(processedPlayedUids)
+            .filter(uid => !previouslyProcessedStartTurnMinionUids.has(uid));
+        if (options?.recordImmediateStartTurnProcessedMinionUids && newlyProcessedUids.length > 0) {
+            ms = {
+                ...ms,
+                sys: {
+                    ...ms.sys,
+                    _ppseImmediateStartTurnProcessedMinionUids: Array.from(processedPlayedUids),
+                } as SmashUpRuntimeSystemState,
+            };
         }
     }
 

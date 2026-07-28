@@ -123,8 +123,8 @@ function validateSharedOngoingBindings(
         pair.classicId,
         pair.podId,
         [...classicShape.triggerTimings]
-            .map((timing) => `触发器 ${timing}`)
-            .filter((item) => !podShape.triggerTimings.has(item.replace('触发器 ', '') as any)),
+            .filter((timing) => !podShape.triggerTimings.has(timing))
+            .map((timing) => `触发器 ${timing}`),
     );
     reportMissingSharedSubset(
         errors,
@@ -133,8 +133,8 @@ function validateSharedOngoingBindings(
         pair.classicId,
         pair.podId,
         [...classicShape.protectionTypes]
-            .map((protectionType) => `保护 ${protectionType}`)
-            .filter((item) => !podShape.protectionTypes.has(item.replace('保护 ', '') as any)),
+            .filter((protectionType) => !podShape.protectionTypes.has(protectionType))
+            .map((protectionType) => `保护 ${protectionType}`),
     );
     reportMissingSharedSubset(
         errors,
@@ -143,8 +143,8 @@ function validateSharedOngoingBindings(
         pair.classicId,
         pair.podId,
         [...classicShape.restrictionTypes]
-            .map((restrictionType) => `限制 ${restrictionType}`)
-            .filter((item) => !podShape.restrictionTypes.has(item.replace('限制 ', '') as any)),
+            .filter((restrictionType) => !podShape.restrictionTypes.has(restrictionType))
+            .map((restrictionType) => `限制 ${restrictionType}`),
     );
 
     if (classicShape.hasInterceptor && !podShape.hasInterceptor) {
@@ -194,8 +194,8 @@ function validateSharedBaseAbilityBindings(
         pair.classicId,
         pair.podId,
         [...classicTimings]
-            .map((timing) => `基地时机 ${timing}`)
-            .filter((item) => !podTimings.has(item.replace('基地时机 ', '') as any)),
+            .filter((timing) => !podTimings.has(timing))
+            .map((timing) => `基地时机 ${timing}`),
     );
     reportMissingSharedSubset(
         errors,
@@ -254,6 +254,21 @@ function validateBasePoolBindings(errors: string[], profile: SmashUpFactionVaria
     }
 
     const podBaseIds = getBaseDefIdsForFactions([profile.podFactionId]);
+    const basePoolRelation = getSmashUpVariantSurfaceRelation('basePool', profile.baseFactionId, profile.podFactionId);
+    if (basePoolRelation === 'shared') {
+        const classicSorted = [...classicBaseIds].sort();
+        const podSorted = [...podBaseIds].sort();
+        if (classicSorted.join('\0') !== podSorted.join('\0')) {
+            errors.push(
+                `POD 派系 ${profile.podFactionId} 的共享基地池应与经典 ${profile.baseFactionId} 一致：classic=${classicSorted.join(', ')} pod=${podSorted.join(', ')}`,
+            );
+        }
+        return;
+    }
+    if (basePoolRelation !== 'separate') {
+        return;
+    }
+
     const invalidPodIds = podBaseIds.filter((baseId) => !baseId.endsWith('_pod'));
     if (invalidPodIds.length > 0) {
         errors.push(
@@ -262,13 +277,19 @@ function validateBasePoolBindings(errors: string[], profile: SmashUpFactionVaria
     }
 }
 
-export function validateSmashUpVariantBindings(): void {
+export function collectSmashUpVariantBindingErrors(): string[] {
     const errors: string[] = [];
 
     for (const profile of getAllSmashUpVariantProfiles()) {
         validateBasePoolBindings(errors, profile);
         validateSharedRuntimeBindings(errors, profile);
     }
+
+    return errors;
+}
+
+export function validateSmashUpVariantBindings(): void {
+    const errors = collectSmashUpVariantBindingErrors();
 
     if (errors.length > 0) {
         throw new Error(`Smash Up 变体绑定校验失败:\n- ${errors.join('\n- ')}`);

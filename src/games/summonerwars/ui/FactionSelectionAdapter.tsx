@@ -12,7 +12,7 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { ImplementationStatusRibbon } from '../../../components/game/framework/ImplementationStatusRibbon';
@@ -23,7 +23,7 @@ import { FACTION_CATALOG, type FactionCatalogEntry } from '../config/factions';
 import { CardSprite } from './CardSprite';
 import { initSpriteAtlases, getSpriteAtlasSource, getFactionAtlasId } from './cardAtlas';
 import { DeckBuilderDrawer } from './DeckBuilderDrawer';
-import { UI_Z_INDEX } from '../../../core';
+import { UI_Z_INDEX, markImageLoaded } from '../../../core';
 import type { SerializedCustomDeck } from '../config/deckSerializer';
 import type { TFunction } from 'i18next';
 import { listCustomDecks, getCustomDeck, type SavedDeckSummary } from '../../../api/custom-deck';
@@ -35,6 +35,8 @@ import { useRuntimeViewport } from '../../../hooks/ui/useRuntimeViewport';
 
 const FACTION_SELECTION_REFERENCE_WIDTH_PX = 1280;
 const FACTION_SELECTION_REFERENCE_HEIGHT_PX = 720;
+const FACTION_SELECTION_GRID_CAPACITY = 8;
+const FACTION_SELECTION_GRID_INLINE_UNITS = 72;
 
 // 玩家配色
 const PLAYER_COLORS: Record<string, { bg: string; border: string; text: string; glow: string }> = {
@@ -333,7 +335,38 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
   } as React.CSSProperties;
   const gridStyle = {
     gap: inlineUnit(0.8),
-    maxWidth: inlineUnit(72),
+    width: inlineUnit(FACTION_SELECTION_GRID_INLINE_UNITS),
+    maxWidth: '100%',
+  } as React.CSSProperties;
+  const factionPageButtonWidth = 'clamp(44px, calc(var(--sw-selection-inline-unit) * 4.2), 56px)';
+  const factionPageSideGap = inlineUnit(1.2);
+  const factionPagerStyle = {
+    boxSizing: 'border-box',
+    width: `calc(${inlineUnit(FACTION_SELECTION_GRID_INLINE_UNITS)} + (${factionPageButtonWidth} + ${factionPageSideGap}) * 2)`,
+    maxWidth: '100%',
+    minHeight: 'clamp(186px, calc(var(--sw-selection-block-unit) * 34), 260px)',
+  } as React.CSSProperties;
+  const factionPageLeftAnchorStyle = {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    zIndex: 2,
+  } as React.CSSProperties;
+  const factionPageRightAnchorStyle = {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    zIndex: 2,
+  } as React.CSSProperties;
+  const factionPageButtonStyle = {
+    width: factionPageButtonWidth,
+    height: 'clamp(64px, calc(var(--sw-selection-block-unit) * 12), 104px)',
+  } as React.CSSProperties;
+  const factionPageIconStyle = {
+    width: 'clamp(18px, calc(var(--sw-selection-inline-unit) * 1.4), 26px)',
+    height: 'clamp(18px, calc(var(--sw-selection-inline-unit) * 1.4), 26px)',
   } as React.CSSProperties;
   const lowerStageStyle = {
     paddingTop: isLandscapeMobileViewport ? blockUnit(0.6) : blockUnit(1.5),
@@ -398,6 +431,54 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
   const availableFactions = useMemo(() => {
     return FACTION_CATALOG.filter(f => f.selectable !== false);
   }, []);
+  useEffect(() => {
+    const preloadedHeroUrls = new Set<string>();
+    availableFactions.forEach((faction) => {
+      const atlasId = getSummonerAtlasIdByFaction(faction.id);
+      const heroSource = getSpriteAtlasSource(atlasId);
+      const heroUrl = heroSource?.image;
+      if (!heroUrl || preloadedHeroUrls.has(heroUrl)) {
+        return;
+      }
+      preloadedHeroUrls.add(heroUrl);
+
+      const img = new Image();
+      img.onload = () => {
+        markImageLoaded(heroUrl, undefined, img);
+      };
+      img.onerror = () => {
+        console.warn(`[FactionSelection] 预加载阵营召唤师图失败: ${atlasId}`);
+      };
+      img.src = heroUrl;
+    });
+  }, [availableFactions]);
+  const visibleSavedDeck = savedDecks[0] ?? null;
+  const reservedGridSlots = 1 + (visibleSavedDeck ? 1 : 0);
+  const factionsPerPage = Math.max(1, FACTION_SELECTION_GRID_CAPACITY - reservedGridSlots);
+  const factionPageCount = Math.max(1, Math.ceil(availableFactions.length / factionsPerPage));
+  const [factionPage, setFactionPage] = useState(0);
+  const currentFactionPage = Math.min(factionPage, factionPageCount - 1);
+  const factionPageStart = currentFactionPage * factionsPerPage;
+  const pagedFactions = useMemo(() => {
+    return availableFactions.slice(factionPageStart, factionPageStart + factionsPerPage);
+  }, [availableFactions, factionPageStart, factionsPerPage]);
+  const factionGridPlaceholderCount = Math.max(0, factionsPerPage - pagedFactions.length);
+  const factionGridPlaceholderFaction = pagedFactions[0] ?? availableFactions[0] ?? null;
+  const factionGridPlaceholderAtlasId = factionGridPlaceholderFaction
+    ? getSummonerAtlasIdByFaction(factionGridPlaceholderFaction.id)
+    : null;
+  const canPageBackward = currentFactionPage > 0;
+  const canPageForward = currentFactionPage < factionPageCount - 1;
+
+  const handlePreviousFactionPage = useCallback(() => {
+    setHoveredFaction(null);
+    setFactionPage(Math.max(currentFactionPage - 1, 0));
+  }, [currentFactionPage]);
+
+  const handleNextFactionPage = useCallback(() => {
+    setHoveredFaction(null);
+    setFactionPage(Math.min(currentFactionPage + 1, factionPageCount - 1));
+  }, [currentFactionPage, factionPageCount]);
 
   // 预加载双方选择的阵营资源（包括对方的）
   React.useEffect(() => {
@@ -587,14 +668,44 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
 
           {/* 主内容区 */}
           <div className="relative flex min-h-0 flex-1 flex-col" style={mainContentStyle}>
-            {/* 阵营卡片网格（两排三列） */}
+            {/* 阵营卡片网格：每页 2 x 4，牌组入口固定占最后槽位 */}
             <div className="flex-shrink-0">
               <div
-                data-testid="sw-faction-grid"
-                className="mx-auto grid grid-cols-4"
-                style={gridStyle}
+                data-testid="sw-faction-pager"
+                className="relative mx-auto flex items-center justify-center"
+                style={factionPagerStyle}
               >
-            {availableFactions.map((faction, index) => {
+                <div style={factionPageLeftAnchorStyle}>
+                  <motion.button
+                    type="button"
+                    data-testid="sw-faction-page-prev"
+                    aria-label={t('factionSelection.previousPage')}
+                    title={t('factionSelection.previousPage')}
+                    disabled={!canPageBackward}
+                    onClick={handlePreviousFactionPage}
+                    whileHover={canPageBackward ? { scale: 1.04, x: -2 } : undefined}
+                    whileTap={canPageBackward ? { scale: 0.96 } : undefined}
+                    className={clsx(
+                      'flex shrink-0 items-center justify-center rounded-xl border-2 transition-[border-color,background-color,opacity,box-shadow] duration-200',
+                      canPageBackward
+                        ? 'cursor-pointer border-amber-400/45 bg-amber-950/40 text-amber-100 shadow-[0_0_18px_rgba(245,158,11,0.18)] hover:border-amber-300/80 hover:bg-amber-800/40'
+                        : 'cursor-default border-white/10 bg-white/[0.03] text-white/20 opacity-45'
+                    )}
+                    style={factionPageButtonStyle}
+                  >
+                    <ChevronLeft aria-hidden="true" style={factionPageIconStyle} />
+                  </motion.button>
+                </div>
+
+                <div
+                  data-testid="sw-faction-grid"
+                  data-page={currentFactionPage + 1}
+                  data-page-count={factionPageCount}
+                  data-grid-capacity={FACTION_SELECTION_GRID_CAPACITY}
+                  className="grid grid-cols-4"
+                  style={gridStyle}
+                >
+            {pagedFactions.map((faction, pageIndex) => {
               // 预设阵营卡片的选中判断：排除通过自定义牌组选择该阵营的情况
               const isSelectedByMe = selectedFactions[currentPlayerId] === faction.id 
                 && !customDeckData?.[currentPlayerId];
@@ -609,7 +720,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                 <FactionCard
                   key={faction.id}
                   faction={faction}
-                  index={index}
+                  index={pageIndex}
                   isSelectedByMe={isSelectedByMe}
                   occupyingPlayers={occupyingPlayers}
                   t={t}
@@ -620,23 +731,40 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
               );
             })}
 
-            {/* 自定义牌组列表（最多显示 2 个） */}
-            {/* 自定义牌组（最多显示 1 个） */}
-            {savedDecks.length > 0 && (
+            {Array.from({ length: factionGridPlaceholderCount }).map((_, placeholderIndex) => (
+              <div
+                key={`faction-slot-placeholder-${currentFactionPage}-${placeholderIndex}`}
+                data-testid="sw-faction-grid-placeholder"
+                aria-hidden="true"
+                className="pointer-events-none invisible relative rounded-lg overflow-hidden border-2 border-transparent"
+                style={{ aspectRatio: String(SUMMONER_WARS_CARD_ASPECT_RATIO) }}
+              >
+                {factionGridPlaceholderAtlasId ? (
+                  <CardSprite
+                    atlasId={factionGridPlaceholderAtlasId}
+                    frameIndex={0}
+                    className="w-full"
+                  />
+                ) : null}
+              </div>
+            ))}
+
+            {/* 自定义牌组（每页固定显示最多 1 个） */}
+            {visibleSavedDeck && (
               <CustomDeckCard
-                key={savedDecks[0].id}
-                deck={savedDecks[0]}
-                index={availableFactions.length}
+                key={visibleSavedDeck.id}
+                deck={visibleSavedDeck}
+                index={factionsPerPage}
                 isSelectedByMe={
-                  selectedFactions[currentPlayerId] === savedDecks[0].summonerFaction &&
-                  customDeckData?.[currentPlayerId]?.id === savedDecks[0].id
+                  selectedFactions[currentPlayerId] === visibleSavedDeck.summonerFaction &&
+                  customDeckData?.[currentPlayerId]?.id === visibleSavedDeck.id
                 }
                 occupyingPlayers={playerIds.filter(
-                  pid => customDeckData?.[pid as PlayerId]?.id === savedDecks[0].id
+                  pid => customDeckData?.[pid as PlayerId]?.id === visibleSavedDeck.id
                 )}
                 t={t}
-                onSelect={() => handleSelectCustomDeck(savedDecks[0].id)}
-                onEdit={() => handleEditDeck(savedDecks[0].id)}
+                onSelect={() => handleSelectCustomDeck(visibleSavedDeck.id)}
+                onEdit={() => handleEditDeck(visibleSavedDeck.id)}
                 onMagnify={handleMagnifyCard}
                 isPlaceholder={false}
               />
@@ -650,7 +778,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
               whileTap={{ scale: 0.98 }}
               data-testid="sw-custom-deck-entry"
               transition={{
-                delay: (availableFactions.length + (savedDecks.length > 0 ? 1 : 0)) * 0.06,
+                delay: (factionsPerPage + (visibleSavedDeck ? 1 : 0)) * 0.06,
                 duration: 0.3,
                 scale: { type: 'spring', stiffness: 400, damping: 20 }
               }}
@@ -658,6 +786,7 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                 'relative rounded-lg overflow-hidden cursor-pointer group',
                 'border-2 border-dashed border-white/20 hover:border-amber-400/60 transition-colors shadow-lg flex flex-col items-center justify-center bg-white/5'
               )}
+              style={{ aspectRatio: String(SUMMONER_WARS_CARD_ASPECT_RATIO) }}
               onClick={handleOpenDeckSelector}
             >
               <div
@@ -675,6 +804,29 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                   : t('factionSelection.clickToBuild')}
               </div>
             </motion.div>
+                </div>
+
+                <div style={factionPageRightAnchorStyle}>
+                  <motion.button
+                    type="button"
+                    data-testid="sw-faction-page-next"
+                    aria-label={t('factionSelection.nextPage')}
+                    title={t('factionSelection.nextPage')}
+                    disabled={!canPageForward}
+                    onClick={handleNextFactionPage}
+                    whileHover={canPageForward ? { scale: 1.04, x: 2 } : undefined}
+                    whileTap={canPageForward ? { scale: 0.96 } : undefined}
+                    className={clsx(
+                      'flex shrink-0 items-center justify-center rounded-xl border-2 transition-[border-color,background-color,opacity,box-shadow] duration-200',
+                      canPageForward
+                        ? 'cursor-pointer border-amber-400/45 bg-amber-950/40 text-amber-100 shadow-[0_0_18px_rgba(245,158,11,0.18)] hover:border-amber-300/80 hover:bg-amber-800/40'
+                        : 'cursor-default border-white/10 bg-white/[0.03] text-white/20 opacity-45'
+                    )}
+                    style={factionPageButtonStyle}
+                  >
+                    <ChevronRight aria-hidden="true" style={factionPageIconStyle} />
+                  </motion.button>
+                </div>
               </div>
             </div>
 
@@ -731,13 +883,13 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
 
                 <div
                   data-testid="sw-faction-right-anchor-cluster"
-                  className="flex h-full shrink-0 items-center"
+                  className="flex h-full shrink-0 items-end"
                   style={rightAnchorClusterStyle}
                 >
                   {/* 玩家状态面板（固定宽度） */}
                   <div
                     data-testid="sw-faction-player-rail"
-                    className="flex flex-col justify-center"
+                    className="flex flex-col justify-end"
                     style={playerRailStyle}
                   >
               {playerIds.map(pid => {
@@ -803,11 +955,12 @@ export const FactionSelection: React.FC<FactionSelectionProps> = ({
                       </div>
                     </div>
                   )}
-                </div>
               </div>
+
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* 放大预览弹窗（tip 图） */}
@@ -930,6 +1083,7 @@ const FactionCard: React.FC<FactionCardProps> = ({
           ? 'border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.4)]'
           : 'border-white/10 hover:border-amber-400/40 shadow-xl'
       )}
+      style={{ aspectRatio: String(SUMMONER_WARS_CARD_ASPECT_RATIO) }}
       onClick={() => onSelect(faction.id)}
       onMouseEnter={() => onHover(faction.id)}
       onMouseLeave={() => onHover(null)}

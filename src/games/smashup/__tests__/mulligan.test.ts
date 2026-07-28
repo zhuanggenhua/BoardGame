@@ -5,7 +5,7 @@
  * - 起手含随从时不触发重抽
  * - 起手全是行动牌时记录可重抽玩家
  * - 重抽交互入队后流程仍会离开 factionSelect
- * - 重抽后手牌与牌库总数守恒
+ * - 重抽后原手牌进入弃牌堆，手牌/牌库/弃牌堆总数守恒
  * - 最多只允许重抽一次
  */
 
@@ -221,13 +221,25 @@ describe('SmashUp 起手重抽', () => {
 
             const prompt = getSimpleChoicePrompt(started.finalState, STARTING_HAND_MULLIGAN_SOURCE_ID);
             expect(prompt.playerId).toBe('0');
+            const originalHandUids = started.finalState.core.players['0'].hand.map(card => card.uid);
 
             const resolved = respondToPrompt(started.finalState, 'mulligan', '0', random);
+            const player = resolved.finalState.core.players['0'];
+            const eventTypes = resolved.events.map(event => event.type);
 
-            expect(resolved.finalState.core.players['0'].hand.length).toBe(STARTING_HAND_SIZE);
-            expect(resolved.finalState.core.players['0'].deck.length).toBe(40 - STARTING_HAND_SIZE);
-            expect(resolved.finalState.core.players['0'].hand.every(card => typeof card.uid === 'string')).toBe(true);
-            expect(resolved.finalState.core.players['0'].hand.some(card => card.type === 'minion')).toBe(false);
+            expect(player.hand.length).toBe(STARTING_HAND_SIZE);
+            expect(player.deck.length).toBe(40 - STARTING_HAND_SIZE * 2);
+            expect(player.discard.map(card => card.uid)).toEqual(originalHandUids);
+            for (const uid of originalHandUids) {
+                expect(player.hand.map(card => card.uid)).not.toContain(uid);
+                expect(player.deck.map(card => card.uid)).not.toContain(uid);
+            }
+            expect(player.hand.every(card => typeof card.uid === 'string')).toBe(true);
+            expect(player.hand.some(card => card.type === 'minion')).toBe(false);
+            expect(eventTypes).toContain(SU_EVENTS.REVEAL_HAND);
+            expect(eventTypes).toContain(SU_EVENTS.CARDS_DISCARDED);
+            expect(eventTypes).toContain(SU_EVENTS.CARDS_DRAWN);
+            expect(eventTypes).not.toContain(SU_EVENTS.HAND_SHUFFLED_INTO_DECK);
             expect(['startTurn', 'playCards']).toContain(resolved.finalState.sys.phase);
             expectNoPrompt(resolved.finalState);
         });

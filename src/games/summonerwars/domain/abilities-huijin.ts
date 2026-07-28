@@ -1,8 +1,9 @@
 /**
  * 召唤师战争 - 灰烬技能定义
  *
- * 当前文件先承载卡面文案与静态能力 ID。具体执行器尚未接入的能力保留 effects: []，
- * 避免在玩法未验证前把机制伪装为已实现。
+ * 当前文件承载卡面文案与静态能力 ID。effects: [] 不等于一律未实现：
+ * 部分被动/旁路消费能力由 helpers、execute、abilityResolver 等运行时链路落地。
+ * 新增空 effects 能力时必须在 entity-chain-integrity.test.ts 的证据映射中分类。
  */
 
 import type { AbilityDef } from './abilities';

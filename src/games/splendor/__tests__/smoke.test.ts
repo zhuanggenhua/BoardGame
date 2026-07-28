@@ -1994,6 +1994,76 @@ describe('splendor smoke', () => {
         expect(actions).toEqual([]);
     });
 
+    test('AI 无宝石可拿时仍会预留任意可预留公开牌，避免空动作卡住', () => {
+        const state = createAiState({
+            bank: { white: 0, blue: 0, green: 0, red: 0, black: 0, gold: 0 },
+            market: { 1: ['t1-white-1'], 2: [], 3: [] },
+            decks: { 1: [], 2: [], 3: [] },
+            players: {
+                '0': createPlayerState('0'),
+                '1': createPlayerState('1'),
+            },
+        });
+
+        const actions = buildSplendorAiLegalActions({ playerId: '0', state });
+
+        expect(actions).toHaveLength(1);
+        expect(actions[0]).toMatchObject({
+            kind: AI_ACTION_KINDS.RESERVE_OPEN,
+            commands: [{ type: 'RESERVE_OPEN_CARD', payload: { tier: 1, cardId: 't1-white-1' } }],
+        });
+    });
+
+    test('AI 只有在买牌、拿宝石、预留都不可用时才生成跳过当前玩家兜底', () => {
+        const state = createAiState({
+            bank: { white: 0, blue: 0, green: 0, red: 0, black: 0, gold: 0 },
+            market: { 1: [], 2: [], 3: [] },
+            decks: { 1: [], 2: [], 3: [] },
+            players: {
+                '0': {
+                    ...createPlayerState('0'),
+                    reservedCardIds: ['t1-white-1', 't1-blue-1', 't1-green-1'],
+                },
+                '1': createPlayerState('1'),
+            },
+        });
+
+        const actions = buildSplendorAiLegalActions({ playerId: '0', state });
+        expect(actions).toHaveLength(1);
+        expect(actions[0]).toMatchObject({
+            kind: AI_ACTION_KINDS.PASS_TURN,
+            commands: [{ type: 'PASS_TURN', payload: {} }],
+        });
+
+        const valid = SplendorDomain.validate(state, {
+            type: 'PASS_TURN',
+            playerId: '0',
+            payload: {},
+            timestamp: 1,
+        });
+        const events = SplendorDomain.execute(state, {
+            type: 'PASS_TURN',
+            playerId: '0',
+            payload: {},
+            timestamp: 1,
+        }, makeRandom());
+        const nextCore = reduceAll(state.core, events);
+
+        expect(valid).toEqual({ valid: true });
+        expect(nextCore.currentPlayer).toBe('1');
+    });
+
+    test('跳过当前玩家兜底在仍有标准动作时会被领域校验拒绝', () => {
+        const state = createAiState();
+
+        expect(SplendorDomain.validate(state, {
+            type: 'PASS_TURN',
+            playerId: '0',
+            payload: {},
+            timestamp: 1,
+        })).toEqual({ valid: false, error: 'standardActionAvailable' });
+    });
+
     test('discard scorer 会把仅存在于 reserved 中的目标颜色算进弃牌偏好', () => {
         const discardScorer = splendorScorers.find((scorer) => scorer.id === 'discard');
         expect(discardScorer).toBeTruthy();

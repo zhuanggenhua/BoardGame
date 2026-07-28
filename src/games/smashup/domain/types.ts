@@ -338,6 +338,17 @@ export interface CardInstance {
     provenance?: SmashUpCardProvenanceSnapshot;
 }
 
+/** 被其他卡牌/机制暂存的卡牌（如踢拳兄弟、返时者停滞区）。 */
+export interface StoredCardInstance extends CardInstance {
+    storedByPlayerId: PlayerId;
+    storedUnderUid?: string;
+    storedUnderDefId?: string;
+    counters?: number;
+    /** 当前回合内移除了最后一个停滞指示物，用于返时者后续天赋/特殊能力判断。 */
+    lastStasisCounterRemovedTurn?: number;
+    reason: string;
+}
+
 /** 基地上的随从 */
 export interface MinionOnBase {
     uid: string;
@@ -435,6 +446,8 @@ export interface PlayerState {
     /** 牌库（索引 0 为顶部） */
     deck: CardInstance[];
     discard: CardInstance[];
+    /** 被特定来源暂存、仍可由规则重新打出的卡牌。 */
+    storedCards?: StoredCardInstance[];
     /** 移出游戏（放入盒中）的卡牌 */
     removedFromGame?: CardInstance[];
     /** 本回合已打出随从数 */
@@ -443,6 +456,8 @@ export interface PlayerState {
     minionLimit: number;
     /** 本回合已打出行动数 */
     actionsPlayed: number;
+    /** 本回合已打出的行动牌张数（包含额外行动；不包含作为行动额度打出的随从） */
+    actionCardsPlayedThisTurn?: number;
     /** 本回合可打出行动额度（默认 1） */
     actionLimit: number;
     /** 本回合作为“额外牌”打出的牌总数（Eliza 等效果使用） */
@@ -799,6 +814,8 @@ export interface SmashUpCore {
     /** 疯狂牌库（克苏鲁扩展，defId 列表） */
     madnessDeck?: string[];
     cardsPlayedThisTurn?: number;
+    /** 本回合每位玩家从手牌弃牌的数量。TURN_STARTED 时清空。 */
+    cardsDiscardedFromHandThisTurn?: Record<PlayerId, number>;
     powerCountersPlacedOnMinionsThisTurn?: number;
     /** 本回合被消灭的随从记录（用于 cthulhu_furthering_the_cause 等能力判定，并阻止过期移动把它们从弃牌堆拉回场上） */
     turnDestroyedMinions?: { uid: string; defId: string; baseIndex: number; owner: string; controller?: string }[];
@@ -1049,6 +1066,8 @@ export interface PlayMinionCommand extends Command<typeof SU_COMMANDS.PLAY_MINIO
         baseIndex: number;
         /** 从弃牌堆打出（而非手牌）。由"它们为你而来"等持续效果启用 */
         fromDiscard?: boolean;
+        /** 从暂存区打出（如返时者停滞区）。 */
+        fromStored?: boolean;
         /** 替代普通行动额度打出这张随从牌，不消耗普通随从额度。 */
         playAsAction?: boolean;
     };
@@ -1062,6 +1081,8 @@ export interface PlayActionCommand extends Command<typeof SU_COMMANDS.PLAY_ACTIO
         targetMinionUid?: string;
         /** 从弃牌堆打出行动卡（如 Cyberback 允许打到自己身上） */
         fromDiscard?: boolean;
+        /** 从暂存区打出行动卡（如踢拳兄弟储存的行动）。 */
+        fromStored?: boolean;
     };
 }
 
@@ -1181,6 +1202,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         fromDeck?: boolean;
         /** 从埋葬区打出（揭开时使用） */
         fromBuried?: boolean;
+        /** 从暂存区打出（如返时者停滞区）。 */
+        fromStored?: boolean;
         targetBaseIndex?: number;
         targetType?: 'base' | 'minion';
         targetMinionUid?: string;
@@ -1211,6 +1234,17 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         fromBuried?: boolean;
         /** 从弃牌堆打出 */
         fromDiscard?: boolean;
+        /** 从暂存区打出 */
+        fromStored?: boolean;
+        /** 从弃牌堆打出的能力来源，用于 once/turn 与替代去向结算。 */
+        discardPlaySourceId?: string;
+        /** false 表示不消耗常规行动额度。 */
+        consumesNormalLimit?: boolean;
+        /** 行动目标基地（持续行动、特殊行动、目标随从行动均可携带） */
+        targetBaseIndex?: number;
+        targetType?: 'base' | 'minion';
+        /** 行动目标随从 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1524,6 +1558,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         restrictToCardUid?: string;
         /** 立即额外行动限定只能打出指定卡牌定义 */
         restrictToCardDefId?: string;
+        /** 立即额外行动限定只能打出基地修正（持续行动且目标为基地） */
+        restrictToBaseModifier?: boolean;
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */
         powerMax?: number;
         /** 同名限制：这些额度只能用于打出同一 defId 的随从（第一个打出时锁定） */
@@ -1594,6 +1630,9 @@ export type SmashUpEvent =
     | CardToDeckBottomEvent
     | CardTransferredEvent
     | CardRecoveredFromDiscardEvent
+    | CardStoredEvent
+    | StoredCardCounterChangedEvent
+    | StoredCardReleasedEvent
     | HandShuffledIntoDeckEvent
     | StartingHandMulliganUsedEvent
     | MadnessDrawnEvent
@@ -1937,6 +1976,40 @@ export interface CardRecoveredFromDiscardEvent extends GameEvent<typeof SU_EVENT
     };
 }
 
+/** 将卡牌暂存到某个来源之下/旁边。 */
+export interface CardStoredEvent extends GameEvent<typeof SU_EVENTS.CARD_STORED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        from: 'hand' | 'deck' | 'discard';
+        storedUnderUid?: string;
+        storedUnderDefId?: string;
+        counters?: number;
+        reason: string;
+    };
+}
+
+/** 调整暂存牌上的计数器。返时者用它表达停滞指示物增减。 */
+export interface StoredCardCounterChangedEvent extends GameEvent<typeof SU_EVENTS.STORED_CARD_COUNTER_CHANGED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        delta: number;
+        reason: string;
+    };
+}
+
+/** 从暂存区释放一张卡牌，通常紧接着被打出。 */
+export interface StoredCardReleasedEvent extends GameEvent<typeof SU_EVENTS.STORED_CARD_RELEASED> {
+    payload: {
+        playerId: PlayerId;
+        cardUid: string;
+        reason: string;
+    };
+}
+
 /** 手牌洗入牌库 */
 export interface HandShuffledIntoDeckEvent extends GameEvent<typeof SU_EVENTS.HAND_SHUFFLED_INTO_DECK> {
     payload: {
@@ -1982,8 +2055,8 @@ export interface RevealHandEvent extends GameEvent<typeof SU_EVENTS.REVEAL_HAND>
     payload: {
         /** 被查看的玩家（单人或多人） */
         targetPlayerId: string | string[];
-        /** 查看者 */
-        viewerPlayerId: string;
+        /** 查看者（'all' = 所有人，PlayerId = 指定玩家） */
+        viewerPlayerId: string | 'all';
         /** 被展示的卡牌列表 */
         cards: { uid: string; defId: string }[];
         /** 触发展示的玩家（viewerPlayerId='all' 时由此玩家关闭展示） */

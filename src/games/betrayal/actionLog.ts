@@ -128,14 +128,52 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.endTurn', { player: actor })]);
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return entry(command, state, [i18nSeg('actionLog.acknowledgeTurnEndRoll', { player: actor })]);
+        case BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION:
+            return entry(command, state, [i18nSeg('actionLog.resolveDamageAllocation', { player: actor })]);
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
             const key = payload.target === 'traitor'
                 ? 'actionLog.attackTraitor'
                 : payload.target === 'jack-spirit'
                     ? 'actionLog.attackJackSpirit'
+                    : payload.target === 'troll-hand'
+                        ? 'actionLog.attackTrollHand'
                     : 'actionLog.attackHero';
             return entry(command, state, [i18nSeg(key, { player: actor })]);
         }
+        case BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE:
+            return entry(command, state, [i18nSeg('actionLog.resolveMonsterDamage', { player: actor })]);
+        case BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START:
+            return entry(command, state, [i18nSeg('actionLog.resolveMonsterTurnStart', { player: actor })]);
+        case BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP:
+            return entry(command, state, [i18nSeg('actionLog.rollMonsterMovementGroup', { player: actor })]);
+        case BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM:
+            return entry(command, state, [i18nSeg('actionLog.moveMonster', { player: actor })]);
+        case BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO:
+            return entry(command, state, [i18nSeg('actionLog.monsterAttackHero', { player: actor })]);
+        case BETRAYAL_COMMANDS.PLAY_PEEKABOO:
+            return entry(command, state, [i18nSeg('actionLog.playPeekaboo', { player: actor })]);
+        case BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN:
+            return entry(command, state, [i18nSeg('actionLog.endBloodFromStoneMonsterTurn', { player: actor })]);
+        case BETRAYAL_COMMANDS.PLACE_BLOOD_FROM_STONE_EXTRA_STONE_CHERUBS:
+            return entry(command, state, [i18nSeg('actionLog.placeBloodFromStoneExtraStoneCherubs', { player: actor })]);
+        case BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND:
+            return entry(command, state, [i18nSeg('actionLog.moveTrollHand', { player: actor })]);
+        case BETRAYAL_COMMANDS.HELPING_HANDS_TROLL_HAND_ATTACK:
+            return entry(command, state, [i18nSeg(
+                payload.combined === true
+                    ? 'actionLog.trollHandCombinedAttack'
+                    : 'actionLog.trollHandAttack',
+                { player: actor },
+            )]);
+        case BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD:
+            return entry(command, state, [i18nSeg(
+                payload.choice === 'steal'
+                    ? 'actionLog.resolveTrollHandAttackRewardSteal'
+                    : 'actionLog.resolveTrollHandAttackRewardDamage',
+                { player: actor },
+            )]);
+        case BETRAYAL_COMMANDS.END_HELPING_HANDS_MONSTER_TURN:
+            return entry(command, state, [i18nSeg('actionLog.endTrollHandMonsterTurn', { player: actor })]);
         case BETRAYAL_COMMANDS.LEARN_ABOUT_JACK:
             return entry(command, state, [i18nSeg('actionLog.learnAboutJack', { player: actor })]);
         case BETRAYAL_COMMANDS.STUDY_EXORCISM:
@@ -161,12 +199,6 @@ export function formatBetrayalActionEntry({
             return entry(command, state, [i18nSeg('actionLog.smashMagicCamera', { player: actor })]);
         case BETRAYAL_COMMANDS.PHANTOM_PHOTOGRAPHER_ATTACK:
             return entry(command, state, [i18nSeg('actionLog.phantomPhotographerAttack', { player: actor })]);
-        case BETRAYAL_COMMANDS.PICK_UP_CORPSE:
-            return entry(command, state, [i18nSeg('actionLog.pickUpCorpse', { player: actor })]);
-        case BETRAYAL_COMMANDS.FEED_HER:
-            return entry(command, state, [i18nSeg('actionLog.feedHer', { player: actor })]);
-        case BETRAYAL_COMMANDS.CULTIST_ATTACK:
-            return entry(command, state, [i18nSeg('actionLog.cultistAttack', { player: actor })]);
         case BETRAYAL_COMMANDS.COMPLETE_SCENARIO:
             return entry(command, state, [i18nSeg('actionLog.completeScenario', { player: actor })]);
         default:

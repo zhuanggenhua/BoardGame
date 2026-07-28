@@ -29,6 +29,7 @@ import {
   getStructureAt,
   getUnitAbilities,
   getValidShourenFreezeTargets,
+  getHuijinScorchTargets,
   findUnitPositionByInstanceId,
   hasStableAbility,
   getStunDestinations,
@@ -59,6 +60,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.MOGU_SYMBIOTIC_SELF_HEALING,
   CARD_IDS.MOGU_RELEASE_SPORES,
   CARD_IDS.SHOUREN_FREEZE,
+  CARD_IDS.HUIJIN_SCORCH,
 ]);
 
 function buildBloodRuneOptions(core: SummonerWarsCore, owner: PlayerId): PromptOption<SwInteractionValue>[] {
@@ -223,6 +225,11 @@ type SwInteractionMeta =
   | {
       type: 'mogu_parasite';
       sourceUnitId: string;
+    }
+  | {
+      type: 'mogu_decay_select_target';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
     }
   | {
       type: 'before_attack_life_drain';
@@ -501,6 +508,7 @@ type SwInteractionValue =
   | { action: 'ice_shards'; sourceUnitId: string; skip?: boolean }
   | { action: 'feed_beast'; sourceUnitId: string; choice: 'destroy_adjacent' | 'self_destroy'; targetPosition?: CellCoord }
   | { action: 'mogu_parasite'; sourceUnitId: string; choice: 'consume_charge' | 'take_damage' }
+  | { action: 'mogu_decay_target'; targetPosition: CellCoord }
   | { action: 'before_attack_life_drain'; targetUnitId: string; targetPosition?: CellCoord }
   | { action: 'before_attack_holy_arrow'; cardId: string }
   | { action: 'before_attack_healing'; cardId: string }
@@ -609,6 +617,12 @@ function getHuijinCallGuardTargets(core: SummonerWarsCore, owner: PlayerId, sour
 
 function getHuijinCallGuardPositions(core: SummonerWarsCore, sourcePosition: CellCoord): CellCoord[] {
   return getAdjacentCells(sourcePosition).filter((pos) => isCellEmpty(core, pos));
+}
+
+function getMoguDecayTargets(core: SummonerWarsCore, owner: PlayerId, sourcePosition: CellCoord): BoardUnit[] {
+  return getAdjacentCells(sourcePosition)
+    .map((pos) => getUnitAt(core, pos))
+    .filter((unit): unit is BoardUnit => !!unit && unit.owner === owner);
 }
 
 function getHuijinRamTargets(
@@ -1520,7 +1534,8 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             case CARD_IDS.BARBARIC_CHANT_OF_GROWTH:
             case CARD_IDS.BARBARIC_CHANT_OF_WEAVING:
             case CARD_IDS.MOGU_COMMAND:
-            case CARD_IDS.SHOUREN_FREEZE: {
+            case CARD_IDS.SHOUREN_FREEZE:
+            case CARD_IDS.HUIJIN_SCORCH: {
               const targets = (() => {
                 if (baseId === CARD_IDS.NECRO_HELLFIRE_BLADE) {
                   return friendlyUnits.filter((unit) => unit.card.unitClass === 'common').map((unit) => unit.position);
@@ -1534,6 +1549,10 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 }
                 if (baseId === CARD_IDS.SHOUREN_FREEZE) {
                   return getValidShourenFreezeTargets(newState.core, payload.playerId)
+                    .map((unit) => unit.position);
+                }
+                if (baseId === CARD_IDS.HUIJIN_SCORCH) {
+                  return getHuijinScorchTargets(newState.core, payload.playerId)
                     .map((unit) => unit.position);
                 }
                 if (baseId === CARD_IDS.BARBARIC_CHANT_OF_POWER) {
@@ -2301,6 +2320,53 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 type: 'ice_ram_target',
                 structurePosition,
                 ownerId,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+            continue;
+          }
+
+          if (actionId === 'mogu_decay') {
+            const sourceUnit = getUnitAt(newState.core, sourcePosition);
+            if (!sourceUnit || sourceUnit.instanceId !== sourceUnitId) {
+              newState = applyPhaseEndResolution(newState, 'mogu_decay', sourceUnitId);
+              continue;
+            }
+            const targets = getMoguDecayTargets(newState.core, sourceUnit.owner, sourcePosition);
+            if (targets.length === 0) {
+              newState = applyPhaseEndResolution(newState, 'mogu_decay', sourceUnitId);
+              continue;
+            }
+            const interactionId = `sw-mogu-decay-${event.timestamp ?? 0}-${sourceUnitId}`;
+            if (hasQueuedInteraction(newState, interactionId)) continue;
+            const options: PromptOption<SwInteractionValue>[] = [
+              ...targets.map((unit) => ({
+                id: `unit:${unit.instanceId}`,
+                label: unit.card.name,
+                value: { action: 'mogu_decay_target' as const, targetPosition: unit.position },
+                displayMode: 'button' as const,
+              })),
+              {
+                id: 'skip',
+                label: '跳过',
+                labelKey: 'actions.skip',
+                value: { skip: true },
+              },
+            ];
+            const interaction = createSimpleChoice(
+              interactionId,
+              sourceUnit.owner,
+              'interaction.sw.moguDecayTarget',
+              options,
+              { sourceId: 'mogu_decay', targetType: 'minion', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'mogu_decay_select_target',
+                sourceUnitId,
+                sourcePosition,
               } satisfies SwInteractionMeta,
             };
             newState = queueInteraction(newState, interaction);
@@ -4030,6 +4096,23 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
                 },
               }));
             }
+          }
+
+          if (sw.type === 'mogu_decay_select_target') {
+            newState = applyPhaseEndResolution(newState, 'mogu_decay', sw.sourceUnitId);
+            const hasSkip = isSkipValue(value) || values.some((item) => isSkipValue(item));
+            const picked = values.find((item) => item.action === 'mogu_decay_target') as
+              { action: 'mogu_decay_target'; targetPosition: CellCoord } | undefined;
+            if (!picked || hasSkip) continue;
+            const sourceUnit = getUnitAt(newState.core, sw.sourcePosition);
+            const target = getUnitAt(newState.core, picked.targetPosition);
+            if (!sourceUnit || sourceUnit.instanceId !== sw.sourceUnitId || !target || target.owner !== sourceUnit.owner) continue;
+            if (manhattanDistance(sw.sourcePosition, picked.targetPosition) !== 1) continue;
+            nextEvents.push({
+              type: SW_EVENTS.UNIT_CHARGED,
+              payload: { position: picked.targetPosition, delta: 2, sourceAbilityId: 'mogu_decay' },
+              timestamp: event.timestamp,
+            });
           }
 
           if (sw.type === 'huijin_call_guards_select_target') {

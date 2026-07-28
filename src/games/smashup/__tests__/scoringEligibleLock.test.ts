@@ -1,14 +1,14 @@
 /**
  * 计分阶段 eligible 基地锁定测试
  *
- * 规则（Wiki Phase 3 Step 4）：一旦基地在进入 scoreBases 阶段时达到 breakpoint，
- * 即使 Me First! 响应窗口中力量被降低到 breakpoint 以下，该基地仍然必定计分。
+ * 规则（Wiki Phase 3 Step 4）：每次只选择一个达标基地开始计分；只有已经开始
+ * 结算的当前基地，即使 beforeScoring 链路中力量被降低到 breakpoint 以下，仍然计分。
  *
  * 验证：
- * 1. getScoringEligibleBaseIndices 优先返回锁定列表
- * 2. 锁定列表不存在时回退到实时计算
- * 3. 进入 scoreBases 阶段时锁定事件被正确发射和 reduce
- * 4. 力量降低后锁定列表不变
+ * 1. 旧锁定字段仍兼容旧快照/夹具
+ * 2. 正常计分链使用实时 eligible 查询
+ * 3. 只有当前已选择基地会写入锁定事件
+ * 4. 已完成一个基地后，会重新检查桌面并丢弃不再达标的旧候选
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
@@ -17,8 +17,10 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { smashUpSystemsForTest } from '../game';
 import { SmashUpDomain } from '../domain';
-import { getScoringEligibleBaseIndices, getTotalEffectivePowerOnBase, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
+import { smashUpFlowHooks } from '../domain/index';
+import { getRealtimeScoringEligibleBaseIndices, getScoringEligibleBaseIndices, getTotalEffectivePowerOnBase, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
 import { reduce } from '../domain/reduce';
+import { createScoringBaseRef, createScoringSession, getScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { SmashUpCore, BaseInPlay, PlayerState, MinionOnBase, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
@@ -177,6 +179,21 @@ describe('计分阶段 eligible 基地锁定', () => {
             expect(result).toEqual([0]);
         });
 
+        it('实时查询不会返回旧锁定列表里不再达标的未选择基地', () => {
+            const core = makeMinimalCore({
+                bases: [
+                    makeBase(BASE_JUNGLE, [
+                        makeMinion('m1', '0', 5),
+                        makeMinion('m2', '1', 5),
+                    ]),
+                ],
+                scoringEligibleBaseIndices: [0],
+            });
+
+            expect(getScoringEligibleBaseIndices(core)).toEqual([0]);
+            expect(getRealtimeScoringEligibleBaseIndices(core)).toEqual([]);
+        });
+
         it('锁定列表包含重复索引时应保序去重，避免重复计分/重复交互选项', () => {
             const core = makeMinimalCore({
                 bases: [
@@ -189,6 +206,75 @@ describe('计分阶段 eligible 基地锁定', () => {
 
             const result = getScoringEligibleBaseIndices(core);
             expect(result).toEqual([2, 0]);
+        });
+    });
+
+    describe('正常 scoreBases session 重新检查', () => {
+        it('进入 scoreBases 时只建立候选 session，不写阶段级锁定事件', () => {
+            const core = makeMinimalCore({
+                bases: [
+                    makeBase(BASE_JUNGLE, [
+                        makeMinion('j0', '0', 6),
+                        makeMinion('j1', '1', 8),
+                    ]),
+                    makeBase(BASE_TAR_PITS, [
+                        makeMinion('t0', '0', 9),
+                        makeMinion('t1', '1', 8),
+                    ]),
+                ],
+            });
+            const sys = createInitialSystemState([...TEST_PLAYER_IDS], smashUpSystemsForTest, undefined);
+            sys.phase = 'playCards';
+            const state: MatchState<SmashUpCore> = { core, sys };
+
+            const phaseEnter = smashUpFlowHooks.onPhaseEnter?.({
+                state,
+                from: 'playCards',
+                to: 'scoreBases',
+                command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 1 } as any,
+                random: testRandom,
+            }) as { events: SmashUpEvent[]; updatedState: MatchState<SmashUpCore> };
+
+            expect(phaseEnter.events.map(event => event.type)).not.toContain(SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED);
+            expect(phaseEnter.updatedState.core.scoringEligibleBaseIndices).toBeUndefined();
+            expect(getScoringSession(phaseEnter.updatedState)?.lockedBaseRefs.map(ref => ref.slotIndex)).toEqual([0, 1]);
+        });
+
+        it('已完成一个基地后，会重新检查并丢弃不再达标的旧候选基地', () => {
+            const core = makeMinimalCore({
+                bases: [
+                    makeBase(BASE_JUNGLE, [
+                        makeMinion('j0', '0', 6),
+                        makeMinion('j1', '1', 8),
+                    ]),
+                    makeBase(BASE_TAR_PITS, [
+                        makeMinion('t0', '0', 4),
+                        makeMinion('t1', '1', 4),
+                    ]),
+                ],
+            });
+            const sys = createInitialSystemState([...TEST_PLAYER_IDS], smashUpSystemsForTest, undefined);
+            sys.phase = 'scoreBases';
+            let state: MatchState<SmashUpCore> = { core, sys };
+            const completedRef = createScoringBaseRef(core, 0);
+            const staleRef = createScoringBaseRef(core, 1);
+            expect(completedRef).toBeDefined();
+            expect(staleRef).toBeDefined();
+            state = setScoringSession(state, {
+                ...createScoringSession(core, [0, 1]),
+                lockedBaseRefs: [completedRef!, staleRef!],
+                completedBaseRefs: [completedRef!],
+            });
+
+            const phaseExit = smashUpFlowHooks.onPhaseExit?.({
+                state,
+                from: 'scoreBases',
+                command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined, timestamp: 2 } as any,
+                random: testRandom,
+            }) as { events: SmashUpEvent[]; updatedState: MatchState<SmashUpCore> };
+
+            expect(phaseExit.events.map(event => event.type)).not.toContain(SU_EVENTS.BASE_SCORED);
+            expect(getScoringSession(phaseExit.updatedState)).toBeUndefined();
         });
     });
 

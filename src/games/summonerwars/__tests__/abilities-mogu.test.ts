@@ -442,7 +442,7 @@ describe('莫古 - 主动技能与事件牌', () => {
     expect(newState.board[target.position.row][target.position.col].unit?.damage).toBe(1);
   });
 
-  it('玛硕达在移动阶段结束时自伤，若仍在场则给相邻友方2充能', () => {
+  it('玛硕达在移动阶段结束时自伤，相邻友方充能等待交互系统指定目标', () => {
     const state = createState();
     state.phase = 'move';
     const maShuoDa = place(state, { row: 4, col: 4 }, unitCard('mogu-ma-shuo-da', '玛硕达', ['mogu_decay'], {
@@ -451,10 +451,15 @@ describe('莫古 - 主动技能与事件牌', () => {
     }));
     const ally = place(state, { row: 4, col: 5 }, unitCard('ally', '友方单位'));
 
-    const { newState } = executeAndReduce(state, SW_COMMANDS.END_PHASE, {});
+    const { events, newState } = executeAndReduce(state, SW_COMMANDS.END_PHASE, {});
 
+    expect(newState.phase).toBe('move');
     expect(newState.board[maShuoDa.position.row][maShuoDa.position.col].unit?.damage).toBe(1);
-    expect(newState.board[ally.position.row][ally.position.col].unit?.boosts).toBe(2);
+    expect(newState.board[ally.position.row][ally.position.col].unit?.boosts ?? 0).toBe(0);
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_DAMAGED
+      && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(true);
+    expect(events.some(e => e.type === SW_EVENTS.UNIT_CHARGED
+      && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_decay')).toBe(false);
   });
 
   it('枯萎法师在移动阶段给2格内友方充能并造成1伤害', () => {
@@ -847,28 +852,23 @@ describe('莫古 - 主动技能与事件牌', () => {
     expect(newState.board[maShuoDa.position.row][maShuoDa.position.col].unit).toBeUndefined();
     expect(newState.board[ally.position.row][ally.position.col].unit?.boosts ?? 0).toBe(0);
     expect(decayChargeEvents).toHaveLength(0);
-    expect(newState.phase).toBe('build');
+    expect(newState.phase).toBe('move');
+
+    const continued = executeAndReduce(newState, SW_COMMANDS.END_PHASE, {});
+    expect(continued.newState.phase).toBe('build');
   });
 
-  it('腐坏给菌袍疫病体补到3充能后，后续魔力阶段结束会触发爆裂并菌化变异', () => {
+  it('菌袍疫病体已有3充能后，后续魔力阶段结束会触发爆裂并菌化变异', () => {
     const state = createState();
-    state.phase = 'move';
-    place(state, { row: 4, col: 4 }, unitCard('mogu-ma-shuo-da-chain', '玛硕达', ['mogu_decay'], {
-      unitClass: 'champion',
-      life: 6,
-    }));
+    state.phase = 'magic';
     const body = place(state, { row: 4, col: 5 }, unitCard('mogu-spore-plague-body-chain', '菌袍疫病体', [
       'mogu_burst',
       'mogu_fungal_mutation',
-    ]), '0', { boosts: 1 });
+    ]), '0', { boosts: 3 });
     const beast = unitCard('mogu-fungal-beast-chain', '菌化野兽', ['mogu_infection', 'mogu_parasite']);
     state.players['0'].discard.push(beast);
 
-    const afterMoveEnd = executeAndReduce(state, SW_COMMANDS.END_PHASE, {});
-    expect(afterMoveEnd.newState.board[body.position.row][body.position.col].unit?.boosts).toBe(3);
-
-    afterMoveEnd.newState.phase = 'magic';
-    const afterMagicEnd = executeAndReduce(afterMoveEnd.newState, SW_COMMANDS.END_PHASE, {});
+    const afterMagicEnd = executeAndReduce(state, SW_COMMANDS.END_PHASE, {});
     const burstDestroy = afterMagicEnd.events.find(e => e.type === SW_EVENTS.UNIT_DESTROYED
       && (e.payload as { sourceAbilityId?: string }).sourceAbilityId === 'mogu_burst');
 

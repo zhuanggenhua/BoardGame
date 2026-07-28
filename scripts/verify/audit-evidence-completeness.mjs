@@ -58,6 +58,9 @@ const AUDIT_WORDS = [
   /全面审计/,
   /深入审计/,
   /重审证据/,
+  /漏审/,
+  /旧审计问题/,
+  /审计问题/,
   /audit/i,
 ];
 
@@ -216,6 +219,68 @@ const VISIBLE_INTERACTION_EVIDENCE = [
   /PromptOverlay/,
 ];
 
+const TEST_COVERAGE_CLAIM_TERMS = [
+  /可玩\s*handler\s*\+\s*测试/i,
+  /定向测试覆盖/,
+  /测试覆盖/,
+  /(^|[^没未无不])有.{0,12}测试/,
+];
+
+const TEST_SEMANTIC_RISK_TERMS = [
+  /选择/,
+  /然后/,
+  /可以/,
+  /至多/,
+  /任意数量/,
+  /弃一张/,
+  /抓.*弃/,
+  /draw.*discard/i,
+  /choose|then|may|up to|any number/i,
+  /simple[- ]choice/i,
+  /prompt/i,
+];
+
+const TEST_SEMANTIC_EVIDENCE = [
+  /测试语义对账/,
+  /测试断言/,
+  /断言.*(最终|响应后|选择后|只|不应|不得)/s,
+  /旧测试.*(失效|错误语义|过窄)/s,
+  /首跑失败/,
+  /红测/,
+  /负向断言/,
+];
+
+const BUG_CLOSEOUT_TERMS = [
+  /漏审/,
+  /回归处理/,
+  /旧结论失效/,
+  /用户原始症状/,
+  /本轮.*修复/,
+  /反馈.*修复/,
+];
+
+const SIMILAR_ISSUE_AUDIT_EVIDENCE = [
+  /同类扩审/,
+  /扩审范围/,
+  /横向搜索/,
+  /搜索范围/,
+  /搜索了什么/,
+  /根因关键词/,
+  /共享.*调用点/,
+  /未审家族/,
+  /残余扩审/,
+];
+
+const MISSED_AUDIT_ROOT_CAUSE_EVIDENCE = [
+  /漏审归因/,
+  /旧测试已经失效/,
+  /测试断言过窄/,
+  /证据停在中间态/,
+  /审计对象没建全集/,
+  /共享抽象没扩审/,
+  /根因分级/,
+];
+
 const UNRESOLVED_COMPLETION_MARKERS = [
   /待补/,
   /pending/i,
@@ -255,6 +320,14 @@ const SELF_CHECK_REQUIRED_ITEMS = [
   {
     name: '真实入口 E2E 与截图核验',
     patterns: [/真实入口.*E2E/s, /E2E.*真实入口/s, /截图核验/, /真实玩法证据/],
+  },
+  {
+    name: '测试语义对账 / 旧测试失效检查',
+    patterns: [/测试语义对账/, /测试断言/, /旧测试.*(失效|错误语义|过窄)/s, /红测/, /首跑失败/],
+  },
+  {
+    name: '同类扩审记录',
+    patterns: [/同类扩审/, /扩审范围/, /横向搜索/, /搜索范围/, /根因关键词/, /共享.*调用点/],
   },
   {
     name: '分支/可选/数量边界',
@@ -391,6 +464,22 @@ function hasAny(content, patterns) {
   return patterns.some(pattern => pattern.test(content));
 }
 
+function hasNonNegatedAny(content, patterns) {
+  return patterns.some(pattern => {
+    const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+    const globalPattern = new RegExp(pattern.source, flags);
+    for (const match of content.matchAll(globalPattern)) {
+      const start = match.index ?? 0;
+      const prefix = content.slice(Math.max(0, start - 36), start);
+      if (/(不|未|无|勿|非|禁止|不得|不能|不可|不应|不再|不要|避免|降级|只能|并非).{0,35}$/.test(prefix)) {
+        continue;
+      }
+      return true;
+    }
+    return false;
+  });
+}
+
 function extractMarkdownSection(content, headingPattern) {
   const match = headingPattern.exec(content);
   if (!match || typeof match.index !== 'number') return '';
@@ -413,7 +502,7 @@ function missingRequiredSections(content) {
 }
 
 function isAuditDoc(content) {
-  return hasAny(content, AUDIT_WORDS) || hasAny(content, FULL_AUDIT_CLAIMS) || hasAny(content, INVALIDATION_MARKERS);
+  return hasAny(content, AUDIT_WORDS) || hasFullAuditClaim(content) || hasAny(content, INVALIDATION_MARKERS);
 }
 
 function isInvalidationDoc(content) {
@@ -422,7 +511,7 @@ function isInvalidationDoc(content) {
 }
 
 function hasFullAuditClaim(content) {
-  return hasAny(content, FULL_AUDIT_CLAIMS);
+  return hasNonNegatedAny(content, FULL_AUDIT_CLAIMS);
 }
 
 function checkFullAuditSelfCheck(file, content) {
@@ -548,6 +637,33 @@ function checkCompletionClaimDoc(file, content) {
   return errors;
 }
 
+function checkTestCoverageClaimDoc(file, content) {
+  const errors = [];
+  if (!hasAny(content, TEST_COVERAGE_CLAIM_TERMS)) return errors;
+  if (!hasAny(content, TEST_SEMANTIC_RISK_TERMS)) return errors;
+
+  if (!hasAny(content, TEST_SEMANTIC_EVIDENCE)) {
+    errors.push(`${file}: 声称“有测试/测试覆盖/可玩 handler + 测试”且命中选择、然后、可选或抽弃等交互语义，但没有写清测试语义对账、旧测试失效检查或最终状态断言。`);
+  }
+
+  return errors;
+}
+
+function checkBugCloseoutDoc(file, content) {
+  const errors = [];
+  if (!hasAny(content, BUG_CLOSEOUT_TERMS)) return errors;
+
+  if (!hasAny(content, SIMILAR_ISSUE_AUDIT_EVIDENCE)) {
+    errors.push(`${file}: 记录了漏审/回归/用户反馈修复，但没有写同类扩审记录、搜索范围、命中项或残余扩审范围。`);
+  }
+
+  if (/漏审/.test(content) && !hasAny(content, MISSED_AUDIT_ROOT_CAUSE_EVIDENCE)) {
+    errors.push(`${file}: 记录了漏审，但没有写漏审归因，例如旧测试失效、测试断言过窄、证据停在中间态、审计对象没建全集或共享抽象没扩审。`);
+  }
+
+  return errors;
+}
+
 function checkResidualDoc(file, content) {
   const errors = [];
   if (!/仍有残余范围/.test(content)) return errors;
@@ -577,6 +693,8 @@ function checkFile(file) {
   } else if (hasFullAuditClaim(content)) {
     errors.push(...checkCompletionClaimDoc(file, content));
   }
+  errors.push(...checkTestCoverageClaimDoc(file, content));
+  errors.push(...checkBugCloseoutDoc(file, content));
   errors.push(...checkResidualDoc(file, content));
 
   return { file, skipped: false, errors };

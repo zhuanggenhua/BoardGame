@@ -22,6 +22,7 @@
 
 import { registerPodAbilityAliases } from '../domain/abilityRegistry';
 import { registerPodOngoingAliases } from '../domain/ongoingEffects';
+import { collectSmashUpVariantBindingErrors } from '../domain/variantBindingValidation';
 
 /**
  * 自动为所有 POD 版本创建能力映射
@@ -43,20 +44,14 @@ export function autoMapPodAbilities(): void {
 }
 
 /**
- * 检查是否有 POD 卡牌缺失能力注册
+ * 检查是否有 POD 变体缺失运行时绑定
  * 
  * 用于开发时验证：
- * - 所有 POD 卡牌都应该有对应的能力（自动映射或显式注册）
+ * - 共享玩法的 POD 卡牌/基地都应该有对应的运行时绑定（自动映射或显式注册）
  * - 如果发现缺失，输出警告
  * 
- * @returns 缺失的 POD 卡牌列表
+ * @returns 缺失的 POD 绑定列表
  */
 export function validatePodAbilities(): string[] {
-    const missing: string[] = [];
-    
-    // 获取所有 POD 卡牌的 defId
-    // 注意：这需要从 cards.ts 中获取，暂时跳过
-    // TODO: 实现完整的验证逻辑
-    
-    return missing;
+    return collectSmashUpVariantBindingErrors();
 }

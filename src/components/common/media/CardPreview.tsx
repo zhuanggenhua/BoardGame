@@ -11,7 +11,7 @@ import {
 } from '../../../core';
 import { getOptimizedImageUrls, getLocalizedAssetPath } from '../../../core/AssetLoader';
 import { OptimizedImage } from './OptimizedImage';
-import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteImgStyle } from '../../../engine/primitives/spriteAtlas';
+import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteImgStyle, computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
 import {
     registerCardAtlasSource,
     getCardAtlasSource,

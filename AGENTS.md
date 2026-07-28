@@ -22,7 +22,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 > 本文档定义 AI 编程助手在本项目中的行为规范、开发流程和质量标准。
 > **坚持"强制优先、结果导向、可审计"，所有流程需可追溯。**
 > **以当前对话为主，当我说继续指的都是当前对话的任务，除非指明否则不关心其他对话的修改**
-> **涉及 Figma 任务且当前会话缺少 Figma MCP 工具时，先运行 `scripts/infra/setup-figma-mcp.ps1`（或 `npm run setup:figma:mcp:window`）补环境；脚本默认只补配置并复用 Codex 文件态 OAuth 凭据，不应每次触发网页登录。只有首次授权、凭据失效或用户明确要求重新授权时，才追加 `-Login` 走 Codex CLI OAuth 网页登录。脚本必须固定 `mcp_oauth_credentials_store = "file"`，避免网页登录成功但新会话吃不到登录态。**
+> **涉及设计工具 / 视觉方案协作时，Open Design 只是当前设计工具接入口：读 `docs/infra/open-design.md`，使用 `scripts/infra/setup-open-design.ps1` 或 `npm run setup:design:mcp` 接入；不得恢复旧设计工具 OAuth 或旧 MCP 接入。用户要“设计稿 / 视觉稿 / 效果图”时，交付物与准入仍按 `docs/ai-rules/doc-index.md` 中“新游戏位图设计稿 / 设计批准门禁”执行：先读规则真相源与素材矩阵，位图稿经 AI 图面核验通过后才进入人工验收；不得用 Open Design artifact、HTML 预览或运行页截图替代设计稿。**
 
 #### 当前对话事实边界（强制）
 
@@ -464,6 +464,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 #### 1.4 分支、协作与 Git 纪律（强制）
 - **Git 复杂细则下沉到项目 skill（强制）**：根 `AGENTS.md` 只保留日常 `status/diff/commit/push` 入口和不可越过的红线；同步主分支、远端协议、pre-push 阻塞、PR、merge、fork、worktree 等细则统一以 `.codex/skill/git-operations/SKILL.md` 为准，不要再把整套 Git 提示词堆回根文件。
+- **分支 / worktree 目标锁定入口（强制）**：凡涉及清理、删除、合并、吸收、迁移、跨 worktree 收口，或发现某游戏改动落到另一游戏分支，必须先读 `docs/ai-rules/worktree-branch-target-lock.md`。未完成“用户点名对象、实际 branch/worktree、当前执行现场、游戏归属、删改影响”五项锁定前，不得删除任何分支/worktree，也不得继续改代码。
 - **开工先看当前目录职责**：开始任何实质工作前，默认以当前 `cwd` 所在工作目录为执行现场，先确认当前分支、已有改动和本轮目标是否匹配。若当前目录已有本任务进度，默认继续在这里推进；只有证据显示当前分支明显服务于另一任务线、另一游戏、另一 PR，或本任务进度明确落在其他 worktree 时，才停止并调整落点。
 - **改前锁定当前执行现场（强制）**：开始改代码前，必须同时确认 ① 当前 `cwd` 对应的是哪一棵 worktree、哪个分支；② 当前目录里的已有改动/进度是否命中本轮任务；③ 本轮准备改的文件是否属于当前目录职责。三项里任一未锁定，只能继续核对，不能直接开改；不得因为存在兄弟 worktree 就跳过当前目录。
 - **分支无关改动默认回主分支（强制）**：若发现要改的是共享规范、共享脚本、跨游戏基础设施、工具目录、构建链路、清理归档，且它们不直接服务当前功能分支主目标，则默认应回 `main` 主工作树或用户明确指定的收口分支处理；不得因为“顺手一起改”就落在当前游戏分支里。
@@ -687,7 +688,7 @@ React 19 + TypeScript / Vite 7 / Tailwind CSS 4 / framer-motion / Canvas 2D 粒�
   - ✅ 新增技能时只需：① 在 `abilities-*.ts` 添加 `AbilityDef` ② 在 `abilityResolver.ts` 注册执行器 ③ 在 i18n JSON 添加文案。不得修改 validate.ts、execute.ts、UI 组件。
 - **状态/buff/debuff 必须使用 `engine/primitives/tags.ts`**：禁止自行实现 statusEffects / tempAbilities，使用 `createTagContainer()` + `addTag/removeTag/matchTags/tickDurations`。支持层级前缀匹配和层数/持续时间。
   - **例外边界**：结构化挂载关系数据不属于 TagContainer 目标；TagContainer 只处理状态、层数、持续时间这类标签型数据。
-- **Custom Action categories 语义正确性（强制）**：注册 `registerCustomActionHandler` 时声明的 `categories` 必须与 handler 实际输出的事件类型一致。**核心规则：handler 产生 `DAMAGE_DEALT` → categories 必须包含 `'damage'`**（`playerAbilityHasDamage` 依赖此判定是否进入防御投掷阶段）。新增/修改 handler 后必须运行 `customaction-category-consistency.test.ts` 验证。详见 `docs/ai-rules/testing-audit.md`「元数据语义一致性审计」节。
+- **Custom Action categories 语义正确性（强制）**：注册 `registerCustomActionHandler` 时声明的 `categories` 必须与 handler 实际输出的事件类型一致。**核心规则：handler 产生 `DAMAGE_DEALT` → categories 必须包含 `'damage'`**；但 `'damage'` 只证明会产生伤害事件，**不得自动等同于“可防御攻击 / 应进入防御投掷阶段”**。DiceThrone 这类有官方颜色、伤害类型和防御入口区分的规则，录入与审计必须同时锁定“是否攻击伤害、是否可防御、是否直接/附属/不可防御/终极伤害”，再让共享防御入口消费；新增/修改 handler 后必须运行 `customaction-category-consistency.test.ts`，并按 `docs/games/dicethrone/card-timing-terms.md` 与 `docs/ai-rules/testing-audit-core-principles.md` 反查防御消费合同。
 - **数值修改管线必须使用 `engine/primitives/modifier.ts`**：禁止自行实现 DamageModifier / PowerModifierFn，使用 `createModifierStack()` + `addModifier/applyModifiers/tickModifiers`。
 - **伤害计算管线必须使用 `engine/primitives/damageCalculation.ts`（新游戏强制）**：基于 `modifier.ts` 的专用包装器，提供自动收集修正 + 完整 breakdown。使用 `createDamageCalculation()` 生成 `DAMAGE_DEALT` 事件，禁止手动构建。详见 `docs/ai-rules/engine-systems.md` 和 `docs/damage-calculation-pipeline-migration-guide.md`。
 - **ActionLog 伤害来源标注必须使用 `engine/primitives/actionLogHelpers.ts`（强制）**：禁止在游戏层手写 breakdown 构建逻辑。每个游戏实现一次 `DamageSourceResolver`（约 15 行），调用 `buildDamageBreakdownSegment`（有修改器明细）或 `buildDamageSourceAnnotation`（轻量来源标注）。详见 `docs/ai-rules/engine-action-log.md`。

@@ -17,6 +17,9 @@
 | 英文规则书文本 | 上一条镜像的可读 Markdown | `docs/games/betrayal/sources/official/betrayal-3e-rulebook-en.md` | 英文对照源 | 已抽取成 13 页文本 |
 | 英文求生者剧本书 | 求生者侧剧本文档 | `docs/games/betrayal/sources/official/betrayal-3e-secrets-of-survival-en.md` | 英文对照源 | 已抽取成 60 页文本 |
 | 英文叛徒剧本书 | 叛徒侧剧本文档 | `docs/games/betrayal/sources/official/betrayal-3e-traitors-tome-en.md` | 英文对照源 | 已抽取成 60 页文本 |
+| 中文规则 PDF | 用户补充的 `小黑屋规则翻译v1.1.pdf` 转换结果 | `src/games/betrayal/rule/legacy-zh/betrayal-2e-rulebook-zh-v1.1/betrayal-2e-rulebook-zh-v1.1.md`；归档镜像在 `docs/games/betrayal/sources/legacy-zh/` | 旧版中文对照源 | 有中文文本层与 24 页页面图，出现“第二版工作人员”，不作为 3e 权威源 |
+| 中文求生者 Word | 用户补充的 `求生秘诀_原版v1.2.docx` 转换结果 | `src/games/betrayal/rule/legacy-zh/betrayal-legacy-secrets-of-survival-zh-v1.2.md`；归档镜像在 `docs/games/betrayal/sources/legacy-zh/` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
+| 中文叛徒 Word | 用户补充的 `奸徒手册_基础版精编校对v1.0.docx` 转换结果 | `src/games/betrayal/rule/legacy-zh/betrayal-legacy-traitors-tome-zh-v1.0.md`；归档镜像在 `docs/games/betrayal/sources/legacy-zh/` | 旧版 / 基础版作祟对照源 | 第 1 剧本是“木乃伊横行”，不对应 3e 作祟 1 |
 
 ## 3. PDF 处理结论
 
@@ -31,7 +34,7 @@
 | 07 | `httpssteamusercontent...1EDD.PDF` | 9.34 MB | `pdf-07.md` 为空 | 扫描型，待 OCR |
 | 08 | `httpssteamusercontent...DC2F.PDF` | 6.22 MB | `pdf-08.md` 为空 | 扫描型，待 OCR |
 
-当前结论：本地 PDF 不能直接转成可读规则文本，后续应走 OCR 或人工录入，不允许把空 Markdown 当规则真相源。
+当前结论：早期本地 PDF 不能直接转成可读规则文本，后续应走 OCR 或人工录入，不允许把空 Markdown 当规则真相源。用户后续补充的中文 PDF 已可读，但版本口径是旧版中文对照，不覆盖当前 3e 官方规则源。
 
 补充：英文规则书、求生者剧本书、叛徒剧本书都已经转成可读 Markdown，可作为当前对照源；Hasbro 说明页的文本镜像抓取仍被对端拒绝，暂不影响本轮 intake 结论。
 
@@ -86,7 +89,7 @@
   - 当前运行时默认预兆对象族必须收敛到这 `9` 张，禁止继续保留 `watch / amulet / pendant / coin / bell / feathers / mirror-shard` 这类不属于真 atlas 的伪对象名。
   - `contact-03-675-1275.jpg` 这组只包含牌背、玩家/叛徒/怪物参考卡；
   - `all-by-size-01.jpg` 里的大图组也没有出现可确认的预兆正面拼页；
-- 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 仍必须诚实显示“缺正面”，不得误接错误拼页、marker 或牌背主视觉。
+- 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 只能用牌背、对象名和类别临时维持可玩性，素材缺口必须记录在 intake / manifest / evidence，并向用户索要素材或锁定补源路径；不得误接错误拼页、marker 或其它无关素材，也不得把排障标签显示给玩家。
 - 用户后续补充的 `384x336` 组已经证明这里有玩家和怪物 token。地图上的玩家 / 怪物位置必须优先使用 `tokens/explorers/*` 与 `tokens/monsters/*`；找不到对应 token 时，必须回到同尺寸组继续审查或询问素材位置，不能用探索者整板、怪物卡、队友面板、文字缩写或无关 marker 顶替。
 - 山屋骰子素材真相已经从 TTS Workshop JSON 与本地解包文件锁定：
   - Workshop 真相源：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Workshop\3420850553.json`。
@@ -137,11 +140,13 @@
 - 楼层总览图与房屋楼层板
 - 预兆正面 atlas 已确认，且当前运行时默认预兆对象族已收敛到 atlas 对应的 9 张真实预兆
 - 扫描 PDF 对应的规则书、剧本书、参考书具体分工
+- 剧本书 / 作祟文案 / 分阵营秘密阅读 / 开局朗读 / 结局朗读的玩家可见正文仍需回到已锁定原文或正式翻译原文后才能标 `locked`；当前整理稿、规则书口吻改写或目标摘要不能作为正式剧本原文。
 - 剩余探索者 token、其它怪物 token、状态 token 仍需逐类审查；不得再笼统写成“头像/模型/局部标记图待确认”
-- 其它物品正面与预兆正面仍需逐格确认；未确认前只允许显示对象名 + 类别 + `缺正面` 短状态
+- 其它物品正面仍需逐格确认；未确认前只允许在玩家 UI 显示对象名 + 类别 + 牌背临时承接，缺素材原因必须写入资源审计材料并进入补源/索要素材链路，不得作为完成态
 
 ## 9. 后续实施入口
 
 1. 先把当前候选资源从 `public/assets/betrayal/` 迁到 `public/assets/i18n/zh-CN/betrayal/`，并重新生成 manifest。
 2. 再从大拼版图中裁出房间板块、楼层板和可能的起始房间。
-3. 最后补 OCR/人工录入，把规则、剧本和参考卡转成结构化文字合同。
+3. 再按 `docs/ai-rules/data-entry.md` 的原文展示门禁，分别锁定规则书正文、求生者剧本书、叛徒剧本书、作祟开局、分阵营秘密阅读和结局朗读的原文来源；没有逐字原文或正式翻译原文时只能标 `blocked / disputed`，不得用摘要冒充剧本书正文。
+4. 最后补 OCR/人工录入，把规则、剧本和参考卡转成结构化文字合同。
