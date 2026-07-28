@@ -23,6 +23,8 @@ import type {
     AbilityFeedbackEvent,
     GamePhase,
     PlayerState,
+    CardInstance,
+    StoredCardInstance,
     BaseInPlay,
     TurnStartedEvent,
     TurnEndedEvent,
@@ -2197,6 +2199,35 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
 // ============================================================================
 
+const HIDDEN_PRIVATE_CARD_DEF_ID = 'hidden_private_card';
+
+function maskPrivateCard(ownerId: PlayerId, zone: 'hand' | 'deck' | 'stored', index: number): CardInstance {
+    return {
+        uid: `hidden_${ownerId}_${zone}_${index}`,
+        defId: HIDDEN_PRIVATE_CARD_DEF_ID,
+        type: 'action',
+        owner: ownerId,
+    };
+}
+
+function maskStoredCard(ownerId: PlayerId, index: number): StoredCardInstance {
+    return {
+        ...maskPrivateCard(ownerId, 'stored', index),
+        storedByPlayerId: ownerId,
+        reason: HIDDEN_PRIVATE_CARD_DEF_ID,
+    };
+}
+
+function maskPlayerPrivateZones(player: PlayerState, playerId: PlayerId): PlayerState {
+    if (player.id === playerId) return player;
+    return {
+        ...player,
+        hand: player.hand.map((_, index) => maskPrivateCard(player.id, 'hand', index)),
+        deck: player.deck.map((_, index) => maskPrivateCard(player.id, 'deck', index)),
+        storedCards: player.storedCards?.map((_, index) => maskStoredCard(player.id, index)),
+    };
+}
+
 // ============================================================================
 
 function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore> {
@@ -2217,7 +2248,13 @@ function playerView(state: SmashUpCore, playerId: PlayerId): Partial<SmashUpCore
             }),
         };
     });
-    return { bases: maskedBases };
+    const maskedPlayers = Object.fromEntries(
+        Object.entries(state.players).map(([id, player]) => [
+            id,
+            maskPlayerPrivateZones(player, playerId),
+        ]),
+    ) as SmashUpCore['players'];
+    return { bases: maskedBases, players: maskedPlayers };
 }
 
 // ============================================================================

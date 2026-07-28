@@ -3,6 +3,7 @@ import { createInteractionSystem, createSimpleChoice } from '../../systems/Inter
 import { applyPlayerViewToState } from '../playerView';
 import type { GameEngineConfig } from '../../transport/server';
 import type { MatchState } from '../../types';
+import { SmashUpDomain } from '../../../games/smashup/domain';
 import { normalizeSmashUpMatchStateForUi } from '../../../games/smashup/ui/normalizeRuntimeState';
 
 const engineConfig: GameEngineConfig = {
@@ -27,6 +28,12 @@ const smashUpEngineConfig: GameEngineConfig = {
         execute: () => [],
         reduce: (state) => state,
     },
+    systems: [],
+};
+
+const smashUpPrivacyEngineConfig: GameEngineConfig = {
+    gameId: 'smashup',
+    domain: SmashUpDomain as any,
     systems: [],
 };
 
@@ -216,5 +223,70 @@ describe('applyPlayerViewToState', () => {
         expect(spectatorView.core.players['0'].usedDiscardPlayAbilities).toBeUndefined();
         expect(spectatorView.core.bases[0].buriedCards).toEqual([]);
         expect(spectatorView.core.madnessDeck).toEqual(['special_madness', 'special_madness']);
+    });
+
+    it('SmashUp 玩家视图浅合并后不应泄露对手手牌和牌库内容', () => {
+        const authoritativeState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1'],
+                turnNumber: 1,
+                nextUid: 10,
+                players: {
+                    '0': {
+                        id: '0',
+                        hand: [{ uid: 'p0-hand-a', defId: 'pirate_first_mate', type: 'minion', owner: '0' }],
+                        deck: [{ uid: 'p0-deck-a', defId: 'pirate_full_sail', type: 'action', owner: '0' }],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                        factions: ['pirates', 'aliens'],
+                    },
+                    '1': {
+                        id: '1',
+                        hand: [{ uid: 'p1-secret-hand', defId: 'alien_probe', type: 'action', owner: '1' }],
+                        deck: [{ uid: 'p1-secret-topdeck', defId: 'alien_invader', type: 'minion', owner: '1' }],
+                        discard: [{ uid: 'p1-public-discard', defId: 'alien_scout', type: 'minion', owner: '1' }],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                        factions: ['pirates', 'aliens'],
+                    },
+                },
+                bases: [{ defId: 'base_tortuga', minions: [], ongoingActions: [] }],
+                baseDeck: [],
+                baseDiscard: [],
+            },
+            sys: {
+                phase: 'playCards',
+                turnNumber: 1,
+                eventStream: { entries: [], nextId: 1 },
+                interaction: { current: undefined, queue: [], isBlocked: false },
+                responseWindow: { current: undefined },
+            },
+        } as MatchState<unknown>;
+
+        const playerView = applyPlayerViewToState(smashUpPrivacyEngineConfig, authoritativeState, '0') as any;
+
+        expect(playerView.core.players['0'].hand[0]).toEqual(expect.objectContaining({
+            uid: 'p0-hand-a',
+            defId: 'pirate_first_mate',
+        }));
+        expect(playerView.core.players['1'].hand).toEqual([
+            expect.objectContaining({ uid: 'hidden_1_hand_0', defId: 'hidden_private_card' }),
+        ]);
+        expect(playerView.core.players['1'].deck).toEqual([
+            expect.objectContaining({ uid: 'hidden_1_deck_0', defId: 'hidden_private_card' }),
+        ]);
+        expect(playerView.core.players['1'].discard[0]).toEqual(expect.objectContaining({
+            uid: 'p1-public-discard',
+            defId: 'alien_scout',
+        }));
     });
 });
