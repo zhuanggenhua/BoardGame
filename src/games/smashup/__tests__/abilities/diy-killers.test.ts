@@ -5,10 +5,17 @@ import { clearBaseAbilityRegistry, triggerBaseAbility } from '../../domain/baseA
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
-import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import {
+    SU_COMMANDS,
+    SU_EVENTS,
+    type LimitModifiedEvent,
+    type MinionDestroyedEvent,
+    type TriggerQueuedEvent,
+} from '../../domain/types';
 import {
     applyEvents,
     getPromptOption,
+    getPromptSourceId,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
@@ -88,10 +95,10 @@ describe('DIY 杀人狂 abilities', () => {
         expect(result.success, result.error).toBe(true);
         expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'm1')).toBe(true);
         expect(result.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(true);
-        expect(result.events.some(event =>
+        expect(result.events.some((event): event is LimitModifiedEvent =>
             event.type === SU_EVENTS.LIMIT_MODIFIED
-            && (event as any).payload.reason === 'diy_killers_good_boy'
-            && (event as any).payload.limitType === 'action',
+            && event.payload.reason === 'diy_killers_good_boy'
+            && event.payload.limitType === 'action',
         )).toBe(true);
     });
 
@@ -123,10 +130,10 @@ describe('DIY 杀人狂 abilities', () => {
         );
         expect(recovered.success, recovered.error).toBe(true);
         expect(recovered.finalState.core.players['0'].hand.some(card => card.uid === 'machete1')).toBe(true);
-        const limit = recovered.events.find(event =>
+        const limit = recovered.events.find((event): event is LimitModifiedEvent =>
             event.type === SU_EVENTS.LIMIT_MODIFIED
-            && (event as any).payload.reason === 'diy_killers_is_it_over'
-        ) as any;
+            && event.payload.reason === 'diy_killers_is_it_over'
+        );
         expect(limit?.payload.restrictToCardUid).toBe('machete1');
         expect(limit?.payload.restrictToCardDefId).toBe('diy_killers_machete');
     });
@@ -153,10 +160,10 @@ describe('DIY 杀人狂 abilities', () => {
         expect(result.success, result.error).toBe(true);
         expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'machete1')).toBe(true);
         expect(result.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
-        const limit = result.events.find(event =>
+        const limit = result.events.find((event): event is LimitModifiedEvent =>
             event.type === SU_EVENTS.LIMIT_MODIFIED
-            && (event as any).payload.reason === 'diy_killers_improvised_weapon'
-        ) as any;
+            && event.payload.reason === 'diy_killers_improvised_weapon'
+        );
         expect(limit?.payload.restrictToCardUid).toBe('machete1');
     });
 
@@ -234,15 +241,16 @@ describe('DIY 杀人狂 abilities', () => {
             destroyerId: '0',
             reason: 'test_destroy',
         }]);
-        const queued = destroyed.events.find(event =>
+        const queued = destroyed.events.find((event): event is TriggerQueuedEvent =>
             event.type === SU_EVENTS.TRIGGER_QUEUED
-            && (event as any).payload.triggers.some((trigger: any) => trigger.sourceDefId === 'diy_killers_oh_no'),
-        ) as any;
+            && event.payload.triggers.some(trigger => trigger.sourceDefId === 'diy_killers_oh_no'),
+        );
         expect(queued).toBeDefined();
 
-        const queuedCore = { ...applyEvents(state.core, destroyed.events as any), triggerQueue: queued.payload.triggers };
-        const prompted = maybeResolveReactionQueue(makeMatchState(queuedCore as any), defaultTestRandom, 10);
-        expect(prompted?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        const queuedCore = { ...applyEvents(state.core, destroyed.events), triggerQueue: queued!.payload.triggers };
+        const prompted = maybeResolveReactionQueue(makeMatchState(queuedCore), defaultTestRandom, 10);
+        const reactionPrompt = getSimpleChoicePrompt(prompted!.state, 'smashup_reaction_choose');
+        expect(getPromptSourceId(reactionPrompt)).toBe('smashup_reaction_choose');
 
         const accepted = respondToPromptOption(
             prompted!.state,
@@ -321,15 +329,16 @@ describe('DIY 杀人狂 abilities', () => {
             toBaseIndex: 0,
             reason: 'test_move',
         }]);
-        const queued = moved.events.find(event =>
+        const queued = moved.events.find((event): event is TriggerQueuedEvent =>
             event.type === SU_EVENTS.TRIGGER_QUEUED
-            && (event as any).payload.triggers.some((trigger: any) => trigger.sourceDefId === 'diy_killers_laundry_room'),
-        ) as any;
+            && event.payload.triggers.some(trigger => trigger.sourceDefId === 'diy_killers_laundry_room'),
+        );
         expect(queued).toBeDefined();
 
-        const movedCore = { ...applyEvents(state.core, moved.events as any), triggerQueue: queued.payload.triggers };
-        const prompted = maybeResolveReactionQueue(makeMatchState(movedCore as any), defaultTestRandom, 10);
-        expect(prompted?.state.sys.interaction.current?.data?.sourceId).toBe('diy_killers_laundry_room_destroy');
+        const movedCore = { ...applyEvents(state.core, moved.events), triggerQueue: queued!.payload.triggers };
+        const prompted = maybeResolveReactionQueue(makeMatchState(movedCore), defaultTestRandom, 10);
+        const destroyPrompt = getSimpleChoicePrompt(prompted!.state, 'diy_killers_laundry_room_destroy');
+        expect(getPromptSourceId(destroyPrompt)).toBe('diy_killers_laundry_room_destroy');
 
         const destroyed = respondToPromptOption(
             prompted!.state,
@@ -387,7 +396,10 @@ describe('DIY 杀人狂 abilities', () => {
             now: 10,
         });
 
-        expect(result.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(2);
-        expect(result.events.map(event => (event as any).payload.minionUid)).toEqual(['weak1', 'weak2']);
+        const destroyedEvents = result.events.filter(
+            (event): event is MinionDestroyedEvent => event.type === SU_EVENTS.MINION_DESTROYED,
+        );
+        expect(destroyedEvents).toHaveLength(2);
+        expect(destroyedEvents.map(event => event.payload.minionUid)).toEqual(['weak1', 'weak2']);
     });
 });

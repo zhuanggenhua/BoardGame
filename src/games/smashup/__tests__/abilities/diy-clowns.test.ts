@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { getDiscardActionPlayOptions } from '../../domain/discardActionPlayability';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
-import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS, type TriggerQueuedEvent } from '../../domain/types';
 import {
+    getPromptSourceId,
+    getSimpleChoicePrompt,
     makeBase,
     makeCard,
     makeMatchState,
@@ -164,18 +166,19 @@ describe('DIY 小丑 abilities', () => {
             payload: { cardUid: 'scarf1' },
         });
         expect(played.success, played.error).toBe(true);
-        const queued = played.events.find(event =>
+        const queued = played.events.find((event): event is TriggerQueuedEvent =>
             event.type === SU_EVENTS.TRIGGER_QUEUED
-            && (event as any).payload.triggers.some((trigger: any) => trigger.sourceDefId === 'diy_clowns_mrs_clown'),
-        ) as any;
+            && event.payload.triggers.some(trigger => trigger.sourceDefId === 'diy_clowns_mrs_clown'),
+        );
         expect(queued).toBeDefined();
 
         const prompted = maybeResolveReactionQueue(
-            makeMatchState({ ...played.finalState.core, triggerQueue: queued.payload.triggers } as any),
+            makeMatchState({ ...played.finalState.core, triggerQueue: queued!.payload.triggers }),
             defaultTestRandom,
             1,
         );
-        expect(prompted?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        const reactionPrompt = getSimpleChoicePrompt(prompted!.state, 'smashup_reaction_choose');
+        expect(getPromptSourceId(reactionPrompt)).toBe('smashup_reaction_choose');
         const accepted = respondToPromptOption(prompted!.state, option => option.value?.triggerId?.includes('diy_clowns_mrs_clown'), '小丑夫人触发');
         expect(accepted.success, accepted.error).toBe(true);
         expect(accepted.finalState.core.players['0'].hand.some(card => card.uid === 'mrs-draw')).toBe(true);
