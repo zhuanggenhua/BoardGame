@@ -59,6 +59,8 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.DIY_CLOWNS_CARDS, kind: 'card', image: 'smashup/cards/diy_clowns', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_CARDS, kind: 'card', image: 'smashup/cards/huluwawa_cards', grid: { rows: 3, cols: 6 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_CARDS, kind: 'card', image: 'smashup/cards/paladin_cards', grid: { rows: 3, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.NEW_ROUND_TABLE_KNIGHTS_CARDS, kind: 'card', image: 'smashup/cards/new_round_table_knights', grid: { rows: 4, cols: 5 } },
+    { id: SMASHUP_ATLAS_IDS.NEW_GOBLINS_CARDS, kind: 'card', image: 'smashup/cards/new_goblins', grid: { rows: 4, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.HULUWAWA_TITAN, kind: 'card', image: 'smashup/taitan/huluwawa_titan', grid: { rows: 1, cols: 1 } },
     { id: SMASHUP_ATLAS_IDS.PALADIN_TITAN, kind: 'card', image: 'smashup/taitan/paladin_seraphim', grid: { rows: 1, cols: 1 } },
     { id: SMASHUP_ATLAS_IDS.TITANS, kind: 'card', image: 'smashup/taitan/taitan1', grid: { rows: 7, cols: 3 } },
@@ -98,6 +100,8 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.PALADIN_BASES, kind: 'base', image: 'smashup/base/paladin_bases', grid: { rows: 1, cols: 2 } },
     { id: SMASHUP_ATLAS_IDS.DISNEY_BASES, kind: 'base', image: 'smashup/base/disney_bases', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.DISNEY_FOUR_FACTION_BASES, kind: 'base', image: 'smashup/base/disney_four_faction_bases', grid: { rows: 4, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.NEW_ROUND_TABLE_KNIGHTS_BASES, kind: 'base', image: 'smashup/base/new_round_table_knights_bases', grid: { rows: 1, cols: 2 } },
+    { id: SMASHUP_ATLAS_IDS.NEW_GOBLINS_BASES, kind: 'base', image: 'smashup/base/new_goblins_bases', grid: { rows: 1, cols: 2 } },
 ];
 
 const atlasById = new Map(SMASHUP_ATLAS_DEFINITIONS.map((atlas) => [atlas.id, atlas] as const));

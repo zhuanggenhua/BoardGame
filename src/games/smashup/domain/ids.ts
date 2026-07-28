@@ -66,6 +66,10 @@ export const SMASHUP_ATLAS_IDS = {
     DIY_CLOWNS_BASES: 'smashup:diy-clowns-bases',
     HULUWAWA_CARDS: 'smashup:huluwawa-cards',
     PALADIN_CARDS: 'smashup:paladin-cards',
+    NEW_ROUND_TABLE_KNIGHTS_CARDS: 'smashup:new-round-table-knights-cards',
+    NEW_ROUND_TABLE_KNIGHTS_BASES: 'smashup:new-round-table-knights-bases',
+    NEW_GOBLINS_CARDS: 'smashup:new-goblins-cards',
+    NEW_GOBLINS_BASES: 'smashup:new-goblins-bases',
     HULUWAWA_TITAN: 'smashup:huluwawa-titan',
     PALADIN_TITAN: 'smashup:paladin-titan',
     TITANS: 'smashup:titans',
@@ -151,6 +155,8 @@ export const SMASHUP_FACTION_IDS = {
     KITTY_CATS_POD: 'kitty_cats_pod',
     MYTHIC_HORSES: 'mythic_horses',
     MYTHIC_HORSES_POD: 'mythic_horses_pod',
+    NEW_ROUND_TABLE_KNIGHTS: 'new_round_table_knights',
+    NEW_GOBLINS: 'new_goblins',
     PALADINS: 'paladins',
     PRINCESSES: 'princesses',
     PRINCESSES_POD: 'princesses_pod',
@@ -264,7 +270,10 @@ export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): 
     return identities;
 }
 
-export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>();
+export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>([
+    SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS,
+    SMASHUP_FACTION_IDS.NEW_GOBLINS,
+]);
 
 export const SMASHUP_DIY_FACTION_IDS = new Set<string>([
     SMASHUP_FACTION_IDS.HULUWAWA,
@@ -335,6 +344,8 @@ export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.KITTY_CATS_POD]: '猫咪 (POD版)',
     [SMASHUP_FACTION_IDS.MYTHIC_HORSES]: '小马',
     [SMASHUP_FACTION_IDS.MYTHIC_HORSES_POD]: '小马 (POD版)',
+    [SMASHUP_FACTION_IDS.NEW_ROUND_TABLE_KNIGHTS]: '圆桌骑士',
+    [SMASHUP_FACTION_IDS.NEW_GOBLINS]: '哥布林',
     [SMASHUP_FACTION_IDS.PALADINS]: '圣骑士',
     [SMASHUP_FACTION_IDS.PRINCESSES]: '公主',
     [SMASHUP_FACTION_IDS.PRINCESSES_POD]: '公主 (POD版)',
