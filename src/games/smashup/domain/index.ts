@@ -363,20 +363,15 @@ function buildBaseRankings(
             groupEnd += 1;
         }
 
-        const awardSlot = groupEnd;
+        const awardSlot = index;
         const printedVp = awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
-        const vp = getModifiedBaseVp(
-            core,
-            baseIndex,
-            sorted[index][0],
-            printedVp,
-        );
 
         for (let i = index; i <= groupEnd; i += 1) {
+            const playerId = sorted[i][0];
             rankings.push({
-                playerId: sorted[i][0],
+                playerId,
                 power,
-                vp,
+                vp: getModifiedBaseVp(core, baseIndex, playerId, printedVp),
             });
         }
 
