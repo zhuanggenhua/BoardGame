@@ -883,10 +883,6 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     actionsPlayed: (isSpecial || isExtraAction || consumesNormalLimit === false) ? player.actionsPlayed : player.actionsPlayed + 1,
                     usedDiscardPlayAbilities: newUsedAbilities,
                     actionCardsPlayedThisTurn: (player.actionCardsPlayedThisTurn ?? 0) + 1,
-                    actionsPlayed: (isSpecial || isExtraAction) ? player.actionsPlayed : player.actionsPlayed + 1,
-                    usedDiscardPlayAbilities: fromDiscard && discardPlaySourceId
-                        ? Array.from(new Set([...(player.usedDiscardPlayAbilities ?? []), discardPlaySourceId]))
-                        : player.usedDiscardPlayAbilities,
                     extraCardsPlayedThisTurn: wasExtraActionPlay
                         ? (player.extraCardsPlayedThisTurn ?? 0) + 1
                         : player.extraCardsPlayedThisTurn,

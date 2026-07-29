@@ -908,7 +908,7 @@ const moveDestinationPromptProgram = createPromptProgram<MoveDestinationContext,
         context.playerId,
         '选择移动目标基地',
         buildBaseTargetOptions(context.destinationBases, context.matchState.core),
-        { sourceId: context.sourceId, targetType: 'base' },
+        { sourceId: context.sourceId, targetType: 'base', titleKey: 'ui.half_the_battle_move_destination_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as BaseChoice;
@@ -1788,7 +1788,7 @@ const copyTalentPromptProgram = createPromptProgram<CopyTalentPromptContext, Sma
             sourceDefId: 'rulers_cosmos_guy_man',
             sourceKind: 'nonAction',
         }),
-        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: false },
+        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: false, titleKey: 'ui.rulers_cosmos_guy_man_copy_talent_title' },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
         const target = targetFromChoice(value as MinionChoice);
@@ -1918,58 +1918,58 @@ const buttonPromptProgram = createPromptProgram<ButtonPromptContext, SmashUpCore
                 case 'kandinsky-talent':
                     return [
                         createSkipOption(),
-                        { id: 'temp', label: '本随从 +2 到回合结束', value: { choice: 'temp' }, displayMode: 'button' as const },
-                        { id: 'move', label: '移动另一个己方随从到这里', value: { choice: 'move' }, displayMode: 'button' as const },
+                        { id: 'temp', label: '本随从 +2 到回合结束', labelKey: 'ui.geckos_kandinsky_temp_option', value: { choice: 'temp' }, displayMode: 'button' as const },
+                        { id: 'move', label: '移动另一个己方随从到这里', labelKey: 'ui.geckos_kandinsky_move_option', value: { choice: 'move' }, displayMode: 'button' as const },
                     ];
                 case 'gecko-power-talent':
                     return [
                         createSkipOption(),
-                        { id: 'move', label: '移动此随从', value: { choice: 'move' }, displayMode: 'button' as const },
-                        { id: 'counter', label: '放置 +1 标记', value: { choice: 'counter' }, displayMode: 'button' as const },
-                        { id: 'temp', label: '本随从 +2 到回合结束', value: { choice: 'temp' }, displayMode: 'button' as const },
+                        { id: 'move', label: '移动此随从', labelKey: 'ui.geckos_gecko_power_move_option', value: { choice: 'move' }, displayMode: 'button' as const },
+                        { id: 'counter', label: '放置 +1 标记', labelKey: 'ui.geckos_gecko_power_counter_option', value: { choice: 'counter' }, displayMode: 'button' as const },
+                        { id: 'temp', label: '本随从 +2 到回合结束', labelKey: 'ui.geckos_gecko_power_temp_option', value: { choice: 'temp' }, displayMode: 'button' as const },
                     ];
                 case 'can-do-minion':
                     return [
                         createSkipOption(),
-                        { id: 'minion', label: '额外打出战力≤2随从', value: { choice: 'minion' }, displayMode: 'button' as const },
-                        { id: 'action', label: '额外打出一张战术', value: { choice: 'action' }, displayMode: 'button' as const },
+                        { id: 'minion', label: '额外打出战力≤2随从', labelKey: 'ui.gi_gerald_can_do_minion_option', value: { choice: 'minion' }, displayMode: 'button' as const },
+                        { id: 'action', label: '额外打出一张战术', labelKey: 'ui.gi_gerald_can_do_action_option', value: { choice: 'action' }, displayMode: 'button' as const },
                     ];
                 case 'topaz-trigger':
                 case 'viscount-trigger':
                     return [
                         createSkipOption(),
-                        { id: 'counter', label: '放置 +1 标记', value: { choice: 'counter' }, displayMode: 'button' as const },
-                        { id: 'temp', label: '直到回合结束 +2 战力', value: { choice: 'temp' }, displayMode: 'button' as const },
-                        { id: 'move', label: '移动到触发基地', value: { choice: 'move' }, displayMode: 'button' as const },
+                        { id: 'counter', label: '放置 +1 标记', labelKey: 'ui.half_the_battle_counter_option', value: { choice: 'counter' }, displayMode: 'button' as const },
+                        { id: 'temp', label: '直到回合结束 +2 战力', labelKey: 'ui.half_the_battle_temp_power_option', value: { choice: 'temp' }, displayMode: 'button' as const },
+                        { id: 'move', label: '移动到触发基地', labelKey: 'ui.half_the_battle_move_to_trigger_base_option', value: { choice: 'move' }, displayMode: 'button' as const },
                     ];
                 case 'pearl-talent':
                     return [
                         createSkipOption(),
-                        { id: 'draw', label: '抓牌库顶战力≤2随从', value: { choice: 'draw' }, displayMode: 'button' as const },
-                        { id: 'temp', label: '这里一个随从 +1', value: { choice: 'temp' }, displayMode: 'button' as const },
+                        { id: 'draw', label: '抓牌库顶战力≤2随从', labelKey: 'ui.pearl_images_pearl_draw_option', value: { choice: 'draw' }, displayMode: 'button' as const },
+                        { id: 'temp', label: '这里一个随从 +1', labelKey: 'ui.pearl_images_pearl_temp_option', value: { choice: 'temp' }, displayMode: 'button' as const },
                     ];
                 case 'alls-right-talent':
                     return [
                         createSkipOption(),
-                        { id: 'all', label: '这里所有随从 +1', value: { choice: 'all' }, displayMode: 'button' as const },
-                        { id: 'per-player', label: '按玩家选择 +2', value: { choice: 'per-player' }, displayMode: 'button' as const },
+                        { id: 'all', label: '这里所有随从 +1', labelKey: 'ui.pearl_images_alls_right_all_option', value: { choice: 'all' }, displayMode: 'button' as const },
+                        { id: 'per-player', label: '按玩家选择 +2', labelKey: 'ui.pearl_images_alls_right_per_player_option', value: { choice: 'per-player' }, displayMode: 'button' as const },
                     ];
                 case 'magic-weapon-talent':
                     return [
                         createSkipOption(),
-                        { id: 'power', label: '按在场玩家数加战力', value: { choice: 'power' }, displayMode: 'button' as const },
-                        { id: 'draw', label: '若仅一张战术则抓牌', value: { choice: 'draw' }, displayMode: 'button' as const },
+                        { id: 'power', label: '按在场玩家数加战力', labelKey: 'ui.rulers_cosmos_magic_weapon_power_option', value: { choice: 'power' }, displayMode: 'button' as const },
+                        { id: 'draw', label: '若仅一张战术则抓牌', labelKey: 'ui.rulers_cosmos_magic_weapon_draw_option', value: { choice: 'draw' }, displayMode: 'button' as const },
                     ];
                 case 'powerful-sword-talent':
                     return [
                         createSkipOption(),
-                        { id: 'protect', label: '直到下回合开始不受其他玩家卡牌影响', value: { choice: 'protect' }, displayMode: 'button' as const },
-                        { id: 'transfer', label: '转移此随从上的另一张战术', value: { choice: 'transfer' }, displayMode: 'button' as const },
+                        { id: 'protect', label: '直到下回合开始不受其他玩家卡牌影响', labelKey: 'ui.rulers_cosmos_powerful_sword_protect_option', value: { choice: 'protect' }, displayMode: 'button' as const },
+                        { id: 'transfer', label: '转移此随从上的另一张战术', labelKey: 'ui.rulers_cosmos_powerful_sword_transfer_option', value: { choice: 'transfer' }, displayMode: 'button' as const },
                     ];
                 default:
                     return [
                         createSkipOption(),
-                        { id: 'apply', label: '执行效果', value: { choice: 'apply' }, displayMode: 'button' as const },
+                        { id: 'apply', label: '执行效果', labelKey: 'ui.half_the_battle_apply_option', value: { choice: 'apply' }, displayMode: 'button' as const },
                     ];
             }
         })();
@@ -2746,7 +2746,7 @@ const crystalFirstPromptProgram = createPromptProgram<CrystalFirstContext, Smash
         context.playerId,
         '水晶：选择另一位玩家的一个随从放置 +1 标记',
         buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'nonAction', effectType: 'buff' }),
-        { sourceId: 'pearl_images_crystal', targetType: 'minion' },
+        { sourceId: 'pearl_images_crystal', targetType: 'minion', titleKey: 'ui.pearl_images_crystal_other_counter_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const target = targetFromChoice(value as MinionChoice);
@@ -2773,7 +2773,7 @@ const crystalSecondPromptProgram = createPromptProgram<CrystalSecondContext, Sma
         context.playerId,
         '水晶：选择同基地你的一个随从放置 +1 标记',
         buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'nonAction', effectType: 'buff' }),
-        { sourceId: 'pearl_images_crystal_own', targetType: 'minion' },
+        { sourceId: 'pearl_images_crystal_own', targetType: 'minion', titleKey: 'ui.pearl_images_crystal_own_counter_title' },
     ),
     onResolve: ({ value, timestamp }) => {
         const target = targetFromChoice(value as MinionChoice);
@@ -2856,7 +2856,7 @@ const jamRewardPromptProgram = createPromptProgram<JamRewardContext, SmashUpCore
         '玩乐一整夜：你可以抓一张牌，或在这里一个随从上放置 +1 标记',
         [
             createSkipOption(),
-            { id: 'draw', label: '抓一张牌', value: { choice: 'draw' }, displayMode: 'button' as const },
+            { id: 'draw', label: '抓一张牌', labelKey: 'ui.pearl_images_jam_all_night_long_draw_option', value: { choice: 'draw' }, displayMode: 'button' as const },
             ...buildMinionTargetOptions(context.counterTargets, {
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
@@ -2868,7 +2868,7 @@ const jamRewardPromptProgram = createPromptProgram<JamRewardContext, SmashUpCore
                 label: `放置 +1：${option.label}`,
             })),
         ],
-        { sourceId: 'pearl_images_jam_all_night_long_reward', targetType: 'generic', autoResolveIfSingle: false },
+        { sourceId: 'pearl_images_jam_all_night_long_reward', targetType: 'generic', autoResolveIfSingle: false, titleKey: 'ui.pearl_images_jam_all_night_long_reward_title' },
     ),
     onResolve: ({ context, state, value, random, timestamp }) => {
         const choice = value as (ButtonChoice & MinionChoice & { skip?: boolean });
@@ -2893,7 +2893,7 @@ const jamMinionPromptProgram = createPromptProgram<JamMinionContext, SmashUpCore
             value: minion,
             displayMode: 'card' as const,
         })),
-        { sourceId: 'pearl_images_jam_all_night_long_minion', targetType: 'hand', autoResolveIfSingle: false },
+        { sourceId: 'pearl_images_jam_all_night_long_minion', targetType: 'hand', autoResolveIfSingle: false, titleKey: 'ui.pearl_images_jam_all_night_long_minion_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as JamMinionContext['minions'][number] | undefined;
@@ -2957,7 +2957,7 @@ const jamPlayerPromptProgram = createPromptProgram<JamPlayerContext, SmashUpCore
             value: player,
             displayMode: 'button' as const,
         })),
-        { sourceId: 'pearl_images_jam_all_night_long', targetType: 'player', autoResolveIfSingle: false },
+        { sourceId: 'pearl_images_jam_all_night_long', targetType: 'player', autoResolveIfSingle: false, titleKey: 'ui.pearl_images_jam_all_night_long_player_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as JamPlayerChoice | undefined;
@@ -3008,7 +3008,7 @@ const bikeFirstPromptProgram = createPromptProgram<BikeFirstContext, SmashUpCore
         context.playerId,
         '现在你知道：自行车安全：选择你的一个随从',
         buildMinionTargetOptions(context.ownTargets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'move' }),
-        { sourceId: context.sourceId, targetType: 'minion' },
+        { sourceId: context.sourceId, targetType: 'minion', titleKey: 'ui.pearl_images_now_you_know_bike_safety_first_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const first = targetFromChoice(value as MinionChoice);
@@ -3038,7 +3038,7 @@ const bikeSecondPromptProgram = createPromptProgram<BikeSecondContext, SmashUpCo
         context.playerId,
         '现在你知道：自行车安全：选择同基地另一位玩家的随从',
         buildMinionTargetOptions(context.otherTargets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'move' }),
-        { sourceId: 'pearl_images_now_you_know_bike_safety_second', targetType: 'minion' },
+        { sourceId: 'pearl_images_now_you_know_bike_safety_second', targetType: 'minion', titleKey: 'ui.pearl_images_now_you_know_bike_safety_second_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const second = targetFromChoice(value as MinionChoice);
@@ -3083,7 +3083,7 @@ const bikeDestinationPromptProgram = createPromptProgram<BikeDestinationContext,
         context.playerId,
         '现在你知道：自行车安全：选择目标基地',
         buildBaseTargetOptions(context.destinationBases, context.matchState.core),
-        { sourceId: 'pearl_images_now_you_know_bike_safety_dest', targetType: 'base' },
+        { sourceId: 'pearl_images_now_you_know_bike_safety_dest', targetType: 'base', titleKey: 'ui.pearl_images_now_you_know_bike_safety_destination_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choice = value as BaseChoice;
@@ -3126,7 +3126,7 @@ const trulyOutstandingFirstPromptProgram = createPromptProgram<TrulyOutstandingF
         context.playerId,
         '杰出表彰：选择任意数量的其他玩家随从放置 +1 标记',
         buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'buff' }),
-        { sourceId: 'pearl_images_truly_outstanding', targetType: 'minion', multi: { min: 0, max: context.candidates.length }, autoResolveIfSingle: false },
+        { sourceId: 'pearl_images_truly_outstanding', targetType: 'minion', multi: { min: 0, max: context.candidates.length }, autoResolveIfSingle: false, titleKey: 'ui.pearl_images_truly_outstanding_first_title' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const choices = (Array.isArray(value) ? value : []) as MinionChoice[];
@@ -3155,7 +3155,7 @@ const trulyOutstandingSecondPromptProgram = createPromptProgram<TrulyOutstanding
         context.playerId,
         '杰出表彰：选择你的随从放置对应数量 +1 标记',
         buildMinionTargetOptions(context.candidates, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'buff' }),
-        { sourceId: 'pearl_images_truly_outstanding_own', targetType: 'minion', multi: { min: 0, max: Math.min(context.selectedCount, context.candidates.length) }, autoResolveIfSingle: false },
+        { sourceId: 'pearl_images_truly_outstanding_own', targetType: 'minion', multi: { min: 0, max: Math.min(context.selectedCount, context.candidates.length) }, autoResolveIfSingle: false, titleKey: 'ui.pearl_images_truly_outstanding_second_title' },
     ),
     onResolve: ({ value, timestamp }) => {
         const choices = (Array.isArray(value) ? value : []) as MinionChoice[];
