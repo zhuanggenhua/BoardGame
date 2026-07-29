@@ -10,6 +10,7 @@ import {
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildStandardDrawEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     buildSemanticOngoingAttachEvents,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedMoveEvents,
@@ -1981,7 +1982,8 @@ const buttonPromptProgram = createPromptProgram<ButtonPromptContext, SmashUpCore
             { sourceId: context.sourceId, targetType: 'button', autoResolveIfSingle: false },
         );
     },
-    onResolve: ({ context, state, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, value, timestamp } = args;
         const choice = value as ButtonChoice;
         if (choice.skip || !choice.choice) return { events: [] };
         const sourceTarget = context.sourceMinionUid && context.sourceBaseIndex !== undefined
@@ -2123,7 +2125,7 @@ const buttonPromptProgram = createPromptProgram<ButtonPromptContext, SmashUpCore
             if (choice.choice === 'draw') {
                 const host = state.core.bases[sourceTarget.baseIndex]?.minions.find(minion => minion.uid === sourceTarget.uid);
                 if ((host?.attachedActions.length ?? 0) === 1) {
-                    return { events: buildStandardDrawEvents(state.core, context.playerId, 1, random, timestamp) };
+                    return { events: buildStandardDrawEventsFromRuntimeContext(args, context.playerId, 1) };
                 }
                 return { events: [] };
             }
@@ -2870,11 +2872,12 @@ const jamRewardPromptProgram = createPromptProgram<JamRewardContext, SmashUpCore
         ],
         { sourceId: 'pearl_images_jam_all_night_long_reward', targetType: 'generic', autoResolveIfSingle: false, titleKey: 'ui.pearl_images_jam_all_night_long_reward_title' },
     ),
-    onResolve: ({ context, state, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, value, timestamp } = args;
         const choice = value as (ButtonChoice & MinionChoice & { skip?: boolean });
         if (choice.skip) return { events: [] };
         if (choice.choice === 'draw') {
-            return { events: buildStandardDrawEvents(state.core, context.playerId, 1, random, timestamp) };
+            return { events: buildStandardDrawEventsFromRuntimeContext(args, context.playerId, 1) };
         }
         const target = targetFromChoice(choice);
         return target ? { events: [addPowerCounter(target.uid, target.baseIndex, 1, 'pearl_images_jam_all_night_long', timestamp)] } : { events: [] };
