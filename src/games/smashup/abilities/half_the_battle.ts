@@ -2873,7 +2873,7 @@ const jamRewardPromptProgram = createPromptProgram<JamRewardContext, SmashUpCore
         { sourceId: 'pearl_images_jam_all_night_long_reward', targetType: 'generic', autoResolveIfSingle: false, titleKey: 'ui.pearl_images_jam_all_night_long_reward_title' },
     ),
     onResolve: (args) => {
-        const { context, state, value, timestamp } = args;
+        const { context, value, timestamp } = args;
         const choice = value as (ButtonChoice & MinionChoice & { skip?: boolean });
         if (choice.skip) return { events: [] };
         if (choice.choice === 'draw') {
