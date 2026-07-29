@@ -417,6 +417,8 @@ export interface BaseInPlay {
     ongoingActions: OngoingActionOnBase[];
     /** 埋葬卡列表（面朝下） */
     buriedCards?: BuriedCardOnBase[];
+    /** 额外元数据（用于临时基地级状态，如“我们上，你们下”） */
+    metadata?: Record<string, unknown>;
 }
 
 export type TitanLocation =
@@ -1236,10 +1238,18 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         fromDiscard?: boolean;
         /** 从暂存区打出 */
         fromStored?: boolean;
+        /** 从弃牌堆打出的能力来源，用于 once/turn 与替代去向结算。 */
+        discardPlaySourceId?: string;
+        /** false 表示不消耗常规行动额度。 */
+        consumesNormalLimit?: boolean;
         /** 行动目标基地（持续行动、特殊行动、目标随从行动均可携带） */
         targetBaseIndex?: number;
         targetType?: 'base' | 'minion';
         /** 行动目标随从 */
+        /** 从弃牌堆打出的能力来源，用于 once/turn 与替代去向结算。 */
+        discardPlaySourceId?: string;
+        targetBaseIndex?: number;
+        targetType?: 'base' | 'minion';
         targetMinionUid?: string;
     };
 }
@@ -1607,6 +1617,7 @@ export type SmashUpEvent =
     | AllFactionsSelectedEvent
     | MinionDestroyedEvent
     | MinionMovedEvent
+    | MinionSwappedEvent
     | MinionControlChangedEvent
     | MinionMetadataUpdatedEvent
     | BaseMetadataUpdatedEvent
@@ -1740,6 +1751,23 @@ export interface MinionMovedEvent extends GameEvent<typeof SU_EVENTS.MINION_MOVE
         sourceBaseIndex?: number;
         /** 同批移动标记；同一批内的随从不应互相见证彼此的移动。 */
         batchId?: string;
+        reason: string;
+    };
+}
+
+export type SmashUpSwapZone = 'hand' | 'deck' | 'discard';
+
+export interface MinionSwappedEvent extends GameEvent<typeof SU_EVENTS.MINION_SWAPPED> {
+    payload: {
+        playerId: PlayerId;
+        sourceMinionUid: string;
+        sourceMinionDefId: string;
+        sourceOwnerId: PlayerId;
+        sourceBaseIndex: number;
+        candidateCardUid: string;
+        candidateDefId: string;
+        candidateOwnerId: PlayerId;
+        candidateZone: SmashUpSwapZone;
         reason: string;
     };
 }
@@ -2051,8 +2079,8 @@ export interface RevealHandEvent extends GameEvent<typeof SU_EVENTS.REVEAL_HAND>
     payload: {
         /** 被查看的玩家（单人或多人） */
         targetPlayerId: string | string[];
-        /** 查看者 */
-        viewerPlayerId: string;
+        /** 查看者（'all' = 所有人，PlayerId = 指定玩家） */
+        viewerPlayerId: string | 'all';
         /** 被展示的卡牌列表 */
         cards: { uid: string; defId: string }[];
         /** 触发展示的玩家（viewerPlayerId='all' 时由此玩家关闭展示） */

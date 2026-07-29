@@ -81,6 +81,7 @@ import { fireTriggers, collectTriggers } from './ongoingEffects';
 import { getEffectivePower } from './ongoingModifiers';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { canPlayFromDiscard } from './discardPlayability';
+import { canPlayActionFromDiscard } from './discardActionPlayability';
 import { reduce } from './reduce';
 import { buildAffectRecords, type AffectRecord } from './affect';
 import { buildActionPlayedEvent } from './actionPlayEvent';
@@ -272,6 +273,15 @@ function executeCommand(
                 : fromDiscard
                 ? player.discard.find(c => c.uid === command.payload.cardUid)
                 : player.hand.find(c => c.uid === command.payload.cardUid))!;
+            const discardActionPlay = fromDiscard
+                ? canPlayActionFromDiscard(
+                    core,
+                    command.playerId,
+                    card.uid,
+                    command.payload.targetBaseIndex,
+                    command.payload.targetMinionUid,
+                )
+                : null;
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             const events: SmashUpEvent[] = [];
             let updatedState: MatchState<SmashUpCore> | undefined;
@@ -283,9 +293,11 @@ function executeCommand(
                 ownerId: card.owner,
                 targetBaseIndex: command.payload.targetBaseIndex,
                 targetMinionUid: command.payload.targetMinionUid,
-                isExtraAction: fromStored || undefined,
+                isExtraAction: fromStored || discardActionPlay?.consumesNormalLimit === false || undefined,
                 fromDiscard,
                 fromStored,
+                discardPlaySourceId: discardActionPlay?.sourceId,
+                consumesNormalLimit: discardActionPlay?.consumesNormalLimit,
                 sourceCommandType: command.type,
                 timestamp: now,
             });
@@ -310,6 +322,19 @@ function executeCommand(
 
             const resolution = resolvePendingActionExecution(workingState, pendingResolution, random, now);
             events.push(...resolution.events);
+            if (fromDiscard && discardActionPlay?.sourceId.startsWith('diy_clowns_')) {
+                events.push({
+                    type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                    payload: {
+                        cardUid: card.uid,
+                        defId: card.defId,
+                        ownerId: card.owner,
+                        sourcePlayerId: command.playerId,
+                        reason: discardActionPlay.sourceId,
+                    },
+                    timestamp: now,
+                } as CardToDeckBottomEvent);
+            }
             if (resolution.state !== workingState) {
                 updatedState = resolution.state;
             }

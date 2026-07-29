@@ -2352,15 +2352,14 @@ describe('scoreBases 阶段自动推进', () => {
         const core = makeMinimalCore({
             bases: [
                 makeBase('base_pirate_cove', [
-                    makeMinion('0', 'robot_warbot', 4),
+                    makeMinion('0', 'robot_warbot', 20),
                     makeMinion('1', 'pirate_first_mate', 2),
                 ]),
                 makeBase('base_egg_chamber', [
-                    makeMinion('0', 'robot_microbot_alpha', 1),
-                    makeMinion('1', 'pirate_king', 5),
+                    makeMinion('0', 'robot_microbot_alpha', 9),
+                    makeMinion('1', 'pirate_king', 8),
                 ]),
             ],
-            scoringEligibleBaseIndices: [0, 1],
         });
 
         const state: MatchState<SmashUpCore> = {

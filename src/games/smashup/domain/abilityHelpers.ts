@@ -509,6 +509,17 @@ export function buildValidatedMoveEvents(
         ?? buildFallbackMinionOnBase(params.minionUid, params.minionDefId, params.targetSnapshot);
     if (!minion) return [];
 
+    const actingPlayerId = params.sourceControllerId ?? params.sourcePlayerId;
+    const targetMoai = targetBase?.minions.find(candidate =>
+        candidate.defId === 'polynesian_voyagers_moai'
+        && candidate.controller !== minion.controller,
+    );
+    const isOtherPlayerMovingMoai = minion.defId === 'polynesian_voyagers_moai'
+        && minion.controller !== actingPlayerId;
+    if (targetMoai || isOtherPlayerMovingMoai) {
+        return [buildAbilityFeedback(params.sourcePlayerId, 'feedback.target_protected', params.now, undefined, 'warning')];
+    }
+
     return buildSemanticSingleMinionEffectEvents(
         state,
         { minion, baseIndex: params.fromBaseIndex },
@@ -1145,7 +1156,7 @@ export function shuffleBaseDeck(
 /** 生成展示手牌事件 */
 export function revealHand(
     targetPlayerId: PlayerId | PlayerId[],
-    viewerPlayerId: PlayerId,
+    viewerPlayerId: PlayerId | 'all',
     cards: { uid: string; defId: string }[],
     reason: string,
     now: number,

@@ -1,10 +1,11 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type { MatchState, PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpCore, SmashUpEvent } from './types';
 import { SU_EVENTS, STARTING_HAND_SIZE } from './types';
 import type { InteractionHandler } from './abilityInteractionHandlers';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
-import type { HandShuffledIntoDeckEvent, CardsDrawnEvent, StartingHandMulliganUsedEvent } from './types';
+import { drawCards } from './utils';
+import type { CardsDiscardedEvent, CardsDrawnEvent, DeckReshuffledEvent, RevealHandEvent, StartingHandMulliganUsedEvent } from './types';
 
 export const STARTING_HAND_MULLIGAN_SOURCE_ID = 'starting_hand_mulligan';
 
@@ -61,30 +62,58 @@ export function registerMulliganInteractionHandlers(): void {
       return { state, events: [used] };
     }
 
-    // mulligan: shuffle hand+deck into a fresh deck order, then draw starting hand
-    const all = [...player.hand, ...player.deck];
-    const shuffled = (random as RandomFn).shuffle(all);
-    const newDeckUids = shuffled.map(c => c.uid);
-    const drawCount = Math.min(STARTING_HAND_SIZE, shuffled.length);
-    const drawnUids = shuffled.slice(0, drawCount).map(c => c.uid);
-
-    const shuffleEvt: HandShuffledIntoDeckEvent = {
-      type: SU_EVENTS.HAND_SHUFFLED_INTO_DECK,
-      payload: { playerId, newDeckUids, reason: STARTING_HAND_MULLIGAN_SOURCE_ID },
+    // mulligan: reveal and discard the original no-minion hand, then draw a new hand.
+    const originalHand = [...player.hand];
+    const originalHandUids = originalHand.map(card => card.uid);
+    const revealEvt: RevealHandEvent = {
+      type: SU_EVENTS.REVEAL_HAND,
+      payload: {
+        targetPlayerId: playerId,
+        viewerPlayerId: 'all',
+        sourcePlayerId: playerId,
+        cards: originalHand.map(card => ({ uid: card.uid, defId: card.defId })),
+        reason: STARTING_HAND_MULLIGAN_SOURCE_ID,
+      },
       timestamp,
-    } as any;
-    const drawnEvt: CardsDrawnEvent = {
-      type: SU_EVENTS.CARDS_DRAWN,
-      payload: { playerId, count: drawCount, cardUids: drawnUids },
+    };
+    const discardEvt: CardsDiscardedEvent = {
+      type: SU_EVENTS.CARDS_DISCARDED,
+      payload: { playerId, cardUids: originalHandUids },
       timestamp: timestamp + 1,
-    } as any;
+    };
+    const ownDiscardedCards = originalHand.filter(card => (core.players[card.owner] ? card.owner : playerId) === playerId);
+    const drawSourcePlayer = {
+      ...player,
+      hand: [],
+      discard: [...player.discard, ...ownDiscardedCards],
+    };
+    const drawResult = drawCards(drawSourcePlayer, STARTING_HAND_SIZE, random);
+    const events: SmashUpEvent[] = [revealEvt, discardEvt] as unknown as SmashUpEvent[];
+
+    if (drawResult.reshuffledDeckUids && drawResult.reshuffledDeckUids.length > 0) {
+      const reshuffleEvt: DeckReshuffledEvent = {
+        type: SU_EVENTS.DECK_RESHUFFLED,
+        payload: { playerId, deckUids: drawResult.reshuffledDeckUids },
+        timestamp: timestamp + 2,
+      };
+      events.push(reshuffleEvt as unknown as SmashUpEvent);
+    }
+    if (drawResult.drawnUids.length > 0) {
+      const drawnEvt: CardsDrawnEvent = {
+        type: SU_EVENTS.CARDS_DRAWN,
+        payload: { playerId, count: drawResult.drawnUids.length, cardUids: drawResult.drawnUids },
+        timestamp: timestamp + 3,
+      };
+      events.push(drawnEvt as unknown as SmashUpEvent);
+    }
     const usedEvt: StartingHandMulliganUsedEvent = {
       type: SU_EVENTS.STARTING_HAND_MULLIGAN_USED,
       payload: { playerId, used: true },
-      timestamp: timestamp + 2,
-    } as any;
+      timestamp: timestamp + 4,
+    };
+    events.push(usedEvt as unknown as SmashUpEvent);
 
-    return { state, events: [shuffleEvt, drawnEvt, usedEvt] as unknown as SmashUpEvent[] };
+    return { state, events };
   };
 
   registerInteractionHandler(STARTING_HAND_MULLIGAN_SOURCE_ID, handler);

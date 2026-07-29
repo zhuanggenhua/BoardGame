@@ -863,6 +863,52 @@ function registerWhatWereWeThinkingModifiers(): void {
     ]);
 }
 
+function registerPolynesianVoyagersModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'polynesian_voyagers_tiki',
+            compute: (ctx, helpers) => (
+                helpers.matchesRuntimeDefId(ctx.minion.defId, 'polynesian_voyagers_tiki')
+                    && (ctx.minion.attachedActions?.length ?? 0) > 0
+                    ? 2
+                    : 0
+            ),
+        },
+        {
+            sourceDefId: 'polynesian_voyagers_sun_tattoo',
+            compute: (ctx) => ctx.minion.attachedActions.some(action => action.defId === 'polynesian_voyagers_sun_tattoo') ? 2 : 0,
+        },
+    ]);
+
+    registerBreakpointModifiers([
+        {
+            sourceDefId: 'base_tropical_paradise',
+            modifier: (ctx) => {
+                if (ctx.base.defId !== 'base_tropical_paradise') return 0;
+                const playersWithMinions = new Set(ctx.base.minions.map(minion => minion.controller));
+                return ctx.state.turnOrder.every(playerId => playersWithMinions.has(playerId)) ? -20 : 0;
+            },
+        },
+    ]);
+}
+
+function registerHalfTheBattleModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'rulers_cosmos_sword_thats_powerful',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => {
+                if (getCardPrintedPower(ctx.minion.defId) < 5) return 0;
+                return helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'rulers_cosmos_sword_thats_powerful',
+                    { relationToTargetController: 'same' },
+                ) * 2;
+            },
+        },
+    ]);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -895,4 +941,6 @@ export function registerAllOngoingModifiers(): void {
     registerZhongguoModifiers();
     registerInternationalIncidentModifiers();
     registerWhatWereWeThinkingModifiers();
+    registerPolynesianVoyagersModifiers();
+    registerHalfTheBattleModifiers();
 }

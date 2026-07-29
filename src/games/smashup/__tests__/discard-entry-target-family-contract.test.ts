@@ -31,6 +31,8 @@ describe('SmashUp 弃牌堆入口目标族合同', () => {
         ]);
         expect(__getDiscardActionPlayProviderIdsForTest().sort()).toEqual([
             'cyborg_apes_cyberback',
+            'diy_clowns_silent_clown',
+            'diy_clowns_slapstick_clown',
             'huluwawa_purple_gold_gourd',
         ]);
         expect(__getDiscardSpecialProviderIdsForTest().sort()).toEqual([

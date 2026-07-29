@@ -3,8 +3,11 @@ import type { CardInstance, SmashUpCore } from './types';
 
 export interface DiscardActionPlayOption {
     card: CardInstance;
+    targetMode?: 'none' | 'base' | 'minion';
     allowedBaseIndices: number[] | 'all';
     allowedMinionUids?: string[];
+    /** false 表示这次从弃牌堆打出是额外行动，不消耗常规行动额度。 */
+    consumesNormalLimit?: boolean;
     sourceId: string;
     defId: string;
     name: string;
@@ -29,7 +32,6 @@ export function clearDiscardActionPlayProviders(): void {
 export function getDiscardActionPlayOptions(core: SmashUpCore, playerId: PlayerId): DiscardActionPlayOption[] {
     const player = core.players[playerId];
     if (!player) return [];
-    if (player.actionsPlayed >= player.actionLimit) return [];
 
     const result: DiscardActionPlayOption[] = [];
     const seenUids = new Set<string>();
@@ -37,6 +39,9 @@ export function getDiscardActionPlayOptions(core: SmashUpCore, playerId: PlayerI
         const options = provider.getPlayableCards(core, playerId);
         for (const option of options) {
             if (seenUids.has(option.card.uid)) continue;
+            if (player.actionsPlayed >= player.actionLimit && option.consumesNormalLimit !== false) {
+                continue;
+            }
             seenUids.add(option.card.uid);
             result.push(option);
         }
@@ -48,11 +53,25 @@ export function canPlayActionFromDiscard(
     core: SmashUpCore,
     playerId: PlayerId,
     cardUid: string,
-    targetBaseIndex: number,
+    targetBaseIndex?: number,
     targetMinionUid?: string,
-): { allowed: true; sourceId: string } | null {
+): { allowed: true; sourceId: string; consumesNormalLimit?: boolean } | null {
     const option = getDiscardActionPlayOptions(core, playerId).find(entry => entry.card.uid === cardUid);
     if (!option) return null;
+    const targetMode = option.targetMode ?? (option.allowedMinionUids?.length ? 'minion' : 'base');
+    if (targetMode === 'none') {
+        if (targetBaseIndex !== undefined || targetMinionUid !== undefined) {
+            return null;
+        }
+        return {
+            allowed: true,
+            sourceId: option.sourceId,
+            consumesNormalLimit: option.consumesNormalLimit,
+        };
+    }
+    if (typeof targetBaseIndex !== 'number') {
+        return null;
+    }
     if (option.allowedBaseIndices !== 'all' && !option.allowedBaseIndices.includes(targetBaseIndex)) {
         return null;
     }
@@ -63,7 +82,11 @@ export function canPlayActionFromDiscard(
     } else if (targetMinionUid !== undefined) {
         return null;
     }
-    return { allowed: true, sourceId: option.sourceId };
+    return {
+        allowed: true,
+        sourceId: option.sourceId,
+        consumesNormalLimit: option.consumesNormalLimit,
+    };
 }
 
 export function __getDiscardActionPlayProviderIdsForTest(): string[] {

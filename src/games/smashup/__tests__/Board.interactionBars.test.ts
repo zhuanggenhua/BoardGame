@@ -29,7 +29,7 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         const source = readBoardSource();
         expect(source).toContain("data?.targetType !== 'discard'");
         expect(source).toContain("autoOpenPanel={isDiscardMinionPrompt || isDiscardCardPrompt}");
-        expect(source).toContain('onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : setDiscardStripSelectedUid}');
+        expect(source).toContain('onSelectCard={isDiscardCardPrompt ? handleDiscardCardPromptSelect : handleDiscardStripSelectCard}');
     });
 
     it('计分响应里手牌后点基地应优先回到 smashup_reaction_choose 的统一响应入口', () => {

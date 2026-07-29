@@ -103,6 +103,24 @@
         }
       }
     },
+    "base/compressed/new_goblins_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "59d5772ad03db29b90fd0f995487b1ac3eba88c4482a82f14829c67cbcb2d7c3",
+          "bytes": 421638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/new_round_table_knights_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "1f74fe28a409ba144b2820861c8185511ae6a21907a4679bab43d9272fdb8f16",
+          "bytes": 443064,
+          "mime": "image/webp"
+        }
+      }
+    },
     "base/compressed/paladin_bases": {
       "variants": {
         "webp": {
@@ -171,6 +189,24 @@
         "png": {
           "sha256": "8d695587adfc6fbcc64eb845d3f70d4a2cc3135b0b53f1f9a7b9e5ee4ad9b24e",
           "bytes": 30275972,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/new_goblins_bases": {
+      "variants": {
+        "png": {
+          "sha256": "de25f5e7efe8e7edc26d0ba3a23b1ab4803cfbc3c21f4674d3de16a9e541a257",
+          "bytes": 2778756,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/new_round_table_knights_bases": {
+      "variants": {
+        "png": {
+          "sha256": "3afd85778effdf3442c1ce2b6a9269b709269d486c31c5aa6c23d7299beaa99a",
+          "bytes": 2679470,
           "mime": "image/png"
         }
       }
@@ -427,11 +463,38 @@
         }
       }
     },
+    "cards/compressed/new_goblins": {
+      "variants": {
+        "webp": {
+          "sha256": "f8c7fa5279f96638a307a82dcd524d6534018dead71b2bd87d9ffcdfb0c5182f",
+          "bytes": 4029816,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/new_round_table_knights": {
+      "variants": {
+        "webp": {
+          "sha256": "f8ee8f98e823c96792138ee787b94daa74ddb019c3052054490fd7ef70d6fc03",
+          "bytes": 5265048,
+          "mime": "image/webp"
+        }
+      }
+    },
     "cards/compressed/paladin_cards": {
       "variants": {
         "webp": {
           "sha256": "88d7fa52cab93e59bb10e4f4a6001f5637e062ee1f8b2b0b9eb734f544b185a7",
           "bytes": 1157846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/polynesian_voyagers": {
+      "variants": {
+        "webp": {
+          "sha256": "989403c1366435feb89daf70bfd1618e7b5df4b79f1a0774feeced06882c5389",
+          "bytes": 1765534,
           "mime": "image/webp"
         }
       }
@@ -679,11 +742,38 @@
         }
       }
     },
+    "cards/new_goblins": {
+      "variants": {
+        "png": {
+          "sha256": "8136163f1799bb828e1c0c06b3e7a78f2f1e87858e94aff0e57ef138fef601b6",
+          "bytes": 18409367,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/new_round_table_knights": {
+      "variants": {
+        "png": {
+          "sha256": "ae94250d829759bc88863b8099fcf48f710bfcc2f66a15029e956acfcddb0cc9",
+          "bytes": 30567071,
+          "mime": "image/png"
+        }
+      }
+    },
     "cards/paladin_cards": {
       "variants": {
         "png": {
           "sha256": "41060b739f0ac7c74e1f8548ded639016f0172bc340087f04ad5e9f42f590bf4",
           "bytes": 39352254,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/polynesian_voyagers": {
+      "variants": {
+        "png": {
+          "sha256": "97299d31a0a98eba7e00411e75a612ad8cf3611fb1c25fec3349a73901b677d8",
+          "bytes": 11247201,
           "mime": "image/png"
         }
       }
@@ -1026,6 +1116,168 @@
         "webp": {
           "sha256": "9af400ebdd443dc5f0f8a03985ca14162e0211932b33fa534e807d56ccc47e2f",
           "bytes": 5032252,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/diy_clowns_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "5918fb7166b393388cdbe8614ac2f7812e5a6e390c49f281af189e3ed2a14851",
+          "bytes": 487418,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/diy_killers_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "7285f0152fee32a672611af3df22dc648b76df9ccd0694e6aae17941237fb08b",
+          "bytes": 482650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/diy_clowns_bases": {
+      "variants": {
+        "png": {
+          "sha256": "fce66e379485e0a3dd6d21468c40218677a13bdd697d7c37e356506e80b732b8",
+          "bytes": 2871712,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/diy_killers_bases": {
+      "variants": {
+        "png": {
+          "sha256": "d7425df575c029fa85c4bdf2727c5c709dc672435a8cba8a19fac82d429a176e",
+          "bytes": 2862123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/diy_clowns": {
+      "variants": {
+        "webp": {
+          "sha256": "c2888bb67bd2478fddd11278b8b677f753405a6abbff2570889172864dab5f75",
+          "bytes": 4664140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/diy_killers": {
+      "variants": {
+        "webp": {
+          "sha256": "21d750563dc60f8db69f4c50da5b387df0c4ad723d7c4259a1abf0dc5b641c73",
+          "bytes": 4870398,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/diy_clowns": {
+      "variants": {
+        "png": {
+          "sha256": "1a5a08ea1b67781e17c6e14c21db6dd2c946cf297faacd77778a5fd6a9e947b3",
+          "bytes": 23916659,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/diy_killers": {
+      "variants": {
+        "png": {
+          "sha256": "8dc9089f8230d725ed7f44a25074ba3c8ee65e3d5df5891af64dcd26283e3186",
+          "bytes": 26436318,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/half_the_battle_bases": {
+      "variants": {
+        "png": {
+          "sha256": "b2ebf074e8c1a0855ebe80a36a4f52462f0563879c39d1a8b02f4461d91c14fb",
+          "bytes": 10812801,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/compressed/half_the_battle_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "fd8047133071ede8778287a8e1849ba2c5f85c78640912aef608eb7dd71e65f4",
+          "bytes": 1710948,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/half_the_battle_cosmos": {
+      "variants": {
+        "png": {
+          "sha256": "585e59539514f2ba180c0e05e5c277e453ec0d5cc713835301bb756852248ec8",
+          "bytes": 24294207,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/half_the_battle_geckos": {
+      "variants": {
+        "png": {
+          "sha256": "59e0eb702c9e4ef3501280c3b013ab16a81c84529a565e0e04b6b14653834f36",
+          "bytes": 22800669,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/half_the_battle_gerald": {
+      "variants": {
+        "png": {
+          "sha256": "5674b78fa3b27177ec97d93a6d1450a260618966d56fd4e9c25b5bbf31d53ec9",
+          "bytes": 22101189,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/half_the_battle_pearl_images": {
+      "variants": {
+        "png": {
+          "sha256": "8a25cc8893363c33797c08f12d352c490aa336438ba5ca4bfefc77a6d0e96fde",
+          "bytes": 17679181,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_cosmos": {
+      "variants": {
+        "webp": {
+          "sha256": "23b9084f3ac4518e74e5047f67c43a9f5dbff27d8e2dc9baa60de1a1b5675657",
+          "bytes": 4299216,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_geckos": {
+      "variants": {
+        "webp": {
+          "sha256": "7ee82396fde206817b6c72d26e28b7e440ac3de18a88d52863051e9f425baae4",
+          "bytes": 4776586,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_gerald": {
+      "variants": {
+        "webp": {
+          "sha256": "d27c4a0eed0cb9a14921f5205bbc70f0111179bd2fc5a39264a2f495044482d2",
+          "bytes": 5157030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/half_the_battle_pearl_images": {
+      "variants": {
+        "webp": {
+          "sha256": "e782a65443b551570eff12c8479f54f5bbe3c17368b0aee142164911a3ad99f2",
+          "bytes": 3935812,
           "mime": "image/webp"
         }
       }

@@ -203,6 +203,42 @@
     "mythic_horses_friendship_power_top_title": "友谊之力：是否将这张行动放到牌库顶？",
     "mythic_horses_friendship_power_top_option": "放到牌库顶",
     "mythic_horses_friendship_power_discard_option": "留在弃牌堆",
+    "diy_clowns_banana_peel_title": "香蕉皮：选择来源基地",
+    "diy_clowns_banana_peel_minions_title": "香蕉皮：选择至多两个要移动的己方随从",
+    "diy_clowns_banana_peel_base_title": "香蕉皮：选择目标基地",
+    "diy_clowns_clown_car_title": "小丑车：选择要移动到此基地的己方随从",
+    "diy_clowns_clown_pyramid_title": "小丑金字塔：选择获得 +2 力量的己方随从",
+    "diy_clowns_colorful_scarf_title": "彩色围巾：选择要转移的行动",
+    "diy_clowns_confetti_bucket_title": "五彩纸屑桶：选择要返回手牌的仆从",
+    "diy_clowns_pie_in_the_face_title": "馅饼砸脸：选择一个对手弃置行动",
+    "diy_clowns_clown_girl_title": "小丑女：选择要打出的额外行动",
+    "diy_clowns_mcdonald_clown_title": "麦当劳小丑：选择一张展示的行动加入手牌",
+    "base_diy_clowns_circus_tent_title": "马戏篷：是否弃掉展示的行动牌？",
+    "base_diy_clowns_circus_tent_discard_option": "弃掉行动牌",
+    "base_diy_clowns_circus_tent_keep_option": "放回牌库顶",
+    "diy_killers_chacha_choose_minion_title": "恰-恰-恰 哈-哈-哈：选择要移动的己方仆从",
+    "diy_killers_chacha_choose_base_title": "恰-恰-恰 哈-哈-哈：选择目标基地",
+    "diy_killers_cha_cha_cha_ha_ha_ha_followup_followup_title": "选择后续效果",
+    "diy_killers_followup_deck_top_option": "放到牌库顶",
+    "diy_killers_followup_extra_action_option": "打出一个额外行动",
+    "diy_killers_good_boy_title": "他是个好孩子!：选择要回收的仆从",
+    "diy_killers_is_it_over_title": "结束了?：选择要回收并额外打出的附着行动",
+    "diy_killers_signature_search_title": "杀人狂：选择是否抽取签名装备",
+    "diy_killers_oh_no_title": "哦 不！！！：选择获得 +3 力量的己方仆从",
+    "diy_killers_laundry_room_destroy_title": "躲藏在洗衣间：选择是否摧毁附着的仆从",
+    "diy_killers_laundry_room_escape_title": "躲藏在洗衣间：弃置并移动该仆从，或让其面临摧毁",
+    "diy_killers_savage_attack_title": "野蛮攻击：选择要摧毁的印刷力量 3 或以下仆从",
+    "diy_killers_savage_attack_boost_title": "野蛮攻击：选择获得 +3 力量的杀人狂",
+    "diy_killers_machete_title": "大砍刀：选择移动目标基地",
+    "diy_killers_freddy_krueger_destroy_title": "弗莱迪·克鲁格：选择是否摧毁力量 1 或以下的仆从",
+    "diy_killers_clawed_glove_title": "爪子手套：选择获得 -1 力量的仆从",
+    "diy_killers_pinhead_title": "钉子头：转移行动或摧毁带有地狱魔盒的仆从",
+    "diy_killers_leatherface_destroy_title": "人皮脸：选择是否摧毁力量 3 或以下的仆从",
+    "diy_killers_jason_destroy_title": "杰森：选择是否摧毁力量 3 或以下的仆从",
+    "diy_killers_chainsaw_move_title": "电锯：选择是否移动宿主",
+    "diy_killers_michael_myers_title": "麦克尔·麦尔斯：选择是否摧毁印刷力量 3 或以下的仆从",
+    "base_diy_killers_camp_crystal_lake_power_title": "水晶湖营地：选择获得力量的仆从",
+    "base_diy_killers_camp_crystal_lake_destroy_title": "水晶湖营地：选择是否摧毁这里的仆从",
     "reaction_choose_mandatory_title": "选择先结算的强制效果",
     "reaction_choose_optional_title": "选择一个反应动作",
     "titan_reaction_click_prompt": "点击高亮泰坦执行效果，或选择跳过",
@@ -1907,6 +1943,14 @@
       "name": "全明星",
       "description": "从经典派系精选的全明星阵容，专注抽牌、弃牌堆回收和额外出牌。"
     },
+    "diy_killers": {
+      "name": "杀人狂",
+      "description": "围绕摧毁、临时力量和恐怖片式反击节奏的 DIY 派系；当前已完成静态接入，完整牌效仍在实施中。"
+    },
+    "diy_clowns": {
+      "name": "小丑",
+      "description": "通过弃牌堆额外行动、抽牌和恶作剧式节奏展开的 DIY 派系；当前已完成静态接入，完整牌效仍在实施中。"
+    },
     "rock_stars": {
       "name": "摇滚明星",
       "description": "通过额外打出、检索和基地战力修正制造爆发；玩法仍在实现中。"
@@ -2038,6 +2082,34 @@
     "wraithrustlers": {
       "name": "怨灵捕手",
       "description": "以怨灵行动附着基地、摧毁行动和转移行动制造节奏。"
+    },
+    "polynesian_voyagers": {
+      "name": "波利尼西亚航海者",
+      "description": "用纹身、航路和新基地扩张版图，在无人驻守的基地之间移动并堆叠力量指示物。"
+    },
+    "new_round_table_knights": {
+      "name": "圆桌骑士",
+      "description": "围绕基地行动、移动和高力量随从协同的正统派系。玩法能力仍在实施中。"
+    },
+    "new_goblins": {
+      "name": "哥布林",
+      "description": "围绕投硬币和 +1 力量指示物展开的正统派系。投硬币玩法能力仍在实施中。"
+    },
+    "adolescent_epic_geckos": {
+      "name": "忍者神龟",
+      "description": "围绕本回合第几张战术展开；第一张战术常给额外战术，后续战术会变得更强。"
+    },
+    "gi_gerald": {
+      "name": "特种部队杰拉尔德",
+      "description": "大量融合卡提供随从面与战术面选择，可在同一张牌里切换火力与战场调度。"
+    },
+    "rulers_of_the_cosmos": {
+      "name": "宇宙的巨人希曼",
+      "description": "把战术打在随从上，为随从授予天赋并在天赋之间复制、转移与强化。"
+    },
+    "pearl_and_the_images": {
+      "name": "珍珠和幻像",
+      "description": "提高其他玩家随从的战力，再把这些提升转化为自己的标记、移动和得分优势。"
     }
   },
   "tutorial": {
@@ -9146,6 +9218,150 @@
       "name": "擂台边",
       "abilityText": "在你打出一个直接影响这里另一位玩家随从的行动后，抽 1 张牌。"
     },
+    "diy_killers_leatherface": {
+      "name": "人皮脸",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取电锯。\n持续：每回合一次，你放置一枚+1力量指示器到这个仆从身上后，你可以摧毁这里的一个力量3或更少的仆从。"
+    },
+    "diy_killers_freddy_krueger": {
+      "name": "弗莱迪·克鲁格",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取爪子手套。\n天赋：直到你的下个回合开始，这里其他玩家的仆从获得-1力量。你可以摧毁这里的一个力量1或更少的仆从。"
+    },
+    "diy_killers_jason": {
+      "name": "杰森",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取大砍刀。\n持续：每回合一次，这个仆从移动后，你可以摧毁那里的一个力量3或更少的仆从并获得+2力量直到回合结束。"
+    },
+    "diy_killers_michael_myers": {
+      "name": "麦克尔·麦尔斯",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取柯克船长面具。\n特殊：这个基地计分前，你可以摧毁这里的一个印刷力量3或更少的仆从。"
+    },
+    "diy_killers_pinhead": {
+      "name": "钉子头",
+      "abilityText": "你可以从你的牌库或弃牌堆抽取地狱魔盒。\n天赋：转移一个你的行动到另一个仆从身上，或摧毁一个身上有地狱魔盒的仆从。"
+    },
+    "diy_killers_captain_kirk_mask": {
+      "name": "柯克船长面具",
+      "effectText": "打出到你的仆从身上。\n持续：这里的一个或更多仆从被摧毁后，这个仆从获得被摧毁仆从的总力量直到回合结束。"
+    },
+    "diy_killers_savage_attack": {
+      "name": "野蛮攻击",
+      "effectText": "你可以在一个你有仆从的基地摧毁一个印刷力量3或更少的仆从，然后你可以让那里的一个杀人狂获得+3力量直到回合结束。"
+    },
+    "diy_killers_cha_cha_cha_ha_ha_ha": {
+      "name": "恰-恰-恰 哈-哈-哈",
+      "effectText": "移动一个你的仆从。你可以放置这张牌到你的牌库顶代替进入弃牌堆，或打出一个额外的行动。"
+    },
+    "diy_killers_chainsaw": {
+      "name": "电锯",
+      "effectText": "打出到你的仆从身上。\n持续：你的回合开始时，放置一枚+1力量指示器到这个仆从身上。一个仆从被摧毁后，你可以移动这个仆从到那个基地或从那个基地移动到另一个基地。"
+    },
+    "diy_killers_clawed_glove": {
+      "name": "爪子手套",
+      "effectText": "打出到你的仆从身上。\n天赋：这里的一个仆从获得-1力量直到你的下个回合开始。\n持续：这里的一个或更多仆从被摧毁后，放置一枚+1力量指示器到这个仆从身上。"
+    },
+    "diy_killers_good_boy": {
+      "name": "他是个好孩子!",
+      "effectText": "从你的弃牌堆放置一个仆从到你的手上，然后打出一个额外的行动。"
+    },
+    "diy_killers_laundry_room": {
+      "name": "躲藏在洗衣间",
+      "effectText": "打出到其他玩家的仆从身上。打出一个额外的行动。\n持续：一个杀人狂打出或移动到这里后，除非它的控制者丢弃一张手牌然后移动这个仆从到一个没有杀人狂的基地，否则你可以摧毁这个仆从。"
+    },
+    "diy_killers_improvised_weapon": {
+      "name": "简易武器",
+      "effectText": "从你的牌库抽一张打出在仆从身上的行动。你可以打出它作为额外的行动；在回合结束时摧毁它。"
+    },
+    "diy_killers_machete": {
+      "name": "大砍刀",
+      "effectText": "打出到你的仆从身上。\n天赋：移动这个仆从到一个有其他玩家仆从的基地。\n持续：这里的一个或更多仆从被摧毁后，你这里的每个仆从获得+1力量直到回合结束。在回合结束时，如果这个仆从本回合摧毁过一个仆从，返回这张牌到你的手上。"
+    },
+    "diy_killers_oh_no": {
+      "name": "哦 不！！！",
+      "effectText": "一个你的仆从获得+3力量直到回合结束。\n特殊：你摧毁其他玩家的仆从后，你可以打出这张牌作为额外的行动。"
+    },
+    "diy_killers_origin_story": {
+      "name": "起源故事",
+      "effectText": "从你的牌库顶抽一个仆从，或如果你没有杀人狂在游戏中，从你的牌库顶抽一个杀人狂。打出一个额外的行动。"
+    },
+    "diy_killers_hell_puzzle_box": {
+      "name": "地狱魔盒",
+      "effectText": "打出到你的仆从身上。\n持续：如果这个仆从不是你控制，取消它的能力。一个或更多个仆从被摧毁后，抽一张牌。"
+    },
+    "diy_killers_is_it_over": {
+      "name": "结束了?",
+      "effectText": "从你的弃牌堆抽一个打出在仆从身上的行动。你可以打出它作为额外的行动。"
+    },
+    "base_diy_killers_camp_crystal_lake": {
+      "name": "水晶湖营地",
+      "abilityText": "你摧毁这里的一个仆从后，这里的一个仆从获得被摧毁仆从的总力量直到回合结束。每回合一次，你打出一张牌后，你可以摧毁这里一个力量不大于你在这个基地的牌的数量的仆从。"
+    },
+    "base_diy_killers_nightmare_world": {
+      "name": "梦魇世界",
+      "abilityText": "这个基地计分前，摧毁这里力量最小的仆从。如果有多个力量最小的仆从，摧毁所有这些仆从。"
+    },
+    "diy_clowns_slapstick_clown": {
+      "name": "滑稽小丑",
+      "abilityText": "持续：你可以从你的弃牌堆打出一张标准行动来代替你的通常行动打出，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_mrs_clown": {
+      "name": "小丑夫人",
+      "abilityText": "持续：每回合一次，你打出一个行动后，你可以抽一张牌。"
+    },
+    "diy_clowns_dancing_clown": {
+      "name": "跳舞小丑",
+      "abilityText": "天赋：如果你的弃牌堆有至少两个标准行动，随机选择它们中的一个，你可以打出它作为额外的行动，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_mcdonald_clown": {
+      "name": "麦当劳小丑",
+      "abilityText": "展示你牌库顶的牌直到展示出两张行动。抽取一张然后丢弃另一张。重洗剩下的进你的牌库。"
+    },
+    "diy_clowns_silent_clown": {
+      "name": "沉默小丑",
+      "abilityText": "如果你这回合还未打出过行动，你可以选择你弃牌堆中的一张标准行动，打出它作为额外的行动，然后放置它到你的牌库底来代替进入你的手上或弃牌堆。"
+    },
+    "diy_clowns_clown_girl": {
+      "name": "小丑女",
+      "abilityText": "你可以搜索你的牌库来寻找一张行动牌，然后丢弃它。"
+    },
+    "diy_clowns_banana_peel": {
+      "name": "香蕉皮",
+      "effectText": "移动至多两个你的仆从从一个基地到另一个基地。如果这张牌是从弃牌堆打出的，你可以打出一个额外的行动。"
+    },
+    "diy_clowns_clown_car": {
+      "name": "小丑车",
+      "effectText": "从你的弃牌堆重洗至多两张牌到你的牌库。如果这张牌是从弃牌堆打出的，你可以打出一个额外的行动。"
+    },
+    "diy_clowns_jack_in_the_box": {
+      "name": "惊吓盒",
+      "effectText": "打出一个力量3或更少的额外仆从。如果这张牌是从弃牌堆打出的，你能打出的仆从力量改为4或更少。"
+    },
+    "diy_clowns_clown_pyramid": {
+      "name": "小丑金字塔",
+      "effectText": "这个基地上的每个你的仆从让你这里的一个仆从获得+1力量直到回合结束。你可以打出一个额外的行动。"
+    },
+    "diy_clowns_colorful_scarf": {
+      "name": "彩色围巾",
+      "effectText": "抽两张牌。如果这张牌是从弃牌堆打出的，你可以丢弃一张牌来额外抽一张牌。"
+    },
+    "diy_clowns_confetti_bucket": {
+      "name": "五彩纸屑桶",
+      "effectText": "丢弃至多四张手牌，然后抽取等量的牌。"
+    },
+    "diy_clowns_juggling": {
+      "name": "杂耍",
+      "effectText": "每个玩家查看他牌库顶的三张牌，丢弃其中一张行动或展示它们证明没有行动，然后以相同的顺序返回它们。"
+    },
+    "diy_clowns_pie_in_the_face": {
+      "name": "馅饼砸脸",
+      "effectText": "一个你的仆从获得+2力量直到回合结束。如果这张牌是从弃牌堆打出的，改为这个仆从获得+4力量代替。"
+    },
+    "base_diy_clowns_clown_academy": {
+      "name": "小丑学院",
+      "abilityText": "每回合你第一次打出仆从到这里后，你可以从你的弃牌堆随机放置一张标准行动到你的手上。"
+    },
+    "base_diy_clowns_circus_tent": {
+      "name": "马戏篷",
+      "abilityText": "你打出一个仆从到这里后，展示你牌库顶的牌。如果它是行动牌你可以丢弃它，否则返回它。"
+    },
     "base_the_squared_circle": {
       "name": "方形擂台",
       "abilityText": "每回合第一次你在这里打出随从后，你可以随机将你弃牌堆中的一个行动置入手牌。"
@@ -10649,6 +10865,446 @@
     "base_wraithrustlers_hq": {
       "name": "怨灵捕手总部",
       "abilityText": "临界点 20 - VP：4/2/1 - 获胜者在其下个回合可以打出 1 张额外行动或 1 个额外佣兵。"
+    },
+    "polynesian_voyagers_growth_of_the_tribes": {
+      "name": "部落的成长",
+      "effectText": "选择一个你没有随从的基地。你可以在那里额外打出一个随从，或将你的一个随从移动到那里。"
+    },
+    "polynesian_voyagers_knowledge_of_the_tribes": {
+      "name": "部落的知识",
+      "effectText": "你在每个有你随从的基地各抽一张牌。"
+    },
+    "polynesian_voyagers_moai": {
+      "name": "莫艾",
+      "abilityText": "持续：其他玩家不能将他们的随从移动到这个基地，也不能将此随从移动到其他基地。"
+    },
+    "polynesian_voyagers_tiki": {
+      "name": "蒂基",
+      "abilityText": "持续：若此随从上有行动，此随从获得 +2 力量。"
+    },
+    "polynesian_voyagers_wayfinder": {
+      "name": "寻路者",
+      "abilityText": "天赋：将此随从移动到一个你没有随从的基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_maui": {
+      "name": "毛伊人",
+      "abilityText": "将基地牌库顶至多两张牌打出。天赋：将你的一个随从移动到一个你没有随从的基地。"
+    },
+    "polynesian_voyagers_ocean_tattoo": {
+      "name": "海洋纹身",
+      "effectText": "打在一个没有其他玩家随从的基地上你的随从身上。天赋：将此随从移动到另一个基地，并在其上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_tattoo_artist": {
+      "name": "纹身艺术家",
+      "effectText": "从你的牌库和/或弃牌堆寻找一张可以打在随从上的行动，将其加入手牌，或作为额外行动打出。"
+    },
+    "polynesian_voyagers_unity_of_the_tribes": {
+      "name": "部落的统一",
+      "effectText": "选择一个有你随从的基地。每个有你至少一个随从的基地上，你的每个随从直到回合结束获得 +2 力量。"
+    },
+    "polynesian_voyagers_volcanic_uprising": {
+      "name": "火山爆发",
+      "effectText": "打出基地牌库顶牌。然后你可以将你的一个随从移动到那里。或者，摧毁一个没有玩家随从的基地，然后以两个基地取代它。"
+    },
+    "polynesian_voyagers_shark_tattoo": {
+      "name": "鲨鱼纹身",
+      "effectText": "打在你的一个随从身上。在其上放置一个 +1 力量指示物。持续：你的回合开始时，若这里只存在你一个随从，在此随从上放置一个 +1 力量指示物。"
+    },
+    "polynesian_voyagers_sun_tattoo": {
+      "name": "太阳纹身",
+      "effectText": "打在你的一个随从身上。持续：此随从获得 +2 力量。特殊：基地计分后，你可以将此牌打在该基地上一个没有行动的你的随从身上，并将该随从移动到另一个基地，而不是放入弃牌堆。"
+    },
+    "base_island_chain": {
+      "name": "岛链",
+      "abilityText": "此基地计分后，打出基地牌库顶牌作为一个额外基地。"
+    },
+    "base_island_peak": {
+      "name": "岛峰",
+      "abilityText": "你的回合开始时，若你在这里正好有一个随从，在其上放置一个 +1 力量指示物。"
+    },
+    "base_tropical_paradise": {
+      "name": "热带天堂",
+      "abilityText": "若每位玩家在这里都有一个或更多随从，此基地的起始断点为 0。"
+    },
+    "new_round_table_knights_king_arthur": {
+      "name": "亚瑟王",
+      "abilityText": "天赋：移动一个你的1仆从从另一个基地到这里。如果你这么做了，且你有行动在这里，放置一枚+1力量指示器到它身上。"
+    },
+    "new_round_table_knights_galahad": {
+      "name": "加拉哈德",
+      "abilityText": "搜索你的牌库来寻找一张打出在基地上的行动然后放置它到你的牌库顶。特殊：这个基地计分前，你可以转移你在这里的一张行动到其他基地。"
+    },
+    "new_round_table_knights_gawain": {
+      "name": "加文",
+      "abilityText": "持续：每个你在这里的力量4或更多的仆从，让这个仆从获得+1力量。"
+    },
+    "new_round_table_knights_guinevere": {
+      "name": "格尼薇儿",
+      "abilityText": "天赋：移动另一个你的仆从从这里到另一个基地。持续：你在基地上的行动不能被其他玩家的能力摧毁。"
+    },
+    "new_round_table_knights_lancelot": {
+      "name": "兰斯洛特",
+      "abilityText": "持续：这个仆从移动到你有一或更多个行动的基地后，放置一枚+1力量指示器到这个仆从身上。"
+    },
+    "new_round_table_knights_merlin": {
+      "name": "梅林",
+      "abilityText": "天赋：展示你牌库顶的牌。如果它是行动，抽取它或打出它作为额外的行动，否则返回它。"
+    },
+    "new_round_table_knights_percival": {
+      "name": "帕西瓦尔",
+      "abilityText": "天赋：移动这个仆从到你有一或更多个行动的其他基地。"
+    },
+    "new_round_table_knights_quest": {
+      "name": "任务",
+      "effectText": "打出到一个你的仆从身上。你可以移动这个仆从。持续：当这个仆从将要进入弃牌堆时，放置它到你的牌库顶代替。"
+    },
+    "new_round_table_knights_sword_in_the_stone": {
+      "name": "石中剑",
+      "effectText": "打出到一个你的仆从身上。持续：这个仆从获得+2力量且不能被其他玩家的牌摧毁。特殊：当这个基地计分时，如果这个仆从是亚瑟王，获得1VP。"
+    },
+    "new_round_table_knights_do_good": {
+      "name": "做好事",
+      "effectText": "打出到一个基地上。抽一张牌。持续：一个你的仆从移动到这里后，你可以转移这张牌到另一个基地然后抽一张牌。做好事的能力每回合只能使用一次。"
+    },
+    "new_round_table_knights_merlins_library": {
+      "name": "梅林藏书馆",
+      "effectText": "打出到一个基地上。天赋：打出一个额外的仆从到这里 OR 移动一个你的仆从到这里 OR 转移这张牌到另一个基地。"
+    },
+    "new_round_table_knights_steed": {
+      "name": "骏马",
+      "effectText": "打出到一个你的仆从身上。天赋：移动这个仆从到另一个基地。"
+    },
+    "new_round_table_knights_fisher_king": {
+      "name": "渔夫王",
+      "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，抽一张牌。然后如果你的手上有八或更多张牌，摧毁这张牌来获得1VP。"
+    },
+    "new_round_table_knights_holy_grail": {
+      "name": "圣杯",
+      "effectText": "打出到没有你的行动的基地上。持续：一个你的仆从移动到这里后，如果你有三或更多个力量4或更多的仆从在这里，放置这张牌到盒子里来获得2VP。"
+    },
+    "new_round_table_knights_green_knight": {
+      "name": "绿衣骑士",
+      "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，放置一枚+1力量指示器到它们中的一个身上。然后如果那个仆从拥有力量7或更多，摧毁这张牌来获得1VP。"
+    },
+    "new_round_table_knights_lady_of_the_lake": {
+      "name": "湖中女神",
+      "effectText": "搜索你的牌库和/或弃牌堆来寻找一张打出到仆从身上的行动。抽取它或打出它作为额外的行动。"
+    },
+    "new_round_table_knights_mists_of_avalon": {
+      "name": "阿瓦隆的迷雾",
+      "effectText": "从你的弃牌堆重洗至多三个仆从到你的牌库。"
+    },
+    "new_round_table_knights_questing_beast": {
+      "name": "追踪野兽",
+      "effectText": "打出到一个基地上。持续：一或更多个你的仆从移动到这里后，放置一枚+1力量指示器到它们中的一个身上然后转移这张牌到另一个基地。"
+    },
+    "base_arthurs_court": {
+      "name": "亚瑟王宫",
+      "abilityText": "这里印刷力量4或更多的仆从不能被其他玩家的卡牌影响。轮到你时，你可以移动一个你的仆从从这里到另一个基地。"
+    },
+    "base_round_table": {
+      "name": "圆桌会议",
+      "abilityText": "在这里你的每个相同印刷力量的仆从获得+1力量。"
+    },
+    "new_goblins_chaos_goblin": {
+      "name": "混沌哥布林",
+      "abilityText": "持续：你投掷一枚硬币后，如果是正面，放置一枚+1力量指示器到你的一个仆从身上；如果是反面，抽一张牌然后丢弃一张牌。"
+    },
+    "new_goblins_oracle_goblin": {
+      "name": "先知哥布林",
+      "abilityText": "持续：每回合一次，你投掷一枚硬币后，你可以立即丢弃一张牌来改变投掷结果。每回合你第一次投掷一枚硬币后，抽一张牌。"
+    },
+    "new_goblins_bomb_goblin": {
+      "name": "爆弹哥布林",
+      "abilityText": "特殊：这个基地计分前，投掷一枚硬币。如果是正面，你可以让这个仆从获得+2力量直到回合结束。如果是反面，你可以移动这个仆从到另一个基地。"
+    },
+    "new_goblins_goblin": {
+      "name": "哥布林",
+      "abilityText": "为游戏中的每个哥布林（包括这个）投掷一枚硬币。每投掷一个正面，放置一枚+1力量指示器到这个仆从身上。"
+    },
+    "new_goblins_magic_helmet": {
+      "name": "“魔法”头盔",
+      "effectText": "打出到你的仆从身上。持续：这个仆从获得+4的力量。这个基地计分前，投掷一枚硬币。如果是反面，摧毁这个仆从。"
+    },
+    "new_goblins_a_little_help": {
+      "name": "一点帮助",
+      "effectText": "投掷一枚硬币。如果是正面，你可以打出一个额外的仆从。如果是反面，你可以打出两个额外的行动。"
+    },
+    "new_goblins_ambush": {
+      "name": "伏击",
+      "effectText": "选择一个仆从然后投掷一枚硬币。如果是正面，摧毁这个仆从。如果是反面，移动它到另一个基地。"
+    },
+    "new_goblins_blast": {
+      "name": "爆破",
+      "effectText": "投掷三枚硬币。每投掷一个正面，放置一枚+1力量指示器到你的一个仆从身上。每投掷一个反面，你可以摧毁基地或仆从身上的一个行动。"
+    },
+    "new_goblins_recruiters": {
+      "name": "哥布林招聘人员",
+      "effectText": "打出到一个基地上。持续：你投掷一枚硬币后，如果是正面，抽一张牌；如果是反面，你可以从你的弃牌堆重洗一张牌到你的牌库。"
+    },
+    "new_goblins_who_smelted_it": {
+      "name": "是谁冶炼它",
+      "effectText": "选择一个仆从然后投掷一枚硬币。如果是正面，放置一枚+1力量指示器到那个仆从身上然后你可以选择另一个仆从然后再次投掷硬币。如果是反面，你可以打出一个额外的行动。"
+    },
+    "new_goblins_make_your_own_luck": {
+      "name": "自己制造好运",
+      "effectText": "特殊：你投掷一枚硬币后立即打出。改变投掷结果。"
+    },
+    "new_goblins_speed_boost": {
+      "name": "速度提升",
+      "effectText": "选择一个基地。为每个你在那里的仆从投掷一枚硬币。每投掷一个正面，在那个仆从身上放置一枚+1力量指示器。每投掷一个反面，那个仆从获得+2力量直到回合结束。"
+    },
+    "base_goblin_caves": {
+      "name": "哥布林洞穴",
+      "abilityText": "这个基地计分后，每个有仆从在那里的玩家可以投掷一枚硬币。如果是正面，他们获得1VP。如果是反面，他们丢弃两张牌。"
+    },
+    "base_goblin_village": {
+      "name": "哥布林村",
+      "abilityText": "你打出一个仆从到这里后，投掷一枚硬币。如果是正面，放置一枚+1力量指示器到那个仆从身上。"
+    },
+    "geckos_hokusai": {
+      "name": "北斋",
+      "abilityText": "你可以在你的一个随从上放置 1 枚 +1 战力标记。天赋：如果你本回合已打出至少两张战术，每个基地各选择一个随从，在其上放置 1 枚 +1 战力标记。"
+    },
+    "geckos_kandinsky": {
+      "name": "康定斯基",
+      "abilityText": "此随从直到回合结束 +1 战力。天赋：如果你本回合已打出至少两张战术，使此随从直到回合结束 +2 战力，或将你的另一个随从移动到这里。"
+    },
+    "geckos_monet": {
+      "name": "莫奈",
+      "abilityText": "抓 1 张牌。持续：任何你可以打出战术的时候，你可以改为抓 1 张牌，并像你打出了一张战术一样触发所有能力。"
+    },
+    "geckos_van_gogh": {
+      "name": "梵高",
+      "abilityText": "你可以将你弃牌堆中的一张标准战术洗入牌库。持续：你打出标准战术后，可以将其存放在此牌下。你的回合开始时或你赢得此基地后，将此牌下所有牌洗入你的牌库。"
+    },
+    "geckos_june": {
+      "name": "爱普莉尔·奥尼尔",
+      "abilityText": "如果你有一张印刷战力为 4 的随从在场，你可以将它与你手牌或牌库中一张不同名称的随从交换；否则，你可以抓你牌库顶一张牌。"
+    },
+    "geckos_breaking_news": {
+      "name": "爆炸新闻",
+      "effectText": "查看你牌库顶 4 张牌。抓其中 1 张，并将其余牌以任意顺序放回。如果这是你本回合打出的第一张战术，额外打出一张战术。"
+    },
+    "geckos_flip_kick": {
+      "name": "回旋踢",
+      "effectText": "抓 1 张牌。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，再多抓 2 张牌。"
+    },
+    "geckos_gecko_blimp": {
+      "name": "壁虎飞艇",
+      "effectText": "如果这是你本回合打出的第一张战术，移动你的一个随从并额外打出一张战术；否则，移动任意一个随从。"
+    },
+    "geckos_gecko_power": {
+      "name": "壁虎力量",
+      "effectText": "打在一个随从上。天赋：如果你本回合已打出至少两张其他战术，移动此随从，或在其上放置 1 枚 +1 战力标记，或使其直到回合结束 +2 战力。"
+    },
+    "geckos_gecko_rap": {
+      "name": "壁虎说唱",
+      "effectText": "将你的一个在场随从与你手牌、牌库或弃牌堆中一张不同名称且战力等于或低于它的随从交换。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，在新随从上放置 1 枚 +1 战力标记。"
+    },
+    "geckos_lasagna_party": {
+      "name": "千层饼派对",
+      "effectText": "额外打出一个战力 2 或以下的随从。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，在该基地的一个随从上放置 2 枚 +1 战力标记。"
+    },
+    "geckos_now_you_know_bullying": {
+      "name": "现在你知道：校园暴力",
+      "effectText": "移动你的一个随从。特殊：一个你没有获胜的基地计分后，你可以打出此牌，改为将你在那里一个随从返回手牌。"
+    },
+    "geckos_masters_teachings": {
+      "name": "大师的教学",
+      "effectText": "在你的一个随从上放置 2 枚 +1 战力标记。如果这是你本回合打出的第一张战术，额外打出一张战术；否则，你可以使该随从直到回合结束 +2 战力。"
+    },
+    "geckos_kc_smith": {
+      "name": "凯西·琼斯",
+      "abilityText": "随从：额外打出一张战术。|战术：额外打出一个随从。"
+    },
+    "gi_gerald_viscount": {
+      "name": "子爵",
+      "abilityText": "持续：每回合一次，在你打出一张融合卡并使用其战术能力后，你可以使此随从直到回合结束 +2 战力，或在其上放置 1 枚 +1 战力标记。"
+    },
+    "gi_gerald_go_gerald": {
+      "name": "出发，杰拉尔德！",
+      "effectText": "选择一个基地。使你本回合在那里打出的每个随从直到回合结束 +2 战力。"
+    },
+    "gi_gerald_now_you_know_home_safety": {
+      "name": "现在你知道：家庭安全",
+      "effectText": "额外打出一个战力 2 或以下的随从。如果它是融合卡，你还可以使用它的战术能力。特殊：你可以在基地计分前打出此牌，改为复制那里你的一个融合卡的战术能力。"
+    },
+    "gi_gerald_mowat": {
+      "name": "卡车式火炮",
+      "abilityText": "随从：你可以使另一个随从直到回合结束 +1 战力。|战术：使一个随从直到回合结束 +3 战力。"
+    },
+    "gi_gerald_obstruction": {
+      "name": "路霸",
+      "abilityText": "随从：你在这里的每个随从直到回合结束 +1 战力。|战术：将一个战力 3 或以下的随从置于其拥有者牌库底。"
+    },
+    "gi_gerald_sawbones": {
+      "name": "外科医生",
+      "abilityText": "随从：将你弃牌堆中的一张战术洗入你的牌库。|战术：将你弃牌堆中的一个随从洗入你的牌库。"
+    },
+    "gi_gerald_ski_lift": {
+      "name": "滑雪缆车",
+      "abilityText": "随从：你可以将你的一个随从从另一个基地移动到这里。|战术：移动一个随从。"
+    },
+    "gi_gerald_can_do": {
+      "name": "偏激者",
+      "abilityText": "随从：你可以在这里额外打出一个战力 2 或以下的随从，或额外打出一张战术。|战术：你可以额外打出一个战力 2 或以下的随从，并额外打出一张战术。"
+    },
+    "gi_gerald_mabel_lean": {
+      "name": "封面女郎",
+      "abilityText": "随从：如果这是你在这里唯一的随从，你可以在其上放置 1 枚 +1 战力标记。|战术：额外打出一个战力 2 或以下的随从。"
+    },
+    "gi_gerald_shellback": {
+      "name": "老水手",
+      "abilityText": "随从：你可以将你的一个非“老水手”融合卡返回手牌。|战术：复制你场上另一个融合卡的战术能力。"
+    },
+    "gi_gerald_dice_ninja": {
+      "name": "骰子忍者",
+      "abilityText": "随从：抓 1 张牌。|战术：抓 2 张牌。"
+    },
+    "gi_gerald_rosie": {
+      "name": "罗西",
+      "abilityText": "随从：你可以在这里另一个随从上放置 1 枚 +1 战力标记。|战术：在你的随从上合计放置 2 枚 +1 战力标记。"
+    },
+    "rulers_cosmos_gal_woman": {
+      "name": "希瑞",
+      "abilityText": "天赋：从任意玩家弃牌堆中额外打出一张打在随从上的战术。回合结束时，或当它离场时，将其置于拥有者牌库底。"
+    },
+    "rulers_cosmos_guy_man": {
+      "name": "希曼",
+      "abilityText": "天赋：复制你的另一个随从的天赋。"
+    },
+    "rulers_cosmos_andko": {
+      "name": "奥克",
+      "abilityText": "天赋：在一个没有战术附着的随从上额外打出一张战术。"
+    },
+    "rulers_cosmos_man_with_arms": {
+      "name": "邓肯武士",
+      "abilityText": "天赋：如果此随从上有战术，它直到你下回合开始 +2 战力。持续：每回合一次，当此随从将要使用由战术给予的天赋时，它可以改为额外使用它的另一个天赋一次。"
+    },
+    "rulers_cosmos_frogga": {
+      "name": "蛙人",
+      "abilityText": "从你的牌库顶抓一张打在随从上的战术。持续：当此随从离场时，你可以将它身上的一张战术洗入你的牌库。"
+    },
+    "rulers_cosmos_young_noble": {
+      "name": "年轻的贵族",
+      "abilityText": "天赋：如果此随从上有一张“剑”牌，将此随从与你手牌、牌库或弃牌堆中一个战力 5 或以上的随从交换。"
+    },
+    "rulers_cosmos_armor_of_battle": {
+      "name": "战斗盔甲",
+      "effectText": "打在一个随从上。持续：此随从获得能力：“天赋：此基地每有一个你控制且附着有战术的随从，将此基地的摧毁点提高 2，直到你下回合开始。”"
+    },
+    "rulers_cosmos_dolts_halfwits_fools_morons": {
+      "name": "傻瓜们！",
+      "effectText": "将你的随从上的任意数量战术转移到你的其他随从上。每个被转入战术的你的随从各放置 1 枚 +1 战力标记。"
+    },
+    "rulers_cosmos_fearless_friend": {
+      "name": "无畏的伙伴",
+      "effectText": "打在你的一个随从上。持续：此随从获得能力：“天赋：移动此随从。”"
+    },
+    "rulers_cosmos_magic_weapon": {
+      "name": "魔法武器",
+      "effectText": "打在一个随从上。持续：此随从获得能力：“天赋：此基地每有一位玩家有随从在这里，此随从直到你下回合开始 +1 战力；或如果此随从上只有一张战术，抓 1 张牌。”"
+    },
+    "rulers_cosmos_myaaah": {
+      "name": "玛雅!",
+      "effectText": "将你的一个随从上或你弃牌堆中的一张打在随从上的战术返回其拥有者手牌。将其作为额外战术打出。"
+    },
+    "rulers_cosmos_mystic_transference": {
+      "name": "神秘转移",
+      "effectText": "打在你的一个随从上。持续：在每位其他玩家回合开始时，选择你场上一张给予天赋的战术。此随从可以立即复制该天赋。天赋：在此随从和你的另一个随从之间转移你的一个战术。"
+    },
+    "rulers_cosmos_now_you_know_toxic_waste": {
+      "name": "现在你知道：有毒废弃物",
+      "effectText": "从你的牌库中抓一张打在随从上的战术。特殊：你可以在基地计分前打出此牌，改为将你的一个随从上的战术转移到另一个随从上；然后你可以使用被转入战术的那个随从上的一个天赋。"
+    },
+    "rulers_cosmos_powerful_sword": {
+      "name": "魔法之剑",
+      "effectText": "打在你的一个随从上。持续：此随从获得能力：“天赋：此随从直到你下回合开始不受其他玩家卡牌影响。” 天赋：将此随从上的另一张战术转移到你的另一个随从上。"
+    },
+    "rulers_cosmos_sword_thats_powerful": {
+      "name": "力量之剑",
+      "effectText": "打在你的一个随从上。持续：此随从获得能力：“天赋：在此随从上放置 1 枚 +1 战力标记。” 如果此随从的印刷战力为 5 或以上，它 +2 战力。"
+    },
+    "pearl_images_pearl": {
+      "name": "珍珠",
+      "abilityText": "天赋：从你的牌库顶抓一个战力 2 或以下的随从，或使这里的一个随从直到回合结束 +1 战力。"
+    },
+    "pearl_images_crystal": {
+      "name": "水晶",
+      "abilityText": "天赋：在另一位玩家的一个随从上放置 1 枚 +1 战力标记，以在同一基地你的一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "pearl_images_ruby": {
+      "name": "红宝石",
+      "abilityText": "你可以使这里所有玩家的随从直到回合结束 +1 战力。"
+    },
+    "pearl_images_topaz": {
+      "name": "黄玉",
+      "abilityText": "持续：每回合一次，在另一位玩家一个随从的战力增加后，你可以在此随从上放置 1 枚 +1 战力标记；或如果你在那里有随从，你可以将此随从移动到那里。"
+    },
+    "pearl_images_alls_right_with_the_world": {
+      "name": "世界一切安好",
+      "effectText": "打在一个基地上。天赋：使这里所有玩家的随从直到回合结束 +1 战力；或每位玩家各选择其一个在这里的随从，使其直到回合结束 +2 战力。"
+    },
+    "pearl_images_dressing_room": {
+      "name": "化妆间",
+      "effectText": "每位玩家可以抓 1 张牌。每有一位玩家如此做，你抓 1 张牌，包括你自己。"
+    },
+    "pearl_images_jam_all_night_long": {
+      "name": "玩乐一整夜",
+      "effectText": "打在一个基地上。天赋：选择一位玩家，使其在这里额外打出一个战力 2 或以下的随从，或展示一手没有此类随从的手牌。然后，如果你选择的是另一位玩家且其打出了随从，你可以抓 1 张牌或在这里一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "pearl_images_love_unites_us": {
+      "name": "爱联结我们",
+      "effectText": "所有玩家将其弃牌堆中所有战力 2 或以下的随从洗入其牌库。"
+    },
+    "pearl_images_now_you_know_bike_safety": {
+      "name": "现在你知道：自行车安全",
+      "effectText": "选择基地上你的一个随从。将该随从和那里另一位玩家的一个随从移动到另一个基地。特殊：你可以在基地计分前打出此牌；将所选择的随从移动到正在计分的基地。"
+    },
+    "pearl_images_shes_got_the_power": {
+      "name": "她得到的力量",
+      "effectText": "打在一个随从上。持续：每回合一次，在这里另一位玩家一个随从的战力增加后，你可以使此随从直到回合结束 +3 战力。"
+    },
+    "pearl_images_truly_outstanding": {
+      "name": "杰出表彰",
+      "effectText": "在任意数量的其他玩家随从上各放置 1 枚 +1 战力标记。每放置一枚，你可以在你的一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "pearl_images_were_up_youre_down": {
+      "name": "我们上，你们下",
+      "effectText": "选择一个基地。直到你下回合开始，其他玩家在那里的随从只将其印刷战力计入其控制者在那里的总战力。特殊：你可以在一个你拥有最多随从的基地计分前打出此牌。你必须选择该基地。"
+    },
+    "base_sewer_hideout": {
+      "name": "下水道隐蔽处",
+      "abilityText": "你一回合中的第二张战术打出后，你可以在这里一个随从上放置 1 枚 +1 战力标记。"
+    },
+    "base_technoball": {
+      "name": "科技球",
+      "abilityText": "每回合你第一次在这里打出随从后，你可以额外打出一张战术。"
+    },
+    "base_gi_geralds_base": {
+      "name": "杰拉尔德基地",
+      "abilityText": "每回合一次，在你在这里打出随从后，你可以抓 1 张牌，并将你手牌中的 1 张牌置于牌库底。"
+    },
+    "base_uss_banner": {
+      "name": "美国海军旗帜号",
+      "abilityText": "在你的回合，你可以在这里额外打出一个战力 2 或以下的随从。如果回合结束时你控制它，将其置于你的牌库顶。"
+    },
+    "base_power_castle": {
+      "name": "力量城堡",
+      "abilityText": "每回合一次，在有战术打在或转移到这里一个随从上后，你可以在该随从上放置 1 枚 +1 战力标记。"
+    },
+    "base_slime_pool": {
+      "name": "粘液池",
+      "abilityText": "你可以不打出你的常规战术，改为从你的牌库顶将一张打在随从上的战术打到这里的一个随从上。"
+    },
+    "base_concert_venue": {
+      "name": "音乐会场地",
+      "abilityText": "每回合你第一次在这里打出随从后，你可以在其上放置 1 枚 +1 战力标记。"
+    },
+    "base_recording_studio": {
+      "name": "录音室",
+      "abilityText": "每回合开始时，这里所有玩家的随从直到回合结束 +1 战力。"
     }
   },
   "debug": {
