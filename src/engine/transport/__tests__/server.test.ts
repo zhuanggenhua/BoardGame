@@ -21017,6 +21017,171 @@ describe('GameTransportServer（离座与重连）', () => {
         }
     });
 
+    it('online AI watchdog 在 summonerwars 观察到 AI 已恢复时也应写入系统反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const gameConfig = createEngineConfigWithId('summonerwars');
+
+        await storage.createMatch('match-watchdog-summonerwars-observed-recovery', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                        turnOrder: ['0', '1'],
+                        hostStarted: false,
+                        hostPlayerId: '0',
+                        selectedFactions: {
+                            '0': 'necromancer',
+                            '1': 'unselected',
+                        },
+                        readyPlayers: {
+                            '0': false,
+                            '1': false,
+                        },
+                    },
+                    sys: {
+                        phase: 'summon',
+                        turnNumber: 1,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: 'summonerwars',
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [gameConfig],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoverySequence: (
+                match: any,
+                tracker: any,
+                candidate: any,
+                progressMarkerBeforeRecovery: string,
+                seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai'; policyId?: string }>,
+            ) => Promise<void>;
+        };
+
+        const tryRecoverSpy = vi.spyOn(server as any, 'tryRecoverOnlineAiWithLegalAction').mockImplementation(async (activeMatch: any) => {
+            activeMatch.state = {
+                ...activeMatch.state,
+                core: {
+                    ...activeMatch.state.core,
+                    selectedFactions: {
+                        ...activeMatch.state.core.selectedFactions,
+                        '1': 'yongheng',
+                    },
+                },
+                sys: {
+                    ...activeMatch.state.sys,
+                    eventStream: { nextId: 3 },
+                },
+            };
+            return {
+                applied: true,
+                resolved: true,
+                blockedReason: null,
+                executedCommandTypes: ['sw:select_faction'],
+                outcome: 'applied',
+                reportedAction: null,
+            };
+        });
+        const resolveCandidateSpy = vi.spyOn(server as any, 'resolveOnlineAiRecoveryCandidate').mockResolvedValue(null);
+
+        try {
+            const match = await serverInternal.loadMatch('match-watchdog-summonerwars-observed-recovery');
+            const candidate = {
+                playerId: '1',
+                reason: 'seat-legal-only',
+                legalActionOnly: true,
+                fingerprintHint: 'seat-legal-only:1:summon:setup-select-faction:sw:select-faction:yongheng',
+                resolution: {
+                    playerId: '1',
+                    attemptKey: 'force-end-turn:1:summonerwars-observed-recovery',
+                    source: 'local-ai',
+                    action: {
+                        actionId: 'force-end-turn:summonerwars-observed-recovery',
+                        kind: 'force-end-turn',
+                        label: '服务端观察 AI 恢复',
+                        commands: [],
+                    },
+                },
+            };
+            const progressMarker = buildAiProgressMarker(match.state, {
+                engineConfig: gameConfig,
+                gameId: 'summonerwars',
+            });
+            const tracker = {
+                key: '1:seat-legal-only:observed-recovery',
+                firstSeenAt: Date.now(),
+                autoSubmittedAt: Date.now(),
+                lastReportedFailureReason: null,
+                failureCount: 0,
+            };
+
+            await serverInternal.runOnlineAiRecoverySequence(
+                match,
+                tracker,
+                candidate,
+                progressMarker,
+                {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'baseline' },
+                },
+            );
+
+            expect(match.state.core.selectedFactions).toMatchObject({
+                '0': 'necromancer',
+                '1': 'yongheng',
+            });
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-summonerwars-observed-recovery',
+                playerId: '1',
+                incidentKind: 'observed-recovery',
+                status: 'resolved',
+                reason: 'seat-legal-only:observed-progress',
+            }));
+            const payload = feedbackReporter.mock.calls[0]?.[0] as {
+                trackerKey?: string;
+                stateSnapshot?: string;
+                actionLog?: string;
+            } | undefined;
+            const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+            expect(snapshot.blockerFingerprint).toContain('seat-legal-only');
+            expect(snapshot.blockerFingerprint).toContain('summon');
+            expect(snapshot.trackerKey).toBe(payload?.trackerKey);
+
+            const actionLog = JSON.parse(payload?.actionLog ?? '{}');
+            expect(actionLog.blockerFingerprint).toContain('seat-legal-only');
+            expect(actionLog.trackerKey).toBe(payload?.trackerKey);
+        } finally {
+            tryRecoverSpy.mockRestore();
+            resolveCandidateSpy.mockRestore();
+        }
+    });
+
     it('online AI watchdog 在 human active 的 off-turn 防御阶段也应代 AI 执行合法动作，避免 defensiveRoll 卡死', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

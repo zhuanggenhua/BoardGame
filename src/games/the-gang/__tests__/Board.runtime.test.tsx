@@ -49,7 +49,6 @@ const standardCard = (rank: PlayingCard['rank'], suit: PlayingCard['suit']): Pla
     suit,
     kind: 'standard',
 });
-
 const renderWithToast = (ui: React.ReactElement) => render(
     <ToastProvider>
         {ui}
@@ -261,7 +260,7 @@ describe('The Gang Board 运行入口', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -301,7 +300,7 @@ describe('The Gang Board 运行入口', () => {
 
         unmount();
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(startHeistCore(initial))}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -318,7 +317,7 @@ describe('The Gang Board 运行入口', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
                 playerID="1"
@@ -338,7 +337,7 @@ describe('The Gang Board 运行入口', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
                 playerID="1"
@@ -358,7 +357,7 @@ describe('The Gang Board 运行入口', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -530,7 +529,7 @@ describe('The Gang Board 运行入口', () => {
         };
 
         const { unmount } = renderWithToast(
-            <Board
+                <Board
                 G={stateOf(handSwapCore)}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -574,7 +573,7 @@ describe('The Gang Board 运行入口', () => {
 
         dispatch.mockClear();
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(handSwapCore)}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -594,7 +593,7 @@ describe('The Gang Board 运行入口', () => {
         const matchData = matchDataForPlayerCount(4);
 
         const { unmount } = renderWithToast(
-            <Board
+                <Board
                 G={stateOf(finalRoundCore)}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -628,7 +627,7 @@ describe('The Gang Board 运行入口', () => {
 
         unmount();
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf({
                     ...finalRoundCore,
                     currentRoundExitChipOwners: ['0:top', '1:bottom'],
@@ -749,7 +748,7 @@ describe('The Gang Board 运行入口', () => {
         } as Parameters<typeof TheGangDomain.execute>[1]);
 
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(withOpponentChip)}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -777,7 +776,7 @@ describe('The Gang Board 运行入口', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
                 playerID="0"
@@ -853,7 +852,7 @@ describe('The Gang Board 运行入口', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
         renderWithToast(
-            <Board
+                <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
                 playerID="1"
@@ -875,29 +874,55 @@ describe('The Gang Board 运行入口', () => {
         }));
     });
 
-    test('房主开局后规则设置会明确显示锁定而不是权限失效', () => {
+    test('房主开局后改规则会先提示重新开始', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
         const lockedCore = startHeistCore(initial);
+        const originalConfirm = window.confirm;
+        const confirmSpy = vi.fn()
+            .mockReturnValueOnce(false)
+            .mockReturnValueOnce(true);
+        Object.defineProperty(window, 'confirm', {
+            configurable: true,
+            value: confirmSpy,
+        });
 
-        renderWithToast(
-            <Board
-                G={stateOf(lockedCore)}
-                dispatch={dispatch as never}
-                playerID="0"
-                matchData={defaultMatchData}
-                isConnected
-            />,
-        );
+        try {
+            renderWithToast(
+                <Board
+                    G={stateOf(lockedCore)}
+                    dispatch={dispatch as never}
+                    playerID="0"
+                    matchData={defaultMatchData}
+                    isConnected
+                />,
+            );
 
-        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
+            fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
 
-        expect(screen.getByText('board.rulesDialogLockedHostHint')).toBeInTheDocument();
-        expect(screen.getByText('board.rulesLocked')).toBeInTheDocument();
-        expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toHaveAttribute('aria-disabled', 'true');
-        fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
-        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
-        expect(screen.getByText(/扩展设置不能再修改|board\.toastRulesLocked/u)).toBeInTheDocument();
+            expect(screen.getByText('board.rulesDialogRestartHostHint')).toBeInTheDocument();
+            expect(screen.getByText('board.rulesRestartNotice')).toBeInTheDocument();
+            expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toHaveAttribute('aria-disabled', 'false');
+
+            fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+            expect(confirmSpy).toHaveBeenCalledWith('board.confirmRulesRestart');
+            expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+
+            fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+            expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.objectContaining({
+                __internalPlayerId: '0',
+                config: expect.objectContaining({ omaha: true }),
+            }));
+        } finally {
+            if (originalConfirm) {
+                Object.defineProperty(window, 'confirm', {
+                    configurable: true,
+                    value: originalConfirm,
+                });
+            } else {
+                delete (window as Window & { confirm?: Window['confirm'] }).confirm;
+            }
+        }
     });
 
     test('工具面板可以发放工具牌并通过已实现工具派发使用命令', () => {
@@ -916,7 +941,7 @@ describe('The Gang Board 运行入口', () => {
         };
 
         const { unmount } = renderWithToast(
-            <Board
+                <Board
                 G={stateOf(initial)}
                 dispatch={dispatch as never}
                 playerID="0"

@@ -494,8 +494,8 @@ describe('The Gang domain flow', () => {
         })).toMatchObject({ valid: false, error: 'rulesLocked' });
     });
 
-    test('扩展配置开始抢劫后锁定', () => {
-        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-rules-config-lock-test');
+    test('扩展配置开始抢劫后允许修改并重新开始整局', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-rules-config-restart-test');
         let state = adapter.setup(['0', '1', '2']);
 
         expect(TheGangDomain.validate(state, {
@@ -514,12 +514,33 @@ describe('The Gang domain flow', () => {
             timestamp: 3,
         }).state;
 
+        const restartConfig = {
+            ...state.core.rules.config,
+            gameMode: 'seven-card-stud' as const,
+        };
+
         expect(TheGangDomain.validate(state, {
             type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
             playerId: '0',
-            payload: { config: { gameMode: 'texas-holdem', challenges: {} } },
+            payload: { config: restartConfig },
             timestamp: 4,
-        })).toMatchObject({ valid: false, error: 'rulesLocked' });
+        })).toMatchObject({ valid: true });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+            playerId: '0',
+            payload: { config: restartConfig },
+            timestamp: 4,
+        }).state;
+
+        expect(state.core.heistNumber).toBe(1);
+        expect(state.core.successes).toBe(0);
+        expect(state.core.failures).toBe(0);
+        expect(state.core.heistStarted).toBe(false);
+        expect(state.core.phase).toBe('chip-selection');
+        expect(state.core.currentRoundChips).toEqual({});
+        expect(state.core.roundHistory).toEqual([]);
+        expect(state.core.rules.config.gameMode).toBe('seven-card-stud');
     });
 
     test('自动模式在所有人拿完筹码后直接推进', () => {

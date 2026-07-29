@@ -248,6 +248,10 @@ wiki-*.html
 *-report.json
 *-results.json
 *-diff.txt
+/temp-*.bin
+/temp-*.html
+/temp-*.json
+/temp-*.txt
 temp_*.txt
 tmp-*.txt
 tmp_*.txt

@@ -544,9 +544,9 @@ describe('烈焰术士 Custom Action 运行时行为断言', () => {
     });
 
     // ========================================================================
-    // ignite-heat-of-soul-resolve: 点燃 II 下半段炎热之魂
+    // ignite-heat-of-soul-resolve: 点燃 II 下半段炙热之魂
     // ========================================================================
-    describe('ignite-heat-of-soul-resolve (炎热之魂)', () => {
+    describe('ignite-heat-of-soul-resolve (炙热之魂)', () => {
         it('提升FM上限、获得5FM并给对手施加燃烧', () => {
             const state = createState({ attackerFM: 2, fmLimit: 5 });
             const handler = getCustomActionHandler('ignite-heat-of-soul-resolve')!;

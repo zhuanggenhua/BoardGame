@@ -2630,9 +2630,14 @@ test.describe('The Gang 测试入口与代表态截图', () => {
 
         await startHeistFromSetup(page);
         await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
-        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('aria-disabled', 'true');
-        await clickControlCenter(page, page.getByTestId('the-gang-mode-seven-card-stud'), '已锁定模式选项');
-        await expect(page.getByText('本次抢劫已开始，扩展设置不能再修改。')).toBeVisible();
+        await expect(page.getByText('本次抢劫已开始。修改扩展或规则会重新开始整局，并清空当前牌局进度。')).toBeVisible();
+        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('aria-disabled', 'false');
+        page.once('dialog', async (dialog) => {
+            expect(dialog.message()).toContain('重新开始整局');
+            await dialog.accept();
+        });
+        await clickControlCenter(page, page.getByTestId('the-gang-mode-seven-card-stud'), '开始后改规则会提示重新开始');
+        await expect(page.getByTestId('the-gang-mode-seven-card-stud')).toHaveAttribute('aria-pressed', 'true');
         await page.getByRole('button', { name: '关闭规则设置' }).click();
 
         await expectToolsPanelUsesPcTwoColumnLayout(page);

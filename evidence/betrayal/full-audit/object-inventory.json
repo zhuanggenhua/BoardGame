@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-12",
+  "generatedAt": "2026-07-29",
   "source": "src/games/betrayal/scenarioConfig.ts::BETRAYAL_DISCOVERY_POOLS",
   "counts": {
     "rooms": {
@@ -7,9 +7,11 @@
       "upper": 14,
       "basement": 10
     },
-    "events": 23,
-    "items": 11,
-    "omens": 9
+    "events": 43,
+    "runtimeEvents": 43,
+    "items": 22,
+    "omens": 9,
+    "runtimePossessions": 34
   },
   "rooms": {
     "ground": [
@@ -763,6 +765,7 @@
     {
       "id": "标本剥制",
       "name": "标本剥制",
+      "runtimeSupported": true,
       "rollTrait": "might",
       "rollDice": null,
       "branches": [
@@ -778,20 +781,28 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "trait",
+        "compound"
+      ]
     },
     {
       "id": "说“茄子”！",
       "name": "说“茄子”！",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "optionalHauntRoll",
-      "modes": []
+      "modes": [
+        "optionalHauntRoll"
+      ]
     },
     {
       "id": "外星几何",
       "name": "外星几何",
+      "runtimeSupported": true,
       "rollTrait": "knowledge",
       "rollDice": null,
       "branches": [
@@ -807,11 +818,16 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "trait",
+        "trait"
+      ]
     },
     {
       "id": "小丑房间",
       "name": "小丑房间",
+      "runtimeSupported": true,
       "rollTrait": "sanity",
       "rollDice": null,
       "branches": [
@@ -827,11 +843,16 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "none",
+        "generalDamage"
+      ]
     },
     {
       "id": "咬一口！",
       "name": "咬一口！",
+      "runtimeSupported": true,
       "rollTrait": "might",
       "rollDice": null,
       "branches": [
@@ -852,20 +873,29 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "none",
+        "generalDamage",
+        "generalDamage"
+      ]
     },
     {
       "id": "吊死鬼",
       "name": "吊死鬼",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "allTraitChecks",
-      "modes": []
+      "modes": [
+        "allTraitChecks"
+      ]
     },
     {
       "id": "电话铃声",
       "name": "电话铃声",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": 2,
       "branches": [
@@ -891,11 +921,18 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "diceRoll",
+        "trait",
+        "trait",
+        "rolledDamage",
+        "rolledDamage"
+      ]
     },
     {
       "id": "小机器人",
       "name": "小机器人",
+      "runtimeSupported": true,
       "rollTrait": "knowledge",
       "rollDice": null,
       "branches": [
@@ -911,11 +948,16 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "drawPossession",
+        "rolledDamage"
+      ]
     },
     {
       "id": "嘎吱的木门",
       "name": "嘎吱的木门",
+      "runtimeSupported": true,
       "rollTrait": "knowledge",
       "rollDice": null,
       "branches": [
@@ -936,11 +978,17 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "placeExplorerInFloorStartingRoom",
+        "placeExplorerInFloorStartingRoom",
+        "placeExplorerInFloorStartingRoom"
+      ]
     },
     {
       "id": "脑状食品",
       "name": "脑状食品",
+      "runtimeSupported": true,
       "rollTrait": "might",
       "rollDice": null,
       "branches": [
@@ -961,65 +1009,101 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "chosenTrait",
+        "compound",
+        "generalDamageChoice"
+      ]
+    },
+    {
+      "id": "片刻希望",
+      "name": "片刻希望",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "placeBlessingToken",
+      "modes": [
+        "placeBlessingToken"
+      ]
     },
     {
       "id": "上古旧宅",
       "name": "上古旧宅",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "chooseTraitRoll",
-      "modes": []
+      "modes": [
+        "chooseTraitRoll"
+      ]
     },
     {
       "id": "肉质苔癣",
       "name": "肉质苔癣",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "optionalEventRoll",
-      "modes": []
+      "modes": [
+        "optionalEventRoll"
+      ]
     },
     {
       "id": "夜幕众星",
       "name": "夜幕众星",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "chooseTraitRoll",
-      "modes": []
+      "modes": [
+        "chooseTraitRoll"
+      ]
     },
     {
       "id": "一抹鲜红",
       "name": "一抹鲜红",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "optionalHauntRoll",
-      "modes": []
+      "modes": [
+        "optionalHauntRoll"
+      ]
     },
     {
       "id": "一瓶微尘",
       "name": "一瓶微尘",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "optionalHauntRoll",
-      "modes": []
+      "modes": [
+        "optionalHauntRoll"
+      ]
     },
     {
       "id": "大宅饿了",
       "name": "大宅饿了",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": null,
       "branches": [],
       "effectMode": "optionalHauntRoll",
-      "modes": []
+      "modes": [
+        "optionalHauntRoll"
+      ]
     },
     {
       "id": "一条秘密通道",
       "name": "一条秘密通道",
+      "runtimeSupported": true,
       "rollTrait": "knowledge",
       "rollDice": null,
       "branches": [
@@ -1040,11 +1124,17 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "compound",
+        "compound",
+        "compound"
+      ]
     },
     {
       "id": "最深的壁橱",
       "name": "最深的壁橱",
+      "runtimeSupported": true,
       "rollTrait": "speed",
       "rollDice": null,
       "branches": [
@@ -1065,11 +1155,17 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "drawPossession",
+        "generalDamage",
+        "compound"
+      ]
     },
     {
       "id": "磁带播放器",
       "name": "磁带播放器",
+      "runtimeSupported": true,
       "rollTrait": "sanity",
       "rollDice": null,
       "branches": [
@@ -1085,11 +1181,16 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "trait",
+        "generalDamage"
+      ]
     },
     {
       "id": "在你背后！",
       "name": "在你背后！",
+      "runtimeSupported": true,
       "rollTrait": "speed",
       "rollDice": null,
       "branches": [
@@ -1105,11 +1206,16 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "trait",
+        "generalDamage"
+      ]
     },
     {
       "id": "蜘蛛！",
       "name": "蜘蛛！",
+      "runtimeSupported": true,
       "rollTrait": "sanity",
       "rollDice": null,
       "branches": [
@@ -1130,11 +1236,17 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "compound",
+        "compound",
+        "trait"
+      ]
     },
     {
       "id": "一种怪异的感觉",
       "name": "一种怪异的感觉",
+      "runtimeSupported": true,
       "rollTrait": null,
       "rollDice": 2,
       "branches": [
@@ -1165,11 +1277,31 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "diceRoll",
+        "none",
+        "trait",
+        "trait",
+        "trait",
+        "trait"
+      ]
+    },
+    {
+      "id": "游魂",
+      "name": "游魂",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalItemEffect",
+      "modes": [
+        "optionalItemEffect"
+      ]
     },
     {
       "id": "葬礼",
       "name": "葬礼",
+      "runtimeSupported": true,
       "rollTrait": "sanity",
       "rollDice": null,
       "branches": [
@@ -1190,7 +1322,357 @@
         }
       ],
       "effectMode": null,
-      "modes": []
+      "modes": [
+        "traitRoll",
+        "trait",
+        "trait",
+        "compound"
+      ]
+    },
+    {
+      "id": "不可能的房间",
+      "name": "不可能的房间",
+      "runtimeSupported": true,
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "抽取一张物品卡",
+          "effectMode": "drawPossession"
+        },
+        {
+          "min": 0,
+          "label": "受到一颗骰子的精神伤害",
+          "effectMode": "rolledDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "drawPossession",
+        "rolledDamage"
+      ]
+    },
+    {
+      "id": "地狱蝙蝠",
+      "name": "地狱蝙蝠",
+      "runtimeSupported": true,
+      "rollTrait": "speed",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "放置到相邻板块",
+          "effectMode": "placeExplorerInAdjacentRoom"
+        },
+        {
+          "min": 0,
+          "label": "受到 1 点物理伤害",
+          "effectMode": "fixedDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "placeExplorerInAdjacentRoom",
+        "fixedDamage"
+      ]
+    },
+    {
+      "id": "断手",
+      "name": "断手",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalEffect",
+      "modes": [
+        "optionalEffect"
+      ]
+    },
+    {
+      "id": "怪异的镜子",
+      "name": "怪异的镜子",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalHauntRoll",
+      "modes": [
+        "optionalHauntRoll"
+      ]
+    },
+    {
+      "id": "花团锦簇",
+      "name": "花团锦簇",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "compound",
+      "modes": [
+        "compound"
+      ]
+    },
+    {
+      "id": "晦暗暴风夜",
+      "name": "晦暗暴风夜",
+      "runtimeSupported": true,
+      "rollTrait": "knowledge",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "受到 1 点精神伤害",
+          "effectMode": "fixedDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "trait",
+        "fixedDamage"
+      ]
+    },
+    {
+      "id": "技术难点",
+      "name": "技术难点",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "placeExplorerInNextFloorStartingRoom",
+      "modes": [
+        "placeExplorerInNextFloorStartingRoom"
+      ]
+    },
+    {
+      "id": "佳馔满桌",
+      "name": "佳馔满桌",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "chooseTraitRoll",
+      "modes": [
+        "chooseTraitRoll"
+      ]
+    },
+    {
+      "id": "禁忌知识",
+      "name": "禁忌知识",
+      "runtimeSupported": true,
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点知识",
+          "effectMode": "trait"
+        },
+        {
+          "min": 2,
+          "label": "获得 1 点知识并失去 1 点神志",
+          "effectMode": "compound"
+        },
+        {
+          "min": 0,
+          "label": "受到两颗骰子的精神伤害",
+          "effectMode": "rolledDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "trait",
+        "compound",
+        "rolledDamage"
+      ]
+    },
+    {
+      "id": "可怜的尤里克",
+      "name": "可怜的尤里克",
+      "runtimeSupported": true,
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点知识",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "受到 1 点精神伤害",
+          "effectMode": "fixedDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "trait",
+        "fixedDamage"
+      ]
+    },
+    {
+      "id": "轮到约拿了",
+      "name": "轮到约拿了",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalItemEffect",
+      "modes": [
+        "optionalItemEffect"
+      ]
+    },
+    {
+      "id": "秘密升降机",
+      "name": "秘密升降机",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "placeExplorerInDiscoveredRoomByFloor",
+      "modes": [
+        "placeExplorerInDiscoveredRoomByFloor"
+      ]
+    },
+    {
+      "id": "神秘液体",
+      "name": "神秘液体",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "optionalEventRoll",
+      "modes": [
+        "optionalEventRoll"
+      ]
+    },
+    {
+      "id": "无线电广播",
+      "name": "无线电广播",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": 2,
+      "branches": [
+        {
+          "min": 3,
+          "label": "获得 1 点知识",
+          "effectMode": "trait"
+        },
+        {
+          "min": 0,
+          "label": "受到一颗骰子的精神伤害",
+          "effectMode": "rolledDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "diceRoll",
+        "trait",
+        "rolledDamage"
+      ]
+    },
+    {
+      "id": "摇曳灯光",
+      "name": "摇曳灯光",
+      "runtimeSupported": true,
+      "rollTrait": null,
+      "rollDice": null,
+      "branches": [],
+      "effectMode": "chooseTraitRoll",
+      "modes": [
+        "chooseTraitRoll"
+      ]
+    },
+    {
+      "id": "一罐器官",
+      "name": "一罐器官",
+      "runtimeSupported": true,
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "抽取一张物品卡",
+          "effectMode": "drawPossession"
+        },
+        {
+          "min": 0,
+          "label": "失去 1 点力量",
+          "effectMode": "trait"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "drawPossession",
+        "trait"
+      ]
+    },
+    {
+      "id": "一声呼救",
+      "name": "一声呼救",
+      "runtimeSupported": true,
+      "rollTrait": "knowledge",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "放置在所在区域的任意板块",
+          "effectMode": "placeExplorerInDiscoveredRoomByFloor"
+        },
+        {
+          "min": 0,
+          "label": "受到 1 点精神伤害",
+          "effectMode": "fixedDamage"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "placeExplorerInDiscoveredRoomByFloor",
+        "fixedDamage"
+      ]
+    },
+    {
+      "id": "着火的人",
+      "name": "着火的人",
+      "runtimeSupported": true,
+      "rollTrait": "sanity",
+      "rollDice": null,
+      "branches": [
+        {
+          "min": 4,
+          "label": "获得 1 点神志",
+          "effectMode": "trait"
+        },
+        {
+          "min": 2,
+          "label": "放置到入口大厅",
+          "effectMode": "placeExplorerInRoom"
+        },
+        {
+          "min": 0,
+          "label": "受到一颗骰子的物理伤害和一颗骰子的精神伤害",
+          "effectMode": "compound"
+        }
+      ],
+      "effectMode": null,
+      "modes": [
+        "traitRoll",
+        "trait",
+        "placeExplorerInRoom",
+        "compound"
+      ]
     }
   ],
   "possessions": {
@@ -1201,13 +1683,38 @@
         "kind": "item"
       },
       {
+        "id": "scary-doll",
+        "name": "恐怖玩偶",
+        "kind": "item"
+      },
+      {
         "id": "medical-kit",
         "name": "急救包",
         "kind": "item"
       },
       {
+        "id": "mirror",
+        "name": "镜子",
+        "kind": "item"
+      },
+      {
         "id": "holy-water",
         "name": "奇怪的药品",
+        "kind": "item"
+      },
+      {
+        "id": "lucky-coin",
+        "name": "幸运硬币",
+        "kind": "item"
+      },
+      {
+        "id": "leather-jacket",
+        "name": "皮夹克",
+        "kind": "item"
+      },
+      {
+        "id": "tooth-necklace",
+        "name": "牙齿项链",
         "kind": "item"
       },
       {
@@ -1226,6 +1733,26 @@
         "kind": "item"
       },
       {
+        "id": "strange-amulet",
+        "name": "奇异护符",
+        "kind": "item"
+      },
+      {
+        "id": "brooch",
+        "name": "胸针",
+        "kind": "item"
+      },
+      {
+        "id": "gun",
+        "name": "枪",
+        "kind": "item"
+      },
+      {
+        "id": "crossbow",
+        "name": "十字弓",
+        "kind": "item"
+      },
+      {
         "id": "rope",
         "name": "兔脚",
         "kind": "item"
@@ -1236,18 +1763,28 @@
         "kind": "item"
       },
       {
+        "id": "mysterious-stopwatch",
+        "name": "神秘秒表",
+        "kind": "item"
+      },
+      {
         "id": "hunting-knife",
         "name": "砍刀",
         "kind": "item"
       },
       {
-        "id": "notebook",
-        "name": "地图",
+        "id": "chainsaw",
+        "name": "电锯",
         "kind": "item"
       },
       {
-        "id": "manuscript",
-        "name": "地图",
+        "id": "dynamite",
+        "name": "炸药",
+        "kind": "item"
+      },
+      {
+        "id": "angel-feather",
+        "name": "天使之羽",
         "kind": "item"
       }
     ],
@@ -1299,6 +1836,212 @@
       }
     ]
   },
+  "runtimePossessions": [
+    {
+      "id": "angel-feather",
+      "name": "天使之羽",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "armor",
+      "name": "盔甲",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "brooch",
+      "name": "胸针",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "camera",
+      "name": "魔法相机",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "chainsaw",
+      "name": "电锯",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "crossbow",
+      "name": "十字弓",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "dagger",
+      "name": "匕首",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "dog",
+      "name": "狗",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "dynamite",
+      "name": "炸药",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "flashlight",
+      "name": "手电筒",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "gun",
+      "name": "枪",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "holy-symbol",
+      "name": "圣符",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "holy-water",
+      "name": "奇怪的药品",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "hunting-knife",
+      "name": "砍刀",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "idol",
+      "name": "雕像",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "journal",
+      "name": "日记",
+      "kind": "item",
+      "source": "firstScenarioStartingInventory"
+    },
+    {
+      "id": "lantern",
+      "name": "灯笼",
+      "kind": "item",
+      "source": "firstScenarioStartingInventory"
+    },
+    {
+      "id": "leather-jacket",
+      "name": "皮夹克",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "lockpick-tool",
+      "name": "骨制钥匙",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "lucky-coin",
+      "name": "幸运硬币",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "map",
+      "name": "地图",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "mask",
+      "name": "面具",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "medical-kit",
+      "name": "急救包",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "mirror",
+      "name": "镜子",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "mysterious-stopwatch",
+      "name": "神秘秒表",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "notebook",
+      "name": "笔记本",
+      "kind": "item",
+      "source": "firstScenarioStartingInventory"
+    },
+    {
+      "id": "omen-book",
+      "name": "书本",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "radio",
+      "name": "头戴耳机",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "ring",
+      "name": "指环",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "rope",
+      "name": "兔脚",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "scary-doll",
+      "name": "恐怖玩偶",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "skull",
+      "name": "头骨",
+      "kind": "omen",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "strange-amulet",
+      "name": "奇异护符",
+      "kind": "item",
+      "source": "discoveryPool"
+    },
+    {
+      "id": "tooth-necklace",
+      "name": "牙齿项链",
+      "kind": "item",
+      "source": "discoveryPool"
+    }
+  ],
   "firstScenarioObjects": [
     {
       "id": "haunt-trigger",
@@ -1311,54 +2054,64 @@
       "category": "scenario"
     },
     {
-      "id": "learn-about-jack",
-      "name": "知晓杰克",
+      "id": "place-mummy-and-sarcophagus",
+      "name": "放置木乃伊与石棺",
+      "category": "setup"
+    },
+    {
+      "id": "place-mummy-girl",
+      "name": "放置女孩",
+      "category": "setup"
+    },
+    {
+      "id": "prepare-mummy-knowledge-tokens",
+      "name": "准备知识标记",
+      "category": "setup"
+    },
+    {
+      "id": "study-mummy-name",
+      "name": "寻找木乃伊真名",
       "category": "hero-action"
     },
     {
-      "id": "study-exorcism",
-      "name": "研究驱魔法阵",
+      "id": "learn-mummy-banishment",
+      "name": "学习驱逐法术",
       "category": "hero-action"
     },
     {
-      "id": "hero-attack-traitor",
-      "name": "英雄攻击叛徒",
-      "category": "combat"
+      "id": "banish-mummy",
+      "name": "驱逐木乃伊",
+      "category": "hero-action"
     },
     {
-      "id": "traitor-attack-hero",
-      "name": "叛徒攻击英雄",
-      "category": "combat"
-    },
-    {
-      "id": "jack-spirit-release",
-      "name": "杰克之灵释放",
-      "category": "monster"
-    },
-    {
-      "id": "jack-spirit-speed-3-roll",
-      "name": "杰克之灵 Speed 3 怪物移动投骰",
-      "category": "monster"
-    },
-    {
-      "id": "jack-spirit-attack-hero",
-      "name": "杰克之灵攻击英雄",
-      "category": "monster"
-    },
-    {
-      "id": "jack-spirit-revive-traitor",
-      "name": "杰克之灵回尸体房复活叛徒",
-      "category": "monster"
-    },
-    {
-      "id": "corpse-loot",
-      "name": "尸体搜刮",
+      "id": "pick-up-mummy-girl",
+      "name": "拾起女孩",
       "category": "haunt-side-rule"
     },
     {
-      "id": "exorcise-jack",
-      "name": "驱魔杰克之灵",
-      "category": "hero-action"
+      "id": "give-girl-to-mummy",
+      "name": "把女孩交给木乃伊",
+      "category": "traitor-action"
+    },
+    {
+      "id": "give-omen-to-mummy",
+      "name": "把圣符或指环交给木乃伊",
+      "category": "traitor-action"
+    },
+    {
+      "id": "mummy-monster-movement",
+      "name": "木乃伊移动与 0/1 瞬移",
+      "category": "monster"
+    },
+    {
+      "id": "mummy-forced-attack",
+      "name": "木乃伊同房强制攻击",
+      "category": "monster"
+    },
+    {
+      "id": "mummy-attack-reward",
+      "name": "木乃伊伤害或偷窃选择",
+      "category": "combat"
     },
     {
       "id": "survivor-victory",

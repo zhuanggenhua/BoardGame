@@ -585,14 +585,14 @@ function HandRankReference({ rules = DEFAULT_HAND_RANK_RULES }: { rules?: readon
 
 function RulesConfigPanel({
     config,
-    locked,
+    restartOnChange,
     canConfigure,
     playerCount,
     onChange,
     onBlockedEdit,
 }: {
     config: TheGangRulesConfig;
-    locked: boolean;
+    restartOnChange: boolean;
     canConfigure: boolean;
     playerCount: number;
     onChange: (config: TheGangRulesConfig) => void;
@@ -606,7 +606,7 @@ function RulesConfigPanel({
         .filter((challengeId) => THE_GANG_CHALLENGES[challengeId as TheGangChallengeId].runtimeStatus === 'implemented') as TheGangChallengeId[];
     const rulesDialogHint = !canConfigure
         ? 'board.rulesDialogGuestHint'
-        : locked ? 'board.rulesDialogLockedHostHint' : 'board.rulesDialogHostHint';
+        : restartOnChange ? 'board.rulesDialogRestartHostHint' : 'board.rulesDialogHostHint';
 
     const updateMode = (gameMode: TheGangGameMode) => {
         onChange(normalizeRulesConfig({ ...normalized, gameMode }));
@@ -631,12 +631,16 @@ function RulesConfigPanel({
         }));
     };
 
-    const canEdit = canConfigure && !locked;
+    const canEdit = canConfigure;
 
     const tryEdit = (action: () => void) => {
         if (!canEdit) {
             onBlockedEdit();
             return;
+        }
+        if (restartOnChange && typeof window !== 'undefined' && typeof window.confirm === 'function') {
+            const confirmed = window.confirm(t('board.confirmRulesRestart'));
+            if (!confirmed) return;
         }
         action();
     };
@@ -708,9 +712,9 @@ function RulesConfigPanel({
                                     {t('board.activeExitChipMode', { mode: THE_GANG_EXIT_CHIP_MODES[normalized.exitChipMode].label })}
                                 </span>
                             </div>
-                            {locked && (
+                            {restartOnChange && canConfigure && (
                                 <div className="mb-4 rounded-lg border border-amber-200/25 bg-amber-200/10 px-3 py-2 text-xs font-bold leading-relaxed text-amber-100/88">
-                                    {t('board.rulesLocked')}
+                                    {t('board.rulesRestartNotice')}
                                 </div>
                             )}
                             <section className="grid gap-3 lg:grid-cols-3" aria-label={t('board.gameMode')}>
@@ -2097,10 +2101,12 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         && core.phase === 'chip-selection'
         && core.rules.config.twoHand
         && (localCanChooseRoundChipSlot || localCanChooseExitChipSlot);
-    const rulesLocked = core.heistNumber !== 1
+    const rulesChangeRestarts = core.heistNumber !== 1
         || core.round !== 1
         || core.phase !== 'chip-selection'
         || heistStarted
+        || Object.keys(core.currentRoundChips).length > 0
+        || core.heistHistory.length > 0
         || core.roundHistory.length > 0;
     const canConfigureRules = resolveCanConfigureRules(matchData, playerID, core.playerIds[0]);
     const twoHandChipSelectionLayout = core.phase === 'chip-selection' && core.rules.config.twoHand;
@@ -2172,12 +2178,6 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
         toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastToolsAlreadyDealt' }, undefined, options);
     };
     const showRulesBlockedToast = () => {
-        if (canConfigureRules) {
-            toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastRulesLocked' }, undefined, {
-                dedupeKey: 'the-gang.rules-locked',
-            });
-            return;
-        }
         toast.warning({ kind: 'i18n', ns: 'game-the-gang', key: 'board.toastHostOnlySetup' }, undefined, {
             dedupeKey: 'the-gang.host-only-setup',
         });
@@ -2318,7 +2318,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                         <HandRankReference rules={handRankRules} />
                         <RulesConfigPanel
                             config={core.rules.config}
-                            locked={rulesLocked}
+                            restartOnChange={rulesChangeRestarts}
                             canConfigure={canConfigureRules}
                             playerCount={core.playerIds.length}
                             onChange={setRulesConfig}

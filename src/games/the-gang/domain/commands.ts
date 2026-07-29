@@ -127,8 +127,6 @@ function validateSetRulesConfig(
     config: Partial<TheGangCore['rules']['config']>,
 ): ValidationResult {
     if (!core.playerIds.includes(playerId)) return failure('unknownPlayer');
-    if (core.heistNumber !== 1 || core.round !== 1 || core.phase !== 'chip-selection') return failure('rulesLocked');
-    if (core.heistStarted || Object.keys(core.currentRoundChips).length > 0 || core.roundHistory.length > 0) return failure('rulesLocked');
     if (normalizeRulesConfig(config).twoHand && core.playerIds.length > 5) return failure('twoHandPlayerLimit');
     return success();
 }

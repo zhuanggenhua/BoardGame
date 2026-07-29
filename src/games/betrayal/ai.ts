@@ -9,7 +9,7 @@ import type { Command, MatchState, PlayerId } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
 import {
     BETRAYAL_EXPLORER_CATALOG,
-    isImplementedBetrayalHauntCardNumber,
+    isBetrayalOptionalHauntRollRuntimeSupported,
     type BetrayalScenarioCardId,
     type BetrayalScenarioId,
     type BetrayalTraitKey,
@@ -317,7 +317,7 @@ function expandEffectPayloads(
             return [...accepted, ...declined];
         }
         case 'optionalHauntRoll': {
-            const accepted = isImplementedBetrayalHauntCardNumber(effect.successHauntId)
+            const accepted = isBetrayalOptionalHauntRollRuntimeSupported(effect.successHauntId)
                 ? seeds.map((payload) => ({ ...payload, accept: true }))
                 : [];
             const declined = seeds.flatMap((payload) => (
@@ -816,6 +816,20 @@ function buildPossessionActions(
                 payload: {},
                 label: `使用${card.name}`,
                 score: canAfford && !alreadyPrepared ? 520 : 0,
+            });
+            continue;
+        }
+
+        if (effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
+            const alreadyPrepared = core.nextNonCombatTraitRollTotalReplacement?.playerId === playerId;
+            add({
+                card,
+                payload: { replacementRollTotal: effect.maxTotal },
+                label: `使用${card.name}`,
+                score: alreadyPrepared ? 0 : 540,
+                metadata: {
+                    replacementRollTotal: effect.maxTotal,
+                },
             });
             continue;
         }

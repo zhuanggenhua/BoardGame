@@ -86,7 +86,7 @@ describe('Pyromancer 技能升级路径验证', () => {
         expect(customAction).toBeDefined();
     });
 
-    it('点燃 II 升级后必须保留下半段炎热之魂入口', () => {
+    it('点燃 II 升级后必须保留下半段炙热之魂入口', () => {
         const ability = getUpgradedAbilityFromCard('card-ignite-2');
         expect(ability).toBeDefined();
 
@@ -97,7 +97,7 @@ describe('Pyromancer 技能升级路径验证', () => {
         const lowerHalf = variants.find(v => v.id === 'heat-of-soul');
         expect(lowerHalf?.trigger).toEqual({
             type: 'diceSet',
-            faces: { fire: 2, fiery_soul: 2 },
+            faces: { magma: 2, fiery_soul: 2 },
         });
         expect(lowerHalf?.effects.find(e => e.action.customActionId === 'ignite-heat-of-soul-resolve')).toBeDefined();
     });

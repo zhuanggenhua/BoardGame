@@ -14,6 +14,8 @@ import { createRunner, cmd, createQueuedRandom, createHeroMatchup, advanceTo } f
 import { registerDiceThroneConditions } from '../conditions';
 import { initializeCustomActions } from '../domain/customActions';
 import { HOT_STREAK_2, IGNITE_2 } from '../heroes/pyromancer/abilities';
+import { createCombatAbilityManager } from '../domain/combat/CombatAbilityManager';
+import { PYROMANCER_DICE_FACE_IDS } from '../domain/ids';
 
 beforeAll(() => {
     registerDiceThroneConditions();
@@ -118,15 +120,43 @@ describe('火法小顺子二级技能 - 焚灭触发', () => {
     });
 });
 
-describe('火法点燃 II 下半段 - 炎热之魂触发', () => {
-    it('升级点燃 II 后，两火+两火魂应触发炎热之魂', () => {
+describe('火法点燃 II 下半段 - 炙热之魂触发', () => {
+    it('触发合同应为两岩浆+两火魂，不应继续使用两火+两火魂', () => {
+        const manager = createCombatAbilityManager();
+        manager.registerAbility(IGNITE_2);
+
+        const fromFeedbackDice = manager.getAvailableAbilities(['ignite'], {
+            currentPhase: 'offensiveRoll',
+            diceValues: [4, 4, 5, 5, 6],
+            faceCounts: {
+                [PYROMANCER_DICE_FACE_IDS.MAGMA]: 2,
+                [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 2,
+                [PYROMANCER_DICE_FACE_IDS.METEOR]: 1,
+            },
+        });
+        expect(fromFeedbackDice).toContain('heat-of-soul');
+        expect(fromFeedbackDice[0]).toBe('heat-of-soul');
+
+        const oldWrongDice = manager.getAvailableAbilities(['ignite'], {
+            currentPhase: 'offensiveRoll',
+            diceValues: [1, 2, 5, 5, 6],
+            faceCounts: {
+                [PYROMANCER_DICE_FACE_IDS.FIRE]: 2,
+                [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 2,
+                [PYROMANCER_DICE_FACE_IDS.METEOR]: 1,
+            },
+        });
+        expect(oldWrongDice).not.toContain('heat-of-soul');
+    });
+
+    it('升级点燃 II 后，两岩浆+两火魂应触发炙热之魂', () => {
         const random = createQueuedRandom([
-            1, 2, 5, 5, 6,
+            4, 4, 5, 5, 6,
         ]);
         const runner = createRunner(random, false);
 
         const result = runner.run({
-            name: '火法点燃II下半段炎热之魂触发',
+            name: '火法点燃II下半段炙热之魂触发',
             setup: createHeroMatchup('pyromancer', 'barbarian', (core) => {
                 const player = core.players['0'];
                 if (!player) return;

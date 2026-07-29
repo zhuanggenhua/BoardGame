@@ -2574,7 +2574,7 @@
     },
     "heat-of-soul": {
       "name": "Heat of Soul",
-      "description": "2 Fire + 2 Fire Soul: increase Fire Mastery stack limit by 1, gain 5 Fire Mastery, and inflict Burn.",
+      "description": "2 Magma + 2 Fire Soul: increase Fire Mastery stack limit by 1, gain 5 Fire Mastery, and inflict Burn.",
       "effects": {
         "main": "Increase Fire Mastery stack limit by 1. Gain 5 Fire Mastery. Inflict 1 Burn token."
       }

@@ -463,7 +463,7 @@ export const IGNITE_2: AbilityDef = {
             trigger: {
                 type: 'diceSet',
                 faces: {
-                    [PYROMANCER_DICE_FACE_IDS.FIRE]: 2,
+                    [PYROMANCER_DICE_FACE_IDS.MAGMA]: 2,
                     [PYROMANCER_DICE_FACE_IDS.FIERY_SOUL]: 2,
                 }
             },

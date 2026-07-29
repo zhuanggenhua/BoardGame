@@ -76,28 +76,48 @@ function eventL3(event) {
 }
 
 function possessionFamily(card) {
-  if (['map', 'notebook', 'manuscript', 'lockpick-tool', 'mask', 'dog'].includes(card.id)) return '移动/位置效果';
+  if (['map', 'notebook', 'journal', 'manuscript', 'lockpick-tool', 'mask', 'dog'].includes(card.id)) return '移动/位置效果';
   if (['holy-symbol', 'idol'].includes(card.id)) return '发现声明替代';
   if (['hunting-knife', 'dagger', 'ring'].includes(card.id)) return '攻击武器';
   if (card.id === 'rope') return '兔脚重掷';
   if (card.id === 'skull') return '死亡保护';
   if (['medical-kit', 'holy-water'].includes(card.id)) return '治疗/恢复';
-  if (['flashlight', 'radio', 'armor', 'omen-book'].includes(card.id)) return '被动修正/减免';
+  if (['flashlight', 'lantern', 'radio', 'armor', 'omen-book'].includes(card.id)) return '被动修正/减免';
+  if (card.id === 'camera') return '检定替代/作祟归属';
+  if (card.id === 'strange-amulet') return '其它作祟设置/通用持有物';
   return '持有物特殊能力';
 }
 
 function possessionL3(card) {
-  if (['map', 'notebook', 'manuscript'].includes(card.id)) return '已有地图类目标选择真实页面证据；legacy 对象复用同一链';
+  if (['map', 'notebook', 'journal', 'manuscript'].includes(card.id)) return '已有地图类目标选择真实页面证据；同构对象复用同一链';
   if (['holy-symbol', 'idol'].includes(card.id)) return 'L3 探索声明替代已有选择前、已选择和跳过事件步骤截图';
   if (['hunting-knife', 'dagger', 'ring'].includes(card.id)) return 'L3 攻击武器已有选择前、目标高亮、攻击投骰和反馈步骤截图';
   if (card.id === 'rope') return '已有兔脚重掷教程真实入口代表链';
   if (card.id === 'skull') return 'L3 已补头骨死亡保护真实浏览器截图：3 骰、总点数 4、阻止死亡反馈';
   if (card.id === 'dog') return '已有交易代表链；不外推全部主动效果';
+  if (card.id === 'camera') return '已有魔法相机知识检定替代和作祟 33 归属真实页面链';
+  if (card.id === 'lantern') return '已有灯笼事件属性检定额外 +2 骰真实页面链；与手电筒共享被动消费者';
+  if (card.id === 'strange-amulet') return '首剧本内只作为通用持有物参与交易/搜尸/死亡掩埋；作祟 12 设置链已有代表证据，不是杰克专属主动能力';
   return 'L2 已覆盖；按新增消费者风险补 L3';
 }
 
+function runtimePossessionIds() {
+  return new Set((inventory.runtimePossessions ?? []).map((card) => card.id));
+}
+
+const discoveryPossessionIds = new Set([
+  ...inventory.possessions.item,
+  ...inventory.possessions.omen,
+].map((card) => card.id));
+
 function scenarioFamily(object) {
-  if (object.category === 'monster') return '杰克之灵怪物线';
+  if (object.category === 'setup') return 'setup / token 放置';
+  if (object.category === 'monster') {
+    if (object.id.startsWith('mummy-')) return '木乃伊怪物线';
+    if (object.id.startsWith('jack-spirit')) return '杰克之灵怪物线';
+    return '怪物线';
+  }
+  if (object.category === 'traitor-action') return '叛徒行动线';
   if (object.category === 'hero-action') return '英雄行动线';
   if (object.category === 'combat') return '攻防链';
   if (object.category === 'endgame') return '双终局';
@@ -106,6 +126,18 @@ function scenarioFamily(object) {
 }
 
 function scenarioL3(object) {
+  if (object.id === 'place-mummy-and-sarcophagus') return '单测覆盖作祟 1 后创建木乃伊与石棺，并在地图公开 token';
+  if (object.id === 'place-mummy-girl') return '单测覆盖女孩 token 初始放置与地图 token 读模型';
+  if (object.id === 'prepare-mummy-knowledge-tokens') return '单测覆盖知识标记 0/2、1/2、2/2 进度条读模型';
+  if (object.id === 'study-mummy-name') return '单测覆盖英雄在合法房间寻找木乃伊真名并取得第 1 枚知识标记';
+  if (object.id === 'learn-mummy-banishment') return '单测覆盖持书英雄学习驱逐法术并取得第 2 枚知识标记';
+  if (object.id === 'banish-mummy') return '单测覆盖书本与木乃伊同房后，英雄用神志驱逐木乃伊进入英雄胜利';
+  if (object.id === 'pick-up-mummy-girl') return '单测覆盖探索者或木乃伊进入女孩房间后拾起女孩';
+  if (object.id === 'give-girl-to-mummy') return '单测覆盖同房时把女孩交给木乃伊';
+  if (object.id === 'give-omen-to-mummy') return '单测覆盖同房时把圣符或指环交给木乃伊，并触发叛徒胜利闭环';
+  if (object.id === 'mummy-monster-movement') return '单测覆盖木乃伊移动骰 0/1 时可瞬移到任意已发现房间，并自动拾起女孩';
+  if (object.id === 'mummy-forced-attack') return '单测覆盖木乃伊与英雄同房且未攻击时，移动入口禁用并必须先攻击';
+  if (object.id === 'mummy-attack-reward') return '单测覆盖木乃伊造成 2 点以上伤害后可偷取女孩/物品/预兆，选择伤害时先扣速度再扣力量；UI 单测覆盖奖励横幅与按钮';
   if (object.id === 'jack-spirit-speed-3-roll') return '已有杰克之灵 Speed 3 怪物移动投骰和移动扣点截图';
   if (object.id === 'corpse-loot') return '已有尸体搜刮二次限制截图';
   if (object.id === 'jack-spirit-revive-traitor') return '已有杰克之灵回尸体房复活叛徒截图';
@@ -190,6 +222,21 @@ for (const [kind, cards] of Object.entries(inventory.possessions)) {
   }
 }
 
+for (const card of (inventory.runtimePossessions ?? []).filter((candidate) => !discoveryPossessionIds.has(candidate.id))) {
+  rows.push(row({
+    category: '开局额外物品',
+    id: card.id,
+    name: card.name,
+    family: possessionFamily(card),
+    l0: `${level.L0}: 首剧本开局额外持有牌`,
+    l1: `${level.L1}: 运行时持有区对象已接入`,
+    l2: `${level.L2}: firstScenarioRuntime 当前运行持有牌消费者覆盖`,
+    l3: possessionL3(card),
+    l4: `${level.L4}: 只证明当前首剧本运行持有牌范围；未来发现池新增需另审`,
+    residual: `当前首剧本开局额外持有牌已进入 ${inventory.counts.runtimePossessions ?? runtimePossessionIds().size} 张运行持有牌守卫；不是发现池物品数量`,
+  }));
+}
+
 for (const object of inventory.firstScenarioObjects) {
   rows.push(row({
     category: '首剧本',
@@ -198,10 +245,10 @@ for (const object of inventory.firstScenarioObjects) {
     family: scenarioFamily(object),
     l0: `${level.L0}: 首剧本规则对象清单`,
     l1: `${level.L1}: 作祟/阵营/怪物/终局对象已列入全集`,
-    l2: `${level.L2}: firstScenarioRuntime 首剧本闭环覆盖`,
+    l2: `${level.L2}: firstScenarioRuntime 当前默认首剧本闭环覆盖`,
     l3: scenarioL3(object),
     l4: `${level.L4}: 只证明第一剧本最小闭环，不外推更多剧本`,
-    residual: '发布级增强按首剧本页面代表链补，不代表山屋整游戏完成',
+    residual: '当前只证明木乃伊横行首剧本；不代表其它作祟或整游戏完成',
   }));
 }
 
@@ -224,8 +271,10 @@ const md = `# 山屋惊魂对象级 L0-L4 审计矩阵
 | --- | ---: |
 | 房间 | ${inventory.counts.rooms.ground + inventory.counts.rooms.upper + inventory.counts.rooms.basement} |
 | 事件牌 | ${inventory.counts.events} |
+| 正式运行事件牌 | ${inventory.counts.runtimeEvents ?? inventory.counts.events} |
 | 物品 | ${inventory.counts.items} |
 | 预兆 | ${inventory.counts.omens} |
+| 当前运行持有牌 | ${inventory.counts.runtimePossessions ?? runtimePossessionIds().size} |
 | 首剧本对象 | ${inventory.firstScenarioObjects.length} |
 | 矩阵行 | ${rows.length} |
 

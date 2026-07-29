@@ -26,6 +26,16 @@ export type PossessionUseEffectProfile = UseEffectProfile | {
     mode: 'moveOthersInRoom';
     target: 'sameRoomOtherExplorersAndMonsters';
     recommendedAction: BetrayalRecommendedAction;
+} | {
+    mode: 'extraTurnAfterTurnEnd';
+    consumeOnUse: boolean;
+    recommendedAction: BetrayalRecommendedAction;
+} | {
+    mode: 'nextNonCombatTraitRollTotalReplacement';
+    minTotal: number;
+    maxTotal: number;
+    consumeOnUse: boolean;
+    recommendedAction: BetrayalRecommendedAction;
 };
 
 export const POSSESSION_USE_EFFECTS: Record<string, PossessionUseEffectProfile> = {
@@ -59,6 +69,13 @@ export const POSSESSION_USE_EFFECTS: Record<string, PossessionUseEffectProfile> 
         consumeOnUse: true,
         recommendedAction: 'explore',
     },
+    mirror: {
+        mode: 'healTraits',
+        traits: ['knowledge', 'sanity'],
+        consumeOnUse: true,
+        target: 'self',
+        recommendedAction: 'explore',
+    },
     journal: {
         mode: 'placeExplorer',
         target: 'anyDiscoveredRoom',
@@ -75,6 +92,18 @@ export const POSSESSION_USE_EFFECTS: Record<string, PossessionUseEffectProfile> 
     manuscript: {
         mode: 'placeExplorer',
         target: 'anyDiscoveredRoom',
+        consumeOnUse: true,
+        recommendedAction: 'explore',
+    },
+    'mysterious-stopwatch': {
+        mode: 'extraTurnAfterTurnEnd',
+        consumeOnUse: true,
+        recommendedAction: 'endTurn',
+    },
+    'angel-feather': {
+        mode: 'nextNonCombatTraitRollTotalReplacement',
+        minTotal: 0,
+        maxTotal: 8,
         consumeOnUse: true,
         recommendedAction: 'explore',
     },

@@ -242,6 +242,7 @@ type OnlineAiRecoveryFeedbackPayload = {
         | 'repeated-recovery-force-unblocked'
         | 'repeated-recovery-suppressed'
         | 'unsatisfiable-interaction-auto-skipped'
+        | 'observed-recovery'
         | 'legal-action-recovered';
     severity: 'medium' | 'high';
     status?: 'open' | 'resolved';
@@ -275,6 +276,9 @@ const buildOnlineAiRecoveryResolvedMethod = (
     }
     if (payload.incidentKind === 'force-end-turn-success') {
         return '系统已自动推进停滞的 AI 座位，让对局继续进行。';
+    }
+    if (payload.incidentKind === 'observed-recovery') {
+        return '系统观察到原本停住的 AI 座位已经继续推进，并记录了这次恢复现场。';
     }
     return '系统已自动恢复这次在线 AI 步骤，对局已继续运行。';
 };
@@ -2502,6 +2506,31 @@ export class GameTransportServer {
                     severity: 'medium',
                     status: 'resolved',
                     reason: `${lastUnreportedLegalActionRecovery.candidateReason}:legal-action:${lastUnreportedLegalActionRecovery.actionKind}:${lastUnreportedLegalActionRecovery.actionId}`,
+                    trackerKey: tracker.key,
+                    progressMarker: progressMarkerBeforeRecovery,
+                    stateSnapshot: await this.buildOnlineAiRecoveryStateSnapshot(
+                        match,
+                        candidate,
+                        tracker.key,
+                        progressMarkerBeforeRecovery,
+                    ),
+                    actionLog: this.buildOnlineAiRecoveryActionLog(
+                        match,
+                        candidate,
+                        tracker.key,
+                        progressMarkerBeforeRecovery,
+                    ),
+                });
+            }
+            if (!usedForcedRecoveryCommand && !lastUnreportedLegalActionRecovery && match.gameId === 'summonerwars') {
+                await this.reportOnlineAiRecoveryFeedback({
+                    matchId: match.matchID,
+                    gameId: match.gameId,
+                    playerId: candidate.playerId,
+                    incidentKind: 'observed-recovery',
+                    severity: 'medium',
+                    status: 'resolved',
+                    reason: `${candidate.reason}:observed-progress`,
                     trackerKey: tracker.key,
                     progressMarker: progressMarkerBeforeRecovery,
                     stateSnapshot: await this.buildOnlineAiRecoveryStateSnapshot(

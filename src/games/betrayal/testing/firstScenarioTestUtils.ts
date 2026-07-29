@@ -8,7 +8,10 @@ import {
   type BetrayalCore,
   type BetrayalTraitKey,
 } from "../game";
-import { BETRAYAL_DISCOVERY_POOLS } from "../scenarioConfig";
+import {
+  BETRAYAL_DISCOVERY_POOLS,
+  type BetrayalScenarioCardId,
+} from "../scenarioConfig";
 
 const BETRAYAL_TRAIT_KEYS: BetrayalTraitKey[] = [
   "might",
@@ -381,10 +384,14 @@ export function createStartedFirstScenarioTutorialCore(
   return applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(playerIds));
 }
 
-export function createFirstScenarioHauntCore(
+function createScenarioHauntCore(
   playerIds: string[] = ["0", "1", "2"],
+  scenarioCardId?: BetrayalScenarioCardId,
 ): BetrayalCore {
   let core = createStartedFirstScenarioCore(playerIds);
+  if (scenarioCardId) {
+    core.proposedScenarioCardId = scenarioCardId;
+  }
   core.roomDiscoveryOrderByFloor.basement = [
     BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.basement.find(
       (room) => room.visualId === "chasm",
@@ -455,6 +462,18 @@ export function createFirstScenarioHauntCore(
 
   setScenarioTestTurnMovement(core, 6);
   return core;
+}
+
+export function createFirstScenarioHauntCore(
+  playerIds: string[] = ["0", "1", "2"],
+): BetrayalCore {
+  return createScenarioHauntCore(playerIds);
+}
+
+export function createCrimsonJackHauntCore(
+  playerIds: string[] = ["0", "1", "2"],
+): BetrayalCore {
+  return createScenarioHauntCore(playerIds, "crimson-jack-returns");
 }
 
 export function createFirstScenarioHauntTutorialCore(): BetrayalCore {
@@ -632,7 +651,7 @@ export function createDustFeverishAttackReadyCore(): BetrayalCore {
 }
 
 export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   const hauntSuccessRandom = createBetrayalScriptedRandom(
     3,
     3,
@@ -770,7 +789,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
 }
 
 export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   const hauntProgressRandom = createBetrayalScriptedRandom(
     3,
     3,
@@ -898,7 +917,7 @@ export function createFirstScenarioReadyToExorciseTutorialCore(): BetrayalCore {
 }
 
 export function createFirstScenarioReadyToLearnAboutJackCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
@@ -910,7 +929,7 @@ export function createFirstScenarioReadyToLearnAboutJackCore(): BetrayalCore {
 }
 
 export function createFirstScenarioReadyToStudyExorcismCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   const hauntProgressRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
 
   setScenarioTestTurnMovement(core, 6);
@@ -1213,7 +1232,7 @@ export function createMaskMoveReadyCore(): BetrayalCore {
 }
 
 export function createHeroAttackTraitorReadyCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "upper-landing",
@@ -1239,7 +1258,7 @@ export function createHeroAttackTraitorReadyTutorialCore(): BetrayalCore {
 }
 
 export function playFirstScenarioToTraitorVictory(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   const traitorWinRandom = createBetrayalScriptedRandom(
     3,
     3,
@@ -1322,7 +1341,7 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
 }
 
 export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
   const traitorWinRandom = createBetrayalScriptedRandom(
     3,
     3,
@@ -1447,7 +1466,7 @@ export function createCorpseLootReadyCore(): BetrayalCore {
 }
 
 export function createJackSpiritReviveReadyCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -1494,7 +1513,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
 }
 
 export function createJackSpiritNaturalMonsterTurnBeforeRollCore(): BetrayalCore {
-  let core = createFirstScenarioHauntCore();
+  let core = createCrimsonJackHauntCore();
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {

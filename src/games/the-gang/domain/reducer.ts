@@ -184,7 +184,18 @@ const applyHandSwapConfirmationToCore = (
 
 const buildCoreWithRulesConfig = (core: TheGangCore, random: RandomFn, config: Partial<TheGangCore['rules']['config']>) => {
     const normalizedConfig = normalizeRulesConfig(config);
-    void random;
+    const hasStartedOrProgressed = core.heistStarted
+        || core.heistNumber !== 1
+        || core.round !== 1
+        || core.phase !== 'chip-selection'
+        || Object.keys(core.currentRoundChips).length > 0
+        || core.roundHistory.length > 0
+        || core.heistHistory.length > 0;
+    if (hasStartedOrProgressed) {
+        return createInitialHeistCore(core.playerIds, random, {
+            rulesConfig: normalizedConfig,
+        });
+    }
     if (!rulesConfigRequiresRedeal(core.rules.config, normalizedConfig)) {
         return {
             ...core,

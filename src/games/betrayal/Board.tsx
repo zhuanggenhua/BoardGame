@@ -81,7 +81,7 @@ import {
   canUseDogForTrade,
   canUseHolySymbolForDiscovery,
   canUseIdolToSkipEvent,
-  canUseRabbitFootForRecentRoll,
+  canUseRecentRollRerollItemForRecentRoll,
   canUseSkeletonKeyForMove,
   createBetrayalCharacterSelectCore,
   resolveHelpingHandsControllerPlayerId,
@@ -90,6 +90,9 @@ import {
   resolveHelpingHandsStealableCards,
   resolveHelpingHandsTrollHandAttackOptions,
   resolveHelpingHandsTrollHandMoveOptions,
+  resolveMummyPendingAttackReward,
+  resolveMummyStealableCards,
+  resolveRecentRollRerollSelectableDieIndices,
   resolveBetrayalAttackTargetPlayerIds,
   resolveBetrayalEndgameReadModel,
   resolveBetrayalHauntRisk,
@@ -115,6 +118,7 @@ import {
   resolveRoomPlacementPreview,
   resolveRoomTileAdjustmentOptions,
   resolveMagicCameraPhantomAttackTargets,
+  resolveInventoryEffectId,
   resolveUseEffect,
 } from "./game";
 import {
@@ -125,7 +129,7 @@ import {
 } from "./possessionAtlas";
 import {
   getBetrayalScenarioCardCandidate,
-  isImplementedBetrayalHauntCardNumber,
+  isBetrayalOptionalHauntRollRuntimeSupported,
   resolveImplementedScenarioIdForCard,
   type BetrayalScenarioCardCandidate,
   type BetrayalScenarioCardId,
@@ -170,7 +174,11 @@ type ScenarioReaderAudience = "all" | "heroes" | "traitor";
 type ScenarioReaderScope = "all" | "heroes" | "traitor";
 
 const SCENARIO_READER_RULE_HANDOFF_SECTION_IDS = new Set(["setup"]);
-const SCENARIO_READER_CINEMATIC_SECTION_IDS = new Set(["prologue"]);
+const SCENARIO_READER_CINEMATIC_SECTION_IDS = new Set([
+  "prologue",
+  "prologueHeroes",
+  "prologueTraitor",
+]);
 
 const splitCinematicNarrationText = (text: string) =>
   text
@@ -189,6 +197,7 @@ const formatScenarioCardSummary = (
 ) => (isChineseLocale(locale) ? candidate.summary : candidate.summaryEn);
 
 type HauntDossierId =
+  | "mummyRampage"
   | "crimsonJack"
   | "dust"
   | "bloodFromStone"
@@ -202,6 +211,8 @@ type HauntDossier = {
   objectiveKey: string;
   heroGoalKey: string;
   traitorGoalKey: string;
+  sourceStatusKey?: string;
+  sourceStatusKind?: "adapted-summary" | "rule-source-text";
   sections: ScenarioReaderSection[];
 };
 
@@ -238,6 +249,37 @@ const createHauntSection = (
 });
 
 const HAUNT_DOSSIERS: Record<HauntDossierId, HauntDossier> = {
+  mummyRampage: {
+    id: "mummyRampage",
+    cardNumber: 1,
+    titleKey: "game-betrayal:board.haunts.mummyRampage.title",
+    objectiveKey: "game-betrayal:board.haunts.mummyRampage.objective",
+    heroGoalKey: "game-betrayal:board.haunts.mummyRampage.heroGoal",
+    traitorGoalKey: "game-betrayal:board.haunts.mummyRampage.traitorGoal",
+    sourceStatusKey:
+      "game-betrayal:board.haunts.mummyRampage.readerSourceStatus",
+    sourceStatusKind: "rule-source-text",
+    sections: [
+      createHauntSection("mummyRampage", "prologue", "border-[#8f5a22]"),
+      createHauntSection("mummyRampage", "prologueHeroes", "border-[#8f5a22]", [
+        "heroes",
+      ]),
+      createHauntSection("mummyRampage", "prologueTraitor", "border-[#8f5a22]", [
+        "traitor",
+      ]),
+      createHauntSection("mummyRampage", "setup", "border-[#607f3a]"),
+      createHauntSection("mummyRampage", "heroes", "border-[#43717a]", ["heroes"]),
+      createHauntSection("mummyRampage", "special", "border-[#a16c24]", ["heroes"]),
+      createHauntSection("mummyRampage", "traitor", "border-[#8f3c2e]", ["traitor"]),
+      createHauntSection("mummyRampage", "monster", "border-[#684b87]", ["traitor"]),
+      createHauntSection("mummyRampage", "endingHeroes", "border-[#8f5a22]", [
+        "heroes",
+      ]),
+      createHauntSection("mummyRampage", "endingTraitor", "border-[#8f5a22]", [
+        "traitor",
+      ]),
+    ],
+  },
   crimsonJack: {
     id: "crimsonJack",
     cardNumber: 1,
@@ -322,7 +364,7 @@ const HAUNT_DOSSIERS: Record<HauntDossierId, HauntDossier> = {
 };
 
 const HAUNT_DOSSIER_BY_CARD_NUMBER: Record<number, HauntDossierId> = {
-  1: "crimsonJack",
+  1: "mummyRampage",
   3: "dust",
   5: "bloodFromStone",
   12: "helpingHands",
@@ -333,6 +375,7 @@ const HAUNT_DOSSIER_BY_HAUNT_ID: Record<
   NonNullable<BetrayalCore["endgameResult"]>["hauntId"],
   HauntDossierId
 > = {
+  "mummy-rampage": "mummyRampage",
   "crimson-jack-returns": "crimsonJack",
   "the-dust": "dust",
   "blood-from-a-stone": "bloodFromStone",
@@ -342,12 +385,18 @@ const HAUNT_DOSSIER_BY_HAUNT_ID: Record<
 
 function resolveActiveHauntDossier(core: BetrayalCore): HauntDossier {
   if (core.phase === "haunt" && core.scenarioRuntime.hauntCardNumber) {
+    if (
+      core.scenarioRuntime.hauntCardNumber === 1 &&
+      core.scenarioRuntime.hauntScenarioCardId === "mummy-rampage"
+    ) {
+      return HAUNT_DOSSIERS.mummyRampage;
+    }
     const dossierId =
       HAUNT_DOSSIER_BY_CARD_NUMBER[core.scenarioRuntime.hauntCardNumber] ??
       "crimsonJack";
     return HAUNT_DOSSIERS[dossierId];
   }
-  return HAUNT_DOSSIERS.crimsonJack;
+  return HAUNT_DOSSIERS.mummyRampage;
 }
 
 function resolveEndgameHauntDossier(core: BetrayalCore): HauntDossier {
@@ -377,6 +426,24 @@ function resolveScenarioReaderScope(
     : "heroes";
 }
 
+function isScenarioSectionVisibleForScope(
+  section: ScenarioReaderSection,
+  scope: ScenarioReaderScope,
+): boolean {
+  if (scope === "all") {
+    return section.audiences.includes("all");
+  }
+  return section.audiences.includes("all") || section.audiences.includes(scope);
+}
+
+function resolveScenarioSourceStatusKey(dossier: HauntDossier): string {
+  return dossier.sourceStatusKey ?? "game-betrayal:board.scenario.readerSourceStatus";
+}
+
+function resolveScenarioSourceStatusKind(dossier: HauntDossier) {
+  return dossier.sourceStatusKind ?? "adapted-summary";
+}
+
 function filterScenarioSectionsByScope(
   sections: ScenarioReaderSection[],
   scope: ScenarioReaderScope,
@@ -386,12 +453,8 @@ function filterScenarioSectionsByScope(
       !SCENARIO_READER_RULE_HANDOFF_SECTION_IDS.has(section.id) &&
       !SCENARIO_READER_CINEMATIC_SECTION_IDS.has(section.id),
   );
-  if (scope === "all") {
-    return immersiveSections;
-  }
   return immersiveSections.filter(
-    (section) =>
-      section.audiences.includes("all") || section.audiences.includes(scope),
+    (section) => isScenarioSectionVisibleForScope(section, scope),
   );
 }
 
@@ -399,19 +462,27 @@ function findScenarioOpeningNarrationSection(
   dossier: HauntDossier,
   scope: ScenarioReaderScope,
 ): ScenarioReaderSection | null {
+  const cinematicSections = dossier.sections.filter(
+    (section) =>
+      SCENARIO_READER_CINEMATIC_SECTION_IDS.has(section.id) &&
+      isScenarioSectionVisibleForScope(section, scope),
+  );
+  if (scope !== "all") {
+    return (
+      cinematicSections.find((section) => section.audiences.includes(scope)) ??
+      cinematicSections[0] ??
+      null
+    );
+  }
   return (
-    dossier.sections.find(
-      (section) =>
-        SCENARIO_READER_CINEMATIC_SECTION_IDS.has(section.id) &&
-        (scope === "all" ||
-          section.audiences.includes("all") ||
-          section.audiences.includes(scope)),
-    ) ?? null
+    cinematicSections.find((section) => section.audiences.includes("all")) ??
+    cinematicSections[0] ??
+    null
   );
 }
 
 function buildScenarioReaderPages(
-  dossier: HauntDossier = HAUNT_DOSSIERS.crimsonJack,
+  dossier: HauntDossier = HAUNT_DOSSIERS.mummyRampage,
   scope: ScenarioReaderScope = "all",
 ): ScenarioReaderPage[] {
   const scopedSections = filterScenarioSectionsByScope(dossier.sections, scope);
@@ -479,6 +550,7 @@ type PreviewState = {
   selectedMaskTargetRoomIdsByTokenId: Record<string, string>;
   activeMaskTargetTokenId: string | null;
   selectedEventTrait: BetrayalTraitKey | null;
+  selectedEventCardId: string | null;
   selectedDustSearchTrait: BetrayalTraitKey | null;
   selectedDustCureTrait: BetrayalTraitKey | null;
   selectedEventTargetRoomId: string | null;
@@ -891,6 +963,7 @@ function createInitialPreviewState(_core: BetrayalCore): PreviewState {
     selectedMaskTargetRoomIdsByTokenId: {},
     activeMaskTargetTokenId: null,
     selectedEventTrait: null,
+    selectedEventCardId: null,
     selectedDustSearchTrait: null,
     selectedDustCureTrait: null,
     selectedEventTargetRoomId: null,
@@ -1841,6 +1914,9 @@ function resolveInventoryCardAccentAsset(card: BetrayalInventoryCard): string {
   if (effect.mode === "nextNonCombatTraitReplacement") {
     return ASSETS.trait[effect.replacementTrait];
   }
+  if (effect.mode === "nextNonCombatTraitRollTotalReplacement") {
+    return ASSETS.trait.knowledge;
+  }
   return ASSETS.trait[effect.trait ?? "knowledge"];
 }
 
@@ -1876,6 +1952,9 @@ function resolvePreviewUseEffectLabel(
   }
   if (profile.mode === "nextNonCombatTraitReplacement") {
     return `下一次非战斗检定可用${t(`board.traits.${profile.replacementTrait}`)}替换`;
+  }
+  if (profile.mode === "nextNonCombatTraitRollTotalReplacement") {
+    return `下一次属性检定可用 ${profile.minTotal}-${profile.maxTotal} 的结果替代投骰`;
   }
   return t("board.useEffects.trait", {
     trait: t(`board.traits.${profile.trait}`),
@@ -1924,8 +2003,14 @@ function resolveInventoryRulesSummary(
     passiveLabels.push("攻击时可选择砍刀，攻击结果 +1");
   if (effectId === "dagger")
     passiveLabels.push("攻击时可选择匕首，额外投 2 骰并失去 1 点速度");
+  if (effectId === "leather-jacket")
+    passiveLabels.push("防御攻击时额外投 1 骰");
+  if (effectId === "chainsaw")
+    passiveLabels.push("攻击时可选择电锯，额外投 1 骰");
+  if (effectId === "gun")
+    passiveLabels.push("攻击时可选择枪，攻击视线内目标，失败不反伤");
   if (effectId === "crossbow")
-    passiveLabels.push("攻击时可选择弩，攻击视线内目标");
+    passiveLabels.push("攻击时可选择十字弓，攻击同板块或相邻板块目标，失败不反伤");
 
   if (activeLabel !== "按卡面规则持有" && passiveLabels.length > 0) {
     return `${activeLabel}；${passiveLabels.join("；")}`;
@@ -2022,14 +2107,44 @@ function resolveEventTargetRooms(
     );
   }
   if (effect.mode === "placeExplorerInDiscoveredRoomByFloor") {
+    const currentRoom = core.rooms.find(
+      (room) => room.id === core.currentExplorer.roomId,
+    );
+    const requiredRoom = effect.requiredIfDiscoveredVisualIds?.length
+      ? core.rooms.find(
+          (room) =>
+            room.state === "discovered" &&
+            effect.requiredIfDiscoveredVisualIds!.includes(room.visualId),
+        )
+      : null;
     return core.rooms.filter(
-      (room) =>
-        room.state === "discovered" &&
-        (effect.targetRoomScope === "anyDiscovered" ||
-          (effect.targetRoomScope === "groundDiscovered" &&
-            room.floor === "ground") ||
-          (effect.targetRoomScope === "basementDiscovered" &&
-            room.floor === "basement")),
+      (room) => {
+        if (room.state !== "discovered") {
+          return false;
+        }
+        if (requiredRoom) {
+          return room.id === requiredRoom.id;
+        }
+        if (effect.targetRoomScope === "anyDiscovered") {
+          return true;
+        }
+        if (effect.targetRoomScope === "groundDiscovered") {
+          return room.floor === "ground";
+        }
+        if (effect.targetRoomScope === "basementDiscovered") {
+          return room.floor === "basement";
+        }
+        if (effect.targetRoomScope === "groundOrBasementDiscovered") {
+          return room.floor === "ground" || room.floor === "basement";
+        }
+        if (effect.targetRoomScope === "sameFloorDiscovered") {
+          return Boolean(currentRoom && room.floor === currentRoom.floor);
+        }
+        if (effect.targetRoomScope === "differentFloorDiscovered") {
+          return Boolean(currentRoom && room.floor !== currentRoom.floor);
+        }
+        return false;
+      },
     );
   }
   if (effect.mode === "placeExplorerInAdjacentRoom") {
@@ -2057,7 +2172,7 @@ function resolveEventTargetRooms(
       (room) =>
         room.state === "discovered" &&
         room.id !== core.currentExplorer.roomId &&
-        !(room.tokens ?? []).some((token) => token.kind === "secretPassage") &&
+        !room.markerTokens?.includes("secretPassage") &&
         (!effect.targetRoomScope ||
           effect.targetRoomScope === "anyOtherDiscovered" ||
           (effect.targetRoomScope === "groundDiscovered" &&
@@ -2093,6 +2208,9 @@ function resolveEventActionEffect(
   effect: UseEffectProfile,
   accept: boolean,
 ): UseEffectProfile {
+  if (effect.mode === "optionalItemEffect") {
+    return accept ? effect.acceptEffect : effect.declineEffect;
+  }
   if (!accept && effect.mode === "optionalHauntRoll") {
     return effect.skippedOrStartedEffect;
   }
@@ -2104,6 +2222,29 @@ function resolveEventActionEffect(
     return effect.allPassEffect;
   }
   return effect;
+}
+
+function resolveEventItemChoiceCards(
+  core: BetrayalCore,
+  effect: UseEffectProfile | null,
+): BetrayalInventoryCard[] {
+  if (effect?.mode !== "optionalItemEffect") {
+    return [];
+  }
+  const attackWeaponEffectIds = new Set(
+    resolveAttackWeaponCardStatuses(core).map((status) =>
+      resolveInventoryEffectId(status.card.id),
+    ),
+  );
+  return core.currentExplorer.inventory.filter((card) => {
+    if (card.kind !== "item") {
+      return false;
+    }
+    if (effect.itemFilter === "nonWeaponItem") {
+      return !attackWeaponEffectIds.has(resolveInventoryEffectId(card.id));
+    }
+    return true;
+  });
 }
 
 function mergeEventTraitChoices(
@@ -2457,7 +2598,15 @@ function CharacterSelectScreen({
     },
     [],
   );
-  const scenarioReaderDossier = HAUNT_DOSSIERS.crimsonJack;
+  const scenarioReaderDossier =
+    proposedScenarioCard.id === "mummy-rampage"
+      ? HAUNT_DOSSIERS.mummyRampage
+      : HAUNT_DOSSIERS.crimsonJack;
+  const scenarioReaderSourceStatus = t(
+    resolveScenarioSourceStatusKey(scenarioReaderDossier),
+  );
+  const scenarioReaderSourceStatusKind =
+    resolveScenarioSourceStatusKind(scenarioReaderDossier);
   const scenarioReaderOpeningSection = findScenarioOpeningNarrationSection(
     scenarioReaderDossier,
     "all",
@@ -3164,7 +3313,8 @@ function CharacterSelectScreen({
                           text={t(scenarioReaderOpeningSection.bodyKey)}
                           variant="opening"
                           presentation="stage"
-                          sourceStatus={t("board.scenario.readerSourceStatus")}
+                          sourceStatus={scenarioReaderSourceStatus}
+                          sourceStatusKind={scenarioReaderSourceStatusKind}
                           sourceStatusTestId="betrayal-scenario-opening-source-status"
                           compact={isPhoneLandscapeLayout}
                           actionSlot={
@@ -4162,6 +4312,7 @@ function CinematicNarrationPanel({
   compact = false,
   presentation = "panel",
   sourceStatus,
+  sourceStatusKind = "adapted-summary",
   sourceStatusTestId,
   actionSlot,
   testId,
@@ -4173,6 +4324,7 @@ function CinematicNarrationPanel({
   compact?: boolean;
   presentation?: "panel" | "stage";
   sourceStatus?: string;
+  sourceStatusKind?: "adapted-summary" | "rule-source-text";
   sourceStatusTestId?: string;
   actionSlot?: React.ReactNode;
   testId?: string;
@@ -4220,7 +4372,7 @@ function CinematicNarrationPanel({
           {sourceStatus ? (
             <div
               data-testid={sourceStatusTestId}
-              data-scenario-source-status="adapted-summary"
+              data-scenario-source-status={sourceStatusKind}
               className={`mt-2 font-bold uppercase text-[#b98c49] ${
                 compact
                   ? "text-[8px] tracking-[0.18em]"
@@ -4444,6 +4596,7 @@ const resolveBetrayalHouseD6Face = (pip: number): number => {
 
 type RecentRollRerollSelection = {
   promptLabel: string;
+  allowedDieIndices?: readonly number[];
   getDieActionLabel: (dieIndex: number) => string;
   onSelectDie: (dieIndex: number) => void;
 };
@@ -4708,7 +4861,11 @@ function BetrayalHouseDice3DGroup({
       }),
     [physicsStates, roll.dice],
   );
+  const allowedRerollDieIndices = rerollSelection?.allowedDieIndices;
   const selectableDiceTargets = React.useMemo(() => {
+    const allowedDieIndexSet = allowedRerollDieIndices
+      ? new Set(allowedRerollDieIndices)
+      : null;
     const physicsTargets = physicsStates
       .map((state) => ({
         dieIndex: state.id - 1,
@@ -4716,7 +4873,10 @@ function BetrayalHouseDice3DGroup({
         source: "physics" as const,
       }))
       .filter(
-        (target) => target.dieIndex >= 0 && target.dieIndex < roll.dice.length,
+        (target) =>
+          target.dieIndex >= 0 &&
+          target.dieIndex < roll.dice.length &&
+          (!allowedDieIndexSet || allowedDieIndexSet.has(target.dieIndex)),
       );
 
     if (physicsTargets.length > 0) {
@@ -4725,29 +4885,33 @@ function BetrayalHouseDice3DGroup({
 
     const spacing = 82;
     const totalWidth = Math.max(0, (roll.dice.length - 1) * spacing);
-    return roll.dice.map((_, dieIndex) => ({
-      dieIndex,
-      layout: {
-        id: dieIndex + 1,
-        x: 0,
-        y: 0,
-        width: 64,
-        height: 64,
-        minX: 0,
-        maxX: 0,
-        minY: 0,
-        maxY: 0,
-        rotateX: 0,
-        rotateY: 0,
-        rotateZ: 0,
-      },
-      fallbackStyle: {
-        left: `calc(50% + ${dieIndex * spacing - totalWidth / 2}px)`,
-        top: "50%",
-      },
-      source: "fallback-projection" as const,
-    }));
-  }, [physicsStates, roll.dice]);
+    return roll.dice
+      .map((_, dieIndex) => ({
+        dieIndex,
+        layout: {
+          id: dieIndex + 1,
+          x: 0,
+          y: 0,
+          width: 64,
+          height: 64,
+          minX: 0,
+          maxX: 0,
+          minY: 0,
+          maxY: 0,
+          rotateX: 0,
+          rotateY: 0,
+          rotateZ: 0,
+        },
+        fallbackStyle: {
+          left: `calc(50% + ${dieIndex * spacing - totalWidth / 2}px)`,
+          top: "50%",
+        },
+        source: "fallback-projection" as const,
+      }))
+      .filter(
+        (target) => !allowedDieIndexSet || allowedDieIndexSet.has(target.dieIndex),
+      );
+  }, [allowedRerollDieIndices, physicsStates, roll.dice]);
   const handleRerollTargetKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>, dieIndex: number) => {
       if (!rerollSelection) return;
@@ -6149,6 +6313,11 @@ export default function BetrayalBoard({
       : scenarioReaderScope === "heroes"
         ? t("board.scenario.readerStatusHeroBook")
         : t("board.scenario.readerStatusPublicBook");
+  const activeHauntSourceStatus = t(
+    resolveScenarioSourceStatusKey(activeHauntDossier),
+  );
+  const activeHauntSourceStatusKind =
+    resolveScenarioSourceStatusKind(activeHauntDossier);
   const scenarioReferenceButtonLabel = t("board.scenario.button");
   const scenarioReferenceAccessibleLabel = `${activeHauntCaseLabel} / ${activeHauntTitle}`;
   const referenceScenarioOpeningSection = findScenarioOpeningNarrationSection(
@@ -6805,7 +6974,7 @@ export default function BetrayalBoard({
     pendingDamageAllocation?.playerId === viewerPlayerId;
   const pendingEventAcceptsUnsupportedHaunt =
     pendingEventChoice?.effect.mode === "optionalHauntRoll" &&
-    !isImplementedBetrayalHauntCardNumber(
+    !isBetrayalOptionalHauntRollRuntimeSupported(
       pendingEventChoice.effect.successHauntId,
     );
   const pendingEventActionEffect =
@@ -6861,6 +7030,19 @@ export default function BetrayalBoard({
         core.phase,
       )
     : [];
+  const pendingEventItemChoice =
+    pendingEventChoice?.effect.mode === "optionalItemEffect"
+      ? pendingEventChoice.effect
+      : null;
+  const pendingEventItemChoiceCards = React.useMemo(
+    () => resolveEventItemChoiceCards(core, pendingEventItemChoice),
+    [core, pendingEventItemChoice],
+  );
+  const selectedEventCardId = pendingEventItemChoiceCards.some(
+    (card) => card.id === previewState.selectedEventCardId,
+  )
+    ? previewState.selectedEventCardId
+    : null;
   const pendingEventChoiceRoll =
     pendingEventChoice &&
     core.recentRoll &&
@@ -6881,12 +7063,14 @@ export default function BetrayalBoard({
   const pendingEventReady =
     Boolean(pendingEventChoice) &&
     !pendingEventAcceptsUnsupportedHaunt &&
+    (!pendingEventItemChoice || Boolean(selectedEventCardId)) &&
     (!pendingEventAcceptTraitChoices.length || Boolean(selectedEventTrait)) &&
     (!pendingEventTargetRooms.length || Boolean(selectedEventTargetRoomId)) &&
     (!pendingEventDamageChoice ||
       selectedEventDamageTraits.length === pendingEventDamageChoice.amount);
   const pendingEventNeedsAcceptSelection =
     pendingEventAcceptTraitChoices.length > 0 ||
+    Boolean(pendingEventItemChoice) ||
     pendingEventTargetRooms.length > 0 ||
     Boolean(pendingEventDamageChoice);
   const shouldShowPendingEventAcceptButton =
@@ -7346,6 +7530,9 @@ export default function BetrayalBoard({
   )
     ? previewState.selectedAttackWeaponCardId
     : null;
+  const selectedAttackWeaponEffectId = selectedAttackWeaponCardId
+    ? resolveInventoryEffectId(selectedAttackWeaponCardId)
+    : null;
   const selectedAttackWeaponCardIdRef = React.useRef<string | null>(null);
   React.useLayoutEffect(() => {
     selectedAttackWeaponCardIdRef.current = selectedAttackWeaponCardId;
@@ -7450,13 +7637,16 @@ export default function BetrayalBoard({
       )
     : null;
   const dustRuntime = core.scenarioRuntime.dust ?? null;
-  const dustResearchTokensByRoomId = React.useMemo(() => {
+  const visibleHauntTokensByRoomId = React.useMemo(() => {
     const tokensByRoomId = new Map<string, BetrayalHauntTokenInstanceSummary[]>();
     for (const token of resolveBetrayalHauntTokenInstances(core)) {
+      const isBoardVisibleHauntToken =
+        token.id.startsWith("dust-research-token-") ||
+        token.id.startsWith("mummy-");
       if (
         !token.roomId ||
         token.visibility !== "public" ||
-        !token.id.startsWith("dust-research-token-")
+        !isBoardVisibleHauntToken
       ) {
         continue;
       }
@@ -7720,9 +7910,42 @@ export default function BetrayalBoard({
   const isHelpingHandsRewardChooser =
     helpingHandsPendingReward?.attackerPlayerId ===
     core.currentExplorer.playerId;
+  const mummyPendingReward = resolveMummyPendingAttackReward(core);
+  const mummyRewardController = mummyPendingReward
+    ? (allExplorers.find(
+        (explorer) =>
+          explorer.playerId === mummyPendingReward.controllerPlayerId,
+      ) ?? null)
+    : null;
+  const mummyRewardDefender = mummyPendingReward
+    ? (allExplorers.find(
+        (explorer) =>
+          explorer.playerId === mummyPendingReward.defenderPlayerId,
+      ) ?? null)
+    : null;
+  const mummyRewardControllerName = mummyRewardController
+    ? resolvePlayerName(
+        mummyRewardController.playerId,
+        mummyRewardController.displayName,
+        matchData,
+      )
+    : "";
+  const mummyRewardDefenderName = mummyRewardDefender
+    ? resolvePlayerName(
+        mummyRewardDefender.playerId,
+        mummyRewardDefender.displayName,
+        matchData,
+      )
+    : "";
+  const mummyStealableCards = mummyPendingReward
+    ? resolveMummyStealableCards(core, mummyPendingReward.defenderPlayerId)
+    : [];
+  const isMummyRewardChooser =
+    mummyPendingReward?.controllerPlayerId === core.currentExplorer.playerId;
   const hasPendingPlayerAgreement = Boolean(
     pendingTradeAgreement ||
       pendingSicknessExchange ||
+      mummyPendingReward ||
       helpingHandsPendingReward ||
       pendingDamageAllocation,
   );
@@ -7745,6 +7968,7 @@ export default function BetrayalBoard({
   const shouldShowInlineTradeConfirm = Boolean(
     !pendingTradeAgreement &&
     !pendingSicknessExchange &&
+    !mummyPendingReward &&
     !helpingHandsPendingReward &&
     !isDustSicknessExchangeMode &&
     core.recommendedAction === "trade" &&
@@ -7766,8 +7990,8 @@ export default function BetrayalBoard({
   const lastUsedInventoryCardStillUsed =
     previewState.lastUsedInventoryCardId !== null &&
     core.usedCardIdsThisTurn.includes(previewState.lastUsedInventoryCardId);
-  const selectedCardCanUseRabbitFoot = selectedInventoryCard
-    ? canUseRabbitFootForRecentRoll(
+  const selectedCardCanUseRecentRollRerollItem = selectedInventoryCard
+    ? canUseRecentRollRerollItemForRecentRoll(
         core,
         core.currentExplorer.playerId,
         selectedInventoryCard.id,
@@ -7779,14 +8003,22 @@ export default function BetrayalBoard({
         selectedInventoryCard.id,
       )
     : null;
-  const rabbitFootRerollSelection =
-    selectedCardCanUseRabbitFoot && core.recentRoll
+  const selectedCardRecentRollRerollDieIndices =
+    selectedInventoryCard && core.recentRoll
+      ? resolveRecentRollRerollSelectableDieIndices(
+          core.recentRoll,
+          selectedInventoryCard.id,
+        )
+      : [];
+  const recentRollRerollSelection =
+    selectedCardCanUseRecentRollRerollItem && core.recentRoll
       ? {
-          promptLabel: t("board.inventory.rabbitFoot"),
+          promptLabel: t("board.inventory.rollRerollItem"),
+          allowedDieIndices: selectedCardRecentRollRerollDieIndices,
           getDieActionLabel: (dieIndex: number) =>
             t("board.inventory.rerollDie", { index: dieIndex + 1 }),
           onSelectDie: (dieIndex: number) => {
-            dispatchCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, {
+            dispatchCommand(BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM, {
               cardId: selectedInventoryCard?.id,
               dieIndex,
             });
@@ -7803,7 +8035,7 @@ export default function BetrayalBoard({
       new Set(
         core.currentExplorerInventory
           .filter((card) =>
-            canUseRabbitFootForRecentRoll(
+            canUseRecentRollRerollItemForRecentRoll(
               core,
               core.currentExplorer.playerId,
               card.id,
@@ -7823,7 +8055,7 @@ export default function BetrayalBoard({
     healTargetExplorers.length > 0;
   const selectedCardBlockedBySpecialActionStatus = Boolean(
     selectedInventoryCard &&
-      !selectedCardCanUseRabbitFoot &&
+      !selectedCardCanUseRecentRollRerollItem &&
       selectedCardSpecialActionStatus &&
       !selectedCardSpecialActionStatus.canUse,
   );
@@ -7864,7 +8096,16 @@ export default function BetrayalBoard({
     }
     return null;
   })();
-  const tradeStatusText = helpingHandsPendingReward
+  const tradeStatusText = mummyPendingReward
+    ? isMummyRewardChooser
+      ? t("board.status.mummyRewardChoose", {
+          player: mummyRewardDefenderName,
+          damage: mummyPendingReward.damageToHero,
+        })
+      : t("board.status.mummyRewardWaiting", {
+          player: mummyRewardControllerName,
+        })
+    : helpingHandsPendingReward
     ? isHelpingHandsRewardChooser
       ? t("board.status.helpingHandsRewardChoose", {
           player: helpingHandsRewardDefenderName,
@@ -8052,6 +8293,7 @@ export default function BetrayalBoard({
   const shouldShowMobileTradeStatus =
     Boolean(pendingTradeAgreement) ||
     Boolean(pendingSicknessExchange) ||
+    Boolean(mummyPendingReward) ||
     Boolean(helpingHandsPendingReward) ||
     shouldStartDustSicknessExchange ||
     core.recommendedAction !== "trade" ||
@@ -8477,6 +8719,7 @@ export default function BetrayalBoard({
     Boolean(helpingHandsMonsterTurnStatus.monsterTurnAfterPlayerId) &&
     (helpingHandsMonsterTurnStatus.active ||
       !helpingHandsMonsterTurnStatus.controllerPlayerId) &&
+    !mummyPendingReward &&
     !helpingHandsPendingReward &&
     !pendingTradeAgreement &&
     !pendingSicknessExchange &&
@@ -8612,6 +8855,19 @@ export default function BetrayalBoard({
     const isDead = core.scenarioRuntime.deadExplorerPlayerIds.includes(
       core.currentExplorer.playerId,
     );
+    const mummyRuntime = core.scenarioRuntime.mummy;
+    const mummyMonster = mummyRuntime
+      ? core.monsters.find(
+          (monster) =>
+            monster.id === mummyRuntime.mummyMonsterId ||
+            monster.definitionId === "mummy",
+        ) ?? null
+      : null;
+    const mummyWeddingOmenCard = core.currentExplorer.inventory.find(
+      (card) =>
+        card.kind === "omen" &&
+        (card.id === "holy-symbol" || card.id === "ring"),
+    ) ?? null;
     const resolveHauntSpecialActionDisabledReason = (
       status: BetrayalHauntSpecialActionStatus,
     ) => {
@@ -8758,6 +9014,87 @@ export default function BetrayalBoard({
           label: t("board.status.focusPlayPeekaboo"),
           cue: t("board.status.actionCuePlayPeekaboo"),
         };
+      }
+    }
+    if (mummyRuntime && !isDead) {
+      const currentRoomId = core.currentExplorer.roomId;
+      if (
+        mummyRuntime.girlRoomId === currentRoomId &&
+        !mummyRuntime.girlHolderPlayerId &&
+        !mummyRuntime.girlHeldByMummy
+      ) {
+        return {
+          actionKind: "use" as const,
+          commandType: BETRAYAL_COMMANDS.PICK_UP_MUMMY_GIRL,
+          label: t("board.status.focusPickUpMummyGirl"),
+          cue: t("board.status.actionCuePickUpMummyGirl"),
+        };
+      }
+      if (
+        isTraitor &&
+        mummyRuntime.girlHolderPlayerId === core.currentExplorer.playerId &&
+        mummyMonster?.roomId === currentRoomId
+      ) {
+        return {
+          actionKind: "use" as const,
+          commandType: BETRAYAL_COMMANDS.GIVE_GIRL_TO_MUMMY,
+          label: t("board.status.focusGiveGirlToMummy"),
+          cue: t("board.status.actionCueGiveGirlToMummy"),
+        };
+      }
+      if (
+        isTraitor &&
+        mummyWeddingOmenCard &&
+        mummyMonster?.roomId === currentRoomId &&
+        !mummyRuntime.mummyCarriedOmenIds.includes(mummyWeddingOmenCard.id)
+      ) {
+        return {
+          actionKind: "use" as const,
+          commandType: BETRAYAL_COMMANDS.GIVE_OMEN_TO_MUMMY,
+          payload: { cardId: mummyWeddingOmenCard.id },
+          label: t("board.status.focusGiveOmenToMummy", {
+            card: mummyWeddingOmenCard.name,
+          }),
+          cue: t("board.status.actionCueGiveOmenToMummy", {
+            card: mummyWeddingOmenCard.name,
+          }),
+        };
+      }
+    }
+    {
+      const banishMummyContext = createBudgetedUseContext("banish-mummy", {
+        actionKind: "use" as const,
+        commandType: BETRAYAL_COMMANDS.BANISH_MUMMY,
+        label: t("board.status.focusBanishMummy"),
+        cue: t("board.status.actionCueBanishMummy"),
+      });
+      if (banishMummyContext) {
+        return banishMummyContext;
+      }
+    }
+    {
+      const learnMummyBanishmentContext = createBudgetedUseContext(
+        "learn-mummy-banishment",
+        {
+          actionKind: "use" as const,
+          commandType: BETRAYAL_COMMANDS.LEARN_MUMMY_BANISHMENT,
+          label: t("board.status.focusLearnMummyBanishment"),
+          cue: t("board.status.actionCueLearnMummyBanishment"),
+        },
+      );
+      if (learnMummyBanishmentContext) {
+        return learnMummyBanishmentContext;
+      }
+    }
+    {
+      const studyMummyNameContext = createBudgetedUseContext("study-mummy-name", {
+        actionKind: "use" as const,
+        commandType: BETRAYAL_COMMANDS.STUDY_MUMMY_NAME,
+        label: t("board.status.focusStudyMummyName"),
+        cue: t("board.status.actionCueStudyMummyName"),
+      });
+      if (studyMummyNameContext) {
+        return studyMummyNameContext;
       }
     }
     {
@@ -9063,6 +9400,7 @@ export default function BetrayalBoard({
   const shouldShowTradeFlowPrompt = Boolean(
     !shouldPauseHauntBoardActions &&
       !pendingSicknessExchange &&
+      !mummyPendingReward &&
       !helpingHandsPendingReward &&
       !isDustSicknessExchangeMode &&
       !activeHauntTargetGuide &&
@@ -9087,6 +9425,7 @@ export default function BetrayalBoard({
   const shouldShowTradeActionPanel = Boolean(
     !shouldPauseHauntBoardActions &&
       !pendingSicknessExchange &&
+      !mummyPendingReward &&
       !helpingHandsPendingReward &&
       !isDustSicknessExchangeMode &&
       !activeHauntTargetGuide &&
@@ -9132,6 +9471,7 @@ export default function BetrayalBoard({
 
     if (
       selectedAttackWeaponCardId &&
+      selectedAttackWeaponEffectId === "gun" &&
       (previewState.hauntTargetingActionKind === "attack-traitor" ||
         previewState.hauntTargetingActionKind === "attack-hero")
     ) {
@@ -9232,6 +9572,7 @@ export default function BetrayalBoard({
     selectedAttackTargetPlayerIds.heroPlayerIds,
     selectedAttackTargetPlayerIds.traitorPlayerId,
     selectedAttackWeaponCardId,
+    selectedAttackWeaponEffectId,
     selectedMonsterAttackEntry,
     visibleMapRooms,
   ]);
@@ -9415,7 +9756,7 @@ export default function BetrayalBoard({
       latestDiscoveryRecentRoll.playerId === core.currentExplorer.playerId,
   );
   const latestDiscoveryRerollSelection =
-    canCurrentPlayerModifyLatestDiscoveryRoll ? rabbitFootRerollSelection : null;
+    canCurrentPlayerModifyLatestDiscoveryRoll ? recentRollRerollSelection : null;
   const activePendingCardResolution =
     core.pendingCardResolutionQueue?.[0] ?? null;
   const hasLatestDiscoveryPendingCardResolution = Boolean(
@@ -10348,6 +10689,7 @@ export default function BetrayalBoard({
 
   function resolveEventAcceptPreview(selection: {
     trait?: BetrayalTraitKey | null;
+    cardId?: string | null;
     targetRoomId?: string | null;
     damageTraits?: BetrayalTraitKey[];
   }) {
@@ -10355,6 +10697,7 @@ export default function BetrayalBoard({
         return null;
       }
       const trait = selection.trait ?? null;
+      const cardId = selection.cardId ?? null;
       const previewEffect = resolveEventPreviewEffect(
         core,
         pendingEventActionEffect,
@@ -10374,12 +10717,18 @@ export default function BetrayalBoard({
         : [];
       return {
         trait,
+        cardId,
         targetRooms,
         targetRoomId,
         damageChoice,
         damageTraits,
         ready:
           !pendingEventAcceptsUnsupportedHaunt &&
+          (!pendingEventItemChoice ||
+            Boolean(
+              cardId &&
+                pendingEventItemChoiceCards.some((card) => card.id === cardId),
+            )) &&
           (!pendingEventAcceptTraitChoices.length || Boolean(trait)) &&
           (!targetRooms.length ||
             Boolean(
@@ -10394,6 +10743,7 @@ export default function BetrayalBoard({
     setPreviewState((previousState) => ({
       ...previousState,
       selectedEventTrait: null,
+      selectedEventCardId: null,
       selectedEventTargetRoomId: null,
       selectedEventDamageTraits: [],
       interactionMode: "default",
@@ -10405,6 +10755,7 @@ export default function BetrayalBoard({
     accept: boolean,
     selection?: {
       trait?: BetrayalTraitKey | null;
+      cardId?: string | null;
       targetRoomId?: string | null;
       damageTraits?: BetrayalTraitKey[];
     },
@@ -10415,6 +10766,7 @@ export default function BetrayalBoard({
       if (accept) {
         const preview = resolveEventAcceptPreview({
           trait: selection?.trait ?? selectedEventTrait,
+          cardId: selection?.cardId ?? selectedEventCardId,
           targetRoomId: selection?.targetRoomId ?? selectedEventTargetRoomId,
           damageTraits: selection?.damageTraits ?? selectedEventDamageTraits,
         });
@@ -10423,6 +10775,7 @@ export default function BetrayalBoard({
         }
         dispatchCommand(BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, {
           ...(preview.trait ? { trait: preview.trait } : {}),
+          ...(preview.cardId ? { cardId: preview.cardId } : {}),
           ...(preview.targetRoomId
             ? { targetRoomId: preview.targetRoomId }
             : {}),
@@ -10447,6 +10800,7 @@ export default function BetrayalBoard({
   function handleSelectEventTrait(trait: BetrayalTraitKey) {
       const nextSelection = {
         trait,
+        cardId: selectedEventCardId,
         targetRoomId: null,
         damageTraits: [],
       };
@@ -10463,9 +10817,29 @@ export default function BetrayalBoard({
       }));
   }
 
+  function handleSelectEventCard(cardId: string) {
+      const nextSelectedCardId = selectedEventCardId === cardId ? null : cardId;
+      const nextSelection = {
+        trait: selectedEventTrait,
+        cardId: nextSelectedCardId,
+        targetRoomId: selectedEventTargetRoomId,
+        damageTraits: selectedEventDamageTraits,
+      };
+      const preview = resolveEventAcceptPreview(nextSelection);
+      if (!pendingEventChoice?.declineLabel && preview?.ready) {
+        dispatchResolveEventChoice(true, nextSelection);
+        return;
+      }
+      setPreviewState((previousState) => ({
+        ...previousState,
+        selectedEventCardId: nextSelectedCardId,
+      }));
+  }
+
   function handleSelectEventTargetRoom(roomId: string) {
       const nextSelection = {
         trait: selectedEventTrait,
+        cardId: selectedEventCardId,
         targetRoomId: roomId,
         damageTraits: selectedEventDamageTraits,
       };
@@ -10513,6 +10887,7 @@ export default function BetrayalBoard({
           : [...selected, trait];
       const nextSelection = {
         trait: selectedEventTrait,
+        cardId: selectedEventCardId,
         targetRoomId: selectedEventTargetRoomId,
         damageTraits: nextSelectedDamageTraits,
       };
@@ -10639,7 +11014,7 @@ export default function BetrayalBoard({
     if (!cardId) {
       return;
     }
-    if (cardId && selectedCardCanUseRabbitFoot) {
+    if (cardId && selectedCardCanUseRecentRollRerollItem) {
       setInventoryPreviewCardId(null);
       return;
     }
@@ -10783,6 +11158,25 @@ export default function BetrayalBoard({
   const handleResolveHelpingHandsAttackReward = React.useCallback(
     (choice: "damage" | "steal", cardId?: string) => {
       dispatchCommand(BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD, {
+        choice,
+        ...(cardId ? { cardId } : {}),
+      });
+      setInventoryPreviewCardId(null);
+      setPreviewState((previousState) => ({
+        ...previousState,
+        selectedTradeTargetPlayerId: null,
+        selectedTradeGiveCardIds: [],
+        tradeSelectionTouched: false,
+        interactionMode: "default",
+        hauntTargetingActionKind: null,
+      }));
+    },
+    [dispatchCommand],
+  );
+
+  const handleResolveMummyAttackReward = React.useCallback(
+    (choice: "damage" | "steal", cardId?: string) => {
+      dispatchCommand(BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD, {
         choice,
         ...(cardId ? { cardId } : {}),
       });
@@ -12489,9 +12883,11 @@ export default function BetrayalBoard({
           !shouldUseMobileEventOpenTableChrome &&
           (visibleDustProgressItems.length > 0 ||
             shouldShowTradeFlowPrompt ||
+            mummyPendingReward ||
             helpingHandsPendingReward ||
             shouldShowHelpingHandsMonsterTurnStatus ||
-            (!helpingHandsPendingReward &&
+            (!mummyPendingReward &&
+              !helpingHandsPendingReward &&
               !pendingTradeAgreement &&
               !pendingSicknessExchange &&
               !isDustSicknessExchangeMode &&
@@ -12506,6 +12902,7 @@ export default function BetrayalBoard({
             >
               {visibleDustProgressItems.length > 0 &&
               !pendingSicknessExchange &&
+              !mummyPendingReward &&
               !helpingHandsPendingReward &&
               !isDustSicknessExchangeMode ? (
                 <div
@@ -12585,6 +12982,38 @@ export default function BetrayalBoard({
                   ) : null}
                 </div>
               ) : null}
+              {mummyPendingReward ? (
+                <div
+                  data-testid="betrayal-mummy-reward-banner"
+                  data-mummy-reward-state={
+                    isMummyRewardChooser ? "choose" : "waiting"
+                  }
+                  data-prompt-placement="top"
+                  className="pointer-events-none flex min-h-[56px] w-full flex-wrap items-center justify-center gap-2.5 rounded-[9px] border border-[rgba(238,204,126,0.52)] bg-[rgba(18,17,13,0.90)] px-4 py-2.5 text-center text-[13px] font-bold tracking-[0.045em] text-[#f3e0a6] shadow-[0_16px_34px_rgba(0,0,0,0.38),0_0_24px_rgba(238,204,126,0.20)] backdrop-blur-sm"
+                  style={{
+                    textShadow:
+                      "0 1px 2px rgba(0,0,0,0.86), 0 0 12px rgba(238,204,126,0.34)",
+                  }}
+                >
+                  <Skull size={18} strokeWidth={2.4} />
+                  <span className="text-[16px] text-[#fff1b8]">
+                    {t("board.status.mummyRewardTitle")}
+                  </span>
+                  <span
+                    data-testid="betrayal-mummy-reward-step"
+                    className="text-[13px] text-[#e3d2a1]"
+                  >
+                    {isMummyRewardChooser
+                      ? t("board.status.mummyRewardChoose", {
+                          player: mummyRewardDefenderName,
+                          damage: mummyPendingReward.damageToHero,
+                        })
+                      : t("board.status.mummyRewardWaiting", {
+                          player: mummyRewardControllerName,
+                        })}
+                  </span>
+                </div>
+              ) : null}
               {helpingHandsPendingReward ? (
                 <div
                   data-testid="betrayal-helping-hands-reward-banner"
@@ -12641,6 +13070,7 @@ export default function BetrayalBoard({
                 </div>
               ) : null}
               {!helpingHandsPendingReward &&
+              !mummyPendingReward &&
               !pendingTradeAgreement &&
               !pendingSicknessExchange &&
               !isDustSicknessExchangeMode &&
@@ -13492,7 +13922,7 @@ export default function BetrayalBoard({
                     canDismissByBackdrop={canDismissRecentRollByBackdrop}
                     onDismiss={handleDismissRecentRoll}
                     effectiveLocale={effectiveLocale}
-                    rerollSelection={rabbitFootRerollSelection}
+                    rerollSelection={recentRollRerollSelection}
                   />
                 )
               ) : null}
@@ -13852,6 +14282,58 @@ export default function BetrayalBoard({
                                 );
                               })}
                             </div>
+                          </div>
+                        ) : null}
+                        {pendingEventItemChoice ? (
+                          <div
+                            className={
+                              isPhoneLandscapeLayout
+                                ? "grid gap-3"
+                                : "grid gap-3.5"
+                            }
+                            data-testid="betrayal-event-choice-items"
+                          >
+                            <span
+                              className={`font-bold uppercase tracking-[0.18em] text-[#f2d27f] drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)] ${
+                                isPhoneLandscapeLayout
+                                  ? "text-[14px]"
+                                  : "text-[14px]"
+                              }`}
+                            >
+                              {t("board.inventory.eventItemChoice")}
+                            </span>
+                            {pendingEventItemChoiceCards.length > 0 ? (
+                              <div
+                                className={
+                                  isPhoneLandscapeLayout
+                                    ? "flex flex-wrap gap-3"
+                                    : "flex flex-wrap gap-4"
+                                }
+                              >
+                                {pendingEventItemChoiceCards.map((card) => (
+                                  <BetrayalSelectionChip
+                                    key={card.id}
+                                    type="button"
+                                    onClick={() => handleSelectEventCard(card.id)}
+                                    data-testid={`betrayal-event-choice-card-${card.id}`}
+                                    selected={selectedEventCardId === card.id}
+                                    selectedClassName="border-[#f0d27f] bg-[#d1b05f] text-[#17130d] shadow-[0_0_18px_rgba(209,176,95,0.30)]"
+                                    idleClassName="border-[rgba(211,179,109,0.32)] bg-[rgba(18,15,10,0.44)] text-[#d6c498] hover:border-[rgba(211,179,109,0.54)] hover:bg-[rgba(209,176,95,0.12)]"
+                                    className={
+                                      isPhoneLandscapeLayout
+                                        ? "!min-h-[44px] !min-w-[112px] !px-3 !py-2 !text-[14px]"
+                                        : "!min-h-[58px] !min-w-[136px] !px-4 !py-3 !text-[16px]"
+                                    }
+                                  >
+                                    {card.name}
+                                  </BetrayalSelectionChip>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[13px] font-semibold tracking-[0.06em] text-[#9f8c62]">
+                                {t("board.inventory.noEventItemChoices")}
+                              </span>
+                            )}
                           </div>
                         ) : null}
                         {shouldShowPendingEventDamageChoice &&
@@ -14503,8 +14985,8 @@ export default function BetrayalBoard({
                       const isActive = room.id === core.activeRoomId;
                       const occupants = roomOccupants[room.id] ?? [];
                       const monsters = roomMonsters[room.id] ?? [];
-                      const dustResearchRoomTokens =
-                        dustResearchTokensByRoomId.get(room.id) ?? [];
+                      const visibleHauntRoomTokens =
+                        visibleHauntTokensByRoomId.get(room.id) ?? [];
                       const isDiscovered = room.state === "discovered";
                       const isReachableRoom = moveTargetRoomIds.has(room.id);
                       const isSkeletonKeyMoveTarget =
@@ -14952,23 +15434,63 @@ export default function BetrayalBoard({
                                 />
                               </span>
                             ) : null}
-                            {dustResearchRoomTokens.length > 0 ? (
+                            {room.markerTokens?.includes("blessing") ? (
+                              <span
+                                data-testid={`betrayal-room-marker-${room.id}-blessing`}
+                                className="pointer-events-none absolute bottom-2 left-16 z-20 grid h-6 w-6 place-items-center rounded-[5px] border border-[#d8cf78] bg-[rgba(28,25,9,0.84)] shadow-[0_0_12px_rgba(216,207,120,0.42)]"
+                                title={t("board.rooms.blessing")}
+                              >
+                                <OptimizedImage
+                                  src={ASSETS.marker.blessing}
+                                  locale={effectiveLocale}
+                                  alt={t("board.rooms.blessing")}
+                                  className="h-5 w-5 object-contain"
+                                  draggable={false}
+                                />
+                              </span>
+                            ) : null}
+                            {visibleHauntRoomTokens.length > 0 ? (
                               <div
                                 data-testid={`betrayal-room-haunt-token-layer-${room.id}`}
                                 className="pointer-events-none absolute bottom-2 right-2 z-20 flex max-w-[84px] flex-wrap justify-end gap-1"
                               >
-                                {dustResearchRoomTokens.map((token) => (
-                                  <span
-                                    key={token.id}
-                                    data-testid={`betrayal-room-haunt-token-${room.id}-${token.id}`}
-                                    data-token-kind={token.kind}
-                                    data-token-status={token.status ?? undefined}
-                                    title={token.label}
-                                    className="grid h-7 min-w-7 place-items-center rounded-full border border-[#d8c477] bg-[radial-gradient(circle_at_35%_28%,rgba(255,249,190,0.95),rgba(177,142,68,0.92)_52%,rgba(53,37,18,0.94))] px-1 text-[10px] font-black leading-none text-[#211407] shadow-[0_0_0_1px_rgba(20,12,5,0.88),0_0_14px_rgba(238,220,126,0.48)]"
-                                  >
-                                    {t("board.hauntTokens.researchTokenShort")}
-                                  </span>
-                                ))}
+                                {visibleHauntRoomTokens.map((token) => {
+                                  const isMummyGirlToken =
+                                    token.id === "mummy-girl-token";
+                                  const isMummySarcophagusToken =
+                                    token.id === "mummy-sarcophagus";
+                                  return (
+                                    <span
+                                      key={token.id}
+                                      data-testid={`betrayal-room-haunt-token-${room.id}-${token.id}`}
+                                      data-token-kind={token.kind}
+                                      data-token-status={
+                                        token.status ?? undefined
+                                      }
+                                      data-token-owner-player-id={
+                                        token.ownerPlayerId ?? undefined
+                                      }
+                                      title={token.label}
+                                      className={`grid h-7 min-w-7 place-items-center rounded-full border px-1 text-[10px] font-black leading-none ${
+                                        isMummyGirlToken
+                                          ? "border-[#ff8bd1] bg-[radial-gradient(circle_at_35%_28%,rgba(255,213,239,0.96),rgba(216,74,159,0.92)_54%,rgba(50,9,35,0.94))] text-[#2d091d] shadow-[0_0_0_1px_rgba(34,5,25,0.88),0_0_15px_rgba(255,139,209,0.56)]"
+                                          : isMummySarcophagusToken
+                                            ? "border-[#c3b293] bg-[radial-gradient(circle_at_35%_28%,rgba(232,221,196,0.94),rgba(139,119,82,0.90)_52%,rgba(44,34,22,0.94))] text-[#1f1710] shadow-[0_0_0_1px_rgba(20,12,5,0.88),0_0_14px_rgba(195,178,147,0.44)]"
+                                            : "border-[#d8c477] bg-[radial-gradient(circle_at_35%_28%,rgba(255,249,190,0.95),rgba(177,142,68,0.92)_52%,rgba(53,37,18,0.94))] text-[#211407] shadow-[0_0_0_1px_rgba(20,12,5,0.88),0_0_14px_rgba(238,220,126,0.48)]"
+                                      }`}
+                                    >
+                                      {isMummyGirlToken
+                                        ? t("board.hauntTokens.girlShort")
+                                        : isMummySarcophagusToken
+                                          ? t(
+                                              "board.hauntTokens.sarcophagusShort",
+                                            )
+                                          : t(
+                                              "board.hauntTokens.researchTokenShort",
+                                            )}
+                                    </span>
+                                  );
+                                })}
                               </div>
                             ) : null}
                           </button>
@@ -15998,9 +16520,11 @@ export default function BetrayalBoard({
               !isPhoneLandscapeLayout &&
               (visibleDustProgressItems.length > 0 ||
                 shouldShowTradeFlowPrompt ||
+                mummyPendingReward ||
                 helpingHandsPendingReward ||
                 shouldShowHelpingHandsMonsterTurnStatus ||
-                (!helpingHandsPendingReward &&
+                (!mummyPendingReward &&
+                  !helpingHandsPendingReward &&
                   !pendingTradeAgreement &&
                   !pendingSicknessExchange &&
                   !isDustSicknessExchangeMode &&
@@ -16014,6 +16538,7 @@ export default function BetrayalBoard({
                 >
                   {visibleDustProgressItems.length > 0 &&
                   !pendingSicknessExchange &&
+                  !mummyPendingReward &&
                   !helpingHandsPendingReward &&
                   !isDustSicknessExchangeMode ? (
                     <div
@@ -16093,6 +16618,38 @@ export default function BetrayalBoard({
                       ) : null}
                     </div>
                   ) : null}
+                  {mummyPendingReward ? (
+                    <div
+                      data-testid="betrayal-mummy-reward-banner"
+                      data-mummy-reward-state={
+                        isMummyRewardChooser ? "choose" : "waiting"
+                      }
+                      data-prompt-placement="top"
+                      className="pointer-events-none flex min-h-[78px] w-[min(960px,calc(100vw-31rem))] flex-wrap items-center justify-center gap-3.5 rounded-[12px] border border-[rgba(238,204,126,0.56)] bg-[rgba(18,17,13,0.90)] px-6 py-4 text-[17px] font-bold tracking-[0.05em] text-[#f3e0a6] shadow-[0_22px_46px_rgba(0,0,0,0.40),0_0_34px_rgba(238,204,126,0.24)] backdrop-blur-sm"
+                      style={{
+                        textShadow:
+                          "0 1px 2px rgba(0,0,0,0.85), 0 0 14px rgba(238,204,126,0.38)",
+                      }}
+                    >
+                      <Skull size={24} strokeWidth={2.4} />
+                      <span className="text-[22px] text-[#fff1b8]">
+                        {t("board.status.mummyRewardTitle")}
+                      </span>
+                      <span
+                        data-testid="betrayal-mummy-reward-step"
+                        className="text-[17px] text-[#e3d2a1]"
+                      >
+                        {isMummyRewardChooser
+                          ? t("board.status.mummyRewardChoose", {
+                              player: mummyRewardDefenderName,
+                              damage: mummyPendingReward.damageToHero,
+                            })
+                          : t("board.status.mummyRewardWaiting", {
+                              player: mummyRewardControllerName,
+                            })}
+                      </span>
+                    </div>
+                  ) : null}
                   {helpingHandsPendingReward ? (
                     <div
                       data-testid="betrayal-helping-hands-reward-banner"
@@ -16150,6 +16707,7 @@ export default function BetrayalBoard({
                     </div>
                   ) : null}
                   {!helpingHandsPendingReward &&
+                  !mummyPendingReward &&
                   !pendingTradeAgreement &&
                   !pendingSicknessExchange &&
                   !isDustSicknessExchangeMode &&
@@ -16185,6 +16743,43 @@ export default function BetrayalBoard({
                   data-testid="betrayal-action-rail"
                   className="pointer-events-none absolute inset-x-0 bottom-1 z-50 hidden flex-col items-center justify-end gap-0.5 md:flex"
                 >
+                  {mummyPendingReward && isMummyRewardChooser ? (
+                    <div
+                      data-testid="betrayal-mummy-reward-actions"
+                      data-prompt-actions-for="betrayal-mummy-reward-banner"
+                      className="pointer-events-auto flex max-w-[760px] flex-wrap items-center justify-center gap-2 rounded-[8px] border border-[rgba(238,204,126,0.34)] bg-[rgba(18,17,13,0.66)] px-3 py-2 shadow-[0_12px_26px_rgba(0,0,0,0.24),0_0_18px_rgba(238,204,126,0.12)]"
+                    >
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleResolveMummyAttackReward("damage");
+                        }}
+                        data-testid="betrayal-mummy-reward-damage"
+                        className="min-h-[46px] rounded-[7px] border border-[#d7c16f] bg-[rgba(215,193,111,0.26)] px-5 py-2 text-[15px] font-black text-[#fff4ba] shadow-[0_0_18px_rgba(215,193,111,0.24)] transition hover:bg-[rgba(215,193,111,0.36)]"
+                      >
+                        {t("board.status.mummyRewardDamage", {
+                          damage: mummyPendingReward.damageToHero,
+                        })}
+                      </button>
+                      {mummyStealableCards.map((card) => (
+                        <button
+                          key={card.id}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleResolveMummyAttackReward("steal", card.id);
+                          }}
+                          data-testid={`betrayal-mummy-reward-steal-${card.id}`}
+                          className="min-h-[46px] rounded-[7px] border border-[rgba(159,225,167,0.52)] bg-[rgba(40,63,50,0.38)] px-5 py-2 text-[15px] font-bold text-[#d9ffcf] transition hover:bg-[rgba(48,78,58,0.50)]"
+                        >
+                          {t("board.status.mummyRewardSteal", {
+                            card: card.name,
+                          })}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                   {helpingHandsPendingReward && isHelpingHandsRewardChooser ? (
                     <div
                       data-testid="betrayal-helping-hands-reward-actions"
@@ -16225,7 +16820,8 @@ export default function BetrayalBoard({
                       ))}
                     </div>
                   ) : null}
-                  {!helpingHandsPendingReward &&
+                  {!mummyPendingReward &&
+                  !helpingHandsPendingReward &&
                   !pendingTradeAgreement &&
                   !pendingSicknessExchange &&
                   !isDustSicknessExchangeMode &&
@@ -16288,6 +16884,7 @@ export default function BetrayalBoard({
                   ) : null}
                   {!pendingTradeAgreement &&
                   !pendingSicknessExchange &&
+                  !mummyPendingReward &&
                   !helpingHandsPendingReward &&
                   !isDustSicknessExchangeMode &&
                   !activeHauntTargetGuide &&
@@ -16330,6 +16927,7 @@ export default function BetrayalBoard({
                   ) : null}
                   {!pendingTradeAgreement &&
                   !pendingSicknessExchange &&
+                  !mummyPendingReward &&
                   !helpingHandsPendingReward &&
                   !isDustSicknessExchangeMode &&
                   !activeHauntTargetGuide &&
@@ -17276,10 +17874,10 @@ export default function BetrayalBoard({
                     </span>
                     <span
                       data-testid="betrayal-scenario-reader-source-status"
-                      data-scenario-source-status="adapted-summary"
+                      data-scenario-source-status={activeHauntSourceStatusKind}
                       className="mt-1 block text-[10px] uppercase tracking-[0.10em] text-[#e0b870]"
                     >
-                      {t("board.scenario.readerSourceStatus")}
+                      {activeHauntSourceStatus}
                     </span>
                   </div>
                 </div>
@@ -17309,7 +17907,8 @@ export default function BetrayalBoard({
                       text={t(referenceScenarioOpeningSection.bodyKey)}
                       variant="opening"
                       presentation="stage"
-                      sourceStatus={t("board.scenario.readerSourceStatus")}
+                      sourceStatus={activeHauntSourceStatus}
+                      sourceStatusKind={activeHauntSourceStatusKind}
                       sourceStatusTestId="betrayal-scenario-opening-source-status"
                       compact={isPhoneLandscapeLayout}
                       actionSlot={
@@ -17535,6 +18134,7 @@ export default function BetrayalBoard({
           core.recommendedAction === "trade" &&
           !pendingTradeAgreement &&
           !pendingSicknessExchange &&
+          !mummyPendingReward &&
           !helpingHandsPendingReward &&
           !isDustSicknessExchangeMode &&
           !shouldShowInlineTradeConfirm) ||
@@ -17619,6 +18219,7 @@ export default function BetrayalBoard({
                         className={`mt-1 truncate text-[11px] ${
                           pendingTradeAgreement ||
                           pendingSicknessExchange ||
+                          mummyPendingReward ||
                           isDustSicknessExchangeMode ||
                           selectedTradeTarget
                             ? "text-[#8db29a]"
@@ -17638,6 +18239,45 @@ export default function BetrayalBoard({
                       >
                         {t("board.status.tradeFlowRequest")}
                       </button>
+                    ) : mummyPendingReward && isMummyRewardChooser ? (
+                      <div
+                        data-testid="betrayal-mobile-mummy-reward-panel"
+                        data-prompt-actions-for="betrayal-mummy-reward-banner"
+                        className="mt-2 grid gap-2"
+                      >
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleResolveMummyAttackReward("damage")
+                            }
+                            data-testid="betrayal-mobile-mummy-reward-damage"
+                            className="min-h-[44px] flex-1 rounded-[8px] border border-[#d7c16f] bg-[rgba(215,193,111,0.24)] px-2.5 text-[13px] font-black text-[#fff4ba]"
+                          >
+                            {t("board.status.mummyRewardDamage", {
+                              damage: mummyPendingReward.damageToHero,
+                            })}
+                          </button>
+                          {mummyStealableCards.map((card) => (
+                            <button
+                              key={card.id}
+                              type="button"
+                              onClick={() =>
+                                handleResolveMummyAttackReward(
+                                  "steal",
+                                  card.id,
+                                )
+                              }
+                              data-testid={`betrayal-mobile-mummy-reward-steal-${card.id}`}
+                              className="min-h-[44px] flex-1 rounded-[8px] border border-[rgba(159,225,167,0.48)] bg-[rgba(40,63,50,0.38)] px-2.5 text-[13px] font-bold text-[#d9ffcf]"
+                            >
+                              {t("board.status.mummyRewardSteal", {
+                                card: card.name,
+                              })}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ) : helpingHandsPendingReward &&
                       isHelpingHandsRewardChooser ? (
                       <div
@@ -17815,6 +18455,7 @@ export default function BetrayalBoard({
                 )}
                 {isPhoneLandscapeLayout &&
                 !pendingSicknessExchange &&
+                !mummyPendingReward &&
                 !helpingHandsPendingReward &&
                 !isDustSicknessExchangeMode &&
                 !pendingEventFocusesMapTarget ? (

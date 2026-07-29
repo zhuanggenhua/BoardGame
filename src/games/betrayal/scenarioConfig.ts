@@ -6,11 +6,13 @@ export type BetrayalDeckKind = 'event' | 'item' | 'omen';
 export type BetrayalRecommendedAction = 'move' | 'explore' | 'trade' | 'use' | 'endTurn';
 export type BetrayalScenarioId = 'first-scenario';
 export type BetrayalScenarioCardId =
+    | 'mummy-rampage'
     | 'crimson-jack-returns'
     | 'friends-forever'
     | 'free-the-realtor'
     | 'blood-from-a-stone'
-    | 'inheritance';
+    | 'inheritance'
+    | 'upon-reflection';
 export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'contract-pending';
 export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo' | 'haunt';
 export type BetrayalTraitorSelectionPolicy = 'last-explorer' | 'current-explorer';
@@ -170,10 +172,22 @@ export type BetrayalUseEffectSeed =
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
+        mode: 'fixedDamage';
+        amount: number;
+        damageKind: 'physical' | 'mental';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
         mode: 'rolledDamage';
         dice: number;
         rolls?: number[];
         damageKind: 'physical' | 'mental';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'traitRoll';
+        trait: BetrayalTraitKey;
+        branches: BetrayalEventResultBranch[];
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
@@ -196,9 +210,25 @@ export type BetrayalUseEffectSeed =
     }
     | {
         mode: 'placeExplorerInDiscoveredRoomByFloor';
-        targetRoomScope: 'anyDiscovered' | 'groundDiscovered' | 'basementDiscovered';
+        targetRoomScope:
+            | 'anyDiscovered'
+            | 'groundDiscovered'
+            | 'basementDiscovered'
+            | 'groundOrBasementDiscovered'
+            | 'sameFloorDiscovered'
+            | 'differentFloorDiscovered';
+        requiredIfDiscoveredVisualIds?: BetrayalRoomVisualId[];
         targetRoomId?: string;
         targetRoomName?: string;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'placeExplorerInNextFloorStartingRoom';
+        basementFallbackFloor: Extract<BetrayalRoomFloor, 'upper' | 'ground'>;
+        basementFallbackDamage?: {
+            amount: number;
+            damageKind: 'physical' | 'mental';
+        };
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
@@ -218,6 +248,10 @@ export type BetrayalUseEffectSeed =
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
+        mode: 'placeBlessingToken';
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
         mode: 'placeSecretPassageToken';
         targetRoomScope?: 'anyOtherDiscovered' | 'groundDiscovered' | 'basementDiscovered';
         targetRoomId?: string;
@@ -227,6 +261,25 @@ export type BetrayalUseEffectSeed =
     | {
         mode: 'compound';
         effects: BetrayalUseEffectSeed[];
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'optionalEffect';
+        acceptLabel: string;
+        declineLabel: string;
+        acceptEffect: BetrayalUseEffectSeed;
+        recommendedAction: BetrayalRecommendedAction;
+    }
+    | {
+        mode: 'optionalItemEffect';
+        acceptLabel: string;
+        declineLabel: string;
+        itemFilter: 'item' | 'nonWeaponItem';
+        consumeAction: 'discard' | 'bury';
+        selectedCardId?: string;
+        selectedCardName?: string;
+        acceptEffect: BetrayalUseEffectSeed;
+        declineEffect: BetrayalUseEffectSeed;
         recommendedAction: BetrayalRecommendedAction;
     }
     | {
@@ -303,6 +356,10 @@ export interface BetrayalEventSeed {
 
 // 12 号已接入官方 setup / 奇异护符控制权 / 巨魔手攻击和偷牌替代伤害。
 export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = [1, 3, 12, 33] as const;
+const BETRAYAL_OPTIONAL_HAUNT_ROLL_RUNTIME_CARD_NUMBERS = [
+    ...BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS,
+    7,
+] as const;
 
 export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): boolean {
     return BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS.includes(
@@ -310,11 +367,16 @@ export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): b
     );
 }
 
+export function isBetrayalOptionalHauntRollRuntimeSupported(hauntCardNumber: number): boolean {
+    return BETRAYAL_OPTIONAL_HAUNT_ROLL_RUNTIME_CARD_NUMBERS.includes(
+        hauntCardNumber as typeof BETRAYAL_OPTIONAL_HAUNT_ROLL_RUNTIME_CARD_NUMBERS[number],
+    );
+}
+
 export function isBetrayalEventRuntimeSupported(event: BetrayalEventSeed): boolean {
-    if (event.effect?.mode !== 'optionalHauntRoll') {
-        return true;
-    }
-    return isImplementedBetrayalHauntCardNumber(event.effect.successHauntId);
+    // 事件牌本身可以进入运行牌堆；未实现的作祟入口在 RESOLVE_EVENT_CHOICE
+    // 和 Board 层禁用“接受作祟检定”，不再把整张事件牌排除出运行牌堆。
+    return Boolean(event.name);
 }
 
 export interface BetrayalMonsterSeed {
@@ -396,16 +458,28 @@ export interface BetrayalHauntRevealResolution {
 
 export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCandidate[] = [
     {
+        id: 'mummy-rampage',
+        title: '木乃伊横行',
+        titleEn: 'Mummy Rampage',
+        scenarioCardLabel: 'Girl',
+        triggerOmenLabel: '女孩',
+        hauntNumber: 1,
+        summary: '旧版 / 基础版第 1 作祟；当前默认首剧本运行时。英雄找出真名并驱逐木乃伊。',
+        summaryEn: 'Legacy/base Haunt 1 and the current default runtime. Heroes learn the true name and banish the mummy.',
+        implementationStatus: 'implemented',
+        implementedScenarioId: 'first-scenario',
+        sourcePath: 'docs/games/betrayal/haunts/01-mummy-rampage.md',
+    },
+    {
         id: 'crimson-jack-returns',
         title: '赤红杰克归来',
         titleEn: 'Crimson Jack Returns',
         scenarioCardLabel: 'NONE',
         triggerOmenLabel: 'A Splash of Crimson',
         hauntNumber: 1,
-        summary: '当前已接入真实运行时的代表作祟链路。',
-        summaryEn: 'Implemented as the current real runtime haunt chain.',
-        implementationStatus: 'implemented',
-        implementedScenarioId: 'first-scenario',
+        summary: '3e 版本首作祟合同保留；当前默认首剧本已按用户裁定切到木乃伊横行。',
+        summaryEn: '3e first-haunt contract retained; the default runtime now follows Mummy Rampage.',
+        implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/01-stacked-like-cordwood-2.md',
     },
     {
@@ -456,12 +530,24 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/06-inheritance.md',
     },
+    {
+        id: 'upon-reflection',
+        title: 'Upon Reflection',
+        titleEn: 'Upon Reflection',
+        scenarioCardLabel: 'NONE',
+        triggerOmenLabel: '怪异的镜子',
+        hauntNumber: 7,
+        summary: '剧本合同已建档；本轮只接入怪异的镜子作祟检定入口和揭示代表态，完整秘密组合、镜中提示和怪物规则待接入。',
+        summaryEn: 'Contract documented; this pass only enables the Eerie Mirror haunt roll entry and representative reveal state.',
+        implementationStatus: 'contract-pending',
+        sourcePath: 'docs/games/betrayal/haunts/07-upon-reflection.md',
+    },
 ] as const;
 
 export const BETRAYAL_SCENARIO_CARD_IDS = BETRAYAL_SCENARIO_CARD_CANDIDATES
     .map((candidate) => candidate.id);
 
-export const DEFAULT_BETRAYAL_SCENARIO_CARD_ID: BetrayalScenarioCardId = 'crimson-jack-returns';
+export const DEFAULT_BETRAYAL_SCENARIO_CARD_ID: BetrayalScenarioCardId = 'mummy-rampage';
 
 const BETRAYAL_SCENARIO_CARD_BY_ID = new Map<BetrayalScenarioCardId, BetrayalScenarioCardCandidate>(
     BETRAYAL_SCENARIO_CARD_CANDIDATES.map((candidate) => [candidate.id, candidate]),
@@ -488,6 +574,25 @@ function normalizeHauntLookupLabel(label: string): string {
     return label.trim().toLocaleLowerCase();
 }
 
+function resolveScenarioCardCandidateForHauntOverride(
+    fallbackCandidate: BetrayalScenarioCardCandidate,
+    triggeringLabel: string,
+    hauntCardNumberOverride?: number,
+): BetrayalScenarioCardCandidate {
+    if (hauntCardNumberOverride === undefined || fallbackCandidate.hauntNumber === hauntCardNumberOverride) {
+        return fallbackCandidate;
+    }
+    const overrideCandidates = BETRAYAL_SCENARIO_CARD_CANDIDATES
+        .filter((candidate) => candidate.hauntNumber === hauntCardNumberOverride);
+    const triggerMatch = overrideCandidates.find((candidate) => (
+        normalizeHauntLookupLabel(candidate.triggerOmenLabel) === normalizeHauntLookupLabel(triggeringLabel)
+    ));
+    if (triggerMatch) {
+        return triggerMatch;
+    }
+    return overrideCandidates.length === 1 ? overrideCandidates[0]! : fallbackCandidate;
+}
+
 export function resolveBetrayalHauntRevealResolution({
     scenarioCardId,
     triggeringOmen,
@@ -501,23 +606,28 @@ export function resolveBetrayalHauntRevealResolution({
         ? getBetrayalScenarioCardCandidate(scenarioCardId)
         : getBetrayalScenarioCardCandidate(DEFAULT_BETRAYAL_SCENARIO_CARD_ID);
     const triggeringOmenName = triggeringOmen?.name?.trim() || candidate.triggerOmenLabel;
-    const hauntCardNumber = hauntCardNumberOverride ?? candidate.hauntNumber;
+    const resolvedCandidate = resolveScenarioCardCandidateForHauntOverride(
+        candidate,
+        triggeringOmenName,
+        hauntCardNumberOverride,
+    );
+    const hauntCardNumber = hauntCardNumberOverride ?? resolvedCandidate.hauntNumber;
     const triggerMatchesScenarioCard = normalizeHauntLookupLabel(triggeringOmenName)
-        === normalizeHauntLookupLabel(candidate.triggerOmenLabel)
-        && hauntCardNumber === candidate.hauntNumber;
+        === normalizeHauntLookupLabel(resolvedCandidate.triggerOmenLabel)
+        && hauntCardNumber === resolvedCandidate.hauntNumber;
 
     return {
-        scenarioCardId: candidate.id,
-        scenarioCardTitle: candidate.title,
-        scenarioCardLabel: candidate.scenarioCardLabel,
-        expectedTriggerOmenLabel: candidate.triggerOmenLabel,
+        scenarioCardId: resolvedCandidate.id,
+        scenarioCardTitle: resolvedCandidate.title,
+        scenarioCardLabel: resolvedCandidate.scenarioCardLabel,
+        expectedTriggerOmenLabel: resolvedCandidate.triggerOmenLabel,
         triggeringOmenId: triggeringOmen?.id ?? null,
         triggeringOmenName,
         hauntCardNumber,
-        implementationStatus: candidate.implementationStatus,
-        implementedScenarioId: candidate.implementedScenarioId,
+        implementationStatus: resolvedCandidate.implementationStatus,
+        implementedScenarioId: resolvedCandidate.implementedScenarioId,
         triggerMatchesScenarioCard,
-        representativeOnly: candidate.implementationStatus !== 'implemented' || !triggerMatchesScenarioCard,
+        representativeOnly: resolvedCandidate.implementationStatus !== 'implemented' || !triggerMatchesScenarioCard,
     };
 }
 
@@ -592,8 +702,8 @@ export const BETRAYAL_SHARED_PRE_HAUNT_SETUP = {
     explorerStartTileId: 'entrance-hall',
     initialDeckCounts: {
         omen: 9,
-        item: 12,
-        event: 20,
+        item: 22,
+        event: 43,
     } satisfies Record<BetrayalDeckKind, number>,
     startingRoomLayout: [
         {
@@ -823,17 +933,27 @@ export const BETRAYAL_DISCOVERY_POOLS = {
     possessions: {
         item: [
             { id: 'camera', name: '魔法相机', kind: 'item' },
+            { id: 'scary-doll', name: '恐怖玩偶', kind: 'item' },
             { id: 'medical-kit', name: '急救包', kind: 'item' },
+            { id: 'mirror', name: '镜子', kind: 'item' },
             { id: 'holy-water', name: '奇怪的药品', kind: 'item' },
+            { id: 'lucky-coin', name: '幸运硬币', kind: 'item' },
+            { id: 'leather-jacket', name: '皮夹克', kind: 'item' },
+            { id: 'tooth-necklace', name: '牙齿项链', kind: 'item' },
             { id: 'flashlight', name: '手电筒', kind: 'item' },
             { id: 'radio', name: '头戴耳机', kind: 'item' },
             { id: 'map', name: '地图', kind: 'item' },
             { id: 'strange-amulet', name: '奇异护符', kind: 'item' },
+            { id: 'brooch', name: '胸针', kind: 'item' },
+            { id: 'gun', name: '枪', kind: 'item' },
+            { id: 'crossbow', name: '十字弓', kind: 'item' },
             { id: 'rope', name: '兔脚', kind: 'item' },
             { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
+            { id: 'mysterious-stopwatch', name: '神秘秒表', kind: 'item' },
             { id: 'hunting-knife', name: '砍刀', kind: 'item' },
-            { id: 'notebook', name: '笔记本', kind: 'item' },
-            { id: 'manuscript', name: '手稿', kind: 'item' },
+            { id: 'chainsaw', name: '电锯', kind: 'item' },
+            { id: 'dynamite', name: '炸药', kind: 'item' },
+            { id: 'angel-feather', name: '天使之羽', kind: 'item' },
         ],
         omen: [
             { id: 'omen-book', name: '书本', kind: 'omen' },
@@ -1424,6 +1544,10 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             },
         },
         {
+            name: '片刻希望',
+            effect: { mode: 'placeBlessingToken', recommendedAction: 'explore' },
+        },
+        {
             name: '上古旧宅',
             effect: {
                 mode: 'chooseTraitRoll',
@@ -1834,6 +1958,45 @@ export const BETRAYAL_DISCOVERY_POOLS = {
             },
         },
         {
+            name: '游魂',
+            effect: {
+                mode: 'optionalItemEffect',
+                acceptLabel: '埋葬一件物品并获得 1 点任意属性',
+                declineLabel: '不埋葬物品',
+                itemFilter: 'item',
+                consumeAction: 'bury',
+                acceptEffect: {
+                    mode: 'chosenTrait',
+                    amount: 1,
+                    allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                    recommendedAction: 'explore',
+                },
+                declineEffect: {
+                    mode: 'traitRoll',
+                    trait: 'sanity',
+                    recommendedAction: 'use',
+                    branches: [
+                        {
+                            min: 4,
+                            label: '抽取一张物品卡',
+                            effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                        },
+                        {
+                            min: 0,
+                            label: '受到 1 点通用伤害',
+                            effect: {
+                                mode: 'generalDamageChoice',
+                                amount: 1,
+                                allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                                recommendedAction: 'endTurn',
+                            },
+                        },
+                    ],
+                },
+                recommendedAction: 'use',
+            },
+        },
+        {
             name: '葬礼',
             roll: {
                 trait: 'sanity',
@@ -1869,20 +2032,450 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 ],
             },
         },
+        {
+            name: '不可能的房间',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '抽取一张物品卡',
+                        effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的精神伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '地狱蝙蝠',
+            roll: {
+                trait: 'speed',
+                branches: [
+                    {
+                        min: 4,
+                        label: '放置到相邻板块',
+                        effect: { mode: 'placeExplorerInAdjacentRoom', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点物理伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '断手',
+            effect: {
+                mode: 'optionalEffect',
+                acceptLabel: '承受伤害并抽取物品',
+                declineLabel: '不触碰断手',
+                recommendedAction: 'use',
+                acceptEffect: {
+                    mode: 'compound',
+                    recommendedAction: 'endTurn',
+                    effects: [
+                        { mode: 'fixedDamage', amount: 2, damageKind: 'physical', recommendedAction: 'endTurn' },
+                        { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    ],
+                },
+            },
+        },
+        {
+            name: '怪异的镜子',
+            effect: {
+                mode: 'optionalHauntRoll',
+                acceptLabel: '进行作祟检定',
+                declineLabel: '抽取一张物品卡',
+                successHauntId: 7,
+                successHauntTriggerLabel: '怪异的镜子',
+                successLabel: '翻开作祟剧本7；该作祟没有奸徒',
+                failureEffect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                skippedOrStartedEffect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                recommendedAction: 'use',
+            },
+        },
+        {
+            name: '花团锦簇',
+            effect: {
+                mode: 'compound',
+                recommendedAction: 'endTurn',
+                effects: [
+                    {
+                        mode: 'generalDamageChoice',
+                        amount: 1,
+                        allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                        recommendedAction: 'endTurn',
+                    },
+                    {
+                        mode: 'placeExplorerInDiscoveredRoomByFloor',
+                        targetRoomScope: 'groundOrBasementDiscovered',
+                        requiredIfDiscoveredVisualIds: ['conservatory'],
+                        recommendedAction: 'endTurn',
+                    },
+                ],
+            },
+        },
+        {
+            name: '晦暗暴风夜',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点精神伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '技术难点',
+            effect: {
+                mode: 'placeExplorerInNextFloorStartingRoom',
+                basementFallbackFloor: 'upper',
+                basementFallbackDamage: { amount: 1, damageKind: 'mental' },
+                recommendedAction: 'endTurn',
+            },
+        },
+        {
+            name: '佳馔满桌',
+            effect: {
+                mode: 'chooseTraitRoll',
+                prompt: '选择知识或神志进行检定',
+                allowedTraits: ['knowledge', 'sanity'],
+                recommendedAction: 'use',
+                branches: [
+                    {
+                        min: 5,
+                        label: '获得 1 点速度',
+                        effect: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点通用伤害',
+                        effect: {
+                            mode: 'generalDamageChoice',
+                            amount: 1,
+                            allowedTraits: ['might', 'speed', 'knowledge', 'sanity'],
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                ],
+            },
+        },
+        {
+            name: '禁忌知识',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 2,
+                        label: '获得 1 点知识并失去 1 点神志',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到两颗骰子的精神伤害',
+                        effect: { mode: 'rolledDamage', dice: 2, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '可怜的尤里克',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点精神伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '轮到约拿了',
+            effect: {
+                mode: 'optionalItemEffect',
+                acceptLabel: '弃置非武器物品并获得 1 点神志',
+                declineLabel: '不弃置物品',
+                itemFilter: 'nonWeaponItem',
+                consumeAction: 'discard',
+                acceptEffect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                declineEffect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                recommendedAction: 'use',
+            },
+        },
+        {
+            name: '秘密升降机',
+            effect: {
+                mode: 'placeExplorerInDiscoveredRoomByFloor',
+                targetRoomScope: 'differentFloorDiscovered',
+                recommendedAction: 'explore',
+            },
+        },
+        {
+            name: '神秘液体',
+            effect: {
+                mode: 'optionalEventRoll',
+                acceptLabel: '喝下神秘液体',
+                declineLabel: '不喝',
+                recommendedAction: 'use',
+                roll: {
+                    kind: 'dice',
+                    dice: 3,
+                    label: '投 3 颗骰子',
+                    branches: [
+                        {
+                            min: 6,
+                            label: '每项属性 +1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'explore',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 5,
+                            label: '力量与速度 +1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'explore',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 4,
+                            label: '知识与神志 +1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'explore',
+                                effects: [
+                                    { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 3,
+                            label: '知识 +1，力量 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                                    { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 2,
+                            label: '知识与神志 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 1,
+                            label: '力量与速度 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                        {
+                            min: 0,
+                            label: '每项属性 -1',
+                            effect: {
+                                mode: 'compound',
+                                recommendedAction: 'endTurn',
+                                effects: [
+                                    { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'speed', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
+                                    { mode: 'trait', trait: 'sanity', amount: -1, recommendedAction: 'endTurn' },
+                                ],
+                            },
+                        },
+                    ],
+                },
+            },
+        },
+        {
+            name: '无线电广播',
+            roll: {
+                kind: 'dice',
+                dice: 2,
+                label: '投 2 颗骰子',
+                branches: [
+                    {
+                        min: 3,
+                        label: '获得 1 点知识',
+                        effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的精神伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '摇曳灯光',
+            effect: {
+                mode: 'chooseTraitRoll',
+                prompt: '选择速度或力量进行检定',
+                allowedTraits: ['speed', 'might'],
+                recommendedAction: 'use',
+                branches: [
+                    {
+                        min: 5,
+                        label: '获得 1 点速度',
+                        effect: { mode: 'trait', trait: 'speed', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的物理伤害',
+                        effect: { mode: 'rolledDamage', dice: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '一罐器官',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '抽取一张物品卡',
+                        effect: { mode: 'drawPossession', kind: 'item', recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 0,
+                        label: '失去 1 点力量',
+                        effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '一声呼救',
+            roll: {
+                trait: 'knowledge',
+                branches: [
+                    {
+                        min: 4,
+                        label: '放置在所在区域的任意板块',
+                        effect: {
+                            mode: 'placeExplorerInDiscoveredRoomByFloor',
+                            targetRoomScope: 'sameFloorDiscovered',
+                            recommendedAction: 'explore',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到 1 点精神伤害',
+                        effect: { mode: 'fixedDamage', amount: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                    },
+                ],
+            },
+        },
+        {
+            name: '着火的人',
+            roll: {
+                trait: 'sanity',
+                branches: [
+                    {
+                        min: 4,
+                        label: '获得 1 点神志',
+                        effect: { mode: 'trait', trait: 'sanity', amount: 1, recommendedAction: 'explore' },
+                    },
+                    {
+                        min: 2,
+                        label: '放置到入口大厅',
+                        effect: {
+                            mode: 'placeExplorerInRoom',
+                            roomId: 'entrance-hall',
+                            roomName: '入口大厅',
+                            recommendedAction: 'endTurn',
+                        },
+                    },
+                    {
+                        min: 0,
+                        label: '受到一颗骰子的物理伤害和一颗骰子的精神伤害',
+                        effect: {
+                            mode: 'compound',
+                            recommendedAction: 'endTurn',
+                            effects: [
+                                { mode: 'rolledDamage', dice: 1, damageKind: 'physical', recommendedAction: 'endTurn' },
+                                { mode: 'rolledDamage', dice: 1, damageKind: 'mental', recommendedAction: 'endTurn' },
+                            ],
+                        },
+                    },
+                ],
+            },
+        },
     ] satisfies BetrayalEventSeed[],
 };
 
 export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScenarioConfig> = {
     'first-scenario': {
         id: 'first-scenario',
-        title: '首剧本：Crimson Jack Returns',
-        scenarioCardLabel: 'NONE',
-        hauntId: 'crimson-jack-returns',
-        hauntTitle: 'Crimson Jack Returns',
-        hauntTriggerLabel: 'A Splash of Crimson',
+        title: '首剧本：木乃伊横行',
+        scenarioCardLabel: 'Girl',
+        hauntId: 'mummy-rampage',
+        hauntTitle: '木乃伊横行',
+        hauntTriggerLabel: '女孩',
         presentation: {
             runtimeObjective: '恶兆前探索',
-            hauntObjective: '击倒叛徒，释放并驱魔杰克之灵',
+            hauntObjective: '找出真名、学习驱逐法术并驱逐木乃伊',
         },
         startingInventoryByExplorerId: {
             'jaden-jones': [
@@ -1923,20 +2516,21 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
         },
         logs: {
             scenarioStarted: '首剧本开始：恶兆前探索',
-            hauntTriggered: '首剧本触发：Crimson Jack Returns',
-            scenarioCompleted: '首剧本完成：杰克之灵被驱散',
+            hauntTriggered: '首剧本触发：木乃伊横行',
+            scenarioCompleted: '首剧本完成：木乃伊被驱逐',
         },
         runtimePreview: {
             monsters: [
                 {
-                    id: 'jack-spirit',
-                    definitionId: 'crimson-jack-spirit',
-                    name: '杰克之灵',
-                    portraitAsset: 'betrayal/monsters/spirit',
-                    tokenAsset: 'betrayal/tokens/monsters/ghost',
+                    id: 'mummy',
+                    definitionId: 'mummy',
+                    name: '木乃伊',
+                    portraitAsset: 'betrayal/monsters/mummy',
+                    tokenAsset: 'betrayal/tokens/monsters/large-monster-front',
                     roomId: 'upper-landing',
-                    might: 5,
+                    might: 8,
                     speed: 3,
+                    sanity: 5,
                     damage: 1,
                 },
             ],

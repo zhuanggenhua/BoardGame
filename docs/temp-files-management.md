@@ -40,6 +40,7 @@
 - 测试报告（`*-report.json`、`*-results.json`）
 - 差异文件（`*-diff.txt`）
 - HTML 测试页面（`test-*.html`）
+- HTTP 下载、页面探针、接口直连保存、curl/Invoke-WebRequest 输出等一次性文件必须直接写入 `temp/`，例如 `temp/http-probes/<purpose>.html` 或 `temp/http-probes/<purpose>.bin`；禁止写成仓库根目录的 `temp-*.bin`、`temp-*.html`、`direct-http.*`
 - AI 读图、OCR、截图裁切、图集切片等中间图片必须放在 `temp/` 或 `tmp/` 子目录下，例如 `temp/safe-image-reading/<batch>/`
 - 禁止在仓库根目录创建 `.tmp_*`、`tmp_*`、`safe_image_*` 这类临时图片目录；如果工具产生了这类目录，提交前必须移动到 `temp/` 或 `tmp/`
 - 数据录入中间产物：
@@ -82,6 +83,8 @@ wiki-*.html
 *-report.json
 *-results.json
 *-diff.txt
+temp-*.bin
+temp-*.html
 temp_*.txt
 tmp-*.txt
 tmp_*.txt
@@ -127,6 +130,7 @@ test-out.txt
 3. **临时脚本**：直接在 `scripts/temp/` 创建，命名格式 `test-<purpose>.mjs`
 4. **临时数据 / 诊断日志**：直接在 `temp/` 创建，任意命名；真机日志、下载日志、排障日志不得写在仓库根目录
 5. **临时图片 / 裁图 / OCR 中间产物**：直接在 `temp/<purpose>/` 或 `tmp/<purpose>/` 下创建；不得在仓库根目录创建 `.tmp_*`、`tmp_*` 目录
+6. **临时下载 / HTTP 探针输出**：`curl`、`Invoke-WebRequest`、浏览器保存、接口直连保存等命令必须显式指定 `temp/` 下路径；如果命令默认会落到当前目录，先建 `temp/http-probes/` 再运行，不得事后留下根目录 `temp-*` 文件给提交审查兜底。
 
 ### 清理临时文件
 - **定期清理**：每个 Sprint 结束时清理 `temp/` 和 `test-results/`
