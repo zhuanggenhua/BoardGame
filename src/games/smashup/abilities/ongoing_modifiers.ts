@@ -892,6 +892,23 @@ function registerPolynesianVoyagersModifiers(): void {
     ]);
 }
 
+function registerHalfTheBattleModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'rulers_cosmos_sword_thats_powerful',
+            runtimeIdentity: 'actionFamily',
+            compute: (ctx, helpers) => {
+                if (getCardPrintedPower(ctx.minion.defId) < 5) return 0;
+                return helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'rulers_cosmos_sword_thats_powerful',
+                    { relationToTargetController: 'same' },
+                ) * 2;
+            },
+        },
+    ]);
+}
+
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
@@ -925,4 +942,5 @@ export function registerAllOngoingModifiers(): void {
     registerInternationalIncidentModifiers();
     registerWhatWereWeThinkingModifiers();
     registerPolynesianVoyagersModifiers();
+    registerHalfTheBattleModifiers();
 }
