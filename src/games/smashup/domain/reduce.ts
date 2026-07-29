@@ -821,7 +821,6 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
 
         case SU_EVENTS.ACTION_PLAYED: {
             const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, fromStored, ownerId, discardPlaySourceId, consumesNormalLimit } = event.payload as any;
-            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, ownerId, discardPlaySourceId } = event.payload as any;
             const player = state.players[playerId];
             const card = fromStored
                 ? player.storedCards?.find(c => c.uid === cardUid)
