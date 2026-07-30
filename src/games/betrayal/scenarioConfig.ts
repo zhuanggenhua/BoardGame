@@ -3,6 +3,7 @@ import type { BetrayalMonsterDefinitionId } from './domain/monsterDefinitions';
 export type BetrayalTraitKey = 'might' | 'speed' | 'knowledge' | 'sanity';
 export type BetrayalInventoryKind = 'item' | 'omen';
 export type BetrayalDeckKind = 'event' | 'item' | 'omen';
+export type BetrayalRoomDiscoverySymbol = BetrayalDeckKind | 'none';
 export type BetrayalRecommendedAction = 'move' | 'explore' | 'trade' | 'use' | 'endTurn';
 export type BetrayalScenarioId = 'first-scenario';
 export type BetrayalScenarioCardId =
@@ -123,10 +124,68 @@ export interface BetrayalRoomDiscoveryTemplate {
     hint: string;
     tags: string[];
     visualId: Exclude<BetrayalRoomVisualId, 'startTriple' | 'startHallway' | 'upperLanding' | 'basementLanding' | 'entranceHall' | 'foyer' | 'backUpper' | 'backGround' | 'backBasement'>;
+    discoverySymbol?: BetrayalRoomDiscoverySymbol;
     doorways: BetrayalRoomEdge[];
     discoveryEffect?: 'gainSanity1' | 'gainKnowledge1' | 'gainMight1' | 'gainSpeed1' | 'drawUntilWeapon' | 'placeObstacleToken';
     endTurnEffect?: 'physicalDamage1' | 'speedCheckFallToBasement' | 'moveToBasementLanding';
     enterEffect?: 'mysticElevator';
+}
+
+export const BETRAYAL_ROOM_DISCOVERY_SYMBOL_BY_VISUAL_ID = {
+    observatory: 'omen',
+    tower: 'event',
+    statuaryCorridor: 'event',
+    gallery: 'event',
+    ballroom: 'omen',
+    kitchen: 'event',
+    laboratory: 'event',
+    conservatory: 'omen',
+    graveyard: 'omen',
+    chapel: 'event',
+    larder: 'none',
+    diningRoom: 'event',
+    laundryChute: 'none',
+    vault: 'item',
+    chasm: 'event',
+    panicRoom: 'omen',
+    undergroundCavern: 'event',
+    ritualRoom: 'omen',
+    undergroundLake: 'event',
+    catacombs: 'omen',
+    secretStaircase: 'none',
+    furnaceRoom: 'event',
+    winterBedroom: 'omen',
+    guestQuarters: 'event',
+    bloodyRoom: 'item',
+    library: 'omen',
+    study: 'omen',
+    collapsedRoom: 'none',
+    junkRoom: 'item',
+    specimenRoom: 'omen',
+    charredRoom: 'omen',
+    salon: 'event',
+    bedroom: 'omen',
+    primaryBedroom: 'omen',
+    organRoom: 'event',
+    soundproofedRoom: 'omen',
+    nursery: 'omen',
+    operatingTheatre: 'item',
+    crawlspace: 'event',
+    gameRoom: 'item',
+    gymnasium: 'none',
+    armory: 'none',
+    crampedPassageway: 'event',
+    mysticElevator: 'none',
+} as const satisfies Partial<Record<BetrayalRoomVisualId, BetrayalRoomDiscoverySymbol>>;
+
+export function resolveBetrayalRoomDiscoverySymbol(
+    room: Pick<BetrayalRoomDiscoveryTemplate, 'visualId' | 'discoverySymbol'>,
+): BetrayalRoomDiscoverySymbol {
+    const symbol = room.discoverySymbol ?? BETRAYAL_ROOM_DISCOVERY_SYMBOL_BY_VISUAL_ID[room.visualId];
+    if (!symbol) {
+        throw new Error(`Betrayal room discovery symbol missing for visualId ${room.visualId}`);
+    }
+    return symbol;
 }
 
 export type BetrayalUseEffectSeed =
@@ -388,6 +447,8 @@ export interface BetrayalMonsterSeed {
     roomId: string;
     might: number;
     speed: number;
+    sanity?: number;
+    knowledge?: number;
     damage: number;
 }
 
@@ -410,8 +471,8 @@ export interface BetrayalScenarioCompletionConfig {
 export interface BetrayalScenarioConfig {
     id: BetrayalScenarioId;
     title: string;
-    scenarioCardLabel: 'NONE';
-    hauntId: 'crimson-jack-returns';
+    scenarioCardLabel: string;
+    hauntId: BetrayalScenarioCardId;
     hauntTitle: string;
     hauntTriggerLabel: string;
     presentation: {
@@ -974,6 +1035,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '一层观测房间，中央器械让视线与路线都更紧张',
                 tags: ['一层', '观察'],
                 visualId: 'observatory',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south', 'west'],
             },
             {
@@ -981,6 +1043,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '玻璃与藤蔓围住的一层房间，适合制造视线遮挡',
                 tags: ['一层', '植物'],
                 visualId: 'conservatory',
+                discoverySymbol: 'omen',
                 doorways: ['east', 'south'],
             },
             {
@@ -988,6 +1051,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '通向地下洞窟的室外墓地，适合承接追逐与怪物线',
                 tags: ['一层', '室外'],
                 visualId: 'graveyard',
+                discoverySymbol: 'omen',
                 doorways: ['east', 'south'],
             },
             {
@@ -995,6 +1059,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '宽敞的一层房间，适合会合与周旋',
                 tags: ['会合', '开阔'],
                 visualId: 'ballroom',
+                discoverySymbol: 'omen',
                 doorways: ['south', 'west'],
             },
             {
@@ -1002,6 +1067,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '食物和器具堆在一层，是事件与物品都可能发生的房间',
                 tags: ['一层', '物资'],
                 visualId: 'kitchen',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south', 'west'],
             },
             {
@@ -1009,6 +1075,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '长桌和阴影形成一层交汇点',
                 tags: ['一层', '会合'],
                 visualId: 'diningRoom',
+                discoverySymbol: 'event',
                 doorways: ['north', 'west'],
             },
             {
@@ -1016,6 +1083,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '冷清肃穆，像在等待一件不该发生的事',
                 tags: ['神秘', '静压'],
                 visualId: 'chapel',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south'],
                 discoveryEffect: 'gainSanity1',
             },
@@ -1024,6 +1092,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '仪器和试剂暗示这里会触发危险事件',
                 tags: ['一层', '危险'],
                 visualId: 'laboratory',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east'],
             },
             {
@@ -1031,6 +1100,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '一层封闭房间，适合放置剧本物件和高价值目标',
                 tags: ['一层', '目标'],
                 visualId: 'vault',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east'],
             },
             {
@@ -1038,6 +1108,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '炙热房间会改变移动与伤害判断',
                 tags: ['一层', '危险'],
                 visualId: 'furnaceRoom',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south', 'west'],
                 endTurnEffect: 'physicalDamage1',
             },
@@ -1046,6 +1117,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '卧室类房间，后续剧本可作为特定目标房间',
                 tags: ['一层', '上层', '卧室'],
                 visualId: 'guestQuarters',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south'],
             },
             {
@@ -1053,6 +1125,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '血迹房间适合承接死亡、搜查和剧本标记',
                 tags: ['一层', '上层', '危险'],
                 visualId: 'bloodyRoom',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east'],
             },
             {
@@ -1060,6 +1133,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '标本和柜架让这里适合触发异常事件',
                 tags: ['一层', '事件'],
                 visualId: 'specimenRoom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1067,6 +1141,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '桌椅和壁炉形成可会合的房间',
                 tags: ['一层', '会合'],
                 visualId: 'salon',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1074,6 +1149,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '卧室类核心房间，适合后续剧本定位',
                 tags: ['一层', '上层', '卧室'],
                 visualId: 'primaryBedroom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1081,6 +1157,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '狭窄房间，适合触发事件和剧本特殊物件',
                 tags: ['一层', '上层', '事件'],
                 visualId: 'nursery',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1088,6 +1165,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '危险的治疗房间，适合承接身体伤害事件',
                 tags: ['一层', '地下', '危险'],
                 visualId: 'operatingTheatre',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1095,6 +1173,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '武器与道具集中，适合物品奖励',
                 tags: ['一层', '物品'],
                 visualId: 'armory',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east', 'south'],
                 discoveryEffect: 'drawUntilWeapon',
             },
@@ -1105,6 +1184,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '上层塔楼，边缘路线和高度感会影响移动判断',
                 tags: ['上层', '高处'],
                 visualId: 'tower',
+                discoverySymbol: 'event',
                 doorways: ['south', 'west'],
             },
             {
@@ -1112,6 +1192,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '上层走廊，适合连接多个房间',
                 tags: ['上层', '走廊'],
                 visualId: 'statuaryCorridor',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1119,6 +1200,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '书桌和卷宗让这里成为调查线索的房间',
                 tags: ['知识', '调查'],
                 visualId: 'study',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east'],
                 discoveryEffect: 'gainKnowledge1',
             },
@@ -1127,6 +1209,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '细长上层通道，容易观察别处动静',
                 tags: ['视野', '走位'],
                 visualId: 'gallery',
+                discoverySymbol: 'event',
                 doorways: ['north', 'south'],
             },
             {
@@ -1134,6 +1217,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '成排旧书和破纸页，是找知识的地方',
                 tags: ['知识', '调查'],
                 visualId: 'library',
+                discoverySymbol: 'omen',
                 doorways: ['south', 'west'],
                 discoveryEffect: 'gainKnowledge1',
             },
@@ -1142,6 +1226,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '卧室类上层房间，后续剧本可作为目标地点',
                 tags: ['上层', '卧室'],
                 visualId: 'winterBedroom',
+                discoverySymbol: 'omen',
                 doorways: ['east', 'south'],
             },
             {
@@ -1149,6 +1234,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '结构破损会影响离开与坠落判断',
                 tags: ['上层', '危险'],
                 visualId: 'collapsedRoom',
+                discoverySymbol: 'none',
                 doorways: ['north', 'south'],
                 endTurnEffect: 'speedCheckFallToBasement',
             },
@@ -1157,6 +1243,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '火焰痕迹明确，适合承接火焰类剧本规则',
                 tags: ['上层', '危险'],
                 visualId: 'charredRoom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east'],
             },
             {
@@ -1164,6 +1251,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '上层仪式感房间，适合声音与精神事件',
                 tags: ['上层', '精神'],
                 visualId: 'organRoom',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1171,6 +1259,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '封闭空间，适合特殊事件和阻隔效果',
                 tags: ['上层', '封闭'],
                 visualId: 'soundproofedRoom',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1178,6 +1267,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '娱乐桌面房间，适合物品和事件交汇',
                 tags: ['上层', '事件'],
                 visualId: 'gameRoom',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east', 'south'],
             },
             {
@@ -1185,6 +1275,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '开阔空间，适合速度与力量检定',
                 tags: ['上层', '力量'],
                 visualId: 'gymnasium',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east', 'south'],
                 discoveryEffect: 'gainSpeed1',
             },
@@ -1193,6 +1284,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '通道型房间，主要承担路线连接',
                 tags: ['上层', '通道'],
                 visualId: 'crampedPassageway',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east', 'south', 'west'],
             },
             {
@@ -1200,6 +1292,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '可连接任意楼层的特殊移动房间',
                 tags: ['上层', '地下', '特殊移动'],
                 visualId: 'mysticElevator',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east', 'south', 'west'],
                 enterEffect: 'mysticElevator',
             },
@@ -1210,6 +1303,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '通向地下室起始点的特殊竖向连接',
                 tags: ['上层', '地下', '特殊移动'],
                 visualId: 'laundryChute',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east'],
                 endTurnEffect: 'moveToBasementLanding',
             },
@@ -1218,6 +1312,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '地下危险地形，后续剧本可能要求丢弃或搬运物体',
                 tags: ['地下', '危险'],
                 visualId: 'chasm',
+                discoverySymbol: 'event',
                 doorways: ['north', 'south'],
             },
             {
@@ -1225,6 +1320,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '堆满旧箱和杂物，翻找起来最像物品点',
                 tags: ['物资', '翻找'],
                 visualId: 'larder',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east'],
                 discoveryEffect: 'gainMight1',
             },
@@ -1233,6 +1329,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '黑水切开地下空间，移动时必须考虑绕行',
                 tags: ['地下', '水域'],
                 visualId: 'undergroundLake',
+                discoverySymbol: 'event',
                 doorways: ['north', 'west'],
             },
             {
@@ -1240,6 +1337,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '粗糙岩壁和阴影让这里更像怪物出没处',
                 tags: ['地下', '危险'],
                 visualId: 'undergroundCavern',
+                discoverySymbol: 'event',
                 doorways: ['east', 'south'],
             },
             {
@@ -1247,6 +1345,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '看得出有人在这里做过不该做的准备',
                 tags: ['仪式', '危险'],
                 visualId: 'ritualRoom',
+                discoverySymbol: 'omen',
                 doorways: ['west', 'south'],
             },
             {
@@ -1254,6 +1353,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '狭长墓道适合让追逐和围堵成立',
                 tags: ['地下', '墓穴'],
                 visualId: 'catacombs',
+                discoverySymbol: 'omen',
                 doorways: ['north', 'south'],
             },
             {
@@ -1261,6 +1361,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '地下到一层的特殊连接房间',
                 tags: ['地下', '特殊移动'],
                 visualId: 'secretStaircase',
+                discoverySymbol: 'none',
                 doorways: ['north', 'east'],
             },
             {
@@ -1268,6 +1369,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '地下杂物房，适合放置障碍或物件',
                 tags: ['地下', '物品'],
                 visualId: 'junkRoom',
+                discoverySymbol: 'item',
                 doorways: ['north', 'east'],
                 discoveryEffect: 'placeObstacleToken',
             },
@@ -1276,6 +1378,7 @@ export const BETRAYAL_DISCOVERY_POOLS = {
                 hint: '狭窄地下通路，适合限制移动',
                 tags: ['地下', '通道'],
                 visualId: 'crawlspace',
+                discoverySymbol: 'event',
                 doorways: ['north', 'east'],
             },
         ],

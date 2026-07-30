@@ -16,16 +16,21 @@ import {
 } from './betrayalTestHelpers';
 
 const EVIDENCE_DIR = 'evidence/betrayal-the-dust-active-possession-ui';
-const ALL_CARDS_SCREENSHOT = `${EVIDENCE_DIR}/01-八张主动持有牌入口全集.jpg`;
+const ALL_CARDS_SCREENSHOT = `${EVIDENCE_DIR}/01-十一张主动持有牌入口全集.jpg`;
 const MEDICAL_KIT_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/02-急救包选择同房目标.jpg`;
 const MEDICAL_KIT_DONE_SCREENSHOT = `${EVIDENCE_DIR}/03-急救包治疗后埋葬.jpg`;
 const HOLY_WATER_READY_SCREENSHOT = `${EVIDENCE_DIR}/04-奇怪的药品无需目标.jpg`;
 const HOLY_WATER_DONE_SCREENSHOT = `${EVIDENCE_DIR}/05-奇怪的药品治疗后埋葬.jpg`;
 const PLACE_READY_SCREENSHOT_PREFIX = `${EVIDENCE_DIR}/06`;
+const MIRROR_READY_SCREENSHOT = `${EVIDENCE_DIR}/07-镜子自疗知识神志预览.jpg`;
+const MIRROR_DONE_SCREENSHOT = `${EVIDENCE_DIR}/08-镜子自疗后埋葬.jpg`;
+const STOPWATCH_DONE_SCREENSHOT = `${EVIDENCE_DIR}/09-神秘秒表使用后等待额外回合.jpg`;
 const BOOK_READY_SCREENSHOT = `${EVIDENCE_DIR}/10-书本无需目标准备使用.jpg`;
 const BOOK_DONE_SCREENSHOT = `${EVIDENCE_DIR}/11-书本使用后保留下次非战斗检定替换.jpg`;
 const MASK_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/12-面具逐目标选择同房玩家和狂热病患.jpg`;
 const MASK_DONE_SCREENSHOT = `${EVIDENCE_DIR}/13-面具结算后目标移动到已发现相邻房间.jpg`;
+const ANGEL_FEATHER_SELECT_SCREENSHOT = `${EVIDENCE_DIR}/14-天使之羽选择替代投骰结果.jpg`;
+const ANGEL_FEATHER_DONE_SCREENSHOT = `${EVIDENCE_DIR}/15-天使之羽使用后保留替代总点数.jpg`;
 const TEST_URL = '/play/betrayal?players=3&playerID=1&seat0=human&seat1=human&seat2=human&seed=the-dust-active-possession-ui';
 
 const ACTIVE_CARD_IDS = Object.keys(
@@ -38,6 +43,8 @@ type DustActivePossessionState = {
     currentInventoryNames?: string[];
     usedCardIdsThisTurn?: string[];
     currentTraits?: Partial<Record<'might' | 'speed' | 'knowledge' | 'sanity', number>>;
+    currentPlayer?: string;
+    turnStartInventoryCardIds?: string[];
     playerZeroRoomId?: string;
     playerZeroTraits?: Partial<Record<'might' | 'speed' | 'knowledge' | 'sanity', number>>;
     feverishRoomId?: string | null;
@@ -45,6 +52,17 @@ type DustActivePossessionState = {
         playerId?: string;
         sourceCardId?: string;
         replacementTrait?: string;
+    } | null;
+    nextNonCombatTraitRollTotalReplacement?: {
+        playerId?: string;
+        sourceCardId?: string;
+        sourceCardName?: string;
+        selectedTotal?: number;
+    } | null;
+    pendingExtraTurnAfterCurrentTurn?: {
+        playerId?: string;
+        sourceCardId?: string;
+        sourceCardName?: string;
     } | null;
     latestLog?: string | null;
     rejected?: { commandType?: string; error?: string } | null;
@@ -75,10 +93,14 @@ const readDustActivePossessionState = async (
             currentInventoryNames: core?.currentExplorer.inventory.map((card) => card.name) ?? [],
             usedCardIdsThisTurn: core?.usedCardIdsThisTurn ?? [],
             currentTraits: core?.currentExplorer.traits,
+            currentPlayer: core?.currentPlayer,
+            turnStartInventoryCardIds: core?.turnStartInventoryCardIds ?? [],
             playerZeroRoomId: playerZero?.roomId,
             playerZeroTraits: playerZero?.traits,
             feverishRoomId: feverish?.roomId ?? null,
             nextNonCombatTraitReplacement: core?.nextNonCombatTraitReplacement ?? null,
+            nextNonCombatTraitRollTotalReplacement: core?.nextNonCombatTraitRollTotalReplacement ?? null,
+            pendingExtraTurnAfterCurrentTurn: core?.pendingExtraTurnAfterCurrentTurn ?? null,
             latestLog: core?.activityLog[0]?.text ?? null,
             rejected: holder.__BG_LAST_COMMAND_REJECTED__ ?? null,
         };
@@ -128,7 +150,7 @@ const selectCard = async (page: Page, cardId: DustActivePossessionE2ECardId) => 
 };
 
 test.describe('山屋惊魂作祟3灰尘主动持有牌玩家可见代表链', () => {
-    test('八张当前主动持有牌都显示入口、选中状态和正确目标要求', async ({ page, context }) => {
+    test('十一张当前主动持有牌都显示入口、选中状态和正确目标要求', async ({ page, context }) => {
         test.setTimeout(120000);
         const diagnostics = await openDustActivePossessionBoard(
             page,
@@ -153,12 +175,29 @@ test.describe('山屋惊魂作祟3灰尘主动持有牌玩家可见代表链', (
         await expect(page.getByTestId('betrayal-inventory-target-player-selector')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
 
+        await selectCard(page, 'mirror');
+        await expect(page.getByTestId('betrayal-inventory-target-player-selector')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-inventory-heal-preview')).toContainText('知识');
+        await expect(page.getByTestId('betrayal-inventory-heal-preview')).toContainText('神志');
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
+
         for (const cardId of ['map', 'notebook', 'journal', 'manuscript'] as const) {
             await selectCard(page, cardId);
             await expect(page.getByTestId('betrayal-inventory-target-room-selector')).toBeVisible();
             await expect(page.getByTestId('betrayal-room-inventory-target-card-highlight-entrance-hall')).toBeVisible();
             await expect(page.getByTestId('betrayal-action-use')).toBeDisabled();
         }
+
+        await selectCard(page, 'mysterious-stopwatch');
+        await expect(page.getByTestId('betrayal-inventory-target-room-selector')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
+
+        await selectCard(page, 'angel-feather');
+        await expect(page.getByTestId('betrayal-inventory-roll-total-selector')).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-use')).toBeDisabled();
+        await page.getByTestId('betrayal-inventory-roll-total-6').click();
+        await expect(page.getByTestId('betrayal-inventory-roll-total-6')).toHaveAttribute('data-selected', 'true');
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
 
         await selectCard(page, 'omen-book');
         await expect(page.getByTestId('betrayal-inventory-target-room-selector')).toHaveCount(0);
@@ -224,6 +263,32 @@ test.describe('山屋惊魂作祟3灰尘主动持有牌玩家可见代表链', (
         });
         await saveScreenshot(page, HOLY_WATER_DONE_SCREENSHOT);
 
+        await injectActiveCard(page, 'mirror');
+        await selectCard(page, 'mirror');
+        await expect(page.getByTestId('betrayal-inventory-heal-preview-knowledge')).toHaveAttribute(
+            'data-trait-preview-target-value',
+            '4',
+        );
+        await expect(page.getByTestId('betrayal-inventory-heal-preview-sanity')).toHaveAttribute(
+            'data-trait-preview-target-value',
+            '4',
+        );
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
+        await saveScreenshot(page, MIRROR_READY_SCREENSHOT);
+        await page.getByTestId('betrayal-action-use').click();
+        await expect.poll(() => readDustActivePossessionState(page)).toMatchObject({
+            currentInventoryIds: [],
+            currentTraits: {
+                might: 2,
+                speed: 2,
+                knowledge: 4,
+                sanity: 4,
+            },
+            usedCardIdsThisTurn: expect.arrayContaining(['mirror']),
+            rejected: null,
+        });
+        await saveScreenshot(page, MIRROR_DONE_SCREENSHOT);
+
         await assertNoFatalFrontendErrors([
             { label: 'betrayal-the-dust-active-possession-ui-heal', diagnostics },
         ]);
@@ -269,6 +334,84 @@ test.describe('山屋惊魂作祟3灰尘主动持有牌玩家可见代表链', (
 
         await assertNoFatalFrontendErrors([
             { label: 'betrayal-the-dust-active-possession-ui-place', diagnostics },
+        ]);
+    });
+
+    test('神秘秒表从真实页面埋葬并在结束回合后给当前玩家额外行动', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openDustActivePossessionBoard(
+            page,
+            context,
+            createDustActivePossessionRuntimeCore(['mysterious-stopwatch']),
+            'betrayal-the-dust-active-possession-ui-stopwatch',
+        );
+
+        await selectCard(page, 'mysterious-stopwatch');
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
+        await page.getByTestId('betrayal-action-use').click();
+        await expect.poll(() => readDustActivePossessionState(page)).toMatchObject({
+            currentInventoryIds: [],
+            usedCardIdsThisTurn: expect.arrayContaining(['mysterious-stopwatch']),
+            pendingExtraTurnAfterCurrentTurn: {
+                playerId: '1',
+                sourceCardId: 'mysterious-stopwatch',
+                sourceCardName: '神秘秒表',
+            },
+            rejected: null,
+        });
+        await saveScreenshot(page, STOPWATCH_DONE_SCREENSHOT);
+
+        await page.getByTestId('betrayal-action-endTurn').click();
+        await expect.poll(() => readDustActivePossessionState(page)).toMatchObject({
+            currentPlayer: '1',
+            currentInventoryIds: [],
+            usedCardIdsThisTurn: [],
+            turnStartInventoryCardIds: [],
+            pendingExtraTurnAfterCurrentTurn: null,
+            rejected: null,
+        });
+
+        await assertNoFatalFrontendErrors([
+            { label: 'betrayal-the-dust-active-possession-ui-stopwatch', diagnostics },
+        ]);
+    });
+
+    test('天使之羽要求页面选择0-8总点数并写入下一次非战斗检定替代状态', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openDustActivePossessionBoard(
+            page,
+            context,
+            createDustActivePossessionRuntimeCore(['angel-feather']),
+            'betrayal-the-dust-active-possession-ui-angel-feather',
+        );
+
+        await selectCard(page, 'angel-feather');
+        await expect(page.getByTestId('betrayal-inventory-roll-total-selector')).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-use')).toBeDisabled();
+        await page.getByTestId('betrayal-inventory-roll-total-6').click();
+        await expect(page.getByTestId('betrayal-inventory-roll-total-6')).toHaveAttribute('data-selected', 'true');
+        await expect(page.getByTestId('betrayal-action-use')).toBeEnabled();
+        await saveScreenshot(page, ANGEL_FEATHER_SELECT_SCREENSHOT);
+
+        await page.getByTestId('betrayal-action-use').click();
+        await expect.poll(() => readDustActivePossessionState(page)).toMatchObject({
+            currentInventoryIds: [],
+            usedCardIdsThisTurn: expect.arrayContaining(['angel-feather']),
+            nextNonCombatTraitRollTotalReplacement: {
+                playerId: '1',
+                sourceCardId: 'angel-feather',
+                sourceCardName: '天使之羽',
+                selectedTotal: 6,
+            },
+            rejected: null,
+        });
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(
+            '下一次属性检定使用 6 作为投骰结果',
+        );
+        await saveScreenshot(page, ANGEL_FEATHER_DONE_SCREENSHOT);
+
+        await assertNoFatalFrontendErrors([
+            { label: 'betrayal-the-dust-active-possession-ui-angel-feather', diagnostics },
         ]);
     });
 

@@ -203,14 +203,17 @@ function validateConfirmHandSwap(
 ): ValidationResult {
     const playerValidation = validateProgressPlayer(core, playerId);
     if (!playerValidation.valid) return playerValidation;
-    if (core.phase !== 'hand-swap') return failure('notHandSwap');
     if (!core.rules.config.twoHand) return failure('handSwapDisabled');
-    if (core.pendingProgress?.kind === 'hand-swap' && core.pendingProgress.approvals.includes(playerId)) {
+    const isPreStartSwap = core.phase === 'chip-selection' && !core.heistStarted;
+    const isStageSwap = core.phase === 'hand-swap';
+    if (!isPreStartSwap && !isStageSwap) return failure('notHandSwap');
+    if (isStageSwap && core.pendingProgress?.kind === 'hand-swap' && core.pendingProgress.approvals.includes(playerId)) {
         return failure('handSwapAlreadyConfirmed');
     }
     const selectedNeither = topIndex === undefined && bottomIndex === undefined;
     const selectedBoth = typeof topIndex === 'number' && typeof bottomIndex === 'number';
     if (!selectedNeither && !selectedBoth) return failure('invalidHandSwapSelection');
+    if (isPreStartSwap && selectedNeither) return failure('invalidHandSwapSelection');
     if (selectedNeither) return success();
 
     const player = core.players[playerId];

@@ -763,8 +763,8 @@ describe('The Gang domain flow', () => {
         expect(bottomResult?.strength.ranks[0]).toBe(14);
     });
 
-    test('两副手牌投票完先进入调换阶段，确认后才推进下一轮', () => {
-        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-hand-swap-round-test');
+    test('两副手牌开局前可交换，开始后投票完直接推进下一轮', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-prestart-hand-swap-round-test');
         let state = adapter.setup(['0', '1', '2']);
 
         state = adapter.execute(state, {
@@ -779,51 +779,40 @@ describe('The Gang domain flow', () => {
             },
             timestamp: 1,
         }).state;
-        state = startHeist(adapter, state, 2);
 
         const topCard = state.core.players['0'].pocketCards[0];
         const bottomCard = state.core.players['0'].secondaryPocketCards?.[1];
         expect(bottomCard).toBeDefined();
 
-        for (const [index, playerId] of state.core.playerIds.entries()) {
-            state = adapter.execute(state, {
-                type: THE_GANG_COMMANDS.TAKE_CHIP,
-                playerId,
-                payload: { chip: index + 1 },
-                timestamp: 10 + index,
-            }).state;
-        }
-
-        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, 20);
-
-        expect(state.core.phase).toBe('hand-swap');
-        expect(state.core.round).toBe(1);
-        expect(state.core.communityCards).toHaveLength(0);
-        expect(state.core.pendingProgress).toBeUndefined();
-
         state = adapter.execute(state, {
             type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
             playerId: '0',
             payload: { topIndex: 0, bottomIndex: 1 },
-            timestamp: 30,
+            timestamp: 3,
         }).state;
 
         expect(state.core.players['0'].pocketCards[0]).toEqual(bottomCard);
         expect(state.core.players['0'].secondaryPocketCards?.[1]).toEqual(topCard);
-        expect(state.core.pendingProgress).toEqual({ kind: 'hand-swap', approvals: ['0'] });
+        expect(state.core.phase).toBe('chip-selection');
+        expect(state.core.heistStarted).toBe(false);
+        expect(state.core.pendingProgress).toBeUndefined();
 
-        state = adapter.execute(state, {
-            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
-            playerId: '1',
-            payload: {},
-            timestamp: 31,
-        }).state;
-        state = adapter.execute(state, {
-            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
-            playerId: '2',
-            payload: {},
-            timestamp: 32,
-        }).state;
+        state = startHeist(adapter, state, 4);
+
+        let chip = 1;
+        for (const playerId of state.core.playerIds) {
+            for (const handSlot of ['top', 'bottom'] as const) {
+                state = adapter.execute(state, {
+                    type: THE_GANG_COMMANDS.TAKE_CHIP,
+                    playerId,
+                    payload: { chip, handSlot },
+                    timestamp: 10 + chip,
+                }).state;
+                chip += 1;
+            }
+        }
+
+        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, 20);
 
         expect(state.core.phase).toBe('chip-selection');
         expect(state.core.round).toBe(2);
@@ -832,8 +821,8 @@ describe('The Gang domain flow', () => {
         expect(state.core.pendingProgress).toBeUndefined();
     });
 
-    test('两副手牌最终轮调换确认后才摊牌', () => {
-        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-hand-swap-showdown-test');
+    test('两副手牌最终轮直接摊牌，不再进入调换阶段', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-two-hand-direct-showdown-test');
         let state = adapter.setup(['0', '1', '2']);
 
         state = adapter.execute(state, {
@@ -867,8 +856,6 @@ describe('The Gang domain flow', () => {
 
             if (round < 4) {
                 state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, round * 100);
-                expect(state.core.phase).toBe('hand-swap');
-                state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, round * 100 + 10);
                 expect(state.core.phase).toBe('chip-selection');
             }
         }
@@ -885,10 +872,6 @@ describe('The Gang domain flow', () => {
         ]);
 
         state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.REVEAL_SHOWDOWN, 500);
-        expect(state.core.phase).toBe('hand-swap');
-        expect(state.core.lastShowdown).toBeUndefined();
-
-        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, 510);
         expect(state.core.phase).toBe('showdown');
         expect(state.core.lastShowdown).toBeDefined();
     });

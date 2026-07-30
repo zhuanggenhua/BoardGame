@@ -186,8 +186,13 @@
       "damage": "伤害",
       "damageAllocationTitle": "伤害分配",
       "damageAllocationAmount": "{{amount}} 点{{kind}}",
+      "damageAllocationReduction": "原始 {{originalAmount}} 点{{kind}}；{{source}}减免 {{reductionAmount}} 点，实际分配 {{reducedAmount}} 点。",
+      "damageAllocationReductionFallback": "防具",
       "damageAllocationConfirm": "确认",
       "damageAllocationWaiting": "等待",
+      "damageAllocationBroochInactive": "使用{{cardName}}改为通用伤害",
+      "damageAllocationBroochActive": "{{cardName}}：已改为通用伤害",
+      "damageAllocationBroochNote": "改为通用伤害后，可从力量、速度、知识、神志中分配。",
       "damageKindPhysical": "物理伤害",
       "damageKindMental": "精神伤害",
       "damageKindGeneral": "一般伤害",
@@ -287,6 +292,7 @@
       "focusAttackTraitor": "攻击叛徒",
       "focusAttackHero": "攻击{{player}}",
       "focusAttackHeroTarget": "攻击英雄",
+      "focusAttackDynamiteRoom": "用炸药攻击房间",
       "focusCureTheDust": "治愈灰尘",
       "focusSearchForCure": "寻找解药",
       "focusSicknessExchange": "交换疾病",
@@ -326,6 +332,7 @@
       "actionCueAttackTraitor": "现在：点攻击叛徒",
       "actionCueAttackHero": "现在：点攻击{{player}}",
       "actionCueAttackHeroTarget": "现在：先点攻击英雄，再点地图上的目标英雄",
+      "actionCueAttackDynamiteRoom": "现在：点房间板块引爆炸药",
       "actionCueCureTheDust": "现在：点治愈灰尘",
       "actionCueSearchForCure": "现在：点寻找解药",
       "actionCueSicknessExchange": "现在：点队友交换疾病",
@@ -759,7 +766,8 @@
       "traitorEventSkip": "跳过事件",
       "mask": "面具",
       "eventItemChoice": "选择物品",
-      "noEventItemChoices": "无可选物品"
+      "noEventItemChoices": "无可选物品",
+      "rollTotalReplacement": "替代结果"
     },
     "decks": {
       "omen": "预兆牌堆",
@@ -809,7 +817,8 @@
       "rewards": {
         "event": "事件",
         "item": "物品",
-        "omen": "预兆"
+        "omen": "预兆",
+        "none": "无发现符号"
       },
       "endTurnEffects": {
         "physicalDamage1": {
@@ -868,6 +877,7 @@
       "eventCard": "事件牌",
       "itemCard": "物品牌",
       "omenCard": "预兆牌",
+      "noCard": "无发现牌",
       "eventResolved": "即时生效",
       "addedToInventory": "已加入持有区",
       "readyToUse": "已选中，可直接使用",
@@ -882,6 +892,8 @@
       "passiveBonus": "加值 {{value}}",
       "detail": "骰子合计 {{subtotal}}｜加值 {{bonus}}",
       "total": "总点数 {{value}}",
+      "attackComparison": "进攻总点 {{attacker}} / 防御总点 {{defender}}",
+      "attackComparisonWithExtraDice": "进攻总点 {{attacker}} / 防御总点 {{defender}}（防御额外 {{extraDice}} 骰）",
       "backToBoard": "返回牌桌",
       "allTraitCheckTitle": "四项属性检定",
       "passed": "通过",

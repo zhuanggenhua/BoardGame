@@ -41,6 +41,9 @@ import {
   createSkeletonKeyMoveReadyCore,
   createStartedFirstScenarioCore,
   createTradeReadyCore,
+  createMummyReadyToBanishCore,
+  playMummyScenarioToSurvivorVictory,
+  playMummyScenarioToTraitorVictory,
   playFirstScenarioToSurvivorVictory,
   playFirstScenarioToTraitorVictory,
 } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
@@ -693,14 +696,26 @@ export function createMonsterEncounterCore(): BetrayalCore {
 }
 
 export function createFirstScenarioSurvivorEndgameCore(): BetrayalCore {
-  return playFirstScenarioToSurvivorVictory();
+  return playMummyScenarioToSurvivorVictory();
 }
 
 export function createFirstScenarioTraitorEndgameCore(): BetrayalCore {
-  return playFirstScenarioToTraitorVictory();
+  return playMummyScenarioToTraitorVictory();
 }
 
 export function createFirstScenarioReadyToExorciseRuntimeCore(): BetrayalCore {
+  return createMummyReadyToBanishCore();
+}
+
+export function createCrimsonJackSurvivorEndgameCore(): BetrayalCore {
+  return playFirstScenarioToSurvivorVictory();
+}
+
+export function createCrimsonJackTraitorEndgameCore(): BetrayalCore {
+  return playFirstScenarioToTraitorVictory();
+}
+
+export function createCrimsonJackReadyToExorciseRuntimeCore(): BetrayalCore {
   return createFirstScenarioReadyToExorciseCore();
 }
 
@@ -1214,11 +1229,14 @@ export function createDustRabbitFootDeathBurialRuntimeCore(): BetrayalCore {
 
 export type DustActivePossessionE2ECardId =
   | "medical-kit"
+  | "mirror"
   | "holy-water"
   | "map"
   | "notebook"
   | "journal"
   | "manuscript"
+  | "mysterious-stopwatch"
+  | "angel-feather"
   | "omen-book"
   | "mask";
 
@@ -1227,11 +1245,18 @@ export const DUST_ACTIVE_POSSESSION_E2E_CARDS: Record<
   BetrayalCore["currentExplorer"]["inventory"][number]
 > = {
   "medical-kit": { id: "medical-kit", name: "急救包", kind: "item" },
+  mirror: { id: "mirror", name: "镜子", kind: "item" },
   "holy-water": { id: "holy-water", name: "奇怪的药品", kind: "item" },
   map: { id: "map", name: "地图", kind: "item" },
   notebook: { id: "notebook", name: "笔记本", kind: "item" },
   journal: { id: "journal", name: "日记", kind: "item" },
   manuscript: { id: "manuscript", name: "手稿", kind: "item" },
+  "mysterious-stopwatch": {
+    id: "mysterious-stopwatch",
+    name: "神秘秒表",
+    kind: "item",
+  },
+  "angel-feather": { id: "angel-feather", name: "天使之羽", kind: "item" },
   "omen-book": { id: "omen-book", name: "书本", kind: "omen" },
   mask: { id: "mask", name: "面具", kind: "omen" },
 };
@@ -1239,11 +1264,14 @@ export const DUST_ACTIVE_POSSESSION_E2E_CARDS: Record<
 export function createDustActivePossessionRuntimeCore(
   cardIds: DustActivePossessionE2ECardId[] = [
     "medical-kit",
+    "mirror",
     "holy-water",
     "map",
     "notebook",
     "journal",
     "manuscript",
+    "mysterious-stopwatch",
+    "angel-feather",
     "omen-book",
     "mask",
   ],

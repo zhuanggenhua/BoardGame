@@ -118,7 +118,11 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
       page.getByTestId("betrayal-haunt-reveal-player-title"),
     ).toContainText("公开揭示");
     await expect(page.getByTestId("betrayal-haunt-reveal-source")).toContainText(
-      /剧本卡 赤红杰克归来.*触发/,
+      /剧本卡 木乃伊横行.*触发/,
+    );
+    // 当前 74 张牌库合同只有 9 张预兆且不含「女孩」；运行时揭示源应呈现真实触发牌「书本」。
+    await expect(page.getByTestId("betrayal-haunt-reveal-source")).toContainText(
+      /书本|Book/,
     );
     await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
     await saveScreenshot(page, PUBLIC_REVEAL_SCREENSHOT);
@@ -134,14 +138,14 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toContainText("英雄剧本书");
     await expect(
       heroReader.getByTestId("betrayal-scenario-reader-source-status"),
-    ).toContainText("非原文摘要");
+    ).toContainText("本地规则源正文");
     const openingNarration = heroReader.getByTestId(
       "betrayal-scenario-opening-cinematic",
     );
     await expect(
       heroReader.getByTestId("betrayal-scenario-opening-stage"),
     ).toBeVisible();
-    await expect(openingNarration).toContainText("山屋异象");
+    await expect(openingNarration).toContainText("挚爱散失于久远洪荒");
     await expect(openingNarration).toHaveAttribute(
       "data-cinematic-narration",
       "opening",
@@ -152,7 +156,7 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     );
     await expect(
       heroReader.getByTestId("betrayal-scenario-opening-source-status"),
-    ).toContainText("非原文摘要");
+    ).toContainText("本地规则源正文");
     await expect(heroReader.getByTestId("betrayal-scenario-book")).toHaveCount(
       0,
     );
@@ -166,19 +170,41 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toHaveCount(0);
     await expect(
       heroReader.getByTestId("betrayal-scenario-book-section-heroes"),
-    ).not.toContainText("山屋异象");
+    ).toContainText("将木乃伊驱逐回亡者之国");
     await expect(
       heroReader.getByTestId("betrayal-scenario-book-section-heroes"),
-    ).toContainText("英雄手册");
+    ).not.toContainText("木乃伊持有女孩");
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-book-section-special"),
+    ).toContainText("6+知识考验");
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-book-section-special"),
+    ).toContainText(/英雄.*不可用速度向木乃伊进行袭击/);
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-book-section-prologueHeroes"),
+    ).toHaveCount(0);
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-book-section-prologueTraitor"),
+    ).toHaveCount(0);
     await expect(
       heroReader.getByTestId("betrayal-scenario-book-section-setup"),
     ).toHaveCount(0);
-    await expect(heroReader).not.toContainText("开局记录");
-    await expect(heroReader).not.toContainText("叛徒手册");
     await expect(
       heroReader.getByTestId("betrayal-scenario-book-section-traitor"),
     ).toHaveCount(0);
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-book-section-monster"),
+    ).toHaveCount(0);
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-book-section-endingTraitor"),
+    ).toHaveCount(0);
     await saveScreenshot(page, HERO_READER_SCREENSHOT);
+    await heroReader
+      .getByTestId("betrayal-scenario-reader-next-zone")
+      .click();
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-book-section-endingHeroes"),
+    ).toContainText("木乃伊犹如细砂随风飞散");
 
     await openInjectedCoreAsPlayer(
       page,
@@ -196,7 +222,7 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toContainText("叛徒剧本书");
     await expect(
       traitorReader.getByTestId("betrayal-scenario-reader-source-status"),
-    ).toContainText("非原文摘要");
+    ).toContainText("本地规则源正文");
     await expect(
       traitorReader.getByTestId("betrayal-scenario-opening-cinematic"),
     ).toHaveAttribute("data-cinematic-stage", "standalone");
@@ -214,25 +240,41 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toHaveCount(0);
     await expect(
       traitorReader.getByTestId("betrayal-scenario-book-section-traitor"),
-    ).toContainText("叛徒手册");
+    ).toContainText("木乃伊持有女孩");
+    await expect(
+      traitorReader.getByTestId("betrayal-scenario-book-section-traitor"),
+    ).toContainText("圣符");
     await expect(
       traitorReader.getByTestId("betrayal-scenario-book-section-monster"),
-    ).toContainText("杰克之灵");
+    ).toContainText("速度3、力量8、神志5");
+    await expect(
+      traitorReader.getByTestId("betrayal-scenario-book-section-monster"),
+    ).toContainText("造成2点或以上的损伤");
     await expect(
       traitorReader.getByTestId("betrayal-scenario-book-section-setup"),
     ).toHaveCount(0);
-    await expect(traitorReader).not.toContainText("开局记录");
-    await expect(traitorReader).not.toContainText("英雄手册");
+    await expect(
+      traitorReader.getByTestId("betrayal-scenario-book-section-prologueHeroes"),
+    ).toHaveCount(0);
+    await expect(
+      traitorReader.getByTestId("betrayal-scenario-book-section-prologueTraitor"),
+    ).toHaveCount(0);
     await expect(
       traitorReader.getByTestId("betrayal-scenario-book-section-heroes"),
+    ).toHaveCount(0);
+    await expect(
+      traitorReader.getByTestId("betrayal-scenario-book-section-special"),
+    ).toHaveCount(0);
+    await expect(
+      traitorReader.getByTestId("betrayal-scenario-book-section-endingHeroes"),
     ).toHaveCount(0);
     await saveScreenshot(page, TRAITOR_READER_SCREENSHOT);
     await traitorReader
       .getByTestId("betrayal-scenario-reader-next-zone")
       .click();
     await expect(
-      traitorReader.getByTestId("betrayal-scenario-book-section-ending"),
-    ).toContainText("胜负判定");
+      traitorReader.getByTestId("betrayal-scenario-book-section-endingTraitor"),
+    ).toContainText("整个世界不久都将臣服于我俩脚下");
 
     await openInjectedCoreAsPlayer(
       page,
@@ -242,18 +284,18 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await dismissHauntRevealIfPresent(page);
     await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
     await expect(page.getByTestId("betrayal-action-use")).toContainText(
-      /驱魔|驱散杰克之灵/,
-    );
-    await expect(page.getByTestId("betrayal-room-focus-target")).toContainText(
-      /驱魔|驱散杰克之灵/,
+      "驱逐木乃伊",
     );
     await expect(page.getByTestId("betrayal-haunt-setup-handoff")).toBeVisible();
     await expect(
-      page.getByTestId("betrayal-haunt-setup-handoff-label"),
-    ).toContainText("开局承接");
+      page.getByTestId("betrayal-haunt-setup-handoff-text"),
+    ).toContainText("木乃伊");
     await expect(
       page.getByTestId("betrayal-haunt-setup-handoff-text"),
-    ).toContainText("驱魔法阵");
+    ).toContainText(/石棺|知识标记/);
+    await expect(page.getByTestId("betrayal-board")).toContainText(
+      "知识标记",
+    );
     await saveScreenshot(page, OBJECTIVE_HANDOFF_SCREENSHOT);
 
     assertNoFatalFrontendErrors([
@@ -300,10 +342,10 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toHaveCount(0);
     await expect(
       survivorEndgame.getByTestId("betrayal-endgame-ending-source-status"),
-    ).toContainText("非原文摘要");
+    ).toContainText("官方 If You Win 原文");
     await expect(
       survivorEndgame.getByTestId("betrayal-endgame-ending-narration"),
-    ).toContainText("杰克之灵消失");
+    ).toContainText("木乃伊犹如细砂随风飞散");
     await assertCinematicActionSlotLayout(
       survivorEndgame.getByTestId("betrayal-endgame-ending-narration"),
     );
@@ -342,11 +384,11 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toHaveCount(0);
     await expect(
       traitorEndgame.getByTestId("betrayal-endgame-ending-source-status"),
-    ).toContainText("非原文摘要");
+    ).toContainText("官方 If You Win 原文");
     await expect(
       traitorEndgame.getByTestId("betrayal-endgame-ending-narration"),
-    ).toContainText("吹起轻快的口哨");
-    await expect(traitorEndgame).not.toContainText("总点数 8");
+    ).toContainText("整个世界不久都将臣服于我俩脚下");
+    await expect(traitorEndgame).not.toContainText("杰克之灵消失");
     await assertCinematicActionSlotLayout(
       traitorEndgame.getByTestId("betrayal-endgame-ending-narration"),
     );

@@ -70,10 +70,10 @@ const DAGGER_ATTACK_TARGET_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/03-叛徒
 const DAGGER_ATTACK_DICE_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/04-匕首6骰攻击骰盘停稳.jpg`;
 const DAGGER_ATTACK_RESULT_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/05-物理伤害与速度花费结果可见.jpg`;
 const DAGGER_ATTACK_SETTLED_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/06-匕首攻击后回牌桌继续可操作.jpg`;
-const CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-弩远程视线完整链路');
-const CROSSBOW_LINE_OF_SIGHT_READY_SCREENSHOT = `${CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR}/01-弩攻击前牌桌可操作.jpg`;
-const CROSSBOW_LINE_OF_SIGHT_SELECTED_SCREENSHOT = `${CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR}/02-弩武器已选中.jpg`;
-const CROSSBOW_LINE_OF_SIGHT_TARGET_SCREENSHOT = `${CROSSBOW_LINE_OF_SIGHT_EVIDENCE_DIR}/03-弩视线连线与叛徒目标高亮.jpg`;
+const CROSSBOW_ADJACENT_ATTACK_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-十字弓相邻攻击完整链路');
+const CROSSBOW_ADJACENT_ATTACK_READY_SCREENSHOT = `${CROSSBOW_ADJACENT_ATTACK_EVIDENCE_DIR}/01-十字弓攻击前牌桌可操作.jpg`;
+const CROSSBOW_ADJACENT_ATTACK_SELECTED_SCREENSHOT = `${CROSSBOW_ADJACENT_ATTACK_EVIDENCE_DIR}/02-十字弓武器已选中.jpg`;
+const CROSSBOW_ADJACENT_ATTACK_TARGET_SCREENSHOT = `${CROSSBOW_ADJACENT_ATTACK_EVIDENCE_DIR}/03-十字弓相邻叛徒目标高亮且无视线连线.jpg`;
 const PHANTOM_PHOTOGRAPHER_LINE_OF_SIGHT_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-幻影摄影师视线攻击完整链路');
 const PHANTOM_PHOTOGRAPHER_READY_SCREENSHOT = `${PHANTOM_PHOTOGRAPHER_LINE_OF_SIGHT_EVIDENCE_DIR}/01-幻影摄影师攻击前牌桌可操作.jpg`;
 const PHANTOM_PHOTOGRAPHER_TARGET_SCREENSHOT = `${PHANTOM_PHOTOGRAPHER_LINE_OF_SIGHT_EVIDENCE_DIR}/02-幻影摄影师视线连线与英雄目标高亮.jpg`;
@@ -107,6 +107,26 @@ const enterAttackTargeting = async (page: Page) => {
     await attackAction.click();
     await expect(attackAction).toHaveAttribute('data-haunt-primary-action-kind', 'attack-traitor');
     await expect(attackAction).toHaveAttribute('data-haunt-primary-action-mode', 'targeting');
+};
+
+const resolveRequiredTraitorPlayerId = (core: BetrayalCore): string => {
+    const traitorPlayerId = core.scenarioRuntime.traitorPlayerId;
+    if (!traitorPlayerId) {
+        throw new Error('山屋攻击代表链缺少叛徒玩家');
+    }
+    return traitorPlayerId;
+};
+
+const expectTraitorTargetHighlighted = async (
+    page: Page,
+    roomId: string,
+    traitorPlayerId: string,
+) => {
+    const traitorToken = page.getByTestId(`betrayal-room-occupant-${roomId}-${traitorPlayerId}`);
+    await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
+    await expect(page.getByTestId(`betrayal-room-occupant-target-outline-${roomId}-${traitorPlayerId}`))
+        .toHaveAttribute('data-highlight-shape', 'pentagon');
+    return traitorToken;
 };
 
 const dismissDiscoveryPanel = async (page: Page) => {
@@ -184,8 +204,9 @@ const createIdolSkipEventCore = () => {
 
 const createHuntingKnifeAttackCore = () => {
     const core = createFirstScenarioHauntCore();
-    const helper = core.otherExplorers.find((explorer) => explorer.playerId === '1');
-    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+    activateE2EExplorer(core, '0');
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === core.scenarioRuntime.traitorPlayerId);
+    const helper = core.otherExplorers.find((explorer) => explorer.playerId !== traitor?.playerId);
     if (!helper || !traitor) {
         throw new Error('山屋首剧本攻击夹具缺少英雄或叛徒');
     }
@@ -243,8 +264,9 @@ const activateE2EExplorer = (core: BetrayalCore, playerId: string) => {
 
 const createUnarmedAttackCore = () => {
     const core = createFirstScenarioHauntCore();
-    const helper = core.otherExplorers.find((explorer) => explorer.playerId === '1');
-    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+    activateE2EExplorer(core, '0');
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === core.scenarioRuntime.traitorPlayerId);
+    const helper = core.otherExplorers.find((explorer) => explorer.playerId !== traitor?.playerId);
     if (!helper || !traitor) {
         throw new Error('山屋首剧本无武器攻击夹具缺少英雄或叛徒');
     }
@@ -304,8 +326,9 @@ const createAttackWeaponDisabledReasonsCore = () => {
 
 const createRingAttackCore = () => {
     const core = createFirstScenarioHauntCore();
-    const helper = core.otherExplorers.find((explorer) => explorer.playerId === '1');
-    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+    activateE2EExplorer(core, '0');
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === core.scenarioRuntime.traitorPlayerId);
+    const helper = core.otherExplorers.find((explorer) => explorer.playerId !== traitor?.playerId);
     if (!helper || !traitor) {
         throw new Error('山屋首剧本指环攻击夹具缺少英雄或叛徒');
     }
@@ -349,8 +372,9 @@ const createRingAttackCore = () => {
 
 const createDaggerAttackCore = () => {
     const core = createFirstScenarioHauntCore();
-    const helper = core.otherExplorers.find((explorer) => explorer.playerId === '1');
-    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+    activateE2EExplorer(core, '0');
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === core.scenarioRuntime.traitorPlayerId);
+    const helper = core.otherExplorers.find((explorer) => explorer.playerId !== traitor?.playerId);
     if (!helper || !traitor) {
         throw new Error('山屋首剧本匕首攻击夹具缺少英雄或叛徒');
     }
@@ -392,24 +416,28 @@ const createDaggerAttackCore = () => {
     return core;
 };
 
-const createCrossbowLineOfSightAttackCore = () => {
+const createCrossbowAdjacentAttackCore = () => {
     const core = createFirstScenarioHauntCore();
-    const helper = core.otherExplorers.find((explorer) => explorer.playerId === '1');
-    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+    activateE2EExplorer(core, '0');
+    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === core.scenarioRuntime.traitorPlayerId);
+    const helper = core.otherExplorers.find((explorer) => explorer.playerId !== traitor?.playerId);
     if (!helper || !traitor) {
-        throw new Error('山屋首剧本弩视线夹具缺少英雄或叛徒');
+        throw new Error('山屋首剧本十字弓相邻攻击夹具缺少英雄或叛徒');
     }
 
     core.currentExplorer = {
         ...core.currentExplorer,
         roomId: 'grand-staircase',
-        inventory: [{ id: 'crossbow', name: '弩', kind: 'item' }],
+        inventory: [{ id: 'crossbow', name: '十字弓', kind: 'item' }],
     };
+    if (core.scenarioRuntime.mummy?.girlRoomId === 'grand-staircase') {
+        core.scenarioRuntime.mummy.girlRoomId = 'upper-landing';
+    }
     core.otherExplorers = [
         { ...helper },
         {
             ...traitor,
-            roomId: 'entrance-hall',
+            roomId: 'hallway',
             traits: {
                 might: 4,
                 speed: 8,
@@ -573,7 +601,14 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
                 playerId: string;
                 traits: { might: number; speed: number; knowledge: number; sanity: number };
             }>;
+            scenarioRuntime: { traitorPlayerId: string | null };
             usedCardIdsThisTurn: string[];
+            pendingDamageAllocation?: {
+                playerId: string;
+                amount: number;
+                damageKind: string;
+                allowedTraits: string[];
+            } | null;
             recentRoll: {
                 kind: string;
                 dice: number[];
@@ -594,7 +629,8 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
         throw new Error('山屋测试 harness 未返回 core');
     }
     const attacker = [core.currentExplorer, ...core.otherExplorers].find((explorer) => explorer.playerId === '0');
-    const traitor = core.otherExplorers.find((explorer) => explorer.playerId === '2');
+    const traitor = [core.currentExplorer, ...core.otherExplorers]
+        .find((explorer) => explorer.playerId === core.scenarioRuntime.traitorPlayerId);
     if (!attacker) {
         throw new Error('山屋攻击夹具缺少攻击者状态');
     }
@@ -605,8 +641,17 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
         attackerRoomId: attacker.roomId,
         attackerInventoryIds: attacker.inventory.map((card) => card.id),
         attackerTraits: { ...attacker.traits },
+        traitorPlayerId: traitor.playerId,
         traitorTraits: { ...traitor.traits },
         usedCardIdsThisTurn: [...core.usedCardIdsThisTurn],
+        pendingDamageAllocation: core.pendingDamageAllocation
+            ? {
+                playerId: core.pendingDamageAllocation.playerId,
+                amount: core.pendingDamageAllocation.amount,
+                damageKind: core.pendingDamageAllocation.damageKind,
+                allowedTraits: [...core.pendingDamageAllocation.allowedTraits],
+            }
+            : null,
         recentRoll: core.recentRoll
             ? {
                 kind: core.recentRoll.kind,
@@ -619,6 +664,40 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
             : null,
     };
 });
+
+const resolveAttackDamageAllocation = async (
+    page: Page,
+    options: {
+        playerId: string;
+        damageKind: 'physical' | 'mental';
+        trait: 'might' | 'speed' | 'knowledge' | 'sanity';
+        allowedTraits: Array<'might' | 'speed' | 'knowledge' | 'sanity'>;
+    },
+) => {
+    const state = await readWeaponAttackState(page);
+    const pending = state.pendingDamageAllocation;
+    const amount = state.recentRoll?.attack?.previousDamageToDefender ?? pending?.amount ?? 0;
+    expect(amount).toBeGreaterThan(0);
+    expect(pending).toMatchObject({
+        playerId: options.playerId,
+        amount,
+        damageKind: options.damageKind,
+        allowedTraits: expect.arrayContaining(options.allowedTraits),
+    });
+    await expect(page.getByTestId('betrayal-damage-allocation-panel')).toBeVisible();
+    await expect(page.getByTestId('betrayal-damage-allocation-source')).toContainText('攻击');
+    await expect(page.getByTestId('betrayal-damage-allocation-amount')).toContainText(
+        `${amount} 点${options.damageKind === 'mental' ? '精神' : '物理'}伤害`,
+    );
+    await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeDisabled();
+    const traitDamage = page.getByTestId(`betrayal-damage-allocation-trait-${options.trait}`);
+    for (let index = 0; index < amount; index += 1) {
+        await traitDamage.click();
+    }
+    await expect(traitDamage).toHaveAttribute('data-damage-selected-count', String(amount));
+    await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeEnabled();
+    return { amount, state };
+};
 
 test.describe('山屋惊魂非 P0 发布级代表链', () => {
     test('普通投骰事件代表链：真实页面同屏展示牌面、骰盘和分支结果', async ({ page, context }) => {
@@ -710,18 +789,19 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         test.setTimeout(120000);
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-hunting-knife-attack');
 
-        await injectCore(page, createHuntingKnifeAttackCore());
+        const injectedCore = createHuntingKnifeAttackCore();
+        const traitorPlayerId = resolveRequiredTraitorPlayerId(injectedCore);
+        await injectCore(page, injectedCore);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-attack-weapon-selector')).toBeVisible();
         await saveScreenshot(page, HUNTING_KNIFE_SELECTOR_SCREENSHOT);
 
         await page.getByTestId('betrayal-attack-weapon-hunting-knife').click();
         await enterAttackTargeting(page);
-        await expect(page.getByTestId('betrayal-room-occupant-entrance-hall-2')).toHaveAttribute('data-direct-target', 'true');
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
         await saveScreenshot(page, HUNTING_KNIFE_TARGET_SCREENSHOT);
 
-        await page.getByTestId('betrayal-room-occupant-entrance-hall-2').click();
+        await traitorToken.click();
 
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用砍刀');
         const attackRollPanel = page.getByTestId('betrayal-recent-roll-panel');
@@ -741,6 +821,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-attack-weapon-disabled-reasons');
 
         const injectedCore = createAttackWeaponDisabledReasonsCore();
+        const traitorPlayerId = resolveRequiredTraitorPlayerId(injectedCore);
         expect(injectedCore.currentExplorer.inventory.map((card) => card.id)).toEqual(['hunting-knife', 'dagger', 'ring']);
         expect(injectedCore.turnStartInventoryCardIds).toEqual(['hunting-knife', 'ring']);
         expect(injectedCore.usedCardIdsThisTurn).toEqual(['ring']);
@@ -775,9 +856,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-attack-weapon-ring')).toBeDisabled();
         await enterAttackTargeting(page);
 
-        const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
-        await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
         await saveScreenshot(page, ATTACK_WEAPON_DISABLED_REASONS_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
@@ -805,11 +884,12 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-attack-weapon-disabled-reasons', diagnostics }]);
     });
 
-    test('弩远程视线代表链：真实页面选择弩后连线并高亮视线内叛徒', async ({ page, context }) => {
+    test('十字弓相邻攻击代表链：真实页面选择十字弓后高亮相邻叛徒且不画视线线', async ({ page, context }) => {
         test.setTimeout(120000);
-        const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-crossbow-line-of-sight');
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-crossbow-adjacent-attack');
 
-        const injectedCore = createCrossbowLineOfSightAttackCore();
+        const injectedCore = createCrossbowAdjacentAttackCore();
+        const traitorPlayerId = resolveRequiredTraitorPlayerId(injectedCore);
         expect(injectedCore.currentExplorer.inventory.map((card) => card.id)).toEqual(['crossbow']);
         await injectCore(page, injectedCore);
         await expect.poll(async () => {
@@ -827,28 +907,19 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(page.getByTestId('betrayal-attack-weapon-selector')).toBeVisible();
         await expect(page.getByTestId('betrayal-attack-weapon-crossbow')).toBeVisible();
         await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toHaveCount(0);
-        await saveScreenshot(page, CROSSBOW_LINE_OF_SIGHT_READY_SCREENSHOT);
+        await saveScreenshot(page, CROSSBOW_ADJACENT_ATTACK_READY_SCREENSHOT);
 
         await page.getByTestId('betrayal-attack-weapon-crossbow').click();
         await expect(page.getByTestId('betrayal-attack-weapon-crossbow')).toHaveClass(/underline/);
         await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toHaveCount(0);
-        await saveScreenshot(page, CROSSBOW_LINE_OF_SIGHT_SELECTED_SCREENSHOT);
+        await saveScreenshot(page, CROSSBOW_ADJACENT_ATTACK_SELECTED_SCREENSHOT);
         await enterAttackTargeting(page);
 
-        const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
-        await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
-        await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toBeVisible();
-        const lineOfSightLine = page.getByTestId('betrayal-line-of-sight-line-grand-staircase-entrance-hall-2');
-        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-source-room', 'grand-staircase');
-        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-target-room', 'entrance-hall');
-        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-target-player', '2');
-        await expect(lineOfSightLine).toHaveAttribute('data-line-of-sight-weapon', 'crossbow');
-        await expect(lineOfSightLine.locator('line')).toHaveCount(2);
-        await expect(lineOfSightLine.locator('circle')).toHaveCount(1);
-        await saveScreenshot(page, CROSSBOW_LINE_OF_SIGHT_TARGET_SCREENSHOT);
+        await expectTraitorTargetHighlighted(page, 'hallway', traitorPlayerId);
+        await expect(page.getByTestId('betrayal-line-of-sight-overlay')).toHaveCount(0);
+        await saveScreenshot(page, CROSSBOW_ADJACENT_ATTACK_TARGET_SCREENSHOT);
 
-        assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-crossbow-line-of-sight', diagnostics }]);
+        assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-crossbow-adjacent-attack', diagnostics }]);
     });
 
     test('幻影摄影师视线攻击代表链：真实页面高亮视线内英雄并显示非交互连线', async ({ page, context }) => {
@@ -936,7 +1007,9 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         test.setTimeout(120000);
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-unarmed-attack');
 
-        await injectCore(page, createUnarmedAttackCore());
+        const injectedCore = createUnarmedAttackCore();
+        const traitorPlayerId = resolveRequiredTraitorPlayerId(injectedCore);
+        await injectCore(page, injectedCore);
         await expect.poll(async () => {
             const state = await readWeaponAttackState(page);
             return {
@@ -960,9 +1033,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, UNARMED_ATTACK_DEFAULT_SCREENSHOT);
         await enterAttackTargeting(page);
 
-        const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
-        await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
         await saveScreenshot(page, UNARMED_ATTACK_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
@@ -980,33 +1051,56 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 4 });
         await saveScreenshot(page, UNARMED_ATTACK_DICE_SCREENSHOT);
 
-        const afterAttack = await readWeaponAttackState(page);
-        expect(afterAttack.recentRoll?.kind).toBe('attackRoll');
-        expect(afterAttack.recentRoll?.dice).toHaveLength(4);
-        expect(afterAttack.recentRoll?.attack?.damageKind).toBe('physical');
-        expect(afterAttack.recentRoll?.attack?.weaponCardId).toBeUndefined();
-        expect(afterAttack.recentRoll?.attack?.weaponAttackTrait).toBeUndefined();
-        expect(afterAttack.recentRoll?.attack?.weaponExtraDice).toBeUndefined();
-        expect(afterAttack.recentRoll?.attack?.weaponSpeedCost).toBeUndefined();
-        expect(afterAttack.recentRoll?.attack?.previousDamageToDefender).toBeGreaterThan(0);
-        expect(afterAttack.recentRoll?.attack?.previousDamageToAttacker).toBe(0);
-        expect(afterAttack.usedCardIdsThisTurn).toContain('haunt-attack');
-        expect(afterAttack.usedCardIdsThisTurn).not.toContain('dagger');
-        expect(afterAttack.usedCardIdsThisTurn).not.toContain('ring');
-        expect(afterAttack.traitorTraits.might + afterAttack.traitorTraits.speed).toBeLessThan(
+        const afterAttackRoll = await readWeaponAttackState(page);
+        expect(afterAttackRoll.recentRoll?.kind).toBe('attackRoll');
+        expect(afterAttackRoll.recentRoll?.dice).toHaveLength(4);
+        expect(afterAttackRoll.recentRoll?.attack?.damageKind).toBe('physical');
+        expect(afterAttackRoll.recentRoll?.attack?.weaponCardId).toBeUndefined();
+        expect(afterAttackRoll.recentRoll?.attack?.weaponAttackTrait).toBeUndefined();
+        expect(afterAttackRoll.recentRoll?.attack?.weaponExtraDice).toBeUndefined();
+        expect(afterAttackRoll.recentRoll?.attack?.weaponSpeedCost).toBeUndefined();
+        expect(afterAttackRoll.recentRoll?.attack?.previousDamageToDefender).toBeGreaterThan(0);
+        expect(afterAttackRoll.recentRoll?.attack?.previousDamageToAttacker).toBe(0);
+        expect(afterAttackRoll.usedCardIdsThisTurn).toContain('haunt-attack');
+        expect(afterAttackRoll.usedCardIdsThisTurn).not.toContain('dagger');
+        expect(afterAttackRoll.usedCardIdsThisTurn).not.toContain('ring');
+        expect(afterAttackRoll.pendingDamageAllocation).toMatchObject({
+            playerId: traitorPlayerId,
+            damageKind: 'physical',
+            allowedTraits: expect.arrayContaining(['might', 'speed']),
+        });
+        const damageToDefender = afterAttackRoll.recentRoll?.attack?.previousDamageToDefender ?? 0;
+        await expect(page.getByTestId('betrayal-damage-allocation-panel')).toBeVisible();
+        await expect(page.getByTestId('betrayal-damage-allocation-source')).toContainText('攻击');
+        await expect(page.getByTestId('betrayal-damage-allocation-amount')).toContainText(`${damageToDefender} 点物理伤害`);
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('力量');
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('速度');
+        await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeDisabled();
+        const mightDamage = page.getByTestId('betrayal-damage-allocation-trait-might');
+        for (let index = 0; index < damageToDefender; index += 1) {
+            await mightDamage.click();
+        }
+        await expect(mightDamage).toHaveAttribute('data-damage-selected-count', String(damageToDefender));
+        await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeEnabled();
+        await saveScreenshot(page, UNARMED_ATTACK_RESULT_SCREENSHOT);
+        await page.getByTestId('betrayal-damage-allocation-confirm').click();
+        await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveCount(0);
+
+        const afterAllocation = await readWeaponAttackState(page);
+        expect(afterAllocation.pendingDamageAllocation).toBeNull();
+        expect(afterAllocation.traitorTraits.might + afterAllocation.traitorTraits.speed).toBeLessThan(
             beforeAttack.traitorTraits.might + beforeAttack.traitorTraits.speed,
         );
-        expect(afterAttack.traitorTraits.knowledge + afterAttack.traitorTraits.sanity).toBe(
+        expect(afterAllocation.traitorTraits.knowledge + afterAllocation.traitorTraits.sanity).toBe(
             beforeAttack.traitorTraits.knowledge + beforeAttack.traitorTraits.sanity,
         );
-        expect(afterAttack.attackerTraits).toEqual(beforeAttack.attackerTraits);
-        await saveScreenshot(page, UNARMED_ATTACK_RESULT_SCREENSHOT);
+        expect(afterAllocation.attackerTraits).toEqual(beforeAttack.attackerTraits);
 
         const attackRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
         await expect(attackRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
         await attackRollBackdrop.click({ position: { x: 16, y: 16 } });
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveCount(0);
+        await expect(page.getByTestId(`betrayal-room-occupant-target-outline-entrance-hall-${traitorPlayerId}`)).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await expect(page.getByTestId('betrayal-board')).toBeVisible();
         await saveScreenshot(page, UNARMED_ATTACK_SETTLED_SCREENSHOT);
@@ -1019,6 +1113,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-ring-sanity-attack');
 
         const injectedCore = createRingAttackCore();
+        const traitorPlayerId = resolveRequiredTraitorPlayerId(injectedCore);
         expect(injectedCore.currentExplorer.inventory.map((card) => card.id)).toEqual(['ring']);
         await injectCore(page, injectedCore);
         await expect.poll(async () => {
@@ -1049,9 +1144,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, RING_ATTACK_SELECTED_SCREENSHOT);
         await enterAttackTargeting(page);
 
-        const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
-        await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
         await saveScreenshot(page, RING_ATTACK_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
@@ -1066,37 +1159,48 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expectVisiblePhysicalDiceBox(attackRollPanel);
         await waitForPhysicalDiceSettled(attackRollPanel);
 
-        const ringImpact = page.getByTestId('betrayal-attack-impact-map-2');
+        const ringImpact = page.getByTestId(`betrayal-attack-impact-map-${traitorPlayerId}`);
         await expect(ringImpact).toBeVisible();
         await expect(ringImpact).toHaveAttribute('data-attack-impact-active', 'true');
         await expect(ringImpact).toHaveAttribute('data-attack-impact-kind', 'mental');
-        await expect(page.getByTestId('betrayal-attack-impact-flash-map-2')).toBeVisible();
-        const ringImpactSlash = page.getByTestId('betrayal-attack-impact-slash-map-2');
+        await expect(page.getByTestId(`betrayal-attack-impact-flash-map-${traitorPlayerId}`)).toBeVisible();
+        const ringImpactSlash = page.getByTestId(`betrayal-attack-impact-slash-map-${traitorPlayerId}`);
         await expect(ringImpactSlash).toBeVisible();
         await expect(ringImpactSlash.locator('canvas')).toBeVisible();
         const ringImpactTrait = ringImpact.locator('[data-attack-impact-trait="knowledge"], [data-attack-impact-trait="sanity"]').first();
         await expect(ringImpactTrait).toBeVisible();
         await expect(ringImpactTrait).toContainText(/知识|神志/);
-        await saveScreenshot(page, RING_ATTACK_RESULT_SCREENSHOT);
         await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 4 });
         await saveScreenshot(page, RING_ATTACK_DICE_SCREENSHOT);
 
-        const afterAttack = await readWeaponAttackState(page);
-        expect(afterAttack.recentRoll?.kind).toBe('attackRoll');
-        expect(afterAttack.recentRoll?.dice).toHaveLength(4);
-        expect(afterAttack.recentRoll?.attack?.damageKind).toBe('mental');
-        expect(afterAttack.recentRoll?.attack?.weaponCardId).toBe('ring');
-        expect(afterAttack.recentRoll?.attack?.weaponAttackTrait).toBe('sanity');
-        expect(afterAttack.recentRoll?.attack?.previousDamageToDefender).toBeGreaterThan(0);
-        expect(afterAttack.recentRoll?.attack?.previousDamageToAttacker).toBe(0);
-        expect(afterAttack.usedCardIdsThisTurn).toContain('ring');
-        expect(afterAttack.traitorTraits.might + afterAttack.traitorTraits.speed).toBe(
+        const afterAttackRoll = await readWeaponAttackState(page);
+        expect(afterAttackRoll.recentRoll?.kind).toBe('attackRoll');
+        expect(afterAttackRoll.recentRoll?.dice).toHaveLength(4);
+        expect(afterAttackRoll.recentRoll?.attack?.damageKind).toBe('mental');
+        expect(afterAttackRoll.recentRoll?.attack?.weaponCardId).toBe('ring');
+        expect(afterAttackRoll.recentRoll?.attack?.weaponAttackTrait).toBe('sanity');
+        expect(afterAttackRoll.recentRoll?.attack?.previousDamageToDefender).toBeGreaterThan(0);
+        expect(afterAttackRoll.recentRoll?.attack?.previousDamageToAttacker).toBe(0);
+        expect(afterAttackRoll.usedCardIdsThisTurn).toContain('ring');
+        await resolveAttackDamageAllocation(page, {
+            playerId: traitorPlayerId,
+            damageKind: 'mental',
+            trait: 'sanity',
+            allowedTraits: ['knowledge', 'sanity'],
+        });
+        await saveScreenshot(page, RING_ATTACK_RESULT_SCREENSHOT);
+        await page.getByTestId('betrayal-damage-allocation-confirm').click();
+        await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveCount(0);
+
+        const afterAllocation = await readWeaponAttackState(page);
+        expect(afterAllocation.pendingDamageAllocation).toBeNull();
+        expect(afterAllocation.traitorTraits.might + afterAllocation.traitorTraits.speed).toBe(
             beforeAttack.traitorTraits.might + beforeAttack.traitorTraits.speed,
         );
-        expect(afterAttack.traitorTraits.knowledge + afterAttack.traitorTraits.sanity).toBeLessThan(
+        expect(afterAllocation.traitorTraits.knowledge + afterAllocation.traitorTraits.sanity).toBeLessThan(
             beforeAttack.traitorTraits.knowledge + beforeAttack.traitorTraits.sanity,
         );
-        expect(afterAttack.attackerTraits).toEqual(beforeAttack.attackerTraits);
+        expect(afterAllocation.attackerTraits).toEqual(beforeAttack.attackerTraits);
 
         await expect(page.getByTestId('betrayal-attack-weapon-ring')).toHaveCount(0);
         const ringAttackRollBackdrop = page.getByTestId('betrayal-roll-review-backdrop');
@@ -1115,6 +1219,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-dagger-attack');
 
         const injectedCore = createDaggerAttackCore();
+        const traitorPlayerId = resolveRequiredTraitorPlayerId(injectedCore);
         expect(injectedCore.currentExplorer.inventory.map((card) => card.id)).toEqual(['dagger']);
         await injectCore(page, injectedCore);
         await expect.poll(async () => {
@@ -1145,9 +1250,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, DAGGER_ATTACK_SELECTED_SCREENSHOT);
         await enterAttackTargeting(page);
 
-        const traitorToken = page.getByTestId('betrayal-room-occupant-entrance-hall-2');
-        await expect(traitorToken).toHaveAttribute('data-direct-target', 'true');
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
         await saveScreenshot(page, DAGGER_ATTACK_TARGET_SCREENSHOT);
 
         await setHarnessRandomQueue(page, [
@@ -1165,37 +1268,49 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expectVisiblePhysicalDiceBox(attackRollPanel);
         await waitForPhysicalDiceSettled(attackRollPanel);
 
-        const daggerImpact = page.getByTestId('betrayal-attack-impact-map-2');
+        const daggerImpact = page.getByTestId(`betrayal-attack-impact-map-${traitorPlayerId}`);
         await expect(daggerImpact).toBeVisible();
         await expect(daggerImpact).toHaveAttribute('data-attack-impact-active', 'true');
         await expect(daggerImpact).toHaveAttribute('data-attack-impact-kind', 'physical');
-        await expect(page.getByTestId('betrayal-attack-impact-flash-map-2')).toBeVisible();
-        const daggerImpactSlash = page.getByTestId('betrayal-attack-impact-slash-map-2');
+        await expect(page.getByTestId(`betrayal-attack-impact-flash-map-${traitorPlayerId}`)).toBeVisible();
+        const daggerImpactSlash = page.getByTestId(`betrayal-attack-impact-slash-map-${traitorPlayerId}`);
         await expect(daggerImpactSlash).toBeVisible();
         await expect(daggerImpactSlash.locator('canvas')).toBeVisible();
         const daggerImpactTrait = daggerImpact.locator('[data-attack-impact-trait="might"], [data-attack-impact-trait="speed"]').first();
         await expect(daggerImpactTrait).toBeVisible();
         await expect(daggerImpactTrait).toContainText(/力量|速度/);
-        await saveScreenshot(page, DAGGER_ATTACK_RESULT_SCREENSHOT);
         await expectPhysicalDiceSeparated(attackRollPanel, { minDiceCount: 6 });
         await saveScreenshot(page, DAGGER_ATTACK_DICE_SCREENSHOT);
 
-        const afterAttack = await readWeaponAttackState(page);
-        expect(afterAttack.recentRoll?.kind).toBe('attackRoll');
-        expect(afterAttack.recentRoll?.dice).toHaveLength(6);
-        expect(afterAttack.recentRoll?.attack?.damageKind).toBe('physical');
-        expect(afterAttack.recentRoll?.attack?.weaponCardId).toBe('dagger');
-        expect(afterAttack.recentRoll?.attack?.weaponAttackTrait).toBe('might');
-        expect(afterAttack.recentRoll?.attack?.weaponExtraDice).toBe(2);
-        expect(afterAttack.recentRoll?.attack?.weaponSpeedCost).toBe(1);
-        expect(afterAttack.recentRoll?.attack?.previousDamageToDefender).toBeGreaterThan(0);
-        expect(afterAttack.recentRoll?.attack?.previousDamageToAttacker).toBe(0);
-        expect(afterAttack.usedCardIdsThisTurn).toContain('dagger');
-        expect(afterAttack.attackerTraits.speed).toBe(beforeAttack.attackerTraits.speed - 1);
-        expect(afterAttack.traitorTraits.might + afterAttack.traitorTraits.speed).toBeLessThan(
+        const afterAttackRoll = await readWeaponAttackState(page);
+        expect(afterAttackRoll.recentRoll?.kind).toBe('attackRoll');
+        expect(afterAttackRoll.recentRoll?.dice).toHaveLength(6);
+        expect(afterAttackRoll.recentRoll?.attack?.damageKind).toBe('physical');
+        expect(afterAttackRoll.recentRoll?.attack?.weaponCardId).toBe('dagger');
+        expect(afterAttackRoll.recentRoll?.attack?.weaponAttackTrait).toBe('might');
+        expect(afterAttackRoll.recentRoll?.attack?.weaponExtraDice).toBe(2);
+        expect(afterAttackRoll.recentRoll?.attack?.weaponSpeedCost).toBe(1);
+        expect(afterAttackRoll.recentRoll?.attack?.previousDamageToDefender).toBeGreaterThan(0);
+        expect(afterAttackRoll.recentRoll?.attack?.previousDamageToAttacker).toBe(0);
+        expect(afterAttackRoll.usedCardIdsThisTurn).toContain('dagger');
+        expect(afterAttackRoll.attackerTraits.speed).toBe(beforeAttack.attackerTraits.speed - 1);
+        await resolveAttackDamageAllocation(page, {
+            playerId: traitorPlayerId,
+            damageKind: 'physical',
+            trait: 'might',
+            allowedTraits: ['might', 'speed'],
+        });
+        await saveScreenshot(page, DAGGER_ATTACK_RESULT_SCREENSHOT);
+        await page.getByTestId('betrayal-damage-allocation-confirm').click();
+        await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveCount(0);
+
+        const afterAllocation = await readWeaponAttackState(page);
+        expect(afterAllocation.pendingDamageAllocation).toBeNull();
+        expect(afterAllocation.attackerTraits.speed).toBe(beforeAttack.attackerTraits.speed - 1);
+        expect(afterAllocation.traitorTraits.might + afterAllocation.traitorTraits.speed).toBeLessThan(
             beforeAttack.traitorTraits.might + beforeAttack.traitorTraits.speed,
         );
-        expect(afterAttack.traitorTraits.knowledge + afterAttack.traitorTraits.sanity).toBe(
+        expect(afterAllocation.traitorTraits.knowledge + afterAllocation.traitorTraits.sanity).toBe(
             beforeAttack.traitorTraits.knowledge + beforeAttack.traitorTraits.sanity,
         );
 
@@ -1204,7 +1319,7 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await expect(daggerAttackRollBackdrop).toHaveAttribute('data-backdrop-dismiss', 'enabled');
         await daggerAttackRollBackdrop.click({ position: { x: 16, y: 16 } });
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
-        await expect(page.getByTestId('betrayal-room-occupant-target-outline-entrance-hall-2')).toHaveCount(0);
+        await expect(page.getByTestId(`betrayal-room-occupant-target-outline-entrance-hall-${traitorPlayerId}`)).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await expect(page.getByTestId('betrayal-board')).toBeVisible();
         await saveScreenshot(page, DAGGER_ATTACK_SETTLED_SCREENSHOT);

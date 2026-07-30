@@ -2099,6 +2099,11 @@
       "category": "traitor-action"
     },
     {
+      "id": "mummy-forced-omen-search",
+      "name": "强制找出关键预兆",
+      "category": "haunt-side-rule"
+    },
+    {
       "id": "mummy-monster-movement",
       "name": "木乃伊移动与 0/1 瞬移",
       "category": "monster"

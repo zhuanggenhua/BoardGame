@@ -115,6 +115,7 @@ import {
   resolveDogTradeTargets,
   resolveExplorableRoomSlots,
   resolveMagicCameraPhotoTargets,
+  resolveNextRoomDiscoveryDeckKind,
   resolveRoomPlacementPreview,
   resolveRoomTileAdjustmentOptions,
   resolveMagicCameraPhantomAttackTargets,
@@ -406,6 +407,22 @@ function resolveEndgameHauntDossier(core: BetrayalCore): HauntDossier {
     : resolveActiveHauntDossier(core);
 }
 
+function resolveEndgameNarrationSectionId(
+  dossier: HauntDossier,
+  outcome: NonNullable<BetrayalCore["endgameResult"]>["outcome"] | undefined,
+): string {
+  if (outcome === "haunt") {
+    return "endingHaunt";
+  }
+  if (outcome === "traitor") {
+    return "endingTraitor";
+  }
+  if (dossier.id === "mummyRampage") {
+    return "endingHeroes";
+  }
+  return "endingSurvivors";
+}
+
 function resolveScenarioReaderScope(
   core: BetrayalCore,
   viewerPlayerId: string,
@@ -431,7 +448,7 @@ function isScenarioSectionVisibleForScope(
   scope: ScenarioReaderScope,
 ): boolean {
   if (scope === "all") {
-    return section.audiences.includes("all");
+    return true;
   }
   return section.audiences.includes("all") || section.audiences.includes(scope);
 }
@@ -547,6 +564,7 @@ type PreviewState = {
   selectedAttackWeaponCardId: string | null;
   selectedInventoryTargetPlayerId: string | null;
   selectedInventoryTargetRoomId: string | null;
+  selectedInventoryReplacementRollTotal: number | null;
   selectedMaskTargetRoomIdsByTokenId: Record<string, string>;
   activeMaskTargetTokenId: string | null;
   selectedEventTrait: BetrayalTraitKey | null;
@@ -556,6 +574,7 @@ type PreviewState = {
   selectedEventTargetRoomId: string | null;
   selectedEventDamageTraits: BetrayalTraitKey[];
   selectedDamageAllocationTraits: BetrayalTraitKey[];
+  useBroochForDamageAllocation: boolean;
   useHolySymbolForExplore: boolean;
   useIdolForExplore: boolean;
   ignoreEventSymbolWithTraitorPower: boolean;
@@ -960,6 +979,7 @@ function createInitialPreviewState(_core: BetrayalCore): PreviewState {
     selectedAttackWeaponCardId: null,
     selectedInventoryTargetPlayerId: null,
     selectedInventoryTargetRoomId: null,
+    selectedInventoryReplacementRollTotal: null,
     selectedMaskTargetRoomIdsByTokenId: {},
     activeMaskTargetTokenId: null,
     selectedEventTrait: null,
@@ -969,6 +989,7 @@ function createInitialPreviewState(_core: BetrayalCore): PreviewState {
     selectedEventTargetRoomId: null,
     selectedEventDamageTraits: [],
     selectedDamageAllocationTraits: [],
+    useBroochForDamageAllocation: false,
     useHolySymbolForExplore: false,
     useIdolForExplore: false,
     ignoreEventSymbolWithTraitorPower: false,
@@ -1706,6 +1727,21 @@ function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
   );
 }
 
+function resolveDynamiteTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
+  const currentRoom = core.rooms.find(
+    (room) => room.id === core.currentExplorer.roomId,
+  );
+  if (!currentRoom || currentRoom.state !== "discovered") {
+    return [];
+  }
+  const connectedIds = resolveConnectedRoomIds(core.rooms, currentRoom.id);
+  return core.rooms.filter(
+    (room) =>
+      room.state === "discovered" &&
+      (room.id === currentRoom.id || connectedIds.has(room.id)),
+  );
+}
+
 function formatRoomTargetList(rooms: BetrayalRoomNode[]): string {
   return Array.from(new Set(rooms.map((room) => room.name))).join(" / ");
 }
@@ -1991,8 +2027,10 @@ function resolveInventoryRulesSummary(
     );
   if (effectId === "flashlight" || effectId === "lantern")
     passiveLabels.push("事件属性检定额外投 2 骰");
-  if (effectId === "strange-amulet")
+  if (effectId === "strange-amulet") {
+    passiveLabels.push("实际承受物理伤害后 +1 神志");
     passiveLabels.push("援手作祟中决定胜利并控制巨魔手");
+  }
   if (effectId === "rope")
     passiveLabels.push("可重掷刚刚的投骰结果");
   if (effectId === "armor") passiveLabels.push("受到物理伤害 -1");
@@ -2019,6 +2057,23 @@ function resolveInventoryRulesSummary(
     return activeLabel;
   }
   return passiveLabels.length > 0 ? passiveLabels.join("；") : activeLabel;
+}
+
+function resolveDamageReductionCardNames(
+  explorer: BetrayalExplorerSummary | null,
+  damageKind: "physical" | "mental" | "general" | undefined,
+): string[] {
+  if (!explorer || damageKind === "general") {
+    return [];
+  }
+  const reductionEffectId =
+    damageKind === "physical" ? "armor" : damageKind === "mental" ? "radio" : null;
+  if (!reductionEffectId) {
+    return [];
+  }
+  return explorer.inventory
+    .filter((card) => resolveInventoryEffectId(card.id) === reductionEffectId)
+    .map((card) => card.name);
 }
 
 function resolveSelectedTradeTargetPlayerId(
@@ -5187,6 +5242,18 @@ function RecentRollPanel({
     roll.passiveBonus !== 0
       ? t("board.roll.bonus", { value: bonusLabel })
       : t("board.roll.noBonus");
+  const attackComparisonText = roll.attack
+    ? t(
+        (roll.attack.defenderDefenseExtraDice ?? 0) > 0
+          ? "board.roll.attackComparisonWithExtraDice"
+          : "board.roll.attackComparison",
+        {
+          attacker: resolveRecentRollTotal(roll),
+          defender: roll.attack.defenderRoll,
+          extraDice: roll.attack.defenderDefenseExtraDice ?? 0,
+        },
+      )
+    : null;
   const canvasTestId = React.useMemo(() => {
     const safeRollId =
       roll.id
@@ -5293,6 +5360,14 @@ function RecentRollPanel({
             {bonusText}
           </span>
         </div>
+        {attackComparisonText ? (
+          <div
+            data-testid="betrayal-recent-roll-attack-comparison"
+            className="mt-1 truncate text-[11px] font-semibold text-[#cdb783]"
+          >
+            {attackComparisonText}
+          </div>
+        ) : null}
       </div>
       <div
         data-testid="betrayal-recent-roll-total"
@@ -5319,6 +5394,7 @@ function RecentRollPanel({
       {showSource ? <span>{roll.sourceTitle}</span> : null}
       <span>{roll.rollLabel ?? t("board.roll.fallbackLabel")}</span>
       <span>{bonusText}</span>
+      {attackComparisonText ? <span>{attackComparisonText}</span> : null}
       <span>{totalLabel}</span>
       <span>{roll.latestLabel}</span>
     </div>
@@ -5576,13 +5652,11 @@ function EndgameScreen({
     core.rooms.filter((room) => room.state === "discovered").length;
   const omensDrawnCount = result?.stats.omensDrawn ?? 0;
   const eventsDrawnCount = result?.stats.eventsDrawn ?? 0;
-  const endgameNarrationKey = `board.haunts.${endgameDossier.id}.reader.${
-    result?.outcome === "haunt"
-      ? "endingHaunt"
-      : result?.outcome === "traitor"
-        ? "endingTraitor"
-        : "endingSurvivors"
-  }`;
+  const endgameNarrationSectionId = resolveEndgameNarrationSectionId(
+    endgameDossier,
+    result?.outcome,
+  );
+  const endgameNarrationKey = `board.haunts.${endgameDossier.id}.reader.${endgameNarrationSectionId}`;
   const endgameNarrationVariant =
     result?.outcome === "haunt"
       ? "ending-haunt"
@@ -6766,6 +6840,31 @@ export default function BetrayalBoard({
     selectedInventoryUseEffect?.mode === "healTraits"
       ? selectedInventoryUseEffect.target
       : null;
+  const selectedInventoryRollTotalReplacementEffect =
+    selectedInventoryUseEffect?.mode === "nextNonCombatTraitRollTotalReplacement"
+      ? selectedInventoryUseEffect
+      : null;
+  const selectedInventoryReplacementRollTotal =
+    selectedInventoryRollTotalReplacementEffect &&
+    Number.isInteger(previewState.selectedInventoryReplacementRollTotal) &&
+    previewState.selectedInventoryReplacementRollTotal >=
+      selectedInventoryRollTotalReplacementEffect.minTotal &&
+    previewState.selectedInventoryReplacementRollTotal <=
+      selectedInventoryRollTotalReplacementEffect.maxTotal
+      ? previewState.selectedInventoryReplacementRollTotal
+      : null;
+  const selectedInventoryReplacementRollTotalOptions =
+    selectedInventoryRollTotalReplacementEffect
+      ? Array.from(
+          {
+            length:
+              selectedInventoryRollTotalReplacementEffect.maxTotal -
+              selectedInventoryRollTotalReplacementEffect.minTotal +
+              1,
+          },
+          (_, index) => selectedInventoryRollTotalReplacementEffect.minTotal + index,
+        )
+      : [];
   const previewInventoryCard =
     core.currentExplorerInventory.find(
       (item) => item.id === inventoryPreviewCardId,
@@ -6936,6 +7035,8 @@ export default function BetrayalBoard({
           : null
         : null;
   const pendingEventChoice = core.pendingEventChoice;
+  const isToothNecklaceEndTurnChoice =
+    pendingEventChoice?.itemResolution === "tooth-necklace-end-turn";
   const pendingDamageAllocation = core.pendingDamageAllocation;
   const pendingDamageExplorer = pendingDamageAllocation
     ? (allExplorers.find(
@@ -6951,22 +7052,54 @@ export default function BetrayalBoard({
     : "";
   const pendingDamageAllocationPhase: BetrayalCore["phase"] =
     pendingDamageAllocation?.allowSkull ? "haunt" : "preHaunt";
+  const canUseBroochForPendingDamageAllocation =
+    Boolean(
+      pendingDamageAllocation?.damageReplacement &&
+        !pendingDamageAllocation.forcedTraitSequence &&
+        pendingDamageAllocation.damageKind !== "general",
+    );
+  const pendingDamageUsesBrooch =
+    canUseBroochForPendingDamageAllocation &&
+    previewState.useBroochForDamageAllocation;
+  const pendingDamageAllocationAllowedTraits =
+    pendingDamageUsesBrooch
+      ? TRAIT_DAMAGE_ORDER
+      : (pendingDamageAllocation?.allowedTraits ?? []);
+  const pendingDamageResolvedKind =
+    pendingDamageUsesBrooch ? "general" : pendingDamageAllocation?.damageKind;
   const selectedDamageAllocationTraits =
     pendingDamageAllocation && pendingDamageExplorer
       ? pruneSelectedDamageTraits(
           previewState.selectedDamageAllocationTraits,
-          pendingDamageAllocation.allowedTraits,
+          pendingDamageAllocationAllowedTraits,
           pendingDamageAllocation.amount,
           pendingDamageExplorer,
           pendingDamageAllocationPhase,
         )
       : [];
   const pendingDamageKindLabel =
+    pendingDamageResolvedKind === "mental"
+      ? t("board.status.damageKindMental")
+      : pendingDamageResolvedKind === "general"
+        ? t("board.status.damageKindGeneral")
+        : t("board.status.damageKindPhysical");
+  const pendingDamageOriginalKindLabel =
     pendingDamageAllocation?.damageKind === "mental"
       ? t("board.status.damageKindMental")
       : pendingDamageAllocation?.damageKind === "general"
         ? t("board.status.damageKindGeneral")
         : t("board.status.damageKindPhysical");
+  const pendingDamageReductionAmount = pendingDamageAllocation
+    ? Math.max(0, pendingDamageAllocation.originalAmount - pendingDamageAllocation.amount)
+    : 0;
+  const pendingDamageReductionCardNames = resolveDamageReductionCardNames(
+    pendingDamageExplorer,
+    pendingDamageAllocation?.damageKind,
+  );
+  const pendingDamageReductionSourceLabel =
+    pendingDamageReductionCardNames.length > 0
+      ? pendingDamageReductionCardNames.join("、")
+      : t("board.status.damageAllocationReductionFallback");
   const pendingDamageAllocationReady =
     Boolean(pendingDamageAllocation && pendingDamageExplorer) &&
     selectedDamageAllocationTraits.length === pendingDamageAllocation?.amount;
@@ -7086,7 +7219,9 @@ export default function BetrayalBoard({
     pendingEventAwaitsMapTargetClick && pendingEventTraitChoices.length > 0;
   const pendingEventCanDecline =
     Boolean(pendingEventChoice?.declineLabel) &&
-    (!pendingEventDeclineTraitChoices.length || Boolean(selectedEventTrait));
+    (isToothNecklaceEndTurnChoice ||
+      !pendingEventDeclineTraitChoices.length ||
+      Boolean(selectedEventTrait));
   const explorableRoomSlots = React.useMemo(
     () => resolveExplorableRoomSlots(core),
     [core],
@@ -7267,23 +7402,21 @@ export default function BetrayalBoard({
     : false;
   const hasCrossFloorRoomSelectionTargets =
     upperRoomMapFloorHasSelectionTarget || lowerRoomMapFloorHasSelectionTarget;
-  const nextDeckKind = React.useMemo(() => {
-    for (let index = 0; index < core.drawOrder.length; index += 1) {
-      const kind =
-        core.drawOrder[(core.exploreIndex + index) % core.drawOrder.length]!;
-      if (core.deckCounts[kind] > 0) {
-        return kind;
-      }
-    }
-    return null;
-  }, [core.deckCounts, core.drawOrder, core.exploreIndex]);
+  const canDeclareHolySymbolExplore = canUseHolySymbolForDiscovery(core);
+  const useHolySymbolForExplore =
+    previewState.useHolySymbolForExplore && canDeclareHolySymbolExplore;
+  const nextDeckKind = React.useMemo(
+    () =>
+      resolveNextRoomDiscoveryDeckKind(core, {
+        useHolySymbol: useHolySymbolForExplore,
+      }),
+    [core, useHolySymbolForExplore],
+  );
   const canStartExploreSelection = Boolean(
     (core.phase === "preHaunt" || core.phase === "haunt") &&
     !core.turnEndedByDiscovery &&
-    nextDeckKind &&
     explorableRoomSlots.length > 0,
   );
-  const canDeclareHolySymbolExplore = canUseHolySymbolForDiscovery(core);
   const canDeclareIdolExplore =
     canUseIdolToSkipEvent(core) && nextDeckKind === "event";
   const canDeclareTraitorEventSkip =
@@ -7301,8 +7434,6 @@ export default function BetrayalBoard({
     !canDeclareIdolExplore
       ? t("board.inventory.traitorPower")
       : t("board.inventory.exploreDeclaration");
-  const useHolySymbolForExplore =
-    previewState.useHolySymbolForExplore && canDeclareHolySymbolExplore;
   const useIdolForExplore =
     previewState.useIdolForExplore && canDeclareIdolExplore;
   const ignoreEventSymbolWithTraitorPower =
@@ -7524,6 +7655,13 @@ export default function BetrayalBoard({
         .filter((status) => status.canUse)
         .map((status) => status.card),
     [attackWeaponCardStatuses],
+  );
+  const dynamiteAttackWeaponCard = React.useMemo(
+    () =>
+      attackWeaponCards.find(
+        (card) => resolveInventoryEffectId(card.id) === "dynamite",
+      ) ?? null,
+    [attackWeaponCards],
   );
   const selectedAttackWeaponCardId = attackWeaponCards.some(
     (card) => card.id === previewState.selectedAttackWeaponCardId,
@@ -8053,6 +8191,8 @@ export default function BetrayalBoard({
     selectedInventoryUseEffectMode === "healTraits" &&
     selectedInventoryHealTarget === "selfOrSameRoomExplorer" &&
     healTargetExplorers.length > 0;
+  const selectedCardNeedsReplacementRollTotal =
+    selectedInventoryUseEffectMode === "nextNonCombatTraitRollTotalReplacement";
   const selectedCardBlockedBySpecialActionStatus = Boolean(
     selectedInventoryCard &&
       !selectedCardCanUseRecentRollRerollItem &&
@@ -8062,6 +8202,8 @@ export default function BetrayalBoard({
   const selectedCardMissingTarget =
     (selectedCardNeedsPlaceRoom && !selectedInventoryTargetRoomId) ||
     (selectedCardNeedsHealTarget && !selectedInventoryTargetPlayerId) ||
+    (selectedCardNeedsReplacementRollTotal &&
+      selectedInventoryReplacementRollTotal === null) ||
     (selectedCardNeedsTargetRoom &&
       (maskTargetTokens.length === 0 ||
         maskTargetTokens.some(
@@ -8089,9 +8231,18 @@ export default function BetrayalBoard({
       ) {
         return t("board.status.cardUnavailableThisTurn");
       }
-      return t("board.status.cardCannotUseNow");
+      return (
+        selectedCardSpecialActionStatus.reason ??
+        t("board.status.cardCannotUseNow")
+      );
     }
     if (selectedCardMissingTarget) {
+      if (
+        selectedCardNeedsReplacementRollTotal &&
+        selectedInventoryReplacementRollTotal === null
+      ) {
+        return "请选择天使之羽的替代投骰结果。";
+      }
       return t("board.status.cardNeedsTarget");
     }
     return null;
@@ -8927,6 +9078,10 @@ export default function BetrayalBoard({
       !isTraitor &&
       !isDead &&
       Boolean(attackDeclarationTargetPlayerIds.traitorPlayerId);
+    const canUseDynamiteRoomAttack =
+      !isDead &&
+      Boolean(dynamiteAttackWeaponCard) &&
+      resolveDynamiteTargetRooms(core).length > 0;
 
     if (
       helpingHandsTrollHandAttackOption &&
@@ -9176,6 +9331,17 @@ export default function BetrayalBoard({
         return studyExorcismContext;
       }
     }
+    if (
+      canUseDynamiteRoomAttack &&
+      (selectedAttackWeaponEffectId === "dynamite" ||
+        (!canAttackTraitor && heroAttackTargets.length === 0))
+    ) {
+      return {
+        actionKind: "attack-room" as const,
+        label: t("board.status.focusAttackDynamiteRoom"),
+        cue: t("board.status.actionCueAttackDynamiteRoom"),
+      };
+    }
     if (canAttackTraitor) {
       return {
         actionKind: "attack-traitor" as const,
@@ -9194,6 +9360,7 @@ export default function BetrayalBoard({
   }, [
     core,
     dustSameRoomLivingTargets.length,
+    dynamiteAttackWeaponCard,
     helpingHandsTrollHandAttackOption,
     helpingHandsTrollHandAttackTarget,
     helpingHandsTrollHandAttackTargetName,
@@ -9203,6 +9370,7 @@ export default function BetrayalBoard({
     magicCameraPhotoTarget,
     magicCameraPhotoTrait,
     matchData,
+    selectedAttackWeaponEffectId,
     previewState.selectedDustCureTrait,
     previewState.selectedDustSearchTrait,
     shouldPauseHauntBoardActions,
@@ -9246,6 +9414,12 @@ export default function BetrayalBoard({
         ? "sickness-exchange"
         : hauntActionContext?.actionKind;
     if (!targetActionKind) {
+      return null;
+    }
+    if (
+      targetActionKind.startsWith("attack-") &&
+      selectedAttackWeaponEffectId === "dynamite"
+    ) {
       return null;
     }
     const resolveExplorerGuide = (
@@ -9384,6 +9558,7 @@ export default function BetrayalBoard({
     matchData,
     previewState.interactionMode,
     previewState.selectedPeekabooSameRoomMonsterId,
+    selectedAttackWeaponEffectId,
     selectedAttackTargetPlayerIds.heroPlayerIds,
     selectedAttackTargetPlayerIds.traitorPlayerId,
     selectedTradeTargetPlayerId,
@@ -9396,7 +9571,6 @@ export default function BetrayalBoard({
       previewState.interactionMode === "sicknessExchange")
       ? hauntTargetGuide
       : null;
-  const isHauntTargetingMode = Boolean(activeHauntTargetGuide);
   const shouldShowTradeFlowPrompt = Boolean(
     !shouldPauseHauntBoardActions &&
       !pendingSicknessExchange &&
@@ -9452,6 +9626,23 @@ export default function BetrayalBoard({
   const isDustAttackTargetingMode =
     previewState.hauntTargetingActionKind === "attack-dust" &&
     hauntActionContext?.actionKind === "attack-dust";
+  const isDynamiteRoomTargetingMode =
+    selectedAttackWeaponEffectId === "dynamite" &&
+    Boolean(previewState.hauntTargetingActionKind?.startsWith("attack-")) &&
+    Boolean(hauntActionContext?.actionKind?.startsWith("attack-"));
+  const isHauntTargetingMode =
+    Boolean(activeHauntTargetGuide) || isDynamiteRoomTargetingMode;
+  const dynamiteTargetRooms = React.useMemo(
+    () =>
+      selectedAttackWeaponEffectId === "dynamite"
+        ? resolveDynamiteTargetRooms(core)
+        : [],
+    [core, selectedAttackWeaponEffectId],
+  );
+  const dynamiteTargetRoomIds = React.useMemo(
+    () => new Set(dynamiteTargetRooms.map((room) => room.id)),
+    [dynamiteTargetRooms],
+  );
   const attackLineOfSightSegments = React.useMemo(() => {
     const visibleRoomById = new Map(
       visibleMapRooms.map((room) => [room.id, room]),
@@ -9832,6 +10023,7 @@ export default function BetrayalBoard({
         event: t("board.discovery.eventCard"),
         item: t("board.discovery.itemCard"),
         omen: t("board.discovery.omenCard"),
+        none: t("board.discovery.noCard"),
       }[latestDiscovery.kind]
     : "";
   const deckResolutionDiscovery =
@@ -9846,6 +10038,7 @@ export default function BetrayalBoard({
         event: t("board.discovery.eventCard"),
         item: t("board.discovery.itemCard"),
         omen: t("board.discovery.omenCard"),
+        none: t("board.discovery.noCard"),
       }[deckResolutionDiscovery.kind]
     : "";
   const latestDiscoveryDeckResolutionSteps = React.useMemo(
@@ -10287,15 +10480,14 @@ export default function BetrayalBoard({
 
   const handleMoveToRoom = React.useCallback(
     (roomId: string) => {
+      const useSkeletonKey = skeletonKeyMoveTargetRoomIds.has(roomId);
       dispatchCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, {
         roomId,
-        ...(skeletonKeyMoveTargetRoomIds.has(roomId)
-          ? { useSkeletonKey: true }
-          : {}),
+        ...(useSkeletonKey ? { useSkeletonKey: true } : {}),
       });
       setPreviewState((previousState) => ({
         ...previousState,
-        interactionMode: "move",
+        interactionMode: useSkeletonKey ? "default" : "move",
       }));
     },
     [dispatchCommand, skeletonKeyMoveTargetRoomIds],
@@ -10610,6 +10802,16 @@ export default function BetrayalBoard({
     [],
   );
 
+  const handleSelectInventoryReplacementRollTotal = React.useCallback(
+    (selectedTotal: number) => {
+      setPreviewState((previousState) => ({
+        ...previousState,
+        selectedInventoryReplacementRollTotal: selectedTotal,
+      }));
+    },
+    [],
+  );
+
   const handleSelectActiveMaskTargetToken = React.useCallback(
     (tokenId: string) => {
       setPreviewState((previousState) => ({
@@ -10902,13 +11104,38 @@ export default function BetrayalBoard({
       }));
   }
 
+  function handleToggleDamageAllocationBrooch() {
+      if (!pendingDamageAllocation || !pendingDamageExplorer) {
+        return;
+      }
+      if (!canUseBroochForPendingDamageAllocation || !isPendingDamageAllocationForViewer) {
+        return;
+      }
+      const nextUseBrooch = !pendingDamageUsesBrooch;
+      const nextAllowedTraits = nextUseBrooch
+        ? TRAIT_DAMAGE_ORDER
+        : pendingDamageAllocation.allowedTraits;
+      const nextSelectedDamageTraits = pruneSelectedDamageTraits(
+        selectedDamageAllocationTraits,
+        nextAllowedTraits,
+        pendingDamageAllocation.amount,
+        pendingDamageExplorer,
+        pendingDamageAllocationPhase,
+      );
+      setPreviewState((previousState) => ({
+        ...previousState,
+        useBroochForDamageAllocation: nextUseBrooch,
+        selectedDamageAllocationTraits: nextSelectedDamageTraits,
+      }));
+  }
+
   function handleToggleDamageAllocationTrait(trait: BetrayalTraitKey) {
       if (!pendingDamageAllocation || !pendingDamageExplorer) {
         return;
       }
       const selected = pruneSelectedDamageTraits(
         selectedDamageAllocationTraits,
-        pendingDamageAllocation.allowedTraits,
+        pendingDamageAllocationAllowedTraits,
         pendingDamageAllocation.amount,
         pendingDamageExplorer,
         pendingDamageAllocationPhase,
@@ -10923,7 +11150,7 @@ export default function BetrayalBoard({
         ),
       );
       if (
-        !pendingDamageAllocation.allowedTraits.includes(trait) ||
+        !pendingDamageAllocationAllowedTraits.includes(trait) ||
         maxTraitCount <= 0
       ) {
         return;
@@ -10945,10 +11172,12 @@ export default function BetrayalBoard({
       }
       dispatchCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, {
         traits: selectedDamageAllocationTraits,
+        ...(pendingDamageUsesBrooch ? { useBrooch: true } : {}),
       });
       setPreviewState((previousState) => ({
         ...previousState,
         selectedDamageAllocationTraits: [],
+        useBroochForDamageAllocation: false,
         interactionMode: "default",
         selectedMonsterAttackMonsterId: null,
       }));
@@ -11029,6 +11258,11 @@ export default function BetrayalBoard({
             : {}),
           ...(selectedInventoryUseEffectMode === "moveOthersInRoom"
             ? { targetRoomIdsByTokenId: selectedMaskTargetRoomIdsByTokenId }
+            : {}),
+          ...(selectedInventoryUseEffectMode ===
+            "nextNonCombatTraitRollTotalReplacement" &&
+          selectedInventoryReplacementRollTotal !== null
+            ? { replacementRollTotal: selectedInventoryReplacementRollTotal }
             : {}),
         }
       : {};
@@ -11629,6 +11863,7 @@ export default function BetrayalBoard({
         selectedTradeGiveCardIds,
         selectedInventoryTargetPlayerId: null,
         selectedInventoryTargetRoomId: null,
+        selectedInventoryReplacementRollTotal: null,
         selectedMaskTargetRoomIdsByTokenId: {},
         activeMaskTargetTokenId: null,
         tradeSelectionTouched: true,
@@ -11677,6 +11912,29 @@ export default function BetrayalBoard({
     [dispatchCommand],
   );
 
+  const handleDynamiteRoomAttack = React.useCallback(
+    (targetRoomId: string) => {
+      const attackWeaponCardId = selectedAttackWeaponCardIdRef.current;
+      if (!attackWeaponCardId) {
+        return;
+      }
+      dispatchCommand(BETRAYAL_COMMANDS.HAUNT_ATTACK, {
+        target: "dynamite-room",
+        weaponCardId: attackWeaponCardId,
+        targetRoomId,
+      });
+      selectedAttackWeaponCardIdRef.current = null;
+      setInventoryPreviewCardId(null);
+      setPreviewState((previousState) => ({
+        ...previousState,
+        selectedAttackWeaponCardId: null,
+        interactionMode: "default",
+        hauntTargetingActionKind: null,
+      }));
+    },
+    [dispatchCommand],
+  );
+
   const handleHauntPrimaryAction = () => {
     if (!hauntActionContext || hasPendingPlayerAgreement) {
       return;
@@ -11696,7 +11954,19 @@ export default function BetrayalBoard({
       focusRoom(explorer?.roomId);
     };
 
-    switch (hauntActionContext.actionKind) {
+    const isDynamiteRoomAttackAction =
+      hauntActionContext.actionKind === "attack-room" ||
+      (hauntActionContext.actionKind.startsWith("attack-") &&
+        selectedAttackWeaponEffectId === "dynamite");
+    if (isDynamiteRoomAttackAction) {
+      if (
+        selectedAttackWeaponEffectId !== "dynamite" &&
+        dynamiteAttackWeaponCard
+      ) {
+        selectedAttackWeaponCardIdRef.current = dynamiteAttackWeaponCard.id;
+      }
+      focusRoom(core.currentExplorer.roomId);
+    } else switch (hauntActionContext.actionKind) {
       case "use":
         handleUseAction();
         return;
@@ -11722,6 +11992,10 @@ export default function BetrayalBoard({
 
     setPreviewState((previousState) => ({
       ...previousState,
+      selectedAttackWeaponCardId:
+        isDynamiteRoomAttackAction && dynamiteAttackWeaponCard
+          ? dynamiteAttackWeaponCard.id
+          : previousState.selectedAttackWeaponCardId,
       interactionMode: "default",
       hauntTargetingActionKind: hauntActionContext.actionKind,
       selectedPeekabooSameRoomMonsterId: null,
@@ -12356,6 +12630,7 @@ export default function BetrayalBoard({
               selectedInventoryCardId: item.id,
               selectedInventoryTargetPlayerId: null,
               selectedInventoryTargetRoomId: null,
+              selectedInventoryReplacementRollTotal: null,
               selectedMaskTargetRoomIdsByTokenId: {},
               activeMaskTargetTokenId: null,
               tradeSelectionTouched: true,
@@ -13976,11 +14251,69 @@ export default function BetrayalBoard({
                         </div>
                       </div>
 
+                      {pendingDamageReductionAmount > 0 ? (
+                        <div
+                          data-testid="betrayal-damage-allocation-reduction"
+                          className="border border-[rgba(122,188,132,0.32)] bg-[rgba(42,82,48,0.24)] px-4 py-3 text-[12px] font-semibold leading-snug text-[#bce8b9]"
+                        >
+                          {t("board.status.damageAllocationReduction", {
+                            originalAmount: pendingDamageAllocation.originalAmount,
+                            reducedAmount: pendingDamageAllocation.amount,
+                            reductionAmount: pendingDamageReductionAmount,
+                            kind: pendingDamageOriginalKindLabel,
+                            source: pendingDamageReductionSourceLabel,
+                          })}
+                        </div>
+                      ) : null}
+
+                      {canUseBroochForPendingDamageAllocation &&
+                      pendingDamageAllocation.damageReplacement ? (
+                        <div
+                          data-testid="betrayal-damage-allocation-brooch"
+                          data-brooch-active={
+                            pendingDamageUsesBrooch ? "true" : "false"
+                          }
+                          className="grid gap-2 border border-[rgba(169,230,242,0.32)] bg-[rgba(33,67,73,0.28)] px-4 py-3"
+                        >
+                          <button
+                            type="button"
+                            data-testid="betrayal-damage-allocation-brooch-toggle"
+                            data-brooch-active={
+                              pendingDamageUsesBrooch ? "true" : "false"
+                            }
+                            disabled={!isPendingDamageAllocationForViewer}
+                            onClick={handleToggleDamageAllocationBrooch}
+                            className={`inline-flex min-h-[42px] items-center justify-center border px-4 py-2 text-[13px] font-black tracking-[0.08em] transition ${
+                              pendingDamageUsesBrooch
+                                ? "border-[#a9e6f2] bg-[#a9e6f2] text-[#10272d] shadow-[0_0_22px_rgba(116,202,224,0.36)]"
+                                : "border-[rgba(169,230,242,0.48)] bg-[rgba(12,14,12,0.38)] text-[#c6f3fb] hover:bg-[rgba(169,230,242,0.12)]"
+                            } disabled:cursor-not-allowed disabled:border-[rgba(169,230,242,0.20)] disabled:bg-[rgba(12,14,12,0.22)] disabled:text-[rgba(198,243,251,0.42)]`}
+                          >
+                            {t(
+                              pendingDamageUsesBrooch
+                                ? "board.status.damageAllocationBroochActive"
+                                : "board.status.damageAllocationBroochInactive",
+                              {
+                                cardName:
+                                  pendingDamageAllocation.damageReplacement
+                                    .cardName,
+                              },
+                            )}
+                          </button>
+                          <span
+                            data-testid="betrayal-damage-allocation-brooch-note"
+                            className="text-[12px] font-semibold leading-snug text-[#a9e6f2]"
+                          >
+                            {t("board.status.damageAllocationBroochNote")}
+                          </span>
+                        </div>
+                      ) : null}
+
                       <div
                         data-testid="betrayal-damage-allocation-traits"
                         className="flex flex-wrap gap-3"
                       >
-                        {pendingDamageAllocation.allowedTraits.map((trait) => {
+                        {pendingDamageAllocationAllowedTraits.map((trait) => {
                           const selectedDamageTraitCount =
                             countSelectedDamageTrait(
                               selectedDamageAllocationTraits,
@@ -14038,7 +14371,7 @@ export default function BetrayalBoard({
                         data-testid="betrayal-damage-allocation-preview"
                         className="grid grid-cols-2 gap-2.5"
                       >
-                        {pendingDamageAllocation.allowedTraits.map((trait) => (
+                        {pendingDamageAllocationAllowedTraits.map((trait) => (
                           <ExplorerTraitOutcomePreview
                             key={`pending-damage-preview-${trait}`}
                             explorer={pendingDamageExplorer}
@@ -14510,6 +14843,7 @@ export default function BetrayalBoard({
                 (selectedInventoryUseEffectMode === "healTraits" &&
                   healTargetExplorers.length > 0) ||
                 Boolean(selectedInventoryHealPreviewExplorer) ||
+                Boolean(selectedInventoryRollTotalReplacementEffect) ||
                 hasExploreDeclarationOptions ||
                 (selectedInventoryUseEffectMode === "placeExplorer" &&
                   inventoryTargetRooms.length > 0) ||
@@ -14658,6 +14992,40 @@ export default function BetrayalBoard({
                           </span>
                         );
                       })}
+                    </div>
+                  ) : null}
+                  {selectedInventoryRollTotalReplacementEffect ? (
+                    <div
+                      data-testid="betrayal-inventory-roll-total-selector"
+                      className="inline-grid max-w-[min(360px,calc(100vw-2rem))] grid-cols-[auto_repeat(9,1.5rem)] items-center justify-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
+                    >
+                      <span className="whitespace-nowrap px-0 pr-1 text-[11px] font-semibold text-[#d9c68f]">
+                        {t("board.inventory.rollTotalReplacement")}
+                      </span>
+                      {selectedInventoryReplacementRollTotalOptions.map(
+                        (total) => {
+                          const isSelected =
+                            selectedInventoryReplacementRollTotal === total;
+                          return (
+                            <button
+                              key={total}
+                              type="button"
+                              onClick={() =>
+                                handleSelectInventoryReplacementRollTotal(total)
+                              }
+                              data-testid={`betrayal-inventory-roll-total-${total}`}
+                              data-selected={isSelected ? "true" : "false"}
+                              className={`flex h-6 w-6 items-center justify-center rounded-none border p-0 text-[11px] font-semibold shadow-none transition ${
+                                isSelected
+                                  ? "border-[#e4d36f] bg-[rgba(228,211,111,0.18)] text-[#fff7b8]"
+                                  : "border-[rgba(214,196,152,0.32)] bg-transparent text-[#d6c498] hover:text-[#f0dfad]"
+                              }`}
+                            >
+                              {total}
+                            </button>
+                          );
+                        },
+                      )}
                     </div>
                   ) : null}
                   {selectedInventoryHealPreviewExplorer ? (
@@ -15040,6 +15408,10 @@ export default function BetrayalBoard({
                       const canSelectEventRoom = isEventChoiceTargetRoom;
                       const canSelectMaskRoom =
                         Boolean(activeMaskTargetTokenId) && isMaskTargetRoom;
+                      const isDynamiteTargetRoom =
+                        isDynamiteRoomTargetingMode &&
+                        dynamiteTargetRoomIds.has(room.id);
+                      const canSelectDynamiteRoom = isDynamiteTargetRoom;
                       const canMoveToRoom =
                         previewState.interactionMode === "move" &&
                         isDiscovered &&
@@ -15080,6 +15452,7 @@ export default function BetrayalBoard({
                         canSelectEventRoom ||
                         canSelectInventoryRoom ||
                         canSelectMaskRoom ||
+                        canSelectDynamiteRoom ||
                         canSelectBloodFromStoneSetupPlacementRoom ||
                         canSelectRoomFocusAction ||
                         canMoveHelpingHandsTrollHandToRoom ||
@@ -15090,6 +15463,7 @@ export default function BetrayalBoard({
                         canSelectEventRoom ||
                         canSelectInventoryRoom ||
                         canSelectMaskRoom ||
+                        canSelectDynamiteRoom ||
                         canMoveHelpingHandsTrollHandToRoom ||
                         canMoveMonsterToRoom;
                       const roomTileVisual = resolveRoomTileVisual(
@@ -15188,6 +15562,10 @@ export default function BetrayalBoard({
                                 );
                                 return;
                               }
+                              if (canSelectDynamiteRoom) {
+                                handleDynamiteRoomAttack(room.id);
+                                return;
+                              }
                               if (canMoveHelpingHandsTrollHandToRoom) {
                                 handleHelpingHandsTrollHandMoveToRoom(room.id);
                                 return;
@@ -15219,6 +15597,7 @@ export default function BetrayalBoard({
                             data-direct-target={
                               canSelectRoomFocusAction ||
                               canSelectBloodFromStoneSetupPlacementRoom ||
+                              canSelectDynamiteRoom ||
                               canMoveHelpingHandsTrollHandToRoom ||
                               canMoveMonsterToRoom
                                 ? "true"
@@ -15229,6 +15608,8 @@ export default function BetrayalBoard({
                                 ? "room-focus"
                                 : canSelectBloodFromStoneSetupPlacementRoom
                                   ? "blood-from-stone-setup-placement"
+                                  : canSelectDynamiteRoom
+                                    ? "dynamite-room"
                                   : canMoveHelpingHandsTrollHandToRoom
                                     ? "helping-hands-troll-move"
                                     : canMoveMonsterToRoom
@@ -15240,7 +15621,11 @@ export default function BetrayalBoard({
                                 ? tutorialStep?.highlightTarget
                                 : undefined
                             }
-                            title={note}
+                            title={
+                              isDynamiteTargetRoom
+                                ? `炸药目标：${room.name}`
+                                : note
+                            }
                             className="relative h-full w-full overflow-visible rounded-[4px] border p-0 text-left transition duration-200 disabled:cursor-default"
                             style={{
                               borderColor: isHelpingHandsTrollMoveTarget
@@ -15249,6 +15634,8 @@ export default function BetrayalBoard({
                                   ? "rgba(238, 204, 126, 0.96)"
                                 : isMonsterMoveTarget
                                   ? "rgba(159, 225, 167, 0.96)"
+                                : isDynamiteTargetRoom
+                                  ? "rgba(238, 204, 126, 0.96)"
                                 : isMoveTarget
                                 ? "rgba(118, 189, 153, 0.92)"
                                 : isPendingRoomPlacementSlot
@@ -15281,6 +15668,8 @@ export default function BetrayalBoard({
                                     ? "0 0 0 3px rgba(238,204,126,0.58), 0 0 26px rgba(238,204,126,0.44), 0 8px 16px rgba(0,0,0,0.18)"
                                   : isMonsterMoveTarget
                                     ? "0 0 0 3px rgba(159,225,167,0.58), 0 0 26px rgba(159,225,167,0.46), 0 8px 16px rgba(0,0,0,0.18)"
+                                  : isDynamiteTargetRoom
+                                    ? "0 0 0 3px rgba(238,204,126,0.58), 0 0 26px rgba(238,204,126,0.44), 0 8px 16px rgba(0,0,0,0.18)"
                                   : isMoveTarget
                                       ? "0 0 0 3px rgba(118,189,153,0.52), 0 0 22px rgba(118,189,153,0.40), 0 8px 16px rgba(0,0,0,0.18)"
                                       : isSelectedInventoryTargetRoom ||
@@ -15308,6 +15697,7 @@ export default function BetrayalBoard({
                                       isBloodFromStoneSetupPlacementTarget ||
                                       isHelpingHandsTrollMoveTarget ||
                                       isMonsterMoveTarget ||
+                                      isDynamiteTargetRoom ||
                                       isMoveTarget ||
                                       isRoomSelectionTarget ||
                                       isReachableRoom ||
@@ -15338,6 +15728,8 @@ export default function BetrayalBoard({
                                     ? "bg-[radial-gradient(circle_at_50%_42%,rgba(159,225,167,0.16),transparent_58%)]"
                                   : isMonsterMoveTarget
                                     ? "bg-[radial-gradient(circle_at_50%_42%,rgba(159,225,167,0.16),transparent_58%)]"
+                                  : isDynamiteTargetRoom
+                                    ? "bg-[radial-gradient(circle_at_50%_42%,rgba(238,204,126,0.16),transparent_58%)]"
                                   : isMoveTarget
                                     ? "bg-[radial-gradient(circle_at_50%_42%,rgba(118,189,153,0.10),transparent_58%)]"
                                     : isReachableRoom
@@ -15352,6 +15744,8 @@ export default function BetrayalBoard({
                                     ? `betrayal-room-event-choice-target-${room.id}`
                                     : isInventoryTargetRoom
                                       ? `betrayal-room-inventory-target-card-highlight-${room.id}`
+                                      : isDynamiteTargetRoom
+                                        ? `betrayal-room-dynamite-target-card-highlight-${room.id}`
                                         : `betrayal-room-mask-target-card-highlight-${room.id}`
                                 }
                                 data-event-target-selected={
@@ -15629,6 +16023,12 @@ export default function BetrayalBoard({
                                             <span
                                               data-testid={`betrayal-room-occupant-target-outline-${room.id}-${occupant.playerId}`}
                                               data-highlight-shape="pentagon"
+                                              data-selected={
+                                                isSelectedExplorerTarget ||
+                                                isHauntGuideExplorerTarget
+                                                  ? "true"
+                                                  : "false"
+                                              }
                                               className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_0_0_1px_rgba(24,17,8,0.92),0_0_24px_rgba(255,224,138,0.58)] ${
                                                 isHauntGuideExplorerTarget
                                                   ? "h-[76px] w-[72px] border-[4px] motion-safe:animate-pulse"
@@ -16208,7 +16608,7 @@ export default function BetrayalBoard({
                             </div>
                             <span className="shrink-0 rounded-[4px] border border-[rgba(238,204,126,0.34)] bg-[rgba(238,204,126,0.12)] px-2 py-1 text-[10px] font-black text-[#f5d98d]">
                               {t(
-                                `board.rooms.rewards.${pendingRoomPlacementPreview.deckKind}`,
+                                `board.rooms.rewards.${pendingRoomPlacementPreview.deckKind ?? "none"}`,
                               )}
                             </span>
                           </div>

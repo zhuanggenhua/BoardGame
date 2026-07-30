@@ -83,6 +83,81 @@ record_decision() {
   } >>"$evidence_file"
 }
 
+capture_high_cpu_root_cause_evidence() {
+  {
+    echo
+    echo "# high CPU root-cause evidence"
+    echo "diagnosticContract=trigger-condition-and-process-snapshot-only"
+    echo "note=This section is not a root cause by itself. It preserves process/thread/container evidence so the next incident can be diagnosed instead of only restarted."
+    echo
+    echo "## host process identity"
+  } >>"$evidence_file"
+
+  local host_pid
+  host_pid="$(docker inspect --format '{{.State.Pid}}' "$CONTAINER_NAME" 2>/dev/null || true)"
+  if [[ -n "$host_pid" && "$host_pid" != "0" ]]; then
+    {
+      echo "hostPid=$host_pid"
+      ps -o pid,ppid,pcpu,pmem,stat,etime,args -p "$host_pid" 2>&1 || true
+      echo
+      echo "## host thread snapshot"
+      ps -L -o pid,tid,pcpu,pmem,stat,etime,comm -p "$host_pid" 2>&1 || true
+      echo
+      echo "## host /proc status"
+      cat "/proc/$host_pid/status" 2>&1 || true
+      echo
+      echo "## host /proc sched"
+      cat "/proc/$host_pid/sched" 2>&1 || true
+      echo
+      echo "## host /proc limits"
+      cat "/proc/$host_pid/limits" 2>&1 || true
+      echo
+      echo "## host /proc cgroup"
+      cat "/proc/$host_pid/cgroup" 2>&1 || true
+      echo
+      echo "## host fd sample"
+      ls -la "/proc/$host_pid/fd" 2>&1 | head -200 || true
+      echo
+    } >>"$evidence_file"
+  else
+    echo "hostPid=unavailable" >>"$evidence_file"
+  fi
+
+  {
+    echo "## container process snapshot"
+    docker exec "$CONTAINER_NAME" sh -lc '
+      echo "# pid1 cmdline";
+      tr "\000" " " </proc/1/cmdline 2>/dev/null || true;
+      echo;
+      echo "# pid1 status";
+      cat /proc/1/status 2>/dev/null || true;
+      echo;
+      echo "# pid1 sched";
+      cat /proc/1/sched 2>/dev/null || true;
+      echo;
+      echo "# pid1 limits";
+      cat /proc/1/limits 2>/dev/null || true;
+      echo;
+      echo "# pid1 cgroup";
+      cat /proc/1/cgroup 2>/dev/null || true;
+      echo;
+      echo "# thread status sample";
+      for task in /proc/1/task/*; do
+        tid="${task##*/}";
+        echo "## tid=$tid";
+        grep -E "^(Name|State|Pid|PPid|Threads|voluntary_ctxt_switches|nonvoluntary_ctxt_switches):" "$task/status" 2>/dev/null || true;
+        cat "$task/stat" 2>/dev/null || true;
+      done;
+      echo;
+      echo "# open fd sample";
+      ls -la /proc/1/fd 2>/dev/null | head -200 || true;
+      echo;
+      echo "# process list";
+      ps -eo pid,ppid,pcpu,pmem,stat,etime,args 2>/dev/null || ps 2>/dev/null || true;
+    ' 2>&1 || true
+  } >>"$evidence_file"
+}
+
 report_high_cpu_feedback() {
   local now_epoch="$1"
   local decision="${last_decision:-unknown}"
@@ -123,8 +198,8 @@ report_high_cpu_feedback() {
   local content="[system][infra-cpu-watch] game-server CPU sustained high: average=${average_cpu}% highSamples=${high_samples}/${SAMPLE_COUNT} threshold=${THRESHOLD_PERCENT}% decision=${decision} restarted=${restarted}"
   local incident_key="infra-cpu-watch:${host_name}:${CONTAINER_NAME}:${THRESHOLD_PERCENT}"
   local state_snapshot
-  state_snapshot="{\"timestamp\":\"$(json_escape "$timestamp")\",\"host\":\"$(json_escape "$host_name")\",\"container\":\"$(json_escape "$CONTAINER_NAME")\",\"thresholdPercent\":${THRESHOLD_PERCENT},\"averageCpu\":${average_cpu},\"highSamples\":${high_samples},\"sampleCount\":${SAMPLE_COUNT},\"sampleIntervalSeconds\":${SAMPLE_INTERVAL_SECONDS},\"decision\":\"$(json_escape "$decision")\",\"reason\":\"$(json_escape "$reason")\",\"restarted\":\"$(json_escape "$restarted")\",\"evidenceFile\":\"$(json_escape "$evidence_file")\"}"
-  local action_log="evidence=${evidence_file}; history=${HISTORY_LOG}; logsSince=${LOG_SINCE}; restartCooldownSeconds=${COOLDOWN_SECONDS}; feedbackCooldownSeconds=${FEEDBACK_COOLDOWN_SECONDS}"
+  state_snapshot="{\"timestamp\":\"$(json_escape "$timestamp")\",\"host\":\"$(json_escape "$host_name")\",\"container\":\"$(json_escape "$CONTAINER_NAME")\",\"thresholdPercent\":${THRESHOLD_PERCENT},\"averageCpu\":${average_cpu},\"highSamples\":${high_samples},\"sampleCount\":${SAMPLE_COUNT},\"sampleIntervalSeconds\":${SAMPLE_INTERVAL_SECONDS},\"decision\":\"$(json_escape "$decision")\",\"reason\":\"$(json_escape "$reason")\",\"restarted\":\"$(json_escape "$restarted")\",\"rootCauseStatus\":\"not_determined_by_cpu_watch\",\"rootCauseEvidence\":\"process_thread_snapshot_in_evidence_file\",\"evidenceFile\":\"$(json_escape "$evidence_file")\"}"
+  local action_log="evidence=${evidence_file}; history=${HISTORY_LOG}; logsSince=${LOG_SINCE}; restartCooldownSeconds=${COOLDOWN_SECONDS}; feedbackCooldownSeconds=${FEEDBACK_COOLDOWN_SECONDS}; rootCauseStatus=not_determined_by_cpu_watch; rootCauseEvidence=process_thread_snapshot_in_evidence_file"
   local payload_file="$EVIDENCE_DIR/$timestamp-$CONTAINER_NAME-feedback.json"
 
   cat >"$payload_file" <<EOF
@@ -242,6 +317,8 @@ if [[ "$high_samples" -lt "$SAMPLE_COUNT" ]]; then
   echo "[watch-game-server-cpu] OK: sustained high CPU not confirmed; highSamples=$high_samples/$SAMPLE_COUNT averageCpu=$average_cpu% evidence=$evidence_file"
   exit 0
 fi
+
+capture_high_cpu_root_cause_evidence
 
 now_epoch="$(date +%s)"
 if [[ -f "$STATE_FILE" ]]; then

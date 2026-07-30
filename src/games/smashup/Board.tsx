@@ -592,8 +592,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             currentPrompt,
             playerID,
             targetType: currentPromptTargetType,
+            hand: myPlayer?.hand,
         });
-    }, [currentPrompt, currentPromptTargetType, playerID]);
+    }, [currentPrompt, currentPromptTargetType, myPlayer?.hand, playerID]);
     const isDirectHandSelectPrompt = handPromptUiMode === 'direct';
     const isReactionChoicePrompt = currentPrompt?.sourceId === 'smashup_reaction_choose';
 

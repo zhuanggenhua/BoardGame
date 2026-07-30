@@ -11,6 +11,10 @@ type PromptOptionLike = {
     value?: unknown;
 };
 
+type HandCardLike = {
+    uid?: unknown;
+};
+
 type ButtonOverlayPromptLike = HandPromptLike & {
     sourceId?: unknown;
     options?: Array<{ displayMode?: unknown; disabled?: unknown; value?: unknown }>;
@@ -20,6 +24,7 @@ type ResolveHandPromptUiModeInput = {
     currentPrompt: HandPromptLike;
     playerID: string | null | undefined;
     targetType: unknown;
+    hand?: ReadonlyArray<HandCardLike> | null | undefined;
 };
 
 type ResolveHandInteractionModeInput = {
@@ -38,7 +43,7 @@ type ResolvePromptOwnershipInput = {
 };
 
 type ResolveDirectHandCardStateInput = ResolveHandPromptUiModeInput & {
-    hand: ReadonlyArray<{ uid?: unknown }> | null | undefined;
+    hand: ReadonlyArray<HandCardLike> | null | undefined;
 };
 
 export function isSmashUpPromptOwnedByPlayer({
@@ -69,6 +74,25 @@ export function getSmashUpSelectableBaseIndices(options: ReadonlyArray<PromptOpt
     return indices;
 }
 
+function hasEnabledCardOptionOutsideHand(
+    currentPrompt: HandPromptLike,
+    hand: ReadonlyArray<HandCardLike> | null | undefined,
+): boolean {
+    if (!hand) return false;
+    const options = (currentPrompt as ButtonOverlayPromptLike | undefined)?.options;
+    if (!Array.isArray(options) || options.length === 0) return false;
+
+    const handUids = new Set(
+        hand.flatMap(card => typeof card?.uid === 'string' ? [card.uid] : []),
+    );
+
+    return options.some(option => {
+        if (option?.disabled) return false;
+        const value = option?.value as { cardUid?: unknown } | undefined;
+        return typeof value?.cardUid === 'string' && !handUids.has(value.cardUid);
+    });
+}
+
 /**
  * 手牌类交互要先区分“由手牌区直接承接”还是“仍由 PromptOverlay 承接”：
  * - direct: 单选 hand prompt，手牌区直接点击选牌
@@ -79,18 +103,22 @@ export function resolveSmashUpHandPromptUiMode({
     currentPrompt,
     playerID,
     targetType,
+    hand,
 }: ResolveHandPromptUiModeInput): SmashUpHandPromptUiMode {
     if (!isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID })) return 'none';
     if (targetType !== 'hand') return 'none';
-    return currentPrompt.multi ? 'overlay' : 'direct';
+    if (currentPrompt.multi) return 'overlay';
+    if (hasEnabledCardOptionOutsideHand(currentPrompt, hand)) return 'overlay';
+    return 'direct';
 }
 
 export function hasSmashUpDirectHandPromptPlayableOptions({
     currentPrompt,
     playerID,
     targetType,
+    hand,
 }: ResolveHandPromptUiModeInput): boolean {
-    if (resolveSmashUpHandPromptUiMode({ currentPrompt, playerID, targetType }) !== 'direct') {
+    if (resolveSmashUpHandPromptUiMode({ currentPrompt, playerID, targetType, hand }) !== 'direct') {
         return false;
     }
 
@@ -114,7 +142,7 @@ export function getSmashUpDirectHandPromptCardState({
     disabledCardUids?: Set<string>;
 } {
     const selectableCardUids = new Set<string>();
-    if (resolveSmashUpHandPromptUiMode({ currentPrompt, playerID, targetType }) !== 'direct') {
+    if (resolveSmashUpHandPromptUiMode({ currentPrompt, playerID, targetType, hand }) !== 'direct') {
         return { selectableCardUids };
     }
 
@@ -157,6 +185,7 @@ export function shouldRenderSmashUpHandArea({
     playerID,
     targetType,
     activePromptSurface,
+    hand,
 }: ResolveHandAreaVisibilityInput): boolean {
     if (activePromptSurface === 'overlay') return false;
 
@@ -164,6 +193,7 @@ export function shouldRenderSmashUpHandArea({
         currentPrompt,
         playerID,
         targetType,
+        hand,
     });
     if (handPromptUiMode !== 'direct') return true;
 
@@ -171,6 +201,7 @@ export function shouldRenderSmashUpHandArea({
         currentPrompt,
         playerID,
         targetType,
+        hand,
     });
 }
 

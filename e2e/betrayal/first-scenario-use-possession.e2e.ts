@@ -74,7 +74,6 @@ async function readUseChainState(page: Page) {
         const useStatus = document.querySelector('[data-testid="betrayal-use-status"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const targetSelector = document.querySelector('[data-testid="betrayal-inventory-target-player-selector"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const targetOutline = document.querySelector('[data-testid="betrayal-room-occupant-target-outline-hallway-1"]');
-        const targetOutlineStyle = targetOutline ? window.getComputedStyle(targetOutline) : null;
         return {
             medicalKit: rectOf('betrayal-inventory-medical-kit'),
             useButton: rectOf('betrayal-action-use'),
@@ -83,7 +82,7 @@ async function readUseChainState(page: Page) {
             feedback,
             useStatus,
             targetSelector,
-            targetOutlineBorderColor: targetOutlineStyle?.borderTopColor ?? '',
+            targetOutlineSelected: targetOutline?.getAttribute('data-selected') ?? '',
             targetOutlineShape: targetOutline?.getAttribute('data-highlight-shape') ?? '',
             targetDirect: document.querySelector('[data-testid="betrayal-room-occupant-hallway-1"]')?.getAttribute('data-direct-target') ?? '',
         };
@@ -113,7 +112,7 @@ async function assertMedicalKitSelectedNeedsTarget(page: Page) {
 async function assertMedicalKitTargetSelected(page: Page) {
     const metrics = await readUseChainState(page);
     expect(metrics.selectedName, '选择目标后仍必须保留急救包为待使用对象').toContain('急救包');
-    expect(metrics.targetOutlineBorderColor, '选中同房间队友后目标高亮应变为已选状态').toBe('rgb(209, 176, 95)');
+    expect(metrics.targetOutlineSelected, '选中同房间队友后目标高亮应变为已选状态').toBe('true');
     expect(metrics.useButtonDisabled, '选中急救包和治疗目标后，使用按钮必须可点击').toBe(false);
 }
 

@@ -185,8 +185,13 @@
       "damage": "Damage",
       "damageAllocationTitle": "Damage Allocation",
       "damageAllocationAmount": "{{amount}} {{kind}}",
+      "damageAllocationReduction": "Original {{originalAmount}} {{kind}}; {{source}} reduces it by {{reductionAmount}}, so assign {{reducedAmount}}.",
+      "damageAllocationReductionFallback": "armor",
       "damageAllocationConfirm": "Confirm",
       "damageAllocationWaiting": "Waiting",
+      "damageAllocationBroochInactive": "Use {{cardName}} as general damage",
+      "damageAllocationBroochActive": "{{cardName}}: general damage selected",
+      "damageAllocationBroochNote": "After replacing it with general damage, assign it among Might, Speed, Knowledge, or Sanity.",
       "damageKindPhysical": "physical damage",
       "damageKindMental": "mental damage",
       "damageKindGeneral": "general damage",
@@ -286,6 +291,7 @@
       "focusAttackTraitor": "Attack traitor",
       "focusAttackHero": "Attack {{player}}",
       "focusAttackHeroTarget": "Attack hero",
+      "focusAttackDynamiteRoom": "Attack a room with Dynamite",
       "focusCureTheDust": "Cure the Dust",
       "focusSearchForCure": "Search for Cure",
       "focusSicknessExchange": "Exchange Sickness",
@@ -325,6 +331,7 @@
       "actionCueAttackTraitor": "Now: attack the traitor",
       "actionCueAttackHero": "Now: attack {{player}}",
       "actionCueAttackHeroTarget": "Now: tap Attack Hero, then tap the target hero on the map",
+      "actionCueAttackDynamiteRoom": "Now: tap a room tile to detonate Dynamite",
       "actionCueCureTheDust": "Now: cure the Dust",
       "actionCueSearchForCure": "Now: search for cure",
       "actionCueSicknessExchange": "Now: tap teammate to exchange",
@@ -758,7 +765,8 @@
       "traitorEventSkip": "Skip Event",
       "mask": "Mask",
       "eventItemChoice": "Choose Item",
-      "noEventItemChoices": "No eligible items"
+      "noEventItemChoices": "No eligible items",
+      "rollTotalReplacement": "Replacement total"
     },
     "decks": {
       "omen": "Omen Deck",
@@ -808,7 +816,8 @@
       "rewards": {
         "event": "Event",
         "item": "Item",
-        "omen": "Omen"
+        "omen": "Omen",
+        "none": "No discovery symbol"
       },
       "endTurnEffects": {
         "physicalDamage1": {
@@ -867,6 +876,7 @@
       "eventCard": "Event Card",
       "itemCard": "Item Card",
       "omenCard": "Omen Card",
+      "noCard": "No Discovery Card",
       "eventResolved": "Immediate effect",
       "addedToInventory": "Added to inventory",
       "readyToUse": "Selected and ready to use",
@@ -881,6 +891,8 @@
       "passiveBonus": "Bonus {{value}}",
       "detail": "Dice total {{subtotal}} | bonus {{bonus}}",
       "total": "Total {{value}}",
+      "attackComparison": "Attack total {{attacker}} / defense total {{defender}}",
+      "attackComparisonWithExtraDice": "Attack total {{attacker}} / defense total {{defender}} (defense +{{extraDice}} die)",
       "backToBoard": "Back to Board",
       "allTraitCheckTitle": "All Trait Checks",
       "passed": "Passed",

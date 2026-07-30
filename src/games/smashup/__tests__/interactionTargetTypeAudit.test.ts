@@ -948,6 +948,34 @@ describe('SmashUp Interaction targetType 审计', () => {
             targetType: 'hand',
         })).toBe('direct');
 
+        expect(resolveSmashUpHandPromptUiMode({
+            currentPrompt: {
+                playerId: '0',
+                multi: undefined,
+                options: [
+                    { id: 'play-card', label: 'Going Bananas', value: { cardUid: 'mind-bananas-hand' }, displayMode: 'card' },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [{ uid: 'mind-bananas-hand' }],
+        })).toBe('direct');
+
+        expect(resolveSmashUpHandPromptUiMode({
+            currentPrompt: {
+                playerId: '0',
+                multi: undefined,
+                sourceId: 'all_stars_prepare_for_battle',
+                options: [
+                    { id: 'deck-top-1', label: '狄俄尼索斯的青睐', value: { cardUid: 'deck-top-1', defId: 'all_stars_favor_of_dionysus' }, displayMode: 'card' },
+                    { id: 'deck-top-2', label: '霸王龙国王', value: { cardUid: 'deck-top-2', defId: 'all_stars_king_rex' }, displayMode: 'card' },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [{ uid: 'actual-hand-card' }],
+        })).toBe('overlay');
+
         expect(isSmashUpPromptOwnedByPlayer({
             currentPrompt: { playerId: 0, multi: undefined } as any,
             playerID: '0',
@@ -992,7 +1020,22 @@ describe('SmashUp Interaction targetType 审计', () => {
             },
             playerID: '0',
             targetType: 'hand',
+            hand: [{ uid: 'mind-bananas-hand' }],
         })).toBe(true);
+
+        expect(hasSmashUpDirectHandPromptPlayableOptions({
+            currentPrompt: {
+                playerId: '0',
+                sourceId: 'all_stars_prepare_for_battle',
+                options: [
+                    { id: 'deck-top-1', label: '狄俄尼索斯的青睐', value: { cardUid: 'deck-top-1', defId: 'all_stars_favor_of_dionysus' }, displayMode: 'card' },
+                    { id: 'deck-top-2', label: '霸王龙国王', value: { cardUid: 'deck-top-2', defId: 'all_stars_king_rex' }, displayMode: 'card' },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [{ uid: 'actual-hand-card' }],
+        })).toBe(false);
 
         expect(shouldRenderSmashUpHandArea({
             currentPrompt: {

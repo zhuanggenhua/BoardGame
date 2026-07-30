@@ -33,6 +33,7 @@ import {
     isBetrayalOptionalHauntRollRuntimeSupported,
     isBetrayalScenarioCardId,
     isImplementedBetrayalHauntCardNumber,
+    resolveBetrayalRoomDiscoverySymbol,
     resolveBetrayalHauntRevealResolution,
     resolveImplementedScenarioIdForCard,
     type BetrayalDeckKind as ConfigDeckKind,
@@ -46,6 +47,7 @@ import {
     type BetrayalInventorySeed,
     type BetrayalMonsterSeed,
     type BetrayalRecommendedAction as ConfigRecommendedAction,
+    type BetrayalRoomDiscoverySymbol,
     type BetrayalRoomDiscoveryTemplate,
     type BetrayalRoomSeed,
     type BetrayalScenarioCardId,
@@ -85,6 +87,7 @@ export type {
 export type BetrayalTraitKey = ConfigTraitKey;
 export type BetrayalInventoryKind = ConfigInventoryKind;
 export type BetrayalDeckKind = ConfigDeckKind;
+export type { BetrayalRoomDiscoverySymbol };
 export type { BetrayalRoomEdge, BetrayalRoomVisualId, BetrayalRoomFloor };
 export type BetrayalPhase = 'characterSelect' | 'preHaunt' | 'haunt' | 'endgame';
 export type BetrayalRecommendedAction = ConfigRecommendedAction;
@@ -554,7 +557,7 @@ export interface BetrayalRoomPlacementPreview {
     floor: BetrayalRoomFloor;
     entryRoomId: string | null;
     entryEdge: BetrayalRoomEdge;
-    deckKind: BetrayalDeckKind;
+    deckKind: BetrayalDeckKind | null;
     skippedRoomName?: string;
     buriedRoomNames?: string[];
     room: Pick<BetrayalRoomNode, 'name' | 'hint' | 'tags' | 'discoveryReward' | 'visualId' | 'doorways' | 'backVisualId' | 'orientationTurns' | 'discoveryEffect' | 'endTurnEffect' | 'enterEffect'>;
@@ -656,7 +659,7 @@ export interface BetrayalRoomTileAdjustmentOption extends BetrayalRoomTileAdjust
 }
 
 export interface BetrayalDiscoverySummary {
-    kind: BetrayalDeckKind;
+    kind: BetrayalRoomDiscoverySymbol;
     title: string;
     summary: string;
     detail: string;
@@ -755,6 +758,7 @@ export interface BetrayalRecentRollState {
         previousDamageToAttacker: number;
         previousDamageToDefender: number;
         defenderRoll: number;
+        defenderDefenseExtraDice?: number;
         attackerTraitsBeforeDamage: BetrayalExplorerSummary['traits'];
         defenderTraitsBeforeDamage?: BetrayalExplorerSummary['traits'];
         weaponCardId?: string;
@@ -1749,7 +1753,7 @@ type BetrayalEvent =
         playerId: string;
         roomId: string;
         room: Pick<BetrayalRoomNode, 'name' | 'hint' | 'tags' | 'discoveryReward' | 'visualId' | 'doorways' | 'backVisualId' | 'orientationTurns' | 'discoveryEffect' | 'endTurnEffect' | 'enterEffect'>;
-        deckKind: BetrayalDeckKind;
+        deckKind: BetrayalDeckKind | null;
         drawnCard?: BetrayalInventoryCard;
         roomDiscoveryCards?: BetrayalInventoryCard[];
         buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
@@ -2844,7 +2848,7 @@ function createPendingCardResolutionQueue(options: {
     playerId: string;
     roomId: string;
     timestamp: number;
-    deckKind: BetrayalDeckKind;
+    deckKind: BetrayalDeckKind | null;
     discovery: BetrayalDiscoverySummary;
     drawnCard?: BetrayalInventoryCard;
     roomDiscoveryCards?: BetrayalInventoryCard[];
@@ -3112,6 +3116,20 @@ function damageTraitsAreAssignable(
     return [...counts.entries()].every(([trait, count]) => (
         count <= resolveTraitDamageAssignableSteps(explorer, trait, options)
     ));
+}
+
+function resolvePossessionUseCostUnavailableReason(
+    explorer: BetrayalExplorerSummary,
+    effect: PossessionUseEffectProfile,
+    cardName: string,
+): string | null {
+    if (
+        effect.mode === 'nextNonCombatTraitReplacement'
+        && resolveTraitDamageAssignableSteps(explorer, 'sanity') < effect.sanityCost
+    ) {
+        return `神志不足，不能支付${cardName}的 ${effect.sanityCost} 点神志。`;
+    }
+    return null;
 }
 
 function effectAllowsGeneralDamageTraits(
@@ -7389,16 +7407,17 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
         const canMummyTeleportNow = hasMummyTeleportMoveAvailable(core, actionSet.monsterId);
         const hasMoveAllowance = (moveRemaining >= moveCost && moveCost > 0) || canMummyTeleportNow;
         const canMoveNow = actionSet.canMove && targetRoomIds.length > 0 && hasMoveAllowance;
+        const mustAttackBeforeMoving = isMummyMonster(core, actionSet.monsterId) && mustMummyAttackBeforeMoving(
+            core,
+            core.monsters.find((monster) => monster.id === actionSet.monsterId)!,
+        );
         const moveReason = actionSet.reason
-            ?? (!actionSet.canMove
-                ? '该怪物当前不能移动。'
-                : targetRoomIds.length === 0
-                    ? isMummyMonster(core, actionSet.monsterId) && mustMummyAttackBeforeMoving(
-                        core,
-                        core.monsters.find((monster) => monster.id === actionSet.monsterId)!,
-                    )
-                        ? '木乃伊与英雄同房且尚未攻击，必须先攻击。'
-                        : '该怪物没有已发现的移动目标。'
+            ?? (mustAttackBeforeMoving
+                ? '木乃伊与英雄同房且尚未攻击，必须先攻击。'
+                : !actionSet.canMove
+                    ? '该怪物当前不能移动。'
+                    : targetRoomIds.length === 0
+                        ? '该怪物没有已发现的移动目标。'
                     : !hasMoveAllowance
                         ? '请先为该怪物所属类型掷移动骰，或移动点不足以离开当前房间。'
                         : null);
@@ -7711,6 +7730,7 @@ export function resolveBetrayalPossessionSpecialActionStatus(
     const sourceId = cardId ?? '';
     const effectId = resolveInventoryEffectId(sourceId);
     const active = Boolean(card && Object.prototype.hasOwnProperty.call(USE_EFFECTS, effectId));
+    const effect = active ? USE_EFFECTS[effectId] : null;
     const usedThisTurn = Boolean(cardId && core.usedCardIdsThisTurn.includes(cardId));
     const receivedThisTurn = Boolean(
         cardId
@@ -7730,6 +7750,8 @@ export function resolveBetrayalPossessionSpecialActionStatus(
         reason = '该持有物本回合已经使用。';
     } else if (!availableAtTurnStart || receivedThisTurn) {
         reason = '本回合新获得的持有物不能立刻使用。';
+    } else if (effect) {
+        reason = resolvePossessionUseCostUnavailableReason(explorer, effect, card?.name ?? sourceId);
     }
 
     return {
@@ -7850,7 +7872,7 @@ export function resolveBetrayalTraitorPowerStatus(
     const currentRoomEndTurnEffect = currentRoom?.endTurnEffect ?? null;
     const damagingRoomEffect = isBetrayalDamagingRoomEndTurnEffect(currentRoom?.endTurnEffect);
     const mandatoryRoomEffect = isBetrayalMandatoryRoomEffect(currentRoom);
-    const nextDeckKind = resolveNextDeckKind(core);
+    const nextDeckKind = resolveNextRoomDiscoveryDeckKind(core);
     const eventSymbolTrigger = active
         && nextDeckKind === 'event'
         && resolveExplorableRoomSlots(core).length > 0;
@@ -9643,10 +9665,14 @@ function rollAttackDefense(
     fallbackTrait: BetrayalTraitKey = 'might',
 ): number {
     const trait = weaponEffect?.attackTrait ?? fallbackTrait;
-    const extraDice = explorer.inventory.reduce((total, card) => (
+    const extraDice = resolveDefenseExtraDiceWhenAttacked(explorer);
+    return rollTrait(random, explorer.traits[trait] + extraDice);
+}
+
+function resolveDefenseExtraDiceWhenAttacked(explorer: BetrayalExplorerSummary): number {
+    return explorer.inventory.reduce((total, card) => (
         total + (DEFENSE_EXTRA_DICE_WHEN_ATTACKED_BY_CARD_ID[resolveInventoryEffectId(card.id)] ?? 0)
     ), 0);
-    return rollTrait(random, explorer.traits[trait] + extraDice);
 }
 
 function isAttackTargetInWeaponRange(
@@ -10922,6 +10948,28 @@ function materializeEventEffect(
     if (effect.mode === 'placeExplorerInFloorStartingRoom') {
         return { ...effect };
     }
+    if (effect.mode === 'placeExplorerInNextFloorStartingRoom') {
+        const currentRoom = core?.rooms.find((room) => room.id === explorer.roomId);
+        if (currentRoom?.floor === 'basement' && effect.basementFallbackDamage) {
+            return {
+                mode: 'compound',
+                effects: [
+                    {
+                        ...effect,
+                        basementFallbackDamage: undefined,
+                    },
+                    {
+                        mode: 'fixedDamage',
+                        amount: effect.basementFallbackDamage.amount,
+                        damageKind: effect.basementFallbackDamage.damageKind,
+                        recommendedAction: effect.recommendedAction,
+                    },
+                ],
+                recommendedAction: effect.recommendedAction,
+            };
+        }
+        return { ...effect };
+    }
     if (effect.mode === 'placeExplorerInAdjacentRoom') {
         return { ...effect };
     }
@@ -11003,6 +11051,60 @@ function createRoomDiscoveryEffectResolutionSteps(
             text: `房间效果：${roomName}，${label}`,
         }]
         : [];
+}
+
+function getRoomDiscoveryRewardNames(roomDiscoveryCards: {
+    roomDiscoveryCards?: BetrayalInventoryCard[];
+    buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
+}): { gained: string[]; buried: string[] } {
+    return {
+        gained: roomDiscoveryCards.roomDiscoveryCards?.map((card) => card.name) ?? [],
+        buried: roomDiscoveryCards.buriedRoomDiscoveryCards?.map((card) => card.name) ?? [],
+    };
+}
+
+function createRoomDiscoveryCardResolutionSteps(
+    roomName: string,
+    roomDiscoveryCards: {
+        roomDiscoveryCards?: BetrayalInventoryCard[];
+        buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
+    },
+): BetrayalDiscoveryResolutionStep[] {
+    const rewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
+    return [
+        ...rewardNames.gained.map((name, index) => ({
+            id: `room-discovery-card-${roomDiscoveryCards.roomDiscoveryCards?.[index]?.id ?? index}`,
+            kind: 'room-discovery-card' as const,
+            text: `${roomName}获得${name}`,
+            deckKind: 'item' as const,
+            cardId: roomDiscoveryCards.roomDiscoveryCards?.[index]?.id,
+        })),
+        ...rewardNames.buried.map((name, index) => ({
+            id: `buried-room-discovery-card-${roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id ?? index}`,
+            kind: 'buried-room-discovery-card' as const,
+            text: `展示后埋葬${name}`,
+            deckKind: 'item' as const,
+            cardId: roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id,
+        })),
+    ];
+}
+
+function formatRoomDiscoveryRewardDetailParts(
+    roomName: string,
+    roomDiscoveryCards: {
+        roomDiscoveryCards?: BetrayalInventoryCard[];
+        buriedRoomDiscoveryCards?: BetrayalInventoryCard[];
+    },
+): string[] {
+    const rewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
+    return [
+        rewardNames.gained.length > 0
+            ? `${roomName}获得${rewardNames.gained.join('、')}`
+            : null,
+        rewardNames.buried.length > 0
+            ? `展示后埋葬${rewardNames.buried.join('、')}`
+            : null,
+    ].filter((part): part is string => Boolean(part));
 }
 
 function resolveEndTurnRoomEffect(core: BetrayalCore, random: RandomFn): BetrayalRoomEndTurnEffectResult | null {
@@ -12751,8 +12853,7 @@ export function resolveRoomPlacementPreview(
     const slot = options.roomId
         ? explorableSlots.find((room) => room.id === options.roomId) ?? null
         : explorableSlots[0] ?? null;
-    const deckKind = resolveNextDeckKind(core);
-    if (!slot || !deckKind) {
+    if (!slot) {
         return null;
     }
     const placement = resolveRoomPlacementContext(core, slot);
@@ -12765,6 +12866,7 @@ export function resolveRoomPlacementPreview(
     if (!roomTemplate) {
         return null;
     }
+    const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
     const defaultPlacement = orientDoorwaysToEntry(roomTemplate.doorways, placement.entryEdge);
     const orientationOptions = resolveRoomPlacementOrientationOptions(
         core,
@@ -13277,9 +13379,22 @@ function formatBetrayalOutcomeLabel(outcome: BetrayalScenarioOutcome): string {
 }
 
 function isBetrayalIfYouWinTextAvailable(result: BetrayalEndgameResult): boolean {
-    return result.hauntId === 'the-dust' && (
+    return (result.hauntId === 'the-dust' || result.hauntId === 'mummy-rampage') && (
         result.outcome === 'survivors' || result.outcome === 'traitor'
     );
+}
+
+function formatBetrayalIfYouWinSourceNote(result: BetrayalEndgameResult, available: boolean): string {
+    if (!available) {
+        return 'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。';
+    }
+    if (result.hauntId === 'mummy-rampage') {
+        return '木乃伊 If You Win 本地规则源正文已接入，中文为正式转写稿。';
+    }
+    if (result.hauntId === 'the-dust') {
+        return '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。';
+    }
+    return 'If You Win 原文已接入。';
 }
 
 export function resolveBetrayalEndgameReadModel(core: BetrayalCore): BetrayalEndgameReadModel {
@@ -13333,9 +13448,7 @@ export function resolveBetrayalEndgameReadModel(core: BetrayalCore): BetrayalEnd
         representativeOnly: true,
         ruleNotes: [
             '终局结果已记录胜方和获胜玩家。',
-            hasIfYouWinText
-                ? '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。'
-                : 'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。',
+            formatBetrayalIfYouWinSourceNote(result, hasIfYouWinText),
             hasDustSpecificEndgamePolicy
                 ? '灰尘按当前完成的结算事件收口：治愈成功立即英雄胜利；全员感染或死亡只在交换、伤害或死亡事件结算后触发叛徒胜利。'
                 : '同时达成、平局或共享胜利处理仍需逐作祟合同接入。',
@@ -13348,14 +13461,28 @@ function formatRoomTargetList(rooms: BetrayalRoomNode[]): string {
     return Array.from(new Set(rooms.map((room) => room.name))).join(' / ');
 }
 
-function resolveNextDeckKind(core: BetrayalCore): BetrayalDeckKind | null {
-    for (let index = 0; index < core.drawOrder.length; index += 1) {
-        const kind = core.drawOrder[(core.exploreIndex + index) % core.drawOrder.length]!;
-        if (core.deckCounts[kind] > 0) {
-            return kind;
-        }
+const DECK_KIND_LABEL: Record<BetrayalDeckKind, string> = {
+    event: '事件',
+    item: '物品',
+    omen: '预兆',
+};
+
+function roomDiscoverySymbolToDeckKind(symbol: BetrayalRoomDiscoverySymbol): BetrayalDeckKind | null {
+    return symbol === 'none' ? null : symbol;
+}
+
+function resolveRoomTemplateDiscoveryDeckKind(roomTemplate: RoomTemplate): BetrayalDeckKind | null {
+    return roomDiscoverySymbolToDeckKind(resolveBetrayalRoomDiscoverySymbol(roomTemplate));
+}
+
+function hasAvailableDiscoveryDeckCard(core: BetrayalCore, deckKind: BetrayalDeckKind): boolean {
+    if (core.deckCounts[deckKind] <= 0) {
+        return false;
     }
-    return null;
+    if (deckKind === 'event') {
+        return core.eventOrder.length > 0;
+    }
+    return core.possessionOrderByKind[deckKind].length > 0;
 }
 
 interface ResolvedRoomDraw {
@@ -13517,6 +13644,25 @@ export function resolveBetrayalRoomDrawResolution(
         useHolySymbol: options.useHolySymbol,
         placement: slot ? resolveRoomPlacementContext(core, slot) : undefined,
     }).resolution);
+}
+
+export function resolveNextRoomDiscoveryDeckKind(
+    core: BetrayalCore,
+    options: { roomId?: string; useHolySymbol?: boolean } = {},
+): BetrayalDeckKind | null {
+    const explorableSlots = resolveExplorableRoomSlots(core);
+    const slot = options.roomId
+        ? explorableSlots.find((room) => room.id === options.roomId) ?? null
+        : explorableSlots[0] ?? null;
+    if (!slot) {
+        return null;
+    }
+    const placement = resolveRoomPlacementContext(core, slot);
+    const roomDraw = resolveRoomDraw(core, slot.floor, {
+        useHolySymbol: options.useHolySymbol && canUseHolySymbolForDiscovery(core),
+        placement,
+    });
+    return roomDraw.roomTemplate ? resolveRoomTemplateDiscoveryDeckKind(roomDraw.roomTemplate) : null;
 }
 
 function roomDiscoveryEntryMatchesSelectedRoom(
@@ -13779,7 +13925,7 @@ function resolveRecommendedAction(core: BetrayalCore, options: { preferUse?: boo
     }
 
     const canMove = core.movesRemaining > 0 && resolveMoveTargetRooms(core).length > 0;
-    const canExplore = Boolean(resolveNextExplorableRoomSlot(core) && resolveNextDeckKind(core));
+    const canExplore = Boolean(resolveNextExplorableRoomSlot(core));
     const canTrade = core.currentExplorer.inventory.length > 0
         && (resolveTradeTargets(core).length > 0 || resolveDogTradeTargets(core).length > 0 || resolveCorpseLootTargets(core).length > 0);
     const cardId = options.cardId
@@ -14283,7 +14429,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             const nextSlot = command.payload.roomId
                 ? explorableSlots.find((room) => room.id === command.payload.roomId) ?? null
                 : explorableSlots[0] ?? null;
-            if (!nextSlot || !resolveNextDeckKind(core)) {
+            if (!nextSlot) {
                 return { valid: false, error: '当前没有可探索房间。' };
             }
             if (command.payload.roomId && !explorableSlots.some((room) => room.id === command.payload.roomId)) {
@@ -14301,6 +14447,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             if (!roomTemplate) {
                 return { valid: false, error: '当前区域没有可发现房间。' };
             }
+            const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
             const orientationOptions = resolveRoomPlacementOrientationOptions(
                 core,
                 roomTemplate,
@@ -14311,7 +14458,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                 if (!canUseIdolToSkipEvent(core)) {
                     return { valid: false, error: '当前探索者不能使用雕像跳过事件抽取。' };
                 }
-                if (resolveNextDeckKind(core) !== 'event') {
+                if (deckKind !== 'event') {
                     return { valid: false, error: '雕像只能在发现事件符号板块时使用。' };
                 }
             }
@@ -14322,7 +14469,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
                 if (!canUseBetrayalTraitorPowers(core, command.playerId)) {
                     return { valid: false, error: '只有作祟开始后的存活叛徒能忽略事件符号。' };
                 }
-                if (resolveNextDeckKind(core) !== 'event') {
+                if (deckKind !== 'event') {
                     return { valid: false, error: '叛徒只能在发现事件符号板块时忽略事件符号。' };
                 }
             }
@@ -15732,7 +15879,6 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const nextSlot = command.payload.roomId
                 ? explorableSlots.find((room) => room.id === command.payload.roomId) ?? explorableSlots[0]!
                 : explorableSlots[0]!;
-            const deckKind = resolveNextDeckKind(core)!;
             const placement = resolveRoomPlacementContext(core, nextSlot);
             const roomDraw = resolveRoomDraw(core, nextSlot.floor, {
                 useHolySymbol: command.payload.useHolySymbol && canUseHolySymbolForDiscovery(core),
@@ -15746,6 +15892,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             if (!roomTemplate || (roomDraw.resolution.requiresTileAdjustment && !roomTileAdjustment)) {
                 return [];
             }
+            const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
             const roomTextResolvedCore = resolveCoreAfterRoomDiscoveryText(core, roomTemplate.discoveryEffect);
             const roomDiscoveryCards = resolveRoomDiscoveryCards(roomTextResolvedCore, roomTemplate.discoveryEffect);
             const roomDiscoveryEffectResolutionSteps = createRoomDiscoveryEffectResolutionSteps(
@@ -15767,6 +15914,100 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const tileAdjustmentLogPrefix = roomTileAdjustment
                 ? `${core.currentExplorer.displayName}先调整房间板块后继续探索；`
                 : '';
+            const roomDiscoveryRewardDetailParts = formatRoomDiscoveryRewardDetailParts(roomTemplate.name, roomDiscoveryCards);
+            const roomDiscoveryCardResolutionSteps = createRoomDiscoveryCardResolutionSteps(roomTemplate.name, roomDiscoveryCards);
+
+            if (deckKind === null) {
+                const noSymbolDetailParts = [
+                    ...roomDiscoveryRewardDetailParts,
+                    '没有事件、物品或预兆发现牌',
+                ];
+                return [nowEvent(EVENTS.ROOM_EXPLORED, {
+                    playerId: command.playerId,
+                    roomId: nextSlot.id,
+                    room: {
+                        name: roomTemplate.name,
+                        hint: roomTemplate.hint,
+                        tags: roomTemplate.tags,
+                        discoveryReward: null,
+                        visualId: roomTemplate.visualId,
+                        doorways: selectedOrientation.doorways,
+                        backVisualId: nextSlot.backVisualId,
+                        orientationTurns: selectedOrientation.orientationTurns,
+                        discoveryEffect: roomTemplate.discoveryEffect,
+                        endTurnEffect: roomTemplate.endTurnEffect,
+                        enterEffect: roomTemplate.enterEffect,
+                    },
+                    deckKind,
+                    ...roomDiscoveryCards,
+                    skippedRoomWithHolySymbol: skippedRoomTemplate
+                        ? { name: skippedRoomTemplate.name }
+                        : undefined,
+                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
+                    roomTileAdjustment,
+                    discovery: {
+                        kind: 'none',
+                        title: roomTemplate.name,
+                        summary: roomDiscoveryEffectResolutionSteps.length > 0 || roomDiscoveryCardResolutionSteps.length > 0
+                            ? '房间文字已结算'
+                            : '无发现符号',
+                        detail: noSymbolDetailParts.join('；'),
+                        tone: roomDiscoveryEffectResolutionSteps.length > 0 || roomDiscoveryCardResolutionSteps.length > 0
+                            ? 'accent'
+                            : 'neutral',
+                        resolutionSteps: [
+                            ...roomDiscoveryEffectResolutionSteps,
+                            ...roomDiscoveryCardResolutionSteps,
+                        ],
+                    },
+                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，房间没有发现符号`,
+                    hauntTriggered: false,
+                }, timestamp)];
+            }
+
+            if (!hasAvailableDiscoveryDeckCard(core, deckKind)) {
+                const emptyDeckDetailParts = [
+                    ...roomDiscoveryRewardDetailParts,
+                    `${DECK_KIND_LABEL[deckKind]}牌堆已空，没有抽取发现牌`,
+                ];
+                return [nowEvent(EVENTS.ROOM_EXPLORED, {
+                    playerId: command.playerId,
+                    roomId: nextSlot.id,
+                    room: {
+                        name: roomTemplate.name,
+                        hint: roomTemplate.hint,
+                        tags: roomTemplate.tags,
+                        discoveryReward: deckKind,
+                        visualId: roomTemplate.visualId,
+                        doorways: selectedOrientation.doorways,
+                        backVisualId: nextSlot.backVisualId,
+                        orientationTurns: selectedOrientation.orientationTurns,
+                        discoveryEffect: roomTemplate.discoveryEffect,
+                        endTurnEffect: roomTemplate.endTurnEffect,
+                        enterEffect: roomTemplate.enterEffect,
+                    },
+                    deckKind,
+                    ...roomDiscoveryCards,
+                    skippedRoomWithHolySymbol: skippedRoomTemplate
+                        ? { name: skippedRoomTemplate.name }
+                        : undefined,
+                    roomDrawResolution: cloneRoomDrawResolution(roomDraw.resolution),
+                    roomTileAdjustment,
+                    discovery: {
+                        kind: deckKind,
+                        title: `${DECK_KIND_LABEL[deckKind]}符号`,
+                        summary: '牌堆已空',
+                        detail: emptyDeckDetailParts.join('；'),
+                        tone: 'neutral',
+                        resolutionSteps: [
+                            ...roomDiscoveryEffectResolutionSteps,
+                            ...roomDiscoveryCardResolutionSteps,
+                        ],
+                    },
+                    logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，${DECK_KIND_LABEL[deckKind]}牌堆已空`,
+                    hauntTriggered: false,
+                }, timestamp)];
+            }
 
             if (deckKind === 'event') {
                 if (shouldSkipEventSymbolForUponReflection(core)) {
@@ -15988,16 +16229,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const hauntRevealResolution = hauntRoll?.triggered
                 ? resolveHauntRevealResolutionForTrigger(core, drawnCard)
                 : undefined;
-            const roomDiscoveryRewardNames = roomDiscoveryCards.roomDiscoveryCards?.map((card) => card.name) ?? [];
-            const buriedRoomDiscoveryRewardNames = roomDiscoveryCards.buriedRoomDiscoveryCards?.map((card) => card.name) ?? [];
-            const roomDiscoveryRewardDetailParts = [
-                roomDiscoveryRewardNames.length > 0
-                    ? `${roomTemplate.name}获得${roomDiscoveryRewardNames.join('、')}`
-                    : null,
-                buriedRoomDiscoveryRewardNames.length > 0
-                    ? `展示后埋葬${buriedRoomDiscoveryRewardNames.join('、')}`
-                    : null,
-            ].filter((part): part is string => Boolean(part));
+            const roomDiscoveryRewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
             const drawnCardBaseDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
             const mummyForcedOmenDetail = mummyForcedOmenDraw.forcedOmenSearch
                 ? mummyForcedOmenDraw.forcedOmenSearch.role === 'hero-book'
@@ -16013,20 +16245,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             const drawnCardDetail = drawnCardDetailParts.join('；');
             const discoveryResolutionSteps: BetrayalDiscoveryResolutionStep[] = [
                 ...roomDiscoveryEffectResolutionSteps,
-                ...roomDiscoveryRewardNames.map((name, index) => ({
-                    id: `room-discovery-card-${roomDiscoveryCards.roomDiscoveryCards?.[index]?.id ?? index}`,
-                    kind: 'room-discovery-card' as const,
-                    text: `${roomTemplate.name}获得${name}`,
-                    deckKind: 'item' as const,
-                    cardId: roomDiscoveryCards.roomDiscoveryCards?.[index]?.id,
-                })),
-                ...buriedRoomDiscoveryRewardNames.map((name, index) => ({
-                    id: `buried-room-discovery-card-${roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id ?? index}`,
-                    kind: 'buried-room-discovery-card' as const,
-                    text: `展示后埋葬${name}`,
-                    deckKind: 'item' as const,
-                    cardId: roomDiscoveryCards.buriedRoomDiscoveryCards?.[index]?.id,
-                })),
+                ...roomDiscoveryCardResolutionSteps,
                 {
                     id: `drawn-card-${drawnCard.id}`,
                     kind: 'drawn-card' as const,
@@ -16044,7 +16263,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     }]
                     : []),
             ];
-            const gainedCardNames = [...roomDiscoveryRewardNames, drawnCard.name];
+            const gainedCardNames = [...roomDiscoveryRewardNames.gained, drawnCard.name];
             return [nowEvent(EVENTS.ROOM_EXPLORED, {
                 playerId: command.playerId,
                 roomId: nextSlot.id,
@@ -17007,7 +17226,11 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 ? `使用${pending.damageReplacement!.cardName}将${pending.damageKind === 'physical' ? '物理' : '精神'}伤害替换为通用伤害，`
                 : '';
             const deathPreview = cloneExplorer(actor);
-            applyGeneralDamage(deathPreview, pending.amount, traits, { allowSkull: pending.allowSkull });
+            const projectedAppliedDamage = applyGeneralDamage(deathPreview, pending.amount, traits, { allowSkull: pending.allowSkull });
+            const strangeAmuletBonusCard = resolvedDamageKind === 'physical' && projectedAppliedDamage > 0
+                ? actor.inventory.find((card) => resolveInventoryEffectId(card.id) === HELPING_HANDS_STRANGE_AMULET_CARD_ID)
+                : undefined;
+            const strangeAmuletLog = strangeAmuletBonusCard ? `；${strangeAmuletBonusCard.name}使神志 +1` : '';
             const deathPreventionRoll = pending.allowSkull
                 && isExplorerDead(deathPreview)
                 ? rollDeathPrevention(random, actor)
@@ -17044,7 +17267,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 helpingHandsMonsterTurnControllerPlayerId: pending.helpingHandsMonsterTurnControllerPlayerId,
                 skipBloodFromStoneMonsterTurnStart: pending.skipBloodFromStoneMonsterTurnStart,
                 deathPrevention,
-                logText: `${actor.displayName}${broochLog}将${pending.sourceTitle}的 ${pending.amount} 点伤害分配到${traitText}${deathPreventionLog}`,
+                logText: `${actor.displayName}${broochLog}将${pending.sourceTitle}的 ${pending.amount} 点伤害分配到${traitText}${deathPreventionLog}${strangeAmuletLog}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.HAUNT_ATTACK: {
@@ -18906,10 +19129,14 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     playerId: event.payload.playerId,
                     sourceTitle: event.payload.discovery.title,
                     acceptLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
+                        || event.payload.eventEffect.mode === 'optionalEffect'
+                        || event.payload.eventEffect.mode === 'optionalItemEffect'
                         || event.payload.eventEffect.mode === 'optionalHauntRoll'
                         ? event.payload.eventEffect.acceptLabel
                         : undefined,
                     declineLabel: event.payload.eventEffect.mode === 'optionalEventRoll'
+                        || event.payload.eventEffect.mode === 'optionalEffect'
+                        || event.payload.eventEffect.mode === 'optionalItemEffect'
                         || event.payload.eventEffect.mode === 'optionalHauntRoll'
                         ? event.payload.eventEffect.declineLabel
                         : undefined,
@@ -19002,13 +19229,23 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     core.recentRoll.eventEffectSnapshot = eventEffectSnapshot;
                 }
                 core.turnEndedByDiscovery = true;
-            } else if (event.payload.drawnCard) {
+            } else if (
+                event.payload.drawnCard
+                && (event.payload.deckKind === 'item' || event.payload.deckKind === 'omen')
+            ) {
                 core.currentExplorer.inventory = [...core.currentExplorer.inventory, cloneInventoryCard(event.payload.drawnCard)];
                 removePossessionCardFromDeck(core, event.payload.deckKind, event.payload.drawnCard.id);
                 if (event.payload.mummyForcedOmenSearch) {
                     core.possessionOrderByKind = {
                         ...core.possessionOrderByKind,
                         omen: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
+                    };
+                    core.scenarioRuntime = {
+                        ...core.scenarioRuntime,
+                        mummyForcedOmenSearch: {
+                            ...event.payload.mummyForcedOmenSearch,
+                            shuffledOmenDeck: event.payload.mummyForcedOmenSearch.shuffledOmenDeck.map(cloneInventoryCard),
+                        },
                     };
                 }
             }
@@ -20970,6 +21207,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         previousDamageToAttacker: event.payload.monsterDamageOutcome?.damageAmount ?? 0,
                         previousDamageToDefender: event.payload.damageToHero ?? 0,
                         defenderRoll: event.payload.heroRoll,
+                        defenderDefenseExtraDice: defender
+                            ? resolveDefenseExtraDiceWhenAttacked(defender)
+                            : 0,
                         attackerTraitsBeforeDamage: {
                             might: monsterTraits?.might ?? 0,
                             speed: monsterTraits?.speed ?? 0,
@@ -21160,6 +21400,9 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                         previousDamageToAttacker: event.payload.damageToAttacker ?? 0,
                         previousDamageToDefender: event.payload.damageToDefender ?? 0,
                         defenderRoll: event.payload.defenderRoll ?? 0,
+                        defenderDefenseExtraDice: defender
+                            ? resolveDefenseExtraDiceWhenAttacked(defender)
+                            : 0,
                         attackerTraitsBeforeDamage: { ...event.payload.attackRoll.attackerTraitsBeforeDamage },
                         defenderTraitsBeforeDamage: event.payload.attackRoll.defenderTraitsBeforeDamage
                             ? { ...event.payload.attackRoll.defenderTraitsBeforeDamage }

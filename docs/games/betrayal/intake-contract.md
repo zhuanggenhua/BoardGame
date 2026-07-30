@@ -6,6 +6,22 @@
 - 用户素材根目录：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods`
 - 本轮目标：把本地素材转成后续易读、易实现、易索引的 intake 结果，而不是现在就完成玩法实现。
 
+### 1.1 2026-07-29 整牌库接续裁定
+
+本文件是首轮素材 intake 合同；整牌库发现牌的当前 S0 主合同已经迁到 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md`。后续引用本文件时必须按下面口径过滤旧结论：
+
+| 口径 | 当前裁定 |
+| --- | --- |
+| 官方基础游戏牌库 | 74 张游戏牌：43 张事件、22 张物品、9 张预兆 |
+| 当前整牌库主真相源 | 用户本地 TTS/Mod 图包、项目正式 atlas、完整裁图和 `full-deck-data-intake-contract.md`；百度、搜索结果、Wiki、旧 E2E、旧截图和当前运行池不能锁定逐卡字段 |
+| 事件 atlas | 已锁 43 张正面 + 1 个空黑格 + 1 张背面；E43「最深的壁橱」来自 frame 42，旧 TTS manifest 的 42 候选是旧 `ContainedObjects` 扫描口径，不是图包缺素材 |
+| 物品 atlas | 已锁 22 张正面 + 1 个空黑格 + 1 张背面；官方运行物品唯一覆盖 item frame 0-21 |
+| 物品 alias | `flashlight / lantern` 共用 frame 8，`map / notebook / journal / manuscript` 共用 frame 16；`lantern / notebook / journal / manuscript` 只作为 legacy / duplicate alias，不计入官方 22 张独立牌 |
+| 预兆 atlas | 已锁 9 张正面 frame 0-8；其它格子是牌背/非正面，不是第 10 张预兆 |
+| 当前状态 | S0 对象/素材/atlas 数量已闭合；整牌库仍为 `in_progress / downstream-blocked`，含义是可继续补合同和证据，但不能宣称整牌库完成，也不能进入 Board/UI、E2E 或截图验收 |
+
+若本文件下方首轮条目与上述裁定冲突，以 `full-deck-data-intake-contract.md` 的 6.15 合同层队列收口审计为准。
+
 ## 2. 真相源与对照源
 
 | 类型 | 现实含义 | 路径/链接 | 本轮角色 | 当前状态 |
@@ -142,9 +158,11 @@
 - 扫描 PDF 对应的规则书、剧本书、参考书具体分工
 - 剧本书 / 作祟文案 / 分阵营秘密阅读 / 开局朗读 / 结局朗读的玩家可见正文仍需回到已锁定原文或正式翻译原文后才能标 `locked`；当前整理稿、规则书口吻改写或目标摘要不能作为正式剧本原文。
 - 剩余探索者 token、其它怪物 token、状态 token 仍需逐类审查；不得再笼统写成“头像/模型/局部标记图待确认”
-- 其它物品正面仍需逐格确认；未确认前只允许在玩家 UI 显示对象名 + 类别 + 牌背临时承接，缺素材原因必须写入资源审计材料并进入补源/索要素材链路，不得作为完成态
+- 物品正面 atlas 的“逐格确认”已由 2026-07-29 整牌库合同覆盖：官方 22 张物品正面已锁定到 item frame 0-21；后续缺口不再是“其它物品正面缺素材”，而是物品效果的 UI 承接、组合测试和新增消费者再审。legacy alias 仍按 duplicate-alias 处理，不重复计数。
 
 ## 9. 后续实施入口
+
+2026-07-29 更新：本节是首轮 intake 遗留入口，不能自动接管当前执行队列。整牌库发现牌、事件/物品/预兆 atlas、duplicate-alias 和当前阻塞口径以 `evidence/betrayal/full-audit/full-deck-data-intake-contract.md` 为准；进入 Board/UI、E2E、截图、完整作祟或剧本实现前，必须重新锁定目标、入口和验收口径。
 
 1. 先把当前候选资源从 `public/assets/betrayal/` 迁到 `public/assets/i18n/zh-CN/betrayal/`，并重新生成 manifest。
 2. 再从大拼版图中裁出房间板块、楼层板和可能的起始房间。

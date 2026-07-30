@@ -95,6 +95,9 @@ export function resolveDiscoveryAtlasVisual(
         const frameIndex = EVENT_FRONT_FRAME_BY_TITLE[discovery.title];
         return typeof frameIndex === 'number' ? buildEventVisual(frameIndex) : null;
     }
+    if (discovery.kind === 'none') {
+        return null;
+    }
     const matchingCard = resolveLatestMatchingInventoryCard(discovery.kind, discovery.title, inventoryCards);
     return matchingCard ? resolvePossessionAtlasVisual(matchingCard) : null;
 }

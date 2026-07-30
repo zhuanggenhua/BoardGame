@@ -28,6 +28,25 @@ The `betrayal` redesign MUST maintain a full rule interaction ledger that maps e
 - **WHEN** the official rulebook comparison identifies a gameplay detail not fully expanded in the local整理版
 - **THEN** the detail is added to the full rule ledger before implementation can claim that area complete
 
+### Requirement: Room Discovery Symbol Contract
+
+The `betrayal` implementation MUST model each room tile's printed discovery symbol as room data and MUST draw from the matching event, item, or omen deck when that room is explored.
+
+#### Scenario: Room tile has a discovery symbol
+
+- **WHEN** a player explores and places a room tile with an event, item, or omen symbol
+- **THEN** the explored room stores that printed symbol and the discovery resolution draws from the corresponding deck
+
+#### Scenario: Runtime draw order conflicts with printed symbol
+
+- **WHEN** runtime draw order or deck availability would select a different deck than the placed room tile's printed symbol
+- **THEN** the printed room symbol remains the rule truth, and the behavior is marked blocked or handled by an explicit rule exception instead of silently substituting another deck
+
+#### Scenario: Tutorial explains exploration
+
+- **WHEN** the basic tutorial teaches room exploration
+- **THEN** it explains the visible symbol mapping in player language: event symbol draws an event card, item symbol draws an item card, and omen symbol draws an omen card
+
 ### Requirement: Haunt-Specific Sub-Ledgers
 
 The `betrayal` redesign MUST NOT claim complete haunt support from representative haunts; each haunt needs an individual interaction contract before implementation can claim that haunt complete.

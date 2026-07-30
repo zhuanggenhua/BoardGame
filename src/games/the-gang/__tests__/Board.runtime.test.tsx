@@ -486,13 +486,13 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
     });
 
-    test('手牌调换阶段点击上下真实手牌后才能确认，也可以跳过', () => {
+    test('两副牌开局前点击上下真实手牌后才能确认交换', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
         const handSwapCore: TheGangCore = {
             ...initial,
-            heistStarted: true,
-            phase: 'hand-swap',
+            heistStarted: false,
+            phase: 'chip-selection',
             rules: {
                 ...initial.rules,
                 config: {
@@ -538,9 +538,9 @@ describe('The Gang Board 运行入口', () => {
             />,
         );
 
-        expect(screen.getByTestId('the-gang-hand-swap-stage')).toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-hand-swap-stage')).not.toBeInTheDocument();
         expect(screen.getByTestId('the-gang-hand-swap-strip')).toHaveTextContent('board.handSwapSelectedCount');
-        expect(screen.getByTestId('the-gang-confirm-hand-swap')).toBeDisabled();
+        expect(screen.getByTestId('the-gang-confirm-prestart-hand-swap')).toBeDisabled();
         expect(screen.getByRole('img', { name: 'A♠' })).toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-opponent-hand-1-rows')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-opponent-hand-2-rows')).not.toBeInTheDocument();
@@ -561,30 +561,16 @@ describe('The Gang Board 运行入口', () => {
 
         expect(screen.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
         expect(screen.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
-        expect(screen.getByTestId('the-gang-confirm-hand-swap')).not.toBeDisabled();
+        expect(screen.getByTestId('the-gang-confirm-prestart-hand-swap')).not.toBeDisabled();
 
-        fireEvent.click(screen.getByTestId('the-gang-confirm-hand-swap'));
+        fireEvent.click(screen.getByTestId('the-gang-confirm-prestart-hand-swap'));
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {
             __internalPlayerId: '0',
             topIndex: 0,
             bottomIndex: 1,
         });
+        expect(screen.queryByTestId('the-gang-skip-hand-swap')).not.toBeInTheDocument();
         unmount();
-
-        dispatch.mockClear();
-        renderWithToast(
-                <Board
-                G={stateOf(handSwapCore)}
-                dispatch={dispatch as never}
-                playerID="0"
-                matchData={defaultMatchData}
-                isConnected
-            />,
-        );
-        fireEvent.click(screen.getByTestId('the-gang-skip-hand-swap'));
-        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {
-            __internalPlayerId: '0',
-        });
     });
 
     test('四人两副手牌第四轮未拿够撤离筹码时不能摊牌，撤离按钮按当前手牌派发命令', () => {
@@ -603,6 +589,12 @@ describe('The Gang Board 运行入口', () => {
         );
 
         expect(screen.getByTestId('the-gang-exit-chip-row')).toBeInTheDocument();
+        const handSelector = screen.getByTestId('the-gang-chip-hand-selector');
+        expect(handSelector.closest('[data-bgg-zone="chip-hand-selector-dock"]')).not.toBeNull();
+        expect(handSelector.closest('[data-bgg-zone="hand-cards"]')).not.toBeNull();
+        expect(handSelector.closest('[data-bgg-zone="token-pile"]')).toBeNull();
+        expect(screen.getByTestId('the-gang-chip-hand-selector-top')).toHaveClass('min-h-11');
+        expect(screen.getByTestId('the-gang-chip-hand-selector-bottom')).toHaveClass('min-h-11');
         expect(screen.getByTestId('the-gang-exit-chip-button-1')).not.toBeDisabled();
         expect(screen.getByTestId('the-gang-exit-chip-button-2')).not.toBeDisabled();
         expect(document.querySelectorAll('[data-bgg-zone="exit-chip-token"] img')).toHaveLength(2);
@@ -771,7 +763,7 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByTestId('undo-provider-state')).toHaveTextContent('0:local');
     });
 
-    test('扩展设置面板复用牌桌折叠入口并派发规则配置命令', () => {
+    test('扩展设置面板只在点击应用设置后派发规则配置命令', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
 
@@ -798,6 +790,8 @@ describe('The Gang Board 运行入口', () => {
         expect(screen.getByTestId('the-gang-exit-mode-mastermind')).toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+        fireEvent.click(screen.getByTestId('the-gang-apply-rules-config'));
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, {
             __internalPlayerId: '0',
             config: {
@@ -813,7 +807,11 @@ describe('The Gang Board 运行入口', () => {
             },
         });
 
+        dispatch.mockClear();
+        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
         fireEvent.click(screen.getByTestId('the-gang-exit-mode-mastermind'));
+        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+        fireEvent.click(screen.getByTestId('the-gang-apply-rules-config'));
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, {
             __internalPlayerId: '0',
             config: {
@@ -829,8 +827,11 @@ describe('The Gang Board 运行入口', () => {
             },
         });
 
+        dispatch.mockClear();
+        fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
         fireEvent.click(screen.getByTestId('the-gang-mode-seven-card-stud'));
-
+        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+        fireEvent.click(screen.getByTestId('the-gang-apply-rules-config'));
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, {
             __internalPlayerId: '0',
             config: {
@@ -867,6 +868,7 @@ describe('The Gang Board 运行入口', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'board.rulesConfig' }));
         fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+        fireEvent.click(screen.getByTestId('the-gang-apply-rules-config'));
 
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.objectContaining({
             __internalPlayerId: '1',
@@ -879,9 +881,7 @@ describe('The Gang Board 运行入口', () => {
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
         const lockedCore = startHeistCore(initial);
         const originalConfirm = window.confirm;
-        const confirmSpy = vi.fn()
-            .mockReturnValueOnce(false)
-            .mockReturnValueOnce(true);
+        const confirmSpy = vi.fn();
         Object.defineProperty(window, 'confirm', {
             configurable: true,
             value: confirmSpy,
@@ -905,14 +905,26 @@ describe('The Gang Board 运行入口', () => {
             expect(screen.getByTestId('the-gang-rule-toggle-omaha')).toHaveAttribute('aria-disabled', 'false');
 
             fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
-            expect(confirmSpy).toHaveBeenCalledWith('board.confirmRulesRestart');
+            expect(confirmSpy).not.toHaveBeenCalled();
             expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
 
-            fireEvent.click(screen.getByTestId('the-gang-rule-toggle-omaha'));
+            fireEvent.click(screen.getByTestId('the-gang-apply-rules-config'));
+            expect(screen.getByText('board.rulesRestartConfirmTitle')).toBeInTheDocument();
+            expect(screen.getByText('board.applyRulesRestart')).toBeInTheDocument();
+            expect(confirmSpy).not.toHaveBeenCalled();
+            expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+
+            fireEvent.click(screen.getByText('board.cancelRulesRestart'));
+            expect(screen.queryByText('board.rulesRestartConfirmTitle')).not.toBeInTheDocument();
+            expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.anything());
+
+            fireEvent.click(screen.getByTestId('the-gang-apply-rules-config'));
+            fireEvent.click(screen.getByText('board.applyRulesRestart'));
             expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.SET_RULES_CONFIG, expect.objectContaining({
                 __internalPlayerId: '0',
                 config: expect.objectContaining({ omaha: true }),
             }));
+            expect(confirmSpy).not.toHaveBeenCalled();
         } finally {
             if (originalConfirm) {
                 Object.defineProperty(window, 'confirm', {
