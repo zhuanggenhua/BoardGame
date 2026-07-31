@@ -63,6 +63,9 @@ const RING_ATTACK_TARGET_SCREENSHOT = `${RING_SANITY_ATTACK_EVIDENCE_DIR}/03-叛
 const RING_ATTACK_DICE_SCREENSHOT = `${RING_SANITY_ATTACK_EVIDENCE_DIR}/04-指环神志攻击骰盘停稳.jpg`;
 const RING_ATTACK_RESULT_SCREENSHOT = `${RING_SANITY_ATTACK_EVIDENCE_DIR}/05-精神伤害结算结果可见.jpg`;
 const RING_ATTACK_SETTLED_SCREENSHOT = `${RING_SANITY_ATTACK_EVIDENCE_DIR}/06-指环攻击后回牌桌继续可操作.jpg`;
+const BROOCH_MENTAL_DAMAGE_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-胸针精神伤害改写完整链路');
+const BROOCH_MENTAL_DAMAGE_PANEL_SCREENSHOT = `${BROOCH_MENTAL_DAMAGE_EVIDENCE_DIR}/01-指环攻击胸针通用伤害分配面板.jpg`;
+const BROOCH_MENTAL_DAMAGE_SETTLED_SCREENSHOT = `${BROOCH_MENTAL_DAMAGE_EVIDENCE_DIR}/02-指环攻击胸针通用伤害结算反馈.jpg`;
 const DAGGER_ATTACK_EVIDENCE_DIR = resolve(process.cwd(), 'evidence/山屋惊魂-匕首攻击完整链路');
 const DAGGER_ATTACK_READY_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/01-匕首攻击前牌桌可操作.jpg`;
 const DAGGER_ATTACK_SELECTED_SCREENSHOT = `${DAGGER_ATTACK_EVIDENCE_DIR}/02-匕首武器已选中.jpg`;
@@ -370,6 +373,19 @@ const createRingAttackCore = () => {
     return core;
 };
 
+const createRingAttackBroochCore = () => {
+    const core = createRingAttackCore();
+    core.otherExplorers = core.otherExplorers.map((explorer) => (
+        explorer.playerId === core.scenarioRuntime.traitorPlayerId
+            ? {
+                ...explorer,
+                inventory: [{ id: 'brooch', name: '胸针', kind: 'item' }],
+            }
+            : explorer
+    ));
+    return core;
+};
+
 const createDaggerAttackCore = () => {
     const core = createFirstScenarioHauntCore();
     activateE2EExplorer(core, '0');
@@ -599,6 +615,7 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
             };
             otherExplorers: Array<{
                 playerId: string;
+                inventory: { id: string }[];
                 traits: { might: number; speed: number; knowledge: number; sanity: number };
             }>;
             scenarioRuntime: { traitorPlayerId: string | null };
@@ -608,6 +625,11 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
                 amount: number;
                 damageKind: string;
                 allowedTraits: string[];
+                damageReplacement?: {
+                    kind: string;
+                    cardId: string;
+                    cardName: string;
+                };
             } | null;
             recentRoll: {
                 kind: string;
@@ -642,6 +664,7 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
         attackerInventoryIds: attacker.inventory.map((card) => card.id),
         attackerTraits: { ...attacker.traits },
         traitorPlayerId: traitor.playerId,
+        traitorInventoryIds: traitor.inventory.map((card) => card.id),
         traitorTraits: { ...traitor.traits },
         usedCardIdsThisTurn: [...core.usedCardIdsThisTurn],
         pendingDamageAllocation: core.pendingDamageAllocation
@@ -650,6 +673,9 @@ const readWeaponAttackState = async (page: Page) => page.evaluate(() => {
                 amount: core.pendingDamageAllocation.amount,
                 damageKind: core.pendingDamageAllocation.damageKind,
                 allowedTraits: [...core.pendingDamageAllocation.allowedTraits],
+                damageReplacement: core.pendingDamageAllocation.damageReplacement
+                    ? { ...core.pendingDamageAllocation.damageReplacement }
+                    : undefined,
             }
             : null,
         recentRoll: core.recentRoll
@@ -1212,6 +1238,105 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await saveScreenshot(page, RING_ATTACK_SETTLED_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-ring-sanity-attack', diagnostics }]);
+    });
+
+    test('胸针精神伤害真实链路：指环造成精神伤害后可改为通用伤害', async ({ page, context }) => {
+        test.setTimeout(120000);
+        const diagnostics = await openBetrayalPage(page, context, 'betrayal-non-p0-brooch-mental-damage');
+
+        const injectedCore = createRingAttackBroochCore();
+        const traitorPlayerId = resolveRequiredTraitorPlayerId(injectedCore);
+        expect(injectedCore.currentExplorer.inventory.map((card) => card.id)).toEqual(['ring']);
+        expect(injectedCore.otherExplorers.find((explorer) => explorer.playerId === traitorPlayerId)?.inventory.map((card) => card.id))
+            .toEqual(['brooch']);
+        await injectCore(page, injectedCore);
+        await expect.poll(async () => {
+            const state = await readWeaponAttackState(page);
+            return {
+                roomId: state.attackerRoomId,
+                inventoryIds: state.attackerInventoryIds,
+                traitorInventoryIds: state.traitorInventoryIds,
+            };
+        }, { timeout: 30000 }).toEqual({
+            roomId: 'entrance-hall',
+            inventoryIds: ['ring'],
+            traitorInventoryIds: ['brooch'],
+        });
+        await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('betrayal-inventory-ring')).toBeVisible();
+        const beforeAttack = await readWeaponAttackState(page);
+
+        await page.getByTestId('betrayal-attack-weapon-ring').click();
+        await enterAttackTargeting(page);
+        const traitorToken = await expectTraitorTargetHighlighted(page, 'entrance-hall', traitorPlayerId);
+
+        await setHarnessRandomQueue(page, [0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0]);
+        await traitorToken.click();
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用指环');
+
+        await expect.poll(async () => {
+            const state = await readWeaponAttackState(page);
+            return state.pendingDamageAllocation;
+        }, { timeout: 30000 }).toMatchObject({
+            playerId: traitorPlayerId,
+            damageKind: 'mental',
+            allowedTraits: ['knowledge', 'sanity'],
+            damageReplacement: {
+                kind: 'brooch-general-damage',
+                cardId: 'brooch',
+                cardName: '胸针',
+            },
+        });
+        const pendingDamage = (await readWeaponAttackState(page)).pendingDamageAllocation;
+        expect(pendingDamage).not.toBeNull();
+        const damageAmount = pendingDamage.amount;
+        expect(damageAmount).toBeGreaterThan(0);
+
+        const damagePanel = page.getByTestId('betrayal-damage-allocation-panel');
+        await expect(damagePanel).toBeVisible();
+        await expect(damagePanel).toHaveAttribute('data-player-id', traitorPlayerId);
+        await expect(page.getByTestId('betrayal-damage-allocation-source')).toContainText('攻击');
+        await expect(page.getByTestId('betrayal-damage-allocation-amount')).toContainText(`${damageAmount} 点精神伤害`);
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('知识');
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('神志');
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).not.toContainText('力量');
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).not.toContainText('速度');
+
+        const broochToggle = page.getByTestId('betrayal-damage-allocation-brooch-toggle');
+        await expect(broochToggle).toBeVisible();
+        await expect(broochToggle).toHaveAttribute('data-brooch-active', 'false');
+        await expect(broochToggle).toContainText('使用胸针改为通用伤害');
+        await broochToggle.click();
+        await expect(broochToggle).toHaveAttribute('data-brooch-active', 'true');
+        await expect(page.getByTestId('betrayal-damage-allocation-amount')).toContainText(`${damageAmount} 点一般伤害`);
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('力量');
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('速度');
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('知识');
+        await expect(page.getByTestId('betrayal-damage-allocation-traits')).toContainText('神志');
+        await saveScreenshot(page, BROOCH_MENTAL_DAMAGE_PANEL_SCREENSHOT);
+
+        const mightDamage = page.getByTestId('betrayal-damage-allocation-trait-might');
+        for (let index = 0; index < damageAmount; index += 1) {
+            await mightDamage.click();
+        }
+        await expect(mightDamage).toHaveAttribute('data-damage-selected-count', String(damageAmount));
+        await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeEnabled();
+        await page.getByTestId('betrayal-damage-allocation-confirm').click();
+        await expect(page.getByTestId('betrayal-damage-allocation-panel')).toHaveCount(0);
+
+        const afterAllocation = await readWeaponAttackState(page);
+        expect(afterAllocation.pendingDamageAllocation).toBeNull();
+        expect(afterAllocation.traitorTraits.might + afterAllocation.traitorTraits.speed).toBeLessThan(
+            beforeAttack.traitorTraits.might + beforeAttack.traitorTraits.speed,
+        );
+        expect(afterAllocation.traitorTraits.knowledge + afterAllocation.traitorTraits.sanity).toBe(
+            beforeAttack.traitorTraits.knowledge + beforeAttack.traitorTraits.sanity,
+        );
+        expect(afterAllocation.usedCardIdsThisTurn).toContain('ring');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用胸针将精神伤害替换为通用伤害');
+        await saveScreenshot(page, BROOCH_MENTAL_DAMAGE_SETTLED_SCREENSHOT);
+
+        assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-brooch-mental-damage', diagnostics }]);
     });
 
     test('匕首攻击真实链路：选择匕首后6骰攻击并花费速度造成物理伤害', async ({ page, context }) => {

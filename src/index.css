@@ -790,6 +790,33 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         display: none !important;
     }
 
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--table,
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--showdown {
+        width: 5rem;
+        height: 7rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--river,
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--hand {
+        width: 7rem;
+        height: 10rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--handDense {
+        width: 4.25rem;
+        height: 6rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--riverCompact,
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .the-gang-card-face--handCompact {
+        width: 3.5rem;
+        height: 5rem;
+    }
+
+    [data-game-page][data-game-id="the-gang"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] {
+        --the-gang-twohand-chip-selection-river-offset: 0rem;
+    }
+
     html[data-game-id="betrayal"][data-betrayal-blocking-roll="true"] [data-testid="fab-menu"] {
         display: none !important;
     }

@@ -6827,8 +6827,28 @@ export default function BetrayalBoard({
           diceCount: hauntRisk.nextRollDiceCount,
           threshold: hauntRisk.threshold,
         });
+  const recentRollRerollOwner = React.useMemo(() => {
+    if (!core.recentRoll || core.recentRoll.playerId !== viewerPlayerId) {
+      return null;
+    }
+    const owner = allExplorers.find(
+      (explorer) => explorer.playerId === core.recentRoll?.playerId,
+    );
+    if (!owner) {
+      return null;
+    }
+    return owner.inventory.some((card) =>
+      canUseRecentRollRerollItemForRecentRoll(core, owner.playerId, card.id),
+    )
+      ? owner
+      : null;
+  }, [allExplorers, core, viewerPlayerId]);
+  const inventoryActionPlayerId =
+    recentRollRerollOwner?.playerId ?? core.currentExplorer.playerId;
+  const visibleInventoryCards =
+    recentRollRerollOwner?.inventory ?? core.currentExplorerInventory;
   const selectedInventoryCard =
-    core.currentExplorerInventory.find(
+    visibleInventoryCards.find(
       (item) => item.id === previewState.selectedInventoryCardId,
     ) ?? null;
   const selectedInventoryUseEffect = selectedInventoryCard
@@ -6904,14 +6924,14 @@ export default function BetrayalBoard({
   ]);
   const inventoryGroups = React.useMemo(
     () => ({
-      item: core.currentExplorerInventory.filter(
+      item: visibleInventoryCards.filter(
         (item) => item.kind === "item",
       ),
-      omen: core.currentExplorerInventory.filter(
+      omen: visibleInventoryCards.filter(
         (item) => item.kind === "omen",
       ),
     }),
-    [core.currentExplorerInventory],
+    [visibleInventoryCards],
   );
   const visibleActivityEntries = React.useMemo(
     () =>
@@ -8078,6 +8098,14 @@ export default function BetrayalBoard({
   const mummyStealableCards = mummyPendingReward
     ? resolveMummyStealableCards(core, mummyPendingReward.defenderPlayerId)
     : [];
+  const mummyStealableCardIdSet = new Set(
+    mummyStealableCards.map((card) => card.id),
+  );
+  const mummyUnavailableStealTargetCount = mummyPendingReward
+    ? mummyPendingReward.stealableCardIds.filter(
+        (cardId) => !mummyStealableCardIdSet.has(cardId),
+      ).length
+    : 0;
   const isMummyRewardChooser =
     mummyPendingReward?.controllerPlayerId === core.currentExplorer.playerId;
   const hasPendingPlayerAgreement = Boolean(
@@ -8131,7 +8159,7 @@ export default function BetrayalBoard({
   const selectedCardCanUseRecentRollRerollItem = selectedInventoryCard
     ? canUseRecentRollRerollItemForRecentRoll(
         core,
-        core.currentExplorer.playerId,
+        inventoryActionPlayerId,
         selectedInventoryCard.id,
       )
     : false;
@@ -8171,17 +8199,17 @@ export default function BetrayalBoard({
   const rollModifierCardIds = React.useMemo(
     () =>
       new Set(
-        core.currentExplorerInventory
+        visibleInventoryCards
           .filter((card) =>
             canUseRecentRollRerollItemForRecentRoll(
               core,
-              core.currentExplorer.playerId,
+              inventoryActionPlayerId,
               card.id,
             ),
           )
           .map((card) => card.id),
       ),
-    [core],
+    [core, inventoryActionPlayerId, visibleInventoryCards],
   );
   const selectedCardNeedsTargetRoom =
     selectedInventoryUseEffectMode === "moveOthersInRoom";
@@ -13287,6 +13315,16 @@ export default function BetrayalBoard({
                           player: mummyRewardControllerName,
                         })}
                   </span>
+                  {mummyUnavailableStealTargetCount > 0 ? (
+                    <span
+                      data-testid="betrayal-mummy-reward-invalid-targets"
+                      className="rounded-full border border-[rgba(245,155,92,0.42)] bg-[rgba(92,42,24,0.42)] px-2.5 py-1 text-[12px] font-bold text-[#ffd0a6]"
+                    >
+                      {t("board.status.mummyRewardInvalidTargets", {
+                        count: mummyUnavailableStealTargetCount,
+                      })}
+                    </span>
+                  ) : null}
                 </div>
               ) : null}
               {helpingHandsPendingReward ? (
@@ -17048,6 +17086,16 @@ export default function BetrayalBoard({
                               player: mummyRewardControllerName,
                             })}
                       </span>
+                      {mummyUnavailableStealTargetCount > 0 ? (
+                        <span
+                          data-testid="betrayal-mummy-reward-invalid-targets"
+                          className="rounded-full border border-[rgba(245,155,92,0.44)] bg-[rgba(92,42,24,0.44)] px-3 py-1.5 text-[13px] font-bold text-[#ffd0a6]"
+                        >
+                          {t("board.status.mummyRewardInvalidTargets", {
+                            count: mummyUnavailableStealTargetCount,
+                          })}
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                   {helpingHandsPendingReward ? (

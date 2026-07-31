@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { Allow, ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { FeedbackReporterType, FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
 
 export const FEEDBACK_SORT_OPTIONS = ['newest', 'oldest'] as const;
@@ -262,6 +262,100 @@ export class FeedbackErrorContextDto {
     componentStack?: string;
 }
 
+export class FeedbackConfigProposalSourceContextDto {
+    @IsString()
+    @IsOptional()
+    @MaxLength(300)
+    route?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(160)
+    tableId?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(160)
+    rowId?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(80)
+    cellKey?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    language?: string;
+
+    @Allow()
+    @IsOptional()
+    objectContext?: unknown;
+}
+
+export class FeedbackConfigProposalDto {
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    gameId!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    configVersion!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(160)
+    objectId!: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    objectType?: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(300)
+    fieldPath!: string;
+
+    @Allow()
+    @IsOptional()
+    currentValue?: unknown;
+
+    @Allow()
+    suggestedValue?: unknown;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(4000)
+    reason!: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(4000)
+    evidence?: string;
+
+    @ValidateNested()
+    @Type(() => FeedbackConfigProposalSourceContextDto)
+    @IsOptional()
+    sourceContext?: FeedbackConfigProposalSourceContextDto;
+
+    @IsIn([
+        'pending_ai_review',
+        'ai_suggest_accept',
+        'ai_suggest_reject',
+        'needs_more_evidence',
+        'needs_human_review',
+        'needs_code_support',
+        'accepted',
+        'rejected',
+        'closed',
+    ])
+    @IsOptional()
+    status?: string;
+}
+
 export class CreateFeedbackDto {
     @IsString()
     @IsNotEmpty()
@@ -312,6 +406,11 @@ export class CreateFeedbackDto {
     @Type(() => FeedbackErrorContextDto)
     @IsOptional()
     errorContext?: FeedbackErrorContextDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackConfigProposalDto)
+    @IsOptional()
+    configProposal?: FeedbackConfigProposalDto;
 }
 
 export class CreateSystemFeedbackDto {

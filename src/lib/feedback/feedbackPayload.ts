@@ -65,3 +65,26 @@ export interface FeedbackErrorContext {
     jsStack?: string;
     componentStack?: string;
 }
+
+export interface FeedbackConfigProposalSourceContext {
+    route?: string;
+    tableId?: string;
+    rowId?: string;
+    cellKey?: string;
+    language?: string;
+    objectContext?: unknown;
+}
+
+export interface FeedbackConfigProposal {
+    gameId: string;
+    configVersion: string;
+    objectId: string;
+    objectType?: string;
+    fieldPath: string;
+    currentValue?: unknown;
+    suggestedValue?: unknown;
+    reason: string;
+    evidence?: string;
+    sourceContext?: FeedbackConfigProposalSourceContext;
+    status?: string;
+}

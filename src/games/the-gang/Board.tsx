@@ -294,6 +294,7 @@ function CardFace({
         showdown: 'h-16 w-11 md:h-20 md:w-14 lg:h-24 lg:w-[4.25rem] xl:h-28 xl:w-20',
     };
     const sizeClass = sizeClassByEmphasis[emphasis];
+    const cardFaceClassName = `the-gang-card-face the-gang-card-face--${emphasis} ${sizeClass}`;
 
     const revealDelayMs = revealOrder === undefined ? undefined : `${Math.min(revealOrder, 32) * 90}ms`;
     const revealClass = revealOrder === undefined
@@ -311,7 +312,8 @@ function CardFace({
     if (hidden || !card) {
         return (
             <div
-                className={`${sizeClass} overflow-hidden rounded-md bg-slate-800 shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/70${revealClass}`}
+                className={`${cardFaceClassName} overflow-hidden rounded-md bg-slate-800 shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/70${revealClass}`}
+                data-the-gang-card-emphasis={emphasis}
                 {...revealProps}
             >
                 <OptimizedImage
@@ -335,7 +337,8 @@ function CardFace({
         const label = formatCard(card);
         return (
             <div
-                className={`${sizeClass} flex items-center justify-center overflow-hidden rounded-md border border-amber-200/45 bg-[radial-gradient(circle_at_50%_24%,rgba(251,191,36,0.34),transparent_42%),linear-gradient(160deg,#111827,#312e18)] px-1 text-center text-[0.62rem] font-black tracking-[0.08em] text-amber-100 shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/75 lg:text-xs${revealClass}`}
+                className={`${cardFaceClassName} flex items-center justify-center overflow-hidden rounded-md border border-amber-200/45 bg-[radial-gradient(circle_at_50%_24%,rgba(251,191,36,0.34),transparent_42%),linear-gradient(160deg,#111827,#312e18)] px-1 text-center text-[0.62rem] font-black tracking-[0.08em] text-amber-100 shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/75 lg:text-xs${revealClass}`}
+                data-the-gang-card-emphasis={emphasis}
                 aria-label={label}
                 {...revealProps}
             >
@@ -346,7 +349,8 @@ function CardFace({
 
     return (
         <div
-            className={`${sizeClass} overflow-hidden rounded-md bg-white shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/75${revealClass}`}
+            className={`${cardFaceClassName} overflow-hidden rounded-md bg-white shadow-[0.2rem_0.24rem_0_rgba(0,0,0,0.45)] ring-1 ring-black/75${revealClass}`}
+            data-the-gang-card-emphasis={emphasis}
             {...revealProps}
         >
             <OptimizedImage
@@ -2020,7 +2024,7 @@ function ChipHandSelector({
 
     return (
         <div
-            className="flex items-center justify-center gap-1 rounded-full bg-black/20 p-0.5 shadow-[0_0.22rem_0.7rem_rgba(0,0,0,0.22)]"
+            className="flex flex-col items-center justify-center gap-0.5"
             style={{
                 transform: 'scale(var(--mobile-board-shell-inverse-scale, 1))',
                 transformOrigin: 'center center',
@@ -2040,14 +2044,19 @@ function ChipHandSelector({
                         data-testid={`the-gang-chip-hand-selector-${slot}`}
                         onClick={() => onSelect(slot)}
                         style={{ minHeight: 44 }}
-                        className={[
-                            'flex min-h-11 min-h-[44px] min-w-[5.5rem] items-center justify-center rounded-full border px-3 text-[0.72rem] font-black tracking-[0.06em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:min-w-[6.5rem] lg:px-4 lg:text-xs',
-                            active
-                                ? 'border-amber-100 bg-amber-300 text-emerald-950 shadow-[0_0_0_0.14rem_rgba(251,191,36,0.38),0_0_1.1rem_rgba(251,191,36,0.7)]'
-                                : 'border-amber-100/24 bg-black/18 text-amber-100/82 hover:border-amber-100/62 hover:bg-emerald-900',
-                            ].join(' ')}
+                        className="group flex min-h-11 min-h-[44px] min-w-14 cursor-pointer items-center justify-center rounded-full bg-transparent p-0 font-black leading-none tracking-[0.02em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100 lg:min-w-20"
                     >
-                        <span>{label}</span>
+                        <span
+                            data-testid={`the-gang-chip-hand-selector-surface-${slot}`}
+                            className={[
+                                'inline-flex h-5 min-w-[2.35rem] items-center justify-center rounded-full border px-1 text-[0.56rem] transition-colors lg:h-6 lg:min-w-[3.25rem] lg:px-1.5 lg:text-[0.68rem]',
+                                active
+                                    ? 'border-amber-100 bg-amber-300/90 text-emerald-950 shadow-[0_0_0_0.04rem_rgba(251,191,36,0.28),0_0_0.24rem_rgba(251,191,36,0.24)]'
+                                    : 'border-amber-100/24 bg-black/28 text-amber-100/78 group-hover:border-amber-100/58 group-hover:bg-emerald-900/78',
+                            ].join(' ')}
+                        >
+                            {label}
+                        </span>
                     </button>
                 );
             })}
@@ -2218,8 +2227,14 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
             ...(localBottomHandRankHint ? { bottom: localBottomHandRankHint } : {}),
         }
         : undefined;
+    const twoHandChipSelectionOffsetVar = core.communityCards.length > 0
+        ? '--the-gang-twohand-chip-selection-river-offset'
+        : '--the-gang-twohand-chip-selection-token-offset';
     const middleCenterStyle = twoHandChipSelectionLayout
-        ? { transform: 'translateY(clamp(4.5rem, 17vh, 5.25rem))', gap: '2rem' }
+        ? {
+            transform: `translateY(var(${twoHandChipSelectionOffsetVar}, clamp(4.5rem, 17vh, 5.25rem)))`,
+            gap: '2rem',
+        }
         : undefined;
 
     const playerNames = buildPlayerDisplayNameMap(
@@ -2581,7 +2596,7 @@ export default function TheGangBoard({ G, dispatch, playerID, reset, matchData, 
                             <div className="relative flex items-center justify-center overflow-visible" data-bgg-zone="hand-cards">
                                 {showChipHandSelector && (
                                     <div
-                                        className="pointer-events-auto absolute inset-x-0 bottom-[calc(100%+1.75rem)] z-50 flex justify-center"
+                                        className="pointer-events-auto absolute bottom-12 right-[calc(100%+3rem)] z-50 flex justify-center lg:right-[calc(100%+1.5rem)]"
                                         data-bgg-zone="chip-hand-selector-dock"
                                     >
                                         <ChipHandSelector

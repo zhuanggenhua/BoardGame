@@ -806,7 +806,23 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
         const handCardsRect = readRect('[data-bgg-zone="hand-cards"]');
         const tokenPileRect = readRect('[data-bgg-zone="token-pile"]');
         const selectorRect = readRect('[data-testid="the-gang-chip-hand-selector"]');
+        const rootStyle = window.getComputedStyle(document.documentElement);
+        const parsedBoardShellScale = Number.parseFloat(rootStyle.getPropertyValue('--mobile-board-shell-scale'));
+        const boardShellScale = Number.isFinite(parsedBoardShellScale) && parsedBoardShellScale > 0
+            ? parsedBoardShellScale
+            : 1;
+        const localHandCardRects = Array.from(document.querySelectorAll(
+            '[data-testid="the-gang-local-hand-top-cards"] [data-the-gang-card-emphasis], [data-testid="the-gang-local-hand-bottom-cards"] [data-the-gang-card-emphasis]',
+        ))
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return {
+                    height: rect.height,
+                    width: rect.width,
+                };
+            });
         const buttonRects = Array.from(document.querySelectorAll('[data-testid^="the-gang-chip-hand-selector-"]'))
+            .filter((node) => !node.getAttribute('data-testid')?.includes('-surface-'))
             .map((node) => {
                 const rect = node.getBoundingClientRect();
                 const classes = node.getAttribute('class') ?? '';
@@ -816,18 +832,49 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
                     hasTouchClass: classes.includes('min-h-11'),
                 };
             });
+        const surfaceRects = Array.from(document.querySelectorAll('[data-testid^="the-gang-chip-hand-selector-surface-"]'))
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return {
+                    height: rect.height,
+                    width: rect.width,
+                    area: rect.width * rect.height,
+                };
+            });
         return {
+            viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
+            boardShellScale,
             selector: selectorRect,
             handGroup,
             handCards: handCardsRect,
+            minLocalHandCardHeight: localHandCardRects.length > 0
+                ? Math.min(...localHandCardRects.map((rect) => rect.height))
+                : null,
+            minLocalHandCardWidth: localHandCardRects.length > 0
+                ? Math.min(...localHandCardRects.map((rect) => rect.width))
+                : null,
+            localHandCardCount: localHandCardRects.length,
             tokenPile: tokenPileRect,
             dockContainsSelector: !!dock && !!selector && dock.contains(selector),
             handCardsContainsDock: !!handCards && !!dock && handCards.contains(dock),
             bottomZoneContainsSelector: !!bottomZone && !!selector && bottomZone.contains(selector),
             tokenPileContainsSelector: !!tokenPile && !!selector && tokenPile.contains(selector),
-            selectorAboveHand: !!selectorRect && !!handCardsRect && selectorRect.bottom <= handCardsRect.top - 4,
-            selectorHandGap: selectorRect && handCardsRect ? handCardsRect.top - selectorRect.bottom : null,
+            selectorLeftOfHand: !!selectorRect && !!handCardsRect && selectorRect.right <= handCardsRect.left - 4,
+            selectorHandGap: selectorRect && handCardsRect ? handCardsRect.left - selectorRect.right : null,
+            selectorCenterDeltaY: selectorRect && handCardsRect
+                ? ((selectorRect.top + selectorRect.bottom) / 2) - ((handCardsRect.top + handCardsRect.bottom) / 2)
+                : null,
+            selectorWidthToHandWidth: selectorRect && handCardsRect ? selectorRect.width / handCardsRect.width : null,
+            selectorAreaToHandArea: selectorRect && handCardsRect
+                ? (selectorRect.width * selectorRect.height) / (handCardsRect.width * handCardsRect.height)
+                : null,
+            visibleSurfaceWidthToHandWidth: handCardsRect && surfaceRects.length > 0
+                ? Math.max(...surfaceRects.map((rect) => rect.width)) / handCardsRect.width
+                : null,
+            visibleSurfaceAreaToHandArea: handCardsRect && surfaceRects.length > 0
+                ? surfaceRects.reduce((sum, rect) => sum + rect.area, 0) / (handCardsRect.width * handCardsRect.height)
+                : null,
             selectorTokenPileGap: selectorRect && tokenPileRect ? selectorRect.top - tokenPileRect.bottom : null,
             selectorBottomDistance: selectorRect ? window.innerHeight - selectorRect.bottom : 0,
             minButtonHeight: Math.min(...buttonRects.map((rect) => rect.height)),
@@ -837,19 +884,37 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
         };
     });
     await writeMiddleLayoutMetrics(`${label}-上手下手选择器位置`, metrics);
-    expect(metrics.dockContainsSelector, `${label}：上手/下手选择器必须挂在手牌上方目标 dock`).toBe(true);
-    expect(metrics.handCardsContainsDock, `${label}：上手/下手选择器必须锚定在手牌本体上方，而不是筹码池下方`).toBe(true);
+    expect(metrics.dockContainsSelector, `${label}：上手/下手选择器必须挂在手牌左侧目标 dock`).toBe(true);
+    expect(metrics.handCardsContainsDock, `${label}：上手/下手选择器必须锚定在手牌本体左侧，而不是筹码池下方`).toBe(true);
     expect(metrics.tokenPileContainsSelector, `${label}：上手/下手选择器不能成为筹码池的一部分`).toBe(false);
-    expect(metrics.selectorAboveHand, `${label}：上手/下手选择器必须在手牌上方，而不是贴底或压手牌`).toBe(true);
-    expect(metrics.selectorHandGap, `${label}：上手/下手选择器必须贴近手牌上沿，不能漂到筹码池下面`).not.toBeNull();
-    expect(metrics.selectorHandGap, `${label}：上手/下手选择器离手牌太远，玩家视角仍然不好按`).toBeGreaterThanOrEqual(8);
-    expect(metrics.selectorHandGap, `${label}：上手/下手选择器离手牌太远，玩家视角仍然不好按`).toBeLessThanOrEqual(64);
+    expect(metrics.selectorLeftOfHand, `${label}：上手/下手选择器必须在手牌左侧，而不是手牌上方或筹码区下方`).toBe(true);
+    expect(metrics.selectorHandGap, `${label}：上手/下手选择器必须贴近手牌左侧动作区`).not.toBeNull();
+    expect(metrics.selectorHandGap, `${label}：上手/下手选择器压住或贴住手牌`).toBeGreaterThanOrEqual(8);
+    expect(metrics.selectorHandGap, `${label}：上手/下手选择器离手牌太远，玩家视角仍然不好按`).toBeLessThanOrEqual(32);
+    expect(metrics.selectorCenterDeltaY, `${label}：上手/下手选择器必须和手牌纵向对齐`).not.toBeNull();
+    expect(Math.abs(metrics.selectorCenterDeltaY!), `${label}：上手/下手选择器必须和手牌纵向对齐`).toBeLessThanOrEqual(32);
+    expect(metrics.selectorWidthToHandWidth, `${label}：上手/下手选择器不能接近整组手牌宽度，否则按钮会抢手牌主体`).not.toBeNull();
+    expect(metrics.selectorWidthToHandWidth, `${label}：上手/下手选择器不能接近整组手牌宽度，否则按钮会抢手牌主体`).toBeLessThanOrEqual(0.75);
+    expect(metrics.selectorAreaToHandArea, `${label}：上手/下手选择器视觉面积不能超过手牌主体`).not.toBeNull();
+    expect(metrics.selectorAreaToHandArea, `${label}：上手/下手选择器视觉面积不能超过手牌主体`).toBeLessThanOrEqual(0.9);
+    expect(metrics.localHandCardCount, `${label}：必须量到两副本地手牌的卡面，不能只量外层手牌容器`).toBeGreaterThanOrEqual(4);
+    expect(metrics.minLocalHandCardHeight, `${label}：本地手牌卡面高度必须存在，不能被压成空容器`).not.toBeNull();
+    expect(metrics.minLocalHandCardWidth, `${label}：本地手牌卡面宽度必须存在，不能被压成空容器`).not.toBeNull();
+    const expectedTwoHandCardHeight = 96 * metrics.boardShellScale;
+    const expectedTwoHandCardWidth = 68 * metrics.boardShellScale;
+    expect(metrics.minLocalHandCardHeight, `${label}：board-shell 下两副手牌必须使用 PC 设计基线再整体缩放，不能先吃移动断点小卡高度`).toBeGreaterThanOrEqual(expectedTwoHandCardHeight - 2);
+    expect(metrics.minLocalHandCardWidth, `${label}：board-shell 下两副手牌必须使用 PC 设计基线再整体缩放，不能先吃移动断点小卡宽度`).toBeGreaterThanOrEqual(expectedTwoHandCardWidth - 2);
+    expect(metrics.visibleSurfaceWidthToHandWidth, `${label}：上手/下手可见按钮面不能接近手牌宽度`).not.toBeNull();
+    expect(metrics.visibleSurfaceWidthToHandWidth, `${label}：上手/下手可见按钮面不能接近手牌宽度`).toBeLessThanOrEqual(0.45);
+    expect(metrics.visibleSurfaceAreaToHandArea, `${label}：上手/下手可见按钮面面积不能抢过手牌主体`).not.toBeNull();
+    expect(metrics.visibleSurfaceAreaToHandArea, `${label}：上手/下手可见按钮面面积不能抢过手牌主体`).toBeLessThanOrEqual(0.25);
     expect(metrics.selectorTokenPileGap, `${label}：上手/下手选择器不能贴在筹码池下面`).not.toBeNull();
-    expect(metrics.selectorTokenPileGap, `${label}：上手/下手选择器必须明显脱离筹码池，回到手牌动作区`).toBeGreaterThanOrEqual(24);
-    expect(metrics.selectorBottomDistance, `${label}：上手/下手选择器距离视口底边太近`).toBeGreaterThanOrEqual(56);
+    expect(metrics.selectorTokenPileGap, `${label}：上手/下手选择器必须明显脱离筹码池，回到手牌动作区`).toBeGreaterThanOrEqual(72);
+    expect(metrics.selectorBottomDistance, `${label}：上手/下手选择器距离视口底边太近`).toBeGreaterThanOrEqual(12);
     expect(metrics.buttonCount, `${label}：上手/下手必须各有一个按钮`).toBe(2);
     expect(metrics.minButtonHeight, `${label}：上手/下手按钮命中高度必须达到 44px 触控底线`).toBeGreaterThanOrEqual(44);
     expect(metrics.minButtonWidth, `${label}：上手/下手按钮命中宽度必须达到 44px 触控底线`).toBeGreaterThanOrEqual(44);
+    expect(metrics.minButtonWidth, `${label}：上手/下手按钮不能为了触控下限被视觉放大成主对象`).toBeLessThanOrEqual(84);
     expect(metrics.allButtonsHaveTouchClass, `${label}：按钮必须保留 min-h-11 触控类`).toBe(true);
 }
 

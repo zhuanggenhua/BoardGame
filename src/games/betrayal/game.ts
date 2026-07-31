@@ -15055,6 +15055,9 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             if (!pending.stealableCardIds.includes(cardId)) {
                 return { valid: false, error: '只能偷取防守者当前可被木乃伊夺取的物品或预兆。' };
             }
+            if (!resolveMummyStealableCards(core, pending.defenderPlayerId).some((card) => card.id === cardId)) {
+                return { valid: false, error: '该木乃伊奖励目标已经不再可偷。' };
+            }
             return { valid: true };
         }
         case BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND: {

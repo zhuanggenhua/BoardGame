@@ -2142,6 +2142,28 @@ describe('Betrayal Board foundation', () => {
         });
     });
 
+    it('木乃伊横行攻击奖励偷取目标失效时显示提示并保留伤害选择', () => {
+        const { core, traitorId, heroId } = createMummyPendingRewardBoardCore();
+
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === heroId
+                ? { ...explorer, inventory: [] }
+                : explorer
+        ));
+
+        renderBoard(core, {
+            playerID: traitorId,
+            matchData: defaultMatchData.slice(0, 3),
+        });
+
+        expect(screen.getByTestId('betrayal-mummy-reward-banner')).toHaveTextContent('木乃伊：伤害或偷取');
+        expect(screen.getByTestId('betrayal-mummy-reward-invalid-targets')).toHaveTextContent('2 个偷取目标已失效');
+        const rewardActions = screen.getByTestId('betrayal-mummy-reward-actions');
+        expect(within(rewardActions).getByTestId('betrayal-mummy-reward-damage')).toHaveTextContent('造成3伤害');
+        expect(within(rewardActions).queryByTestId('betrayal-mummy-reward-steal-map')).not.toBeInTheDocument();
+        expect(within(rewardActions).queryByTestId('betrayal-mummy-reward-steal-holy-symbol')).not.toBeInTheDocument();
+    });
+
     it('木乃伊横行攻击奖励选择偷取后清空奖励并显示偷取反馈', async () => {
         const { core, traitorId } = createMummyPendingRewardBoardCore();
 
@@ -2194,6 +2216,7 @@ describe('Betrayal Board foundation', () => {
         const mummyMonsterId = mummyRuntime.mummyMonsterId;
         const girlRoomId = mummyRuntime.girlRoomId!;
         const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId;
+        const unrevealedRoomId = core.rooms.find((room) => room.state !== 'discovered')?.id;
         const quietRoomId = core.rooms.find((room) => (
             room.state === 'discovered'
             && room.id !== mummyRoomId
@@ -2240,6 +2263,11 @@ describe('Betrayal Board foundation', () => {
             'true',
         );
         expect(screen.getByTestId(`betrayal-room-monster-move-target-${girlRoomId}`)).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('只限已发现房间');
+        expect(screen.getByTestId('betrayal-turn-hint')).toHaveTextContent('不能探索新房间');
+        if (unrevealedRoomId) {
+            expect(screen.queryByTestId(`betrayal-room-monster-move-target-${unrevealedRoomId}`)).not.toBeInTheDocument();
+        }
 
         fireEvent.click(screen.getByTestId(`betrayal-room-${girlRoomId}`));
 
@@ -2252,23 +2280,30 @@ describe('Betrayal Board foundation', () => {
         });
     });
 
-    it('木乃伊横行木乃伊同房有英雄时必须先攻击再移动', async () => {
+    it('木乃伊横行木乃伊同房有英雄时必须先攻击再移动，并过滤叛徒和死亡英雄', async () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
         const mummyRuntime = core.scenarioRuntime.mummy!;
         const mummyMonsterId = mummyRuntime.mummyMonsterId;
         const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId;
-        const heroTarget = [core.currentExplorer, ...core.otherExplorers]
-            .find((explorer) => explorer.playerId !== traitorId);
-        if (!heroTarget || !mummyRoomId) {
+        const [heroTarget, deadHero] = [core.currentExplorer, ...core.otherExplorers]
+            .filter((explorer) => explorer.playerId !== traitorId);
+        if (!heroTarget || !deadHero || !mummyRoomId) {
             throw new Error('木乃伊同房攻击测试夹具缺少英雄或木乃伊房间');
         }
         core = activateBoardExplorer(core, traitorId);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: mummyRoomId,
+        };
         core.otherExplorers = core.otherExplorers.map((explorer) => (
-            explorer.playerId === heroTarget.playerId
+            explorer.playerId === heroTarget.playerId || explorer.playerId === deadHero.playerId
                 ? { ...explorer, roomId: mummyRoomId }
                 : explorer
         ));
+        core.activeRoomId = mummyRoomId;
+        core.currentExplorerRoomId = mummyRoomId;
+        core.scenarioRuntime.deadExplorerPlayerIds = [deadHero.playerId];
         core = completeMonsterPreparationForAttackSlot(core, mummyMonsterId);
         core = dismissBlockingBoardOverlays(core);
 
@@ -2307,6 +2342,8 @@ describe('Betrayal Board foundation', () => {
         await waitFor(() => {
             expect(screen.getByTestId(`betrayal-room-occupant-${mummyRoomId}-${heroTarget.playerId}`)).toHaveAttribute('data-direct-target', 'true');
             expect(screen.getByTestId(`betrayal-room-occupant-target-outline-${mummyRoomId}-${heroTarget.playerId}`)).toHaveAttribute('data-highlight-shape', 'pentagon');
+            expect(screen.queryByTestId(`betrayal-room-occupant-target-outline-${mummyRoomId}-${traitorId}`)).not.toBeInTheDocument();
+            expect(screen.queryByTestId(`betrayal-room-occupant-target-outline-${mummyRoomId}-${deadHero.playerId}`)).not.toBeInTheDocument();
         });
         fireEvent.click(screen.getByTestId(`betrayal-room-occupant-${mummyRoomId}-${heroTarget.playerId}`));
 
@@ -2314,6 +2351,84 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('木乃伊');
             expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('木乃伊攻击');
         });
+    });
+
+    it('木乃伊横行木乃伊攻击目标没有可偷对象时直接进入伤害分配', async () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const mummyRuntime = core.scenarioRuntime.mummy!;
+        const mummyMonsterId = mummyRuntime.mummyMonsterId;
+        const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId;
+        const heroTarget = [core.currentExplorer, ...core.otherExplorers]
+            .find((explorer) => explorer.playerId !== traitorId);
+        if (!heroTarget || !mummyRoomId) {
+            throw new Error('木乃伊无可偷对象测试夹具缺少英雄或木乃伊房间');
+        }
+        core = activateBoardExplorer(core, traitorId);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            roomId: mummyRoomId,
+        };
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === heroTarget.playerId
+                ? {
+                    ...explorer,
+                    roomId: mummyRoomId,
+                    inventory: [],
+                }
+                : explorer
+        ));
+        core.activeRoomId = mummyRoomId;
+        core.currentExplorerRoomId = mummyRoomId;
+        core.scenarioRuntime.mummy = {
+            ...mummyRuntime,
+            girlHolderPlayerId: null,
+            girlHeldByMummy: false,
+        };
+        core = setBoardTraitTrack(core, heroTarget.playerId, 'might', Array.from({ length: 16 }, () => 4), 14, 14);
+        core = setBoardTraitTrack(core, heroTarget.playerId, 'speed', Array.from({ length: 16 }, () => 4), 14, 14);
+        core = completeMonsterPreparationForAttackSlot(core, mummyMonsterId);
+        core = dismissBlockingBoardOverlays(core);
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                playerID={traitorId}
+                matchData={defaultMatchData.slice(0, 3)}
+                diceResults={[2, 2, 2, 2, 1, 1, 1, 1, 1]}
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('betrayal-action-monsterAttack'));
+        await waitFor(() => {
+            expect(screen.getByTestId(`betrayal-room-monster-${mummyRoomId}-${mummyMonsterId}`)).toHaveAttribute(
+                'data-direct-target',
+                'true',
+            );
+        });
+        fireEvent.click(screen.getByTestId(`betrayal-room-monster-${mummyRoomId}-${mummyMonsterId}`));
+        await waitFor(() => {
+            expect(screen.getByTestId(`betrayal-room-occupant-${mummyRoomId}-${heroTarget.playerId}`)).toHaveAttribute(
+                'data-direct-target',
+                'true',
+            );
+        });
+        fireEvent.click(screen.getByTestId(`betrayal-room-occupant-${mummyRoomId}-${heroTarget.playerId}`));
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-mummy-reward-banner')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('betrayal-mummy-reward-actions')).not.toBeInTheDocument();
+            expect(screen.getByTestId('betrayal-damage-allocation-panel')).toHaveAttribute(
+                'data-player-id',
+                heroTarget.playerId,
+            );
+        });
+        expect(screen.getByTestId('betrayal-damage-allocation-source')).toHaveTextContent('攻击');
+        expect(screen.getByTestId('betrayal-damage-allocation-amount')).toHaveTextContent('4 点物理伤害');
+        expect(screen.getByTestId('betrayal-damage-allocation-traits')).toHaveTextContent('速度');
+        expect(screen.getByTestId('betrayal-damage-allocation-traits')).toHaveTextContent('力量');
+        expect(screen.getByTestId('betrayal-damage-allocation-confirm')).toBeDisabled();
+        expect(screen.getByTestId('betrayal-damage-allocation-confirm')).toHaveTextContent('等待');
     });
 
     it('大宅饿了作祟只显示可关闭阶段横幅，并通过手动入口打开剧本书', async () => {
@@ -4636,6 +4751,76 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-discovery-panel'));
         expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-recent-roll-panel')).not.toBeInTheDocument();
+    });
+
+    it('兔脚在死亡保护由非当前行动者投骰时仍显示受伤玩家持有牌', () => {
+        let core = createFirstScenarioHauntCore();
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'ground-north' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: 'ground-north' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, '1', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'basement-landing' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'grand-staircase' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'hallway' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: 'ground-north' });
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === '0'
+                ? {
+                    ...explorer,
+                    inventory: [
+                        { id: 'skull', name: '头骨', kind: 'omen' },
+                        { id: 'rope', name: '兔脚', kind: 'item' },
+                    ],
+                }
+                : explorer
+        ));
+        core = setBoardTraitTrack(core, '0', 'might', [1, 2], 1, 1);
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.HAUNT_ATTACK,
+            '2',
+            { target: 'hero', targetPlayerId: '0' },
+            100,
+            createBetrayalScriptedRandom(3, 3, 3, 3, 3, 1, 1, 1, 1),
+        );
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            '0',
+            { traits: lethalDamageTraitsForPendingAllocation(core) },
+            101,
+            createBetrayalScriptedRandom(1, 2, 2),
+        );
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.playerId).toBe('0');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain('0');
+        core = activateBoardExplorer(core, '1');
+
+        render(
+            <HarnessBoardWithRandom
+                initialCore={core}
+                playerID="0"
+                matchData={defaultMatchData.slice(0, 3)}
+                diceResults={[3]}
+            />,
+        );
+
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('正常死亡');
+        expect(screen.getByTestId('betrayal-inventory-rope')).toHaveAttribute('data-roll-modifier-available', 'true');
+        expect(screen.getByTestId('betrayal-inventory-rope-roll-modifier')).toHaveAttribute('data-highlight-shape', 'card');
+        fireEvent.click(screen.getByTestId('betrayal-inventory-rope'));
+        expect(screen.getByTestId('betrayal-selected-inventory-card-name')).toHaveTextContent('兔脚');
+        expect(screen.getByTestId('betrayal-rabbit-foot-dice')).toHaveAttribute('data-reroll-target-count', '3');
+
+        fireEvent.click(screen.getByTestId('betrayal-house-dice-reroll-target-0'));
+
+        expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('阻止死亡');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用兔脚重掷第 1 颗骰子');
     });
 
     it('幸运硬币在真实页面只允许选择最近属性检定的空白骰', () => {

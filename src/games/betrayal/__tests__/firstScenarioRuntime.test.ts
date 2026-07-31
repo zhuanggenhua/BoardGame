@@ -5087,14 +5087,86 @@ describe('Betrayal first scenario runtime', () => {
         expect(resolveBetrayalMonsterTurnRuntimeState(core).moveRemainingById[mummyMonsterId]).toBe(0);
     });
 
+    it('木乃伊移动骰为 0 或 1 时可跨楼层选择已发现房间，但不能去未发现房间', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const mummyRuntime = core.scenarioRuntime.mummy!;
+        const mummyMonsterId = mummyRuntime.mummyMonsterId;
+        const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId;
+        const upperTarget = core.rooms.find((room) => room.floor === 'upper' && room.id !== mummyRoomId);
+        const basementTarget = core.rooms.find((room) => room.floor === 'basement' && room.id !== mummyRoomId);
+        if (!mummyRoomId || !upperTarget || !basementTarget) {
+            throw new Error('木乃伊跨楼层移动测试夹具缺少目标房间');
+        }
+        setDiscoveredTestRoom(core, upperTarget.id, { name: '上层测试房间', floor: 'upper' });
+        setDiscoveredTestRoom(core, basementTarget.id, { name: '地下测试房间', floor: 'basement' });
+        const unrevealedRoom = core.rooms.find((room) => (
+            room.state !== 'discovered'
+            && room.id !== upperTarget.id
+            && room.id !== basementTarget.id
+        ));
+        if (!unrevealedRoom) {
+            throw new Error('木乃伊跨楼层移动测试夹具缺少未发现房间');
+        }
+        const quietRoomId = core.rooms.find((room) => (
+            room.state === 'discovered'
+            && room.id !== mummyRoomId
+            && room.id !== upperTarget.id
+            && room.id !== basementTarget.id
+        ))?.id ?? upperTarget.id;
+        activateTestExplorer(core, traitorId);
+        for (const playerId of core.playerIds.filter((playerId) => playerId !== traitorId)) {
+            setTestExplorerRoom(core, playerId, quietRoomId);
+        }
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.ROLL_MONSTER_MOVEMENT_GROUP,
+            traitorId,
+            { groupId: '木乃伊:3' },
+            100,
+            createBetrayalScriptedRandom(1, 1, 1),
+        );
+
+        const targetRoomIds = resolveBetrayalMonsterMoveTargetRooms(core, mummyMonsterId)
+            .map((room) => room.id);
+        expect(targetRoomIds).toContain(upperTarget.id);
+        expect(targetRoomIds).toContain(basementTarget.id);
+        expect(targetRoomIds).not.toContain(mummyRoomId);
+        expect(targetRoomIds).not.toContain(unrevealedRoom.id);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, traitorId, {
+                monsterId: mummyMonsterId,
+                roomId: unrevealedRoom.id,
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '怪物只能移动到已发现且真实连接的房间。',
+        });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, traitorId, {
+            monsterId: mummyMonsterId,
+            roomId: upperTarget.id,
+        });
+
+        expect(core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId).toBe(upperTarget.id);
+    });
+
     it('木乃伊与英雄同房且未攻击时必须先攻击，不能先移动', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
-        const heroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
+        const [heroId, deadHeroId] = core.playerIds.filter((playerId) => playerId !== traitorId);
+        if (!heroId || !deadHeroId) {
+            throw new Error('木乃伊同房先攻击测试夹具缺少英雄');
+        }
         const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
         const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)!.roomId;
         activateTestExplorer(core, traitorId);
-        findTestExplorer(core, heroId).roomId = mummyRoomId;
+        setTestExplorerRoom(core, traitorId, mummyRoomId);
+        setTestExplorerRoom(core, heroId, mummyRoomId);
+        setTestExplorerRoom(core, deadHeroId, mummyRoomId);
+        core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId];
 
         core = applyBetrayalCommand(
             core,
@@ -5114,6 +5186,8 @@ describe('Betrayal first scenario runtime', () => {
             targetPlayerIds: [heroId],
             canResolveWithExistingCommand: true,
         });
+        expect(resolveBetrayalNormalMonsterAttackTargets(core, mummyMonsterId)?.targetPlayerIds).not.toContain(traitorId);
+        expect(resolveBetrayalNormalMonsterAttackTargets(core, mummyMonsterId)?.targetPlayerIds).not.toContain(deadHeroId);
     });
 
     it('木乃伊攻击造成 2 点以上伤害后可选择偷取女孩或物品代替伤害', () => {
@@ -5203,6 +5277,87 @@ describe('Betrayal first scenario runtime', () => {
             girlHolderPlayerId: null,
             girlHeldByMummy: true,
         });
+    });
+
+    it('木乃伊攻击目标没有可偷对象时不会生成偷取奖励，直接进入强制伤害分配', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const heroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
+        const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
+        const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)!.roomId;
+        activateTestExplorer(core, traitorId);
+        findTestExplorer(core, heroId).roomId = mummyRoomId;
+        setHighCapacityPhysicalDamageTracks(core, heroId);
+        setTestExplorerInventory(core, heroId, []);
+        core.scenarioRuntime.mummy = {
+            ...core.scenarioRuntime.mummy!,
+            girlHolderPlayerId: null,
+            girlHeldByMummy: false,
+        };
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+            traitorId,
+            { monsterId: mummyMonsterId, targetPlayerId: heroId },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2, 2, 1, 1, 1, 1, 1),
+        );
+
+        expect(resolveMummyStealableCards(core, heroId)).toEqual([]);
+        expect(resolveMummyPendingAttackReward(core)).toBeNull();
+        expect(core.pendingDamageAllocation).toMatchObject({
+            playerId: heroId,
+            damageKind: 'physical',
+            amount: 4,
+            allowSkull: true,
+            forcedTraitSequence: ['speed', 'speed', 'speed', 'speed'],
+        });
+    });
+
+    it('木乃伊攻击奖励偷取目标失效时拒绝偷取，但仍可选择造成伤害', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const heroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
+        const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
+        const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)!.roomId;
+        activateTestExplorer(core, traitorId);
+        findTestExplorer(core, heroId).roomId = mummyRoomId;
+        setHighCapacityPhysicalDamageTracks(core, heroId);
+        setTestExplorerInventory(core, heroId, [
+            { id: 'map', name: '地图', kind: 'item' },
+        ]);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+            traitorId,
+            { monsterId: mummyMonsterId, targetPlayerId: heroId },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2, 2, 1, 1, 1, 1, 1),
+        );
+        expect(resolveMummyPendingAttackReward(core)).toMatchObject({
+            stealableCardIds: ['map'],
+        });
+
+        setTestExplorerInventory(core, heroId, []);
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD, traitorId, {
+                choice: 'steal',
+                cardId: 'map',
+            }),
+        )).toMatchObject({
+            valid: false,
+            error: '该木乃伊奖励目标已经不再可偷。',
+        });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD, traitorId, {
+                choice: 'damage',
+            }),
+        )).toMatchObject({ valid: true });
     });
 
     it('木乃伊选择造成伤害后必须先扣速度，最后一名英雄死亡时按木乃伊横行结算', () => {

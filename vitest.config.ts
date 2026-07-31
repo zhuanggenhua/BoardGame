@@ -43,6 +43,7 @@ export default defineConfig({
             'src/hooks/**/__tests__/**/*.test.{ts,tsx}',
             'src/lib/**/__tests__/**/*.test.{ts,tsx}',
             'src/shared/**/__tests__/**/*.test.{ts,tsx}',
+            'src/game-config/**/__tests__/**/*.test.{ts,tsx}',
             'src/games/**/__tests__/**/*.test.{ts,tsx}',
             'src/engine/**/__tests__/**/*.test.{ts,tsx}',
             'src/server/**/__tests__/**/*.test.{ts,tsx}',

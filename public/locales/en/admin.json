@@ -37,20 +37,21 @@
       "user": "User",
       "system": "System"
     },
-      "source": {
-        "feedbackModal": "Feedback modal",
-        "onlineAiWatchdog": "Online AI watchdog",
-        "clientAutoReport": "Client auto-report",
-        "clientRuntimeGuard": "Client runtime guard",
-        "clientWindowError": "Window error capture",
-        "clientUnhandledRejection": "Unhandled promise rejection",
-        "reactErrorBoundary": "React error boundary",
-        "boardRenderError": "Board render error boundary",
-        "homeModalErrorBoundary": "Home modal error boundary",
-        "globalErrorCapture": "Global error capture",
-        "unsatAutoSkip": "System auto-skip (unsatisfiable interaction)",
-        "unknown": "Unknown"
-      },
+    "source": {
+      "feedbackModal": "Feedback modal",
+      "onlineAiWatchdog": "Online AI watchdog",
+      "clientAutoReport": "Client auto-report",
+      "clientRuntimeGuard": "Client runtime guard",
+      "clientWindowError": "Window error capture",
+      "clientUnhandledRejection": "Unhandled promise rejection",
+      "reactErrorBoundary": "React error boundary",
+      "boardRenderError": "Board render error boundary",
+      "homeModalErrorBoundary": "Home modal error boundary",
+      "globalErrorCapture": "Global error capture",
+      "unsatAutoSkip": "System auto-skip (unsatisfiable interaction)",
+      "unknown": "Unknown",
+      "configReview": "Config review table"
+    },
     "severity": {
       "critical": "Critical",
       "high": "High",

@@ -15,6 +15,7 @@ type FeedbackManagerScope = {
 };
 
 const DEFAULT_USER_SOURCE = 'feedback-modal';
+const CONFIG_REVIEW_SOURCE = 'config-review';
 const PUBLIC_AUTO_FEEDBACK_SOURCES = new Set([
     'client-auto-report',
     'client-runtime-guard',
@@ -27,6 +28,7 @@ const PUBLIC_AUTO_FEEDBACK_SOURCES = new Set([
 const PUBLIC_AUTO_FEEDBACK_SOURCE_LIST = Array.from(PUBLIC_AUTO_FEEDBACK_SOURCES);
 const ALLOWED_USER_SOURCES = new Set([
     DEFAULT_USER_SOURCE,
+    CONFIG_REVIEW_SOURCE,
     ...PUBLIC_AUTO_FEEDBACK_SOURCE_LIST,
 ]);
 const LEGACY_WATCHDOG_SOURCE = 'online-ai-watchdog';
@@ -71,7 +73,7 @@ export class FeedbackService {
         const rewardPoints = userId ? FEEDBACK_REWARD_POINTS : 0;
         const created = await this.feedbackModel.create({
             ...dto,
-            gameId: this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName),
+            gameId: this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName, dto.configProposal?.gameId),
             reporterType: this.resolvePublicReporterType(source),
             source,
             rewardPoints,

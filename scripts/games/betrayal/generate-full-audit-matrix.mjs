@@ -98,8 +98,8 @@ function possessionL3(card) {
   if (card.id === 'lucky-coin') return 'L3 Board 组件代表链已补：选中幸运硬币后，最近属性检定骰盘只高亮空白骰，非空白骰不生成可重掷目标；真实 Playwright / 截图和更多组合仍未闭合';
   if (['holy-symbol', 'idol'].includes(card.id)) return 'L3 探索声明替代已有选择前、已选择和跳过事件步骤截图';
   if (['hunting-knife', 'dagger', 'ring'].includes(card.id)) return 'L3 攻击武器已有选择前、目标高亮、攻击投骰和反馈步骤截图';
-  if (card.id === 'rope') return '已有兔脚重掷教程真实入口代表链';
-  if (card.id === 'skull') return 'L3 已补头骨死亡保护真实浏览器截图：3 骰、总点数 4、阻止死亡反馈';
+  if (card.id === 'rope') return '已有兔脚重掷教程真实入口代表链；木乃伊攻击头骨失败后的死亡保护重掷真实入口已补：受伤英雄可从持有区选择兔脚重掷并阻止死亡';
+  if (card.id === 'skull') return 'L3 已补头骨死亡保护 Board 组件代表链和木乃伊攻击真实入口截图：3 骰死亡保护，成功阻止死亡并回到牌桌，失败则正常死亡但不直接外推终局；木乃伊攻击头骨失败后的兔脚重掷阻止死亡真实入口已补；更多致死来源仍未闭合';
   if (card.id === 'dog') return '已有狗交易 Board 组件代表链；不外推真实 Playwright / 全组合';
   if (card.id === 'camera') return '已有魔法相机知识检定替代和作祟 33 归属真实页面链';
   if (card.id === 'lantern') return '已有灯笼事件属性检定额外 +2 骰真实页面链；与手电筒共享被动消费者';
@@ -309,10 +309,10 @@ const POSSESSION_DOWNSTREAM_GAPS = new Map([
     residual: '需继续补真实 Playwright / 截图链、减伤、死亡保护和作祟伤害组合',
   }],
   ['brooch', {
-    status: 'min-domain-verified / min-ui-representative / partial-combo',
-    gap: '伤害类型改写、通用伤害、Board 组件伤害分配代表链',
-    l3: 'L3 Board 组件代表链已补：伤害分配页可开启胸针、改为通用伤害并提交 useBrooch:true；真实 Playwright / 截图和组合仍未闭合',
-    residual: '需继续补真实 Playwright / 截图链、更多伤害来源、减伤叠加、强制伤害顺序、死亡保护和作祟伤害组合',
+    status: 'min-domain-verified / min-ui-representative / mummy-forced-damage-e2e-boundary / non-forced-physical-damage-e2e-representative / non-forced-mental-damage-e2e-representative / partial-combo',
+    gap: '伤害类型改写、通用伤害、Board 组件伤害分配代表链、木乃伊强制伤害不适用真实入口、灰尘普通攻击物理伤害可用真实入口、指环攻击精神伤害可用真实入口',
+    l3: 'L3 Board 组件代表链已补：伤害分配页可开启胸针、改为通用伤害并提交 useBrooch:true；木乃伊攻击真实入口已补强制速度/力量伤害下胸针不适用截图链，持有胸针时不显示胸针开关、不开放知识/神志，结算后胸针未记为已用；灰尘普通攻击真实入口已补非强制物理伤害下可开启胸针、切为通用伤害并分配到四项属性；指环攻击真实入口已补非强制精神伤害下可开启胸针、切为通用伤害并分配到力量/速度/知识/神志；更多来源和组合仍未闭合',
+    residual: '需继续补更多伤害来源、减伤叠加、死亡保护和作祟伤害组合',
   }],
   ['leather-jacket', {
     status: 'min-domain-verified / Board component representative / partial-ui',
@@ -379,10 +379,10 @@ const OMEN_DOWNSTREAM_GAPS = new Map([
     residual: '需继续补真实 Playwright / 截图链、怪物回合、死亡目标和不能发现新板块边界',
   }],
   ['skull', {
-    status: 'min-domain-verified / Board component representative / partial-ui',
+    status: 'min-domain-verified / Board component representative / mummy-attack-success-failure-and-rabbit-foot-e2e / partial-combo',
     gap: '知识检定加值、死亡前保护、兔脚重掷',
-    l3: 'L3 Board 组件代表链已补：攻击伤害分配进入死亡保护后显示 3 骰骰盘、4+ 阻止死亡和头骨反馈；真实 Playwright / 截图和更多组合仍未闭合',
-    residual: '需继续补真实 Playwright / 截图链、更多致死来源、作祟终局和遗物掩埋组合',
+    l3: 'L3 Board 组件代表链已补：攻击伤害分配进入死亡保护后显示 3 骰骰盘、4+ 阻止死亡和头骨反馈；木乃伊攻击真实入口 E2E / 截图链已补：致死伤害分配后进入头骨死亡保护骰盘，成功分支阻止死亡并回到牌桌，失败分支显示正常死亡、目标英雄死亡且不直接外推终局；头骨失败且持有兔脚时，同一真实入口可选择兔脚重掷死亡保护骰并阻止死亡；更多组合仍未闭合',
+    residual: '木乃伊攻击头骨成功阻止死亡、失败正常死亡、头骨失败后兔脚重掷阻止死亡真实入口已补；需继续补更多致死来源、作祟终局、遗物掩埋和更多兔脚死亡保护组合',
   }],
   ['holy-symbol', {
     status: 'min-domain-verified / Board component representative / partial-ui',
@@ -393,8 +393,8 @@ const OMEN_DOWNSTREAM_GAPS = new Map([
   ['armor', {
     status: 'min-domain-verified / Board component representative / partial-ui',
     gap: '物理伤害减免、非通用伤害/非直接属性降低',
-    l3: 'L3 Board 组件代表链已补：伤害分配页显示原始物理伤害、盔甲减免和实际分配数；真实 Playwright / 截图和更多组合仍未闭合',
-    residual: '需继续补真实 Playwright / 截图链、更多物理伤害来源、死亡保护和作祟伤害消费者',
+    l3: 'L3 Board 组件代表链已补：伤害分配页显示原始物理伤害、盔甲减免和实际分配数；木乃伊攻击真实入口 E2E / 截图链已补：受伤英雄持有盔甲时，木乃伊攻击物理伤害显示原始伤害、盔甲减免 1 点和实际分配点数，并按减免后数值扣属性；更多组合仍未闭合',
+    residual: '木乃伊攻击这一条真实 Playwright / 截图链已补；需继续补更多物理伤害来源、死亡保护、胸针叠加和作祟伤害消费者',
   }],
   ['idol', {
     status: 'min-domain-verified / Board component representative / partial-ui',
@@ -472,11 +472,11 @@ function scenarioL3(object) {
   if (object.id === 'banish-mummy') return 'L3 真实入口 E2E / 截图链已补：两枚知识标记、学会法术、书本与木乃伊同房后，英雄从真实牌桌主动作点击驱逐木乃伊并进入英雄终局朗读和结果报告；领域/Board 代表链仍覆盖驱逐失败反馈';
   if (object.id === 'pick-up-mummy-girl') return 'L3 真实入口 E2E / 截图链已补：叛徒从真实牌桌主动作点击拾起女孩，女孩 token 从房间放置改为叛徒持有；领域/Board 代表链仍覆盖探索者或木乃伊进入女孩房间后的拾取规则';
   if (object.id === 'give-girl-to-mummy') return 'L3 真实入口 E2E / 截图链已补：叛徒从真实牌桌主动作点击交出女孩，女孩 token 改为木乃伊持有；领域/Board 代表链仍覆盖同房门槛';
-  if (object.id === 'give-omen-to-mummy') return 'L3 真实入口 E2E / 截图链已补：叛徒从真实牌桌主动作交出圣符进入叛徒终局，并覆盖木乃伊已持女孩时交出指环进入叛徒终局；领域/Board 代表链仍覆盖非婚礼牌/已交过负向入口';
+  if (object.id === 'give-omen-to-mummy') return 'L3 真实入口 E2E / 截图链已补：叛徒从真实牌桌主动作交出圣符进入叛徒终局，并覆盖木乃伊已持女孩时交出指环进入叛徒终局；自然怪物移动回石棺胜利已在木乃伊怪物移动链补证；领域/Board 代表链仍覆盖非婚礼牌/已交过负向入口';
   if (object.id === 'mummy-forced-omen-search') return 'L3 真实入口 E2E / 截图链已补：英雄作祟后探索预兆房会强制从预兆堆找出书本，叛徒作祟后探索预兆房会强制从预兆堆找出圣符或指环，并在发现面板显示木乃伊横行强制找牌提示；领域链仍覆盖洗牌和目标移出预兆堆';
-  if (object.id === 'mummy-monster-movement') return 'L3 真实入口 E2E / 截图链已补：叛徒从牌桌怪物动作槽开木乃伊回合，分别掷移动骰 0 和 1，进入移动模式、切到女孩房间楼层并点击目标房间后，木乃伊均可瞬移到女孩房间并自动拾起女孩；领域/Board 代表链仍覆盖 0/1 瞬移规则';
-  if (object.id === 'mummy-forced-attack') return 'L3 真实入口 E2E / 截图链已补：木乃伊与英雄同房时页面不显示怪物移动入口，必须从木乃伊攻击入口点木乃伊和同房英雄进入攻击投骰；领域/Board 代表链仍覆盖同房先攻击禁用原因';
-  if (object.id === 'mummy-attack-reward') return 'L3 真实入口 E2E / 截图链已补：木乃伊真实攻击造成 2 点以上伤害后，返回牌桌出现造成伤害/偷走地图/偷走圣符奖励入口；点击偷走地图后目标英雄持有区移除地图并清空奖励，点击造成伤害后进入受伤英雄的木乃伊攻击物理伤害分配页，受伤英雄确认强制速度/力量伤害后扣属性轨道格并回到牌桌/投骰复盘界面；领域/Board 代表链仍覆盖偷女孩/预兆分支';
+  if (object.id === 'mummy-monster-movement') return 'L3 真实入口 E2E / 截图链已补：叛徒从牌桌怪物动作槽开木乃伊回合，分别掷移动骰 0 和 1，进入移动模式、切到女孩房间楼层并点击目标房间后，木乃伊均可瞬移到女孩房间并自动拾起女孩；移动模式提示“只限已发现房间 / 不能探索新房间”，未发现房间不生成怪物移动目标框；木乃伊已持女孩并携带圣符时，真实怪物移动入口会高亮石棺房间，点击后触发叛徒终局；领域代表链补充证明 0/1 移动可跨楼层选择已发现房间，且未发现房间不会进入目标集合、命令会被拒绝；领域/Board 代表链仍覆盖 0/1 瞬移规则';
+  if (object.id === 'mummy-forced-attack') return 'L3 真实入口 E2E / 截图链已补：木乃伊与英雄同房时页面不显示怪物移动入口，必须从木乃伊攻击入口点木乃伊和同房存活英雄进入攻击投骰；叛徒和已死亡英雄即使与木乃伊同房，也不会高亮为攻击目标；攻击并结算偷取奖励后，真实页面会恢复移动入口，并可将木乃伊瞬移到地下室起始点；领域/Board 代表链仍覆盖同房先攻击禁用原因和目标过滤';
+  if (object.id === 'mummy-attack-reward') return 'L3 真实入口 E2E / 截图链已补：木乃伊真实攻击造成 2 点以上伤害后，返回牌桌出现造成伤害/偷走地图/偷走圣符/偷走指环/偷走女孩奖励入口；点击偷走地图后目标英雄持有区移除地图并清空奖励，点击偷走圣符后目标英雄持有区移除圣符并写入木乃伊携带预兆，点击偷走指环后目标英雄持有区移除指环并写入木乃伊携带预兆，点击偷走女孩后女孩 token 改为木乃伊持有，点击造成伤害后进入受伤英雄的木乃伊攻击物理伤害分配页，受伤英雄确认强制速度/力量伤害后扣属性轨道格并回到牌桌/投骰复盘界面；目标英雄持有盔甲时，同一真实入口会显示原始物理伤害、盔甲减免 1 点和实际分配点数，并按减免后的强制速度/力量伤害结算；目标英雄持有头骨且伤害致死时，同一真实入口会进入头骨死亡保护骰盘，成功分支阻止死亡并回到牌桌，失败分支让目标英雄正常死亡但不直接外推终局；目标英雄同时持有兔脚时，头骨失败后可由受伤英雄使用兔脚重掷并阻止死亡；目标英雄持有胸针时，同一真实入口证明木乃伊强制速度/力量伤害不显示胸针开关、不开放通用伤害入口且不记为已用；目标英雄没有可偷物品、预兆或女孩时，领域与 Board 代表链证明不会生成空的偷取奖励，直接进入木乃伊攻击强制物理伤害分配；若奖励 pending 后旧偷取目标失效，领域会拒绝偷取旧目标，Board 会提示偷取目标已失效并保留造成伤害选择；领域/Board 代表链仍覆盖更多可偷牌分支';
   if (object.id === 'jack-spirit-speed-3-roll') return '已有杰克之灵 Speed 3 怪物移动投骰和移动扣点截图';
   if (object.id === 'corpse-loot') return '已有尸体搜刮二次限制截图';
   if (object.id === 'jack-spirit-revive-traitor') return '已有杰克之灵回尸体房复活叛徒截图';
@@ -502,15 +502,16 @@ function row({ category, id, name, family, l0, l1, l2, l3, l4, residual }) {
 }
 
 function scenarioResidual(object) {
-  if (object.id === 'study-mummy-name') return '真实入口 E2E / 截图链已补；仍缺自然整段链、非持书/非法房间负向 UI、兔脚/手电筒/书本加成与重掷组合';
-  if (object.id === 'learn-mummy-banishment') return '真实入口 E2E / 截图链已补；仍缺自然整段链、非持书英雄负向 UI、兔脚/手电筒/书本加成与重掷组合';
-  if (object.id === 'banish-mummy') return '真实入口 E2E / 截图链已补；仍缺自然整段链、驱逐失败真实页、神志加值/重掷组合和更多书本同房边界';
-  if (object.id === 'pick-up-mummy-girl') return '真实入口 E2E / 截图链已补；仍缺非叛徒拾取负向 UI、木乃伊自然拾取以外的玩家进入女孩房间组合和交易/死亡后女孩状态组合';
-  if (object.id === 'give-girl-to-mummy') return '真实入口 E2E / 截图链已补；仍缺非叛徒/不同房/死亡状态负向 UI、交易后女孩状态和自然整段链';
-  if (object.id === 'give-omen-to-mummy') return '真实入口 E2E / 截图链已补，覆盖圣符与指环两条婚礼预兆分支；仍缺死亡/交易后组合、木乃伊自然回石棺路径和更多负向 UI';
-  if (object.id === 'mummy-forced-omen-search') return '真实入口 E2E / 截图链已补，覆盖英雄强制找书本和叛徒强制找圣符分支；仍缺牌堆顺序更深组合、作祟确认队列更多组合、女孩版本冲突裁定和整局自然链';
-  if (object.id === 'mummy-monster-movement') return '移动骰 0 和 1 瞬移女孩房间真实入口 E2E / 截图链已补；仍缺非法未发现房间提示、更多楼层/房间目标组合和已攻击后移动恢复';
-  if (object.id === 'mummy-attack-reward') return '偷地图和造成伤害分配并实际扣属性轨道格回牌桌真实入口 E2E / 截图链已补；仍缺偷女孩、偷其它预兆、死亡保护/头骨/盔甲/胸针和更多伤害来源组合';
+  if (object.id === 'study-mummy-name') return '真实入口 E2E / 截图链已补；验证层级缺口：自然整段链、非持书/非法房间负向 UI；非阻塞扩展：兔脚/手电筒/书本加成与重掷组合';
+  if (object.id === 'learn-mummy-banishment') return '真实入口 E2E / 截图链已补；验证层级缺口：自然整段链、非持书英雄负向 UI；非阻塞扩展：兔脚/手电筒/书本加成与重掷组合';
+  if (object.id === 'banish-mummy') return '真实入口 E2E / 截图链已补；验证层级缺口：自然整段链、驱逐失败真实页；非阻塞扩展：神志加值/重掷组合和更多书本同房边界';
+  if (object.id === 'pick-up-mummy-girl') return '真实入口 E2E / 截图链已补；验证层级缺口：非叛徒拾取负向 UI；非阻塞扩展：木乃伊自然拾取以外的玩家进入女孩房间组合和交易/死亡后女孩状态组合';
+  if (object.id === 'give-girl-to-mummy') return '真实入口 E2E / 截图链已补；验证层级缺口：非叛徒/不同房/死亡状态负向 UI、自然整段链；非阻塞扩展：交易后女孩状态组合';
+  if (object.id === 'give-omen-to-mummy') return '真实入口 E2E / 截图链已补，覆盖圣符与指环两条婚礼预兆分支；自然怪物移动回石棺胜利已在木乃伊怪物移动链补证；验证层级缺口：更多负向 UI；非阻塞扩展：死亡/交易后组合';
+  if (object.id === 'mummy-forced-omen-search') return '真实入口 E2E / 截图链已补，覆盖英雄强制找书本和叛徒强制找圣符分支；数据/版本争议：女孩版本冲突裁定；验证层级缺口：整局自然链；非阻塞扩展：牌堆顺序更深组合、作祟确认队列更多组合';
+  if (object.id === 'mummy-monster-movement') return '移动骰 0 和 1 瞬移女孩房间、移动模式只限已发现房间提示、未发现房间不生成移动目标框，以及已持女孩和圣符时移动回石棺触发叛徒终局真实入口 E2E / 截图链已补；0/1 移动跨楼层已发现房间目标与未发现房间拒绝领域代表链已补；验证层级缺口：同一整局自然跨回合链；非阻塞扩展：特殊房间状态与怪物移动交叉组合，不作为当前木乃伊中段实现正确性阻塞';
+  if (object.id === 'mummy-forced-attack') return '同房先攻击、同房攻击目标过滤和攻击后移动恢复真实入口 E2E / 截图链已补；验证层级缺口：非法目标提示；非阻塞扩展：更多英雄数量/特殊状态组合和其它攻击奖励组合';
+  if (object.id === 'mummy-attack-reward') return '偷地图、偷圣符、偷指环、偷女孩、造成伤害分配并实际扣属性轨道格回牌桌、木乃伊攻击这一条盔甲减伤真实入口、木乃伊攻击头骨成功阻止死亡与失败正常死亡真实入口、头骨失败后兔脚重掷阻止死亡真实入口，以及木乃伊强制伤害下胸针不适用真实入口 E2E / 截图链已补；无可偷物品、预兆或女孩时直接进入强制伤害分配的领域 + Board 代表链已补；失效偷取目标会被领域拒绝并在 Board 显示提示、保留造成伤害选择；非阻塞扩展：更多伤害来源减伤叠加、更多致死来源和更多兔脚死亡保护组合，不作为当前木乃伊攻击奖励实现正确性阻塞';
   return '当前只证明木乃伊横行首剧本；不代表其它作祟或整游戏完成';
 }
 
@@ -589,7 +590,7 @@ for (const [kind, cards] of Object.entries(inventory.possessions)) {
         : `${level.L4}: legacy/同构对象复用同一合同，新增消费者再补证`,
       residual: downstreamGap?.residual ?? (
         card.id === 'skull'
-          ? '已补发布级死亡保护代表截图；不能扩大成整游戏完成'
+          ? '已补头骨死亡保护 Board 组件代表链、木乃伊攻击成功阻止死亡 / 失败正常死亡真实入口截图，以及头骨失败后兔脚重掷阻止死亡真实入口截图；不能扩大成整游戏完成'
           : isSkeletonKey
             ? '真实页面代表链已补；仍需墙体 / 门位 / 同层 / 相邻限制全组合、作祟地图规则和特殊移动限制扩审'
           : '新增消费者或旧证据失效时再补证；不能扩大成整游戏完成'
@@ -639,6 +640,7 @@ const md = `# 山屋惊魂对象级 L0-L4 审计矩阵
 - 本矩阵由 \`object-inventory.json\` 生成，用来固定房间、事件牌、物品、预兆和首剧本对象的证据层级。
 - L0/L1 锁对象和结构；L2 锁领域行为；L3 锁页面代表链；L4 锁治理口径和结论边界。
 - 同一行为 family 复用代表链；只有新交互、不同消费者、高风险时序、旧证据失效或图面裁定分歧，才补独立 L3/L4。
+- 残余范围必须区分实现正确性阻塞、验证层级缺口和非阻塞扩展；“更多组合”默认不是下一步任务，除非它直接命中规则子句未实现、玩家无法完成或共享消费者不一致。
 - 本矩阵不能被解读为“山屋整游戏完成”或“每个对象都有独立端到端截图”。
 
 ## 统计

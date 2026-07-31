@@ -37,20 +37,21 @@
       "user": "用户",
       "system": "系统"
     },
-      "source": {
-        "feedbackModal": "反馈弹窗",
-        "onlineAiWatchdog": "在线智能看门狗",
-        "clientAutoReport": "客户端自动反馈",
-        "clientRuntimeGuard": "客户端运行时守卫",
-        "clientWindowError": "窗口错误捕获",
-        "clientUnhandledRejection": "未处理异步拒绝",
-        "reactErrorBoundary": "界面渲染错误边界",
-        "boardRenderError": "对局渲染错误边界",
-        "homeModalErrorBoundary": "首页弹窗错误边界",
-        "globalErrorCapture": "全局错误捕获",
-        "unsatAutoSkip": "系统自动跳过（无解交互）",
-        "unknown": "未知"
-      },
+    "source": {
+      "feedbackModal": "反馈弹窗",
+      "onlineAiWatchdog": "在线智能看门狗",
+      "clientAutoReport": "客户端自动反馈",
+      "clientRuntimeGuard": "客户端运行时守卫",
+      "clientWindowError": "窗口错误捕获",
+      "clientUnhandledRejection": "未处理异步拒绝",
+      "reactErrorBoundary": "界面渲染错误边界",
+      "boardRenderError": "对局渲染错误边界",
+      "homeModalErrorBoundary": "首页弹窗错误边界",
+      "globalErrorCapture": "全局错误捕获",
+      "unsatAutoSkip": "系统自动跳过（无解交互）",
+      "unknown": "未知",
+      "configReview": "配置审查表"
+    },
     "severity": {
       "critical": "严重",
       "high": "高",

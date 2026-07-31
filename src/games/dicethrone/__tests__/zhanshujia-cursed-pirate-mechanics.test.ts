@@ -932,6 +932,37 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.pendingAttack?.resolvedDamage ?? 0).toBe(0);
     });
 
+    it('直接伤害发生在攻击挂起期间也不会累计为本次攻击伤害', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            isDefendable: false,
+            settlementStage: 'preDamage',
+            resolvedDamage: 0,
+            damageResolved: false,
+        } as DiceThroneCore['pendingAttack'];
+
+        const next = applyEvents(state.core, [{
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: '1',
+                amount: 3,
+                actualDamage: 3,
+                sourceAbilityId: 'test-direct-damage',
+                damageScope: 'direct',
+                unblockable: true,
+            },
+            sourceCommandType: 'TEST',
+            timestamp: 100,
+        } as DiceThroneEvent]);
+
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 3);
+        expect(next.pendingAttack?.resolvedDamage ?? 0).toBe(0);
+        expect(next.pendingAttack?.settlementStage).toBe('preDamage');
+    });
+
     it('休战在攻击已发起时不会于 offensiveRoll -> defensiveRoll 提前移除', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.core.players['0'].statusEffects[STATUS_IDS.PARLEY] = 1;
@@ -1156,6 +1187,40 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE]).toBe(0);
         expect(eventsOfType(events, 'INTERACTION_REQUESTED')[0]?.payload.interaction.type).toBe('selectStatus');
         expect(eventsOfType(events, 'INTERACTION_REQUESTED')[0]?.payload.interaction.transferConfig).toEqual({});
+    });
+
+    it('战术优势只有转移状态限定主要阶段，其余用法可按瞬时时机使用', () => {
+        const createTacticalAdvantageState = (amount: number, phase: TurnPhase = 'offensiveRoll') => {
+            const state = createHeroMatchup('zhanshujia', 'cursed_pirate')(['0', '1'], fixedRandom);
+            state.sys.phase = phase;
+            state.core.activePlayerId = '0';
+            state.core.rollCount = 1;
+            state.core.rollDiceCount = 5;
+            state.core.players['0'].tokens[TOKEN_IDS.TACTICAL_ADVANTAGE] = amount;
+            state.core.dice[0] = { ...state.core.dice[0], id: 0, value: 1, isKept: false };
+            return state;
+        };
+        const validatePassive = (
+            actionIndex: number,
+            amount: number,
+            phase: TurnPhase = 'offensiveRoll',
+            payload: Record<string, unknown> = {},
+        ) => {
+            const state = createTacticalAdvantageState(amount, phase);
+            return validateCommand(state.core, command('USE_PASSIVE_ABILITY', '0', {
+                passiveId: 'zhanshujia-tactical-advantage',
+                actionIndex,
+                ...payload,
+            }), phase);
+        };
+
+        expect(validatePassive(0, 1).valid).toBe(true);
+        expect(validatePassive(1, 1, 'offensiveRoll', { targetDieId: 0 }).valid).toBe(true);
+        expect(validatePassive(2, 3).valid).toBe(true);
+        expect(validatePassive(3, 3).valid).toBe(true);
+        expect(validatePassive(4, 4).valid).toBe(true);
+        expect(validatePassive(5, 4).valid).toBe(false);
+        expect(validatePassive(5, 4, 'main1').valid).toBe(true);
     });
 
     it('战术家反制措施按防御骰结算反击、防伤与战术优势', () => {
@@ -2931,7 +2996,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(next.players['0'].abilities.some(ability => ability.id === 'soul-stab')).toBe(false);
     });
 
-    it('human 面咒缚移除最后 1 个诅咒金币后会在同回合结束立即翻回咒缚面', () => {
+    it('human 面咒缚移除最后 1 个诅咒金币后不会在同回合结束立即翻回咒缚面', () => {
         const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         state.sys.phase = 'discard';
         state.core.activePlayerId = '0';
@@ -2958,13 +3023,11 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             statusId: STATUS_IDS.CURSED_COIN,
             stacks: 1,
         });
-        expect(eventsOfType(events as DiceThroneEvent[], 'PLAYER_BOARD_FACE_CHANGED')[0]?.payload).toMatchObject({
-            playerId: '0',
-            face: 'cursed',
-            sourceAbilityId: 'human-cursed',
-        });
-        expect(next.players['0'].playerBoardFace).toBe('cursed');
+        expect(eventsOfType(events as DiceThroneEvent[], 'PLAYER_BOARD_FACE_CHANGED')).toHaveLength(0);
+        expect(next.players['0'].playerBoardFace).toBe('normal');
         expect(next.players['0'].statusEffects[STATUS_IDS.CURSED_COIN] ?? 0).toBe(0);
+        expect(next.players['0'].abilities.some(ability => ability.id === 'human-cursed')).toBe(true);
+        expect(next.players['0'].abilities.some(ability => ability.id === 'soul-stab')).toBe(false);
     });
 
     it('human 面咒缚在没有诅咒金币时会于回合结束翻回咒缚面并切换能力集', () => {
@@ -3395,6 +3458,148 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
         expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
         expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 13);
+    });
+
+    it('诅咒面死亡吐息对已有火药桶目标会先爆桶再继续结算 7 点主攻击伤害', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
+        setCursedPirateDiceValues(state, [1, 2, 3, 4, 5]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'breath-of-death-small' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'breath-of-death-small',
+            isDefendable: true,
+        });
+
+        const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const enteredDefense = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(enteredDefense.success).toBe(true);
+        expect(enteredDefense.state.sys.phase).toBe('defensiveRoll');
+        expect(eventsOfType(enteredDefense.events as DiceThroneEvent[], 'DAMAGE_DEALT')[0]?.payload).toMatchObject({
+            targetId: '1',
+            amount: 3,
+            damageScope: 'direct',
+        });
+        expect(enteredDefense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 3);
+        expect(enteredDefense.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+        expect(enteredDefense.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(enteredDefense.state.core.pendingAttack?.resolvedDamage ?? 0).toBe(0);
+        expect(enteredDefense.state.core.pendingAttack?.settlementStage).toBe('preDamage');
+
+        const defenseRolled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            enteredDefense.state,
+            command('ROLL_DICE', '1'),
+            createQueuedRandom([1, 1, 1, 1, 1]),
+            ['0', '1'],
+        );
+        expect(defenseRolled.success).toBe(true);
+
+        const defenseConfirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            defenseRolled.state,
+            command('CONFIRM_ROLL', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(defenseConfirmed.success).toBe(true);
+
+        const resolved = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            defenseConfirmed.state,
+            command('ADVANCE_PHASE', '1'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.sys.phase).toBe('main2');
+        expect(resolved.state.core.pendingAttack).toBeNull();
+        expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 10);
+        expect(eventsOfType(resolved.events as DiceThroneEvent[], 'DAMAGE_DEALT')
+            .some(event => event.payload.sourceAbilityId === 'breath-of-death-small'
+                && event.payload.damageScope === 'attack'
+                && event.payload.amount === 7)).toBe(true);
+    });
+
+    it('诅咒面灵魂指令对已有火药桶目标会先爆桶再继续结算 8 点主攻击伤害', () => {
+        const state = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
+        setPlayerBoardFace(state, '0', 'cursed');
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 5;
+        state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG] = 1;
+        setCursedPirateDiceValues(state, [6, 6, 6, 6, 1]);
+
+        const selected = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'soul-command' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selected.success).toBe(true);
+        expect(selected.state.core.pendingAttack).toMatchObject({
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'soul-command',
+            isDefendable: false,
+        });
+
+        const hpBefore = selected.state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+        const advanced = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selected.state,
+            command('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(advanced.success).toBe(true);
+        expect(eventsOfType(advanced.events as DiceThroneEvent[], 'DAMAGE_DEALT')
+            .map(event => ({
+                amount: event.payload.amount,
+                damageScope: event.payload.damageScope,
+                sourceAbilityId: event.payload.sourceAbilityId,
+            }))).toEqual([
+            { amount: 3, damageScope: 'direct', sourceAbilityId: 'soul-command' },
+            { amount: 8, damageScope: 'attack', sourceAbilityId: 'soul-command' },
+        ]);
+        expect(advanced.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 11);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.PARLEY]).toBe(1);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+        expect(advanced.state.core.players['1'].statusEffects[STATUS_IDS.POWDER_KEG]).toBe(1);
+        expect(advanced.state.core.pendingAttack).toBeNull();
+        expect(advanced.state.sys.phase).toBe('main2');
     });
 
     it('human 面判决指令在镜像 E2E 注入态下仍会于 ADVANCE_PHASE 后进入诅咒金币 simple-choice', () => {
