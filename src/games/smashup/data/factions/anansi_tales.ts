@@ -2,7 +2,7 @@ import type { ActionCardDef, BaseCardDef, CardDef, MinionCardDef } from '../../d
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const FACTION = SMASHUP_FACTION_IDS.ANANSI_TALES;
-const CARD_ATLAS = SMASHUP_ATLAS_IDS.ANANSI_TALES_POD_CARDS;
+const CARD_ATLAS = SMASHUP_ATLAS_IDS.CULTURE_SHOCK_CARDS;
 const BASE_ATLAS = SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES;
 
 export const ANANSI_TALES_MINIONS: MinionCardDef[] = [
@@ -16,7 +16,7 @@ export const ANANSI_TALES_MINIONS: MinionCardDef[] = [
         abilityTags: ['talent', 'extra'],
         activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 19 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 0 },
     },
     {
         id: 'anansi_tales_osebo_the_leopard',
@@ -27,7 +27,7 @@ export const ANANSI_TALES_MINIONS: MinionCardDef[] = [
         power: 4,
         abilityTags: ['ongoing'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 18 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 1 },
     },
     {
         id: 'anansi_tales_onini_the_python',
@@ -38,7 +38,7 @@ export const ANANSI_TALES_MINIONS: MinionCardDef[] = [
         power: 4,
         abilityTags: ['ongoing'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 17 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 2 },
     },
     {
         id: 'anansi_tales_akye_the_turtle',
@@ -49,7 +49,7 @@ export const ANANSI_TALES_MINIONS: MinionCardDef[] = [
         power: 3,
         abilityTags: ['onPlay'],
         count: 3,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 14 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 3 },
     },
     {
         id: 'anansi_tales_mboro_hornet',
@@ -60,7 +60,7 @@ export const ANANSI_TALES_MINIONS: MinionCardDef[] = [
         power: 2,
         abilityTags: ['special', 'extra'],
         count: 4,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 10 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 4 },
     },
 ];
 
@@ -74,7 +74,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 6 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 5 },
     },
     {
         id: 'anansi_tales_pot_of_beans',
@@ -85,7 +85,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay'],
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 4 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 6 },
     },
     {
         id: 'anansi_tales_collecting_stories',
@@ -96,7 +96,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 2,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 2 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 7 },
     },
     {
         id: 'anansi_tales_ear_of_corn',
@@ -107,7 +107,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 1 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 8 },
     },
     {
         id: 'anansi_tales_pot_of_wisdom',
@@ -118,7 +118,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay', 'extra'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 0 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 9 },
     },
     {
         id: 'anansi_tales_trading_stories',
@@ -129,7 +129,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 9 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 10 },
     },
     {
         id: 'anansi_tales_let_it_be_full_and_eat',
@@ -140,7 +140,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 7 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 11 },
     },
     {
         id: 'anansi_tales_feather_gifts',
@@ -151,7 +151,7 @@ export const ANANSI_TALES_ACTIONS: ActionCardDef[] = [
         faction: FACTION,
         abilityTags: ['onPlay'],
         count: 1,
-        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 8 },
+        previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: 12 },
     },
 ];
 

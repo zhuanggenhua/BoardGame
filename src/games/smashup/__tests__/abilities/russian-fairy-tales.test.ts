@@ -46,7 +46,7 @@ describe('俄罗斯童话代表性玩法行为', () => {
         expect(RUSSIAN_FAIRY_TALES_CARDS).toHaveLength(16);
         expect(RUSSIAN_FAIRY_TALES_CARDS.reduce((total, card) => total + card.count, 0)).toBe(20);
         expect(RUSSIAN_FAIRY_TALES_CARDS.map(card => card.previewRef?.index).sort((a, b) => Number(a) - Number(b))).toEqual(
-            [0, 1, 3, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 17, 18, 19],
+            Array.from({ length: 16 }, (_value, index) => index + 31),
         );
         expect(RUSSIAN_FAIRY_TALES_CARDS.find(card => card.id === 'russian_fairy_tales_finist_the_falcon')?.name).toBe('芬尼斯特猎鹰');
         expect(RUSSIAN_FAIRY_TALES_BASES.map(base => base.id).sort()).toEqual([
