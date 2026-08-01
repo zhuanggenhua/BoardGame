@@ -18,7 +18,15 @@ import {
 } from '../domain/ongoingModifiers';
 import { fireTriggers, isCardSuppressed, isMinionProtected } from '../domain/ongoingEffects';
 import { SU_COMMANDS, SU_EVENTS, type BaseReplacedEvent, type LimitModifiedEvent, type SmashUpCore, type TempPowerAddedEvent } from '../domain/types';
-import { makeBase, makeCard, makeMatchState, makeMinion, makeState } from './helpers';
+import {
+    getSimpleChoicePrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makeState,
+    respondToPromptOption,
+} from './helpers';
 import { runCommand } from './testRunner';
 
 const fixedRandom = {
@@ -561,6 +569,74 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         expect(getEffectivePower(state, enemy, 0)).toBe(4);
         expect(getPlayerEffectivePowerOnBase(state, state.bases[0], 0, '0')).toBe(14);
         expect(getPlayerEffectivePowerOnBase(state, state.bases[0], 0, '1')).toBe(4);
+    });
+
+    it('火箭靴天赋会移动被附着随从到另一个基地并保留附着牌', () => {
+        const host = makeMinion('host-1', 'munchkin_warriors_big_hero', '0', 5, {
+            attachedActions: [
+                { uid: 'rocket-1', defId: 'munchkin_treasure_rocket_boots', ownerId: '0' },
+            ],
+        });
+        const state = makeState({
+            bases: [
+                makeBase({ defId: 'base_the_mines', minions: [host] }),
+                makeBase({ defId: 'base_treasure_bath' }),
+            ],
+        });
+        const command = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'rocket-1', baseIndex: 0 },
+        } as const;
+
+        expect(getCardDef('munchkin_treasure_rocket_boots')).toMatchObject({
+            id: 'munchkin_treasure_rocket_boots',
+            type: 'action',
+            subtype: 'ongoing',
+            ongoingTarget: 'minion',
+            abilityTags: ['talent'],
+        });
+        expect(validate(makeMatchState(state), command)).toEqual({ valid: true });
+
+        const activated = runCommand(makeMatchState(state), command, fixedRandom);
+        expect(activated.success).toBe(true);
+        expect(activated.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TALENT_USED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                ongoingCardUid: 'rocket-1',
+                defId: 'munchkin_treasure_rocket_boots',
+                baseIndex: 0,
+            }),
+        }));
+        const prompt = getSimpleChoicePrompt(activated.finalState, 'munchkin_treasure_rocket_boots_move');
+        expect(prompt.targetType).toBe('base');
+        expect(prompt.options.map((option: any) => option.value?.baseIndex)).toEqual([1]);
+
+        const moved = respondToPromptOption(
+            activated.finalState,
+            option => option.value?.baseIndex === 1,
+            '火箭靴目标基地',
+            '0',
+            fixedRandom,
+        );
+
+        expect(moved.success).toBe(true);
+        expect(moved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual([]);
+        expect(moved.finalState.core.bases[1].minions).toContainEqual(expect.objectContaining({
+            uid: 'host-1',
+            defId: 'munchkin_warriors_big_hero',
+            attachedActions: [expect.objectContaining({
+                uid: 'rocket-1',
+                defId: 'munchkin_treasure_rocket_boots',
+                ownerId: '0',
+                talentUsed: true,
+            })],
+        }));
+        expect(validate(moved.finalState, {
+            ...command,
+            payload: { ongoingCardUid: 'rocket-1', baseIndex: 1 },
+        })).toMatchObject({ valid: false, error: '本回合天赋已使用' });
     });
 
     it('怯懦药水持续让被附着随从失去能力，但不压制药水自身', () => {

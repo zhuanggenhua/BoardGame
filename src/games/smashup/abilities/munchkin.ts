@@ -3,6 +3,9 @@ import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addTempPower,
     buildValidatedDestroyEvents,
+    buildAbilityFeedback,
+    buildBaseTargetOptions,
+    buildValidatedMoveEvents,
     buildValidatedReturnEvents,
     grantExtraMinion,
     recoverCardsFromDiscard,
@@ -16,9 +19,22 @@ import {
 import type { ProtectionCheckContext, TriggerContext } from '../domain/ongoingEffects';
 import type { MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { getEffectivePower } from '../domain/ongoingModifiers';
+import { getBaseDef } from '../data/cards';
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 
 const BAG_OF_CALTROPS = 'munchkin_treasure_bag_of_caltrops';
+const ROCKET_BOOTS = 'munchkin_treasure_rocket_boots';
+const ROCKET_BOOTS_MOVE_SOURCE_ID = 'munchkin_treasure_rocket_boots_move';
 const TEMPORAL_DISPLACEMENT_JETPACK = 'munchkin_treasure_temporal_displacement_jetpack';
+
+type RocketBootsBaseChoice = { baseIndex?: number };
+type RocketBootsInteractionData = {
+    minionUid?: unknown;
+    minionDefId?: unknown;
+    fromBaseIndex?: unknown;
+    sourceCardUid?: unknown;
+};
 
 function halflingHirelingOnPlay(ctx: AbilityContext): AbilityResult {
     return {
@@ -184,9 +200,80 @@ function bagOfCaltropsTrigger(ctx: TriggerContext): SmashUpEvent[] {
     ];
 }
 
+function findRocketBootsHost(
+    state: SmashUpCore,
+    baseIndex: number,
+    sourceCardUid: string | undefined,
+): MinionOnBase | undefined {
+    if (!sourceCardUid) return undefined;
+    return state.bases[baseIndex]?.minions.find((minion) =>
+        minion.attachedActions.some((action) =>
+            action.uid === sourceCardUid
+            && action.defId === ROCKET_BOOTS
+        )
+    );
+}
+
+function rocketBootsDestinationCandidates(state: SmashUpCore, fromBaseIndex: number) {
+    return state.bases
+        .map((base, baseIndex) => ({
+            baseIndex,
+            label: getBaseDef(base.defId)?.name ?? base.defId,
+        }))
+        .filter(candidate => candidate.baseIndex !== fromBaseIndex);
+}
+
+function rocketBootsValidateUse(ctx: AbilityContext): string | null {
+    const host = findRocketBootsHost(ctx.state, ctx.baseIndex, ctx.cardUid);
+    if (!host) return '当前没有可选择的目标';
+    return rocketBootsDestinationCandidates(ctx.state, ctx.baseIndex).length > 0
+        ? null
+        : '当前没有可选择的目标';
+}
+
+function rocketBootsTalent(ctx: AbilityContext): AbilityResult {
+    const host = findRocketBootsHost(ctx.state, ctx.baseIndex, ctx.cardUid);
+    const candidates = rocketBootsDestinationCandidates(ctx.state, ctx.baseIndex);
+    if (!host || candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    }
+
+    const interaction = createSimpleChoice<RocketBootsBaseChoice>(
+        `${ROCKET_BOOTS_MOVE_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '火箭靴：选择目标基地',
+        buildBaseTargetOptions(candidates, ctx.state),
+        {
+            sourceId: ROCKET_BOOTS_MOVE_SOURCE_ID,
+            targetType: 'base',
+            titleKey: 'ui.munchkin_rocket_boots_move_title',
+            responseValidationMode: 'live',
+            displayCard: { defId: ROCKET_BOOTS, cardUid: ctx.cardUid },
+        },
+    );
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                minionUid: host.uid,
+                minionDefId: host.defId,
+                fromBaseIndex: ctx.baseIndex,
+                sourceCardUid: ctx.cardUid,
+            },
+        }),
+    };
+}
+
 export function registerMunchkinAbilities(): void {
     registerAbility('munchkin_treasure_halfling_hireling', 'onPlay', halflingHirelingOnPlay);
     registerAbility('munchkin_treasure_potion_of_idiotic_bravery', 'onPlay', potionOfIdioticBraveryOnPlay);
+    registerAbility(ROCKET_BOOTS, 'talent', {
+        execute: rocketBootsTalent,
+        validateUse: rocketBootsValidateUse,
+    });
     registerCardAbilitySuppression('munchkin_treasure_potion_of_cowardice', potionOfCowardiceSuppression);
     registerProtection('munchkin_treasure_buckler_of_swashing', 'destroy', bucklerOfSwashingProtection);
     registerTrigger(BAG_OF_CALTROPS, 'onMinionPlayed', bagOfCaltropsTrigger, {
@@ -200,5 +287,47 @@ export function registerMunchkinAbilities(): void {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+    });
+}
+
+export function registerMunchkinInteractionHandlers(): void {
+    registerInteractionHandler(ROCKET_BOOTS_MOVE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const choice = value as RocketBootsBaseChoice | undefined;
+        const data = interactionData as RocketBootsInteractionData | undefined;
+        const minionUid = typeof data?.minionUid === 'string' ? data.minionUid : undefined;
+        const minionDefId = typeof data?.minionDefId === 'string' ? data.minionDefId : undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const fromBaseIndex = typeof data?.fromBaseIndex === 'number' ? data.fromBaseIndex : undefined;
+        if (
+            !minionUid
+            || !minionDefId
+            || !sourceCardUid
+            || fromBaseIndex === undefined
+            || choice?.baseIndex === undefined
+            || choice.baseIndex === fromBaseIndex
+        ) {
+            return { state, events: [] };
+        }
+
+        const liveHost = findRocketBootsHost(state.core, fromBaseIndex, sourceCardUid);
+        if (!liveHost || liveHost.uid !== minionUid) return { state, events: [] };
+
+        return {
+            state,
+            events: buildValidatedMoveEvents(state.core, {
+                minionUid: liveHost.uid,
+                minionDefId: liveHost.defId,
+                fromBaseIndex,
+                toBaseIndex: choice.baseIndex,
+                reason: ROCKET_BOOTS,
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid,
+                sourceDefId: ROCKET_BOOTS,
+                sourceControllerId: playerId,
+                sourceBaseIndex: fromBaseIndex,
+                sourceKind: 'action',
+            }),
+        };
     });
 }

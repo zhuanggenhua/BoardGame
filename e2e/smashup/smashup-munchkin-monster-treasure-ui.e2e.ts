@@ -8,6 +8,22 @@ import {
 
 type SmashUpSceneConfig = Parameters<GameTestContext['setupScene']>[0];
 
+type RocketBootsCoreState = {
+    bases: Array<{
+        minions: Array<{
+            uid: string;
+            attachedActions?: Array<{ uid: string; defId: string; talentUsed?: boolean }>;
+        }>;
+    }>;
+    triggerQueue?: unknown[];
+};
+
+type InteractionOption = {
+    value?: {
+        baseIndex?: number;
+    };
+};
+
 const deckCards = (playerId: string, defId: string, count: number) =>
     Array.from({ length: count }, (_, index) => ({
         uid: `${playerId}-deck-${index}`,
@@ -128,6 +144,74 @@ const buildMunchkinMonsterTreasureScene = (): SmashUpSceneConfig => ({
     },
 });
 
+const buildMunchkinRocketBootsScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [],
+        deck: deckCards('0', 'munchkin_dwarves_gem_grabber', 18),
+        discard: [],
+        factions: ['munchkin_dwarves', 'munchkin_warriors'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 6,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 6,
+            nextUid: 800,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_treasure_bath',
+                    minions: [
+                        {
+                            ...minion('rocket-host', 'munchkin_warriors_big_hero', '0', 5),
+                            attachedActions: [
+                                {
+                                    uid: 'rocket-boots-1',
+                                    defId: 'munchkin_treasure_rocket_boots',
+                                    ownerId: '0',
+                                    talentUsed: false,
+                                },
+                            ],
+                        },
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
 test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
     test('怪物行和公共小牌堆不抢原版布局', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
@@ -225,5 +309,53 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             'minion',
         ]);
         expect(core.treasureDeck).toHaveLength(19);
+    });
+
+    test('火箭靴附着行动天赋可从卡本体点击并移动宿主到目标基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinRocketBootsScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        const host = page.locator('[data-minion-uid="rocket-host"]').first();
+        const rocketBoots = page.locator('[data-attached-action-uid="rocket-boots-1"]').first();
+        await expect(host).toBeVisible({ timeout: 15000 });
+        await host.hover();
+        await expect(rocketBoots).toBeVisible({ timeout: 15000 });
+        await game.screenshot('03-火箭靴附着行动可点击', testInfo);
+
+        await rocketBoots.click({ force: true });
+        await game.waitForInteraction('munchkin_treasure_rocket_boots_move', 10000);
+        await game.screenshot('04-火箭靴选择目标基地', testInfo);
+
+        await game.selectInteractionOptionBy(
+            (option: InteractionOption) => option?.value?.baseIndex === 1,
+            '火箭靴目标基地',
+        );
+        await game.waitForNoInteraction(10000);
+
+        await expect.poll(async () => {
+            const core = await readCoreState(page) as RocketBootsCoreState;
+            const sourceUids = core.bases[0].minions.map(minion => minion.uid);
+            const targetHost = core.bases[1].minions.find(minion => minion.uid === 'rocket-host');
+            const rocket = targetHost?.attachedActions?.find(action => action.uid === 'rocket-boots-1');
+            return {
+                sourceUids,
+                targetHasHost: Boolean(targetHost),
+                targetHasRocketBoots: rocket?.defId === 'munchkin_treasure_rocket_boots',
+                rocketTalentUsed: rocket?.talentUsed === true,
+                triggerQueueLength: core.triggerQueue?.length ?? 0,
+            };
+        }, { timeout: 10000 }).toEqual({
+            sourceUids: [],
+            targetHasHost: true,
+            targetHasRocketBoots: true,
+            rocketTalentUsed: true,
+            triggerQueueLength: 0,
+        });
+
+        await game.screenshot('05-火箭靴移动宿主后状态', testInfo);
     });
 });

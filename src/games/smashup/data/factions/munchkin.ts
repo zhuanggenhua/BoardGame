@@ -119,7 +119,7 @@ export const MUNCHKIN_TREASURE_CARD_DEFS: CardDef[] = [
     treasureMinion(treasure('munchkin_treasure_tiger_steed'), 3),
     treasureAction(treasure('munchkin_treasure_bag_of_caltrops'), { subtype: 'ongoing', ongoingTarget: 'base', playNeedsBase: true }),
     treasureAction(treasure('munchkin_treasure_spiky_boots'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
-    treasureAction(treasure('munchkin_treasure_rocket_boots'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_rocket_boots'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true, abilityTags: ['talent'] }),
     treasureAction(treasure('munchkin_treasure_buckler_of_swashing'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_bloody_dismemberment_chainsaw'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_loads_of_treasure'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
