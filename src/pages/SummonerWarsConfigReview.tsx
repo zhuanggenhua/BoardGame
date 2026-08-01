@@ -40,7 +40,6 @@ const CONFIG_REVIEW_ENUM_VALUES: Partial<Record<SummonerWarsConfigReviewFieldKey
   attackType: ['melee', 'ranged'],
   playPhase: ['factionSelect', 'summon', 'move', 'build', 'attack', 'magic', 'draw', 'any'],
   eventType: ['legendary', 'common'],
-  spriteAtlas: ['hero', 'cards', 'portal'],
   deckSymbols: [
     'double_axe',
     'flame',
@@ -110,40 +109,6 @@ function formatReferencedCardName(value: unknown, rowNameByObjectId: Map<string,
     ?? translateConfigValue(translate, 'configReview.values.referenceFallback', '未知对象');
 }
 
-function formatSourceContext(value: unknown, translate: TranslateConfigValue): string {
-  const text = String(value);
-  if (text === '召唤师') {
-    return translateConfigValue(translate, 'configReview.values.sourceContexts.summoner', '召唤师');
-  }
-  if (text === '起始城门') {
-    return translateConfigValue(translate, 'configReview.values.sourceContexts.startingGate', '起始城门');
-  }
-  if (text === '起始单位') {
-    return translateConfigValue(translate, 'configReview.values.sourceContexts.startingUnit', '起始单位');
-  }
-  if (text === '抽牌堆') {
-    return translateConfigValue(translate, 'configReview.values.sourceContexts.deck', '抽牌堆');
-  }
-
-  const startingGateMatch = text.match(/^起始城门: (\d+),(\d+)$/);
-  if (startingGateMatch) {
-    return translateConfigValue(translate, 'configReview.values.sourceContexts.startingGatePosition', '起始城门：第 {{row}} 行第 {{col}} 列', {
-      row: startingGateMatch[1],
-      col: startingGateMatch[2],
-    });
-  }
-
-  const startingUnitMatch = text.match(/^起始单位: (\d+)@(\d+),(\d+)$/);
-  if (startingUnitMatch) {
-    return translateConfigValue(translate, 'configReview.values.sourceContexts.startingUnitPosition', '起始单位：第 {{index}} 张，第 {{row}} 行第 {{col}} 列', {
-      index: startingUnitMatch[1],
-      row: startingUnitMatch[2],
-      col: startingUnitMatch[3],
-    });
-  }
-
-  return text;
-}
 
 function formatSetupPosition(value: unknown, translate: TranslateConfigValue): string {
   const text = String(value);
@@ -186,8 +151,6 @@ function formatCellDisplayValue(
   if (value === undefined || value === null) return '';
 
   switch (fieldKey) {
-    case 'id':
-      return row.name;
     case 'faction':
       return translateConfigValue(translate, `factions.${String(value)}`, String(value));
     case 'cardType':
@@ -204,8 +167,6 @@ function formatCellDisplayValue(
     case 'isGate':
     case 'isStartingGate':
       return translateConfigValue(translate, `configReview.values.boolean.${String(value)}`, String(value));
-    case 'spriteAtlas':
-      return translateConfigValue(translate, `configReview.values.spriteAtlas.${String(value)}`, String(value));
     case 'deckSymbols':
       return Array.isArray(value)
         ? formatDisplayList(value, (symbol) => translateConfigValue(translate, `configReview.values.deckSymbols.${String(symbol)}`, String(symbol)))
@@ -224,10 +185,6 @@ function formatCellDisplayValue(
       return Array.isArray(value)
         ? formatDisplayList(value, (setupPosition) => formatSetupPosition(setupPosition, translate))
         : formatSetupPosition(value, translate);
-    case 'sourceContexts':
-      return Array.isArray(value)
-        ? formatDisplayList(value, (sourceContext) => formatSourceContext(sourceContext, translate))
-        : formatSourceContext(value, translate);
     default:
       return formatCellValue(value);
   }
@@ -297,29 +254,6 @@ function parseSetupPositionDisplayValue(rawValue: string): string {
   return text;
 }
 
-function parseSourceContextDisplayValue(rawValue: string, translate: TranslateConfigValue): string {
-  const text = rawValue.trim();
-  const aliases = new Map<string, string>();
-  addEditAlias(aliases, '召唤师', '召唤师');
-  addEditAlias(aliases, translateConfigValue(translate, 'configReview.values.sourceContexts.summoner', '召唤师'), '召唤师');
-  addEditAlias(aliases, '起始城门', '起始城门');
-  addEditAlias(aliases, translateConfigValue(translate, 'configReview.values.sourceContexts.startingGate', '起始城门'), '起始城门');
-  addEditAlias(aliases, '起始单位', '起始单位');
-  addEditAlias(aliases, translateConfigValue(translate, 'configReview.values.sourceContexts.startingUnit', '起始单位'), '起始单位');
-  addEditAlias(aliases, '抽牌堆', '抽牌堆');
-  addEditAlias(aliases, translateConfigValue(translate, 'configReview.values.sourceContexts.deck', '抽牌堆'), '抽牌堆');
-
-  const staticValue = aliases.get(normalizeConfigEditToken(text));
-  if (staticValue) return staticValue;
-
-  const startingGateMatch = text.match(/^起始城门[:：]\s*第\s*(\d+)\s*行第\s*(\d+)\s*列$/);
-  if (startingGateMatch) return `起始城门: ${startingGateMatch[1]},${startingGateMatch[2]}`;
-
-  const startingUnitMatch = text.match(/^起始单位[:：]\s*第\s*(\d+)\s*张[，,]\s*第\s*(\d+)\s*行第\s*(\d+)\s*列$/);
-  if (startingUnitMatch) return `起始单位: ${startingUnitMatch[1]}@${startingUnitMatch[2]},${startingUnitMatch[3]}`;
-
-  return text;
-}
 
 function parseLocalizedScalarValue(
   fieldKey: SummonerWarsConfigReviewFieldKey,
@@ -335,7 +269,7 @@ function parseLocalizedScalarValue(
     return parseBooleanDisplayValue(trimmed, translate);
   }
 
-  if (fieldKey === 'id' || fieldKey === 'targetUnitId' || fieldKey === 'entanglementTargets') {
+  if (fieldKey === 'targetUnitId' || fieldKey === 'entanglementTargets') {
     const aliases = new Map<string, string>();
     rowNameByObjectId.forEach((name, objectId) => {
       addEditAlias(aliases, objectId, objectId);
@@ -364,10 +298,6 @@ function parseLocalizedScalarValue(
 
   if (fieldKey === 'setupPositions') {
     return parseSetupPositionDisplayValue(trimmed);
-  }
-
-  if (fieldKey === 'sourceContexts') {
-    return parseSourceContextDisplayValue(trimmed, translate);
   }
 
   const enumValues = CONFIG_REVIEW_ENUM_VALUES[fieldKey];
@@ -412,8 +342,6 @@ function areConfigValuesEqual(left: unknown, right: unknown): boolean {
 
 function cellWidthClass(fieldKey: SummonerWarsConfigReviewFieldKey): string {
   switch (fieldKey) {
-    case 'id':
-      return 'w-[158px]';
     case 'name':
       return 'w-[148px]';
     case 'deckSymbols':
@@ -425,12 +353,10 @@ function cellWidthClass(fieldKey: SummonerWarsConfigReviewFieldKey): string {
     case 'targetUnitId':
     case 'entanglementTargets':
     case 'setupPositions':
-    case 'sourceContexts':
       return 'w-[180px]';
     case 'cardType':
     case 'unitClass':
     case 'faction':
-    case 'spriteAtlas':
       return 'w-[108px]';
     default:
       return 'w-[82px]';
@@ -461,15 +387,22 @@ function buildConfigProposal(
   suggestedValue: unknown,
   language: string,
   configVersion: string,
+  fieldDisplayName: string,
+  currentDisplayValue: string,
+  updatedDisplayValue: string,
 ): Omit<FeedbackConfigProposal, 'reason'> & { reason?: string } {
   return {
     gameId: 'summonerwars',
     configVersion,
     objectId: row.objectId,
+    objectDisplayName: row.name,
     objectType: row.objectType,
     fieldPath: row.fieldPaths[fieldKey],
+    fieldDisplayName,
     currentValue: getSummonerWarsConfigReviewCellValue(row, fieldKey),
     suggestedValue,
+    currentDisplayValue,
+    updatedDisplayValue,
     sourceContext: {
       route: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}${window.location.hash}` : undefined,
       tableId: SUMMONER_WARS_CONFIG_REVIEW_TABLE_ID,
@@ -517,7 +450,6 @@ function ConfigProposalCell({
 }) {
   const applicable = isSummonerWarsConfigReviewFieldApplicable(row, fieldKey);
   const currentValue = getSummonerWarsConfigReviewCellValue(row, fieldKey);
-  const currentText = applicable ? formatCellValue(currentValue) : '';
   const currentDisplayText = applicable ? formatDisplayValue(currentValue) : '';
   const pendingDisplayText = pendingEdit
     ? pendingEdit.error
@@ -601,7 +533,7 @@ function ConfigProposalCell({
             cellWidthClass(fieldKey),
           ].join(' ')}
           aria-label={`${label}：${editHint}`}
-          title={pendingEdit?.error ?? `${displayText || placeholder} · ${rawValueLabel}：${currentText || placeholder} · ${editHint}`}
+          title={pendingEdit?.error ?? `${displayText || placeholder} · ${rawValueLabel}：${currentDisplayText || placeholder} · ${editHint}`}
           data-testid={`summonerwars-config-cell-${fieldKey}`}
         >
           <span className={['block min-w-0 truncate', displayText ? '' : 'text-[#8a6444]/62'].join(' ')}>
@@ -694,6 +626,7 @@ export const SummonerWarsConfigReview = () => {
   const [pendingEdits, setPendingEdits] = useState<Record<string, PendingConfigEdit>>({});
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [magnifiedRow, setMagnifiedRow] = useState<SummonerWarsConfigReviewRow | null>(null);
+  const tableScrollerRef = useRef<HTMLDivElement>(null);
 
   const visibleRows = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -739,13 +672,23 @@ export const SummonerWarsConfigReview = () => {
   const pendingEditList = useMemo(() => Object.values(pendingEdits), [pendingEdits]);
   const invalidEditCount = pendingEditList.filter((edit) => edit.error).length;
   const validPendingEdits = pendingEditList.filter((edit) => !edit.error);
-  const feedbackProposals = useMemo(() => validPendingEdits.map((edit) => buildConfigProposal(
-    edit.row,
-    edit.fieldKey,
-    edit.parsedValue,
-    i18n.language || 'zh-CN',
-    table.configVersion,
-  )), [i18n.language, table.configVersion, validPendingEdits]);
+  const feedbackProposals = useMemo(() => validPendingEdits.map((edit) => {
+    const currentValue = getSummonerWarsConfigReviewCellValue(edit.row, edit.fieldKey);
+    return buildConfigProposal(
+      edit.row,
+      edit.fieldKey,
+      edit.parsedValue,
+      i18n.language || 'zh-CN',
+      table.configVersion,
+      t(`configReview.fields.${edit.fieldKey}`),
+      formatCellDisplayValue(edit.row, edit.fieldKey, currentValue, translateDisplayValue, rowNameByObjectId),
+      formatCellDisplayValue(edit.row, edit.fieldKey, edit.parsedValue, translateDisplayValue, rowNameByObjectId),
+    );
+  }), [i18n.language, rowNameByObjectId, table.configVersion, t, translateDisplayValue, validPendingEdits]);
+
+  useEffect(() => {
+    tableScrollerRef.current?.scrollTo({ left: 0, top: 0 });
+  }, [factionFilter, pageSize, query, safeCurrentPage, typeFilter]);
 
   const handleCellCommit = ({
     row,
@@ -918,11 +861,12 @@ export const SummonerWarsConfigReview = () => {
 
           <div className="relative min-h-0 flex-1">
             <div
+              ref={tableScrollerRef}
               style={{ scrollbarGutter: 'stable both-edges', scrollbarWidth: 'auto', scrollbarColor: '#6b4328 #ead8b8' }}
               className="h-full min-h-0 overflow-x-scroll overflow-y-auto rounded-[8px] border border-[#8f6642]/35 bg-[#fff3d7] shadow-inner"
               data-testid="summonerwars-config-table"
             >
-              <table className="w-full min-w-[3000px] border-separate border-spacing-0 text-left text-xs">
+              <table className="w-full min-w-[2500px] border-separate border-spacing-0 text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-[#3f2718] text-[#f3e3c3] shadow-[0_2px_0_rgba(0,0,0,0.12)]">
                   <tr>
                     {SUMMONER_WARS_CONFIG_REVIEW_COLUMN_KEYS.map((columnKey) => (

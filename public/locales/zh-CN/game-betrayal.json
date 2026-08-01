@@ -142,8 +142,6 @@
       "hauntStatusWin": "达成",
       "completedStamp": "完成",
       "endingNarrationLabel": "结局朗读",
-      "endingSourceStatus": "非原文摘要 / 临时整理",
-      "endingSourceStatusOfficial": "官方 If You Win 原文 / 正式翻译",
       "continueToReport": "查看结果报告"
     },
     "hud": {
@@ -426,10 +424,9 @@
       "hauntRiskPhasePreHaunt": "作祟前",
       "hauntRiskPhaseHaunt": "作祟中",
       "hauntRevealPlayerTitle": "公开揭示：作祟开始",
-      "hauntRevealLead": "剧本发生变化，可以打开剧本查阅。",
+      "hauntRevealLead": "剧本已切换。",
       "hauntRevealSource": "剧本卡 {{scenarioCard}} / 触发 {{omen}} / 作祟 {{number}}",
-      "hauntRevealDismiss": "关闭",
-      "hauntRevealOpenScenario": "阅读开局"
+      "hauntRevealDismiss": "关闭"
     },
     "feedback": {
       "label": "刚发生",
@@ -463,7 +460,6 @@
       "readerStatusPublicBook": "剧本档案",
       "readerStatusHeroBook": "英雄剧本书",
       "readerStatusTraitorBook": "叛徒剧本书",
-      "readerSourceStatus": "非原文摘要 / 临时整理",
       "readerPageLabel": "页数",
       "readerPageAria": "当前页 {{mobile}}，桌面双页 {{desktop}}",
       "readerPrev": "上一页",
@@ -522,7 +518,6 @@
         "heroGoal": "找真名，持书学法术，与木乃伊同房用神志驱逐。",
         "traitorGoal": "让木乃伊取得女孩和圣符或指环，并回到石棺房间。",
         "nextFallback": "找真名、学法术或接近木乃伊",
-        "readerSourceStatus": "本地规则源正文 / 正式中文转写",
         "progress": {
           "knowledge": "知识标记",
           "trueName": "真名",
@@ -531,7 +526,7 @@
         },
         "reader": {
           "prologueLabel": "公开揭示",
-          "prologue": "作祟 1「木乃伊横行」已锁定。作祟开始后，英雄和叛徒会分别阅读自己的剧本书正文。",
+          "prologue": "石棺里传出干枯的摩擦声。木乃伊醒来后盯上了女孩，宅邸里每一步都像在靠近一场不该发生的婚礼。",
           "prologueHeroesLabel": "英雄开场",
           "prologueHeroes": "目睹房中忽然四处尘土飞扬，你心中闪过不祥的阴霾。不远处传来朋友的叫喊，其中混集着惊恐，还有一丝的兴奋。你脑中传来一把陌生而深沉的声音：“与挚爱散失于久远洪荒。纵泪已成灰，心中爱仍炽热如日。今我爱重临，我俩必永不分离！敢阻我者必死，并魂飞魄散！”",
           "prologueTraitorLabel": "叛徒开场",

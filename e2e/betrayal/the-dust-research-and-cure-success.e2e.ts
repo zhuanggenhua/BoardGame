@@ -191,10 +191,11 @@ test.describe('山屋惊魂作祟3灰尘研究与治愈成功', () => {
         await expect(endgameScreen).toBeVisible({ timeout: 30000 });
         await expect(endgameScreen).toContainText('灰尘');
         await expect(page.getByTestId('betrayal-endgame-ending-stage')).toBeVisible();
-        await expect(page.getByTestId('betrayal-endgame-ending-source-status')).toContainText('官方 If You Win 原文 / 正式翻译');
-        await expect(page.getByTestId('betrayal-endgame-ending-source-status')).not.toContainText('非原文摘要');
+        await expect(page.getByTestId('betrayal-endgame-ending-source-status')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-endgame-ending-narration')).toContainText('你把临时做成的注射器扎进手臂');
         await expect(page.getByTestId('betrayal-endgame-ending-narration')).toContainText('最好趁免疫力消退前赶快离开');
+        await expect(page.getByTestId('betrayal-endgame-ending-narration')).not.toContainText('官方 If You Win 原文');
+        await expect(page.getByTestId('betrayal-endgame-ending-narration')).not.toContainText('非原文摘要');
         await expect.poll(() => readDustResearchAndCureState(page)).toMatchObject({
             phase: 'endgame',
             usedCardIdsThisTurn: expect.arrayContaining(['search-for-cure', 'cure-the-dust']),
@@ -264,10 +265,11 @@ test.describe('山屋惊魂作祟3灰尘研究与治愈成功', () => {
         await expect(endgameScreen).toBeVisible({ timeout: 30000 });
         await expect(endgameScreen).toContainText('灰尘');
         await expect(page.getByTestId('betrayal-endgame-ending-stage')).toBeVisible();
-        await expect(page.getByTestId('betrayal-endgame-ending-source-status')).toContainText('官方 If You Win 原文 / 正式翻译');
-        await expect(page.getByTestId('betrayal-endgame-ending-source-status')).not.toContainText('非原文摘要');
+        await expect(page.getByTestId('betrayal-endgame-ending-source-status')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-endgame-ending-narration')).toContainText('你把临时做成的注射器扎进手臂');
         await expect(page.getByTestId('betrayal-endgame-ending-narration')).toContainText('最好趁免疫力消退前赶快离开');
+        await expect(page.getByTestId('betrayal-endgame-ending-narration')).not.toContainText('官方 If You Win 原文');
+        await expect(page.getByTestId('betrayal-endgame-ending-narration')).not.toContainText('非原文摘要');
         await expect.poll(() => readDustResearchAndCureState(page)).toMatchObject({
             phase: 'endgame',
             usedCardIdsThisTurn: expect.arrayContaining(['cure-the-dust']),

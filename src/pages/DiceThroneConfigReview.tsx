@@ -1,11 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ImageOff, Maximize2, MoveHorizontal, Search, Send, Trash2 } from 'lucide-react';
+import { ArrowLeft, ImageOff, LoaderCircle, Maximize2, MoveHorizontal, Search, Send, Square, Trash2, Volume2 } from 'lucide-react';
 import { CardPreview } from '../components/common/media/CardPreview';
 import { MagnifyOverlay } from '../components/common/overlays/MagnifyOverlay';
 import { FeedbackModal } from '../components/system/FeedbackModal';
 import type { FeedbackConfigProposal } from '../lib/feedback/feedbackPayload';
+import { AudioManager } from '../lib/audio/AudioManager';
+import {
+  COMMON_AUDIO_BASE_PATH,
+  loadCommonAudioRegistry,
+  type AudioRegistryEntry,
+} from '../lib/audio/commonRegistry';
 import {
   buildDiceThroneConfigReviewTable,
   DICETHRONE_CONFIG_REVIEW_COLUMN_KEYS,
@@ -18,6 +24,7 @@ import {
   type DiceThroneConfigReviewType,
 } from '../games/dicethrone/config/configReviewAdapter';
 import { initDiceThroneCardAtlases } from '../games/dicethrone/ui/cardAtlas';
+import phraseMappingsData from '../assets/audio/phrase-mappings.zh-CN.json';
 
 const TYPE_FILTERS: Array<'all' | DiceThroneConfigReviewType> = [
   'all',
@@ -32,6 +39,16 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 type PageSize = typeof PAGE_SIZE_OPTIONS[number];
 
 const BOOLEAN_FIELD_KEYS = new Set<DiceThroneConfigReviewFieldKey>(['isAttackModifier']);
+
+const AUDIO_PHRASES = (phraseMappingsData as { phrases?: Record<string, string> }).phrases ?? {};
+
+const CONFIG_REVIEW_ENUM_VALUES: Partial<Record<DiceThroneConfigReviewFieldKey, readonly string[]>> = {
+  cardType: ['action', 'upgrade'],
+  timing: ['main', 'roll', 'instant'],
+  abilityType: ['offensive', 'defensive', 'utility', 'passive'],
+  tokenCategory: ['buff', 'debuff', 'consumable'],
+  tags: ['defensive', 'ultimate', 'unblockable', 'uninterruptible'],
+};
 
 interface PendingConfigEdit {
   row: DiceThroneConfigReviewRow;
@@ -58,8 +75,69 @@ function formatCellValue(value: unknown): string {
   return String(value);
 }
 
+function extractAudioStem(name: string): string {
+  return name.replace(/\s+\d+[A-Za-z]?$/, '').replace(/\s+[A-Za-z]$/, '').trim();
+}
+
+function audioFriendlyNameBase(key: string): string {
+  const parts = key.split('.');
+  const last = parts[parts.length - 1] ?? key;
+  const cleaned = last.replace(/(_(?:krst|none))+$/i, '');
+  return cleaned.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()).trim();
+}
+
+function audioKeyDisplayNumber(key: string): string {
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    hash = ((hash << 5) - hash) + key.charCodeAt(index);
+    hash |= 0;
+  }
+  return String(Math.abs(hash) % 10000).padStart(4, '0');
+}
+
+function formatAudioVariantSuffix(suffix: string): string {
+  const normalized = suffix.trim();
+  if (!normalized) return '';
+  const alphabetIndex = /^[a-z]$/i.test(normalized)
+    ? normalized.toUpperCase().charCodeAt(0) - 64
+    : 0;
+  if (alphabetIndex > 0) return `变体 ${alphabetIndex}`;
+  if (/^\d+$/.test(normalized)) return `第 ${Number(normalized)} 版`;
+  return `变体 ${audioKeyDisplayNumber(normalized)}`;
+}
+
+function formatAudioDisplayName(value: unknown): string {
+  const key = String(value ?? '');
+  if (!key) return '';
+  const base = audioFriendlyNameBase(key);
+  const stem = extractAudioStem(base);
+  const translated = AUDIO_PHRASES[stem];
+  if (!translated) return `音效 ${audioKeyDisplayNumber(key)}`;
+  const suffix = base.slice(stem.length).trim();
+  const displaySuffix = formatAudioVariantSuffix(suffix);
+  return displaySuffix ? `${translated} ${displaySuffix}` : translated;
+}
+
 function normalizeEditToken(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+function addEditAlias<T>(aliases: Map<string, T>, label: string | undefined, value: T) {
+  if (!label) return;
+  aliases.set(normalizeEditToken(label), value);
+}
+
+function buildTranslatedAliasMap(
+  translate: TranslateFn,
+  namespace: string,
+  values: readonly string[],
+): Map<string, string> {
+  const aliases = new Map<string, string>();
+  for (const value of values) {
+    addEditAlias(aliases, value, value);
+    addEditAlias(aliases, tr(translate, `${namespace}.${value}`, value), value);
+  }
+  return aliases;
 }
 
 function splitEditableListInput(rawValue: string): string[] {
@@ -85,17 +163,43 @@ function parseBooleanDisplayValue(rawValue: string, translate: TranslateFn): boo
   return aliases.get(normalizeEditToken(rawValue)) ?? rawValue.trim();
 }
 
+function parseLocalizedScalarValue(
+  fieldKey: DiceThroneConfigReviewFieldKey,
+  rawValue: string,
+  translate: TranslateFn,
+  sfxKeyByDisplayName: Map<string, string>,
+): unknown {
+  const trimmed = rawValue.trim();
+  if (BOOLEAN_FIELD_KEYS.has(fieldKey)) return parseBooleanDisplayValue(trimmed, translate);
+  if (fieldKey === 'sfxKey') return sfxKeyByDisplayName.get(normalizeEditToken(trimmed)) ?? (trimmed || undefined);
+
+  const enumValues = CONFIG_REVIEW_ENUM_VALUES[fieldKey];
+  if (enumValues) {
+    const aliases = buildTranslatedAliasMap(translate, `configReview.values.${fieldKey}`, enumValues);
+    return aliases.get(normalizeEditToken(trimmed)) ?? (trimmed || undefined);
+  }
+
+  return trimmed || undefined;
+}
+
 function parseSuggestedValue(
   fieldKey: DiceThroneConfigReviewFieldKey,
   rawValue: string,
   translate: TranslateFn,
+  sfxKeyByDisplayName: Map<string, string>,
 ): unknown {
   const trimmed = rawValue.trim();
   const { valueKind } = getDiceThroneConfigReviewFieldDefinition(fieldKey);
-  if (valueKind === 'string-array') return splitEditableListInput(trimmed);
+  if (valueKind === 'string-array') {
+    return splitEditableListInput(trimmed).map((part) => parseLocalizedScalarValue(
+      fieldKey,
+      part,
+      translate,
+      sfxKeyByDisplayName,
+    ));
+  }
   if (valueKind === 'number') return trimmed === '' ? undefined : Number(trimmed);
-  if (valueKind === 'boolean' || BOOLEAN_FIELD_KEYS.has(fieldKey)) return parseBooleanDisplayValue(trimmed, translate);
-  return trimmed || undefined;
+  return parseLocalizedScalarValue(fieldKey, trimmed, translate, sfxKeyByDisplayName);
 }
 
 function areConfigValuesEqual(left: unknown, right: unknown): boolean {
@@ -122,8 +226,6 @@ function formatCellDisplayValue(
       return formatLocalizedKey(value, translate);
     case 'character':
       return tr(translate, `characters.${String(value)}`, String(value));
-    case 'rowType':
-      return tr(translate, `configReview.types.${String(value)}`, String(value));
     case 'cardType':
       return tr(translate, `configReview.values.cardType.${String(value)}`, String(value));
     case 'timing':
@@ -136,10 +238,14 @@ function formatCellDisplayValue(
       return Array.isArray(value)
         ? value.map((symbol) => tr(translate, `dice.face.${String(symbol)}`, String(symbol))).join('、')
         : tr(translate, `dice.face.${String(value)}`, String(value));
+    case 'tags':
+      return Array.isArray(value)
+        ? value.map((tag) => tr(translate, `configReview.values.tags.${String(tag)}`, String(tag))).join('、')
+        : tr(translate, `configReview.values.tags.${String(value)}`, String(value));
     case 'isAttackModifier':
       return tr(translate, `configReview.values.boolean.${String(value)}`, String(value));
-    case 'sourceContexts':
-      return Array.isArray(value) ? value.join('、') : String(value);
+    case 'sfxKey':
+      return formatAudioDisplayName(value);
     default:
       return formatCellValue(value);
   }
@@ -147,28 +253,15 @@ function formatCellDisplayValue(
 
 function fieldWidthClass(fieldKey: DiceThroneConfigReviewFieldKey): string {
   switch (fieldKey) {
-    case 'id':
-      return 'w-[190px]';
     case 'name':
       return 'w-[168px]';
     case 'description':
-    case 'effects':
-    case 'variants':
-    case 'passiveTrigger':
-    case 'activeUse':
-    case 'playCondition':
-    case 'passiveAbilities':
       return 'w-[300px]';
-    case 'sourceContexts':
-    case 'statusAtlasPath':
-    case 'diceSprite':
+    case 'sfxKey':
       return 'w-[220px]';
     case 'character':
-    case 'rowType':
-    case 'diceDefinitionId':
-    case 'previewAtlas':
-    case 'tokenAtlasId':
-    case 'statusAtlasId':
+    case 'diceSymbols':
+    case 'tags':
       return 'w-[150px]';
     default:
       return 'w-[96px]';
@@ -197,15 +290,23 @@ function buildConfigProposal(
   suggestedValue: unknown,
   language: string,
   configVersion: string,
+  objectDisplayName: string,
+  fieldDisplayName: string,
+  currentDisplayValue: string,
+  updatedDisplayValue: string,
 ): Omit<FeedbackConfigProposal, 'reason'> & { reason?: string } {
   return {
     gameId: 'dicethrone',
     configVersion,
     objectId: row.objectId,
+    objectDisplayName,
     objectType: row.objectType,
     fieldPath: row.fieldPaths[fieldKey],
+    fieldDisplayName,
     currentValue: getDiceThroneConfigReviewCellValue(row, fieldKey),
     suggestedValue,
+    currentDisplayValue,
+    updatedDisplayValue,
     sourceContext: {
       route: typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}${window.location.hash}` : undefined,
       tableId: DICETHRONE_CONFIG_REVIEW_TABLE_ID,
@@ -246,7 +347,6 @@ function ConfigProposalCell({
 }) {
   const applicable = isDiceThroneConfigReviewFieldApplicable(row, fieldKey);
   const currentValue = getDiceThroneConfigReviewCellValue(row, fieldKey);
-  const currentText = applicable ? formatCellValue(currentValue) : '';
   const currentDisplayText = applicable ? formatDisplayValue(currentValue) : '';
   const pendingDisplayText = pendingEdit ? (pendingEdit.error ? pendingEdit.rawValue : formatDisplayValue(pendingEdit.parsedValue)) : undefined;
   const displayText = pendingDisplayText ?? currentDisplayText;
@@ -265,6 +365,7 @@ function ConfigProposalCell({
   const commit = () => {
     if (!applicable) return;
     setIsEditing(false);
+    if (draft.trim() === editText.trim()) return;
     onCommit({ row, fieldKey, rawValue: draft });
   };
 
@@ -301,7 +402,7 @@ function ConfigProposalCell({
         pendingEdit?.error ? 'bg-red-100 text-red-800' : pendingEdit ? 'bg-[#e4c27d]/45 text-[#301a0e]' : 'text-[#3f2718]',
         'hover:bg-[#efe0bd]',
       ].join(' ')}
-      title={`${editHint}\n${rawValueLabel}: ${currentText || placeholder}`}
+      title={`${editHint}\n${rawValueLabel}: ${currentDisplayText || placeholder}`}
       onDoubleClick={() => {
         setDraft(editText);
         setIsEditing(true);
@@ -353,6 +454,63 @@ function ConfigCardPreviewButton({
   );
 }
 
+function AudioPreviewButton({
+  sfxKey,
+  entry,
+  isPlaying,
+  isLoading,
+  previewLabel,
+  stopLabel,
+  loadingLabel,
+  missingLabel,
+  onPreview,
+}: {
+  sfxKey: string;
+  entry?: AudioRegistryEntry;
+  isPlaying: boolean;
+  isLoading: boolean;
+  previewLabel: string;
+  stopLabel: string;
+  loadingLabel: string;
+  missingLabel: string;
+  onPreview: (sfxKey: string) => void;
+}) {
+  const disabled = !entry;
+  const title = disabled
+    ? missingLabel
+    : isLoading
+      ? loadingLabel
+      : isPlaying
+        ? stopLabel
+        : previewLabel;
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onPreview(sfxKey)}
+      className={[
+        'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] border text-[#4b2c18] transition',
+        disabled
+          ? 'cursor-not-allowed border-[#8f6642]/18 bg-[#ead8b8]/60 opacity-45'
+          : 'border-[#8f6642]/38 bg-[#fff7df] hover:bg-[#f5dfaf]',
+        isPlaying ? 'border-[#3f2718]/45 bg-[#4b2c18] text-[#f5ddb4] hover:bg-[#321c0e]' : '',
+      ].join(' ')}
+      title={title}
+      aria-label={title}
+      data-testid="dicethrone-config-audio-preview"
+    >
+      {isLoading ? (
+        <LoaderCircle aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+      ) : isPlaying ? (
+        <Square aria-hidden="true" className="h-3.5 w-3.5" />
+      ) : (
+        <Volume2 aria-hidden="true" className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
+}
+
 export const DiceThroneConfigReview = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation('game-dicethrone');
@@ -374,6 +532,106 @@ export const DiceThroneConfigReview = () => {
   const [pendingEdits, setPendingEdits] = useState<Record<string, PendingConfigEdit>>({});
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [magnifiedRow, setMagnifiedRow] = useState<DiceThroneConfigReviewRow | null>(null);
+  const tableScrollerRef = useRef<HTMLDivElement>(null);
+  const [audioEntriesByKey, setAudioEntriesByKey] = useState<Map<string, AudioRegistryEntry>>(() => new Map());
+  const [audioLoadError, setAudioLoadError] = useState<string | null>(null);
+  const [playingAudioKey, setPlayingAudioKey] = useState<string | null>(null);
+  const [loadingAudioKey, setLoadingAudioKey] = useState<string | null>(null);
+  const playingAudioKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadCommonAudioRegistry()
+      .then((payload) => {
+        if (cancelled) return;
+        AudioManager.registerRegistryEntries(payload.entries, COMMON_AUDIO_BASE_PATH);
+        AudioManager.initialize();
+        setAudioEntriesByKey(new Map(payload.entries.map((entry) => [entry.key, entry])));
+        setAudioLoadError(null);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setAudioLoadError(String(error?.message ?? error));
+      });
+
+    return () => {
+      cancelled = true;
+      if (playingAudioKeyRef.current) {
+        AudioManager.stopSfx(playingAudioKeyRef.current);
+        playingAudioKeyRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loadingAudioKey) return undefined;
+
+    const syncLoadingState = () => {
+      const state = AudioManager.getSfxLoadState(loadingAudioKey);
+      if (state === 'loading') return;
+      setLoadingAudioKey((current) => (current === loadingAudioKey ? null : current));
+      if (state === 'failed' || state === 'missing') {
+        setPlayingAudioKey((current) => (current === loadingAudioKey ? null : current));
+        if (playingAudioKeyRef.current === loadingAudioKey) {
+          playingAudioKeyRef.current = null;
+        }
+      }
+    };
+
+    syncLoadingState();
+    const timer = window.setInterval(syncLoadingState, 120);
+    return () => window.clearInterval(timer);
+  }, [loadingAudioKey]);
+
+  const sfxKeyByDisplayName = useMemo(() => {
+    const aliases = new Map<string, string>();
+    for (const key of audioEntriesByKey.keys()) {
+      addEditAlias(aliases, key, key);
+      addEditAlias(aliases, formatAudioDisplayName(key), key);
+    }
+    for (const row of table.rows) {
+      if (!row.sfxKey) continue;
+      addEditAlias(aliases, row.sfxKey, row.sfxKey);
+      addEditAlias(aliases, formatAudioDisplayName(row.sfxKey), row.sfxKey);
+    }
+    return aliases;
+  }, [audioEntriesByKey, table.rows]);
+
+  const handleAudioPreview = useCallback((sfxKey: string) => {
+    const entry = audioEntriesByKey.get(sfxKey);
+    if (!entry) return;
+
+    if (playingAudioKeyRef.current === sfxKey) {
+      AudioManager.stopSfx(sfxKey);
+      playingAudioKeyRef.current = null;
+      setPlayingAudioKey(null);
+      setLoadingAudioKey(null);
+      return;
+    }
+
+    if (playingAudioKeyRef.current) {
+      AudioManager.stopSfx(playingAudioKeyRef.current);
+    }
+
+    playingAudioKeyRef.current = sfxKey;
+    setPlayingAudioKey(sfxKey);
+    AudioManager.play(sfxKey, undefined, () => {
+      if (playingAudioKeyRef.current !== sfxKey) return;
+      playingAudioKeyRef.current = null;
+      setPlayingAudioKey(null);
+      setLoadingAudioKey(null);
+    });
+
+    const state = AudioManager.getSfxLoadState(sfxKey);
+    if (state === 'missing' || state === 'failed') {
+      playingAudioKeyRef.current = null;
+      setPlayingAudioKey(null);
+      setLoadingAudioKey(null);
+      return;
+    }
+    setLoadingAudioKey(state === 'loading' ? sfxKey : null);
+  }, [audioEntriesByKey]);
 
   const visibleRows = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -397,13 +655,24 @@ export const DiceThroneConfigReview = () => {
   const pendingEditList = useMemo(() => Object.values(pendingEdits), [pendingEdits]);
   const invalidEditCount = pendingEditList.filter((edit) => edit.error).length;
   const validPendingEdits = pendingEditList.filter((edit) => !edit.error);
-  const feedbackProposals = useMemo(() => validPendingEdits.map((edit) => buildConfigProposal(
-    edit.row,
-    edit.fieldKey,
-    edit.parsedValue,
-    i18n.language || 'zh-CN',
-    table.configVersion,
-  )), [i18n.language, table.configVersion, validPendingEdits]);
+  const feedbackProposals = useMemo(() => validPendingEdits.map((edit) => {
+    const currentValue = getDiceThroneConfigReviewCellValue(edit.row, edit.fieldKey);
+    return buildConfigProposal(
+      edit.row,
+      edit.fieldKey,
+      edit.parsedValue,
+      i18n.language || 'zh-CN',
+      table.configVersion,
+      formatCellDisplayValue(edit.row, 'name', edit.row.name, translate),
+      t(`configReview.fields.${edit.fieldKey}`),
+      formatCellDisplayValue(edit.row, edit.fieldKey, currentValue, translate),
+      formatCellDisplayValue(edit.row, edit.fieldKey, edit.parsedValue, translate),
+    );
+  }), [i18n.language, table.configVersion, t, translate, validPendingEdits]);
+
+  useEffect(() => {
+    tableScrollerRef.current?.scrollTo({ left: 0, top: 0 });
+  }, [characterFilter, pageSize, query, safeCurrentPage, typeFilter]);
 
   const handleCellCommit = ({ row, fieldKey, rawValue }: {
     row: DiceThroneConfigReviewRow;
@@ -412,7 +681,7 @@ export const DiceThroneConfigReview = () => {
   }) => {
     const editKey = getEditKey(row, fieldKey);
     const currentValue = getDiceThroneConfigReviewCellValue(row, fieldKey);
-    const parsedValue = parseSuggestedValue(fieldKey, rawValue, translate);
+    const parsedValue = parseSuggestedValue(fieldKey, rawValue, translate, sfxKeyByDisplayName);
     const trimmed = rawValue.trim();
     const { valueKind } = getDiceThroneConfigReviewFieldDefinition(fieldKey);
 
@@ -562,11 +831,12 @@ export const DiceThroneConfigReview = () => {
 
           <div className="relative min-h-0 flex-1">
             <div
+              ref={tableScrollerRef}
               style={{ scrollbarGutter: 'stable both-edges', scrollbarWidth: 'auto', scrollbarColor: '#6b4328 #ead8b8' }}
               className="h-full min-h-0 overflow-x-scroll overflow-y-auto rounded-[8px] border border-[#8f6642]/35 bg-[#fff3d7] shadow-inner"
               data-testid="dicethrone-config-table"
             >
-              <table className="w-full min-w-[5200px] border-separate border-spacing-0 text-left text-xs">
+              <table className="w-full min-w-[2600px] border-separate border-spacing-0 text-left text-xs">
                 <thead className="sticky top-0 z-10 bg-[#3f2718] text-[#f3e3c3] shadow-[0_2px_0_rgba(0,0,0,0.12)]">
                   <tr>
                     {DICETHRONE_CONFIG_REVIEW_COLUMN_KEYS.map((columnKey) => (
@@ -605,6 +875,42 @@ export const DiceThroneConfigReview = () => {
                                 missingLabel={t('configReview.material.noPreview')}
                                 magnifyLabel={t('configReview.actions.magnify', { name: formatCellDisplayValue(row, 'name', row.name, translate) })}
                               />
+                            ) : columnKey === 'sfxKey' ? (
+                              <div className="flex min-h-[30px] items-center gap-1.5">
+                                <ConfigProposalCell
+                                  row={row}
+                                  fieldKey={columnKey}
+                                  label={t(`configReview.fields.${columnKey}`)}
+                                  placeholder={t('configReview.feedback.emptyCell')}
+                                  editHint={t('configReview.feedback.cellEditHint')}
+                                  rawValueLabel={t('configReview.feedback.rawValueLabel')}
+                                  pendingEdit={pendingEdits[getEditKey(row, columnKey)]}
+                                  formatDisplayValue={(value) => formatCellDisplayValue(row, columnKey, value, translate)}
+                                  onCommit={handleCellCommit}
+                                />
+                                {(() => {
+                                  const pendingEdit = pendingEdits[getEditKey(row, columnKey)];
+                                  const previewValue = pendingEdit && !pendingEdit.error
+                                    ? pendingEdit.parsedValue
+                                    : getDiceThroneConfigReviewCellValue(row, columnKey);
+                                  const sfxKey = typeof previewValue === 'string' ? previewValue : '';
+                                  return sfxKey ? (
+                                    <AudioPreviewButton
+                                      sfxKey={sfxKey}
+                                      entry={audioEntriesByKey.get(sfxKey)}
+                                      isPlaying={playingAudioKey === sfxKey}
+                                      isLoading={loadingAudioKey === sfxKey}
+                                      previewLabel={t('configReview.audio.preview', { name: formatAudioDisplayName(sfxKey) })}
+                                      stopLabel={t('configReview.audio.stop', { name: formatAudioDisplayName(sfxKey) })}
+                                      loadingLabel={t('configReview.audio.loading', { name: formatAudioDisplayName(sfxKey) })}
+                                      missingLabel={audioLoadError
+                                        ? t('configReview.audio.loadFailed')
+                                        : t('configReview.audio.missing')}
+                                      onPreview={handleAudioPreview}
+                                    />
+                                  ) : null;
+                                })()}
+                              </div>
                             ) : (
                               <ConfigProposalCell
                                 row={row}

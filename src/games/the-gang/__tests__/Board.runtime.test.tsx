@@ -955,7 +955,90 @@ describe('The Gang Board 运行入口', () => {
         });
     });
 
-    test('收到其他玩家拖拽筹码事件时会在筹码上方显示操作者昵称', () => {
+    test('收到多个其他玩家同时拖拽筹码事件时会区分玩家身份和筹码值', () => {
+        const dispatch = vi.fn();
+        const started = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
+        const uiEventListeners = new Set<(event: MatchUiEvent) => void>();
+        const subscribeUiEvent = vi.fn((listener: (event: MatchUiEvent) => void) => {
+            uiEventListeners.add(listener);
+            return () => uiEventListeners.delete(listener);
+        });
+
+        renderWithToast(
+            <Board
+                G={stateOf(started)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+                subscribeUiEvent={subscribeUiEvent}
+            />,
+        );
+
+        act(() => {
+            uiEventListeners.forEach((listener) => {
+                listener({
+                    type: 'the-gang:chip-drag',
+                    playerId: '1',
+                    payload: {
+                        action: 'move',
+                        chip: 2,
+                        round: 1,
+                        origin: 'pool',
+                        x: 0.5,
+                        y: 0.42,
+                    },
+                    sentAt: 1,
+                });
+                listener({
+                    type: 'the-gang:chip-drag',
+                    playerId: '2',
+                    payload: {
+                        action: 'move',
+                        chip: 3,
+                        round: 1,
+                        origin: 'pool',
+                        x: 0.5,
+                        y: 0.42,
+                    },
+                    sentAt: 1,
+                });
+            });
+        });
+
+        const remoteDragOne = screen.getByTestId('the-gang-remote-chip-drag-1');
+        const remoteDragTwo = screen.getByTestId('the-gang-remote-chip-drag-2');
+        const getPoolChipButton = (value: number) => {
+            const button = document.querySelector(`[data-bgg-zone="token-pile"] button[data-chip-value="${value}"]`);
+            expect(button).not.toBeNull();
+            return button as HTMLElement;
+        };
+        expect(remoteDragOne).toHaveAttribute('data-player-id', '1');
+        expect(remoteDragOne).toHaveAttribute('data-chip-value', '2');
+        expect(remoteDragTwo).toHaveAttribute('data-player-id', '2');
+        expect(remoteDragTwo).toHaveAttribute('data-chip-value', '3');
+        expect(within(remoteDragOne).getByText('AI 2 号位 · 2★')).toBeInTheDocument();
+        expect(within(remoteDragTwo).getByText('AI 3 号位 · 3★')).toBeInTheDocument();
+        expect(remoteDragOne.getAttribute('style')).not.toBe(remoteDragTwo.getAttribute('style'));
+        expect(getPoolChipButton(2)).toHaveAttribute('data-drag-source-hidden', 'true');
+        expect(getPoolChipButton(3)).toHaveAttribute('data-drag-source-hidden', 'true');
+
+        act(() => {
+            uiEventListeners.forEach((listener) => listener({
+                type: 'the-gang:chip-drag',
+                playerId: '1',
+                payload: { action: 'end' },
+                sentAt: 2,
+            }));
+        });
+
+        expect(screen.queryByTestId('the-gang-remote-chip-drag-1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-remote-chip-drag-2')).toBeInTheDocument();
+        expect(getPoolChipButton(2)).not.toHaveAttribute('data-drag-source-hidden');
+        expect(getPoolChipButton(3)).toHaveAttribute('data-drag-source-hidden', 'true');
+    });
+
+    test('收到其他玩家点击拿筹码事件时会播放带玩家和筹码值的共享过渡', () => {
         const dispatch = vi.fn();
         const started = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
         const uiEventListeners = new Set<(event: MatchUiEvent) => void>();
@@ -980,29 +1063,20 @@ describe('The Gang Board 运行入口', () => {
                 type: 'the-gang:chip-drag',
                 playerId: '1',
                 payload: {
-                    action: 'move',
+                    action: 'transfer',
                     chip: 2,
                     round: 1,
-                    x: 0.5,
-                    y: 0.42,
+                    origin: 'pool',
+                    target: { kind: 'hand' },
                 },
                 sentAt: 1,
             }));
         });
 
-        const remoteDrag = screen.getByTestId('the-gang-remote-chip-drag-1');
-        expect(within(remoteDrag).getByText('AI 2 号位')).toBeInTheDocument();
-
-        act(() => {
-            uiEventListeners.forEach((listener) => listener({
-                type: 'the-gang:chip-drag',
-                playerId: '1',
-                payload: { action: 'end' },
-                sentAt: 2,
-            }));
-        });
-
-        expect(screen.queryByTestId('the-gang-remote-chip-drag-1')).not.toBeInTheDocument();
+        const transferAnimation = screen.getByTestId('the-gang-chip-transfer-animation');
+        expect(transferAnimation).toHaveAttribute('data-player-id', '1');
+        expect(transferAnimation).toHaveAttribute('data-chip-value', '2');
+        expect(within(transferAnimation).getByText('AI 2 号位 · 2★')).toBeInTheDocument();
     });
 
     test('拖拽筹码释放到无效区域不会派发选筹命令', () => {

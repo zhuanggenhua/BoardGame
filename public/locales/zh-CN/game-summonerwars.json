@@ -54,7 +54,7 @@
       "nextPage": "下一页"
     },
     "filters": {
-      "searchPlaceholder": "搜索名称、配置编号、能力或来源",
+      "searchPlaceholder": "搜索名称、阵营、能力或字段值",
       "allFactions": "全部阵营"
     },
     "tableScroll": {
@@ -231,7 +231,7 @@
       "editHint": "双击单元格编辑；修改会先暂存在本页，最后统一提交。",
       "emptyCell": "—",
       "emptyValue": "空",
-      "rawValueLabel": "原始配置值",
+      "rawValueLabel": "当前值",
       "pendingCount": "{{count}} 项待提交",
       "invalidCount": "{{count}} 项无效",
       "invalidNumber": "请输入数字",

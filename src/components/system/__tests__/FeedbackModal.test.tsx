@@ -397,10 +397,14 @@ describe('FeedbackModal', () => {
                         gameId: 'summonerwars',
                         configVersion: 'legacy-ts-config-v1',
                         objectId: 'necro-summoner',
+                        objectDisplayName: '瑞特-塔鲁斯',
                         objectType: 'summoner',
                         fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+                        fieldDisplayName: '攻击',
                         currentValue: 3,
                         suggestedValue: 4,
+                        currentDisplayValue: '3',
+                        updatedDisplayValue: '4',
                         sourceContext: {
                             tableId: 'summonerwars:legacy-config-review',
                             rowId: 'summonerwars:necromancer:summoner:necro-summoner',
@@ -413,8 +417,10 @@ describe('FeedbackModal', () => {
             </TestWrapper>
         );
 
-        expect(screen.getByTestId('feedback-config-proposal-context')).toHaveTextContent('necro-summoner');
-        expect(screen.getByTestId('feedback-config-proposal-change')).toHaveTextContent('当前值：3；建议值：4');
+        expect(screen.getByTestId('feedback-config-proposal-context')).toHaveTextContent('瑞特-塔鲁斯');
+        expect(screen.getByTestId('feedback-config-proposal-context')).toHaveTextContent('攻击');
+        expect(screen.getByTestId('feedback-config-proposal-change')).toHaveTextContent('当前值：3；修改后值：4');
+        expect(screen.queryByText(/建议值/)).not.toBeInTheDocument();
 
         const textarea = screen.getByPlaceholderText(/描述/i);
         fireEvent.change(textarea, { target: { value: '瑞特-塔鲁斯的攻击值应为 4，请核对卡图。' } });
@@ -432,9 +438,13 @@ describe('FeedbackModal', () => {
         expect(body.configProposal).toMatchObject({
             gameId: 'summonerwars',
             objectId: 'necro-summoner',
+            objectDisplayName: '瑞特-塔鲁斯',
             fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+            fieldDisplayName: '攻击',
             currentValue: 3,
             suggestedValue: 4,
+            currentDisplayValue: '3',
+            updatedDisplayValue: '4',
             reason: '瑞特-塔鲁斯的攻击值应为 4，请核对卡图。',
             status: 'pending_ai_review',
         });
@@ -451,10 +461,14 @@ describe('FeedbackModal', () => {
                             gameId: 'summonerwars',
                             configVersion: 'legacy-ts-config-v1',
                             objectId: 'necro-summoner',
+                            objectDisplayName: '瑞特-塔鲁斯',
                             objectType: 'summoner',
                             fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+                            fieldDisplayName: '攻击',
                             currentValue: 3,
                             suggestedValue: 4,
+                            currentDisplayValue: '3',
+                            updatedDisplayValue: '4',
                             sourceContext: {
                                 tableId: 'summonerwars:legacy-config-review',
                                 rowId: 'summonerwars:necromancer:summoner:necro-summoner',
@@ -465,10 +479,14 @@ describe('FeedbackModal', () => {
                             gameId: 'summonerwars',
                             configVersion: 'legacy-ts-config-v1',
                             objectId: 'necro-starting-gate',
+                            objectDisplayName: '起始城门',
                             objectType: 'gate',
                             fieldPath: 'legacy.summonerwars.cardRegistry.necro-starting-gate.life',
+                            fieldDisplayName: '生命',
                             currentValue: 9,
                             suggestedValue: 10,
+                            currentDisplayValue: '9',
+                            updatedDisplayValue: '10',
                             sourceContext: {
                                 tableId: 'summonerwars:legacy-config-review',
                                 rowId: 'summonerwars:necromancer:gate:necro-starting-gate',
@@ -482,8 +500,10 @@ describe('FeedbackModal', () => {
         );
 
         expect(screen.getByTestId('feedback-config-proposal-context')).toHaveTextContent('2 项配置字段修正');
-        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('necro-summoner');
-        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('necro-starting-gate');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('瑞特-塔鲁斯');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('起始城门');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).toHaveTextContent('当前值');
+        expect(screen.getByTestId('feedback-config-proposal-batch-list')).not.toHaveTextContent('necro-summoner');
 
         const textarea = screen.getByPlaceholderText(/描述/i);
         fireEvent.change(textarea, { target: { value: '两处数值都与卡图不一致，请一起核对。' } });
@@ -501,14 +521,22 @@ describe('FeedbackModal', () => {
         expect(body.configProposals[0]).toMatchObject({
             gameId: 'summonerwars',
             objectId: 'necro-summoner',
+            objectDisplayName: '瑞特-塔鲁斯',
             fieldPath: 'legacy.summonerwars.cardRegistry.necro-summoner.strength',
+            fieldDisplayName: '攻击',
+            currentDisplayValue: '3',
+            updatedDisplayValue: '4',
             reason: '两处数值都与卡图不一致，请一起核对。',
             status: 'pending_ai_review',
         });
         expect(body.configProposals[1]).toMatchObject({
             gameId: 'summonerwars',
             objectId: 'necro-starting-gate',
+            objectDisplayName: '起始城门',
             fieldPath: 'legacy.summonerwars.cardRegistry.necro-starting-gate.life',
+            fieldDisplayName: '生命',
+            currentDisplayValue: '9',
+            updatedDisplayValue: '10',
             reason: '两处数值都与卡图不一致，请一起核对。',
             status: 'pending_ai_review',
         });

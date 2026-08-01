@@ -466,6 +466,15 @@ function createScenarioHauntCore(
   if (scenarioCardId) {
     core.proposedScenarioCardId = scenarioCardId;
   }
+  setFixtureExplorerInventory(core, "0", [
+    { id: "omen-book", name: "书本", kind: "omen" },
+  ]);
+  setFixtureExplorerInventory(core, "1", [
+    { id: "ring", name: "指环", kind: "omen" },
+  ]);
+  setFixtureExplorerInventory(core, "2", [
+    { id: "mask", name: "面具", kind: "omen" },
+  ]);
   setFixtureRoomDiscoveryDeck(core, [
     { floor: "upper", room: findFixtureRoomTemplate("upper", "library") },
     { floor: "ground", room: findFixtureRoomTemplate("ground", "observatory") },

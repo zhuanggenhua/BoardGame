@@ -131,6 +131,22 @@ const formatConfigProposalValue = (value: unknown): string => {
     return String(value);
 };
 
+const getConfigProposalObjectLabel = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.objectDisplayName || proposal.objectId
+);
+
+const getConfigProposalFieldLabel = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.fieldDisplayName || proposal.fieldPath
+);
+
+const getConfigProposalCurrentDisplayValue = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.currentDisplayValue ?? formatConfigProposalValue(proposal.currentValue)
+);
+
+const getConfigProposalUpdatedDisplayValue = (proposal: FeedbackConfigProposalDraft): string => (
+    proposal.updatedDisplayValue ?? formatConfigProposalValue(proposal.suggestedValue)
+);
+
 const hashConfigProposalDraftKey = (value: string): string => {
     let hash = 0;
     for (let index = 0; index < value.length; index += 1) {
@@ -623,10 +639,10 @@ export const FeedbackModal = ({
                                             >
                                                 {t('hud.feedback.configProposal.batchItem', {
                                                     index: index + 1,
-                                                    objectId: proposal.objectId,
-                                                    fieldPath: proposal.fieldPath,
-                                                    currentValue: formatConfigProposalValue(proposal.currentValue),
-                                                    suggestedValue: formatConfigProposalValue(proposal.suggestedValue),
+                                                    objectName: getConfigProposalObjectLabel(proposal),
+                                                    fieldName: getConfigProposalFieldLabel(proposal),
+                                                    currentValue: getConfigProposalCurrentDisplayValue(proposal),
+                                                    updatedValue: getConfigProposalUpdatedDisplayValue(proposal),
                                                 })}
                                             </div>
                                         ))}
@@ -643,8 +659,8 @@ export const FeedbackModal = ({
                                 <>
                                     <div className="mt-1 break-words text-parchment-light-text">
                                         {t('hud.feedback.configProposal.target', {
-                                            objectId: configProposalList[0].objectId,
-                                            fieldPath: configProposalList[0].fieldPath,
+                                            objectName: getConfigProposalObjectLabel(configProposalList[0]),
+                                            fieldName: getConfigProposalFieldLabel(configProposalList[0]),
                                         })}
                                     </div>
                                     {'currentValue' in configProposalList[0] || 'suggestedValue' in configProposalList[0] ? (
@@ -653,8 +669,8 @@ export const FeedbackModal = ({
                                             data-testid="feedback-config-proposal-change"
                                         >
                                             {t('hud.feedback.configProposal.change', {
-                                                currentValue: formatConfigProposalValue(configProposalList[0].currentValue),
-                                                suggestedValue: formatConfigProposalValue(configProposalList[0].suggestedValue),
+                                                currentValue: getConfigProposalCurrentDisplayValue(configProposalList[0]),
+                                                updatedValue: getConfigProposalUpdatedDisplayValue(configProposalList[0]),
                                             })}
                                         </div>
                                     ) : null}

@@ -138,7 +138,7 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toContainText("英雄剧本书");
     await expect(
       heroReader.getByTestId("betrayal-scenario-reader-source-status"),
-    ).toContainText("本地规则源正文");
+    ).toHaveCount(0);
     const openingNarration = heroReader.getByTestId(
       "betrayal-scenario-opening-cinematic",
     );
@@ -156,7 +156,9 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     );
     await expect(
       heroReader.getByTestId("betrayal-scenario-opening-source-status"),
-    ).toContainText("本地规则源正文");
+    ).toHaveCount(0);
+    await expect(heroReader).not.toContainText("本地规则源正文");
+    await expect(heroReader).not.toContainText("正式中文转写");
     await expect(heroReader.getByTestId("betrayal-scenario-book")).toHaveCount(
       0,
     );
@@ -222,7 +224,9 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toContainText("叛徒剧本书");
     await expect(
       traitorReader.getByTestId("betrayal-scenario-reader-source-status"),
-    ).toContainText("本地规则源正文");
+    ).toHaveCount(0);
+    await expect(traitorReader).not.toContainText("本地规则源正文");
+    await expect(traitorReader).not.toContainText("正式中文转写");
     await expect(
       traitorReader.getByTestId("betrayal-scenario-opening-cinematic"),
     ).toHaveAttribute("data-cinematic-stage", "standalone");
@@ -336,10 +340,12 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toHaveCount(0);
     await expect(
       survivorEndgame.getByTestId("betrayal-endgame-ending-source-status"),
-    ).toContainText("官方 If You Win 原文");
+    ).toHaveCount(0);
     await expect(
       survivorEndgame.getByTestId("betrayal-endgame-ending-narration"),
     ).toContainText("木乃伊犹如细砂随风飞散");
+    await expect(survivorEndgame).not.toContainText("官方 If You Win 原文");
+    await expect(survivorEndgame).not.toContainText("正式翻译");
     await assertCinematicActionSlotLayout(
       survivorEndgame.getByTestId("betrayal-endgame-ending-narration"),
     );
@@ -378,10 +384,12 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     ).toHaveCount(0);
     await expect(
       traitorEndgame.getByTestId("betrayal-endgame-ending-source-status"),
-    ).toContainText("官方 If You Win 原文");
+    ).toHaveCount(0);
     await expect(
       traitorEndgame.getByTestId("betrayal-endgame-ending-narration"),
     ).toContainText("整个世界不久都将臣服于我俩脚下");
+    await expect(traitorEndgame).not.toContainText("官方 If You Win 原文");
+    await expect(traitorEndgame).not.toContainText("正式翻译");
     await expect(traitorEndgame).not.toContainText("杰克之灵消失");
     await assertCinematicActionSlotLayout(
       traitorEndgame.getByTestId("betrayal-endgame-ending-narration"),

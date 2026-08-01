@@ -2580,43 +2580,7 @@ export const BETRAYAL_SCENARIO_CONFIGS: Record<BetrayalScenarioId, BetrayalScena
             runtimeObjective: '恶兆前探索',
             hauntObjective: '找出真名、学习驱逐法术并驱逐木乃伊',
         },
-        startingInventoryByExplorerId: {
-            'jaden-jones': [
-                { id: 'rope', name: '兔脚', kind: 'item' },
-                { id: 'flashlight', name: '手电筒', kind: 'item' },
-                { id: 'omen-book', name: '书本', kind: 'omen' },
-            ],
-            'rebecca-allen': [
-                { id: 'rope', name: '兔脚', kind: 'item' },
-                { id: 'notebook', name: '笔记本', kind: 'item' },
-                { id: 'ring', name: '指环', kind: 'omen' },
-            ],
-            'darryl-highla': [
-                { id: 'medical-kit', name: '急救包', kind: 'item' },
-                { id: 'camera', name: '魔法相机', kind: 'item' },
-                { id: 'mask', name: '面具', kind: 'omen' },
-            ],
-            'oliver-swift': [
-                { id: 'map', name: '地图', kind: 'item' },
-                { id: 'lantern', name: '灯笼', kind: 'item' },
-                { id: 'holy-symbol', name: '圣符', kind: 'omen' },
-            ],
-            'lia-valencia': [
-                { id: 'journal', name: '日记', kind: 'item' },
-                { id: 'radio', name: '头戴耳机', kind: 'item' },
-                { id: 'skull', name: '头骨', kind: 'omen' },
-            ],
-            'sam-yin': [
-                { id: 'holy-water', name: '奇怪的药品', kind: 'item' },
-                { id: 'flashlight', name: '手电筒', kind: 'item' },
-                { id: 'idol', name: '雕像', kind: 'omen' },
-            ],
-            'michelle-monroe': [
-                { id: 'lockpick-tool', name: '骨制钥匙', kind: 'item' },
-                { id: 'lantern', name: '灯笼', kind: 'item' },
-                { id: 'dagger', name: '匕首', kind: 'omen' },
-            ],
-        },
+        startingInventoryByExplorerId: {},
         logs: {
             scenarioStarted: '首剧本开始：恶兆前探索',
             hauntTriggered: '首剧本触发：木乃伊横行',

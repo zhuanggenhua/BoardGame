@@ -265,6 +265,58 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
     "transparent-virtual",
   );
   await expect(diceGroup).toHaveAttribute("data-dice-count", /[1-9]/);
+  const initialDiceState = await diceGroup.evaluate((node) => {
+    const group = node as HTMLElement;
+    const preload = group.querySelector(
+      '[data-testid="betrayal-house-dice-preloaded-faces"]',
+    ) as HTMLElement | null;
+    const preloadedFaces = Array.from(
+      group.querySelectorAll<HTMLElement>(
+        '[data-testid^="betrayal-house-dice-preloaded-face-"]',
+      ),
+    );
+    const preloadStyle = preload ? window.getComputedStyle(preload) : null;
+    const preloadRect = preload?.getBoundingClientRect();
+    return {
+      physicsReady: group.dataset.dicePhysicsReady ?? "",
+      preloadState: group.dataset.dicePreloadState ?? "",
+      preloadCount: preloadedFaces.length,
+      preloadVisible: Boolean(
+        preload &&
+          preloadRect &&
+          preloadRect.width > 0 &&
+          preloadRect.height > 0 &&
+          preloadStyle &&
+          preloadStyle.display !== "none" &&
+          preloadStyle.visibility !== "hidden" &&
+          Number(preloadStyle.opacity || "1") > 0.5,
+      ),
+      preloadBackgroundColor: preloadStyle?.backgroundColor ?? null,
+      preloadBackgroundImage: preloadStyle?.backgroundImage ?? null,
+    };
+  });
+  if (initialDiceState.physicsReady !== "true") {
+    expect(
+      initialDiceState.preloadState,
+      `山屋物理骰首帧必须有同皮肤预加载承接：${JSON.stringify(initialDiceState)}`,
+    ).toBe("visible");
+    expect(
+      initialDiceState.preloadCount,
+      `山屋物理骰首帧不能空白：${JSON.stringify(initialDiceState)}`,
+    ).toBeGreaterThan(0);
+    expect(
+      initialDiceState.preloadVisible,
+      `山屋物理骰预加载层必须真实可见：${JSON.stringify(initialDiceState)}`,
+    ).toBe(true);
+    expect(
+      initialDiceState.preloadBackgroundColor,
+      `山屋物理骰预加载层不能变成黑底托盘：${JSON.stringify(initialDiceState)}`,
+    ).toBe("rgba(0, 0, 0, 0)");
+    expect(
+      initialDiceState.preloadBackgroundImage,
+      `山屋物理骰预加载层不能叠背景图：${JSON.stringify(initialDiceState)}`,
+    ).toBe("none");
+  }
   try {
     await expect
       .poll(async () => diceGroup.getAttribute("data-dice-physics-ready"), {
@@ -344,6 +396,10 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
       `山屋物理骰子没有渲染就绪：${JSON.stringify(diagnostics)}\n${error instanceof Error ? error.message : String(error)}`,
     );
   }
+  await expect(diceGroup).toHaveAttribute("data-dice-preload-state", "retired");
+  await expect(
+    diceGroup.getByTestId("betrayal-house-dice-preloaded-faces"),
+  ).toHaveCount(0);
 
   const physicsSource = rollPanel.getByTestId(
     "betrayal-house-dice-physics-source",
@@ -437,6 +493,156 @@ export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
     })
     .toBe("true");
   await rollPanel.page().waitForTimeout(450);
+};
+
+export const expectPhysicalDiceStableAfterSettled = async (
+  rollPanel: Locator,
+  options: {
+    waitMs?: number;
+    maxCenterShiftPx?: number;
+    maxGroupDriftPx?: number;
+  } = {},
+) => {
+  const waitMs = options.waitMs ?? 600;
+  const maxCenterShiftPx = options.maxCenterShiftPx ?? 24;
+  const maxGroupDriftPx = options.maxGroupDriftPx ?? 8;
+  const physicsSource = rollPanel.getByTestId(
+    "betrayal-house-dice-physics-source",
+  );
+  await expect
+    .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
+      timeout: 15000,
+    })
+    .toBe("true");
+
+  const readSnapshot = async () =>
+    rollPanel.evaluate((node) => {
+      type Layout = {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        visualWidth?: number;
+        visualHeight?: number;
+      };
+      type DebugDie = { layout?: Layout | null };
+      type DebugSnapshot = {
+        dice?: DebugDie[];
+        canvas?: { clientWidth?: number; clientHeight?: number } | null;
+      };
+      const panel = node as HTMLElement;
+      const group = panel.querySelector(
+        '[data-testid="betrayal-house-dice-3d-group"]',
+      ) as HTMLElement | null;
+      const groupRect = group?.getBoundingClientRect();
+      const debugRegistry =
+        (
+          window as typeof window & {
+            __diceBoxThreeDebug?: Record<string, () => DebugSnapshot | null>;
+          }
+        ).__diceBoxThreeDebug ?? {};
+      const canvases = Array.from(panel.querySelectorAll("canvas")).filter(
+        (canvas): canvas is HTMLCanvasElement =>
+          canvas instanceof HTMLCanvasElement,
+      );
+      const activeCanvas =
+        canvases.find((canvas) => {
+          const testId = canvas.dataset.testid;
+          return Boolean(testId && typeof debugRegistry[testId] === "function");
+        }) ??
+        canvases[0] ??
+        null;
+      const activeCanvasTestId =
+        activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+      const snapshot = activeCanvasTestId
+        ? (debugRegistry[activeCanvasTestId]?.() ?? null)
+        : (debugRegistry["betrayal-house-dice-box-canvas"]?.() ?? null);
+      const canvasClientWidth = snapshot?.canvas?.clientWidth ?? 0;
+      const canvasClientHeight = snapshot?.canvas?.clientHeight ?? 0;
+      const canvasRect = activeCanvas?.getBoundingClientRect();
+      const displayScaleX =
+        canvasRect && canvasClientWidth > 0
+          ? canvasRect.width / canvasClientWidth
+          : 1;
+      const displayScaleY =
+        canvasRect && canvasClientHeight > 0
+          ? canvasRect.height / canvasClientHeight
+          : 1;
+      const layouts = (snapshot?.dice ?? [])
+        .map((die) => die.layout)
+        .filter(
+          (layout): layout is Layout =>
+            Boolean(layout) &&
+            Number.isFinite(layout.x) &&
+            Number.isFinite(layout.y) &&
+            Number.isFinite(layout.width) &&
+            Number.isFinite(layout.height),
+        )
+        .map((layout) => ({
+          x: layout.x,
+          y: layout.y,
+          width: layout.visualWidth ?? layout.width,
+          height: layout.visualHeight ?? layout.height,
+        }));
+
+      return {
+        hasSnapshot: Boolean(snapshot),
+        activeCanvasTestId,
+        diceCount: layouts.length,
+        displayScaleX,
+        displayScaleY,
+        groupRect: groupRect
+          ? {
+              x: groupRect.x,
+              y: groupRect.y,
+              width: groupRect.width,
+              height: groupRect.height,
+            }
+          : null,
+        layouts,
+      };
+    });
+
+  const before = await readSnapshot();
+  await rollPanel.page().waitForTimeout(waitMs);
+  const after = await readSnapshot();
+  expect(
+    before.hasSnapshot && after.hasSnapshot,
+    `山屋骰盘停稳稳定性必须来自真实 Three.js 快照：${JSON.stringify({ before, after })}`,
+  ).toBe(true);
+  expect(
+    after.diceCount,
+    `山屋骰盘停稳后骰子数量不能变化：${JSON.stringify({ before, after })}`,
+  ).toBe(before.diceCount);
+  expect(
+    before.diceCount,
+    `山屋骰盘停稳稳定性至少要看到一颗骰子：${JSON.stringify({ before, after })}`,
+  ).toBeGreaterThan(0);
+
+  const shifts = before.layouts.map((layout, index) => {
+    const next = after.layouts[index];
+    if (!next) return Number.POSITIVE_INFINITY;
+    const dx = (next.x - layout.x) * after.displayScaleX;
+    const dy = (next.y - layout.y) * after.displayScaleY;
+    return Math.hypot(dx, dy);
+  });
+  const maxShift = Math.max(...shifts);
+  expect(
+    maxShift,
+    `山屋骰子停稳后不能二次瞬移：${JSON.stringify({ before, after, shifts })}`,
+  ).toBeLessThanOrEqual(maxCenterShiftPx);
+  if (before.groupRect && after.groupRect) {
+    const groupDrift = Math.max(
+      Math.abs(after.groupRect.x - before.groupRect.x),
+      Math.abs(after.groupRect.y - before.groupRect.y),
+      Math.abs(after.groupRect.width - before.groupRect.width),
+      Math.abs(after.groupRect.height - before.groupRect.height),
+    );
+    expect(
+      groupDrift,
+      `山屋骰盘停稳后容器不能漂移：${JSON.stringify({ before, after })}`,
+    ).toBeLessThanOrEqual(maxGroupDriftPx);
+  }
 };
 
 export const expectPhysicalDiceSeparated = async (

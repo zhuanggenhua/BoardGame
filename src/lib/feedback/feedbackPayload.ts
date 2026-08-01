@@ -79,10 +79,14 @@ export interface FeedbackConfigProposal {
     gameId: string;
     configVersion: string;
     objectId: string;
+    objectDisplayName?: string;
     objectType?: string;
     fieldPath: string;
+    fieldDisplayName?: string;
     currentValue?: unknown;
     suggestedValue?: unknown;
+    currentDisplayValue?: string;
+    updatedDisplayValue?: string;
     reason: string;
     evidence?: string;
     sourceContext?: FeedbackConfigProposalSourceContext;

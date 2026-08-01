@@ -110,11 +110,10 @@ describe('SummonerWars configReviewAdapter', () => {
       isGate: 'legacy.summonerwars.cardRegistry.necro-starting-gate.isGate',
       isStartingGate: 'legacy.summonerwars.cardRegistry.necro-starting-gate.isStartingGate',
       setupPositions: 'legacy.summonerwars.deckSources.necro-starting-gate.setupPositions',
-      sourceContexts: 'legacy.summonerwars.deckSources.necro-starting-gate',
     });
   });
 
-  it('表格列由规则和运行时消费字段清单驱动，防止牌组符号这类字段漏审', () => {
+  it('主表只显示玩家需要录入或修正的字段，不暴露内部定位和素材索引', () => {
     const requiredFields = SUMMONER_WARS_CONFIG_REVIEW_FIELD_DEFINITIONS.filter((definition) => definition.requiredForAudit);
     const requiredKeys = requiredFields.map((definition) => definition.key);
     const visibleColumns = new Set(SUMMONER_WARS_CONFIG_REVIEW_COLUMN_KEYS);
@@ -126,14 +125,19 @@ describe('SummonerWars configReviewAdapter', () => {
       'attackType',
       'attackRange',
       'abilities',
-      'spriteAtlas',
-      'spriteIndex',
     ]));
     expect(requiredFields.filter((definition) => definition.evidence.length === 0)).toEqual([]);
 
     for (const fieldKey of requiredKeys) {
       expect(visibleColumns.has(fieldKey)).toBe(true);
     }
+
+    expect(SUMMONER_WARS_CONFIG_REVIEW_COLUMN_KEYS).not.toEqual(expect.arrayContaining([
+      'id',
+      'sourceContexts',
+      'spriteAtlas',
+      'spriteIndex',
+    ]));
   });
 
   it('字段清单同时驱动值读取、适用对象和字段级反馈路径', () => {

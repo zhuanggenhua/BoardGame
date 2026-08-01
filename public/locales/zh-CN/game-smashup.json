@@ -1599,6 +1599,38 @@
       "name": "米斯卡塔尼克",
       "description": "利用疯狂牌获得优势，研究知识。注意：每2张疯狂牌终局扣1 VP。"
     },
+    "munchkin_dwarves": {
+      "name": "矮人",
+      "description": "来自萌奇金扩展，擅长装备、宝物和稳固战力。"
+    },
+    "munchkin_halflings": {
+      "name": "半身人",
+      "description": "来自萌奇金扩展，依靠灵活小随从和战术配合抢占基地。"
+    },
+    "munchkin_thieves": {
+      "name": "盗贼",
+      "description": "来自萌奇金扩展，擅长偷取资源、干扰对手和制造节奏差。"
+    },
+    "munchkin_mages": {
+      "name": "法师",
+      "description": "来自萌奇金扩展，使用法术效果改变战局。"
+    },
+    "munchkin_elves": {
+      "name": "木精灵",
+      "description": "来自萌奇金扩展，善于支援盟友并创造额外得分机会。"
+    },
+    "munchkin_clerics": {
+      "name": "牧师",
+      "description": "来自萌奇金扩展，偏向恢复、保护和持续支援。"
+    },
+    "munchkin_orcs": {
+      "name": "兽人",
+      "description": "来自萌奇金扩展，以直接进攻和高压力量推进基地。"
+    },
+    "munchkin_warriors": {
+      "name": "勇士",
+      "description": "来自萌奇金扩展，依靠正面战斗和稳定力量争夺基地。"
+    },
     "frankenstein": {
       "name": "科学怪人",
       "description": "利用 +1 力量指示物增强随从，通过牺牲和转移指示物获得优势。"
@@ -11337,6 +11369,422 @@
     "base_recording_studio": {
       "name": "录音室",
       "abilityText": "每回合开始时，这里所有玩家的随从直到回合结束 +1 战力。"
+    },
+    "munchkin_dwarves_dwarf_king": {
+      "name": "矮人王"
+    },
+    "munchkin_dwarves_loot_lover": {
+      "name": "宝藏爱好者"
+    },
+    "munchkin_dwarves_gold_digger": {
+      "name": "黄金挖掘者"
+    },
+    "munchkin_dwarves_gem_grabber": {
+      "name": "宝石抓取者"
+    },
+    "munchkin_halflings_shire_marshal": {
+      "name": "夏尔首领"
+    },
+    "munchkin_halflings_pestling": {
+      "name": "调皮鬼"
+    },
+    "munchkin_halflings_bardling": {
+      "name": "吟游诗人"
+    },
+    "munchkin_halflings_quarterling": {
+      "name": "半身人"
+    },
+    "munchkin_thieves_master_thief": {
+      "name": "盗贼大师"
+    },
+    "munchkin_thieves_fence": {
+      "name": "销赃犯"
+    },
+    "munchkin_thieves_cat_burglar": {
+      "name": "猫咪窃贼"
+    },
+    "munchkin_thieves_pickpocket": {
+      "name": "扒手"
+    },
+    "munchkin_mages_blaster_master": {
+      "name": "爆破大师"
+    },
+    "munchkin_mages_happy_zapper": {
+      "name": "快乐小法师"
+    },
+    "munchkin_mages_wand_whiz": {
+      "name": "魔杖天才"
+    },
+    "munchkin_mages_scroll_shuffler": {
+      "name": "勤读者"
+    },
+    "munchkin_elves_fae_fighter": {
+      "name": "精灵斗士"
+    },
+    "munchkin_elves_lord_of_the_prance": {
+      "name": "优雅贵族"
+    },
+    "munchkin_elves_flower_child": {
+      "name": "花之子"
+    },
+    "munchkin_elves_elf_help_guru": {
+      "name": "精灵帮助大师"
+    },
+    "munchkin_clerics_cardinal": {
+      "name": "红衣主教"
+    },
+    "munchkin_clerics_deep_friar": {
+      "name": "资深修士"
+    },
+    "munchkin_clerics_turner": {
+      "name": "特纳"
+    },
+    "munchkin_clerics_holy_roller": {
+      "name": "圣临者"
+    },
+    "munchkin_orcs_sword_lord": {
+      "name": "剑王"
+    },
+    "munchkin_orcs_topper_chopper": {
+      "name": "粉碎者"
+    },
+    "munchkin_orcs_hammer_slammer": {
+      "name": "重击者"
+    },
+    "munchkin_orcs_dork_orc": {
+      "name": "呆瓜兽人"
+    },
+    "munchkin_warriors_big_hero": {
+      "name": "大英雄"
+    },
+    "munchkin_warriors_star_player": {
+      "name": "明星勇士"
+    },
+    "munchkin_warriors_berserker": {
+      "name": "狂战士"
+    },
+    "munchkin_warriors_taunter": {
+      "name": "嘲讽者"
+    },
+    "munchkin_dwarves_anything_for_money": {
+      "name": "为了钱什么都可以",
+      "effectText": "待补：为了钱什么都可以 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_dwarves_cash_out": {
+      "name": "套现",
+      "effectText": "待补：套现 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_dwarves_cunning_plan": {
+      "name": "狡猾计划",
+      "effectText": "待补：狡猾计划 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_dwarves_greed_is_good": {
+      "name": "贪婪是好的",
+      "effectText": "待补：贪婪是好的 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_dwarves_hidden_assets": {
+      "name": "隐藏资产",
+      "effectText": "待补：隐藏资产 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_dwarves_mine": {
+      "name": "我的！",
+      "effectText": "待补：我的！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_dwarves_no_my_precious": {
+      "name": "不！我的宝贝！",
+      "effectText": "待补：不！我的宝贝！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_dwarves_salvage": {
+      "name": "打捞",
+      "effectText": "待补：打捞 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_last_call": {
+      "name": "最后通牒",
+      "effectText": "待补：最后通牒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_lunch_run": {
+      "name": "午餐散步",
+      "effectText": "待补：午餐散步 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_out_of_nowhere": {
+      "name": "偷袭",
+      "effectText": "待补：偷袭 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_rude_awakening": {
+      "name": "惊醒",
+      "effectText": "待补：惊醒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_small_but_tough": {
+      "name": "小而坚韧",
+      "effectText": "待补：小而坚韧 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_sneaksy": {
+      "name": "偷偷摸摸",
+      "effectText": "待补：偷偷摸摸 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_spoiled_brats": {
+      "name": "被宠坏的小家伙",
+      "effectText": "待补：被宠坏的小家伙 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_halflings_unexpected_party": {
+      "name": "意外的派对",
+      "effectText": "待补：意外的派对 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_backstab": {
+      "name": "背刺",
+      "effectText": "待补：背刺 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_clever_distraction": {
+      "name": "转移注意力",
+      "effectText": "待补：转移注意力 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_mugging": {
+      "name": "打劫",
+      "effectText": "待补：打劫 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_potion_bandolier": {
+      "name": "药水腰带",
+      "effectText": "待补：药水腰带 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_secret_stash": {
+      "name": "秘密藏匿处",
+      "effectText": "待补：秘密藏匿处 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_smuggling": {
+      "name": "走私",
+      "effectText": "待补：走私 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_strip_bare": {
+      "name": "剥光",
+      "effectText": "待补：剥光 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_thieves_swipe": {
+      "name": "顺手拿走",
+      "effectText": "待补：顺手拿走 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_charm": {
+      "name": "魅力",
+      "effectText": "待补：魅力 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_embiggen": {
+      "name": "大上一倍",
+      "effectText": "待补：大上一倍 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_mass_summoning": {
+      "name": "大召唤",
+      "effectText": "待补：大召唤 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_portal_to_beyond": {
+      "name": "通往次元之门",
+      "effectText": "待补：通往次元之门 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_recover_arcane_wisdom": {
+      "name": "恢复奥术智慧",
+      "effectText": "待补：恢复奥术智慧 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_some_enchanted_evening": {
+      "name": "神奇的夜晚",
+      "effectText": "待补：神奇的夜晚 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_speed_reading": {
+      "name": "快速阅读",
+      "effectText": "待补：快速阅读 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_mages_zzzzzap": {
+      "name": "快速攻击！",
+      "effectText": "待补：快速攻击！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_after_you": {
+      "name": "在你之后",
+      "effectText": "待补：在你之后 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_dancing_root": {
+      "name": "舞动之根",
+      "effectText": "待补：舞动之根 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_helping_hands": {
+      "name": "援手",
+      "effectText": "待补：援手 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_pumping_iron": {
+      "name": "力量训练",
+      "effectText": "待补：力量训练 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_run_away": {
+      "name": "逃跑吧！",
+      "effectText": "待补：逃跑吧！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_run_away_more": {
+      "name": "赶紧逃跑吧！",
+      "effectText": "待补：赶紧逃跑吧！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_trade": {
+      "name": "贸易",
+      "effectText": "待补：贸易 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_elves_traveling_elf": {
+      "name": "旅行精灵",
+      "effectText": "待补：旅行精灵 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_bin_and_gone": {
+      "name": "垃圾处理",
+      "effectText": "待补：垃圾处理 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_collection_plate": {
+      "name": "光盘",
+      "effectText": "待补：光盘 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_curse_of_imprisonment": {
+      "name": "监禁诅咒",
+      "effectText": "待补：监禁诅咒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_curse_of_uselessness": {
+      "name": "无用诅咒",
+      "effectText": "待补：无用诅咒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_good_habits": {
+      "name": "好习惯",
+      "effectText": "待补：好习惯 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_join_the_club": {
+      "name": "加入团队",
+      "effectText": "待补：加入团队 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_remove_curse": {
+      "name": "解除诅咒",
+      "effectText": "待补：解除诅咒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_clerics_word_of_recall": {
+      "name": "回忆祷词",
+      "effectText": "待补：回忆祷词 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_and_stay_down": {
+      "name": "躺下！",
+      "effectText": "待补：躺下！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_angry_pillagers": {
+      "name": "愤怒的掠夺者",
+      "effectText": "待补：愤怒的掠夺者 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_crush": {
+      "name": "挤碎",
+      "effectText": "待补：挤碎 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_death_breath": {
+      "name": "死亡之息",
+      "effectText": "待补：死亡之息 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_dogpile": {
+      "name": "狗堆",
+      "effectText": "待补：狗堆 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_gimme": {
+      "name": "给我！",
+      "effectText": "待补：给我！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_stalling": {
+      "name": "洗手间",
+      "effectText": "待补：洗手间 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_orcs_too_tough": {
+      "name": "太难了",
+      "effectText": "待补：太难了 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_campaign": {
+      "name": "领导运动",
+      "effectText": "待补：领导运动 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_cleave": {
+      "name": "斩杀",
+      "effectText": "待补：斩杀 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_dumbbells": {
+      "name": "哑铃",
+      "effectText": "待补：哑铃 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_dungeon_bait": {
+      "name": "地牢诱饵",
+      "effectText": "待补：地牢诱饵 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_eternal_hero": {
+      "name": "永恒的英雄",
+      "effectText": "待补：永恒的英雄 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_ruckus": {
+      "name": "骚乱",
+      "effectText": "待补：骚乱 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_shield_of_ubiquity": {
+      "name": "无处不在之盾",
+      "effectText": "待补：无处不在之盾 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "munchkin_warriors_war_cry": {
+      "name": "战争怒吼",
+      "effectText": "待补：战争怒吼 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+    },
+    "base_the_mines": {
+      "name": "矿洞",
+      "abilityText": "待补：矿洞 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_treasure_bath": {
+      "name": "宝藏池",
+      "abilityText": "待补：宝藏池 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_birthday_party": {
+      "name": "生日派对",
+      "abilityText": "待补：生日派对 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_subterranean_lair": {
+      "name": "地下矮屋",
+      "abilityText": "待补：地下矮屋 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_the_coffers": {
+      "name": "金库",
+      "abilityText": "待补：金库 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_thieves_guild": {
+      "name": "盗贼公会",
+      "abilityText": "待补：盗贼公会 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_dimension_doors": {
+      "name": "次元之门",
+      "abilityText": "待补：次元之门 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_mages_tower": {
+      "name": "法师之塔",
+      "abilityText": "待补：法师之塔 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_helpers_hollow": {
+      "name": "援助山谷",
+      "abilityText": "待补：援助山谷 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_treehouse": {
+      "name": "树屋",
+      "abilityText": "待补：树屋 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_hotel_of_holiness": {
+      "name": "圣洁酒店",
+      "abilityText": "待补：圣洁酒店 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_whack_a_ghoul": {
+      "name": "抓鬼",
+      "abilityText": "待补：抓鬼 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_garrison": {
+      "name": "要塞",
+      "abilityText": "待补：要塞 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_the_pits": {
+      "name": "坑洞",
+      "abilityText": "待补：坑洞 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_bastion": {
+      "name": "堡垒",
+      "abilityText": "待补：堡垒 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+    },
+    "base_the_gauntlet": {
+      "name": "锦标赛",
+      "abilityText": "待补：锦标赛 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
     }
   },
   "debug": {

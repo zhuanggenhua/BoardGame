@@ -26,6 +26,7 @@ import {
   setHarnessRandomQueue,
   expectVisiblePhysicalDiceBox,
   expectPhysicalDiceSeparated,
+  expectPhysicalDiceStableAfterSettled,
   waitForPhysicalDiceSettled,
   waitForBetrayalPageReady,
   warmBetrayalFrontend,
@@ -453,7 +454,7 @@ async function expectHauntGoalCardAndScenarioBook(
   );
   await expect(
     scenarioReaderDialog,
-    "新作祟触发时不应自动打开剧本书；剧本书应由玩家从牌桌入口打开",
+    "稳定作祟牌桌不应重复弹出剧本书；重开剧本应由牌桌短入口承接",
   ).toHaveCount(0);
   const openScenarioButton = page.getByTestId("betrayal-open-scenario");
   await expect(
@@ -2253,6 +2254,9 @@ async function runDirectRollEventFullChain(
   await expect(
     page.getByTestId("betrayal-discovery-card-front-atlas"),
   ).toBeVisible();
+  await expect(page.getByTestId("betrayal-discovery-top-banner")).toHaveCount(
+    0,
+  );
   const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
   const discoveryRollTexts =
     eventCase.expectedDiscoveryRollTexts ??
@@ -2276,7 +2280,7 @@ async function runDirectRollEventFullChain(
     page.getByTestId("betrayal-house-dice-3d-group"),
   ).toHaveAttribute("data-dice-rule-subtotal", eventCase.expectedSubtotal);
   await expectVisiblePhysicalDiceBox(rollPanel);
-  await waitForPhysicalDiceSettled(rollPanel);
+  await expectPhysicalDiceStableAfterSettled(rollPanel);
   await expectPhysicalDiceSeparated(rollPanel, {
     minDiceCount: Number(eventCase.expectedDiceCount),
   });
@@ -3461,6 +3465,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
     core.eventOrder = [dustyVial];
+    core.deckCounts.event = core.eventOrder.length;
+    pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
       traits: {
@@ -3585,6 +3591,9 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "aria-label",
       /事件牌 一瓶微尘/,
     );
+    await expect(page.getByTestId("betrayal-discovery-top-banner")).toHaveCount(
+      0,
+    );
     const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
     await expect(rollPanel).toBeVisible();
     await expect(rollPanel).toContainText("作祟检定");
@@ -3594,6 +3603,12 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(rolledDice.length).toBeGreaterThan(0);
     expect(rolledDice.every((pip) => pip === 0)).toBe(true);
     await expect(rollPanel).toContainText(`总点数 ${rolledSubtotal}`);
+    const rollBreakdown = rollPanel.getByTestId(
+      "betrayal-recent-roll-breakdown",
+    );
+    await expect(rollBreakdown).toContainText(`骰面合计 ${rolledSubtotal}`);
+    await expect(rollBreakdown).toContainText("加值 0");
+    await expect(rollBreakdown).toContainText(`总点数 ${rolledSubtotal}`);
     const diceGroup = discoveryPanel.getByTestId(
       "betrayal-house-dice-3d-group",
     );
@@ -3605,8 +3620,15 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       "data-dice-rule-subtotal",
       String(rolledSubtotal),
     );
+    const diceTraySurface = rollPanel.getByTestId(
+      "betrayal-house-dice-tray-surface",
+    );
+    await expect(diceTraySurface).toHaveAttribute(
+      "data-dice-tray-surface",
+      "transparent",
+    );
     await expectVisiblePhysicalDiceBox(rollPanel);
-    await waitForPhysicalDiceSettled(rollPanel);
+    await expectPhysicalDiceStableAfterSettled(rollPanel);
     await expectPhysicalDiceSeparated(rollPanel, {
       minDiceCount: rolledDice.length,
     });
@@ -3745,12 +3767,29 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     expect(
       currentHauntCore.scenarioRuntime.dust?.sicknessTokensByPlayerId["0"],
     ).toHaveLength(3);
+    const scenarioReaderDialog = page.getByTestId(
+      "betrayal-scenario-reader-dialog",
+    );
     await expect(
-      page.getByTestId("betrayal-scenario-reader-dialog"),
-      "灰尘作祟触发后不应自动打开剧本书；牌桌只保留公开读法提示，setup 队列不上前景",
-    ).toHaveCount(0);
-    await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
+      scenarioReaderDialog,
+      "灰尘作祟触发这个状态变化后必须承接一次剧本阅读，不能只把读法入口留在牌桌上",
+    ).toBeVisible();
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-opening-stage"),
+    ).toBeVisible();
+    await expect(
+      scenarioReaderDialog.getByTestId("betrayal-scenario-opening-cinematic"),
+    ).toBeVisible();
+    await expect(scenarioReaderDialog).toContainText("剧本3");
+    await expect(scenarioReaderDialog).toContainText("灰尘");
     await expect(page.getByTestId("betrayal-recent-roll-panel")).toHaveCount(0);
+    await saveScreenshot(
+      page,
+      `${screenshotBase}-03-作祟成功后灰尘剧本阅读承接.jpg`,
+    );
+    await page.getByTestId("betrayal-scenario-reader-close").click();
+    await expect(scenarioReaderDialog).toHaveCount(0);
+    await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
     await expect(page.getByTestId("betrayal-haunt-reveal-cue")).toBeVisible();
     await expect(page.getByTestId("betrayal-dust-progress-strip")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-action-use")).toHaveCount(0);
@@ -3758,11 +3797,11 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(page.getByTestId("betrayal-attack-weapon-selector")).toHaveCount(0);
     await expect(page.getByText("攻击灰尘")).toHaveCount(0);
     await expect(page.getByText("交换疾病")).toHaveCount(0);
-    await saveScreenshot(page, `${screenshotBase}-03-作祟成功进入灰尘.jpg`);
-    await page.getByTestId("betrayal-haunt-reveal-return-to-board").click();
+    await saveScreenshot(page, `${screenshotBase}-03a-关闭剧本后保留作祟横幅.jpg`);
+    await page.getByTestId("betrayal-haunt-reveal-close").click();
     await expect(page.getByTestId("betrayal-haunt-reveal-cue")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-dust-progress-strip")).toBeVisible();
-    await saveScreenshot(page, `${screenshotBase}-03a-作祟揭示返回牌桌后显示灰尘进度.jpg`);
+    await saveScreenshot(page, `${screenshotBase}-03b-作祟揭示返回牌桌后显示灰尘进度.jpg`);
 
     const dustActionCore = await readCurrentCore(page);
     const hallwayAfterHaunt = dustActionCore.rooms.find(
@@ -4711,6 +4750,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
     core.eventOrder = [crimsonSplash];
+    core.deckCounts.event = core.eventOrder.length;
+    pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
       traits: {
@@ -5047,6 +5088,9 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(
       page.getByTestId("betrayal-discovery-card-front-atlas"),
     ).toBeVisible();
+    await expect(page.getByTestId("betrayal-discovery-top-banner")).toHaveCount(
+      0,
+    );
     const discoveryDetail = page.getByTestId("betrayal-discovery-detail");
     await expect(discoveryDetail).toContainText("知识检定");
     await expect(discoveryDetail).toContainText("获得 1 点知识");
@@ -5065,7 +5109,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       page.getByTestId("betrayal-house-dice-3d-group"),
     ).toHaveAttribute("data-dice-rule-subtotal", "6");
     await expectVisiblePhysicalDiceBox(rollPanel);
-    await waitForPhysicalDiceSettled(rollPanel);
+    await expectPhysicalDiceStableAfterSettled(rollPanel);
+    await expectPhysicalDiceSeparated(rollPanel, { minDiceCount: 3 });
     await saveScreenshot(page, `${screenshotBase}-04-骰盘停稳直接结算.jpg`);
 
     await expect(discoveryDetail).toContainText("获得 1 点知识");

@@ -85,6 +85,10 @@ const THE_GANG_TWO_HAND_ONLINE_PC_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '10-联机真实房间四人两副手牌8个筹码.jpg',
 );
+const THE_GANG_ONLINE_MULTI_PLAYER_CHIP_DRAG_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '15-联机多人同时拖拽不同筹码可见身份和值.jpg',
+);
 const THE_GANG_TWO_HAND_LOBBY_PC_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '11-大厅创建四人两副手牌8个筹码.jpg',
@@ -753,6 +757,36 @@ async function dispatchTheGangCommand(page: Page, playerId: string, type: string
         },
         { commandPlayerId: playerId, commandType: type, commandPayload: payload },
     );
+}
+
+async function dragChipWithoutRelease(
+    page: Page,
+    chipLabel: string,
+    target: { xRatio: number; yRatio: number },
+) {
+    const chip = page.locator('[data-bgg-zone="token-pile"]').getByRole('button', { name: chipLabel, exact: true });
+    await expect(chip).toBeVisible();
+    const sourceBox = await chip.boundingBox();
+    const viewport = page.viewportSize();
+    if (!sourceBox || !viewport) {
+        throw new Error(`无法读取 ${chipLabel} 拖拽起点或视口尺寸`);
+    }
+    const sourcePoint = {
+        x: sourceBox.x + sourceBox.width / 2,
+        y: sourceBox.y + sourceBox.height / 2,
+    };
+    const targetPoint = {
+        x: viewport.width * target.xRatio,
+        y: viewport.height * target.yRatio,
+    };
+    await page.mouse.move(sourcePoint.x, sourcePoint.y);
+    await page.mouse.down();
+    await page.mouse.move(
+        sourcePoint.x + ((targetPoint.x - sourcePoint.x) * 0.45),
+        sourcePoint.y + ((targetPoint.y - sourcePoint.y) * 0.45),
+        { steps: 6 },
+    );
+    await page.mouse.move(targetPoint.x, targetPoint.y, { steps: 8 });
 }
 
 async function expectCurrentRoundChips(page: Page, expectedCount: number) {
@@ -2398,6 +2432,126 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
         await page.screenshot({ path: THE_GANG_TWO_HAND_ONLINE_PC_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
         await game.screenshot('联机真实房间四人两副手牌8个白筹码', testInfo);
+    });
+
+    test('联机真实房间能同屏看到多个玩家同时拖拽不同筹码', async ({ browser, game, page, workerPorts }, testInfo) => {
+        test.setTimeout(150000);
+        await page.setViewportSize({ width: 1366, height: 768 });
+        const playerCount = 3;
+        const expectedPlayerIds = Array.from({ length: playerCount }, (_, index) => String(index));
+        const { matchId, playerId } = await createOnlineTheGangMatch(page, playerCount);
+        const guestPlayers: TheGangOnlinePlayer[] = [];
+
+        try {
+            await openOnlineTheGangMatch(page, matchId, playerId);
+            for (let seatIndex = 1; seatIndex < playerCount; seatIndex += 1) {
+                const player = await createTheGangOnlinePlayerPage({
+                    browser,
+                    baseURL: testInfo.project.use.baseURL as string | undefined,
+                    workerPorts,
+                    matchId,
+                    playerId: String(seatIndex),
+                });
+                await player.page.setViewportSize({ width: 1366, height: 768 });
+                guestPlayers.push(player);
+            }
+
+            await expect
+                .poll(async () => {
+                    const state = await getTheGangState(page);
+                    return {
+                        playerIds: state?.core?.playerIds ?? [],
+                        heistStarted: state?.core?.heistStarted,
+                        phase: state?.core?.phase,
+                    };
+                }, { message: '等待纸牌帮三人真实联机房间全部连入并处于开局筹码选择前' })
+                .toEqual({
+                    playerIds: expectedPlayerIds,
+                    heistStarted: false,
+                    phase: 'chip-selection',
+                });
+
+            await startHeistFromSetup(page);
+            await expectChipRoundForPlayerCount(page, '白筹码', playerCount);
+            await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', playerCount);
+
+            await Promise.all([
+                dragChipWithoutRelease(guestPlayers[0].page, '白筹码 2 星', { xRatio: 0.42, yRatio: 0.42 }),
+                dragChipWithoutRelease(guestPlayers[1].page, '白筹码 3 星', { xRatio: 0.58, yRatio: 0.48 }),
+            ]);
+
+            const remoteDragOne = page.getByTestId('the-gang-remote-chip-drag-1');
+            const remoteDragTwo = page.getByTestId('the-gang-remote-chip-drag-2');
+            await expect(remoteDragOne).toBeVisible({ timeout: 10_000 });
+            await expect(remoteDragTwo).toBeVisible({ timeout: 10_000 });
+            await expect(remoteDragOne).toHaveAttribute('data-player-id', '1');
+            await expect(remoteDragOne).toHaveAttribute('data-chip-value', '2');
+            await expect(remoteDragTwo).toHaveAttribute('data-player-id', '2');
+            await expect(remoteDragTwo).toHaveAttribute('data-chip-value', '3');
+            await expect(remoteDragOne).toContainText(/(纸牌帮E2E-1|玩家 2).*2★/u);
+            await expect(remoteDragTwo).toContainText(/(纸牌帮E2E-2|玩家 3).*3★/u);
+            const tokenPile = page.locator('[data-bgg-zone="token-pile"]');
+            await expect(tokenPile.locator('button[data-chip-value="2"]'))
+                .toHaveAttribute('data-drag-source-hidden', 'true');
+            await expect(tokenPile.locator('button[data-chip-value="3"]'))
+                .toHaveAttribute('data-drag-source-hidden', 'true');
+
+            const metrics = await page.evaluate(() => {
+                const readRect = (testId: string) => {
+                    const node = document.querySelector(`[data-testid="${testId}"]`);
+                    if (!node) return null;
+                    const rect = node.getBoundingClientRect();
+                    return {
+                        bottom: rect.bottom,
+                        height: rect.height,
+                        left: rect.left,
+                        right: rect.right,
+                        top: rect.top,
+                        width: rect.width,
+                    };
+                };
+                const one = readRect('the-gang-remote-chip-drag-1');
+                const two = readRect('the-gang-remote-chip-drag-2');
+                const centerDistance = one && two
+                    ? Math.hypot(
+                        ((one.left + one.right) / 2) - ((two.left + two.right) / 2),
+                        ((one.top + one.bottom) / 2) - ((two.top + two.bottom) / 2),
+                    )
+                    : 0;
+                return {
+                    count: document.querySelectorAll('[data-testid^="the-gang-remote-chip-drag-"]').length,
+                    labels: Array.from(document.querySelectorAll('[data-testid^="the-gang-remote-chip-drag-"]'))
+                        .map((node) => node.textContent?.trim() ?? ''),
+                    one,
+                    two,
+                    centerDistance,
+                    source2Hidden: document
+                        .querySelector('[data-bgg-zone="token-pile"] button[data-chip-value="2"]')
+                        ?.getAttribute('data-drag-source-hidden') ?? null,
+                    source3Hidden: document
+                        .querySelector('[data-bgg-zone="token-pile"] button[data-chip-value="3"]')
+                        ?.getAttribute('data-drag-source-hidden') ?? null,
+                };
+            });
+            expect(metrics.count, '房主观察页必须同时存在两个远端拖拽筹码').toBe(2);
+            expect(metrics.labels.some((label) => /2★/u.test(label)), '远端拖拽标签必须显示 2 星筹码').toBe(true);
+            expect(metrics.labels.some((label) => /3★/u.test(label)), '远端拖拽标签必须显示 3 星筹码').toBe(true);
+            expect(metrics.centerDistance, '两个远端拖拽体不能完全叠在一起').toBeGreaterThan(48);
+            expect(metrics.source2Hidden, '2 星源筹码必须隐藏为占位，不能和远端 ghost 双显').toBe('true');
+            expect(metrics.source3Hidden, '3 星源筹码必须隐藏为占位，不能和远端 ghost 双显').toBe('true');
+
+            await mkdir(THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR, { recursive: true });
+            await page.screenshot({
+                path: THE_GANG_ONLINE_MULTI_PLAYER_CHIP_DRAG_SCREENSHOT_PATH,
+                fullPage: false,
+                type: 'jpeg',
+                quality: 90,
+            });
+            await game.screenshot('联机多人同时拖拽不同筹码可见身份和值', testInfo);
+        } finally {
+            await Promise.all(guestPlayers.map((player) => player.page.mouse.up().catch(() => {})));
+            await Promise.all(guestPlayers.map((player) => player.context?.close().catch(() => {})));
+        }
     });
 
     test('大厅真实创建四人房间即使旧偏好是三人两副手牌也显示8个白筹码', async ({ game, page }, testInfo) => {

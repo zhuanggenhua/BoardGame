@@ -332,8 +332,9 @@ test.describe('山屋惊魂作祟3灰尘攻击武器致死完整链', () => {
             await expect(page.getByTestId('betrayal-endgame-ending-narration')).toContainText(
                 '狂热病患冲出房屋',
             );
-            await expect(page.getByTestId('betrayal-endgame-ending-source-status')).toContainText(
-                '官方 If You Win 原文 / 正式翻译',
+            await expect(page.getByTestId('betrayal-endgame-ending-source-status')).toHaveCount(0);
+            await expect(page.getByTestId('betrayal-endgame-ending-narration')).not.toContainText(
+                '官方 If You Win 原文',
             );
             await page.getByTestId('betrayal-endgame-ending-continue').click();
             await expect(page.getByTestId('betrayal-endgame-result-report')).toBeVisible();

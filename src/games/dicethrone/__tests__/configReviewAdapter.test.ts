@@ -74,10 +74,9 @@ describe('DiceThrone configReviewAdapter', () => {
       materialStatus: 'ready',
     });
     expect(innerPeace?.fieldPaths.cpCost).toBe('legacy.dicethrone.cards.monk.card-inner-peace.cpCost');
-    expect(innerPeace?.fieldPaths.previewIndex).toBe('legacy.dicethrone.cards.monk.card-inner-peace.previewIndex');
   });
 
-  it('把运行时消费的关键字段显式暴露为表格字段', () => {
+  it('主表只显示玩家需要录入或修正的静态字段，不暴露内部调试和素材索引', () => {
     const requiredFields = DICETHRONE_CONFIG_REVIEW_FIELD_DEFINITIONS.filter((definition) => definition.requiredForAudit);
     const requiredKeys = requiredFields.map((definition) => definition.key);
     const visibleColumns = new Set(DICETHRONE_CONFIG_REVIEW_COLUMN_KEYS);
@@ -85,34 +84,52 @@ describe('DiceThrone configReviewAdapter', () => {
     expect(requiredKeys).toEqual(expect.arrayContaining([
       'startingCp',
       'startingHealth',
+      'cpMax',
       'handLimit',
       'startingHandSize',
-      'diceDefinitionId',
       'diceValue',
       'diceSymbols',
       'abilityType',
-      'trigger',
-      'effects',
-      'variants',
+      'tags',
+      'initialAbilityLevel',
       'cardType',
       'cpCost',
       'timing',
-      'playCondition',
+      'description',
       'isAttackModifier',
-      'previewAtlas',
-      'previewIndex',
       'tokenCategory',
       'stackLimit',
-      'passiveTrigger',
-      'activeUse',
-      'statusAtlasId',
-      'statusAtlasPath',
+      'initialTokenAmount',
+      'initialStatusAmount',
+      'sfxKey',
     ]));
     expect(requiredFields.filter((definition) => definition.evidence.length === 0)).toEqual([]);
 
     for (const fieldKey of requiredKeys) {
       expect(visibleColumns.has(fieldKey)).toBe(true);
     }
+
+    expect(DICETHRONE_CONFIG_REVIEW_COLUMN_KEYS).not.toEqual(expect.arrayContaining([
+      'id',
+      'rowType',
+      'sourceContexts',
+      'diceDefinitionId',
+      'diceSprite',
+      'trigger',
+      'effects',
+      'variants',
+      'passiveAbilities',
+      'playCondition',
+      'previewAtlas',
+      'previewIndex',
+      'sourceAtlasIndex',
+      'passiveTrigger',
+      'activeUse',
+      'frameId',
+      'tokenAtlasId',
+      'statusAtlasId',
+      'statusAtlasPath',
+    ]));
   });
 
   it('字段定义同时驱动值读取、适用对象和稳定修改路径', () => {

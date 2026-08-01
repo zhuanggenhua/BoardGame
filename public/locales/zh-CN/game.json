@@ -170,10 +170,10 @@
       "title": "配置修正提案",
       "batchTitle": "配置修正提案批量提交",
       "batchSummary": "本次将提交 {{count}} 项配置字段修正，统一进入 AI 首轮审查。",
-      "batchItem": "{{index}}. {{objectId}} · {{fieldPath}}：{{currentValue}} → {{suggestedValue}}",
+      "batchItem": "{{index}}. {{objectName}} · {{fieldName}}：当前值：{{currentValue}}；修改后值：{{updatedValue}}",
       "batchMore": "另有 {{count}} 项未在此处展开。",
-      "target": "对象：{{objectId}}；字段路径：{{fieldPath}}",
-      "change": "当前值：{{currentValue}}；建议值：{{suggestedValue}}"
+      "target": "对象：{{objectName}}；字段：{{fieldName}}",
+      "change": "当前值：{{currentValue}}；修改后值：{{updatedValue}}"
     },
     "submit": "提交反馈",
       "success": "反馈已提交，感谢支持！",

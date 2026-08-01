@@ -142,8 +142,6 @@
       "hauntStatusWin": "Prevails",
       "completedStamp": "Complete",
       "endingNarrationLabel": "Ending Reading",
-      "endingSourceStatus": "Non-original summary / temporary adaptation",
-      "endingSourceStatusOfficial": "Official If You Win text / formal translation",
       "continueToReport": "View Result Report"
     },
     "hud": {
@@ -425,10 +423,9 @@
       "hauntRiskPhasePreHaunt": "Before haunt",
       "hauntRiskPhaseHaunt": "Haunt",
       "hauntRevealPlayerTitle": "Public Reveal: Haunt begins",
-      "hauntRevealLead": "The scenario has changed. You can open the scenario book.",
+      "hauntRevealLead": "Scenario switched.",
       "hauntRevealSource": "Scenario {{scenarioCard}} / trigger {{omen}} / haunt {{number}}",
-      "hauntRevealDismiss": "Close",
-      "hauntRevealOpenScenario": "Read Opening"
+      "hauntRevealDismiss": "Close"
     },
     "feedback": {
       "label": "Latest",
@@ -462,7 +459,6 @@
       "readerStatusPublicBook": "Scenario Dossier",
       "readerStatusHeroBook": "Hero Scenario Book",
       "readerStatusTraitorBook": "Traitor Scenario Book",
-      "readerSourceStatus": "Non-original summary / temporary adaptation",
       "readerPageLabel": "Page",
       "readerPageAria": "Current page {{mobile}}, desktop spread {{desktop}}",
       "readerPrev": "Previous",
@@ -521,7 +517,6 @@
         "heroGoal": "Find the true name, learn the spell with the Book, then use Sanity to banish the Mummy.",
         "traitorGoal": "Help the Mummy carry the Girl and the Holy Symbol or Ring back to the Sarcophagus room.",
         "nextFallback": "Find the true name, learn the spell, or reach the Mummy",
-        "readerSourceStatus": "Local rule-source text / translated from zh-CN source",
         "progress": {
           "knowledge": "Knowledge Tokens",
           "trueName": "True Name",
@@ -530,7 +525,7 @@
         },
         "reader": {
           "prologueLabel": "Public Reveal",
-          "prologue": "Haunt 1, Mummy Rampage, is locked. After the haunt begins, heroes and the traitor read their own scenario-book text.",
+          "prologue": "Dry scraping comes from the sarcophagus. The mummy wakes, turns toward the Girl, and every step through the house starts to feel like a march toward a wedding that should never happen.",
           "prologueHeroesLabel": "Hero Opening",
           "prologueHeroes": "Dust suddenly swirls through the room, and a shadow of dread crosses your mind. Not far away, you hear a friend's cry, mixed with fear and a trace of excitement. A strange, deep voice echoes in your head: \"My beloved was lost in the ancient flood. Though my tears have turned to ash, love still burns in my heart like the sun. Now my love has returned. We shall never be parted! Anyone who stops me will die, body and soul!\"",
           "prologueTraitorLabel": "Traitor Opening",

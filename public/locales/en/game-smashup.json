@@ -1616,6 +1616,38 @@
       "name": "Miskatonic University",
       "description": "Leverage madness for advantage and research. Note: every 2 madness cards cost 1 VP at game end."
     },
+    "munchkin_dwarves": {
+      "name": "Dwarves",
+      "description": "A Munchkin faction built around treasure cards. Static intake only; treasure mechanics are still in progress."
+    },
+    "munchkin_halflings": {
+      "name": "Halflings",
+      "description": "A Munchkin faction focused on extra minion plays and catch-up tempo. Static intake only."
+    },
+    "munchkin_thieves": {
+      "name": "Thieves",
+      "description": "A Munchkin faction focused on theft, treasures, and VP swings. Static intake only; treasure mechanics are still in progress."
+    },
+    "munchkin_mages": {
+      "name": "Mages",
+      "description": "A Munchkin faction using discard costs, extra plays, and monster interactions. Static intake only; monster mechanics are still in progress."
+    },
+    "munchkin_elves": {
+      "name": "Elves",
+      "description": "A Munchkin faction that helps other players while gaining value. Static intake only."
+    },
+    "munchkin_clerics": {
+      "name": "Clerics",
+      "description": "A Munchkin faction using discard-pile recursion, curses, and undead monster hooks. Static intake only."
+    },
+    "munchkin_orcs": {
+      "name": "Orcs",
+      "description": "A Munchkin faction focused on raw power and destruction. Static intake only."
+    },
+    "munchkin_warriors": {
+      "name": "Warriors",
+      "description": "A Munchkin faction centered on fighting monsters and claiming rewards. Static intake only; monster mechanics are still in progress."
+    },
     "frankenstein": {
       "name": "Frankenstein",
       "description": "Use +1 power counters to enhance minions, gain advantage through sacrifice and transfer."
@@ -11354,6 +11386,422 @@
     "base_recording_studio": {
       "name": "Recording Studio",
       "abilityText": "At the start of each turn, all players' minions here gain +1 power until the end of the turn."
+    },
+    "munchkin_dwarves_dwarf_king": {
+      "name": "Dwarf King"
+    },
+    "munchkin_dwarves_loot_lover": {
+      "name": "Loot Lover"
+    },
+    "munchkin_dwarves_gold_digger": {
+      "name": "Gold Digger"
+    },
+    "munchkin_dwarves_gem_grabber": {
+      "name": "Gem Grabber"
+    },
+    "munchkin_halflings_shire_marshal": {
+      "name": "Shire Marshal"
+    },
+    "munchkin_halflings_pestling": {
+      "name": "Pestling"
+    },
+    "munchkin_halflings_bardling": {
+      "name": "Bardling"
+    },
+    "munchkin_halflings_quarterling": {
+      "name": "Quarterling"
+    },
+    "munchkin_thieves_master_thief": {
+      "name": "Master Thief"
+    },
+    "munchkin_thieves_fence": {
+      "name": "Fence"
+    },
+    "munchkin_thieves_cat_burglar": {
+      "name": "Cat Burglar"
+    },
+    "munchkin_thieves_pickpocket": {
+      "name": "Pickpocket"
+    },
+    "munchkin_mages_blaster_master": {
+      "name": "Blaster Master"
+    },
+    "munchkin_mages_happy_zapper": {
+      "name": "Happy Zapper"
+    },
+    "munchkin_mages_wand_whiz": {
+      "name": "Wand Whiz"
+    },
+    "munchkin_mages_scroll_shuffler": {
+      "name": "Scroll Shuffler"
+    },
+    "munchkin_elves_fae_fighter": {
+      "name": "Fae Fighter"
+    },
+    "munchkin_elves_lord_of_the_prance": {
+      "name": "Lord of the Prance"
+    },
+    "munchkin_elves_flower_child": {
+      "name": "Flower Child"
+    },
+    "munchkin_elves_elf_help_guru": {
+      "name": "Elf Help Guru"
+    },
+    "munchkin_clerics_cardinal": {
+      "name": "Cardinal"
+    },
+    "munchkin_clerics_deep_friar": {
+      "name": "Deep Friar"
+    },
+    "munchkin_clerics_turner": {
+      "name": "Turner"
+    },
+    "munchkin_clerics_holy_roller": {
+      "name": "Holy Roller"
+    },
+    "munchkin_orcs_sword_lord": {
+      "name": "Sword Lord"
+    },
+    "munchkin_orcs_topper_chopper": {
+      "name": "Topper Chopper"
+    },
+    "munchkin_orcs_hammer_slammer": {
+      "name": "Hammer Slammer"
+    },
+    "munchkin_orcs_dork_orc": {
+      "name": "Dork Orc"
+    },
+    "munchkin_warriors_big_hero": {
+      "name": "Big Hero"
+    },
+    "munchkin_warriors_star_player": {
+      "name": "Star Player"
+    },
+    "munchkin_warriors_berserker": {
+      "name": "Berserker"
+    },
+    "munchkin_warriors_taunter": {
+      "name": "Taunter"
+    },
+    "munchkin_dwarves_anything_for_money": {
+      "name": "Anything for Money",
+      "effectText": "Pending: Anything for Money's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_dwarves_cash_out": {
+      "name": "Cash Out",
+      "effectText": "Pending: Cash Out's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_dwarves_cunning_plan": {
+      "name": "Cunning Plan",
+      "effectText": "Pending: Cunning Plan's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_dwarves_greed_is_good": {
+      "name": "Greed is Good",
+      "effectText": "Pending: Greed is Good's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_dwarves_hidden_assets": {
+      "name": "Hidden Assets",
+      "effectText": "Pending: Hidden Assets's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_dwarves_mine": {
+      "name": "Mine!",
+      "effectText": "Pending: Mine!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_dwarves_no_my_precious": {
+      "name": "No! My Precious!",
+      "effectText": "Pending: No! My Precious!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_dwarves_salvage": {
+      "name": "Salvage",
+      "effectText": "Pending: Salvage's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_last_call": {
+      "name": "Last Call",
+      "effectText": "Pending: Last Call's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_lunch_run": {
+      "name": "Lunch Run",
+      "effectText": "Pending: Lunch Run's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_out_of_nowhere": {
+      "name": "Out Of Nowhere",
+      "effectText": "Pending: Out Of Nowhere's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_rude_awakening": {
+      "name": "Rude Awakening",
+      "effectText": "Pending: Rude Awakening's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_small_but_tough": {
+      "name": "Small But Tough",
+      "effectText": "Pending: Small But Tough's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_sneaksy": {
+      "name": "Sneaksy",
+      "effectText": "Pending: Sneaksy's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_spoiled_brats": {
+      "name": "Spoiled Brats",
+      "effectText": "Pending: Spoiled Brats's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_halflings_unexpected_party": {
+      "name": "Unexpected Party",
+      "effectText": "Pending: Unexpected Party's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_backstab": {
+      "name": "Backstab",
+      "effectText": "Pending: Backstab's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_clever_distraction": {
+      "name": "Clever Distraction",
+      "effectText": "Pending: Clever Distraction's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_mugging": {
+      "name": "Mugging",
+      "effectText": "Pending: Mugging's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_potion_bandolier": {
+      "name": "Potion Bandolier",
+      "effectText": "Pending: Potion Bandolier's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_secret_stash": {
+      "name": "Secret Stash",
+      "effectText": "Pending: Secret Stash's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_smuggling": {
+      "name": "Smuggling",
+      "effectText": "Pending: Smuggling's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_strip_bare": {
+      "name": "Strip Bare",
+      "effectText": "Pending: Strip Bare's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_thieves_swipe": {
+      "name": "Swipe",
+      "effectText": "Pending: Swipe's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_charm": {
+      "name": "Charm",
+      "effectText": "Pending: Charm's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_embiggen": {
+      "name": "Embiggen",
+      "effectText": "Pending: Embiggen's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_mass_summoning": {
+      "name": "Mass Summoning",
+      "effectText": "Pending: Mass Summoning's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_portal_to_beyond": {
+      "name": "Portal to Beyond",
+      "effectText": "Pending: Portal to Beyond's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_recover_arcane_wisdom": {
+      "name": "Recover Arcane Wisdom",
+      "effectText": "Pending: Recover Arcane Wisdom's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_some_enchanted_evening": {
+      "name": "Some Enchanted Evening",
+      "effectText": "Pending: Some Enchanted Evening's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_speed_reading": {
+      "name": "Speed Reading",
+      "effectText": "Pending: Speed Reading's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_mages_zzzzzap": {
+      "name": "Zzzzzap!",
+      "effectText": "Pending: Zzzzzap!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_after_you": {
+      "name": "After You",
+      "effectText": "Pending: After You's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_dancing_root": {
+      "name": "Dancing Root",
+      "effectText": "Pending: Dancing Root's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_helping_hands": {
+      "name": "Helping Hands",
+      "effectText": "Pending: Helping Hands's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_pumping_iron": {
+      "name": "Pumping Iron",
+      "effectText": "Pending: Pumping Iron's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_run_away": {
+      "name": "Run Away!",
+      "effectText": "Pending: Run Away!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_run_away_more": {
+      "name": "Run Away More!",
+      "effectText": "Pending: Run Away More!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_trade": {
+      "name": "Trade",
+      "effectText": "Pending: Trade's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_elves_traveling_elf": {
+      "name": "Traveling Elf",
+      "effectText": "Pending: Traveling Elf's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_bin_and_gone": {
+      "name": "Bin and Gone",
+      "effectText": "Pending: Bin and Gone's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_collection_plate": {
+      "name": "Collection Plate",
+      "effectText": "Pending: Collection Plate's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_curse_of_imprisonment": {
+      "name": "Curse of Imprisonment",
+      "effectText": "Pending: Curse of Imprisonment's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_curse_of_uselessness": {
+      "name": "Curse of Uselessness",
+      "effectText": "Pending: Curse of Uselessness's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_good_habits": {
+      "name": "Good Habits",
+      "effectText": "Pending: Good Habits's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_join_the_club": {
+      "name": "Join the Club",
+      "effectText": "Pending: Join the Club's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_remove_curse": {
+      "name": "Remove Curse",
+      "effectText": "Pending: Remove Curse's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_clerics_word_of_recall": {
+      "name": "Word of Recall",
+      "effectText": "Pending: Word of Recall's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_and_stay_down": {
+      "name": "And Stay Down!",
+      "effectText": "Pending: And Stay Down!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_angry_pillagers": {
+      "name": "Angry Pillagers",
+      "effectText": "Pending: Angry Pillagers's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_crush": {
+      "name": "Crush",
+      "effectText": "Pending: Crush's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_death_breath": {
+      "name": "Death Breath",
+      "effectText": "Pending: Death Breath's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_dogpile": {
+      "name": "Dogpile",
+      "effectText": "Pending: Dogpile's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_gimme": {
+      "name": "Gimme!",
+      "effectText": "Pending: Gimme!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_stalling": {
+      "name": "Stalling",
+      "effectText": "Pending: Stalling's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_orcs_too_tough": {
+      "name": "Too Tough",
+      "effectText": "Pending: Too Tough's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_campaign": {
+      "name": "Campaign",
+      "effectText": "Pending: Campaign's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_cleave": {
+      "name": "Cleave",
+      "effectText": "Pending: Cleave's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_dumbbells": {
+      "name": "Dumbbells",
+      "effectText": "Pending: Dumbbells's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_dungeon_bait": {
+      "name": "Dungeon Bait",
+      "effectText": "Pending: Dungeon Bait's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_eternal_hero": {
+      "name": "Eternal Hero",
+      "effectText": "Pending: Eternal Hero's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_ruckus": {
+      "name": "Ruckus",
+      "effectText": "Pending: Ruckus's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_shield_of_ubiquity": {
+      "name": "Shield of Ubiquity",
+      "effectText": "Pending: Shield of Ubiquity's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "munchkin_warriors_war_cry": {
+      "name": "War Cry",
+      "effectText": "Pending: War Cry's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+    },
+    "base_the_mines": {
+      "name": "The Mines",
+      "abilityText": "Pending: The Mines's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_treasure_bath": {
+      "name": "Treasure Bath",
+      "abilityText": "Pending: Treasure Bath's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_birthday_party": {
+      "name": "Birthday Party",
+      "abilityText": "Pending: Birthday Party's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_subterranean_lair": {
+      "name": "Subterranean Lair",
+      "abilityText": "Pending: Subterranean Lair's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_the_coffers": {
+      "name": "The Coffers",
+      "abilityText": "Pending: The Coffers's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_thieves_guild": {
+      "name": "Thieves' Guild",
+      "abilityText": "Pending: Thieves' Guild's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_dimension_doors": {
+      "name": "Dimension Doors",
+      "abilityText": "Pending: Dimension Doors's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_mages_tower": {
+      "name": "Mage's Tower",
+      "abilityText": "Pending: Mage's Tower's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_helpers_hollow": {
+      "name": "Helper's Hollow",
+      "abilityText": "Pending: Helper's Hollow's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_treehouse": {
+      "name": "Treehouse",
+      "abilityText": "Pending: Treehouse's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_hotel_of_holiness": {
+      "name": "Hotel of Holiness",
+      "abilityText": "Pending: Hotel of Holiness's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_whack_a_ghoul": {
+      "name": "Whack-A-Ghoul",
+      "abilityText": "Pending: Whack-A-Ghoul's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_garrison": {
+      "name": "Garrison",
+      "abilityText": "Pending: Garrison's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_the_pits": {
+      "name": "The Pits",
+      "abilityText": "Pending: The Pits's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_bastion": {
+      "name": "Bastion",
+      "abilityText": "Pending: Bastion's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+    },
+    "base_the_gauntlet": {
+      "name": "The Gauntlet",
+      "abilityText": "Pending: The Gauntlet's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
     }
   },
   "debug": {

@@ -159,7 +159,9 @@ test.describe("山屋惊魂基本流程", () => {
       scenarioReaderDialog.getByTestId(
         "betrayal-scenario-opening-source-status",
       ),
-    ).toContainText("本地规则源正文");
+    ).toHaveCount(0);
+    await expect(scenarioReaderDialog).not.toContainText("本地规则源正文");
+    await expect(scenarioReaderDialog).not.toContainText("正式中文转写");
     const scenarioReaderNextZone = scenarioReaderDialog.getByTestId(
       "betrayal-scenario-reader-next-zone",
     );
@@ -274,7 +276,9 @@ test.describe("山屋惊魂基本流程", () => {
     ).toContainText("木乃伊横行");
     await expect(
       page.getByTestId("betrayal-start-scenario-opening-source-status"),
-    ).toContainText("本地规则源正文");
+    ).toHaveCount(0);
+    await expect(startScenarioOpeningStage).not.toContainText("本地规则源正文");
+    await expect(startScenarioOpeningStage).not.toContainText("正式中文转写");
     await saveScreenshot(page, START_SCENARIO_OPENING_SCREENSHOT);
     await page.getByTestId("betrayal-start-scenario-opening-continue").click();
     await expect(startScenarioOpeningStage).toHaveCount(0);
@@ -535,7 +539,9 @@ test.describe("山屋惊魂基本流程", () => {
       mobileScenarioReaderDialog.getByTestId(
         "betrayal-scenario-opening-source-status",
       ),
-    ).toContainText("本地规则源正文");
+    ).toHaveCount(0);
+    await expect(mobileScenarioReaderDialog).not.toContainText("本地规则源正文");
+    await expect(mobileScenarioReaderDialog).not.toContainText("正式中文转写");
     await mobileScenarioReaderDialog
       .getByTestId("betrayal-scenario-reader-next-zone")
       .click();

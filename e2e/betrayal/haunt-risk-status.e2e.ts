@@ -15,7 +15,8 @@ import {
 const EVIDENCE_DIR = 'evidence/betrayal-core-interactions/haunt-risk-status';
 const THREE_OMEN_SCREENSHOT = `${EVIDENCE_DIR}/01-预兆状态-三预兆待检定.jpg`;
 const LAST_OMEN_READY_SCREENSHOT = `${EVIDENCE_DIR}/02-预兆状态-最后预兆提示.jpg`;
-const LAST_OMEN_TRIGGERED_SCREENSHOT = `${EVIDENCE_DIR}/03-最后预兆触发后.jpg`;
+const LAST_OMEN_READER_SCREENSHOT = `${EVIDENCE_DIR}/03-最后预兆触发后剧本阅读承接.jpg`;
+const LAST_OMEN_TRIGGERED_SCREENSHOT = `${EVIDENCE_DIR}/04-最后预兆触发后.jpg`;
 const PLAYER_ZERO_TEST_URL = '/play/betrayal?players=3&playerID=0&seat0=human&seat1=human&seat2=human';
 
 test.describe('山屋惊魂预兆状态条', () => {
@@ -65,9 +66,14 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(riskProgress).toHaveAttribute('data-track-max', '9');
         await expect(riskProgress).toHaveAttribute('data-current-omen-count', '3');
         await expect(riskProgress).toHaveAttribute('data-progress-percent', '33');
+        await expect(riskProgress).toHaveAttribute('data-current-display', 'segment-highlight');
         await expect(riskProgress).toHaveAttribute('aria-valuenow', '3');
-        await expect(page.getByTestId('betrayal-haunt-risk-slot')).toHaveCount(10);
-        await expect(page.getByTestId('betrayal-haunt-risk-pointer')).toHaveAttribute('data-progress-percent', '33');
+        const riskSlots = page.getByTestId('betrayal-haunt-risk-slot');
+        await expect(riskSlots).toHaveCount(10);
+        await expect(riskSlots.nth(3)).toHaveAttribute('data-haunt-risk-slot', '3');
+        await expect(riskSlots.nth(3)).toHaveAttribute('data-haunt-risk-current-slot', 'true');
+        await expect(riskSlots.nth(2)).toHaveAttribute('data-haunt-risk-current-slot', 'false');
+        await expect(page.getByTestId('betrayal-haunt-risk-pointer')).toHaveCount(0);
         const oldRiskCopy = new RegExp(['下次' + '掷', `${5}\\+ 作祟`].join('|'));
         await expect(riskStatus).not.toHaveText(oldRiskCopy);
         await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆前|Pre-Haunt/i);
@@ -134,6 +140,16 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(riskStatus).toHaveAttribute('data-haunt-started', 'true');
         await expect(riskStatus).toHaveText(/作祟已开始/);
         await expect(riskStatus).toHaveAttribute('title', /不再进行作祟检定/);
+        const scenarioReaderDialog = page.getByTestId('betrayal-scenario-reader-dialog');
+        await expect(
+            scenarioReaderDialog,
+            '最后预兆触发作祟这个状态变化后必须承接一次剧本阅读',
+        ).toBeVisible();
+        await expect(scenarioReaderDialog.getByTestId('betrayal-scenario-opening-stage')).toBeVisible();
+        await expect(scenarioReaderDialog).toContainText(/木乃伊横行|剧本1/);
+        await saveScreenshot(page, LAST_OMEN_READER_SCREENSHOT);
+        await page.getByTestId('betrayal-scenario-reader-close').click();
+        await expect(scenarioReaderDialog).toHaveCount(0);
         await page.getByTestId('betrayal-haunt-reveal-close').click();
         await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible();

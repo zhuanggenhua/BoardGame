@@ -177,6 +177,27 @@ export function DiceBoxPhysicsSource({
         }
     }, [dice]);
 
+    const restoreVisibleSettledDice = React.useCallback(async (
+        engine: DiceBoxThreeEngine,
+        nextValues: number[],
+    ) => {
+        if (nextValues.length === 0) return;
+        await engine.restoreValues(nextValues);
+        engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
+        engine.separateOverlappingDice({ settleAfter: true });
+        engine.settleDiceIntoSafeSpread();
+        engine.freezeSettledDice();
+        emitPhysicsStates(engine, true);
+    }, [emitPhysicsStates]);
+
+    const finalizeVisibleSettledDice = React.useCallback((
+        engine: DiceBoxThreeEngine,
+    ) => {
+        engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
+        engine.freezeSettledDice();
+        emitPhysicsStates(engine, true);
+    }, [emitPhysicsStates]);
+
     const setSettledState = React.useCallback((nextSettled: boolean) => {
         const previousSettled = settledRef.current;
         settledRef.current = nextSettled;
@@ -315,6 +336,10 @@ export function DiceBoxPhysicsSource({
                     setSettledState(true);
                     return;
                 }
+                if (!engine.hasDice(dice.length) && values.length > 0) {
+                    await restoreVisibleSettledDice(engine, values);
+                    previousDiceIdsRef.current = dice.map((die) => die.id);
+                }
                 setSettledState(false);
                 if (activeMotionRef.current?.type !== 'roll' || activeMotionRef.current.key !== rollingKey) {
                     activeMotionRef.current = { type: 'roll', key: rollingKey };
@@ -325,11 +350,7 @@ export function DiceBoxPhysicsSource({
                             await engine.rollToValues(values);
                         }
                     } finally {
-                        engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
-                        engine.separateOverlappingDice({ settleAfter: true });
-                        engine.settleDiceIntoSafeSpread();
-                        engine.freezeSettledDice();
-                        emitPhysicsStates(engine, true);
+                        finalizeVisibleSettledDice(engine);
                         if (activeMotionRef.current?.type === 'roll' && activeMotionRef.current.key === rollingKey) {
                             activeMotionRef.current = null;
                         }
@@ -352,11 +373,7 @@ export function DiceBoxPhysicsSource({
                 try {
                     await engine.rerollToValues(rerollIndices, targetValues, targetLockedIndices);
                 } finally {
-                    engine.recoverOutOfBoundsDice({ strictProjectedBounds: true });
-                    engine.separateOverlappingDice({ settleAfter: true });
-                    engine.settleDiceIntoSafeSpread();
-                    engine.freezeSettledDice();
-                    emitPhysicsStates(engine, true);
+                    finalizeVisibleSettledDice(engine);
                     if (activeMotionRef.current?.type === 'reroll' && activeMotionRef.current.key === key) {
                         activeMotionRef.current = null;
                     }
@@ -411,8 +428,7 @@ export function DiceBoxPhysicsSource({
                 }
 
                 setSettledState(true);
-                await engine.restoreValues(values);
-                emitPhysicsStates(engine, true);
+                await restoreVisibleSettledDice(engine, values);
                 previousDiceIdsRef.current = dice.map((die) => die.id);
                 setSettledState(true);
                 return;
@@ -427,7 +443,7 @@ export function DiceBoxPhysicsSource({
         void run().catch((error) => {
             failEngine(error);
         });
-    }, [dice, emitPhysicsStates, engineReady, failEngine, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, rollingIndices, rollingKey, setSettledState, values]);
+    }, [dice, emitPhysicsStates, engineReady, failEngine, finalizeVisibleSettledDice, isRolling, lockedIndices, rerollIds, rerollMotionKey, requiredDieSkinsReady, restoreVisibleSettledDice, rollingIndices, rollingKey, setSettledState, values]);
 
     return (
         <div

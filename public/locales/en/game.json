@@ -170,10 +170,10 @@
       "title": "Config correction proposal",
       "batchTitle": "Config correction proposal batch",
       "batchSummary": "This submits {{count}} configuration field corrections for AI review.",
-      "batchItem": "{{index}}. {{objectId}} · {{fieldPath}}: {{currentValue}} → {{suggestedValue}}",
+      "batchItem": "{{index}}. {{objectName}} · {{fieldName}}: current value: {{currentValue}}; updated value: {{updatedValue}}",
       "batchMore": "{{count}} more item(s) are not expanded here.",
-      "target": "Object: {{objectId}}; field path: {{fieldPath}}",
-      "change": "Current value: {{currentValue}}; suggested value: {{suggestedValue}}"
+      "target": "Object: {{objectName}}; field: {{fieldName}}",
+      "change": "Current value: {{currentValue}}; updated value: {{updatedValue}}"
     },
     "submit": "Submit Feedback",
       "success": "Feedback submitted. Thanks for the support!",

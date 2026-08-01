@@ -54,7 +54,7 @@
       "nextPage": "Next Page"
     },
     "filters": {
-      "searchPlaceholder": "Search name, config object, ability, or source",
+      "searchPlaceholder": "Search name, faction, ability, or field value",
       "allFactions": "All Factions"
     },
     "tableScroll": {
@@ -231,7 +231,7 @@
       "editHint": "Double-click a cell to edit. Changes are staged on this page and submitted together.",
       "emptyCell": "—",
       "emptyValue": "empty",
-      "rawValueLabel": "Raw config value",
+      "rawValueLabel": "Current value",
       "pendingCount": "{{count}} staged edit(s)",
       "invalidCount": "{{count}} invalid edit(s)",
       "invalidNumber": "Enter a number",

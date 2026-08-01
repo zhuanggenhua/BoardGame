@@ -1007,6 +1007,12 @@ function createHelpingHandsHauntCore(playerIds: string[] = ['0', '1', '2']): Bet
         { id: 'dog', name: '狗', kind: 'omen' },
         { id: 'mask', name: '面具', kind: 'omen' },
     ];
+    setTestExplorerInventory(core, '1', [
+        { id: 'ring', name: '指环', kind: 'omen' },
+    ]);
+    setTestExplorerInventory(core, '2', [
+        { id: 'holy-symbol', name: '圣符', kind: 'omen' },
+    ]);
     core.currentExplorer.traits.might = 4;
     core.currentExplorer.traits.speed = 4;
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
@@ -1343,6 +1349,21 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.phase).toBe('preHaunt');
         expect(core.scenarioId).toBe('first-scenario');
+    });
+
+    it('正常开局不预发物品或预兆，第一次预兆作祟检定只按新抽预兆计数', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        const explorers = [core.currentExplorer, ...core.otherExplorers];
+
+        expect(explorers.every((explorer) => explorer.inventory.length === 0)).toBe(true);
+        expect(resolveBetrayalOmenCount(core)).toBe(0);
+        expect(resolveBetrayalHauntRisk(core, { additionalOmenCount: 1 })).toMatchObject({
+            omenCount: 0,
+            requestedRollOmenCount: 1,
+            nextRollDiceCount: 1,
+            threshold: 5,
+            hauntStarted: false,
+        });
     });
 
     it('回合开始按速度锁定移动力，回合中速度变化不刷新本回合移动力', () => {
@@ -1777,6 +1798,58 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.movesRemaining).toBe(2);
         expect(core.turnEndedByDiscovery).toBe(false);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.state).toBe('unexplored');
+    });
+
+    it('探索新房间会使用玩家选择的合法朝向', () => {
+        let core = createStartedFirstScenarioCore();
+        const baseRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'conservatory')!;
+        const rotatingRoom = {
+            ...baseRoom,
+            name: '测试可旋转房',
+            hint: '测试用：同一入口存在多个合法朝向',
+            tags: ['测试'],
+            discoverySymbol: 'none' as const,
+            doorways: ['south' as const, 'east' as const],
+        };
+        core.roomDiscoveryDeck = [
+            { floor: 'ground', room: rotatingRoom },
+        ];
+        core.roomDiscoveryOrderByFloor = {
+            ground: [rotatingRoom],
+            upper: [],
+            basement: [],
+        };
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+        const preview = resolveRoomPlacementPreview(core, { roomId: 'ground-north' });
+        expect(preview).not.toBeNull();
+        const chosenOrientation = preview!.orientationOptions.find(
+            (option) => option.orientationTurns !== preview!.defaultOrientationTurns,
+        );
+        expect(chosenOrientation).toBeDefined();
+
+        const validation = BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(
+                BETRAYAL_COMMANDS.EXPLORE_ROOM,
+                '0',
+                { roomId: 'ground-north', orientationTurns: chosenOrientation!.orientationTurns },
+            ),
+        );
+        expect(validation).toMatchObject({ valid: true });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {
+            roomId: 'ground-north',
+            orientationTurns: chosenOrientation!.orientationTurns,
+        });
+
+        const placedRoom = core.rooms.find((room) => room.id === 'ground-north');
+        expect(placedRoom?.name).toBe('测试可旋转房');
+        expect(placedRoom?.orientationTurns).toBe(chosenOrientation!.orientationTurns);
+        expect(placedRoom?.doorways.map((doorway) => doorway.edge).sort()).toEqual(
+            chosenOrientation!.doorways.map((doorway) => doorway.edge).sort(),
+        );
+        expect(core.latestDiscovery?.kind).toBe('none');
     });
 
     it('区域不匹配的房间会先掩埋到底部，并继续翻找当前区域房间', () => {
@@ -2703,7 +2776,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(actualRiskTagsByEventName).toEqual(expectedRiskTagsByEventName);
     });
 
-    it('当前运行持有牌全集覆盖发现牌池和开局额外持有牌，并登记主动/武器能力', () => {
+    it('当前运行持有牌全集覆盖发现牌池，并登记主动/武器能力', () => {
         const discoveryCardIds = new Set([
             ...BETRAYAL_DISCOVERY_POOLS.possessions.item,
             ...BETRAYAL_DISCOVERY_POOLS.possessions.omen,
@@ -2755,11 +2828,8 @@ describe('Betrayal first scenario runtime', () => {
             'idol',
             'ring',
             'dagger',
-            'notebook',
-            'lantern',
-            'journal',
         ]);
-        expect(runtimeCards.filter((card) => !discoveryCardIds.has(card.id)).map((card) => card.name)).toEqual(['笔记本', '灯笼', '日记']);
+        expect(runtimeCards.filter((card) => !discoveryCardIds.has(card.id)).map((card) => card.name)).toEqual([]);
         expect(actualCoverage).toEqual({
             camera: { name: '魔法相机', kind: 'item', activeUseMode: null, attackWeapon: false },
             'scary-doll': { name: '恐怖玩偶', kind: 'item', activeUseMode: null, attackWeapon: false },
@@ -2783,7 +2853,6 @@ describe('Betrayal first scenario runtime', () => {
             chainsaw: { name: '电锯', kind: 'item', activeUseMode: null, attackWeapon: true },
             dynamite: { name: '炸药', kind: 'item', activeUseMode: null, attackWeapon: true },
             'angel-feather': { name: '天使之羽', kind: 'item', activeUseMode: 'nextNonCombatTraitRollTotalReplacement', attackWeapon: false },
-            notebook: { name: '笔记本', kind: 'item', activeUseMode: 'placeExplorer', attackWeapon: false },
             'omen-book': { name: '书本', kind: 'omen', activeUseMode: 'nextNonCombatTraitReplacement', attackWeapon: false },
             dog: { name: '狗', kind: 'omen', activeUseMode: null, attackWeapon: false },
             mask: { name: '面具', kind: 'omen', activeUseMode: 'moveOthersInRoom', attackWeapon: false },
@@ -2793,8 +2862,6 @@ describe('Betrayal first scenario runtime', () => {
             idol: { name: '雕像', kind: 'omen', activeUseMode: null, attackWeapon: false },
             ring: { name: '指环', kind: 'omen', activeUseMode: null, attackWeapon: true },
             dagger: { name: '匕首', kind: 'omen', activeUseMode: null, attackWeapon: true },
-            lantern: { name: '灯笼', kind: 'item', activeUseMode: null, attackWeapon: false },
-            journal: { name: '日记', kind: 'item', activeUseMode: 'placeExplorer', attackWeapon: false },
         });
     });
 
@@ -3092,9 +3159,6 @@ describe('Betrayal first scenario runtime', () => {
             idol: ['passiveMightBonus', 'idolEventSkip', 'dustDeathBurial'],
             ring: ['passiveSanityBonus', 'attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
             dagger: ['attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
-            notebook: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
-            lantern: ['eventTraitExtraDice', 'dustDeathBurial'],
-            journal: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
         };
         const runtimeCards = collectRuntimePossessionCards();
 
@@ -3131,9 +3195,6 @@ describe('Betrayal first scenario runtime', () => {
             idol: ['passiveMightBonus', 'idolEventSkip', 'dustDeathBurial'],
             ring: ['passiveSanityBonus', 'attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
             dagger: ['attackWeapon', 'tradeAfterUseLimit', 'dustDeathBurial'],
-            notebook: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
-            lantern: ['eventTraitExtraDice', 'dustDeathBurial'],
-            journal: ['turnStartActiveUseLimit', 'placeExplorer', 'dustDeathBurial'],
         });
     });
 
@@ -3166,8 +3227,6 @@ describe('Betrayal first scenario runtime', () => {
             急救包: 'healTraits',
             奇怪的药品: 'healTraits',
             地图: 'placeExplorer',
-            笔记本: 'placeExplorer',
-            日记: 'placeExplorer',
             书本: 'nextNonCombatTraitReplacement',
             面具: 'moveOthersInRoom',
         });
@@ -3611,7 +3670,7 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.title).toBe('外星几何');
-        expect(core.latestDiscovery?.detail).toContain('知识检定 7');
+        expect(core.latestDiscovery?.detail).toContain('知识检定 6');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点知识');
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.currentExplorer.traits.speed).toBe(4);
@@ -3635,7 +3694,7 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.title).toBe('外星几何');
-        expect(core.latestDiscovery?.detail).toContain('知识检定 1');
+        expect(core.latestDiscovery?.detail).toContain('知识检定 0');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点速度');
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.currentExplorer.traits.speed).toBe(3);
@@ -3665,7 +3724,7 @@ describe('Betrayal first scenario runtime', () => {
             kind: step.kind,
             text: step.text,
         }))).toEqual([
-            { kind: 'event-effect', text: '事件效果：知识检定 7：获得 1 点知识；知识 +1' },
+            { kind: 'event-effect', text: '事件效果：知识检定 6：获得 1 点知识；知识 +1' },
         ]);
         expect(core.pendingCardResolutionQueue).toHaveLength(1);
         expect(core.pendingCardResolutionQueue[0]).toMatchObject({
@@ -3819,9 +3878,9 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.recentRoll?.kind).toBe('eventTraitCheck');
         expect(core.recentRoll?.dice).toEqual([0, 1, 2, 0, 1, 2, 0, 1]);
-        expect(core.recentRoll?.passiveBonus).toBe(1);
+        expect(core.recentRoll?.passiveBonus).toBe(0);
         expect(core.recentRoll?.dice.every((pip) => pip >= 0 && pip <= 2)).toBe(true);
-        expect(core.latestDiscovery?.detail).toContain('知识检定 8');
+        expect(core.latestDiscovery?.detail).toContain('知识检定 7');
     });
 
     it('一种怪异的感觉按固定 2 骰执行成功和失败分支', () => {
@@ -4073,7 +4132,7 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.title).toBe('小机器人');
-        expect(core.latestDiscovery?.detail).toContain('知识检定 9');
+        expect(core.latestDiscovery?.detail).toContain('知识检定 8');
         expect(core.latestDiscovery?.detail).toContain('抽取一张物品卡');
         expect(core.currentExplorer.inventory).toHaveLength(inventoryBefore + 1);
         expect(core.currentExplorerInventory).toHaveLength(inventoryBefore + 1);
@@ -4097,11 +4156,11 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             { roomId: 'ground-north' },
             100,
-            createBetrayalScriptedRandom(3, 1, 1, 1, 1, 3),
+            createBetrayalScriptedRandom(3, 1, 1, 3),
         );
 
         expect(core.latestDiscovery?.title).toBe('小机器人');
-        expect(core.latestDiscovery?.detail).toContain('知识检定 3');
+        expect(core.latestDiscovery?.detail).toContain('知识检定 2');
         expect(core.latestDiscovery?.detail).toContain('受到一颗骰子的物理伤害');
         expect(core.currentExplorer.traitTracks.might.position).toBe(mightPositionBeforeRobotDamage - 2);
         expect(core.currentExplorer.traits.might).toBe(2);
@@ -4338,7 +4397,7 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.summary).toBe('选择一项属性进行检定');
-        expect(core.latestDiscovery?.detail).toContain('知识检定 9');
+        expect(core.latestDiscovery?.detail).toContain('知识检定 8');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点所选属性');
         expect(core.latestDiscovery?.detail).toContain('知识 +1');
         expect(core.currentExplorer.traits.knowledge).toBe(5);
@@ -4734,11 +4793,11 @@ describe('Betrayal first scenario runtime', () => {
         const trollHandTokens = resolveBetrayalHauntTokenInstances(helpingHandsCore)
             .filter((token) => token.kind === 'monster' && token.label === '巨魔手');
         expect(trollHandTokens).toHaveLength(2);
-        expect(trollHandTokens.every((token) => (
-            token.status === 'active'
-            && token.source === 'monster-box'
-            && token.asset?.includes('betrayal/tokens/monsters/small-monster-')
-        ))).toBe(true);
+        expect(trollHandTokens.map((token) => token.asset).sort()).toEqual([
+            'betrayal/tokens/monsters/troll-left-hand',
+            'betrayal/tokens/monsters/troll-right-hand',
+        ]);
+        expect(trollHandTokens.every((token) => token.status === 'active' && token.source === 'monster-box')).toBe(true);
 
         const corpseCore = createCorpseLootReadyCore();
         expect(resolveBetrayalHauntTokenInstances(corpseCore)
@@ -7160,7 +7219,7 @@ describe('Betrayal first scenario runtime', () => {
             representativeOnly: true,
         });
         expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
-            '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。',
+            '灰尘 If You Win 胜利文本已接入。',
             '灰尘按当前完成的结算事件收口：治愈成功立即英雄胜利；全员感染或死亡只在交换、伤害或死亡事件结算后触发叛徒胜利。',
         ]));
         expect(endgame.ruleNotes).not.toEqual(expect.arrayContaining([
@@ -7201,7 +7260,7 @@ describe('Betrayal first scenario runtime', () => {
         });
         expect([...endgame.winnerPlayerIds].sort()).toEqual(['1', '3']);
         expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
-            '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。',
+            '灰尘 If You Win 胜利文本已接入。',
         ]));
     });
 
@@ -19173,7 +19232,7 @@ describe('Betrayal first scenario runtime', () => {
 
     it('新增配置事件的失败伤害分支会写入物理或精神伤害状态', () => {
         let mentalBefore = 0;
-        let core = exploreConfiguredEventByName('不可能的房间', [1, 1, 1, 3], (draft) => {
+        let core = exploreConfiguredEventByName('不可能的房间', [1, 3, 3], (draft) => {
             setTestTraitTrack(draft, '0', 'sanity', [1, 1, 1, 1, 1], 3, 3);
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
@@ -19195,7 +19254,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalBefore - 1);
         expect(core.latestDiscovery?.detail).toContain('受到 1 点精神伤害');
 
-        core = exploreConfiguredEventByName('禁忌知识', [1, 1, 1, 2, 2], (draft) => {
+        core = exploreConfiguredEventByName('禁忌知识', [1, 2, 2], (draft) => {
             setTestTraitTrack(draft, '0', 'sanity', [1, 1, 1, 1, 1], 3, 3);
             mentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
         });
@@ -19224,7 +19283,7 @@ describe('Betrayal first scenario runtime', () => {
 
         let burningPhysicalBefore = 0;
         let burningMentalBefore = 0;
-        core = exploreConfiguredEventByName('着火的人', [1, 1, 1, 3, 2], (draft) => {
+        core = exploreConfiguredEventByName('着火的人', [1, 3, 2], (draft) => {
             setTestTraitTrack(draft, '0', 'sanity', [1, 1, 1, 1, 1], 3, 3);
             burningPhysicalBefore = traitTrackPositionTotal(draft, '0', ['might', 'speed']);
             burningMentalBefore = traitTrackPositionTotal(draft, '0', ['knowledge', 'sanity']);
@@ -23400,7 +23459,7 @@ describe('Betrayal first scenario runtime', () => {
             representativeOnly: true,
         });
         expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
-            '木乃伊 If You Win 本地规则源正文已接入，中文为正式转写稿。',
+            '木乃伊 If You Win 胜利文本已接入。',
             '当前只证明代表作祟终局读模型，不代表 50 个作祟终局全部完成。',
         ]));
     });
@@ -23426,7 +23485,7 @@ describe('Betrayal first scenario runtime', () => {
             representativeOnly: true,
         });
         expect(endgame.ruleNotes).toEqual(expect.arrayContaining([
-            '木乃伊 If You Win 本地规则源正文已接入，中文为正式转写稿。',
+            '木乃伊 If You Win 胜利文本已接入。',
         ]));
     });
 

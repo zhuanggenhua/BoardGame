@@ -136,6 +136,12 @@
         "buff": "正面状态",
         "debuff": "负面状态",
         "consumable": "可消耗标记"
+      },
+      "tags": {
+        "defensive": "防御",
+        "ultimate": "终极技",
+        "unblockable": "不可防御",
+        "uninterruptible": "不可打断"
       }
     },
     "feedback": {
@@ -143,10 +149,17 @@
       "invalidCount": "{{count}} 处格式错误",
       "emptyCell": "空",
       "cellEditHint": "双击单元格修改，最后统一提交",
-      "rawValueLabel": "原始值",
+      "rawValueLabel": "当前值",
       "invalidNumber": "请输入数字",
       "invalidBoolean": "请输入 是/否",
       "initialBatchContent": "我想提交 {{count}} 处骰子王座配置修改，请审查是否应该进入配置源。"
+    },
+    "audio": {
+      "preview": "试听 {{name}}",
+      "stop": "停止 {{name}}",
+      "loading": "正在加载 {{name}}",
+      "missing": "音效文件未找到",
+      "loadFailed": "音效列表加载失败"
     },
     "tableScroll": {
       "primaryHint": "横向内容请使用底部原生滚动条或触控板横滑",

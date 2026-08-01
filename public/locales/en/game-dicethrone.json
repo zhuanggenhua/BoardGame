@@ -136,6 +136,12 @@
         "buff": "Buff",
         "debuff": "Debuff",
         "consumable": "Consumable"
+      },
+      "tags": {
+        "defensive": "Defensive",
+        "ultimate": "Ultimate",
+        "unblockable": "Unblockable",
+        "uninterruptible": "Uninterruptible"
       }
     },
     "feedback": {
@@ -143,10 +149,17 @@
       "invalidCount": "{{count}} invalid",
       "emptyCell": "Empty",
       "cellEditHint": "Double-click a cell to edit, then submit edits together",
-      "rawValueLabel": "Raw value",
+      "rawValueLabel": "Current value",
       "invalidNumber": "Enter a number",
       "invalidBoolean": "Enter yes/no",
       "initialBatchContent": "I want to submit {{count}} Dice Throne config edits for AI review before changing the source config."
+    },
+    "audio": {
+      "preview": "Preview {{name}}",
+      "stop": "Stop {{name}}",
+      "loading": "Loading {{name}}",
+      "missing": "Audio file not found",
+      "loadFailed": "Audio list failed to load"
     },
     "tableScroll": {
       "primaryHint": "Use the native bottom scrollbar or trackpad horizontal swipe for wide fields",

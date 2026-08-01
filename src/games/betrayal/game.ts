@@ -54,7 +54,6 @@ import {
     type BetrayalScenarioId,
     type BetrayalScenarioOutcome,
     type BetrayalTraitKey as ConfigTraitKey,
-    type BetrayalSurvivorSelectionPolicy,
 } from './scenarioConfig';
 import {
     POSSESSION_USE_EFFECTS as USE_EFFECTS,
@@ -4261,20 +4260,6 @@ function getExplorersInTurnOrder(core: BetrayalCore): BetrayalExplorerSummary[] 
     return core.playerIds
         .map((playerId) => explorerByPlayerId.get(playerId))
         .filter((explorer): explorer is BetrayalExplorerSummary => Boolean(explorer));
-}
-
-function resolveScenarioSurvivors(
-    explorers: BetrayalExplorerSummary[],
-    traitor: BetrayalExplorerSummary,
-    policy: BetrayalSurvivorSelectionPolicy,
-): BetrayalExplorerSummary[] {
-    switch (policy) {
-        case 'current-explorer-only':
-            return explorers.filter((explorer) => explorer.playerId === explorers[0]?.playerId);
-        case 'all-non-traitor':
-        default:
-            return explorers.filter((explorer) => explorer.playerId !== traitor.playerId);
-    }
 }
 
 function replaceExplorers(
@@ -9609,14 +9594,6 @@ export function resolveBetrayalAttackTargetPlayerIds(
     return { traitorPlayerId, heroPlayerIds };
 }
 
-function rollAttack(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    weaponEffect: ReturnType<typeof resolveAttackWeaponEffect>,
-): number {
-    return rollAttackWithDice(random, explorer, weaponEffect).total;
-}
-
 function rollAttackWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
@@ -9767,15 +9744,6 @@ function resolveRoomBlessingExtraDice(core: BetrayalCore | undefined, explorer: 
     return room?.markerTokens?.includes('blessing') ? 1 : 0;
 }
 
-function rollTraitCheck(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    core?: BetrayalCore,
-): number {
-    return rollTrait(random, resolveTraitCheckValue(explorer, trait) + resolveRoomBlessingExtraDice(core, explorer)) + resolveTraitRollPassiveBonus(explorer, trait);
-}
-
 function rollTraitCheckWithDice(
     random: RandomFn,
     explorer: BetrayalExplorerSummary,
@@ -9830,15 +9798,6 @@ function rollNonCombatTraitCheckWithDice(
 function resolveEventTraitCheckExtraDice(explorer: BetrayalExplorerSummary): number {
     const cardIds = new Set(explorer.inventory.map((card) => resolveInventoryEffectId(card.id)));
     return [...cardIds].reduce((total, cardId) => total + (EVENT_TRAIT_CHECK_EXTRA_DICE_BY_CARD_ID[cardId] ?? 0), 0);
-}
-
-function rollEventTraitCheck(
-    random: RandomFn,
-    explorer: BetrayalExplorerSummary,
-    trait: BetrayalTraitKey,
-    core?: BetrayalCore,
-): number {
-    return rollEventTraitCheckWithDice(random, explorer, trait, core).total;
 }
 
 function rollEventTraitCheckWithDice(
@@ -11930,10 +11889,6 @@ function rollMysticElevatorWithDice(random: RandomFn): { total: number; dice: nu
     };
 }
 
-function rollMysticElevator(random: RandomFn): number {
-    return rollMysticElevatorWithDice(random).total;
-}
-
 function resolveMysticElevatorAllowedFloors(rollTotal: number): BetrayalRoomFloor[] {
     if (rollTotal >= 4) {
         return ['upper', 'ground', 'basement'];
@@ -13363,10 +13318,10 @@ function formatBetrayalIfYouWinSourceNote(result: BetrayalEndgameResult, availab
         return 'If You Win 原文尚未接入；当前只暴露可追踪的胜利文本合同 id。';
     }
     if (result.hauntId === 'mummy-rampage') {
-        return '木乃伊 If You Win 本地规则源正文已接入，中文为正式转写稿。';
+        return '木乃伊 If You Win 胜利文本已接入。';
     }
     if (result.hauntId === 'the-dust') {
-        return '灰尘 If You Win 英文官方原文已接入，中文为正式翻译稿。';
+        return '灰尘 If You Win 胜利文本已接入。';
     }
     return 'If You Win 原文已接入。';
 }

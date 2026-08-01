@@ -311,6 +311,11 @@ export class FeedbackConfigProposalDto {
 
     @IsString()
     @IsOptional()
+    @MaxLength(200)
+    objectDisplayName?: string;
+
+    @IsString()
+    @IsOptional()
     @MaxLength(64)
     objectType?: string;
 
@@ -319,12 +324,27 @@ export class FeedbackConfigProposalDto {
     @MaxLength(300)
     fieldPath!: string;
 
+    @IsString()
+    @IsOptional()
+    @MaxLength(160)
+    fieldDisplayName?: string;
+
     @Allow()
     @IsOptional()
     currentValue?: unknown;
 
     @Allow()
     suggestedValue?: unknown;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(2000)
+    currentDisplayValue?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(2000)
+    updatedDisplayValue?: string;
 
     @IsString()
     @IsNotEmpty()

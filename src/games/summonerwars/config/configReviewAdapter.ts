@@ -21,7 +21,6 @@ export type SummonerWarsConfigMaterialStatus =
 
 export const SUMMONER_WARS_CONFIG_REVIEW_FIELD_KEYS = [
   'name',
-  'id',
   'faction',
   'deckSymbols',
   'cardType',
@@ -43,9 +42,6 @@ export const SUMMONER_WARS_CONFIG_REVIEW_FIELD_KEYS = [
   'effect',
   'isGate',
   'isStartingGate',
-  'spriteAtlas',
-  'spriteIndex',
-  'sourceContexts',
 ] as const;
 
 export type SummonerWarsConfigReviewFieldKey = typeof SUMMONER_WARS_CONFIG_REVIEW_FIELD_KEYS[number];
@@ -170,16 +166,6 @@ function cardFieldPath(objectId: string, field: string): string {
 }
 
 export const SUMMONER_WARS_CONFIG_REVIEW_FIELD_DEFINITIONS: readonly SummonerWarsConfigReviewFieldDefinition[] = [
-  {
-    key: 'id',
-    valueKind: 'string',
-    applicability: 'all',
-    requiredForAudit: true,
-    meaning: '配置对象唯一编号',
-    evidence: [RULE_EVIDENCE.cardPrintedFields],
-    fieldPath: (objectId) => cardFieldPath(objectId, 'id'),
-    getValue: (row) => row.objectId,
-  },
   {
     key: 'name',
     valueKind: 'string',
@@ -399,36 +385,6 @@ export const SUMMONER_WARS_CONFIG_REVIEW_FIELD_DEFINITIONS: readonly SummonerWar
     evidence: [RULE_EVIDENCE.setupData],
     fieldPath: (objectId) => cardFieldPath(objectId, 'isStartingGate'),
     getValue: (row) => row.isStartingGate,
-  },
-  {
-    key: 'spriteAtlas',
-    valueKind: 'string',
-    applicability: 'all',
-    requiredForAudit: true,
-    meaning: '卡图图集',
-    evidence: [RULE_EVIDENCE.materialPreview],
-    fieldPath: (objectId) => cardFieldPath(objectId, 'spriteAtlas'),
-    getValue: (row) => row.spriteAtlas,
-  },
-  {
-    key: 'spriteIndex',
-    valueKind: 'number',
-    applicability: 'all',
-    requiredForAudit: true,
-    meaning: '卡图在图集里的编号',
-    evidence: [RULE_EVIDENCE.materialPreview],
-    fieldPath: (objectId) => cardFieldPath(objectId, 'spriteIndex'),
-    getValue: (row) => row.spriteIndex,
-  },
-  {
-    key: 'sourceContexts',
-    valueKind: 'string-array',
-    applicability: 'all',
-    requiredForAudit: false,
-    meaning: '对象来自召唤师、起始城门、起始单位或抽牌堆的配置源上下文',
-    evidence: [RULE_EVIDENCE.setupData],
-    fieldPath: (objectId) => deckSourceRoot(objectId),
-    getValue: (row) => row.sourceContexts,
   },
 ];
 

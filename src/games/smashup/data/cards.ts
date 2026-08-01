@@ -74,6 +74,7 @@ import {
     NEW_ROUND_TABLE_KNIGHTS_BASES,
     NEW_ROUND_TABLE_KNIGHTS_CARDS,
 } from './factions/new_round_table_knights';
+import { MUNCHKIN_BASES, MUNCHKIN_CARDS } from './factions/munchkin';
 import { PALADIN_CARDS } from './factions/paladins';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { PRINCESSES_POD_CARDS } from './factions/princesses_pod';
@@ -279,6 +280,7 @@ registerCards(MYTHIC_HORSES_CARDS);
 registerCards(MYTHIC_HORSES_POD_CARDS);
 registerCards(NEW_ROUND_TABLE_KNIGHTS_CARDS);
 registerCards(NEW_GOBLINS_CARDS);
+registerCards(MUNCHKIN_CARDS);
 registerCards(PALADIN_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(PRINCESSES_POD_CARDS);
@@ -1453,6 +1455,7 @@ registerBases(NIGHTMARE_BEFORE_CHRISTMAS_BASES);
 registerBases(WRECK_IT_RALPH_BASES);
 registerBases(NEW_ROUND_TABLE_KNIGHTS_BASES);
 registerBases(NEW_GOBLINS_BASES);
+registerBases(MUNCHKIN_BASES);
 
 registerPodBaseSkeletons();
 

@@ -17,6 +17,7 @@ description: "BoardGame 桌游 UI 概念图/imagegen prompt 前置流程。用�
 6. 先输出 UI 元素拆解，再生成 prompt；没有拆解，不要直接生图。
 7. 如果用户明确要“生成图 / image2 / UI 指导图”，交付物仍然是 imagegen 概念图；真实素材 mockup/screenshot 只能作为辅助校验和 prompt 参考，不能替代生成图。
 8. 如果用户要求保留/使用真实地图或棋盘素材，prompt 必须把“完整地图素材作为结构参考”写清楚；必要时先做 HTML/CSS/React 静态 mockup 辅助定位，但最终仍按用户要求输出生成图。
+9. 如果默认 imagegen 路线不可用，而 Open Design 工具链可用，必须自动转入 **Open Design artifact 候选稿路线**，不得停在“缺 imagegen / 缺 API key”。Open Design 候选稿仍必须继承本 skill 的规则重读、素材输入包、出图前硬回执、少边框和 AI 图面核验门禁；只有渲染导出的 PNG/JPG/WebP 或等价图片证据通过 AI 核验后，才允许打开给用户验收。
 
 ### 设计启动门禁（强制）
 
@@ -25,7 +26,7 @@ description: "BoardGame 桌游 UI 概念图/imagegen prompt 前置流程。用�
 - **先读规则再想布局**：Step 1 的第一步是从本轮刚读取的规则页段 / 合同中抽对象、状态、隐藏信息、操作入口和禁止项；不得先凭桌游经验、旧稿印象或素材外观排版，再把规则补进去。
 - **读取动作必须可追踪**：本轮已读规则不能只表现为 artifact 里列了路径、引用了旧矩阵或复述了交接摘要；必须能反查到当前轮次实际打开规则真相源 / 素材合同 / 输入包的动作，或当前轮次重新生成的前置证据文件。若上下文压缩、换会话或切 worktree 后无法确认读取动作，默认重新读取，不得继承“我之前看过”。
 - **先锁素材再定视觉主语**：凡是规则对象有正式棋盘、卡牌、角色板、token、骰子、牌背、状态板或 atlas crop，这些素材必须先被登记为主体输入，再决定布局。不能先设计一套框体 / 面板 / 胶囊壳，再把素材当小图标塞进去。
-- **风格不得绕过规则 / 素材**：主题、色彩、材质和氛围只能在规则主体和素材职责已经成立之后收敛；如果素材不能进入生成链，当前只能输出 blocked brief，不得用纯 prompt 或 HTML/CSS 壳层补一张“概念稿”。
+- **风格不得绕过规则 / 素材**：主题、色彩、材质和氛围只能在规则主体和素材职责已经成立之后收敛；如果当前 imagegen 入口不可用，但 Open Design 能把正式素材作为项目内图片、reference sheet、拼接基底或可追溯 crop 使用，必须自动转 Open Design artifact 候选稿；只有 imagegen 和 Open Design 都不能接入正式素材时，才输出 blocked brief。不得用纯 prompt、无素材 HTML/CSS 壳层或手工拼贴补一张“概念稿”。
 - **设计声明也要带证据**：`spec/domain/design/components/craft/template/evaluator` 里必须直接引用本轮规则结论和素材账本；没有这些证据的设计声明只能标 `draft-blocked`，不得成为下游 prompt 或实现合同。
 - **框体默认无权先行**：除素材自带印刷边、真实交互命中高亮和必要按钮底板外，任何常驻边框 / 面板 / 底板都必须在设计启动时写明现实对象和交互职责；写不出职责就不能进入布局稿。
 - **启动自证先于设计动作**：开始布局、风格、prompt、Open Design、HTML 预览、AI 核图或实现骨架前，必须先在当前 worktree 的前置包 / prompt brief / 随图审计里写出 `本轮规则来源`、`三条以上画面结论`、`正式素材输入链`、`人工验收状态`。四项缺任一项时，只能补证据或标 `blocked`，不得继续设计。
@@ -50,7 +51,7 @@ description: "BoardGame 桌游 UI 概念图/imagegen prompt 前置流程。用�
 - 素材账本必须写明复查证据：普通图片至少有 `path-exists + dimensions`；atlas 对象至少有 `atlas-config-exists + frame-id-found + source-image-exists`；程序化对象至少有来源文件 / 规则页 / workshop 对象证据。只写路径、只写文件名或只写 prompt 引用，都不能进入出图。
 - “使用素材”必须是图面主体实际由该正式图片、正式 atlas crop、正式牌背、正式 token 或来源锁定程序化对象承担；只在 prompt 里写素材名、用文字描述重画、用相似图标、用 CSS/边框壳或临时裁图表达，都按未使用素材处理。
 - 证据块必须记录素材如何真实进入当前 artifact：例如复制到输入包、拼入 reference sheet、作为 imagegen / Open Design 图像输入、作为 atlas crop 或运行时渲染来源。只有素材账本、没有输入动作或渲染来源时，不能宣称“已用素材”。
-- 如果当前工具不能把正式素材作为图像输入、拼接基底、可追溯 crop 或运行时渲染来源，本轮只能产出 brief / 缺口清单；不得生成或打开完成态设计稿。
+- 如果当前工具不能把正式素材作为图像输入、拼接基底、可追溯 crop 或运行时渲染来源，先检查 Open Design 是否可用并能承接这些素材；可用时自动转 Open Design artifact 候选稿路线。只有 imagegen / Open Design / 其它正式设计工具都不能承接素材时，本轮才只能产出 brief / 缺口清单；不得生成或打开完成态设计稿。
 - 若 artifact 缺少该证据块，或证据块没有覆盖画面主体，默认判 `REVISE`，并先补规则/素材证据，而不是继续调风格、边框、配色或 prompt 形容词。
 
 ### 出图前硬回执（强制）
@@ -73,7 +74,7 @@ description: "BoardGame 桌游 UI 概念图/imagegen prompt 前置流程。用�
 - `素材输入包` 的内容必须来自正式资源或正式 atlas crop：棋盘、角色板、卡牌、牌背、token、骰子、状态板等已有正式素材的主体对象必须作为图像输入、拼接基底、可追溯裁片或运行时渲染来源之一。只把路径写进 prompt，或让模型凭文字重画，仍按未使用素材处理。
 - 若使用 Open Design，本项目素材必须先复制或导入到 Open Design 当前项目目录下的相对路径，再通过 `image` / `images` / composition 输入给生成链路；不得把工作树绝对路径写进 prompt 后声称素材已参与。
 - 若素材过多，先生成一张或多张 `reference sheet / composition`：保留主棋盘、状态板、卡背、代表性卡牌、token、骰子等真实像素，附最少对象标签；该 reference sheet 也必须持久落盘并列入输入包。纯文字 prompt 不能替代 reference sheet。
-- 若当前模型、CLI、MCP 或工具参数无法接受这些素材输入，本轮只能输出 `blocked` 的 brief、缺口清单和下一步接线任务；不得退回 HTML/CSS、纯 prompt、线框稿、手工拼贴稿或旧截图冒充正式设计稿。
+- 若当前 imagegen 模型、CLI 或参数无法接受这些素材输入，但 Open Design MCP / artifact 路线可用，必须把素材导入 Open Design 项目或项目内相对路径，并继续生成 artifact 候选稿；不得停在 `blocked`。只有所有可用设计工具都无法接受正式素材输入时，本轮才输出 `blocked` 的 brief、缺口清单和下一步接线任务；不得退回无素材 HTML/CSS、纯 prompt、线框稿、手工拼贴稿或旧截图冒充正式设计稿。
 - AI 图面核验时先查 `素材输入包 -> 生成输入 -> 图面主体` 三段是否连通；任一主体对象只在账本中存在、没有进入输入包或没有在图面承担主视觉，直接判 `REVISE`。
 
 ### 读规则 / 用素材 / 少边框事故拦截（强制）
@@ -90,6 +91,7 @@ description: "BoardGame 桌游 UI 概念图/imagegen prompt 前置流程。用�
 ### 生图交付物类型门禁（强制）
 
 - 这个 skill 的正式交付物默认必须是**生图生成的位图设计稿**，不是手工拼贴稿、不是线框稿、不是资产切片排版图、也不是“看起来像 UI 排版图”的半成品。
+- **Open Design 自动接力例外**：当 imagegen 路线不可用且 Open Design 可用时，Open Design artifact 渲染导出的 PNG/JPG/WebP 可以作为本轮设计稿候选交付物，但必须在随图审计中明确标注 `open-design-artifact-candidate`，并证明 `正式资源 -> Open Design 项目/输入包 -> artifact 渲染 -> 图面主体` 连通。它不是运行页截图，也不是无审计 HTML 预览；未通过 AI 图面核验前仍不得人工验收。
 - 允许存在内部辅助 mockup，但它只能服务：
   - 校准 prompt；
   - 核对空间比例；
@@ -259,6 +261,7 @@ description: "BoardGame 桌游 UI 概念图/imagegen prompt 前置流程。用�
 ## 生成方式裁决
 
 - **UI 指导图**：用户要生成图时，目标是指导后续 UI 实现，不是最终可运行截图。可以视觉概念化，但必须守规则结构、素材构图和去重约束。
+- **imagegen 不可用时自动转 Open Design**：如果内置 imagegen 不可用、CLI 缺 API key、模型/参数不能接正式素材，且 Open Design MCP / CLI / artifact 工具可用，默认立即改走 Open Design artifact 候选稿路线。转线后仍要使用同一份规则与素材前置包，把正式素材复制/导入 Open Design 项目或 artifact 相对目录，产出可渲染 artifact，再导出 PNG/JPG/WebP 进行 AI 图面核验。不得要求用户再次确认“是否改走 Open Design”，除非用户当轮明确禁止 Open Design 或要求只能用 imagegen。
 - **辅助保真 mockup**：当需要核对空间关系时，可以先用真实素材做 HTML/CSS/React 静态 mockup 或截图；它只用于校准 prompt，不作为生成图交付替代品。
 - **禁止把 mockup 做成正式稿**：即使 mockup 已经能表达布局，也不得把它继续美化成“多层边框 + 深色面板 + 素材拼贴”的伪正式稿直接交付；这类图要么留在内部，要么废弃，不能顶替 imagegen 设计稿。
 - **失败处理**：如果 imagegen 连续生成重复 HUD、拆图、重绘流程轨或遮挡素材，应先收紧 prompt 和规范；不要直接把截图当成“已完成生图”。
