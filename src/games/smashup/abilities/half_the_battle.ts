@@ -30,6 +30,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import {
     registerActiveBaseAbility,
     registerBaseAbility,
@@ -42,7 +43,6 @@ import { buildValidatedOngoingDetachEvents, findLiveOngoingCardLocation } from '
 import { getBaseDef, getCardDef } from '../data/cards';
 import type {
     ActionCardDef,
-    ActionPlayedEvent,
     BaseAbilityUsedEvent,
     BaseMetadataUpdatedEvent,
     CardInstance,
@@ -1484,22 +1484,18 @@ const discardPlayOnMinionTargetPromptProgram = createPromptProgram<DiscardPlayOn
     onResolve: ({ context, state, value, timestamp }) => {
         const target = targetFromChoice(value as MinionChoice);
         if (!target) return { events: [] };
-        const actionPlayed: ActionPlayedEvent = {
-            type: SU_EVENTS.ACTION_PLAYED,
-            payload: {
-                playerId: context.playerId,
-                cardUid: context.action.cardUid,
-                defId: context.action.defId,
-                ownerId: context.action.ownerId,
-                isExtraAction: true,
-                fromDiscard: true,
-                discardPlaySourceId: 'rulers_cosmos_gal_woman',
-                targetBaseIndex: target.baseIndex,
-                targetType: 'minion',
-                targetMinionUid: target.uid,
-            },
+        const actionPlayed = buildActionPlayedEvent({
+            playerId: context.playerId,
+            cardUid: context.action.cardUid,
+            defId: context.action.defId,
+            ownerId: context.action.ownerId,
+            isExtraAction: true,
+            fromDiscard: true,
+            discardPlaySourceId: 'rulers_cosmos_gal_woman',
+            targetBaseIndex: target.baseIndex,
+            targetMinionUid: target.uid,
             timestamp,
-        };
+        });
         return {
             events: [
                 actionPlayed,
@@ -1746,19 +1742,15 @@ const slimePoolTargetPromptProgram = createPromptProgram<SlimePoolTargetContext,
     onResolve: ({ context, state, value, timestamp }) => {
         const target = targetFromChoice(value as MinionChoice);
         if (!target) return { events: [] };
-        const actionPlayed: ActionPlayedEvent = {
-            type: SU_EVENTS.ACTION_PLAYED,
-            payload: {
-                playerId: context.playerId,
-                cardUid: context.cardUid,
-                defId: context.defId,
-                ownerId: context.ownerId,
-                targetBaseIndex: target.baseIndex,
-                targetType: 'minion',
-                targetMinionUid: target.uid,
-            },
+        const actionPlayed = buildActionPlayedEvent({
+            playerId: context.playerId,
+            cardUid: context.cardUid,
+            defId: context.defId,
+            ownerId: context.ownerId,
+            targetBaseIndex: target.baseIndex,
+            targetMinionUid: target.uid,
             timestamp,
-        };
+        });
         return {
             events: [
                 actionPlayed,

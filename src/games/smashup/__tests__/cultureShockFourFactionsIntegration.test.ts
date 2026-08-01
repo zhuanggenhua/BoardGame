@@ -49,25 +49,19 @@ describe('文化冲击四派系静态接入', () => {
         expect(getFactionCards(SMASHUP_FACTION_IDS.ANCIENT_INCAS)).toHaveLength(12);
     });
 
-    it('格林童话与古印加继续使用文化冲击组合图集，阿南西传说与俄罗斯童话使用 POD 卡图', () => {
-        const cultureShockSlots = [
+    it('四派系卡图槽位覆盖文化冲击 atlas 的 0-58，且不注册标识格 59', () => {
+        const slots = [
+            ...ANANSI_TALES_CARDS,
             ...GRIMMS_FAIRY_TALES_CARDS,
+            ...RUSSIAN_FAIRY_TALES_CARDS,
             ...ANCIENT_INCAS_CARDS,
         ]
             .map(card => card.previewRef?.type === 'atlas' ? card.previewRef.index : -1)
             .sort((left, right) => left - right);
 
-        expect(cultureShockSlots).toEqual([
-            ...Array.from({ length: 18 }, (_value, index) => index + 13),
-            ...Array.from({ length: 12 }, (_value, index) => index + 47),
-        ]);
-        expect(cultureShockSlots).not.toContain(59);
-        expect(new Set(cultureShockSlots).size).toBe(30);
-
-        expect(new Set(ANANSI_TALES_CARDS.map(card => card.previewRef?.type === 'atlas' ? card.previewRef.atlasId : null)))
-            .toEqual(new Set([SMASHUP_ATLAS_IDS.ANANSI_TALES_POD_CARDS]));
-        expect(new Set(RUSSIAN_FAIRY_TALES_CARDS.map(card => card.previewRef?.type === 'atlas' ? card.previewRef.atlasId : null)))
-            .toEqual(new Set([SMASHUP_ATLAS_IDS.RUSSIAN_FAIRY_TALES_POD_CARDS]));
+        expect(slots).toEqual(Array.from({ length: 59 }, (_value, index) => index));
+        expect(slots).not.toContain(59);
+        expect(new Set(slots).size).toBe(59);
     });
 
     it('八张基地复用唯一文化冲击基地 atlas', () => {
@@ -108,8 +102,6 @@ describe('文化冲击四派系静态接入', () => {
 
     it('注册卡牌 atlas 与派系选择元数据', () => {
         expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.CULTURE_SHOCK_CARDS)).toBe('smashup/cards/culture_shock/atlas');
-        expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.ANANSI_TALES_POD_CARDS)).toBe('smashup/cards/anansi_tales_pod');
-        expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.RUSSIAN_FAIRY_TALES_POD_CARDS)).toBe('smashup/cards/russian_fairy_tales_pod');
         expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES)).toBe('smashup/base/polynesian_voyagers/atlas');
 
         const byId = new Map(FACTION_METADATA.map(meta => [meta.id, meta]));

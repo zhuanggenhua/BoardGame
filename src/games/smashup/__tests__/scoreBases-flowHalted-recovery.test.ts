@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { smashUpFlowHooks } from '../domain';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore } from '../domain/types';
-import { getScoringSession } from '../domain/scoringSession';
+import { createScoringSession, getScoringSession, setScoringSession } from '../domain/scoringSession';
 import { expectNoPrompt, getFirstPrompt } from './helpers';
 
 describe('scoreBases flowHalted 恢复', () => {
@@ -65,8 +65,10 @@ describe('scoreBases flowHalted 恢复', () => {
         };
 
         // 调用 onPhaseExit('scoreBases')
+        const scoringState = setScoringSession(state, createScoringSession(state.core, [0]));
+
         const result = smashUpFlowHooks.onPhaseExit!({
-            state,
+            state: scoringState,
             from: 'scoreBases',
             to: 'draw',
             command: { type: 'ADVANCE_PHASE', timestamp: 1000 },
@@ -151,8 +153,10 @@ describe('scoreBases flowHalted 恢复', () => {
         };
 
         // 调用 onPhaseExit('scoreBases')
+        const scoringState = setScoringSession(state, createScoringSession(state.core, [0]));
+
         const result = smashUpFlowHooks.onPhaseExit!({
-            state,
+            state: scoringState,
             from: 'scoreBases',
             to: 'draw',
             command: { type: 'ADVANCE_PHASE', timestamp: 1000 },

@@ -571,7 +571,7 @@ describe('功夫斗士首批能力实现', () => {
         expect(finalCore.bases[0].minions.find(minion => minion.uid === 'enemy-low')?.powerCounters ?? 0).toBe(0);
     });
 
-    it('比武擂台在唯一第一名时会按零战力玩家数给额外 VP，平局第一时不会加成', () => {
+    it('比武擂台在唯一第一名与并列第一时都会按零战力玩家数给额外 VP', () => {
         const uniqueFirstResult = scoreOneBase(
             makeState({
                 players: {
@@ -636,8 +636,8 @@ describe('功夫斗士首批能力实现', () => {
             makeMatchState(tiedFirstCore),
         );
         const tiedBaseScored = tiedResult.events.find(event => event.type === SU_EVENTS.BASE_SCORED) as any;
-        expect(tiedBaseScored.payload.rankings.find((ranking: any) => ranking.playerId === '0')?.vp).toBe(0);
-        expect(tiedBaseScored.payload.rankings.find((ranking: any) => ranking.playerId === '1')?.vp).toBe(0);
+        expect(tiedBaseScored.payload.rankings.find((ranking: any) => ranking.playerId === '0')?.vp).toBe(2);
+        expect(tiedBaseScored.payload.rankings.find((ranking: any) => ranking.playerId === '1')?.vp).toBe(2);
     });
 
     it('让我们躁起来与古道场的力量判断都走有效战力', () => {

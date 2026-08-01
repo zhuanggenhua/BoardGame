@@ -2250,8 +2250,16 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(resolved.success).toBe(true);
-        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally')?.tempPowerModifier).toBe(4);
-        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.TEMP_POWER_ADDED,
+                payload: expect.objectContaining({ minionUid: 'ally', amount: 4 }),
+            }),
+        ]));
+        expect(resolved.events.some(event =>
+            event.type === SU_EVENTS.TEMP_POWER_ADDED
+            && (event as any).payload?.minionUid === 'enemy',
+        )).toBe(false);
     });
 
     it('节拍一转会先让计分基地目标随从 +1，再让同基地一个随从 -1', () => {
@@ -2298,8 +2306,16 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(resolved.success).toBe(true);
-        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally')?.tempPowerModifier).toBe(1);
-        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.tempPowerModifier).toBe(-1);
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.TEMP_POWER_ADDED,
+                payload: expect.objectContaining({ minionUid: 'ally', amount: 1 }),
+            }),
+            expect.objectContaining({
+                type: SU_EVENTS.TEMP_POWER_ADDED,
+                payload: expect.objectContaining({ minionUid: 'enemy', amount: -1 }),
+            }),
+        ]));
     });
 
     it('快如闪电会给予目标 +2 战力并在本回合被消灭时改回手牌', () => {
@@ -2532,10 +2548,18 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         expect(resolved.success).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'source')?.powerCounters).toBe(0);
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'receiver')?.powerCounters).toBe(3);
-        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'dragon')?.metadata).toMatchObject({
-            mythicHorsesSeastarExtraTalent: true,
-            mythicHorsesSeastarExtraTalentConsumed: false,
-        });
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_METADATA_UPDATED,
+                payload: expect.objectContaining({
+                    minionUid: 'dragon',
+                    metadataUpdate: expect.objectContaining({
+                        mythicHorsesSeastarExtraTalent: true,
+                        mythicHorsesSeastarExtraTalentConsumed: false,
+                    }),
+                }),
+            }),
+        ]));
     });
 
     it('掌握时机只做额外天赋时会直接授予己方有天赋随从一次额外使用', () => {
@@ -2587,10 +2611,18 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
         );
 
         expect(chooseTalent.success).toBe(true);
-        expect(chooseTalent.finalState.core.bases[0].minions.find(minion => minion.uid === 'dragon')?.metadata).toMatchObject({
-            mythicHorsesSeastarExtraTalent: true,
-            mythicHorsesSeastarExtraTalentConsumed: false,
-        });
+        expect(chooseTalent.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_METADATA_UPDATED,
+                payload: expect.objectContaining({
+                    minionUid: 'dragon',
+                    metadataUpdate: expect.objectContaining({
+                        mythicHorsesSeastarExtraTalent: true,
+                        mythicHorsesSeastarExtraTalentConsumed: false,
+                    }),
+                }),
+            }),
+        ]));
         expect(chooseTalent.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally')?.metadata).toBeUndefined();
     });
 
