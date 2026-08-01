@@ -14448,7 +14448,7 @@ export default function BetrayalBoard({
                             <span className="rounded-[5px] border border-[rgba(214,181,109,0.24)] bg-[rgba(214,181,109,0.12)] px-1.5 py-0.5 text-center text-[12px] font-black tracking-[0.08em] text-[#fff1b8]">
                               {shouldShowLatestDiscoveryStepProgress
                                 ? `${index + 1}/${latestDiscoveryDetailSteps.length}`
-                                : "结果"}
+                                : t("board.discovery.resultLabel")}
                             </span>
                             <span className="min-w-0 leading-snug">
                               {shouldCompactLatestDiscoveryResolutionSteps ? (

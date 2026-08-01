@@ -873,6 +873,7 @@
     },
     "discovery": {
       "label": "探索结果",
+      "resultLabel": "结果",
       "revealed": "已翻开",
       "eventCard": "事件牌",
       "itemCard": "物品牌",

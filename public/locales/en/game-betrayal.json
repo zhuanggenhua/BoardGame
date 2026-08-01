@@ -872,6 +872,7 @@
     },
     "discovery": {
       "label": "Discovery",
+      "resultLabel": "Result",
       "revealed": "Revealed",
       "eventCard": "Event Card",
       "itemCard": "Item Card",
