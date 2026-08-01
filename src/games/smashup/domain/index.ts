@@ -1531,6 +1531,10 @@ function normalizeLegacySmashUpMatchState(
     if (normalizedTreasureDeck !== core.treasureDeck) {
         changed = true;
     }
+    const normalizedTreasureDiscard = normalizeSmashUpRuntimeMadnessDeck(core.treasureDiscard);
+    if (normalizedTreasureDiscard !== core.treasureDiscard) {
+        changed = true;
+    }
 
     const normalizedState = changed ? {
         ...state,
@@ -1541,6 +1545,7 @@ function normalizeLegacySmashUpMatchState(
             madnessDeck: normalizedMadnessDeck,
             monsterDeck: normalizedMonsterDeck,
             treasureDeck: normalizedTreasureDeck,
+            treasureDiscard: normalizedTreasureDiscard,
         },
     } : state;
 

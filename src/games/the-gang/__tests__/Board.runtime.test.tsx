@@ -1146,6 +1146,46 @@ describe('The Gang Board 运行入口', () => {
         expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.RETURN_CHIP, expect.anything());
     });
 
+    test('拖拽筹码时后续指针移动落到窗口也必须继续跟随', () => {
+        const dispatch = vi.fn();
+        const started = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
+
+        renderWithToast(
+            <Board
+                G={stateOf(started)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        const chipButton = document.querySelector('[data-bgg-zone="token-pile"] button');
+        const handTarget = screen.getByTestId('the-gang-local-hand-top');
+        expect(chipButton).toBeInTheDocument();
+
+        const restoreElementFromPoint = mockElementFromPoint(handTarget);
+        try {
+            fireEvent.pointerDown(chipButton!, { pointerId: 21, button: 0, clientX: 10, clientY: 10 });
+            fireEvent.pointerMove(chipButton!, { pointerId: 21, clientX: 44, clientY: 44 });
+            expect(screen.getByTestId('the-gang-chip-drag-ghost').getAttribute('style') ?? '').toContain('left: 44px');
+
+            fireEvent.pointerMove(window, { pointerId: 21, clientX: 144, clientY: 124 });
+            const ghostStyle = screen.getByTestId('the-gang-chip-drag-ghost').getAttribute('style') ?? '';
+            expect(ghostStyle).toContain('left: 144px');
+            expect(ghostStyle).toContain('top: 124px');
+
+            fireEvent.pointerUp(window, { pointerId: 21, clientX: 144, clientY: 124 });
+        } finally {
+            restoreElementFromPoint();
+        }
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
+            __internalPlayerId: '0',
+            chip: 1,
+        });
+    });
+
     test('真实 Board 会把撤回状态提供给通用 HUD 上下文', () => {
         render(<HarnessBoard />);
 

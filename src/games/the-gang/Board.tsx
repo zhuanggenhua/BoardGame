@@ -321,6 +321,12 @@ interface CardDragHandlers {
 }
 
 type ChipClickEvent = ReactMouseEvent<HTMLElement>;
+type ChipPointerEventLike = {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    preventDefault?: () => void;
+};
 
 interface ProgressButtonState {
     approvals: string[];
@@ -3090,10 +3096,32 @@ export default function TheGangBoard({
         event?.preventDefault?.();
     };
 
+    const continueChipDrag = (event: ChipPointerEventLike) => {
+        const current = chipDragRef.current;
+        if (!current || current.pointerId !== event.pointerId) return;
+        const moved = Math.hypot(event.clientX - current.startX, event.clientY - current.startY);
+        const dragging = current.dragging || moved >= CHIP_DRAG_THRESHOLD;
+        const nextDrag = {
+            ...current,
+            x: event.clientX,
+            y: event.clientY,
+            dragging,
+            hoverTarget: dragging ? getDropTargetAtPoint(event.clientX, event.clientY) : undefined,
+        };
+        updateChipDrag(nextDrag);
+        emitChipDragMove(nextDrag, event);
+        if (dragging) {
+            event.preventDefault?.();
+        }
+    };
+
     const bindChipDragGlobalEndListeners = (pointerId: number) => {
         if (typeof window === 'undefined') return;
         clearChipDragGlobalEndListeners();
 
+        const handlePointerMove = (event: PointerEvent) => {
+            continueChipDrag(event);
+        };
         const handlePointerUp = (event: PointerEvent) => {
             const current = chipDragRef.current;
             if (!current || current.pointerId !== pointerId) return;
@@ -3108,9 +3136,11 @@ export default function TheGangBoard({
             cancelChipDrag(current);
         };
 
+        window.addEventListener('pointermove', handlePointerMove, { passive: false });
         window.addEventListener('pointerup', handlePointerUp);
         window.addEventListener('pointercancel', handlePointerCancel);
         chipDragGlobalCleanupRef.current = () => {
+            window.removeEventListener('pointermove', handlePointerMove);
             window.removeEventListener('pointerup', handlePointerUp);
             window.removeEventListener('pointercancel', handlePointerCancel);
         };
@@ -3132,19 +3162,7 @@ export default function TheGangBoard({
             bindChipDragGlobalEndListeners(event.pointerId);
         },
         onPointerMove: (event) => {
-            const current = chipDragRef.current;
-            if (!current || current.pointerId !== event.pointerId) return;
-            const moved = Math.hypot(event.clientX - current.startX, event.clientY - current.startY);
-            const dragging = current.dragging || moved >= CHIP_DRAG_THRESHOLD;
-            const nextDrag = {
-                ...current,
-                x: event.clientX,
-                y: event.clientY,
-                dragging,
-                hoverTarget: dragging ? getDropTargetAtPoint(event.clientX, event.clientY) : undefined,
-            };
-            updateChipDrag(nextDrag);
-            emitChipDragMove(nextDrag, event);
+            continueChipDrag(event);
         },
         onPointerUp: (event) => {
             const current = chipDragRef.current;

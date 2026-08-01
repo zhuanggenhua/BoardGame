@@ -12,6 +12,7 @@ import {
   Handshake,
   House,
   Hourglass,
+  LocateFixed,
   RotateCcw,
   RotateCw,
   Search,
@@ -3888,10 +3889,10 @@ function ExplorerTraitTrackRail({
       ? "h-[32px]"
       : "h-[28px]";
   const slotLabelClass = isCompact
-    ? "grid h-full w-full place-items-center text-[9px] leading-none"
+    ? "flex h-full w-full translate-y-[1px] items-center justify-center text-[9px] leading-none tabular-nums"
     : isDetail
-      ? "grid h-full w-full place-items-center text-[13px] leading-none"
-      : "grid h-full w-full place-items-center text-[12px] leading-none";
+      ? "flex h-full w-full translate-y-[1px] items-center justify-center text-[13px] leading-none tabular-nums"
+      : "flex h-full w-full translate-y-[1px] items-center justify-center text-[12px] leading-none tabular-nums";
 
   return (
     <div
@@ -3938,7 +3939,8 @@ function ExplorerTraitTrackRail({
       >
         <div
           data-trait-track-segmented-rail="true"
-          className={`absolute inset-x-0 top-1/2 grid ${trackBodyClass} -translate-y-1/2 gap-[3px] overflow-hidden rounded-[7px] border border-[rgba(181,128,70,0.62)] bg-[rgba(58,39,27,0.88)] p-[2px] shadow-[inset_0_0_0_1px_rgba(255,224,159,0.16),inset_0_0_12px_rgba(0,0,0,0.44),0_3px_10px_rgba(0,0,0,0.24)]`}
+          data-trait-track-visual-separation="visible-physical-slot-boundaries"
+          className={`absolute inset-x-0 top-1/2 grid ${trackBodyClass} -translate-y-1/2 gap-[4px] overflow-hidden rounded-[7px] border border-[rgba(181,128,70,0.62)] bg-[rgba(38,24,16,0.92)] p-[2px] shadow-[inset_0_0_0_1px_rgba(255,224,159,0.16),inset_0_0_12px_rgba(0,0,0,0.44),0_3px_10px_rgba(0,0,0,0.24)]`}
           style={{ gridTemplateColumns: `repeat(${slots.length}, minmax(0, 1fr))` }}
         >
           {slots.map((position) => {
@@ -3956,9 +3958,13 @@ function ExplorerTraitTrackRail({
                 data-trait-track-pointer={isCurrent ? "true" : undefined}
                 data-trait-track-pointer-shape={isCurrent ? "material-slot-highlight" : undefined}
                 data-trait-track-start={isStart ? "true" : "false"}
+                data-trait-track-start-indicator={
+                  isStart ? "in-slot-green-band" : undefined
+                }
                 data-trait-track-critical={isCritical ? "true" : "false"}
                 data-trait-track-skull={isSkull ? "true" : "false"}
                 data-trait-track-death={isSkull ? "true" : "false"}
+                data-trait-track-slot-boundary="visible"
                 data-trait-track-value={isSkull ? undefined : slotValue}
                 data-trait-track-color={
                   isCurrent
@@ -3971,9 +3977,9 @@ function ExplorerTraitTrackRail({
                           ? "start-green"
                           : "neutral"
                 }
-                title={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格（不是数值）" : slotValue}${isCurrent ? "，当前位置" : ""}`}
-                aria-label={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格，不是数值" : slotValue}${isCurrent ? "，当前位置" : ""}`}
-                className={`relative grid min-w-0 place-items-center rounded-[4px] border text-center font-semibold leading-none ${
+                title={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格（不是数值）" : slotValue}${isStart ? "，初始格" : ""}${isCurrent ? "，当前位置" : ""}`}
+                aria-label={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格，不是数值" : slotValue}${isStart ? "，初始格" : ""}${isCurrent ? "，当前位置" : ""}`}
+                className={`relative grid min-w-0 place-items-center rounded-[4px] border text-center font-semibold leading-none ring-1 ring-inset ring-[rgba(255,236,196,0.14)] ${
                   isCurrent
                     ? "border-[#d7ff8d] bg-[rgba(78,128,59,0.82)] text-[#f7ffd8] shadow-[inset_0_0_0_1px_rgba(231,255,172,0.30),0_0_13px_rgba(155,214,103,0.46)]"
                     : isSkull
@@ -3983,6 +3989,10 @@ function ExplorerTraitTrackRail({
                         : isStart
                           ? "border-[rgba(168,216,111,0.70)] bg-[rgba(88,124,48,0.36)] text-[#e8ffd2]"
                           : "border-[rgba(153,111,66,0.52)] bg-[rgba(16,19,15,0.42)] text-[rgba(238,220,176,0.82)]"
+                } ${
+                  isStart
+                    ? "after:pointer-events-none after:absolute after:inset-x-[4px] after:bottom-[3px] after:h-[3px] after:rounded-full after:bg-[rgba(199,255,150,0.72)] after:shadow-[0_0_8px_rgba(199,255,150,0.48)] after:content-['']"
+                    : ""
                 }`}
               >
                 {isSkull ? (
@@ -6393,6 +6403,9 @@ export default function BetrayalBoard({
   const [selectedRoomMapFloor, setSelectedRoomMapFloor] = React.useState<
     BetrayalRoomNode["floor"]
   >(() => resolveExplorerFloor(baseCore));
+  const [roomFocusPanTarget, setRoomFocusPanTarget] = React.useState<
+    string | null
+  >(null);
   const roomGridRef = React.useRef<HTMLDivElement | null>(null);
   const isPhoneLandscapeLayout =
     runtimeViewport.width > 0 &&
@@ -6484,6 +6497,21 @@ export default function BetrayalBoard({
     },
     [core.currentExplorer.playerId],
   );
+  const handleFocusSelfRoom = React.useCallback(() => {
+    const selfRoom = core.rooms.find(
+      (room) => room.id === core.currentExplorer.roomId,
+    );
+    if (!selfRoom) {
+      return;
+    }
+    setObservedExplorerPlayerId(null);
+    setSelectedRoomMapFloor(selfRoom.floor);
+    const nextTarget = `betrayal-room-${selfRoom.id}`;
+    setRoomFocusPanTarget(null);
+    window.requestAnimationFrame(() => {
+      setRoomFocusPanTarget(nextTarget);
+    });
+  }, [core.currentExplorer.roomId, core.rooms]);
   const referencePages = React.useMemo(
     () => resolveReferencePages(core),
     [core],
@@ -15654,9 +15682,10 @@ export default function BetrayalBoard({
                   minScale={0.55}
                   maxScale={2.4}
                   panToTarget={
-                    isPhoneLandscapeLayout
+                    roomFocusPanTarget ??
+                    (isPhoneLandscapeLayout
                       ? `betrayal-room-${core.currentExplorer.roomId}`
-                      : null
+                      : null)
                   }
                   panToScale={isPhoneLandscapeLayout ? 1 : undefined}
                   panBoundsMode="free"
@@ -18317,12 +18346,16 @@ export default function BetrayalBoard({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setRoomPreviewId(core.activeRoomId)}
-                  data-testid="betrayal-open-active-room-preview"
+                  onClick={handleFocusSelfRoom}
+                  data-testid="betrayal-focus-self-room"
+                  data-room-focus-action="self-room"
+                  data-room-focus-target-id={core.currentExplorer.roomId}
+                  data-room-focus-icon="locate-fixed"
                   className="grid h-[40px] w-[40px] place-items-center rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] text-[#d8bf81] transition hover:border-[#8b744d]"
-                  title={t("board.rooms.preview")}
+                  title={t("board.rooms.focusSelf")}
+                  aria-label={t("board.rooms.focusSelf")}
                 >
-                  <House size={16} />
+                  <LocateFixed size={16} aria-hidden="true" />
                 </button>
               </div>
               <div className="mt-3 hidden xl:block">

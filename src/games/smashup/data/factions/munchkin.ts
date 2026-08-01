@@ -123,19 +123,19 @@ export const MUNCHKIN_TREASURE_CARD_DEFS: CardDef[] = [
     treasureAction(treasure('munchkin_treasure_buckler_of_swashing'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_bloody_dismemberment_chainsaw'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_loads_of_treasure'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
-    treasureAction(treasure('munchkin_treasure_crossbow'), { subtype: 'standard', playNeedsBase: true }),
+    treasureAction(treasure('munchkin_treasure_crossbow'), { subtype: 'standard', playNeedsBase: true, abilityTags: ['onPlay'] }),
     treasureAction(treasure('munchkin_treasure_dungeon_rulebook'), { subtype: 'standard' }),
     treasureAction(treasure('munchkin_treasure_temporal_displacement_jetpack'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_kneepads_of_allure'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
-    treasureAction(treasure('munchkin_treasure_magic_missile'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_magic_missile'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true, abilityTags: ['talent'] }),
     treasureAction(treasure('munchkin_treasure_potion_of_cowardice'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_potion_of_halitosis'), { subtype: 'standard', playNeedsBase: true }),
     treasureAction(treasure('munchkin_treasure_potion_of_idiotic_bravery'), { subtype: 'standard', playNeedsMinion: true, abilityTags: ['onPlay'] }),
     treasureAction(treasure('munchkin_treasure_potion_of_straight_line_running_away'), { subtype: 'special', specialTiming: 'afterScoring' }),
     treasureAction(treasure('munchkin_treasure_potion_of_paralysis'), { subtype: 'special', specialTiming: 'beforeScoring', playNeedsBase: true }),
     treasureAction(treasure('munchkin_treasure_potion_of_duplication'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
-    treasureAction(treasure('munchkin_treasure_treasure_finder'), { subtype: 'standard' }),
-    treasureAction(treasure('munchkin_treasure_wishing_ring'), { subtype: 'standard' }),
+    treasureAction(treasure('munchkin_treasure_treasure_finder'), { subtype: 'standard', abilityTags: ['onPlay'] }),
+    treasureAction(treasure('munchkin_treasure_wishing_ring'), { subtype: 'standard', abilityTags: ['onPlay'] }),
 ];
 
 export const MUNCHKIN_MONSTER_CARDS: MunchkinSpecialCardDescriptor[] = [

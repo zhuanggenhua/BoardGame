@@ -1111,6 +1111,33 @@ async function captureChipDragToLocalHandHighlight(
     await expect(page.getByTestId('the-gang-chip-drag-ghost')).toBeVisible();
     const ghostVisibleLatencyMs = Date.now() - dragStartMs;
     await expect(target).toHaveAttribute('data-the-gang-chip-drop-state', 'active');
+    const ghostBeforeHoldBox = await page.getByTestId('the-gang-chip-drag-ghost').boundingBox();
+    const sustainedPoint = {
+        x: Math.min(targetBox.x + targetBox.width - 2, targetPoint.x + 16),
+        y: Math.min(targetBox.y + targetBox.height - 2, targetPoint.y + 12),
+    };
+    await page.waitForTimeout(1200);
+    await page.mouse.move(sustainedPoint.x, sustainedPoint.y, { steps: 3 });
+    const ghostAfterHoldBox = await page.getByTestId('the-gang-chip-drag-ghost').boundingBox();
+    if (!ghostBeforeHoldBox || !ghostAfterHoldBox) {
+        throw new Error(`${label}：无法读取按住一秒前后的筹码 ghost 位置`);
+    }
+    const ghostBeforeHoldCenter = {
+        x: ghostBeforeHoldBox.x + ghostBeforeHoldBox.width / 2,
+        y: ghostBeforeHoldBox.y + ghostBeforeHoldBox.height / 2,
+    };
+    const ghostAfterHoldCenter = {
+        x: ghostAfterHoldBox.x + ghostAfterHoldBox.width / 2,
+        y: ghostAfterHoldBox.y + ghostAfterHoldBox.height / 2,
+    };
+    const sustainedGhostMoveDistance = Math.hypot(
+        ghostAfterHoldCenter.x - ghostBeforeHoldCenter.x,
+        ghostAfterHoldCenter.y - ghostBeforeHoldCenter.y,
+    );
+    const sustainedGhostPointerDistance = Math.hypot(
+        ghostAfterHoldCenter.x - sustainedPoint.x,
+        ghostAfterHoldCenter.y - sustainedPoint.y,
+    );
 
     const metrics = {
         ...await page.evaluate((slot) => {
@@ -1185,9 +1212,13 @@ async function captureChipDragToLocalHandHighlight(
         };
     }, handSlot),
         ghostVisibleLatencyMs,
+        sustainedGhostMoveDistance,
+        sustainedGhostPointerDistance,
     };
     await writeMiddleLayoutMetrics(`${label}-拖拽高亮`, metrics);
     expect(metrics.ghostVisibleLatencyMs, `${label}：第一次拖筹码 ghost 出现过慢，疑似重开/重发后首次筹码交互卡住`).toBeLessThanOrEqual(2500);
+    expect(metrics.sustainedGhostMoveDistance, `${label}：第一次拖筹码按住约 1 秒后必须继续跟手，不能卡在旧位置`).toBeGreaterThan(4);
+    expect(metrics.sustainedGhostPointerDistance, `${label}：第一次拖筹码按住约 1 秒后 ghost 必须贴近当前指针`).toBeLessThanOrEqual(10);
     if (poolSourceBehavior === 'hidden') {
         expect(metrics.sourceHidden, `${label}：拖筹码时源筹码必须隐藏，不能和 ghost 双显`).toBe('true');
         expect(metrics.sourceOpacity, `${label}：拖筹码时源筹码必须视觉不可见但保留占位`).toBe('0');

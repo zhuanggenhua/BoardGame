@@ -1470,7 +1470,12 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-action-explore')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-mobile-dock-explore')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-open-scenario')).toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-open-active-room-preview')).toBeInTheDocument();
+        const focusSelfRoomButton = screen.getByTestId('betrayal-focus-self-room');
+        expect(focusSelfRoomButton).toBeInTheDocument();
+        expect(focusSelfRoomButton).toHaveAttribute('data-room-focus-action', 'self-room');
+        expect(focusSelfRoomButton).toHaveAttribute('data-room-focus-target-id', core.currentExplorer.roomId);
+        expect(focusSelfRoomButton).toHaveAttribute('data-room-focus-icon', 'locate-fixed');
+        expect(focusSelfRoomButton).toHaveAttribute('title', '聚焦到我的房间');
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent('特性：');
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent(/\S+：\S+/);
         const currentTraits = screen.getByTestId('betrayal-current-traits');
@@ -1486,6 +1491,13 @@ describe('Betrayal Board foundation', () => {
         expect(skullEndpoint).toHaveAttribute('title', expect.stringContaining('死亡格'));
         expect(currentTraits.querySelector('[data-trait-track-start-marker="true"]')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-current-trait-track-might')).toHaveAttribute('data-trait-track-position');
+        for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+            const track = screen.getByTestId(`betrayal-current-trait-track-${trait}`);
+            const startSlot = track.querySelector('[data-trait-track-start="true"]');
+            expect(startSlot).toBeInTheDocument();
+            expect(startSlot).toHaveAttribute('data-trait-track-start-indicator', 'in-slot-green-band');
+            expect(startSlot).toHaveAttribute('title', expect.stringContaining('初始格'));
+        }
         expect(within(currentTraits).getByText('力量').parentElement).toHaveClass('text-[#e8b09f]');
         expect(within(currentTraits).getByText('速度').parentElement).toHaveClass('text-[#ebdca1]');
         expect(within(currentTraits).getByText('知识').parentElement).toHaveClass('text-[#cbe4ea]');
@@ -1526,13 +1538,13 @@ describe('Betrayal Board foundation', () => {
     it('当前角色板按属性轨位置显示夹子，重复数值不会吞掉位置变化', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.currentExplorer.traitTracks.speed = {
-            trackId: 'test-speed-nonlinear',
-            values: [1, 3, 3, 4, 5],
-            position: 1,
-            startPosition: 3,
+            trackId: 'test-speed-full-physical-slots',
+            values: [2, 3, 3, 4, 4, 5, 6, 6],
+            position: 2,
+            startPosition: 1,
             criticalPosition: 0,
             skullPosition: -1,
-            maxPosition: 4,
+            maxPosition: 7,
         };
         core.currentExplorer.traits.speed = 3;
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
@@ -1543,25 +1555,29 @@ describe('Betrayal Board foundation', () => {
         });
 
         const speedTrack = screen.getByTestId('betrayal-current-trait-track-speed');
-        expect(speedTrack).toHaveAttribute('data-trait-track-position', '1');
+        expect(speedTrack).toHaveAttribute('data-trait-track-position', '2');
         expect(speedTrack).toHaveAttribute('data-trait-track-value', '3');
         expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
         expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-repeat-value-policy', 'separate-physical-slots');
         expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toBeInTheDocument();
+        expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'visible-physical-slot-boundaries');
+        expect(speedTrack.querySelectorAll('[data-trait-track-slot="true"]')).toHaveLength(9);
+        expect(speedTrack.querySelectorAll('[data-trait-track-slot-boundary="visible"]')).toHaveLength(9);
         expect(speedTrack.querySelectorAll('[data-trait-track-pointer="true"]')).toHaveLength(1);
-        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '1');
+        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
         expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
         expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-pointer-shape', 'material-slot-highlight');
-        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-color', 'current-green');
-        expect(speedTrack.querySelector('[data-trait-track-position="3"]')).toHaveAttribute('data-trait-track-color', 'start-green');
-        expect(speedTrack.querySelector('[data-trait-track-position="1"] [data-trait-track-slot-label="true"]')).toHaveAttribute('data-trait-track-slot-label-align', 'center');
+        expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveAttribute('data-trait-track-color', 'current-green');
+        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-color', 'start-green');
+        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-start-indicator', 'in-slot-green-band');
+        expect(speedTrack.querySelector('[data-trait-track-position="2"] [data-trait-track-slot-label="true"]')).toHaveAttribute('data-trait-track-slot-label-align', 'center');
         expect(speedTrack.querySelector('[data-trait-track-marker-asset]')).not.toBeInTheDocument();
         expect(speedTrack.querySelector('[data-trait-track-tick="true"]')).not.toBeInTheDocument();
-        expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveTextContent('3');
-        expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveAttribute('data-trait-track-current', 'false');
+        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveTextContent('3');
+        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-current', 'false');
 
         const boardMarker = screen.getByTestId('betrayal-explorer-board-marker-speed');
-        expect(boardMarker).toHaveAttribute('data-trait-track-position', '1');
+        expect(boardMarker).toHaveAttribute('data-trait-track-position', '2');
         expect(boardMarker).toHaveAttribute('data-trait-track-value', '3');
         expect(boardMarker).toHaveAttribute('data-trait-board-marker-shape', 'blank-material-marker');
         expect(boardMarker).toHaveAttribute('data-trait-board-marker-asset', 'betrayal/markers/number-blank');
@@ -1601,6 +1617,11 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-observed-player', 'true');
         expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-player-id', '1');
         expect(screen.getByTestId('betrayal-current-panel-token-1')).toHaveAttribute('data-token-asset', anita.portraitAsset);
+
+        fireEvent.click(screen.getByTestId('betrayal-focus-self-room'));
+        expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-observed-player', 'false');
+        expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-player-id', '0');
+        expect(screen.getByTestId('betrayal-focus-self-room')).toHaveAttribute('data-room-focus-target-id', core.currentExplorer.roomId);
 
         fireEvent.click(screen.getByTestId(`betrayal-room-occupant-${core.currentExplorer.roomId}-1`));
         expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveTextContent('安妮塔·赫南德兹');

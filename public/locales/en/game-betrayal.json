@@ -787,6 +787,7 @@
       "moveTarget": "Move target",
       "skeletonKeyMoveTarget": "Use Skeleton Key to move through walls",
       "preview": "Zoom preview",
+      "focusSelf": "Focus my room",
       "obstacle": "Obstacle",
       "secretPassage": "Secret Passage",
       "blessing": "Blessing",

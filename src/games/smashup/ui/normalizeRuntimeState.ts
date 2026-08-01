@@ -279,6 +279,9 @@ export function normalizeSmashUpCoreForUi(core: SmashUpCore | null | undefined):
         treasureDeck: core.treasureDeck === undefined
             ? undefined
             : normalizeMadnessDeck(core.treasureDeck, 'treasureDeck', anomalies),
+        treasureDiscard: core.treasureDiscard === undefined
+            ? undefined
+            : normalizeMadnessDeck(core.treasureDiscard, 'treasureDiscard', anomalies),
     };
 
     if (core.turnOrder !== undefined && !Array.isArray(core.turnOrder)) {

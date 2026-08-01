@@ -788,6 +788,7 @@
       "moveTarget": "可移动到此",
       "skeletonKeyMoveTarget": "使用骨制钥匙穿墙移动",
       "preview": "放大查看",
+      "focusSelf": "聚焦到我的房间",
       "obstacle": "障碍物",
       "secretPassage": "秘密通道",
       "blessing": "祝福",

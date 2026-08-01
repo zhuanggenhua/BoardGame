@@ -17,7 +17,7 @@ import {
     getTotalEffectivePowerOnBase,
 } from '../domain/ongoingModifiers';
 import { fireTriggers, isCardSuppressed, isMinionProtected } from '../domain/ongoingEffects';
-import { SU_COMMANDS, SU_EVENTS, type BaseReplacedEvent, type LimitModifiedEvent, type SmashUpCore, type TempPowerAddedEvent } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS, type BaseReplacedEvent, type LimitModifiedEvent, type SmashUpCore, type TempPowerAddedEvent, type VpAwardedEvent } from '../domain/types';
 import {
     getSimpleChoicePrompt,
     makeBase,
@@ -542,6 +542,215 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         expect(result.finalState.core.players['0'].discard.map(card => card.uid)).toContain('potion-1');
     });
 
+    it('许愿指环按普通行动获得 1VP，并把自身放回公共宝藏牌库底', () => {
+        const state = makeState({
+            bases: [makeBase({ defId: 'base_the_mines' })],
+            treasureDeck: ['munchkin_treasure_dwarf_hireling'],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            vp: 2,
+            hand: [makeCard('wishing-ring-1', 'munchkin_treasure_wishing_ring', 'action', '0')],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+        const command = {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'wishing-ring-1' },
+        } as const;
+
+        expect(getCardDef('munchkin_treasure_wishing_ring')).toMatchObject({
+            id: 'munchkin_treasure_wishing_ring',
+            type: 'action',
+            subtype: 'standard',
+            abilityTags: ['onPlay'],
+        });
+        expect(validate(makeMatchState(state), command)).toEqual({ valid: true });
+
+        const result = runCommand(makeMatchState(state), command, fixedRandom);
+        const vpEvent = result.events.find((event): event is VpAwardedEvent => event.type === SU_EVENTS.VP_AWARDED);
+
+        expect(result.success).toBe(true);
+        expect(vpEvent?.payload).toMatchObject({
+            playerId: '0',
+            amount: 1,
+            reason: 'munchkin_treasure_wishing_ring',
+        });
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MUNCHKIN_TREASURE_TO_DECK_BOTTOM,
+            payload: expect.objectContaining({
+                cardUid: 'wishing-ring-1',
+                defId: 'munchkin_treasure_wishing_ring',
+                ownerId: '0',
+                reason: 'munchkin_treasure_wishing_ring',
+            }),
+        }));
+        expect(result.finalState.core.players['0'].vp).toBe(3);
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('wishing-ring-1');
+        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('wishing-ring-1');
+        expect(result.finalState.core.treasureDeck).toEqual([
+            'munchkin_treasure_dwarf_hireling',
+            'munchkin_treasure_wishing_ring',
+        ]);
+        expect(result.finalState.core.players['0'].actionsPlayed).toBe(1);
+    });
+
+    it('探宝棒抽两张宝藏，并把自身和隐藏宝藏弃牌堆重洗回公共宝藏牌库', () => {
+        const state = makeState({
+            bases: [makeBase({ defId: 'base_the_mines' })],
+            treasureDeck: [
+                'munchkin_treasure_dwarf_hireling',
+                'munchkin_treasure_halfling_hireling',
+                'munchkin_treasure_tiger_steed',
+            ],
+            treasureDiscard: [
+                'munchkin_treasure_magic_missile',
+                'munchkin_treasure_wishing_ring',
+            ],
+            nextUid: 1200,
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            hand: [makeCard('finder-1', 'munchkin_treasure_treasure_finder', 'action', '0')],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+        const command = {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'finder-1' },
+        } as const;
+
+        expect(getCardDef('munchkin_treasure_treasure_finder')).toMatchObject({
+            id: 'munchkin_treasure_treasure_finder',
+            type: 'action',
+            subtype: 'standard',
+            abilityTags: ['onPlay'],
+        });
+        expect(validate(makeMatchState(state), command)).toEqual({ valid: true });
+
+        const result = runCommand(makeMatchState(state), command, fixedRandom);
+
+        expect(result.success).toBe(true);
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MUNCHKIN_TREASURES_DRAWN,
+            payload: expect.objectContaining({
+                playerId: '0',
+                count: 2,
+                reason: 'munchkin_treasure_treasure_finder',
+            }),
+        }));
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MUNCHKIN_TREASURE_DECK_SHUFFLED,
+            payload: expect.objectContaining({
+                cardUid: 'finder-1',
+                defId: 'munchkin_treasure_treasure_finder',
+                ownerId: '0',
+                reason: 'munchkin_treasure_treasure_finder',
+            }),
+        }));
+        expect(result.finalState.core.players['0'].hand.map(card => card.defId)).toEqual([
+            'munchkin_treasure_dwarf_hireling',
+            'munchkin_treasure_halfling_hireling',
+        ]);
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
+            'munchkin_treasure_1200',
+            'munchkin_treasure_1201',
+        ]);
+        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('finder-1');
+        expect(result.finalState.core.treasureDiscard).toEqual([]);
+        expect(result.finalState.core.treasureDeck).toEqual([
+            'munchkin_treasure_tiger_steed',
+            'munchkin_treasure_treasure_finder',
+            'munchkin_treasure_magic_missile',
+            'munchkin_treasure_wishing_ring',
+        ]);
+        expect(result.finalState.core.nextUid).toBe(1202);
+        expect(result.finalState.core.players['0'].actionsPlayed).toBe(1);
+    });
+
+    it('十字弓选择基地和派系，使那里该派系所有仆从本回合 +2', () => {
+        const state = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_the_mines',
+                    minions: [
+                        makeMinion('pirate-a', 'pirate_buccaneer', '0', 4),
+                        makeMinion('pirate-b', 'pirate_first_mate', '1', 4),
+                        makeMinion('alien-a', 'alien_invader', '1', 3),
+                    ],
+                }),
+                makeBase({
+                    defId: 'base_treasure_bath',
+                    minions: [makeMinion('pirate-away', 'pirate_buccaneer', '0', 4)],
+                }),
+            ],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            factions: ['pirates', 'aliens'],
+            hand: [makeCard('crossbow-1', 'munchkin_treasure_crossbow', 'action', '0')],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+        const command = {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'crossbow-1', targetBaseIndex: 0 },
+        } as const;
+
+        expect(getCardDef('munchkin_treasure_crossbow')).toMatchObject({
+            id: 'munchkin_treasure_crossbow',
+            type: 'action',
+            subtype: 'standard',
+            abilityTags: ['onPlay'],
+        });
+        expect(validate(makeMatchState(state), command)).toEqual({ valid: true });
+
+        const played = runCommand(makeMatchState(state), command, fixedRandom);
+        expect(played.success).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(played.finalState, 'munchkin_treasure_crossbow_choose_faction');
+        expect(prompt.targetType).toBe('button');
+        expect(prompt.options.map((option: any) => option.value?.factionId)).toEqual(['pirates', 'aliens']);
+
+        const resolved = respondToPromptOption(
+            played.finalState,
+            option => option.value?.factionId === 'pirates',
+            '十字弓目标派系',
+            '0',
+            fixedRandom,
+        );
+        const powerEvents = resolved.events.filter((event): event is TempPowerAddedEvent => event.type === SU_EVENTS.TEMP_POWER_ADDED);
+
+        expect(resolved.success).toBe(true);
+        expect(powerEvents.map(event => event.payload.minionUid).sort()).toEqual(['pirate-a', 'pirate-b']);
+        expect(powerEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    minionUid: 'pirate-a',
+                    baseIndex: 0,
+                    amount: 2,
+                    reason: 'munchkin_treasure_crossbow',
+                }),
+            }),
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    minionUid: 'pirate-b',
+                    baseIndex: 0,
+                    amount: 2,
+                    reason: 'munchkin_treasure_crossbow',
+                }),
+            }),
+        ]));
+        expect(getEffectivePower(resolved.finalState.core, resolved.finalState.core.bases[0].minions[0], 0)).toBe(6);
+        expect(getEffectivePower(resolved.finalState.core, resolved.finalState.core.bases[0].minions[1], 0)).toBe(6);
+        expect(getEffectivePower(resolved.finalState.core, resolved.finalState.core.bases[0].minions[2], 0)).toBe(3);
+        expect(getEffectivePower(resolved.finalState.core, resolved.finalState.core.bases[1].minions[0], 1)).toBe(4);
+        expect(resolved.finalState.core.players['0'].actionsPlayed).toBe(1);
+    });
+
     it('宝藏持续力量牌按牌面修正随从与同基地总力', () => {
         const hero = makeMinion('hero-1', 'munchkin_warriors_big_hero', '0', 5, {
             attachedActions: [
@@ -637,6 +846,79 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             ...command,
             payload: { ongoingCardUid: 'rocket-1', baseIndex: 1 },
         })).toMatchObject({ valid: false, error: '本回合天赋已使用' });
+    });
+
+    it('魔法导弹天赋会把自身放回公共宝藏牌库底，并摧毁这里力量 3 或更少的仆从', () => {
+        const host = makeMinion('host-1', 'munchkin_warriors_big_hero', '0', 5, {
+            attachedActions: [
+                { uid: 'missile-1', defId: 'munchkin_treasure_magic_missile', ownerId: '0' },
+            ],
+        });
+        const lowPowerMinion = makeMinion('low-1', 'alien_invader', '1', 3);
+        const highPowerMinion = makeMinion('high-1', 'munchkin_warriors_big_hero', '1', 4);
+        const state = makeState({
+            bases: [
+                makeBase({ defId: 'base_the_mines', minions: [host, lowPowerMinion, highPowerMinion] }),
+            ],
+            treasureDeck: ['munchkin_treasure_wishing_ring'],
+        });
+        const command = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'missile-1', baseIndex: 0 },
+        } as const;
+
+        expect(getCardDef('munchkin_treasure_magic_missile')).toMatchObject({
+            id: 'munchkin_treasure_magic_missile',
+            type: 'action',
+            subtype: 'ongoing',
+            ongoingTarget: 'minion',
+            abilityTags: ['talent'],
+        });
+        expect(validate(makeMatchState(state), command)).toEqual({ valid: true });
+
+        const activated = runCommand(makeMatchState(state), command, fixedRandom);
+        expect(activated.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(activated.finalState, 'munchkin_treasure_magic_missile_destroy');
+        expect(prompt.targetType).toBe('minion');
+        expect(prompt.options.map((option: any) => option.value?.minionUid)).toEqual(['low-1']);
+
+        const resolved = respondToPromptOption(
+            activated.finalState,
+            option => option.value?.minionUid === 'low-1',
+            '魔法导弹目标仆从',
+            '0',
+            fixedRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MUNCHKIN_TREASURE_TO_DECK_BOTTOM,
+            payload: expect.objectContaining({
+                cardUid: 'missile-1',
+                defId: 'munchkin_treasure_magic_missile',
+                ownerId: '0',
+                reason: 'munchkin_treasure_magic_missile',
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.MINION_DESTROYED,
+            payload: expect.objectContaining({
+                minionUid: 'low-1',
+                minionDefId: 'alien_invader',
+                fromBaseIndex: 0,
+                reason: 'munchkin_treasure_magic_missile',
+            }),
+        }));
+        expect(resolved.finalState.core.treasureDeck).toEqual([
+            'munchkin_treasure_wishing_ring',
+            'munchkin_treasure_magic_missile',
+        ]);
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['host-1', 'high-1']);
+        expect(resolved.finalState.core.bases[0].minions[0].attachedActions).toEqual([]);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).not.toContain('missile-1');
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('missile-1');
+        expect(validate(resolved.finalState, command)).toMatchObject({ valid: false });
     });
 
     it('怯懦药水持续让被附着随从失去能力，但不压制药水自身', () => {
@@ -797,5 +1079,32 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         });
 
         expect(notTriggered.events).toEqual([]);
+    });
+
+    it('一袋铁蒺藜不会摧毁同一玩家打到本基地的低力量随从', () => {
+        const friendlyLowPowerMinion = makeMinion('friendly-low-1', 'alien_invader', '0', 3);
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [friendlyLowPowerMinion],
+                ongoingActions: [
+                    { uid: 'caltrops-1', defId: 'munchkin_treasure_bag_of_caltrops', ownerId: '0' },
+                ],
+            })],
+        });
+
+        const triggered = fireTriggers(state, 'onMinionPlayed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'friendly-low-1',
+            triggerMinionDefId: 'alien_invader',
+            triggerMinion: friendlyLowPowerMinion,
+            sourceCardUid: 'caltrops-1',
+            random: fixedRandom,
+            now: 112,
+        });
+
+        expect(triggered.events).toEqual([]);
     });
 });

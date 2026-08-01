@@ -845,6 +845,8 @@ export interface SmashUpCore {
     monsterDiscard?: string[];
     /** 宝藏牌库（Munchkin 扩展，defId 列表） */
     treasureDeck?: string[];
+    /** 宝藏弃牌堆（Munchkin 扩展，defId 列表；UI 暂不展示） */
+    treasureDiscard?: string[];
     cardsPlayedThisTurn?: number;
     /** 本回合每位玩家从手牌弃牌的数量。TURN_STARTED 时清空。 */
     cardsDiscardedFromHandThisTurn?: Record<PlayerId, number>;
@@ -1686,6 +1688,9 @@ export type SmashUpEvent =
     | MadnessDrawnEvent
     | MadnessReturnedEvent
     | MunchkinMonsterDefeatedEvent
+    | MunchkinTreasuresDrawnEvent
+    | MunchkinTreasureDeckShuffledEvent
+    | MunchkinTreasureToDeckBottomEvent
     | BaseDeckReorderedEvent
     | RevealHandEvent
     | RevealDeckTopEvent
@@ -2118,6 +2123,53 @@ export interface MunchkinMonsterDefeatedEvent extends GameEvent<typeof SU_EVENTS
         /** 预分配宝藏实例 UID；不足时 reducer 用 nextUid 补足 */
         treasureUids?: string[];
         reason: string;
+    };
+}
+
+/** Munchkin 公共宝藏牌库抽宝藏到玩家手牌。 */
+export interface MunchkinTreasuresDrawnEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURES_DRAWN> {
+    payload: {
+        playerId: PlayerId;
+        count: number;
+        /** 预分配宝藏实例 UID；不足时 reducer 用 nextUid 补足 */
+        treasureUids?: string[];
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
+/** Munchkin 公共宝藏牌库重洗；用于探宝棒等把隐藏宝藏弃牌堆洗回牌库的效果。 */
+export interface MunchkinTreasureDeckShuffledEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_DECK_SHUFFLED> {
+    payload: {
+        deckDefIds: string[];
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
+/** Munchkin 宝藏回到公共宝藏牌库底；不是玩家个人牌库。 */
+export interface MunchkinTreasureToDeckBottomEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_TO_DECK_BOTTOM> {
+    payload: {
+        cardUid: string;
+        defId: string;
+        ownerId: PlayerId;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
     };
 }
 
