@@ -120,9 +120,9 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await expect(page.getByTestId("betrayal-haunt-reveal-source")).toContainText(
       /剧本卡 木乃伊横行.*触发/,
     );
-    // 当前 74 张牌库合同只有 9 张预兆且不含「女孩」；运行时揭示源应呈现真实触发牌「书本」。
+    // 当前 74 张牌库合同不含「女孩」；该代表夹具连续探索三张预兆，第三张「面具」触发木乃伊代表态。
     await expect(page.getByTestId("betrayal-haunt-reveal-source")).toContainText(
-      /书本|Book/,
+      /面具|Mask/,
     );
     await expect(page.getByTestId("betrayal-open-scenario")).toBeVisible();
     await saveScreenshot(page, PUBLIC_REVEAL_SCREENSHOT);
@@ -286,13 +286,7 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await expect(page.getByTestId("betrayal-action-use")).toContainText(
       "驱逐木乃伊",
     );
-    await expect(page.getByTestId("betrayal-haunt-setup-handoff")).toBeVisible();
-    await expect(
-      page.getByTestId("betrayal-haunt-setup-handoff-text"),
-    ).toContainText("木乃伊");
-    await expect(
-      page.getByTestId("betrayal-haunt-setup-handoff-text"),
-    ).toContainText(/石棺|知识标记/);
+    await expect(page.getByTestId("betrayal-haunt-setup-handoff")).toHaveCount(0);
     await expect(page.getByTestId("betrayal-board")).toContainText(
       "知识标记",
     );

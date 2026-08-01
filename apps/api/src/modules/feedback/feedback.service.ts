@@ -73,7 +73,12 @@ export class FeedbackService {
         const rewardPoints = userId ? FEEDBACK_REWARD_POINTS : 0;
         const created = await this.feedbackModel.create({
             ...dto,
-            gameId: this.normalizeFeedbackGameIdCandidates(dto.clientContext?.gameId, dto.gameName, dto.configProposal?.gameId),
+            gameId: this.normalizeFeedbackGameIdCandidates(
+                dto.clientContext?.gameId,
+                dto.gameName,
+                dto.configProposal?.gameId,
+                dto.configProposals?.[0]?.gameId,
+            ),
             reporterType: this.resolvePublicReporterType(source),
             source,
             rewardPoints,

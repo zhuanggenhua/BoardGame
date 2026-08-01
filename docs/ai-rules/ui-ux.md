@@ -189,7 +189,7 @@
 
 | Hook | 用途 | 说明 |
 |------|------|------|
-| `useHorizontalDragScroll` | 横向滚动容器增强 | 滚轮纵向→横向转换 + 鼠标拖拽左右滑动。所有横向卡牌列表/弃牌堆浏览必须使用，禁止手写 wheel 事件监听。返回 `{ ref, dragProps }`，`dragProps` 需展开到容器元素。 |
+| `useHorizontalDragScroll` | 横向卡牌 / 对象横排浏览增强 | 滚轮纵向→横向转换 + 鼠标拖拽左右滑动。所有横向卡牌列表/弃牌堆浏览必须使用，禁止手写 wheel 事件监听。不要用于同时需要上下滚动的数据表、审查表或日志表；这类表格必须保留普通滚轮上下、横向滚动条 / 触控板横向手势 / `Shift + 滚轮` 左右浏览。返回 `{ ref, dragProps }`，`dragProps` 需展开到容器元素。 |
 | `useTouchLongPress` | mobile long-press interaction | Provides touch long-press trigger, move-cancel, and post-long-press click suppression. Returns pointer handlers, `clearLongPressState`, and `shouldBlockClick`. |
 | `useTouchInspectGesture` | coarse-pointer inspect gesture | Combines coarse-pointer detection with long-press inspect behavior. Use when touch devices need long-press preview while keeping tap for the primary action. |
 | `useArmedActivation` | armed tap-to-activate interaction | Provides "first tap arms, second tap activates" state for touch-first UIs. Use when coarse-pointer devices need explicit selection before firing a primary action. |

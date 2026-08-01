@@ -141,6 +141,48 @@ describe('The Gang action-log', () => {
         }
     });
 
+    test('记录退回筹码但不公开手牌或内部手牌槽位', () => {
+        let state = setupState();
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                heistStarted: true,
+                round: 1,
+                phase: 'chip-selection',
+                currentRoundChips: {
+                    0: 1,
+                },
+            },
+        };
+
+        state = runCommand(state, command({
+            type: THE_GANG_COMMANDS.RETURN_CHIP,
+            playerId: '0',
+            payload: {},
+            timestamp: 2,
+        }));
+
+        const latestEntry = state.sys.actionLog.entries.at(-1);
+        expect(latestEntry?.kind).toBe(THE_GANG_COMMANDS.RETURN_CHIP);
+        expect(latestEntry?.segments).toEqual([{
+            type: 'i18n',
+            ns: 'game-the-gang',
+            key: 'actionLog.returnChip',
+            params: { player: 1, round: 1, chip: 1 },
+        }]);
+
+        const serializedLog = JSON.stringify(latestEntry);
+        expect(serializedLog).not.toContain('"rank"');
+        expect(serializedLog).not.toContain('"suit"');
+        expect(serializedLog).not.toContain('handSlot');
+        for (const player of Object.values(state.core.players)) {
+            for (const card of player.pocketCards) {
+                expect(serializedLog).not.toContain(card.suit);
+            }
+        }
+    });
+
     test('记录公开抢劫流程且不暴露隐藏手牌', () => {
         let state = setupState();
         state = startHeist(state, 1);
@@ -221,13 +263,6 @@ describe('The Gang action-log', () => {
             timestamp: 1,
         }));
         state = startHeist(state, 2);
-        state = {
-            ...state,
-            core: {
-                ...state.core,
-                phase: 'hand-swap',
-            },
-        };
 
         state = runCommand(state, command({
             type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,

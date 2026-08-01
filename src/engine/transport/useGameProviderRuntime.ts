@@ -283,6 +283,14 @@ export function useGameProviderRuntime(args: {
         }
     }, [playerId]);
 
+    const sendUiEvent = useCallback((type: string, payload: unknown) => {
+        clientRef.current?.sendUiEvent(type, payload);
+    }, []);
+
+    const subscribeUiEvent = useCallback((listener: Parameters<GameTransportClient['subscribeUiEvent']>[0]) => (
+        clientRef.current?.subscribeUiEvent(listener) ?? (() => undefined)
+    ), []);
+
     useEffect(() => {
         if (!isTestEnvironment()) return;
 
@@ -307,7 +315,9 @@ export function useGameProviderRuntime(args: {
         seatControllers: undefined,
         isConnected,
         isMultiplayer: true,
-    }), [dispatch, isConnected, matchPlayers, playerId, state]);
+        sendUiEvent,
+        subscribeUiEvent,
+    }), [dispatch, isConnected, matchPlayers, playerId, sendUiEvent, state, subscribeUiEvent]);
 
     return {
         rollbackSignal,

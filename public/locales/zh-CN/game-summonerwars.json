@@ -40,6 +40,205 @@
     "shouren": "冰苔兽人",
     "yongheng": "永恒议会"
   },
+  "configReview": {
+    "eyebrow": "配置审查表",
+    "title": "召唤师战争配置表",
+    "subtitle": "来自现有配置与真实卡图；双击单元格暂存修改，最后统一提交审查。",
+    "actions": {
+      "back": "返回目录",
+      "closePreview": "关闭大图",
+      "magnify": "放大查看 {{name}}",
+      "clearEdits": "清空修改",
+      "submitBatch": "提交 {{count}} 项修改",
+      "previousPage": "上一页",
+      "nextPage": "下一页"
+    },
+    "filters": {
+      "searchPlaceholder": "搜索名称、配置编号、能力或来源",
+      "allFactions": "全部阵营"
+    },
+    "tableScroll": {
+      "primaryHint": "左右滚动查看更多字段",
+      "secondaryHint": "普通滚轮上下；拖动表格底部横条或用触控板横向滑动"
+    },
+    "columns": {
+      "image": "卡图",
+      "id": "配置对象",
+      "name": "名称",
+      "faction": "归属阵营",
+      "deckSymbols": "牌组符号",
+      "cardType": "卡牌类型",
+      "unitClass": "单位级别",
+      "quantity": "数量",
+      "setupPositions": "起始位置",
+      "attack": "攻击",
+      "life": "生命",
+      "cost": "费用",
+      "attackType": "攻击方式",
+      "attackRange": "射程",
+      "playPhase": "出牌阶段",
+      "eventType": "事件类型",
+      "isActive": "持续",
+      "charges": "充能",
+      "targetUnitId": "目标单位",
+      "entanglementTargets": "交缠目标",
+      "abilities": "能力",
+      "effect": "效果文本",
+      "isGate": "城门",
+      "isStartingGate": "起始城门",
+      "spriteAtlas": "卡图图集",
+      "spriteIndex": "卡图编号",
+      "sourceContexts": "配置来源"
+    },
+    "fields": {
+      "id": "配置对象",
+      "name": "名称",
+      "faction": "归属阵营",
+      "deckSymbols": "牌组符号",
+      "cardType": "卡牌类型",
+      "unitClass": "单位级别",
+      "quantity": "数量",
+      "setupPositions": "起始位置",
+      "attack": "攻击",
+      "life": "生命",
+      "cost": "费用",
+      "attackType": "攻击方式",
+      "attackRange": "射程",
+      "playPhase": "出牌阶段",
+      "eventType": "事件类型",
+      "isActive": "持续事件标记",
+      "charges": "充能",
+      "targetUnitId": "目标单位",
+      "entanglementTargets": "交缠目标",
+      "abilities": "能力",
+      "effect": "效果文本",
+      "isGate": "城门标记",
+      "isStartingGate": "起始城门标记",
+      "spriteAtlas": "卡图图集",
+      "spriteIndex": "卡图编号",
+      "sourceContexts": "配置来源"
+    },
+    "types": {
+      "all": "全部类型",
+      "summoner": "召唤师",
+      "champion": "英雄",
+      "common": "士兵",
+      "event": "事件",
+      "gate": "城门",
+      "structure": "建筑"
+    },
+    "stats": {
+      "version": "配置版本",
+      "totalRows": "总行数",
+      "visibleRows": "筛选结果",
+      "pageRows": "当前页",
+      "compactStatus": "{{version}} · {{visible}} / {{total}} 行 · 当前 {{pageRows}} 行",
+      "attack": "攻击",
+      "life": "生命",
+      "cost": "费用",
+      "range": "射程",
+      "melee": "近战",
+      "ranged": "远程"
+    },
+    "pagination": {
+      "pageSize": "每页",
+      "pageStatus": "第 {{page}} / {{total}} 页",
+      "visibleRange": "显示 {{start}}-{{end}} / 共 {{total}} 行"
+    },
+    "material": {
+      "ready": "已接入卡图",
+      "missing-sprite": "缺卡图"
+    },
+    "values": {
+      "configVersion": {
+        "legacy-ts-config-v1": "旧版代码配置 v1"
+      },
+      "boolean": {
+        "true": "是",
+        "false": "否"
+      },
+      "cardType": {
+        "unit": "单位",
+        "event": "事件",
+        "structure": "建筑"
+      },
+      "unitClass": {
+        "summoner": "召唤师",
+        "champion": "英雄",
+        "common": "士兵"
+      },
+      "attackType": {
+        "melee": "近战",
+        "ranged": "远程"
+      },
+      "playPhase": {
+        "factionSelect": "选阵营阶段",
+        "summon": "召唤阶段",
+        "move": "移动阶段",
+        "build": "建造阶段",
+        "attack": "攻击阶段",
+        "magic": "魔力阶段",
+        "draw": "抽牌阶段",
+        "any": "任意阶段"
+      },
+      "eventType": {
+        "legendary": "传奇事件",
+        "common": "普通事件"
+      },
+      "spriteAtlas": {
+        "hero": "召唤师图集",
+        "cards": "卡牌图集",
+        "portal": "城门图集"
+      },
+      "deckSymbols": {
+        "double_axe": "双斧",
+        "flame": "火焰",
+        "moon": "新月",
+        "eye": "眼睛",
+        "wave": "波浪",
+        "shield": "盾牌",
+        "diamond": "钻石",
+        "claw": "爪子",
+        "mask": "面具",
+        "snowflake": "雪花",
+        "droplet": "水滴",
+        "star": "星形",
+        "rhombus": "菱形",
+        "spore": "孢子",
+        "mycelium": "菌丝",
+        "ember": "灰烬",
+        "phoenix": "凤凰",
+        "tundra": "冰苔",
+        "council": "议会"
+      },
+      "sourceContexts": {
+        "summoner": "召唤师",
+        "startingGate": "起始城门",
+        "startingUnit": "起始单位",
+        "deck": "抽牌堆",
+        "startingGatePosition": "起始城门：第 {{row}} 行第 {{col}} 列",
+        "startingUnitPosition": "起始单位：第 {{index}} 张，第 {{row}} 行第 {{col}} 列"
+      },
+      "setupPositions": {
+        "summoner": "召唤师：第 {{row}} 行第 {{col}} 列",
+        "startingGate": "起始城门：第 {{row}} 行第 {{col}} 列",
+        "startingUnit": "起始单位：第 {{index}} 张，第 {{row}} 行第 {{col}} 列"
+      },
+      "referenceFallback": "未知对象"
+    },
+    "feedback": {
+      "cellEditHint": "双击编辑，回车保存，取消键取消",
+      "editHint": "双击单元格编辑；修改会先暂存在本页，最后统一提交。",
+      "emptyCell": "—",
+      "emptyValue": "空",
+      "rawValueLabel": "原始配置值",
+      "pendingCount": "{{count}} 项待提交",
+      "invalidCount": "{{count}} 项无效",
+      "invalidNumber": "请输入数字",
+      "invalidBoolean": "请输入是、否、一或零",
+      "initialBatchContent": "我建议批量修正这 {{count}} 个配置字段："
+    }
+  },
   "actions": {
     "closePreview": "关闭预览",
     "close": "关闭",

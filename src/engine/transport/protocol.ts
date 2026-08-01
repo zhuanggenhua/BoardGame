@@ -49,6 +49,13 @@ export interface StatePatchMeta {
     randomCursor: number;
 }
 
+export interface MatchUiEvent {
+    type: string;
+    playerId: string;
+    payload: unknown;
+    sentAt?: number;
+}
+
 export interface BatchDispatchMeta {
     /** 客户端发起这批命令时所基于的权威 stateID */
     expectedStateID?: number;
@@ -73,6 +80,9 @@ export interface ClientToServerEvents {
         credentials?: string,
         meta?: BatchDispatchMeta,
     ) => void;
+
+    /** 临时 UI 事件：只转发给同局客户端，不进入权威游戏状态 */
+    'ui:event': (matchID: string, eventType: string, payload: unknown, credentials?: string) => void;
 }
 
 // ============================================================================
@@ -121,6 +131,9 @@ export interface ServerToClientEvents {
 
     /** 批次拒绝 */
     'batch:rejected': (matchID: string, batchId: string, reason: string) => void;
+
+    /** 临时 UI 事件：例如拖拽预览、指示器等非权威表现 */
+    'ui:event': (matchID: string, event: MatchUiEvent) => void;
 }
 
 // ============================================================================
@@ -167,4 +180,10 @@ export interface GameBoardProps<
 
     /** 重置游戏回调（用于重赛） */
     reset?: () => void;
+
+    /** 发送临时 UI 事件；仅在线模式实际转发，本地模式为 no-op */
+    sendUiEvent?: (type: string, payload: unknown) => void;
+
+    /** 订阅同局其它客户端发来的临时 UI 事件 */
+    subscribeUiEvent?: (listener: (event: MatchUiEvent) => void) => () => void;
 }

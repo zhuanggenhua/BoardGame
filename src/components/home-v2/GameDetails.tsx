@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, BookOpen, Download, HardDriveDownload, LoaderCircle, Plus, RefreshCw, Search } from 'lucide-react';
+import { AlertTriangle, BookOpen, Download, HardDriveDownload, LoaderCircle, Plus, RefreshCw, Search, TableProperties } from 'lucide-react';
 import { type GameConfig } from '../../config/games.config';
 import { preloadWarmImages, resolveCriticalImages, UI_Z_INDEX } from '../../core';
 import { useAuth } from '../../contexts/AuthContext';
@@ -644,6 +644,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
         .slice(0, 2);
     const leadParagraph = editorialParagraphs[0] || descriptionExcerpt;
     const secondaryParagraph = editorialParagraphs[1] || '';
+    const hasConfigReview = game.id === 'summonerwars' || game.id === 'dicethrone';
 
     const handleTutorial = () => {
         const gameId = game.id;
@@ -655,6 +656,10 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
             });
         });
         navigate(`/play/${game.id}/tutorial`);
+    };
+
+    const handleConfigReview = () => {
+        navigate(`/games/${game.id}/config`);
     };
 
     return (
@@ -800,6 +805,16 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                             >
                                 {t('lobby:actions.tutorial')}
                             </BookLineButton>
+                            {hasConfigReview ? (
+                                <BookLineButton
+                                    className="min-h-[31px] w-[146px] shrink-0 px-[14px] text-[10.2px] tracking-[0.05em]"
+                                    icon={<TableProperties aria-hidden="true" className="h-[13px] w-[13px]" strokeWidth={2.1} />}
+                                    onClick={handleConfigReview}
+                                    testId="home-v2-config-review-button"
+                                >
+                                    {t('lobby:actions.configReview')}
+                                </BookLineButton>
+                            ) : null}
                         </div>
                     ) : null}
                     {!isCompactLandscape ? (
@@ -843,6 +858,16 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                     >
                         {t('lobby:actions.tutorial')}
                     </BookLineButton>
+                    {hasConfigReview ? (
+                        <BookLineButton
+                            className="min-h-[48px] w-[52%] px-[24px] text-[clamp(16px,1.08vw,20px)] tracking-[0.06em]"
+                            icon={<TableProperties aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.1} />}
+                            onClick={handleConfigReview}
+                            testId="home-v2-config-review-button"
+                        >
+                            {t('lobby:actions.configReview')}
+                        </BookLineButton>
+                    ) : null}
                         </>
                     ) : null}
                     {hasRealAuthorName ? (

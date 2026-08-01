@@ -1,0 +1,94 @@
+{
+  "url": "http://127.0.0.1:6290/games/summonerwars/config?codexCapture=20",
+  "title": "易桌游 - 桌游教学与在线联机平台 | 王权骰铸、大杀四方、召唤师战争",
+  "bodyTextSample": "返回目录\n召唤师战争配置表\n旧版代码配置 v1 · 160 / 160 行 · 当前 25 行\n全部阵营\n堕落王国\n欺心巫族\n先锋卫队\n洞穴地精\n极地矮人\n野蛮部落\n莫古\n灰烬\n冰苔兽人\n永恒议会\n全部类型\n召唤师\n英雄\n士兵\n事件\n城门\n建筑\n0 项待提交\n清空修改\n提交 0 项修改\n左右滚动查看更多字段\n普通滚轮上下；拖动表格底部横条或用触控板横向滑动\n卡图\t名称\t配置对象\t归属阵营\t牌组符号\t卡牌类型\t单位级别\t数量\t起始位置\t攻击\t生命\t费用\t攻击方式\t射程\t出牌阶段\t事件类型\t持续\t充能\t目标单位\t交缠目标\t能力\t效果文本\t城门\t起始城门\t卡图图集\t卡图编号\t配置来源\n\n\t\n瑞特-塔鲁斯\n\t\n瑞特-塔鲁斯\n\t\n堕落王国\n\t\n双斧、火焰、新月\n\t\n单位\n\t\n召唤师\n\t\n1\n\t\n召唤师：第 0 行第 3 列\n\t\n2\n\t\n12\n\t\n0\n\t\n远程\n\t\n3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n复活死灵\n\t\n—\n\t\n—\n\t\n—\n\t\n召唤师图集\n\t\n0\n\t\n召唤师\n\n\n\t\n传送门\n\t\n传送门\n\t\n堕落王国\n\t\n—\n\t\n建筑\n\t\n—\n\t\n3\n\t\n—\n\t\n—\n\t\n5\n\t\n0\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n是\n\t\n—\n\t\n城门图集\n\t\n1\n\t\n抽牌堆\n\n\n\t\n起始城门\n\t\n起始城门\n\t\n堕落王国\n\t\n—\n\t\n建筑\n\t\n—\n\t\n1\n\t\n起始城门：第 2 行第 3 列\n\t\n—\n\t\n10\n\t\n0\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n是\n\t\n是\n\t\n城门图集\n\t\n0\n\t\n起始城门\n\n\n\t\n德拉戈斯\n\t\n德拉戈斯\n\t\n堕落王国\n\t\n新月\n\t\n单位\n\t\n英雄\n\t\n1\n\t\n—\n\t\n4\n\t\n8\n\t\n6\n\t\n近战\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n吸取生命\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n2\n\t\n抽牌堆\n\n\n\t\n古尔-达斯\n\t\n古尔-达斯\n\t\n堕落王国\n\t\n火焰、新月\n\t\n单位\n\t\n英雄\n\t\n1\n\t\n—\n\t\n2\n\t\n8\n\t\n6\n\t\n近战\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n暴怒\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n10\n\t\n抽牌堆\n\n\n\t\n伊路特-巴尔\n\t\n伊路特-巴尔\n\t\n堕落王国\n\t\n火焰\n\t\n单位\n\t\n英雄\n\t\n1\n\t\n—\n\t\n6\n\t\n6\n\t\n6\n\t\n近战\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n火祀召唤\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n0\n\t\n抽牌堆\n\n\n\t\n地狱火教徒\n\t\n地狱火教徒\n\t\n堕落王国\n\t\n火焰\n\t\n单位\n\t\n士兵\n\t\n4\n\t\n—\n\t\n2\n\t\n2\n\t\n0\n\t\n远程\n\t\n3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n献祭\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n7\n\t\n抽牌堆\n\n\n\t\n亡灵弓箭手\n\t\n亡灵弓箭手\n\t\n堕落王国\n\t\n火焰\n\t\n单位\n\t\n士兵\n\t\n1\n\t\n起始单位：第 1 张，第 2 行第 2 列\n\t\n3\n\t\n2\n\t\n2\n\t\n远程\n\t\n3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n灵魂转移\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n9\n\t\n起始单位\n\n\n\t\n亡灵弓箭手\n\t\n亡灵弓箭手\n\t\n堕落王国\n\t\n火焰\n\t\n单位\n\t\n士兵\n\t\n4\n\t\n—\n",
+  "headerRect": {
+    "x": 30,
+    "y": 24,
+    "width": 1380,
+    "height": 106
+  },
+  "tableRect": {
+    "x": 46,
+    "y": 182,
+    "width": 1348,
+    "height": 622
+  },
+  "hintRect": {
+    "x": 58,
+    "y": 152,
+    "width": 144,
+    "height": 16
+  },
+  "paginationRect": {
+    "x": 46,
+    "y": 812,
+    "width": 1348,
+    "height": 48
+  },
+  "scrollMetrics": {
+    "scrollLeft": 0,
+    "scrollTop": 500,
+    "scrollWidth": 3632,
+    "clientWidth": 1318,
+    "scrollHeight": 1156,
+    "clientHeight": 622
+  },
+  "hasHorizontalOverflow": true,
+  "visibleChineseHint": true,
+  "hasCompactStatus": true,
+  "hasSubtitle": false,
+  "hasLongSubtitle": false,
+  "hasEyebrow": false,
+  "hasEnglishFallbackKey": false,
+  "hasScrollButtonsText": false,
+  "visibleHeaderText": [
+    "卡图",
+    "名称",
+    "配置对象",
+    "归属阵营",
+    "牌组符号",
+    "卡牌类型",
+    "单位级别",
+    "数量",
+    "起始位置",
+    "攻击",
+    "生命",
+    "费用"
+  ],
+  "wheelCheck": {
+    "beforeWheel": {
+      "left": 0,
+      "top": 0
+    },
+    "afterVerticalWheel": {
+      "left": 0,
+      "top": 500
+    }
+  },
+  "messages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    }
+  ],
+  "pageErrors": [],
+  "requestFailures": [],
+  "screenshotPath": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\summonerwars\\config-review\\20-配置表顶部最终简化-当前工作区.png"
+}

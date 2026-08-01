@@ -1,7 +1,9 @@
 # 作祟 1 交互子账本：木乃伊横行
 
-> 状态：`locked-minimum-runtime-contract`
+> 状态：`locked-minimum-runtime-contract / visual-token-blocked`
 > 版本边界：本账本对应旧版 / 基础版中文规则源中的第 1 剧本「木乃伊横行」。3e 旧合同 `01-stacked-like-cordwood-2.md` 保留为「赤红杰克归来」版本，不在本轮删除或覆盖。
+> 当前运行裁定：当前工作区牌库合同仍是 3e 基础游戏 74 张（43 事件 / 22 物品 / 9 预兆），9 张预兆不包含「女孩」。本文里的「女孩」沿用旧版木乃伊剧本正文，是旧版触发标签和剧本 token；当前运行时可由 3e 预兆代表性进入木乃伊横行，但不得把「女孩」补录为当前 9 张预兆牌。
+> 2026-07-31 素材承接修订：规则要求放置「木乃伊怪物标记(大)」。当前运行态已创建木乃伊怪物对象，但正式木乃伊 / 大怪物 token 资源未接入，不能把地图上的占位框、红色块或其它怪物 token 当成正式完成证据；本地图包搜索留档见 `evidence/betrayal/full-audit/mummy-token-source-search-2026-07-31.md`。
 
 ## 1. 源段锁定
 
@@ -12,14 +14,14 @@
 | 版本说明 | `src/games/betrayal/rule/legacy-zh/README.md` |
 | 用户裁定 | `docs/games/betrayal/user-stories/first-haunt-mummy-runtime-scope-2026-07-28.md` |
 | 叛徒 | 作祟揭秘者 |
-| 触发示例 | 规则书示例：揭秘者持有「女孩」且位于「陵墓」时执行 1 号剧本 |
+| 触发示例 | 旧版规则书示例：揭秘者持有「女孩」且位于「陵墓」时执行 1 号剧本；当前 3e 牌库不含「女孩」预兆，这一项只作为旧版木乃伊合同来源，不作为当前牌库补录依据 |
 
 ## 2. 公开步骤
 
 - 作祟揭示层公开：1 号作祟标题为「木乃伊横行」，叛徒为作祟揭秘者。
 - 叛徒仍继续使用原探索者。
 - 放置木乃伊大怪物 token 和五角形物品 token；五角形物品 token 代表石棺。
-- 「女孩」预兆从持有者身上旁置，改由品红色标记在地图上表示。
+- 「女孩」按旧版规则从持有者身上旁置，当前运行以品红色剧本 token 在地图上表示；它不是当前 9 张预兆牌的新对象。
 - 首个作祟后回合由叛徒左侧玩家开始。
 
 ## 3. 私密可见性
@@ -57,7 +59,7 @@
 
 - 若书本尚未翻开，后续英雄探索新房间并需抽预兆时，应从预兆堆找出书本代替抽牌并洗牌。
 - 若圣符和指环都尚未翻开，后续叛徒因探索新房间翻开预兆时，应从预兆堆找出圣符或指环并洗牌。
-- 任何人物或木乃伊进入女孩标记所在房间，即可持有女孩预兆。
+- 任何人物或木乃伊进入女孩标记所在房间，即可持有女孩；当前运行记录为剧本 token / 持有状态，旧版规则书称为「女孩预兆」。
 - 叛徒持有女孩且与木乃伊同房时，可将女孩交给木乃伊。
 - 木乃伊移动掷骰结果为 0 或 1 时，可瞬移到大宅任意房间。
 - 木乃伊可携带物件、偷窃；物件不会改变木乃伊属性。
@@ -70,7 +72,7 @@
 
 | 对象 | 数量 | 状态真相 |
 | --- | ---: | --- |
-| 木乃伊 | 1 | 怪物 token，房间位置，速度 3、力量 8、神志 5 |
+| 木乃伊 | 1 | 规则要求「木乃伊怪物标记(大)」；运行态已创建怪物、房间位置和速度 3 / 力量 8 / 神志 5。当前代码引用 `betrayal/tokens/monsters/large-monster-front` 与 `betrayal/monsters/mummy`，但正式源图和压缩图缺失，状态为 `runtime-present / visual-token-blocked`。`mummy-token-source-search-2026-07-31.md` 已记录本地图包未发现可确认源图。 |
 | 石棺 | 1 | 五角形物品 token，放在作祟触发房间 |
 | 女孩 | 1 | 品红色标记，初始放在远离木乃伊的房间；后续可被人物或木乃伊持有 |
 | 知识标记 | 2 | 英雄目标进度：第 1 枚代表真名，第 2 枚代表驱逐法术 |
@@ -78,12 +80,13 @@
 ## 9. UI 承接
 
 - 主目标条：英雄显示“找真名 -> 学驱逐法术 -> 同房神志驱逐”；叛徒显示“让木乃伊带女孩和圣符 / 指环回石棺”。
-- 地图：木乃伊、石棺、女孩必须是公开 token。
+- 地图：木乃伊、石棺、女孩必须是公开 token；其中木乃伊目前只满足运行态对象，正式大怪物 token 图面仍阻塞。
 - 状态区：用「知识标记」进度条显示 0/2、1/2、2/2。
 - 怪物卡：显示木乃伊速度 3、力量 8、神志 5，以及速度攻击无效和 0/1 瞬移摘要。
 
 ## 10. 当前缺口
 
+- `P0-blocked-resource`：木乃伊正式大怪物 token / 木乃伊怪物图面未闭合。当前 `src/games/betrayal/domain/monsterDefinitions.ts` 引用 `betrayal/tokens/monsters/large-monster-front` 和 `betrayal/monsters/mummy`，但 `public/assets/i18n/zh-CN/betrayal/tokens/monsters/large-monster-front.png`、`public/assets/i18n/zh-CN/betrayal/tokens/monsters/compressed/large-monster-front.webp`、`public/assets/i18n/zh-CN/betrayal/monsters/mummy.png`、`public/assets/i18n/zh-CN/betrayal/monsters/compressed/mummy.webp` 当前均不存在；`mummy-token-source-search-2026-07-31.md` 已记录本地图包也未命中可确认源图；不得用狼人、幽灵、小型怪物、文字壳或红色占位替代。
 - `done-runtime`：已实现探索者拾起女孩、交给木乃伊、交给木乃伊圣符 / 指环，并在木乃伊带齐后回石棺触发叛徒胜利。
 - `done-runtime`：已实现后续英雄 / 叛徒探索预兆时，从预兆堆强制找出书本 / 圣符 / 指环并洗牌。
 - `done-runtime`：已实现木乃伊自主拾起女孩、2 点以上伤害后偷窃替代伤害、携带普通物件和预兆、0/1 移动骰瞬移选择、同房英雄强制先攻击。

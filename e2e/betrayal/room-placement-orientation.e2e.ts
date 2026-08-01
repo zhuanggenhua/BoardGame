@@ -97,7 +97,12 @@ test.describe('山屋惊魂房间朝向选择', () => {
         await expect(page.getByTestId('betrayal-room-ground-north')).not.toHaveAccessibleName(/未探索/);
         await expect(page.getByTestId('betrayal-room-occupant-ground-north-0')).toBeVisible();
         await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible();
-        await page.getByTestId('betrayal-discovery-continue').click();
+        for (let safety = 0; safety < 4; safety += 1) {
+            if (!await page.getByTestId('betrayal-discovery-continue').isVisible().catch(() => false)) {
+                break;
+            }
+            await page.getByTestId('betrayal-discovery-continue').click();
+        }
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await saveScreenshot(page, PLACED_SCREENSHOT);
 

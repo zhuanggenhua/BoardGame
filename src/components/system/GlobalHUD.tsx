@@ -36,6 +36,12 @@ const LazyAboutModal = lazy(() => import('./AboutModal').then(m => ({ default: m
 const LazyFeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default: m.FeedbackModal })));
 
 const HOME_STYLE_QUERY_PARAM = 'homeStyle';
+const shouldHideOnRoute = (pathname: string) => (
+    pathname === '/games/summonerwars/config'
+    || pathname.startsWith('/games/summonerwars/config/')
+    || pathname === '/games/dicethrone/config'
+    || pathname.startsWith('/games/dicethrone/config/')
+);
 
 const openExternalUrlInNewTab = (url: string) => {
     const anchor = document.createElement('a');
@@ -60,6 +66,7 @@ export const GlobalHUD = () => {
 
     // 根据路由判断主题
     const isGamePage = location.pathname.startsWith('/play/');
+    const shouldHideHud = shouldHideOnRoute(location.pathname);
     const isHomeEntryStyleRoute = isNativeAndroid && isHomeEntryRoute(location.pathname);
     const currentHomeEntryStyle: HomeEntryStyle = isHomeV2PreviewRoute(location.pathname)
         ? 'book'
@@ -180,7 +187,7 @@ export const GlobalHUD = () => {
         });
     }, [closeByNamespace, isGamePage]);
 
-    if (isGamePage) return null;
+    if (isGamePage || shouldHideHud) return null;
 
     const isImmediateOtaActive = otaEnabledForCurrentShell && otaActivityState.active;
 

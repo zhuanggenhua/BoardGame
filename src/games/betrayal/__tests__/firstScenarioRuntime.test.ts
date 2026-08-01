@@ -15707,7 +15707,7 @@ describe('Betrayal first scenario runtime', () => {
             id: 'jack-spirit',
             name: '杰克之灵',
             portraitAsset: 'betrayal/monsters/spirit',
-            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            tokenAsset: 'betrayal/tokens/monsters/jacks-spirit',
             roomId: 'entrance-hall',
             might: 5,
             speed: 3,
@@ -20998,7 +20998,7 @@ describe('Betrayal first scenario runtime', () => {
             id: 'jack-spirit',
             name: '杰克之灵',
             portraitAsset: 'betrayal/monsters/spirit',
-            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            tokenAsset: 'betrayal/tokens/monsters/jacks-spirit',
             roomId: 'entrance-hall',
             might: 5,
             speed: 3,
@@ -21064,7 +21064,7 @@ describe('Betrayal first scenario runtime', () => {
             id: 'jack-spirit',
             name: '杰克之灵',
             portraitAsset: 'betrayal/monsters/spirit',
-            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            tokenAsset: 'betrayal/tokens/monsters/jacks-spirit',
             roomId: 'hallway',
             might: 5,
             speed: 3,
@@ -21143,6 +21143,18 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.roomId).toBe('upper-north');
         expect(core.scenarioRuntime.usedRoomEffectIdsThisTurn).toContain('mysticElevator');
         expect(core.activityLog[0]?.text).toContain('神秘电梯');
+        expect(core.recentRoll?.kind).toBe('mysticElevator');
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {}),
+        ).valid).toBe(true);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, '0', {}),
+        ).valid).toBe(false);
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, '0', {});
+        expect(core.recentRoll).toBeNull();
 
         const secondUse = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -23767,7 +23779,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.title).toBe(omen.name);
         expect(core.latestDiscovery?.detail).toContain('作祟检定');
         expect(core.latestDiscovery?.detail).toContain('抽到预兆后进行作祟检定');
-        expect(core.latestDiscovery?.detail).toContain('5+ 作祟开始');
+        expect(core.latestDiscovery?.detail).not.toContain(`${core.scenarioRuntime.hauntRollThreshold}+ 作祟开始`);
         expect(core.recentRoll?.kind).toBe('hauntRoll');
         expect(core.recentRoll?.sourceTitle).toBe(omen.name);
         expect(core.recentRoll?.rollLabel).toBe('作祟检定');
@@ -25968,7 +25980,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.recommendedAction).toBe('move');
     });
 
-    it('作祟风险按所有玩家当前持有预兆总数派生', () => {
+    it('预兆状态按所有玩家当前持有预兆总数派生', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.currentExplorer.inventory = [
             { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
@@ -25993,21 +26005,21 @@ describe('Betrayal first scenario runtime', () => {
         const riskTrack = resolveBetrayalNumberTracks(core).find((track) => track.id === 'haunt-risk');
         expect(riskTrack).toMatchObject({
             kind: 'haunt-risk',
-            label: '作祟风险',
+            label: '预兆状态',
             value: 3,
             min: 0,
-            max: 5,
-            targetValue: 5,
+            max: 9,
+            targetValue: 9,
             currentLabel: '预兆 3',
-            targetLabel: '5+ 作祟',
-            statusLabel: '下次 4 骰',
-            progressPercent: 38,
+            targetLabel: '最后预兆',
+            statusLabel: '预兆已发现',
+            progressPercent: 33,
             source: 'base-rule',
             representativeOnly: false,
         });
     });
 
-    it('交易转移预兆后，作祟风险仍按全员总数而不是当前玩家持有数派生', () => {
+    it('交易转移预兆后，预兆状态仍按全员总数而不是当前玩家持有数派生', () => {
         let core = createExchangeReadyCore();
         const riskBeforeTrade = resolveBetrayalHauntRisk(core);
 
@@ -26036,13 +26048,15 @@ describe('Betrayal first scenario runtime', () => {
         });
         expect(riskTrackAfterTrade).toMatchObject({
             id: 'haunt-risk',
-            value: riskBeforeTrade.requestedRollOmenCount,
+            value: riskBeforeTrade.omenCount,
+            max: 9,
+            targetValue: 9,
             currentLabel: `预兆 ${riskBeforeTrade.omenCount}`,
-            statusLabel: `下次 ${riskBeforeTrade.nextRollDiceCount} 骰`,
+            statusLabel: '预兆已发现',
         });
     });
 
-    it('抽到新预兆时作祟检定骰数和风险读模型一致', () => {
+    it('抽到新预兆时作祟检定骰数和预兆状态模型一致', () => {
         let core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.drawOrder = ['omen'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'omen');
@@ -26100,7 +26114,8 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.kind).toBe('omen');
-        expect(core.latestDiscovery?.detail).toContain('抽到最后一张预兆');
+        expect(core.latestDiscovery?.detail).toContain('最后一张预兆触发作祟');
+        expect(core.latestDiscovery?.detail).not.toContain('抽到最后一张预兆');
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');

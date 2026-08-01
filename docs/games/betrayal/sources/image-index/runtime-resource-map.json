@@ -253,26 +253,26 @@
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/rebecca-allen.png",
-    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009175524F90EA10F7E7ECF6740403AE41223506AB53C7.png",
-    "meaning": "地图玩家指示物：Rebecca Allen / 丽贝卡·艾伦博士；来自 384x336 token 组，不能用探索者整板代替",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92.png",
+    "meaning": "地图玩家指示物：Rebecca Allen / 丽贝卡·艾伦博士；来自 384x336 token 组；本轮纠正旧索引误接的怪物 / Stunned 图。",
     "status": "runtime"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/darryl-highla.png",
-    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820092446C10A240DDCE3D9FD0A23F0F7351F2508EDF6B9A.png",
-    "meaning": "地图玩家指示物：Darryl Highla / 达里尔·海拉；来自 384x336 token 组，不能用探索者整板代替",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182006176F92CB356076A3D52EE2EC3176CA4FAB154384393.png",
+    "meaning": "地图玩家指示物：Darryl Highla / 达里尔·海拉；来自 384x336 token 组；本轮纠正旧索引误接的怪物 / Stunned 图。",
     "status": "runtime"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/werewolf.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009690E728675FB44504D66C708D918FBE6C3A9AE2A3BF.png",
-    "meaning": "地图怪物 token：Werewolf / 狼人；来自 384x336 token 组，不能用怪物卡或文字缩写代替",
+    "meaning": "地图怪物 token：Werewolf / 狼人；来自用户点名 384x336 token 范围。",
     "status": "runtime"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/ghost.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820101161D515C9E18B593DE20403B83FE05D059F7FCEBC3.png",
-    "meaning": "地图怪物 token：Ghost / 幽灵；来自 384x336 token 组，不能用怪物卡或文字缩写代替",
+    "meaning": "地图怪物 token：Ghost / 幽灵；来自用户点名 384x336 token 范围。",
     "status": "runtime"
   },
   {
@@ -514,5 +514,191 @@
     "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820045172F226CEC4075249D331E17E5092623CE09ECACAD.png",
     "meaning": "标记：Videotape / 录像带",
     "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/jacks-spirit.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182008410269D81C3A3FE5CFDBC207A4ABC9C62CBEE7C83DC.png",
+    "meaning": "地图怪物 token：Jack's Spirit / 杰克之灵；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/jacks-spirit-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820084622FAB7E15B85F8E0ED19CE69256F9367073AA9E96.png",
+    "meaning": "地图怪物 token 击晕面：Jack's Spirit / 杰克之灵；依据相邻物理顺序登记；若规则禁止击晕，运行时可不用但不得错名给其它对象。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/head-of-the-house.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182008532718F54AA9EB3442C7D110A054C5389F58DC162FB.png",
+    "meaning": "地图怪物 token：Head of the House / 宅邸之首；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/head-of-the-house-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182008599FE28B3352CE2B8418FA78DC1C43191D743F7C806.png",
+    "meaning": "地图怪物 token 击晕面：Head of the House / 宅邸之首；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/demon.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200865475FEE92C7E7029E4C8524850DB4F0AC34C8A58AD.png",
+    "meaning": "地图怪物 token：Demon / 恶魔；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/demon-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182008727509699FC19B9A5F9FA9D58B9F702005FCBB7096E.png",
+    "meaning": "地图怪物 token 击晕面：Demon / 恶魔；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/dark-queen.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182008792357CB7EF6F63206F7A84FF2E4DDCBFD06DA0171F.png",
+    "meaning": "地图怪物 token：Dark Queen / 黑暗女王；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/dark-queen-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182008860AF797178744BE8AAA364EF273189079D1F227831.png",
+    "meaning": "地图怪物 token 击晕面：Dark Queen / 黑暗女王；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/ghost-shark.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182008960A3D33336D7DFB5D8FD53B4E3FD0CD45DAC13D135.png",
+    "meaning": "地图怪物 token：Ghost Shark / 幽灵鲨；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/ghost-shark-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009038A691999170EC847EBE2479F19E0DD655BCACC4A9.png",
+    "meaning": "地图怪物 token 击晕面：Ghost Shark / 幽灵鲨；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/construct.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820091123D6F96A0D7230B73E29C6D083BC1EF30EC5A31FC.png",
+    "meaning": "地图怪物 token：Construct / 构装体；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/construct-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009175524F90EA10F7E7ECF6740403AE41223506AB53C7.png",
+    "meaning": "地图怪物 token 击晕面：Construct / 构装体；该源图此前被错误登记为 Rebecca token，本轮改回怪物击晕面。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/bakeneko.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820092446C10A240DDCE3D9FD0A23F0F7351F2508EDF6B9A.png",
+    "meaning": "地图怪物 token：Bakeneko / 化猫；该源图此前被错误登记为 Darryl token，本轮改回怪物 token。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/bakeneko-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820093235B2EDC715C6A9CAB03D52D39B4CB9DE6F979DAA6.png",
+    "meaning": "地图怪物 token 击晕面：Bakeneko / 化猫；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/giant-wasp.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009408240895E169F0665B2FEB66DBCE7C186DDA421BCC.png",
+    "meaning": "地图怪物 token：Giant Wasp / 巨蜂；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/giant-wasp-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009483EE347A28DC787F26C1F58E06D5C92166A4DDCDA3.png",
+    "meaning": "地图怪物 token 击晕面：Giant Wasp / 巨蜂；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/demon-dog.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820095519C7D99E88F11DF3B4E149450152B0D718C7D3520.png",
+    "meaning": "地图怪物 token：Demon Dog / 恶魔犬；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/demon-dog-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009616F431FFB4BBE8493A00A2B0152D116B342C183E7F.png",
+    "meaning": "地图怪物 token 击晕面：Demon Dog / 恶魔犬；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/werewolf-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820097572889267B246D548B591A4E47DE1E4FE90D0AF963.png",
+    "meaning": "地图怪物 token 击晕面：Werewolf / 狼人；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/vampire.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182009832B9498CF962747F0AA089DEF0CAA850A282507BFB.png",
+    "meaning": "地图怪物 token：Vampire / 吸血鬼；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/vampire-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200991198A9B708F9B34362C3EFBE8E50A9413245BAB5A0.png",
+    "meaning": "地图怪物 token 击晕面：Vampire / 吸血鬼；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/faceless-man.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018200996842EB109869753C8E5EE2A9A37BEA1E96CD029FDC.png",
+    "meaning": "地图怪物 token：Faceless Man / 无面人；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/faceless-man-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182010041185D47607012FB30BD1E99269F993FC1AA7188C6.png",
+    "meaning": "地图怪物 token 击晕面：Faceless Man / 无面人；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/ghost-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182010187D5E8B17883810FA8E09AA2319527EA5A68469009.png",
+    "meaning": "地图怪物 token 击晕面：Ghost / 幽灵；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/troll-right-hand.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820102339DF40B78524AA810F05D4E555211CE06551C0564.png",
+    "meaning": "地图怪物 token：Troll Right Hand / 巨魔右手；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/troll-right-hand-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820102951799078FA4D6258E55D28CD057BB4C8A8165413E.png",
+    "meaning": "地图怪物 token 击晕面：Troll Right Hand / 巨魔右手；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/giant-hair-monster.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018201035486E9FFBB03E6546C18996B441507E39E97361F05.png",
+    "meaning": "地图怪物 token：Giant Hair Monster / 巨型毛发怪；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/giant-hair-monster-stunned.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc184254931018201041547C247AB68326609FDBE6492B6987DAC27F3C860.png",
+    "meaning": "地图怪物 token 击晕面：Giant Hair Monster / 巨型毛发怪；依据相邻物理顺序登记。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/troll-left-hand.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc18425493101820104931672E93ED8FD28F769D5AEC173AB6F22442F4782.png",
+    "meaning": "地图怪物 token：Troll Left Hand / 巨魔左手；来自用户点名 384x336 token 范围。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/large-monster-front.png",
+    "sourceFile": "temporary-generated-placeholder",
+    "meaning": "地图怪物 token：木乃伊怪物标记(大)；用户批准先占位，正式源图仍缺失，不得作为正式素材完成。",
+    "status": "temporary-runtime-placeholder"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/monsters/mummy.png",
+    "sourceFile": "temporary-generated-placeholder",
+    "meaning": "怪物头像：木乃伊；用户批准先占位，正式 portrait 源图仍缺失，不得作为正式素材完成。",
+    "status": "temporary-runtime-placeholder"
   }
 ]

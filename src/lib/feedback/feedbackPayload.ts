@@ -88,3 +88,7 @@ export interface FeedbackConfigProposal {
     sourceContext?: FeedbackConfigProposalSourceContext;
     status?: string;
 }
+
+export type FeedbackConfigProposalDraft = Omit<FeedbackConfigProposal, 'reason'> & {
+    reason?: string;
+};

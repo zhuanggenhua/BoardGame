@@ -114,8 +114,8 @@ const HELPING_HANDS_STRANGE_AMULET_CARD: BetrayalInventoryCard = {
     kind: 'item',
 };
 const HELPING_HANDS_TROLL_HAND_TOKEN_ASSETS = [
-    'betrayal/tokens/monsters/small-monster-1-front',
-    'betrayal/tokens/monsters/small-monster-2-front',
+    'betrayal/tokens/monsters/troll-right-hand',
+    'betrayal/tokens/monsters/troll-left-hand',
 ] as const;
 const MAGIC_CAMERA_PHANTOM_PHOTOGRAPHER_TRAITS = {
     might: 4,
@@ -1616,6 +1616,7 @@ export type BetrayalCommandMap = {
     [BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT]: { accept: boolean };
     [BETRAYAL_COMMANDS.LOOT_CORPSE]: { sourcePlayerId?: string; cardId?: string };
     [BETRAYAL_COMMANDS.END_TURN]: Record<string, never>;
+    [BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL]: Record<string, never>;
     [BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL]: Record<string, never>;
     [BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION]: { traits?: BetrayalTraitKey[]; useBrooch?: boolean };
     [BETRAYAL_COMMANDS.HAUNT_ATTACK]: {
@@ -1688,6 +1689,7 @@ const EVENTS = {
     POSSESSION_TRADE_DECLINED: 'POSSESSION_TRADE_DECLINED',
     CORPSE_LOOTED: 'CORPSE_LOOTED',
     TURN_ENDED: 'TURN_ENDED',
+    RECENT_ROLL_ACKNOWLEDGED: 'RECENT_ROLL_ACKNOWLEDGED',
     TURN_END_ROLL_ACKNOWLEDGED: 'TURN_END_ROLL_ACKNOWLEDGED',
     DAMAGE_ALLOCATION_RESOLVED: 'DAMAGE_ALLOCATION_RESOLVED',
     HAUNT_TRIGGERED: 'HAUNT_TRIGGERED',
@@ -1894,6 +1896,7 @@ type BetrayalEvent =
     | GameEvent<typeof EVENTS.POSSESSION_TRADE_DECLINED, { playerId: string; targetPlayerId: string; cardIds: string[]; targetCardIds?: string[]; logText: string }>
     | GameEvent<typeof EVENTS.CORPSE_LOOTED, { playerId: string; sourcePlayerId: string; cardId: string; logText: string }>
     | GameEvent<typeof EVENTS.TURN_ENDED, BetrayalTurnEndedPayload>
+    | GameEvent<typeof EVENTS.RECENT_ROLL_ACKNOWLEDGED, { playerId: string; rollId: string; sourceTitle: string; logText: string }>
     | GameEvent<typeof EVENTS.TURN_END_ROLL_ACKNOWLEDGED, {
         previousPlayerId: string;
         nextPlayerId: string;
@@ -2036,6 +2039,7 @@ type BetrayalEvent =
         toRoomId: string;
         moveCost: number;
         moveRemaining: number;
+        teleportMove: boolean;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.MONSTER_ATTACK_HERO_RESOLVED, {
@@ -8603,56 +8607,26 @@ function clampBetrayalNumberTrackProgress(value: number, min: number, max: numbe
     return Math.max(0, Math.min(100, Math.round(progress)));
 }
 
-function resolveHauntRollChancePercent(diceCount: number, threshold: number): number {
-    const normalizedDiceCount = normalizeBetrayalDiceCount(diceCount);
-    if (normalizedDiceCount <= 0) {
-        return 0;
-    }
-    let totals = new Map<number, number>([[0, 1]]);
-    for (let dieIndex = 0; dieIndex < normalizedDiceCount; dieIndex += 1) {
-        const nextTotals = new Map<number, number>();
-        for (const [total, count] of totals.entries()) {
-            for (const pip of [0, 1, 2]) {
-                nextTotals.set(total + pip, (nextTotals.get(total + pip) ?? 0) + count);
-            }
-        }
-        totals = nextTotals;
-    }
-    let successOutcomes = 0;
-    let totalOutcomes = 0;
-    for (const [total, count] of totals.entries()) {
-        totalOutcomes += count;
-        if (total >= threshold) {
-            successOutcomes += count;
-        }
-    }
-    if (totalOutcomes <= 0) {
-        return 0;
-    }
-    return Math.round((successOutcomes / totalOutcomes) * 100);
-}
-
 function resolveBetrayalHauntRiskNumberTrack(core: BetrayalCore): BetrayalNumberTrackStatus {
     const risk = resolveBetrayalHauntRisk(core);
-    const progressPercent = risk.hauntStarted || risk.nextOmenAutomatic
-        ? 100
-        : resolveHauntRollChancePercent(risk.nextRollDiceCount, risk.threshold);
+    const maxOmenCount = BETRAYAL_INITIAL_DECK_COUNTS.omen;
+    const progressPercent = clampBetrayalNumberTrackProgress(risk.omenCount, 0, maxOmenCount);
     return {
         id: 'haunt-risk',
         kind: 'haunt-risk',
-        label: '作祟风险',
+        label: '预兆状态',
         labelKey: 'board.status.hauntRiskLabel',
-        value: risk.requestedRollOmenCount,
+        value: risk.omenCount,
         min: 0,
-        max: Math.max(risk.threshold, risk.requestedRollOmenCount),
-        targetValue: risk.threshold,
+        max: maxOmenCount,
+        targetValue: maxOmenCount,
         currentLabel: `预兆 ${risk.omenCount}`,
-        targetLabel: `${risk.threshold}+ 作祟`,
+        targetLabel: '最后预兆',
         statusLabel: risk.hauntStarted
             ? '作祟已开始'
             : risk.nextOmenAutomatic
-                ? '最后预兆自动作祟'
-                : `下次 ${risk.nextRollDiceCount} 骰`,
+                ? '再抽预兆即作祟'
+                : '预兆已发现',
         progressPercent,
         source: 'base-rule',
         representativeOnly: false,
@@ -12111,9 +12085,9 @@ function resolveHauntRoll(
 
 function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): string {
     if (hauntRoll.automatic) {
-        return '抽到最后一张预兆，按通用预兆规则自动触发作祟';
+        return '最后一张预兆触发作祟';
     }
-    return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.threshold}+ 作祟开始，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
+    return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
 }
 
 function resolveHauntRevealResolutionForTrigger(
@@ -14051,6 +14025,20 @@ function resolvePendingTurnEndRoll(core: BetrayalCore): BetrayalRecentRollState 
     return null;
 }
 
+function resolveAcknowledgeableRecentRoll(core: BetrayalCore): BetrayalRecentRollState | null {
+    const recentRoll = core.recentRoll;
+    if (!recentRoll || recentRoll.playerId !== core.currentPlayer) {
+        return null;
+    }
+    if (recentRoll.kind !== 'mysticElevator') {
+        return null;
+    }
+    if (recentRoll.roomEndTurn?.nextPlayerId || recentRoll.deathPrevention?.nextPlayerId) {
+        return null;
+    }
+    return recentRoll;
+}
+
 function validateTurnEndRollAcknowledgement(core: BetrayalCore, command: BetrayalCommand): ValidationResult | null {
     const pendingRoll = resolvePendingTurnEndRoll(core);
     if (!pendingRoll) {
@@ -14663,6 +14651,15 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
+            const recentRoll = resolveAcknowledgeableRecentRoll(core);
+            if (!recentRoll) {
+                return { valid: false, error: '当前没有待确认的投骰结果。' };
+            }
+            return command.playerId === recentRoll.playerId
+                ? { valid: true }
+                : { valid: false, error: '必须由刚刚投骰的玩家确认结果。' };
+        }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION:
@@ -14914,6 +14911,15 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
             return validatePreHauntAction(state, command);
         case BETRAYAL_COMMANDS.END_TURN:
             return { valid: true };
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
+            const recentRoll = resolveAcknowledgeableRecentRoll(core);
+            if (!recentRoll) {
+                return { valid: false, error: '当前没有待确认的投骰结果。' };
+            }
+            return command.playerId === recentRoll.playerId
+                ? { valid: true }
+                : { valid: false, error: '必须由刚刚投骰的玩家确认结果。' };
+        }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL:
             return { valid: false, error: '当前没有待确认的回合结束投骰。' };
         case BETRAYAL_COMMANDS.RESOLVE_MONSTER_DAMAGE: {
@@ -16319,6 +16325,19 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 logText: `${actor.displayName}确认${pendingResolution.cardName}：${pendingResolution.text}`,
             }, timestamp)];
         }
+        case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
+            const recentRoll = resolveAcknowledgeableRecentRoll(core);
+            if (!recentRoll) {
+                return [];
+            }
+            const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            return [nowEvent(EVENTS.RECENT_ROLL_ACKNOWLEDGED, {
+                playerId: command.playerId,
+                rollId: recentRoll.id,
+                sourceTitle: recentRoll.sourceTitle,
+                logText: `${actor.displayName}确认${recentRoll.sourceTitle}投骰结果`,
+            }, timestamp)];
+        }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
             const card = core.currentExplorer.inventory.find((item) => item.id === command.payload.cardId);
             if (!card) {
@@ -16602,7 +16621,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                         kind: 'event',
                         title: pending.sourceTitle,
                         summary: pending.effect.acceptLabel,
-                        detail: `选择进行作祟检定：总点数 ${rollTotal}（${dice.length} 颗骰子，${hauntRisk.threshold}+ 作祟开始，${effectLabel}）`,
+                        detail: `选择进行作祟检定：总点数 ${rollTotal}（${dice.length} 颗骰子，${effectLabel}）`,
                         tone: hauntTriggered ? 'warning' : 'accent',
                     },
                     logText: `${actor.displayName}进行作祟检定：${pending.sourceTitle}（总点数 ${rollTotal}，${effectLabel}）`,
@@ -18167,6 +18186,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 toRoomId: targetRoom.id,
                 moveCost,
                 moveRemaining,
+                teleportMove: canMummyTeleportNow,
                 logText: canMummyTeleportNow
                     ? `${monster.name}从${core.rooms.find((room) => room.id === monster.roomId)?.name ?? monster.roomId}瞬移到${targetRoom.name}`
                     : `${monster.name}从${core.rooms.find((room) => room.id === monster.roomId)?.name ?? monster.roomId}移动到${targetRoom.name}，消耗 ${moveCost} 点移动${stoppedInHeroLineOfSight ? '；进入英雄视线后立即停止' : ''}`,
@@ -20752,6 +20772,18 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 activityLog: appendActivity(synced, event.payload.logText, 'warning'),
             };
         }
+        case EVENTS.RECENT_ROLL_ACKNOWLEDGED: {
+            if (core.recentRoll?.id !== event.payload.rollId) {
+                return core;
+            }
+            core.recentRoll = null;
+            const synced = syncCurrentExplorerProjection(core);
+            return {
+                ...synced,
+                recommendedAction: resolveRecommendedAction(synced),
+                activityLog: appendActivity(synced, event.payload.logText, 'accent'),
+            };
+        }
         case EVENTS.TURN_END_ROLL_ACKNOWLEDGED: {
             const pendingDeathPreventionRecentRoll = core.recentRoll?.kind === 'deathPrevention'
                 ? core.recentRoll
@@ -21110,10 +21142,12 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 core.scenarioRuntime.jackSpiritRoomId = event.payload.toRoomId;
                 core.scenarioRuntime.jackSpiritHasMovedSinceRelease = true;
             }
-            monsterTurn.movedMonsterIdsThisTurn = Array.from(new Set([
-                ...monsterTurn.movedMonsterIdsThisTurn,
-                event.payload.monsterId,
-            ]));
+            if (event.payload.teleportMove) {
+                monsterTurn.movedMonsterIdsThisTurn = Array.from(new Set([
+                    ...monsterTurn.movedMonsterIdsThisTurn,
+                    event.payload.monsterId,
+                ]));
+            }
             monsterTurn.moveRemainingById = {
                 ...monsterTurn.moveRemainingById,
                 [event.payload.monsterId]: event.payload.moveRemaining,

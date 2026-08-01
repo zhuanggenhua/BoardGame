@@ -40,6 +40,205 @@
     "shouren": "Tundra Orcs",
     "yongheng": "Eternal Council"
   },
+  "configReview": {
+    "eyebrow": "Config review table",
+    "title": "Summoner Wars Config Table",
+    "subtitle": "This table is generated from the existing Summoner Wars TypeScript config, faction deck builder, and real card atlas. Faction ownership, deck symbols, stats, effects, assets, and setup placement are shown from the current config source. Players can double-click cells, stage edits, then submit one AI-review proposal batch.",
+    "actions": {
+      "back": "Back to Directory",
+      "closePreview": "Close Image",
+      "magnify": "Magnify {{name}}",
+      "clearEdits": "Clear Edits",
+      "submitBatch": "Submit {{count}} Edits",
+      "previousPage": "Previous Page",
+      "nextPage": "Next Page"
+    },
+    "filters": {
+      "searchPlaceholder": "Search name, config object, ability, or source",
+      "allFactions": "All Factions"
+    },
+    "tableScroll": {
+      "primaryHint": "Scroll sideways to see more fields",
+      "secondaryHint": "Mouse wheel moves up and down; drag the bottom bar or use a trackpad to move sideways"
+    },
+    "columns": {
+      "image": "Card",
+      "id": "Config Object",
+      "name": "Name",
+      "faction": "Owner Faction",
+      "deckSymbols": "Deck Symbols",
+      "cardType": "Card Type",
+      "unitClass": "Unit Class",
+      "quantity": "Qty",
+      "setupPositions": "Setup Position",
+      "attack": "Attack",
+      "life": "Life",
+      "cost": "Cost",
+      "attackType": "Attack Type",
+      "attackRange": "Range",
+      "playPhase": "Play Phase",
+      "eventType": "Event Type",
+      "isActive": "Active",
+      "charges": "Charges",
+      "targetUnitId": "Target Unit",
+      "entanglementTargets": "Entangle Targets",
+      "abilities": "Abilities",
+      "effect": "Effect Text",
+      "isGate": "Gate",
+      "isStartingGate": "Starting Gate",
+      "spriteAtlas": "Card Atlas",
+      "spriteIndex": "Card Index",
+      "sourceContexts": "Config Source"
+    },
+    "fields": {
+      "id": "Config Object",
+      "name": "Name",
+      "faction": "owner faction",
+      "deckSymbols": "deck symbols",
+      "cardType": "card type",
+      "unitClass": "unit class",
+      "quantity": "quantity",
+      "setupPositions": "setup position",
+      "attack": "attack",
+      "life": "life",
+      "cost": "cost",
+      "attackType": "attack type",
+      "attackRange": "range",
+      "playPhase": "play phase",
+      "eventType": "event type",
+      "isActive": "active-event flag",
+      "charges": "charges",
+      "targetUnitId": "target unit",
+      "entanglementTargets": "entanglement targets",
+      "abilities": "abilities",
+      "effect": "effect text",
+      "isGate": "gate flag",
+      "isStartingGate": "starting-gate flag",
+      "spriteAtlas": "card atlas",
+      "spriteIndex": "card index",
+      "sourceContexts": "config source"
+    },
+    "types": {
+      "all": "All Types",
+      "summoner": "Summoner",
+      "champion": "Champion",
+      "common": "Common",
+      "event": "Event",
+      "gate": "Gate",
+      "structure": "Structure"
+    },
+    "stats": {
+      "version": "Config Version",
+      "totalRows": "Total Rows",
+      "visibleRows": "Filtered Rows",
+      "pageRows": "Current Page",
+      "compactStatus": "{{version}} · {{visible}} / {{total}} rows · {{pageRows}} on page",
+      "attack": "Attack",
+      "life": "Life",
+      "cost": "Cost",
+      "range": "Range",
+      "melee": "Melee",
+      "ranged": "Ranged"
+    },
+    "pagination": {
+      "pageSize": "Rows per page",
+      "pageStatus": "Page {{page}} / {{total}}",
+      "visibleRange": "Showing {{start}}-{{end}} / {{total}} rows"
+    },
+    "material": {
+      "ready": "Card image wired",
+      "missing-sprite": "Missing card image"
+    },
+    "values": {
+      "configVersion": {
+        "legacy-ts-config-v1": "Legacy code config v1"
+      },
+      "boolean": {
+        "true": "Yes",
+        "false": "No"
+      },
+      "cardType": {
+        "unit": "Unit",
+        "event": "Event",
+        "structure": "Structure"
+      },
+      "unitClass": {
+        "summoner": "Summoner",
+        "champion": "Champion",
+        "common": "Common Unit"
+      },
+      "attackType": {
+        "melee": "Melee",
+        "ranged": "Ranged"
+      },
+      "playPhase": {
+        "factionSelect": "Faction Select Phase",
+        "summon": "Summon Phase",
+        "move": "Move Phase",
+        "build": "Build Phase",
+        "attack": "Attack Phase",
+        "magic": "Magic Phase",
+        "draw": "Draw Phase",
+        "any": "Any Phase"
+      },
+      "eventType": {
+        "legendary": "Legendary Event",
+        "common": "Common Event"
+      },
+      "spriteAtlas": {
+        "hero": "Summoner Atlas",
+        "cards": "Card Atlas",
+        "portal": "Gate Atlas"
+      },
+      "deckSymbols": {
+        "double_axe": "Double Axe",
+        "flame": "Flame",
+        "moon": "Crescent Moon",
+        "eye": "Eye",
+        "wave": "Wave",
+        "shield": "Shield",
+        "diamond": "Diamond",
+        "claw": "Claw",
+        "mask": "Mask",
+        "snowflake": "Snowflake",
+        "droplet": "Droplet",
+        "star": "Star",
+        "rhombus": "Rhombus",
+        "spore": "Spore",
+        "mycelium": "Mycelium",
+        "ember": "Ember",
+        "phoenix": "Phoenix",
+        "tundra": "Tundra",
+        "council": "Council"
+      },
+      "sourceContexts": {
+        "summoner": "Summoner",
+        "startingGate": "Starting Gate",
+        "startingUnit": "Starting Unit",
+        "deck": "Draw Deck",
+        "startingGatePosition": "Starting Gate: row {{row}}, column {{col}}",
+        "startingUnitPosition": "Starting Unit: card {{index}}, row {{row}}, column {{col}}"
+      },
+      "setupPositions": {
+        "summoner": "Summoner: row {{row}}, column {{col}}",
+        "startingGate": "Starting Gate: row {{row}}, column {{col}}",
+        "startingUnit": "Starting Unit: card {{index}}, row {{row}}, column {{col}}"
+      },
+      "referenceFallback": "Unknown object"
+    },
+    "feedback": {
+      "cellEditHint": "Double-click to edit; Enter saves; Esc cancels",
+      "editHint": "Double-click a cell to edit. Changes are staged on this page and submitted together.",
+      "emptyCell": "—",
+      "emptyValue": "empty",
+      "rawValueLabel": "Raw config value",
+      "pendingCount": "{{count}} staged edit(s)",
+      "invalidCount": "{{count}} invalid edit(s)",
+      "invalidNumber": "Enter a number",
+      "invalidBoolean": "Enter true/false, yes/no, or 1/0",
+      "initialBatchContent": "I suggest reviewing these {{count}} configuration field corrections:"
+    }
+  },
   "actions": {
     "closePreview": "Close Preview",
     "close": "Close",

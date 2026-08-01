@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useMemo, useCallback, useEffectEvent, type
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { AlertTriangle, Download, HardDriveDownload, Info, LoaderCircle, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, Download, HardDriveDownload, Info, LoaderCircle, RefreshCw, TableProperties, X } from 'lucide-react';
 import * as matchApi from '../../services/matchApi';
 import { getLocalMatchPreferences, updateLocalMatchPreferences } from '../../api/user-settings';
 import { useAuth } from '../../contexts/AuthContext';
@@ -737,6 +737,11 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         navigate(`/play/${gameId}/tutorial`);
     };
     const hasTutorialEntry = useMemo(() => hasGameTutorialLoader(gameId), [gameId]);
+    const hasConfigReview = normalizedGameId === 'summonerwars' || normalizedGameId === 'dicethrone';
+    const handleConfigReview = () => {
+        onNavigate?.();
+        navigate(`/games/${normalizedGameId}/config`);
+    };
     const loadCreateRoomPreferences = async (): Promise<LocalMatchPreferences | null> => {
         if (!gameManifest) {
             return null;
@@ -2110,15 +2115,28 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             </div>
 
                             {/* 操作按钮 - 固定在底部 */}
-                            {hasTutorialEntry ? (
+                            {hasTutorialEntry || hasConfigReview ? (
                                 <div className="mt-1 grid shrink-0 w-full gap-2 md:mt-0 md:grid-cols-1">
-                                    <button
-                                        type="button"
-                                        onClick={handleTutorial}
-                                        className="w-full py-1.5 md:py-2 px-3 md:px-4 bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text font-bold rounded-[4px] hover:bg-parchment-base-bg transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs"
-                                    >
-                                        {t('actions.tutorial')}
-                                    </button>
+                                    {hasTutorialEntry ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleTutorial}
+                                            className="w-full py-1.5 md:py-2 px-3 md:px-4 bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text font-bold rounded-[4px] hover:bg-parchment-base-bg transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs"
+                                        >
+                                            {t('actions.tutorial')}
+                                        </button>
+                                    ) : null}
+                                    {hasConfigReview ? (
+                                        <button
+                                            type="button"
+                                            data-testid="game-details-config-review-button"
+                                            onClick={handleConfigReview}
+                                            className="w-full py-1.5 md:py-2 px-3 md:px-4 bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text font-bold rounded-[4px] hover:bg-parchment-base-bg transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs"
+                                        >
+                                            <TableProperties aria-hidden="true" className="h-3.5 w-3.5 md:h-4 md:w-4" strokeWidth={2.1} />
+                                            {t('actions.configReview')}
+                                        </button>
+                                    ) : null}
                                 </div>
                             ) : null}
 

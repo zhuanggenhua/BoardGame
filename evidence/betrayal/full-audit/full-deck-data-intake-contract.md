@@ -2,7 +2,7 @@
 
 > 日期：2026-07-28
 > 续跑核验：2026-07-29
-> 本合同主范围：整牌库 S0 数据录入 / 合同层闭合；2026-07-29 用户已继续授权消费已锁 S0 合同进入 S1/S2 已锁单卡机制补证。此前神秘秒表、牙齿项链、胸针等对象级补证继续作为实现证据保留；本轮已补天使之羽、炸药、奇异护符、技术难点、新增配置事件代表链、7 号作祟镜中提示、镜中怪物最近目标移动 / 平手路径、镜中怪物同房神志攻击最小领域链、幸运硬币在倒塌房间回合末属性检定中的真实效果链组合、9 张预兆逐卡效果领域证据矩阵，以及作祟公共规则（全员当前持有预兆数、交易转移后总数、抽新预兆骰数、8 骰上限、普通预兆触发、最后一张预兆自动触发与翻牌确认队列）最小领域证据。幸运硬币当前已补 Board 组件空白骰选择代表链；牙齿项链当前已补 Board 组件选择 / 跳过代表链；胸针当前已补 Board 组件伤害分配代表链、强制伤害不适用真实入口、非强制物理伤害真实入口和非强制精神伤害真实入口；奇异护符当前已补 Board 摘要 / 日志代表链；圣符 / 雕像当前已补 Board 组件探索声明和刚获得限制代表链；仍不把真实 Playwright、截图或未点名 UI 当作完成证据。
+> 本合同主范围：整牌库 S0 数据录入 / 合同层闭合；2026-07-29 用户已继续授权消费已锁 S0 合同进入 S1/S2 已锁单卡机制补证。此前神秘秒表、牙齿项链、胸针等对象级补证继续作为实现证据保留；本轮已补天使之羽、炸药、奇异护符、技术难点、新增配置事件代表链、7 号作祟镜中提示、镜中怪物最近目标移动 / 平手路径、镜中怪物同房神志攻击最小领域链、幸运硬币在倒塌房间回合末属性检定中的真实效果链组合、9 张预兆逐卡效果领域证据矩阵，以及作祟公共规则（全员当前持有预兆数、交易转移后总数、抽新预兆骰数、8 骰上限、普通预兆触发、最后一张预兆自动触发与翻牌确认队列）最小领域证据。幸运硬币当前已补 Board 组件空白骰选择代表链和真实重掷 Playwright / 截图代表链；牙齿项链当前已补 Board 组件选择 / 跳过和真实结束回合 Playwright / 截图代表链；胸针当前已补 Board 组件伤害分配代表链、强制伤害不适用真实入口、非强制物理伤害真实入口和非强制精神伤害真实入口；奇异护符当前已补 Board 摘要 / 日志代表链；书本当前已补真实使用并保留下次非战斗检定替换状态的 Playwright / 截图代表链；狗当前已补远距交易 Playwright / 截图代表链；面具当前已补逐目标移动同房探索者和狂热病患到已发现相邻房间的 Playwright / 截图代表链；头骨当前已补木乃伊攻击致死后的成功、失败和兔脚重掷真实链；圣符当前已补探索声明真实 Playwright / 截图代表链；盔甲当前已补木乃伊攻击物理减伤真实链；雕像当前已补 Board 组件探索声明 / 刚获得限制代表链和真实探索声明 Playwright / 截图代表链；指环和匕首当前已补真实攻击武器链；仍不把未点名真实 Playwright、截图或未点名 UI 当作完成证据。
 > 当前总状态：`in_progress / downstream-gated`（历史旧别名：`downstream-blocked`）。这里的 `gated / blocked` 只表示**不能宣称整牌库完成、不能进入 Board/UI/E2E/截图验收**；不表示合同层不能继续推进。官方 74 张对象已经进入同一张合同账本；本轮按用户指定本地图包重新核对，三个项目正式 atlas 与原始 TTS/Mod 图包逐字节一致。事件源图包实际包含 43 张事件正面 + 1 个空黑格 + 1 张事件背面，E43「最深的壁橱」frame 42 已由原始 atlas 直接锁定；旧 `tts-9x5-crop-manifest.json` 原始 `candidateCards` 仍只有 42 个 TTS `ContainedObjects` 候选，但本轮已在同一 manifest 补入 `gridAudit20260728` 全格扫描字段，明确 frame 42 是有效事件正面、frame 43 是空黑格、frame 44 是事件背面。因此这是旧裁图 manifest 生成口径问题，不是图包缺素材。物品源图包实际包含 22 张物品正面 + 1 个空黑格 + 1 张物品背面；当前工作区发现池已扩到 22 张官方物品，项目 atlas alias 已覆盖 22 个官方物品正面。`notebook`、`lantern`、`journal` 仍作为首剧本起始 / legacy alias 保留在运行持有物全集，但不计入官方 22 张独立物品。原审计入口基线仍按 23 事件 / 12 物品 / 9 预兆记录差异，后续工作区配置扩到 43/22/9 只能说明数量接线已变化，不能倒推最初 30 张缺口不存在。当前计数接线已到 74/74，但大量逐卡机制、UI 承接和测试证据仍未闭合，不得进入整牌库完成或 E2E/截图验收阶段。
 
 ## 0. 本轮前提锁定
@@ -28,6 +28,8 @@
 | 事件正面 atlas | 原始图包 `Mods/Images/...F454F087E26E7B3812E15CAFC9C941BD5ED49D66.jpg`；尺寸 `6076x6376`；SHA-256 `09C43D68FACFAEB619162C600D95AE91C011C04C29345DCFB9E0C85902E768F5`；Workshop `ObjectStates/18` deck 372 声明 `9x5` 且 `ContainedObjects=42` | `public/assets/i18n/zh-CN/betrayal/cards/event-front-atlas.jpg` 与原图包逐字节一致；临时联系图 `temp/betrayal-asset-source-diagnostics-2026-07-28/event-9x5-last-row-36-44.jpg` 显示 frame 42 是「最深的壁橱」、frame 43 是空黑格、frame 44 是事件背面 | 项目 atlas 复制/导入没错；旧 TTS 裁图 manifest 只按 `ContainedObjects` 生成到 index 41，漏掉有效正面 frame 42 |
 | 物品正面 atlas | 原始图包 `Mods/Images/...DB35BA7304F2999D84979FFC9FDC379603C70853.jpg`；尺寸 `5400x3826`；SHA-256 `5C7609535AE034D370D81EED5E9E0A52E1E23F1F5C63DF3F0438E6587D096D30`；Workshop `ObjectStates/19` deck 373 声明 `8x3` 且 `ContainedObjects=22` | `public/assets/i18n/zh-CN/betrayal/cards/item-front-atlas.jpg` 与原图包逐字节一致；临时联系图 `temp/betrayal-asset-source-diagnostics-2026-07-28/item-8x3-all-00-23.jpg` 显示 0-21 为 22 张物品正面、22 为空黑格、23 为物品背面 | 源图包不缺 22 张物品；当前运行发现池已覆盖 22 张官方物品，旧裁图 manifest 仍只覆盖旧批次物品；`map/notebook/journal/manuscript`、`flashlight/lantern` 属于 duplicate-alias / legacy-alias 裁定 |
 | 预兆正面 atlas | 原始图包 `Mods/Images/httpssteamusercontentaakamaihdnetugc19168630339958248031296A0A5F30236EF5DB2B389F4C2B0A6BFE7449B.jpg`；尺寸 `3376x2550`；SHA-256 `C09E88AD93036F59022BDFFA00FFCC1F21609A599BBFD95ADD26CEAB6325573F`；Workshop `ObjectStates/20` deck 378 声明 `5x2` 且 `ContainedObjects=9` | `public/assets/i18n/zh-CN/betrayal/cards/omen-front-atlas.jpg` 与原图包逐字节一致；临时联系图 `temp/betrayal-asset-source-diagnostics-2026-07-28/omen-5x2-all-00-09.jpg` 显示 0-8 为 9 张预兆正面、9 为预兆背面 | 预兆素材数量对；仍需保持“逐卡效果合同”和“作祟公共规则合同”两层审计 |
+
+2026-07-31 版本边界补充：「女孩」不在当前 3e 预兆正面 atlas 的 9 张预兆内，也不作为当前 74 张合同漏录项处理。旧版「木乃伊横行」规则正文中的「女孩」只作为剧本 token / legacy 触发标签进入运行合同；除非另启纯旧版牌库或触发表迁移，不得在数据录入阶段把「女孩」补进当前 9 张预兆。
 
 ### 0.2 2026-07-29 S0 机器一致性复核
 
@@ -77,7 +79,7 @@
 | 类别 | 官方数量 | 当前发现池配置 | 本合同对象行 | 当前缺口结论 |
 | --- | ---: | ---: | ---: | --- |
 | 事件牌 | 43 | 43 | 43 | 43 个当前配置事件标题已有 atlas 映射；E43「最深的壁橱」已由原始事件 atlas frame 42 锁定，旧 manifest 原候选漏 frame 42 但已补 `gridAudit20260728`；「轮到约拿了」「片刻希望」「游魂」「技术难点」已补最小运行闭合；新增配置事件定向回归已覆盖 20 张新增/补录事件的运行消费入口，其中 9 张待选择事件已补最小指令结算，自动分支已补一批抽物品、属性写入和移动状态断言，失败伤害分支与剩余可配置分支已各补一组代表链；但多张事件仍缺剩余分支、作祟特例、UI 承接和组合测试 |
-| 物品牌 | 22 | 22 | 22 | 原始物品 atlas 已锁 22 张正面；当前发现池已扩到 22 个官方物品对象；`notebook / lantern / journal` 作为 legacy alias 保留但不计入官方 22；恐怖玩偶已补 Board 组件全骰选择代表链，幸运硬币已补 Board 组件空白骰选择代表链，牙齿项链已补最小领域验证和 Board 组件选择 / 跳过代表链，胸针已补最小领域验证和 Board 组件伤害分配代表链，奇异护符已补最小领域验证和 Board 摘要 / 日志代表链，神秘秒表、天使之羽、炸药已补最小领域验证或代表链，多张新增物品仍缺完整真实入口 / UI 承接或组合验证 |
+| 物品牌 | 22 | 22 | 22 | 原始物品 atlas 已锁 22 张正面；当前发现池已扩到 22 个官方物品对象；`notebook / lantern / journal` 作为 legacy alias 保留但不计入官方 22；恐怖玩偶已补 Board 组件全骰选择代表链和真实重掷 Playwright / 截图代表链，幸运硬币已补 Board 组件空白骰选择代表链和真实重掷 Playwright / 截图代表链，牙齿项链已补最小领域验证、Board 组件选择 / 跳过和真实结束回合 Playwright / 截图代表链，胸针已补最小领域验证和 Board 组件伤害分配代表链，奇异护符已补最小领域验证和 Board 摘要 / 日志代表链，神秘秒表、天使之羽、炸药已补最小领域验证或代表链，多张新增物品仍缺完整真实入口 / UI 承接或组合验证 |
 | 预兆牌 | 9 | 9 | 9 | 9 张对象和素材已建合同；作祟公共规则必须独立于单卡效果审；最后一张预兆自动作祟已补最小领域回归 |
 | 合计 | 74 | 74 | 74 | 当前配置数量已对齐官方整牌库；但事件与物品仍需逐张机制/UI/测试闭合证据，不能以计数通过冒充整牌库完成 |
 
@@ -98,7 +100,8 @@
 | 神秘秒表定向领域回归 | `firstScenarioRuntime.test.ts -t "神秘秒表"`：7 passed / 650 skipped；`firstScenarioRuntime.test.ts -t "牙齿项链|胸针|神秘秒表"`：21 passed / 636 skipped | 覆盖作祟前不能使用、作祟后埋葬并在当前回合结束后仍由当前玩家再行动一轮、未使用时作祟回合结束正常交接且持有者保留秒表 |
 | 幸运硬币 / 倒塌房间组合定向领域回归 | `firstScenarioRuntime.test.ts -t "幸运硬币|倒塌房间"`：17 passed / 672 skipped | 覆盖幸运硬币在倒塌房间回合末速度检定中只重掷空白骰；重投为非空白时回滚坠落并按新结果取消房间伤害；重投仍为空白时先进入幸运硬币精神伤害分配，再允许确认倒塌房间坠落伤害并按房间结果推进下一玩家 |
 | 幸运硬币 Board 组件回归 | `Board.foundation.test.tsx -t "幸运硬币"`：1 passed / 142 skipped | 覆盖真实页面选中幸运硬币后，最近属性检定骰盘只生成空白骰重掷目标，非空白骰不生成可重掷目标 |
-| 恐怖玩偶 Board 组件回归 | `Board.foundation.test.tsx -t "恐怖玩偶"`：1 passed / 143 skipped；`firstScenarioRuntime.test.ts -t "恐怖玩偶"`：6 passed / 689 skipped | 覆盖真实页面选中恐怖玩偶后，最近属性检定骰盘为全部骰子生成重掷目标；领域链仍只证明已有属性检定消费者，不外推作祟特殊行动属性检定通用回滚快照 |
+| 幸运硬币真实入口回归 | `npx eslint e2e/betrayal/lucky-coin-reroll.e2e.ts`：0 errors；`npm run test:e2e:file -- e2e/betrayal/lucky-coin-reroll.e2e.ts`：1 passed | 覆盖真实牌桌持有区选中幸运硬币、只开放空白骰重掷、点击任一空白骰后重掷全部空白骰、重投仍空白时进入精神伤害并收口回牌桌；仍不外推作祟特殊行动、死亡保护或全部伤害分配组合 |
+| 恐怖玩偶 Board / 真实入口回归 | `Board.foundation.test.tsx -t "恐怖玩偶"`：1 passed / 143 skipped；`firstScenarioRuntime.test.ts -t "恐怖玩偶"`：6 passed / 689 skipped；`npx eslint e2e/betrayal/scary-doll-reroll.e2e.ts` 0 errors；`npm run test:e2e:file -- e2e/betrayal/scary-doll-reroll.e2e.ts` 1 passed | 覆盖真实页面选中恐怖玩偶后，最近属性检定骰盘为全部骰子生成重掷目标；真实入口链证明点击任一骰会重掷全部属性检定骰并回写原事件分支；仍不外推作祟特殊行动属性检定通用回滚快照 |
 | 天使之羽定向领域回归 | `firstScenarioRuntime.test.ts -t "天使之羽"`：7 passed / 653 skipped | 覆盖使用时必须选择 0-8 整数、使用后埋葬、下一次非战斗属性检定使用所选数字作为投骰结果、仍叠加属性加值、固定骰事件不消费替代状态 |
 | 炸药定向领域回归 | `firstScenarioRuntime.test.ts -t "炸药"`：8 passed / 656 skipped | 覆盖当前/相邻已发现板块目标限制、使用后从持有区移除并埋葬、记为本回合已攻击、目标板块探索者分别速度检定、失败探索者进入 4 点物理伤害分配、失败怪物走通用受伤后端 |
 | 奇异护符定向领域回归 | `firstScenarioRuntime.test.ts -t "奇异护符"`：12 passed / 655 skipped | 覆盖实际承受物理伤害后神志 +1；通用伤害分配到速度不触发；速度属性直接降低不触发 |
@@ -212,13 +215,13 @@
 | # | 中文名 / 槽位 | 英文名或原文名 | 类别 | 官方来源或真相源位置 | 规则原文或效果子句录入状态 | 素材 / atlas / 裁图 / frame 状态 | 当前配置/运行状态 | 能力 / 效果 / UI 后续 | 合同状态 | 阻塞原因与下一步最小解阻动作 |
 | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | I01 | 魔法相机（camera） | Magic Camera | 物品 | 物品/预兆效果审计表；原始 item atlas frame 0 | `locked` | item frame 0；crop-ready；`source-atlas-diagnostics.json` 复核 | `in-runtime` | 当前能力合同已有证据；新增消费者再审 | `locked` | 无 |
-| I02 | 恐怖玩偶 | 未锁英文名 | 物品 | 原始 item atlas frame 1；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-01-r0c1-full.jpg` | TTS 图包已读：你的每个回合可使用一次；可以使用恐怖玩偶重新投掷刚刚进行的属性检定的所有骰子 | item frame 1 已裁完整单卡；sha256 `a4006c186f6d59662c451fe8d553e67bec4a25a682aa18d2f6206216940c7a85`；atlas alias 已接 | `in-runtime / partial-mechanism-covered / Board component representative / partial-ui` | 已补最近属性检定全骰重掷入口：事件属性检定可回写原事件分支结算，房间回合末属性检定入口已开放；Board 组件代表链证明选中恐怖玩偶后最近属性检定骰盘为全部骰子生成重掷目标；固定骰、攻击、作祟检定、作祟特殊行动属性检定不放行 | `locked` | S0 图包字段、属性检定全骰重掷机制和 Board 组件代表链已锁；后续最小解阻为补真实 Playwright / 截图、作祟特殊行动属性检定通用回滚快照和更多重掷消费者组合 |
+| I02 | 恐怖玩偶 | 未锁英文名 | 物品 | 原始 item atlas frame 1；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-01-r0c1-full.jpg` | TTS 图包已读：你的每个回合可使用一次；可以使用恐怖玩偶重新投掷刚刚进行的属性检定的所有骰子 | item frame 1 已裁完整单卡；sha256 `a4006c186f6d59662c451fe8d553e67bec4a25a682aa18d2f6206216940c7a85`；atlas alias 已接 | `in-runtime / L3 real-entry representative / partial-combo` | 已补最近属性检定全骰重掷入口：事件属性检定可回写原事件分支结算，房间回合末属性检定入口已开放；Board 组件和真实入口代表链证明选中恐怖玩偶后最近属性检定骰盘为全部骰子生成重掷目标，点击任一骰会重掷全部属性检定骰并回写原分支；固定骰、攻击、作祟检定、作祟特殊行动属性检定不放行 | `locked` | S0 图包字段、属性检定全骰重掷机制、Board 组件代表链和真实 Playwright / 截图代表链已锁；后续最小解阻为补作祟特殊行动属性检定通用回滚快照和更多重掷消费者组合 |
 | I03 | 奇怪的药品（holy-water） | Strange Medicine | 物品 | 物品/预兆效果审计表；原始 item atlas frame 2 | `locked` | item frame 2；crop-ready | `in-runtime` | 当前能力合同已有证据；新增消费者再审 | `locked` | 内部 id 为 legacy alias，不影响当前 S0 |
 | I04 | 镜子 | 未锁英文名 | 物品 | 原始 item atlas frame 3；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-03-r0c3-full.jpg` | TTS 图包已读：在你的回合内，可以埋葬此镜子；若如此做，治疗你的知识和神志 | item frame 3 已裁完整单卡；sha256 `fcb43814e5992d433e233d93da28e31c504d6270b72c852daf9ba8cae9631eeb`；atlas alias 已接 | `in-runtime / min-verified` | 已补主动埋葬治疗知识和神志的最小运行承接；后续仍需组合回归 | `locked` | S0 字段与最小效果已接；后续补更多伤害/治疗组合验证 |
 | I05 | 急救包（medical-kit） | Medical Kit | 物品 | 物品/预兆效果审计表；原始 item atlas frame 4 | `locked` | item frame 4；crop-ready | `in-runtime` | 当前能力合同已有证据；新增消费者再审 | `locked` | 无 |
-| I06 | 幸运硬币 | 未锁英文名 | 物品 | 原始 item atlas frame 5；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-05-r0c5-full.jpg` | TTS 图包已读：你的每个回合可使用一次；可以使用幸运硬币重新投掷刚刚进行的一项属性检定的所有空白骰子；重投结果中每有一个空白骰子，承受 1 点精神伤害 | item frame 5 已裁完整单卡；sha256 `a2661a7da513d14819a70d737667d5ff4db6bf0fef1ee1bbe6b58a45677f354c`；atlas alias 已接 | `in-runtime / combo-domain-verified / Board component representative / partial-ui` | 已补最近属性检定空白骰重掷入口：事件属性检定可重掷所有空白骰，重投后每个空白进入精神伤害分配；Board 组件目标层只允许选择空白骰；固定骰、攻击、作祟检定和作祟特殊行动属性检定不放行；已补倒塌房间回合末真实效果链组合：重投为非空白会回滚坠落并取消房间伤害，重投仍为空白会先分配幸运硬币精神伤害，再确认倒塌房间坠落伤害并推进下一玩家 | `locked` | S0 图包字段、S1/S2 最小领域组合和 Board 组件代表链已锁；后续最小解阻为补真实 Playwright / 截图、作祟特殊行动、死亡保护和更多伤害分配组合回归 |
+| I06 | 幸运硬币 | 未锁英文名 | 物品 | 原始 item atlas frame 5；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-05-r0c5-full.jpg` | TTS 图包已读：你的每个回合可使用一次；可以使用幸运硬币重新投掷刚刚进行的一项属性检定的所有空白骰子；重投结果中每有一个空白骰子，承受 1 点精神伤害 | item frame 5 已裁完整单卡；sha256 `a2661a7da513d14819a70d737667d5ff4db6bf0fef1ee1bbe6b58a45677f354c`；atlas alias 已接 | `in-runtime / L3 real-entry representative / partial-combo` | 已补最近属性检定空白骰重掷入口：事件属性检定可重掷所有空白骰，重投后每个空白进入精神伤害分配；Board 组件目标层只允许选择空白骰；真实入口代表链证明从牌桌持有区选中幸运硬币后，点击任一空白骰会重掷刚刚属性检定中的所有空白骰并按空白结果进入精神伤害收口；固定骰、攻击、作祟检定和作祟特殊行动属性检定不放行；已补倒塌房间回合末真实效果链组合：重投为非空白会回滚坠落并取消房间伤害，重投仍为空白会先分配幸运硬币精神伤害，再确认倒塌房间坠落伤害并推进下一玩家 | `locked` | S0 图包字段、S1/S2 最小领域组合、Board 组件代表链和真实 Playwright / 截图代表链已锁；后续最小解阻为补作祟特殊行动、死亡保护和更多伤害分配组合回归 |
 | I07 | 皮夹克 | 未锁英文名 | 物品 | 原始 item atlas frame 6；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-06-r0c6-full.jpg` | TTS 图包已读：无论何时你防御一次进攻时，多投掷一颗额外的骰子 | item frame 6 已裁完整单卡；sha256 `3669741d0d9bb9a5eddf1acbac13aaea7cfe4b6ea2a188b8e7f6156122d8858a`；atlas alias 已接 | `in-runtime / min-domain-verified / Board component representative` | 已补防御攻击时额外 1 骰的最小运行承接；当前树 Board 组件代表链已证明真实攻击入口结算后，攻击投骰复盘显示进攻总点、防御总点和防御额外 1 骰；后续仍需更多攻击来源组合 | `locked` | S0 字段、最小领域效果和 Board 组件代表链已接；后续补真实 Playwright / 截图、怪物攻击、作祟攻击和更多攻击来源组合验证 |
-| I08 | 牙齿项链 | 未锁英文名 | 物品 | 原始 item atlas frame 7；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-07-r0c7-full.jpg` | TTS 图包已读：在你的回合结束时，可以获得 1 点你选择的某项濒死属性 | item frame 7 已裁完整单卡；sha256 `3c2370c1a249401a0db7e32a2bc8c09f8265294e281da8c899097e85c42d7c7a`；atlas alias 已接 | `in-runtime / min-domain-verified / min-ui-representative` | 已补回合结束触发、濒死属性筛选、选择后提升 1 步、跳过和非法属性拒绝；当前树已补 Board 组件选择 / 跳过代表链，但不等同真实 Playwright / 截图闭环 | `locked` | S0 字段、最小领域效果和 Board 组件代表链已接；后续补更多作祟/房间结束/死亡保护组合回归 |
+| I08 | 牙齿项链 | 未锁英文名 | 物品 | 原始 item atlas frame 7；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-07-r0c7-full.jpg` | TTS 图包已读：在你的回合结束时，可以获得 1 点你选择的某项濒死属性 | item frame 7 已裁完整单卡；sha256 `3c2370c1a249401a0db7e32a2bc8c09f8265294e281da8c899097e85c42d7c7a`；atlas alias 已接 | `in-runtime / L3 real-entry representative / partial-combo` | 已补回合结束触发、濒死属性筛选、选择后提升 1 步、跳过和非法属性拒绝；当前树已补 Board 组件选择 / 跳过和真实结束回合 Playwright / 截图代表链 | `locked` | S0 字段、最小领域效果、Board 组件和真实结束回合代表链已接；后续补更多作祟/房间结束/怪物回合/死亡保护组合回归 |
 | I09 | 手电筒（flashlight） | Flashlight | 物品 | 物品/预兆效果审计表；原始 item atlas frame 8 | `locked` | item frame 8；crop-ready | `in-runtime` | 当前能力合同已有证据；新增消费者再审 | `locked` | `lantern` 复用同 frame，见 alias 表 |
 | I10 | 头戴耳机（radio） | Headphones | 物品 | 物品/预兆效果审计表；原始 item atlas frame 9 | `locked` | item frame 9；crop-ready | `in-runtime` | 当前能力合同已有证据；新增消费者再审 | `locked` | 内部 id 为 legacy alias，不影响当前 S0 |
 | I11 | 奇怪的护身符（strange-amulet；代码名“奇异护符”） | 未锁英文名 | 物品 | `scenarioConfig.ts` 运行池；`possessionAtlas.ts` atlas alias；原始 item atlas frame 10；`item-strange-amulet-full.jpg` | TTS/atlas 图包已读：无论何时你受到物理伤害时，获得 1 点神志；通用伤害应用到物理或速度上的效果不算在内，对力量/速度属性的直接降低不算在内 | item frame 10 已从正式 atlas 裁完整单卡；sha256 `9e25d6048a0b59263723b09da1a467bafee3d69e3c1e08d29d25ad9680693728` | `in-runtime / min-domain-verified` | 已补“实际承受物理伤害后获得 1 点神志”的最小领域承接，并排除通用伤害分配到速度、速度属性直接降低两类误触发；仍缺触发 UI/日志提示和更多组合验证 | `locked` | S1/S2 最小领域补证已过；后续最小解阻为补 UI/日志提示、减伤/死亡保护/作祟伤害组合回归 |
@@ -230,7 +233,7 @@
 | I17 | 地图（map） | Map | 物品 | 物品/预兆效果审计表；原始 item atlas frame 16 | `locked` | item frame 16；crop-ready | `in-runtime` | 当前能力合同已有证据；新增消费者再审 | `locked` | `notebook / manuscript / journal` 复用同 frame，不能重复计为独立 locked 官方牌 |
 | I18 | 砍刀（hunting-knife） | Machete | 物品 | 物品/预兆效果审计表；原始 item atlas frame 17 | `locked` | item frame 17；crop-ready | `in-runtime` | 当前能力合同已有证据；新增攻击消费者再审 | `locked` | 内部 id 为 legacy alias，不影响当前 S0 |
 | I19 | 电锯 | 未锁英文名 | 物品 | 原始 item atlas frame 18；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-18-r2c2-full.jpg` | TTS 图包已读：武器；当你使用电锯进行攻击时，将你的投骰数量增加一颗；每次攻击只能使用一把武器，且本回合不能交易已使用过的武器 | item frame 18 已裁完整单卡；sha256 `38ed8325c0a1c35d3578296fbd25e0bd7ff4de7bd95d67965247443e7adf711e`；atlas alias 已接 | `in-runtime / min-verified` | 已补攻击额外 1 骰和本回合用后交易限制的最小运行承接；后续仍需更多攻击来源组合 | `locked` | S0 字段与最小效果已接；后续补攻击组合回归 |
-| I20 | 炸药 | 未锁英文名 | 物品 | 原始 item atlas frame 19；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-19-r2c3-full.jpg` | TTS 图包已读：武器；可以使用炸药来代替一次常规的攻击；若如此做，将炸药埋葬后，选择你所在的板块或相邻的板块；在所选板块上的每个人（探险者或怪物）必须进行一次速度检定：4+ 无事发生，0-3 受到 4 点物理伤害；该板块上的每个人都必须分别投骰并承受伤害；每次攻击只能使用一把武器 | item frame 19 已裁完整单卡；sha256 `cb7456d76090413f124fb59cf0af86ccb4a03451709398f33b73e767fa34307e`；atlas alias 已接 | `in-runtime / min-domain-verified / min-ui-representative` | 已补代替常规攻击、当前/相邻已发现板块目标、使用后埋葬、目标板块每名探索者/怪物分别速度检定、失败探索者进入 4 点物理伤害分配、失败怪物走通用怪物受伤后端的最小领域承接；2026-07-29 已补 Board 页面组件目标态代表链：主动作自动选中炸药，当前 / 相邻已发现房间高亮，点击房间板块派发炸药攻击载荷 | `locked` | S1/S2 最小领域与最小 UI 代表链已过；后续最小解阻为真实 Playwright / 截图链、非法原因展示、更多怪物 / 作祟组合和特殊免疫边界回归 |
+| I20 | 炸药 | 未锁英文名 | 物品 | 原始 item atlas frame 19；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-19-r2c3-full.jpg` | TTS 图包已读：武器；可以使用炸药来代替一次常规的攻击；若如此做，将炸药埋葬后，选择你所在的板块或相邻的板块；在所选板块上的每个人（探险者或怪物）必须进行一次速度检定：4+ 无事发生，0-3 受到 4 点物理伤害；该板块上的每个人都必须分别投骰并承受伤害；每次攻击只能使用一把武器 | item frame 19 已裁完整单卡；sha256 `cb7456d76090413f124fb59cf0af86ccb4a03451709398f33b73e767fa34307e`；atlas alias 已接 | `in-runtime / min-domain-verified / min-ui-representative / Playwright representative` | 已补代替常规攻击、当前/相邻已发现板块目标、使用后埋葬、目标板块每名探索者/怪物分别速度检定、失败探索者进入 4 点物理伤害分配、失败怪物走通用怪物受伤后端的最小领域承接；2026-07-29 已补 Board 页面组件目标态代表链：主动作自动选中炸药，当前 / 相邻已发现房间高亮，点击房间板块派发炸药攻击载荷；后续已补真实房间攻击 Playwright / 截图代表链，覆盖动作 rail 进入目标板块选择、点击相邻房间、消耗炸药并进入 4 点物理伤害分配 | `locked` | S1/S2 最小领域、最小 UI 代表链和首条真实 Playwright / 截图代表链已过；后续最小解阻为非法原因展示、更多怪物 / 作祟组合和特殊免疫边界回归 |
 | I21 | 天使之羽 | 未锁英文名 | 物品 | 原始 item atlas frame 20；`temp/betrayal-asset-source-diagnostics-2026-07-28/item-20-r2c4-full.jpg` | TTS 图包已读：当你被要求进行一次属性检定时，可以埋葬此天使之羽来代替它；若如此做，选择一个 0-8 之间的数字，使用该数字作为被要求进行的投骰结果；仍可以应用相关属性加成，例如从预兆牌中获得的加值 | item frame 20 已裁完整单卡；sha256 `77de0a0a9c2d132920be72014579829e097d30845d773638fe12b1a25cc9e3f1`；atlas alias 已接 | `in-runtime / min-domain-verified / min-ui-representative` | 已补埋葬、0-8 结果选择、下一次非战斗属性检定投骰结果替代、属性加值叠加、固定骰不消费；2026-07-29 已补真实页面 0-8 数字选择、未选禁用、选择 6 后使用并写入替代总点数；后续仍缺攻击/作祟检定边界扩审、额外骰是否属于“相关属性加成”的规则裁定 | `locked` | S1/S2 最小领域与最小 UI 代表链已过；后续最小解阻为更多组合验证 |
 | I22 | 兔脚（rope） | Rabbit's Foot | 物品 | 物品/预兆效果审计表；原始 item atlas frame 21 | `locked` | item frame 21；crop-ready | `in-runtime` | 当前能力合同已有证据；新增投骰消费者再审 | `locked` | 内部 id `rope` 为 legacy alias，玩家名按兔脚 |
 
@@ -268,13 +271,13 @@
 
 | 预兆 | 已有领域效果证据 | 当前状态 | 仍缺口 |
 | --- | --- | --- | --- |
-| 书本 | 知识检定 +1；每回合一次失去 1 点神志，并让下一次非战斗检定可用知识替换；战斗对攻不被替换；临界神志时不能免费写入替代状态 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多非战斗检定消费者、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合 |
-| 狗 | 速度检定 +1；每回合一次可请求与 4 格内玩家交易任意数量物品/预兆；需要对方同意；沿用已用牌、刚收到牌等交易限制 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多距离/死亡/搜尸/作祟状态组合、收到牌本回合使用限制 UI |
-| 面具 | 速度检定 +1；每回合一次移动同板块其他探险者和怪物到已发现相邻板块；支持多目标分别指定目标板块；不能发现新板块 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、死亡目标/怪物回合等更多组合回归 |
+| 书本 | 知识检定 +1；每回合一次失去 1 点神志，并让下一次非战斗检定可用知识替换；战斗对攻不被替换；临界神志时不能免费写入替代状态 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 真实页面使用和替换状态保留已有代表链；仍缺更多非战斗检定消费者、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合 |
+| 狗 | 速度检定 +1；每回合一次可请求与 4 格内玩家交易任意数量物品/预兆；需要对方同意；沿用已用牌、刚收到牌等交易限制 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 真实远距交易代表链已补；仍缺更多距离/死亡/搜尸/作祟状态组合、收到牌本回合使用限制 UI |
+| 面具 | 速度检定 +1；每回合一次移动同板块其他探险者和怪物到已发现相邻板块；支持多目标分别指定目标板块；不能发现新板块 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 真实页面逐目标移动已有代表链；仍缺死亡目标/怪物回合/作祟怪物等更多组合回归 |
 | 头骨 | 知识检定 +1；探索者将要死亡前投 3 骰，4-6 阻止死亡并把所有属性调至濒死，0-3 正常死亡；兔脚可重掷该死亡保护骰 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多致死来源、作祟终局和遗物掩埋组合回归 |
 | 圣符 | 神志检定 +1；发现板块时可埋葬第一张板块并继续发现下一张，且不结算第一张板块效果；本回合刚获得时不能使用 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多房间/事件/作祟探索组合回归 |
 | 盔甲 | 物理伤害降低 1 点；不会阻挡通用伤害或直接属性降低；不能被通用主动使用入口误当成移动/属性加成 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多物理伤害来源、死亡保护和作祟伤害组合回归 |
-| 雕像 | 力量检定 +1；发现事件符号板块时可选择不抽事件卡且不结算事件效果；不能在无事件符号或无雕像时声明跳过 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多事件堆顺序/作祟探索组合回归 |
+| 雕像 | 力量检定 +1；发现事件符号板块时可选择不抽事件卡且不结算事件效果；不能在无事件符号或无雕像时声明跳过 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 更多事件堆顺序 / 作祟探索 / 无事件符号拒绝 UI 组合回归 |
 | 指环 | 神志检定 +1；只能作为攻击武器显式使用，双方改用神志对攻并造成精神伤害；未声明使用时不会自动改战斗属性 | `min-domain-verified / partial-ui` | 攻击 UI 承接、怪物/多武器/作祟攻击组合回归 |
 | 匕首 | 只能作为攻击武器显式使用；使用时攻击者失去 1 点速度并额外投 2 颗骰，造成物理伤害；未声明使用时不会自动生效 | `min-domain-verified / partial-ui` | 攻击 UI 承接、速度濒死/多武器/死亡保护组合回归 |
 
@@ -321,13 +324,13 @@
 | 物品 | 已有消费场景证据 | 当前裁定 | 剩余缺口 / 下一步 |
 | --- | --- | --- | --- |
 | 魔法相机 | 作祟 setup、灰尘知识检定改用更高神志等现有领域证据 | `covered-by-existing-contract / consumer-review-on-change` | 新增摄影师、作祟或属性检定消费者时再审；不作为本轮缺图或导入阻塞 |
-| 恐怖玩偶 | 最近属性检定全骰重掷；事件属性检定可回写原分支，房间回合末入口已开放；Board 组件证明选中后全部骰子均生成重掷目标 | `partial-mechanism-covered / Board component representative / partial-ui` | 真实 Playwright / 截图、作祟特殊行动属性检定通用回滚快照和更多重掷消费者组合仍需补证；固定骰、攻击、作祟检定保持不放行 |
+| 恐怖玩偶 | 最近属性检定全骰重掷；事件属性检定可回写原分支，房间回合末入口已开放；Board 组件和真实入口代表链证明选中后全部骰子均生成重掷目标，点击任一骰会重掷全部属性检定骰并回写原分支 | `L3 real-entry representative / partial-combo` | 作祟特殊行动属性检定通用回滚快照和更多重掷消费者组合仍需补证；固定骰、攻击、作祟检定保持不放行 |
 | 奇怪的药品 | 埋葬并治疗当前探索者力量和速度 | `covered-by-existing-contract / consumer-review-on-change` | 新增治疗、交易、死亡保护消费者时再审 |
 | 镜子 | 主动埋葬治疗当前探索者知识和神志 | `min-verified / partial-combo` | 更多伤害后治疗、回合时点和作祟状态组合仍需补证 |
 | 急救包 | 埋葬治疗自己所有濒死属性；可治疗同板块另一位探索者；不同板块拒绝 | `covered-by-existing-contract / consumer-review-on-change` | 新增同房目标、死亡保护、交易限制消费者时再审 |
-| 幸运硬币 | 最近属性检定空白骰重掷；空白精神伤害；倒塌房间回合末速度检定组合已补；Board 组件证明只高亮空白骰、非空白骰不可选 | `combo-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图、作祟特殊行动、死亡保护和更多伤害分配组合回归 |
+| 幸运硬币 | 最近属性检定空白骰重掷；空白精神伤害；倒塌房间回合末速度检定组合已补；Board 组件证明只高亮空白骰、非空白骰不可选；真实入口代表链证明点击任一空白骰会重掷全部空白骰并按空白结果进入精神伤害收口 | `L3 real-entry representative / partial-combo` | 作祟特殊行动、死亡保护和更多伤害分配组合回归 |
 | 皮夹克 | 防御攻击时额外 1 骰；攻击投骰复盘显示进攻总点、防御总点和防御额外 1 骰 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多攻击来源、怪物攻击和作祟攻击组合仍需补证 |
-| 牙齿项链 | 回合结束存在濒死属性时可选一项提升 1 步；非法选择拒绝；可跳过；Board 组件面板允许直接跳过或选择濒死属性确认 | `min-domain-verified / min-ui-representative / partial-combo` | 真实 Playwright / 截图链、作祟回合、房间回合末和死亡保护相关结束回合组合仍需补证 |
+| 牙齿项链 | 回合结束存在濒死属性时可选一项提升 1 步；非法选择拒绝；可跳过；Board 组件面板允许直接跳过或选择濒死属性确认；真实牌桌点击结束回合会弹出濒死属性选择，只开放可提升属性，确认后提升并交给下一位 | `L3 real-entry representative / partial-combo` | 作祟回合、房间回合末、怪物回合和死亡保护相关结束回合组合仍需补证 |
 | 手电筒 | 事件属性检定额外 2 骰；不能主动用作通用移动/属性加成 | `covered-by-existing-contract / consumer-review-on-change` | 新增事件属性检定消费者时再审 |
 | 头戴耳机 | 精神伤害降低 1；不会阻挡知识属性直接降低 | `covered-by-existing-contract / Board component representative / consumer-review-on-change` | 真实 Playwright / 截图链、更多精神伤害来源、减伤叠加和死亡保护组合仍需补证 |
 | 地图 | 主动埋葬并放置到任意已发现房间；`notebook / journal / manuscript` 复用同 frame | `covered-by-existing-contract / duplicate-alias-guarded` | 新增地图移动消费者时再审；alias 不得重复计数为官方独立牌 |
@@ -340,7 +343,7 @@
 | 神秘秒表 | 作祟前禁用；作祟后埋葬并在当前回合结束后再行动一轮；未用正常交接 | `min-verified / min-ui-representative / partial-combo` | 页面代表链已补；更多作祟、怪物回合、房间回合末和结束回合组合回归 |
 | 砍刀 | 显式作为攻击武器使用；攻击结果 +1；未声明不会自动生效；用后不可交易 | `covered-by-existing-contract / partial-combo` | 更多攻击来源、怪物攻击和多武器互斥组合回归 |
 | 电锯 | 显式攻击时额外 1 骰；用后不可交易 | `min-verified / partial-combo` | 更多攻击来源、多武器互斥和怪物目标组合回归 |
-| 炸药 | 代替常规攻击；当前/相邻已发现板块目标；埋葬；板块内每名探索者/怪物分别速度检定；Board 主动作进入房间目标态 | `min-domain-verified / min-ui-representative / partial-combo` | 真实 Playwright / 截图链、非法原因展示、更多怪物/作祟组合和特殊免疫边界回归 |
+| 炸药 | 代替常规攻击；当前/相邻已发现板块目标；埋葬；板块内每名探索者/怪物分别速度检定；Board 主动作进入房间目标态；真实房间攻击链已覆盖从页面选择目标房间到物理伤害分配 | `min-domain-verified / min-ui-representative / Playwright representative / partial-combo` | 非法原因展示、更多怪物/作祟组合和特殊免疫边界回归 |
 | 天使之羽 | 埋葬后选择 0-8 作为下一次非战斗属性检定投骰结果；仍叠加属性加值；固定骰不消费 | `min-domain-verified / min-ui-representative / partial-combo` | 页面 0-8 数字选择已补；攻击/作祟检定边界、房间回合末组合、额外骰是否属于相关属性加成的规则裁定仍待补 |
 
 ### 6.3 新增 / 补录事件分支补证矩阵（2026-07-29）
@@ -376,13 +379,13 @@
 
 | 对象 / 公共规则 | 已有领域证据 | 当前裁定 | 剩余缺口 / 下一步 |
 | --- | --- | --- | --- |
-| 书本 | 知识检定 +1；每回合一次失去 1 点神志并让下一次非战斗检定可用知识替换；战斗对攻不替换；神志临界时拒绝支付成本 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多非战斗检定消费者、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合 |
-| 狗 | 速度检定 +1；每回合一次 4 格内交易，需对方同意并沿用交易限制 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多距离边界、死亡/搜尸/作祟状态、收到牌本回合使用限制 UI |
-| 面具 | 速度检定 +1；每回合一次移动同板块其他探索者和怪物到相邻已发现板块 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、怪物回合、死亡目标、不能发现新板块边界 |
+| 书本 | 知识检定 +1；每回合一次失去 1 点神志并让下一次非战斗检定可用知识替换；战斗对攻不替换；神志临界时拒绝支付成本 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 真实页面使用和替换状态保留已有代表链；仍缺更多非战斗检定消费者、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合 |
+| 狗 | 速度检定 +1；每回合一次 4 格内交易，需对方同意并沿用交易限制 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 真实远距交易代表链已补；仍缺更多距离边界、死亡/搜尸/作祟状态、收到牌本回合使用限制 UI |
+| 面具 | 速度检定 +1；每回合一次移动同板块其他探索者和怪物到相邻已发现板块 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 真实页面逐目标移动已有代表链；仍缺怪物回合、死亡目标、不能发现新板块边界 |
 | 头骨 | 知识检定 +1；死亡前 3 骰保护；兔脚可重掷死亡保护骰 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多致死来源、作祟终局和遗物掩埋组合 |
 | 圣符 | 神志检定 +1；发现板块时可埋葬第一张板块并继续发现下一张；本回合刚获得不能用 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多房间/事件/作祟探索组合和牌堆顺序边界 |
 | 盔甲 | 物理伤害 -1；不阻挡通用伤害或直接属性降低 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多物理伤害来源、死亡保护和作祟伤害组合 |
-| 雕像 | 力量检定 +1；发现事件符号板块时可选择不抽事件且不结算事件效果 | `min-domain-verified / Board component representative / partial-ui` | 真实 Playwright / 截图链、更多事件牌堆顺序、作祟探索和无事件符号拒绝 UI 组合 |
+| 雕像 | 力量检定 +1；发现事件符号板块时可选择不抽事件且不结算事件效果 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 更多事件牌堆顺序、作祟探索和无事件符号拒绝 UI 组合 |
 | 指环 | 神志检定 +1；显式作为攻击武器时双方用神志对攻并造成精神伤害 | `min-domain-verified / partial-ui` | 攻击 UI、怪物目标、多武器互斥、未声明不自动生效组合 |
 | 匕首 | 显式作为攻击武器；使用时失去 1 点速度并额外 2 骰，造成物理伤害 | `min-domain-verified / partial-ui` | 攻击 UI、速度濒死/死亡保护、多武器互斥和怪物目标组合 |
 | 抽到预兆后的作祟检定 | 抽新预兆进入作祟检定，记录来源预兆和翻牌确认队列 | `min-domain-verified / partial-ui` | 作祟风险 UI、翻牌确认 UI、事件型作祟入口组合 |
@@ -550,13 +553,13 @@
 | 物品 | 主要消费桶 | 当前证据级别 | 可继续的合同层动作 | 后续阶段动作 |
 | --- | --- | --- | --- | --- |
 | 魔法相机 | 作祟消费者、属性检定替代 | `covered-by-existing-contract / consumer-review-on-change` | 记录摄影师、作祟和属性检定新消费者出现时需回查 | 新增相关消费者后再补组合验证 |
-| 恐怖玩偶 | 属性检定重掷、回滚快照、Board 全骰选择 | `partial-mechanism-covered / Board component representative / partial-ui` | 保留属性检定全骰重掷和 Board 全骰选择已验；标出作祟特殊行动属性检定缺通用回滚快照；固定骰、攻击、作祟检定保持不放行 | 真实 Playwright / 截图、通用回滚快照和更多重掷消费者组合 |
+| 恐怖玩偶 | 属性检定重掷、回滚快照、Board 全骰选择、真实入口重掷 | `L3 real-entry representative / partial-combo` | 保留属性检定全骰重掷、Board 全骰选择和真实入口点击重掷全部骰已验；标出作祟特殊行动属性检定缺通用回滚快照；固定骰、攻击、作祟检定保持不放行 | 通用回滚快照和更多重掷消费者组合 |
 | 奇怪的药品 | 埋葬治疗、属性恢复 | `covered-by-existing-contract / consumer-review-on-change` | 新增治疗、交易、死亡保护消费者时再审 | 组合回归按新增消费者触发 |
 | 镜子 | 主动治疗、回合时点 | `min-verified / partial-combo` | 标出伤害后治疗、回合时点、作祟状态组合缺口 | UI/组合授权后补 |
 | 急救包 | 同房治疗、濒死属性恢复、目标合法性 | `covered-by-existing-contract / consumer-review-on-change` | 新增同房目标、死亡保护、交易限制消费者时再审 | 目标 UI 和死亡保护组合 |
-| 幸运硬币 | 空白骰重掷、精神伤害、房间回合末组合、Board 空白骰选择 | `combo-domain-verified / Board component representative / partial-ui` | 保留倒塌房间组合和 Board 空白骰选择已验，列出作祟/死亡保护等更多伤害分配消费者 | 真实 Playwright / 截图和更多伤害组合 |
+| 幸运硬币 | 空白骰重掷、精神伤害、房间回合末组合、Board 空白骰选择、真实入口重掷 | `L3 real-entry representative / partial-combo` | 保留倒塌房间组合、Board 空白骰选择和真实入口点击任一空白骰重掷全部空白骰已验，列出作祟/死亡保护等更多伤害分配消费者 | 更多伤害组合 |
 | 皮夹克 | 攻击防御额外骰 | `min-domain-verified / Board component representative / partial-ui` | 已补攻击投骰复盘 UI 可见进攻总点、防御总点和防御额外 1 骰；仍列出怪物攻击、作祟攻击、更多攻击来源消费者 | 真实 Playwright / 截图链和攻击来源组合 |
-| 牙齿项链 | 回合结束濒死属性恢复、死亡保护 | `min-domain-verified / min-ui-representative / partial-combo` | 标出 Board 组件选择 / 跳过代表链已补；作祟回合、房间回合末、结束回合时点消费者仍需组合审 | 真实 Playwright / 截图链和死亡保护组合 |
+| 牙齿项链 | 回合结束濒死属性恢复、死亡保护 | `L3 real-entry representative / partial-combo` | 标出 Board 组件选择 / 跳过和真实结束回合 Playwright / 截图代表链已补；作祟回合、房间回合末、怪物回合、结束回合时点消费者仍需组合审 | 死亡保护组合 |
 | 手电筒 | 事件属性检定加骰 | `covered-by-existing-contract / consumer-review-on-change` | 新增事件属性检定消费者时逐项确认是否加骰 | 事件 UI/组合按新增消费者触发 |
 | 头戴耳机 | 精神伤害减免 | `covered-by-existing-contract / Board component representative / consumer-review-on-change` | 已补伤害分配页原始精神伤害、头戴耳机减免和实际分配数组件代表链；继续列出精神伤害来源、减伤叠加和死亡保护消费者 | 真实 Playwright / 截图链和死亡保护组合 |
 | 地图 | 主动移动、已发现房间、duplicate alias | `covered-by-existing-contract / duplicate-alias-guarded` | 继续把 `notebook / journal / manuscript` 归为同 frame alias，不重复计数 | 地图移动 UI 或新增移动消费者再审 |
@@ -569,7 +572,7 @@
 | 神秘秒表 | 作祟后额外行动、结束回合时点 | `min-verified / min-ui-representative / partial-combo` | 标出作祟、怪物回合和结束回合组合消费者；页面代表链已补 | 作祟 / 怪物回合 / 房间回合末组合 |
 | 砍刀 | 近战武器、攻击结果 +1、武器互斥、交易限制 | `covered-by-existing-contract / partial-combo` | 列出更多攻击来源、怪物攻击、多武器互斥消费者 | 攻击 UI 和多武器组合 |
 | 电锯 | 攻击额外骰、武器互斥、交易限制 | `min-verified / partial-combo` | 列出更多攻击来源、怪物目标和多武器互斥消费者 | 攻击 UI 和怪物目标组合 |
-| 炸药 | 代替常规攻击、板块目标、群体速度检定、埋葬、Board 目标态承接 | `min-domain-verified / min-ui-representative / partial-combo` | 已补主动作自动选中炸药和房间板块目标态；仍标出真实入口、非法原因、怪物/作祟组合和特殊免疫边界 | 真实 Playwright / 截图链、非法原因展示和更多作祟/怪物组合 |
+| 炸药 | 代替常规攻击、板块目标、群体速度检定、埋葬、Board 目标态承接和真实房间攻击代表链 | `min-domain-verified / min-ui-representative / Playwright representative / partial-combo` | 已补主动作自动选中炸药、房间板块目标态和真实房间攻击 Playwright / 截图代表链；仍标出非法原因、怪物/作祟组合和特殊免疫边界 | 非法原因展示和更多作祟/怪物组合 |
 | 天使之羽 | 非战斗属性检定投骰结果替代、数值选择 | `min-domain-verified / min-ui-representative / partial-combo` | 0-8 数字选择页面代表链已补；固定骰不消费和攻击/作祟检定边界缺口仍保留；额外骰规则裁定仍待后续 | 攻击/作祟边界、房间回合末与额外骰组合 |
 
 按消费桶归并后的下一步优先级：先保留“伤害减免 / 死亡保护 / 伤害改写”同组合同索引，再保留“武器攻击 / 多武器互斥 / 交易限制”同组合同索引，最后保留“移动 / 目标选择 / 额外行动 / 重掷消费者再审”同组缺口。未获后续阶段授权前，这些只保持为合同缺口，不进入实现。
@@ -582,13 +585,13 @@
 
 | 预兆 | 主要消费桶 | 当前证据级别 | 可继续的合同层动作 | 后续阶段动作 |
 | --- | --- | --- | --- | --- |
-| 书本 | 知识检定加值、非战斗检定替换、神志成本 | `min-domain-verified / Board component representative / partial-ui` | 已补临界神志成本领域门禁、使用后禁用和神志不足提示组件代表链；继续标出非战斗检定消费者、房间检定、作祟特殊行动检定和替代 / 重掷组合边界 | 真实 Playwright / 截图链和更多非战斗检定组合 |
-| 狗 | 速度检定加值、4 格交易、同意与交易限制 | `min-domain-verified / Board component representative / partial-ui` | 已补狗交易候选、4 格目标、同意结算、已用牌禁用、灰尘交换疾病冲突和预兆交易后风险条代表链；继续标出更多距离边界、死亡/搜尸/作祟状态、收到牌本回合使用限制 | 真实 Playwright / 截图链和更多死亡/搜尸/作祟组合 |
-| 面具 | 同板块移动其他探索者/怪物、相邻已发现板块 | `min-domain-verified / Board component representative / partial-ui` | 已补 Board 多目标选择代表链；继续标出怪物回合、死亡目标、不能发现新板块边界 | 真实 Playwright / 截图链和怪物组合 |
+| 书本 | 知识检定加值、非战斗检定替换、神志成本 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 已补临界神志成本领域门禁、使用后禁用、神志不足提示组件代表链，以及真实页面使用并保留下次非战斗检定替换状态代表链；继续标出更多非战斗检定消费者、房间检定、作祟特殊行动检定和替代 / 重掷组合边界 | 更多非战斗检定组合 |
+| 狗 | 速度检定加值、4 格交易、同意与交易限制 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 已补狗交易候选、4 格目标、同意结算、已用牌禁用、灰尘交换疾病冲突、预兆交易后风险条代表链和真实远距交易截图代表链；继续标出更多距离边界、死亡/搜尸/作祟状态、收到牌本回合使用限制 | 更多死亡/搜尸/作祟组合 |
+| 面具 | 同板块移动其他探索者/怪物、相邻已发现板块 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 已补 Board 多目标选择代表链和真实页面逐目标移动代表链；继续标出怪物回合、死亡目标、不能发现新板块边界 | 怪物回合、死亡目标和作祟怪物组合 |
 | 头骨 | 知识检定加值、死亡前保护、兔脚重掷 | `min-domain-verified / Board component representative / partial-ui` | 已补 Board 死亡保护骰盘与成功反馈代表链；继续标出更多致死来源、作祟终局和遗物掩埋消费者 | 真实 Playwright / 截图链和致死组合 |
 | 圣符 | 神志检定加值、探索时埋葬房间并继续探索、本回合刚获得限制 | `min-domain-verified / Board component representative / partial-ui` | 已补探索声明和刚获得限制 Board 组件代表链；继续标出房间/事件/作祟探索消费者和牌堆顺序边界 | 真实 Playwright / 截图链和更多房间/事件/作祟组合 |
 | 盔甲 | 物理伤害减免、非通用伤害/非直接属性降低 | `min-domain-verified / Board component representative / partial-ui` | 已补伤害分配页原始伤害、盔甲减免和实际分配数组件代表链；继续标出物理伤害来源、死亡保护和作祟伤害消费者 | 真实 Playwright / 截图链和更多伤害组合 |
-| 雕像 | 力量检定加值、事件符号房间可不抽事件 | `min-domain-verified / Board component representative / partial-ui` | 已补探索声明、连续事件房间和刚获得限制 Board 组件代表链；继续标出事件牌堆顺序、作祟探索和无事件符号拒绝 UI 边界 | 真实 Playwright / 截图链和更多事件牌堆组合 |
+| 雕像 | 力量检定加值、事件符号房间可不抽事件 | `min-domain-verified / Board component representative / Playwright representative / partial-ui` | 已补探索声明、连续事件房间和刚获得限制 Board 组件代表链；已补真实页面声明雕像、跳过事件、不扣力量和回牌桌状态清理代表链；继续标出事件牌堆顺序、作祟探索和无事件符号拒绝 UI 边界 | 更多事件牌堆顺序、作祟探索和无事件符号拒绝 UI 组合 |
 | 指环 | 神志检定加值、神志武器攻击、精神伤害 | `min-domain-verified / partial-ui` | 标出怪物目标、多武器互斥、未声明不自动生效消费者 | 攻击 UI 和武器互斥组合 |
 | 匕首 | 显式武器攻击、速度成本、额外 2 骰、物理伤害 | `min-domain-verified / partial-ui` | 标出速度濒死/死亡保护、多武器互斥、怪物目标消费者 | 攻击 UI 和速度成本组合 |
 
@@ -1009,8 +1012,8 @@ NB-01 裁定：
 | 奇异护符 | 实际承受物理伤害后获得 1 点神志；通用伤害分配到速度或直接属性降低不触发 | `min-domain-verified / partial-ui` | 物理伤害是否先被减免、胸针改写后是否不再触发、死亡保护前后触发顺序、作祟物理伤害组合 | 不把通用伤害或直接属性降低外推为触发；不改触发顺序 |
 | 胸针 | 受到物理或精神伤害时，可以替换为承受通用伤害 | `min-domain-verified / min-ui-representative / mummy-forced-damage-e2e-boundary / non-forced-physical-damage-e2e-representative / partial-combo` | 声明改写时点、改写后通用伤害分配、Board 组件伤害分配代表链、木乃伊强制伤害不适用真实入口、灰尘普通攻击非强制物理伤害可用真实入口、头戴耳机/奇异护符是否仍适用、死亡保护窗口、双伤害顺序 | 不把 Board 组件代表链、木乃伊强制伤害不适用截图或普通攻击物理伤害代表链外推为全部来源完成 |
 | 皮夹克 | 防御一次进攻时额外投 1 骰 | `min-verified / partial-combo` | 这是攻击结算前骰数消费者，不是事件/房间伤害减免；仍需怪物攻击、作祟攻击、防御 UI 和攻击结果伤害组合 | 不改攻击防御逻辑；不把皮夹克当作通用减伤或死亡保护 |
-| 幸运硬币 | 每回合一次，重掷刚刚进行的一项属性检定的所有空白骰；重投结果每有一个空白，承受 1 点精神伤害 | `combo-domain-verified / Board component representative / partial-ui` | 幸运硬币自身产生的精神伤害、事件/房间属性检定、Board 组件空白骰选择、固定骰/攻击/作祟检定排除、死亡保护、作祟特殊行动属性检定待回滚快照 | 不默认允许全部投骰来源重掷；不改死亡保护；不把组件代表链外推为真实 Playwright / 截图闭环 |
-| 牙齿项链 | 回合结束时，可以获得 1 点选择的某项濒死属性 | `min-domain-verified / min-ui-representative / partial-combo` | 回合结束恢复消费者；Board 组件选择 / 跳过代表链已补；仍需单列死亡保护后是否仍到回合结束、房间回合末伤害、作祟回合和真实 Playwright / 截图链 | 不把它当作即时伤害减免或即时死亡保护 |
+| 幸运硬币 | 每回合一次，重掷刚刚进行的一项属性检定的所有空白骰；重投结果每有一个空白，承受 1 点精神伤害 | `L3 real-entry representative / partial-combo` | 幸运硬币自身产生的精神伤害、事件/房间属性检定、Board 组件空白骰选择、真实入口重掷代表链、固定骰/攻击/作祟检定排除、死亡保护、作祟特殊行动属性检定待回滚快照 | 不默认允许全部投骰来源重掷；不改死亡保护；不把真实入口代表链外推为全部伤害或作祟特殊行动组合完成 |
+| 牙齿项链 | 回合结束时，可以获得 1 点选择的某项濒死属性 | `L3 real-entry representative / partial-combo` | 回合结束恢复消费者；Board 组件选择 / 跳过和真实结束回合 Playwright / 截图代表链已补；仍需单列死亡保护后是否仍到回合结束、房间回合末伤害、作祟回合和怪物回合 | 不把它当作即时伤害减免或即时死亡保护 |
 
 | 6.33 伤害来源组 | 相关物品消费者 | 当前交叉边界 |
 | --- | --- | --- |
@@ -1034,8 +1037,8 @@ NB-06 裁定：
 
 | 物品 | 当前效果合同 | 当前证据级别 | 本合同层只登记的边界 | 未授权前仍禁止 |
 | --- | --- | --- | --- | --- |
-| 恐怖玩偶 | 每回合一次，重新投掷刚刚进行的属性检定的所有骰子 | `partial-mechanism-covered / Board component representative / partial-ui` | 事件属性检定和房间回合末属性检定有入口；Board 组件证明选中后全部骰子均可作为重掷目标；固定骰、攻击、作祟检定不放行；作祟特殊行动属性检定仍缺通用回滚快照 | 不新增作祟特殊行动放行；不把组件代表链外推为真实入口或全部重掷消费者完成 |
-| 幸运硬币 | 每回合一次，重新投掷刚刚进行的属性检定中所有空白骰；重投结果每有一个空白，承受 1 点精神伤害 | `combo-domain-verified / Board component representative / partial-ui` | 事件/房间属性检定空白骰可重掷；Board 组件只高亮空白骰；固定骰、攻击、作祟检定和作祟特殊行动属性检定不放行；自身精神伤害与死亡保护仍回到 6.34 | 不默认允许全部投骰来源重掷；不改精神自伤；不把组件代表链外推为真实入口完成 |
+| 恐怖玩偶 | 每回合一次，重新投掷刚刚进行的属性检定的所有骰子 | `L3 real-entry representative / partial-combo` | 事件属性检定和房间回合末属性检定有入口；Board 组件和真实入口代表链证明选中后全部骰子均可作为重掷目标，点击任一骰会重掷全部属性检定骰并回写原分支；固定骰、攻击、作祟检定不放行；作祟特殊行动属性检定仍缺通用回滚快照 | 不新增作祟特殊行动放行；不把真实入口代表链外推为全部重掷消费者完成 |
+| 幸运硬币 | 每回合一次，重新投掷刚刚进行的属性检定中所有空白骰；重投结果每有一个空白，承受 1 点精神伤害 | `L3 real-entry representative / partial-combo` | 事件/房间属性检定空白骰可重掷；Board 组件只高亮空白骰；真实入口代表链证明点击任一空白骰会重掷全部空白骰；固定骰、攻击、作祟检定和作祟特殊行动属性检定不放行；自身精神伤害与死亡保护仍回到 6.34 | 不默认允许全部投骰来源重掷；不改精神自伤；不把真实入口代表链外推为全部重掷消费者完成 |
 | 兔脚 | 最近投骰重掷消费者；新增骰子消费者必须逐项确认 | `broad-domain-covered / consumer-review-on-change` | 已有事件、房间、攻击、死亡保护等代表消费者；不能默认扩展到所有新 roll kind | 不新增 roll kind 准入；不把代表链外推为全局重掷完成 |
 | 天使之羽 | 埋葬后选择 0-8 作为下一次非战斗属性检定投骰结果；仍应用相关属性加值 | `min-domain-verified / min-ui-representative / partial-combo` | 非战斗属性检定替代已覆盖；真实页面 0-8 数字选择已补；固定骰不消费；攻击/作祟检定边界和额外骰是否属于相关加值仍待裁定 | 不改额外骰或作祟边界；不把页面代表链外推为全部组合完成 |
 | 手电筒 | 事件属性检定额外骰 | `covered-by-existing-contract / consumer-review-on-change` | 事件属性检定消费者已有代表链；新增事件属性检定消费者时逐项确认是否加骰 | 不扩展到房间、攻击或作祟检定 |
@@ -1066,7 +1069,7 @@ NB-09 裁定：
 | --- | --- | --- | --- | --- |
 | 全员当前持有预兆总数 | 作祟检定骰数按所有玩家当前持有的预兆总数派生，不只看当前抽牌玩家 | `min-domain-verified / partial-ui` | 交易转移后总数已有代表链；死亡掉落、遗物转移、搜尸和风险 UI 刷新仍是后续组合缺口 | 不改风险计算；不新增风险 UI |
 | 抽到预兆后的作祟检定 | 作祟开始前抽到预兆时进行作祟检定，并记录来源预兆和作祟确认队列 | `min-domain-verified / partial-ui` | 普通抽预兆入口已有领域链；事件型作祟入口、真实骰盘、翻牌揭示 UI 和真实入口链仍未闭合 | 不新增骰盘或翻牌 UI；不跑真实入口 |
-| 5+ 开始作祟 | 作祟检定结果为 5+ 时进入作祟，并记录剧本卡、作祟揭秘者、触发预兆和首行动 / 叛徒代表裁定 | `min-domain-verified / representative-only` | 普通预兆 5+ 触发已有代表链；更多剧本入口、木乃伊触发牌版本冲突和作祟揭示 UI 仍不能外推完成 | 不改剧本入口；不补揭秘 UI |
+| 5+ 开始作祟 | 作祟检定结果为 5+ 时进入作祟，并记录剧本卡、作祟揭秘者、触发预兆和首行动 / 叛徒代表裁定 | `min-domain-verified / representative-only` | 普通预兆 5+ 触发已有代表链；更多剧本入口、旧版木乃伊触发牌版本边界和作祟揭示 UI 仍不能外推完成 | 不改剧本入口；不补揭秘 UI |
 | 最多 8 骰 | 作祟风险总数可超过 8，但实际作祟检定最多只投 8 颗骰 | `min-domain-verified / partial-ui` | 9 个预兆时实际 8 骰已有领域证据；风险 UI 是否同时显示总数、下次骰数和上限说明仍需后续 UI 合同 | 不改骰数归一化；不补骰盘展示 |
 | 最后一张预兆自动作祟 | 若抽到最后一张预兆且作祟尚未开始，作祟自动开始，不依赖 5+ 点数 | `min-domain-verified / partial-ui` | 最后一张抽取自动进入作祟已有领域链；经交易、死亡掉落、强制搜牌后的组合和自动作祟 UI 仍缺 | 不把自动作祟接入重掷或替代数值；不补揭示 UI |
 
@@ -1178,7 +1181,7 @@ NB-15 裁定：
 
 | 转移 / 风险节点 | 当前合同 | 当前证据级别 | 本合同层只登记的边界 | 后续最小解阻动作 |
 | --- | --- | --- | --- | --- |
-| 狗 4 格交易 | 狗允许每回合一次与 4 格内玩家请求交易任意数量物品或预兆；死亡探索者不作为目标；交易仍需对方同意 | `min-domain-verified / partial-ui` | `resolveDogTradeTargets`、`canUseDogForTrade` 和领域测试已证明 4 格目标、pending 交易、同意结算和二次使用拒绝；不证明真实交易 UI、距离展示或按钮状态 | 点名狗交易 UI 承接对象、4 格距离读模型、目标玩家视角和真实入口验收 |
+| 狗 4 格交易 | 狗允许每回合一次与 4 格内玩家请求交易任意数量物品或预兆；死亡探索者不作为目标；交易仍需对方同意 | `min-domain-verified / Playwright representative / partial-ui` | `resolveDogTradeTargets`、`canUseDogForTrade` 和领域测试已证明 4 格目标、pending 交易、同意结算和二次使用拒绝；真实入口已证明多张持有物、4 格内目标 token、等待同意、同意结算和回牌桌收口 | 若继续扩审，点名死亡 / 搜尸 / 作祟状态、收到牌本回合限制、目标玩家视角和验收入口 |
 | pendingTradeAgreement / 同意结算 | `TRADE_POSSESSION` 只提出请求，`RESOLVE_TRADE_AGREEMENT` 同意后才真实转移持有物；拒绝或请求失效不移动持有物 | `min-domain-verified / partial-ui` | 已登记请求方 / 目标方 inventory 转移、active player 让目标方同意、拒绝和失效边界；不证明 pending 状态跨视角 UI | 点名请求方、目标方、旁观者各自可见信息和同意 / 拒绝入口 |
 | `usedCardIdsThisTurn` 已用牌限制 | 本回合已使用的持有物不能交易；狗作为远距交易动作来源时不能同时被交易出去；收到的牌本回合不能立刻使用 | `min-domain-verified / partial-ui` | `resolveBetrayalTradeCardStatus` 已把已用牌和狗动作来源标为不可交易；领域测试覆盖已用牌不能交易、收到牌不能立刻使用；不证明真实 UI 禁用提示 | 点名具体已用牌、交易双方、动作来源和按钮禁用 / 错误提示验收 |
 | 交易转移后的作祟风险读模型 | 作祟风险按全员当前持有预兆总数派生，不按当前玩家持有数派生；预兆交易只换持有人，不改变全局总数 | `min-domain-verified / partial-ui` | `resolveBetrayalOmenCount` 汇总所有探索者 inventory 中的预兆；领域测试覆盖交易后当前玩家预兆数变化但全员总数和下次骰数不变；不证明交易后真实风险条刷新 | 后续补 UI/测试时分开验证持有者变化、全局预兆总数、下次骰数和风险条显示 |
@@ -1401,7 +1404,7 @@ NB-07 裁定：
 | 奇怪的药品 | 主动埋葬后治疗当前探索者的力量和速度；消耗后离开持有区并进入本回合已用牌 | `covered-by-existing-contract / consumer-review-on-change` | 已有主动使用、埋葬、力量 / 速度恢复代表链；未证明伤害后治疗、死亡保护、交易限制和更多作祟状态组合 | 若进入下游，点名伤害来源、恢复前轨位、是否已用 / 可交易和 UI / 日志验收范围 |
 | 镜子 | 主动埋葬后治疗当前探索者的知识和神志；仅以持有者自身为目标 | `min-verified / partial-combo` | 已有主动埋葬治疗知识 / 神志最小运行链；未证明伤害后治疗、作祟状态、交易限制、UI / 日志和更多回合时点组合 | 若进入下游，点名知识 / 神志轨位、使用时点、是否作祟中和 UI / 日志验收范围 |
 | 急救包 | 主动埋葬后治疗自己所有濒死属性，或治疗同板块另一位探索者；不同板块目标被拒绝 | `covered-by-existing-contract / min-ui-representative / partial-combo` | 已有自己 / 同板块目标、不同板块拒绝、页面同板块目标选择和预览代表链；未证明所有目标 UI 状态、死亡保护、交易限制、作祟 / 死亡掉落组合 | 若进入下游，点名目标玩家、同板块 / 不同板块状态、濒死属性集合和 UI / 组合验证范围 |
-| 牙齿项链 | 回合结束且存在当前濒死属性时，可选择一项濒死属性提升 1 步；无濒死属性不拦截；非法选择拒绝；可跳过 | `min-domain-verified / min-ui-representative / partial-combo` | 已有回合结束拦截、濒死筛选、选择提升、跳过和非法属性拒绝代表链；Board 组件选择 / 跳过代表链已补；未证明真实 Playwright / 截图、作祟回合、房间回合末、死亡保护后顺序和更多组合 | 若进入下游，点名回合结束来源、濒死属性、死亡保护 / 房间伤害前后顺序和真实入口 / 组合验证范围 |
+| 牙齿项链 | 回合结束且存在当前濒死属性时，可选择一项濒死属性提升 1 步；无濒死属性不拦截；非法选择拒绝；可跳过 | `L3 real-entry representative / partial-combo` | 已有回合结束拦截、濒死筛选、选择提升、跳过和非法属性拒绝代表链；Board 组件选择 / 跳过和真实结束回合 Playwright / 截图代表链已补；未证明作祟回合、房间回合末、怪物回合、死亡保护后顺序和更多组合 | 若进入下游，点名回合结束来源、濒死属性、死亡保护 / 房间伤害前后顺序和组合验证范围 |
 
 | 共享机制 | 当前证据 | 合同层只登记的边界 | 未授权前仍禁止 |
 | --- | --- | --- | --- |
@@ -1438,7 +1441,7 @@ NB-08 裁定：
 | 地图 | 主动埋葬后把当前探索者放置到任一已发现板块；不能放置到未发现板块；`notebook / journal / manuscript` 是 legacy alias / duplicate-alias，不计官方 22 张独立物品 | `covered-by-existing-contract / duplicate-alias-guarded / partial-ui` | 已有主动 `placeExplorer` 配置、已发现板块领域代表链和页面代表链；未证明所有目标 UI、跨楼层显示、非法原因展示、作祟地图限制或新增移动消费者 | 若进入下游，点名当前探索者所在房间、目标已发现板块、目标楼层、非法目标和 UI / 领域验收范围 |
 | 骨制钥匙 | 可穿过一格同层相邻墙体移动到已发现板块；不能作为主动移动加成；不能发现新房间；使用后按投骰 / 当前链路处理埋葬边界 | `L3 representative / partial-combo` | 当前树已补穿墙到已发现相邻板块、不能发现新房间、不会作为普通主动移动加成、页面移动模式代表链、点击结算和回到默认牌桌；未证明墙体 / 门位 / 同层 / 相邻限制全组合、作祟地图规则、特殊移动限制或埋葬随机分支 | 后续扩审必须点名起点房间、目标房间、墙体 / 门位状态、是否同层、是否已发现、作祟地图限制是否适用，以及投骰是否进入埋葬分支 |
 | 急救包 | 主动埋葬后治疗自己所有濒死属性，或治疗同板块另一位探索者；不同板块目标被拒绝。本桶只作为同板块 / 同房目标语义相邻证据，不重新打开治疗桶 | `covered-by-NB-08 / adjacency-only / partial-ui` | 治疗效果、死亡保护、回合时点和治疗 UI 已归 6.46；本桶只登记同板块 / 同房目标与地图目标读模型相邻 | 若后续处理同板块 UI / 房间目标统一读模型，引用 NB-08 目标合法性并点名目标玩家和房间 id |
-| 炸药 | 作为代替攻击使用，选择当前或相邻已发现板块作为目标；目标板块内探索者 / 怪物分别速度检定；使用后埋葬并记为本回合已攻击 | `min-domain-verified / min-ui-representative / map-target-adjacent / partial-combo` | 已有当前 / 相邻已发现板块目标、使用后埋葬、探索者失败伤害和怪物受伤代表链；当前树已补 Board 页面组件目标态代表链；未证明真实 Playwright / 截图链、非法原因展示、更多怪物 / 作祟组合、特殊免疫和墙体 / 门位相邻边界 | 若进入下游，点名攻击者、目标板块、当前 / 相邻关系、已发现状态、目标内探索者 / 怪物集合和 UI / 领域验收范围 |
+| 炸药 | 作为代替攻击使用，选择当前或相邻已发现板块作为目标；目标板块内探索者 / 怪物分别速度检定；使用后埋葬并记为本回合已攻击 | `min-domain-verified / min-ui-representative / Playwright representative / map-target-adjacent / partial-combo` | 已有当前 / 相邻已发现板块目标、使用后埋葬、探索者失败伤害和怪物受伤代表链；当前树已补 Board 页面组件目标态和真实房间攻击 Playwright / 截图代表链；未证明非法原因展示、更多怪物 / 作祟组合、特殊免疫和墙体 / 门位相邻边界 | 若进入下游，点名攻击者、目标板块、当前 / 相邻关系、已发现状态、目标内探索者 / 怪物集合和 UI / 领域验收范围 |
 
 | 共享机制 | 当前证据 | 合同层只登记的边界 | 未授权前仍禁止 |
 | --- | --- | --- | --- |
@@ -1459,7 +1462,7 @@ NB-08 裁定：
 
 NB-10 裁定：
 
-1. 地图、骨制钥匙、急救包和炸药已按已发现房间 / 板块、任意已发现房间放置、穿墙到已发现相邻板块、同板块 / 同房目标、当前 / 相邻已发现板块目标和门位 / 墙体 / 作祟地图规则缺口六类登记；骨制钥匙穿墙移动真实入口代表链和炸药目标板块 Board 组件代表链已补，但这不等于地图目标 UI、炸药真实 Playwright / 截图链、非法原因展示或空间组合测试完成。
+1. 地图、骨制钥匙、急救包和炸药已按已发现房间 / 板块、任意已发现房间放置、穿墙到已发现相邻板块、同板块 / 同房目标、当前 / 相邻已发现板块目标和门位 / 墙体 / 作祟地图规则缺口六类登记；骨制钥匙穿墙移动真实入口代表链、炸药目标板块 Board 组件代表链和炸药真实房间攻击 Playwright / 截图代表链已补，但这不等于地图目标 UI、炸药非法原因展示或空间组合测试完成。
 2. 地图的 `notebook / journal / manuscript` 仍是 legacy alias / duplicate-alias 口径，不计官方 22 张独立物品；本桶不重新打开物品数量或 atlas 导入问题。
 3. 骨制钥匙不是普通主动移动加成；后续若处理它，必须以墙体 / 门位 / 同层 / 已发现状态和作祟地图限制为前提，不得泛化成“移动 +1”。
 4. 急救包在本桶只作为同板块 / 同房目标语义相邻对象；治疗效果和死亡保护组合仍以 6.46 的 NB-08 为准。
@@ -1473,22 +1476,22 @@ NB-10 裁定：
 
 | 预兆 / 节点 | 已锁合同边界 | 当前证据状态 | 未闭合原因 | 下步最小解阻动作 |
 | --- | --- | --- | --- | --- |
-| 书本 | 知识检定 +1；每回合一次花 1 神志，让下一次非战斗检定可用知识替代；该替代状态不得被战斗攻击消费；神志临界时不得免费使用 | `L1/L2 + Board component representative / partial-ui / non-combat-replacement-indexed` | 已有事件非战斗检定、灰尘寻找解药、临界神志成本拒绝、使用后禁用和神志不足提示代表链；未证明真实 Playwright / 截图、更多非战斗检定、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合 | 点名书本、具体非战斗检定来源、当前神志轨位、预期替代属性、是否需要真实页面 / 截图和验收入口 |
-| 狗 | 速度检定 +1；狗交易另归 NB-12，本桶只登记速度加值消费者和交易后风险读模型相邻关系 | `min-domain-verified / transfer-adjacent / partial-ui` | 已有倒塌房间速度检定 +1、灰尘治愈灰尘被动加值和狗交易代表链；未证明交易 UI、距离显示、交易候选、死亡 / 作祟状态限制和更多速度检定组合 | 若处理速度加值，点名具体速度检定来源、当前狗持有者、骰值、被动加值和 UI / 日志验收；若处理交易，回到 NB-12 |
-| 面具 | 速度检定 +1；每回合一次移动同房其他探索者和怪物的主动能力另归移动 / 空间消费者，本桶只登记速度加值 | `min-domain-verified / Board component representative / movement-adjacent / partial-ui` | 已有倒塌房间速度检定 +1、灰尘治愈灰尘被动加值和面具主动移动 Board 组件代表链；未证明真实 Playwright / 截图链、死亡目标过滤、怪物回合、作祟怪物组合和更多速度检定组合 | 若处理速度加值，点名速度检定来源；若处理移动能力，点名同房目标、相邻已发现房间和移动 UI / 领域验收范围 |
+| 书本 | 知识检定 +1；每回合一次花 1 神志，让下一次非战斗检定可用知识替代；该替代状态不得被战斗攻击消费；神志临界时不得免费使用 | `L1/L2 + Board component representative / Playwright representative / partial-ui / non-combat-replacement-indexed` | 已有事件非战斗检定、灰尘寻找解药、临界神志成本拒绝、使用后禁用、神志不足提示代表链，以及真实页面使用 / 替换状态保留代表链；未证明更多非战斗检定、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合 | 点名书本、具体非战斗检定来源、当前神志轨位、预期替代属性、是否需要扩大真实页面 / 截图验收入口 |
+| 狗 | 速度检定 +1；狗交易另归 NB-12，本桶只登记速度加值消费者和交易后风险读模型相邻关系 | `min-domain-verified / Playwright representative / transfer-adjacent / partial-ui` | 已有倒塌房间速度检定 +1、灰尘治愈灰尘被动加值、狗交易 Board 代表链和狗远距交易真实入口代表链；未证明死亡 / 作祟状态限制和更多速度检定组合 | 若处理速度加值，点名具体速度检定来源、当前狗持有者、骰值、被动加值和 UI / 日志验收；若处理交易，回到 NB-12 |
+| 面具 | 速度检定 +1；每回合一次移动同房其他探索者和怪物的主动能力另归移动 / 空间消费者，本桶只登记速度加值 | `min-domain-verified / Board component representative / Playwright representative / movement-adjacent / partial-ui` | 已有倒塌房间速度检定 +1、灰尘治愈灰尘被动加值、面具主动移动 Board 组件代表链和真实页面逐目标移动代表链；未证明死亡目标过滤、怪物回合、作祟怪物组合和更多速度检定组合 | 若处理速度加值，点名速度检定来源；若处理移动能力，点名同房目标、相邻已发现房间和移动 UI / 领域验收范围 |
 | 头骨 | 知识检定 +1；死亡前 3 骰 4+ 阻止死亡的死亡保护另归 NB-01 / NB-06，本桶只登记知识加值与死亡保护相邻关系 | `min-domain-verified / Board component representative / death-protection-adjacent / mummy-attack-success-failure-and-rabbit-foot-e2e / partial-ui` | 已有灰尘治愈灰尘知识加值和死亡保护 Board 组件代表链；木乃伊攻击致死伤害已补真实入口成功阻止死亡、失败正常死亡，以及头骨失败后兔脚重掷阻止死亡截图链；未证明更多致死来源、作祟终局、遗物掩埋，以及知识加值与更多非战斗消费者组合 | 若处理知识加值，点名具体知识检定来源；若处理死亡保护，回到 NB-01 / NB-06 点名致死来源、兔脚重掷和死亡保护验收 |
 | 圣符 | 神志检定 +1；探索时埋葬第一张板块并继续探索的能力另归探索 / 房间 / 作祟桶，本桶只登记神志加值 | `min-domain-verified / Board component representative / discovery-adjacent / partial-ui` | 已有驱魔神志检定 +1、灰尘治愈灰尘加值、圣符探索埋葬领域链，以及探索声明 / 刚获得限制 Board 组件代表链；未证明真实 Playwright / 截图、更多房间 / 事件 / 作祟探索消费者、牌堆顺序和更多神志检定组合 | 若处理神志加值，点名神志检定来源；若处理探索埋葬，点名房间牌、牌堆顺序、刚获得状态和 UI / 领域验收范围 |
 | 盔甲 | 不属于属性检定加值预兆；作为防具受到物理伤害 -1，不阻挡通用伤害或直接属性降低 | `out-of-bucket-guard / covered-by-NB-06 / Board component representative / partial-ui` | 已有物理伤害减免、直接力量降低不被挡、无主动 / 非武器入口和伤害分配页减伤提示代表链；本桶只用于排除盔甲误入属性加值管线 | 若处理盔甲，回到 NB-06 点名更多物理伤害来源、减伤顺序、死亡保护和真实截图验收；不要从 NB-11 开属性加值实现 |
-| 雕像 | 力量检定 +1；发现事件符号房间时可选择不抽事件另归探索 / 事件桶，本桶只登记力量加值 | `min-domain-verified / Board component representative / event-skip-adjacent / partial-ui` | 已有灰尘治愈灰尘力量加值、事件符号房间跳过事件、入口矩阵代表链，以及探索声明 / 刚获得限制 Board 组件代表链；未证明真实 Playwright / 截图、更多事件牌堆顺序、作祟探索、无事件符号拒绝 UI 和更多力量检定组合 | 若处理力量加值，点名力量检定来源；若处理跳过事件，点名房间符号、是否作祟、事件牌堆和 UI / 领域验收范围 |
+| 雕像 | 力量检定 +1；发现事件符号房间时可选择不抽事件另归探索 / 事件桶，本桶只登记力量加值 | `min-domain-verified / Board component representative / Playwright representative / event-skip-adjacent / partial-ui` | 已有灰尘治愈灰尘力量加值、事件符号房间跳过事件、入口矩阵代表链、探索声明 / 刚获得限制 Board 组件代表链，以及真实页面声明雕像、跳过事件、不扣力量和回牌桌状态清理代表链；未证明更多事件牌堆顺序、作祟探索、无事件符号拒绝 UI 和更多力量检定组合 | 若处理力量加值，点名力量检定来源；若处理跳过事件，点名房间符号、是否作祟、事件牌堆和 UI / 领域验收范围 |
 | 指环 | 神志检定 +1；攻击时必须显式选择，双方改用神志对攻并造成精神伤害。攻击武器语义与普通神志加值必须隔离 | `min-domain-verified / weapon-adjacent / partial-ui` | 已有驱魔神志检定 +1、灰尘治愈灰尘加值、显式神志攻击和未声明不自动生效代表链；未证明攻击 UI、怪物目标、多武器互斥、作祟攻击和更多神志检定组合 | 若处理神志加值，点名非攻击神志检定来源；若处理攻击武器，回到 NB-07 / NB-15 点名攻击目标、武器声明和精神伤害验收 |
 
 | 共享机制 | 当前证据 | 合同层只登记的边界 | 未授权前仍禁止 |
 | --- | --- | --- | --- |
 | 属性检定被动加值消费者 | 书本 / 头骨为知识 +1，狗 / 面具为速度 +1，圣符 / 指环为神志 +1，雕像为力量 +1；盔甲不是属性检定加值消费者 | 只登记被动加值需要按检定来源准入；代表链不等于所有事件、房间、作祟特殊行动、攻击或 UI 完成 | 不改属性骰计算或 UI 展示 |
-| 书本非战斗检定替代 | 书本主动使用后花 1 神志，下一次非战斗属性检定可用知识替代原属性骰数；消费后清空，战斗攻击不得消费；神志临界时校验拒绝 | 已补事件 / 灰尘代表链、临界成本负向断言、使用后禁用和神志不足提示组件代表链；更多非战斗来源和组合消费者仍未闭合 | 不把组件代表链外推为真实 Playwright / 截图或全部消费者完成 |
+| 书本非战斗检定替代 | 书本主动使用后花 1 神志，下一次非战斗属性检定可用知识替代原属性骰数；消费后清空，战斗攻击不得消费；神志临界时校验拒绝 | 已补事件 / 灰尘代表链、临界成本负向断言、使用后禁用、神志不足提示组件代表链和真实页面使用 / 替换状态保留代表链；更多非战斗来源和组合消费者仍未闭合 | 不把单条真实入口外推为全部消费者完成 |
 | 固定骰与事件骰排除 | 固定骰、纯事件骰和非属性检定不得自动消费属性加值或书本替代；每个新增消费者需要按来源单独准入 | 神秘液体、无线电广播等固定骰 / 事件骰仍以 NB-04 / NB-05 边界为准 | 不把固定骰当属性检定；不让固定骰消费书本 |
 | 战斗检定隔离 | 普通攻击、武器攻击和作祟怪物攻击需要与非战斗属性检定隔离；指环是显式攻击武器，书本替代不得误消费到攻击 | 只登记隔离边界；攻击 UI、怪物目标、多武器互斥和作祟攻击仍归攻击 / 作祟桶 | 不改攻击命令、武器声明或精神伤害结算 |
-| 濒死神志成本 | 书本花费神志时若持有者神志已接近临界，必须拒绝免费使用并提示成本不足；不应写入 `nextNonCombatTraitReplacement` 或记录本回合已用 | 已补领域成本门禁和 Board 组件提示代表链；死亡保护组合、真实 Playwright / 截图和更多检定消费者仍未闭合 | 不把神志不足负向链外推为全部支付 / 死亡保护组合完成 |
+| 濒死神志成本 | 书本花费神志时若持有者神志已接近临界，必须拒绝免费使用并提示成本不足；不应写入 `nextNonCombatTraitReplacement` 或记录本回合已用 | 已补领域成本门禁、Board 组件提示代表链和书本真实页面使用代表链；死亡保护组合和更多检定消费者仍未闭合 | 不把神志不足负向链或单条真实入口外推为全部支付 / 死亡保护组合完成 |
 | 作祟公共规则隔离 | 抽预兆后的作祟检定骰数、5+、8 骰上限和最后一张自动作祟仍归公共作祟规则 | 作祟检定不能并入任一张预兆自身效果 | 不改作祟公共流程或作祟 UI |
 
 | 相邻桶 | 原因 |
@@ -1502,7 +1505,7 @@ NB-10 裁定：
 
 NB-11 裁定：
 
-1. 书本、狗、面具、头骨、圣符、雕像和指环已按属性检定被动加值、书本非战斗替代、固定骰 / 战斗排除、临界神志成本门禁和作祟公共规则隔离登记；书本、面具、头骨、圣符、雕像另有 Board 组件代表链，但这仍不等于属性检定、真实 UI、截图或组合测试完成。
+1. 书本、狗、面具、头骨、圣符、盔甲、雕像、指环和匕首已按属性检定被动加值、书本非战斗替代、固定骰 / 战斗排除、临界神志成本门禁、武器声明和作祟公共规则隔离登记；当前 9 张预兆均已有至少一条真实 Playwright / 截图代表链或专项真实入口代表链，但这仍不等于属性检定、逐消费者、负向 UI、作祟期、死亡 / 搜尸、怪物攻击、房间伤害、重掷替代或多武器互斥组合完成。
 2. 盔甲被明确排除在属性检定加值消费者之外；它仍属于物理伤害减免 / 死亡保护相邻桶，不能从 NB-11 误接到属性加值管线。
 3. 指环同时有神志检定 +1 和显式攻击武器语义；后续处理时必须先分清“非攻击神志检定”还是“攻击武器神志对攻”，不得互相替代。
 4. 书本的替代只限非战斗检定；固定事件骰、作祟公共检定和攻击投骰不得自动消费书本替代；神志不足时不得免费写入替代状态。
@@ -2093,20 +2096,20 @@ NB-11 裁定：
 - 6.32 的下一对象 / 缺口桶选择器只证明后续合同层入口已结构化，不证明任何具体牌、公共作祟、7 号作祟、UI/E2E/截图或资源链缺口已经完成。
 - 6.33 的 NB-01 事件伤害消费者桶只证明 19 张事件的伤害 / 死亡保护 / 减免组合边界已登记，不证明任何伤害结算、死亡保护、减免、UI/E2E 或截图缺口已经完成。
 - 6.34 的 NB-06 物品伤害 / 死亡保护桶只证明六张物品与五类伤害来源的消费者边界已登记，不证明任何减免、改写、死亡保护、攻击防御、重掷后自伤、UI/E2E 或截图缺口已经完成。
-- 6.35 的 NB-09 物品重掷 / 替代数值 / 属性检定消费者桶只证明六张物品与六类投骰来源边界已登记，不证明任何重掷、替代数值、加骰、回滚、作祟特殊行动、UI/E2E 或截图缺口已经完成。
+- 6.35 的 NB-09 物品重掷 / 替代数值 / 属性检定消费者桶原本只证明六张物品与六类投骰来源边界已登记；后续当前树已补恐怖玩偶真实入口 Playwright / 截图代表链，证明最近属性检定全骰重掷和原事件分支回滚；也已补幸运硬币真实入口 Playwright / 截图代表链，证明最近属性检定空白骰重掷和空白精神伤害收口。但仍不证明替代数值、加骰、作祟特殊行动、死亡保护或全部重掷消费者组合完成。
 - 6.36 的 NB-13 作祟风险 / 8 骰上限 / 最后一张自动作祟桶只证明五条公共作祟风险规则与五类风险流程边界已登记，不证明作祟揭示 UI、骰盘、翻牌确认、更多剧本入口、E2E 或截图缺口已经完成。
 - 6.37 的 NB-14 7 号作祟公开 / 私密可见性与 setup 桶只证明五个可见性 / setup 节点、三类视角边界和五项 setup 分层已登记，不证明私密 UI、完整 setup UI、破咒 UI、镜中怪物完整流程、E2E 或截图缺口已经完成。
 - 6.38 的 NB-16 UI / E2E / 截图 / 脚注音频授权前置桶只证明后续授权边界已登记，不证明 Board/UI、真实入口测试、截图、图片打开、音频接入、资源压缩上传或远端回查已经发生。
 - 6.39 的 NB-15 7 号作祟破咒 / 镜中提示 / 镜中怪物移动攻击桶只证明六个行动 / 怪物节点的合同边界已登记，不证明完整 7 号作祟、专属 UI、真实入口 E2E、截图或完整怪物回合组合完成。
-- 6.40 的 NB-12 预兆交易 / 持有物转移 / 已用牌限制桶原本只证明狗交易、普通交易、同意结算、已用牌限制、交易后全员预兆数、搜尸和控制回合限制的合同边界已登记；后续当前树已补狗交易 Board 组件候选 / 4 格目标 / 同意结算 / 已用牌禁用 / 灰尘冲突 / 风险条代表链，但仍不证明真实入口 E2E、截图、死亡掉落 / 搜尸组合或全部作祟状态完成。
+- 6.40 的 NB-12 预兆交易 / 持有物转移 / 已用牌限制桶原本只证明狗交易、普通交易、同意结算、已用牌限制、交易后全员预兆数、搜尸和控制回合限制的合同边界已登记；后续当前树已补狗交易 Board 组件候选 / 4 格目标 / 同意结算 / 已用牌禁用 / 灰尘冲突 / 风险条代表链，并补狗远距交易真实入口 E2E / 截图代表链，但仍不证明死亡掉落 / 搜尸组合或全部作祟状态完成。
 - 6.41 的 NB-02 事件目标候选 / 房间合法性桶原本只证明六张事件的候选来源、非法原因和未来 UI 状态真相已登记；后续当前树已补地狱蝙蝠、花团锦簇、秘密升降机、一条秘密通道、一声呼救和上古旧宅 Board 组件目标选择代表链，也已补技术难点确定性起始点放置与地下室精神伤害 Board 组件代表链，但仍不证明真实入口 E2E、截图、非法目标提示 UI、失败伤害 UI、秘密通道标志物移动入口、地图 / 门位 / 区域组合、温室 / 楼层全部组合、通用伤害死亡保护、精神伤害减免/死亡保护或作祟地图限制完成。
 - 6.42 的 NB-03 事件物品 / 牌堆 / 持有物选择桶原本只证明五张事件的抽物品、非武器筛选、弃置 / 埋葬终点和持有物来源边界已登记；后续当前树已补不可能的房间、断手、轮到约拿了和游魂的 Board 组件代表链，其中轮到约拿了已补非武器候选、确认派发和拒绝精神伤害确认步骤，但仍不证明物品牌堆耗尽、无非武器物品 UI、已用 / 不可交易组合、弃置终点可见性、真实入口 E2E 或截图完成。
 - 6.43 的 NB-04 事件投骰 / 属性 / 重掷消费者桶只证明十二张事件的事件属性检定、固定事件骰、祝福额外骰、属性上下限和重掷准入边界已登记；天使之羽页面 0-8 数字选择已由物品主动牌 E2E 代表链补证，片刻希望房间祝福标记 UI、上古旧宅力量地面分支、肉质苔癣固定 2 骰成功任选属性分支、脑状食品力量检定高分 / 低分代表分支、吊死鬼全通过奖励属性选择代表分支和一条秘密通道第二目标板块代表路径已由 Board 组件代表链补证，但本桶仍不证明重掷组合、祝福加骰同屏可见性、死亡保护、事件真实入口 E2E 或截图完成。
 - 6.44 的 NB-05 事件作祟特例 / 展示音频桶只证明怪异的镜子 7 号代表链和无线电广播脚注 / 音频资源边界已隔离，不证明完整 7 号作祟、脚注 UI、音频资源接入、资源上传、真实入口 E2E 或截图完成。
-- 6.45 的 NB-07 物品武器攻击 / 多武器互斥 / 交易限制桶原本只证明枪、十字弓、砍刀、电锯和炸药的攻击消费者边界、用后限制和相邻缺口已登记；后续当前树已补炸药 Board 页面组件目标态代表链，但仍不证明多武器互斥组合、怪物 / 作祟攻击组合、真实入口 E2E 或截图完成。
-- 6.46 的 NB-08 物品治疗 / 属性恢复 / 同房目标桶只证明奇怪的药品、镜子、急救包和牙齿项链的治疗 / 恢复边界、目标合法性、用后限制和相邻缺口已登记；后续当前树已补牙齿项链 Board 组件选择 / 跳过代表链，但仍不证明治疗 UI、牙齿项链真实 Playwright / 截图链、死亡保护组合或全部真实入口完成。
-- 6.47 的 NB-10 物品移动 / 地图 / 门位墙体桶原本只证明地图、骨制钥匙、急救包和炸药的已发现房间、同板块 / 同房目标、墙体 / 门位、目标板块和作祟地图规则缺口已登记；后续当前树已补骨制钥匙穿墙移动真实入口 E2E 与截图代表链、炸药目标板块 Board 页面组件代表链，但仍不证明地图移动 UI、炸药真实入口 E2E / 截图、非法原因展示、房间 / 门位合法性全组合、作祟地图限制全组合或全部移动消费者完成。
-- 6.48 的 NB-11 预兆属性检定加值 / 非战斗检定替代桶原本只证明书本、狗、面具、头骨、圣符、盔甲、雕像和指环的属性加值、书本替代、固定骰 / 战斗排除、濒死成本和相邻桶边界已登记；后续当前树已补书本临界神志成本领域门禁、使用后禁用和神志不足提示 Board 组件代表链，并补面具多目标移动、头骨死亡保护、圣符 / 雕像探索声明与刚获得限制 Board 组件代表链，但仍不证明检定替代逻辑完整、全部 UI、组合测试、真实入口 E2E 或截图完成。
+- 6.45 的 NB-07 物品武器攻击 / 多武器互斥 / 交易限制桶原本只证明枪、十字弓、砍刀、电锯和炸药的攻击消费者边界、用后限制和相邻缺口已登记；后续当前树已补炸药 Board 页面组件目标态和真实房间攻击 Playwright / 截图代表链，但仍不证明多武器互斥组合、怪物 / 作祟攻击组合、非法原因展示或特殊免疫边界完成。
+- 6.46 的 NB-08 物品治疗 / 属性恢复 / 同房目标桶只证明奇怪的药品、镜子、急救包和牙齿项链的治疗 / 恢复边界、目标合法性、用后限制和相邻缺口已登记；后续当前树已补牙齿项链 Board 组件选择 / 跳过和真实结束回合 Playwright / 截图代表链，但仍不证明死亡保护组合、房间回合末、怪物回合、作祟回合或全部真实入口完成。
+- 6.47 的 NB-10 物品移动 / 地图 / 门位墙体桶原本只证明地图、骨制钥匙、急救包和炸药的已发现房间、同板块 / 同房目标、墙体 / 门位、目标板块和作祟地图规则缺口已登记；后续当前树已补骨制钥匙穿墙移动真实入口 E2E 与截图代表链、炸药目标板块 Board 页面组件代表链和炸药真实房间攻击 Playwright / 截图代表链，但仍不证明地图移动 UI、炸药非法原因展示、房间 / 门位合法性全组合、作祟地图限制全组合或全部移动消费者完成。
+- 6.48 的 NB-11 预兆属性检定加值 / 非战斗检定替代桶原本只证明书本、狗、面具、头骨、圣符、盔甲、雕像和指环的属性加值、书本替代、固定骰 / 战斗排除、濒死成本和相邻桶边界已登记；后续当前树已补书本临界神志成本领域门禁、使用后禁用、神志不足提示 Board 组件代表链和真实页面使用 / 替换状态保留截图代表链，并补狗远距交易真实入口 E2E / 截图代表链、面具多目标移动 Board 组件代表链和真实页面逐目标移动截图代表链、头骨死亡保护真实入口链、圣符探索声明真实入口链、盔甲物理减伤真实入口链、雕像探索声明真实入口链，以及指环 / 匕首真实攻击武器链；但仍不证明检定替代逻辑完整、逐消费者、负向 UI、作祟期、死亡 / 搜尸、怪物攻击、房间伤害、重掷替代或多武器互斥组合完成。
 - 6.49 的 NB 工作桶覆盖闭环审计只证明 NB-01 到 NB-16 均有合同段落、结构化副本和状态文件记录，不证明任一桶的下游机制、UI、E2E、截图、音频或资源链完成。
 - 6.50-6.67 的下游重锁、授权包、路由、退出门、剩余缺口索引、覆盖审计、最小解阻动作索引、最小解阻动作覆盖审计和合同层停线审计只证明“如何离开合同层”已写清，不证明任何授权包已领取，也不证明卡牌机制、Board/UI、E2E、截图、音频或资源链完成。
 
@@ -2114,7 +2117,7 @@ NB-11 裁定：
 
 1. 本轮 S0 合同层可以回答用户问题：图包不缺整牌库 atlas 素材，项目正式 atlas 与原始图包逐字节一致；旧缺口来自旧 manifest/旧运行池口径和后续机制承接，不是导入错。
 2. 当前仍保持 `in_progress / downstream-gated`（历史旧别名：`downstream-blocked`），原因不是“缺 74 张对象行”，也不是 S0 合同层不能继续，而是事件和物品有逐卡机制/UI/测试承接缺口；用户已授权继续消费已锁对象进入 S1/S2，但不得把对象级补证外推为整牌库完成。
-3. 恐怖玩偶已有属性检定全骰重掷领域链和 Board 组件全骰选择代表链，但仍缺真实 Playwright / 截图、作祟特殊行动属性检定通用回滚快照和更多重掷消费者组合；神秘秒表、胸针、天使之羽、炸药、奇异护符、幸运硬币倒塌房间组合已有 S1/S2 最小领域补证；胸针另已补木乃伊强制伤害下不适用的真实入口 / 截图边界，补灰尘普通攻击非强制物理伤害下可用的真实入口 / 截图代表链，并补指环攻击非强制精神伤害下可用的真实入口 / 截图代表链，但仍不证明更多来源、减伤叠加、死亡保护或作祟伤害组合；幸运硬币另有 Board 组件空白骰选择代表链，但仍缺真实 Playwright / 截图、作祟特殊行动、死亡保护和更多伤害分配组合；牙齿项链已有最小领域补证和 Board 组件选择 / 跳过代表链，但仍缺真实 Playwright / 截图、作祟回合、房间回合末和死亡保护组合；书本已有临界神志成本领域门禁、使用后禁用和神志不足提示 Board 组件代表链，但仍缺真实 Playwright / 截图、更多非战斗检定消费者、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合；面具已有同板块队友 / 怪物分别选择相邻板块 Board 组件代表链，但仍缺真实 Playwright / 截图、死亡目标过滤、怪物回合和作祟怪物组合；头骨已有死亡保护 3 骰骰盘、4+ 阻止死亡和头骨反馈 Board 组件代表链，并已补木乃伊攻击致死伤害触发头骨、成功阻止死亡、失败正常死亡，以及头骨失败后兔脚重掷阻止死亡的真实入口 E2E / 截图链，但仍缺更多致死来源、作祟终局、遗物掩埋和更多兔脚死亡保护组合；圣符 / 雕像已有探索声明、连续事件房间和刚获得限制 Board 组件代表链，但仍缺真实 Playwright / 截图、更多房间/作祟探索、无事件符号拒绝 UI 和牌堆顺序组合；新增配置事件已完成一轮运行入口、部分关键分支、自动分支、失败伤害分支、成功属性分支和部分剩余可配置分支代表链补证，并追加覆盖技术难点地下室 fallback、一罐器官成功抽物品、可怜的尤里克成功知识提升 / 失败精神伤害 Board 代表链、无线电广播成功知识提升 / 失败精神伤害 Board 代表链、怪异的镜子接受检定 0-4 / 5+ 代表入口、7 号作祟秘密组合私密状态、破咒最小领域链、事件符号房间不抽事件不结束回合、镜中提示最小领域链、镜中怪物最近目标移动 / 平手路径、镜中怪物同房神志攻击 / 精神伤害代表链、地狱蝙蝠/花团锦簇/秘密升降机/一条秘密通道/一声呼救房间目标合法性、脑状食品力量检定三档 / 伤害与死亡保护相邻链、吊死鬼全属性检定 / 奖励属性选择代表链、一条秘密通道第二目标板块 / 标志物代表链；无线电广播脚注已裁定为展示/音频提示而非规则结算；作祟公共规则已补全员当前持有预兆数、交易转移后总数、抽新预兆骰数、8 骰上限、普通预兆触发和最后一张预兆自动触发的最小领域回归；9 张预兆逐卡领域证据矩阵已补；6.15 已把 A-E 队列做合同层收口审计，6.16 已记录旧数量 / 完成口径扫描，6.17 已把伤害/死亡保护和目标候选 UI 状态真相归并成跨消费者索引，6.18 已补离开合同层前的授权门禁，6.19 已把规范残留的 blocked 停工误读点复核并修正为阶段门禁口径，6.20 已复核 74 行对象表结构完整性，6.21 已复核对象表路径类证据 39 个 token 均可解析，6.22 已复核合同 / 当前运行池 / atlas 三方一致，6.23 已完成 S0 出口审计，6.24 已补下游阶段切换包，6.25 已拆出 8 条可领取工作单，6.26 已领取 WO-01 并把 25 张非纯 `locked` 事件剩余分支归并成 5 个合同缺口桶，6.27 已领取 WO-02 并把 22 张物品消费者归并成 7 个合同缺口桶，6.28 已领取 WO-03/WO-04 并把 9 张预兆逐卡效果与作祟公共规则归并成 7 个合同缺口桶，6.29 已领取 WO-05 并把 7 号作祟完整流程归并成 9 个子账本缺口桶，6.30 已领取 WO-06/WO-07/WO-08 并把 UI / E2E / 截图 / 无线电广播脚注音频资源归并成 3 个授权前置组，6.31 已确认 WO-01 到 WO-08 均有合同段落和结构化副本，6.32 已把下一对象 / 缺口桶选择器整理为 16 个合同层入口，6.33 已领取 NB-01 并把 19 张事件伤害消费者归并成精神伤害、物理伤害、通用伤害、直接属性降低和双伤害顺序 5 个组合边界，6.34 已领取 NB-06 并把头戴耳机、奇异护符、胸针、皮夹克、幸运硬币、牙齿项链与五类伤害来源交叉索引，6.35 已领取 NB-09 并把恐怖玩偶、幸运硬币、兔脚、天使之羽、手电筒、魔法相机与六类投骰来源交叉索引，6.36 已领取 NB-13 并把全员预兆总数、抽预兆作祟检定、5+ 触发、最多 8 骰和最后一张自动作祟与五类风险流程交叉索引，6.37 已领取 NB-14 并把 7 号作祟公开 / 私密可见性、setup 自动 / manual-check 分层、视角矩阵和 setup 项最小解阻动作写入合同，6.38 已领取 NB-16 并把 UI / E2E / 截图 / 脚注音频授权前置拆成发现牌 UI 承接、旧 E2E/截图降级、真实入口 E2E 与截图选择、无线电广播脚注 / 音频 / 资源链 4 个边界，6.39 已领取 NB-15 并把 7 号作祟破咒、镜中提示、事件符号房间、镜中怪物移动 / 平手裁决、镜中怪物攻击 / 精神伤害、完整流程验收拆成 6 个行动 / 怪物节点边界，6.40 已领取 NB-12 并把狗 4 格交易、pendingTradeAgreement / 同意结算、已用牌限制、交易后全员预兆数、死亡掉落 / 搜尸风险刷新和控制回合限制拆成 6 个转移 / 风险节点边界，6.41 已领取 NB-02 并把地狱蝙蝠、花团锦簇、技术难点、秘密升降机、一条秘密通道、一声呼救的候选来源、非法原因、楼层 / 区域 / 已发现限制和未来 UI 状态真相写入合同，6.42 已领取 NB-03 并把不可能的房间、断手、轮到约拿了、游魂、一罐器官的抽物品、非武器筛选、弃置 / 埋葬终点和持有物来源边界写入合同，6.43 已领取 NB-04 并把佳馔满桌、禁忌知识、可怜的尤里克、片刻希望、神秘液体、肉质苔癣、脑状食品、吊死鬼、一条秘密通道、摇曳灯光、着火的人、上古旧宅的事件属性检定、固定事件骰、祝福额外骰、属性上下限、最近投骰重掷和分支回滚边界写入合同，6.44 已领取 NB-05 并把怪异的镜子拒绝 / 0-4 / 5+ 三层、7 号代表链、无线电广播规则结算和脚注 / 音频提示边界写入合同，6.45 已领取 NB-07 并把枪、十字弓、砍刀、电锯和炸药的攻击来源、目标范围、骰 / 属性改写、失败不反伤例外、用后限制和多武器互斥边界写入合同，6.46 已领取 NB-08 并把奇怪的药品、镜子、急救包和牙齿项链的主动治疗、目标合法性、消耗终点、回合结束恢复和组合消费者边界写入合同，6.47 已领取 NB-10 并把地图、骨制钥匙、急救包和炸药的已发现房间、同板块 / 同房目标、墙体 / 门位、目标板块和作祟地图规则缺口写入合同，6.48 已领取 NB-11 并把书本、狗、面具、头骨、圣符、盔甲、雕像和指环的属性检定加值、书本非战斗替代、固定骰 / 战斗排除、濒死神志成本和相邻桶边界写入合同，6.49 已确认 NB-01 到 NB-16 均有合同段落和结构化副本。但后续仍需处理其它剩余物品机制/UI 组合、新增事件剩余分支、7 号专属移动/目标选择 UI、预兆逐卡 UI 承接与组合测试；未闭合前这些继续作为合同缺口清单保留。
+3. 恐怖玩偶已有属性检定全骰重掷领域链、Board 组件全骰选择代表链和真实 Playwright / 截图代表链，但仍缺作祟特殊行动属性检定通用回滚快照和更多重掷消费者组合；神秘秒表、胸针、天使之羽、炸药、奇异护符、幸运硬币倒塌房间组合已有 S1/S2 最小领域补证；炸药另已补真实房间攻击 Playwright / 截图代表链，但仍缺非法原因展示、更多怪物 / 作祟组合和特殊免疫边界；胸针另已补木乃伊强制伤害下不适用的真实入口 / 截图边界，补灰尘普通攻击非强制物理伤害下可用的真实入口 / 截图代表链，并补指环攻击非强制精神伤害下可用的真实入口 / 截图代表链，但仍不证明更多来源、减伤叠加、死亡保护或作祟伤害组合；幸运硬币另有 Board 组件空白骰选择代表链和真实 Playwright / 截图代表链，但仍缺作祟特殊行动、死亡保护和更多伤害分配组合；牙齿项链已有最小领域补证、Board 组件选择 / 跳过代表链和真实结束回合 Playwright / 截图代表链，但仍缺作祟回合、房间回合末、怪物回合和死亡保护组合；书本已有临界神志成本领域门禁、使用后禁用、神志不足提示 Board 组件代表链和真实页面使用 / 替换状态保留 Playwright / 截图代表链，但仍缺更多非战斗检定消费者、房间检定、作祟特殊行动检定和重掷 / 替代消费者组合；狗已有远距交易真实 Playwright / 截图代表链，但仍缺死亡掉落 / 搜尸和更多作祟状态组合；面具已有同板块队友 / 怪物分别选择相邻板块 Board 组件代表链和真实页面逐目标移动 Playwright / 截图代表链，但仍缺死亡目标过滤、怪物回合和作祟怪物组合；头骨已有死亡保护 3 骰骰盘、4+ 阻止死亡和头骨反馈 Board 组件代表链，并已补木乃伊攻击致死伤害触发头骨、成功阻止死亡、失败正常死亡，以及头骨失败后兔脚重掷阻止死亡的真实入口 E2E / 截图链，但仍缺更多致死来源、作祟终局、遗物掩埋和更多兔脚死亡保护组合；圣符 / 雕像已有探索声明、连续事件房间和刚获得限制 Board 组件代表链；圣符另有真实探索声明 Playwright / 截图代表链，雕像另有真实 Playwright / 截图代表链；两者仍缺更多房间/作祟探索、无事件符号拒绝 UI、刚获得限制真实负向和牌堆顺序组合；指环 / 匕首已有真实攻击武器 Playwright / 截图代表链，但仍缺怪物目标、多武器互斥、作祟攻击和未声明/刚获得限制真实负向；新增配置事件已完成一轮运行入口、部分关键分支、自动分支、失败伤害分支、成功属性分支和部分剩余可配置分支代表链补证，并追加覆盖技术难点地下室 fallback、一罐器官成功抽物品、可怜的尤里克成功知识提升 / 失败精神伤害 Board 代表链、无线电广播成功知识提升 / 失败精神伤害 Board 代表链、怪异的镜子接受检定 0-4 / 5+ 代表入口、7 号作祟秘密组合私密状态、破咒最小领域链、事件符号房间不抽事件不结束回合、镜中提示最小领域链、镜中怪物最近目标移动 / 平手路径、镜中怪物同房神志攻击 / 精神伤害代表链、地狱蝙蝠/花团锦簇/秘密升降机/一条秘密通道/一声呼救房间目标合法性、脑状食品力量检定三档 / 伤害与死亡保护相邻链、吊死鬼全属性检定 / 奖励属性选择代表链、一条秘密通道第二目标板块 / 标志物代表链；无线电广播脚注已裁定为展示/音频提示而非规则结算；作祟公共规则已补全员当前持有预兆数、交易转移后总数、抽新预兆骰数、8 骰上限、普通预兆触发、最后一张预兆自动触发、风险条、作祟揭示横幅和翻牌确认队列代表链；9 张预兆逐卡领域证据矩阵已补且当前均有至少一条真实代表链；6.15 已把 A-E 队列做合同层收口审计，6.16 已记录旧数量 / 完成口径扫描，6.17 已把伤害/死亡保护和目标候选 UI 状态真相归并成跨消费者索引，6.18 已补离开合同层前的授权门禁，6.19 已把规范残留的 blocked 停工误读点复核并修正为阶段门禁口径，6.20 已复核 74 行对象表结构完整性，6.21 已复核对象表路径类证据 39 个 token 均可解析，6.22 已复核合同 / 当前运行池 / atlas 三方一致，6.23 已完成 S0 出口审计，6.24 已补下游阶段切换包，6.25 已拆出 8 条可领取工作单，6.26 已领取 WO-01 并把 25 张非纯 `locked` 事件剩余分支归并成 5 个合同缺口桶，6.27 已领取 WO-02 并把 22 张物品消费者归并成 7 个合同缺口桶，6.28 已领取 WO-03/WO-04 并把 9 张预兆逐卡效果与作祟公共规则归并成 7 个合同缺口桶，6.29 已领取 WO-05 并把 7 号作祟完整流程归并成 9 个子账本缺口桶，6.30 已领取 WO-06/WO-07/WO-08 并把 UI / E2E / 截图 / 无线电广播脚注音频资源归并成 3 个授权前置组，6.31 已确认 WO-01 到 WO-08 均有合同段落和结构化副本，6.32 已把下一对象 / 缺口桶选择器整理为 16 个合同层入口，6.33 已领取 NB-01 并把 19 张事件伤害消费者归并成精神伤害、物理伤害、通用伤害、直接属性降低和双伤害顺序 5 个组合边界，6.34 已领取 NB-06 并把头戴耳机、奇异护符、胸针、皮夹克、幸运硬币、牙齿项链与五类伤害来源交叉索引，6.35 已领取 NB-09 并把恐怖玩偶、幸运硬币、兔脚、天使之羽、手电筒、魔法相机与六类投骰来源交叉索引，6.36 已领取 NB-13 并把全员预兆总数、抽预兆作祟检定、5+ 触发、最多 8 骰和最后一张自动作祟与五类风险流程交叉索引，6.37 已领取 NB-14 并把 7 号作祟公开 / 私密可见性、setup 自动 / manual-check 分层、视角矩阵和 setup 项最小解阻动作写入合同，6.38 已领取 NB-16 并把 UI / E2E / 截图 / 脚注音频授权前置拆成发现牌 UI 承接、旧 E2E/截图降级、真实入口 E2E 与截图选择、无线电广播脚注 / 音频 / 资源链 4 个边界，6.39 已领取 NB-15 并把 7 号作祟破咒、镜中提示、事件符号房间、镜中怪物移动 / 平手裁决、镜中怪物攻击 / 精神伤害、完整流程验收拆成 6 个行动 / 怪物节点边界，6.40 已领取 NB-12 并把狗 4 格交易、pendingTradeAgreement / 同意结算、已用牌限制、交易后全员预兆数、死亡掉落 / 搜尸风险刷新和控制回合限制拆成 6 个转移 / 风险节点边界，6.41 已领取 NB-02 并把地狱蝙蝠、花团锦簇、技术难点、秘密升降机、一条秘密通道、一声呼救的候选来源、非法原因、楼层 / 区域 / 已发现限制和未来 UI 状态真相写入合同，6.42 已领取 NB-03 并把不可能的房间、断手、轮到约拿了、游魂、一罐器官的抽物品、非武器筛选、弃置 / 埋葬终点和持有物来源边界写入合同，6.43 已领取 NB-04 并把佳馔满桌、禁忌知识、可怜的尤里克、片刻希望、神秘液体、肉质苔癣、脑状食品、吊死鬼、一条秘密通道、摇曳灯光、着火的人、上古旧宅的事件属性检定、固定事件骰、祝福额外骰、属性上下限、最近投骰重掷和分支回滚边界写入合同，6.44 已领取 NB-05 并把怪异的镜子拒绝 / 0-4 / 5+ 三层、7 号代表链、无线电广播规则结算和脚注 / 音频提示边界写入合同，6.45 已领取 NB-07 并把枪、十字弓、砍刀、电锯和炸药的攻击来源、目标范围、骰 / 属性改写、失败不反伤例外、用后限制和多武器互斥边界写入合同，6.46 已领取 NB-08 并把奇怪的药品、镜子、急救包和牙齿项链的主动治疗、目标合法性、消耗终点、回合结束恢复和组合消费者边界写入合同，6.47 已领取 NB-10 并把地图、骨制钥匙、急救包和炸药的已发现房间、同板块 / 同房目标、墙体 / 门位、目标板块和作祟地图规则缺口写入合同，6.48 已领取 NB-11 并把书本、狗、面具、头骨、圣符、盔甲、雕像和指环的属性检定加值、书本非战斗替代、固定骰 / 战斗排除、濒死神志成本和相邻桶边界写入合同，6.49 已确认 NB-01 到 NB-16 均有合同段落和结构化副本。但后续仍需处理其它剩余物品机制/UI 组合、新增事件剩余分支、7 号专属移动/目标选择 UI、预兆逐卡消费者与组合测试；未闭合前这些继续作为合同缺口清单保留。
 4. S0 长段中的 6.41 / 6.43 历史汇总以本轮补正后的 NB-02 / NB-04 正文为准：当前已追加上古旧宅房间目标合法性、属性检定、地面通用伤害和地下室精神伤害边界，并追加肉质苔癣可选拒绝、固定 2 骰、成功任选属性、失败精神伤害和兔脚重掷分支边界，以及脑状食品力量检定三档、任选力量 / 速度、速度 +1 并神志 -1、通用伤害 2、头骨死亡保护和兔脚回滚相邻链，并追加一条秘密通道第二目标板块、秘密通道标志物、知识 +1、神志 -1 和确认收口边界；仍不证明上古旧宅上层成功 UI、地下室精神伤害 UI、非法目标提示 UI，也不证明肉质苔癣精神伤害减免 / 死亡保护、属性上限、更多属性选择、兔脚 UI / 更多重掷组合、真实入口 E2E 或截图完成；也不证明脑状食品成功力量 UI、属性上下限、直接属性降低致死 / 死亡保护、通用伤害减免 / 胸针、兔脚 UI / 更多重掷组合或真实入口 E2E / 截图完成。
 5. 后续当前树已补地狱蝙蝠、花团锦簇、秘密升降机、一条秘密通道、一声呼救和上古旧宅 Board 组件目标选择代表链，分别证明相邻目标、地面 / 地下室 / 温室目标、不同区域目标、同区域目标和上古旧宅地面目标的候选展示 / 目标点击承接代表路径；这只降低“目标选择 UI 代表链”缺口，不证明真实入口 E2E / 截图、非法目标提示 UI、失败伤害 UI、作祟地图限制、更多门位 / 连接 / 区域 / 温室 / 楼层组合、通用伤害死亡保护或移动后续反馈完成。
 6. 预兆继续保持两层账本：9 张预兆逐卡效果合同 + 作祟公共规则合同；作祟检定不能归并成某一张预兆自身效果。

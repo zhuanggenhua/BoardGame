@@ -1,8 +1,9 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 import type { MatchState } from '../../../engine/types';
+import type { MatchUiEvent } from '../../../engine/transport/protocol';
 import { useUndo } from '../../../contexts/UndoContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import { ToastViewport } from '../../../components/system/ToastViewport';
@@ -195,6 +196,20 @@ const renderBoardForCore = (core: TheGangCore) => renderWithToast(
         isConnected
     />,
 );
+
+const mockElementFromPoint = (element: Element | null) => {
+    const originalElementFromPoint = document.elementFromPoint;
+    Object.defineProperty(document, 'elementFromPoint', {
+        configurable: true,
+        value: vi.fn(() => element),
+    });
+    return () => {
+        Object.defineProperty(document, 'elementFromPoint', {
+            configurable: true,
+            value: originalElementFromPoint,
+        });
+    };
+};
 
 const expectBggTableAnchors = () => {
     const layoutRoot = document.querySelector('[data-layout-contract]');
@@ -486,7 +501,35 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelectorAll('[data-bgg-zone="hand-current-chip"]')).toHaveLength(1);
     });
 
-    test('两副牌开局前点击上下真实手牌后才能确认交换', () => {
+    test('点击自己的当前筹码会派发放回中区命令', () => {
+        const dispatch = vi.fn();
+        const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+        const withLocalChip = reduceCommand(startHeistCore(initial), {
+            type: THE_GANG_COMMANDS.TAKE_CHIP,
+            playerId: '0',
+            payload: { chip: 1 },
+            timestamp: 2,
+        } as Parameters<typeof TheGangDomain.execute>[1]);
+
+        renderWithToast(
+            <Board
+                G={stateOf(withLocalChip)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        fireEvent.click(screen.getByTestId('the-gang-return-local-chip-top'));
+
+        expect(screen.getByTestId('the-gang-chip-transfer-animation')).toBeInTheDocument();
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.RETURN_CHIP, {
+            __internalPlayerId: '0',
+        });
+    });
+
+    test('两副牌可拖拽上手和下手真实卡牌并立即交换', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
         const handSwapCore: TheGangCore = {
@@ -539,8 +582,10 @@ describe('The Gang Board 运行入口', () => {
         );
 
         expect(screen.queryByTestId('the-gang-hand-swap-stage')).not.toBeInTheDocument();
-        expect(screen.getByTestId('the-gang-hand-swap-strip')).toHaveTextContent('board.handSwapSelectedCount');
-        expect(screen.getByTestId('the-gang-confirm-prestart-hand-swap')).toBeDisabled();
+        expect(screen.queryByTestId('the-gang-hand-swap-strip')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-confirm-prestart-hand-swap')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-confirm-hand-swap')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-skip-hand-swap')).not.toBeInTheDocument();
         expect(screen.getByRole('img', { name: 'A♠' })).toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-opponent-hand-1-rows')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-opponent-hand-2-rows')).not.toBeInTheDocument();
@@ -556,20 +601,31 @@ describe('The Gang Board 运行入口', () => {
             expect(screen.queryByRole('img', { name: exposedCard })).not.toBeInTheDocument();
         }
 
-        fireEvent.click(screen.getByTestId('the-gang-local-hand-top-card-0'));
-        fireEvent.click(screen.getByTestId('the-gang-local-hand-bottom-card-1'));
+        const topCard = screen.getByTestId('the-gang-local-hand-top-card-0');
+        const bottomCard = screen.getByTestId('the-gang-local-hand-bottom-card-1');
+        const restoreElementFromPoint = mockElementFromPoint(bottomCard);
+        try {
+            fireEvent.pointerDown(topCard, { pointerId: 31, button: 0, clientX: 12, clientY: 12 });
+            fireEvent.pointerMove(topCard, { pointerId: 31, clientX: 48, clientY: 48 });
 
-        expect(screen.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
-        expect(screen.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
-        expect(screen.getByTestId('the-gang-confirm-prestart-hand-swap')).not.toBeDisabled();
+            expect(screen.getByTestId('the-gang-card-drag-ghost')).toBeInTheDocument();
+            expect(topCard).toHaveAttribute('data-drag-source-hidden', 'true');
+            expect(bottomCard).toHaveAttribute('data-the-gang-card-drop-state', 'active');
+            expect(bottomCard).toHaveAttribute('data-the-gang-drop-range-ui', 'open-right-gradient');
+            expect(bottomCard).toHaveClass('the-gang-open-drop-target--active');
+            expect(bottomCard.getAttribute('style') ?? '').not.toContain('outline');
 
-        fireEvent.click(screen.getByTestId('the-gang-confirm-prestart-hand-swap'));
+            fireEvent.pointerUp(topCard, { pointerId: 31, clientX: 48, clientY: 48 });
+        } finally {
+            restoreElementFromPoint();
+        }
+
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.CONFIRM_HAND_SWAP, {
             __internalPlayerId: '0',
             topIndex: 0,
             bottomIndex: 1,
         });
-        expect(screen.queryByTestId('the-gang-skip-hand-swap')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-card-drag-ghost')).not.toBeInTheDocument();
         unmount();
     });
 
@@ -749,12 +805,234 @@ describe('The Gang Board 运行入口', () => {
             />,
         );
 
-        screen.getByTestId('the-gang-take-player-chip-1-single').click();
+        fireEvent.click(screen.getByTestId('the-gang-take-player-chip-1-single'));
 
+        expect(screen.getByTestId('the-gang-chip-transfer-animation')).toBeInTheDocument();
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
             __internalPlayerId: '0',
             chip: 2,
         });
+    });
+
+    test('拖拽中区筹码到本地手牌槽会派发拿取命令', () => {
+        const dispatch = vi.fn();
+        const started = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
+
+        renderWithToast(
+            <Board
+                G={stateOf(started)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        const chipButton = document.querySelector('[data-bgg-zone="token-pile"] button');
+        const handTarget = screen.getByTestId('the-gang-local-hand-top');
+        const handCards = screen.getByTestId('the-gang-local-hand-top-cards');
+        expect(chipButton).toBeInTheDocument();
+        expect(handTarget).toHaveAttribute('data-the-gang-chip-drop-target', 'local-hand');
+        expect(handCards).not.toHaveAttribute('data-the-gang-chip-drop-target');
+
+        const restoreElementFromPoint = mockElementFromPoint(handTarget);
+        try {
+            fireEvent.pointerDown(chipButton!, { pointerId: 11, button: 0, clientX: 10, clientY: 10 });
+            fireEvent.pointerMove(chipButton!, { pointerId: 11, clientX: 40, clientY: 40 });
+            expect(screen.getByTestId('the-gang-chip-drag-ghost')).toBeInTheDocument();
+            expect(chipButton).toHaveAttribute('data-drag-source-hidden', 'true');
+            expect(handTarget).toHaveAttribute('data-the-gang-chip-drop-state', 'active');
+            expect(handTarget).toHaveAttribute('data-the-gang-drop-range-ui', 'open-right-gradient');
+            expect(handTarget).toHaveClass('the-gang-open-drop-target--active');
+            expect(handTarget.getAttribute('style') ?? '').not.toContain('outline');
+            fireEvent.pointerUp(chipButton!, { pointerId: 11, clientX: 40, clientY: 40 });
+        } finally {
+            restoreElementFromPoint();
+        }
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
+            __internalPlayerId: '0',
+            chip: 1,
+        });
+        expect(screen.getByTestId('the-gang-chip-transfer-animation')).toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-chip-drag-ghost')).not.toBeInTheDocument();
+    });
+
+    test('拖起本地筹码时所有合法可放区域常亮并突出命中槽', () => {
+        const dispatch = vi.fn();
+        const started = buildFourPlayerTwoHandFinalRoundCore();
+
+        renderWithToast(
+            <Board
+                G={stateOf(started)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={matchDataForPlayerCount(4)}
+                isConnected
+            />,
+        );
+
+        const chipButton = screen.getByTestId('the-gang-return-local-chip-top');
+        const topTarget = screen.getByTestId('the-gang-local-hand-top');
+        const bottomTarget = screen.getByTestId('the-gang-local-hand-bottom');
+        expect(screen.getByTestId('the-gang-local-hand-top-cards')).not.toHaveAttribute('data-the-gang-chip-drop-target');
+        expect(screen.getByTestId('the-gang-local-hand-bottom-cards')).not.toHaveAttribute('data-the-gang-chip-drop-target');
+        const poolTarget = document.querySelector('[data-bgg-zone="token-pile"]');
+        expect(poolTarget).toBeInTheDocument();
+
+        const restoreElementFromPoint = mockElementFromPoint(bottomTarget);
+        try {
+            fireEvent.pointerDown(chipButton, { pointerId: 12, button: 0, clientX: 12, clientY: 12 });
+            fireEvent.pointerMove(chipButton, { pointerId: 12, clientX: 48, clientY: 48 });
+
+            expect(screen.getByTestId('the-gang-chip-drag-ghost')).toBeInTheDocument();
+            expect(chipButton).toHaveAttribute('data-drag-source-hidden', 'true');
+            expect(bottomTarget).toHaveAttribute('data-the-gang-chip-drop-state', 'active');
+            expect(bottomTarget).toHaveAttribute('data-the-gang-drop-range-ui', 'open-right-gradient');
+            expect(bottomTarget).toHaveClass('the-gang-open-drop-target--active');
+            expect(bottomTarget.getAttribute('style') ?? '').not.toContain('outline');
+            expect(poolTarget).toHaveAttribute('data-the-gang-chip-drop-state', 'available');
+            expect(poolTarget).toHaveAttribute('data-the-gang-drop-range-ui', 'open-right-gradient');
+            expect(poolTarget).toHaveClass('the-gang-open-drop-target--available');
+            expect(topTarget).not.toHaveAttribute('data-the-gang-chip-drop-state');
+
+            fireEvent.pointerUp(chipButton, { pointerId: 12, clientX: 48, clientY: 48 });
+        } finally {
+            restoreElementFromPoint();
+        }
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
+            __internalPlayerId: '0',
+            chip: 1,
+            handSlot: 'bottom',
+        });
+    });
+
+    test('拖起本地筹码放回中间池时中间筹码池突出为 active', () => {
+        const dispatch = vi.fn();
+        const started = buildFourPlayerTwoHandFinalRoundCore();
+
+        renderWithToast(
+            <Board
+                G={stateOf(started)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={matchDataForPlayerCount(4)}
+                isConnected
+            />,
+        );
+
+        const chipButton = screen.getByTestId('the-gang-return-local-chip-top');
+        const topTarget = screen.getByTestId('the-gang-local-hand-top');
+        const bottomTarget = screen.getByTestId('the-gang-local-hand-bottom');
+        const poolTarget = document.querySelector('[data-bgg-zone="token-pile"]');
+        expect(poolTarget).toBeInTheDocument();
+
+        const restoreElementFromPoint = mockElementFromPoint(poolTarget);
+        try {
+            fireEvent.pointerDown(chipButton, { pointerId: 13, button: 0, clientX: 12, clientY: 12 });
+            fireEvent.pointerMove(chipButton, { pointerId: 13, clientX: 64, clientY: 64 });
+
+            expect(screen.getByTestId('the-gang-chip-drag-ghost')).toBeInTheDocument();
+            expect(chipButton).toHaveAttribute('data-drag-source-hidden', 'true');
+            expect(poolTarget).toHaveAttribute('data-the-gang-chip-drop-state', 'active');
+            expect(poolTarget).toHaveAttribute('data-the-gang-drop-range-ui', 'open-right-gradient');
+            expect(poolTarget).toHaveClass('the-gang-open-drop-target--active');
+            expect((poolTarget as HTMLElement).getAttribute('style') ?? '').not.toContain('outline');
+            expect(bottomTarget).toHaveAttribute('data-the-gang-chip-drop-state', 'available');
+            expect(bottomTarget).toHaveAttribute('data-the-gang-drop-range-ui', 'open-right-gradient');
+            expect(bottomTarget).toHaveClass('the-gang-open-drop-target--available');
+            expect(topTarget).not.toHaveAttribute('data-the-gang-chip-drop-state');
+
+            fireEvent.pointerUp(chipButton, { pointerId: 13, clientX: 64, clientY: 64 });
+        } finally {
+            restoreElementFromPoint();
+        }
+
+        expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.RETURN_CHIP, {
+            __internalPlayerId: '0',
+            handSlot: 'top',
+        });
+    });
+
+    test('收到其他玩家拖拽筹码事件时会在筹码上方显示操作者昵称', () => {
+        const dispatch = vi.fn();
+        const started = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
+        const uiEventListeners = new Set<(event: MatchUiEvent) => void>();
+        const subscribeUiEvent = vi.fn((listener: (event: MatchUiEvent) => void) => {
+            uiEventListeners.add(listener);
+            return () => uiEventListeners.delete(listener);
+        });
+
+        renderWithToast(
+            <Board
+                G={stateOf(started)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+                subscribeUiEvent={subscribeUiEvent}
+            />,
+        );
+
+        act(() => {
+            uiEventListeners.forEach((listener) => listener({
+                type: 'the-gang:chip-drag',
+                playerId: '1',
+                payload: {
+                    action: 'move',
+                    chip: 2,
+                    round: 1,
+                    x: 0.5,
+                    y: 0.42,
+                },
+                sentAt: 1,
+            }));
+        });
+
+        const remoteDrag = screen.getByTestId('the-gang-remote-chip-drag-1');
+        expect(within(remoteDrag).getByText('AI 2 号位')).toBeInTheDocument();
+
+        act(() => {
+            uiEventListeners.forEach((listener) => listener({
+                type: 'the-gang:chip-drag',
+                playerId: '1',
+                payload: { action: 'end' },
+                sentAt: 2,
+            }));
+        });
+
+        expect(screen.queryByTestId('the-gang-remote-chip-drag-1')).not.toBeInTheDocument();
+    });
+
+    test('拖拽筹码释放到无效区域不会派发选筹命令', () => {
+        const dispatch = vi.fn();
+        const started = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
+
+        renderWithToast(
+            <Board
+                G={stateOf(started)}
+                dispatch={dispatch as never}
+                playerID="0"
+                matchData={defaultMatchData}
+                isConnected
+            />,
+        );
+
+        const chipButton = document.querySelector('[data-bgg-zone="token-pile"] button');
+        expect(chipButton).toBeInTheDocument();
+
+        const restoreElementFromPoint = mockElementFromPoint(null);
+        try {
+            fireEvent.pointerDown(chipButton!, { pointerId: 12, button: 0, clientX: 10, clientY: 10 });
+            fireEvent.pointerMove(chipButton!, { pointerId: 12, clientX: 44, clientY: 44 });
+            fireEvent.pointerUp(chipButton!, { pointerId: 12, clientX: 44, clientY: 44 });
+        } finally {
+            restoreElementFromPoint();
+        }
+
+        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, expect.anything());
+        expect(dispatch).not.toHaveBeenCalledWith(THE_GANG_COMMANDS.RETURN_CHIP, expect.anything());
     });
 
     test('真实 Board 会把撤回状态提供给通用 HUD 上下文', () => {

@@ -17,6 +17,7 @@ import type {
     StateUpdateMeta,
     RandomSyncMeta,
     BatchDispatchMeta,
+    MatchUiEvent,
 } from './protocol';
 import { applyPatches } from './patch';
 
@@ -70,6 +71,7 @@ export type ClientConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 export class GameTransportClient {
     private readonly stateUpdateSubscribers = new Set<(state: unknown) => void>();
+    private readonly uiEventSubscribers = new Set<(event: MatchUiEvent) => void>();
     private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
     private readonly config: GameTransportClientConfig;
     private _connectionState: ClientConnectionState = 'disconnected';
@@ -119,6 +121,23 @@ export class GameTransportClient {
                 subscriber(state);
             } catch {
                 // 调试/辅助订阅者异常不应影响主同步链路
+            }
+        }
+    }
+
+    subscribeUiEvent(listener: (event: MatchUiEvent) => void): () => void {
+        this.uiEventSubscribers.add(listener);
+        return () => {
+            this.uiEventSubscribers.delete(listener);
+        };
+    }
+
+    private notifyUiEventSubscribers(event: MatchUiEvent): void {
+        for (const subscriber of this.uiEventSubscribers) {
+            try {
+                subscriber(event);
+            } catch {
+                // 临时 UI 订阅者异常不应影响权威状态同步。
             }
         }
     }
@@ -274,6 +293,11 @@ export class GameTransportClient {
             this.config.onPlayerConnectionChange?.(playerID, false);
         });
 
+        socket.on('ui:event', (matchID, event) => {
+            if (this._destroyed || matchID !== this.config.matchID) return;
+            this.notifyUiEventSubscribers(event);
+        });
+
         socket.on('disconnect', () => {
             if (this._destroyed) return;
             this._connectionState = 'disconnected';
@@ -309,6 +333,18 @@ export class GameTransportClient {
             'command',
             this.config.matchID,
             commandType,
+            payload,
+            this.config.credentials,
+        );
+    }
+
+    /** 发送临时 UI 事件；不进入权威游戏状态。 */
+    sendUiEvent(eventType: string, payload: unknown): void {
+        if (!this.socket || this._destroyed || this._connectionState !== 'connected') return;
+        this.socket.emit(
+            'ui:event',
+            this.config.matchID,
+            eventType,
             payload,
             this.config.credentials,
         );

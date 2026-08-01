@@ -1,4 +1,4 @@
-import { mkdirSync } from "fs";
+import { existsSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { dirname } from "path";
 import {
   expect,
@@ -232,7 +232,25 @@ export const warmBetrayalFrontend = async (
 
 export const saveScreenshot = async (page: Page, path: string) => {
   mkdirSync(dirname(path), { recursive: true });
-  await page.screenshot({ path, fullPage: false });
+  const image = await page.screenshot({ fullPage: false });
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const tempPath = `${path}.${process.pid}.${Date.now()}.${attempt}.tmp`;
+    try {
+      writeFileSync(tempPath, image);
+      renameSync(tempPath, path);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (existsSync(tempPath)) {
+        unlinkSync(tempPath);
+      }
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+  }
+  throw lastError;
 };
 
 export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
@@ -741,6 +759,29 @@ export function createExchangeReadyRuntimeCore(): BetrayalCore {
 
 export function createMedicalKitUseReadyRuntimeCore(): BetrayalCore {
   return createMedicalKitUseReadyCore();
+}
+
+export function createToothNecklaceEndTurnRuntimeCore(): BetrayalCore {
+  let core = createStartedFirstScenarioCore(["0", "1", "2"]);
+  core = focusBetrayalE2EExplorer(core, "0");
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    inventory: [
+      { id: "tooth-necklace", name: "牙齿项链", kind: "item" },
+    ],
+  };
+  setBetrayalE2ETraitTrack(core, "0", "might", [1, 2, 3], 0, 1);
+  setBetrayalE2ETraitTrack(core, "0", "speed", [1, 2, 3], 1, 1);
+  setBetrayalE2ETraitTrack(core, "0", "knowledge", [1, 2, 3], 1, 1);
+  setBetrayalE2ETraitTrack(core, "0", "sanity", [1, 2, 3], 1, 1);
+  syncBetrayalE2ECurrentExplorer(core);
+  core.usedCardIdsThisTurn = [];
+  core.pendingEventChoice = null;
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
+  core.recentRoll = null;
+  core.recommendedAction = "endTurn";
+  return core;
 }
 
 export function createHolyWaterUseReadyRuntimeCore(): BetrayalCore {

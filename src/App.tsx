@@ -45,6 +45,8 @@ const LocalMatchRoom = React.lazy(() => import('./pages/LocalMatchRoomWithAudio'
 const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'));
 const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
+const SummonerWarsConfigReviewPage = React.lazy(() => import('./pages/SummonerWarsConfigReview'));
+const DiceThroneConfigReviewPage = React.lazy(() => import('./pages/DiceThroneConfigReview'));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
 const EmptyToastViewport: React.FC = () => null;
 
@@ -290,6 +292,22 @@ const AppContent = () => {
                       element={(
                         <React.Suspense fallback={null}>
                           <LazyMaintenancePage />
+                        </React.Suspense>
+                      )}
+                    />
+                    <Route
+                      path="/games/summonerwars/config"
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <SummonerWarsConfigReviewPage />
+                        </React.Suspense>
+                      )}
+                    />
+                    <Route
+                      path="/games/dicethrone/config"
+                      element={(
+                        <React.Suspense fallback={null}>
+                          <DiceThroneConfigReviewPage />
                         </React.Suspense>
                       )}
                     />

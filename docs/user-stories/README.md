@@ -25,6 +25,7 @@
 - 召唤师战争：`docs/games/summonerwars/user-stories/ice-shards-attack-start-auto-2026-07-17.md`
 - 七大恨：`docs/games/qidahen/user-stories/population-token-no-material-exception-2026-07-07.md`
 - 山屋惊魂：`docs/games/betrayal/user-stories/first-haunt-mummy-runtime-scope-2026-07-28.md`
+- 山屋惊魂：`docs/games/betrayal/user-stories/board-ui-trait-haunt-status-contract-2026-07-31.md`
 - SmashUp：`docs/games/smashup/user-stories/body-shop-sentence-boundary-2026-05-23.md`
 - SmashUp：`docs/games/smashup/user-stories/controller-does-not-transfer-ownership-2026-06-06.md`
 - SmashUp：`docs/games/smashup/user-stories/bear-necessities-minions-and-base-actions-2026-06-07.md`

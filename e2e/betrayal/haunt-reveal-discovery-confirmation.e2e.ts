@@ -368,10 +368,8 @@ test('普通预兆未触发作祟时仍显示获得预兆和作祟检定两步�
     await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveCount(0);
     await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆前|pre-haunt/i);
     await expect(page.locator('[data-testid="betrayal-inventory-dog-0"]')).toBeVisible();
-    const deckLedger = page.getByTestId('betrayal-deck-resolution-ledger');
-    await expect(deckLedger).toHaveAttribute('data-discovery-kind', 'omen');
-    await expect(deckLedger).toHaveAttribute('data-discovery-title', '狗');
-    await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(2);
+    await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(0);
     await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
         phase: 'preHaunt',
         pendingSteps: [],

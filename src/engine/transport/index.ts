@@ -17,6 +17,7 @@ export type {
 // 协议类型
 export type {
     MatchPlayerInfo,
+    MatchUiEvent,
     ClientToServerEvents,
     ServerToClientEvents,
     GameBoardProps,

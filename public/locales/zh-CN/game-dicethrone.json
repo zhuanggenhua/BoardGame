@@ -1,4 +1,166 @@
 {
+  "configReview": {
+    "title": "骰子王权配置表",
+    "actions": {
+      "back": "返回",
+      "clearEdits": "清空修改",
+      "submitBatch": "提交 {{count}} 处修改",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "magnify": "放大查看 {{name}}",
+      "closePreview": "关闭预览"
+    },
+    "stats": {
+      "compactStatus": "{{version}}｜显示 {{visible}} / {{total}}｜本页 {{pageRows}}"
+    },
+    "filters": {
+      "searchPlaceholder": "搜索英雄、卡牌、技能、标记、字段值…",
+      "allCharacters": "全部英雄"
+    },
+    "types": {
+      "all": "全部类型",
+      "character": "英雄",
+      "diceFace": "骰面",
+      "ability": "技能",
+      "card": "卡牌",
+      "token": "标记/状态"
+    },
+    "columns": {
+      "image": "卡图",
+      "name": "名称",
+      "id": "编号",
+      "character": "英雄",
+      "rowType": "类型",
+      "sourceContexts": "配置来源",
+      "startingCp": "开局 CP",
+      "startingHealth": "开局生命",
+      "cpMax": "CP 上限",
+      "handLimit": "手牌上限",
+      "startingHandSize": "起手牌数",
+      "diceDefinitionId": "骰子定义",
+      "diceValue": "骰值",
+      "diceSymbols": "骰面符号",
+      "diceSprite": "骰子素材",
+      "abilityType": "技能类型",
+      "trigger": "触发条件",
+      "tags": "标签",
+      "effects": "效果配置",
+      "variants": "变体",
+      "initialAbilityLevel": "初始技能等级",
+      "passiveAbilities": "被动能力",
+      "cardType": "卡牌类型",
+      "cpCost": "CP 费用",
+      "timing": "使用时机",
+      "description": "描述",
+      "playCondition": "使用条件",
+      "isAttackModifier": "攻击修正",
+      "previewAtlas": "卡图图集",
+      "previewIndex": "卡图索引",
+      "sourceAtlasIndex": "源图索引",
+      "tokenCategory": "标记分类",
+      "stackLimit": "堆叠上限",
+      "initialTokenAmount": "初始标记",
+      "initialStatusAmount": "初始状态",
+      "passiveTrigger": "被动触发",
+      "activeUse": "主动使用",
+      "frameId": "帧编号",
+      "tokenAtlasId": "标记图集",
+      "statusAtlasId": "状态图集",
+      "statusAtlasPath": "状态图集路径",
+      "sfxKey": "音效"
+    },
+    "fields": {
+      "name": "名称",
+      "id": "编号",
+      "character": "英雄",
+      "rowType": "类型",
+      "sourceContexts": "配置来源",
+      "startingCp": "开局 CP",
+      "startingHealth": "开局生命",
+      "cpMax": "CP 上限",
+      "handLimit": "手牌上限",
+      "startingHandSize": "起手牌数",
+      "diceDefinitionId": "骰子定义",
+      "diceValue": "骰值",
+      "diceSymbols": "骰面符号",
+      "diceSprite": "骰子素材",
+      "abilityType": "技能类型",
+      "trigger": "触发条件",
+      "tags": "标签",
+      "effects": "效果配置",
+      "variants": "变体",
+      "initialAbilityLevel": "初始技能等级",
+      "passiveAbilities": "被动能力",
+      "cardType": "卡牌类型",
+      "cpCost": "CP 费用",
+      "timing": "使用时机",
+      "description": "描述",
+      "playCondition": "使用条件",
+      "isAttackModifier": "是否攻击修正",
+      "previewAtlas": "卡图图集",
+      "previewIndex": "卡图索引",
+      "sourceAtlasIndex": "源图索引",
+      "tokenCategory": "标记分类",
+      "stackLimit": "堆叠上限",
+      "initialTokenAmount": "初始标记数量",
+      "initialStatusAmount": "初始状态数量",
+      "passiveTrigger": "被动触发配置",
+      "activeUse": "主动使用配置",
+      "frameId": "帧编号",
+      "tokenAtlasId": "标记图集",
+      "statusAtlasId": "状态图集",
+      "statusAtlasPath": "状态图集路径",
+      "sfxKey": "音效"
+    },
+    "values": {
+      "boolean": {
+        "true": "是",
+        "false": "否"
+      },
+      "cardType": {
+        "action": "行动牌",
+        "upgrade": "升级牌"
+      },
+      "timing": {
+        "main": "主要阶段",
+        "roll": "掷骰阶段",
+        "instant": "瞬时"
+      },
+      "abilityType": {
+        "offensive": "进攻",
+        "defensive": "防御",
+        "utility": "功能",
+        "passive": "被动"
+      },
+      "tokenCategory": {
+        "buff": "正面状态",
+        "debuff": "负面状态",
+        "consumable": "可消耗标记"
+      }
+    },
+    "feedback": {
+      "pendingCount": "待提交 {{count}} 处",
+      "invalidCount": "{{count}} 处格式错误",
+      "emptyCell": "空",
+      "cellEditHint": "双击单元格修改，最后统一提交",
+      "rawValueLabel": "原始值",
+      "invalidNumber": "请输入数字",
+      "invalidBoolean": "请输入 是/否",
+      "initialBatchContent": "我想提交 {{count}} 处骰子王座配置修改，请审查是否应该进入配置源。"
+    },
+    "tableScroll": {
+      "primaryHint": "横向内容请使用底部原生滚动条或触控板横滑",
+      "secondaryHint": "普通滚轮上下滚动；双击单元格后再修改"
+    },
+    "pagination": {
+      "visibleRange": "当前显示 {{start}}-{{end}} / {{total}}",
+      "pageSize": "每页",
+      "pageStatus": "第 {{page}} / {{total}} 页"
+    },
+    "material": {
+      "noPreview": "此行不是卡牌，或卡图未配置"
+    }
+  },
   "phase": {
     "title": "回合顺序",
     "setup": {

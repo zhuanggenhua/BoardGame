@@ -14,10 +14,10 @@ import {
   warmBetrayalFrontend,
 } from "./betrayalTestHelpers";
 
-const EVIDENCE_DIR = "evidence/山屋惊魂-圣符探索声明完整链路";
-const BEFORE_DECLARE_SCREENSHOT = `${EVIDENCE_DIR}/01-圣符声明前牌桌可操作.jpg`;
-const DECLARED_SCREENSHOT = `${EVIDENCE_DIR}/02-圣符探索声明已选中.jpg`;
-const CANCELED_SCREENSHOT = `${EVIDENCE_DIR}/03-取消圣符声明后回到未声明.jpg`;
+const EVIDENCE_DIR = "evidence/山屋惊魂-圣符探索前持有物完整链路";
+const BEFORE_DECLARE_SCREENSHOT = `${EVIDENCE_DIR}/01-圣符选择前牌桌可操作.jpg`;
+const DECLARED_SCREENSHOT = `${EVIDENCE_DIR}/02-圣符探索前持有物已选中.jpg`;
+const CANCELED_SCREENSHOT = `${EVIDENCE_DIR}/03-取消圣符选择后回到未选中.jpg`;
 const TARGET_SELECTION_SCREENSHOT = `${EVIDENCE_DIR}/04-重新声明后选择未知房间.jpg`;
 const SETTLED_SCREENSHOT = `${EVIDENCE_DIR}/05-圣符替换房间并结算事件.jpg`;
 const DISMISSED_SCREENSHOT = `${EVIDENCE_DIR}/06-关闭后回牌桌继续可操作.jpg`;
@@ -44,6 +44,12 @@ async function readCurrentCore(page: Page): Promise<BetrayalCore> {
 
 async function dismissDiscoveryPanel(page: Page) {
   const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
+  const continueButton = page.getByTestId("betrayal-discovery-continue");
+  if (await continueButton.isVisible().catch(() => false)) {
+    await continueButton.click();
+    await expect(discoveryPanel).toBeHidden({ timeout: 30000 });
+    return;
+  }
   const blankPoint = await discoveryPanel.evaluate((panel) => {
     const panelRect = panel.getBoundingClientRect();
     const content = panel.querySelector(
@@ -97,7 +103,7 @@ function createHolySymbolExploreDeclarationCore(): BetrayalCore {
     },
   ];
   core.roomDiscoveryOrderByFloor.upper = [
-    roomByVisualId("upper", "mysticElevator"),
+    roomByVisualId("upper", "gallery"),
     roomByVisualId("upper", "collapsedRoom"),
   ];
   core.currentExplorer = {
@@ -132,8 +138,8 @@ async function readHolySymbolButtonMetrics(page: Page) {
     });
 }
 
-test.describe("山屋惊魂圣符探索声明完整链路", () => {
-  test("真实页面声明圣符、取消、重新声明、探索并收口", async ({
+test.describe("山屋惊魂圣符探索前持有物完整链路", () => {
+  test("真实页面选择圣符、取消、重新选择、探索并收口", async ({
     page,
     context,
   }) => {
@@ -168,7 +174,7 @@ test.describe("山屋惊魂圣符探索声明完整链路", () => {
     await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
     await expect(
       page.getByTestId("betrayal-room-upper-north"),
-    ).toHaveAccessibleName(/未探索.*(上层|二层).*可探索/);
+    ).toHaveAccessibleName(/未探索.*(上层|二层).*尚未翻出/);
     const beforeMetrics = await readHolySymbolButtonMetrics(page);
     expect(
       beforeMetrics.height,
@@ -178,25 +184,18 @@ test.describe("山屋惊魂圣符探索声明完整链路", () => {
       beforeMetrics.width,
       "圣符声明按钮必须保留可点击宽度",
     ).toBeGreaterThanOrEqual(38);
-    expect(
-      beforeMetrics.backgroundColor,
-      "圣符声明按钮应保持开放式透明样式",
-    ).toMatch(/rgba\(0,\s*0,\s*0,\s*0\)/);
-    expect(beforeMetrics.borderTopWidth, "圣符声明按钮不应新增背景框边线").toBe(
-      "0px",
-    );
     await saveScreenshot(page, BEFORE_DECLARE_SCREENSHOT);
 
     await page.getByTestId("betrayal-explore-option-holy-symbol").click();
     await expect(
       page.getByTestId("betrayal-explore-option-holy-symbol"),
-    ).toHaveClass(/text-\[#eef4a8\]/);
+    ).toHaveClass(/bg-\[rgba\(214,181,109,0\.24\)\]/);
     await saveScreenshot(page, DECLARED_SCREENSHOT);
 
     await page.getByTestId("betrayal-explore-option-holy-symbol").click();
     await expect(
       page.getByTestId("betrayal-explore-option-holy-symbol"),
-    ).not.toHaveClass(/text-\[#eef4a8\]/);
+    ).not.toHaveClass(/bg-\[rgba\(214,181,109,0\.24\)\]/);
     await saveScreenshot(page, CANCELED_SCREENSHOT);
 
     await page.getByTestId("betrayal-explore-option-holy-symbol").click();
@@ -207,6 +206,12 @@ test.describe("山屋惊魂圣符探索声明完整链路", () => {
     await saveScreenshot(page, TARGET_SELECTION_SCREENSHOT);
 
     await page.getByTestId("betrayal-room-upper-north").click();
+    const placementPanel = page.getByTestId("betrayal-room-placement-panel");
+    await expect(placementPanel).toBeVisible({ timeout: 30000 });
+    await expect(placementPanel).toContainText("长廊");
+    await expect(placementPanel).toContainText("已掩埋：倒塌房间");
+    await page.getByTestId("betrayal-room-placement-confirm").click();
+    await expect(placementPanel).toBeHidden({ timeout: 30000 });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toHaveAttribute(
       "aria-label",
@@ -220,7 +225,7 @@ test.describe("山屋惊魂圣符探索声明完整链路", () => {
     ).toContainText("圣符埋葬倒塌房间");
     await expect(
       page.getByTestId("betrayal-room-latest-feedback"),
-    ).toContainText("继续发现神秘电梯");
+    ).toContainText("继续发现长廊");
     const settledCore = await readCurrentCore(page);
     const discoveredRoom = settledCore.rooms.find(
       (room) => room.id === "upper-north",
@@ -228,8 +233,9 @@ test.describe("山屋惊魂圣符探索声明完整链路", () => {
     expect(
       discoveredRoom?.name,
       "圣符声明后最终进入牌桌的必须是替换后的房间",
-    ).toBe("神秘电梯");
-    expect(discoveredRoom?.visualId).toBe("mysticElevator");
+    ).toBe("长廊");
+    expect(discoveredRoom?.visualId).toBe("gallery");
+    expect(discoveredRoom?.discoveryReward).toBe("event");
     expect(
       discoveredRoom?.endTurnEffect,
       "被圣符埋葬的倒塌房间坠落效果不能落到牌桌",
@@ -240,7 +246,7 @@ test.describe("山屋惊魂圣符探索声明完整链路", () => {
     ).toContain("holy-symbol");
     await expect(
       page.getByTestId("betrayal-room-upper-north"),
-    ).toHaveAccessibleName(/神秘电梯/);
+    ).toHaveAccessibleName(/长廊/);
     await saveScreenshot(page, SETTLED_SCREENSHOT);
 
     await dismissDiscoveryPanel(page);
@@ -254,7 +260,7 @@ test.describe("山屋惊魂圣符探索声明完整链路", () => {
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-room-upper-north"),
-    ).toHaveAccessibleName(/神秘电梯/);
+    ).toHaveAccessibleName(/长廊/);
     await saveScreenshot(page, DISMISSED_SCREENSHOT);
 
     assertNoFatalFrontendErrors([

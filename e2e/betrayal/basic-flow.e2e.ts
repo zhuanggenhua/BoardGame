@@ -19,6 +19,7 @@ const SCENARIO_SELECT_ENTRY_SCREENSHOT = `${EVIDENCE_DIR}/02a-山屋惊魂-基�
 const SCENARIO_SELECT_DETAIL_SCREENSHOT = `${EVIDENCE_DIR}/02b-山屋惊魂-基本流程-书本式剧本阅读首页.png`;
 const SCENARIO_SELECT_DETAIL_TURNING_SCREENSHOT = `${EVIDENCE_DIR}/02c-山屋惊魂-基本流程-书本式剧本翻页中.png`;
 const SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT = `${EVIDENCE_DIR}/02d-山屋惊魂-基本流程-书本式剧本阅读末页.png`;
+const START_SCENARIO_OPENING_SCREENSHOT = `${EVIDENCE_DIR}/03a-山屋惊魂-开始剧本后开局过场.png`;
 const RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-基本流程-运行时.png`;
 const INVENTORY_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-基本流程-持有物放大.png`;
 const USE_ITEM_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-基本流程-使用物品.png`;
@@ -240,44 +241,43 @@ test.describe("山屋惊魂基本流程", () => {
       scenarioReaderDialog.getByTestId("betrayal-scenario-book-section-endingTraitor"),
     ).toContainText("结局");
     await saveScreenshot(page, SCENARIO_SELECT_DETAIL_BOTTOM_SCREENSHOT);
-    await page.waitForTimeout(400);
-    await page.mouse.click(12, 12);
+    await scenarioReaderDialog
+      .getByTestId("betrayal-scenario-reader-close")
+      .click();
     await expect(
       page.getByTestId("betrayal-scenario-reader-dialog"),
     ).toBeHidden();
     const scenarioSelectDialog = page.getByTestId(
       "betrayal-scenario-select-dialog",
     );
-    const scenarioSelectStillOpen = await scenarioSelectDialog
-      .isVisible({ timeout: 800 })
+    await expect(scenarioSelectDialog).toBeVisible();
+    await scenarioSelectDialog.getByTestId("betrayal-scenario-dialog-close").click();
+    await expect(scenarioSelectDialog).toBeHidden({ timeout: 5000 });
+    const characterConfirm = page.getByTestId("betrayal-character-confirm");
+    await expect(characterConfirm).toBeVisible({ timeout: 10000 });
+    await expect(characterConfirm).toHaveText(/确认此剧本卡/);
+    await characterConfirm.click();
+
+    const startScenarioOpeningStage = page.getByTestId(
+      "betrayal-start-scenario-opening-stage",
+    );
+    const startedAfterScenarioConfirmation = await startScenarioOpeningStage
+      .isVisible({ timeout: 2000 })
       .catch(() => false);
-    if (scenarioSelectStillOpen) {
-      await Promise.race([
-        scenarioSelectDialog
-          .waitFor({ state: "hidden", timeout: 3000 })
-          .catch(() => null),
-        page
-          .getByTestId("betrayal-scenario-select-current")
-          .click({ timeout: 3000 })
-          .catch(() => null),
-      ]);
-      await expect(scenarioSelectDialog).toBeHidden({ timeout: 5000 });
+    if (!startedAfterScenarioConfirmation) {
+      await expect(characterConfirm).toHaveText(/开始剧本/);
+      await characterConfirm.click();
     }
-    const boardOrConfirm = await Promise.race([
-      page
-        .getByTestId("betrayal-board")
-        .waitFor({ state: "visible", timeout: 5000 })
-        .then(() => "board" as const)
-        .catch(() => null),
-      page
-        .getByTestId("betrayal-character-confirm")
-        .waitFor({ state: "visible", timeout: 5000 })
-        .then(() => "confirm" as const)
-        .catch(() => null),
-    ]);
-    if (boardOrConfirm === "confirm") {
-      await page.getByTestId("betrayal-character-confirm").click();
-    }
+    await expect(startScenarioOpeningStage).toBeVisible({ timeout: 30000 });
+    await expect(
+      page.getByTestId("betrayal-start-scenario-opening-cinematic"),
+    ).toContainText("木乃伊横行");
+    await expect(
+      page.getByTestId("betrayal-start-scenario-opening-source-status"),
+    ).toContainText("本地规则源正文");
+    await saveScreenshot(page, START_SCENARIO_OPENING_SCREENSHOT);
+    await page.getByTestId("betrayal-start-scenario-opening-continue").click();
+    await expect(startScenarioOpeningStage).toHaveCount(0);
 
     await expect(page.getByTestId("betrayal-board")).toBeVisible({
       timeout: 30000,

@@ -198,6 +198,7 @@ export const THE_GANG_COMMANDS = {
     START_HEIST: 'START_HEIST',
     REDEAL_HEIST: 'REDEAL_HEIST',
     TAKE_CHIP: 'TAKE_CHIP',
+    RETURN_CHIP: 'RETURN_CHIP',
     TAKE_EXIT_CHIP: 'TAKE_EXIT_CHIP',
     SET_RULES_CONFIG: 'SET_RULES_CONFIG',
     DEAL_TOOLS: 'DEAL_TOOLS',
@@ -224,6 +225,12 @@ export interface TakeChipCommand extends Command<typeof THE_GANG_COMMANDS.TAKE_C
         handSlot?: TheGangHandSlot;
         tutorialChipMode?: TheGangTutorialChipMode;
         tutorialOnlyIfMissing?: boolean;
+    };
+}
+
+export interface ReturnChipCommand extends Command<typeof THE_GANG_COMMANDS.RETURN_CHIP> {
+    payload: {
+        handSlot?: TheGangHandSlot;
     };
 }
 
@@ -279,6 +286,7 @@ export type TheGangCommand =
     | StartHeistCommand
     | RedealHeistCommand
     | TakeChipCommand
+    | ReturnChipCommand
     | TakeExitChipCommand
     | SetRulesConfigCommand
     | DealToolsCommand
@@ -299,6 +307,7 @@ export type TheGangCommandMap = {
         tutorialChipMode?: TheGangTutorialChipMode;
         tutorialOnlyIfMissing?: boolean;
     };
+    [THE_GANG_COMMANDS.RETURN_CHIP]: { handSlot?: TheGangHandSlot };
     [THE_GANG_COMMANDS.TAKE_EXIT_CHIP]: { handSlot?: TheGangHandSlot };
     [THE_GANG_COMMANDS.SET_RULES_CONFIG]: { config: Partial<TheGangRulesConfig> };
     [THE_GANG_COMMANDS.DEAL_TOOLS]: Record<string, never>;
@@ -315,6 +324,7 @@ export const THE_GANG_EVENTS = {
     HEIST_STARTED: 'HEIST_STARTED',
     HEIST_REDEALT: 'HEIST_REDEALT',
     CHIP_TAKEN: 'CHIP_TAKEN',
+    CHIP_RETURNED: 'CHIP_RETURNED',
     EXIT_CHIP_TAKEN: 'EXIT_CHIP_TAKEN',
     RULES_CONFIG_SET: 'RULES_CONFIG_SET',
     TOOLS_DEALT: 'TOOLS_DEALT',
@@ -344,6 +354,16 @@ export interface HeistRedealtEvent extends GameEvent<typeof THE_GANG_EVENTS.HEIS
 }
 
 export interface ChipTakenEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_TAKEN> {
+    payload: {
+        playerId: PlayerId;
+        ownerKey: string;
+        handSlot?: TheGangHandSlot;
+        round: TheGangRound;
+        chip: number;
+    };
+}
+
+export interface ChipReturnedEvent extends GameEvent<typeof THE_GANG_EVENTS.CHIP_RETURNED> {
     payload: {
         playerId: PlayerId;
         ownerKey: string;
@@ -413,7 +433,7 @@ export interface HandSwapStartedEvent extends GameEvent<typeof THE_GANG_EVENTS.H
 export interface HandSwapConfirmedEvent extends GameEvent<typeof THE_GANG_EVENTS.HAND_SWAP_CONFIRMED> {
     payload: {
         playerId: PlayerId;
-        approvals: PlayerId[];
+        approvals?: PlayerId[];
         topIndex?: number;
         bottomIndex?: number;
     };
@@ -453,6 +473,7 @@ export type TheGangEvent =
     | HeistStartedEvent
     | HeistRedealtEvent
     | ChipTakenEvent
+    | ChipReturnedEvent
     | ExitChipTakenEvent
     | RulesConfigSetEvent
     | ToolsDealtEvent

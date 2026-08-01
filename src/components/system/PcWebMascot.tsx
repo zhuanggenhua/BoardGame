@@ -12,6 +12,10 @@ const COMMUNITY_QQ_GROUP = '1081373485';
 const shouldHideOnRoute = (pathname: string) => (
     pathname === '/play'
     || pathname.startsWith('/play/')
+    || pathname === '/games/summonerwars/config'
+    || pathname.startsWith('/games/summonerwars/config/')
+    || pathname === '/games/dicethrone/config'
+    || pathname.startsWith('/games/dicethrone/config/')
     || pathname.startsWith('/admin')
     || pathname.startsWith('/dev')
 );

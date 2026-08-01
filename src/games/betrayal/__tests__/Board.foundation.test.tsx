@@ -292,14 +292,14 @@ function HarnessBoardWithRandom({ initialCore, playerID = '0', matchData, diceRe
     );
 }
 
-function renderBoard(
+function renderBoardTree(
     core: MatchState<Record<string, unknown>>['core'],
     options?: {
         playerID?: string;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
     },
 ) {
-    return render(
+    return (
         <ToastProvider>
             <TutorialProvider>
                 <GameModeProvider mode="local">
@@ -315,7 +315,7 @@ function renderBoard(
                     />
                 </GameModeProvider>
             </TutorialProvider>
-        </ToastProvider>,
+        </ToastProvider>
     );
 }
 
@@ -343,7 +343,19 @@ function renderBoardWithDispatch(
                     />
                 </GameModeProvider>
             </TutorialProvider>
-        </ToastProvider>,
+        </ToastProvider>
+    );
+}
+
+function renderBoard(
+    core: MatchState<Record<string, unknown>>['core'],
+    options?: {
+        playerID?: string;
+        matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
+    },
+) {
+    return render(
+        renderBoardTree(core, options),
     );
 }
 
@@ -626,6 +638,7 @@ function createHelpingHandsHauntOpeningBoardCore(playerIds: string[] = ['0', '1'
     };
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
     core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    setNextBoardDiscoveryRoom(core, 'ground', 'kitchen');
 
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
     core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
@@ -771,6 +784,7 @@ function createMagicCameraHauntRevealBoardCore(cameraOwnerPlayerId: string | nul
     let core = createStartedFirstScenarioCore(['0', '1', '2']);
     core.drawOrder = ['event'];
     core.eventOrder = [BETRAYAL_DISCOVERY_POOLS.events.find((event) => event.name === '说“茄子”！')!];
+    setNextBoardDiscoveryRoom(core, 'ground', 'kitchen');
     core.currentExplorer = removeMagicCameraFromBoardExplorer(core.currentExplorer);
     core.otherExplorers = core.otherExplorers.map(removeMagicCameraFromBoardExplorer);
     core.currentExplorer.inventory = [
@@ -1322,6 +1336,63 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-character-confirm')).toHaveTextContent('开始剧本');
     });
 
+    it('点击开始剧本后先显示开局电影字幕，再进入牌桌', async () => {
+        render(
+            <HarnessBoard
+                initialCore={createBetrayalCharacterSelectCore(['0', '1', '2'])}
+                playerID="0"
+                matchData={defaultMatchData.slice(0, 3)}
+            />,
+        );
+
+        fireEvent.click(
+            within(screen.getByTestId('betrayal-character-mobile-grid'))
+                .getByTestId('betrayal-character-card-jaden-jones'),
+        );
+        fireEvent.click(screen.getByTestId('betrayal-character-confirm'));
+        expect(screen.getByTestId('betrayal-character-confirm')).toHaveTextContent('确认此剧本卡');
+
+        fireEvent.click(screen.getByTestId('betrayal-character-confirm'));
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-character-confirm')).toHaveTextContent('开始剧本');
+            expect(screen.getByTestId('betrayal-character-confirm')).not.toBeDisabled();
+        });
+
+        fireEvent.click(screen.getByTestId('betrayal-character-confirm'));
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-start-scenario-opening-stage')).toBeInTheDocument();
+        });
+        expect(screen.getByTestId('betrayal-start-scenario-opening-cinematic')).toHaveTextContent('木乃伊横行');
+        expect(screen.getByTestId('betrayal-start-scenario-opening-source-status')).toHaveTextContent('本地规则源正文');
+
+        fireEvent.click(screen.getByTestId('betrayal-start-scenario-opening-continue'));
+        await waitFor(() => {
+            expect(screen.queryByTestId('betrayal-start-scenario-opening-stage')).not.toBeInTheDocument();
+        });
+        expect(screen.getByTestId('betrayal-room-grid')).toBeInTheDocument();
+    });
+
+    it('直接注入恶兆前牌桌时不强制弹开局电影字幕', async () => {
+        const view = renderBoard(createBetrayalCharacterSelectCore(['0', '1', '2']), {
+            playerID: '0',
+            matchData: defaultMatchData.slice(0, 3),
+        });
+
+        expect(screen.getByTestId('betrayal-character-confirm')).toBeInTheDocument();
+
+        view.rerender(
+            renderBoardTree(createStartedFirstScenarioCore(['0', '1', '2']), {
+                playerID: '0',
+                matchData: defaultMatchData.slice(0, 3),
+            }),
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('betrayal-room-grid')).toBeInTheDocument();
+        });
+        expect(screen.queryByTestId('betrayal-start-scenario-opening-stage')).not.toBeInTheDocument();
+    });
+
     it('角色选择阶段必须显示共同确认进度，不能只靠单名玩家确认就开局', () => {
         let core = createBetrayalCharacterSelectCore(['0', '1', '2']);
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
@@ -1372,7 +1443,13 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent('特性：');
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent(/\S+：\S+/);
         const currentTraits = screen.getByTestId('betrayal-current-traits');
+        expect(currentTraits.querySelector('[data-trait-track-rail="true"]')).toBeInTheDocument();
         expect(currentTraits.querySelector('[data-trait-track-slot="true"]')).toBeInTheDocument();
+        expect(currentTraits.querySelector('[data-trait-track-pointer="true"]')).toBeInTheDocument();
+        const skullEndpoint = currentTraits.querySelector('[data-trait-track-skull="true"]');
+        expect(skullEndpoint).toBeInTheDocument();
+        expect(skullEndpoint).toHaveAttribute('title', expect.stringContaining('死亡格'));
+        expect(currentTraits.querySelector('[data-trait-track-start-marker="true"]')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-current-trait-track-might')).toHaveAttribute('data-trait-track-position');
         expect(within(currentTraits).getByText('力量').parentElement).toHaveClass('text-[#e8b09f]');
         expect(within(currentTraits).getByText('速度').parentElement).toHaveClass('text-[#ebdca1]');
@@ -1433,7 +1510,8 @@ describe('Betrayal Board foundation', () => {
         const speedTrack = screen.getByTestId('betrayal-current-trait-track-speed');
         expect(speedTrack).toHaveAttribute('data-trait-track-position', '1');
         expect(speedTrack).toHaveAttribute('data-trait-track-value', '3');
-        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-current', 'true');
+        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '1');
+        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
         expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveTextContent('3');
         expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveAttribute('data-trait-track-current', 'false');
 
@@ -1472,7 +1550,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-explorer-detail-token-1')).toHaveAttribute('data-token-asset', rebecca.portraitAsset);
     });
 
-    it('牌堆区常驻显示作祟风险，并按全员预兆总数显示下次骰数', () => {
+    it('牌堆区常驻显示预兆状态，并隐藏完整作祟检定规则说明', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.currentExplorer.inventory = [
             { id: 'item-alpha', name: '物品A', kind: 'item' },
@@ -1500,12 +1578,20 @@ describe('Betrayal Board foundation', () => {
         expect(riskStatus).toHaveAttribute('data-next-dice-count', '4');
         expect(riskStatus).toHaveAttribute('data-threshold', '5');
         expect(riskStatus).toHaveAttribute('data-haunt-started', 'false');
-        expect(riskStatus).toHaveTextContent('作祟风险');
-        expect(riskStatus).toHaveTextContent('预兆 3 / 下次掷 4 颗 / 5+ 作祟');
+        expect(riskStatus).toHaveTextContent('预兆状态');
+        expect(riskStatus).toHaveTextContent('预兆 3');
+        expect(riskStatus).not.toHaveTextContent(/下次掷|5\+ 作祟|再抽预兆时检定/);
+        expect(riskStatus).toHaveAttribute('title', expect.stringContaining('抽预兆后作祟检定'));
+        expect(riskStatus).toHaveAttribute('title', expect.stringContaining('5+ 作祟'));
         const riskProgress = screen.getByTestId('betrayal-haunt-risk-progress');
         expect(riskProgress).toHaveAttribute('data-number-track-id', 'haunt-risk');
-        expect(riskProgress).toHaveAttribute('data-progress-percent', '38');
-        expect(riskProgress).toHaveAttribute('aria-valuenow', '38');
+        expect(riskProgress).toHaveAttribute('data-track-min', '0');
+        expect(riskProgress).toHaveAttribute('data-track-max', '9');
+        expect(riskProgress).toHaveAttribute('data-current-omen-count', '3');
+        expect(riskProgress).toHaveAttribute('data-progress-percent', '33');
+        expect(riskProgress).toHaveAttribute('aria-valuenow', '3');
+        expect(screen.getAllByTestId('betrayal-haunt-risk-slot')).toHaveLength(10);
+        expect(screen.getByTestId('betrayal-haunt-risk-pointer')).toHaveAttribute('data-progress-percent', '33');
     });
 
     it('局内首剧本入口按英雄身份打开英雄剧本书并隐藏叛徒秘密页', () => {
@@ -1680,13 +1766,15 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-scenario-reader-dialog')).not.toBeInTheDocument();
     });
 
-    it('首剧本作祟检定只写作祟开始时也不自动打开剧本书，但可手动查阅', async () => {
+    it('首剧本作祟检定只写检定结果时也不自动打开剧本书，但可手动查阅', async () => {
         const core = createFirstScenarioHauntCore();
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntCardNumber).toBe(1);
         expect(core.scenarioRuntime.hauntScenarioCardTitle).toBe('木乃伊横行');
         expect(core.scenarioRuntime.triggeringOmenName).toBeTruthy();
-        expect(core.latestDiscovery?.detail).toContain('作祟开始');
+        expect(core.latestDiscovery?.detail).toContain('作祟检定');
+        expect(core.latestDiscovery?.detail).toContain('已触发');
+        expect(core.latestDiscovery?.detail).not.toContain(['5+', '作祟开始'].join(' '));
         expect(core.latestDiscovery?.detail).not.toContain('剧本');
         expect(core.pendingCardResolutionQueue).toEqual([]);
 
@@ -2280,6 +2368,76 @@ describe('Betrayal Board foundation', () => {
         });
     });
 
+    it('木乃伊普通移动点完目标后仍保持连续移动选择态', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const mummyRuntime = core.scenarioRuntime.mummy!;
+        const mummyMonsterId = mummyRuntime.mummyMonsterId;
+        const mummyRoom = core.rooms.find((room) => (
+            room.id === core.monsters.find((monster) => monster.id === mummyMonsterId)?.roomId
+        ));
+        if (!mummyRoom) {
+            throw new Error('木乃伊连续移动测试夹具缺少木乃伊房间');
+        }
+        const quietRoomId = core.rooms.find((room) => (
+            room.state === 'discovered'
+            && room.id !== mummyRoom.id
+            && room.id !== mummyRuntime.girlRoomId
+        ))?.id ?? mummyRuntime.girlRoomId!;
+        core = activateBoardExplorer(core, traitorId);
+        core.otherExplorers = core.otherExplorers.map((explorer) => (
+            explorer.playerId === traitorId
+                ? explorer
+                : { ...explorer, roomId: quietRoomId }
+        ));
+        core.scenarioRuntime.monsterTurn = {
+            ...core.scenarioRuntime.monsterTurn,
+            resolvedStartMonsterIds: [mummyMonsterId],
+            movementRollsByGroupId: {
+                '木乃伊:3': {
+                    groupId: '木乃伊:3',
+                    monsterName: '木乃伊',
+                    monsterIds: [mummyMonsterId],
+                    playerId: traitorId,
+                    speed: 3,
+                    diceCount: 3,
+                    dice: [1, 1, 1],
+                    total: 3,
+                    moveAllowance: 3,
+                    rollOnceForGroup: true,
+                    minimumMoveAllowance: 0,
+                },
+            },
+            moveRemainingById: {
+                [mummyMonsterId]: 3,
+            },
+        };
+        core = dismissBlockingBoardOverlays(core);
+
+        const targetRoom = resolveBetrayalMonsterMoveTargetRooms(core, mummyMonsterId)
+            .find((room) => room.floor === mummyRoom.floor)
+            ?? resolveBetrayalMonsterMoveTargetRooms(core, mummyMonsterId)[0];
+        expect(targetRoom).toBeDefined();
+
+        const dispatch = vi.fn();
+        renderBoardWithDispatch(core, dispatch, {
+            playerID: traitorId,
+            matchData: defaultMatchData.slice(0, 3),
+        });
+
+        fireEvent.click(screen.getByTestId('betrayal-action-monsterMove'));
+        expect(screen.getByTestId('betrayal-action-monsterMove')).toHaveTextContent('取消移动');
+        expect(screen.getByTestId(`betrayal-room-monster-move-target-${targetRoom!.id}`)).toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId(`betrayal-room-${targetRoom!.id}`));
+
+        expect(dispatch).toHaveBeenCalledWith(BETRAYAL_COMMANDS.MOVE_MONSTER_TO_ROOM, {
+            monsterId: mummyMonsterId,
+            roomId: targetRoom!.id,
+        });
+        expect(screen.getByTestId('betrayal-action-monsterMove')).toHaveTextContent('取消移动');
+    });
+
     it('木乃伊横行木乃伊同房有英雄时必须先攻击再移动，并过滤叛徒和死亡英雄', async () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
@@ -2730,7 +2888,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-action-use')).toHaveTextContent('寻找解药');
     });
 
-    it('灰尘 setup 牌桌可以确认怪物参考卡和研究 token 池', async () => {
+    it('灰尘 setup 不在牌桌右栏常驻显示', () => {
         const core = createDustHauntBoardCore();
 
         render(
@@ -2741,25 +2899,11 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
-        const setupCard = screen.getByTestId('betrayal-haunt-setup-handoff');
-        const confirmMonsterCardButton = within(setupCard).getByTestId('betrayal-haunt-setup-confirm-monster-card-left-of-revealer');
-        const confirmResearchButton = within(setupCard).getByTestId('betrayal-haunt-setup-confirm-prepare-research-tokens');
-        expect(confirmMonsterCardButton).toHaveTextContent('确认怪物参考卡');
-        expect(confirmResearchButton).toHaveTextContent('确认研究标记');
-
-        fireEvent.click(confirmResearchButton);
-
-        await waitFor(() => {
-            expect(screen.queryByTestId('betrayal-haunt-setup-confirm-prepare-research-tokens')).not.toBeInTheDocument();
-        });
-        expect(screen.getByTestId('betrayal-haunt-setup-confirm-monster-card-left-of-revealer')).toBeInTheDocument();
-
-        fireEvent.click(screen.getByTestId('betrayal-haunt-setup-confirm-monster-card-left-of-revealer'));
-
-        await waitFor(() => {
-            expect(screen.queryByTestId('betrayal-haunt-setup-confirm-monster-card-left-of-revealer')).not.toBeInTheDocument();
-        });
-        expect(within(screen.getByTestId('betrayal-haunt-setup-handoff')).getByTestId('betrayal-haunt-setup-status')).toHaveTextContent('开局设置已确认');
+        expect(screen.queryByTestId('betrayal-haunt-setup-handoff')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-haunt-setup-confirm-monster-card-left-of-revealer')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-haunt-setup-confirm-prepare-research-tokens')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-dust-progress-strip')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-open-scenario')).toBeInTheDocument();
     });
 
     it('灰尘疾病编号只在本人玩家视图显示且不公开永久感染名单', () => {
@@ -2912,7 +3056,7 @@ describe('Betrayal Board foundation', () => {
             id: 'jack-spirit',
             name: '杰克之灵',
             portraitAsset: 'betrayal/monsters/spirit',
-            tokenAsset: 'betrayal/tokens/monsters/ghost',
+            tokenAsset: 'betrayal/tokens/monsters/jacks-spirit',
             roomId: 'upper-north',
             might: 5,
             speed: 3,
@@ -3359,7 +3503,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).not.toHaveTextContent('换回');
     });
 
-    it('狗交易结算预兆后作祟风险条继续按全员预兆总数刷新', async () => {
+    it('狗交易结算预兆后预兆状态继续按全员预兆总数刷新', async () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const teammate = core.otherExplorers.find((explorer) => explorer.playerId === '1')!;
         core.currentExplorer = {
@@ -3387,7 +3531,8 @@ describe('Betrayal Board foundation', () => {
         );
 
         expect(screen.getByTestId('betrayal-haunt-risk-status')).toHaveAttribute('data-omen-count', '2');
-        expect(screen.getByTestId('betrayal-haunt-risk-status')).toHaveTextContent('预兆 2 / 下次掷 3 颗 / 5+ 作祟');
+        expect(screen.getByTestId('betrayal-haunt-risk-status')).toHaveTextContent('预兆 2');
+        expect(screen.getByTestId('betrayal-haunt-risk-status')).not.toHaveTextContent(/下次掷|5\+ 作祟|再抽预兆时检定/);
         expect(screen.getByTestId('betrayal-inventory-omen-book')).toBeInTheDocument();
 
         fireEvent.click(screen.getByTestId('betrayal-dog-trade-card-omen-book'));
@@ -3405,7 +3550,8 @@ describe('Betrayal Board foundation', () => {
         });
         expect(screen.queryByTestId('betrayal-inventory-omen-book')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-haunt-risk-status')).toHaveAttribute('data-omen-count', '2');
-        expect(screen.getByTestId('betrayal-haunt-risk-status')).toHaveTextContent('预兆 2 / 下次掷 3 颗 / 5+ 作祟');
+        expect(screen.getByTestId('betrayal-haunt-risk-status')).toHaveTextContent('预兆 2');
+        expect(screen.getByTestId('betrayal-haunt-risk-status')).not.toHaveTextContent(/下次掷|5\+ 作祟|再抽预兆时检定/);
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用狗完成交易');
     });
 
@@ -3833,7 +3979,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用雕像跳过了事件：阴影扑面');
     });
 
-    it('刚获得圣符或雕像时真实页面不会显示探索声明按钮', () => {
+    it('刚获得圣符或雕像时真实页面不会显示探索前持有物按钮', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.drawOrder = ['event'];
         core.eventOrder = [
@@ -3887,6 +4033,7 @@ describe('Betrayal Board foundation', () => {
             },
         ];
         core.deckCounts.event = core.eventOrder.length;
+        setNextBoardDiscoveryRoom(core, 'ground', 'kitchen');
         const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
         expect(targetRoomId).toBeTruthy();
 
@@ -4268,16 +4415,8 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
 
-        const deckLedger = screen.getByTestId('betrayal-deck-resolution-ledger');
-        expect(deckLedger).toHaveAttribute('data-discovery-kind', 'none');
-        expect(deckLedger).toHaveAttribute('data-discovery-title', '器械库');
-        expect(deckLedger).toHaveTextContent('最近结算');
-        const deckLedgerSteps = screen.getAllByTestId('betrayal-deck-resolution-ledger-step');
-        expect(deckLedgerSteps).toHaveLength(2);
-        expect(deckLedgerSteps[0]).toHaveAttribute('data-step-kind', 'room-discovery-card');
-        expect(deckLedgerSteps[0]).toHaveTextContent('器械库获得砍刀');
-        expect(deckLedgerSteps[1]).toHaveAttribute('data-step-kind', 'buried-room-discovery-card');
-        expect(deckLedgerSteps[1]).toHaveTextContent('展示后埋葬急救包');
+        expect(screen.queryByTestId('betrayal-deck-resolution-ledger')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-deck-resolution-ledger-step')).not.toBeInTheDocument();
     });
 
     it('即时事件效果会在真实页面展示确认步骤', () => {
@@ -4297,6 +4436,7 @@ describe('Betrayal Board foundation', () => {
         core.activeRoomId = 'hallway';
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         core.currentExplorerInventory = [];
+        setNextBoardDiscoveryRoom(core, 'ground', 'kitchen');
 
         render(
             <HarnessBoardWithRandom
@@ -4383,14 +4523,8 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
 
-        const deckLedgerSteps = screen.getAllByTestId('betrayal-deck-resolution-ledger-step');
-        expect(deckLedgerSteps).toHaveLength(2);
-        expect(deckLedgerSteps[0]).toHaveAttribute('data-step-kind', 'room-effect');
-        expect(deckLedgerSteps[0]).toHaveAttribute('data-deck-kind', '');
-        expect(deckLedgerSteps[0]).toHaveTextContent('房间效果：礼拜堂，神志 +1');
-        expect(deckLedgerSteps[1]).toHaveAttribute('data-step-kind', 'event-effect');
-        expect(deckLedgerSteps[1]).toHaveAttribute('data-deck-kind', 'event');
-        expect(deckLedgerSteps[1]).toHaveTextContent('知识 +1');
+        expect(screen.queryByTestId('betrayal-deck-resolution-ledger')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-deck-resolution-ledger-step')).not.toBeInTheDocument();
     });
 
     it('圣符预兆翻出后同屏显示作祟检定骰盘', () => {
@@ -4449,13 +4583,11 @@ describe('Betrayal Board foundation', () => {
             'data-result-emphasis',
             'primary-total',
         );
-        expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toContainElement(
-            screen.getByTestId('betrayal-recent-roll-subtotal'),
-        );
-        expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toContainElement(
-            screen.getByTestId('betrayal-recent-roll-passive-bonus'),
-        );
-        expect(screen.getByTestId('betrayal-recent-roll-subtotal')).toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-recent-roll-outcome')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('betrayal-recent-roll-stage-surface')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-recent-roll-subtotal')).toHaveTextContent('骰面合计');
+        expect(screen.getByTestId('betrayal-recent-roll-passive-bonus')).toHaveTextContent('加值');
 
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
         expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
@@ -5754,7 +5886,7 @@ describe('Betrayal Board foundation', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('夺取本质');
-            expect(screen.getByTestId('betrayal-recent-roll-detail')).toHaveTextContent('骰子合计');
+            expect(screen.getByTestId('betrayal-recent-roll-detail')).toHaveTextContent('骰面合计');
         });
     });
 
@@ -6515,7 +6647,7 @@ describe('Betrayal Board foundation', () => {
         });
 
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '3');
-        expect(screen.getByTestId('betrayal-recent-roll-detail')).toHaveTextContent('骰子合计 4');
+        expect(screen.getByTestId('betrayal-recent-roll-detail')).toHaveTextContent('骰面合计 4');
         expect(screen.getByTestId('betrayal-recent-roll-total')).toHaveTextContent('总点数 4');
         expect(screen.getByTestId('betrayal-recent-roll-panel')).toHaveTextContent('阻止死亡');
         expect(screen.getAllByText('阻止死亡').length).toBeGreaterThan(0);
@@ -7001,6 +7133,7 @@ describe('Betrayal Board foundation', () => {
             core.activeRoomId = 'hallway';
             core.currentExplorerTraits = { ...core.currentExplorer.traits };
             core.currentExplorerInventory = [];
+            setNextBoardDiscoveryRoom(core, 'ground', 'kitchen');
 
             const view = render(
                 <HarnessBoardWithRandom
@@ -7023,7 +7156,9 @@ describe('Betrayal Board foundation', () => {
             );
             const discoveryTopBanner = screen.getByTestId('betrayal-discovery-top-banner');
             expect(discoveryTopBanner).toHaveAttribute('data-prompt-placement', 'top');
-            expect(screen.getByTestId('betrayal-discovery-top-banner-title')).toHaveTextContent(eventName);
+            expect(screen.queryByTestId('betrayal-discovery-top-banner-title')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('betrayal-discovery-top-banner-detail')).not.toBeInTheDocument();
+            expect(discoveryTopBanner).not.toHaveTextContent(eventName);
             const discoveryDetailText = screen.getByTestId('betrayal-discovery-detail').textContent ?? '';
             expect(discoveryDetailText).toMatch(/检定|投|骰/);
             expect(
@@ -7037,10 +7172,11 @@ describe('Betrayal Board foundation', () => {
                 'data-result-layout',
                 'split-primary-total',
             );
-            expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toContainElement(
-                screen.getByTestId('betrayal-recent-roll-subtotal'),
-            );
-            expect(screen.getByTestId('betrayal-recent-roll-subtotal')).toBeInTheDocument();
+            expect(screen.queryByTestId('betrayal-recent-roll-outcome')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('betrayal-recent-roll-stage-surface')).not.toBeInTheDocument();
+            expect(screen.getByTestId('betrayal-recent-roll-breakdown')).toBeInTheDocument();
+            expect(screen.getByTestId('betrayal-recent-roll-subtotal')).toHaveTextContent('骰面合计');
+            expect(screen.getByTestId('betrayal-recent-roll-passive-bonus')).toHaveTextContent('加值');
 
             view.unmount();
         }
@@ -8644,6 +8780,7 @@ describe('Betrayal Board foundation', () => {
         };
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         core.currentExplorerInventory = [];
+        setNextBoardDiscoveryRoom(core, 'ground', 'kitchen');
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(
             core,

@@ -1,0 +1,22 @@
+{
+  "url": "http://127.0.0.1:4290/games/summonerwars/config",
+  "metrics": {
+    "scrollLeft": 0,
+    "scrollTop": 0,
+    "scrollWidth": 3436,
+    "clientWidth": 1728,
+    "scrollHeight": 7231,
+    "clientHeight": 7231,
+    "canScrollRight": true,
+    "canScrollDown": false
+  },
+  "tableBox": {
+    "x": 96,
+    "y": 370,
+    "width": 1728,
+    "height": 7230.65625
+  },
+  "paginationCount": 0,
+  "hintCount": 0,
+  "visibleTextSample": "返回目录\n配置审查表\n召唤师战争配置表\n\n表格来自召唤师战争现有代码配置、阵营牌组构建器和真实卡图图集；归属阵营、牌组符号、数值、效果、素材和起始部署都按当前配置源展示。玩家可双击单元格暂存修改，再统一提交待智能审查的修正提案。\n\n配置版本\nlegacy-ts-config-v1\n总行数\n160\n筛选结果\n160\n全部阵营\n堕落王国\n欺心巫族\n先锋卫队\n洞穴地精\n极地矮人\n野蛮部落\n莫古\n灰烬\n冰苔兽人\n永恒议会\n全部类型\n召唤师\n英雄\n士兵\n事件\n城门\n建筑\nconfigReview.actions.scrollLeft\nconfigReview.actions.scrollRight\n双击单元格编辑；修改会先暂存在本页，最后统一提交。\n0 项待提交\n清空修改\n提交 0 项修改\n卡图\t配置对象\t名称\t归属阵营\t牌组符号\t卡牌类型\t单位级别\t数量\t攻击\t生命\t费用\t攻击方式\t射程\t出牌阶段\t事件类型\t持续\t充能\t目标单位\t交缠目标\t能力\t效果文本\t城门\t起始城门\t卡图图集\t卡图编号\t配置来源\n\n\t\nnecro-summoner\n\t\n瑞特-塔鲁斯\n\t\nnecromancer\n\t\ndouble_axe, flame, moon\n\t\nunit\n\t\nsummoner\n\t\n1\n\t\n2\n\t\n12\n\t\n0\n\t\nranged\n\t\n3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nrevive_undead\n\t\n—\n\t\n—\n\t\n—\n\t\nhero\n\t\n0\n\t\n召唤师\n\n\n\t\nnecro-portal\n\t\n传送门\n\t\nnecromancer\n\t\n—\n\t\nstructure\n\t\n—\n\t\n3\n\t\n—\n\t\n5\n\t\n0\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\ntrue\n\t\n—\n\t\nportal\n\t\n1\n\t\n抽牌堆\n\n\n\t\nnecro-starting-gate\n\t\n起始城门\n\t\nnecromancer\n\t\n—\n\t\nstructure\n\t\n—\n\t\n1\n\t\n—\n\t\n10\n\t\n0\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\ntrue\n\t\ntrue\n\t\nportal\n\t\n0\n\t\n起始城门: 2,3\n\n\n\t\nnecro-dragos\n\t\n德拉戈斯\n\t\nnecromancer\n\t\nmoon\n\t\nunit\n\t\nchampion\n\t\n1\n\t\n4\n\t\n8\n\t\n6\n\t\nmelee\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nlife_drain\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n2\n\t\n抽牌堆\n\n\n\t\nnecro-gul-das\n\t\n古尔-达斯\n\t\nnecromancer\n\t\nflame, moon\n\t\nunit\n\t\nchampion\n\t\n1\n\t\n2\n\t\n8\n\t\n6\n\t\nmelee\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nrage\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n10\n\t\n抽牌堆\n\n\n\t\nnecro-elut-bar\n\t\n伊路特-巴尔\n\t\nnecromancer\n\t\nflame\n\t\nunit\n\t\nchampion\n\t\n1\n\t\n6\n\t\n6\n\t\n6\n\t\nmelee\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nfire_sacrifice_summon\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n0\n\t\n抽牌堆\n\n\n\t\nnecro-hellfire-cultist\n\t\n地狱火教徒\n\t\nnecromancer\n\t\nflame\n\t\nunit\n\t\ncommon\n\t\n4\n\t\n2\n\t\n2\n\t\n0\n\t\nranged\n\t\n3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nsacrifice\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n7\n\t\n抽牌堆\n\n\n\t\nnecro-start-archer\n\t\n亡灵弓箭手\n\t\nnecromancer\n\t\nflame\n\t\nunit\n\t\ncommon\n\t\n1\n\t\n3\n\t\n2\n\t\n2\n\t\nranged\n\t\n3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nsoul_transfer\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n9\n\t\n起始单位: 1@2,2\n\n\n\t\nnecro-undead-archer\n\t\n亡灵弓箭手\n\t\nnecromancer\n\t\nflame\n\t\nunit\n\t\ncommon\n\t\n4\n\t\n3\n\t\n2\n\t\n2\n\t\nranged\n\t\n3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nsoul_transfer\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n9\n\t\n抽牌堆\n\n\n\t\nnecro-start-zombie\n\t\n亡灵疫病体\n\t\nnecromancer\n\t\nmoon\n\t\nunit\n\t\ncommon\n\t\n1\n\t\n2\n\t\n3\n\t\n1\n\t\nmelee\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nsoulless, infection\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n8\n\t\n起始单位: 2@3,3\n\n\n\t\nnecro-plague-zombie\n\t\n亡灵疫病体\n\t\nnecromancer\n\t\nmoon\n\t\nunit\n\t\ncommon\n\t\n4\n\t\n2\n\t\n3\n\t\n1\n\t\nmelee\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nsoulless, infection\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n8\n\t\n抽牌堆\n\n\n\t\nnecro-undead-warrior\n\t\n亡灵战士\n\t\nnecromancer\n\t\nmoon\n\t\nunit\n\t\ncommon\n\t\n4\n\t\n2\n\t\n4\n\t\n2\n\t\nmelee\n\t\n1\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\nblood_rage, power_boost, blood_rage_decay\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n6\n\t\n抽牌堆\n\n\n\t\nnecro-annihilate\n\t\n除灭\n\t\nnecromancer\n"
+}

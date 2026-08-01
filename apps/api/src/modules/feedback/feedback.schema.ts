@@ -198,6 +198,9 @@ export class Feedback {
 
     @Prop({ type: Object })
     configProposal?: FeedbackConfigProposalContext;
+
+    @Prop({ type: [Object] })
+    configProposals?: FeedbackConfigProposalContext[];
 }
 
 export const FeedbackSchema = SchemaFactory.createForClass(Feedback);

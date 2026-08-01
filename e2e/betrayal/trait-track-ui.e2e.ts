@@ -13,8 +13,8 @@ import {
 } from './betrayalTestHelpers';
 
 const EVIDENCE_DIR = 'evidence/betrayal-core-interactions/trait-track-ui';
-const CURRENT_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/01-属性轨角色板-重复数值夹子位置.jpg`;
-const DETAIL_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/02-属性轨详情-队友轨道.jpg`;
+const CURRENT_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/01-属性轨角色板-连续轨指针位置.jpg`;
+const DETAIL_TRACK_SCREENSHOT = `${EVIDENCE_DIR}/02-属性轨详情-队友连续轨.jpg`;
 
 test.describe('山屋惊魂属性轨 UI', () => {
     test('真实牌桌入口按属性轨位置显示夹子，重复数值不吞掉位置变化', async ({ page, context }) => {
@@ -67,7 +67,9 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(speedTrack).toBeVisible();
         await expect(speedTrack).toHaveAttribute('data-trait-track-position', '1');
         await expect(speedTrack).toHaveAttribute('data-trait-track-value', '3');
-        await expect(speedTrack.locator('[data-trait-track-position="1"][data-trait-track-current="true"]')).toBeVisible();
+        await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
+        await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '1');
+        await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
         await expect(speedTrack.locator('[data-trait-track-position="2"][data-trait-track-current="false"]')).toHaveText('3');
 
         const boardMarker = page.getByTestId('betrayal-explorer-board-marker-speed');
@@ -79,7 +81,9 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(page.getByTestId('betrayal-explorer-detail-dialog-1')).toBeVisible();
         const detailSpeedTrack = page.getByTestId('betrayal-explorer-detail-trait-track-1-speed');
         await expect(detailSpeedTrack).toHaveAttribute('data-trait-track-position', '1');
-        await expect(detailSpeedTrack.locator('[data-trait-track-position="1"][data-trait-track-current="true"]')).toBeVisible();
+        await expect(detailSpeedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
+        await expect(detailSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '1');
+        await expect(detailSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
         await expect(detailSpeedTrack.locator('[data-trait-track-position="2"][data-trait-track-current="false"]')).toHaveText('3');
         await saveScreenshot(page, DETAIL_TRACK_SCREENSHOT);
 

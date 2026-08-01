@@ -74,6 +74,58 @@ function eventByName(name: string) {
   return event;
 }
 
+function cloneGroundRoomTemplate(
+  room: BetrayalCore["roomDiscoveryOrderByFloor"]["ground"][number],
+): BetrayalCore["roomDiscoveryOrderByFloor"]["ground"][number] {
+  return {
+    ...room,
+    tags: [...room.tags],
+    doorways: [...room.doorways],
+  };
+}
+
+function pinGroundNorthToEventRoom(core: BetrayalCore, visualId = "kitchen") {
+  const roomTemplate = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find(
+    (room) => room.visualId === visualId,
+  );
+  if (!roomTemplate || roomTemplate.discoverySymbol !== "event") {
+    throw new Error(`山屋 E2E 夹具缺少一层事件房：${visualId}`);
+  }
+
+  const orderedGroundRooms = [
+    cloneGroundRoomTemplate(roomTemplate),
+    ...core.roomDiscoveryOrderByFloor.ground
+      .filter((room) => room.visualId !== visualId)
+      .map(cloneGroundRoomTemplate),
+  ];
+  core.roomDiscoveryOrderByFloor = {
+    ...core.roomDiscoveryOrderByFloor,
+    ground: orderedGroundRooms,
+  };
+  core.roomDiscoveryDeck = [
+    ...orderedGroundRooms.map((room) => ({
+      floor: "ground" as const,
+      room: cloneGroundRoomTemplate(room),
+    })),
+    ...core.roomDiscoveryOrderByFloor.upper.map((room) => ({
+      floor: "upper" as const,
+      room: {
+        ...room,
+        tags: [...room.tags],
+        doorways: [...room.doorways],
+      },
+    })),
+    ...core.roomDiscoveryOrderByFloor.basement.map((room) => ({
+      floor: "basement" as const,
+      room: {
+        ...room,
+        tags: [...room.tags],
+        doorways: [...room.doorways],
+      },
+    })),
+  ];
+}
+
 function branchEffect(eventName: string, min: number): BetrayalUseEffectSeed {
   const event = eventByName(eventName);
   const branch = event.roll?.branches.find(
@@ -143,6 +195,8 @@ function createExploredEventChoiceCore(
   let core = createRuntimeCore();
   core.drawOrder = ["event"];
   core.eventOrder = [event];
+  core.deckCounts.event = core.eventOrder.length;
+  pinGroundNorthToEventRoom(core);
   core.currentExplorer = {
     ...core.currentExplorer,
     traits: {
@@ -957,12 +1011,10 @@ async function expectMobileEventChoiceLayout(page: Page, label: string) {
   await expect(
     rollPanel.getByTestId("betrayal-recent-roll-result-stage"),
   ).toHaveAttribute("data-result-layout", "split-primary-total");
-  await expect(
-    rollPanel.getByTestId("betrayal-recent-roll-breakdown"),
-  ).toContainText("骰面合计");
-  await expect(
-    rollPanel.getByTestId("betrayal-recent-roll-breakdown"),
-  ).toContainText("加值");
+  await expect(rollPanel.getByTestId("betrayal-recent-roll-stage-surface")).toHaveCount(0);
+  await expect(rollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("骰面合计");
+  await expect(rollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("加值");
+  await expect(rollPanel.getByTestId("betrayal-recent-roll-outcome")).toHaveCount(0);
 
   const metrics = await page.evaluate(() => {
     const rectOf = (selector: string) => {
@@ -2153,6 +2205,8 @@ async function runDirectRollEventFullChain(
   const core = createRuntimeCore();
   core.drawOrder = ["event"];
   core.eventOrder = [eventCard];
+  core.deckCounts.event = core.eventOrder.length;
+  pinGroundNorthToEventRoom(core);
   core.currentExplorer = {
     ...core.currentExplorer,
     traits: {
@@ -4943,6 +4997,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
     core.eventOrder = [alienGeometry];
+    core.deckCounts.event = core.eventOrder.length;
+    pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
       traits: {
@@ -5341,6 +5397,8 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     const core = createRuntimeCore();
     core.drawOrder = ["event"];
     core.eventOrder = [alienGeometry];
+    core.deckCounts.event = core.eventOrder.length;
+    pinGroundNorthToEventRoom(core);
     core.currentExplorer = {
       ...core.currentExplorer,
       traits: {

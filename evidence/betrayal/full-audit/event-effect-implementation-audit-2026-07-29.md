@@ -10,9 +10,9 @@
 
 ## 结论等级
 
-结论等级：`event-effect-matrix-indexed / broad-domain-partial-verified / downstream-open`。
+结论等级：`event-effect-matrix-indexed / broad-domain-and-board-representative-verified / downstream-open`。
 
-含义：43 张事件已经进入当前运行池并有事件正面 atlas 映射；运行时已经有通用事件效果解释器、待选择事件状态、翻牌确认队列、房间目标合法性、最近投骰回滚和一批领域/组件代表链。20 张新增或复杂事件已经有运行入口、部分关键分支、自动分支、失败伤害分支、成功属性分支、部分剩余分支代表链和部分 UI 承接证据。但逐事件完整 UI、真实入口 E2E、截图、死亡保护/伤害减免/重掷/作祟特例/房间目标组合仍未闭合；不能把“43 张进运行池”说成“事件牌全部完成”。
+含义：43 张事件已经进入当前运行池并有事件正面 atlas 映射；运行时已经有通用事件效果解释器、待选择事件状态、翻牌确认队列、房间目标合法性、最近投骰回滚和一批领域/组件代表链。20 张新增或复杂事件已有运行入口、关键分支、自动分支、失败伤害分支、成功属性分支、剩余分支代表链和 Board 组件承接证据；本轮定向复跑未发现“分支无最终状态写入 / 无玩家选择入口 / 分支后卡住”的 P0 实现阻塞。但逐事件完整真实入口 E2E、截图、死亡保护/伤害减免/重掷/作祟特例/房间目标组合仍未闭合；不能把“43 张进运行池”说成“事件牌全部完成”。
 
 ## 权威来源
 
@@ -24,6 +24,7 @@
 | 领域消费 | `src/games/betrayal/game.ts` 的事件效果解释、待选择事件、房间目标、通用伤害、重掷回滚、翻牌确认队列 |
 | 页面承接 | `src/games/betrayal/Board.tsx` 的 `betrayal-event-choice-panel`、事件牌正面、属性/物品/伤害/房间选择和确认/跳过按钮 |
 | 测试证据 | `src/games/betrayal/__tests__/firstScenarioRuntime.test.ts`、`src/games/betrayal/__tests__/Board.foundation.test.tsx` |
+| 2026-07-31 静态复核 | 临时 `npx tsx -` 矩阵脚本直接导入 `BETRAYAL_DISCOVERY_POOLS.events`，递归收集事件效果模式并对照 `game.ts` / `Board.tsx` / 单测 / E2E / audit 文本 |
 
 ## 实现入口索引
 
@@ -36,6 +37,7 @@
 | 探索抽事件与确认队列 | `game.ts:15918`、`15987`、`18830`、`18909`、`19141` | 探索事件能进入翻牌确认和待选择队列；确认队列存在不等于完整 UI/E2E。 |
 | 玩家选择执行 | `game.ts:16197-16725` 的 `RESOLVE_EVENT_CHOICE` | 覆盖 `optionalHauntRoll`、`chooseTraitRoll`、`allTraitChecks`、`traitRoll`、`optionalItemEffect`、`optionalEffect`、`optionalEventRoll` 等通用分支。 |
 | Board 事件承接 | `Board.tsx:6952-7115`、`10710-10920`、`14117-14504` | 有通用事件选择面板和属性、物品、房间、通用伤害选择 UI；只证明通用承接，不证明 43 张逐事件 E2E。 |
+| 事件效果模式全集消费 | 2026-07-31 临时矩阵脚本统计配置中实际出现的 26 类事件效果模式：`allTraitChecks`、`chooseTraitRoll`、`chosenTrait`、`compound`、`drawPossession`、`fixedDamage`、`generalDamage`、`generalDamageChoice`、`healChosenTrait`、`none`、`optionalEffect`、`optionalEventRoll`、`optionalHauntRoll`、`optionalItemEffect`、`placeBlessingToken`、`placeExplorerInAdjacentRoom`、`placeExplorerInDiscoveredRoomByFloor`、`placeExplorerInDiscoveredRoomByVisualId`、`placeExplorerInFloorStartingRoom`、`placeExplorerInNextFloorStartingRoom`、`placeExplorerInRoom`、`placeObstacleToken`、`placeSecretPassageToken`、`rolledDamage`、`trait`、`traitRoll`；对照 `game.ts` 后 `noApplyMention=[]`。 | 该复核只排除“配置里有某类效果但 reducer 完全不消费”的 P0；`drawPossession`、`fixedDamage`、`rolledDamage` 等纯结算模式不需要单独 Board 模式分支，仍通过发现确认 / 骰盘 / 伤害分配 / 持有区结果承接。不能外推为逐事件真实 E2E 或截图完成。 |
 
 ## 逐项结论
 
@@ -168,7 +170,7 @@
 
 残余范围：
 
-- 20 张新增/复杂事件仍需逐张补完整分支、UI 承接和组合测试。
+- 20 张新增/复杂事件已有领域和 Board 代表链；仍需逐张补真实入口 E2E、截图和组合测试。
 - 43 张事件缺逐事件真实入口 E2E 和截图链；当前 Board 测试只是通用/代表组件证据。
 - 所有造成伤害或直接降属性的事件仍需补死亡保护、胸针、盔甲、头戴耳机、奇异护符、头骨、兔脚组合矩阵。
 - 房间目标类事件仍需补真实地图候选、非法目标 UI 提示、作祟地图限制和新房间/已发现房间边界。
@@ -182,7 +184,7 @@
 | 搜索范围 | `full-deck-data-intake-contract.md`、`object-l0-l4-matrix.md`、`scenarioConfig.ts`、`game.ts`、`Board.tsx`、`firstScenarioRuntime.test.ts`、`Board.foundation.test.tsx` |
 | 根因关键词 | `events`、`eventEffectNeedsPendingEventChoice`、`RESOLVE_EVENT_CHOICE`、`pendingEventChoice`、`pendingCardResolutionQueue`、`betrayal-event-choice-panel`、`新增配置事件`、`房间目标合法性`、`怪异的镜子` |
 | 横向搜索命中 | 事件池 43 张、20 张新增/复杂事件配置、通用事件解释器、Board 通用事件选择面板、领域分支测试和代表 UI 测试均存在；逐事件 UI/E2E/截图和组合测试仍未逐项闭合。 |
-| 当前裁定 | 事件牌可以继续实现消费审计；不需要倒退到图包/录入。但当前只能给 `broad-domain-partial-verified / downstream-open`，不能给完成口径。 |
+| 当前裁定 | 事件剩余分支已从 P0 实现阻塞候选降为 P1 验证层级缺口；不需要倒退到图包/录入。但当前只能给 `broad-domain-and-board-representative-verified / downstream-open`，不能给完成口径。 |
 
 ## 修订记录
 
@@ -190,6 +192,8 @@
 | --- | --- |
 | 旧矩阵风险 | `object-l0-l4-matrix.md` 与总合同中对事件牌使用了 `partial`、`min-verified`、`representative` 等混合口径，容易被误读成“43 张事件都已经完成”。 |
 | 本轮修订 | 本文件把 43 张事件按旧 23 张和 20 张新增/复杂事件分账，并明确数量/atlas、领域代表链、Board 代表链和逐事件 UI/E2E 是四个不同层级；当前续跑已把生成器和总矩阵中的旧 E2E 过度口径改为 `event-effect downstream-open`。 |
+| 事件剩余分支 P0 复核 | `firstScenarioRuntime.test.ts -t "新增配置事件\|不可能的房间\|地狱蝙蝠\|断手\|怪异的镜子\|花团锦簇\|晦暗暴风夜\|技术难点\|佳馔满桌\|禁忌知识\|可怜的尤里克\|轮到约拿了\|秘密升降机\|神秘液体\|无线电广播\|摇曳灯光\|一罐器官\|一声呼救\|着火的人\|游魂\|脑状食品\|吊死鬼\|一条秘密通道\|肉质苔癣\|上古旧宅"` 46 passed / 652 skipped；`Board.foundation.test.tsx -t "事件\|不可能的房间\|地狱蝙蝠\|断手\|花团锦簇\|晦暗暴风夜\|技术难点\|佳馔满桌\|禁忌知识\|可怜的尤里克\|轮到约拿了\|秘密升降机\|神秘液体\|无线电广播\|摇曳灯光\|一罐器官\|一声呼救\|着火的人\|游魂\|脑状食品\|吊死鬼\|一条秘密通道\|肉质苔癣\|上古旧宅"` 34 passed / 143 skipped，退出码 0。Board 测试夹具补充把事件牌用例的下一张探索房间固定为事件符号房，属于测试真相源修正，不是规则实现本体修改。 |
+| 事件效果模式全集静态复核 | 2026-07-31 临时 `npx tsx -` 矩阵脚本直接导入 `BETRAYAL_DISCOVERY_POOLS.events` 后递归收集所有子效果，得到 43 张事件实际使用 26 类效果模式；对照 `game.ts` 中 `applyEventEffect`、`materializeEventEffect`、`RESOLVE_EVENT_CHOICE` 和相关校验后，`noApplyMention=[]`。脚本同时显示 20 张事件未被真实 E2E 文件按中文名直接命中，这被归类为 P1 真实入口 / 截图补证，不是 P0 reducer 消费缺失。 |
 | 神秘液体 UI 投骰缺口修订 | 旧结论“UI 投骰承接未闭合”已被 `Board.foundation.test.tsx:7171` 替代：当前可见卡面、拒绝按钮、喝下按钮、固定 3 骰骰盘、总点数和分支结果；新结论降级为 Board 组件代表链已补，仍不外推真实入口 E2E / 截图、属性上下限、死亡保护和固定骰重掷组合。 |
 | 摇曳灯光选择属性 UI 缺口修订 | 旧结论“选择属性 UI 未闭合”已被 `Board.foundation.test.tsx:7235` 替代：当前可见卡面、速度/力量 chip，点击速度后进入摇曳灯光属性检定结果，展示骰盘、总点数 8 和速度 +1；新结论降级为 Board 组件代表链已补，仍不外推真实入口 E2E / 截图、速度上限、祝福与重掷/替代组合、物理伤害减免和死亡保护。 |
 | 佳馔满桌选择属性 / 速度提升 / 通用伤害 UI 缺口修订 | 旧结论“选择属性 UI 只到代表链 / UI 承接未闭合”已被 `Board.foundation.test.tsx:7398` 细化：当前可见卡面、知识/神志 chip，点击知识并选择伤害备选属性后，总点数 8 时展示“速度 +1”，总点数 0 时进入通用伤害分配，选择力量后展示“通用伤害 1（力量）”；新结论降级为 Board 组件代表链已补成功速度 +1 UI 与失败通用伤害 UI，仍不外推真实入口 E2E / 截图、速度上限、祝福与重掷/替代组合、死亡保护。 |
@@ -212,4 +216,4 @@
 | 一条秘密通道标志物 / 第二目标板块 UI 缺口修订 | 旧结论“一条秘密通道只在旧 23 张 family 代表链里，未单列秘密通道标志物、第二目标板块、直接神志降低和发现确认收口”已被 `firstScenarioRuntime.test.ts:17730`、`firstScenarioRuntime.test.ts:12429` 和 `Board.foundation.test.tsx:7736` 细化：当前领域链覆盖 5+ / 3-4 / 0-2 三档、非法目标拒绝、发现确认前禁止移动、神志 -1 触发头骨死亡保护；Board 组件代表链覆盖第二目标房间候选、目标点击、两个秘密通道标志物和“知识 +1”反馈；新结论降级为 Board 组件代表链已补第二目标代表路径，仍不外推非法原因 UI、更多目标范围、秘密通道标志物移动入口真实可用性、属性上下限、死亡保护 / 头骨 / 兔脚组合或真实入口 E2E / 截图。 |
 | 晦暗暴风夜知识检定 / 神志提升 / 精神伤害 UI 缺口修订 | 旧结论“UI/日志未闭合”已被 `Board.foundation.test.tsx:6571` 细化：当前事件房间翻出晦暗暴风夜后可见知识检定骰盘，总点数 8 时显示“获得 1 点神志”和“神志 +1”，总点数 0 时显示“受到 1 点精神伤害”。新结论降级为 Board 组件代表链已补成功神志提升和失败精神伤害反馈，仍不外推神志上限、精神伤害减免 / 死亡保护、重掷组合、真实入口 E2E 或截图。 |
 | 技术难点楼层起始点 / 地下室精神伤害 UI 缺口修订 | 旧结论“楼层起始点 UI、地下室/未发现楼层边界、精神伤害组合未闭合”已被 `Board.foundation.test.tsx:6643` 细化：当前从地面层事件房间翻出技术难点后会显示“放置到下一楼层起始点”并把探索者放到地下室起始点；从地下室事件房间翻出后会把探索者放到上层起始点，并在发现详情与确认步骤显示“受到 1 点精神伤害”。新结论降级为 Board 组件代表链已补确定性放置与地下室 fallback 伤害反馈，仍不外推更多楼层边界、精神伤害减免 / 死亡保护组合、真实入口 E2E 或截图。 |
-| 当前状态 | `event-effect-matrix-indexed / broad-domain-partial-verified / downstream-open`，不是完成。 |
+| 当前状态 | `event-effect-matrix-indexed / broad-domain-and-board-representative-verified / downstream-open`，P0 实现消费候选已降级；不是完成。 |

@@ -1,4 +1,166 @@
 {
+  "configReview": {
+    "title": "Dice Throne Config Table",
+    "actions": {
+      "back": "Back",
+      "clearEdits": "Clear edits",
+      "submitBatch": "Submit {{count}} edits",
+      "previousPage": "Previous",
+      "nextPage": "Next",
+      "magnify": "Enlarge {{name}}",
+      "closePreview": "Close preview"
+    },
+    "stats": {
+      "compactStatus": "{{version}} | Showing {{visible}} / {{total}} | Page rows {{pageRows}}"
+    },
+    "filters": {
+      "searchPlaceholder": "Search heroes, cards, abilities, tokens, field values...",
+      "allCharacters": "All Heroes"
+    },
+    "types": {
+      "all": "All Types",
+      "character": "Hero",
+      "diceFace": "Die Face",
+      "ability": "Ability",
+      "card": "Card",
+      "token": "Token/Status"
+    },
+    "columns": {
+      "image": "Image",
+      "name": "Name",
+      "id": "ID",
+      "character": "Hero",
+      "rowType": "Type",
+      "sourceContexts": "Sources",
+      "startingCp": "Start CP",
+      "startingHealth": "Start HP",
+      "cpMax": "CP Max",
+      "handLimit": "Hand Limit",
+      "startingHandSize": "Starting Hand",
+      "diceDefinitionId": "Dice Def",
+      "diceValue": "Die Value",
+      "diceSymbols": "Face Symbols",
+      "diceSprite": "Dice Asset",
+      "abilityType": "Ability Type",
+      "trigger": "Trigger",
+      "tags": "Tags",
+      "effects": "Effects",
+      "variants": "Variants",
+      "initialAbilityLevel": "Initial Level",
+      "passiveAbilities": "Passives",
+      "cardType": "Card Type",
+      "cpCost": "CP Cost",
+      "timing": "Timing",
+      "description": "Description",
+      "playCondition": "Play Condition",
+      "isAttackModifier": "Attack Modifier",
+      "previewAtlas": "Card Atlas",
+      "previewIndex": "Card Index",
+      "sourceAtlasIndex": "Source Index",
+      "tokenCategory": "Token Category",
+      "stackLimit": "Stack Limit",
+      "initialTokenAmount": "Initial Tokens",
+      "initialStatusAmount": "Initial Status",
+      "passiveTrigger": "Passive Trigger",
+      "activeUse": "Active Use",
+      "frameId": "Frame ID",
+      "tokenAtlasId": "Token Atlas",
+      "statusAtlasId": "Status Atlas",
+      "statusAtlasPath": "Status Atlas Path",
+      "sfxKey": "SFX"
+    },
+    "fields": {
+      "name": "Name",
+      "id": "ID",
+      "character": "Hero",
+      "rowType": "Type",
+      "sourceContexts": "Sources",
+      "startingCp": "Start CP",
+      "startingHealth": "Start HP",
+      "cpMax": "CP Max",
+      "handLimit": "Hand Limit",
+      "startingHandSize": "Starting Hand",
+      "diceDefinitionId": "Dice Definition",
+      "diceValue": "Die Value",
+      "diceSymbols": "Face Symbols",
+      "diceSprite": "Dice Asset",
+      "abilityType": "Ability Type",
+      "trigger": "Trigger",
+      "tags": "Tags",
+      "effects": "Effects",
+      "variants": "Variants",
+      "initialAbilityLevel": "Initial Ability Level",
+      "passiveAbilities": "Passive Abilities",
+      "cardType": "Card Type",
+      "cpCost": "CP Cost",
+      "timing": "Timing",
+      "description": "Description",
+      "playCondition": "Play Condition",
+      "isAttackModifier": "Attack Modifier",
+      "previewAtlas": "Card Atlas",
+      "previewIndex": "Card Index",
+      "sourceAtlasIndex": "Source Atlas Index",
+      "tokenCategory": "Token Category",
+      "stackLimit": "Stack Limit",
+      "initialTokenAmount": "Initial Token Amount",
+      "initialStatusAmount": "Initial Status Amount",
+      "passiveTrigger": "Passive Trigger",
+      "activeUse": "Active Use",
+      "frameId": "Frame ID",
+      "tokenAtlasId": "Token Atlas",
+      "statusAtlasId": "Status Atlas",
+      "statusAtlasPath": "Status Atlas Path",
+      "sfxKey": "SFX"
+    },
+    "values": {
+      "boolean": {
+        "true": "Yes",
+        "false": "No"
+      },
+      "cardType": {
+        "action": "Action",
+        "upgrade": "Upgrade"
+      },
+      "timing": {
+        "main": "Main",
+        "roll": "Roll",
+        "instant": "Instant"
+      },
+      "abilityType": {
+        "offensive": "Offensive",
+        "defensive": "Defensive",
+        "utility": "Utility",
+        "passive": "Passive"
+      },
+      "tokenCategory": {
+        "buff": "Buff",
+        "debuff": "Debuff",
+        "consumable": "Consumable"
+      }
+    },
+    "feedback": {
+      "pendingCount": "{{count}} pending",
+      "invalidCount": "{{count}} invalid",
+      "emptyCell": "Empty",
+      "cellEditHint": "Double-click a cell to edit, then submit edits together",
+      "rawValueLabel": "Raw value",
+      "invalidNumber": "Enter a number",
+      "invalidBoolean": "Enter yes/no",
+      "initialBatchContent": "I want to submit {{count}} Dice Throne config edits for AI review before changing the source config."
+    },
+    "tableScroll": {
+      "primaryHint": "Use the native bottom scrollbar or trackpad horizontal swipe for wide fields",
+      "secondaryHint": "Mouse wheel scrolls vertically; double-click a cell before editing"
+    },
+    "pagination": {
+      "visibleRange": "Showing {{start}}-{{end}} / {{total}}",
+      "pageSize": "Rows",
+      "pageStatus": "Page {{page}} / {{total}}"
+    },
+    "material": {
+      "noPreview": "This row is not a card, or no card art is configured"
+    }
+  },
   "phase": {
     "title": "Turn Order",
     "setup": {

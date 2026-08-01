@@ -82,8 +82,8 @@
 | `cards` | 12 | 牌背、玩家参考卡、中文参考卡 |
 | `explorers` | 13 | 已识别探索者角色牌 |
 | `monsters` | 3 | 已识别怪物/特殊角色卡 |
-| `tokens/explorers` | 2 | 已确认地图玩家指示物，来自 `384x336` 组 |
-| `tokens/monsters` | 2 | 已确认地图怪物 token，来自 `384x336` 组 |
+| `tokens/explorers` | 4 | 已确认地图玩家指示物，来自 `384x336` 组；Rebecca / Darryl 已从旧错图纠正 |
+| `tokens/monsters` | 43 | 已确认地图怪物 token：31 张用户点名的 3e 怪物 / Stunned token，以及小型怪物 1-6 双面图和正面裁片 |
 | `markers` | 28 | 数字、状态、资源标记 |
 
 资源映射真相源：`docs/games/betrayal/sources/image-index/runtime-resource-map.json`
@@ -107,6 +107,8 @@
   - `all-by-size-01.jpg` 里的大图组也没有出现可确认的预兆正面拼页；
 - 因此当前运行时持有物里，已确认对象必须优先使用真实正面 atlas；未确认的 `Omen` 只能用牌背、对象名和类别临时维持可玩性，素材缺口必须记录在 intake / manifest / evidence，并向用户索要素材或锁定补源路径；不得误接错误拼页、marker 或其它无关素材，也不得把排障标签显示给玩家。
 - 用户后续补充的 `384x336` 组已经证明这里有玩家和怪物 token。地图上的玩家 / 怪物位置必须优先使用 `tokens/explorers/*` 与 `tokens/monsters/*`；找不到对应 token 时，必须回到同尺寸组继续审查或询问素材位置，不能用探索者整板、怪物卡、队友面板、文字缩写或无关 marker 顶替。
+- 2026-07-31 `384x336` token 纠错：用户点名范围 `...EE7C83DC` 到 `...442F4782` 共 31 张，此前只登记 4 张，且 `...06AB53C7`、`...8EDF6B9A` 被误登记为 Rebecca / Darryl。现已全部落到 `tokens/monsters/*` 语义路径并生成同尺寸压缩产物；Rebecca / Darryl 已改回正确探索者 token 源图。证据见 `evidence/betrayal/full-audit/token-384x336-intake-correction-2026-07-31.md`。
+- 2026-07-31 木乃伊专项补充：旧版「木乃伊横行」规则要求「木乃伊怪物标记(大)」。虽然本轮已补齐 3e `384x336` 怪物 / Stunned token 组，但该组未发现木乃伊；当前代码仍引用 `betrayal/tokens/monsters/large-monster-front` 与 `betrayal/monsters/mummy`。用户批准先占位后，已新增明确写有“临时占位”的源图、压缩图、manifest 与 `runtime-resource-map.json` 记录；`evidence/betrayal/full-audit/mummy-token-source-search-2026-07-31.md` 已记录本地图包 `Mods\Images`、TTS、`Models`、`Assetbundles` 均未发现可确认木乃伊 token / portrait 源图。该对象正式素材状态仍必须保持 `blocked / visual-token-blocked`，不得把临时占位、其它怪物 token 或文字壳当成正式完成。
 - 山屋骰子素材真相已经从 TTS Workshop JSON 与本地解包文件锁定：
   - Workshop 真相源：`D:\gongzuo\webgame\gameasset\山屋惊魂(小黑屋)第三版（渣图汉化自用)\Mods\Workshop\3420850553.json`。
   - 真正的山屋 0/1/2 骰子是 `Custom_Model`，共 48 颗，使用同一模型 `MeshURL`：`https://steamusercontent-a.akamaihd.net/ugc/836952878380612616/2444D3E2AC5B69A7939369B3566A0941C2D881C9/`。
@@ -140,11 +142,28 @@
 
 - 探索者角色牌：已确认 13 张
 - 怪物/特殊角色卡：已确认 3 张
-- 探索者 / 怪物 token：当前确认 4 张，来自 `384x336` 组
+- 探索者 token：当前确认 4 张，来自 `384x336` 组
   - `tokens/explorers/jaden-jones.png`
   - `tokens/explorers/father-warren-leung.png`
+  - `tokens/explorers/rebecca-allen.png`
+  - `tokens/explorers/darryl-highla.png`
+- 怪物 / Stunned token：当前确认 31 张用户点名范围内的 3e token，来自 `384x336` 组；另有小型怪物 1-6 双面图和正面裁片
+  - `tokens/monsters/jacks-spirit.png`
+  - `tokens/monsters/head-of-the-house.png`
+  - `tokens/monsters/demon.png`
+  - `tokens/monsters/dark-queen.png`
+  - `tokens/monsters/ghost-shark.png`
+  - `tokens/monsters/construct.png`
+  - `tokens/monsters/bakeneko.png`
+  - `tokens/monsters/giant-wasp.png`
+  - `tokens/monsters/demon-dog.png`
   - `tokens/monsters/werewolf.png`
+  - `tokens/monsters/vampire.png`
+  - `tokens/monsters/faceless-man.png`
   - `tokens/monsters/ghost.png`
+  - `tokens/monsters/troll-right-hand.png`
+  - `tokens/monsters/giant-hair-monster.png`
+  - `tokens/monsters/troll-left-hand.png`
 - 牌背：已确认 5 张
 - 玩家/叛徒/怪物参考卡：已确认 6 张
 - 标记：已确认 28 张

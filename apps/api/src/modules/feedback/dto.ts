@@ -411,6 +411,13 @@ export class CreateFeedbackDto {
     @Type(() => FeedbackConfigProposalDto)
     @IsOptional()
     configProposal?: FeedbackConfigProposalDto;
+
+    @IsArray()
+    @ArrayMaxSize(50)
+    @ValidateNested({ each: true })
+    @Type(() => FeedbackConfigProposalDto)
+    @IsOptional()
+    configProposals?: FeedbackConfigProposalDto[];
 }
 
 export class CreateSystemFeedbackDto {

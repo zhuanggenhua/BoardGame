@@ -358,11 +358,8 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
         await expect(discoveryPanel).toHaveCount(0);
         await expect(page.locator('[data-testid="betrayal-inventory-flashlight-0"]')).toBeVisible();
-        const deckLedger = page.getByTestId('betrayal-deck-resolution-ledger');
-        await expect(deckLedger).toHaveAttribute('data-discovery-kind', 'item');
-        await expect(deckLedger).toHaveAttribute('data-discovery-title', '手电筒');
-        await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(1);
-        await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step').first()).toContainText('手电筒');
+        await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(0);
         await saveScreenshot(page, ORDINARY_ITEM_INVENTORY_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-ordinary-item-discovery', diagnostics }]);
@@ -421,13 +418,8 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
             await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
             await expect(discoveryPanel).toHaveCount(0);
             await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(itemCard.name);
-            const deckLedger = page.getByTestId('betrayal-deck-resolution-ledger');
-            await expect(deckLedger).toHaveAttribute('data-discovery-kind', 'item');
-            await expect(deckLedger).toHaveAttribute('data-discovery-title', itemCard.name);
-            await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(1);
-            await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step').first()).toContainText(
-                itemCard.name,
-            );
+            await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
+            await expect(page.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(0);
             await expect.poll(async () => {
                 const state = await readOrdinaryItemDiscoveryState(page);
                 return Boolean(
@@ -503,10 +495,8 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         await expect(discoveryPanel).toHaveCount(0);
         await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toBeVisible();
         await expect(page.locator('[data-testid="betrayal-inventory-medical-kit-0"]')).toBeVisible();
-        const deckLedger = page.getByTestId('betrayal-deck-resolution-ledger');
-        await expect(deckLedger).toHaveAttribute('data-discovery-kind', 'item');
-        await expect(deckLedger).toHaveAttribute('data-discovery-title', '急救包');
-        await expect(deckLedger.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(3);
+        await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(0);
         await saveScreenshot(page, ARMORY_INVENTORY_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-high-risk-armory-discovery', diagnostics }]);

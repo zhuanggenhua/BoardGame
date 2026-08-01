@@ -2483,6 +2483,81 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(hasEvent(newSocket, 'error', (args) => args[1] === 'unauthorized')).toBe(false);
     });
 
+    it('临时 UI 事件只从已同步玩家转发给同局其他连接', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-ui-event', {
+            initialState: createStoredState(),
+            metadata: {
+                gameName: 'test-game',
+                players: {
+                    '0': {
+                        name: '玩家0',
+                        credentials: 'cred-0',
+                        isConnected: false,
+                    },
+                    '1': {
+                        name: '玩家1',
+                        credentials: 'cred-1',
+                        isConnected: false,
+                    },
+                },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                setupData: {},
+            },
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => (
+                metadata.players[playerID]?.credentials === credentials
+            ),
+        });
+        server.start();
+
+        const senderSocket = new MockSocket('socket-ui-event-sender');
+        const receiverSocket = new MockSocket('socket-ui-event-receiver');
+        const unsyncedSocket = new MockSocket('socket-ui-event-unsynced');
+        io.gameNamespace.connectSocket(senderSocket);
+        io.gameNamespace.connectSocket(receiverSocket);
+        io.gameNamespace.connectSocket(unsyncedSocket);
+
+        await unsyncedSocket.clientEmit('ui:event', 'match-ui-event', 'the-gang:chip-drag', { action: 'move' });
+        expect(hasEvent(senderSocket, 'ui:event')).toBe(false);
+        expect(hasEvent(receiverSocket, 'ui:event')).toBe(false);
+
+        await senderSocket.clientEmit('sync', 'match-ui-event', '0', 'cred-0');
+        await receiverSocket.clientEmit('sync', 'match-ui-event', '1', 'cred-1');
+        senderSocket.sent.length = 0;
+        receiverSocket.sent.length = 0;
+        unsyncedSocket.sent.length = 0;
+
+        const payload = {
+            action: 'move',
+            chip: 2,
+            round: 1,
+            x: 0.45,
+            y: 0.5,
+        };
+        await senderSocket.clientEmit('ui:event', 'match-ui-event', 'the-gang:chip-drag', payload);
+
+        expect(hasEvent(senderSocket, 'ui:event')).toBe(false);
+        expect(hasEvent(unsyncedSocket, 'ui:event')).toBe(false);
+        expect(hasEvent(receiverSocket, 'ui:event', (args) => {
+            const [matchID, event] = args;
+            return matchID === 'match-ui-event'
+                && typeof event === 'object'
+                && event !== null
+                && (event as { type?: unknown }).type === 'the-gang:chip-drag'
+                && (event as { playerId?: unknown }).playerId === '0'
+                && (event as { payload?: unknown }).payload === payload
+                && typeof (event as { sentAt?: unknown }).sentAt === 'number';
+        })).toBe(true);
+    });
+
     it('sync should prefer auth metadata provider for active matches', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -3258,6 +3333,55 @@ describe('GameTransportServer（离座与重连）', () => {
 
         const persisted = await storage.fetch('match-batch-stale-state', { state: true });
         expect(persisted.state?._stateID).toBe(1);
+    });
+
+    it('串行执行期间排队的普通命令若状态已前进，应直接丢弃而不是按新状态重放', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-queued-stale-command', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<{
+                executing: boolean;
+                stateID: number;
+                commandQueue: unknown[];
+            }>;
+            handleCommand: (
+                matchID: string,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+            drainCommandQueue: (match: unknown) => Promise<void>;
+            executeCommandInternal: (...args: unknown[]) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-queued-stale-command');
+        match.executing = true;
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        const queuedResult = serverInternal.handleCommand('match-queued-stale-command', '0', 'TEST_CMD', { stale: true });
+        expect(match.commandQueue).toHaveLength(1);
+
+        match.stateID += 1;
+        match.executing = false;
+        await serverInternal.drainCommandQueue(match);
+
+        await expect(queuedResult).resolves.toBe(false);
+        expect(executeSpy).not.toHaveBeenCalled();
     });
 
     it('batch 内命令验证失败时应透传领域错误码而不是折叠成 command_failed', async () => {

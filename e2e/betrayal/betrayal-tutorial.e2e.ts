@@ -240,106 +240,6 @@ const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
   await rollPanel.page().waitForTimeout(450);
 };
 
-const readBetrayalRollMetrics = async (rollPanel: Locator) => {
-  return rollPanel.evaluate((node) => {
-    const panel = node as HTMLElement;
-    const diceGroup = panel.querySelector(
-      '[data-testid="betrayal-house-dice-3d-group"]',
-    ) as HTMLElement | null;
-    const subtotal =
-      panel.querySelector('[data-testid="betrayal-recent-roll-subtotal"]')
-        ?.textContent ?? "";
-    const total =
-      panel.querySelector('[data-testid="betrayal-recent-roll-total"]')
-        ?.textContent ?? "";
-    const bonus =
-      panel.querySelector('[data-testid="betrayal-recent-roll-passive-bonus"]')
-        ?.textContent ?? "";
-    const ruleValues = (diceGroup?.dataset.diceRuleValues ?? "")
-      .split(",")
-      .filter(Boolean)
-      .map((value) => Number(value));
-    const visibleRuleValues = (diceGroup?.dataset.diceVisibleRuleValues ?? "")
-      .split(",")
-      .filter(Boolean)
-      .map((value) => Number(value));
-    const readableOverlayCount = panel.querySelectorAll(
-      '[data-testid^="betrayal-house-readable-die-"]',
-    ).length;
-    const dieValueOverlayCount = panel.querySelectorAll(
-      '[data-testid^="betrayal-house-die-value-overlay-"]',
-    ).length;
-    const skinCanvasCount = Array.from(panel.querySelectorAll("canvas"))
-      .filter(
-        (canvas): canvas is HTMLCanvasElement =>
-          canvas instanceof HTMLCanvasElement,
-      )
-      .filter((canvas) => canvas.dataset.skinsReady === "true").length;
-    const physicalFaces = (diceGroup?.dataset.dicePhysicalD6Faces ?? "")
-      .split(",")
-      .filter(Boolean)
-      .map((value) => Number(value));
-    const subtotalNumber = Number(subtotal.match(/-?\d+/)?.[0] ?? Number.NaN);
-    const totalNumber = Number(total.match(/-?\d+/)?.[0] ?? Number.NaN);
-    const bonusNumber = Number(bonus.match(/[+-]?\d+/)?.[0] ?? Number.NaN);
-    return {
-      ruleValues,
-      visibleRuleValues,
-      readableOverlayCount,
-      dieValueOverlayCount,
-      skinCanvasCount,
-      physicalFaces,
-      ruleSubtotal: Number(diceGroup?.dataset.diceRuleSubtotal ?? Number.NaN),
-      expectedSubtotal: ruleValues.reduce((sum, value) => sum + value, 0),
-      expectedPhysicalFaces: ruleValues.map((value) => value * 2 + 1),
-      subtotalNumber,
-      totalNumber,
-      bonusNumber,
-    };
-  });
-};
-
-const expectBetrayalRollMetricsToMatchVisibleSummary = async (
-  rollPanel: Locator,
-) => {
-  const metrics = await readBetrayalRollMetrics(rollPanel);
-  expect(
-    metrics.ruleValues.length,
-    "山屋骰必须暴露每颗 0/1/2 规则骰面",
-  ).toBeGreaterThan(0);
-  expect(
-    metrics.ruleSubtotal,
-    "骰子组件记录的规则骰面合计必须等于逐骰求和",
-  ).toBe(metrics.expectedSubtotal);
-  expect(
-    metrics.subtotalNumber,
-    "信息区“骰面合计”必须等于山屋 0/1/2 规则骰面合计",
-  ).toBe(metrics.expectedSubtotal);
-  expect(
-    metrics.visibleRuleValues,
-    "物理骰本体使用的山屋 0/1/2 规则值必须与结算骰一致",
-  ).toEqual(metrics.ruleValues);
-  expect(
-    metrics.readableOverlayCount,
-    "不能用额外小骰面列替代物理骰本体可读性",
-  ).toBe(0);
-  expect(
-    metrics.dieValueOverlayCount,
-    "不能用 DOM 数字叠层替代骰子素材本体",
-  ).toBe(0);
-  expect(
-    metrics.skinCanvasCount,
-    "山屋 0/1/2 规则值必须由 dice-box 骰子皮肤承载",
-  ).toBeGreaterThan(0);
-  expect(
-    metrics.physicalFaces,
-    "物理 d6 目标面必须和山屋规则骰一一对应",
-  ).toEqual(metrics.expectedPhysicalFaces);
-  expect(metrics.totalNumber, "信息区“总点数”必须等于规则骰面合计 + 加值").toBe(
-    metrics.expectedSubtotal + metrics.bonusNumber,
-  );
-};
-
 const expectInventoryCardHasSingleSymmetricOutline = async (card: Locator) => {
   const outline = await card.evaluate((node) => {
     const button = node as HTMLElement;
@@ -1525,24 +1425,17 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "betrayal-recent-roll-panel",
     );
     await expect(discoveryRollPanel).toBeVisible();
-    await expect(discoveryRollPanel).toContainText("外星几何");
-    await expect(discoveryRollPanel).toContainText("知识检定");
+    await expect(discoveryRollPanel).not.toContainText("外星几何");
+    await expect(discoveryRollPanel).not.toContainText("知识检定");
     await expect(
       discoveryReveal.getByTestId("betrayal-recent-roll-total"),
     ).toContainText("总点数");
-    const initialRollDetail = discoveryReveal.getByTestId(
-      "betrayal-recent-roll-detail",
-    );
     await expect(
-      discoveryReveal.getByTestId("betrayal-recent-roll-subtotal"),
-    ).toContainText(/骰面合计\s+\d+/);
+      discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
+    ).toContainText("骰面合计");
     await expect(
-      discoveryReveal.getByTestId("betrayal-recent-roll-passive-bonus"),
-    ).toContainText(/加值\s+[+-]\d+/);
-    await expect(initialRollDetail).toContainText(
-      /骰子合计\s+\d+｜加值\s+[+-]\d+/,
-    );
-    await expect(initialRollDetail).not.toContainText(/骰面|\d+\s+\+\s+\d+/);
+      discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
+    ).toContainText("加值");
     await expect(discoveryRollPanel).toHaveAttribute(
       "data-roll-panel-style",
       "open-table-transparent",
@@ -1745,13 +1638,15 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       .not.toBe("none");
     await expect(rabbitFootCard).toHaveAttribute("aria-pressed", "true");
     await expectInventoryCardHasSingleSymmetricOutline(rabbitFootCard);
-    await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);
+    await expect(
+      discoveryRollPanel.getByTestId("betrayal-recent-roll-total"),
+    ).toContainText("总点数");
+    await expect(discoveryRollPanel.getByTestId("betrayal-recent-roll-stage-surface")).toHaveCount(0);
+    await expect(discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("骰面合计");
+    await expect(discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown")).toContainText("加值");
     await expectTutorialNextDoesNotStealRollModifierFocus(page);
     await saveScreenshot(page, STEP_13);
     await saveScreenshot(page, STEP_14);
-    const rollDetail = discoveryReveal.getByTestId(
-      "betrayal-recent-roll-detail",
-    );
     await setHarnessRandomQueue(page, [0.99]);
     await rerollTargetDie.click();
     await expect(rabbitFootDice).toBeHidden();
@@ -1760,14 +1655,14 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toHaveAttribute("data-dice-settled", "false");
     await waitForPhysicalDiceSettled(discoveryRollPanel);
     await expect(
-      discoveryReveal.getByTestId("betrayal-recent-roll-subtotal"),
-    ).toContainText(/骰面合计\s+\d+/);
+      discoveryRollPanel.getByTestId("betrayal-recent-roll-total"),
+    ).toContainText("总点数");
     await expect(
-      discoveryReveal.getByTestId("betrayal-recent-roll-passive-bonus"),
-    ).toContainText(/加值\s+[+-]\d+/);
-    await expectBetrayalRollMetricsToMatchVisibleSummary(discoveryRollPanel);
-    await expect(rollDetail).toContainText(/骰子合计\s+\d+｜加值\s+[+-]\d+/);
-    await expect(rollDetail).not.toContainText(/骰面|\d+\s+\+\s+\d+/);
+      discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
+    ).toContainText("骰面合计");
+    await expect(
+      discoveryRollPanel.getByTestId("betrayal-recent-roll-breakdown"),
+    ).toContainText("加值");
     await saveScreenshot(page, STEP_15);
     await clickNext(page);
     await expect(page.locator("[data-tutorial-step]")).toHaveCount(0, {

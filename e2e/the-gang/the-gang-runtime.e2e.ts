@@ -7,13 +7,13 @@ import { THE_GANG_CHALLENGES } from '../../src/games/the-gang/domain/expansions'
 
 const THE_GANG_GAME_ID = 'the-gang';
 const THE_GANG_IMAGE_LOAD_TIMEOUT_MS = 15_000;
-const THE_GANG_PRESTART_HAND_SWAP_SCREENSHOT_PATH = join(
+const THE_GANG_PRESTART_CARD_DRAG_SWAP_SCREENSHOT_PATH = join(
     process.cwd(),
     'test-results',
     'evidence-screenshots',
     'the-gang',
-    'twohand-prestart-hand-swap-current',
-    'the-gang-prestart-hand-swap.png',
+    'twohand-card-drag-swap-current',
+    '01-桌面两副手牌开局前拖拽上手牌到下手牌源牌隐藏.png',
 );
 const THE_GANG_CHALLENGE_MODAL_SCREENSHOT_PATH = join(
     process.cwd(),
@@ -105,9 +105,21 @@ const THE_GANG_TWO_HAND_MOBILE_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '02-移动横屏四人两副手牌8个筹码槽和下手选中.jpg',
 );
-const THE_GANG_TWO_HAND_MOBILE_PRESTART_HAND_SWAP_SCREENSHOT_PATH = join(
+const THE_GANG_TWO_HAND_MOBILE_CHIP_DRAG_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
-    '08-移动横屏两副手牌开局前交换选择态.jpg',
+    '03-移动横屏拖拽白筹码到上手时手牌目标高亮.jpg',
+);
+const THE_GANG_TWO_HAND_MOBILE_RETURN_CHIP_DRAG_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '04-移动横屏拖拽上手筹码回中间筹码池高亮.jpg',
+);
+const THE_GANG_TWO_HAND_MOBILE_PRESTART_CARD_DRAG_SWAP_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '05-移动横屏开局前拖拽上手牌到下手牌源牌隐藏.jpg',
+);
+const THE_GANG_TWO_HAND_MOBILE_STARTED_CARD_DRAG_SWAP_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '08-移动横屏开始后拖拽下手牌到上手牌源牌隐藏.jpg',
 );
 const THE_GANG_TWO_HAND_FIVE_PLAYER_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
@@ -916,6 +928,411 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
     expect(metrics.minButtonWidth, `${label}：上手/下手按钮命中宽度必须达到 44px 触控底线`).toBeGreaterThanOrEqual(44);
     expect(metrics.minButtonWidth, `${label}：上手/下手按钮不能为了触控下限被视觉放大成主对象`).toBeLessThanOrEqual(84);
     expect(metrics.allButtonsHaveTouchClass, `${label}：按钮必须保留 min-h-11 触控类`).toBe(true);
+}
+
+async function captureTwoHandChipDragHighlight(
+    page: Page,
+    screenshotPath: string,
+    label: string,
+    handSlot: 'top' | 'bottom',
+) {
+    const source = page.locator('[data-bgg-zone="token-pile"]').getByRole('button', { name: '白筹码 1 星', exact: true });
+    const target = page.getByTestId(`the-gang-local-hand-${handSlot}`);
+    await expect(source).toBeVisible();
+    await expect(target).toBeVisible();
+
+    const sourceBox = await source.boundingBox();
+    const targetBox = await target.boundingBox();
+    if (!sourceBox || !targetBox) {
+        throw new Error(`${label}：无法读取筹码或手牌目标位置`);
+    }
+    const sourcePoint = {
+        x: sourceBox.x + sourceBox.width / 2,
+        y: sourceBox.y + sourceBox.height / 2,
+    };
+    const targetPoint = {
+        x: targetBox.x + targetBox.width / 2,
+        y: targetBox.y + targetBox.height / 2,
+    };
+
+    await page.mouse.move(sourcePoint.x, sourcePoint.y);
+    await page.mouse.down();
+    await page.mouse.move(
+        sourcePoint.x + ((targetPoint.x - sourcePoint.x) * 0.45),
+        sourcePoint.y + ((targetPoint.y - sourcePoint.y) * 0.45),
+        { steps: 6 },
+    );
+    await page.mouse.move(targetPoint.x, targetPoint.y, { steps: 8 });
+    await expect(page.getByTestId('the-gang-chip-drag-ghost')).toBeVisible();
+    await expect(target).toHaveAttribute('data-the-gang-chip-drop-state', 'active');
+
+    const metrics = await page.evaluate((slot) => {
+        const readElementRect = (node: Element | null) => {
+            if (!node) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                bottom: rect.bottom,
+                left: rect.left,
+                right: rect.right,
+                width: rect.width,
+                height: rect.height,
+            };
+        };
+        const readRect = (selector: string) => readElementRect(document.querySelector(selector));
+        const intersects = (
+            left: ReturnType<typeof readElementRect>,
+            right: ReturnType<typeof readElementRect>,
+        ) => !!left
+            && !!right
+            && left.left < right.right
+            && left.right > right.left
+            && left.top < right.bottom
+            && left.bottom > right.top;
+        const activeTarget = document.querySelector('[data-the-gang-chip-drop-target="local-hand"][data-the-gang-chip-drop-state="active"]');
+        const targetRow = document.querySelector(`[data-testid="the-gang-local-hand-${slot}"]`);
+        const targetCards = document.querySelector(`[data-testid="the-gang-local-hand-${slot}-cards"]`);
+        const activeTargetRect = readElementRect(activeTarget);
+        const targetRowRect = readElementRect(targetRow);
+        const targetCardsRect = readElementRect(targetCards);
+        const selectorRect = readRect('[data-testid="the-gang-chip-hand-selector"]');
+        const tokenPileRect = readRect('[data-bgg-zone="token-pile"]');
+        const ghostRect = readRect('[data-testid="the-gang-chip-drag-ghost"]');
+        const activeTargetStyle = activeTarget ? window.getComputedStyle(activeTarget) : null;
+        const activeTargetAfterStyle = activeTarget ? window.getComputedStyle(activeTarget, '::after') : null;
+        return {
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight,
+            activeTargetTestId: activeTarget?.getAttribute('data-testid') ?? null,
+            activeDropRangeUi: activeTarget?.getAttribute('data-the-gang-drop-range-ui') ?? null,
+            activeHasOpenDropClass: activeTarget?.classList.contains('the-gang-open-drop-target--active') ?? false,
+            activeTargetIsHandRow: activeTarget === targetRow,
+            activeTargetIsCards: activeTarget === targetCards,
+            activeTargetContainsCards: !!activeTarget && !!targetCards && activeTarget.contains(targetCards),
+            activeLocalTargetCount: document.querySelectorAll('[data-the-gang-chip-drop-target="local-hand"][data-the-gang-chip-drop-state="active"]').length,
+            availableLocalTargetCount: document.querySelectorAll('[data-the-gang-chip-drop-target="local-hand"][data-the-gang-chip-drop-state="available"]').length,
+            poolDropState: document.querySelector('[data-the-gang-chip-drop-target="pool"]')?.getAttribute('data-the-gang-chip-drop-state') ?? null,
+            activeTarget: activeTargetRect,
+            targetRow: targetRowRect,
+            targetCards: targetCardsRect,
+            selector: selectorRect,
+            tokenPile: tokenPileRect,
+            ghost: ghostRect,
+            activeWidthToCards: activeTargetRect && targetCardsRect ? activeTargetRect.width / targetCardsRect.width : null,
+            activeHeightToCards: activeTargetRect && targetCardsRect ? activeTargetRect.height / targetCardsRect.height : null,
+            activeOutlineWidth: activeTargetStyle ? Number.parseFloat(activeTargetStyle.outlineWidth) : null,
+            activeBorderRightWidth: activeTargetStyle ? Number.parseFloat(activeTargetStyle.borderRightWidth) : null,
+            activeOpenStop: activeTargetStyle?.getPropertyValue('--the-gang-drop-open-stop').trim() ?? null,
+            activeAfterBorderLeftWidth: activeTargetAfterStyle ? Number.parseFloat(activeTargetAfterStyle.borderLeftWidth) : null,
+            activeAfterBorderRightWidth: activeTargetAfterStyle ? Number.parseFloat(activeTargetAfterStyle.borderRightWidth) : null,
+            activeAfterHasGradient: !!activeTargetAfterStyle && activeTargetAfterStyle.backgroundImage.includes('linear-gradient'),
+            activeAfterBoxShadow: activeTargetAfterStyle?.boxShadow ?? null,
+            activeOverlapsSelector: intersects(activeTargetRect, selectorRect),
+            activeOverlapsTokenPile: intersects(activeTargetRect, tokenPileRect),
+        };
+    }, handSlot);
+    await writeMiddleLayoutMetrics(`${label}-拖拽高亮`, metrics);
+    expect(metrics.activeTargetTestId, `${label}：拖拽高亮必须落在目标手牌行`).toBe(`the-gang-local-hand-${handSlot}`);
+    expect(metrics.activeTargetIsHandRow, `${label}：拖拽高亮必须锚定整副手牌行，不能只锚定卡牌小容器`).toBe(true);
+    expect(metrics.activeTargetIsCards, `${label}：拖拽高亮不能只框住卡牌容器`).toBe(false);
+    expect(metrics.activeTargetContainsCards, `${label}：拖拽高亮必须包住对应手牌卡面`).toBe(true);
+    expect(metrics.activeLocalTargetCount, `${label}：拖拽中只能有一个手牌目标突出为 active`).toBe(1);
+    expect(metrics.availableLocalTargetCount, `${label}：另一副手牌应保持 available，而不是消失或同样 active`).toBe(1);
+    expect(metrics.poolDropState, `${label}：从筹码池拖出时，筹码池不能被误高亮成可投放目标`).toBeNull();
+    expect(metrics.activeWidthToCards, `${label}：拖拽高亮必须覆盖比卡牌小容器更完整的手牌目标面`).not.toBeNull();
+    expect(metrics.activeWidthToCards, `${label}：拖拽高亮必须覆盖比卡牌小容器更完整的手牌目标面`).toBeGreaterThan(1.05);
+    expect(metrics.activeHeightToCards, `${label}：拖拽高亮必须和目标手牌行同高，不能漂到别的区域`).not.toBeNull();
+    expect(metrics.activeHeightToCards, `${label}：拖拽高亮必须和目标手牌行同高，不能漂到别的区域`).toBeGreaterThanOrEqual(0.95);
+    expect(metrics.activeDropRangeUi, `${label}：拖拽高亮必须使用右侧开放的范围 UI`).toBe('open-right-gradient');
+    expect(metrics.activeHasOpenDropClass, `${label}：active 落点必须使用开放式高亮类`).toBe(true);
+    expect(metrics.activeOutlineWidth, `${label}：拖拽高亮不能再使用封闭 outline`).toBe(0);
+    expect(metrics.activeBorderRightWidth, `${label}：拖拽高亮右侧必须开放，不能有右边框`).toBe(0);
+    expect(metrics.activeAfterBorderRightWidth, `${label}：拖拽高亮伪元素右侧必须开放`).toBe(0);
+    expect(metrics.activeAfterBorderLeftWidth, `${label}：拖拽高亮左侧必须保留定位线`).not.toBeNull();
+    expect(metrics.activeAfterBorderLeftWidth, `${label}：拖拽高亮左侧定位线必须可见`).toBeGreaterThanOrEqual(2);
+    expect(metrics.activeAfterHasGradient, `${label}：拖拽高亮上下边界必须用渐变表达范围`).toBe(true);
+    expect(metrics.activeOpenStop, `${label}：拖拽高亮必须在到达右侧前淡出，不能形成右端线`).toBe('78%');
+    expect(metrics.activeAfterBoxShadow, `${label}：拖拽高亮伪元素不能用 box-shadow 形成右侧端帽`).toBe('none');
+    expect(metrics.activeOverlapsSelector, `${label}：拖拽高亮不能压住左侧给上手/给下手按钮`).toBe(false);
+    expect(metrics.activeOverlapsTokenPile, `${label}：拖拽高亮不能漂到中区筹码池`).toBe(false);
+
+    await mkdir(dirname(screenshotPath), { recursive: true });
+    await page.screenshot({ path: screenshotPath, fullPage: false, type: 'jpeg', quality: 90 });
+    await page.mouse.move(sourcePoint.x, sourcePoint.y, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.getByTestId('the-gang-chip-drag-ghost')).toHaveCount(0);
+}
+
+async function captureReturnChipDragPoolHighlight(
+    page: Page,
+    screenshotPath: string,
+    label: string,
+    handSlot: 'top' | 'bottom',
+) {
+    const source = page.getByTestId(`the-gang-return-local-chip-${handSlot}`);
+    const target = page.locator('[data-bgg-zone="token-pile"]');
+    const otherHandSlot = handSlot === 'top' ? 'bottom' : 'top';
+    await expect(source).toBeVisible();
+    await expect(target).toBeVisible();
+
+    const sourceBox = await source.boundingBox();
+    const targetBox = await target.boundingBox();
+    if (!sourceBox || !targetBox) {
+        throw new Error(`${label}：无法读取已贴筹码或中间筹码池位置`);
+    }
+    const sourcePoint = {
+        x: sourceBox.x + sourceBox.width / 2,
+        y: sourceBox.y + sourceBox.height / 2,
+    };
+    const targetPoint = {
+        x: targetBox.x + targetBox.width / 2,
+        y: targetBox.y + targetBox.height / 2,
+    };
+
+    await page.mouse.move(sourcePoint.x, sourcePoint.y);
+    await page.mouse.down();
+    await page.mouse.move(
+        sourcePoint.x + ((targetPoint.x - sourcePoint.x) * 0.45),
+        sourcePoint.y + ((targetPoint.y - sourcePoint.y) * 0.45),
+        { steps: 6 },
+    );
+    await page.mouse.move(targetPoint.x, targetPoint.y, { steps: 8 });
+    await expect(page.getByTestId('the-gang-chip-drag-ghost')).toBeVisible();
+    await expect(target).toHaveAttribute('data-the-gang-chip-drop-state', 'active');
+
+    const metrics = await page.evaluate(({ slot, otherSlot }) => {
+        const readElementRect = (node: Element | null) => {
+            if (!node) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                bottom: rect.bottom,
+                left: rect.left,
+                right: rect.right,
+                width: rect.width,
+                height: rect.height,
+            };
+        };
+        const readRect = (selector: string) => readElementRect(document.querySelector(selector));
+        const activePool = document.querySelector('[data-the-gang-chip-drop-target="pool"][data-the-gang-chip-drop-state="active"]');
+        const tokenPile = document.querySelector('[data-bgg-zone="token-pile"]');
+        const activePoolRect = readElementRect(activePool);
+        const tokenPileRect = readElementRect(tokenPile);
+        const ghostRect = readRect('[data-testid="the-gang-chip-drag-ghost"]');
+        const sourceHand = document.querySelector(`[data-testid="the-gang-local-hand-${slot}"]`);
+        const otherHand = document.querySelector(`[data-testid="the-gang-local-hand-${otherSlot}"]`);
+        const activePoolStyle = activePool ? window.getComputedStyle(activePool) : null;
+        const activePoolAfterStyle = activePool ? window.getComputedStyle(activePool, '::after') : null;
+        return {
+            activePoolIsTokenPile: activePool === tokenPile,
+            activeDropRangeUi: activePool?.getAttribute('data-the-gang-drop-range-ui') ?? null,
+            activeHasOpenDropClass: activePool?.classList.contains('the-gang-open-drop-target--active') ?? false,
+            poolActiveTargetCount: document.querySelectorAll('[data-the-gang-chip-drop-target="pool"][data-the-gang-chip-drop-state="active"]').length,
+            activeLocalTargetCount: document.querySelectorAll('[data-the-gang-chip-drop-target="local-hand"][data-the-gang-chip-drop-state="active"]').length,
+            sourceHandDropState: sourceHand?.getAttribute('data-the-gang-chip-drop-state') ?? null,
+            otherHandDropState: otherHand?.getAttribute('data-the-gang-chip-drop-state') ?? null,
+            activePool: activePoolRect,
+            tokenPile: tokenPileRect,
+            ghost: ghostRect,
+            activePoolWidthToTokenPile: activePoolRect && tokenPileRect ? activePoolRect.width / tokenPileRect.width : null,
+            activePoolHeightToTokenPile: activePoolRect && tokenPileRect ? activePoolRect.height / tokenPileRect.height : null,
+            activeOutlineWidth: activePoolStyle ? Number.parseFloat(activePoolStyle.outlineWidth) : null,
+            activeBorderRightWidth: activePoolStyle ? Number.parseFloat(activePoolStyle.borderRightWidth) : null,
+            activeOpenStop: activePoolStyle?.getPropertyValue('--the-gang-drop-open-stop').trim() ?? null,
+            activeAfterBorderLeftWidth: activePoolAfterStyle ? Number.parseFloat(activePoolAfterStyle.borderLeftWidth) : null,
+            activeAfterBorderRightWidth: activePoolAfterStyle ? Number.parseFloat(activePoolAfterStyle.borderRightWidth) : null,
+            activeAfterHasGradient: !!activePoolAfterStyle && activePoolAfterStyle.backgroundImage.includes('linear-gradient'),
+            activeAfterBoxShadow: activePoolAfterStyle?.boxShadow ?? null,
+        };
+    }, { slot: handSlot, otherSlot: otherHandSlot });
+    await writeMiddleLayoutMetrics(`${label}-拖回中间池高亮`, metrics);
+    expect(metrics.activePoolIsTokenPile, `${label}：拖回放置目标必须就是中间筹码池本体`).toBe(true);
+    expect(metrics.poolActiveTargetCount, `${label}：拖回中间时只能有一个中间池 active 目标`).toBe(1);
+    expect(metrics.activeLocalTargetCount, `${label}：拖回中间时手牌不能误突出为 active`).toBe(0);
+    expect(metrics.sourceHandDropState, `${label}：来源手牌不能在拖回时反向高亮`).toBeNull();
+    expect(metrics.otherHandDropState, `${label}：另一副手牌应保持可转移提示，不应抢 active`).toBe('available');
+    expect(metrics.activePoolWidthToTokenPile, `${label}：中间高亮必须包住筹码池本体宽度`).not.toBeNull();
+    expect(metrics.activePoolWidthToTokenPile, `${label}：中间高亮必须包住筹码池本体宽度`).toBeGreaterThanOrEqual(0.99);
+    expect(metrics.activePoolHeightToTokenPile, `${label}：中间高亮必须包住筹码池本体高度`).not.toBeNull();
+    expect(metrics.activePoolHeightToTokenPile, `${label}：中间高亮必须包住筹码池本体高度`).toBeGreaterThanOrEqual(0.99);
+    expect(metrics.activeDropRangeUi, `${label}：中间筹码池必须使用右侧开放的范围 UI`).toBe('open-right-gradient');
+    expect(metrics.activeHasOpenDropClass, `${label}：中间筹码池 active 落点必须使用开放式高亮类`).toBe(true);
+    expect(metrics.activeOutlineWidth, `${label}：中间筹码池不能再使用封闭 outline`).toBe(0);
+    expect(metrics.activeBorderRightWidth, `${label}：中间筹码池右侧必须开放，不能有右边框`).toBe(0);
+    expect(metrics.activeAfterBorderRightWidth, `${label}：中间筹码池伪元素右侧必须开放`).toBe(0);
+    expect(metrics.activeAfterBorderLeftWidth, `${label}：中间筹码池左侧必须保留定位线`).not.toBeNull();
+    expect(metrics.activeAfterBorderLeftWidth, `${label}：中间筹码池左侧定位线必须可见`).toBeGreaterThanOrEqual(2);
+    expect(metrics.activeAfterHasGradient, `${label}：中间筹码池上下边界必须用渐变表达范围`).toBe(true);
+    expect(metrics.activeOpenStop, `${label}：中间筹码池高亮必须在到达右侧前淡出，不能形成右端线`).toBe('78%');
+    expect(metrics.activeAfterBoxShadow, `${label}：中间筹码池伪元素不能用 box-shadow 形成右侧端帽`).toBe('none');
+
+    await mkdir(dirname(screenshotPath), { recursive: true });
+    await page.screenshot({ path: screenshotPath, fullPage: false, type: 'jpeg', quality: 90 });
+    await page.mouse.up();
+    await expect(page.getByTestId('the-gang-chip-drag-ghost')).toHaveCount(0);
+    await expect(source).toHaveCount(0);
+}
+
+async function captureCardDragSwap(
+    page: Page,
+    screenshotPath: string,
+    label: string,
+    options: {
+        sourceSlot: 'top' | 'bottom';
+        sourceIndex: number;
+        targetSlot: 'top' | 'bottom';
+        targetIndex: number;
+    },
+) {
+    const { sourceSlot, sourceIndex, targetSlot, targetIndex } = options;
+    const sourceTestId = `the-gang-local-hand-${sourceSlot}-card-${sourceIndex}`;
+    const targetTestId = `the-gang-local-hand-${targetSlot}-card-${targetIndex}`;
+    const source = page.getByTestId(sourceTestId);
+    const target = page.getByTestId(targetTestId);
+    await expect(source).toBeVisible();
+    await expect(target).toBeVisible();
+    await expect(page.getByTestId('the-gang-hand-swap-stage')).toHaveCount(0);
+    await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toHaveCount(0);
+    await expect(page.getByTestId('the-gang-confirm-hand-swap')).toHaveCount(0);
+    await expect(page.getByTestId('the-gang-skip-hand-swap')).toHaveCount(0);
+
+    const beforeState = await getTheGangState(page);
+    const player = beforeState?.core?.players?.['0'];
+    const sourceCardBefore = JSON.stringify(
+        sourceSlot === 'top'
+            ? player?.pocketCards?.[sourceIndex]
+            : player?.secondaryPocketCards?.[sourceIndex],
+    );
+    const targetCardBefore = JSON.stringify(
+        targetSlot === 'top'
+            ? player?.pocketCards?.[targetIndex]
+            : player?.secondaryPocketCards?.[targetIndex],
+    );
+    if (!sourceCardBefore || sourceCardBefore === 'undefined' || !targetCardBefore || targetCardBefore === 'undefined') {
+        throw new Error(`${label}：拖拽前未读到上下手牌`);
+    }
+
+    const sourceBox = await source.boundingBox();
+    const targetBox = await target.boundingBox();
+    if (!sourceBox || !targetBox) {
+        throw new Error(`${label}：无法读取源牌或目标牌位置`);
+    }
+    const sourcePoint = {
+        x: sourceBox.x + sourceBox.width / 2,
+        y: sourceBox.y + sourceBox.height / 2,
+    };
+    const targetPoint = {
+        x: targetBox.x + targetBox.width / 2,
+        y: targetBox.y + targetBox.height / 2,
+    };
+
+    await page.mouse.move(sourcePoint.x, sourcePoint.y);
+    await page.mouse.down();
+    await page.mouse.move(
+        sourcePoint.x + ((targetPoint.x - sourcePoint.x) * 0.45),
+        sourcePoint.y + ((targetPoint.y - sourcePoint.y) * 0.45),
+        { steps: 6 },
+    );
+    await page.mouse.move(targetPoint.x, targetPoint.y, { steps: 8 });
+    await expect(page.getByTestId('the-gang-card-drag-ghost')).toBeVisible();
+    await expect(source).toHaveAttribute('data-drag-source-hidden', 'true');
+    await expect(target).toHaveAttribute('data-the-gang-card-drop-state', 'active');
+
+    const metrics = await page.evaluate(({ sourceId, targetId }) => {
+        const readElementRect = (node: Element | null) => {
+            if (!node) return null;
+            const rect = node.getBoundingClientRect();
+            return {
+                top: rect.top,
+                bottom: rect.bottom,
+                left: rect.left,
+                right: rect.right,
+                width: rect.width,
+                height: rect.height,
+            };
+        };
+        const readByTestId = (testId: string) => document.querySelector(`[data-testid="${testId}"]`);
+        const sourceNode = readByTestId(sourceId);
+        const targetNode = readByTestId(targetId);
+        const activeTarget = document.querySelector('[data-the-gang-card-drop-target="hand-card"][data-the-gang-card-drop-state="active"]');
+        const sourceStyle = sourceNode ? window.getComputedStyle(sourceNode) : null;
+        const activeTargetStyle = activeTarget ? window.getComputedStyle(activeTarget) : null;
+        const activeTargetAfterStyle = activeTarget ? window.getComputedStyle(activeTarget, '::after') : null;
+        return {
+            sourceHidden: sourceNode?.getAttribute('data-drag-source-hidden') ?? null,
+            sourceOpacity: sourceStyle?.opacity ?? null,
+            targetDropState: targetNode?.getAttribute('data-the-gang-card-drop-state') ?? null,
+            activeTargetTestId: activeTarget?.getAttribute('data-testid') ?? null,
+            activeDropRangeUi: activeTarget?.getAttribute('data-the-gang-drop-range-ui') ?? null,
+            activeHasOpenDropClass: activeTarget?.classList.contains('the-gang-open-drop-target--active') ?? false,
+            activeCardTargetCount: document.querySelectorAll('[data-the-gang-card-drop-target="hand-card"][data-the-gang-card-drop-state="active"]').length,
+            ghost: readElementRect(document.querySelector('[data-testid="the-gang-card-drag-ghost"]')),
+            source: readElementRect(sourceNode),
+            target: readElementRect(targetNode),
+            activeOutlineWidth: activeTargetStyle ? Number.parseFloat(activeTargetStyle.outlineWidth) : null,
+            activeBorderRightWidth: activeTargetStyle ? Number.parseFloat(activeTargetStyle.borderRightWidth) : null,
+            activeOpenStop: activeTargetStyle?.getPropertyValue('--the-gang-drop-open-stop').trim() ?? null,
+            activeAfterBorderLeftWidth: activeTargetAfterStyle ? Number.parseFloat(activeTargetAfterStyle.borderLeftWidth) : null,
+            activeAfterBorderRightWidth: activeTargetAfterStyle ? Number.parseFloat(activeTargetAfterStyle.borderRightWidth) : null,
+            activeAfterHasGradient: !!activeTargetAfterStyle && activeTargetAfterStyle.backgroundImage.includes('linear-gradient'),
+            activeAfterBoxShadow: activeTargetAfterStyle?.boxShadow ?? null,
+            handSwapStageCount: document.querySelectorAll('[data-testid="the-gang-hand-swap-stage"]').length,
+            prestartConfirmCount: document.querySelectorAll('[data-testid="the-gang-confirm-prestart-hand-swap"]').length,
+            confirmCount: document.querySelectorAll('[data-testid="the-gang-confirm-hand-swap"]').length,
+            skipCount: document.querySelectorAll('[data-testid="the-gang-skip-hand-swap"]').length,
+        };
+    }, { sourceId: sourceTestId, targetId: targetTestId });
+    await writeMiddleLayoutMetrics(`${label}-拖牌换位`, metrics);
+    expect(metrics.sourceHidden, `${label}：拖牌时源牌必须隐藏，不能和 ghost 双显`).toBe('true');
+    expect(metrics.sourceOpacity, `${label}：拖牌时源牌必须视觉不可见但保留占位`).toBe('0');
+    expect(metrics.targetDropState, `${label}：目标牌必须成为 active 落点`).toBe('active');
+    expect(metrics.activeTargetTestId, `${label}：active 高亮必须锚定目标卡牌本体`).toBe(targetTestId);
+    expect(metrics.activeCardTargetCount, `${label}：拖牌中只能有一个目标牌 active`).toBe(1);
+    expect(metrics.ghost, `${label}：拖牌 ghost 必须可见`).not.toBeNull();
+    expect(metrics.activeDropRangeUi, `${label}：目标牌必须使用右侧开放的范围 UI`).toBe('open-right-gradient');
+    expect(metrics.activeHasOpenDropClass, `${label}：目标牌 active 落点必须使用开放式高亮类`).toBe(true);
+    expect(metrics.activeOutlineWidth, `${label}：目标牌不能再使用封闭 outline`).toBe(0);
+    expect(metrics.activeBorderRightWidth, `${label}：目标牌右侧必须开放，不能有右边框`).toBe(0);
+    expect(metrics.activeAfterBorderRightWidth, `${label}：目标牌伪元素右侧必须开放`).toBe(0);
+    expect(metrics.activeAfterBorderLeftWidth, `${label}：目标牌左侧必须保留定位线`).not.toBeNull();
+    expect(metrics.activeAfterBorderLeftWidth, `${label}：目标牌左侧定位线必须可见`).toBeGreaterThanOrEqual(2);
+    expect(metrics.activeAfterHasGradient, `${label}：目标牌上下边界必须用渐变表达范围`).toBe(true);
+    expect(metrics.activeOpenStop, `${label}：目标牌高亮必须在到达右侧前淡出，不能形成右端线`).toBe('78%');
+    expect(metrics.activeAfterBoxShadow, `${label}：目标牌伪元素不能用 box-shadow 形成右侧端帽`).toBe('none');
+    expect(metrics.handSwapStageCount, `${label}：不允许出现旧手牌调换阶段条`).toBe(0);
+    expect(metrics.prestartConfirmCount, `${label}：不允许出现开局前交换确认按钮`).toBe(0);
+    expect(metrics.confirmCount, `${label}：不允许出现旧交换确认按钮`).toBe(0);
+    expect(metrics.skipCount, `${label}：不允许出现旧跳过交换按钮`).toBe(0);
+
+    await mkdir(dirname(screenshotPath), { recursive: true });
+    await page.screenshot({ path: screenshotPath, fullPage: false, type: 'jpeg', quality: 90 });
+    await page.mouse.up();
+    await expect(page.getByTestId('the-gang-card-drag-ghost')).toHaveCount(0);
+    await expect
+        .poll(async () => {
+            const state = await getTheGangState(page);
+            const currentPlayer = state?.core?.players?.['0'];
+            return {
+                phase: state?.core?.phase,
+                pendingKind: state?.core?.pendingProgress?.kind,
+                sourceCard: JSON.stringify(
+                    sourceSlot === 'top'
+                        ? currentPlayer?.pocketCards?.[sourceIndex]
+                        : currentPlayer?.secondaryPocketCards?.[sourceIndex],
+                ),
+                targetCard: JSON.stringify(
+                    targetSlot === 'top'
+                        ? currentPlayer?.pocketCards?.[targetIndex]
+                        : currentPlayer?.secondaryPocketCards?.[targetIndex],
+                ),
+            };
+        }, { message: `${label}：等待拖牌松手后真实上下手牌换位` })
+        .toEqual({
+            phase: 'chip-selection',
+            pendingKind: undefined,
+            sourceCard: targetCardBefore,
+            targetCard: sourceCardBefore,
+        });
 }
 
 async function createOnlineTheGangMatch(page: Page, playerCount: number) {
@@ -2387,7 +2804,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         }
     });
 
-    test('桌面端两副手牌开局前可交换上下手牌且开局后投票直接进入下一轮', async ({ game, page }, testInfo) => {
+    test('桌面端两副手牌可拖拽换位且开局后投票直接进入下一轮', async ({ game, page }, testInfo) => {
         test.setTimeout(150000);
         await page.setViewportSize({ width: 1366, height: 768 });
         const playerCount = 4;
@@ -2430,45 +2847,20 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             });
 
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toHaveCount(0);
-        await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toBeDisabled();
+        await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-local-hand-top')).toBeVisible();
         await expect(page.getByTestId('the-gang-local-hand-bottom')).toBeVisible();
         await expect(page.locator('[data-testid^="the-gang-local-hand-top-card-"] img')).toHaveCount(2);
         await expect(page.locator('[data-testid^="the-gang-local-hand-bottom-card-"] img')).toHaveCount(2);
-        const beforePrestartSwap = await getTheGangState(page);
-        const topCardBeforeSwap = JSON.stringify(beforePrestartSwap?.core?.players?.['0']?.pocketCards?.[0]);
-        const bottomCardBeforeSwap = JSON.stringify(beforePrestartSwap?.core?.players?.['0']?.secondaryPocketCards?.[1]);
-        await page.getByTestId('the-gang-local-hand-top-card-0').click();
-        await page.getByTestId('the-gang-local-hand-bottom-card-1').click();
-        await expect(page.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
-        await expect(page.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
-        await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toBeEnabled();
-        await mkdir(dirname(THE_GANG_PRESTART_HAND_SWAP_SCREENSHOT_PATH), { recursive: true });
         await mkdir(THE_GANG_HAND_RANK_HINTS_EVIDENCE_DIR, { recursive: true });
         await page.screenshot({ path: THE_GANG_TWO_HAND_RANK_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
-        await page.screenshot({ path: THE_GANG_PRESTART_HAND_SWAP_SCREENSHOT_PATH, fullPage: false });
-        await game.screenshot('桌面两副手牌开局前已选择上下牌', testInfo);
-        await page.getByTestId('the-gang-confirm-prestart-hand-swap').click();
-        await expect
-            .poll(async () => {
-                const state = await getTheGangState(page);
-                return {
-                    heistStarted: state?.core?.heistStarted,
-                    pendingKind: state?.core?.pendingProgress?.kind,
-                    phase: state?.core?.phase,
-                    round: state?.core?.round,
-                    topCard: JSON.stringify(state?.core?.players?.['0']?.pocketCards?.[0]),
-                    bottomCard: JSON.stringify(state?.core?.players?.['0']?.secondaryPocketCards?.[1]),
-                };
-            }, { message: '等待开局前上下手牌交换只改手牌，不启动抢劫也不进入投票等待' })
-            .toEqual({
-                heistStarted: false,
-                pendingKind: undefined,
-                phase: 'chip-selection',
-                round: 1,
-                topCard: bottomCardBeforeSwap,
-                bottomCard: topCardBeforeSwap,
-            });
+        await captureCardDragSwap(
+            page,
+            THE_GANG_PRESTART_CARD_DRAG_SWAP_SCREENSHOT_PATH,
+            '桌面两副手牌开局前拖拽上手牌到下手牌',
+            { sourceSlot: 'top', sourceIndex: 0, targetSlot: 'bottom', targetIndex: 1 },
+        );
+        await game.screenshot('桌面两副手牌开局前拖拽换位后保持筹码选择', testInfo);
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toHaveCount(0);
 
         await startHeistFromSetup(page);
@@ -2942,36 +3334,41 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             });
 
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toHaveCount(0);
-        await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toBeDisabled();
-        await page.getByTestId('the-gang-local-hand-top-card-0').click();
-        await page.getByTestId('the-gang-local-hand-bottom-card-1').click();
-        await expect(page.getByTestId('the-gang-local-hand-top-card-0')).toHaveAttribute('data-selected', 'true');
-        await expect(page.getByTestId('the-gang-local-hand-bottom-card-1')).toHaveAttribute('data-selected', 'true');
-        await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toBeEnabled();
-        await page.screenshot({ path: THE_GANG_TWO_HAND_MOBILE_PRESTART_HAND_SWAP_SCREENSHOT_PATH, fullPage: false, type: 'jpeg', quality: 90 });
-        await game.screenshot('移动横屏两副手牌开局前已选择上下牌', testInfo);
-        await page.getByTestId('the-gang-confirm-prestart-hand-swap').click();
-        await expect
-            .poll(async () => {
-                const state = await getTheGangState(page);
-                return {
-                    heistStarted: state?.core?.heistStarted,
-                    pendingKind: state?.core?.pendingProgress?.kind,
-                    phase: state?.core?.phase,
-                    round: state?.core?.round,
-                };
-            }, { message: '等待移动端开局前交换不启动抢劫也不进入投票等待' })
-            .toEqual({
-                heistStarted: false,
-                pendingKind: undefined,
-                phase: 'chip-selection',
-                round: 1,
-            });
+        await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toHaveCount(0);
+        await captureCardDragSwap(
+            page,
+            THE_GANG_TWO_HAND_MOBILE_PRESTART_CARD_DRAG_SWAP_SCREENSHOT_PATH,
+            '移动横屏开局前拖拽上手牌到下手牌',
+            { sourceSlot: 'top', sourceIndex: 0, targetSlot: 'bottom', targetIndex: 1 },
+        );
+        await game.screenshot('移动横屏两副手牌开局前拖拽换位后保持筹码选择', testInfo);
 
         await startHeistFromSetup(page);
         await expectExactChipButtonCounts(page, '白筹码', chipValues);
         await expect(page.getByTestId('the-gang-chip-hand-selector')).toBeVisible();
         await expectChipHandSelectorDockPlacement(page, '移动横屏四人两副手牌筹码目标');
+        await captureCardDragSwap(
+            page,
+            THE_GANG_TWO_HAND_MOBILE_STARTED_CARD_DRAG_SWAP_SCREENSHOT_PATH,
+            '移动横屏开始后拖拽下手牌到上手牌',
+            { sourceSlot: 'bottom', sourceIndex: 0, targetSlot: 'top', targetIndex: 1 },
+        );
+        await game.screenshot('移动横屏开始后拖拽换位后保持筹码选择', testInfo);
+        await captureTwoHandChipDragHighlight(
+            page,
+            THE_GANG_TWO_HAND_MOBILE_CHIP_DRAG_SCREENSHOT_PATH,
+            '移动横屏四人两副手牌拖拽白筹码到上手',
+            'top',
+        );
+        await dispatchTheGangCommand(page, '0', 'TAKE_CHIP', { chip: 1, handSlot: 'top' });
+        await expect(page.getByTestId('the-gang-return-local-chip-top')).toBeVisible();
+        await captureReturnChipDragPoolHighlight(
+            page,
+            THE_GANG_TWO_HAND_MOBILE_RETURN_CHIP_DRAG_SCREENSHOT_PATH,
+            '移动横屏四人两副手牌拖拽上手筹码回中间筹码池',
+            'top',
+        );
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
         await page.getByTestId('the-gang-chip-hand-selector-bottom').click();
         await expect(page.getByTestId('the-gang-chip-hand-selector-bottom')).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByTestId('the-gang-chip-hand-selector-top')).toHaveAttribute('aria-pressed', 'false');

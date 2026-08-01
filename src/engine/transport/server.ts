@@ -774,6 +774,8 @@ interface ActiveMatch {
         commandType: string;
         payload: unknown;
         playerID: string;
+        /** 入队时的权威状态号；消费时若已变化，说明命令来自旧画面，应丢弃。 */
+        stateIDAtEnqueue: number;
         options?: ExecuteCommandInternalOptions;
         resolve: (success: boolean) => void;
     } | {
@@ -1080,6 +1082,22 @@ export class GameTransportServer {
                     return;
                 }
                 await this.handleBatch(socket, matchID, info.playerID, batchId, commands, meta);
+            });
+
+            socket.on('ui:event', (
+                matchID: string,
+                eventType: string,
+                payload: unknown,
+            ) => {
+                if (!matchID || typeof eventType !== 'string' || eventType.length === 0 || eventType.length > 120) return;
+                const info = this.socketIndex.get(socket.id);
+                if (!info || info.matchID !== matchID || !info.playerID) return;
+                socket.to(`game:${matchID}`).emit('ui:event', matchID, {
+                    type: eventType,
+                    playerId: info.playerID,
+                    payload,
+                    sentAt: Date.now(),
+                });
             });
 
             socket.on('disconnect', () => {
@@ -4165,6 +4183,17 @@ export class GameTransportServer {
                     await next.execute();
                     next.resolve(true);
                 } else {
+                    if (next.stateIDAtEnqueue !== match.stateID) {
+                        logger.warn('[GameTransport] dropped stale queued command', {
+                            matchID: match.matchID,
+                            playerID: next.playerID,
+                            commandType: next.commandType,
+                            stateIDAtEnqueue: next.stateIDAtEnqueue,
+                            currentStateID: match.stateID,
+                        });
+                        next.resolve(false);
+                        continue;
+                    }
                     const queuedSuccess = await this.executeCommandInternal(
                         match,
                         next.playerID,
@@ -4300,6 +4329,7 @@ export class GameTransportServer {
                     commandType,
                     payload,
                     playerID,
+                    stateIDAtEnqueue: match.stateID,
                     options: { reportFailureFeedback: true },
                     resolve,
                 });

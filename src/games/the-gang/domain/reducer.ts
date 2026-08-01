@@ -256,8 +256,6 @@ const progressKindForCommand = (command: TheGangCommand): TheGangProgressKind | 
             return 'end-round';
         case THE_GANG_COMMANDS.REVEAL_SHOWDOWN:
             return 'reveal-showdown';
-        case THE_GANG_COMMANDS.CONFIRM_HAND_SWAP:
-            return 'hand-swap';
         case THE_GANG_COMMANDS.START_NEXT_HEIST:
             return 'start-next-heist';
         default:
@@ -294,86 +292,20 @@ const hasAllProgressApprovals = (core: TheGangCore, events: TheGangEvent[]) => {
     return core.playerIds.every((playerId) => approval.payload.approvals.includes(playerId));
 };
 
-const buildEventsAfterHandSwap = (
-    core: TheGangCore,
-    command: TheGangCommand,
-    timestamp: number,
-): TheGangEvent[] => {
-    if (core.round < 4) {
-        return [{
-            type: THE_GANG_EVENTS.ROUND_ENDED,
-            payload: {
-                round: core.round,
-                nextRound: nextPlayableRound(core),
-                ...buildRoundAdvanceDraw(core),
-            },
-            sourceCommandType: command.type,
-            timestamp,
-        }];
-    }
-
-    if (core.communityCards.length < 5) return [];
-    const record = createHeistRecord(core);
-    const successes = core.successes + (record.outcome === 'success' ? 1 : 0);
-    const failures = core.failures + (record.outcome === 'failure' ? 1 : 0);
-    const events: TheGangEvent[] = [{
-        type: THE_GANG_EVENTS.SHOWDOWN_REVEALED,
-        payload: { record, successes, failures },
-        sourceCommandType: command.type,
-        timestamp,
-    }];
-
-    if (successes >= 3 || failures >= 3) {
-        events.push({
-            type: THE_GANG_EVENTS.GAME_FINISHED,
-            payload: successes >= 3 ? { winners: core.playerIds } : { draw: false },
-            sourceCommandType: command.type,
-            timestamp,
-        });
-    }
-
-    return events;
-};
-
 const buildHandSwapConfirmedEvents = (
-    core: TheGangCore,
     command: Extract<TheGangCommand, { type: typeof THE_GANG_COMMANDS.CONFIRM_HAND_SWAP }>,
     timestamp: number,
 ): TheGangEvent[] => {
-    const existingApprovals = core.pendingProgress?.kind === 'hand-swap'
-        ? core.pendingProgress.approvals
-        : [];
-    if (existingApprovals.includes(command.playerId)) return [];
-
-    const approvals = [...existingApprovals, command.playerId];
-    const hasSwap = typeof command.payload.topIndex === 'number' && typeof command.payload.bottomIndex === 'number';
-    const confirmationPayload = {
-        playerId: command.playerId,
-        approvals,
-        ...(hasSwap ? {
+    return [{
+        type: THE_GANG_EVENTS.HAND_SWAP_CONFIRMED,
+        payload: {
+            playerId: command.playerId,
             topIndex: command.payload.topIndex,
             bottomIndex: command.payload.bottomIndex,
-        } : {}),
-    };
-    const confirmationEvent: TheGangEvent = {
-        type: THE_GANG_EVENTS.HAND_SWAP_CONFIRMED,
-        payload: confirmationPayload,
+        },
         sourceCommandType: command.type,
         timestamp,
-    };
-    if (core.phase === 'chip-selection' && !core.heistStarted) {
-        return [confirmationEvent];
-    }
-
-    const coreAfterSwap = applyHandSwapConfirmationToCore(core, confirmationPayload);
-    if (!core.playerIds.every((playerId) => approvals.includes(playerId))) {
-        return [confirmationEvent];
-    }
-
-    return [
-        confirmationEvent,
-        ...buildEventsAfterHandSwap(coreAfterSwap, command, timestamp),
-    ];
+    }];
 };
 
 const drawFirstNonJoker = (core: TheGangCore) => {
@@ -498,6 +430,23 @@ export function execute(
                 ),
             ];
         }
+        case THE_GANG_COMMANDS.RETURN_CHIP: {
+            const ownerKey = resolveChipOwnerKey(core, command.playerId, command.payload.handSlot);
+            const chip = core.currentRoundChips[ownerKey];
+            if (chip === undefined) return [];
+            return [{
+                type: THE_GANG_EVENTS.CHIP_RETURNED,
+                payload: {
+                    playerId: command.playerId,
+                    ownerKey,
+                    handSlot: command.payload.handSlot,
+                    round: core.round,
+                    chip,
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            }];
+        }
         case THE_GANG_COMMANDS.TAKE_EXIT_CHIP: {
             const ownerKey = resolveChipOwnerKey(core, command.playerId, command.payload.handSlot);
             const nextExitChipOwners = [
@@ -606,7 +555,7 @@ export function execute(
             return events;
         }
         case THE_GANG_COMMANDS.CONFIRM_HAND_SWAP:
-            return buildHandSwapConfirmedEvents(core, command, timestamp);
+            return buildHandSwapConfirmedEvents(command, timestamp);
         case THE_GANG_COMMANDS.START_NEXT_HEIST: {
             const events = buildProgressApprovalEvent(core, command, timestamp);
             if (!hasAllProgressApprovals(core, events)) return events;
@@ -653,6 +602,17 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
                     ...nextRoundChips,
                     [event.payload.ownerKey]: event.payload.chip,
                 },
+                pendingProgress: undefined,
+            };
+        }
+        case THE_GANG_EVENTS.CHIP_RETURNED: {
+            const nextRoundChips = { ...core.currentRoundChips };
+            delete nextRoundChips[event.payload.ownerKey];
+            return {
+                ...core,
+                currentRoundChips: nextRoundChips,
+                currentRoundExitChipOwners: getCurrentRoundExitChipOwners(core)
+                    .filter((ownerKey) => ownerKey !== event.payload.ownerKey),
                 pendingProgress: undefined,
             };
         }
@@ -763,13 +723,9 @@ export function reduce(core: TheGangCore, event: TheGangEvent): TheGangCore {
             };
         case THE_GANG_EVENTS.HAND_SWAP_CONFIRMED: {
             const swappedCore = applyHandSwapConfirmationToCore(core, event.payload);
-            return {
-                ...swappedCore,
-                pendingProgress: core.phase === 'hand-swap' ? {
-                    kind: 'hand-swap',
-                    approvals: event.payload.approvals,
-                } : core.pendingProgress,
-            };
+            return core.phase === 'chip-selection'
+                ? { ...swappedCore, pendingProgress: undefined }
+                : swappedCore;
         }
         case THE_GANG_EVENTS.ROUND_ENDED: {
             const historyEntry = {

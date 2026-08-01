@@ -115,6 +115,49 @@ describe('The Gang domain flow', () => {
         })).toMatchObject({ valid: true });
     });
 
+    test('退回当前轮筹码会清除对应撤离标记和待确认进度', () => {
+        const adapter = createReplayAdapter(TheGangDomain, 'the-gang-return-chip-test');
+        let state = adapter.setup(['0', '1', '2', '3', '4', '5', '6']);
+        state = startHeist(adapter, state, 1);
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                round: 4,
+                phase: 'chip-selection',
+                currentRoundChips: {
+                    0: 1,
+                    1: 2,
+                    2: 3,
+                    3: 4,
+                    4: 5,
+                    5: 6,
+                    6: 7,
+                },
+                currentRoundExitChipOwners: ['0'],
+                pendingProgress: { kind: 'reveal-showdown', approvals: ['1'] },
+            },
+        };
+
+        expect(TheGangDomain.validate(state, {
+            type: THE_GANG_COMMANDS.RETURN_CHIP,
+            playerId: '0',
+            payload: {},
+            timestamp: 2,
+        })).toMatchObject({ valid: true });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.RETURN_CHIP,
+            playerId: '0',
+            payload: {},
+            timestamp: 2,
+        }).state;
+
+        expect(state.core.currentRoundChips['0']).toBeUndefined();
+        expect(state.core.currentRoundExitChipOwners).not.toContain('0');
+        expect(state.core.pendingProgress).toBeUndefined();
+    });
+
     test('非本人 playerView 隐藏其他玩家底牌', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-view-test');
         let state = adapter.setup(['0', '1', '2']);
@@ -763,7 +806,7 @@ describe('The Gang domain flow', () => {
         expect(bottomResult?.strength.ranks[0]).toBe(14);
     });
 
-    test('两副手牌开局前可交换，开始后投票完直接推进下一轮', () => {
+    test('两副手牌在筹码选择阶段可随时交换，结束轮次不进入交换阶段', () => {
         const adapter = createReplayAdapter(TheGangDomain, 'the-gang-prestart-hand-swap-round-test');
         let state = adapter.setup(['0', '1', '2']);
 
@@ -799,6 +842,23 @@ describe('The Gang domain flow', () => {
 
         state = startHeist(adapter, state, 4);
 
+        const startedTopCard = state.core.players['0'].pocketCards[1];
+        const startedBottomCard = state.core.players['0'].secondaryPocketCards?.[0];
+        expect(startedBottomCard).toBeDefined();
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+            playerId: '0',
+            payload: { topIndex: 1, bottomIndex: 0 },
+            timestamp: 5,
+        }).state;
+
+        expect(state.core.players['0'].pocketCards[1]).toEqual(startedBottomCard);
+        expect(state.core.players['0'].secondaryPocketCards?.[0]).toEqual(startedTopCard);
+        expect(state.core.phase).toBe('chip-selection');
+        expect(state.core.heistStarted).toBe(true);
+        expect(state.core.pendingProgress).toBeUndefined();
+
         let chip = 1;
         for (const playerId of state.core.playerIds) {
             for (const handSlot of ['top', 'bottom'] as const) {
@@ -812,7 +872,24 @@ describe('The Gang domain flow', () => {
             }
         }
 
-        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, 20);
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.END_ROUND,
+            playerId: '0',
+            payload: {},
+            timestamp: 20,
+        }).state;
+        expect(state.core.pendingProgress).toEqual({ kind: 'end-round', approvals: ['0'] });
+
+        state = adapter.execute(state, {
+            type: THE_GANG_COMMANDS.CONFIRM_HAND_SWAP,
+            playerId: '0',
+            payload: { topIndex: 0, bottomIndex: 0 },
+            timestamp: 21,
+        }).state;
+        expect(state.core.phase).toBe('chip-selection');
+        expect(state.core.pendingProgress).toBeUndefined();
+
+        state = confirmProgressForAllPlayers(adapter, state, THE_GANG_COMMANDS.END_ROUND, 30);
 
         expect(state.core.phase).toBe('chip-selection');
         expect(state.core.round).toBe(2);
