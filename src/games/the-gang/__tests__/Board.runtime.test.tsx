@@ -524,6 +524,9 @@ describe('The Gang Board 运行入口', () => {
         fireEvent.click(screen.getByTestId('the-gang-return-local-chip-top'));
 
         expect(screen.getByTestId('the-gang-chip-transfer-animation')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-chip-transfer-line')).toHaveAttribute('data-chip-value', '1');
+        expect(screen.queryByTestId('the-gang-chip-transfer-line-label')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-chip-transfer-animation-label')).not.toBeInTheDocument();
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.RETURN_CHIP, {
             __internalPlayerId: '0',
         });
@@ -784,6 +787,28 @@ describe('The Gang Board 运行入口', () => {
         expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
     });
 
+    test('其他玩家按本地玩家之后的自然座位顺序从左到右展示', () => {
+        const core = TheGangDomain.setup(['0', '1', '2', '3'], fixedRandom);
+        renderWithToast(
+                <Board
+                G={stateOf(core)}
+                dispatch={vi.fn() as never}
+                playerID="1"
+                matchData={matchDataForPlayerCount(4)}
+                isConnected
+            />,
+        );
+
+        const playerBoards = Array.from(document.querySelectorAll('[data-bgg-zone="top-zone"] [data-bgg-zone="plboard"]'));
+        const playerBoardTexts = playerBoards.map((node) => node.textContent ?? '');
+
+        expect(playerBoards).toHaveLength(3);
+        expect(playerBoardTexts[0]).toContain('AI 3 号位');
+        expect(playerBoardTexts[1]).toContain('AI 4 号位');
+        expect(playerBoardTexts[2]).toContain('玩家 1');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).not.toHaveTextContent('AI 2 号位');
+    });
+
     test('选筹阶段可以直接点击对手当前轮筹码拿走', () => {
         const dispatch = vi.fn();
         const initial = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
@@ -808,6 +833,9 @@ describe('The Gang Board 运行入口', () => {
         fireEvent.click(screen.getByTestId('the-gang-take-player-chip-1-single'));
 
         expect(screen.getByTestId('the-gang-chip-transfer-animation')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-chip-transfer-line')).toHaveAttribute('data-chip-value', '2');
+        expect(screen.queryByTestId('the-gang-chip-transfer-line-label')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-chip-transfer-animation-label')).not.toBeInTheDocument();
         expect(dispatch).toHaveBeenCalledWith(THE_GANG_COMMANDS.TAKE_CHIP, {
             __internalPlayerId: '0',
             chip: 2,
@@ -855,6 +883,9 @@ describe('The Gang Board 运行入口', () => {
             chip: 1,
         });
         expect(screen.getByTestId('the-gang-chip-transfer-animation')).toBeInTheDocument();
+        expect(screen.getByTestId('the-gang-chip-transfer-line')).toHaveAttribute('data-chip-value', '1');
+        expect(screen.queryByTestId('the-gang-chip-transfer-line-label')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-chip-transfer-animation-label')).not.toBeInTheDocument();
         expect(screen.queryByTestId('the-gang-chip-drag-ghost')).not.toBeInTheDocument();
     });
 
@@ -1074,9 +1105,15 @@ describe('The Gang Board 运行入口', () => {
         });
 
         const transferAnimation = screen.getByTestId('the-gang-chip-transfer-animation');
+        const transferLine = screen.getByTestId('the-gang-chip-transfer-line');
         expect(transferAnimation).toHaveAttribute('data-player-id', '1');
         expect(transferAnimation).toHaveAttribute('data-chip-value', '2');
-        expect(within(transferAnimation).getByText('AI 2 号位 · 2★')).toBeInTheDocument();
+        expect(transferAnimation).toHaveAttribute('aria-label', 'AI 2 号位 · 2★');
+        expect(transferLine).toHaveAttribute('data-player-id', '1');
+        expect(transferLine).toHaveAttribute('data-chip-value', '2');
+        expect(document.querySelector('[data-bgg-zone="top-zone"]')).toHaveTextContent('AI 2 号位');
+        expect(screen.queryByTestId('the-gang-chip-transfer-line-label')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('the-gang-chip-transfer-animation-label')).not.toBeInTheDocument();
     });
 
     test('拖拽筹码释放到无效区域不会派发选筹命令', () => {

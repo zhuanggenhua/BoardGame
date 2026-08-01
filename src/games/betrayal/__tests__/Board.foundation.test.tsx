@@ -410,16 +410,26 @@ function setNextBoardDiscoveryRoom(
 
 function expectSingleEventEffectResolutionStep(...expectedTexts: string[]) {
     expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
-    expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-    const resolutionSteps = screen.getAllByTestId('betrayal-discovery-resolution-step');
+    const resolutionSteps = expectDiscoveryResolutionLedgerTraceOnly(1);
     expect(resolutionSteps).toHaveLength(1);
     expect(resolutionSteps[0]).toHaveTextContent('事件效果');
     for (const text of expectedTexts) {
         expect(resolutionSteps[0]).toHaveTextContent(text);
     }
     expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-    expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 1/1');
+    expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确定');
     expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
+}
+
+function expectDiscoveryResolutionLedgerTraceOnly(expectedCount: number) {
+    const ledger = screen.getByTestId('betrayal-discovery-resolution-steps');
+    expect(ledger).toBeInTheDocument();
+    expect(ledger).toHaveAttribute('hidden');
+    expect(ledger).toHaveAttribute('aria-hidden', 'true');
+    expect(ledger).toHaveAttribute('data-ui-role', 'nonvisual-resolution-ledger');
+    const resolutionSteps = screen.getAllByTestId('betrayal-discovery-resolution-step');
+    expect(resolutionSteps).toHaveLength(expectedCount);
+    return resolutionSteps;
 }
 
 function dismissBlockingBoardOverlays(core: BetrayalCore): BetrayalCore {
@@ -1252,28 +1262,38 @@ describe('Betrayal Board foundation', () => {
             'no-scrollbar',
         );
         const mobileCharacters = within(mobileGrid);
-        expect(mobileCharacters.getByTestId('betrayal-character-card-jaden-jones')).not.toHaveTextContent('已选择');
-        expect(mobileCharacters.getByTestId('betrayal-character-card-jaden-jones')).toHaveAttribute('aria-label', expect.stringContaining('已选择'));
-        expect(mobileCharacters.getByTestId('betrayal-character-card-jaden-jones')).toHaveTextContent('P1');
-        expect(mobileCharacters.getByTestId('betrayal-character-card-jaden-jones-state-outline')).toHaveAttribute('data-highlight-shape', 'pentagon');
+        expect(mobileCharacters.getByTestId('betrayal-character-card-isa-valencia')).not.toHaveTextContent('已选择');
+        expect(mobileCharacters.getByTestId('betrayal-character-card-isa-valencia')).toHaveAttribute('aria-label', expect.stringContaining('已选择'));
+        expect(mobileCharacters.getByTestId('betrayal-character-card-isa-valencia')).toHaveTextContent('P1');
+        expect(mobileCharacters.getByTestId('betrayal-character-card-isa-valencia-state-outline')).toHaveAttribute('data-highlight-shape', 'pentagon');
         [
-            'jaden-jones',
-            'rebecca-allen',
-            'darryl-highla',
+            'isa-valencia',
+            'anita-hernandez',
+            'father-warren-leung',
+            'dan-nguyen-md',
+            'michelle-monroe',
+            'beat-box-bowen',
+            'josef-hooper',
             'oliver-swift',
-            'lia-valencia',
-            'sam-yin',
+            'stephanie-richter',
+            'persephone-puleri',
+            'sammy-angler',
+            'jaden-jones',
         ].forEach((explorerId) => {
             expect(mobileCharacters.getByTestId(`betrayal-character-card-${explorerId}`)).toBeInTheDocument();
         });
+        expect(mobileCharacters.queryByTestId('betrayal-character-card-rebecca-allen')).not.toBeInTheDocument();
+        expect(mobileCharacters.queryByTestId('betrayal-character-card-darryl-highla')).not.toBeInTheDocument();
+        expect(mobileCharacters.queryByTestId('betrayal-character-card-lia-valencia')).not.toBeInTheDocument();
+        expect(mobileCharacters.queryByTestId('betrayal-character-card-sam-yin')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-character-mobile-page-label')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-character-page-down')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-character-page-up')).not.toBeInTheDocument();
 
         const abilitySummary = screen.getByTestId('betrayal-character-ability-summary');
         expect(abilitySummary).toHaveTextContent('特性：');
-        expect(abilitySummary).toHaveTextContent('大胆');
-        expect(abilitySummary).toHaveTextContent('攻击投掷 +1。');
+        expect(abilitySummary).toHaveTextContent('无特殊能力');
+        expect(abilitySummary).toHaveTextContent('基础版角色背景不改变规则');
         expect(abilitySummary).not.toHaveAttribute('title');
         expect(screen.queryByTestId('betrayal-character-ability-trigger')).not.toBeInTheDocument();
     });
@@ -1337,9 +1357,17 @@ describe('Betrayal Board foundation', () => {
     });
 
     it('点击开始剧本后先显示开局电影字幕，再进入牌桌', async () => {
+        let openingCore = createBetrayalCharacterSelectCore(['0', '1', '2']);
+        openingCore = applyBetrayalCommand(openingCore, BETRAYAL_COMMANDS.SELECT_EXPLORER, '1', { explorerId: 'anita-hernandez' });
+        openingCore = applyBetrayalCommand(openingCore, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '1', {});
+        openingCore = applyBetrayalCommand(openingCore, BETRAYAL_COMMANDS.SELECT_EXPLORER, '2', { explorerId: 'father-warren-leung' });
+        openingCore = applyBetrayalCommand(openingCore, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '2', {});
+        openingCore = applyBetrayalCommand(openingCore, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '1', {});
+        openingCore = applyBetrayalCommand(openingCore, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '2', {});
+
         render(
             <HarnessBoard
-                initialCore={createBetrayalCharacterSelectCore(['0', '1', '2'])}
+                initialCore={openingCore}
                 playerID="0"
                 matchData={defaultMatchData.slice(0, 3)}
             />,
@@ -1400,7 +1428,7 @@ describe('Betrayal Board foundation', () => {
         let core = createBetrayalCharacterSelectCore(['0', '1', '2']);
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '1', { explorerId: 'rebecca-allen' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '1', { explorerId: 'anita-hernandez' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '1', {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '0', {});
 
@@ -1447,8 +1475,12 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-current-ability')).toHaveTextContent(/\S+：\S+/);
         const currentTraits = screen.getByTestId('betrayal-current-traits');
         expect(currentTraits.querySelector('[data-trait-track-rail="true"]')).toBeInTheDocument();
+        expect(currentTraits.querySelector('[data-trait-track-rail-shape="continuous-segmented"]')).toBeInTheDocument();
+        expect(currentTraits.querySelector('[data-trait-track-repeat-value-policy="separate-physical-slots"]')).toBeInTheDocument();
+        expect(currentTraits.querySelector('[data-trait-track-segmented-rail="true"]')).toBeInTheDocument();
         expect(currentTraits.querySelector('[data-trait-track-slot="true"]')).toBeInTheDocument();
         expect(currentTraits.querySelector('[data-trait-track-pointer="true"]')).toBeInTheDocument();
+        expect(currentTraits.querySelector('[data-trait-track-tick="true"]')).not.toBeInTheDocument();
         const skullEndpoint = currentTraits.querySelector('[data-trait-track-skull="true"]');
         expect(skullEndpoint).toBeInTheDocument();
         expect(skullEndpoint).toHaveAttribute('title', expect.stringContaining('死亡格'));
@@ -1513,17 +1545,31 @@ describe('Betrayal Board foundation', () => {
         const speedTrack = screen.getByTestId('betrayal-current-trait-track-speed');
         expect(speedTrack).toHaveAttribute('data-trait-track-position', '1');
         expect(speedTrack).toHaveAttribute('data-trait-track-value', '3');
+        expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
+        expect(speedTrack.querySelector('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-repeat-value-policy', 'separate-physical-slots');
+        expect(speedTrack.querySelector('[data-trait-track-segmented-rail="true"]')).toBeInTheDocument();
+        expect(speedTrack.querySelectorAll('[data-trait-track-pointer="true"]')).toHaveLength(1);
         expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '1');
         expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-current', 'true');
+        expect(speedTrack.querySelector('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-pointer-shape', 'material-slot-highlight');
+        expect(speedTrack.querySelector('[data-trait-track-position="1"]')).toHaveAttribute('data-trait-track-color', 'current-green');
+        expect(speedTrack.querySelector('[data-trait-track-position="3"]')).toHaveAttribute('data-trait-track-color', 'start-green');
+        expect(speedTrack.querySelector('[data-trait-track-position="1"] [data-trait-track-slot-label="true"]')).toHaveAttribute('data-trait-track-slot-label-align', 'center');
+        expect(speedTrack.querySelector('[data-trait-track-marker-asset]')).not.toBeInTheDocument();
+        expect(speedTrack.querySelector('[data-trait-track-tick="true"]')).not.toBeInTheDocument();
         expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveTextContent('3');
         expect(speedTrack.querySelector('[data-trait-track-position="2"]')).toHaveAttribute('data-trait-track-current', 'false');
 
         const boardMarker = screen.getByTestId('betrayal-explorer-board-marker-speed');
         expect(boardMarker).toHaveAttribute('data-trait-track-position', '1');
         expect(boardMarker).toHaveAttribute('data-trait-track-value', '3');
+        expect(boardMarker).toHaveAttribute('data-trait-board-marker-shape', 'blank-material-marker');
+        expect(boardMarker).toHaveAttribute('data-trait-board-marker-asset', 'betrayal/markers/number-blank');
+        expect(boardMarker).toHaveAttribute('data-trait-board-marker-visible-value', 'false');
+        expect(boardMarker).not.toHaveTextContent('3');
     });
 
-    it('探索者棋子素材不使用眩晕或化猫这类错误 token，并支持查看详情', () => {
+    it('探索者棋子素材不使用眩晕或化猫这类错误 token，玩家卡切观察视角，棋盘 token 查看详情', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         core.otherExplorers = core.otherExplorers.map((explorer) => (
             explorer.playerId === '1'
@@ -1536,21 +1582,29 @@ describe('Betrayal Board foundation', () => {
             matchData: defaultMatchData,
         });
 
-        const rebecca = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === 'rebecca-allen')!;
-        const darryl = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === 'darryl-highla')!;
-        expect(rebecca.tokenAsset).toBeUndefined();
-        expect(darryl.tokenAsset).toBeUndefined();
-        expect(screen.getByTestId('betrayal-bottom-teammate-1')).toHaveAttribute('data-token-asset', rebecca.portraitAsset);
-        expect(screen.getByTestId('betrayal-bottom-teammate-2')).toHaveAttribute('data-token-asset', darryl.portraitAsset);
+        const anita = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === 'anita-hernandez')!;
+        const fatherWarren = EXPLORER_CATALOG.find((explorer) => explorer.explorerId === 'father-warren-leung')!;
+        expect(EXPLORER_CATALOG.some((explorer) => explorer.explorerId === 'rebecca-allen')).toBe(false);
+        expect(EXPLORER_CATALOG.some((explorer) => explorer.explorerId === 'darryl-highla')).toBe(false);
+        expect(anita.tokenAsset).toBeUndefined();
+        expect(fatherWarren.tokenAsset).toBe('betrayal/tokens/explorers/father-warren-leung');
+        expect(screen.getByTestId('betrayal-bottom-teammate-1')).toHaveAttribute('data-token-asset', anita.portraitAsset);
+        expect(screen.getByTestId('betrayal-bottom-teammate-2')).toHaveAttribute('data-token-asset', fatherWarren.tokenAsset);
+        expect(screen.getByTestId('betrayal-bottom-teammate-1').querySelector('[data-player-status-tone="neutral"]')).toHaveTextContent('同房间');
+        expect(screen.getByTestId('betrayal-bottom-teammate-1').querySelector('[data-player-status-tone="target"]')).toBeNull();
+        expect(screen.getByTestId('betrayal-teammate-panel-1').querySelector('[data-player-status-tone="neutral"]')).toHaveTextContent('同房间');
 
         fireEvent.click(screen.getByTestId('betrayal-bottom-teammate-1'));
-        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveTextContent('队友一');
-        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveAttribute('data-token-asset', rebecca.portraitAsset);
-        fireEvent.click(screen.getByTestId('betrayal-explorer-detail-close'));
+        expect(screen.queryByTestId('betrayal-explorer-detail-dialog-1')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-bottom-teammate-1')).toHaveAttribute('data-observed-player', 'true');
+        expect(screen.getByTestId('betrayal-bottom-teammate-observed-1')).toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-observed-player', 'true');
+        expect(screen.getByTestId('betrayal-current-traits')).toHaveAttribute('data-player-id', '1');
+        expect(screen.getByTestId('betrayal-current-panel-token-1')).toHaveAttribute('data-token-asset', anita.portraitAsset);
 
         fireEvent.click(screen.getByTestId(`betrayal-room-occupant-${core.currentExplorer.roomId}-1`));
-        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveTextContent('丽贝卡·艾伦博士');
-        expect(screen.getByTestId('betrayal-explorer-detail-token-1')).toHaveAttribute('data-token-asset', rebecca.portraitAsset);
+        expect(screen.getByTestId('betrayal-explorer-detail-dialog-1')).toHaveTextContent('安妮塔·赫南德兹');
+        expect(screen.getByTestId('betrayal-explorer-detail-token-1')).toHaveAttribute('data-token-asset', anita.portraitAsset);
     });
 
     it('牌堆区常驻显示预兆状态，并隐藏完整作祟检定规则说明', () => {
@@ -1592,13 +1646,20 @@ describe('Betrayal Board foundation', () => {
         expect(riskProgress).toHaveAttribute('data-track-max', '9');
         expect(riskProgress).toHaveAttribute('data-current-omen-count', '3');
         expect(riskProgress).toHaveAttribute('data-progress-percent', '33');
-        expect(riskProgress).toHaveAttribute('data-current-display', 'segment-highlight');
+        expect(riskProgress).toHaveAttribute('data-current-display', 'material-slot-highlight');
+        expect(riskProgress).toHaveAttribute('data-haunt-risk-style', 'official-asset-track');
+        expect(riskProgress).toHaveAttribute('data-haunt-risk-track-shape', 'material-0-9-bar');
+        expect(screen.getByTestId('betrayal-haunt-risk-track-image')).toHaveAttribute('data-haunt-risk-track-image', 'official-0-9');
+        expect(riskProgress.querySelector('[data-haunt-risk-slot-grid="true"]')).toBeInTheDocument();
         expect(riskProgress).toHaveAttribute('aria-valuenow', '3');
         const riskSlots = screen.getAllByTestId('betrayal-haunt-risk-slot');
         expect(riskSlots).toHaveLength(10);
         expect(riskSlots[3]).toHaveAttribute('data-haunt-risk-slot', '3');
         expect(riskSlots[3]).toHaveAttribute('data-haunt-risk-current-slot', 'true');
+        expect(riskSlots[3]).toHaveAttribute('data-haunt-risk-current-cell', 'true');
         expect(riskSlots[2]).toHaveAttribute('data-haunt-risk-current-slot', 'false');
+        expect(riskSlots[2]).toHaveAttribute('data-haunt-risk-current-cell', 'false');
+        riskSlots.forEach((slot) => expect(slot).toHaveTextContent(''));
         expect(screen.queryByTestId('betrayal-haunt-risk-pointer')).not.toBeInTheDocument();
     });
 
@@ -3038,6 +3099,7 @@ describe('Betrayal Board foundation', () => {
         core.currentExplorer = actor;
         core.currentExplorerTraits = { ...actor.traits };
         core.currentExplorerInventory = [...actor.inventory];
+        const teammateName = core.otherExplorers.find((explorer) => explorer.playerId === '1')!.displayName;
         core.activeRoomId = 'upper-west';
         core.currentExplorerRoomId = 'upper-west';
         core.recommendedAction = 'use';
@@ -3057,7 +3119,7 @@ describe('Betrayal Board foundation', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('Crimson Jack');
-            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('丽贝卡·艾伦博士');
+            expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent(teammateName);
             expect(screen.getByTestId('betrayal-bottom-teammate-knowledge-1')).toHaveTextContent('掌握杰克线索');
         });
     });
@@ -3325,6 +3387,7 @@ describe('Betrayal Board foundation', () => {
         core.activeRoomId = 'entrance-hall';
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.turnStartInventoryCardIds = ['medical-kit'];
+        const medicalKitTargetName = core.otherExplorers.find((explorer) => explorer.playerId === '1')!.displayName;
 
         render(
             <HarnessBoardWithRandom
@@ -3350,7 +3413,7 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-action-use'));
 
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('埋葬急救包');
-        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('治疗丽贝卡·艾伦博士的力量和速度和知识和神志');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent(`治疗${medicalKitTargetName}的力量和速度和知识和神志`);
         expect(screen.queryByTestId('betrayal-inventory-medical-kit')).not.toBeInTheDocument();
     });
 
@@ -4433,10 +4496,9 @@ describe('Betrayal Board foundation', () => {
         );
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('器械库获得砍刀');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('展示后埋葬急救包');
-        expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')).toHaveLength(2);
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('器械库获得砍刀');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[1]).toHaveTextContent('展示后埋葬急救包');
+        const armorySteps = expectDiscoveryResolutionLedgerTraceOnly(2);
+        expect(armorySteps[0]).toHaveTextContent('器械库获得砍刀');
+        expect(armorySteps[1]).toHaveTextContent('展示后埋葬急救包');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('探索到器械库');
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('房间没有发现符号');
         expect(screen.getByTestId('betrayal-inventory-hunting-knife-armory-0-1')).toBeInTheDocument();
@@ -4493,12 +4555,11 @@ describe('Betrayal Board foundation', () => {
         );
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识检定');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
-        expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')).toHaveLength(1);
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('事件效果');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('知识 +1');
+        const alienGeometrySteps = expectDiscoveryResolutionLedgerTraceOnly(1);
+        expect(alienGeometrySteps[0]).toHaveTextContent('事件效果');
+        expect(alienGeometrySteps[0]).toHaveTextContent('知识 +1');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 1/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确定');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
 
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
@@ -4543,8 +4604,7 @@ describe('Betrayal Board foundation', () => {
             'aria-label',
             expect.stringContaining('事件牌 外星几何'),
         );
-        const steps = screen.getAllByTestId('betrayal-discovery-resolution-step');
-        expect(steps).toHaveLength(2);
+        const steps = expectDiscoveryResolutionLedgerTraceOnly(2);
         expect(steps[0]).toHaveTextContent('房间效果：礼拜堂，神志 +1');
         expect(steps[1]).toHaveTextContent('事件效果');
         expect(steps[1]).toHaveTextContent('知识 +1');
@@ -4685,10 +4745,9 @@ describe('Betrayal Board foundation', () => {
             expect.stringContaining('预兆牌 A Splash of Crimson'),
         );
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')).toHaveLength(2);
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('已加入持有区');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[1]).toHaveTextContent('作祟检定');
+        const omenSteps = expectDiscoveryResolutionLedgerTraceOnly(2);
+        expect(omenSteps[0]).toHaveTextContent('已加入持有区');
+        expect(omenSteps[1]).toHaveTextContent('作祟检定');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 1/2');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/2');
 
@@ -6364,6 +6423,7 @@ describe('Betrayal Board foundation', () => {
         core = placeOtherExplorerInBoardRoom(core, '0', 'hallway');
         core.recommendedAction = 'trade';
         dismissBlockingBoardOverlays(core);
+        const sicknessExchangeTargetName = core.otherExplorers.find((explorer) => explorer.playerId === '0')!.displayName;
 
         render(
             <HarnessBoard
@@ -6378,8 +6438,8 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-sickness-exchange-banner')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-trade-flow-banner')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-action-use')).toHaveAttribute('data-haunt-targeting-status', 'true');
-        expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent('杰登·琼斯');
-        expect(screen.getByTestId('betrayal-room-occupant-target-cue-hallway-0')).toHaveTextContent('点杰登·琼斯交换疾病');
+        expect(screen.getByTestId('betrayal-action-cue')).toHaveTextContent(sicknessExchangeTargetName);
+        expect(screen.getByTestId('betrayal-room-occupant-target-cue-hallway-0')).toHaveTextContent(`点${sicknessExchangeTargetName}交换疾病`);
         const desktopCancelTargetButton = screen.getAllByTestId('betrayal-haunt-target-cancel')[0];
         expect(desktopCancelTargetButton).toHaveStyle({
             bottom: '0px',
@@ -8788,12 +8848,11 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('知识 +1');
-        expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')).toHaveLength(1);
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('事件效果');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('知识 +1');
+        const hungryHouseSteps = expectDiscoveryResolutionLedgerTraceOnly(1);
+        expect(hungryHouseSteps[0]).toHaveTextContent('事件效果');
+        expect(hungryHouseSteps[0]).toHaveTextContent('知识 +1');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 1/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确定');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
 
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
@@ -8863,13 +8922,12 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-discovery-panel')).toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('速度 +1');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('放置到门厅');
-        expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')).toHaveLength(1);
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('事件效果');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('速度 +1');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('放置到门厅');
+        const spiderSteps = expectDiscoveryResolutionLedgerTraceOnly(1);
+        expect(spiderSteps[0]).toHaveTextContent('事件效果');
+        expect(spiderSteps[0]).toHaveTextContent('速度 +1');
+        expect(spiderSteps[0]).toHaveTextContent('放置到门厅');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 1/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确定');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
 
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
@@ -9082,7 +9140,8 @@ describe('Betrayal Board foundation', () => {
         const damageBranch = brainFood!.roll!.branches.find((branch) => branch.min === 0);
         expect(damageBranch?.effect).toBeTruthy();
 
-        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        let core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        core = setBoardTraitTrack(core, '0', 'might', [1, 2, 3, 4], 2, 2);
         core.pendingEventChoice = {
             id: 'test-brain-food-repeat-damage-choice',
             playerId: '0',
@@ -9249,13 +9308,12 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('力量 -1');
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('神志 +1');
-        expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')).toHaveLength(1);
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('事件效果');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('力量 -1');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('神志 +1');
+        const dustSteps = expectDiscoveryResolutionLedgerTraceOnly(1);
+        expect(dustSteps[0]).toHaveTextContent('事件效果');
+        expect(dustSteps[0]).toHaveTextContent('力量 -1');
+        expect(dustSteps[0]).toHaveTextContent('神志 +1');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 1/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确定');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
 
         fireEvent.click(screen.getByTestId('betrayal-discovery-continue'));
@@ -9291,12 +9349,11 @@ describe('Betrayal Board foundation', () => {
 
         expect(screen.queryByTestId('betrayal-event-choice-panel')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-detail')).toHaveTextContent('抽取一张物品卡');
-        expect(screen.getByTestId('betrayal-discovery-resolution-steps')).toBeInTheDocument();
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')).toHaveLength(1);
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('事件效果');
-        expect(screen.getAllByTestId('betrayal-discovery-resolution-step')[0]).toHaveTextContent('抽取一张物品卡');
+        const sayCheeseSteps = expectDiscoveryResolutionLedgerTraceOnly(1);
+        expect(sayCheeseSteps[0]).toHaveTextContent('事件效果');
+        expect(sayCheeseSteps[0]).toHaveTextContent('抽取一张物品卡');
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-backdrop-dismiss', 'disabled');
-        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确认 1/1');
+        expect(screen.getByTestId('betrayal-discovery-continue')).toHaveTextContent('确定');
         expect(screen.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
         expect(within(screen.getByTestId('betrayal-inventory-row-item')).getByText('魔法相机')).toBeInTheDocument();
 

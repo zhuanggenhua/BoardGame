@@ -4,9 +4,23 @@ import { describe, expect, it } from 'vitest';
 
 import { smashUpCriticalImageResolver } from '../criticalImageResolver';
 import { getBaseDef, getBaseDefIdsForFactions, getFactionCards } from '../data/cards';
+import {
+    getMunchkinSpecialCardDescriptor,
+    MUNCHKIN_MONSTER_CARDS,
+    MUNCHKIN_MONSTER_DECK_DEF_IDS,
+    MUNCHKIN_MONSTER_DECK_PREVIEW_DEF_ID,
+    MUNCHKIN_MONSTER_DECK_SIZE,
+    MUNCHKIN_TREASURE_CARDS,
+    MUNCHKIN_TREASURE_DECK_DEF_IDS,
+    MUNCHKIN_TREASURE_DECK_PREVIEW_DEF_ID,
+    MUNCHKIN_TREASURE_DECK_SIZE,
+} from '../data/factions/munchkin';
 import { getSmashUpAtlasImageById, SMASHUP_ATLAS_DEFINITIONS } from '../domain/atlasCatalog';
+import { hasMunchkinExpansionFaction } from '../domain/abilityHelpers';
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../domain/ids';
-import type { ActionCardDef } from '../domain/types';
+import { reduce } from '../domain/reducer';
+import { SU_EVENTS } from '../domain/types';
+import type { ActionCardDef, PlayerState, SmashUpCore } from '../domain/types';
 import { getVisibleFactionMetadata, isFactionImplementationInProgress } from '../ui/factionMeta';
 
 type MunchkinFixture = {
@@ -138,6 +152,59 @@ function makePlayingState(factions: Record<string, [string, string]>) {
     };
 }
 
+function makePlayer(
+    id: string,
+    factions: [string, string] = [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
+): PlayerState {
+    return {
+        id,
+        vp: 0,
+        hand: [],
+        deck: [],
+        discard: [],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        factions,
+    };
+}
+
+function makeFactionSelectedCore(playerSelections: Record<string, [string, string]>): SmashUpCore {
+    const players = Object.fromEntries(
+        Object.entries(playerSelections).map(([playerId, factions]) => [playerId, makePlayer(playerId, factions)]),
+    ) as SmashUpCore['players'];
+
+    return {
+        players,
+        turnOrder: Object.keys(players),
+        currentPlayerIndex: 0,
+        bases: [{ defId: 'base_the_jungle', minions: [], ongoingActions: [] }],
+        baseDeck: [],
+        turnNumber: 1,
+        nextUid: 100,
+        factionSelection: {
+            takenFactions: Object.values(playerSelections).flat(),
+            playerSelections,
+            completedPlayers: Object.keys(playerSelections),
+        },
+    };
+}
+
+function allFactionsSelectedEvent() {
+    return {
+        type: SU_EVENTS.ALL_FACTIONS_SELECTED,
+        payload: {
+            readiedPlayers: {
+                '0': { deck: [], hand: [] },
+                '1': { deck: [], hand: [] },
+            },
+            nextUid: 200,
+        },
+        timestamp: 1000,
+    };
+}
+
 describe('SmashUp Munchkin intake 静态合同', () => {
     it('8 个派系手牌和基地 atlas 均已注册，宝藏/怪物只注册为特殊图集', () => {
         for (const fixture of MUNCHKIN_FIXTURES) {
@@ -206,6 +273,50 @@ describe('SmashUp Munchkin intake 静态合同', () => {
         expect(resolved.critical).toContain('smashup/base/munchkin_dwarves_bases');
         expect(resolved.critical).toContain('smashup/cards/munchkin_warriors');
         expect(resolved.critical).toContain('smashup/base/munchkin_warriors_bases');
+    });
+
+    it('宝藏和怪物公共牌堆按图集合同展开为 22 张宝藏、20 张怪物', () => {
+        expect(MUNCHKIN_TREASURE_CARDS).toHaveLength(22);
+        expect(MUNCHKIN_TREASURE_DECK_SIZE).toBe(22);
+        expect(MUNCHKIN_TREASURE_DECK_DEF_IDS).toHaveLength(22);
+        expect(new Set(MUNCHKIN_TREASURE_DECK_DEF_IDS).size).toBe(22);
+        expect(getMunchkinSpecialCardDescriptor(MUNCHKIN_TREASURE_DECK_PREVIEW_DEF_ID)?.previewRef).toEqual({
+            type: 'atlas',
+            atlasId: SMASHUP_ATLAS_IDS.MUNCHKIN_TREASURES_CARDS,
+            index: 0,
+        });
+
+        expect(MUNCHKIN_MONSTER_CARDS).toHaveLength(8);
+        expect(MUNCHKIN_MONSTER_DECK_SIZE).toBe(20);
+        expect(MUNCHKIN_MONSTER_DECK_DEF_IDS).toHaveLength(20);
+        expect(getMunchkinSpecialCardDescriptor(MUNCHKIN_MONSTER_DECK_PREVIEW_DEF_ID)?.previewRef).toEqual({
+            type: 'atlas',
+            atlasId: SMASHUP_ATLAS_IDS.MUNCHKIN_MONSTERS_CARDS,
+            index: 0,
+        });
+        expect(MUNCHKIN_MONSTER_DECK_DEF_IDS.filter(id => id === 'munchkin_monster_bigfoot')).toHaveLength(2);
+        expect(MUNCHKIN_MONSTER_DECK_DEF_IDS.filter(id => id === 'munchkin_monster_fowl_fiend')).toHaveLength(4);
+    });
+
+    it('选到 Munchkin 派系后初始化怪物和宝藏公共牌堆，未选时保持不显示', () => {
+        expect(hasMunchkinExpansionFaction({
+            '0': { factions: [SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES, SMASHUP_FACTION_IDS.ALIENS] },
+            '1': { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] },
+        })).toBe(true);
+
+        const withMunchkin = reduce(makeFactionSelectedCore({
+            '0': [SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES, SMASHUP_FACTION_IDS.ALIENS],
+            '1': [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
+        }), allFactionsSelectedEvent() as any);
+        expect(withMunchkin.monsterDeck).toEqual(MUNCHKIN_MONSTER_DECK_DEF_IDS);
+        expect(withMunchkin.treasureDeck).toEqual(MUNCHKIN_TREASURE_DECK_DEF_IDS);
+
+        const withoutMunchkin = reduce(makeFactionSelectedCore({
+            '0': [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.DINOSAURS],
+            '1': [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS],
+        }), allFactionsSelectedEvent() as any);
+        expect(withoutMunchkin.monsterDeck).toBeUndefined();
+        expect(withoutMunchkin.treasureDeck).toBeUndefined();
     });
 
     it('中英文 locale 覆盖派系和卡牌名称，中文行动牌保留未实现提示', () => {

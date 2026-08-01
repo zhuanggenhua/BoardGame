@@ -357,6 +357,17 @@ const denormalizeViewportPoint = (point: ViewportPoint): ViewportPoint => {
     };
 };
 
+const getChipTransferPathMetrics = (animation: ChipTransferAnimation) => {
+    const dx = animation.to.x - animation.from.x;
+    const dy = animation.to.y - animation.from.y;
+    return {
+        angleDeg: Math.atan2(dy, dx) * (180 / Math.PI),
+        length: Math.max(1, Math.hypot(dx, dy)),
+        midX: animation.from.x + (dx * 0.54),
+        midY: animation.from.y + (dy * 0.54),
+    };
+};
+
 const isChipDragUiPayload = (payload: unknown): payload is ChipDragUiPayload => (
     !!payload
     && typeof payload === 'object'
@@ -406,6 +417,18 @@ const chipDropTargetKey = (target?: ChipDropTarget) => (
 const cardDropTargetKey = (target?: CardDropTarget) => (
     target ? `${target.slot}:${target.index}` : ''
 );
+
+const orderOpponentPlayerIdsForLocal = (
+    playerIds: readonly string[],
+    localPlayerId: string,
+) => {
+    const localIndex = playerIds.indexOf(localPlayerId);
+    if (localIndex < 0) return playerIds.filter((id) => id !== localPlayerId);
+    return [
+        ...playerIds.slice(localIndex + 1),
+        ...playerIds.slice(0, localIndex),
+    ];
+};
 
 const isChipDragSourceActive = (drag: ChipDragState | null, source: ChipDragSource) => {
     if (!drag?.dragging || drag.origin !== source.origin || drag.chip !== source.chip) return false;
@@ -1831,7 +1854,7 @@ function ChipDisc({
 
     return (
         <span
-            className={['relative inline-flex rounded-full', sizeClass, className].join(' ')}
+            className={['the-gang-chip-disc', `the-gang-chip-disc--${size}`, 'relative inline-flex rounded-full', sizeClass, className].join(' ')}
             aria-label={label}
             data-bgg-zone={zone}
         >
@@ -2613,6 +2636,7 @@ export default function TheGangBoard({
     const chipTransferTimersRef = useRef<number[]>([]);
     const suppressNextChipClickRef = useRef(false);
     const lastChipDragBroadcastAtRef = useRef(0);
+    const chipDragGlobalCleanupRef = useRef<(() => void) | null>(null);
     const heistStarted = core.heistStarted === true;
     const setupOpen = core.phase === 'chip-selection' && !heistStarted;
     const allPlayersHaveChip = allRequiredChipOwnersHaveChips(core);
@@ -2676,7 +2700,7 @@ export default function TheGangBoard({
     const handRankRules = isChallengeActive(core.rules.config, 'grinding-gears') || isChallengeActive(core.rules.config, 'the-joker') || isChallengeActive(core.rules.config, 'master-key')
         ? THE_GANG_EXPANDED_HAND_RANK_RULES
         : TEXAS_HOLDEM_HAND_RANK_RULES;
-    const opponentPlayerIds = core.playerIds.filter((id) => id !== localPlayerId);
+    const opponentPlayerIds = orderOpponentPlayerIdsForLocal(core.playerIds, localPlayerId);
     const localHandCardEmphasis: CardFaceEmphasis = hasSecondaryHand
         ? 'handDense'
         : 'hand';
@@ -2823,6 +2847,8 @@ export default function TheGangBoard({
     useEffect(() => () => {
         chipTransferTimersRef.current.forEach((timer) => window.clearTimeout(timer));
         chipTransferTimersRef.current = [];
+        chipDragGlobalCleanupRef.current?.();
+        chipDragGlobalCleanupRef.current = null;
     }, []);
 
     const tutorialOpponentTargetId = core.playerIds.find((id) => id !== localPlayerId);
@@ -3006,28 +3032,88 @@ export default function TheGangBoard({
     const getDropTargetAtPoint = (clientX: number, clientY: number) => (
         typeof document === 'undefined'
             ? undefined
-            : resolveChipDropTarget(document.elementFromPoint(clientX, clientY))
+            : (typeof document.elementsFromPoint === 'function'
+                ? document.elementsFromPoint(clientX, clientY)
+                : [document.elementFromPoint(clientX, clientY)].filter((element): element is Element => !!element))
+                .map((element) => resolveChipDropTarget(element))
+                .find((target): target is ChipDropTarget => !!target)
     );
 
-    const resolveChipDrop = (source: ChipDragSource, target?: ChipDropTarget) => {
+    const resolveChipDrop = (source: ChipDragSource, target?: ChipDropTarget, sourcePoint?: ViewportPoint) => {
         if (!target) return;
+        const dragSourcePoint = sourcePoint ?? {
+            x: chipDragRef.current?.x ?? 0,
+            y: chipDragRef.current?.y ?? 0,
+        };
         if (target.kind === 'pool') {
             if (source.origin === 'local-hand') {
-                returnChipForHandSlot(source.handSlot ?? activeChipHandSlot, {
-                    x: chipDragRef.current?.x ?? 0,
-                    y: chipDragRef.current?.y ?? 0,
-                });
+                returnChipForHandSlot(source.handSlot ?? activeChipHandSlot, dragSourcePoint);
             }
             return;
         }
         if (target.kind === 'local-hand') {
             const targetHandSlot = target.handSlot ?? activeChipHandSlot;
             if (source.origin === 'local-hand' && (source.handSlot ?? 'top') === targetHandSlot) return;
-            takeChipForHandSlot(source.chip, targetHandSlot, {
-                x: chipDragRef.current?.x ?? 0,
-                y: chipDragRef.current?.y ?? 0,
-            });
+            takeChipForHandSlot(source.chip, targetHandSlot, dragSourcePoint);
         }
+    };
+
+    const clearChipDragGlobalEndListeners = () => {
+        chipDragGlobalCleanupRef.current?.();
+        chipDragGlobalCleanupRef.current = null;
+    };
+
+    const cancelChipDrag = (current: ChipDragState) => {
+        clearChipDragGlobalEndListeners();
+        if (current.dragging) {
+            emitChipDragEnd();
+        }
+        updateChipDrag(null);
+    };
+
+    const finishChipDrag = (
+        current: ChipDragState,
+        target: ChipDropTarget | undefined,
+        sourcePoint: ViewportPoint,
+        event?: { preventDefault?: () => void },
+    ) => {
+        clearChipDragGlobalEndListeners();
+        if (!current.dragging) {
+            updateChipDrag(null);
+            return;
+        }
+
+        suppressNextChipClickRef.current = true;
+        updateChipDrag(null);
+        resolveChipDrop(current, target, sourcePoint);
+        emitChipDragEnd();
+        event?.preventDefault?.();
+    };
+
+    const bindChipDragGlobalEndListeners = (pointerId: number) => {
+        if (typeof window === 'undefined') return;
+        clearChipDragGlobalEndListeners();
+
+        const handlePointerUp = (event: PointerEvent) => {
+            const current = chipDragRef.current;
+            if (!current || current.pointerId !== pointerId) return;
+            finishChipDrag(current, getDropTargetAtPoint(event.clientX, event.clientY), {
+                x: event.clientX,
+                y: event.clientY,
+            }, event);
+        };
+        const handlePointerCancel = () => {
+            const current = chipDragRef.current;
+            if (!current || current.pointerId !== pointerId) return;
+            cancelChipDrag(current);
+        };
+
+        window.addEventListener('pointerup', handlePointerUp);
+        window.addEventListener('pointercancel', handlePointerCancel);
+        chipDragGlobalCleanupRef.current = () => {
+            window.removeEventListener('pointerup', handlePointerUp);
+            window.removeEventListener('pointercancel', handlePointerCancel);
+        };
     };
 
     const getChipDragHandlers = (source: ChipDragSource): ChipDragHandlers => ({
@@ -3043,6 +3129,7 @@ export default function TheGangBoard({
                 y: event.clientY,
                 dragging: false,
             });
+            bindChipDragGlobalEndListeners(event.pointerId);
         },
         onPointerMove: (event) => {
             const current = chipDragRef.current;
@@ -3063,21 +3150,15 @@ export default function TheGangBoard({
             const current = chipDragRef.current;
             if (!current || current.pointerId !== event.pointerId) return;
             event.currentTarget.releasePointerCapture?.(event.pointerId);
-            if (current.dragging) {
-                suppressNextChipClickRef.current = true;
-                resolveChipDrop(current, getDropTargetAtPoint(event.clientX, event.clientY));
-                emitChipDragEnd();
-                event.preventDefault();
-            }
-            updateChipDrag(null);
+            finishChipDrag(current, getDropTargetAtPoint(event.clientX, event.clientY), {
+                x: event.clientX,
+                y: event.clientY,
+            }, event);
         },
         onPointerCancel: (event) => {
             const current = chipDragRef.current;
             if (!current || current.pointerId !== event.pointerId) return;
-            if (current.dragging) {
-                emitChipDragEnd();
-            }
-            updateChipDrag(null);
+            cancelChipDrag(current);
         },
     });
 
@@ -3262,35 +3343,47 @@ export default function TheGangBoard({
                     <HudPortal>
                         {chipTransferAnimations.map((animation) => {
                             const position = animation.settled ? animation.to : animation.from;
-                            const label = animation.playerId
+                            const path = getChipTransferPathMetrics(animation);
+                            const transferAriaLabel = animation.playerId
                                 ? `${playerName(animation.playerId)} · ${animation.chip}★`
                                 : `${animation.chip}★`;
                             return (
-                                <div
-                                    key={animation.id}
-                                    className="pointer-events-none fixed left-0 top-0 drop-shadow-[0_1rem_1.45rem_rgba(0,0,0,0.46)] transition-[transform,opacity] ease-out motion-reduce:transition-none"
-                                    data-testid="the-gang-chip-transfer-animation"
-                                    data-player-id={animation.playerId}
-                                    data-chip-value={animation.chip}
-                                    style={{
-                                        opacity: animation.settled ? 0 : 0.98,
-                                        transform: `translate3d(${position.x}px, ${position.y}px, 0) translate(-50%, -50%) scale(${animation.settled ? 0.86 : 1.08})`,
-                                        transitionDuration: `${CHIP_TRANSFER_ANIMATION_MS}ms`,
-                                        zIndex: UI_Z_INDEX.emergencyHud + 19,
-                                    }}
-                                >
+                                <div key={animation.id} className="contents">
                                     <span
-                                        className="absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap rounded-full border border-amber-100/70 bg-emerald-950/94 px-2.5 py-0.5 text-[0.68rem] font-black tracking-[0.08em] text-amber-100 shadow-[0_0.35rem_1rem_rgba(0,0,0,0.4)] lg:text-xs"
-                                        data-testid="the-gang-chip-transfer-animation-label"
-                                    >
-                                        {label}
-                                    </span>
-                                    <ChipDisc
-                                        round={animation.round}
-                                        value={animation.chip}
-                                        size="lg"
-                                        className="drop-shadow-[0_0_1.35rem_rgba(251,191,36,0.72)]"
+                                        aria-hidden="true"
+                                        className="the-gang-chip-transfer-line"
+                                        data-testid="the-gang-chip-transfer-line"
+                                        data-player-id={animation.playerId}
+                                        data-chip-value={animation.chip}
+                                        style={{
+                                            animationDuration: `${CHIP_TRANSFER_ANIMATION_MS}ms`,
+                                            left: animation.from.x,
+                                            top: animation.from.y,
+                                            transform: `translate3d(0, -50%, 0) rotate(${path.angleDeg}deg)`,
+                                            width: path.length,
+                                            zIndex: UI_Z_INDEX.emergencyHud + 18,
+                                        }}
                                     />
+                                    <div
+                                        aria-label={transferAriaLabel}
+                                        className="pointer-events-none fixed left-0 top-0 drop-shadow-[0_1rem_1.45rem_rgba(0,0,0,0.46)] transition-[transform,opacity] ease-out motion-reduce:transition-none"
+                                        data-testid="the-gang-chip-transfer-animation"
+                                        data-player-id={animation.playerId}
+                                        data-chip-value={animation.chip}
+                                        style={{
+                                            opacity: animation.settled ? 0 : 0.98,
+                                            transform: `translate3d(${position.x}px, ${position.y}px, 0) translate(-50%, -50%) scale(${animation.settled ? 0.86 : 1.08})`,
+                                            transitionDuration: `${CHIP_TRANSFER_ANIMATION_MS}ms`,
+                                            zIndex: UI_Z_INDEX.emergencyHud + 19,
+                                        }}
+                                    >
+                                        <ChipDisc
+                                            round={animation.round}
+                                            value={animation.chip}
+                                            size="lg"
+                                            className="drop-shadow-[0_0_1.35rem_rgba(251,191,36,0.72)]"
+                                        />
+                                    </div>
                                 </div>
                             );
                         })}

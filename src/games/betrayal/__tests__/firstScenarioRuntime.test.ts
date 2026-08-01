@@ -72,6 +72,7 @@ import {
     resolveBetrayalNumberTracks,
     resolveBetrayalOmenCount,
     resolveBetrayalRoomDrawResolution,
+    BETRAYAL_INITIAL_DECK_COUNTS,
     resolveBetrayalTileStackSearchPreview,
     resolveBetrayalTraitorVolunteerInteraction,
     resolveBetrayalTraitorVolunteerResolutionPreview,
@@ -116,6 +117,29 @@ function findTestExplorer(core: BetrayalCore, playerId: string) {
         throw new Error(`山屋测试夹具缺少玩家 ${playerId}`);
     }
     return explorer;
+}
+
+function selectDefaultOpeningExplorers(core: BetrayalCore): BetrayalCore {
+    return core.playerIds.reduce((draft, playerId, index) => {
+        let next = applyBetrayalCommand(draft, BETRAYAL_COMMANDS.SELECT_EXPLORER, playerId, {
+            explorerId: EXPLORER_CATALOG[index % EXPLORER_CATALOG.length]!.explorerId,
+        });
+        next = applyBetrayalCommand(next, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, playerId, {});
+        return next;
+    }, core);
+}
+
+function confirmScenarioCardForAllPlayers(core: BetrayalCore): BetrayalCore {
+    return core.playerIds.reduce(
+        (draft, playerId) => applyBetrayalCommand(draft, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, playerId, {}),
+        core,
+    );
+}
+
+function startFirstScenarioFromCharacterSelect(core: BetrayalCore): BetrayalCore {
+    let next = selectDefaultOpeningExplorers(core);
+    next = confirmScenarioCardForAllPlayers(next);
+    return applyBetrayalCommand(next, BETRAYAL_COMMANDS.START_SCENARIO, next.playerIds[0] ?? '0', {});
 }
 
 function isMagicCameraTestCard(card: BetrayalCore['currentExplorer']['inventory'][number]): boolean {
@@ -382,8 +406,37 @@ function setHighCapacityGeneralDamageTracks(
     }
 }
 
+function setTestExplorerTraitsBelowCatalogStart(core: BetrayalCore, playerId: string): void {
+    const explorer = findTestExplorer(core, playerId);
+    const template = EXPLORER_CATALOG.find((entry) => entry.explorerId === explorer.explorerId);
+    if (!template) {
+        throw new Error(`山屋测试夹具缺少探索者模板 ${explorer.explorerId}`);
+    }
+    for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]) {
+        const startValue = template.traits[trait];
+        setTestTraitTrack(
+            core,
+            playerId,
+            trait,
+            [1, Math.max(1, startValue - 1), startValue, startValue + 1],
+            0,
+            2,
+        );
+    }
+}
+
 function traitTrackPosition(core: BetrayalCore, playerId: string, trait: BetrayalTraitKey): number {
     return findTestExplorer(core, playerId).traitTracks[trait].position;
+}
+
+function criticalTraitValues(core: BetrayalCore, playerId: string): Record<BetrayalTraitKey, number> {
+    const explorer = findTestExplorer(core, playerId);
+    return Object.fromEntries(
+        (['might', 'speed', 'knowledge', 'sanity'] as BetrayalTraitKey[]).map((trait) => {
+            const track = explorer.traitTracks[trait];
+            return [trait, track.values[track.criticalPosition] ?? 0];
+        }),
+    ) as Record<BetrayalTraitKey, number>;
 }
 
 function traitTrackPositionTotal(
@@ -409,8 +462,31 @@ function repeatTraitsForPendingDamage(
     core: BetrayalCore,
     traits: BetrayalTraitKey[],
 ): BetrayalTraitKey[] {
-    const amount = core.pendingDamageAllocation?.amount ?? 0;
-    return Array.from({ length: amount }, (_, index) => traits[index % traits.length]!);
+    const pending = core.pendingDamageAllocation;
+    if (!pending) {
+        return [];
+    }
+    const explorer = findTestExplorer(core, pending.playerId);
+    const assignedTraits: BetrayalTraitKey[] = [];
+    let remaining = pending.amount;
+    for (const trait of traits) {
+        if (remaining <= 0) {
+            break;
+        }
+        if (!pending.allowedTraits.includes(trait)) {
+            continue;
+        }
+        const track = explorer.traitTracks[trait];
+        const floorPosition = pending.allowSkull ? track.skullPosition : track.criticalPosition;
+        const assignableSteps = Math.max(0, track.position - floorPosition);
+        const take = Math.min(remaining, assignableSteps);
+        assignedTraits.push(...Array.from({ length: take }, () => trait));
+        remaining -= take;
+    }
+    if (assignedTraits.length !== pending.amount) {
+        throw new Error(`山屋测试夹具无法为 ${pending.sourceTitle} 分配 ${pending.amount} 点伤害`);
+    }
+    return assignedTraits;
 }
 
 function acknowledgeSingleEventEffectResolution(
@@ -1281,6 +1357,49 @@ function seedDustControlImpulsesTokens(core: BetrayalCore): void {
 }
 
 describe('Betrayal first scenario runtime', () => {
+    it('基础版探索者 catalog 覆盖 12 名角色、正式起始值、卡面属性轨和无特殊能力', () => {
+        const expectedTraitsByExplorerId = {
+            'isa-valencia': { might: 3, speed: 5, knowledge: 4, sanity: 4 },
+            'anita-hernandez': { might: 4, speed: 4, knowledge: 5, sanity: 3 },
+            'father-warren-leung': { might: 3, speed: 4, knowledge: 4, sanity: 5 },
+            'dan-nguyen-md': { might: 4, speed: 3, knowledge: 5, sanity: 4 },
+            'michelle-monroe': { might: 5, speed: 4, knowledge: 4, sanity: 3 },
+            'beat-box-bowen': { might: 5, speed: 3, knowledge: 4, sanity: 4 },
+            'josef-hooper': { might: 5, speed: 4, knowledge: 3, sanity: 4 },
+            'oliver-swift': { might: 4, speed: 5, knowledge: 4, sanity: 3 },
+            'stephanie-richter': { might: 4, speed: 3, knowledge: 4, sanity: 5 },
+            'persephone-puleri': { might: 4, speed: 4, knowledge: 3, sanity: 5 },
+            'sammy-angler': { might: 4, speed: 5, knowledge: 3, sanity: 4 },
+            'jaden-jones': { might: 3, speed: 4, knowledge: 5, sanity: 4 },
+        } as const;
+        const catalogByExplorerId = new Map(EXPLORER_CATALOG.map((explorer) => [explorer.explorerId, explorer]));
+
+        expect(EXPLORER_CATALOG.map((explorer) => explorer.explorerId)).toEqual(Object.keys(expectedTraitsByExplorerId));
+        expect(catalogByExplorerId.has('rebecca-allen')).toBe(false);
+        expect(catalogByExplorerId.has('darryl-highla')).toBe(false);
+        expect(catalogByExplorerId.has('lia-valencia')).toBe(false);
+        expect(catalogByExplorerId.has('sam-yin')).toBe(false);
+
+        for (const [explorerId, expectedTraits] of Object.entries(expectedTraitsByExplorerId)) {
+            const explorer = catalogByExplorerId.get(explorerId);
+            expect(explorer).toBeDefined();
+            expect(explorer!.traits).toEqual(expectedTraits);
+            expect(explorer!.abilityName).toBe('无特殊能力');
+            expect(explorer!.abilityText).toContain('基础版角色背景不改变规则');
+            for (const trait of ['might', 'speed', 'knowledge', 'sanity'] as const) {
+                const track = explorer!.traitTracks[trait];
+                expect(track.values.length).toBeGreaterThanOrEqual(7);
+                expect(track.values[track.startPosition]).toBe(expectedTraits[trait]);
+            }
+        }
+
+        expect(catalogByExplorerId.get('jaden-jones')!.tokenAsset).toBe('betrayal/tokens/explorers/jaden-jones');
+        expect(catalogByExplorerId.get('father-warren-leung')!.tokenAsset).toBe('betrayal/tokens/explorers/father-warren-leung');
+        expect(catalogByExplorerId.get('michelle-monroe')!.tokenAsset).toBe('betrayal/tokens/explorers/michelle-monroe');
+        expect(catalogByExplorerId.get('stephanie-richter')!.tokenAsset).toBe('betrayal/tokens/explorers/stephanie-richter');
+        expect(catalogByExplorerId.get('josef-hooper')!.traitTracks.might.values.slice(2, 4)).toEqual([5, 5]);
+    });
+
     it('设置阶段必须从七张剧本卡候选中提议并确认，默认首剧本是木乃伊横行', () => {
         let core = BetrayalDomain.setup(['0', '1', '2'], BETRAYAL_FIXED_RANDOM);
         expect(core.scenarioCandidateIds).toEqual([...BETRAYAL_SCENARIO_CARD_IDS]);
@@ -1292,7 +1411,7 @@ describe('Betrayal first scenario runtime', () => {
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '1', { explorerId: 'rebecca-allen' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '1', { explorerId: 'anita-hernandez' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '1', {});
 
         expect(BetrayalDomain.validate(
@@ -1300,8 +1419,10 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
         )).toMatchObject({
             valid: false,
-            error: '请先确认当前剧本卡。',
+            error: '每位玩家都需要先选择探索者。',
         });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '2', { explorerId: 'father-warren-leung' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '2', {});
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.PROPOSE_SCENARIO_CARD, '0', {
             candidateId: 'friends-forever',
@@ -1329,6 +1450,14 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
         )).toMatchObject({
             valid: false,
+            error: '请先确认当前剧本卡。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '2', {});
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
+        )).toMatchObject({
+            valid: false,
             error: '所选剧本卡的运行时规则尚未接入，不能开始剧本。',
         });
 
@@ -1345,6 +1474,14 @@ describe('Betrayal first scenario runtime', () => {
             error: '请先确认当前剧本卡。',
         });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '1', {});
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前剧本卡。',
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '2', {});
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', {});
 
         expect(core.phase).toBe('preHaunt');
@@ -1364,6 +1501,32 @@ describe('Betrayal first scenario runtime', () => {
             threshold: 5,
             hauntStarted: false,
         });
+    });
+
+    it('正式开始剧本后只从共享开局和所选角色配置装配探索者', () => {
+        let core = BetrayalDomain.setup(['0', '1', '2'], BETRAYAL_FIXED_RANDOM);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'oliver-swift' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '1', { explorerId: 'father-warren-leung' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '1', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '2', { explorerId: 'jaden-jones' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '2', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '1', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '2', {});
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', {});
+
+        const explorers = [core.currentExplorer, ...core.otherExplorers];
+        expect(core.phase).toBe('preHaunt');
+        expect(core.currentExplorer.explorerId).toBe('oliver-swift');
+        expect(findTestExplorer(core, '1').explorerId).toBe('father-warren-leung');
+        expect(findTestExplorer(core, '2').explorerId).toBe('jaden-jones');
+        expect(explorers.map((explorer) => explorer.roomId)).toEqual(['entrance-hall', 'entrance-hall', 'entrance-hall']);
+        expect(explorers.map((explorer) => explorer.inventory)).toEqual([[], [], []]);
+        expect(core.turnStartInventoryCardIds).toEqual([]);
+        expect(core.deckCounts).toMatchObject(BETRAYAL_INITIAL_DECK_COUNTS);
+        expect(resolveBetrayalOmenCount(core)).toBe(0);
     });
 
     it('回合开始按速度锁定移动力，回合中速度变化不刷新本回合移动力', () => {
@@ -1582,10 +1745,7 @@ describe('Betrayal first scenario runtime', () => {
             shuffle: <T,>(array: T[]) => [...array].reverse(),
         };
         let core = BetrayalDomain.setup(['0', '1', '2'], reverseRandom);
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', {});
+        core = startFirstScenarioFromCharacterSelect(core);
 
         expect(core.drawOrder).toEqual(['omen', 'item', 'event']);
         const expectedFirstUpperRoom = [...BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper].reverse()[0]!;
@@ -4229,6 +4389,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([2, 2]);
+        const knowledgePositionBeforeMossReward = traitTrackPosition(core, '0', 'knowledge');
 
         core = applyBetrayalCommand(
             core,
@@ -4269,7 +4430,7 @@ describe('Betrayal first scenario runtime', () => {
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
         ).valid).toBe(true);
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBeforeMossReward + 1);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([2, 2]);
 
@@ -4347,6 +4508,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.currentExplorer.traits.knowledge).toBe(4);
         expect(core.latestDiscovery?.detail).toContain('获得 1 点任意属性');
         expect(core.latestDiscovery?.detail).not.toContain('知识 +1');
+        const knowledgePositionBeforeRabbitMossReward = traitTrackPosition(core, '0', 'knowledge');
 
         core = applyBetrayalCommand(
             core,
@@ -4357,7 +4519,7 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.traits.might).toBe(4);
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBeforeRabbitMossReward + 1);
         expect(core.latestDiscovery?.detail).toContain('知识 +1');
     });
 
@@ -4380,6 +4542,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.pendingEventChoice?.sourceTitle).toBe('夜幕众星');
         expect(core.discardCounts.event).toBe(0);
         expect(core.turnEndedByDiscovery).toBe(false);
+        const knowledgePositionBeforeStarsReward = traitTrackPosition(core, '0', 'knowledge');
 
         const missingTrait = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -4400,7 +4563,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('知识检定 8');
         expect(core.latestDiscovery?.detail).toContain('获得 1 点所选属性');
         expect(core.latestDiscovery?.detail).toContain('知识 +1');
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBeforeStarsReward + 1);
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.recentRoll?.kind).toBe('eventTraitCheck');
         expect(core.recentRoll?.trait).toBe('knowledge');
@@ -4800,10 +4963,11 @@ describe('Betrayal first scenario runtime', () => {
         expect(trollHandTokens.every((token) => token.status === 'active' && token.source === 'monster-box')).toBe(true);
 
         const corpseCore = createCorpseLootReadyCore();
+        const corpseExplorer = findTestExplorer(corpseCore, '0');
         expect(resolveBetrayalHauntTokenInstances(corpseCore)
             .find((token) => token.id === 'corpse-0')).toMatchObject({
             kind: 'corpse',
-            label: '杰登·琼斯尸体',
+            label: `${corpseExplorer.displayName}尸体`,
             roomId: 'hallway',
             ownerPlayerId: '0',
             value: 2,
@@ -16076,6 +16240,7 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.title).toBe('大宅饿了');
         expect(core.pendingEventChoice?.sourceTitle).toBe('大宅饿了');
         expect(core.turnEndedByDiscovery).toBe(false);
+        const knowledgePositionBeforeSkippingHaunt = traitTrackPosition(core, '0', 'knowledge');
 
         core = applyBetrayalCommand(
             core,
@@ -16112,7 +16277,7 @@ describe('Betrayal first scenario runtime', () => {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
         expect(core.pendingCardResolutionQueue).toEqual([]);
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBeforeSkippingHaunt + 1);
         expect(core.turnEndedByDiscovery).toBe(true);
     });
 
@@ -17498,7 +17663,6 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.pendingEventChoice).toBeNull();
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.currentExplorer.traitTracks.speed.position).toBe(speedPositionBeforeChoice + 1);
-        expect(core.currentExplorer.traits.speed).toBe(4);
         expect(core.turnEndedByDiscovery).toBe(true);
         expect(core.pendingCardResolutionQueue).toHaveLength(1);
         expect(core.pendingCardResolutionQueue[0]).toMatchObject({
@@ -17978,6 +18142,7 @@ describe('Betrayal first scenario runtime', () => {
         );
         expect(invalidSameRoom.valid).toBe(false);
 
+        const knowledgePositionBeforeSecretPassage = traitTrackPosition(core, '0', 'knowledge');
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE,
@@ -17986,7 +18151,7 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.pendingEventChoice).toBeNull();
-        expect(core.currentExplorer.traits.knowledge).toBe(5);
+        expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBeforeSecretPassage + 1);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.rooms.find((room) => room.id === 'basement-landing')?.markerTokens ?? []).toContain('secretPassage');
         expect(core.latestDiscovery?.detail).toContain('在当前板块放置秘密通道标志物');
@@ -19718,11 +19883,11 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'basement-landing' });
-        const mightBefore = core.currentExplorer.traits.might;
+        const mightPositionBefore = traitTrackPosition(core, '0', 'might');
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'basement-east' });
 
         expect(core.rooms.find((room) => room.id === 'basement-east')?.name).toBe('储物间');
-        expect(core.currentExplorer.traits.might).toBe(mightBefore + 1);
+        expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBefore + 1);
     });
 
     it('体育馆发现时获得 1 点速度', () => {
@@ -19734,11 +19899,11 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
-        const speedBefore = core.currentExplorer.traits.speed;
+        const speedPositionBefore = traitTrackPosition(core, '0', 'speed');
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
 
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('体育馆');
-        expect(core.currentExplorer.traits.speed).toBe(speedBefore + 1);
+        expect(traitTrackPosition(core, '0', 'speed')).toBe(speedPositionBefore + 1);
     });
 
     it('杂物间发现时会在房间上放置障碍物标记', () => {
@@ -20062,10 +20227,10 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
-        const knowledgeBefore = core.currentExplorer.traits.knowledge;
+        const knowledgePositionBefore = traitTrackPosition(core, '0', 'knowledge');
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('图书馆');
-        expect(core.currentExplorer.traits.knowledge).toBe(knowledgeBefore + 1);
+        expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBefore + 1);
     });
 
     it('书房发现时获得 1 点知识', () => {
@@ -20079,10 +20244,10 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
-        const knowledgeBefore = core.currentExplorer.traits.knowledge;
+        const knowledgePositionBefore = traitTrackPosition(core, '0', 'knowledge');
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' });
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe('书房');
-        expect(core.currentExplorer.traits.knowledge).toBe(knowledgeBefore + 1);
+        expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBefore + 1);
     });
 
     it('房间文字提升属性后，后续事件属性检定应使用提升后的骰数', () => {
@@ -20232,7 +20397,7 @@ describe('Betrayal first scenario runtime', () => {
             '0',
             {},
             100,
-            createBetrayalScriptedRandom(1, 1, 1, 2),
+            createBetrayalScriptedRandom(1, 1, 1, 2, 1, 3),
         );
 
         const fallenExplorer = core.currentExplorer;
@@ -21319,10 +21484,7 @@ describe('Betrayal first scenario runtime', () => {
             shuffle: <T,>(array: T[]) => [...array].reverse(),
         };
         let core = BetrayalDomain.setup(['0', '1', '2'], fixedItemDrawRandom);
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', {});
+        core = startFirstScenarioFromCharacterSelect(core);
         core.drawOrder = ['item'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'item');
         core.possessionOrderByKind.item = [
@@ -21988,6 +22150,8 @@ describe('Betrayal first scenario runtime', () => {
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.turnStartInventoryCardIds = ['rope'];
+        const mightPositionBeforeWeirdFeeling = traitTrackPosition(core, '0', 'might');
+        const sanityPositionBeforeWeirdFeeling = traitTrackPosition(core, '0', 'sanity');
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(
@@ -22001,8 +22165,8 @@ describe('Betrayal first scenario runtime', () => {
 
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 0');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点力量');
-        expect(core.currentExplorer.traits.might).toBe(3);
-        expect(core.currentExplorer.traits.sanity).toBe(4);
+        expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling - 1);
+        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling);
         expect(core.recentRoll?.kind).toBe('eventDiceRoll');
         expect(core.recentRoll?.dice).toEqual([0, 0]);
 
@@ -22018,8 +22182,8 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.latestDiscovery?.detail).toContain('投 2 颗骰子 2');
         expect(core.latestDiscovery?.detail).toContain('失去 1 点神志');
         expect(core.latestDiscovery?.tone).toBe('warning');
-        expect(core.currentExplorer.traits.might).toBe(4);
-        expect(core.currentExplorer.traits.sanity).toBe(3);
+        expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
+        expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeWeirdFeeling - 1);
         expect(core.recentRoll?.dice).toEqual([2, 0]);
         expect(core.usedCardIdsThisTurn).toContain('rope');
     });
@@ -22275,8 +22439,7 @@ describe('Betrayal first scenario runtime', () => {
         core.activeRoomId = core.currentExplorer.roomId;
 
         placeActiveTestExplorerInRoom(core, '0', 'ground-north');
-        const sanityBeforeStudy = core.currentExplorer.traits.sanity;
-        const knowledgeBeforeStudy = core.currentExplorer.traits.knowledge;
+        const mentalPositionBeforeStudy = traitTrackPositionTotal(core, '0', ['knowledge', 'sanity']);
 
         core = applyBetrayalCommand(
             core,
@@ -22288,9 +22451,7 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.scenarioRuntime.exorcismCircleRoomIds).toEqual([]);
-        expect(core.currentExplorer.traits.sanity + core.currentExplorer.traits.knowledge).toBe(
-            sanityBeforeStudy + knowledgeBeforeStudy - 1,
-        );
+        expect(traitTrackPositionTotal(core, '0', ['knowledge', 'sanity'])).toBe(mentalPositionBeforeStudy - 1);
     });
 
     it('头戴耳机不会阻挡对知识属性的直接降低，也不能被主动使用成通用移动效果', () => {
@@ -22446,13 +22607,6 @@ describe('Betrayal first scenario runtime', () => {
         let core = createStartedFirstScenarioCore();
         core.currentExplorer = {
             ...core.currentExplorer,
-            traits: {
-                ...core.currentExplorer.traits,
-                might: 1,
-                speed: 1,
-                knowledge: 1,
-                sanity: 1,
-            },
             inventory: [
                 { id: 'medical-kit', name: '急救包', kind: 'item' },
             ],
@@ -22460,6 +22614,7 @@ describe('Betrayal first scenario runtime', () => {
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.turnStartInventoryCardIds = ['medical-kit'];
+        setTestExplorerTraitsBelowCatalogStart(core, '0');
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '0', { cardId: 'medical-kit', targetPlayerId: '0' });
 
@@ -22486,19 +22641,13 @@ describe('Betrayal first scenario runtime', () => {
                 ? {
                     ...explorer,
                     roomId: core.currentExplorer.roomId,
-                    traits: {
-                        ...explorer.traits,
-                        might: 1,
-                        speed: 1,
-                        knowledge: 1,
-                        sanity: 1,
-                    },
                 }
                 : explorer
         ));
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.turnStartInventoryCardIds = ['medical-kit'];
+        setTestExplorerTraitsBelowCatalogStart(core, targetPlayerId);
         const currentTraitsBefore = { ...core.currentExplorer.traits };
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_POSSESSION, '0', {
@@ -22966,12 +23115,7 @@ describe('Betrayal first scenario runtime', () => {
         const protectedHero = [core.currentExplorer, ...core.otherExplorers]
             .find((explorer) => explorer.playerId === '0')!;
         expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
-        expect(protectedHero.traits).toEqual({
-            might: 1,
-            speed: 1,
-            knowledge: 1,
-            sanity: 1,
-        });
+        expect(protectedHero.traits).toEqual(criticalTraitValues(core, '0'));
         expect(core.phase).toBe('haunt');
         expect(core.endgameResult).toBeNull();
         expect(core.activityLog[0]?.text).toContain('头骨投出 4，阻止死亡');
@@ -23096,12 +23240,7 @@ describe('Betrayal first scenario runtime', () => {
         const protectedHero = [core.currentExplorer, ...core.otherExplorers]
             .find((explorer) => explorer.playerId === '0')!;
         expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('0');
-        expect(protectedHero.traits).toEqual({
-            might: 1,
-            speed: 1,
-            knowledge: 1,
-            sanity: 1,
-        });
+        expect(protectedHero.traits).toEqual(criticalTraitValues(core, '0'));
         expect(core.recentRoll?.latestLabel).toContain('阻止死亡');
         expect(core.usedCardIdsThisTurn).toContain('rope');
         expect(BetrayalDomain.validate(
@@ -23911,10 +24050,7 @@ describe('Betrayal first scenario runtime', () => {
             shuffle: <T,>(array: T[]) => [...array].reverse(),
         };
         let core = BetrayalDomain.setup(['0', '1', '2'], reverseRandom);
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, '0', { explorerId: 'jaden-jones' });
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_EXPLORER, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '0', {});
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, '0', {});
+        core = startFirstScenarioFromCharacterSelect(core);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
@@ -24615,6 +24751,7 @@ describe('Betrayal first scenario runtime', () => {
 
         const heroBeforeAttack = { ...core.currentExplorer.traits };
         const traitorBeforeAttack = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
+        const traitorPhysicalPositionBeforeAttack = traitTrackPositionTotal(core, '2', ['might', 'speed']);
         core = applyBetrayalCommand(
             core,
             BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -24670,10 +24807,7 @@ describe('Betrayal first scenario runtime', () => {
             { traits: repeatTraitsForPendingDamage(core, ['might', 'speed']) },
         );
 
-        const traitorAfterDamageAllocation = core.otherExplorers.find((explorer) => explorer.playerId === '2')!;
-        expect(traitorAfterDamageAllocation.traits.might + traitorAfterDamageAllocation.traits.speed).toBeLessThan(
-            traitorBeforeAttack.traits.might + traitorBeforeAttack.traits.speed,
-        );
+        expect(traitTrackPositionTotal(core, '2', ['might', 'speed'])).toBeLessThan(traitorPhysicalPositionBeforeAttack);
         expect(core.pendingDamageAllocation).toBeNull();
 
         const useAgain = BetrayalDomain.validate(

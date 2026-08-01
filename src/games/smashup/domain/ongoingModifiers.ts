@@ -12,6 +12,7 @@
 
 import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, TitanState } from './types';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isBaseScoringSuppressed, isCardSuppressed } from './ongoingEffects';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
@@ -1309,9 +1310,10 @@ export function getPlayerEffectivePowerOnBase(
         }, 0);
     const ongoingCardPower = getOngoingCardPowerContribution(base, playerId);
     const titanPower = getTitanPowerContribution(state, baseIndex, playerId);
+    const controlledMonsterPower = getControlledMonsterPowerOnBase(state, baseIndex, playerId);
     const basePowerBonus = getBasePowerModifiers(state, baseIndex, playerId);
     const tempBasePower = getTempBasePowerModifier(state, baseIndex, playerId);
-    return minionPower + ongoingCardPower + titanPower + basePowerBonus + tempBasePower;
+    return minionPower + controlledMonsterPower + ongoingCardPower + titanPower + basePowerBonus + tempBasePower;
 }
 
 /**
@@ -1328,6 +1330,9 @@ export function getTotalEffectivePowerOnBase(
                 ? sum
                 : sum + getEffectivePower(state, m, baseIndex)
         ), 0);
+    const controlledMonsterPower = (base.monsters ?? []).reduce((sum, monster) => (
+        monster.controllerId ? sum + getMunchkinMonsterPrintedPower(monster.defId) : sum
+    ), 0);
     // 累加所有玩家的 ongoing 卡力量贡献（不限于有随从的玩家）
     // 修复 Bug：只有 ongoing 卡但没有随从的玩家，其力量贡献也应该计入总力量
     let ongoingBonus = 0;
@@ -1339,7 +1344,7 @@ export function getTotalEffectivePowerOnBase(
         basePowerBonus += getBasePowerModifiers(state, baseIndex, pid);
         basePowerBonus += getTempBasePowerModifier(state, baseIndex, pid);
     }
-    return minionPower + ongoingBonus + titanBonus + basePowerBonus;
+    return minionPower + controlledMonsterPower + ongoingBonus + titanBonus + basePowerBonus;
 }
 
 /**
@@ -1374,7 +1379,36 @@ export function getEffectiveBreakpoint(
     const tempDelta = (baseInstanceId ? state.tempBreakpointModifiersByBaseId?.[baseInstanceId] : undefined)
         ?? state.tempBreakpointModifiers?.[baseIndex]
         ?? 0;
-    return Math.max(0, baseDef.breakpoint + total + tempDelta);
+    return Math.max(0, baseDef.breakpoint + getMonsterPowerOnBase(state, baseIndex) + total + tempDelta);
+}
+
+export function getMonsterPowerOnBase(state: SmashUpCore, baseIndex: number): number {
+    const base = state.bases[baseIndex];
+    if (!base?.monsters?.length) return 0;
+    return base.monsters.reduce((sum, monster) => {
+        if (monster.controllerId) return sum;
+        return sum + getMunchkinMonsterPrintedPower(monster.defId);
+    }, 0);
+}
+
+export function getControlledMonsterPowerOnBase(
+    state: SmashUpCore,
+    baseIndex: number,
+    playerId: PlayerId,
+): number {
+    const base = state.bases[baseIndex];
+    if (!base?.monsters?.length) return 0;
+    return base.monsters.reduce((sum, monster) => (
+        monster.controllerId === playerId
+            ? sum + getMunchkinMonsterPrintedPower(monster.defId)
+            : sum
+    ), 0);
+}
+
+function getMunchkinMonsterPrintedPower(defId: string): number {
+    const descriptor = getMunchkinSpecialCardDescriptor(defId);
+    if (descriptor?.kind !== 'monster') return 0;
+    return descriptor.power ?? 0;
 }
 
 export function getRealtimeScoringEligibleBaseIndices(state: SmashUpCore): number[] {

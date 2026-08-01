@@ -78,6 +78,7 @@ import { registerBeautyAndTheBeastAbilities } from './beauty_and_the_beast';
 import { registerNightmareBeforeChristmasAbilities } from './nightmare_before_christmas';
 import { registerWreckItRalphAbilities } from './wreck_it_ralph';
 import { registerHalfTheBattleAbilities } from './half_the_battle';
+import { registerMunchkinAbilities } from './munchkin';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -230,6 +231,7 @@ export function initAllAbilities(): void {
     registerNightmareBeforeChristmasAbilities();
     registerWreckItRalphAbilities();
     registerHalfTheBattleAbilities();
+    registerMunchkinAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 

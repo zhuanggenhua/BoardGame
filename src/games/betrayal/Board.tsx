@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ChevronUp,
   Compass,
+  Eye,
   Footprints,
   Handshake,
   House,
@@ -690,19 +691,11 @@ const ASSETS = {
     portal: "betrayal/markers/portal",
     searched: "betrayal/markers/searched",
     trait: "betrayal/markers/trait",
+    numberBlank: "betrayal/markers/number-blank",
     videotape: "betrayal/markers/videotape",
   } as const,
-  numberMarker: {
-    blank: "betrayal/markers/number-blank",
-    1: "betrayal/markers/number-1",
-    2: "betrayal/markers/number-2",
-    3: "betrayal/markers/number-3",
-    4: "betrayal/markers/number-4",
-    5: "betrayal/markers/number-5",
-    6: "betrayal/markers/number-6",
-    7: "betrayal/markers/number-7",
-    8: "betrayal/markers/number-8",
-    9: "betrayal/markers/number-9",
+  ui: {
+    hauntRiskTrack: "betrayal/ui/trait-track-0-9",
   } as const,
 } as const;
 
@@ -1587,12 +1580,6 @@ function resolveRoomEdgeLabel(
   t: ReturnType<typeof useTranslation>["t"],
 ): string {
   return t(`board.rooms.edges.${edge}`);
-}
-
-function resolveNumberMarkerAsset(value: number): string {
-  const clamped = Math.max(1, Math.min(9, Math.round(value))) as
-    1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-  return ASSETS.numberMarker[clamped];
 }
 
 function resolveExplorerBoardMarkerPosition(
@@ -3889,22 +3876,22 @@ function ExplorerTraitTrackRail({
   const currentValue = explorer.traits[trait] ?? 0;
   const isCompact = density === "compact";
   const isDetail = density === "detail";
-  const pointerPercent = resolveTrackPositionPercent(slots, currentPosition);
+  const currentSlotIndex = Math.max(0, slots.indexOf(currentPosition));
   const railHeightClass = isCompact
     ? "h-[30px]"
     : isDetail
-      ? "h-[42px]"
-      : "h-[34px]";
-  const tickLabelClass = isCompact
-    ? "top-[19px] text-[6px]"
+      ? "h-[44px]"
+      : "h-[38px]";
+  const trackBodyClass = isCompact
+    ? "h-[22px]"
     : isDetail
-      ? "top-[27px] text-[10px]"
-      : "top-[22px] text-[7px]";
-  const pointerSizeClass = isCompact
-    ? "h-[20px] w-[14px]"
+      ? "h-[32px]"
+      : "h-[28px]";
+  const slotLabelClass = isCompact
+    ? "grid h-full w-full place-items-center text-[9px] leading-none"
     : isDetail
-      ? "h-[28px] w-[18px]"
-      : "h-[24px] w-[16px]";
+      ? "grid h-full w-full place-items-center text-[13px] leading-none"
+      : "grid h-full w-full place-items-center text-[12px] leading-none";
 
   return (
     <div
@@ -3920,10 +3907,10 @@ function ExplorerTraitTrackRail({
       data-trait-track-value={currentValue}
       className={`grid items-center gap-1.5 ${
         isCompact
-          ? "grid-cols-[42px_minmax(0,1fr)_18px] text-[9px]"
+          ? "grid-cols-[42px_minmax(0,1fr)] text-[9px]"
           : isDetail
-            ? "grid-cols-[74px_minmax(0,1fr)_28px] text-[12px]"
-            : "grid-cols-[66px_minmax(0,1fr)_24px] text-[12px]"
+            ? "grid-cols-[74px_minmax(0,1fr)] text-[12px]"
+            : "grid-cols-[66px_minmax(0,1fr)] text-[12px]"
       }`}
     >
       <span
@@ -3942,81 +3929,86 @@ function ExplorerTraitTrackRail({
       </span>
       <div
         data-trait-track-rail="true"
+        data-trait-track-rail-shape="continuous-segmented"
+        data-trait-track-repeat-value-policy="separate-physical-slots"
+        data-trait-track-current-index={currentSlotIndex}
         className={`relative ${railHeightClass} min-w-0`}
         title={`${TRAIT_LABEL_LOCAL[trait]}属性轨：骷髅为死亡端点，当前指针在第 ${currentPosition} 位，数值 ${currentValue}`}
         aria-label={`${TRAIT_LABEL_LOCAL[trait]}属性轨，骷髅为死亡端点，当前指针在第 ${currentPosition} 位，数值 ${currentValue}`}
       >
-        <span className="pointer-events-none absolute left-0 right-0 top-1/2 h-[5px] -translate-y-1/2 rounded-full border border-[rgba(214,191,129,0.22)] bg-[linear-gradient(90deg,rgba(89,30,29,0.78),rgba(77,68,39,0.84),rgba(22,32,24,0.92))] shadow-[inset_0_0_8px_rgba(0,0,0,0.42)]" />
-        <span
-          data-trait-track-pointer="true"
-          data-trait-track-position={currentPosition}
-          data-trait-track-current="true"
-          data-trait-track-value={currentValue}
-          aria-label={`当前${TRAIT_LABEL_LOCAL[trait]}：第 ${currentPosition} 位，数值 ${currentValue}`}
-          title={`当前${TRAIT_LABEL_LOCAL[trait]}：第 ${currentPosition} 位，数值 ${currentValue}`}
-          className={`pointer-events-none absolute top-1/2 z-20 flex ${pointerSizeClass} -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center`}
-          style={{ left: `${pointerPercent}%` }}
+        <div
+          data-trait-track-segmented-rail="true"
+          className={`absolute inset-x-0 top-1/2 grid ${trackBodyClass} -translate-y-1/2 gap-[3px] overflow-hidden rounded-[7px] border border-[rgba(181,128,70,0.62)] bg-[rgba(58,39,27,0.88)] p-[2px] shadow-[inset_0_0_0_1px_rgba(255,224,159,0.16),inset_0_0_12px_rgba(0,0,0,0.44),0_3px_10px_rgba(0,0,0,0.24)]`}
+          style={{ gridTemplateColumns: `repeat(${slots.length}, minmax(0, 1fr))` }}
         >
-          <span className="h-0 w-0 border-l-[6px] border-r-[6px] border-t-[9px] border-l-transparent border-r-transparent border-t-[#f2cf82] drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)]" />
-          <span className="-mt-[1px] h-[11px] w-[4px] rounded-full bg-[#f2cf82] shadow-[0_0_10px_rgba(242,207,130,0.72)]" />
-        </span>
-        {slots.map((position) => {
-          const isSkull = position === track.skullPosition;
-          const isCurrent = position === currentPosition;
-          const isStart = position === track.startPosition;
-          const isCritical = position === track.criticalPosition;
-          const slotValue = isSkull ? null : track.values[position];
-          return (
-            <span
-              key={`${trait}-${position}`}
-              data-trait-track-slot="true"
-              data-trait-track-position={position}
-              data-trait-track-current="false"
-              data-trait-track-start={isStart ? "true" : "false"}
-              data-trait-track-critical={isCritical ? "true" : "false"}
-              data-trait-track-skull={isSkull ? "true" : "false"}
-              data-trait-track-death={isSkull ? "true" : "false"}
-              title={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格（不是数值）" : slotValue}`}
-              aria-label={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格，不是数值" : slotValue}`}
-              className="absolute top-1/2 z-10 flex min-w-[14px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center text-center font-semibold leading-none"
-              style={{ left: `${resolveTrackPositionPercent(slots, position)}%` }}
-            >
-              {isSkull ? (
-                <>
-                  <span className={`grid ${isCompact ? "h-[14px] w-[14px]" : isDetail ? "h-[18px] w-[18px]" : "h-[16px] w-[16px]"} place-items-center rounded-full border border-[#9a4038] bg-[rgba(91,31,28,0.88)] text-[#ffd0c6] ${isCurrent ? "shadow-[0_0_10px_rgba(207,72,62,0.42)]" : ""}`}>
-                    <Skull className={isCompact ? "h-2.5 w-2.5" : "h-3 w-3"} />
-                  </span>
-                  <span className="sr-only">{TRAIT_SKULL_LABEL}</span>
-                </>
-              ) : (
-                <>
-                  <span
-                    data-trait-track-tick="true"
-                    className={`block ${isCritical ? "h-[13px] bg-[#c05b4d]" : isStart ? "h-[12px] bg-[#a8d86f]" : "h-[9px] bg-[rgba(214,191,129,0.62)]"} w-px rounded-full`}
-                  />
+          {slots.map((position) => {
+            const isSkull = position === track.skullPosition;
+            const isCurrent = position === currentPosition;
+            const isStart = position === track.startPosition;
+            const isCritical = position === track.criticalPosition;
+            const slotValue = isSkull ? null : track.values[position];
+            return (
+              <span
+                key={`${trait}-${position}`}
+                data-trait-track-slot="true"
+                data-trait-track-position={position}
+                data-trait-track-current={isCurrent ? "true" : "false"}
+                data-trait-track-pointer={isCurrent ? "true" : undefined}
+                data-trait-track-pointer-shape={isCurrent ? "material-slot-highlight" : undefined}
+                data-trait-track-start={isStart ? "true" : "false"}
+                data-trait-track-critical={isCritical ? "true" : "false"}
+                data-trait-track-skull={isSkull ? "true" : "false"}
+                data-trait-track-death={isSkull ? "true" : "false"}
+                data-trait-track-value={isSkull ? undefined : slotValue}
+                data-trait-track-color={
+                  isCurrent
+                    ? "current-green"
+                    : isSkull
+                      ? "death-red"
+                      : isCritical
+                        ? "critical-red"
+                        : isStart
+                          ? "start-green"
+                          : "neutral"
+                }
+                title={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格（不是数值）" : slotValue}${isCurrent ? "，当前位置" : ""}`}
+                aria-label={`${TRAIT_LABEL_LOCAL[trait]} ${isSkull ? "死亡格，不是数值" : slotValue}${isCurrent ? "，当前位置" : ""}`}
+                className={`relative grid min-w-0 place-items-center rounded-[4px] border text-center font-semibold leading-none ${
+                  isCurrent
+                    ? "border-[#d7ff8d] bg-[rgba(78,128,59,0.82)] text-[#f7ffd8] shadow-[inset_0_0_0_1px_rgba(231,255,172,0.30),0_0_13px_rgba(155,214,103,0.46)]"
+                    : isSkull
+                      ? "border-[rgba(168,69,59,0.74)] bg-[rgba(68,19,17,0.76)] text-[#ffd0c6]"
+                      : isCritical
+                        ? "border-[rgba(178,95,76,0.68)] bg-[rgba(91,36,31,0.64)] text-[#ffd7cd]"
+                        : isStart
+                          ? "border-[rgba(168,216,111,0.70)] bg-[rgba(88,124,48,0.36)] text-[#e8ffd2]"
+                          : "border-[rgba(153,111,66,0.52)] bg-[rgba(16,19,15,0.42)] text-[rgba(238,220,176,0.82)]"
+                }`}
+              >
+                {isSkull ? (
+                  <>
+                    <Skull
+                      className={`${isCompact ? "h-3 w-3" : "h-4 w-4"} ${
+                        isCurrent ? "text-[#fff0bf]" : "text-[#ffd0c6]"
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span className="sr-only">{TRAIT_SKULL_LABEL}</span>
+                  </>
+                ) : (
                   <span
                     data-trait-track-slot-label="true"
-                    className={`absolute ${tickLabelClass} ${
-                      isCurrent
-                        ? TRAIT_VALUE_TEXT_CLASS[trait]
-                        : isCritical
-                          ? "text-[#d88f82]"
-                          : "text-[rgba(232,216,174,0.72)]"
-                    } ${isDetail ? "" : "opacity-60"}`}
+                    data-trait-track-slot-label-align="center"
+                    className={slotLabelClass}
                   >
                     {slotValue}
                   </span>
-                </>
-              )}
-            </span>
-          );
-        })}
+                )}
+              </span>
+            );
+          })}
+        </div>
       </div>
-      <span
-        className={`text-right font-semibold ${isDetail ? "text-[16px]" : "text-[14px]"} ${TRAIT_VALUE_TEXT_CLASS[trait]}`}
-      >
-        {currentValue}
-      </span>
     </div>
   );
 }
@@ -6449,6 +6441,19 @@ export default function BetrayalBoard({
     () => [core.currentExplorer, ...core.otherExplorers],
     [core.currentExplorer, core.otherExplorers],
   );
+  const [observedExplorerPlayerId, setObservedExplorerPlayerId] =
+    React.useState<string | null>(null);
+  const observedExplorer =
+    (observedExplorerPlayerId
+      ? allExplorers.find(
+          (explorer) => explorer.playerId === observedExplorerPlayerId,
+        )
+      : null) ?? core.currentExplorer;
+  const observedExplorerRoomName =
+    core.rooms.find((room) => room.id === observedExplorer.roomId)?.name ??
+    t("board.rooms.unknown");
+  const isObservingOtherExplorer =
+    observedExplorer.playerId !== core.currentExplorer.playerId;
   const inspectedExplorer =
     allExplorers.find(
       (explorer) => explorer.playerId === inspectedExplorerPlayerId,
@@ -6468,6 +6473,17 @@ export default function BetrayalBoard({
   const closeExplorerDetails = React.useCallback(() => {
     setInspectedExplorerPlayerId(null);
   }, []);
+  const handleObserveExplorer = React.useCallback(
+    (playerId: string) => {
+      setObservedExplorerPlayerId((previousPlayerId) =>
+        previousPlayerId === playerId || playerId === core.currentExplorer.playerId
+          ? null
+          : playerId,
+      );
+      setInspectedExplorerPlayerId(null);
+    },
+    [core.currentExplorer.playerId],
+  );
   const referencePages = React.useMemo(
     () => resolveReferencePages(core),
     [core],
@@ -6637,6 +6653,16 @@ export default function BetrayalBoard({
       setInspectedExplorerPlayerId(null);
     }
   }, [allExplorers, inspectedExplorerPlayerId]);
+  React.useEffect(() => {
+    if (
+      observedExplorerPlayerId &&
+      !allExplorers.some(
+        (explorer) => explorer.playerId === observedExplorerPlayerId,
+      )
+    ) {
+      setObservedExplorerPlayerId(null);
+    }
+  }, [allExplorers, observedExplorerPlayerId]);
 
   const openScenarioReference = React.useCallback(() => {
     const tutorialScenarioStepId = tutorialStep?.id;
@@ -10251,7 +10277,7 @@ export default function BetrayalBoard({
     () => buildDiscoveryResolutionSteps(latestDiscovery),
     [latestDiscovery],
   );
-  const shouldShowLatestDiscoveryResolutionSteps =
+  const shouldKeepLatestDiscoveryResolutionLedger =
     Boolean(
       latestDiscovery?.resolutionSteps?.some((step) => step.text.trim().length > 0),
     ) || latestDiscoveryDetailSteps.length > 1;
@@ -10332,11 +10358,15 @@ export default function BetrayalBoard({
       latestDiscoveryOwnerPlayerId,
     ]);
   const latestDiscoveryContinueLabel = latestDiscoveryPendingCardResolution
-    ? t("board.discovery.confirmCardStep", {
-        current: latestDiscoveryPendingCardResolution.index,
-        total: latestDiscoveryPendingCardResolution.total,
-      })
+    ? latestDiscoveryPendingCardResolution.total > 1
+      ? t("board.discovery.confirmCardStep", {
+          current: latestDiscoveryPendingCardResolution.index,
+          total: latestDiscoveryPendingCardResolution.total,
+        })
+      : t("common:button.confirm")
     : t("board.roll.backToBoard");
+  const shouldShowLatestDiscoveryStepProgress =
+    latestDiscoveryDetailSteps.length > 1;
   const handleDismissLatestDiscovery = React.useCallback(() => {
     if (!latestDiscoveryKey) {
       return;
@@ -13212,16 +13242,16 @@ export default function BetrayalBoard({
     );
   }
 
-  const currentExplorerTemplate = EXPLORER_CATALOG.find(
-    (explorer) => explorer.explorerId === core.currentExplorer.explorerId,
+  const observedExplorerTemplate = EXPLORER_CATALOG.find(
+    (explorer) => explorer.explorerId === observedExplorer.explorerId,
   );
-  const currentExplorerAbilityName =
-    core.currentExplorer.abilityName ||
-    currentExplorerTemplate?.abilityName ||
+  const observedExplorerAbilityName =
+    observedExplorer.abilityName ||
+    observedExplorerTemplate?.abilityName ||
     "";
-  const currentExplorerAbilityText =
-    core.currentExplorer.abilityText ||
-    currentExplorerTemplate?.abilityText ||
+  const observedExplorerAbilityText =
+    observedExplorer.abilityText ||
+    observedExplorerTemplate?.abilityText ||
     "";
 
   return (
@@ -13662,20 +13692,20 @@ export default function BetrayalBoard({
                 <div className="relative mx-auto w-full max-w-[188px]">
                   <div className="pointer-events-none absolute inset-[12%] rounded-full bg-[rgba(77,138,92,0.18)] blur-3xl" />
                   <OptimizedImage
-                    src={core.currentExplorer.portraitAsset}
+                    src={observedExplorer.portraitAsset}
                     locale={effectiveLocale}
-                    alt={core.currentExplorer.displayName}
+                    alt={observedExplorer.displayName}
                     className="relative z-10 aspect-[1/1.05] h-auto w-full object-contain drop-shadow-[0_16px_30px_rgba(0,0,0,0.38)]"
                     draggable={false}
                   />
                   {(
-                    Object.entries(core.currentExplorer.traits) as [
+                    Object.entries(observedExplorer.traits) as [
                       BetrayalTraitKey,
                       number,
                     ][]
                   ).map(([key, value]) => {
                     const track = resolveExplorerTraitTrack(
-                      core.currentExplorer,
+                      observedExplorer,
                       key,
                     );
                     const markerPosition = resolveExplorerBoardMarkerPosition(
@@ -13689,14 +13719,19 @@ export default function BetrayalBoard({
                         data-testid={`betrayal-explorer-board-marker-${key}`}
                         data-trait-track-position={track.position}
                         data-trait-track-value={value}
-                        className="pointer-events-none absolute z-20 h-7 w-7 -translate-x-1/2 -translate-y-1/2"
+                        data-trait-board-marker-shape="blank-material-marker"
+                        data-trait-board-marker-asset={ASSETS.marker.numberBlank}
+                        data-trait-board-marker-visible-value="false"
+                        aria-label={`${TRAIT_LABEL_LOCAL[key]}当前位置，第 ${track.position} 位，数值 ${value}`}
+                        title={`${TRAIT_LABEL_LOCAL[key]}当前位置：第 ${track.position} 位，数值 ${value}`}
+                        className="pointer-events-none absolute z-20 h-[20px] w-[20px] -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_3px_7px_rgba(0,0,0,0.44)]"
                         style={markerPosition}
                       >
                         <OptimizedImage
-                          src={resolveNumberMarkerAsset(value)}
+                          src={ASSETS.marker.numberBlank}
                           locale={effectiveLocale}
-                          alt={`${TRAIT_LABEL_LOCAL[key]} ${value}`}
-                          className="h-full w-full object-contain drop-shadow-[0_3px_8px_rgba(0,0,0,0.38)]"
+                          alt=""
+                          className="h-full w-full object-contain"
                           draggable={false}
                         />
                       </div>
@@ -13707,17 +13742,17 @@ export default function BetrayalBoard({
                   <div className="relative inline-flex min-w-[194px] max-w-[214px] items-center justify-between gap-2 overflow-hidden rounded-[7px] border border-[rgba(103,82,48,0.62)] bg-[linear-gradient(180deg,rgba(14,18,16,0.9),rgba(9,12,10,0.96))] px-2.5 py-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.14)]">
                     <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                     {renderAttackImpactSurface(
-                      core.currentExplorer.playerId,
+                      observedExplorer.playerId,
                       "current-panel",
                       <ExplorerFigureToken
-                        explorer={core.currentExplorer}
+                        explorer={observedExplorer}
                         locale={effectiveLocale}
                         label={resolvePlayerName(
-                          core.currentExplorer.playerId,
-                          core.currentExplorer.displayName,
+                          observedExplorer.playerId,
+                          observedExplorer.displayName,
                           matchData,
                         )}
-                        tone="self"
+                        tone={isObservingOtherExplorer ? "ally" : "self"}
                         size="panel"
                         testIdPrefix="betrayal-current-panel-token"
                       />,
@@ -13728,9 +13763,7 @@ export default function BetrayalBoard({
                         {t("board.hud.locationLabel")}
                       </div>
                       <div className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.12em] text-[#efe2c4]">
-                        {core.rooms.find(
-                          (room) => room.id === core.currentExplorer.roomId,
-                        )?.name || t("board.rooms.unknown")}
+                        {observedExplorerRoomName}
                       </div>
                     </div>
                     <div className="shrink-0 self-center rounded-[6px] border border-[rgba(105,83,47,0.58)] bg-[radial-gradient(circle_at_35%_25%,rgba(227,211,168,0.12),rgba(18,15,12,0.95))] px-2 py-0.5 text-center shadow-[0_4px_10px_rgba(0,0,0,0.14)]">
@@ -13738,7 +13771,7 @@ export default function BetrayalBoard({
                         {t("board.hud.holdingLabel")}
                       </div>
                       <div className="text-[15px] font-semibold leading-none text-[#f0e2c0]">
-                        {core.currentExplorerInventory.length}
+                        {observedExplorer.inventory.length}
                       </div>
                     </div>
                   </div>
@@ -13749,12 +13782,16 @@ export default function BetrayalBoard({
                     className="relative overflow-hidden rounded-[10px] border border-[rgba(93,79,54,0.42)] bg-[rgba(13,17,15,0.52)] px-3 py-2 shadow-[inset_0_0_0_1px_rgba(214,191,129,0.04)]"
                     data-testid="betrayal-current-traits"
                     data-tutorial-id="betrayal-current-traits"
-                    data-player-id={core.currentExplorer.playerId}
-                    data-explorer-id={core.currentExplorer.explorerId}
-                    data-room-id={core.currentExplorer.roomId}
+                    data-player-id={observedExplorer.playerId}
+                    data-explorer-id={observedExplorer.explorerId}
+                    data-room-id={observedExplorer.roomId}
+                    data-observed-player={
+                      isObservingOtherExplorer ? "true" : "false"
+                    }
+                    data-observed-player-id={observedExplorer.playerId}
                     data-token-asset={
-                      core.currentExplorer.tokenAsset ??
-                      core.currentExplorer.portraitAsset
+                      observedExplorer.tokenAsset ??
+                      observedExplorer.portraitAsset
                     }
                   >
                     <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
@@ -13762,10 +13799,13 @@ export default function BetrayalBoard({
                       <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bf81]">
                         {t("board.hud.currentTraitsLabel")}
                       </span>
-                      <span className="rounded-[4px] border border-[rgba(181,239,66,0.28)] bg-[rgba(40,58,21,0.52)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#d9ff97]">
+                      <span className="inline-flex items-center gap-1 rounded-[4px] border border-[rgba(181,239,66,0.28)] bg-[rgba(40,58,21,0.52)] px-2 py-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#d9ff97]">
+                        {isObservingOtherExplorer ? (
+                          <Eye size={11} aria-hidden="true" />
+                        ) : null}
                         {resolvePlayerName(
-                          core.currentExplorer.playerId,
-                          core.currentExplorer.displayName,
+                          observedExplorer.playerId,
+                          observedExplorer.displayName,
                           matchData,
                         )}
                       </span>
@@ -13784,7 +13824,7 @@ export default function BetrayalBoard({
                           data-testid={`betrayal-current-trait-row-${trait}`}
                         >
                           <ExplorerTraitTrackRail
-                            explorer={core.currentExplorer}
+                            explorer={observedExplorer}
                             trait={trait}
                             locale={effectiveLocale}
                             testIdPrefix="betrayal-current-trait-track"
@@ -13800,10 +13840,10 @@ export default function BetrayalBoard({
                         {t("board.characterSelect.abilityTitle")}：
                       </span>
                       <span className="font-semibold">
-                        {currentExplorerAbilityName}：
+                        {observedExplorerAbilityName}：
                       </span>
                       <span className="text-[#c8d8a2]">
-                        {currentExplorerAbilityText}
+                        {observedExplorerAbilityText}
                       </span>
                     </div>
                   </div>
@@ -13868,24 +13908,62 @@ export default function BetrayalBoard({
                   const isDogTradeTarget = dogTradeTargets.some(
                     (item) => item.playerId === explorer.playerId,
                   );
+                  const isPassiveSameRoomCue =
+                    isTradeCandidate &&
+                    isSameRoom &&
+                    !isCorpseLootCandidate &&
+                    !isSicknessExchangeTarget &&
+                    !isMagicCameraPhotoTarget &&
+                    !isPhantomPhotographerTarget &&
+                    !isMonsterAttackTarget &&
+                    !isHelpingHandsTrollHandTarget &&
+                    !isDustTarget &&
+                    !isAttackTarget &&
+                    !isDogTradeTarget;
+                  const isObservedExplorer =
+                    observedExplorer.playerId === explorer.playerId;
                   const panel = (
-                    <div
+                    <button
                       key={explorer.playerId}
+                      type="button"
+                      onClick={() => {
+                        if (isAttackTarget || isSicknessExchangeTarget) {
+                          handleSelectExplorerTarget(explorer);
+                          return;
+                        }
+                        handleObserveExplorer(explorer.playerId);
+                      }}
                       data-testid={`betrayal-teammate-panel-${explorer.playerId}`}
                       data-player-id={explorer.playerId}
+                      data-player-seat-anchor={explorer.playerId}
                       data-explorer-id={explorer.explorerId}
                       data-room-id={explorer.roomId}
+                      data-observed-player={
+                        isObservedExplorer ? "true" : "false"
+                      }
                       data-token-asset={
                         explorer.tokenAsset ?? explorer.portraitAsset
                       }
-                      className={`grid grid-cols-[50px_minmax(0,1fr)_122px] items-center gap-2 rounded-[8px] border px-1.5 py-2 transition ${
+                      title={`切换观察视角：${resolvePlayerName(
+                        explorer.playerId,
+                        explorer.displayName,
+                        matchData,
+                      )}`}
+                      aria-label={`切换观察视角：${resolvePlayerName(
+                        explorer.playerId,
+                        explorer.displayName,
+                        matchData,
+                      )}`}
+                      className={`group pointer-events-auto grid w-full grid-cols-[50px_minmax(0,1fr)_122px] items-center gap-2 rounded-[8px] border px-1.5 py-2 text-left transition ${
                         isSelectedTradeTarget
                           ? "border-[#eecc7e] bg-[linear-gradient(180deg,rgba(53,40,20,0.58),rgba(22,19,14,0.70))] shadow-[0_0_0_1px_rgba(24,17,8,0.92),0_0_18px_rgba(238,204,126,0.30)]"
-                          : isTradeCandidate ||
+                          : (isTradeCandidate && !isPassiveSameRoomCue) ||
                               isCorpseLootCandidate ||
                               isAttackTarget
                             ? "border-[rgba(118,189,153,0.46)] bg-[rgba(12,18,15,0.20)] hover:border-[rgba(159,225,167,0.64)] hover:bg-[rgba(255,224,138,0.06)]"
-                            : "border-transparent bg-transparent"
+                            : isObservedExplorer
+                              ? "border-[rgba(224,189,114,0.62)] bg-[rgba(55,38,21,0.44)] shadow-[0_0_0_1px_rgba(24,17,8,0.80),0_0_15px_rgba(224,189,114,0.22)]"
+                              : "border-transparent bg-transparent hover:border-[rgba(117,98,68,0.34)] hover:bg-[rgba(28,24,19,0.5)]"
                       }`}
                     >
                       <div className="relative h-12 w-12 overflow-visible">
@@ -13917,6 +13995,15 @@ export default function BetrayalBoard({
                             "panel",
                           )}
                         </div>
+                        {isObservedExplorer ? (
+                          <span
+                            data-testid={`betrayal-teammate-observed-${explorer.playerId}`}
+                            className="pointer-events-none absolute -right-1 -top-1 z-20 grid h-5 w-5 place-items-center rounded-full border border-[rgba(224,189,114,0.72)] bg-[rgba(20,14,8,0.92)] text-[#f5d993] shadow-[0_4px_9px_rgba(0,0,0,0.34)]"
+                            aria-hidden="true"
+                          >
+                            <Eye size={12} />
+                          </span>
+                        ) : null}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -13932,9 +14019,18 @@ export default function BetrayalBoard({
                           isSicknessExchangeTarget ||
                           isAttackTarget ? (
                             <span
+                              data-player-status-tone={
+                                isSelectedTradeTarget
+                                  ? "selected"
+                                  : isPassiveSameRoomCue
+                                    ? "neutral"
+                                    : "target"
+                              }
                               className={`shrink-0 rounded-[4px] border px-2 py-0.5 text-[10px] font-medium ${
                                 isSelectedTradeTarget
                                   ? "border-[#eecc7e] bg-[rgba(238,204,126,0.18)] text-[#ffe4a0]"
+                                  : isPassiveSameRoomCue
+                                    ? "border-[rgba(117,98,68,0.44)] bg-[rgba(28,24,19,0.54)] text-[#c9bda1]"
                                   : "border-[rgba(118,189,153,0.30)] bg-[rgba(40,63,50,0.18)] text-[#bddac2]"
                               }`}
                             >
@@ -13963,7 +14059,7 @@ export default function BetrayalBoard({
                             (room) => room.id === explorer.roomId,
                           )?.name || t("board.rooms.unknown")}
                         </div>
-                        <div className="text-[11px] text-[#8db29a]">
+                        <div className="text-[11px] text-[#b7aa92]">
                           {t("board.players.inventoryCount", {
                             count: explorer.inventory.length,
                           })}
@@ -13988,7 +14084,7 @@ export default function BetrayalBoard({
                           />
                         ))}
                       </div>
-                    </div>
+                    </button>
                   );
 
                   return panel;
@@ -14330,12 +14426,15 @@ export default function BetrayalBoard({
                         />
                       ) : null}
                     </div>
-                    {shouldShowLatestDiscoveryResolutionSteps ? (
+                    {shouldKeepLatestDiscoveryResolutionLedger ? (
                       <ol
+                        hidden
+                        aria-hidden="true"
                         data-testid="betrayal-discovery-resolution-steps"
+                        data-ui-role="nonvisual-resolution-ledger"
                         className={`grid w-full max-w-[min(760px,calc(100vw-2rem))] gap-1.5 rounded-[10px] border border-[rgba(214,181,109,0.26)] bg-[rgba(12,14,11,0.70)] p-2.5 text-left shadow-[0_12px_26px_rgba(0,0,0,0.22)] ${
                           isPhoneLandscapeLayout
-                            ? "max-h-[72px] overflow-auto text-[10px]"
+                            ? "max-h-[78px] overflow-auto text-[12px]"
                             : "text-[12px]"
                         }`}
                       >
@@ -14344,10 +14443,12 @@ export default function BetrayalBoard({
                             key={`${latestDiscoveryKey ?? "discovery"}-step-${index}`}
                             data-testid="betrayal-discovery-resolution-step"
                             data-visible-text={latestDiscoveryVisibleDetailSteps[index]}
-                            className="grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 text-[#eadbb0]"
+                            className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-2 text-[#eadbb0]"
                           >
-                            <span className="rounded-[5px] border border-[rgba(214,181,109,0.24)] bg-[rgba(214,181,109,0.12)] px-1.5 py-0.5 text-center text-[10px] font-black tracking-[0.08em] text-[#fff1b8]">
-                              {index + 1}/{latestDiscoveryDetailSteps.length}
+                            <span className="rounded-[5px] border border-[rgba(214,181,109,0.24)] bg-[rgba(214,181,109,0.12)] px-1.5 py-0.5 text-center text-[12px] font-black tracking-[0.08em] text-[#fff1b8]">
+                              {shouldShowLatestDiscoveryStepProgress
+                                ? `${index + 1}/${latestDiscoveryDetailSteps.length}`
+                                : "结果"}
                             </span>
                             <span className="min-w-0 leading-snug">
                               {shouldCompactLatestDiscoveryResolutionSteps ? (
@@ -18062,10 +18163,10 @@ export default function BetrayalBoard({
                 className="mt-3 rounded-[7px] border border-[rgba(169,42,46,0.42)] bg-[linear-gradient(180deg,rgba(72,20,24,0.44),rgba(18,12,12,0.60))] px-2.5 py-2 shadow-[0_10px_18px_rgba(0,0,0,0.14)]"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[9px] font-black uppercase tracking-[0.18em] text-[#d99a72]">
+                  <span className="text-[12px] font-black uppercase tracking-[0.08em] text-[#d99a72]">
                     {t("board.status.hauntRiskLabel")}
                   </span>
-                  <span className="rounded-[4px] border border-[rgba(245,211,137,0.20)] bg-[rgba(245,211,137,0.08)] px-1.5 py-0.5 text-[10px] font-bold text-[#f7df9d]">
+                  <span className="rounded-[4px] border border-[rgba(245,211,137,0.20)] bg-[rgba(245,211,137,0.08)] px-1.5 py-0.5 text-[12px] font-bold leading-none text-[#f7df9d]">
                     {hauntRisk.hauntStarted
                       ? t("board.status.hauntRiskPhaseHaunt")
                       : t("board.status.hauntRiskPhasePreHaunt")}
@@ -18083,40 +18184,61 @@ export default function BetrayalBoard({
                   data-track-value={hauntRiskTrackValue}
                   data-progress-percent={hauntRiskTrackPositionPercent}
                   data-track-position-percent={hauntRiskTrackPositionPercent}
-                  data-current-display="segment-highlight"
+                  data-current-display="material-slot-highlight"
+                  data-haunt-risk-style="official-asset-track"
+                  data-haunt-risk-track-shape="material-0-9-bar"
                   role="progressbar"
                   aria-label={hauntRiskDetailText}
                   aria-valuemin={hauntRiskTrackMin}
                   aria-valuemax={hauntRiskTrackMax}
                   aria-valuenow={hauntRiskTrackValue}
-                  className="relative mt-2 overflow-visible"
+                  className="relative mt-2 w-full overflow-visible rounded-[7px]"
                 >
                   <div
                     aria-hidden="true"
-                    className="grid h-[24px] gap-[3px]"
-                    style={{
-                      gridTemplateColumns: `repeat(${hauntRiskTrackSlots.length}, minmax(0, 1fr))`,
-                    }}
+                    className="relative min-h-[36px] w-full overflow-hidden rounded-[7px] shadow-[0_8px_16px_rgba(0,0,0,0.22)]"
+                    style={{ aspectRatio: "1794 / 349" }}
                   >
-                    {hauntRiskTrackSlots.map((slot) => {
-                      const isCurrentSlot = slot === hauntRiskTrackValue;
-                      return (
-                        <span
-                          key={`haunt-risk-slot-${slot}`}
-                          data-testid="betrayal-haunt-risk-slot"
-                          data-haunt-risk-slot={slot}
-                          data-haunt-risk-segment="true"
-                          data-haunt-risk-current-slot={
-                            isCurrentSlot ? "true" : "false"
-                          }
-                          className={`min-w-0 rounded-[3px] border transition-[background-color,border-color,box-shadow,transform] duration-200 ${
-                            isCurrentSlot
-                              ? "border-[#ffe28b] bg-[#67b25b] shadow-[0_0_14px_rgba(103,178,91,0.62)] ring-1 ring-[#2b4f27] ring-offset-1 ring-offset-[rgba(18,12,12,0.86)]"
-                              : "border-[rgba(224,86,58,0.58)] bg-[rgba(36,19,18,0.72)]"
-                          }`}
-                        />
-                      );
-                    })}
+                    <OptimizedImage
+                      data-testid="betrayal-haunt-risk-track-image"
+                      data-haunt-risk-track-image="official-0-9"
+                      src={ASSETS.ui.hauntRiskTrack}
+                      locale={effectiveLocale}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-fill"
+                      draggable={false}
+                    />
+                    <div
+                      data-haunt-risk-slot-grid="true"
+                      className="absolute inset-0 grid"
+                      style={{
+                        gridTemplateColumns: `repeat(${hauntRiskTrackSlots.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {hauntRiskTrackSlots.map((slot) => {
+                        const isCurrentSlot = slot === hauntRiskTrackValue;
+                        return (
+                          <span
+                            key={`haunt-risk-slot-${slot}`}
+                            data-testid="betrayal-haunt-risk-slot"
+                            data-haunt-risk-slot={slot}
+                            data-haunt-risk-segment="true"
+                            data-haunt-risk-current-slot={
+                              isCurrentSlot ? "true" : "false"
+                            }
+                            data-haunt-risk-cell="true"
+                            data-haunt-risk-current-cell={
+                              isCurrentSlot ? "true" : "false"
+                            }
+                            className={`min-w-0 rounded-[4px] transition-[background-color,box-shadow] duration-200 ${
+                              isCurrentSlot
+                                ? "bg-[rgba(103,185,93,0.30)] shadow-[inset_0_0_0_2px_rgba(213,255,153,0.82),0_0_14px_rgba(103,185,93,0.52)]"
+                                : "bg-transparent shadow-none"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -18260,6 +18382,23 @@ export default function BetrayalBoard({
                         explorer.playerId === selectedDustTargetPlayerId);
                     const isSameRoom =
                       core.currentExplorer.roomId === explorer.roomId;
+                    const isDogTradeTarget = dogTradeTargets.some(
+                      (item) => item.playerId === explorer.playerId,
+                    );
+                    const isPassiveSameRoomCue =
+                      isTradeCandidate &&
+                      isSameRoom &&
+                      !isCorpseLootCandidate &&
+                      !isSicknessExchangeTarget &&
+                      !isMagicCameraPhotoTarget &&
+                      !isPhantomPhotographerTarget &&
+                      !isMonsterAttackTarget &&
+                      !isHelpingHandsTrollHandTarget &&
+                      !isDustTarget &&
+                      !isAttackTarget &&
+                      !isDogTradeTarget;
+                    const isObservedExplorer =
+                      observedExplorer.playerId === explorer.playerId;
                     const roomName =
                       core.rooms.find((room) => room.id === explorer.roomId)
                         ?.name || t("board.rooms.unknown");
@@ -18272,35 +18411,44 @@ export default function BetrayalBoard({
                             handleSelectExplorerTarget(explorer);
                             return;
                           }
-                          openExplorerDetails(explorer.playerId);
+                          handleObserveExplorer(explorer.playerId);
                         }}
                         data-testid={`betrayal-bottom-teammate-${explorer.playerId}`}
                         data-player-id={explorer.playerId}
+                        data-player-seat-anchor={explorer.playerId}
                         data-explorer-id={explorer.explorerId}
                         data-room-id={explorer.roomId}
+                        data-observed-player={
+                          isObservedExplorer ? "true" : "false"
+                        }
                         data-token-asset={
                           explorer.tokenAsset ?? explorer.portraitAsset
                         }
-                        className={`group relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] border px-1.5 py-1.5 text-left transition ${
+                        className={`group pointer-events-auto relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] border px-1.5 py-1.5 text-left transition ${
                           isSelectedTradeTarget
                             ? "border-[#eecc7e] bg-[linear-gradient(180deg,rgba(53,40,20,0.72),rgba(22,19,14,0.82))] shadow-[0_0_0_1px_rgba(24,17,8,0.92),0_0_18px_rgba(238,204,126,0.34)]"
-                            : isTradeCandidate ||
+                            : (isTradeCandidate && !isPassiveSameRoomCue) ||
                                 isCorpseLootCandidate ||
                                 isAttackTarget
                               ? "border-[rgba(118,189,153,0.46)] bg-[rgba(12,18,15,0.20)] hover:bg-[rgba(28,24,19,0.5)] hover:border-[rgba(159,225,167,0.64)]"
-                              : "border-transparent hover:bg-[rgba(28,24,19,0.5)]"
+                              : isObservedExplorer
+                                ? "border-[rgba(224,189,114,0.62)] bg-[rgba(55,38,21,0.44)] shadow-[0_0_0_1px_rgba(24,17,8,0.80),0_0_15px_rgba(224,189,114,0.22)]"
+                                : "border-transparent hover:bg-[rgba(28,24,19,0.5)]"
                         }`}
-                        title={t("board.players.detailsAria", {
-                          player: resolvePlayerName(
-                            explorer.playerId,
-                            explorer.displayName,
-                            matchData,
-                          ),
-                        })}
+                        title={`切换观察视角：${resolvePlayerName(
+                          explorer.playerId,
+                          explorer.displayName,
+                          matchData,
+                        )}`}
+                        aria-label={`切换观察视角：${resolvePlayerName(
+                          explorer.playerId,
+                          explorer.displayName,
+                          matchData,
+                        )}`}
                       >
                         <div
                           className={`relative h-[34px] w-[34px] overflow-visible rounded-[6px] border ${
-                            isTradeCandidate ||
+                            (isTradeCandidate && !isPassiveSameRoomCue) ||
                             isCorpseLootCandidate ||
                             isSicknessExchangeTarget ||
                             isAttackTarget
@@ -18338,11 +18486,20 @@ export default function BetrayalBoard({
                           </div>
                           <span
                             className={`pointer-events-none absolute inset-0 rounded-[6px] ring-1 ${
-                              isSameRoom
-                                ? "ring-[rgba(174,230,133,0.34)]"
+                              isObservedExplorer
+                                ? "ring-[rgba(224,189,114,0.54)]"
                                 : "ring-transparent"
                             }`}
                           />
+                          {isObservedExplorer ? (
+                            <span
+                              data-testid={`betrayal-bottom-teammate-observed-${explorer.playerId}`}
+                              className="pointer-events-none absolute -right-1 -top-1 z-20 grid h-[18px] w-[18px] place-items-center rounded-full border border-[rgba(224,189,114,0.72)] bg-[rgba(20,14,8,0.92)] text-[#f5d993] shadow-[0_4px_9px_rgba(0,0,0,0.34)]"
+                              aria-hidden="true"
+                            >
+                              <Eye size={10} />
+                            </span>
+                          ) : null}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center justify-between gap-2">
@@ -18358,9 +18515,18 @@ export default function BetrayalBoard({
                             isSicknessExchangeTarget ||
                             isAttackTarget ? (
                               <span
+                                data-player-status-tone={
+                                  isSelectedTradeTarget
+                                    ? "selected"
+                                    : isPassiveSameRoomCue
+                                      ? "neutral"
+                                      : "target"
+                                }
                                 className={`shrink-0 rounded-[4px] border px-1.5 py-0.5 text-[9px] ${
                                   isSelectedTradeTarget
                                     ? "border-[#eecc7e] bg-[rgba(238,204,126,0.18)] text-[#ffe4a0]"
+                                    : isPassiveSameRoomCue
+                                      ? "border-[rgba(117,98,68,0.44)] bg-[rgba(28,24,19,0.54)] text-[#c9bda1]"
                                     : "border-[rgba(118,189,153,0.30)] bg-[rgba(40,63,50,0.18)] text-[#bddac2]"
                                 }`}
                               >
@@ -18378,6 +18544,8 @@ export default function BetrayalBoard({
                                           ? t("board.players.corpse")
                                           : isSameRoom
                                             ? t("board.players.sameRoom")
+                                            : isDogTradeTarget
+                                              ? t("board.inventory.dog")
                                             : t("board.players.tradeTarget")}
                               </span>
                             ) : null}

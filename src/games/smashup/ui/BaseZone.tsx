@@ -17,6 +17,7 @@ import { getFactionMeta } from './factionMeta';
 import { useSmashUpOverlay } from './SmashUpOverlayContext';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import { UI_Z_INDEX } from '../../../core';
 import { getLayoutConfig, layoutInlineSize } from './layoutConfig';
 import {
@@ -138,9 +139,11 @@ export const BaseZone: React.FC<{
     usableTitanOngoingUids?: Set<string>;
     reactionTitanTriggerUids?: Set<string>;
     onResolveTitanReaction?: (titanUid: string) => void;
+    defeatableMonsterUids?: Set<string>;
+    onDefeatMonster?: (baseIndex: number, monsterUid: string) => void;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -167,6 +170,7 @@ export const BaseZone: React.FC<{
         : 'absolute -bottom-[0.5vw] bg-white text-slate-900 text-[0.6vw] font-bold px-[0.4vw] py-[0.1vw] rounded shadow-sm border border-slate-300 whitespace-nowrap';
     const titansOnBase = getTitansOnBase(core, baseIndex);
     const ongoingActions = base.ongoingActions ?? [];
+    const monstersOnBase = base.monsters ?? [];
     const hasOngoingRow = ongoingActions.length > 0;
     const titanCardWidth = titansOnBase.length > 1
         ? Math.max(layout.minionCardWidth - 0.4, layout.ongoingCardWidth + 1.2)
@@ -188,6 +192,13 @@ export const BaseZone: React.FC<{
     const leftOngoingActions = ongoingActions.slice(0, ongoingSplitIndex);
     const rightOngoingActions = ongoingActions.slice(ongoingSplitIndex);
     const ongoingCardOverlap = Math.max(layout.ongoingCardWidth * 0.2, 0.4);
+    const monsterCardWidth = Math.max(
+        Math.min(layout.baseCardWidth * 0.42, layout.minionCardWidth * 1.05),
+        layout.minionCardWidth * 0.82,
+    );
+    const monsterCardHeight = monsterCardWidth / BASE_CARD_ASPECT_RATIO;
+    const monsterVisibleSlice = monsterCardWidth * 0.42;
+    const monsterCardOverlap = Math.max(monsterCardWidth - monsterVisibleSlice, 0);
     const titanSideContainerGap = Math.max(layout.ongoingCardWidth * 0.04, 0.08);
     const titanSideContainerAnchorOffset = titanRowWidth / 2 + titanSideContainerGap;
     const isBaseHighlighted = isSelectable || canUseBaseAbility || (isDeployMode && !isMinionSelectMode);
@@ -721,6 +732,69 @@ export const BaseZone: React.FC<{
         );
     };
 
+    const renderMonsterCard = (
+        monster: NonNullable<BaseInPlay['monsters']>[number],
+        idx: number,
+        total: number,
+    ) => {
+        const monsterDef = getMunchkinSpecialCardDescriptor(monster.defId);
+        if (!monsterDef) return null;
+        const controllerLabel = monster.controllerId !== undefined
+            ? (playerNames?.[monster.controllerId] ?? `P${Number(monster.controllerId) + 1}`)
+            : undefined;
+        const canDefeatMonster = monster.controllerId === undefined && defeatableMonsterUids?.has(monster.uid) === true;
+        const rotation = (idx - (total - 1) / 2) * 2.2;
+        const title = controllerLabel ? `${monsterDef.name} · ${controllerLabel}` : monsterDef.name;
+        const monsterCard = (
+            <div className={`relative h-full w-full overflow-hidden rounded-[0.18vw] border-[0.1vw] bg-slate-900 shadow-md transition-[box-shadow,filter] duration-200 ${
+                canDefeatMonster
+                    ? 'border-emerald-300/90 shadow-[0_0_16px_rgba(52,211,153,0.55)] group-hover:shadow-[0_0_22px_rgba(52,211,153,0.78)]'
+                    : 'border-amber-200/70 group-hover:shadow-[0_0_14px_rgba(251,191,36,0.45)]'
+            }`}>
+                <CardPreview
+                    previewRef={monsterDef.previewRef}
+                    className="h-full w-full"
+                    title={title}
+                />
+            </div>
+        );
+
+        return (
+            <div
+                key={monster.uid}
+                data-testid={`su-base-monster-${monster.uid}`}
+                data-monster-uid={monster.uid}
+                data-monster-controller-id={monster.controllerId}
+                data-defeatable-monster={canDefeatMonster ? 'true' : undefined}
+                className={`group relative transition-[transform,filter] duration-200 hover:z-40 hover:-translate-y-[0.2vw] ${canDefeatMonster ? 'cursor-pointer' : 'cursor-default'}`}
+                style={{
+                    width: layoutInlineSize(monsterCardWidth, layout),
+                    height: layoutInlineSize(monsterCardHeight, layout),
+                    marginLeft: idx === 0 ? '0vw' : layoutInlineSize(-monsterCardOverlap, layout),
+                    transform: `rotate(${rotation}deg)`,
+                }}
+                title={title}
+            >
+                {canDefeatMonster ? (
+                    <button
+                        type="button"
+                        aria-label={`击败${monsterDef.name}`}
+                        className="block h-full w-full rounded-[0.18vw] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onDefeatMonster?.(baseIndex, monster.uid);
+                        }}
+                    >
+                        {monsterCard}
+                    </button>
+                ) : monsterCard}
+                {controllerLabel && (
+                    <div className="absolute -bottom-[0.25vw] left-1/2 z-30 h-[0.65vw] w-[0.65vw] -translate-x-1/2 rounded-full border border-white bg-emerald-400 shadow" />
+                )}
+            </div>
+        );
+    };
+
     return (
         <div 
             className="relative flex flex-col items-center group/base"
@@ -949,6 +1023,19 @@ export const BaseZone: React.FC<{
                 )}
             </div>
             </div>
+
+            {monstersOnBase.length > 0 && (
+                <div
+                    data-testid={`su-base-monster-row-${baseIndex}`}
+                    className="relative z-10 mt-[0.35vw] mb-[0.2vw] flex items-center justify-center"
+                    style={{
+                        width: layoutInlineSize(layout.baseCardWidth, layout),
+                        minHeight: layoutInlineSize(monsterCardHeight, layout),
+                    }}
+                >
+                    {monstersOnBase.map((monster, idx) => renderMonsterCard(monster, idx, monstersOnBase.length))}
+                </div>
+            )}
 
 
             {/* --- PLAYER COLUMNS CONTAINER --- */}

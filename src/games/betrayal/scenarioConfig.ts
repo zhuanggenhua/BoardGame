@@ -88,6 +88,11 @@ export interface BetrayalInventorySeed {
     kind: BetrayalInventoryKind;
 }
 
+export interface BetrayalExplorerTraitTrackSeed {
+    values: number[];
+    startPosition: number;
+}
+
 export interface BetrayalExplorerCatalogEntry {
     explorerId: string;
     displayName: string;
@@ -95,6 +100,7 @@ export interface BetrayalExplorerCatalogEntry {
     tokenAsset?: string;
     color: string;
     traits: Record<BetrayalTraitKey, number>;
+    traitTracks: Record<BetrayalTraitKey, BetrayalExplorerTraitTrackSeed>;
     abilityName: string;
     abilityText: string;
 }
@@ -692,70 +698,193 @@ export function resolveBetrayalHauntRevealResolution({
     };
 }
 
+const BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME = '无特殊能力';
+const BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT = '基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。';
+
 export const BETRAYAL_EXPLORER_CATALOG: BetrayalExplorerCatalogEntry[] = [
     {
-        explorerId: 'jaden-jones',
-        displayName: '杰登·琼斯',
-        portraitAsset: 'betrayal/explorers/jade-jones',
-        tokenAsset: 'betrayal/tokens/explorers/jaden-jones',
-        color: '#8cc63f',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '大胆',
-        abilityText: '攻击投掷 +1。',
-    },
-    {
-        explorerId: 'rebecca-allen',
-        displayName: '丽贝卡·艾伦博士',
+        explorerId: 'isa-valencia',
+        displayName: '伊莎·瓦伦西亚',
         portraitAsset: 'betrayal/explorers/xia',
-        color: '#3699d3',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '冷静',
-        abilityText: '第一次事件检定后可重投 1 颗骰。',
+        color: '#d0a23e',
+        traits: { might: 3, speed: 5, knowledge: 4, sanity: 4 },
+        traitTracks: {
+            might: { values: [2, 3, 3, 4, 4, 5, 6, 7], startPosition: 1 },
+            speed: { values: [4, 4, 5, 5, 6, 7, 8, 8], startPosition: 2 },
+            knowledge: { values: [2, 3, 3, 4, 4, 5, 6, 6], startPosition: 3 },
+            sanity: { values: [2, 3, 4, 5, 6, 7, 7, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'darryl-highla',
-        displayName: '达里尔·海拉',
+        explorerId: 'anita-hernandez',
+        displayName: '安妮塔·赫南德兹',
         portraitAsset: 'betrayal/explorers/anita-hernandez',
+        color: '#d9b23f',
+        traits: { might: 4, speed: 4, knowledge: 5, sanity: 3 },
+        traitTracks: {
+            might: { values: [2, 2, 3, 4, 5, 6, 7], startPosition: 3 },
+            speed: { values: [2, 3, 4, 4, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [4, 4, 5, 5, 7, 8, 8], startPosition: 2 },
+            sanity: { values: [2, 2, 3, 4, 5, 5, 6, 6], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'father-warren-leung',
+        displayName: '神父 梁沃伦',
+        portraitAsset: 'betrayal/explorers/father-warren-leung',
+        tokenAsset: 'betrayal/tokens/explorers/father-warren-leung',
+        color: '#c8d0d2',
+        traits: { might: 3, speed: 4, knowledge: 4, sanity: 5 },
+        traitTracks: {
+            might: { values: [2, 2, 3, 3, 4, 5, 6, 6], startPosition: 2 },
+            speed: { values: [2, 3, 4, 4, 5, 5, 6, 6], startPosition: 2 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 2 },
+            sanity: { values: [3, 3, 5, 5, 6, 6, 8, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'dan-nguyen-md',
+        displayName: '阮单 医学博士',
+        portraitAsset: 'betrayal/explorers/dan-nguyen-md',
+        color: '#d8dce0',
+        traits: { might: 4, speed: 3, knowledge: 5, sanity: 4 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 4, 5, 5, 6, 7], startPosition: 2 },
+            speed: { values: [2, 3, 3, 4, 4, 5, 6, 7], startPosition: 1 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 3 },
+            sanity: { values: [2, 3, 4, 4, 5, 5, 6, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'michelle-monroe',
+        displayName: '米歇尔·梦露',
+        portraitAsset: 'betrayal/explorers/michelle-monroe',
+        tokenAsset: 'betrayal/tokens/explorers/michelle-monroe',
         color: '#b45ca3',
-        traits: { might: 3, speed: 4, knowledge: 3, sanity: 5 },
-        abilityName: '敏锐',
-        abilityText: '探索到事件房间时，知识 +1。',
+        traits: { might: 5, speed: 4, knowledge: 4, sanity: 3 },
+        traitTracks: {
+            might: { values: [2, 3, 4, 5, 5, 6, 7, 8], startPosition: 3 },
+            speed: { values: [2, 3, 4, 4, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [2, 3, 3, 4, 5, 6, 7, 8], startPosition: 3 },
+            sanity: { values: [2, 2, 3, 4, 4, 5, 6, 6], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'beat-box-bowen',
+        displayName: '布里塔妮 “B-BOX” 鲍温',
+        portraitAsset: 'betrayal/explorers/beat-box-bowen',
+        color: '#b23f8a',
+        traits: { might: 5, speed: 3, knowledge: 4, sanity: 4 },
+        traitTracks: {
+            might: { values: [3, 3, 5, 5, 6, 7, 7, 8], startPosition: 2 },
+            speed: { values: [2, 3, 3, 4, 4, 5, 6, 6], startPosition: 1 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 2 },
+            sanity: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'josef-hooper',
+        displayName: '约瑟夫 “铁子” 霍珀',
+        portraitAsset: 'betrayal/explorers/josef-hooper',
+        color: '#c85045',
+        traits: { might: 5, speed: 4, knowledge: 3, sanity: 4 },
+        traitTracks: {
+            might: { values: [4, 4, 5, 5, 6, 7, 8, 8], startPosition: 2 },
+            speed: { values: [2, 3, 4, 4, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [2, 2, 3, 3, 5, 5, 6, 6], startPosition: 2 },
+            sanity: { values: [2, 2, 3, 4, 5, 5, 6, 6], startPosition: 3 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
         explorerId: 'oliver-swift',
         displayName: '奥利弗·斯威夫特',
         portraitAsset: 'betrayal/explorers/oliver-swift',
         color: '#d0603f',
-        traits: { might: 4, speed: 3, knowledge: 2, sanity: 4 },
-        abilityName: '谨慎',
-        abilityText: '结束回合时若未探索，移动 +1。',
+        traits: { might: 4, speed: 5, knowledge: 4, sanity: 3 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 5, 5, 6, 7], startPosition: 2 },
+            speed: { values: [3, 4, 5, 5, 6, 7, 7, 8], startPosition: 2 },
+            knowledge: { values: [3, 3, 4, 5, 6, 6, 7], startPosition: 2 },
+            sanity: { values: [2, 3, 3, 4, 5, 5, 6, 7], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'lia-valencia',
-        displayName: '莉娅·瓦伦西亚',
-        portraitAsset: 'betrayal/explorers/sera-nguyen',
-        color: '#d0a23e',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '专注',
-        abilityText: '使用物品后可查看顶牌。',
+        explorerId: 'stephanie-richter',
+        displayName: '斯蒂芬妮·里克特',
+        portraitAsset: 'betrayal/explorers/stephanie-richter',
+        tokenAsset: 'betrayal/tokens/explorers/stephanie-richter',
+        color: '#3699d3',
+        traits: { might: 4, speed: 3, knowledge: 4, sanity: 5 },
+        traitTracks: {
+            might: { values: [2, 3, 4, 5, 5, 6, 6], startPosition: 2 },
+            speed: { values: [2, 3, 3, 4, 5, 5, 6, 7], startPosition: 1 },
+            knowledge: { values: [2, 3, 3, 4, 4, 5, 6, 6], startPosition: 3 },
+            sanity: { values: [4, 4, 5, 5, 6, 7, 8, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'sam-yin',
-        displayName: '山姆·尹',
-        portraitAsset: 'betrayal/explorers/father-warren-leung',
+        explorerId: 'persephone-puleri',
+        displayName: '珀尔塞福涅·普拉里',
+        portraitAsset: 'betrayal/explorers/persephone-puleri',
+        color: '#478bbf',
+        traits: { might: 4, speed: 4, knowledge: 3, sanity: 5 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 2 },
+            speed: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 2 },
+            knowledge: { values: [2, 3, 3, 4, 5, 6, 6, 7], startPosition: 1 },
+            sanity: { values: [3, 3, 4, 5, 6, 7, 8, 8], startPosition: 3 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
+    },
+    {
+        explorerId: 'sammy-angler',
+        displayName: '塞米·昂勒尔',
+        portraitAsset: 'betrayal/explorers/sammy-angler',
         color: '#719d4a',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '守护',
-        abilityText: '同房间队友受伤时可替其承受 1 点。',
+        traits: { might: 4, speed: 5, knowledge: 3, sanity: 4 },
+        traitTracks: {
+            might: { values: [3, 3, 4, 4, 5, 6, 8], startPosition: 2 },
+            speed: { values: [2, 3, 4, 5, 5, 6, 7, 8], startPosition: 3 },
+            knowledge: { values: [2, 2, 3, 3, 4, 6, 7, 8], startPosition: 2 },
+            sanity: { values: [2, 3, 3, 4, 5, 6, 6, 7], startPosition: 3 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
     {
-        explorerId: 'michelle-monroe',
-        displayName: '米歇尔·门罗',
-        portraitAsset: 'betrayal/explorers/anita-hernandez',
-        color: '#777777',
-        traits: { might: 4, speed: 3, knowledge: 4, sanity: 6 },
-        abilityName: '沉默',
-        abilityText: '长曲棍球冠军，适合作为首剧本叛徒基准角色。',
+        explorerId: 'jaden-jones',
+        displayName: '杰登·琼斯',
+        portraitAsset: 'betrayal/explorers/jade-jones',
+        tokenAsset: 'betrayal/tokens/explorers/jaden-jones',
+        color: '#8cc63f',
+        traits: { might: 3, speed: 4, knowledge: 5, sanity: 4 },
+        traitTracks: {
+            might: { values: [2, 3, 3, 4, 4, 5, 6, 7], startPosition: 1 },
+            speed: { values: [3, 4, 4, 5, 5, 6, 7, 8], startPosition: 1 },
+            knowledge: { values: [3, 3, 4, 5, 5, 6, 6, 7], startPosition: 3 },
+            sanity: { values: [3, 3, 4, 5, 5, 6, 7, 8], startPosition: 2 },
+        },
+        abilityName: BETRAYAL_NO_EXPLORER_RULE_ABILITY_NAME,
+        abilityText: BETRAYAL_NO_EXPLORER_RULE_ABILITY_TEXT,
     },
 ];
 

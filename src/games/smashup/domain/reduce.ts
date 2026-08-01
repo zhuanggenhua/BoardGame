@@ -31,6 +31,7 @@ import type {
     HandShuffledIntoDeckEvent,
     MadnessDrawnEvent,
     MadnessReturnedEvent,
+    MunchkinMonsterDefeatedEvent,
     BaseDeckReorderedEvent,
     BaseReplacedEvent,
     ExtraTurnQueuedEvent,
@@ -46,6 +47,7 @@ import type {
     TriggerQueuedEvent,
     TriggerConsumedEvent,
     MinionOnBase,
+    MonsterOnBase,
     CardType,
     CardInstance,
     BaseInPlay,
@@ -73,7 +75,8 @@ import {
     enrichCardInstanceWithObjectRef,
     getCardTransferObjectRef,
 } from './objectProvenance';
-import { canControllerPlayTitan, hasCthulhuExpansionFaction } from './abilityHelpers';
+import { canControllerPlayTitan, hasCthulhuExpansionFaction, hasMunchkinExpansionFaction } from './abilityHelpers';
+import { getMunchkinSpecialCardDescriptor, MUNCHKIN_MONSTER_DECK_DEF_IDS, MUNCHKIN_TREASURE_DECK_DEF_IDS } from '../data/factions/munchkin';
 import { normalizeScoringEligibleBaseIndices } from './ongoingModifiers';
 import {
     getBestMatchingBaseLimitedPowerQuota,
@@ -106,6 +109,70 @@ function removeTempBreakpointModifierAtBaseIndex(
         return acc;
     }, {});
     return Object.keys(adjusted).length > 0 ? adjusted : undefined;
+}
+
+interface MunchkinMonsterDealResult {
+    base: BaseInPlay;
+    monsterDeck?: string[];
+    nextUid: number;
+}
+
+function dealMunchkinMonstersToBase(
+    base: BaseInPlay,
+    monsterDeck: string[] | undefined,
+    nextUid: number,
+): MunchkinMonsterDealResult {
+    const requiredCount = Math.max(0, getBaseDef(base.defId)?.monsterCount ?? 0);
+    const existingMonsters = base.monsters ?? [];
+    const remainingNeeded = Math.max(0, requiredCount - existingMonsters.length);
+    if (!monsterDeck?.length || remainingNeeded <= 0) {
+        return { base, monsterDeck, nextUid };
+    }
+
+    const dealtDefIds = monsterDeck.slice(0, remainingNeeded);
+    const dealtMonsters: MonsterOnBase[] = dealtDefIds.map((defId, index) => ({
+        uid: `munchkin_monster_${nextUid + index}`,
+        defId,
+    }));
+    return {
+        base: {
+            ...base,
+            monsters: [...existingMonsters, ...dealtMonsters],
+        },
+        monsterDeck: monsterDeck.slice(dealtDefIds.length),
+        nextUid: nextUid + dealtDefIds.length,
+    };
+}
+
+function dealMunchkinMonstersToBases(
+    bases: BaseInPlay[],
+    monsterDeck: string[] | undefined,
+    nextUid: number,
+): { bases: BaseInPlay[]; monsterDeck?: string[]; nextUid: number } {
+    if (!monsterDeck) return { bases, monsterDeck, nextUid };
+    let nextMonsterDeck = monsterDeck;
+    let nextUidValue = nextUid;
+    const nextBases = bases.map((base) => {
+        const dealt = dealMunchkinMonstersToBase(base, nextMonsterDeck, nextUidValue);
+        nextMonsterDeck = dealt.monsterDeck;
+        nextUidValue = dealt.nextUid;
+        return dealt.base;
+    });
+    return { bases: nextBases, monsterDeck: nextMonsterDeck, nextUid: nextUidValue };
+}
+
+function allocateMunchkinTreasureUids(
+    state: SmashUpCore,
+    requestedUids: string[] | undefined,
+    count: number,
+): { treasureUids: string[]; nextUid: number } {
+    const treasureUids = requestedUids?.slice(0, count) ?? [];
+    let nextUid = state.nextUid;
+    while (treasureUids.length < count) {
+        treasureUids.push(`munchkin_treasure_${nextUid}`);
+        nextUid += 1;
+    }
+    return { treasureUids, nextUid };
 }
 
 function removeTempBasePowerModifierAtBaseIndex(
@@ -572,16 +639,30 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const madnessDeck = hasCthulhuExpansionFaction(newPlayers)
                 ? Array.from({ length: MADNESS_DECK_SIZE }, () => MADNESS_CARD_DEF_ID)
                 : undefined;
+            const monsterDeck = hasMunchkinExpansionFaction(newPlayers)
+                ? [...MUNCHKIN_MONSTER_DECK_DEF_IDS]
+                : undefined;
+            const treasureDeck = hasMunchkinExpansionFaction(newPlayers)
+                ? [...MUNCHKIN_TREASURE_DECK_DEF_IDS]
+                : undefined;
+
+            const dealtInitialBases = dealMunchkinMonstersToBases(
+                bases ?? state.bases,
+                monsterDeck,
+                nextUid,
+            );
 
             return {
                 ...state,
                 players: newPlayers,
-                nextUid,
+                nextUid: dealtInitialBases.nextUid,
                 currentPlayerIndex: 0,
                 factionSelection: undefined,
                 madnessDeck,
+                monsterDeck: dealtInitialBases.monsterDeck,
+                treasureDeck,
                 titans,
-                bases: bases ?? state.bases,
+                bases: dealtInitialBases.bases,
                 baseDeck: baseDeck ?? state.baseDeck,
                 nextBaseInstanceId: nextBaseInstanceId ?? state.nextBaseInstanceId,
             };
@@ -1366,6 +1447,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             let newPlayers = { ...state.players };
             const titans = state.titans ?? [];
             const newBaseDiscard = [...(state.baseDiscard ?? []), scoredBase.defId];
+            const clearedMonsterDefIds = scoredBase.monsters?.map(monster => monster.defId) ?? [];
 
             // 埋葬卡：基地离场时翻开弃置到真正所有者弃牌堆（不触发能力）
             if (scoredBase.buriedCards && scoredBase.buriedCards.length > 0) {
@@ -1471,6 +1553,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 bases: newBases,
                 titans: newTitans,
                 baseDiscard: newBaseDiscard,
+                monsterDiscard: clearedMonsterDefIds.length > 0
+                    ? [...(state.monsterDiscard ?? []), ...clearedMonsterDefIds]
+                    : state.monsterDiscard,
                 scoringEligibleBaseIndices: newEligible?.length ? newEligible : undefined,
                 tempBreakpointModifiers: newTempBreakpointModifiers,
                 tempBreakpointModifiersByBaseId: newTempBreakpointModifiersByBaseId,
@@ -2190,12 +2275,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const nextBaseIdentity = newBaseInstanceId
                 ? { instanceId: newBaseInstanceId, nextBaseInstanceId: state.nextBaseInstanceId }
                 : createNextBaseInstanceId(state);
-            const newBase: BaseInPlay = {
+            const emptyBase: BaseInPlay = {
                 instanceId: nextBaseIdentity.instanceId,
                 defId: newBaseDefId,
                 minions: [],
                 ongoingActions: [],
             };
+            const dealtNewBase = dealMunchkinMonstersToBase(emptyBase, state.monsterDeck, state.nextUid);
+            const newBase = dealtNewBase.base;
             const newBases = [...state.bases];
             newBases.splice(baseIndex, 0, newBase);
             const adjustedTitans = (state.titans ?? []).map(titan => {
@@ -2229,6 +2316,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 bases: newBases,
                 titans: adjustedTitans,
                 baseDeck: newBaseDeck,
+                monsterDeck: dealtNewBase.monsterDeck,
+                nextUid: dealtNewBase.nextUid,
                 ...(nextBaseIdentity.nextBaseInstanceId ? { nextBaseInstanceId: nextBaseIdentity.nextBaseInstanceId } : {}),
                 beforeScoringTriggeredBases: cleanedBeforeScoring.length > 0 ? cleanedBeforeScoring : undefined,
                 whenScoringTriggeredBases: cleanedWhenScoring.length > 0 ? cleanedWhenScoring : undefined,
@@ -3798,6 +3887,52 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 players: {
                     ...state.players,
                     [playerId]: { ...player, hand: newHand, discard: newDiscard },
+                },
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED: {
+            const { playerId, baseIndex, monsterUid, treasureUids } = (event as MunchkinMonsterDefeatedEvent).payload;
+            const player = state.players[playerId];
+            const base = state.bases[baseIndex];
+            if (!player || !base?.monsters?.length || !state.treasureDeck) return state;
+            const defeatedMonster = base.monsters.find(monster => monster.uid === monsterUid);
+            if (!defeatedMonster) return state;
+            const descriptor = getMunchkinSpecialCardDescriptor(defeatedMonster.defId);
+            if (descriptor?.kind !== 'monster') return state;
+
+            const rewardCount = Math.min(descriptor.treasureReward ?? 0, state.treasureDeck.length);
+            const drawnTreasureDefIds = state.treasureDeck.slice(0, rewardCount);
+            const allocation = allocateMunchkinTreasureUids(state, treasureUids, rewardCount);
+            const awardedTreasures: CardInstance[] = drawnTreasureDefIds.map((defId, index) => {
+                const cardDef = getCardDef(defId);
+                return {
+                    uid: allocation.treasureUids[index],
+                    defId,
+                    type: cardDef?.type === 'minion' ? 'minion' : 'action',
+                    owner: playerId,
+                };
+            });
+            const nextBases = state.bases.map((candidateBase, index) => {
+                if (index !== baseIndex) return candidateBase;
+                return {
+                    ...candidateBase,
+                    monsters: candidateBase.monsters?.filter(monster => monster.uid !== monsterUid),
+                };
+            });
+
+            return {
+                ...state,
+                bases: nextBases,
+                monsterDiscard: [...(state.monsterDiscard ?? []), defeatedMonster.defId],
+                treasureDeck: state.treasureDeck.slice(rewardCount),
+                nextUid: allocation.nextUid,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        hand: [...player.hand, ...awardedTreasures],
+                    },
                 },
             };
         }

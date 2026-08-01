@@ -74,7 +74,7 @@ import {
     NEW_ROUND_TABLE_KNIGHTS_BASES,
     NEW_ROUND_TABLE_KNIGHTS_CARDS,
 } from './factions/new_round_table_knights';
-import { MUNCHKIN_BASES, MUNCHKIN_CARDS } from './factions/munchkin';
+import { MUNCHKIN_BASES, MUNCHKIN_CARDS, MUNCHKIN_TREASURE_CARD_DEFS } from './factions/munchkin';
 import { PALADIN_CARDS } from './factions/paladins';
 import { PRINCESSES_CARDS } from './factions/princesses';
 import { PRINCESSES_POD_CARDS } from './factions/princesses_pod';
@@ -281,6 +281,7 @@ registerCards(MYTHIC_HORSES_POD_CARDS);
 registerCards(NEW_ROUND_TABLE_KNIGHTS_CARDS);
 registerCards(NEW_GOBLINS_CARDS);
 registerCards(MUNCHKIN_CARDS);
+registerCards(MUNCHKIN_TREASURE_CARD_DEFS);
 registerCards(PALADIN_CARDS);
 registerCards(PRINCESSES_CARDS);
 registerCards(PRINCESSES_POD_CARDS);

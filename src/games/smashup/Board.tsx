@@ -1743,6 +1743,48 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return usable;
     }, [G, playerID, isMyTurn, phase, selectedCardUid, discardStripSelectedUid, activeSelectedSetAsideTitanUid, isBaseSelectPrompt, isBuriedSelectPrompt, meFirstPendingCard, coreBases]);
 
+    const defeatableMonsterUids = useMemo(() => {
+        const next = new Set<string>();
+        if (!playerID || !isMyTurn || phase !== 'playCards' || !matchState) return next;
+        if (
+            selectedCardUid ||
+            discardStripSelectedUid ||
+            activeSelectedSetAsideTitanUid ||
+            currentPrompt ||
+            meFirstPendingCard ||
+            shouldLockNormalHandInteraction
+        ) {
+            return next;
+        }
+
+        coreBases.forEach((base, baseIndex) => {
+            for (const monster of base.monsters ?? []) {
+                const validation = validate(matchState, {
+                    type: SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER,
+                    playerId: playerID,
+                    payload: { baseIndex, monsterUid: monster.uid },
+                });
+                if (validation.valid) {
+                    next.add(monster.uid);
+                }
+            }
+        });
+
+        return next;
+    }, [
+        activeSelectedSetAsideTitanUid,
+        coreBases,
+        currentPrompt,
+        discardStripSelectedUid,
+        isMyTurn,
+        matchState,
+        meFirstPendingCard,
+        phase,
+        playerID,
+        selectedCardUid,
+        shouldLockNormalHandInteraction,
+    ]);
+
     const draggedCard = useMemo(() => {
         if (!handDragPreview || !myPlayer) return null;
         return myPlayer.hand.find((card) => card.uid === handDragPreview.cardUid) ?? null;
@@ -2041,6 +2083,31 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setSelectedCardMode(null);
         return true;
     }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed, myPlayer, reactionWindow, t, validateImmediateActionPlay, toastCommandFeedback]);
+
+    const handleDefeatMunchkinMonster = useCallback((baseIndex: number, monsterUid: string) => {
+        if (!playerID || !matchState) {
+            playDeniedSound();
+            return;
+        }
+        if (!isTutorialCommandAllowed(SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER)) {
+            playDeniedSound();
+            return;
+        }
+
+        const command = {
+            type: SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER,
+            playerId: playerID,
+            payload: { baseIndex, monsterUid },
+        };
+        const validation = validate(matchState, command);
+        if (!validation.valid) {
+            playDeniedSound();
+            toastCommandFeedback(validation.error || t('ui.no_valid_targets'));
+            return;
+        }
+
+        dispatch(SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER, { baseIndex, monsterUid });
+    }, [dispatch, isTutorialCommandAllowed, matchState, playerID, t, toastCommandFeedback]);
     const handleDiscardStripSelectCard = useCallback((cardUid: string | null) => {
         if (!cardUid) {
             setDiscardStripSelectedUid(null);
@@ -3791,6 +3858,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     usableTitanOngoingUids={usableTitanOngoingUids}
                                     reactionTitanTriggerUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
                                     onResolveTitanReaction={handleTitanReactionTrigger}
+                                    defeatableMonsterUids={defeatableMonsterUids}
+                                    onDefeatMonster={handleDefeatMunchkinMonster}
                                     canUseBaseAbility={usableActiveBaseAbilityIndices.has(idx)}
                                     tokenRef={(el) => {
                                         if (el) baseRefsMap.current.set(idx, el);
@@ -3972,6 +4041,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             deckCards={isAlternateView ? (displayedDeckPlayer?.deck ?? []) : (myPlayer?.deck ?? [])}
                             deckFactions={isAlternateView ? (displayedDeckPlayer?.factions ?? []) : (myPlayer?.factions ?? [])}
                             madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}
+                            monsterDeckCount={core.monsterDeck !== undefined ? core.monsterDeck.length : undefined}
+                            treasureDeckCount={core.treasureDeck !== undefined ? core.treasureDeck.length : undefined}
                             discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
                             compactLayout={isMobileViewport}
                             isMyTurn={isMyTurn}

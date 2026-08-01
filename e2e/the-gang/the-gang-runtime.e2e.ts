@@ -89,6 +89,10 @@ const THE_GANG_ONLINE_MULTI_PLAYER_CHIP_DRAG_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '15-联机多人同时拖拽不同筹码可见身份和值.jpg',
 );
+const THE_GANG_ONLINE_OTHER_PLAYER_CHIP_TRANSFER_LINE_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '18-联机房主视角看到玩家2拿白筹码白色轨迹线和身份.jpg',
+);
 const THE_GANG_TWO_HAND_LOBBY_PC_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '11-大厅创建四人两副手牌8个筹码.jpg',
@@ -117,9 +121,17 @@ const THE_GANG_TWO_HAND_MOBILE_RETURN_CHIP_DRAG_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
     '04-移动横屏拖拽上手筹码回中间筹码池高亮.jpg',
 );
-const THE_GANG_TWO_HAND_MOBILE_PRESTART_CARD_DRAG_SWAP_SCREENSHOT_PATH = join(
+const THE_GANG_TWO_HAND_MOBILE_REDEAL_FIRST_CHIP_DRAG_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
-    '05-移动横屏开局前拖拽上手牌到下手牌源牌隐藏.jpg',
+    '05-移动横屏重新发牌后第一次拖拽白筹码到上手源筹码隐藏.jpg',
+);
+const THE_GANG_TWO_HAND_MOBILE_RULE_RESTART_FIRST_CHIP_DRAG_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '16-移动横屏应用规则重开后第一次拖拽白筹码到手牌源筹码隐藏.jpg',
+);
+const THE_GANG_TWO_HAND_MOBILE_CHIP_TRANSFER_LINE_SCREENSHOT_PATH = join(
+    THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
+    '17-移动横屏点击拿白筹码白色轨迹线.jpg',
 );
 const THE_GANG_TWO_HAND_MOBILE_STARTED_CARD_DRAG_SWAP_SCREENSHOT_PATH = join(
     THE_GANG_TWO_HAND_CHIPS_EVIDENCE_DIR,
@@ -152,8 +164,75 @@ type TheGangOnlinePlayer = {
     playerId: string;
 };
 
-async function chooseVisibleChip(page: Page, chipLabel: string) {
+async function chooseVisibleChip(
+    page: Page,
+    chipLabel: string,
+    options: { transferLineScreenshotPath?: string } = {},
+) {
     await page.getByRole('button', { name: chipLabel }).click();
+    const transferLine = page.getByTestId('the-gang-chip-transfer-line');
+    const transferAnimation = page.getByTestId('the-gang-chip-transfer-animation');
+    const chipValue = chipLabel.match(/(\d+)\s*星/u)?.[1];
+    await expect(transferLine, `${chipLabel}：点击拿筹码后必须显示白色转移轨迹线`).toBeVisible();
+    await expect(transferAnimation, `${chipLabel}：点击拿筹码后必须显示移动筹码本体`).toBeVisible();
+    if (chipValue) {
+        await expect(transferLine).toHaveAttribute('data-chip-value', chipValue);
+        await expect(transferAnimation).toHaveAttribute('data-chip-value', chipValue);
+    }
+    await expect(page.getByTestId('the-gang-chip-transfer-line-label')).toHaveCount(0);
+    await expect(page.getByTestId('the-gang-chip-transfer-animation-label')).toHaveCount(0);
+    if (options.transferLineScreenshotPath) {
+        await page.waitForTimeout(180);
+        await mkdir(dirname(options.transferLineScreenshotPath), { recursive: true });
+        await page.screenshot({
+            path: options.transferLineScreenshotPath,
+            fullPage: false,
+            type: 'jpeg',
+            quality: 90,
+        });
+    }
+    await expect(transferLine, `${chipLabel}：白色转移轨迹线必须随拿筹码动画退场`).toHaveCount(0, { timeout: 3_000 });
+}
+
+async function chooseChipAndCaptureObserverTransfer(args: {
+    actorPage: Page;
+    observerPage: Page;
+    chipLabel: string;
+    expectedChipValue: string;
+    expectedPlayerId: string;
+    expectedPlayerName: RegExp;
+    screenshotPath: string;
+}) {
+    const observerPlayerId = await args.observerPage.evaluate(() => {
+        const params = new URL(window.location.href).searchParams;
+        return params.get('playerID') ?? '0';
+    });
+    expect(
+        args.expectedPlayerId,
+        '观察页验收必须证明别人拿筹码，不能把本地玩家自己的拿筹码截图当通过',
+    ).not.toBe(observerPlayerId);
+
+    await args.actorPage.getByRole('button', { name: args.chipLabel, exact: true }).click();
+    const transferLine = args.observerPage.getByTestId('the-gang-chip-transfer-line');
+    const transferAnimation = args.observerPage.getByTestId('the-gang-chip-transfer-animation');
+    await expect(transferLine, '房主观察页必须看到其他玩家拿筹码的白色轨迹线').toBeVisible();
+    await expect(transferAnimation, '房主观察页必须看到其他玩家拿走的移动筹码本体').toBeVisible();
+    await expect(transferLine).toHaveAttribute('data-player-id', args.expectedPlayerId);
+    await expect(transferLine).toHaveAttribute('data-chip-value', args.expectedChipValue);
+    await expect(transferAnimation).toHaveAttribute('data-player-id', args.expectedPlayerId);
+    await expect(transferAnimation).toHaveAttribute('data-chip-value', args.expectedChipValue);
+    await expect(args.observerPage.locator('[data-bgg-zone="top-zone"]')).toContainText(args.expectedPlayerName);
+    await expect(args.observerPage.getByTestId('the-gang-chip-transfer-line-label')).toHaveCount(0);
+    await expect(args.observerPage.getByTestId('the-gang-chip-transfer-animation-label')).toHaveCount(0);
+    await args.observerPage.waitForTimeout(180);
+    await mkdir(dirname(args.screenshotPath), { recursive: true });
+    await args.observerPage.screenshot({
+        path: args.screenshotPath,
+        fullPage: false,
+        type: 'jpeg',
+        quality: 90,
+    });
+    await expect(transferLine, '房主观察页其他玩家拿筹码轨迹线必须随动画退场').toHaveCount(0, { timeout: 3_000 });
 }
 
 async function ensureHeistStartedByCommand(page: Page) {
@@ -867,6 +946,14 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
                     width: rect.width,
                 };
             });
+        const tokenChipRects = Array.from(document.querySelectorAll('[data-bgg-zone="token-pile"] button[data-chip-value]'))
+            .map((node) => {
+                const rect = node.getBoundingClientRect();
+                return {
+                    height: rect.height,
+                    width: rect.width,
+                };
+            });
         const buttonRects = Array.from(document.querySelectorAll('[data-testid^="the-gang-chip-hand-selector-"]'))
             .filter((node) => !node.getAttribute('data-testid')?.includes('-surface-'))
             .map((node) => {
@@ -901,6 +988,13 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
                 ? Math.min(...localHandCardRects.map((rect) => rect.width))
                 : null,
             localHandCardCount: localHandCardRects.length,
+            minTokenChipHeight: tokenChipRects.length > 0
+                ? Math.min(...tokenChipRects.map((rect) => rect.height))
+                : null,
+            minTokenChipWidth: tokenChipRects.length > 0
+                ? Math.min(...tokenChipRects.map((rect) => rect.width))
+                : null,
+            tokenChipCount: tokenChipRects.length,
             tokenPile: tokenPileRect,
             dockContainsSelector: !!dock && !!selector && dock.contains(selector),
             handCardsContainsDock: !!handCards && !!dock && handCards.contains(dock),
@@ -948,8 +1042,14 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
     expect(metrics.minLocalHandCardWidth, `${label}：本地手牌卡面宽度必须存在，不能被压成空容器`).not.toBeNull();
     const expectedTwoHandCardHeight = 96 * metrics.boardShellScale;
     const expectedTwoHandCardWidth = 68 * metrics.boardShellScale;
+    const expectedTokenChipSize = 48 * metrics.boardShellScale;
     expect(metrics.minLocalHandCardHeight, `${label}：board-shell 下两副手牌必须使用 PC 设计基线再整体缩放，不能先吃移动断点小卡高度`).toBeGreaterThanOrEqual(expectedTwoHandCardHeight - 2);
     expect(metrics.minLocalHandCardWidth, `${label}：board-shell 下两副手牌必须使用 PC 设计基线再整体缩放，不能先吃移动断点小卡宽度`).toBeGreaterThanOrEqual(expectedTwoHandCardWidth - 2);
+    expect(metrics.tokenChipCount, `${label}：必须量到中区筹码本体，不能只看筹码池容器`).toBeGreaterThanOrEqual(1);
+    expect(metrics.minTokenChipHeight, `${label}：board-shell 下筹码必须使用 PC 设计基线再整体缩放，不能先吃移动断点小筹码高度`).not.toBeNull();
+    expect(metrics.minTokenChipWidth, `${label}：board-shell 下筹码必须使用 PC 设计基线再整体缩放，不能先吃移动断点小筹码宽度`).not.toBeNull();
+    expect(metrics.minTokenChipHeight, `${label}：board-shell 下筹码高度必须保持 PC 等比，不得双重缩小`).toBeGreaterThanOrEqual(expectedTokenChipSize - 2);
+    expect(metrics.minTokenChipWidth, `${label}：board-shell 下筹码宽度必须保持 PC 等比，不得双重缩小`).toBeGreaterThanOrEqual(expectedTokenChipSize - 2);
     expect(metrics.visibleSurfaceWidthToHandWidth, `${label}：上手/下手可见按钮面不能接近手牌宽度`).not.toBeNull();
     expect(metrics.visibleSurfaceWidthToHandWidth, `${label}：上手/下手可见按钮面不能接近手牌宽度`).toBeLessThanOrEqual(0.45);
     expect(metrics.visibleSurfaceAreaToHandArea, `${label}：上手/下手可见按钮面面积不能抢过手牌主体`).not.toBeNull();
@@ -964,12 +1064,22 @@ async function expectChipHandSelectorDockPlacement(page: Page, label: string) {
     expect(metrics.allButtonsHaveTouchClass, `${label}：按钮必须保留 min-h-11 触控类`).toBe(true);
 }
 
-async function captureTwoHandChipDragHighlight(
+async function captureChipDragToLocalHandHighlight(
     page: Page,
     screenshotPath: string,
     label: string,
     handSlot: 'top' | 'bottom',
+    options: {
+        expectedAvailableLocalTargetCount?: number;
+        minActiveWidthToCards?: number;
+        poolSourceBehavior?: 'hidden' | 'hidden-or-removed';
+        releaseAt?: 'source' | 'target';
+    } = {},
 ) {
+    const expectedAvailableLocalTargetCount = options.expectedAvailableLocalTargetCount ?? 1;
+    const minActiveWidthToCards = options.minActiveWidthToCards ?? 1.05;
+    const poolSourceBehavior = options.poolSourceBehavior ?? 'hidden';
+    const releaseAt = options.releaseAt ?? 'source';
     const source = page.locator('[data-bgg-zone="token-pile"]').getByRole('button', { name: '白筹码 1 星', exact: true });
     const target = page.getByTestId(`the-gang-local-hand-${handSlot}`);
     await expect(source).toBeVisible();
@@ -989,6 +1099,7 @@ async function captureTwoHandChipDragHighlight(
         y: targetBox.y + targetBox.height / 2,
     };
 
+    const dragStartMs = Date.now();
     await page.mouse.move(sourcePoint.x, sourcePoint.y);
     await page.mouse.down();
     await page.mouse.move(
@@ -998,9 +1109,11 @@ async function captureTwoHandChipDragHighlight(
     );
     await page.mouse.move(targetPoint.x, targetPoint.y, { steps: 8 });
     await expect(page.getByTestId('the-gang-chip-drag-ghost')).toBeVisible();
+    const ghostVisibleLatencyMs = Date.now() - dragStartMs;
     await expect(target).toHaveAttribute('data-the-gang-chip-drop-state', 'active');
 
-    const metrics = await page.evaluate((slot) => {
+    const metrics = {
+        ...await page.evaluate((slot) => {
         const readElementRect = (node: Element | null) => {
             if (!node) return null;
             const rect = node.getBoundingClientRect();
@@ -1031,12 +1144,18 @@ async function captureTwoHandChipDragHighlight(
         const targetCardsRect = readElementRect(targetCards);
         const selectorRect = readRect('[data-testid="the-gang-chip-hand-selector"]');
         const tokenPileRect = readRect('[data-bgg-zone="token-pile"]');
+        const sourceChips = Array.from(document.querySelectorAll('[data-bgg-zone="token-pile"] button[data-chip-value="1"]'));
+        const sourceChip = sourceChips[0] ?? null;
+        const sourceChipStyle = sourceChip ? window.getComputedStyle(sourceChip) : null;
         const ghostRect = readRect('[data-testid="the-gang-chip-drag-ghost"]');
         const activeTargetStyle = activeTarget ? window.getComputedStyle(activeTarget) : null;
         const activeTargetAfterStyle = activeTarget ? window.getComputedStyle(activeTarget, '::after') : null;
         return {
             viewportWidth: window.innerWidth,
             viewportHeight: window.innerHeight,
+            sourceChipCount: sourceChips.length,
+            sourceHidden: sourceChip?.getAttribute('data-drag-source-hidden') ?? null,
+            sourceOpacity: sourceChipStyle?.opacity ?? null,
             activeTargetTestId: activeTarget?.getAttribute('data-testid') ?? null,
             activeDropRangeUi: activeTarget?.getAttribute('data-the-gang-drop-range-ui') ?? null,
             activeHasOpenDropClass: activeTarget?.classList.contains('the-gang-open-drop-target--active') ?? false,
@@ -1064,17 +1183,29 @@ async function captureTwoHandChipDragHighlight(
             activeOverlapsSelector: intersects(activeTargetRect, selectorRect),
             activeOverlapsTokenPile: intersects(activeTargetRect, tokenPileRect),
         };
-    }, handSlot);
+    }, handSlot),
+        ghostVisibleLatencyMs,
+    };
     await writeMiddleLayoutMetrics(`${label}-拖拽高亮`, metrics);
+    expect(metrics.ghostVisibleLatencyMs, `${label}：第一次拖筹码 ghost 出现过慢，疑似重开/重发后首次筹码交互卡住`).toBeLessThanOrEqual(2500);
+    if (poolSourceBehavior === 'hidden') {
+        expect(metrics.sourceHidden, `${label}：拖筹码时源筹码必须隐藏，不能和 ghost 双显`).toBe('true');
+        expect(metrics.sourceOpacity, `${label}：拖筹码时源筹码必须视觉不可见但保留占位`).toBe('0');
+    } else if (metrics.sourceChipCount > 0) {
+        expect(metrics.sourceHidden, `${label}：拖筹码时源筹码若仍在筹码池，必须隐藏，不能和 ghost 双显`).toBe('true');
+        expect(metrics.sourceOpacity, `${label}：拖筹码时源筹码若仍在筹码池，必须视觉不可见`).toBe('0');
+    } else {
+        expect(metrics.sourceChipCount, `${label}：拖筹码时源筹码必须隐藏或移出筹码池，不能和 ghost 双显`).toBe(0);
+    }
     expect(metrics.activeTargetTestId, `${label}：拖拽高亮必须落在目标手牌行`).toBe(`the-gang-local-hand-${handSlot}`);
     expect(metrics.activeTargetIsHandRow, `${label}：拖拽高亮必须锚定整副手牌行，不能只锚定卡牌小容器`).toBe(true);
     expect(metrics.activeTargetIsCards, `${label}：拖拽高亮不能只框住卡牌容器`).toBe(false);
     expect(metrics.activeTargetContainsCards, `${label}：拖拽高亮必须包住对应手牌卡面`).toBe(true);
     expect(metrics.activeLocalTargetCount, `${label}：拖拽中只能有一个手牌目标突出为 active`).toBe(1);
-    expect(metrics.availableLocalTargetCount, `${label}：另一副手牌应保持 available，而不是消失或同样 active`).toBe(1);
+    expect(metrics.availableLocalTargetCount, `${label}：可投放但非 active 的手牌目标数量不符合当前手牌模式`).toBe(expectedAvailableLocalTargetCount);
     expect(metrics.poolDropState, `${label}：从筹码池拖出时，筹码池不能被误高亮成可投放目标`).toBeNull();
     expect(metrics.activeWidthToCards, `${label}：拖拽高亮必须覆盖比卡牌小容器更完整的手牌目标面`).not.toBeNull();
-    expect(metrics.activeWidthToCards, `${label}：拖拽高亮必须覆盖比卡牌小容器更完整的手牌目标面`).toBeGreaterThan(1.05);
+    expect(metrics.activeWidthToCards, `${label}：拖拽高亮必须覆盖当前手牌目标面`).toBeGreaterThanOrEqual(minActiveWidthToCards);
     expect(metrics.activeHeightToCards, `${label}：拖拽高亮必须和目标手牌行同高，不能漂到别的区域`).not.toBeNull();
     expect(metrics.activeHeightToCards, `${label}：拖拽高亮必须和目标手牌行同高，不能漂到别的区域`).toBeGreaterThanOrEqual(0.95);
     expect(metrics.activeDropRangeUi, `${label}：拖拽高亮必须使用右侧开放的范围 UI`).toBe('open-right-gradient');
@@ -1092,7 +1223,8 @@ async function captureTwoHandChipDragHighlight(
 
     await mkdir(dirname(screenshotPath), { recursive: true });
     await page.screenshot({ path: screenshotPath, fullPage: false, type: 'jpeg', quality: 90 });
-    await page.mouse.move(sourcePoint.x, sourcePoint.y, { steps: 8 });
+    const releasePoint = releaseAt === 'target' ? targetPoint : sourcePoint;
+    await page.mouse.move(releasePoint.x, releasePoint.y, { steps: 8 });
     await page.mouse.up();
     await expect(page.getByTestId('the-gang-chip-drag-ghost')).toHaveCount(0);
 }
@@ -2434,7 +2566,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await game.screenshot('联机真实房间四人两副手牌8个白筹码', testInfo);
     });
 
-    test('联机真实房间能同屏看到多个玩家同时拖拽不同筹码', async ({ browser, game, page, workerPorts }, testInfo) => {
+    test('联机真实房间能在房主视角看到别人拿筹码并同屏看到多人拖拽', async ({ browser, game, page, workerPorts }, testInfo) => {
         test.setTimeout(150000);
         await page.setViewportSize({ width: 1366, height: 768 });
         const playerCount = 3;
@@ -2474,6 +2606,22 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             await startHeistFromSetup(page);
             await expectChipRoundForPlayerCount(page, '白筹码', playerCount);
             await expectImagesLoaded(page, '[data-bgg-zone="token-pile"] img', playerCount);
+
+            await chooseChipAndCaptureObserverTransfer({
+                actorPage: guestPlayers[0].page,
+                observerPage: page,
+                chipLabel: '白筹码 2 星',
+                expectedChipValue: '2',
+                expectedPlayerId: '1',
+                expectedPlayerName: /(纸牌帮E2E-1|玩家 2)/u,
+                screenshotPath: THE_GANG_ONLINE_OTHER_PLAYER_CHIP_TRANSFER_LINE_SCREENSHOT_PATH,
+            });
+            await game.screenshot('联机房主视角看到玩家2拿白筹码白色轨迹线和身份', testInfo);
+            await dispatchTheGangCommand(guestPlayers[0].page, '1', 'RETURN_CHIP');
+            await expect(page.locator('[data-bgg-zone="token-pile"]').getByRole('button', { name: '白筹码 2 星', exact: true }))
+                .toBeVisible({ timeout: 10_000 });
+            await expect(guestPlayers[0].page.locator('[data-bgg-zone="token-pile"]').getByRole('button', { name: '白筹码 2 星', exact: true }))
+                .toBeVisible({ timeout: 10_000 });
 
             await Promise.all([
                 dragChipWithoutRelease(guestPlayers[0].page, '白筹码 2 星', { xRatio: 0.42, yRatio: 0.42 }),
@@ -3142,6 +3290,9 @@ test.describe('The Gang 测试入口与代表态截图', () => {
     test('移动横屏从大厅创建 AI 房间后扩展选择不会被 AI 抢先锁定', async ({ game, page }, testInfo) => {
         test.setTimeout(150000);
         await page.setViewportSize({ width: 812, height: 375 });
+        const playerCount = 4;
+        const chipValues = Array.from({ length: playerCount }, (_, index) => index + 1);
+        const expectedPlayerIds = Array.from({ length: playerCount }, (_, index) => String(index));
         await page.goto('/?game=the-gang&homeStyle=classic', { waitUntil: 'domcontentloaded', timeout: 45000 });
         await page.getByTestId('game-details-open-create-room').waitFor({ state: 'visible' });
         await game.screenshot('真实开房移动横屏纸牌帮详情', testInfo);
@@ -3154,6 +3305,11 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await page.waitForURL(/\/play\/the-gang\/match\//u, { timeout: 90000 });
         await page.getByTestId('the-gang-utility-dock').waitFor({ state: 'visible' });
         await expectUtilityDockLayout(page, 'column', { maxControlHeight: 46, maxControlWidth: 72 });
+        await expect
+            .poll(async () => (await getTheGangState(page))?.core?.playerIds ?? [], {
+                message: '等待真实 AI 房间按四人进入 runtime',
+            })
+            .toEqual(expectedPlayerIds);
 
         await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
         await page.getByTestId('the-gang-rules-modal').waitFor({ state: 'visible' });
@@ -3234,6 +3390,22 @@ test.describe('The Gang 测试入口与代表态截图', () => {
                 round: 1,
             });
         expect(nativeDialogs, '确认应用设置也不得调用浏览器默认 confirm/dialog').toEqual([]);
+
+        await startHeistFromSetup(page);
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
+        await captureChipDragToLocalHandHighlight(
+            page,
+            THE_GANG_TWO_HAND_MOBILE_RULE_RESTART_FIRST_CHIP_DRAG_SCREENSHOT_PATH,
+            '移动横屏应用规则重开后第一次拖拽白筹码到手牌',
+            'top',
+            {
+                expectedAvailableLocalTargetCount: 0,
+                minActiveWidthToCards: 1,
+                poolSourceBehavior: 'hidden-or-removed',
+                releaseAt: 'target',
+            },
+        );
+        await game.screenshot('移动横屏应用规则重开后第一次拖拽白筹码到手牌', testInfo);
 
         await expectToolsPanelUsesPcTwoColumnLayout(page);
         await game.screenshot('真实开房移动横屏工具面板同源布局关闭后', testInfo);
@@ -3487,20 +3659,40 @@ test.describe('The Gang 测试入口与代表态截图', () => {
                 bottomCards: 2,
             });
 
+        const readLocalTwoHandSignature = async () => {
+            const state = await getTheGangState(page);
+            const player = state?.core?.players?.['0'];
+            return JSON.stringify({
+                bottom: player?.secondaryPocketCards ?? [],
+                top: player?.pocketCards ?? [],
+            });
+        };
+        const beforeRedealHandSignature = await readLocalTwoHandSignature();
+        await expect(page.getByTestId('the-gang-redeal-heist')).toBeVisible();
+        await page.getByTestId('the-gang-redeal-heist').click();
+        await expect
+            .poll(readLocalTwoHandSignature, { message: '等待移动横屏重新发牌后刷新上下两副手牌' })
+            .not.toBe(beforeRedealHandSignature);
+
         await expect(page.getByTestId('the-gang-hand-swap-stage')).toHaveCount(0);
         await expect(page.getByTestId('the-gang-confirm-prestart-hand-swap')).toHaveCount(0);
-        await captureCardDragSwap(
-            page,
-            THE_GANG_TWO_HAND_MOBILE_PRESTART_CARD_DRAG_SWAP_SCREENSHOT_PATH,
-            '移动横屏开局前拖拽上手牌到下手牌',
-            { sourceSlot: 'top', sourceIndex: 0, targetSlot: 'bottom', targetIndex: 1 },
-        );
-        await game.screenshot('移动横屏两副手牌开局前拖拽换位后保持筹码选择', testInfo);
 
         await startHeistFromSetup(page);
         await expectExactChipButtonCounts(page, '白筹码', chipValues);
         await expect(page.getByTestId('the-gang-chip-hand-selector')).toBeVisible();
         await expectChipHandSelectorDockPlacement(page, '移动横屏四人两副手牌筹码目标');
+        await chooseVisibleChip(page, '白筹码 8 星', {
+            transferLineScreenshotPath: THE_GANG_TWO_HAND_MOBILE_CHIP_TRANSFER_LINE_SCREENSHOT_PATH,
+        });
+        await dispatchTheGangCommand(page, '0', 'RETURN_CHIP', { handSlot: 'top' });
+        await expectExactChipButtonCounts(page, '白筹码', chipValues);
+        await captureChipDragToLocalHandHighlight(
+            page,
+            THE_GANG_TWO_HAND_MOBILE_REDEAL_FIRST_CHIP_DRAG_SCREENSHOT_PATH,
+            '移动横屏重新发牌后第一次拖拽白筹码到上手',
+            'top',
+        );
+        await game.screenshot('移动横屏重新发牌后第一次拖拽白筹码到上手', testInfo);
         await captureCardDragSwap(
             page,
             THE_GANG_TWO_HAND_MOBILE_STARTED_CARD_DRAG_SWAP_SCREENSHOT_PATH,
@@ -3508,7 +3700,7 @@ test.describe('The Gang 测试入口与代表态截图', () => {
             { sourceSlot: 'bottom', sourceIndex: 0, targetSlot: 'top', targetIndex: 1 },
         );
         await game.screenshot('移动横屏开始后拖拽换位后保持筹码选择', testInfo);
-        await captureTwoHandChipDragHighlight(
+        await captureChipDragToLocalHandHighlight(
             page,
             THE_GANG_TWO_HAND_MOBILE_CHIP_DRAG_SCREENSHOT_PATH,
             '移动横屏四人两副手牌拖拽白筹码到上手',

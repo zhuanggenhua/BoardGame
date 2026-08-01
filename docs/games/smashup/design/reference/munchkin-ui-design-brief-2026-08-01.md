@@ -9,9 +9,10 @@
 ## 2026-08-01 设计裁定更新
 
 - 用户裁定：怪物进入基地后，默认显示在**基地下方的一排公共怪物行**，多张怪物允许横向重叠 / 扇形排布。
+- 用户裁定：怪物 / 宝藏公共抽牌堆按疯狂牌的轻量供应角处理，只在玩家抽牌堆旁显示小卡 + 剩余数量；怪物弃牌堆、宝藏弃牌堆本轮不做常驻入口。
 - 槽位边界：怪物行贴近基地下缘，位于基地卡与玩家随从列之间；它只能在怪物行内部互相重叠，不能盖住基地文字、玩家随从、附着行动、泰坦、基地持续行动、力量 token 或当前 prompt。
 - 信息边界：怪物和宝藏卡的名称、类别、战力、奖励值默认由卡面承担；常驻 UI 不再复写 `中立 / 力量 / 宝藏` 这类卡面已有字段，只补运行时状态、选择反馈、控制者、动态门槛修正或聚合结果。
-- 旧方向作废：基地上缘 / 基地中部贴怪物、给怪物常驻短徽章、把宝藏身份再贴 chip 的旧稿和旧 prompt 均不得继续用于 v3。
+- 旧方向作废：基地上缘 / 基地中部贴怪物、给怪物常驻短徽章、把宝藏身份再贴 chip、给怪物 / 宝藏另开弃牌堆常驻入口的旧稿和旧 prompt 均不得继续用于 v3。
 
 ## 本轮规则读取回执
 
@@ -34,7 +35,7 @@
 
 | 规则结论 | 影响的画面主体 | 设计决策 / 禁止项 |
 | --- | --- | --- |
-| 宝藏牌 / 怪物牌不是普通派系卡池，当前静态合同只把它们注册为特殊图集 | 公共牌堆入口、公共弃牌入口 | 右侧只做紧凑公共入口：`怪物牌堆`、`怪物弃牌`、`宝藏牌堆`、`宝藏弃牌`；禁止把它们混进玩家普通手牌或派系牌库 |
+| 宝藏牌 / 怪物牌不是普通派系卡池，当前静态合同只把它们注册为特殊图集 | 抽牌堆旁公共牌堆数量入口 | 复用疯狂牌供应角：只显示怪物 / 宝藏抽牌堆小卡 + 剩余数量；本轮不显示怪物 / 宝藏弃牌堆；禁止把它们混进玩家普通手牌或派系牌库 |
 | 怪物进入基地后是公共对象，有力量和宝藏奖励 | 基地下方公共怪物行 | 怪物卡排在基地下方一排，允许横向重叠 / 扇形排布；禁止占用基地上缘、基地中部、玩家随从列或独立边栏 |
 | 宝藏是奖励资源，可进入玩家持有区，也可能作为随从、行动或附着行动被打出 | 玩家持有区、手牌区、附着卡槽 | 宝藏用真实卡面承载身份；若卡面已可读，不再贴 `宝藏` chip；禁止用纯文字列表替代宝藏卡本体 |
 | 破基地结算时，怪物力量影响基地压力但不归属任何玩家；怪物和宝藏奖励要在结算前可见 | 当前焦点基地、破基地预览浮层 | 当前焦点基地旁只显示聚合预览：玩家力量排序 + 怪物门槛合计 + 宝藏奖励合计；禁止逐张复写怪物卡面字段或写长规则说明句 |
@@ -52,7 +53,7 @@
 ### 主交互槽位五联单
 
 - 主交互对象：基地本体、基地下方公共怪物行、基地下方玩家随从列、玩家手牌 / 持有宝藏、当前破基地结算浮层。
-- 固定槽位：三张基地在中央主舞台；每个基地的怪物行固定在基地卡下缘与玩家随从列之间，允许怪物卡横向重叠；玩家手牌 / 持有物在底部；公共宝藏 / 怪物牌堆在紧凑公共牌堆入口；破基地预览贴近当前焦点基地。
+- 固定槽位：三张基地在中央主舞台；每个基地的怪物行固定在基地卡下缘与玩家随从列之间，允许怪物卡横向重叠；玩家手牌 / 持有物在底部；公共宝藏 / 怪物抽牌堆数量贴在玩家抽牌堆旁；破基地预览贴近当前焦点基地。
 - 让位顺序：完整日志、帮助说明、完整弃牌清单、完整宝藏清单、非焦点基地的展开详情先退场；基地、怪物行、玩家随从列、玩家手牌和当前结算预览不得被挤出主视线。
 - 禁止侵入对象：规则长文、教程正文、大日志面板、厚后台栏、第二套主操作面板不得侵入基地、怪物行、玩家随从列和手牌槽位。
 - 来源家族：大杀四方 `HandArea` 底部手牌槽位、`PromptOverlay` 卡牌本体选择面、`BaseZone` 基地公共对象附属槽位、公共牌堆入口家族。
@@ -64,8 +65,8 @@
 | 三张基地卡 | `design-asset-ready` | 中央主舞台，使用正式基地裁片 |
 | 玩家随从 / 行动牌 | `design-asset-ready` | 基地下方玩家随从列和底部手牌区，使用正式普通牌裁片 |
 | 公共怪物卡 | `design-asset-ready` | 基地下方公共怪物行，横向重叠 / 扇形排布；不贴 `中立 / 力量 / 宝藏` 复写徽章 |
-| 宝藏牌 | `design-asset-ready` | 右侧公共牌堆、奖励托盘、玩家持有区和附着区 |
-| 怪物 / 宝藏弃牌堆 | `approved-programmatic-runtime-ui` | 紧凑牌堆入口，只显示牌背 / 顶牌缩略 / 数量 |
+| 宝藏牌 | `design-asset-ready` | 抽牌堆旁公共数量小卡、奖励托盘、玩家持有区和附着区 |
+| 怪物 / 宝藏抽牌堆数量 | `approved-programmatic-runtime-ui` | 贴在玩家抽牌堆旁的小卡 + 剩余数量；不显示怪物 / 宝藏弃牌堆 |
 | 破基地预览 | `approved-programmatic-runtime-ui` | 当前焦点基地旁轻量浮层，短标签和数值 |
 | 完整规则说明 | `forbidden-main-ui` | 不进入常驻主 UI，只允许后续帮助层 |
 
@@ -112,7 +113,7 @@
 - 基地、怪物、宝藏、普通牌自身的印刷边。
 - 当前焦点基地的轻量描边 / 光晕，用于提示破基地预览关联对象。
 - 基地下方公共怪物行自身的轻量承托 / 阴影，用于表达这些怪物属于该基地；多张怪物允许在该行内互相重叠。
-- 右侧公共牌堆入口的极轻托盘，用于保护四个公共牌堆点击区。
+- 抽牌堆旁公共数量角标的极轻托盘，用于保护怪物 / 宝藏小卡和剩余数量。
 - 底部手牌 / 宝藏持有区的轻量桌面托盘，用于承载真实卡牌，不做厚面板。
 
 禁止项：
@@ -134,10 +135,10 @@ Current step: Step 1 structure draft for the PC runtime main board.
 Primary request: Design a 16:9 2D printed-board-game UI mockup showing how Munchkin Monsters and Treasures should appear in Smash Up.
 Input images: Use the Munchkin reference sheet and individual formal crops as visual inputs. The base cards, monster cards, treasure cards, and player cards must remain recognizable as real card objects and must be the main visual subjects.
 Scene/backdrop: Open tabletop game board, not a dashboard. Three base cards are the central stage.
-Subject: Current focus base with a public monster row directly below the base card, player minions below the monster row, public Monster deck/discard and Treasure deck/discard, treasure reward reveal tray, player hand and treasure attachment examples.
+Subject: Current focus base with a public monster row directly below the base card, player minions below the monster row, compact public Monster deck and Treasure deck count badges beside the player draw deck, treasure reward reveal tray, player hand and treasure attachment examples.
 Style/medium: 2D printed tabletop UI concept, tactical clean + light fantasy accent, clear and implementable.
-Composition/framing: 16:9 desktop viewport. Center: three base cards. Under the focus base card: 2 public monster cards arranged in one horizontal row with slight overlap/fan spacing, placed between the base card and the player minion rows. The monster cards must not be on the top edge of the base and must not cover ongoing actions, titans, player minions, base text, power tokens, or prompt controls. Right side or bottom rail: compact public deck entries with "怪物牌堆", "怪物弃牌", "宝藏牌堆", "宝藏弃牌". Bottom: player hand with normal cards and treasure cards as real card objects; one treasure card attached to a minion as a small overlapped card. Near focus base: small break-base preview with player power ranking, monster threshold total, and treasure reward total.
-Text (verbatim, short labels only): "怪物牌堆", "怪物弃牌", "宝藏牌堆", "宝藏弃牌", "破基地预览", "手牌", "附着". Do not add labels that repeat monster or treasure card face data.
+Composition/framing: 16:9 desktop viewport. Center: three base cards. Under the focus base card: 2 public monster cards arranged in one horizontal row with slight overlap/fan spacing, placed between the base card and the player minion rows. The monster cards must not be on the top edge of the base and must not cover ongoing actions, titans, player minions, base text, power tokens, or prompt controls. Beside the player draw deck: compact public deck count badges showing one Monster card thumbnail with "x 20" and one Treasure card thumbnail with "x 22". Do not show Monster discard or Treasure discard entries. Bottom: player hand with normal cards and treasure cards as real card objects; one treasure card attached to a minion as a small overlapped card. Near focus base: small break-base preview with player power ranking, monster threshold total, and treasure reward total.
+Text (verbatim, short labels only): "x 20", "x 22", "破基地预览", "手牌", "附着". Do not add labels that repeat monster or treasure card face data.
 Constraints: Use real card/base assets as the visual subjects. Keep UI labels short. No long rule text. No tutorial text. No giant logs. No thick container frames. No dashboard panels. Monsters must read as public base-attached objects in the row below the base, distinct from player minions. Treasures must look like rewards, not Madness-style penalty cards.
 Avoid: HTML wireframe look, placeholder cards, purely textual UI, heavy borders, dark admin dashboard, 3D render, stock-photo table, rules explanation paragraphs, duplicate control panels.
 ```
@@ -150,7 +151,7 @@ Avoid: HTML wireframe look, placeholder cards, purely textual UI, heavy borders,
 - 怪物必须在基地下方公共怪物行中，允许横向重叠 / 扇形排布；不得放在基地上缘 / 基地中部，不得混成某个玩家的随从。
 - 怪物和宝藏不得常驻复写卡面已有信息，例如 `中立`、`力量 N`、`宝藏 xN`、`宝藏`。
 - 宝藏必须是奖励资源，不得像疯狂牌那样表现为惩罚负担。
-- 公共怪物 / 宝藏牌堆必须紧凑可见，但不能压过基地主舞台。
+- 公共怪物 / 宝藏抽牌堆数量必须紧凑可见，贴近玩家抽牌堆；怪物 / 宝藏弃牌堆不常驻显示，且公共牌堆不能压过基地主舞台。
 - 破基地预览必须是短标签 / 数值层，不得写长规则说明。
 - 画面第一眼必须是开放式牌桌和真实卡牌，不是后台面板、表格或线框。
 

@@ -1917,7 +1917,7 @@ import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSy
 // ============================================================================
 
 import type { MadnessDrawnEvent, MadnessReturnedEvent } from './types';
-import { MADNESS_CARD_DEF_ID, CTHULHU_EXPANSION_FACTIONS } from './types';
+import { MADNESS_CARD_DEF_ID, CTHULHU_EXPANSION_FACTIONS, MUNCHKIN_EXPANSION_FACTIONS } from './types';
 
 /**
  * 生成抽取疯狂卡事件
@@ -1977,6 +1977,17 @@ export function hasCthulhuExpansionFaction(players: Record<string, { factions: [
         for (const f of player.factions) {
             const baseFactionId = f.endsWith('_pod') ? f.slice(0, -4) : f;
             if (CTHULHU_EXPANSION_FACTIONS.some((factionId) => factionId === baseFactionId)) return true;
+        }
+    }
+    return false;
+}
+
+/** 检查游戏中是否有 Munchkin 扩展派系（需要怪物 / 宝藏牌库） */
+export function hasMunchkinExpansionFaction(players: Record<string, { factions: [string, string] }>): boolean {
+    for (const player of Object.values(players)) {
+        for (const f of player.factions) {
+            const baseFactionId = f.endsWith('_pod') ? f.slice(0, -4) : f;
+            if (MUNCHKIN_EXPANSION_FACTIONS.some((factionId) => factionId === baseFactionId)) return true;
         }
     }
     return false;

@@ -752,6 +752,24 @@ async function expectDiscoveryContinueAtPanelBottom(page: Page) {
   ).toBeLessThanOrEqual(2);
 }
 
+async function expectDiscoveryResolutionLedgerTraceOnly(
+  discoveryPanel: Locator,
+  label: string,
+) {
+  const resolutionLedger = discoveryPanel.getByTestId(
+    "betrayal-discovery-resolution-steps",
+  );
+  await expect(
+    resolutionLedger,
+    `${label}确认队列只能作为隐藏追踪，不能可见复写结果正文`,
+  ).toBeHidden();
+  await expect(resolutionLedger).toHaveAttribute("aria-hidden", "true");
+  await expect(resolutionLedger).toHaveAttribute(
+    "data-ui-role",
+    "nonvisual-resolution-ledger",
+  );
+}
+
 async function expectEventChoiceKeepsTurnBlocked(page: Page, label: string) {
   const core = await readCurrentCore(page);
   expect(core.currentPlayer, `${label}当前行动者仍应是发现玩家`).toBe("0");
@@ -2994,6 +3012,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       }
       const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
       await expect(discoveryPanel).toBeVisible();
+      await expectDiscoveryResolutionLedgerTraceOnly(
+        discoveryPanel,
+        `${eventCase.title} 结算结果`,
+      );
       for (const expectedText of eventCase.expectedTexts) {
         await expect(
           page.locator("body"),
@@ -3587,6 +3609,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     await expect(eventChoicePanel).toBeHidden({ timeout: 30000 });
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible();
+    await expectDiscoveryResolutionLedgerTraceOnly(
+      discoveryPanel,
+      "一瓶微尘作祟检定结算",
+    );
     await expect(discoveryPanel).toHaveAttribute(
       "aria-label",
       /事件牌 一瓶微尘/,
@@ -5081,6 +5107,10 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
     );
     const discoveryPanel = page.getByTestId("betrayal-discovery-panel");
     await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
+    await expectDiscoveryResolutionLedgerTraceOnly(
+      discoveryPanel,
+      "外星几何自动投骰结算",
+    );
     await expect(discoveryPanel).toHaveAttribute(
       "aria-label",
       /事件牌 外星几何/,

@@ -3,6 +3,25 @@ import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 type MinionSeed = readonly [id: string, name: string, nameEn: string, power: number, count: number, index: number];
 type ActionSeed = readonly [id: string, name: string, nameEn: string, count: number, index: number];
+type MunchkinSpecialDeckKind = 'treasure' | 'monster';
+type MunchkinSpecialSeed = readonly [id: string, name: string, nameEn: string, count: number, index: number, power?: number, treasureReward?: number];
+
+export interface MunchkinSpecialCardDescriptor {
+    id: string;
+    name: string;
+    nameEn: string;
+    kind: MunchkinSpecialDeckKind;
+    count: number;
+    /** 怪物力量：不计入任何玩家总力，只用于抬高基地破坏门槛 */
+    power?: number;
+    /** 击败该怪物时奖励的宝藏数量 */
+    treasureReward?: number;
+    previewRef: {
+        type: 'atlas';
+        atlasId: string;
+        index: number;
+    };
+}
 
 function minion(faction: string, atlasId: string, seed: MinionSeed): MinionCardDef {
     const [id, name, nameEn, power, count, index] = seed;
@@ -12,6 +31,137 @@ function minion(faction: string, atlasId: string, seed: MinionSeed): MinionCardD
 function action(faction: string, atlasId: string, seed: ActionSeed): ActionCardDef {
     const [id, name, nameEn, count, index] = seed;
     return { id, type: 'action', subtype: 'standard', name, nameEn, faction, count, previewRef: { type: 'atlas', atlasId, index } };
+}
+
+function treasureMinion(
+    card: MunchkinSpecialCardDescriptor,
+    power: number,
+    abilityTags?: MinionCardDef['abilityTags'],
+): MinionCardDef {
+    return {
+        id: card.id,
+        type: 'minion',
+        name: card.name,
+        nameEn: card.nameEn,
+        faction: MUNCHKIN_TREASURE_FACTION_ID,
+        power,
+        count: card.count,
+        previewRef: card.previewRef,
+        ...(abilityTags ? { abilityTags } : {}),
+    };
+}
+
+function treasureAction(
+    card: MunchkinSpecialCardDescriptor,
+    options: Pick<ActionCardDef, 'subtype' | 'ongoingTarget' | 'playNeedsBase' | 'playNeedsMinion' | 'specialTiming' | 'abilityTags'>,
+): ActionCardDef {
+    return {
+        id: card.id,
+        type: 'action',
+        name: card.name,
+        nameEn: card.nameEn,
+        faction: MUNCHKIN_TREASURE_FACTION_ID,
+        count: card.count,
+        previewRef: card.previewRef,
+        ...options,
+    };
+}
+
+function special(kind: MunchkinSpecialDeckKind, atlasId: string, seed: MunchkinSpecialSeed): MunchkinSpecialCardDescriptor {
+    const [id, name, nameEn, count, index, power, treasureReward] = seed;
+    return { id, name, nameEn, kind, count, power, treasureReward, previewRef: { type: 'atlas', atlasId, index } };
+}
+
+function expandSpecialDeck(cards: readonly MunchkinSpecialCardDescriptor[]): string[] {
+    return cards.flatMap(card => Array.from({ length: card.count }, () => card.id));
+}
+
+const TREASURES_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_TREASURES_CARDS;
+const MONSTERS_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_MONSTERS_CARDS;
+
+export const MUNCHKIN_TREASURE_CARDS: MunchkinSpecialCardDescriptor[] = [
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_dwarf_hireling', '矮人雇佣兵', 'Dwarf Hireling', 1, 0]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_halfling_hireling', '半身人雇佣兵', 'Halfling Hireling', 1, 1]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_tiger_steed', '虎骑士', 'Tiger Steed', 1, 2]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_bag_of_caltrops', '一袋铁蒺藜', 'Bag of Caltrops', 1, 3]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_spiky_boots', '尖刺靴', 'Spiky Boots', 1, 4]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_rocket_boots', '火箭靴', 'Rocket Boots', 1, 5]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_buckler_of_swashing', '摆动的盾牌', 'Buckler of Swashing', 1, 6]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_bloody_dismemberment_chainsaw', '血腥肢解电锯', 'Bloody Dismemberment Chainsaw', 1, 7]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_loads_of_treasure', '大量宝藏', 'Loads of Treasure', 1, 8]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_crossbow', '十字弓', 'Crossbow', 1, 9]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_dungeon_rulebook', '地牢规则书', 'Dungeon Rulebook', 1, 10]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_temporal_displacement_jetpack', '时间错乱的喷气背包', 'Temporal Displacement Jetpack', 1, 11]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_kneepads_of_allure', '诱惑护膝', 'Kneepads of Allure', 1, 12]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_magic_missile', '魔法导弹', 'Magic Missile', 1, 13]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_potion_of_cowardice', '怯懦药水', 'Potion of Cowardice', 1, 14]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_potion_of_halitosis', '口臭药水', 'Potion of Halitosis', 1, 15]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_potion_of_idiotic_bravery', '愚蠢勇气药水', 'Potion of Idiotic Bravery', 1, 16]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_potion_of_straight_line_running_away', '直线跑路药水', 'Potion of Straight Line Running Away', 1, 17]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_potion_of_paralysis', '麻痹药水', 'Potion of Paralysis', 1, 18]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_potion_of_duplication', '复制药水', 'Potion of Duplication', 1, 19]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_treasure_finder', '探宝棒', 'Treasure Finder', 1, 20]),
+    special('treasure', TREASURES_CARD_ATLAS, ['munchkin_treasure_wishing_ring', '许愿指环', 'Wishing Ring', 1, 21]),
+];
+
+const MUNCHKIN_TREASURE_FACTION_ID = 'munchkin_treasures';
+
+const TREASURE_BY_ID = new Map(MUNCHKIN_TREASURE_CARDS.map(card => [card.id, card] as const));
+function treasure(id: string): MunchkinSpecialCardDescriptor {
+    const card = TREASURE_BY_ID.get(id);
+    if (!card) throw new Error(`unknown Munchkin treasure card: ${id}`);
+    return card;
+}
+
+export const MUNCHKIN_TREASURE_CARD_DEFS: CardDef[] = [
+    treasureMinion(treasure('munchkin_treasure_dwarf_hireling'), 2),
+    treasureMinion(treasure('munchkin_treasure_halfling_hireling'), 2, ['onPlay']),
+    treasureMinion(treasure('munchkin_treasure_tiger_steed'), 3),
+    treasureAction(treasure('munchkin_treasure_bag_of_caltrops'), { subtype: 'ongoing', ongoingTarget: 'base', playNeedsBase: true }),
+    treasureAction(treasure('munchkin_treasure_spiky_boots'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_rocket_boots'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_buckler_of_swashing'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_bloody_dismemberment_chainsaw'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_loads_of_treasure'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_crossbow'), { subtype: 'standard', playNeedsBase: true }),
+    treasureAction(treasure('munchkin_treasure_dungeon_rulebook'), { subtype: 'standard' }),
+    treasureAction(treasure('munchkin_treasure_temporal_displacement_jetpack'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_kneepads_of_allure'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_magic_missile'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_potion_of_cowardice'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_potion_of_halitosis'), { subtype: 'standard', playNeedsBase: true }),
+    treasureAction(treasure('munchkin_treasure_potion_of_idiotic_bravery'), { subtype: 'standard', playNeedsMinion: true, abilityTags: ['onPlay'] }),
+    treasureAction(treasure('munchkin_treasure_potion_of_straight_line_running_away'), { subtype: 'special', specialTiming: 'afterScoring' }),
+    treasureAction(treasure('munchkin_treasure_potion_of_paralysis'), { subtype: 'special', specialTiming: 'beforeScoring', playNeedsBase: true }),
+    treasureAction(treasure('munchkin_treasure_potion_of_duplication'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_treasure_finder'), { subtype: 'standard' }),
+    treasureAction(treasure('munchkin_treasure_wishing_ring'), { subtype: 'standard' }),
+];
+
+export const MUNCHKIN_MONSTER_CARDS: MunchkinSpecialCardDescriptor[] = [
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_treasure_dragon', '宝藏龙', 'Treasure Dragon', 1, 0, 5, 3]),
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_bigfoot', '大脚怪', 'Bigfoot', 2, 1, 4, 2]),
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_pegasus', '天马', 'Pegasus', 3, 3, 3, 1]),
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_gross_troll', '长毛巨魔', 'Gross Troll', 4, 6, 1, 0]),
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_undead_horseman', '活死人骑士', 'Undead Horseman', 1, 10, 5, 2]),
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_tutankhamen', '图坦卡蒙', 'Tutankhamen', 2, 11, 4, 2]),
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_ghoul', '食尸鬼', 'Ghoul', 3, 13, 3, 1]),
+    special('monster', MONSTERS_CARD_ATLAS, ['munchkin_monster_fowl_fiend', '鸟之冤魂', 'Fowl Fiend', 4, 16, 2, 1]),
+];
+
+export const MUNCHKIN_TREASURE_DECK_DEF_IDS = expandSpecialDeck(MUNCHKIN_TREASURE_CARDS);
+export const MUNCHKIN_MONSTER_DECK_DEF_IDS = expandSpecialDeck(MUNCHKIN_MONSTER_CARDS);
+export const MUNCHKIN_TREASURE_DECK_SIZE = MUNCHKIN_TREASURE_DECK_DEF_IDS.length;
+export const MUNCHKIN_MONSTER_DECK_SIZE = MUNCHKIN_MONSTER_DECK_DEF_IDS.length;
+export const MUNCHKIN_TREASURE_DECK_PREVIEW_DEF_ID = MUNCHKIN_TREASURE_CARDS[0].id;
+export const MUNCHKIN_MONSTER_DECK_PREVIEW_DEF_ID = MUNCHKIN_MONSTER_CARDS[0].id;
+
+const MUNCHKIN_SPECIAL_CARD_BY_ID = new Map<string, MunchkinSpecialCardDescriptor>(
+    [...MUNCHKIN_TREASURE_CARDS, ...MUNCHKIN_MONSTER_CARDS].map(card => [card.id, card]),
+);
+
+export function getMunchkinSpecialCardDescriptor(defId: string): MunchkinSpecialCardDescriptor | undefined {
+    return MUNCHKIN_SPECIAL_CARD_BY_ID.get(defId);
 }
 
 const DWARVES = SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES;
@@ -42,8 +192,8 @@ export const MUNCHKIN_DWARVES_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_DWARVES_BASES: BaseCardDef[] = [
-    { id: 'base_the_mines', name: '矿洞', nameEn: 'The Mines', breakpoint: 18, vpAwards: [4, 2, 1], faction: DWARVES, previewRef: { type: 'atlas', atlasId: DWARVES_BASE_ATLAS, index: 0 } },
-    { id: 'base_treasure_bath', name: '宝藏池', nameEn: 'Treasure Bath', breakpoint: 12, vpAwards: [2, 0, 0], faction: DWARVES, previewRef: { type: 'atlas', atlasId: DWARVES_BASE_ATLAS, index: 1 } },
+    { id: 'base_the_mines', name: '矿洞', nameEn: 'The Mines', breakpoint: 18, vpAwards: [4, 2, 1], faction: DWARVES, monsterCount: 2, previewRef: { type: 'atlas', atlasId: DWARVES_BASE_ATLAS, index: 0 } },
+    { id: 'base_treasure_bath', name: '宝藏池', nameEn: 'Treasure Bath', breakpoint: 12, vpAwards: [2, 0, 0], faction: DWARVES, monsterCount: 1, previewRef: { type: 'atlas', atlasId: DWARVES_BASE_ATLAS, index: 1 } },
 ];
 
 const HALFLINGS = SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS;
@@ -74,8 +224,8 @@ export const MUNCHKIN_HALFLINGS_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_HALFLINGS_BASES: BaseCardDef[] = [
-    { id: 'base_birthday_party', name: '生日派对', nameEn: 'Birthday Party', breakpoint: 20, vpAwards: [4, 2, 1], faction: HALFLINGS, previewRef: { type: 'atlas', atlasId: HALFLINGS_BASE_ATLAS, index: 0 } },
-    { id: 'base_subterranean_lair', name: '地下矮屋', nameEn: 'Subterranean Lair', breakpoint: 23, vpAwards: [5, 3, 2], faction: HALFLINGS, previewRef: { type: 'atlas', atlasId: HALFLINGS_BASE_ATLAS, index: 1 } },
+    { id: 'base_birthday_party', name: '生日派对', nameEn: 'Birthday Party', breakpoint: 20, vpAwards: [4, 2, 1], faction: HALFLINGS, monsterCount: 1, previewRef: { type: 'atlas', atlasId: HALFLINGS_BASE_ATLAS, index: 0 } },
+    { id: 'base_subterranean_lair', name: '地下矮屋', nameEn: 'Subterranean Lair', breakpoint: 23, vpAwards: [5, 3, 2], faction: HALFLINGS, monsterCount: 1, previewRef: { type: 'atlas', atlasId: HALFLINGS_BASE_ATLAS, index: 1 } },
 ];
 
 const THIEVES = SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES;
@@ -106,8 +256,8 @@ export const MUNCHKIN_THIEVES_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_THIEVES_BASES: BaseCardDef[] = [
-    { id: 'base_the_coffers', name: '金库', nameEn: 'The Coffers', breakpoint: 18, vpAwards: [4, 2, 1], faction: THIEVES, previewRef: { type: 'atlas', atlasId: THIEVES_BASE_ATLAS, index: 0 } },
-    { id: 'base_thieves_guild', name: '盗贼公会', nameEn: 'Thieves\' Guild', breakpoint: 19, vpAwards: [4, 3, 2], faction: THIEVES, previewRef: { type: 'atlas', atlasId: THIEVES_BASE_ATLAS, index: 1 } },
+    { id: 'base_the_coffers', name: '金库', nameEn: 'The Coffers', breakpoint: 18, vpAwards: [4, 2, 1], faction: THIEVES, monsterCount: 2, previewRef: { type: 'atlas', atlasId: THIEVES_BASE_ATLAS, index: 0 } },
+    { id: 'base_thieves_guild', name: '盗贼公会', nameEn: 'Thieves\' Guild', breakpoint: 19, vpAwards: [4, 3, 2], faction: THIEVES, monsterCount: 1, previewRef: { type: 'atlas', atlasId: THIEVES_BASE_ATLAS, index: 1 } },
 ];
 
 const MAGES = SMASHUP_FACTION_IDS.MUNCHKIN_MAGES;
@@ -138,8 +288,8 @@ export const MUNCHKIN_MAGES_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_MAGES_BASES: BaseCardDef[] = [
-    { id: 'base_dimension_doors', name: '次元之门', nameEn: 'Dimension Doors', breakpoint: 20, vpAwards: [4, 2, 1], faction: MAGES, previewRef: { type: 'atlas', atlasId: MAGES_BASE_ATLAS, index: 0 } },
-    { id: 'base_mages_tower', name: '法师之塔', nameEn: 'Mage\'s Tower', breakpoint: 18, vpAwards: [4, 3, 2], faction: MAGES, previewRef: { type: 'atlas', atlasId: MAGES_BASE_ATLAS, index: 1 } },
+    { id: 'base_dimension_doors', name: '次元之门', nameEn: 'Dimension Doors', breakpoint: 20, vpAwards: [4, 2, 1], faction: MAGES, monsterCount: 1, previewRef: { type: 'atlas', atlasId: MAGES_BASE_ATLAS, index: 0 } },
+    { id: 'base_mages_tower', name: '法师之塔', nameEn: 'Mage\'s Tower', breakpoint: 18, vpAwards: [4, 3, 2], faction: MAGES, monsterCount: 1, previewRef: { type: 'atlas', atlasId: MAGES_BASE_ATLAS, index: 1 } },
 ];
 
 const ELVES = SMASHUP_FACTION_IDS.MUNCHKIN_ELVES;
@@ -170,8 +320,8 @@ export const MUNCHKIN_ELVES_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_ELVES_BASES: BaseCardDef[] = [
-    { id: 'base_helpers_hollow', name: '援助山谷', nameEn: 'Helper\'s Hollow', breakpoint: 17, vpAwards: [3, 2, 1], faction: ELVES, previewRef: { type: 'atlas', atlasId: ELVES_BASE_ATLAS, index: 0 } },
-    { id: 'base_treehouse', name: '树屋', nameEn: 'Treehouse', breakpoint: 15, vpAwards: [4, 2, 1], faction: ELVES, previewRef: { type: 'atlas', atlasId: ELVES_BASE_ATLAS, index: 1 } },
+    { id: 'base_helpers_hollow', name: '援助山谷', nameEn: 'Helper\'s Hollow', breakpoint: 17, vpAwards: [3, 2, 1], faction: ELVES, monsterCount: 2, previewRef: { type: 'atlas', atlasId: ELVES_BASE_ATLAS, index: 0 } },
+    { id: 'base_treehouse', name: '树屋', nameEn: 'Treehouse', breakpoint: 15, vpAwards: [4, 2, 1], faction: ELVES, monsterCount: 2, previewRef: { type: 'atlas', atlasId: ELVES_BASE_ATLAS, index: 1 } },
 ];
 
 const CLERICS = SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS;
@@ -202,8 +352,8 @@ export const MUNCHKIN_CLERICS_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_CLERICS_BASES: BaseCardDef[] = [
-    { id: 'base_hotel_of_holiness', name: '圣洁酒店', nameEn: 'Hotel of Holiness', breakpoint: 15, vpAwards: [4, 3, 2], faction: CLERICS, previewRef: { type: 'atlas', atlasId: CLERICS_BASE_ATLAS, index: 0 } },
-    { id: 'base_whack_a_ghoul', name: '抓鬼', nameEn: 'Whack-A-Ghoul', breakpoint: 12, vpAwards: [3, 2, 1], faction: CLERICS, previewRef: { type: 'atlas', atlasId: CLERICS_BASE_ATLAS, index: 1 } },
+    { id: 'base_hotel_of_holiness', name: '圣洁酒店', nameEn: 'Hotel of Holiness', breakpoint: 15, vpAwards: [4, 3, 2], faction: CLERICS, monsterCount: 2, previewRef: { type: 'atlas', atlasId: CLERICS_BASE_ATLAS, index: 0 } },
+    { id: 'base_whack_a_ghoul', name: '抓鬼', nameEn: 'Whack-A-Ghoul', breakpoint: 12, vpAwards: [3, 2, 1], faction: CLERICS, monsterCount: 3, previewRef: { type: 'atlas', atlasId: CLERICS_BASE_ATLAS, index: 1 } },
 ];
 
 const ORCS = SMASHUP_FACTION_IDS.MUNCHKIN_ORCS;
@@ -234,8 +384,8 @@ export const MUNCHKIN_ORCS_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_ORCS_BASES: BaseCardDef[] = [
-    { id: 'base_garrison', name: '要塞', nameEn: 'Garrison', breakpoint: 12, vpAwards: [3, 2, 1], faction: ORCS, previewRef: { type: 'atlas', atlasId: ORCS_BASE_ATLAS, index: 0 } },
-    { id: 'base_the_pits', name: '坑洞', nameEn: 'The Pits', breakpoint: 16, vpAwards: [4, 2, 1], faction: ORCS, previewRef: { type: 'atlas', atlasId: ORCS_BASE_ATLAS, index: 1 } },
+    { id: 'base_garrison', name: '要塞', nameEn: 'Garrison', breakpoint: 12, vpAwards: [3, 2, 1], faction: ORCS, monsterCount: 2, previewRef: { type: 'atlas', atlasId: ORCS_BASE_ATLAS, index: 0 } },
+    { id: 'base_the_pits', name: '坑洞', nameEn: 'The Pits', breakpoint: 16, vpAwards: [4, 2, 1], faction: ORCS, monsterCount: 2, previewRef: { type: 'atlas', atlasId: ORCS_BASE_ATLAS, index: 1 } },
 ];
 
 const WARRIORS = SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS;
@@ -266,8 +416,8 @@ export const MUNCHKIN_WARRIORS_CARDS: CardDef[] = [
 ];
 
 export const MUNCHKIN_WARRIORS_BASES: BaseCardDef[] = [
-    { id: 'base_bastion', name: '堡垒', nameEn: 'Bastion', breakpoint: 11, vpAwards: [3, 2, 2], faction: WARRIORS, previewRef: { type: 'atlas', atlasId: WARRIORS_BASE_ATLAS, index: 0 } },
-    { id: 'base_the_gauntlet', name: '锦标赛', nameEn: 'The Gauntlet', breakpoint: 14, vpAwards: [5, 3, 2], faction: WARRIORS, previewRef: { type: 'atlas', atlasId: WARRIORS_BASE_ATLAS, index: 1 } },
+    { id: 'base_bastion', name: '堡垒', nameEn: 'Bastion', breakpoint: 11, vpAwards: [3, 2, 2], faction: WARRIORS, monsterCount: 3, previewRef: { type: 'atlas', atlasId: WARRIORS_BASE_ATLAS, index: 0 } },
+    { id: 'base_the_gauntlet', name: '锦标赛', nameEn: 'The Gauntlet', breakpoint: 14, vpAwards: [5, 3, 2], faction: WARRIORS, monsterCount: 3, previewRef: { type: 'atlas', atlasId: WARRIORS_BASE_ATLAS, index: 1 } },
 ];
 
 export const MUNCHKIN_CARDS: CardDef[] = [

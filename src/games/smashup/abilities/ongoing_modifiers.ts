@@ -67,6 +67,9 @@ const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinitio
     { defId: 'superheroes_expanded_power', location: 'minion', target: 'self', delta: 1 },
     { defId: 'vigilantes_tough_it_out', location: 'minion', target: 'self', delta: 2 },
     { defId: 'mounties_haich_q', location: 'base', target: 'ownerMinions', delta: 1 },
+    { defId: 'munchkin_treasure_spiky_boots', location: 'minion', target: 'self', delta: 1, variantPolicy: 'baseOnly' },
+    { defId: 'munchkin_treasure_bloody_dismemberment_chainsaw', location: 'minion', target: 'self', delta: 2, variantPolicy: 'baseOnly' },
+    { defId: 'munchkin_treasure_potion_of_cowardice', location: 'minion', target: 'self', delta: -2, variantPolicy: 'baseOnly' },
 ];
 
 function registerStructuredOngoingPowerModifiers(): void {
@@ -641,6 +644,46 @@ function registerMythicHorsesModifiers(): void {
         },
     ]);
 }
+
+function isMunchkinTreasureAttachment(defId: string): boolean {
+    return getCardDef(defId)?.faction === 'munchkin_treasures';
+}
+
+function countActiveMunchkinTreasureAttachments(ctx: PowerModifierContext): number {
+    return ctx.minion.attachedActions.filter(action => (
+        isMunchkinTreasureAttachment(action.defId)
+        && !isCardSuppressed(ctx.state, action.uid)
+    )).length;
+}
+
+function registerMunchkinTreasureModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'munchkin_treasure_loads_of_treasure',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => {
+                const sourceCount = helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'munchkin_treasure_loads_of_treasure',
+                );
+                if (sourceCount === 0) return 0;
+                return sourceCount * countActiveMunchkinTreasureAttachments(ctx);
+            },
+        },
+        {
+            sourceDefId: 'munchkin_treasure_kneepads_of_allure',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => (
+                ctx.base.minions.reduce((total, minion) => (
+                    total + minion.attachedActions.filter(action => (
+                        helpers.matchesRuntimeDefId(action.defId, 'munchkin_treasure_kneepads_of_allure')
+                        && !isCardSuppressed(ctx.state, action.uid)
+                    )).length
+                ), 0)
+            ),
+        },
+    ]);
+}
 // ============================================================================
 // 基地持续力量修正
 // ============================================================================
@@ -932,6 +975,7 @@ export function registerAllOngoingModifiers(): void {
     registerKaijuModifiers();
     registerKittyCatsModifiers();
     registerMythicHorsesModifiers();
+    registerMunchkinTreasureModifiers();
     registerWerewolfModifiers();
     registerDragonModifiers();
     registerSuperheroesModifiers();

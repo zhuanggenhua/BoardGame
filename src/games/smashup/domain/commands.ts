@@ -33,6 +33,7 @@ import {
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
 import { getCardActivatableAbilities, hasCardActivatableAbility } from './activationMetadata';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import {
     actionLikeNeedsResponseWindowBase,
     canCardBePlayedInResponseWindowForMatchState,
@@ -1246,6 +1247,42 @@ export function validate(
                 return { valid: false, error: 'player_mismatch' };
             }
             return validateTitanAbility(state, command, 'ongoing');
+        }
+
+        case SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER: {
+            if (phase !== 'playCards') {
+                return { valid: false, error: '只能在出牌阶段击败怪物' };
+            }
+            if (command.playerId !== currentPlayerId) {
+                return { valid: false, error: 'player_mismatch' };
+            }
+
+            const { baseIndex, monsterUid } = command.payload;
+            const base = core.bases[baseIndex];
+            if (!base) {
+                return { valid: false, error: '无效的基地索引' };
+            }
+
+            const monster = base.monsters?.find(candidate => candidate.uid === monsterUid);
+            if (!monster) {
+                return { valid: false, error: '该基地没有这个怪物' };
+            }
+            if (monster.controllerId !== undefined) {
+                return { valid: false, error: '已受控怪物不能被击败' };
+            }
+
+            const descriptor = getMunchkinSpecialCardDescriptor(monster.defId);
+            if (descriptor?.kind !== 'monster') {
+                return { valid: false, error: '该对象不是怪物' };
+            }
+
+            const monsterPower = descriptor.power ?? 0;
+            const playerPower = getPlayerEffectivePowerOnBase(core, base, baseIndex, command.playerId);
+            if (playerPower < monsterPower) {
+                return { valid: false, error: `你在该基地的力量不足以击败这个怪物（需要${monsterPower}）` };
+            }
+
+            return { valid: true };
         }
 
         default:

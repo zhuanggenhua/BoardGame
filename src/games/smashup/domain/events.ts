@@ -115,6 +115,7 @@ export const SU_EVENTS = defineEvents({
   
   'su:madness_drawn': { audio: 'immediate', sound: MADNESS_KEY },
   'su:madness_returned': { audio: 'immediate', sound: MADNESS_KEY },
+  'su:munchkin_monster_defeated': { audio: 'immediate', sound: POSITIVE_SIGNAL_KEY },
   
   'su:reveal_hand': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:reveal_deck_top': { audio: 'immediate', sound: CARD_SCROLL_KEY },
@@ -216,6 +217,7 @@ export const SU_EVENT_TYPES = {
   HAND_SHUFFLED_INTO_DECK: SU_EVENTS['su:hand_shuffled_into_deck'].type,
   MADNESS_DRAWN: SU_EVENTS['su:madness_drawn'].type,
   MADNESS_RETURNED: SU_EVENTS['su:madness_returned'].type,
+  MUNCHKIN_MONSTER_DEFEATED: SU_EVENTS['su:munchkin_monster_defeated'].type,
   BASE_DECK_REORDERED: SU_EVENTS['su:base_deck_reordered'].type,
   REVEAL_HAND: SU_EVENTS['su:reveal_hand'].type,
   REVEAL_DECK_TOP: SU_EVENTS['su:reveal_deck_top'].type,

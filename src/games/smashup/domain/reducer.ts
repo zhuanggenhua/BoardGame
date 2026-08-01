@@ -57,6 +57,7 @@ import type {
     SpecialAfterScoringArmedEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
+    MunchkinMonsterDefeatedEvent,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
@@ -826,6 +827,22 @@ function executeCommand(
                 return { events: result.events, updatedState: result.matchState };
             }
             return { events: result.events };
+        }
+
+        case SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER: {
+            const { baseIndex, monsterUid } = command.payload;
+            const event: MunchkinMonsterDefeatedEvent = {
+                type: SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED,
+                payload: {
+                    playerId: command.playerId,
+                    baseIndex,
+                    monsterUid,
+                    reason: command.type,
+                },
+                sourceCommandType: command.type,
+                timestamp: now,
+            };
+            return { events: [event] };
         }
 
         default:

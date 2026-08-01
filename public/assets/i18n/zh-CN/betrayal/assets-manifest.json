@@ -1327,11 +1327,29 @@
         }
       }
     },
+    "tokens/explorers/compressed/michelle-monroe": {
+      "variants": {
+        "webp": {
+          "sha256": "0dbacb2b5643facbac23274f6a3b6b6621c7bd0aa117d067fdb7c7ca9ed7c464",
+          "bytes": 30890,
+          "mime": "image/webp"
+        }
+      }
+    },
     "tokens/explorers/compressed/rebecca-allen": {
       "variants": {
         "webp": {
           "sha256": "cb3ceb60ca86bcaa810941b3f607b06de3d6d1439156eeea1047dc906a3471c4",
           "bytes": 33764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "tokens/explorers/compressed/stephanie-richter": {
+      "variants": {
+        "webp": {
+          "sha256": "fa5e92f43cb9b3461cf955d347dde9b3f0e8e4a5e6fe57346c689814d688d707",
+          "bytes": 42232,
           "mime": "image/webp"
         }
       }
@@ -1363,7 +1381,25 @@
         }
       }
     },
+    "tokens/explorers/michelle-monroe": {
+      "variants": {
+        "png": {
+          "sha256": "603fc76b59557ab908fe427b2b37da891eee5e528d32973e4e05e19879915f6a",
+          "bytes": 142634,
+          "mime": "image/png"
+        }
+      }
+    },
     "tokens/explorers/rebecca-allen": {
+      "variants": {
+        "png": {
+          "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",
+          "bytes": 182697,
+          "mime": "image/png"
+        }
+      }
+    },
+    "tokens/explorers/stephanie-richter": {
       "variants": {
         "png": {
           "sha256": "c0cd4b2de0039d46da9ac5b8e71ea86144818735ea4d05902ff1835ecfab5c89",

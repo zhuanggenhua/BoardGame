@@ -2,6 +2,7 @@ import type { Command, MatchState, RandomFn } from "../../../engine/types";
 import {
   BETRAYAL_COMMANDS,
   BetrayalDomain,
+  EXPLORER_CATALOG,
   createBetrayalMonsterFromDefinition,
   resolveBetrayalMonsterMoveTargetRooms,
   type BetrayalCommand,
@@ -87,27 +88,6 @@ function traitValueAtTestTrack(
   return track.values[position] ?? track.values[track.criticalPosition] ?? 1;
 }
 
-function positionForTestTrackValue(
-  track: BetrayalCore["currentExplorer"]["traitTracks"][BetrayalTraitKey],
-  value: number,
-): number | null {
-  if (value <= 0) {
-    return track.skullPosition;
-  }
-  const exactPositions = track.values
-    .map((trackValue, index) => ({ trackValue, index }))
-    .filter(({ trackValue }) => trackValue === value)
-    .map(({ index }) => index);
-  if (exactPositions.length === 0) {
-    return null;
-  }
-  return exactPositions.reduce((best, index) => (
-    Math.abs(index - track.startPosition) < Math.abs(best - track.startPosition)
-      ? index
-      : best
-  ), exactPositions[0]!);
-}
-
 function syncLegacyTestExplorerTraitTracks(
   explorer: BetrayalCore["currentExplorer"],
 ): void {
@@ -126,17 +106,11 @@ function syncLegacyTestExplorerTraitTracks(
         explorer.traits[trait] = traitValueAtTestTrack(track);
         continue;
       }
-      const nextPosition = positionForTestTrackValue(track, explorer.traits[trait]);
-      if (nextPosition === null) {
-        explorer.traitTracks[trait] = buildLinearTestTraitTrack(
-          `legacy-test-${explorer.explorerId}-${trait}`,
-          explorer.traits[trait],
-        );
-        explorer.traits[trait] = traitValueAtTestTrack(explorer.traitTracks[trait]);
-      } else {
-        track.position = nextPosition;
-        explorer.traits[trait] = traitValueAtTestTrack(track);
-      }
+      explorer.traitTracks[trait] = buildLinearTestTraitTrack(
+        `legacy-test-${explorer.explorerId}-${trait}`,
+        explorer.traits[trait],
+      );
+      explorer.traits[trait] = traitValueAtTestTrack(explorer.traitTracks[trait]);
     }
   }
 }
@@ -217,6 +191,35 @@ function findFixtureExplorer(
   return explorer;
 }
 
+function setFixtureTraitTrack(
+  core: BetrayalCore,
+  playerId: string,
+  trait: BetrayalTraitKey,
+  values: number[],
+  position: number,
+  startPosition = position,
+): void {
+  const explorer = findFixtureExplorer(core, playerId);
+  explorer.traitTracks[trait] = {
+    trackId: `test-${playerId}-${trait}`,
+    values: [...values],
+    position,
+    startPosition,
+    criticalPosition: 0,
+    skullPosition: -1,
+    maxPosition: values.length - 1,
+  };
+  explorer.traits[trait] = values[position] ?? 0;
+  if (core.currentExplorer.playerId === playerId) {
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  }
+}
+
+function setFixturePhysicalDeathDoor(core: BetrayalCore, playerId: string): void {
+  setFixtureTraitTrack(core, playerId, "might", [1], 0);
+  setFixtureTraitTrack(core, playerId, "speed", [1], 0);
+}
+
 function lethalTraitsForPendingDamage(
   core: BetrayalCore,
   lethalTrait: BetrayalTraitKey = "might",
@@ -251,6 +254,9 @@ function lethalTraitsForPendingDamage(
     traits.push(...Array.from({ length: take }, () => trait));
     remaining -= take;
   }
+  if (traits.length !== pending.amount) {
+    throw new Error(`山屋测试夹具无法为 ${pending.sourceTitle} 分配 ${pending.amount} 点伤害`);
+  }
   return traits;
 }
 
@@ -282,21 +288,23 @@ export function createStartedFirstScenarioCore(
   playerIds: string[] = ["0", "1", "2"],
 ): BetrayalCore {
   let core = BetrayalDomain.setup(playerIds, BETRAYAL_FIXED_RANDOM);
-  core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, "0", {
-    explorerId: "jaden-jones",
-  });
-  core = applyBetrayalCommand(
-    core,
-    BETRAYAL_COMMANDS.CONFIRM_EXPLORER,
-    "0",
-    {},
-  );
-  core = applyBetrayalCommand(
-    core,
-    BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
-    "0",
-    {},
-  );
+  for (const [index, playerId] of core.playerIds.entries()) {
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.SELECT_EXPLORER, playerId, {
+      explorerId: EXPLORER_CATALOG[index % EXPLORER_CATALOG.length]!.explorerId,
+    });
+    core = applyBetrayalCommand(
+      core,
+      BETRAYAL_COMMANDS.CONFIRM_EXPLORER,
+      playerId,
+      {},
+    );
+    core = applyBetrayalCommand(
+      core,
+      BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
+      playerId,
+      {},
+    );
+  }
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.START_SCENARIO, "0", {
   });
   core.eventOrder = [
@@ -919,22 +927,6 @@ export function createDustFeverishAttackReadyCore(): BetrayalCore {
 
 export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
   let core = createCrimsonJackHauntCore();
-  const hauntSuccessRandom = createBetrayalScriptedRandom(
-    3,
-    3,
-    3,
-    3, // 对攻击倒叛徒：英雄高点数
-    1,
-    1,
-    1,
-    1, // 对攻击倒叛徒：叛徒低点数
-    3,
-    3,
-    3,
-    3,
-    3,
-    3, // 最终驱魔成功
-  );
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -969,13 +961,14 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "0",
     { target: "traitor" },
     100,
-    hauntSuccessRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "0", {});
@@ -1029,7 +1022,7 @@ export function playFirstScenarioToSurvivorVictory(): BetrayalCore {
     "0",
     {},
     100,
-    hauntSuccessRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 3, 3),
   );
 
   return core;
@@ -1085,6 +1078,7 @@ export function createFirstScenarioReadyToExorciseCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -1484,24 +1478,6 @@ export function createHeroAttackTraitorReadyTutorialCore(): BetrayalCore {
 
 export function playFirstScenarioToTraitorVictory(): BetrayalCore {
   let core = createCrimsonJackHauntCore();
-  const traitorWinRandom = createBetrayalScriptedRandom(
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第一次对攻击倒英雄：叛徒 8 vs 英雄 0
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第二次对攻击倒英雄
-  );
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -1540,25 +1516,27 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "ground-north",
   });
+  setFixturePhysicalDeathDoor(core, "0");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "2",
     { target: "hero", targetPlayerId: "0" },
     100,
-    traitorWinRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
 
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "2", {});
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, "1", {});
+  setFixturePhysicalDeathDoor(core, "1");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "2",
     { target: "hero", targetPlayerId: "1" },
     100,
-    traitorWinRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
 
@@ -1567,24 +1545,6 @@ export function playFirstScenarioToTraitorVictory(): BetrayalCore {
 
 export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
   let core = createCrimsonJackHauntCore();
-  const traitorWinRandom = createBetrayalScriptedRandom(
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第一次对攻击倒英雄：叛徒 8 vs 英雄 0
-    3,
-    3,
-    3,
-    3,
-    1,
-    1,
-    1,
-    1, // 第二次对攻击倒英雄
-  );
 
   setScenarioTestTurnMovement(core, 6);
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
@@ -1623,13 +1583,14 @@ export function createFirstScenarioReadyToTraitorVictoryCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "2", {
     roomId: "ground-north",
   });
+  setFixturePhysicalDeathDoor(core, "0");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
     "2",
     { target: "hero", targetPlayerId: "0" },
     100,
-    traitorWinRandom,
+    createBetrayalScriptedRandom(3, 3, 3, 3, 1, 1),
   );
   core = resolvePendingDamageAllocation(core);
 
@@ -1706,6 +1667,7 @@ export function createJackSpiritReviveReadyCore(): BetrayalCore {
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,
@@ -1759,6 +1721,7 @@ export function createJackSpiritNaturalMonsterTurnBeforeRollCore(): BetrayalCore
   core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, "0", {
     roomId: "basement-east",
   });
+  setFixturePhysicalDeathDoor(core, "2");
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.HAUNT_ATTACK,

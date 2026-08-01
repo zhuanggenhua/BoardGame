@@ -1507,18 +1507,28 @@ function normalizeLegacySmashUpMatchState(
 
     const normalizedBases = core.bases.map((base) => {
         const buriedCards = normalizeSmashUpRuntimeObjectArray(base.buriedCards);
-        if (buriedCards === base.buriedCards) {
+        const monsters = normalizeSmashUpRuntimeObjectArray(base.monsters);
+        if (buriedCards === base.buriedCards && monsters === base.monsters) {
             return base;
         }
         changed = true;
         return {
             ...base,
+            monsters,
             buriedCards,
         };
     });
 
     const normalizedMadnessDeck = normalizeSmashUpRuntimeMadnessDeck(core.madnessDeck);
     if (normalizedMadnessDeck !== core.madnessDeck) {
+        changed = true;
+    }
+    const normalizedMonsterDeck = normalizeSmashUpRuntimeMadnessDeck(core.monsterDeck);
+    if (normalizedMonsterDeck !== core.monsterDeck) {
+        changed = true;
+    }
+    const normalizedTreasureDeck = normalizeSmashUpRuntimeMadnessDeck(core.treasureDeck);
+    if (normalizedTreasureDeck !== core.treasureDeck) {
         changed = true;
     }
 
@@ -1529,6 +1539,8 @@ function normalizeLegacySmashUpMatchState(
             players: normalizedPlayers,
             bases: normalizedBases,
             madnessDeck: normalizedMadnessDeck,
+            monsterDeck: normalizedMonsterDeck,
+            treasureDeck: normalizedTreasureDeck,
         },
     } : state;
 

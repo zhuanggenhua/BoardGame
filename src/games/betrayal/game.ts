@@ -45,6 +45,7 @@ import {
     type BetrayalEventSeed,
     type BetrayalInventoryKind as ConfigInventoryKind,
     type BetrayalInventorySeed,
+    type BetrayalExplorerTraitTrackSeed,
     type BetrayalMonsterSeed,
     type BetrayalRecommendedAction as ConfigRecommendedAction,
     type BetrayalRoomDiscoverySymbol,
@@ -137,6 +138,7 @@ export interface BetrayalExplorerTemplate {
     tokenAsset?: string;
     color: string;
     traits: Record<BetrayalTraitKey, number>;
+    traitTracks: Record<BetrayalTraitKey, BetrayalExplorerTraitTrackSeed>;
     abilityName: string;
     abilityText: string;
 }
@@ -3391,6 +3393,28 @@ function buildDefaultTraitTrack(trackId: string, startValue: number): BetrayalTr
     };
 }
 
+function buildTraitTrackFromSeed(
+    trackId: string,
+    seed: BetrayalExplorerTraitTrackSeed,
+    fallbackStartValue: number,
+): BetrayalTraitTrackState {
+    if (seed.values.length === 0) {
+        return buildDefaultTraitTrack(trackId, fallbackStartValue);
+    }
+    const values = [...seed.values];
+    const maxPosition = values.length - 1;
+    const startPosition = Math.max(0, Math.min(maxPosition, seed.startPosition));
+    return {
+        trackId,
+        values,
+        position: startPosition,
+        startPosition,
+        criticalPosition: 0,
+        skullPosition: -1,
+        maxPosition,
+    };
+}
+
 function cloneTraitTrack(track: BetrayalTraitTrackState): BetrayalTraitTrackState {
     return { ...track, values: [...track.values] };
 }
@@ -3417,6 +3441,19 @@ function buildTraitTracksFromValues(
         BETRAYAL_TRAIT_KEYS.map((trait) => [
             trait,
             buildDefaultTraitTrack(`${explorerId}-${trait}`, values[trait]),
+        ]),
+    ) as BetrayalTraitTrackMap;
+}
+
+function buildTraitTracksFromTemplate(template: BetrayalExplorerTemplate): BetrayalTraitTrackMap {
+    return Object.fromEntries(
+        BETRAYAL_TRAIT_KEYS.map((trait) => [
+            trait,
+            buildTraitTrackFromSeed(
+                `${template.explorerId}-${trait}`,
+                template.traitTracks[trait],
+                template.traits[trait],
+            ),
         ]),
     ) as BetrayalTraitTrackMap;
 }
@@ -3861,7 +3898,7 @@ function createExplorer(
         tokenAsset: template.tokenAsset,
         roomId,
         traits: { ...template.traits },
-        traitTracks: buildTraitTracksFromValues(template.explorerId, template.traits),
+        traitTracks: buildTraitTracksFromTemplate(template),
         inventory: inventory.map(cloneInventorySeed),
     };
     normalizeExplorerTraitTracks(explorer);
@@ -15701,8 +15738,19 @@ function validateCommand(state: MatchState<BetrayalCore>, command: BetrayalComma
         case BETRAYAL_COMMANDS.START_SCENARIO:
             if (core.phase !== 'characterSelect') return { valid: false, error: '当前不在角色选择阶段。' };
             {
-                const participatingPlayerIds = Object.keys(core.selectedExplorerByPlayerId);
-                const missingConfirmationPlayerId = participatingPlayerIds.find(
+                const missingExplorerPlayerId = core.playerIds.find(
+                    (playerId) => !core.selectedExplorerByPlayerId[playerId],
+                );
+                if (missingExplorerPlayerId) {
+                    return { valid: false, error: '每位玩家都需要先选择探索者。' };
+                }
+                const unconfirmedExplorerPlayerId = core.playerIds.find(
+                    (playerId) => !core.readyPlayerIds.includes(playerId),
+                );
+                if (unconfirmedExplorerPlayerId) {
+                    return { valid: false, error: '每位玩家都需要先确认探索者。' };
+                }
+                const missingConfirmationPlayerId = core.playerIds.find(
                     (playerId) => core.scenarioCardConfirmations[playerId] !== core.proposedScenarioCardId,
                 );
                 if (missingConfirmationPlayerId) {

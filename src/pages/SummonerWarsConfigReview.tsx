@@ -367,8 +367,6 @@ function stickyColumnClass(columnKey: 'image' | SummonerWarsConfigReviewFieldKey
   switch (columnKey) {
     case 'image':
       return 'sticky left-0 z-[2] w-[70px] shadow-[2px_0_0_rgba(143,102,66,0.18)]';
-    case 'name':
-      return 'sticky left-[72px] z-[2] shadow-[2px_0_0_rgba(143,102,66,0.14)]';
     default:
       return '';
   }

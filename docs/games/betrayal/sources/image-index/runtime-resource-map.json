@@ -252,16 +252,28 @@
     "status": "runtime"
   },
   {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/michelle-monroe.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182006176F92CB356076A3D52EE2EC3176CA4FAB154384393.png",
+    "meaning": "地图玩家指示物：Michelle Monroe / 米歇尔·梦露；从旧错名 darryl-highla 迁入正式语义路径，旧路径仅保留作历史别名证据。",
+    "status": "runtime"
+  },
+  {
+    "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/stephanie-richter.png",
+    "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92.png",
+    "meaning": "地图玩家指示物：Stephanie Richter / 斯蒂芬妮·里克特；从旧错名 rebecca-allen 迁入正式语义路径，旧路径仅保留作历史别名证据。",
+    "status": "runtime"
+  },
+  {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/rebecca-allen.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182005578A7A26BB13A104D9123B6E5F6903DE5A75BA7EE92.png",
-    "meaning": "地图玩家指示物：Rebecca Allen / 丽贝卡·艾伦博士；来自 384x336 token 组；本轮纠正旧索引误接的怪物 / Stunned 图。",
-    "status": "runtime"
+    "meaning": "历史错名别名：该图面已裁决为 Stephanie Richter / 斯蒂芬妮·里克特 token；正式运行时使用 stephanie-richter.png，本路径仅保留迁移证据。",
+    "status": "deprecated-alias"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/explorers/darryl-highla.png",
     "sourceFile": "httpssteamusercontentaakamaihdnetugc1842549310182006176F92CB356076A3D52EE2EC3176CA4FAB154384393.png",
-    "meaning": "地图玩家指示物：Darryl Highla / 达里尔·海拉；来自 384x336 token 组；本轮纠正旧索引误接的怪物 / Stunned 图。",
-    "status": "runtime"
+    "meaning": "历史错名别名：该图面已裁决为 Michelle Monroe / 米歇尔·梦露 token；正式运行时使用 michelle-monroe.png，本路径仅保留迁移证据。",
+    "status": "deprecated-alias"
   },
   {
     "target": "public/assets/i18n/zh-CN/betrayal/tokens/monsters/werewolf.png",

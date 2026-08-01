@@ -305,6 +305,8 @@ export interface BaseCardDef {
     replaceOnSetup?: boolean;
     /** 显式允许多个泰坦共存（如未来 Kaiju Island） */
     allowMultipleTitans?: boolean;
+    /** Munchkin 基地进场时自动发到该基地的怪物数量 */
+    monsterCount?: number;
 }
 
 // ============================================================================
@@ -407,6 +409,15 @@ export interface BuriedCardOnBase {
     buriedFrom: 'hand' | 'discard' | 'play' | 'deck';
 }
 
+/** Munchkin 怪物：公开在基地下方的公共对象，不占玩家随从额度 */
+export interface MonsterOnBase {
+    uid: string;
+    defId: string;
+    /** 被玩家控制后才有控制者；未控制怪物保持 undefined */
+    controllerId?: PlayerId;
+    metadata?: Record<string, unknown>;
+}
+
 /** 场上的基地 */
 export interface BaseInPlay {
     /** 运行时基地实例身份；槽位编号只表示当前位置，不表示长期身份。 */
@@ -415,6 +426,8 @@ export interface BaseInPlay {
     minions: MinionOnBase[];
     /** 持续行动卡列表 */
     ongoingActions: OngoingActionOnBase[];
+    /** Munchkin 怪物行：显示在基地卡下缘与玩家随从列之间 */
+    monsters?: MonsterOnBase[];
     /** 埋葬卡列表（面朝下） */
     buriedCards?: BuriedCardOnBase[];
     /** 额外元数据（用于临时基地级状态，如“我们上，你们下”） */
@@ -516,6 +529,17 @@ export const CTHULHU_EXPANSION_FACTIONS = [
     SMASHUP_FACTION_IDS.ELDER_THINGS,
     SMASHUP_FACTION_IDS.INNSMOUTH,
     SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
+] as const;
+/** Munchkin 扩展派系（使用怪物 / 宝藏公共牌库的派系） */
+export const MUNCHKIN_EXPANSION_FACTIONS = [
+    SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES,
+    SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS,
+    SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES,
+    SMASHUP_FACTION_IDS.MUNCHKIN_MAGES,
+    SMASHUP_FACTION_IDS.MUNCHKIN_ELVES,
+    SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS,
+    SMASHUP_FACTION_IDS.MUNCHKIN_ORCS,
+    SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS,
 ] as const;
 
 /** 计分后触发的 special 延迟记录（Me First! 窗口打出，afterScoring 时兑现） */
@@ -815,6 +839,12 @@ export interface SmashUpCore {
     factionSelection?: FactionSelectionState;
     /** 疯狂牌库（克苏鲁扩展，defId 列表） */
     madnessDeck?: string[];
+    /** 怪物牌库（Munchkin 扩展，defId 列表） */
+    monsterDeck?: string[];
+    /** 怪物弃牌堆（Munchkin 扩展，defId 列表；UI 暂不展示） */
+    monsterDiscard?: string[];
+    /** 宝藏牌库（Munchkin 扩展，defId 列表） */
+    treasureDeck?: string[];
     cardsPlayedThisTurn?: number;
     /** 本回合每位玩家从手牌弃牌的数量。TURN_STARTED 时清空。 */
     cardsDiscardedFromHandThisTurn?: Record<PlayerId, number>;
@@ -1059,6 +1089,8 @@ export const SU_COMMANDS = {
     ACTIVATE_SPECIAL: 'su:activate_special',
     /** 激活在场泰坦的主动 ongoing 能力 */
     ACTIVATE_TITAN_ONGOING: 'su:activate_titan_ongoing',
+    /** 击败 Munchkin 怪物并获得其奖励宝藏 */
+    DEFEAT_MUNCHKIN_MONSTER: 'su:defeat_munchkin_monster',
 } as const;
 
 /** 打出随从 */
@@ -1155,6 +1187,14 @@ export interface ActivateTitanOngoingCommand extends Command<typeof SU_COMMANDS.
     };
 }
 
+/** 击败基地上的 Munchkin 怪物 */
+export interface DefeatMunchkinMonsterCommand extends Command<typeof SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER> {
+    payload: {
+        baseIndex: number;
+        monsterUid: string;
+    };
+}
+
 export type SmashUpCommand =
     | PlayMinionCommand
     | PlayActionCommand
@@ -1165,7 +1205,8 @@ export type SmashUpCommand =
     | UseBaseAbilityCommand
     | UseTalentCommand
     | ActivateSpecialCommand
-    | ActivateTitanOngoingCommand;
+    | ActivateTitanOngoingCommand
+    | DefeatMunchkinMonsterCommand;
 
 // ============================================================================
 // 事件类型
@@ -1644,6 +1685,7 @@ export type SmashUpEvent =
     | StartingHandMulliganUsedEvent
     | MadnessDrawnEvent
     | MadnessReturnedEvent
+    | MunchkinMonsterDefeatedEvent
     | BaseDeckReorderedEvent
     | RevealHandEvent
     | RevealDeckTopEvent
@@ -2061,6 +2103,20 @@ export interface MadnessReturnedEvent extends GameEvent<typeof SU_EVENTS.MADNESS
     payload: {
         playerId: PlayerId;
         cardUid: string;
+        reason: string;
+    };
+}
+
+/** Munchkin 怪物被击败：移出基地并按怪物奖励给玩家宝藏 */
+export interface MunchkinMonsterDefeatedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED> {
+    payload: {
+        playerId: PlayerId;
+        baseIndex: number;
+        monsterUid: string;
+        /** 可选快照；reducer 以场上实际怪物为准，缺场上怪物时不生效 */
+        monsterDefId?: string;
+        /** 预分配宝藏实例 UID；不足时 reducer 用 nextUid 补足 */
+        treasureUids?: string[];
         reason: string;
     };
 }

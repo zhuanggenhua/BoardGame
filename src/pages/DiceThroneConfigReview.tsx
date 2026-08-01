@@ -24,6 +24,7 @@ import {
   type DiceThroneConfigReviewType,
 } from '../games/dicethrone/config/configReviewAdapter';
 import { initDiceThroneCardAtlases } from '../games/dicethrone/ui/cardAtlas';
+import { formatDiceThroneConfigReviewDiceFaceName } from './diceThroneConfigReviewDisplay';
 import phraseMappingsData from '../assets/audio/phrase-mappings.zh-CN.json';
 
 const TYPE_FILTERS: Array<'all' | DiceThroneConfigReviewType> = [
@@ -222,6 +223,10 @@ function formatCellDisplayValue(
 
   switch (fieldKey) {
     case 'name':
+      if (row.objectType === 'diceFace' && value === row.name) {
+        return formatDiceThroneConfigReviewDiceFaceName(row, translate);
+      }
+      return formatLocalizedKey(value, translate);
     case 'description':
       return formatLocalizedKey(value, translate);
     case 'character':
@@ -272,8 +277,6 @@ function stickyColumnClass(columnKey: 'image' | DiceThroneConfigReviewFieldKey):
   switch (columnKey) {
     case 'image':
       return 'sticky left-0 z-[2] w-[70px] shadow-[2px_0_0_rgba(143,102,66,0.18)]';
-    case 'name':
-      return 'sticky left-[72px] z-[2] shadow-[2px_0_0_rgba(143,102,66,0.14)]';
     default:
       return '';
   }
