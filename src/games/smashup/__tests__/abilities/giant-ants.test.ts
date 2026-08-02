@@ -20,6 +20,7 @@ import {
     makeMatchState,
     getSimpleChoicePrompt,
     getPromptOption,
+    getPromptOptions,
     getPromptSliderMax,
     getPromptRuntimeContinuationContext,
     respondToPrompt,
@@ -1175,11 +1176,12 @@ describe('巨蚁派系能力', () => {
         // 第2个交互自动弹出
         const second = getSimpleChoicePrompt(r1.finalState, 'giant_ant_drone_prevent_destroy');
 
-        // 解决第2个交互：尝试防止 m2（但雄蜂已无指示物）
-        const droneOption2 = getPromptOption(second, o => o?.value?.droneUid === 'd1', 'second drone option');
+        // 雄蜂已无指示物：刷新后的第二个交互不再暴露防止选项，只能选择不防止。
+        expect(getPromptOptions(second).some(o => o?.value?.droneUid === 'd1')).toBe(false);
+        const skipOption = getPromptOption(second, o => o?.value?.skip === true, 'second skip option');
         const r2 = respondToPrompt(
             r1.finalState,
-            droneOption2.id,
+            skipOption.id,
             '0',
             defaultTestRandom,
         );
