@@ -25,6 +25,7 @@ type RocketBootsCoreState = {
     }>;
     players?: Record<string, {
         hand?: Array<{ uid: string; defId: string; type: string }>;
+        deck?: Array<{ uid: string; defId: string; type: string }>;
         discard?: Array<{ uid: string; defId: string; type: string }>;
         actionsPlayed?: number;
         actionLimit?: number;
@@ -1439,6 +1440,537 @@ const buildMunchkinThievesCatBurglarScene = (nextUid = 1940): SmashUpSceneConfig
                     ongoingActions: [],
                     monsters: [
                         { uid: 'cat-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesFenceScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'fence-treasure-ring', defId: 'munchkin_treasure_wishing_ring', type: 'action', owner: '0' },
+            { uid: 'fence-treasure-hireling', defId: 'munchkin_treasure_dwarf_hireling', type: 'minion', owner: '0' },
+            { uid: 'fence-normal-card', defId: 'alien_invader', type: 'minion', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_thieves_pickpocket', 18),
+        discard: [],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 3,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 1960,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_thieves_guild',
+                    minions: [minion('fence-1', 'munchkin_thieves_fence', '0', 3)],
+                    ongoingActions: [],
+                    monsters: [
+                        { uid: 'fence-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesBackstabScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'backstab-1', defId: 'munchkin_thieves_backstab', type: 'action', owner: '0' },
+            { uid: 'backstab-treasure-ring', defId: 'munchkin_treasure_wishing_ring', type: 'action', owner: '0' },
+            { uid: 'backstab-normal-card', defId: 'alien_scout', type: 'minion', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_thieves_pickpocket', 18),
+        discard: [],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 6,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 1970,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_thieves_guild',
+                    minions: [
+                        minion('backstab-low-target', 'alien_invader', '1', 2),
+                        minion('backstab-high-target', 'munchkin_warriors_big_hero', '1', 5),
+                    ],
+                    ongoingActions: [],
+                    monsters: [
+                        { uid: 'backstab-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesPotionBandolierScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'bandolier-1', defId: 'munchkin_thieves_potion_bandolier', type: 'action', owner: '0' },
+            { uid: 'bandolier-treasure-ring', defId: 'munchkin_treasure_wishing_ring', type: 'action', owner: '0' },
+            { uid: 'bandolier-normal-card', defId: 'alien_scout', type: 'minion', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_thieves_pickpocket', 18),
+        discard: [],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 6,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 1980,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_thieves_guild',
+                    minions: [
+                        minion('bandolier-target', 'alien_invader', '1', 2),
+                        minion('bandolier-bystander', 'munchkin_warriors_big_hero', '0', 5),
+                    ],
+                    ongoingActions: [],
+                    monsters: [
+                        { uid: 'bandolier-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesSmugglingScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'smuggling-1', defId: 'munchkin_thieves_smuggling', type: 'action', owner: '0' },
+            { uid: 'smuggling-treasure-ring', defId: 'munchkin_treasure_wishing_ring', type: 'action', owner: '0' },
+            { uid: 'smuggling-treasure-hireling', defId: 'munchkin_treasure_dwarf_hireling', type: 'minion', owner: '0' },
+        ],
+        deck: [
+            { uid: 'smuggling-deck-a', defId: 'alien_invader', type: 'minion', owner: '0' },
+            { uid: 'smuggling-deck-b', defId: 'alien_scout', type: 'minion', owner: '0' },
+        ],
+        discard: [
+            { uid: 'smuggling-discard-a', defId: 'munchkin_thieves_pickpocket', type: 'minion', owner: '0' },
+            { uid: 'smuggling-discard-b', defId: 'munchkin_thieves_swipe', type: 'action', owner: '0' },
+        ],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 1990,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_thieves_guild',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [
+                        { uid: 'smuggling-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesMuggingScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'mugging-1', defId: 'munchkin_thieves_mugging', type: 'action', owner: '0' },
+            { uid: 'mugging-pressure-minion', defId: 'alien_scout', type: 'minion', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_thieves_pickpocket', 18),
+        discard: [],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 2000,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_thieves_guild',
+                    minions: [
+                        {
+                            ...minion('mugging-enemy-host', 'alien_invader', '1', 2),
+                            attachedActions: [
+                                { uid: 'mugging-spiky-boots', defId: 'munchkin_treasure_spiky_boots', ownerId: '1' },
+                            ],
+                        },
+                        minion('mugging-own-target', 'munchkin_thieves_pickpocket', '0', 2),
+                    ],
+                    ongoingActions: [],
+                    monsters: [
+                        { uid: 'mugging-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesStripBareScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'strip-bare-1', defId: 'munchkin_thieves_strip_bare', type: 'action', owner: '0' },
+            { uid: 'strip-pressure-minion', defId: 'alien_scout', type: 'minion', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_thieves_pickpocket', 18),
+        discard: [],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 2010,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_thieves_guild',
+                    minions: [
+                        minion('strip-treasure-minion', 'munchkin_treasure_dwarf_hireling', '1', 2),
+                        minion('strip-normal-minion', 'alien_invader', '1', 2),
+                    ],
+                    ongoingActions: [
+                        { uid: 'strip-treasure-action', defId: 'munchkin_treasure_bag_of_caltrops', ownerId: '1' },
+                    ],
+                    monsters: [
+                        { uid: 'strip-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesGuildScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'guild-caltrops-1', defId: 'munchkin_treasure_bag_of_caltrops', type: 'action', owner: '0' },
+            { uid: 'guild-pressure-minion', defId: 'alien_scout', type: 'minion', owner: '0' },
+        ],
+        deck: [
+            { uid: 'guild-draw-1', defId: 'alien_invader', type: 'minion', owner: '0' },
+        ],
+        discard: [],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 2020,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_thieves_guild',
+                    minions: [
+                        minion('guild-own-minion', 'munchkin_thieves_pickpocket', '0', 2),
+                    ],
+                    ongoingActions: [],
+                    monsters: [
+                        { uid: 'guild-monster-1', defId: 'munchkin_monster_bigfoot' },
+                    ],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinThievesScoringScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'clever-distraction-1', defId: 'munchkin_thieves_clever_distraction', type: 'action', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_thieves_pickpocket', 18),
+        discard: [],
+        factions: ['munchkin_thieves', 'aliens'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 2,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 20),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 22,
+            nextUid: 2030,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: [
+                'munchkin_treasure_wishing_ring',
+                'munchkin_treasure_dwarf_hireling',
+                'munchkin_treasure_spiky_boots',
+                'munchkin_treasure_buckler_of_swashing',
+            ],
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_the_coffers',
+                    minions: [
+                        minion('coffers-thief-minion', 'munchkin_thieves_pickpocket', '0', 2),
+                        minion('coffers-winner-minion', 'munchkin_warriors_big_hero', '1', 20),
+                    ],
+                    ongoingActions: [
+                        { uid: 'secret-stash-1', defId: 'munchkin_thieves_secret_stash', ownerId: '0' },
+                    ],
+                    monsters: [
+                        { uid: 'coffers-monster-1', defId: 'munchkin_monster_gross_troll' },
+                        { uid: 'coffers-monster-2', defId: 'munchkin_monster_gross_troll' },
                     ],
                 },
                 {
@@ -4992,6 +5524,603 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await expect(page.getByTestId('su-minion-power-badge-cat-burglar-1')).toHaveCount(0);
         await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 2');
         await game.screenshot('152-猫咪窃贼空选后不展示也不加指示物', testInfo);
+    });
+
+    test('销赃犯可从真实天赋入口弃两张手牌宝藏获得 1VP', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesFenceScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="fence-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="fence-treasure-ring"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="fence-treasure-hireling"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="fence-normal-card"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-base-monster-row-0')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 22');
+        await game.screenshot('153-销赃犯天赋前手牌宝藏与怪物槽', testInfo);
+
+        await page.locator('[data-minion-uid="fence-1"]').first().click({ force: true });
+        await game.waitForInteraction('munchkin_thieves_fence_choose_treasures', 10000);
+        const fenceOptions = await game.getInteractionOptions();
+        const ringOption = fenceOptions.find((option: InteractionOption) => option.value?.cardUid === 'fence-treasure-ring');
+        const hirelingOption = fenceOptions.find((option: InteractionOption) => option.value?.cardUid === 'fence-treasure-hireling');
+        expect(ringOption?.id, '销赃犯应列出手牌许愿指环').toBeTruthy();
+        expect(hirelingOption?.id, '销赃犯应列出手牌矮人雇佣兵').toBeTruthy();
+        expect(fenceOptions.some((option: InteractionOption) => option.value?.cardUid === 'fence-normal-card')).toBe(false);
+        await game.screenshot('154-销赃犯选择两张手牌宝藏', testInfo);
+
+        await page.locator(`[data-option-id="${ringOption!.id}"]`).first().click({ force: true });
+        await page.locator(`[data-option-id="${hirelingOption!.id}"]`).first().click({ force: true });
+        await game.confirm();
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            const fence = core.bases[0].minions.find(minion => minion.uid === 'fence-1');
+            return {
+                player0Vp: player0?.vp ?? 0,
+                player0HandUids: player0?.hand?.map(card => card.uid) ?? [],
+                player0DiscardUids: player0?.discard?.map(card => card.uid) ?? [],
+                fenceTalentUsed: fence?.talentUsed === true,
+                treasureDeckSize: core.treasureDeck?.length ?? 0,
+                treasureDiscardSize: core.treasureDiscard?.length ?? 0,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            player0Vp: 4,
+            player0HandUids: ['fence-normal-card'],
+            player0DiscardUids: ['fence-treasure-ring', 'fence-treasure-hireling'],
+            fenceTalentUsed: true,
+            treasureDeckSize: 22,
+            treasureDiscardSize: 0,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await expect(page.locator('[data-card-uid="fence-normal-card"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-testid="su-munchkin-treasure-discard"]')).toHaveCount(0);
+        await game.screenshot('155-销赃犯弃宝藏后VP增加', testInfo);
+    });
+
+    test('背刺可从真实手牌入口弃一张宝藏并摧毁低力量随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesBackstabScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="backstab-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="backstab-treasure-ring"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="backstab-low-target"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="backstab-high-target"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('156-背刺打出前手牌宝藏与高低力量目标', testInfo);
+
+        await game.playCard('munchkin_thieves_backstab');
+        await game.waitForInteraction('munchkin_thieves_backstab_choose_treasure', 10000);
+        const treasureOptions = await game.getInteractionOptions();
+        const treasureOption = treasureOptions.find((option: InteractionOption) => option.value?.cardUid === 'backstab-treasure-ring');
+        expect(treasureOption?.id, '背刺应列出手牌宝藏作为成本').toBeTruthy();
+        expect(treasureOptions.some((option: InteractionOption) => option.value?.cardUid === 'backstab-normal-card')).toBe(false);
+        await game.screenshot('157-背刺选择一张手牌宝藏作为成本', testInfo);
+        await page.locator(`[data-option-id="${treasureOption!.id}"]`).first().click({ force: true });
+        await game.confirm();
+
+        await game.waitForInteraction('munchkin_thieves_backstab_choose_minion', 10000);
+        const targetOptions = await game.getInteractionOptions();
+        expect(targetOptions.some((option: InteractionOption) => option.value?.minionUid === 'backstab-low-target')).toBe(true);
+        expect(targetOptions.some((option: InteractionOption) => option.value?.minionUid === 'backstab-high-target')).toBe(false);
+        await game.screenshot('158-背刺只允许选择力量3或更少的随从', testInfo);
+        await game.selectInteractionOptionBy(
+            (option: InteractionOption) => option.value?.minionUid === 'backstab-low-target',
+            '背刺选择低力量随从',
+        );
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            const player1 = core.players?.['1'] as SmashUpPlayerCoreSlice | undefined;
+            return {
+                base0Uids: core.bases[0].minions.map(minion => minion.uid),
+                player0HandUids: player0?.hand?.map(card => card.uid) ?? [],
+                player0DiscardUids: player0?.discard?.map(card => card.uid) ?? [],
+                player1DiscardDefIds: player1?.discard?.map(card => card.defId) ?? [],
+                player0ActionsPlayed: player0?.actionsPlayed ?? 0,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            base0Uids: ['backstab-high-target'],
+            player0HandUids: ['backstab-normal-card'],
+            player0DiscardUids: ['backstab-1', 'backstab-treasure-ring'],
+            player1DiscardDefIds: ['alien_invader'],
+            player0ActionsPlayed: 1,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await expect(page.locator('[data-minion-uid="backstab-high-target"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="backstab-low-target"]')).toHaveCount(0);
+        await game.screenshot('159-背刺摧毁低力量随从后收口', testInfo);
+    });
+
+    test('药水腰带可从真实手牌入口弃宝藏并给任意随从本回合加力量', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesPotionBandolierScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="bandolier-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="bandolier-treasure-ring"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="bandolier-target"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="bandolier-bystander"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('160-药水腰带打出前手牌宝藏与目标随从', testInfo);
+
+        await game.playCard('munchkin_thieves_potion_bandolier', {
+            targetMinionUid: 'bandolier-target',
+        });
+        await game.waitForInteraction('munchkin_thieves_potion_bandolier_choose_treasure', 10000);
+        const treasureOptions = await game.getInteractionOptions();
+        const treasureOption = treasureOptions.find((option: InteractionOption) => option.value?.cardUid === 'bandolier-treasure-ring');
+        expect(treasureOption?.id, '药水腰带应列出手牌宝藏作为成本').toBeTruthy();
+        expect(treasureOptions.some((option: InteractionOption) => option.value?.cardUid === 'bandolier-normal-card')).toBe(false);
+        await game.screenshot('161-药水腰带选择一张手牌宝藏作为成本', testInfo);
+        await page.locator(`[data-option-id="${treasureOption!.id}"]`).first().click({ force: true });
+        await game.confirm();
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            const target = core.bases[0].minions.find(minion => minion.uid === 'bandolier-target');
+            const bystander = core.bases[0].minions.find(minion => minion.uid === 'bandolier-bystander');
+            return {
+                targetTempPower: target?.tempPowerModifier ?? 0,
+                bystanderTempPower: bystander?.tempPowerModifier ?? 0,
+                player0HandUids: player0?.hand?.map(card => card.uid) ?? [],
+                player0DiscardUids: player0?.discard?.map(card => card.uid) ?? [],
+                player0ActionsPlayed: player0?.actionsPlayed ?? 0,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            targetTempPower: 3,
+            bystanderTempPower: 0,
+            player0HandUids: ['bandolier-normal-card'],
+            player0DiscardUids: ['bandolier-1', 'bandolier-treasure-ring'],
+            player0ActionsPlayed: 1,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await expect(page.getByTestId('su-minion-power-badge-bandolier-target')).toContainText('+3');
+        await expect(page.locator('[data-testid="su-munchkin-treasure-discard"]')).toHaveCount(0);
+        await game.screenshot('162-药水腰带结算后目标获得临时力量', testInfo);
+    });
+
+    test('走私可从真实手牌入口弃两张宝藏得VP并把弃牌洗回牌库', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesSmugglingScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="smuggling-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="smuggling-treasure-ring"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="smuggling-treasure-hireling"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-base-monster-row-0')).toBeVisible({ timeout: 15000 });
+        await game.screenshot('163-走私打出前手牌宝藏与个人弃牌', testInfo);
+
+        await game.playCard('munchkin_thieves_smuggling');
+        await game.waitForInteraction('munchkin_thieves_smuggling_choose_treasures', 10000);
+        const smugglingOptions = await game.getInteractionOptions();
+        const ringOption = smugglingOptions.find((option: InteractionOption) => option.value?.cardUid === 'smuggling-treasure-ring');
+        const hirelingOption = smugglingOptions.find((option: InteractionOption) => option.value?.cardUid === 'smuggling-treasure-hireling');
+        expect(ringOption?.id, '走私应列出手牌许愿指环').toBeTruthy();
+        expect(hirelingOption?.id, '走私应列出手牌矮人雇佣兵').toBeTruthy();
+        await game.screenshot('164-走私选择两张手牌宝藏作为成本', testInfo);
+
+        await page.locator(`[data-option-id="${ringOption!.id}"]`).first().click({ force: true });
+        await page.locator(`[data-option-id="${hirelingOption!.id}"]`).first().click({ force: true });
+        await game.confirm();
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            return {
+                player0Vp: player0?.vp ?? 0,
+                player0HandUids: player0?.hand?.map(card => card.uid) ?? [],
+                player0DiscardUids: player0?.discard?.map(card => card.uid) ?? [],
+                player0DeckSize: player0?.deck?.length ?? 0,
+                player0DeckBottomUid: player0?.deck?.at(-1)?.uid ?? null,
+                player0DeckUidSet: [...new Set(player0?.deck?.map(card => card.uid) ?? [])].sort(),
+                treasureDeckSize: core.treasureDeck?.length ?? 0,
+                treasureDiscardSize: core.treasureDiscard?.length ?? 0,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            player0Vp: 5,
+            player0HandUids: [],
+            player0DiscardUids: [],
+            player0DeckSize: 7,
+            player0DeckBottomUid: 'smuggling-1',
+            player0DeckUidSet: [
+                'smuggling-1',
+                'smuggling-deck-a',
+                'smuggling-deck-b',
+                'smuggling-discard-a',
+                'smuggling-discard-b',
+                'smuggling-treasure-hireling',
+                'smuggling-treasure-ring',
+            ],
+            treasureDeckSize: 22,
+            treasureDiscardSize: 0,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await expect(page.locator('[data-card-uid="smuggling-1"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="su-munchkin-treasure-discard"]')).toHaveCount(0);
+        await game.screenshot('165-走私结算后VP增加且个人弃牌洗回牌库', testInfo);
+    });
+
+    test('打劫可从真实手牌入口转移仆从身上的行动到己方另一个仆从', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesMuggingScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="mugging-1"]').first()).toBeVisible({ timeout: 15000 });
+        const host = page.locator('[data-minion-uid="mugging-enemy-host"]').first();
+        const target = page.locator('[data-minion-uid="mugging-own-target"]').first();
+        await expect(host).toBeVisible({ timeout: 15000 });
+        await expect(target).toBeVisible({ timeout: 15000 });
+        await host.hover();
+        await expect(page.locator('[data-attached-action-uid="mugging-spiky-boots"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('166-打劫打出前附着行动与己方目标', testInfo);
+
+        await game.playCard('munchkin_thieves_mugging');
+        await game.waitForInteraction('munchkin_thieves_mugging_choose_action', 10000);
+        const actionOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(actionOptions.some((option) => option.value?.cardUid === 'mugging-spiky-boots')).toBe(true);
+        await host.hover();
+        await game.screenshot('167-打劫选择仆从身上的行动', testInfo);
+        await page.locator('[data-attached-action-uid="mugging-spiky-boots"]').first().click({ force: true });
+
+        await game.waitForInteraction('munchkin_thieves_mugging_choose_minion', 10000);
+        const minionOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(minionOptions.some((option) => option.value?.minionUid === 'mugging-own-target')).toBe(true);
+        expect(minionOptions.some((option) => option.value?.minionUid === 'mugging-enemy-host')).toBe(false);
+        await game.screenshot('168-打劫选择己方另一个仆从', testInfo);
+        await target.click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const sourceHost = core.bases[0].minions.find(minion => minion.uid === 'mugging-enemy-host');
+            const ownTarget = core.bases[0].minions.find(minion => minion.uid === 'mugging-own-target');
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            return {
+                sourceAttachedUids: sourceHost?.attachedActions?.map(action => action.uid) ?? [],
+                targetAttachedUids: ownTarget?.attachedActions?.map(action => action.uid) ?? [],
+                targetAttachedDefIds: ownTarget?.attachedActions?.map(action => action.defId) ?? [],
+                player0DiscardDefIds: player0?.discard?.map(card => card.defId) ?? [],
+                player0ActionsPlayed: player0?.actionsPlayed ?? 0,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            sourceAttachedUids: [],
+            targetAttachedUids: ['mugging-spiky-boots'],
+            targetAttachedDefIds: ['munchkin_treasure_spiky_boots'],
+            player0DiscardDefIds: ['munchkin_thieves_mugging'],
+            player0ActionsPlayed: 1,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await target.hover();
+        await expect(page.locator('[data-minion-uid="mugging-own-target"]').locator('[data-attached-action-uid="mugging-spiky-boots"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="mugging-enemy-host"]').locator('[data-attached-action-uid="mugging-spiky-boots"]')).toHaveCount(0);
+        await game.screenshot('169-打劫结算后行动附着到己方目标', testInfo);
+    });
+
+    test('剥光可从真实手牌入口拿走场上的宝藏牌进当前玩家手牌', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesStripBareScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="strip-bare-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="strip-treasure-minion"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="strip-normal-minion"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-ongoing-uid="strip-treasure-action"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('170-剥光打出前场上宝藏牌', testInfo);
+
+        await game.playCard('munchkin_thieves_strip_bare');
+        await game.waitForInteraction('munchkin_thieves_strip_bare_choose_treasure', 10000);
+        const stripOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(stripOptions.some((option) => option.value?.cardUid === 'strip-treasure-action')).toBe(true);
+        expect(stripOptions.some((option) => option.value?.cardUid === 'strip-treasure-minion')).toBe(true);
+        expect(stripOptions.some((option) => option.value?.cardUid === 'strip-normal-minion')).toBe(false);
+        await game.screenshot('171-剥光选择场上的宝藏牌', testInfo);
+        await page.locator('[data-ongoing-uid="strip-treasure-action"]').first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            const player1 = core.players?.['1'] as SmashUpPlayerCoreSlice | undefined;
+            return {
+                baseOngoingUids: core.bases[0].ongoingActions?.map(action => action.uid) ?? [],
+                baseMinionUids: core.bases[0].minions.map(minion => minion.uid),
+                player0HandUids: player0?.hand?.map(card => card.uid) ?? [],
+                player0HandDefIds: player0?.hand?.map(card => card.defId) ?? [],
+                player0DiscardDefIds: player0?.discard?.map(card => card.defId) ?? [],
+                player1DiscardUids: player1?.discard?.map(card => card.uid) ?? [],
+                player0ActionsPlayed: player0?.actionsPlayed ?? 0,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            baseOngoingUids: [],
+            baseMinionUids: ['strip-treasure-minion', 'strip-normal-minion'],
+            player0HandUids: ['strip-pressure-minion', 'strip-treasure-action'],
+            player0HandDefIds: ['alien_scout', 'munchkin_treasure_bag_of_caltrops'],
+            player0DiscardDefIds: ['munchkin_thieves_strip_bare'],
+            player1DiscardUids: [],
+            player0ActionsPlayed: 1,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await expect(page.locator('[data-ongoing-uid="strip-treasure-action"]')).toHaveCount(0);
+        await expect(page.locator('[data-card-uid="strip-treasure-action"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('172-剥光结算后宝藏牌进入手牌', testInfo);
+    });
+
+    test('盗贼公会在宝藏行动打到本基地后从真实入口抽一张普通牌', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesGuildScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="guild-caltrops-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="guild-own-minion"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 22');
+        await game.screenshot('173-盗贼公会打出宝藏行动前', testInfo);
+
+        await game.playCard('munchkin_treasure_bag_of_caltrops', { targetBaseIndex: 0 });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            const events = (state.sys?.eventStream?.entries ?? []).map((entry: EventStreamEntry) => entry.event);
+            return {
+                baseOngoingUids: core.bases[0].ongoingActions?.map(action => action.uid) ?? [],
+                player0HandUids: player0?.hand?.map(card => card.uid) ?? [],
+                player0HandDefIds: player0?.hand?.map(card => card.defId) ?? [],
+                player0DeckUids: player0?.deck?.map(card => card.uid) ?? [],
+                player0ActionsPlayed: player0?.actionsPlayed ?? 0,
+                drewByGuild: events.some(event =>
+                    event?.type === 'su:cards_drawn'
+                    && event.payload?.playerId === '0'
+                    && event.payload?.cardUids?.includes('guild-draw-1')
+                ),
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            baseOngoingUids: ['guild-caltrops-1'],
+            player0HandUids: ['guild-pressure-minion', 'guild-draw-1'],
+            player0HandDefIds: ['alien_scout', 'alien_invader'],
+            player0DeckUids: [],
+            player0ActionsPlayed: 1,
+            drewByGuild: true,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await expect(page.locator('[data-ongoing-uid="guild-caltrops-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="guild-draw-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 22');
+        await game.screenshot('174-盗贼公会触发后普通牌进手牌', testInfo);
+    });
+
+    test('金库计分链同时处理秘密藏匿处、转移注意力和计分后抽宝藏', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinThievesScoringScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="clever-distraction-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="coffers-thief-minion"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="coffers-winner-minion"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-ongoing-uid="secret-stash-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-base-monster-row-0')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 4');
+        await game.screenshot('175-金库计分前转移注意力与秘密藏匿处', testInfo);
+
+        await game.advancePhase();
+        await game.waitForPhase('scoreBases', 10000);
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.core?.pendingMunchkinTreasureReward?.treasureCards?.length === 2
+                    && (
+                        state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose'
+                        || Boolean(state?.sys?.responseWindow?.current?.windowType)
+                    );
+            },
+            { timeout: 15000, polling: 200 },
+        );
+        await game.screenshot('176-秘密藏匿处让计分奖励展示两张宝藏', testInfo);
+
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+            const status = await getReactionWindowStatus(page);
+            const options = status.sourceId === 'smashup_reaction_choose'
+                ? await game.getInteractionOptions() as InteractionOption[]
+                : [];
+            const hasCleverOption = status.windowType === 'afterScoring'
+                && options.some((option) =>
+                    option.value?.kind === 'play_action'
+                    && option.value?.cardUid === 'clever-distraction-1'
+                );
+            if (hasCleverOption) break;
+
+            const didPass = await passOpenReactionOrResponseWindow(page, game, `转移注意力前置响应让过 ${attempt + 1}`);
+            expect(didPass, '等待 afterScoring 转移注意力入口期间必须存在可让过的响应').toBe(true);
+            await page.waitForTimeout(300);
+        }
+
+        await expect.poll(async () => {
+            const status = await getReactionWindowStatus(page);
+            const options = status.sourceId === 'smashup_reaction_choose'
+                ? await game.getInteractionOptions() as InteractionOption[]
+                : [];
+            return {
+                windowType: status.windowType,
+                hasCleverOption: options.some((option) =>
+                    option.value?.kind === 'play_action'
+                    && option.value?.cardUid === 'clever-distraction-1'
+                ),
+            };
+        }, { timeout: 10000 }).toEqual({
+            windowType: 'afterScoring',
+            hasCleverOption: true,
+        });
+        await game.screenshot('177-转移注意力afterScoring响应入口', testInfo);
+
+        await game.selectInteractionOptionBy(
+            (option: InteractionOption) =>
+                option.value?.kind === 'play_action'
+                && option.value?.cardUid === 'clever-distraction-1',
+            'afterScoring 选择转移注意力',
+        );
+        await waitForSmashUpFxToSettle(page);
+
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            const player1 = core.players?.['1'] as SmashUpPlayerCoreSlice | undefined;
+            const done = state.sys?.phase === 'playCards'
+                && !state.sys?.interaction?.current
+                && !state.sys?.responseWindow?.current
+                && (core.triggerQueue?.length ?? 0) === 0
+                && !core.pendingMunchkinTreasureReward
+                && (player0?.hand?.filter(card => card.defId.startsWith('munchkin_treasure_')).length ?? 0) === 2
+                && (player1?.hand?.filter(card => card.defId.startsWith('munchkin_treasure_')).length ?? 0) === 2;
+            if (done) break;
+
+            const status = await getReactionWindowStatus(page);
+            if (status.sourceId === 'smashup_reaction_choose') {
+                const options = await game.getInteractionOptions() as InteractionOption[];
+                const triggers = (state.core?.triggerQueue ?? []) as TriggerQueueEntry[];
+                const hasCoffersTrigger = options.some((option) => {
+                    const triggerId = option.value?.triggerId;
+                    const trigger = triggers.find((entry) => entry?.id === triggerId);
+                    return trigger?.sourceDefId === 'base_the_coffers'
+                        || trigger?.source?.defId === 'base_the_coffers'
+                        || option.value?.defId === 'base_the_coffers';
+                });
+                if (hasCoffersTrigger) {
+                    await chooseReactionBySourceDefId(game, 'base_the_coffers', '金库 afterScoring 抽宝藏');
+                } else if (options.some((option) => option.value?.kind === 'pass')) {
+                    await game.selectInteractionOptionBy(
+                        (option: InteractionOption) => option.value?.kind === 'pass',
+                        `金库计分链让过 ${attempt + 1}`,
+                    );
+                } else {
+                    await page.waitForTimeout(500);
+                }
+            } else if (status.windowType) {
+                await game.passResponseWindow();
+            } else {
+                await page.waitForTimeout(500);
+            }
+        }
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+            const player1 = core.players?.['1'] as SmashUpPlayerCoreSlice | undefined;
+            const events = (state.sys?.eventStream?.entries ?? []).map((entry: EventStreamEntry) => entry.event);
+            return {
+                phase: state.sys?.phase,
+                base0DefId: core.bases[0]?.defId,
+                player0Vp: player0?.vp ?? 0,
+                player1Vp: player1?.vp ?? 0,
+                player0TreasureHandCount: player0?.hand?.filter(card => card.defId.startsWith('munchkin_treasure_')).length ?? 0,
+                player1TreasureHandCount: player1?.hand?.filter(card => card.defId.startsWith('munchkin_treasure_')).length ?? 0,
+                player0DiscardHasClever: player0?.discard?.some(card => card.defId === 'munchkin_thieves_clever_distraction') ?? false,
+                player0DiscardHasSecretStash: player0?.discard?.some(card => card.defId === 'munchkin_thieves_secret_stash') ?? false,
+                rewardRevealCount: events.find(event =>
+                    event?.type === 'su:munchkin_treasure_reward_revealed'
+                    && event.payload?.reason === 'munchkin_scoring_treasure_reward'
+                )?.payload?.count ?? 0,
+                cofferDrawEvents: events.filter(event =>
+                    event?.type === 'su:munchkin_treasures_drawn'
+                    && event.payload?.reason === 'base_the_coffers'
+                ).length,
+                cleverVpEvents: events.filter(event =>
+                    event?.type === 'su:vp_awarded'
+                    && event.payload?.reason === 'munchkin_thieves_clever_distraction'
+                ).length,
+                treasureDeckSize: core.treasureDeck?.length ?? 0,
+                pendingTreasureReward: core.pendingMunchkinTreasureReward ?? null,
+                triggerQueueLength: core.triggerQueue?.length ?? 0,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 15000 }).toEqual({
+            phase: 'playCards',
+            base0DefId: 'base_the_homeworld',
+            player0Vp: 5,
+            player1Vp: 8,
+            player0TreasureHandCount: 2,
+            player1TreasureHandCount: 2,
+            player0DiscardHasClever: true,
+            player0DiscardHasSecretStash: true,
+            rewardRevealCount: 2,
+            cofferDrawEvents: 2,
+            cleverVpEvents: 2,
+            treasureDeckSize: 0,
+            pendingTreasureReward: null,
+            triggerQueueLength: 0,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 0');
+        await game.screenshot('178-金库计分后宝藏奖励与转移注意力收口', testInfo);
     });
 
     test('矮人雇佣兵可按宝藏随从从手牌打到基地', async ({ page, game }, testInfo) => {

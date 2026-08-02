@@ -1222,6 +1222,13 @@
     "munchkin_anything_for_money_discard_title": "Anything for Money: choose any number of cards to discard",
     "munchkin_cash_out_choose_treasures_title": "Cash Out: choose up to three Treasure cards to play",
     "munchkin_cat_burglar_choose_treasures_title": "Cat Burglar: choose Treasure cards to reveal",
+    "munchkin_thieves_fence_choose_treasures_title": "Fence: choose two Treasure cards to discard",
+    "munchkin_thieves_backstab_choose_treasure_title": "Backstab: choose a Treasure card to discard",
+    "munchkin_thieves_backstab_choose_minion_title": "Backstab: choose a minion with power 3 or less",
+    "munchkin_thieves_potion_bandolier_choose_treasure_title": "Potion Bandolier: choose a Treasure card to discard",
+    "munchkin_thieves_smuggling_choose_treasures_title": "Smuggling: choose two Treasure cards to discard",
+    "munchkin_thieves_mugging_choose_action_title": "Mugging: choose an action on a minion",
+    "munchkin_thieves_strip_bare_choose_treasure_title": "Strip Bare: choose a Treasure in play",
     "munchkin_gold_digger_choose_treasure_title": "Gold Digger: choose a Treasure discard",
     "munchkin_greed_is_good_choose_treasure_title": "Greed is Good: choose to draw or recover a Treasure",
     "munchkin_greed_is_good_draw_treasure_option": "Draw a Treasure card",
@@ -1470,7 +1477,8 @@
     "pearl_images_now_you_know_bike_safety_second_title": "Now You Know Bike Safety: choose another player minion here",
     "pearl_images_now_you_know_bike_safety_destination_title": "Now You Know Bike Safety: choose a destination base",
     "pearl_images_truly_outstanding_first_title": "Truly Outstanding: choose any number of other players minions to place +1 counters",
-    "pearl_images_truly_outstanding_second_title": "Truly Outstanding: choose your minions to place the matching number of +1 counters"
+    "pearl_images_truly_outstanding_second_title": "Truly Outstanding: choose your minions to place the matching number of +1 counters",
+    "munchkin_thieves_mugging_choose_minion_title": "Mugging: choose one of your minions"
   },
   "mechanics": {
     "madness": {

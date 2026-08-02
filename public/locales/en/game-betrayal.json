@@ -1044,13 +1044,13 @@
         "setupMonsterMove": "Now watch the Mummy's own monster turn. It starts in the Sarcophagus room, the Girl is in a distant room, and the traitor controls the Mummy.",
         "monsterTurnStart": "Choose Start Mummy. This moves the Mummy from goal text back into the real monster action slot.",
         "monsterRoll": "Choose Mummy Movement. The dice table shows how far the Mummy may move this turn.",
-        "monsterRollReview": "This movement roll is 0. On 0 or 1, the Mummy may teleport to any discovered room. Read it, then return to the board.",
-        "monsterMoveTarget": "Choose Move Mummy, click the Mummy token, then click the discovered room with the Girl. Undiscovered rooms are not targets.",
+        "monsterRollReview": "Read the dice table, then return to the board.",
+        "monsterMoveTarget": "The movement roll gives the Mummy a teleport. Choose Move Mummy, click the Mummy token, then click the discovered room with the Girl. Undiscovered rooms are not targets.",
         "monsterMoveResult": "After the Mummy teleports to the Girl's room, the Girl token becomes held by the Mummy. This is a board result, not a log summary.",
         "setupAttack": "Now check same-room combat. The Mummy, the traitor, and one living hero share a room, and the hero carries the Map and Holy Symbol.",
         "attackForced": "When the Mummy shares a room with a hero, Mummy Attack appears first. It cannot move away before attacking.",
         "attackTarget": "Choose Mummy Attack, then click the Mummy token and the hero in the same room. The traitor and dead explorer are not attack targets.",
-        "attackRollReview": "The attack dice table shows both sides' dice, totals, and outcome. If the Mummy deals enough damage, it may choose damage or steal. Read it, then return to the board.",
+        "attackRollReview": "Read the attack dice table, then return to the board. The damage-or-steal choice comes next.",
         "attackReward": "Choose Steal Map here. Stealing replaces this damage and transfers the item from the hero to the Mummy.",
         "stealResult": "The Mummy has taken the Map, the reward bar is closed, and the board feedback shows the steal result."
       }

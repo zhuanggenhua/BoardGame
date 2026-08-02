@@ -4724,6 +4724,10 @@ describe('Betrayal Board foundation', () => {
             String(expectedHauntDiceCount),
         );
         expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
+            'data-dice-surface-mode',
+            'transparent-virtual',
+        );
+        expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
             'data-dice-rule-subtotal',
             String(expectedHauntDiceCount),
         );
@@ -7320,6 +7324,10 @@ describe('Betrayal Board foundation', () => {
             expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
                 'data-dice-preload-state',
                 'visible',
+            );
+            expect(screen.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute(
+                'data-dice-surface-mode',
+                'transparent-virtual',
             );
             expect(screen.getByTestId('betrayal-house-dice-preloaded-faces')).toHaveAttribute(
                 'data-dice-preload-source',

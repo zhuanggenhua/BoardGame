@@ -5523,6 +5523,57 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
+    it('木乃伊攻击奖励阶段由木乃伊控制者确认攻击骰盘，即使当前回合玩家不同', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const heroId = core.playerIds.find((playerId) => playerId !== traitorId)!;
+        const mummyMonsterId = core.scenarioRuntime.mummy!.mummyMonsterId;
+        const mummyRoomId = core.monsters.find((monster) => monster.id === mummyMonsterId)!.roomId;
+        activateTestExplorer(core, traitorId);
+        findTestExplorer(core, heroId).roomId = mummyRoomId;
+        setHighCapacityPhysicalDamageTracks(core, heroId);
+        setTestExplorerInventory(core, heroId, [
+            { id: 'map', name: '地图', kind: 'item' },
+        ]);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO,
+            traitorId,
+            { monsterId: mummyMonsterId, targetPlayerId: heroId },
+            100,
+            createBetrayalScriptedRandom(2, 2, 2, 2, 1, 1, 1, 1, 1),
+        );
+        expect(core.recentRoll).toMatchObject({
+            kind: 'attackRoll',
+            playerId: traitorId,
+        });
+        expect(core.activePlayerId).toBe(traitorId);
+        expect(resolveMummyPendingAttackReward(core)).toMatchObject({
+            controllerPlayerId: traitorId,
+        });
+
+        activateTestExplorer(core, heroId);
+        core.activePlayerId = traitorId;
+
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {}),
+        )).toMatchObject({ valid: true });
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, heroId, {}),
+        )).toMatchObject({ valid: false });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, traitorId, {});
+
+        expect(core.recentRoll).toBeNull();
+        expect(resolveMummyPendingAttackReward(core)).toMatchObject({
+            controllerPlayerId: traitorId,
+            defenderPlayerId: heroId,
+        });
+    });
+
     it('木乃伊攻击目标没有可偷对象时不会生成偷取奖励，直接进入强制伤害分配', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;

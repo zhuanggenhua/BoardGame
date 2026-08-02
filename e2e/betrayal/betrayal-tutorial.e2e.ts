@@ -92,9 +92,94 @@ const waitForStep = async (
   stepId: string,
   timeout = 15000,
 ) => {
-  await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({
-    timeout,
-  });
+  try {
+    await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({
+      timeout,
+    });
+  } catch (error) {
+    const diagnostics = await page.evaluate((expectedStepId) => {
+      const snapshot = (
+        window as unknown as {
+          __BG_TEST_HARNESS__?: {
+            state?: {
+              get?: () => {
+                sys?: {
+                  tutorial?: {
+                    active?: boolean;
+                    manifestId?: string | null;
+                    stepIndex?: number;
+                    steps?: unknown[];
+                    totalSteps?: number;
+                    step?: {
+                      id?: string;
+                      highlightTarget?: string;
+                      aiActions?: unknown[];
+                    } | null;
+                    aiActions?: unknown[];
+                    pendingAnimationAdvance?: boolean;
+                  };
+                };
+                core?: { phase?: string };
+              };
+            };
+          };
+          __BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?: unknown;
+        }
+      ).__BG_TEST_HARNESS__?.state?.get?.();
+      const tutorial = snapshot?.sys?.tutorial;
+      const highlightTarget = tutorial?.step?.highlightTarget ?? null;
+      const target = highlightTarget
+        ? document.querySelector(`[data-tutorial-id="${highlightTarget}"]`)
+          ?? document.getElementById(highlightTarget)
+          ?? document.querySelector(`[data-testid="${highlightTarget}"]`)
+        : null;
+      const activeStep = document.querySelector("[data-tutorial-step]");
+      const overlayCard = document.querySelector('[data-testid="tutorial-overlay-card"]');
+      const targetRect = target?.getBoundingClientRect();
+      return {
+        expectedStepId,
+        href: window.location.href,
+        contextDiagnostics:
+          (window as unknown as { __BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?: unknown })
+            .__BG_TUTORIAL_CONTEXT_DIAGNOSTICS__ ?? null,
+        tutorialActive: tutorial?.active ?? null,
+        manifestId: tutorial?.manifestId ?? null,
+        stepIndex: tutorial?.stepIndex ?? null,
+        stepId: tutorial?.step?.id ?? null,
+        stepsLength: tutorial?.steps?.length ?? null,
+        totalSteps: tutorial?.totalSteps ?? null,
+        stepAiActionCount: tutorial?.step?.aiActions?.length ?? 0,
+        aiActionCount: tutorial?.aiActions?.length ?? 0,
+        pendingAnimationAdvance: tutorial?.pendingAnimationAdvance ?? false,
+        highlightTarget,
+        highlightTargetFound: Boolean(target),
+        highlightTargetRect: targetRect
+          ? {
+              x: Math.round(targetRect.x),
+              y: Math.round(targetRect.y),
+              width: Math.round(targetRect.width),
+              height: Math.round(targetRect.height),
+            }
+          : null,
+        activeStepDom: activeStep?.getAttribute("data-tutorial-step") ?? null,
+        hasTutorialOverlayCard: Boolean(overlayCard),
+        overlayText:
+          overlayCard?.textContent?.replace(/\s+/g, " ").trim().slice(0, 300)
+          ?? null,
+        phase: snapshot?.core?.phase ?? null,
+        bodyText:
+          document.body.textContent?.replace(/\s+/g, " ").trim().slice(0, 800)
+          ?? "",
+      };
+    }, stepId);
+    throw new Error(
+      `等待教程步骤 ${stepId} 超时。\n诊断：${JSON.stringify(
+        diagnostics,
+        null,
+        2,
+      )}\n原始错误：${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 };
 
 const waitForTradeAgreementState = async (
@@ -1910,20 +1995,13 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     releaseCriticalEventAtlas();
     await waitForBetrayalPageReady(page);
 
-    await page.waitForTimeout(1000);
-    const initialTutorialDiagnostics = await readTutorialRuntimeDiagnostics(page);
-    if (
-      !initialTutorialDiagnostics.hasTutorialOverlayCard
-      || !initialTutorialDiagnostics.hasTutorialNextButton
-    ) {
-      throw new Error(
-        `教程首个可见步骤未出现或不可继续，无法进入移动探索教程。\n诊断：${JSON.stringify(
-          initialTutorialDiagnostics,
-          null,
-          2,
-        )}`,
-      );
-    }
+    await waitForStep(page, "objective-and-turn", 15000);
+    await expect(page.getByTestId("tutorial-overlay-card")).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByTestId("tutorial-next-button")).toBeVisible({
+      timeout: 15000,
+    });
 
     await advanceToStep(page, "use-book");
     await waitForStep(page, "use-book");

@@ -4671,4 +4671,625 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
             'normal-1',
         ]);
     });
+
+    it('销赃犯天赋恰好弃两张宝藏获得 1VP，宝藏不足不能发动', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [makeMinion('fence-1', 'munchkin_thieves_fence', '0', 3)],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            vp: 2,
+            hand: [
+                makeCard('treasure-1', 'munchkin_treasure_wishing_ring', 'action', '0'),
+                makeCard('treasure-2', 'munchkin_treasure_dwarf_hireling', 'minion', '0'),
+                makeCard('normal-1', 'alien_invader', 'minion', '0'),
+            ],
+        };
+        const command = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'fence-1', baseIndex: 0 },
+        } as const;
+
+        expect(getCardDef('munchkin_thieves_fence')).toMatchObject({
+            id: 'munchkin_thieves_fence',
+            type: 'minion',
+            abilityTags: ['talent'],
+        });
+        expect(validate(makeMatchState(state), command)).toEqual({ valid: true });
+
+        const used = runCommand(makeMatchState(state), command, fixedRandom);
+        const prompt = getSimpleChoicePrompt(used.finalState, 'munchkin_thieves_fence_choose_treasures');
+
+        expect(used.success).toBe(true);
+        expect(prompt.targetType).toBe('hand');
+        expect(prompt.multi).toEqual({ min: 2, max: 2 });
+        expect(prompt.options.map((option: any) => option.value)).toEqual([
+            { cardUid: 'treasure-1', defId: 'munchkin_treasure_wishing_ring' },
+            { cardUid: 'treasure-2', defId: 'munchkin_treasure_dwarf_hireling' },
+        ]);
+
+        const resolved = respondToPromptOptions(
+            used.finalState,
+            prompt.options.map((option: any) => option.id),
+            '0',
+            fixedRandom,
+        );
+        const discardEvent = resolved.events.find((event): event is CardsDiscardedEvent =>
+            event.type === SU_EVENTS.CARDS_DISCARDED
+        );
+        const vpEvent = resolved.events.find((event): event is VpAwardedEvent =>
+            event.type === SU_EVENTS.VP_AWARDED
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(discardEvent?.payload).toEqual({
+            playerId: '0',
+            cardUids: ['treasure-1', 'treasure-2'],
+        });
+        expect(vpEvent?.payload).toMatchObject({
+            playerId: '0',
+            amount: 1,
+            reason: 'munchkin_thieves_fence',
+        });
+        expect(resolved.finalState.core.players['0'].vp).toBe(3);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['normal-1']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([
+            'treasure-1',
+            'treasure-2',
+        ]);
+
+        const blockedState = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [makeMinion('blocked-fence', 'munchkin_thieves_fence', '0', 3)],
+            })],
+        });
+        blockedState.players['0'] = {
+            ...blockedState.players['0'],
+            hand: [makeCard('only-treasure', 'munchkin_treasure_wishing_ring', 'action', '0')],
+        };
+        expect(validate(makeMatchState(blockedState), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'blocked-fence', baseIndex: 0 },
+        } as const)).toMatchObject({ valid: false });
+    });
+
+    it('背刺弃一张宝藏后只能摧毁力量 3 或更少的仆从', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [
+                    makeMinion('target-low', 'alien_invader', '1', 3),
+                    makeMinion('target-high', 'munchkin_warriors_big_hero', '1', 5),
+                ],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            hand: [
+                makeCard('backstab-1', 'munchkin_thieves_backstab', 'action', '0'),
+                makeCard('treasure-1', 'munchkin_treasure_wishing_ring', 'action', '0'),
+            ],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+
+        expect(getCardDef('munchkin_thieves_backstab')).toMatchObject({
+            id: 'munchkin_thieves_backstab',
+            type: 'action',
+            abilityTags: ['onPlay'],
+        });
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'backstab-1' },
+        } as const, fixedRandom);
+        const treasurePrompt = getSimpleChoicePrompt(played.finalState, 'munchkin_thieves_backstab_choose_treasure');
+        expect(played.success).toBe(true);
+        expect(treasurePrompt.targetType).toBe('hand');
+        expect(treasurePrompt.multi).toEqual({ min: 1, max: 1 });
+
+        const costSelected = respondToPromptOptions(
+            played.finalState,
+            [treasurePrompt.options[0].id],
+            '0',
+            fixedRandom,
+        );
+        const targetPrompt = getSimpleChoicePrompt(costSelected.finalState, 'munchkin_thieves_backstab_choose_minion');
+        expect(costSelected.success).toBe(true);
+        expect(costSelected.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        expect(targetPrompt.targetType).toBe('minion');
+        expect(targetPrompt.options.map((option: any) => option.value.minionUid)).toEqual(['target-low']);
+
+        const resolved = respondToPromptOption(
+            costSelected.finalState,
+            option => option.value?.minionUid === 'target-low',
+            '背刺目标',
+            '0',
+            fixedRandom,
+        );
+        const discardEvent = resolved.events.find((event): event is CardsDiscardedEvent =>
+            event.type === SU_EVENTS.CARDS_DISCARDED
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(discardEvent?.payload).toEqual({
+            playerId: '0',
+            cardUids: ['treasure-1'],
+        });
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['target-high']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual([
+            'backstab-1',
+            'treasure-1',
+        ]);
+
+        const noCostState = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [makeMinion('no-cost-target', 'alien_invader', '1', 3)],
+            })],
+        });
+        noCostState.players['0'] = {
+            ...noCostState.players['0'],
+            hand: [makeCard('no-cost-backstab', 'munchkin_thieves_backstab', 'action', '0')],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+        const noCost = runCommand(makeMatchState(noCostState), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'no-cost-backstab' },
+        } as const, fixedRandom);
+        expect(noCost.success).toBe(true);
+        expect(getOptionalSimpleChoicePrompt(noCost.finalState, 'munchkin_thieves_backstab_choose_treasure')).toBeUndefined();
+        expect(noCost.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['no-cost-target']);
+    });
+
+    it('药水腰带弃一张宝藏后给目标随从 +3 到回合结束', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [makeMinion('target-1', 'alien_invader', '1', 2)],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            hand: [
+                makeCard('bandolier-1', 'munchkin_thieves_potion_bandolier', 'action', '0'),
+                makeCard('treasure-1', 'munchkin_treasure_wishing_ring', 'action', '0'),
+            ],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+        const command = {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'bandolier-1', targetBaseIndex: 0, targetMinionUid: 'target-1' },
+        } as const;
+
+        expect(getCardDef('munchkin_thieves_potion_bandolier')).toMatchObject({
+            id: 'munchkin_thieves_potion_bandolier',
+            type: 'action',
+            abilityTags: ['onPlay'],
+            playNeedsMinion: true,
+            playTargetMinionController: 'any',
+        });
+        expect(validate(makeMatchState(state), command)).toEqual({ valid: true });
+
+        const played = runCommand(makeMatchState(state), command, fixedRandom);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'munchkin_thieves_potion_bandolier_choose_treasure');
+        expect(played.success).toBe(true);
+        expect(prompt.targetType).toBe('hand');
+        expect(prompt.multi).toEqual({ min: 1, max: 1 });
+
+        const resolved = respondToPromptOptions(played.finalState, [prompt.options[0].id], '0', fixedRandom);
+        const discardEvent = resolved.events.find((event): event is CardsDiscardedEvent =>
+            event.type === SU_EVENTS.CARDS_DISCARDED
+        );
+        const powerEvent = resolved.events.find((event): event is TempPowerAddedEvent =>
+            event.type === SU_EVENTS.TEMP_POWER_ADDED
+        );
+        const target = resolved.finalState.core.bases[0].minions[0];
+
+        expect(resolved.success).toBe(true);
+        expect(discardEvent?.payload).toEqual({
+            playerId: '0',
+            cardUids: ['treasure-1'],
+        });
+        expect(powerEvent?.payload).toMatchObject({
+            minionUid: 'target-1',
+            baseIndex: 0,
+            amount: 3,
+            reason: 'munchkin_thieves_potion_bandolier',
+        });
+        expect(getEffectivePower(resolved.finalState.core, target, 0)).toBe(5);
+
+        const nextTurn = reduce(resolved.finalState.core, {
+            type: SU_EVENTS.TURN_STARTED,
+            payload: { playerId: '1', turnNumber: 2 },
+            timestamp: 200,
+        });
+        expect(getEffectivePower(nextTurn, nextTurn.bases[0].minions[0], 0)).toBe(2);
+    });
+
+    it('走私弃两张宝藏获得 1VP 并把弃牌堆洗回牌库且自身放到牌库底', () => {
+        const state = makeState({
+            bases: [makeBase({ defId: 'base_the_mines' })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            vp: 4,
+            hand: [
+                makeCard('smuggling-1', 'munchkin_thieves_smuggling', 'action', '0'),
+                makeCard('treasure-1', 'munchkin_treasure_wishing_ring', 'action', '0'),
+                makeCard('treasure-2', 'munchkin_treasure_dwarf_hireling', 'minion', '0'),
+            ],
+            deck: [
+                makeCard('deck-a', 'alien_invader', 'minion', '0'),
+                makeCard('deck-b', 'alien_scout', 'minion', '0'),
+            ],
+            discard: [
+                makeCard('discard-a', 'munchkin_thieves_pickpocket', 'minion', '0'),
+                makeCard('discard-b', 'munchkin_thieves_swipe', 'action', '0'),
+            ],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+
+        expect(getCardDef('munchkin_thieves_smuggling')).toMatchObject({
+            id: 'munchkin_thieves_smuggling',
+            type: 'action',
+            abilityTags: ['onPlay'],
+        });
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'smuggling-1' },
+        } as const, fixedRandom);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'munchkin_thieves_smuggling_choose_treasures');
+        expect(played.success).toBe(true);
+        expect(prompt.targetType).toBe('hand');
+        expect(prompt.multi).toEqual({ min: 2, max: 2 });
+
+        const resolved = respondToPromptOptions(
+            played.finalState,
+            prompt.options.map((option: any) => option.id),
+            '0',
+            fixedRandom,
+        );
+        const discardEvent = resolved.events.find((event): event is CardsDiscardedEvent =>
+            event.type === SU_EVENTS.CARDS_DISCARDED
+        );
+        const vpEvent = resolved.events.find((event): event is VpAwardedEvent =>
+            event.type === SU_EVENTS.VP_AWARDED
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(discardEvent?.payload).toEqual({
+            playerId: '0',
+            cardUids: ['treasure-1', 'treasure-2'],
+        });
+        expect(vpEvent?.payload).toMatchObject({
+            playerId: '0',
+            amount: 1,
+            reason: 'munchkin_thieves_smuggling',
+        });
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                deckUids: ['deck-a', 'deck-b', 'discard-a', 'discard-b', 'treasure-1', 'treasure-2'],
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+            payload: expect.objectContaining({
+                cardUid: 'smuggling-1',
+                defId: 'munchkin_thieves_smuggling',
+                ownerId: '0',
+                reason: 'munchkin_thieves_smuggling',
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].vp).toBe(5);
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
+            'deck-a',
+            'deck-b',
+            'discard-a',
+            'discard-b',
+            'treasure-1',
+            'treasure-2',
+            'smuggling-1',
+        ]);
+        expect(resolved.finalState.core.players['0'].discard).toEqual([]);
+        expect(resolved.finalState.core.players['0'].hand).toEqual([]);
+
+        const blockedState = makeState({
+            bases: [makeBase({ defId: 'base_the_mines' })],
+        });
+        blockedState.players['0'] = {
+            ...blockedState.players['0'],
+            hand: [
+                makeCard('blocked-smuggling', 'munchkin_thieves_smuggling', 'action', '0'),
+                makeCard('only-treasure', 'munchkin_treasure_wishing_ring', 'action', '0'),
+            ],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+        const blocked = runCommand(makeMatchState(blockedState), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'blocked-smuggling' },
+        } as const, fixedRandom);
+        expect(blocked.success).toBe(true);
+        expect(getOptionalSimpleChoicePrompt(blocked.finalState, 'munchkin_thieves_smuggling_choose_treasures')).toBeUndefined();
+        expect(blocked.finalState.core.players['0'].vp).toBe(0);
+        expect(blocked.finalState.core.players['0'].deck).toEqual([]);
+        expect(blocked.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['blocked-smuggling']);
+    });
+});
+
+
+describe('Smash Up Munchkin 盗贼剩余规则实现', () => {
+    it('转移注意力在计分后响应窗口让赢家失去 1VP，并让打出者获得 1VP', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [
+                    makeMinion('thief-minion', 'munchkin_thieves_pickpocket', '0', 2),
+                    makeMinion('winner-minion', 'alien_invader', '1', 6),
+                ],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            vp: 2,
+            hand: [makeCard('clever-1', 'munchkin_thieves_clever_distraction', 'action', '0')],
+        };
+        state.players['1'] = { ...state.players['1'], vp: 5 };
+
+        expect(getCardDef('munchkin_thieves_clever_distraction')).toMatchObject({
+            subtype: 'special',
+            specialTiming: 'afterScoring',
+            responseWindowTiming: 'afterScoring',
+            responseWindowNeedsBase: true,
+            abilityTags: ['special'],
+        });
+        const result = runCommand(attachAfterScoringWindow(state, 0), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'clever-1', targetBaseIndex: 0 },
+        } as const, fixedRandom);
+        const vpEvents = result.events.filter((event): event is VpAwardedEvent =>
+            event.type === SU_EVENTS.VP_AWARDED
+        );
+
+        expect(result.success).toBe(true);
+        expect(vpEvents.map(event => event.payload)).toEqual([
+            { playerId: '1', amount: -1, reason: 'munchkin_thieves_clever_distraction' },
+            { playerId: '0', amount: 1, reason: 'munchkin_thieves_clever_distraction' },
+        ]);
+        expect(result.finalState.core.players['0'].vp).toBe(3);
+        expect(result.finalState.core.players['1'].vp).toBe(4);
+    });
+
+    it('打劫把打出到仆从身上的行动转移到你的另一个仆从身上', () => {
+        const attachedAction = { uid: 'attached-treasure', defId: 'munchkin_treasure_bag_of_caltrops', ownerId: '1' };
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [
+                    makeMinion('enemy-host', 'alien_invader', '1', 2, { attachedActions: [attachedAction] }),
+                    makeMinion('own-target', 'munchkin_thieves_pickpocket', '0', 2),
+                ],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            hand: [makeCard('mugging-1', 'munchkin_thieves_mugging', 'action', '0')],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'mugging-1' },
+        } as const, fixedRandom);
+        const actionPrompt = getSimpleChoicePrompt(played.finalState, 'munchkin_thieves_mugging_choose_action');
+        expect(played.success).toBe(true);
+        expect(actionPrompt.targetType).toBe('ongoing');
+        expect(actionPrompt.options.map((option: any) => option.value.cardUid)).toEqual(['attached-treasure']);
+
+        const actionSelected = respondToPromptOption(
+            played.finalState,
+            option => option.value?.cardUid === 'attached-treasure',
+            '打劫行动',
+            '0',
+            fixedRandom,
+        );
+        const minionPrompt = getSimpleChoicePrompt(actionSelected.finalState, 'munchkin_thieves_mugging_choose_minion');
+        expect(minionPrompt.targetType).toBe('minion');
+        expect(minionPrompt.options.map((option: any) => option.value.minionUid)).toEqual(['own-target']);
+
+        const resolved = respondToPromptOption(
+            actionSelected.finalState,
+            option => option.value?.minionUid === 'own-target',
+            '打劫目标仆从',
+            '0',
+            fixedRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-host')?.attachedActions).toEqual([]);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'own-target')?.attachedActions).toEqual([
+            expect.objectContaining({ uid: 'attached-treasure', defId: 'munchkin_treasure_bag_of_caltrops', ownerId: '1' }),
+        ]);
+    });
+
+    it('秘密藏匿处作为基地持续行动，在该基地计分时额外加入两张宝藏奖励', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [makeMinion('scorer-1', 'munchkin_warriors_big_hero', '0', 30)],
+                ongoingActions: [{ uid: 'stash-1', defId: 'munchkin_thieves_secret_stash', ownerId: '0' }],
+            })],
+            treasureDeck: [
+                'munchkin_treasure_wishing_ring',
+                'munchkin_treasure_dwarf_hireling',
+                'munchkin_treasure_bag_of_caltrops',
+            ],
+            nextUid: 2100,
+        });
+
+        expect(getCardDef('munchkin_thieves_secret_stash')).toMatchObject({
+            subtype: 'ongoing',
+            ongoingTarget: 'base',
+            playNeedsBase: true,
+            abilityTags: ['ongoing'],
+        });
+        const result = scoreOneBase(state, 0, [], '0', 10, fixedRandom);
+        const revealEvent = result.events.find(event => event.type === SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED);
+        const afterReveal = result.events.reduce((core, event) => reduce(core, event as any), state);
+
+        expect(revealEvent).toMatchObject({
+            payload: expect.objectContaining({ count: 2, eligiblePlayerIds: ['0'] }),
+        });
+        expect(afterReveal.pendingMunchkinTreasureReward?.treasureCards.map(card => card.defId)).toEqual([
+            'munchkin_treasure_wishing_ring',
+            'munchkin_treasure_dwarf_hireling',
+        ]);
+    });
+
+    it('剥光选择场上的宝藏牌并放到当前玩家手牌', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_mines',
+                minions: [
+                    makeMinion('treasure-minion', 'munchkin_treasure_dwarf_hireling', '1', 2, '1'),
+                    makeMinion('normal-minion', 'alien_invader', '1', 2),
+                ],
+                ongoingActions: [{ uid: 'treasure-action', defId: 'munchkin_treasure_bag_of_caltrops', ownerId: '1' }],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            hand: [makeCard('strip-1', 'munchkin_thieves_strip_bare', 'action', '0')],
+            actionsPlayed: 0,
+            actionLimit: 1,
+        };
+
+        const played = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'strip-1' },
+        } as const, fixedRandom);
+        const prompt = getSimpleChoicePrompt(played.finalState, 'munchkin_thieves_strip_bare_choose_treasure');
+        expect(played.success).toBe(true);
+        expect(prompt.targetType).toBe('board');
+        expect(prompt.options.map((option: any) => option.value.cardUid).sort()).toEqual(['treasure-action', 'treasure-minion']);
+
+        const resolved = respondToPromptOption(
+            played.finalState,
+            option => option.value?.cardUid === 'treasure-action',
+            '剥光宝藏',
+            '0',
+            fixedRandom,
+        );
+        const transferEvent = resolved.events.find(event => event.type === SU_EVENTS.CARD_TRANSFERRED);
+
+        expect(resolved.success).toBe(true);
+        expect(transferEvent).toMatchObject({
+            payload: expect.objectContaining({
+                cardUid: 'treasure-action',
+                defId: 'munchkin_treasure_bag_of_caltrops',
+                fromPlayerId: '1',
+                toPlayerId: '0',
+                reason: 'munchkin_thieves_strip_bare',
+            }),
+        });
+        expect(resolved.finalState.core.bases[0].ongoingActions).toEqual([]);
+        expect(resolved.finalState.core.players['0'].hand).toContainEqual(expect.objectContaining({
+            uid: 'treasure-action',
+            defId: 'munchkin_treasure_bag_of_caltrops',
+        }));
+    });
+
+    it('金库计分后让每个在这里有仆从的玩家各抽一张宝藏', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_the_coffers',
+                minions: [
+                    makeMinion('p0-minion', 'munchkin_thieves_pickpocket', '0', 2),
+                    makeMinion('p1-minion', 'alien_invader', '1', 2),
+                    makeMinion('p1-minion-b', 'alien_scout', '1', 1),
+                ],
+            })],
+        });
+        const result = triggerBaseAbility('base_the_coffers', 'afterScoring', {
+            state,
+            baseIndex: 0,
+            baseDefId: 'base_the_coffers',
+            playerId: '0',
+            now: 10,
+        });
+
+        expect(getBaseDef('base_the_coffers')).toMatchObject({ monsterCount: 2 });
+        expect(result.events.filter(event => event.type === SU_EVENTS.MUNCHKIN_TREASURES_DRAWN).map(event => event.payload)).toEqual([
+            expect.objectContaining({ playerId: '0', count: 1, reason: 'base_the_coffers' }),
+            expect.objectContaining({ playerId: '1', count: 1, reason: 'base_the_coffers' }),
+        ]);
+    });
+
+    it('盗贼公会在玩家把宝藏行动打到这里或这里的仆从后抽一张普通牌', () => {
+        const state = makeState({
+            bases: [makeBase({
+                defId: 'base_thieves_guild',
+                minions: [makeMinion('target-minion', 'munchkin_thieves_pickpocket', '0', 2)],
+            })],
+        });
+        state.players['0'] = {
+            ...state.players['0'],
+            deck: [makeCard('draw-1', 'alien_invader', 'minion', '0')],
+        };
+
+        const result = triggerBaseAbility('base_thieves_guild', 'onActionPlayed', {
+            state,
+            baseIndex: 0,
+            baseDefId: 'base_thieves_guild',
+            playerId: '0',
+            actionTargetBaseIndex: 0,
+            actionTargetType: 'minion',
+            actionTargetMinionUid: 'target-minion',
+            triggerCardUid: 'treasure-action-1',
+            triggerCardDefId: 'munchkin_treasure_bag_of_caltrops',
+            triggerCardOwnerId: '0',
+            random: fixedRandom,
+            now: 10,
+        });
+        const blocked = triggerBaseAbility('base_thieves_guild', 'onActionPlayed', {
+            state,
+            baseIndex: 0,
+            baseDefId: 'base_thieves_guild',
+            playerId: '0',
+            actionTargetBaseIndex: 0,
+            actionTargetType: 'base',
+            triggerCardUid: 'normal-action-1',
+            triggerCardDefId: 'alien_abduction',
+            triggerCardOwnerId: '0',
+            random: fixedRandom,
+            now: 11,
+        });
+
+        expect(getBaseDef('base_thieves_guild')).toMatchObject({ monsterCount: 1 });
+        expect(result.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN).map(event => event.payload)).toEqual([
+            expect.objectContaining({ playerId: '0', count: 1 }),
+        ]);
+        expect(blocked.events).toEqual([]);
+    });
 });

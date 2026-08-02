@@ -716,6 +716,7 @@ export const TutorialOverlay: React.FC = () => {
           "0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 12px rgba(59, 130, 246, 0.3)",
       } satisfies React.CSSProperties)
     : undefined;
+  const showHighlightFrame = currentStep.highlightFrame !== "none";
 
   return (
     <div
@@ -739,7 +740,7 @@ export const TutorialOverlay: React.FC = () => {
       </svg>
 
       {/* 目标高亮环（苹果风格蓝色光晕）- 目标存在时始终可见 */}
-      {visibleTargetRect && (
+      {visibleTargetRect && showHighlightFrame && (
         <div
           data-testid="tutorial-highlight-ring"
           data-tutorial-highlight-target={currentStep.highlightTarget}

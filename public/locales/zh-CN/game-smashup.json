@@ -1205,6 +1205,13 @@
     "munchkin_anything_for_money_discard_title": "为了钱什么都可以：选择任意数量手牌弃掉",
     "munchkin_cash_out_choose_treasures_title": "套现：选择至多三张宝藏牌打出",
     "munchkin_cat_burglar_choose_treasures_title": "猫咪窃贼：选择要展示的宝藏牌",
+    "munchkin_thieves_fence_choose_treasures_title": "销赃犯：选择两张宝藏牌弃掉",
+    "munchkin_thieves_backstab_choose_treasure_title": "背刺：选择一张宝藏牌弃掉",
+    "munchkin_thieves_backstab_choose_minion_title": "背刺：选择力量3或更少的仆从",
+    "munchkin_thieves_potion_bandolier_choose_treasure_title": "药水腰带：选择一张宝藏牌弃掉",
+    "munchkin_thieves_smuggling_choose_treasures_title": "走私：选择两张宝藏牌弃掉",
+    "munchkin_thieves_mugging_choose_action_title": "打劫：选择打出到仆从身上的行动",
+    "munchkin_thieves_strip_bare_choose_treasure_title": "剥光：选择场上的宝藏牌",
     "munchkin_gold_digger_choose_treasure_title": "黄金挖掘者：选择宝藏弃牌",
     "munchkin_greed_is_good_choose_treasure_title": "贪婪是好的：选择抽宝藏或回收宝藏弃牌",
     "munchkin_greed_is_good_draw_treasure_option": "抽一张宝藏牌",
@@ -1453,7 +1460,8 @@
     "pearl_images_now_you_know_bike_safety_second_title": "现在你知道：自行车安全：选择同基地另一位玩家的随从",
     "pearl_images_now_you_know_bike_safety_destination_title": "现在你知道：自行车安全：选择目标基地",
     "pearl_images_truly_outstanding_first_title": "杰出表彰：选择任意数量的其他玩家随从放置 +1 标记",
-    "pearl_images_truly_outstanding_second_title": "杰出表彰：选择你的随从放置对应数量 +1 标记"
+    "pearl_images_truly_outstanding_second_title": "杰出表彰：选择你的随从放置对应数量 +1 标记",
+    "munchkin_thieves_mugging_choose_minion_title": "打劫：选择你的一个仆从"
   },
   "mechanics": {
     "madness": {

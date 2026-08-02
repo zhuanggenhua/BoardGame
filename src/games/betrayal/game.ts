@@ -14048,13 +14048,22 @@ function resolvePendingTurnEndRoll(core: BetrayalCore): BetrayalRecentRollState 
 
 function resolveAcknowledgeableRecentRoll(core: BetrayalCore): BetrayalRecentRollState | null {
     const recentRoll = core.recentRoll;
-    if (!recentRoll || recentRoll.playerId !== core.currentPlayer) {
-        return null;
-    }
-    if (recentRoll.kind !== 'mysticElevator') {
+    const currentDecisionPlayerIds = new Set(
+        [core.currentPlayer, core.activePlayerId].filter((playerId): playerId is string => Boolean(playerId)),
+    );
+    if (!recentRoll || !currentDecisionPlayerIds.has(recentRoll.playerId)) {
         return null;
     }
     if (recentRoll.roomEndTurn?.nextPlayerId || recentRoll.deathPrevention?.nextPlayerId) {
+        return null;
+    }
+    const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
+        'mysticElevator',
+        'attackRoll',
+        'hauntActionTraitCheck',
+        'monsterMoveRoll',
+    ];
+    if (!acknowledgeableKinds.includes(recentRoll.kind)) {
         return null;
     }
     return recentRoll;
@@ -14759,6 +14768,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (
         pendingHelpingHandsReward
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_HELPING_HANDS_ATTACK_REWARD
+        && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
     ) {
         return { valid: false, error: '请先选择造成伤害或偷取物品/预兆。' };
     }
@@ -14766,6 +14776,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
     if (
         pendingMummyReward
         && command.type !== BETRAYAL_COMMANDS.RESOLVE_MUMMY_ATTACK_REWARD
+        && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
     ) {
         return { valid: false, error: '请先选择木乃伊造成伤害或偷取物品/预兆。' };
     }
@@ -14839,6 +14850,10 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         !isPlayersTurn(core, command.playerId)
         && !(helpingHandsMonsterTurnStatus.active && isHelpingHandsMonsterCommand)
         && !(bloodFromStoneMonsterTurnStatus.active && isBloodFromStoneMonsterCommand)
+        && !(
+            command.type === BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
+            && resolveAcknowledgeableRecentRoll(core)?.playerId === command.playerId
+        )
     ) {
         return { valid: false, error: '还没有轮到该玩家。' };
     }

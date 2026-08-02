@@ -17,6 +17,8 @@
    - 目标：切到真实「木乃伊横行」作祟后局面，讲清作祟后目标改变、自动打开一次英雄剧本开场、手动回看英雄目标页、真名 / 驱逐法术前置因果，以及房间本体直选触发驱逐木乃伊神志对抗和终局。
 5. `traitor-path`
    - 目标：切到真实「木乃伊横行」叛徒胜利前局面，讲清叛徒目标、打开叛徒剧本书、拾起女孩、把女孩交给木乃伊、交出圣符 / 指环，并触发木乃伊叛徒胜利。
+6. `mummy-monster-actions`
+   - 目标：切到真实「木乃伊横行」怪物行动局面，讲清木乃伊作为怪物的移动、同房必须先攻击、合法攻击目标、攻击骰盘和偷取奖励链路。
 
 隐藏历史入口：
 
@@ -58,6 +60,12 @@
   - `node --max-old-space-size=8192 .\node_modules\eslint\bin\eslint.js src\games\betrayal\tutorial.ts src\games\betrayal\testing\firstScenarioTestUtils.ts src\games\betrayal\__tests__\tutorial.test.ts src\games\betrayal\__tests__\tutorialIds.test.ts e2e\betrayal\betrayal-tutorial.e2e.ts src\games\betrayal\Board.tsx`
   - 结果：通过；默认 `npx eslint ...` 曾因 Node 堆内存 OOM，中断点不是代码 lint 失败。
 - 本轮新增 / 刷新的真实教程 E2E：
+  - `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts`
+  - 结果：`9 passed / 2 skipped`；2 个 skipped 是隐藏旧「赤红杰克归来」历史入口（`hero-attack-path`、`jack-spirit-path`），不纳入当前默认「木乃伊横行」教程验收。
+  - `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts "[mummy-monster-actions] 教程会完成木乃伊怪物移动、同房攻击和偷取奖励"`
+  - 结果：`1 passed`，覆盖木乃伊怪物移动、同房攻击骰盘和偷取奖励，刷新 `49-57` 截图。
+  - `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts "移动探索教程会使用持有物、整张房间牌移动并探索出发现牌"`
+  - 结果：`1 passed`，覆盖探索发现牌、兔脚改骰和结果回牌桌，刷新 `11-16` 截图。
   - `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-command.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-banish"`
   - 结果：`1 passed`，覆盖房间本体直选触发「驱逐木乃伊」和同一主骰盘。
   - `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-command.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts --grep "omen-confirm"`
@@ -65,7 +73,7 @@
   - `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-command.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts --grep "tutorial-main"`
   - 结果：`1 passed`，覆盖当前目录章节、属性轨 / 观察 / 聚焦 / 预兆进度、木乃伊剧本开场 / 目标页、驱逐木乃伊骰盘和终局。
   - `node scripts/infra/run-e2e-command.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-traitor-path"`
-  - 当前状态：本轮已新增木乃伊叛徒线用例；待当前重任务锁释放后重新跑通并核验 44-48 截图。
+  - 结果：已由整份 `betrayal-tutorial.e2e.ts` 复跑覆盖，刷新并核验 `44-48` 叛徒线截图。
 
 ## 规则覆盖矩阵
 
@@ -96,11 +104,15 @@
 | 驱逐木乃伊前玩家因果链：已找出真名并学会驱逐法术，所以现在才轮到同房神志对抗 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-action-use`、`betrayal-room-*`、教程浮层因果说明 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/19-山屋惊魂-教程-驱逐木乃伊前因果说明.jpg` |
 | 英雄驱逐木乃伊：玩家点击木乃伊 / 石棺所在房间牌本体进入神志对抗骰盘 | 已覆盖 | `haunt-actions-and-finish` | `BANISH_MUMMY` -> `MUMMY_BANISHED` -> `betrayal-exorcise-roll-review` -> `betrayal-recent-roll-panel`；骰盘必须显示骰子、总点数、加值 / 对抗结果，并保持无背景托盘 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-banish"`、`evidence/betrayal-tutorial/20-山屋惊魂-教程-驱逐木乃伊神志对抗骰盘.jpg` |
 | 英雄驱逐成功后进入真实木乃伊终局页 | 已覆盖 | `haunt-actions-and-finish` | `MUMMY_BANISHED success=true` -> `betrayal-endgame-screen`，终局朗读出现木乃伊化作细砂、烟消云散 | `e2e/betrayal/betrayal-tutorial.e2e.ts --grep "tutorial-main"`、`evidence/betrayal-tutorial/21-山屋惊魂-教程-驱逐木乃伊成功后的终局页.jpg` |
-| 叛徒目标页：叛徒需要阅读自己的剧本书目标，不用英雄目标替代 | 已补实现 / 待本轮 E2E 复跑 | `traitor-path` | `betrayal-open-scenario` -> `betrayal-scenario-objective-page[data-scenario-reader-scope="traitor"]`；目标页显示女孩、圣符 / 指环、石棺和木乃伊规则 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-traitor-path"`、待刷新 `evidence/betrayal-tutorial/44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.jpg` |
-| 叛徒拾起女孩：女孩公开 token 从房间标记变为叛徒持有目标 | 已补实现 / 待本轮 E2E 复跑 | `traitor-path` | `PICK_UP_MUMMY_GIRL` -> `MUMMY_GIRL_PICKED_UP`；真实底部动作区显示“拾起女孩” | `tutorial.test.ts`、待刷新 `evidence/betrayal-tutorial/45-山屋惊魂-教程-叛徒拾起女孩前.jpg` |
-| 叛徒把女孩交给木乃伊：叛徒与木乃伊同房后女孩转为木乃伊持有 | 已补实现 / 待本轮 E2E 复跑 | `traitor-path` | `GIVE_GIRL_TO_MUMMY` -> `MUMMY_GIRL_GIVEN`；女孩 token 状态从 `held-by-player` 转为 `held-by-mummy` | `tutorial.test.ts`、待刷新 `evidence/betrayal-tutorial/46-山屋惊魂-教程-女孩交给木乃伊前.jpg` |
-| 叛徒把圣符 / 指环交给木乃伊：木乃伊带齐指定预兆后可触发叛徒胜利 | 已补实现 / 待本轮 E2E 复跑 | `traitor-path` | `GIVE_OMEN_TO_MUMMY` -> `MUMMY_OMEN_GIVEN`；本教程使用正式预兆「圣符」 | `tutorial.test.ts`、待刷新 `evidence/betrayal-tutorial/47-山屋惊魂-教程-圣符交给木乃伊前.jpg` |
-| 木乃伊叛徒胜利：木乃伊带着女孩和圣符回到石棺 | 已补实现 / 待本轮 E2E 复跑 | `traitor-path` | `phase=endgame`、`outcome=traitor`、结局朗读出现木乃伊怀中的小女孩 | `tutorial.test.ts`、待刷新 `evidence/betrayal-tutorial/48-山屋惊魂-教程-木乃伊叛徒胜利.jpg` |
+| 叛徒目标页：叛徒需要阅读自己的剧本书目标，不用英雄目标替代 | 已覆盖 | `traitor-path` | `betrayal-open-scenario` -> `betrayal-scenario-objective-page[data-scenario-reader-scope="traitor"]`；目标页显示女孩、圣符 / 指环、石棺和木乃伊规则 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-traitor-path"`、`evidence/betrayal-tutorial/44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.jpg` |
+| 叛徒拾起女孩：女孩公开 token 从房间标记变为叛徒持有目标 | 已覆盖 | `traitor-path` | `PICK_UP_MUMMY_GIRL` -> `MUMMY_GIRL_PICKED_UP`；真实底部动作区显示“拾起女孩” | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/45-山屋惊魂-教程-叛徒拾起女孩前.jpg` |
+| 叛徒把女孩交给木乃伊：叛徒与木乃伊同房后女孩转为木乃伊持有 | 已覆盖 | `traitor-path` | `GIVE_GIRL_TO_MUMMY` -> `MUMMY_GIRL_GIVEN`；女孩 token 状态从 `held-by-player` 转为 `held-by-mummy` | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/46-山屋惊魂-教程-女孩交给木乃伊前.jpg` |
+| 叛徒把圣符 / 指环交给木乃伊：木乃伊带齐指定预兆后可触发叛徒胜利 | 已覆盖 | `traitor-path` | `GIVE_OMEN_TO_MUMMY` -> `MUMMY_OMEN_GIVEN`；本教程使用正式预兆「圣符」 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/47-山屋惊魂-教程-圣符交给木乃伊前.jpg` |
+| 木乃伊叛徒胜利：木乃伊带着女孩和圣符回到石棺 | 已覆盖 | `traitor-path` | `phase=endgame`、`outcome=traitor`、结局朗读出现木乃伊怀中的小女孩 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts`、`evidence/betrayal-tutorial/48-山屋惊魂-教程-木乃伊叛徒胜利.jpg` |
+| 木乃伊怪物回合开始：怪物行动从正式底部动作区进入，不用横幅替代 | 已覆盖 | `mummy-monster-actions` | `betrayal-action-monsterTurnStart` -> `MONSTER_TURN_START_RESOLVED`；木乃伊 token 在房间本体上可见 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-monster-actions"`、`evidence/betrayal-tutorial/49-山屋惊魂-教程-木乃伊怪物回合开始前.jpg` |
+| 木乃伊怪物移动：先掷移动骰，骰盘显示骰子、合计、加值 / 结果，然后连续选择木乃伊本体和目标房间 | 已覆盖 | `mummy-monster-actions` | `betrayal-action-monsterMovementRoll` -> `betrayal-recent-roll-panel` -> `betrayal-action-monsterMove` -> `MONSTER_MOVED`；移动目标必须来自房间 / token 本体直选 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-monster-actions"`、`evidence/betrayal-tutorial/50-山屋惊魂-教程-木乃伊移动骰盘.jpg`、`51-山屋惊魂-教程-木乃伊瞬移目标.jpg`、`52-山屋惊魂-教程-木乃伊拾起女孩结果.jpg` |
+| 木乃伊同房攻击：如果木乃伊和英雄同房，规则先要求攻击，不能先移动或偷取 | 已覆盖 | `mummy-monster-actions` | `betrayal-action-monsterAttack`；同房目标高亮、已死英雄与叛徒不是本次合法目标 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-monster-actions"`、`evidence/betrayal-tutorial/53-山屋惊魂-教程-木乃伊同房必须先攻击.jpg`、`54-山屋惊魂-教程-木乃伊攻击目标高亮.jpg` |
+| 木乃伊攻击结算与偷取奖励：攻击骰盘结算后才出现偷取奖励入口，选择地图后木乃伊持有地图 | 已覆盖 | `mummy-monster-actions` | `MONSTER_ATTACK_HERO_RESOLVED` -> `betrayal-recent-roll-panel` -> `betrayal-mummy-reward-banner` -> `MUMMY_ATTACK_REWARD_CHOSEN`；骰盘必须显示骰子、总点数、加值 / 对抗结果，并保持无背景托盘 | `tutorial.test.ts`、`e2e/betrayal/betrayal-tutorial.e2e.ts --grep "mummy-monster-actions"`、`evidence/betrayal-tutorial/55-山屋惊魂-教程-木乃伊攻击骰盘.jpg`、`56-山屋惊魂-教程-木乃伊偷取奖励入口.jpg`、`57-山屋惊魂-教程-木乃伊偷走地图结果.jpg` |
 | 旧赤红杰克英雄攻击叛徒、杰克之灵怪物行动 | 隐藏历史 / 非当前默认教程验收 | `hero-attack-path`、`jack-spirit-path` | 旧 `crimson-jack-returns` 运行态未作为当前默认剧本运行态维护，当前已 `hiddenFromCatalog=true`；不得作为「木乃伊横行」教程完整证据 | 旧截图 `22-28` 只作历史证据；旧 E2E 已跳过，恢复前必须先补旧剧本运行态或翻正到木乃伊 |
 | 作祟后真实关键动作仍在正式底部动作区 | 已覆盖 | `haunt-actions-and-finish` | `betrayal-action-use` | `tutorial.test.ts`、`evidence/betrayal-tutorial/19-山屋惊魂-教程-驱逐木乃伊前因果说明.jpg` |
 
@@ -112,29 +124,29 @@
 | 底部主动作 | 进入移动、探索、交易、使用、结束回合 | `betrayal-action-*` | 高频 | `basic-setup-and-turn`、`trade-and-agreement`、作祟分支章节 | `evidence/betrayal-tutorial/01`、`19`、`29-35` | 无 |
 | 属性轨 | 读取当前属性、起始值、死亡端点和重复格位置 | `betrayal-current-traits` | 高频 / 非直觉 | `basic-setup-and-turn / trait-track-reading` | `evidence/betrayal-tutorial/36-山屋惊魂-教程-属性轨读法.jpg`；专项图见 `evidence/betrayal-core-interactions/trait-track-ui/` | 无 |
 | 剩余移动圆牌 | 读取本回合还剩几步 | `betrayal-moves-remaining` | 高频 | `basic-setup-and-turn / moves-remaining` | `evidence/betrayal-tutorial/02` | 无 |
-| 预兆 / 作祟进度 | 读取已发现预兆数和作祟风险 | `betrayal-haunt-risk-status`、`betrayal-haunt-risk-progress` | 高频 / 非直觉 | `basic-setup-and-turn / haunt-risk-track`、`omen-confirmation-and-haunt-risk / haunt-risk-track`，细节走悬浮提示 | `evidence/betrayal-tutorial/39-山屋惊魂-教程-预兆作祟进度条.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` | 无 |
+| 预兆 / 作祟进度 | 读取已发现预兆数和作祟触发状态 | `betrayal-haunt-risk-status`、`betrayal-haunt-risk-progress` | 高频 / 非直觉 | `basic-setup-and-turn / haunt-risk-track`、`omen-confirmation-and-haunt-risk / haunt-risk-track`，细节走悬浮提示 | `evidence/betrayal-tutorial/39-山屋惊魂-教程-预兆作祟进度条.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` | 无 |
 | 持有区 | 查看与选择物品 / 预兆 | `betrayal-inventory-zone`、`betrayal-inventory-*` | 高频 | `basic-setup-and-turn`、`trade-and-agreement`、`omen-confirmation-and-haunt-risk` | `evidence/betrayal-tutorial/04-07`、`30`、`35` | 无 |
 | 房间主视区 | 看自己位置、队友、连通房间、探索目标 | `betrayal-room-board`、`betrayal-room-*` | 高频 | `basic-setup-and-turn`、攻击 / 怪物分支 | `evidence/betrayal-tutorial/03`、`09-12`、`22`、`27` | 无 |
 | 观察视角切换 | 点击队友后查看该队友属性 / 状态 | `betrayal-bottom-teammate-*` | 非直觉 | `basic-setup-and-turn / observe-teammate` | `evidence/betrayal-tutorial/37-山屋惊魂-教程-观察队友视角.jpg` | 无 |
 | 聚焦到我的房间 | 从观察队友或拖动画面后回到自己所在房间 | `betrayal-focus-self-room` | 非直觉 | `basic-setup-and-turn / focus-self-room` | `evidence/betrayal-tutorial/38-山屋惊魂-教程-聚焦回自己房间.jpg` | 无 |
 | 发现牌与单次确认 | 处理抽牌、获得、作祟检定等同屏结果，避免把内部记录拆成多个玩家动作 | `betrayal-latest-discovery`、`betrayal-discovery-continue` | 非直觉 | `omen-confirmation-and-haunt-risk` | `evidence/betrayal-tutorial/40-山屋惊魂-教程-同屏确认预兆与作祟检定.jpg`、`42-山屋惊魂-教程-确认后回牌桌持有区.jpg`、`43-山屋惊魂-教程-确认后预兆进度条.jpg` | 无 |
 | 骰盘 / 随机结算 | 显示骰子、合计、加值、可改骰入口和结果 | `betrayal-recent-roll-panel`、`betrayal-attack-roll-review`、`betrayal-exorcise-roll-review` | 高频 / 非直觉 | `basic-setup-and-turn`、`haunt-actions-and-finish` | `evidence/betrayal-tutorial/13-15`、`20-山屋惊魂-教程-驱逐木乃伊神志对抗骰盘.jpg`；旧杰克截图 `23`、`28` 只作历史参考 | 无 |
-| 只读规则 / 剧本入口 | 回看参考卡、英雄目标、叛徒目标、怪物目标 | `betrayal-reference-entry`、`betrayal-open-scenario` | 非直觉 | `basic-setup-and-turn`、`haunt-actions-and-finish`、`traitor-path` | `evidence/betrayal-tutorial/04`、`18-山屋惊魂-教程-打开木乃伊剧本目标页.jpg`、待刷新 `44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.jpg`；旧杰克截图 `26` 只作历史参考 | 叛徒目标页截图待本轮 E2E 复跑后核图 |
+| 只读规则 / 剧本入口 | 回看参考卡、英雄目标、叛徒目标、怪物目标 | `betrayal-reference-entry`、`betrayal-open-scenario` | 非直觉 | `basic-setup-and-turn`、`haunt-actions-and-finish`、`traitor-path`、`mummy-monster-actions` | `evidence/betrayal-tutorial/04`、`18-山屋惊魂-教程-打开木乃伊剧本目标页.jpg`、`44-山屋惊魂-教程-叛徒打开木乃伊剧本目标页.jpg`；旧杰克截图 `26` 只作历史参考 | 无 |
 | 交易请求 / 同意 | 选择双方持有物并等待接收方同意 | `betrayal-action-trade`、`betrayal-trade-flow-banner`、`betrayal-trade-agreement-panel` | 高频 / 非直觉 | `trade-and-agreement` | `evidence/betrayal-tutorial/29-35` | 无 |
-| 作祟目标与特殊行动 | 作祟后按剧本目标执行找真名、学驱逐法术、驱逐木乃伊，或叛徒帮助木乃伊完成女孩 + 圣符 / 指环目标 | `betrayal-open-scenario`、`betrayal-action-use`、`betrayal-room-board` | 非直觉 | `haunt-actions-and-finish`、`traitor-path` | `evidence/betrayal-tutorial/17-21`、待刷新 `45-47` | 当前只承诺默认首剧本「木乃伊横行」；木乃伊怪物移动 / 攻击 / 偷取仍待独立端到端证据 |
-| 终局 / 结果反馈 | 告诉玩家哪方胜利、刚才动作产生什么结果 | `betrayal-endgame-screen`、`betrayal-room-latest-feedback` | 高频 | `haunt-actions-and-finish`、`traitor-path`、`trade-and-agreement` | `evidence/betrayal-tutorial/21-山屋惊魂-教程-驱逐木乃伊成功后的终局页.jpg`、待刷新 `48-山屋惊魂-教程-木乃伊叛徒胜利.jpg`、`35`；旧杰克截图 `25` 只作历史参考 | 叛徒胜利截图待本轮 E2E 复跑后核图 |
+| 作祟目标与特殊行动 | 作祟后按剧本目标执行找真名、学驱逐法术、驱逐木乃伊；叛徒帮助木乃伊完成女孩 + 圣符 / 指环目标；怪物行动按规则移动、攻击和偷取 | `betrayal-open-scenario`、`betrayal-action-use`、`betrayal-room-board`、`betrayal-action-monster*`、`betrayal-mummy-reward-banner` | 非直觉 | `haunt-actions-and-finish`、`traitor-path`、`mummy-monster-actions` | `evidence/betrayal-tutorial/17-21`、`45-47`、`49-57` | 当前只承诺默认首剧本「木乃伊横行」；更多剧本仍未承诺 |
+| 终局 / 结果反馈 | 告诉玩家哪方胜利、刚才动作产生什么结果 | `betrayal-endgame-screen`、`betrayal-room-latest-feedback`、`betrayal-mummy-reward-banner` | 高频 | `haunt-actions-and-finish`、`traitor-path`、`trade-and-agreement`、`mummy-monster-actions` | `evidence/betrayal-tutorial/21-山屋惊魂-教程-驱逐木乃伊成功后的终局页.jpg`、`48-山屋惊魂-教程-木乃伊叛徒胜利.jpg`、`35`、`52`、`57`；旧杰克截图 `25` 只作历史参考 | 无 |
 
 ## 当前仍未承诺的范围
 
 1. 更多剧本 / 更多 haunt 分支
-   - 当前可见教程只承诺默认首剧本「木乃伊横行」的基础回合、预兆确认、交易、英雄驱逐木乃伊收尾和叛徒帮助木乃伊胜利链；旧「赤红杰克归来」英雄攻击、杰克之灵只作为隐藏历史入口，不算当前教程完整证据。
+   - 当前可见教程只承诺默认首剧本「木乃伊横行」的基础回合、预兆确认、交易、英雄驱逐木乃伊收尾、叛徒帮助木乃伊胜利链，以及木乃伊怪物移动 / 攻击 / 偷取链；旧「赤红杰克归来」英雄攻击、杰克之灵只作为隐藏历史入口，不算当前教程完整证据。
 
 2. 完整规则书级教学
-   - 当前是“5 个可见章节 + 4 个隐藏兼容 / 历史入口”的真实教程，不是把所有边界规则都塞进一次长教程。
+   - 当前是“6 个可见章节 + 4 个隐藏兼容 / 历史入口”的真实教程，不是把所有边界规则都塞进一次长教程。
 
 ## 当前建议
 
 1. 继续保持“真实页面 + 真实命令 + 可见章节不重复”的教程策略，不回退到教程专用壳层。
 2. 玩家链路截图必须保持游玩顺序：基础行动 -> 属性轨 / 观察 / 聚焦 / 预兆进度 -> 可探索盖着房间 / 发现牌 -> 预兆同屏单次确认 -> 作祟变化时剧本开场 -> 木乃伊目标页 -> 驱逐木乃伊前因果说明 -> 驱逐骰盘 -> 木乃伊终局；素材加载、debug、review 图只能作为技术证据，不混入全链路阶段。
-3. 下一轮若扩教程，优先把木乃伊移动 / 攻击 / 偷取、更多剧本或旧杰克兼容分支翻正为可见教程，不再重复基础移动 / 探索 / 驱逐 / 叛徒交付目标。
+3. 下一轮若扩教程，优先处理更多剧本或旧杰克兼容分支是否翻正为可见教程，不再重复基础移动 / 探索 / 驱逐 / 叛徒交付目标 / 木乃伊怪物行动。
 4. 任何教程新增章节都先补重复机制归并表、玩家因果链、真实锚点与最小 E2E，再扩文案。

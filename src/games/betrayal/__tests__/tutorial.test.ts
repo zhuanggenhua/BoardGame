@@ -390,6 +390,8 @@ describe('Betrayal 教程配置', () => {
         });
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.allowedCommands)
             .toEqual(['ACKNOWLEDGE_RECENT_ROLL']);
+        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-roll-review')?.highlightFrame)
+            .toBe('none');
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-monster-move-target')?.allowedCommands)
             .toEqual(['MOVE_MONSTER_TO_ROOM']);
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-target')?.allowedCommands)
@@ -399,6 +401,8 @@ describe('Betrayal 教程配置', () => {
             values: [3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1, 1],
             cursor: 0,
         });
+        expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-roll-review')?.highlightFrame)
+            .toBe('none');
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-reward')?.allowedCommands)
             .toEqual(['RESOLVE_MUMMY_ATTACK_REWARD']);
         expect(mummyMonsterManifest?.steps.find((step) => step.id === 'mummy-attack-reward')?.advanceOnEvents).toEqual([
@@ -567,12 +571,15 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupMonsterMove).toContain('怪物回合');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterTurnStart).toContain('木乃伊开回合');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRoll).toContain('木乃伊移动骰');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('0 或 1 点');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('读完骰盘');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).not.toContain('0 点');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('瞬移机会');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('未发现房间不会成为目标');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('女孩标记变成木乃伊持有');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackForced).toContain('不能先移动离开');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackTarget).toContain('叛徒和已死亡角色不会成为攻击目标');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('双方骰子');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('读完攻击骰盘');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).not.toContain('总点数');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackReward).toContain('偷走地图');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.stealResult).toContain('奖励条关闭');
         expect(JSON.stringify(zhCNLocale.tutorial)).not.toMatch(/真实链路|运行态|不是动画|不是说明图层|不是教程按钮|E2E|正式验证|收口|收尾|终局页|房间焦点入口|对攻/);

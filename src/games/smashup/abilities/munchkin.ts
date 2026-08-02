@@ -8,6 +8,7 @@ import {
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildStandardDrawEvents,
+    buildSemanticOngoingAttachEvents,
     buildValidatedMoveEvents,
     buildValidatedReturnEvents,
     grantExtraAction,
@@ -92,10 +93,27 @@ const HALFLINGS_UNEXPECTED_PARTY_CHOOSE_BASE_SOURCE_ID = 'munchkin_halflings_une
 const BASE_BIRTHDAY_PARTY = 'base_birthday_party';
 const BASE_SUBTERRANEAN_LAIR = 'base_subterranean_lair';
 const THIEVES_MASTER_THIEF = 'munchkin_thieves_master_thief';
+const THIEVES_FENCE = 'munchkin_thieves_fence';
+const THIEVES_FENCE_CHOOSE_TREASURES_SOURCE_ID = 'munchkin_thieves_fence_choose_treasures';
+const THIEVES_BACKSTAB = 'munchkin_thieves_backstab';
+const THIEVES_BACKSTAB_CHOOSE_TREASURE_SOURCE_ID = 'munchkin_thieves_backstab_choose_treasure';
+const THIEVES_BACKSTAB_CHOOSE_MINION_SOURCE_ID = 'munchkin_thieves_backstab_choose_minion';
 const THIEVES_CAT_BURGLAR = 'munchkin_thieves_cat_burglar';
 const THIEVES_CAT_BURGLAR_CHOOSE_TREASURES_SOURCE_ID = 'munchkin_thieves_cat_burglar_choose_treasures';
 const THIEVES_PICKPOCKET = 'munchkin_thieves_pickpocket';
+const THIEVES_POTION_BANDOLIER = 'munchkin_thieves_potion_bandolier';
+const THIEVES_POTION_BANDOLIER_CHOOSE_TREASURE_SOURCE_ID = 'munchkin_thieves_potion_bandolier_choose_treasure';
+const THIEVES_SMUGGLING = 'munchkin_thieves_smuggling';
+const THIEVES_SMUGGLING_CHOOSE_TREASURES_SOURCE_ID = 'munchkin_thieves_smuggling_choose_treasures';
 const THIEVES_SWIPE = 'munchkin_thieves_swipe';
+const THIEVES_CLEVER_DISTRACTION = 'munchkin_thieves_clever_distraction';
+const THIEVES_MUGGING = 'munchkin_thieves_mugging';
+const THIEVES_MUGGING_CHOOSE_ACTION_SOURCE_ID = 'munchkin_thieves_mugging_choose_action';
+const THIEVES_MUGGING_CHOOSE_MINION_SOURCE_ID = 'munchkin_thieves_mugging_choose_minion';
+const THIEVES_STRIP_BARE = 'munchkin_thieves_strip_bare';
+const THIEVES_STRIP_BARE_CHOOSE_TREASURE_SOURCE_ID = 'munchkin_thieves_strip_bare_choose_treasure';
+const BASE_THE_COFFERS = 'base_the_coffers';
+const BASE_THIEVES_GUILD = 'base_thieves_guild';
 
 type AttachedTreasureHost = {
     host: MinionOnBase;
@@ -165,6 +183,10 @@ type CashOutInteractionData = {
     sourceCardUid?: unknown;
     sourcePlayerId?: unknown;
 };
+type HandTreasureChoice = {
+    cardUid?: string;
+    defId?: string;
+};
 type CatBurglarTreasureChoice = {
     cardUid?: string;
     defId?: string;
@@ -172,6 +194,74 @@ type CatBurglarTreasureChoice = {
 type CatBurglarInteractionData = {
     sourceMinionUid?: unknown;
     sourceBaseIndex?: unknown;
+};
+type FenceInteractionData = {
+    sourceMinionUid?: unknown;
+    sourceBaseIndex?: unknown;
+};
+type BackstabTreasureInteractionData = {
+    sourceCardUid?: unknown;
+    sourcePlayerId?: unknown;
+};
+type BackstabMinionChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+    minionDefId?: string;
+};
+type BackstabMinionInteractionData = {
+    sourceCardUid?: unknown;
+    sourcePlayerId?: unknown;
+    treasureCardUid?: unknown;
+    treasureDefId?: unknown;
+};
+type MuggingActionChoice = {
+    cardUid?: string;
+    defId?: string;
+    ownerId?: string;
+    baseIndex?: number;
+    targetMinionUid?: string;
+};
+type MuggingActionInteractionData = {
+    sourceCardUid?: unknown;
+    sourcePlayerId?: unknown;
+};
+type MuggingMinionChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+    minionDefId?: string;
+};
+type MuggingMinionInteractionData = {
+    sourceCardUid?: unknown;
+    sourcePlayerId?: unknown;
+    actionCardUid?: unknown;
+    actionDefId?: unknown;
+    actionOwnerId?: unknown;
+    originalBaseIndex?: unknown;
+    originalHostMinionUid?: unknown;
+};
+type StripBareTreasureChoice = {
+    cardUid?: string;
+    defId?: string;
+    ownerId?: string;
+    baseIndex?: number;
+    targetType?: 'minion' | 'base' | 'attachedAction';
+    targetMinionUid?: string;
+};
+type StripBareInteractionData = {
+    sourceCardUid?: unknown;
+    sourcePlayerId?: unknown;
+};
+type PotionBandolierTreasureInteractionData = {
+    sourceCardUid?: unknown;
+    sourcePlayerId?: unknown;
+    targetMinionUid?: unknown;
+    targetBaseIndex?: unknown;
+};
+type SmugglingInteractionData = {
+    sourceCardUid?: unknown;
+    sourcePlayerId?: unknown;
 };
 type MineTreasureHostChoice = {
     treasureDefId?: string;
@@ -1225,6 +1315,335 @@ function buildCatBurglarTreasureOptions(state: SmashUpCore, playerId: string) {
         }));
 }
 
+function getHandTreasureCards(state: SmashUpCore, playerId: string): CardInstance[] {
+    return (state.players[playerId]?.hand ?? [])
+        .filter(card => isMunchkinTreasureCard(card.defId));
+}
+
+function buildHandTreasureOptions(state: SmashUpCore, playerId: string) {
+    return getHandTreasureCards(state, playerId).map(card => ({
+        id: `treasure-hand-${card.uid}`,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: {
+            cardUid: card.uid,
+            defId: card.defId,
+        } satisfies HandTreasureChoice,
+        _source: 'hand' as const,
+        displayMode: 'card' as const,
+    }));
+}
+
+function getSelectedHandTreasureCards(
+    state: SmashUpCore,
+    playerId: string,
+    value: unknown,
+    requiredCount: number,
+): CardInstance[] | undefined {
+    const selected = (Array.isArray(value) ? value : [value]) as HandTreasureChoice[];
+    const selectedCardUids = [...new Set(selected
+        .map(choice => choice?.cardUid)
+        .filter((cardUid): cardUid is string => typeof cardUid === 'string'))];
+    if (selectedCardUids.length !== requiredCount) return undefined;
+
+    const handTreasures = getHandTreasureCards(state, playerId);
+    const selectedTreasures = selectedCardUids
+        .map(cardUid => handTreasures.find(card => card.uid === cardUid))
+        .filter((card): card is CardInstance => card !== undefined);
+    return selectedTreasures.length === requiredCount ? selectedTreasures : undefined;
+}
+
+function buildDiscardTreasureCostEvent(
+    playerId: string,
+    selectedCards: CardInstance[],
+    timestamp: number,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.CARDS_DISCARDED,
+        payload: {
+            playerId,
+            cardUids: selectedCards.map(card => card.uid),
+        },
+        timestamp,
+    };
+}
+
+function buildVpAwardedEvent(
+    playerId: string,
+    amount: number,
+    reason: string,
+    timestamp: number,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.VP_AWARDED,
+        payload: { playerId, amount, reason },
+        timestamp,
+    };
+}
+
+function isActionInPlayerDiscard(
+    state: SmashUpCore,
+    playerId: string,
+    sourceCardUid: string | undefined,
+    defId: string,
+): boolean {
+    if (!sourceCardUid) return false;
+    return state.players[playerId]?.discard.some(card =>
+        card.uid === sourceCardUid
+        && card.defId === defId
+    ) ?? false;
+}
+
+function buildThievesBackstabMinionOptions(state: SmashUpCore, playerId: string) {
+    const candidates = state.bases.flatMap((base, baseIndex) => {
+        const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
+        return base.minions
+            .filter(minion => getEffectivePower(state, minion, baseIndex) <= 3)
+            .map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${getCardDef(minion.defId)?.name ?? minion.defId}（${baseName}）`,
+            }));
+    });
+
+    return buildActionMinionTargetOptions(candidates, {
+        state,
+        sourcePlayerId: playerId,
+        sourceDefId: THIEVES_BACKSTAB,
+        effectType: 'destroy',
+    });
+}
+
+function findMinionChoiceTarget(
+    state: SmashUpCore,
+    choice: BackstabMinionChoice | undefined,
+): { minion: MinionOnBase; baseIndex: number } | undefined {
+    const targetMinionUid = typeof choice?.minionUid === 'string' ? choice.minionUid : undefined;
+    const targetBaseIndex = typeof choice?.baseIndex === 'number' ? choice.baseIndex : undefined;
+    if (!targetMinionUid || targetBaseIndex === undefined) return undefined;
+    const minion = state.bases[targetBaseIndex]?.minions.find(candidate => candidate.uid === targetMinionUid);
+    return minion ? { minion, baseIndex: targetBaseIndex } : undefined;
+}
+
+function getSmashUpCardName(defId: string): string {
+    return getCardDef(defId)?.name ?? defId;
+}
+
+function getSmashUpBaseName(defId: string, baseIndex: number): string {
+    return getBaseDef(defId)?.name ?? `基地 ${baseIndex + 1}`;
+}
+
+function hasPlayerMinionAtBase(state: SmashUpCore, playerId: string, baseIndex: number | undefined): boolean {
+    return baseIndex !== undefined
+        && (state.bases[baseIndex]?.minions.some(minion => minion.controller === playerId) ?? false);
+}
+
+function getCleverDistractionWinnerIds(state: SmashUpCore, baseIndex: number | undefined): string[] {
+    if (baseIndex === undefined) return [];
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+    const contenders = Array.from(new Set(base.minions.map(minion => minion.controller)));
+    if (contenders.length === 0) return [];
+    const powers = contenders.map(playerId => ({
+        playerId,
+        power: getPlayerEffectivePowerOnBase(state, base, baseIndex, playerId),
+    }));
+    const maxPower = Math.max(...powers.map(entry => entry.power));
+    return powers
+        .filter(entry => entry.power === maxPower)
+        .map(entry => entry.playerId);
+}
+
+function buildCleverDistractionEvents(
+    state: SmashUpCore,
+    playerId: string,
+    baseIndex: number | undefined,
+    timestamp: number,
+): SmashUpEvent[] {
+    if (!hasPlayerMinionAtBase(state, playerId, baseIndex)) return [];
+    const winnerIds = getCleverDistractionWinnerIds(state, baseIndex);
+    if (winnerIds.length === 0) return [];
+
+    return [
+        ...winnerIds.map(winnerId =>
+            buildVpAwardedEvent(winnerId, -1, THIEVES_CLEVER_DISTRACTION, timestamp),
+        ),
+        buildVpAwardedEvent(playerId, 1, THIEVES_CLEVER_DISTRACTION, timestamp),
+    ];
+}
+
+function findAttachedActionByUid(
+    state: SmashUpCore,
+    cardUid: string | undefined,
+): { action: MinionOnBase['attachedActions'][number]; host: MinionOnBase; baseIndex: number } | undefined {
+    if (!cardUid) return undefined;
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+        for (const host of state.bases[baseIndex].minions) {
+            const action = host.attachedActions.find(candidate => candidate.uid === cardUid);
+            if (action) return { action, host, baseIndex };
+        }
+    }
+    return undefined;
+}
+
+function buildThievesMuggingActionOptions(state: SmashUpCore) {
+    return state.bases.flatMap((base, baseIndex) => {
+        const baseName = getSmashUpBaseName(base.defId, baseIndex);
+        return base.minions.flatMap((minion) => {
+            const minionName = getSmashUpCardName(minion.defId);
+            return minion.attachedActions.map((action, index) => ({
+                id: `mugging-action-${baseIndex}-${minion.uid}-${action.uid}-${index}`,
+                label: `${getSmashUpCardName(action.defId)}（${minionName} / ${baseName}）`,
+                value: {
+                    cardUid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    baseIndex,
+                    targetMinionUid: minion.uid,
+                } satisfies MuggingActionChoice,
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            }));
+        });
+    });
+}
+
+function buildThievesMuggingMinionOptions(
+    state: SmashUpCore,
+    playerId: string,
+    originalHostMinionUid?: string,
+    sourceDefId: string = THIEVES_MUGGING,
+) {
+    const candidates = state.bases.flatMap((base, baseIndex) => {
+        const baseName = getSmashUpBaseName(base.defId, baseIndex);
+        return base.minions
+            .filter(minion =>
+                minion.controller === playerId
+                && minion.uid !== originalHostMinionUid
+            )
+            .map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${getSmashUpCardName(minion.defId)}（${baseName}）`,
+            }));
+    });
+
+    return buildActionMinionTargetOptions(candidates, {
+        state,
+        sourcePlayerId: playerId,
+        sourceDefId,
+        effectType: 'affect',
+    });
+}
+
+function buildStripBareTreasureOptions(state: SmashUpCore) {
+    return state.bases.flatMap((base, baseIndex) => {
+        const baseName = getSmashUpBaseName(base.defId, baseIndex);
+        const treasureMinions = base.minions
+            .filter(minion => isMunchkinTreasureCard(minion.defId))
+            .map((minion) => ({
+                id: `strip-bare-minion-${baseIndex}-${minion.uid}`,
+                label: `${getSmashUpCardName(minion.defId)}（${baseName}）`,
+                value: {
+                    cardUid: minion.uid,
+                    defId: minion.defId,
+                    ownerId: minion.owner,
+                    baseIndex,
+                    targetType: 'minion' as const,
+                } satisfies StripBareTreasureChoice,
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            }));
+        const treasureOngoingActions = base.ongoingActions
+            .filter(action => isMunchkinTreasureCard(action.defId))
+            .map((action) => ({
+                id: `strip-bare-base-action-${baseIndex}-${action.uid}`,
+                label: `${getSmashUpCardName(action.defId)}（${baseName}）`,
+                value: {
+                    cardUid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    baseIndex,
+                    targetType: 'base' as const,
+                } satisfies StripBareTreasureChoice,
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            }));
+        const treasureAttachedActions = base.minions.flatMap((minion) => {
+            const minionName = getSmashUpCardName(minion.defId);
+            return minion.attachedActions
+                .filter(action => isMunchkinTreasureCard(action.defId))
+                .map((action) => ({
+                    id: `strip-bare-attached-action-${baseIndex}-${minion.uid}-${action.uid}`,
+                    label: `${getSmashUpCardName(action.defId)}（${minionName} / ${baseName}）`,
+                    value: {
+                        cardUid: action.uid,
+                        defId: action.defId,
+                        ownerId: action.ownerId,
+                        baseIndex,
+                        targetType: 'attachedAction' as const,
+                        targetMinionUid: minion.uid,
+                    } satisfies StripBareTreasureChoice,
+                    _source: 'field' as const,
+                    displayMode: 'card' as const,
+                }));
+        });
+        return [
+            ...treasureMinions,
+            ...treasureOngoingActions,
+            ...treasureAttachedActions,
+        ];
+    });
+}
+
+function findStripBareTreasureTarget(
+    state: SmashUpCore,
+    choice: StripBareTreasureChoice | undefined,
+): StripBareTreasureChoice | undefined {
+    const cardUid = typeof choice?.cardUid === 'string' ? choice.cardUid : undefined;
+    const defId = typeof choice?.defId === 'string' ? choice.defId : undefined;
+    const ownerId = typeof choice?.ownerId === 'string' ? choice.ownerId : undefined;
+    const baseIndex = typeof choice?.baseIndex === 'number' ? choice.baseIndex : undefined;
+    if (!cardUid || !defId || !ownerId || baseIndex === undefined || !isMunchkinTreasureCard(defId)) {
+        return undefined;
+    }
+
+    const base = state.bases[baseIndex];
+    if (!base) return undefined;
+    if (choice?.targetType === 'minion') {
+        const minion = base.minions.find(candidate =>
+            candidate.uid === cardUid
+            && candidate.defId === defId
+            && candidate.owner === ownerId
+            && isMunchkinTreasureCard(candidate.defId)
+        );
+        return minion ? { cardUid, defId, ownerId, baseIndex, targetType: 'minion' } : undefined;
+    }
+    if (choice?.targetType === 'base') {
+        const ongoing = base.ongoingActions.find(candidate =>
+            candidate.uid === cardUid
+            && candidate.defId === defId
+            && candidate.ownerId === ownerId
+            && isMunchkinTreasureCard(candidate.defId)
+        );
+        return ongoing ? { cardUid, defId, ownerId, baseIndex, targetType: 'base' } : undefined;
+    }
+    if (choice?.targetType === 'attachedAction') {
+        const targetMinionUid = typeof choice.targetMinionUid === 'string' ? choice.targetMinionUid : undefined;
+        const host = base.minions.find(candidate => candidate.uid === targetMinionUid);
+        const attached = host?.attachedActions.find(candidate =>
+            candidate.uid === cardUid
+            && candidate.defId === defId
+            && candidate.ownerId === ownerId
+            && isMunchkinTreasureCard(candidate.defId)
+        );
+        return attached ? { cardUid, defId, ownerId, baseIndex, targetType: 'attachedAction', targetMinionUid } : undefined;
+    }
+
+    return undefined;
+}
+
 function buildMineTreasureHostOptions(state: SmashUpCore, playerId: string) {
     const ownMinions = state.bases.flatMap((base, baseIndex) => {
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
@@ -1400,6 +1819,168 @@ function pickpocketOnPlay(ctx: AbilityContext): AbilityResult {
         : { events: [] };
 }
 
+function fenceValidateUse(ctx: AbilityContext): string | null {
+    return getHandTreasureCards(ctx.state, ctx.playerId).length >= 2
+        ? null
+        : '你需要至少两张手牌宝藏牌';
+}
+
+function fenceTalent(ctx: AbilityContext): AbilityResult {
+    const options = buildHandTreasureOptions(ctx.state, ctx.playerId);
+    if (options.length < 2) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_target', ctx.now)] };
+    }
+
+    const interaction = createSimpleChoice<HandTreasureChoice>(
+        `${THIEVES_FENCE_CHOOSE_TREASURES_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '销赃犯：选择两张宝藏牌弃掉',
+        options,
+        {
+            sourceId: 'munchkin_thieves_fence_choose_treasures',
+            targetType: 'hand',
+            titleKey: 'ui.munchkin_thieves_fence_choose_treasures_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'hand',
+            multi: { min: 2, max: 2 },
+            displayCard: { defId: THIEVES_FENCE, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) =>
+        buildHandTreasureOptions(latestState.core as SmashUpCore, ctx.playerId);
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                sourceMinionUid: ctx.cardUid,
+                sourceBaseIndex: ctx.baseIndex,
+            },
+        }),
+    };
+}
+
+function backstabOnPlay(ctx: AbilityContext): AbilityResult {
+    const options = buildHandTreasureOptions(ctx.state, ctx.playerId);
+    const targetOptions = buildThievesBackstabMinionOptions(ctx.state, ctx.playerId);
+    if (options.length === 0 || targetOptions.length === 0) {
+        return { events: [] };
+    }
+
+    const interaction = createSimpleChoice<HandTreasureChoice>(
+        `${THIEVES_BACKSTAB_CHOOSE_TREASURE_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '背刺：选择一张宝藏牌弃掉',
+        options,
+        {
+            sourceId: 'munchkin_thieves_backstab_choose_treasure',
+            targetType: 'hand',
+            titleKey: 'ui.munchkin_thieves_backstab_choose_treasure_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'hand',
+            multi: { min: 1, max: 1 },
+            displayCard: { defId: THIEVES_BACKSTAB, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) =>
+        buildHandTreasureOptions(latestState.core as SmashUpCore, ctx.playerId);
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                sourceCardUid: ctx.cardUid,
+                sourcePlayerId: ctx.playerId,
+            },
+        }),
+    };
+}
+
+function potionBandolierOnPlay(ctx: AbilityContext): AbilityResult {
+    const targetBaseIndex = ctx.targetBaseIndex;
+    const targetMinionUid = ctx.targetMinionUid;
+    const target = targetBaseIndex === undefined
+        ? undefined
+        : ctx.state.bases[targetBaseIndex]?.minions.find(minion => minion.uid === targetMinionUid);
+    const options = buildHandTreasureOptions(ctx.state, ctx.playerId);
+    if (!target || options.length === 0) {
+        return { events: [] };
+    }
+
+    const interaction = createSimpleChoice<HandTreasureChoice>(
+        `${THIEVES_POTION_BANDOLIER_CHOOSE_TREASURE_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '药水腰带：选择一张宝藏牌弃掉',
+        options,
+        {
+            sourceId: 'munchkin_thieves_potion_bandolier_choose_treasure',
+            targetType: 'hand',
+            titleKey: 'ui.munchkin_thieves_potion_bandolier_choose_treasure_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'hand',
+            multi: { min: 1, max: 1 },
+            displayCard: { defId: THIEVES_POTION_BANDOLIER, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) =>
+        buildHandTreasureOptions(latestState.core as SmashUpCore, ctx.playerId);
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                sourceCardUid: ctx.cardUid,
+                sourcePlayerId: ctx.playerId,
+                targetMinionUid,
+                targetBaseIndex,
+            },
+        }),
+    };
+}
+
+function smugglingOnPlay(ctx: AbilityContext): AbilityResult {
+    const options = buildHandTreasureOptions(ctx.state, ctx.playerId);
+    if (options.length < 2) {
+        return { events: [] };
+    }
+
+    const interaction = createSimpleChoice<HandTreasureChoice>(
+        `${THIEVES_SMUGGLING_CHOOSE_TREASURES_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '走私：选择两张宝藏牌弃掉',
+        options,
+        {
+            sourceId: 'munchkin_thieves_smuggling_choose_treasures',
+            targetType: 'hand',
+            titleKey: 'ui.munchkin_thieves_smuggling_choose_treasures_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'hand',
+            multi: { min: 2, max: 2 },
+            displayCard: { defId: THIEVES_SMUGGLING, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) =>
+        buildHandTreasureOptions(latestState.core as SmashUpCore, ctx.playerId);
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                sourceCardUid: ctx.cardUid,
+                sourcePlayerId: ctx.playerId,
+            },
+        }),
+    };
+}
+
 function catBurglarOnPlay(ctx: AbilityContext): AbilityResult {
     const options = buildCatBurglarTreasureOptions(ctx.state, ctx.playerId);
     if (options.length === 0) {
@@ -1435,6 +2016,169 @@ function catBurglarOnPlay(ctx: AbilityContext): AbilityResult {
             },
         }),
     };
+}
+
+function cleverDistractionValidateUse(ctx: AbilityContext): string | null {
+    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
+    if (!hasPlayerMinionAtBase(ctx.state, ctx.playerId, baseIndex)) {
+        return '你必须在该计分基地有一个仆从';
+    }
+    if (getCleverDistractionWinnerIds(ctx.state, baseIndex).length === 0) {
+        return '该基地没有可结算的赢家';
+    }
+    return null;
+}
+
+function cleverDistractionSpecial(ctx: AbilityContext): AbilityResult {
+    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
+    return {
+        events: buildCleverDistractionEvents(ctx.state, ctx.playerId, baseIndex, ctx.now),
+    };
+}
+
+function muggingOnPlay(ctx: AbilityContext): AbilityResult {
+    const actionOptions = buildThievesMuggingActionOptions(ctx.state);
+    const hasOwnMinion = ctx.state.bases.some(base =>
+        base.minions.some(minion => minion.controller === ctx.playerId),
+    );
+    if (actionOptions.length === 0 || !hasOwnMinion) {
+        return { events: [] };
+    }
+
+    const interaction = createSimpleChoice<MuggingActionChoice>(
+        `${THIEVES_MUGGING_CHOOSE_ACTION_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '打劫：选择一个打出到仆从身上的行动',
+        actionOptions,
+        {
+            sourceId: 'munchkin_thieves_mugging_choose_action',
+            targetType: 'ongoing',
+            titleKey: 'ui.munchkin_thieves_mugging_choose_action_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'field',
+            displayCard: { defId: THIEVES_MUGGING, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) =>
+        buildThievesMuggingActionOptions(latestState.core as SmashUpCore);
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                sourceCardUid: ctx.cardUid,
+                sourcePlayerId: ctx.playerId,
+            },
+        }),
+    };
+}
+
+function stripBareOnPlay(ctx: AbilityContext): AbilityResult {
+    const options = buildStripBareTreasureOptions(ctx.state);
+    if (options.length === 0) {
+        return { events: [] };
+    }
+
+    const interaction = createSimpleChoice<StripBareTreasureChoice>(
+        `${THIEVES_STRIP_BARE_CHOOSE_TREASURE_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '剥光：选择场上的一张宝藏牌',
+        options,
+        {
+            sourceId: 'munchkin_thieves_strip_bare_choose_treasure',
+            targetType: 'board',
+            titleKey: 'ui.munchkin_thieves_strip_bare_choose_treasure_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'field',
+            displayCard: { defId: THIEVES_STRIP_BARE, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) =>
+        buildStripBareTreasureOptions(latestState.core as SmashUpCore);
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                sourceCardUid: ctx.cardUid,
+                sourcePlayerId: ctx.playerId,
+            },
+        }),
+    };
+}
+
+function cleverDistractionAfterScoringTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    const baseIndex = ctx.baseIndex;
+    if (baseIndex === undefined) return [];
+    const armedEntries = (ctx.state.pendingAfterScoringSpecials ?? []).filter(entry =>
+        entry.sourceDefId === THIEVES_CLEVER_DISTRACTION
+        && entry.baseIndex === baseIndex
+    );
+    if (armedEntries.length === 0) return [];
+
+    const events: SmashUpEvent[] = [];
+    for (const entry of armedEntries) {
+        events.push({
+            type: SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED,
+            payload: {
+                sourceDefId: entry.sourceDefId,
+                playerId: entry.playerId,
+                baseIndex: entry.baseIndex,
+                cardUid: entry.cardUid,
+            },
+            timestamp: ctx.now,
+        } as SmashUpEvent);
+        events.push(...buildCleverDistractionEvents(ctx.state, entry.playerId, baseIndex, ctx.now));
+    }
+    return events;
+}
+
+function theCoffersAfterScoring(ctx: BaseAbilityContext): BaseAbilityResult {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) return { events: [] };
+    const playerIds = Array.from(new Set(base.minions.map(minion => minion.controller)));
+    return {
+        events: playerIds.map(playerId => ({
+            type: SU_EVENTS.MUNCHKIN_TREASURES_DRAWN,
+            payload: {
+                playerId,
+                count: 1,
+                reason: BASE_THE_COFFERS,
+                sourcePlayerId: playerId,
+                sourceDefId: BASE_THE_COFFERS,
+                sourceControllerId: playerId,
+                sourceBaseIndex: ctx.baseIndex,
+            },
+            timestamp: ctx.now,
+        } as SmashUpEvent)),
+    };
+}
+
+function theCoffersCanTrigger(ctx: BaseAbilityContext): boolean {
+    return (ctx.state.bases[ctx.baseIndex]?.minions.length ?? 0) > 0;
+}
+
+function thievesGuildOnActionPlayed(ctx: BaseAbilityContext): BaseAbilityResult {
+    if (ctx.actionTargetBaseIndex !== ctx.baseIndex) return { events: [] };
+    if (ctx.actionTargetType !== 'base' && ctx.actionTargetType !== 'minion') return { events: [] };
+    const triggerDef = ctx.triggerCardDefId ? getCardDef(ctx.triggerCardDefId) : undefined;
+    if (triggerDef?.type !== 'action' || triggerDef.faction !== MUNCHKIN_TREASURE_FACTION_ID) {
+        return { events: [] };
+    }
+    return {
+        events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
+    };
+}
+
+function thievesGuildCanTrigger(ctx: BaseAbilityContext): boolean {
+    if (ctx.actionTargetBaseIndex !== ctx.baseIndex) return false;
+    if (ctx.actionTargetType !== 'base' && ctx.actionTargetType !== 'minion') return false;
+    const triggerDef = ctx.triggerCardDefId ? getCardDef(ctx.triggerCardDefId) : undefined;
+    return triggerDef?.type === 'action' && triggerDef.faction === MUNCHKIN_TREASURE_FACTION_ID;
 }
 
 function anythingForMoneyOnPlay(ctx: AbilityContext): AbilityResult {
@@ -2387,8 +3131,21 @@ export function registerMunchkinAbilities(): void {
         validateUse: goldDiggerValidateUse,
     });
     registerAbility(THIEVES_MASTER_THIEF, 'talent', masterThiefTalent);
+    registerAbility(THIEVES_FENCE, 'talent', {
+        execute: fenceTalent,
+        validateUse: fenceValidateUse,
+    });
+    registerAbility(THIEVES_BACKSTAB, 'onPlay', backstabOnPlay);
     registerAbility(THIEVES_CAT_BURGLAR, 'onPlay', catBurglarOnPlay);
+    registerAbility(THIEVES_CLEVER_DISTRACTION, 'special', {
+        execute: cleverDistractionSpecial,
+        validateUse: cleverDistractionValidateUse,
+    });
+    registerAbility(THIEVES_MUGGING, 'onPlay', muggingOnPlay);
     registerAbility(THIEVES_PICKPOCKET, 'onPlay', pickpocketOnPlay);
+    registerAbility(THIEVES_POTION_BANDOLIER, 'onPlay', potionBandolierOnPlay);
+    registerAbility(THIEVES_SMUGGLING, 'onPlay', smugglingOnPlay);
+    registerAbility(THIEVES_STRIP_BARE, 'onPlay', stripBareOnPlay);
     registerAbility(THIEVES_SWIPE, 'onPlay', swipeOnPlay);
     registerAbility(DWARVES_CASH_OUT, 'onPlay', cashOutOnPlay);
     registerAbility(DWARVES_CUNNING_PLAN, 'special', cunningPlanSpecial);
@@ -2405,6 +3162,12 @@ export function registerMunchkinAbilities(): void {
     });
     registerBaseAbility(BASE_SUBTERRANEAN_LAIR, 'onTurnStart', subterraneanLairOnTurnStart, {
         canTrigger: ctx => !(ctx.state.bases[ctx.baseIndex]?.minions.some(minion => minion.controller === ctx.playerId) ?? false),
+    });
+    registerBaseAbility(BASE_THE_COFFERS, 'afterScoring', theCoffersAfterScoring, {
+        canTrigger: theCoffersCanTrigger,
+    });
+    registerBaseAbility(BASE_THIEVES_GUILD, 'onActionPlayed', thievesGuildOnActionPlayed, {
+        canTrigger: thievesGuildCanTrigger,
     });
     registerAbility(MAGIC_MISSILE, 'talent', {
         execute: magicMissileTalent,
@@ -2437,6 +3200,10 @@ export function registerMunchkinAbilities(): void {
     registerTrigger(HALFLINGS_SMALL_BUT_TOUGH, 'onMinionDiscardedFromBase', smallButToughTrigger, {
         canTrigger: smallButToughCanTrigger,
         perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger(THIEVES_CLEVER_DISTRACTION, 'afterScoring', cleverDistractionAfterScoringTrigger, {
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
@@ -3062,6 +3829,214 @@ export function registerMunchkinInteractionHandlers(): void {
         return { state, events };
     });
 
+    registerInteractionHandler(THIEVES_FENCE_CHOOSE_TREASURES_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const data = interactionData as FenceInteractionData | undefined;
+        const sourceMinionUid = typeof data?.sourceMinionUid === 'string' ? data.sourceMinionUid : undefined;
+        const sourceBaseIndex = typeof data?.sourceBaseIndex === 'number' ? data.sourceBaseIndex : undefined;
+        if (!sourceMinionUid || sourceBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+
+        const sourceMinion = state.core.bases[sourceBaseIndex]?.minions.find(minion =>
+            minion.uid === sourceMinionUid
+            && minion.defId === THIEVES_FENCE
+            && minion.controller === playerId
+        );
+        const selectedTreasureCards = getSelectedHandTreasureCards(state.core, playerId, value, 2);
+        if (!sourceMinion || !selectedTreasureCards) {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: [
+                buildDiscardTreasureCostEvent(playerId, selectedTreasureCards, timestamp),
+                buildVpAwardedEvent(playerId, 1, THIEVES_FENCE, timestamp),
+            ],
+        };
+    });
+
+    registerInteractionHandler(THIEVES_BACKSTAB_CHOOSE_TREASURE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const data = interactionData as BackstabTreasureInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourcePlayerId = typeof data?.sourcePlayerId === 'string' ? data.sourcePlayerId : undefined;
+        if (!sourceCardUid || !sourcePlayerId || playerId !== sourcePlayerId) {
+            return { state, events: [] };
+        }
+        if (!isActionInPlayerDiscard(state.core, sourcePlayerId, sourceCardUid, THIEVES_BACKSTAB)) {
+            return { state, events: [] };
+        }
+
+        const selectedTreasureCards = getSelectedHandTreasureCards(state.core, playerId, value, 1);
+        const selectedTreasure = selectedTreasureCards?.[0];
+        const targetOptions = buildThievesBackstabMinionOptions(state.core, playerId);
+        if (!selectedTreasure || targetOptions.length === 0) {
+            return { state, events: [] };
+        }
+
+        const interaction = createSimpleChoice<BackstabMinionChoice>(
+            `${THIEVES_BACKSTAB_CHOOSE_MINION_SOURCE_ID}_${sourceCardUid}_${timestamp}`,
+            playerId,
+            '背刺：选择力量3或更少的仆从',
+            targetOptions,
+            {
+                sourceId: 'munchkin_thieves_backstab_choose_minion',
+                targetType: 'minion',
+                titleKey: 'ui.munchkin_thieves_backstab_choose_minion_title',
+                responseValidationMode: 'live',
+                autoRefresh: 'field',
+                displayCard: { defId: THIEVES_BACKSTAB, cardUid: sourceCardUid },
+            },
+        );
+        interaction.data.optionsGenerator = (latestState) =>
+            buildThievesBackstabMinionOptions(latestState.core as SmashUpCore, playerId);
+
+        return {
+            state: queueInteraction(state, {
+                ...interaction,
+                data: {
+                    ...interaction.data,
+                    sourceCardUid,
+                    sourcePlayerId,
+                    treasureCardUid: selectedTreasure.uid,
+                    treasureDefId: selectedTreasure.defId,
+                },
+            }),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler(THIEVES_BACKSTAB_CHOOSE_MINION_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const choice = value as BackstabMinionChoice | undefined;
+        const data = interactionData as BackstabMinionInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourcePlayerId = typeof data?.sourcePlayerId === 'string' ? data.sourcePlayerId : undefined;
+        const treasureCardUid = typeof data?.treasureCardUid === 'string' ? data.treasureCardUid : undefined;
+        if (!sourceCardUid || !sourcePlayerId || playerId !== sourcePlayerId || !treasureCardUid) {
+            return { state, events: [] };
+        }
+        if (!isActionInPlayerDiscard(state.core, sourcePlayerId, sourceCardUid, THIEVES_BACKSTAB)) {
+            return { state, events: [] };
+        }
+
+        const selectedTreasureCards = getSelectedHandTreasureCards(
+            state.core,
+            playerId,
+            [{ cardUid: treasureCardUid }],
+            1,
+        );
+        const target = findMinionChoiceTarget(state.core, choice);
+        if (!selectedTreasureCards || !target || getEffectivePower(state.core, target.minion, target.baseIndex) > 3) {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: [
+                buildDiscardTreasureCostEvent(playerId, selectedTreasureCards, timestamp),
+                ...buildValidatedDestroyEvents(state.core, {
+                    minionUid: target.minion.uid,
+                    minionDefId: target.minion.defId,
+                    fromBaseIndex: target.baseIndex,
+                    destroyerId: playerId,
+                    reason: THIEVES_BACKSTAB,
+                    now: timestamp,
+                    sourcePlayerId: playerId,
+                    sourceCardUid,
+                    sourceDefId: THIEVES_BACKSTAB,
+                    sourceControllerId: playerId,
+                }),
+            ],
+        };
+    });
+
+    registerInteractionHandler(THIEVES_POTION_BANDOLIER_CHOOSE_TREASURE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const data = interactionData as PotionBandolierTreasureInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourcePlayerId = typeof data?.sourcePlayerId === 'string' ? data.sourcePlayerId : undefined;
+        const targetMinionUid = typeof data?.targetMinionUid === 'string' ? data.targetMinionUid : undefined;
+        const targetBaseIndex = typeof data?.targetBaseIndex === 'number' ? data.targetBaseIndex : undefined;
+        if (!sourceCardUid || !sourcePlayerId || playerId !== sourcePlayerId || !targetMinionUid || targetBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        if (!isActionInPlayerDiscard(state.core, sourcePlayerId, sourceCardUid, THIEVES_POTION_BANDOLIER)) {
+            return { state, events: [] };
+        }
+
+        const target = state.core.bases[targetBaseIndex]?.minions.find(minion => minion.uid === targetMinionUid);
+        const selectedTreasureCards = getSelectedHandTreasureCards(state.core, playerId, value, 1);
+        if (!target || !selectedTreasureCards) {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: [
+                buildDiscardTreasureCostEvent(playerId, selectedTreasureCards, timestamp),
+                addTempPower(target.uid, targetBaseIndex, 3, THIEVES_POTION_BANDOLIER, timestamp, {
+                    sourcePlayerId: playerId,
+                    sourceCardUid,
+                    sourceDefId: THIEVES_POTION_BANDOLIER,
+                    sourceControllerId: playerId,
+                }),
+            ],
+        };
+    });
+
+    registerInteractionHandler(THIEVES_SMUGGLING_CHOOSE_TREASURES_SOURCE_ID, (state, playerId, value, interactionData, random, timestamp) => {
+        const data = interactionData as SmugglingInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourcePlayerId = typeof data?.sourcePlayerId === 'string' ? data.sourcePlayerId : undefined;
+        if (!sourceCardUid || !sourcePlayerId || playerId !== sourcePlayerId) {
+            return { state, events: [] };
+        }
+        const player = state.core.players[sourcePlayerId];
+        const sourceCard = player?.discard.find(card =>
+            card.uid === sourceCardUid
+            && card.defId === THIEVES_SMUGGLING
+        );
+        const selectedTreasureCards = getSelectedHandTreasureCards(state.core, playerId, value, 2);
+        if (!player || !sourceCard || !selectedTreasureCards) {
+            return { state, events: [] };
+        }
+
+        const shuffledDeckCards = random.shuffle([
+            ...player.deck,
+            ...player.discard.filter(card => card.uid !== sourceCardUid),
+            ...selectedTreasureCards,
+        ]);
+
+        return {
+            state,
+            events: [
+                buildDiscardTreasureCostEvent(playerId, selectedTreasureCards, timestamp),
+                buildVpAwardedEvent(playerId, 1, THIEVES_SMUGGLING, timestamp),
+                {
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: {
+                        playerId,
+                        deckUids: shuffledDeckCards.map(card => card.uid),
+                    },
+                    timestamp,
+                },
+                {
+                    type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                    payload: {
+                        cardUid: sourceCard.uid,
+                        defId: THIEVES_SMUGGLING,
+                        ownerId: sourceCard.owner,
+                        reason: THIEVES_SMUGGLING,
+                        sourcePlayerId: playerId,
+                        sourceCardUid: sourceCard.uid,
+                        sourceDefId: THIEVES_SMUGGLING,
+                        sourceControllerId: playerId,
+                    },
+                    timestamp,
+                },
+            ],
+        };
+    });
+
     registerInteractionHandler(THIEVES_CAT_BURGLAR_CHOOSE_TREASURES_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
         const data = interactionData as CatBurglarInteractionData | undefined;
         const sourceMinionUid = typeof data?.sourceMinionUid === 'string' ? data.sourceMinionUid : undefined;
@@ -3110,6 +4085,157 @@ export function registerMunchkinInteractionHandlers(): void {
         }
 
         return { state, events };
+    });
+
+    registerInteractionHandler(THIEVES_MUGGING_CHOOSE_ACTION_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const choice = value as MuggingActionChoice | undefined;
+        const data = interactionData as MuggingActionInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourcePlayerId = typeof data?.sourcePlayerId === 'string' ? data.sourcePlayerId : undefined;
+        if (!sourceCardUid || !sourcePlayerId || playerId !== sourcePlayerId) {
+            return { state, events: [] };
+        }
+        if (!isActionInPlayerDiscard(state.core, sourcePlayerId, sourceCardUid, THIEVES_MUGGING)) {
+            return { state, events: [] };
+        }
+
+        const attached = findAttachedActionByUid(state.core, choice?.cardUid);
+        if (!attached || attached.action.defId !== choice?.defId || attached.action.ownerId !== choice.ownerId) {
+            return { state, events: [] };
+        }
+
+        const targetOptions = buildThievesMuggingMinionOptions(
+            state.core,
+            playerId,
+            attached.host.uid,
+            attached.action.defId,
+        );
+        if (targetOptions.length === 0) {
+            return { state, events: [] };
+        }
+
+        const interaction = createSimpleChoice<MuggingMinionChoice>(
+            `${THIEVES_MUGGING_CHOOSE_MINION_SOURCE_ID}_${sourceCardUid}_${timestamp}`,
+            playerId,
+            '打劫：选择你的一个仆从',
+            targetOptions,
+            {
+                sourceId: 'munchkin_thieves_mugging_choose_minion',
+                targetType: 'minion',
+                titleKey: 'ui.munchkin_thieves_mugging_choose_minion_title',
+                responseValidationMode: 'live',
+                autoRefresh: 'field',
+                displayCard: { defId: THIEVES_MUGGING, cardUid: sourceCardUid },
+            },
+        );
+        interaction.data.optionsGenerator = (latestState, latestData) => {
+            const latest = latestData as MuggingMinionInteractionData | undefined;
+            const originalHostMinionUid = typeof latest?.originalHostMinionUid === 'string'
+                ? latest.originalHostMinionUid
+                : attached.host.uid;
+            const actionDefId = typeof latest?.actionDefId === 'string'
+                ? latest.actionDefId
+                : attached.action.defId;
+            return buildThievesMuggingMinionOptions(
+                latestState.core as SmashUpCore,
+                playerId,
+                originalHostMinionUid,
+                actionDefId,
+            );
+        };
+
+        return {
+            state: queueInteraction(state, {
+                ...interaction,
+                data: {
+                    ...interaction.data,
+                    sourceCardUid,
+                    sourcePlayerId,
+                    actionCardUid: attached.action.uid,
+                    actionDefId: attached.action.defId,
+                    actionOwnerId: attached.action.ownerId,
+                    originalBaseIndex: attached.baseIndex,
+                    originalHostMinionUid: attached.host.uid,
+                },
+            }),
+            events: [],
+        };
+    });
+
+    registerInteractionHandler(THIEVES_MUGGING_CHOOSE_MINION_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const choice = value as MuggingMinionChoice | undefined;
+        const data = interactionData as MuggingMinionInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourcePlayerId = typeof data?.sourcePlayerId === 'string' ? data.sourcePlayerId : undefined;
+        const actionCardUid = typeof data?.actionCardUid === 'string' ? data.actionCardUid : undefined;
+        const actionDefId = typeof data?.actionDefId === 'string' ? data.actionDefId : undefined;
+        const actionOwnerId = typeof data?.actionOwnerId === 'string' ? data.actionOwnerId : undefined;
+        const originalHostMinionUid = typeof data?.originalHostMinionUid === 'string' ? data.originalHostMinionUid : undefined;
+        if (!sourceCardUid || !sourcePlayerId || playerId !== sourcePlayerId || !actionCardUid || !actionDefId || !actionOwnerId) {
+            return { state, events: [] };
+        }
+        if (!isActionInPlayerDiscard(state.core, sourcePlayerId, sourceCardUid, THIEVES_MUGGING)) {
+            return { state, events: [] };
+        }
+
+        const attached = findAttachedActionByUid(state.core, actionCardUid);
+        const target = findMinionChoiceTarget(state.core, choice as BackstabMinionChoice | undefined);
+        if (!attached || !target || attached.action.defId !== actionDefId || attached.action.ownerId !== actionOwnerId) {
+            return { state, events: [] };
+        }
+        if (target.minion.controller !== playerId || target.minion.uid === originalHostMinionUid) {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: buildSemanticOngoingAttachEvents(state.core, {
+                cardUid: attached.action.uid,
+                defId: attached.action.defId,
+                ownerId: attached.action.ownerId,
+                sourcePlayerId: playerId,
+                sourceKind: 'action',
+                targetBaseIndex: target.baseIndex,
+                targetMinionUid: target.minion.uid,
+                metadata: attached.action.metadata,
+                talentUsed: attached.action.talentUsed,
+                now: timestamp,
+            }),
+        };
+    });
+
+    registerInteractionHandler(THIEVES_STRIP_BARE_CHOOSE_TREASURE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const choice = value as StripBareTreasureChoice | undefined;
+        const data = interactionData as StripBareInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourcePlayerId = typeof data?.sourcePlayerId === 'string' ? data.sourcePlayerId : undefined;
+        if (!sourceCardUid || !sourcePlayerId || playerId !== sourcePlayerId) {
+            return { state, events: [] };
+        }
+        if (!isActionInPlayerDiscard(state.core, sourcePlayerId, sourceCardUid, THIEVES_STRIP_BARE)) {
+            return { state, events: [] };
+        }
+
+        const target = findStripBareTreasureTarget(state.core, choice);
+        if (!target?.cardUid || !target.defId || !target.ownerId) {
+            return { state, events: [] };
+        }
+
+        return {
+            state,
+            events: [{
+                type: SU_EVENTS.CARD_TRANSFERRED,
+                payload: {
+                    cardUid: target.cardUid,
+                    defId: target.defId,
+                    fromPlayerId: target.ownerId,
+                    toPlayerId: playerId,
+                    ownerId: target.ownerId,
+                    reason: THIEVES_STRIP_BARE,
+                },
+                timestamp,
+            } as SmashUpEvent],
+        };
     });
 
     registerInteractionHandler(DWARVES_GREED_IS_GOOD_CHOOSE_TREASURE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {

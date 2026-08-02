@@ -1093,6 +1093,23 @@ function buildRecentRollDisplayKey(
   ].join("::");
 }
 
+function isAcknowledgeableRecentRollDisplay(
+  recentRoll: BetrayalRecentRollState | null | undefined,
+): boolean {
+  if (!recentRoll) {
+    return false;
+  }
+  if (recentRoll.roomEndTurn?.nextPlayerId || recentRoll.deathPrevention?.nextPlayerId) {
+    return false;
+  }
+  return (
+    recentRoll.kind === "mysticElevator" ||
+    recentRoll.kind === "attackRoll" ||
+    recentRoll.kind === "hauntActionTraitCheck" ||
+    recentRoll.kind === "monsterMoveRoll"
+  );
+}
+
 function buildLatestDiscoveryDisplayEntry(
   core: BetrayalCore,
 ): LatestDiscoveryDisplayEntry | null {
@@ -4707,7 +4724,7 @@ function resolveRecentRollTotal(roll: BetrayalRecentRollState): number {
 
 const BETRAYAL_HOUSE_DICE_STYLE_PROFILE = {
   id: "betrayal-house-dice",
-  surface: "green-felt",
+  surface: "transparent-virtual",
   colorset: "white",
   texture: "",
   material: "plastic",
@@ -5109,6 +5126,11 @@ function BetrayalHouseDice3DGroup({
       data-testid="betrayal-house-dice-3d-group"
       data-render-mode="betrayal-house-dice-box-visible"
       data-dice-tray-style="transparent-virtual"
+      data-dice-surface-mode={
+        styleProfile.surface === "transparent-virtual"
+          ? "transparent-virtual"
+          : "theme-surface"
+      }
       data-dice-physics-ready={hasPhysicsState ? "true" : "false"}
       data-dice-preload-state={hasPhysicsState ? "retired" : "visible"}
       data-dice-count={roll.dice.length}
@@ -10655,7 +10677,7 @@ export default function BetrayalBoard({
       core.recentRoll.deathPrevention?.nextPlayerId
     ) {
       dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, {});
-    } else if (core.recentRoll.kind === "mysticElevator") {
+    } else if (isAcknowledgeableRecentRollDisplay(core.recentRoll)) {
       dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL, {});
     }
     setPreviewState((previousState) => ({
@@ -14631,6 +14653,7 @@ export default function BetrayalBoard({
                           rerollSelection={latestDiscoveryRerollSelection}
                           effectiveLocale={effectiveLocale}
                           showSource={false}
+                          showRollLabel={false}
                           openTable
                           compactResult
                           denseResult={isPhoneLandscapeLayout}
@@ -15086,6 +15109,7 @@ export default function BetrayalBoard({
                         animateInitialRoll={false}
                         effectiveLocale={effectiveLocale}
                         showSource={false}
+                        showRollLabel={false}
                         openTable
                         compactResult={false}
                         denseResult

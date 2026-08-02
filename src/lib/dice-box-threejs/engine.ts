@@ -132,6 +132,12 @@ type DiceBoxDieWithBody = DiceBoxDie & {
     body?: DiceBoxBodyLike;
 };
 
+type DiceBoxSurfaceObject = {
+    visible?: boolean;
+    receiveShadow?: boolean;
+    material?: DiceBoxMaterialInstance | DiceBoxMaterialInstance[];
+};
+
 type DiceBoxDieTransformSnapshot = {
     position: { x: number; y: number; z: number };
     quaternion: { x: number; y: number; z: number; w: number };
@@ -161,6 +167,16 @@ const DEFAULT_DICE_BOX_STYLE_PROFILE: DiceBoxStyleProfile = {
     settledLayoutScale: 1,
     compactSettledDice: false,
 };
+
+function usesTransparentVirtualSurface(styleProfile: DiceBoxStyleProfile): boolean {
+    return styleProfile.surface === 'transparent' || styleProfile.surface === 'transparent-virtual';
+}
+
+function resolveThemeSurface(styleProfile: DiceBoxStyleProfile): string {
+    return usesTransparentVirtualSurface(styleProfile)
+        ? DEFAULT_DICE_BOX_STYLE_PROFILE.surface ?? 'green-felt'
+        : styleProfile.surface ?? DEFAULT_DICE_BOX_STYLE_PROFILE.surface ?? 'green-felt';
+}
 
 let nextContainerId = 0;
 let diceBoxModulePromise: Promise<typeof DiceBoxModule> | null = null;
@@ -320,7 +336,7 @@ export class DiceBoxThreeEngine {
             sounds: false,
             color_spotlight: styleProfile.colorSpotlight ?? DEFAULT_DICE_BOX_STYLE_PROFILE.colorSpotlight,
             shadows: styleProfile.shadows ?? DEFAULT_DICE_BOX_STYLE_PROFILE.shadows,
-            theme_surface: styleProfile.surface ?? DEFAULT_DICE_BOX_STYLE_PROFILE.surface,
+            theme_surface: resolveThemeSurface(styleProfile),
             sound_dieMaterial: styleProfile.soundMaterial ?? styleProfile.material ?? DEFAULT_DICE_BOX_STYLE_PROFILE.soundMaterial,
             theme_colorset: styleProfile.colorset ?? DEFAULT_DICE_BOX_STYLE_PROFILE.colorset,
             theme_material: styleProfile.material ?? DEFAULT_DICE_BOX_STYLE_PROFILE.material,
@@ -346,9 +362,13 @@ export class DiceBoxThreeEngine {
         box.renderer.domElement.style.pointerEvents = 'none';
         box.renderer.domElement.style.background = 'transparent';
         box.renderer.domElement.dataset.dicePhysicsSource = 'dice-box-threejs';
+        box.renderer.domElement.dataset.diceSurfaceMode = usesTransparentVirtualSurface(styleProfile)
+            ? 'transparent-virtual'
+            : 'theme-surface';
         if (config?.canvasTestId) {
             box.renderer.domElement.dataset.testid = config.canvasTestId;
         }
+        engine.applySurfaceVisibility();
         if (typeof window !== 'undefined' && config?.canvasTestId) {
             const debugWindow = window as unknown as {
                 __E2E_TEST_MODE__?: boolean;
@@ -652,6 +672,7 @@ export class DiceBoxThreeEngine {
             x: worldWidth,
             y: worldHeight,
         });
+        this.applySurfaceVisibility();
         this.applyCameraProfile();
 
         const canvas = this.box.renderer?.domElement;
@@ -677,6 +698,28 @@ export class DiceBoxThreeEngine {
 
         camera.zoom = cameraZoom;
         camera.updateProjectionMatrix?.();
+        this.box.renderer?.render?.(this.box.scene, this.box.camera);
+    }
+
+    private applySurfaceVisibility(): void {
+        if (!usesTransparentVirtualSurface(this.styleProfile)) return;
+
+        const runtime = this.box as DiceBoxInternalRuntime & {
+            desk?: DiceBoxSurfaceObject;
+        };
+        const desk = runtime.desk;
+        if (!desk) return;
+
+        desk.visible = false;
+        desk.receiveShadow = false;
+        const materials = Array.isArray(desk.material) ? desk.material : [desk.material];
+        for (const material of materials) {
+            if (!material) continue;
+            material.visible = false;
+            material.transparent = true;
+            material.opacity = 0;
+            material.needsUpdate = true;
+        }
         this.box.renderer?.render?.(this.box.scene, this.box.camera);
     }
 

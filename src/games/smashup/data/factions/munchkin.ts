@@ -5,6 +5,18 @@ type MinionSeed = readonly [id: string, name: string, nameEn: string, power: num
 type ActionSeed = readonly [id: string, name: string, nameEn: string, count: number, index: number];
 type MunchkinSpecialDeckKind = 'treasure' | 'monster';
 type MunchkinSpecialSeed = readonly [id: string, name: string, nameEn: string, count: number, index: number, power?: number, treasureReward?: number];
+type ActionExtras = Pick<ActionCardDef,
+    | 'abilityTags'
+    | 'playNeedsBase'
+    | 'playNeedsMinion'
+    | 'playTargetMinionController'
+    | 'subtype'
+    | 'ongoingTarget'
+    | 'specialTiming'
+    | 'specialNeedsBase'
+    | 'responseWindowTiming'
+    | 'responseWindowNeedsBase'
+>;
 
 export interface MunchkinSpecialCardDescriptor {
     id: string;
@@ -47,9 +59,12 @@ function action(
     faction: string,
     atlasId: string,
     seed: ActionSeed,
-    abilityTags?: ActionCardDef['abilityTags'],
+    abilityTagsOrExtras?: ActionCardDef['abilityTags'] | Partial<ActionExtras>,
 ): ActionCardDef {
     const [id, name, nameEn, count, index] = seed;
+    const extras = Array.isArray(abilityTagsOrExtras)
+        ? { abilityTags: abilityTagsOrExtras }
+        : abilityTagsOrExtras;
     return {
         id,
         type: 'action',
@@ -59,7 +74,7 @@ function action(
         faction,
         count,
         previewRef: { type: 'atlas', atlasId, index },
-        ...(abilityTags ? { abilityTags } : {}),
+        ...(extras ?? {}),
     };
 }
 
@@ -295,19 +310,35 @@ const THIEVES_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_THIEVES_BASES;
 
 export const MUNCHKIN_THIEVES_MINIONS: MinionCardDef[] = [
     minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_master_thief', '盗贼大师', 'Master Thief', 5, 1, 0], ['talent']),
-    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_fence', '销赃犯', 'Fence', 3, 2, 1]),
+    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_fence', '销赃犯', 'Fence', 3, 2, 1], ['talent']),
     minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_cat_burglar', '猫咪窃贼', 'Cat Burglar', 3, 3, 3], ['onPlay']),
     minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_pickpocket', '扒手', 'Pickpocket', 2, 4, 6], ['onPlay']),
 ];
 
 export const MUNCHKIN_THIEVES_ACTIONS: ActionCardDef[] = [
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_backstab', '背刺', 'Backstab', 1, 10]),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_clever_distraction', '转移注意力', 'Clever Distraction', 1, 11]),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_mugging', '打劫', 'Mugging', 1, 12]),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_potion_bandolier', '药水腰带', 'Potion Bandolier', 2, 13]),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_secret_stash', '秘密藏匿处', 'Secret Stash', 1, 15]),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_smuggling', '走私', 'Smuggling', 1, 16]),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_strip_bare', '剥光', 'Strip Bare', 1, 17]),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_backstab', '背刺', 'Backstab', 1, 10], ['onPlay']),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_clever_distraction', '转移注意力', 'Clever Distraction', 1, 11], {
+        subtype: 'special',
+        abilityTags: ['special'],
+        specialTiming: 'afterScoring',
+        specialNeedsBase: true,
+        responseWindowTiming: 'afterScoring',
+        responseWindowNeedsBase: true,
+    }),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_mugging', '打劫', 'Mugging', 1, 12], ['onPlay']),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_potion_bandolier', '药水腰带', 'Potion Bandolier', 2, 13], {
+        abilityTags: ['onPlay'],
+        playNeedsMinion: true,
+        playTargetMinionController: 'any',
+    }),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_secret_stash', '秘密藏匿处', 'Secret Stash', 1, 15], {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['ongoing'],
+    }),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_smuggling', '走私', 'Smuggling', 1, 16], ['onPlay']),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_strip_bare', '剥光', 'Strip Bare', 1, 17], ['onPlay']),
     action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_swipe', '顺手拿走', 'Swipe', 2, 18], ['onPlay']),
 ];
 

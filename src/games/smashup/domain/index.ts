@@ -270,11 +270,15 @@ function collectQualifiedPlayerPowers(
 }
 
 function getMunchkinTreasureRewardCountForScoringBase(base: BaseInPlay): number {
-    return (base.monsters ?? []).reduce((sum, monster) => {
+    const monsterRewardCount = (base.monsters ?? []).reduce((sum, monster) => {
         const descriptor = getMunchkinSpecialCardDescriptor(monster.defId);
         if (descriptor?.kind !== 'monster') return sum;
         return sum + Math.max(0, descriptor.treasureReward ?? 0);
     }, 0);
+    const secretStashRewardCount = (base.ongoingActions ?? [])
+        .filter(action => action.defId === 'munchkin_thieves_secret_stash')
+        .length * 2;
+    return monsterRewardCount + secretStashRewardCount;
 }
 
 function buildMunchkinTreasureRewardEventsForScoringBase(
