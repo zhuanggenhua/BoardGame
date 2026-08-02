@@ -36,5 +36,5 @@
 - [x] 5.1 Run resource upload precheck for the new card/base atlas entries.
 - [ ] 5.2 Upload runtime WebP resources to the server asset source and verify representative public `HEAD 200` URLs. Blocked locally by missing SSH public-key access; PR includes the atlas resources for maintainer-side publish.
 - [x] 5.3 Review the final diff so unrelated existing worktree changes are not bundled.
-- [ ] 5.4 Commit with a Chinese message that names 企鹅 and the atlas/resource work.
-- [ ] 5.5 Push the branch and open a draft PR for the author with the atlas included in the PR scope.
+- [x] 5.4 Commit with a Chinese message that names 企鹅 and the atlas/resource work.
+- [x] 5.5 Push the branch and open a draft PR for the author with the atlas included in the PR scope. Draft PR: https://github.com/zhuanggenhua/BoardGame/pull/118
