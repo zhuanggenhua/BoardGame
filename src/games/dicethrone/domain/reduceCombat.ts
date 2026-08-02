@@ -180,7 +180,8 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     const sourcePlayerId = event.payload.sourcePlayerId ?? currentAttackAttackerId;
     const sourcePlayer = sourcePlayerId ? state.players[sourcePlayerId] : undefined;
     const parleyStacks = sourcePlayer?.statusEffects?.[STATUS_IDS.PARLEY] ?? 0;
-    const isCurrentAttackDamage = damageScope === 'attack'
+    const isAttackScopedDamage = damageScope !== 'direct';
+    const isCurrentAttackDamage = isAttackScopedDamage
         && Boolean(currentAttackAttackerId)
         && sourcePlayerId === currentAttackAttackerId
         && targetId === state.pendingAttack?.defenderId;

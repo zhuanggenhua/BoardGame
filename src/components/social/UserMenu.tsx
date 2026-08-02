@@ -10,6 +10,7 @@ import { SYSTEM_NOTIFICATION_ID } from './constants';
 import { AccountSettingsModal } from '../auth/AccountSettingsModal';
 import { CursorSettingsModal } from '../settings/CursorSettingsModal';
 import { NOTIFICATION_API_URL } from '../../config/server';
+import { readLocalStorageItem, writeLocalStorageItem } from '../../lib/browserStorage';
 import { useSocial } from '../../contexts/SocialContext';
 import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
 import { MyFeedbackModal } from './MyFeedbackModal';
@@ -97,8 +98,8 @@ export const UserMenu = ({ onLogout, variant = 'classic', triggerTestId = 'user-
 
                 const scopedSeenKey = getNotificationSeenStorageKey(user?.id);
                 const localSeenAt = Math.max(
-                    parseTimestamp(localStorage.getItem(NOTIFICATION_SEEN_KEY)),
-                    parseTimestamp(localStorage.getItem(scopedSeenKey)),
+                    parseTimestamp(readLocalStorageItem(NOTIFICATION_SEEN_KEY)),
+                    parseTimestamp(readLocalStorageItem(scopedSeenKey)),
                 );
 
                 let persistedSeenAt = 0;
@@ -137,8 +138,8 @@ export const UserMenu = ({ onLogout, variant = 'classic', triggerTestId = 'user-
         setHasNewNotification(false);
         const seenAt = Math.max(Date.now(), latestNotificationTimestamp);
         const seenAtRaw = seenAt.toString();
-        localStorage.setItem(NOTIFICATION_SEEN_KEY, seenAtRaw);
-        localStorage.setItem(getNotificationSeenStorageKey(user?.id), seenAtRaw);
+        writeLocalStorageItem(NOTIFICATION_SEEN_KEY, seenAtRaw);
+        writeLocalStorageItem(getNotificationSeenStorageKey(user?.id), seenAtRaw);
 
         if (token) {
             void fetch(`${NOTIFICATION_API_URL}/read-state`, {

@@ -2201,6 +2201,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // VIEWING STATE
     const [viewingCard, setViewingCard] = useState<CardMagnifyTarget | null>(null);
 
+    useEffect(() => {
+        if (currentPrompt && !shouldRenderPromptInOverlay) {
+            setViewingCard(null);
+        }
+    }, [currentPrompt, currentPrompt?.id, shouldRenderPromptInOverlay]);
+
     const handleBaseClick = useCallback((index: number) => {
         // Me First! 基地选择模式：打出需要基地目标的 Special 卡
         if (meFirstPendingCard) {
@@ -2266,7 +2272,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 return;
             }
             if (discardCard.mode === 'activate_special_minion') {
-                toast(t('ui.select_minion_hint'));
+                toast(t('ui.select_target_minion_hint'));
                 return;
             }
             if (discardCard.mode === 'play_action_minion') {
@@ -2275,7 +2281,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     setDiscardStripSelectedUid(null);
                     return;
                 }
-                toast(t('ui.select_minion_hint'));
+                toast(t('ui.select_target_minion_hint'));
                 return;
             }
             // 正常弃牌堆出牌模式
@@ -2327,7 +2333,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
             if (selectedCardMode === 'ongoing-minion' || selectedCardMode === 'action-minion') {
                 // 需要选择随从，点击基地无效
-                toast(t('ui.select_minion_hint'));
+                toast(t(selectedCardMode === 'action-minion' ? 'ui.select_target_minion_hint' : 'ui.select_minion_hint'));
                 return;
             }
             
@@ -4065,7 +4071,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         return t('ui.click_base_to_activate_discard_special');
                                     }
                                     if (selected?.mode === 'activate_special_minion') {
-                                        return t('ui.select_minion_hint');
+                                        return t('ui.select_target_minion_hint');
                                     }
                                     if (selected?.mode === 'play_action') {
                                         return t('ui.discard_action_play_direct_option');
@@ -4073,7 +4079,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     if (selected?.mode === 'play_action_minion') {
                                         return discardStripAllowedMinionUids.size === 0
                                             ? t('ui.click_base_to_deploy')
-                                            : t('ui.select_minion_hint');
+                                            : t('ui.select_target_minion_hint');
                                     }
                                     return t('ui.click_base_to_deploy');
                                 })()

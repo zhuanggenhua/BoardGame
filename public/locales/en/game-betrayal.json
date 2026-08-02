@@ -1,6 +1,6 @@
 {
   "title": "Betrayal at House on the Hill",
-  "description": "A 3-6 player horror exploration board game. This foundation skeleton locks the runtime board layout, asset paths, and the entry point for later gameplay work.",
+  "description": "A 3-6 player horror exploration board game. Enter a growing haunted house, explore rooms, find items and omens, then survive the haunt by following the scenario goals.",
   "players": "3-6 Players",
   "actionLog": {
     "selectExplorer": "Player {{player}} selected an explorer",
@@ -100,7 +100,7 @@
       "scenarioCardMeta": "Scenario {{card}} / trigger {{omen}}",
       "scenarioHauntNumber": "Haunt {{number}}",
       "scenarioImplemented": "Playable",
-      "scenarioContractPending": "Pending",
+      "scenarioContractPending": "Unavailable",
       "scenarioProposed": "Proposed",
       "scenarioConfirmed": "Confirmed",
       "scenarioNeedsConfirmation": "Confirm scenario card",
@@ -108,7 +108,7 @@
       "scenarioConfirmationCount": "Scenario confirmations {{confirmed}}/{{total}}",
       "confirmScenarioCard": "Confirm This Card",
       "waitScenarioConfirmations": "Waiting for other players",
-      "cannotStartPendingScenario": "Rules pending; cannot start",
+      "cannotStartPendingScenario": "This scenario cannot start yet",
       "viewScenarioDetails": "Read Full Scenario",
       "hideScenarioDetails": "Close File",
       "useScenario": "Confirm Scenario",
@@ -450,10 +450,10 @@
       "traitorGoalLabel": "Traitor Goal",
       "traitorGoal": "Help the mummy take the Girl plus either the Holy Symbol or Ring back to the sarcophagus. The traitor also wins if every hero dies.",
       "monsterGoalLabel": "Mummy",
-      "monsterGoal": "The mummy is a monster with Might 8, Speed 3, and Sanity 5. The current runtime covers public placement, knowledge tokens, the hero banishment loop, and the traitor loop for returning to the sarcophagus with the Girl plus the Holy Symbol or Ring.",
+      "monsterGoal": "The mummy is a monster with Might 8, Speed 3, and Sanity 5. Heroes learn the true name, learn the banishment spell, and banish the mummy; the traitor helps the mummy return to the sarcophagus with the Girl and either the Holy Symbol or Ring.",
       "readerTitle": "Mummy Rampage / Scenario Details",
       "readerSubtitle": "",
-      "readerLead": "This summary follows the Mummy Rampage runtime contract. Heroes find the true name, learn the spell, and banish the mummy with Sanity; the traitor helps the mummy return to the sarcophagus with the Girl and the Holy Symbol or Ring.",
+      "readerLead": "Heroes find the true name, learn the spell, and banish the mummy with Sanity; the traitor helps the mummy return to the sarcophagus with the Girl and either the Holy Symbol or Ring.",
       "readerCaseLabel": "File",
       "readerStatusLabel": "Status",
       "readerStatusPublicBook": "Scenario Dossier",
@@ -474,15 +474,15 @@
         "heroManualLabel": "Hero Manual",
         "heroManual": "Heroes complete two knowledge steps in order. First, make a 6+ Knowledge roll in the sarcophagus room, Study, or Library to find the mummy's true name and gain the first knowledge token.\n\nAfter the true name is found, the hero holding the Book may make a 6+ Knowledge roll to learn the banishment spell and gain the second knowledge token. Then the Book must reach the mummy's room before any hero in that room can attempt the final banishment.",
         "circleManualLabel": "Banishment Steps",
-        "circleManual": "The final banishment is a Sanity contest against the mummy. It is available only after the heroes have 2 knowledge tokens, the spell is learned, and a living hero with the Book is in the mummy's room.\n\nThe current runtime implements the hero loop: if the hero's Sanity total is strictly higher than the mummy's Sanity total, the heroes win.",
+        "circleManual": "The final banishment is a Sanity contest against the mummy. It is available only after the heroes have 2 knowledge tokens, the spell is learned, and a living hero with the Book is in the mummy's room.\n\nIf the hero's Sanity total is strictly higher than the mummy's Sanity total, the heroes win.",
         "traitorManualLabel": "Traitor Manual",
-        "traitorManual": "The traitor helps the mummy take the Girl, then bring the Girl and either the Holy Symbol or Ring back to the sarcophagus room.\n\nThe current runtime supports explorers picking up the Girl, giving the Girl to the Mummy in the same room, and giving the Holy Symbol or Ring to the Mummy in the same room. The traitor wins when the Mummy returns to the sarcophagus with the Girl and either required omen. Killing every hero remains a traitor win condition.",
+        "traitorManual": "The traitor helps the mummy take the Girl, then bring the Girl and either the Holy Symbol or Ring back to the sarcophagus room.\n\nExplorers can pick up the Girl, give the Girl to the Mummy in the same room, and give the Holy Symbol or Ring to the Mummy in the same room. The traitor wins when the Mummy returns to the sarcophagus with the Girl and either required omen. The traitor also wins if every hero dies.",
         "spiritManualLabel": "Mummy",
-        "spiritManual": "The mummy is a monster with Might 8, Speed 3, and Sanity 5. It is not stunned by normal attacks, and heroes may not make Speed attacks against it.\n\nThe contract also records its 0/1 movement teleport, stealing instead of damage, and forced attack impulse. Those details are still pending full runtime coverage.",
+        "spiritManual": "The mummy is a monster with Might 8, Speed 3, and Sanity 5. It is not stunned by normal attacks, and heroes may not make Speed attacks against it.\n\nWhen rolling for the mummy's movement, a result of 0 or 1 lets it move instantly to any room in the house. The mummy can carry items and can steal instead of dealing damage.",
         "exorcismManualLabel": "Final Exorcism",
         "exorcismManual": "Runtime actions open by progress: find the true name, learn the banishment spell, then banish the mummy.\n\nEach hero can attempt only one haunt special action per turn. The Book must be in the final room, but the hero who starts the banishment does not have to personally hold it.",
         "endingManualLabel": "Win Conditions",
-        "endingManual": "Heroes win by finding the true name, learning the spell, and banishing the mummy with Sanity.\n\nThe traitor wins when the mummy returns to the sarcophagus with the Girl and either the Holy Symbol or Ring, or when all heroes die. The current runtime covers hero banishment, the Mummy sarcophagus return, and all-heroes-dead outcomes."
+        "endingManual": "Heroes win by finding the true name, learning the spell, and banishing the mummy with Sanity.\n\nThe traitor wins when the mummy returns to the sarcophagus with the Girl and either the Holy Symbol or Ring, or when all heroes die."
       },
       "statusLabel": "Current State",
       "haunt": "Haunt",
@@ -619,7 +619,7 @@
           "prologueLabel": "The Stone Moves",
           "prologue": "The statues are no longer decorations. Each time you turn away, they seem a little closer; each blink makes their stone smiles sharper.",
           "setupLabel": "Opening Record",
-          "setup": "After Haunt 5, Blood from a Stone, Stone Cherubs enter the house. They are not normal enemies and cannot be solved through ordinary attacks.\n\nThe representative chain currently covers Cherub movement, line-of-sight damage, and Peekaboo. Full setup placement remains on the rule completion list.",
+          "setup": "After Haunt 5, Blood from a Stone, Stone Cherubs enter the house. Place one in each hero's room first, then place the extra Cherubs outside hero line of sight when possible; if there are not enough rooms, players choose discovered rooms for the remaining Cherubs.\n\nStone Cherubs are not normal enemies and cannot be solved through ordinary attacks.",
           "heroesLabel": "Hero Manual",
           "heroes": "Heroes must make every Stone Cherub disappear. A hero may play Peekaboo when one Stone Cherub is on the same tile and another Stone Cherub is in line of sight.\n\nPeekaboo is a Knowledge check; a Mirror helps. Success removes those two Cherubs. Failure causes general damage.",
           "specialLabel": "Sight and Peekaboo",
@@ -779,7 +779,7 @@
     "rooms": {
       "active": "Active Room",
       "unknown": "Unknown Room",
-      "tilePlaceholder": "Room tile pending",
+      "tilePlaceholder": "Unrevealed room",
       "ready": "Move here",
       "slotUndiscovered": "Not revealed yet",
       "slotReady": "Press Explore to reveal a new room",
@@ -883,6 +883,7 @@
       "addedToInventory": "Added to inventory",
       "readyToUse": "Selected and ready to use",
       "rollModifierTag": "Modify Dice",
+      "confirmCard": "Confirm",
       "confirmCardStep": "Confirm {{current}}/{{total}}"
     },
     "roll": {
@@ -937,7 +938,7 @@
     }
   },
   "errors": {
-    "readOnly": "This is a read-only foundation skeleton. Gameplay commands are not enabled yet."
+    "readOnly": "This action is not available right now."
   },
   "setup": {
     "scenario": {
@@ -953,14 +954,29 @@
         "setupRuntime": "The haunt has not started yet. Walk through a core turn: read the board, use a possession, move, explore an unknown room, and resolve the discovery.",
         "objectiveAndTurn": "Your goal is to keep exploring the house. The bottom actions are the main entry points: Move, Explore, Trade, Use, and End Turn.",
         "traitsAndSpeed": "Read Speed before moving. Speed tells you the farthest you can move this turn.",
+        "traitTrackReading": "Read each trait as separate physical slots: the current slot is highlighted, the green number is the starting value, and the skull is death, not a number. Repeated values are still separate slots.",
         "movesRemaining": "The movement medallion in the upper-right shows how many steps remain right now. It decreases as you move, so it may not equal your full Speed.",
         "roomBoard": "The central room board is the main play area. Check where you are, which rooms connect, and where exploration can continue.",
+        "observeTeammate": "Click a teammate panel to observe that explorer and move the camera to that explorer's room. Click the same teammate again to return to the place you were viewing before, not always to yourself.",
+        "focusSelfRoom": "If you lose your place after panning the board, Focus My Room moves the camera back to your explorer's room. It is not a room details popup or the return control for teammate observation.",
+        "hauntRiskTrack": "Read the omen progress by slots: the highlighted slot is the number of discovered omens. The haunt-check details stay in hover help instead of filling the main HUD.",
         "inventoryAndHelp": "The lower-left area is your inventory. Items and omens stay here; later use, trade, and effect choices start from these cards.",
         "useBook": "Select the Book in your inventory, then click Use. The Book points the next non-combat check toward Knowledge.",
         "openMoveTargets": "Now choose Move. Glowing rooms are places you can still reach this turn.",
         "moveToHallway": "Move into the Hallway. It connects to a new exit, so the next step can reveal an unknown room.",
-        "exploreUpper": "Select the explorable face-down room. It reveals as a new room, then immediately draws the matching discovery card.",
+        "exploreUpper": "Select the explorable face-down room. First choose the exit; the new room reveals into a placement preview.",
+        "confirmRoomPlacement": "After checking the room orientation and connected doorway, choose Confirm Placement. Only then does the room symbol resolve and draw the discovery card.",
         "finish": "The discovery has entered a Knowledge check. After the dice stop, you may use Rabbit's Foot to reroll one die; continue only when you do not want to change the result."
+      }
+    },
+    "omenConfirmation": {
+      "title": "Omen: Confirm and Haunt Progress",
+      "description": "After drawing an omen, read the omen track, the single Confirm button, and why the haunt check appears on the same screen as the omen card.",
+      "steps": {
+        "setupOmenConfirmation": "Now look at an omen discovery. The omen card and haunt-check result belong to the same discovery, so they appear together in one result panel.",
+        "hauntRiskTrack": "This shows how many omens have been discovered. The highlighted slot is the current count; hover help expands how many dice roll and what total starts the haunt.",
+        "confirmOmenCard": "The omen card and haunt-check result are already on the same screen. After reading them, press Confirm once to close this discovery and return to the board.",
+        "review": "After confirmation, the omen is in your inventory and the board returns to pre-haunt play. This check did not start the haunt, so exploration continues."
       }
     },
     "tradeAndAgreement": {
@@ -978,14 +994,15 @@
       }
     },
     "hauntActions": {
-      "title": "After the Haunt: Read the Goal, Then Exorcise",
-      "description": "After the haunt begins, see why the goal changed before finishing the hero exorcism check.",
+      "title": "After the Haunt: Read the Goal, Then Banish the Mummy",
+      "description": "After the haunt begins, see why the goal changed before finishing the hero banishment check.",
       "steps": {
-        "setupReadyToExorcise": "Exploration and omens can push the house into the haunt. This is now Crimson Jack Returns: the heroes must banish Jack's Spirit, and the traitor must stop them.",
-        "helpEntry": "The goal has changed after the haunt: heroes are no longer just exploring. Open the haunt reference to see how each side wins.",
-        "hauntActions": "The exorcism is not appearing out of nowhere. The heroes have already investigated Jack and studied two exorcism circles, so the last step is exorcising him.",
-        "exorciseJack": "Use Exorcise now to make a Sanity check. Once the dice settle, compare the total with the haunt requirement.",
-        "endgameReview": "The exorcism succeeds. Jack's Spirit is banished, and the survivors escape."
+        "setupReadyToExorcise": "Exploration and omens can push the house into the haunt. This is now Mummy Rampage: heroes must find the true name, learn the banishment spell, and banish the mummy before the traitor completes the wedding.",
+        "helpEntry": "The goal has changed after the haunt: heroes are no longer just exploring. Open the haunt reference to confirm how the heroes and traitor each win.",
+        "hauntActions": "Banish Mummy is not appearing out of nowhere. The heroes have already found the true name and learned the banishment spell, so the last step is a Sanity contest in the mummy's room.",
+        "exorciseJack": "Use Banish Mummy now to make the Sanity check. Once the dice settle, compare the hero total against the mummy.",
+        "banishMummy": "Use Banish Mummy now to make the Sanity contest. Once the dice settle, compare the hero total against the mummy.",
+        "endgameReview": "The banishment succeeds. The mummy crumbles into sand, and the ending narration opens the final report."
       }
     },
     "heroAttackPath": {
@@ -1009,13 +1026,33 @@
       }
     },
     "traitorPath": {
-      "title": "If the Traitor Succeeds",
-      "description": "Switch to the traitor side and see the alternate ending.",
+      "title": "Helping the Mummy",
+      "description": "Switch to the traitor side, pick up the Girl, give her to the Mummy, hand over the Holy Symbol, and trigger the traitor ending.",
       "steps": {
-        "setupTraitorTurn": "Now switch to the traitor side. This is not the next step after the hero victory; it demonstrates what happens if the traitor's chase succeeds.",
-        "traitorObjective": "The traitor does not study circles. The traitor closes in, attacks, and tries to knock down every hero.",
-        "attackHero": "Choose Attack Hero first to enter target selection, then click the hero token in the same room for the enemy attack. The attack rolls both sides, and the difference becomes damage.",
-        "traitorFinish": "When every hero falls, Crimson Jack prevails and the traitor wins."
+        "setupTraitorTurn": "Now switch to the traitor side. The traitor does not banish the Mummy; the traitor wins by helping the Mummy return to the Sarcophagus with the Girl and either the Holy Symbol or the Ring.",
+        "traitorObjective": "Open the Traitor's Tome first. The goal is the Girl, one required omen, and the Sarcophagus all coming together before the heroes banish the Mummy.",
+        "pickUpGirl": "The Girl token is in this room. Choose Pick Up Girl to move her from the room token into the traitor's public custody.",
+        "giveGirlToMummy": "The traitor is in the same room as the Mummy. Choose Give Girl to move the Girl from the traitor to the Mummy.",
+        "giveOmenToMummy": "The Mummy has the Girl and still needs the Holy Symbol or the Ring. Choose Give Holy Symbol so the Mummy carries the required omen in the Sarcophagus room.",
+        "traitorFinish": "The Mummy returns to the Sarcophagus with the Girl and the Holy Symbol, so the traitor wins. This shows the ending narration and final report."
+      }
+    },
+    "mummyMonsterActions": {
+      "title": "Mummy Monster Actions",
+      "description": "Switch to the Mummy's monster turn and complete movement, forced attack, and the steal reward.",
+      "steps": {
+        "setupMonsterMove": "Now watch the Mummy's own monster turn. It starts in the Sarcophagus room, the Girl is in a distant room, and the traitor controls the Mummy.",
+        "monsterTurnStart": "Choose Start Mummy. This moves the Mummy from goal text back into the real monster action slot.",
+        "monsterRoll": "Choose Mummy Movement. The dice table shows how far the Mummy may move this turn.",
+        "monsterRollReview": "This movement roll is 0. On 0 or 1, the Mummy may teleport to any discovered room. Read it, then return to the board.",
+        "monsterMoveTarget": "Choose Move Mummy, click the Mummy token, then click the discovered room with the Girl. Undiscovered rooms are not targets.",
+        "monsterMoveResult": "After the Mummy teleports to the Girl's room, the Girl token becomes held by the Mummy. This is a board result, not a log summary.",
+        "setupAttack": "Now check same-room combat. The Mummy, the traitor, and one living hero share a room, and the hero carries the Map and Holy Symbol.",
+        "attackForced": "When the Mummy shares a room with a hero, Mummy Attack appears first. It cannot move away before attacking.",
+        "attackTarget": "Choose Mummy Attack, then click the Mummy token and the hero in the same room. The traitor and dead explorer are not attack targets.",
+        "attackRollReview": "The attack dice table shows both sides' dice, totals, and outcome. If the Mummy deals enough damage, it may choose damage or steal. Read it, then return to the board.",
+        "attackReward": "Choose Steal Map here. Stealing replaces this damage and transfers the item from the hero to the Mummy.",
+        "stealResult": "The Mummy has taken the Map, the reward bar is closed, and the board feedback shows the steal result."
       }
     }
   }

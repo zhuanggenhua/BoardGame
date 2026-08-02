@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { BETRAYAL_DISCOVERY_POOLS } from '../../src/games/betrayal/scenarioConfig';
 import {
     assertNoFatalFrontendErrors,
     attachPageDiagnostics,
@@ -14,10 +15,26 @@ import {
 
 const EVIDENCE_DIR = 'evidence/betrayal-core-interactions/haunt-risk-status';
 const THREE_OMEN_SCREENSHOT = `${EVIDENCE_DIR}/01-预兆状态-三预兆待检定.jpg`;
-const LAST_OMEN_READY_SCREENSHOT = `${EVIDENCE_DIR}/02-预兆状态-最后预兆提示.jpg`;
-const LAST_OMEN_READER_SCREENSHOT = `${EVIDENCE_DIR}/03-最后预兆触发后剧本阅读承接.jpg`;
-const LAST_OMEN_TRIGGERED_SCREENSHOT = `${EVIDENCE_DIR}/04-最后预兆触发后.jpg`;
+const LAST_OMEN_READY_SCREENSHOT = `${EVIDENCE_DIR}/02-预兆状态-牌堆末张提示.jpg`;
+const LAST_OMEN_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/03-抽到触发预兆后先显示来源.jpg`;
+const LAST_OMEN_READER_SCREENSHOT = `${EVIDENCE_DIR}/04-确认触发预兆后剧本阅读承接.jpg`;
+const LAST_OMEN_TRIGGERED_SCREENSHOT = `${EVIDENCE_DIR}/05-关闭剧本书后作祟牌桌.jpg`;
 const PLAYER_ZERO_TEST_URL = '/play/betrayal?players=3&playerID=0&seat0=human&seat1=human&seat2=human';
+
+function requireOmenCard(cardId: string) {
+    const card = BETRAYAL_DISCOVERY_POOLS.possessions.omen.find((candidate) => candidate.id === cardId);
+    if (!card) {
+        throw new Error(`山屋 E2E 缺少真实预兆卡：${cardId}`);
+    }
+    return { ...card };
+}
+
+const FINAL_DRAW_OMEN_CARD = requireOmenCard('dog');
+const CURRENT_PLAYER_OMEN_CARD = requireOmenCard('omen-book');
+const TEAMMATE_OMEN_CARDS = [
+    requireOmenCard('mask'),
+    requireOmenCard('skull'),
+];
 
 test.describe('山屋惊魂预兆状态条', () => {
     test('真实牌桌入口用预兆进度条承载作祟检定信息', async ({ page, context }) => {
@@ -32,18 +49,14 @@ test.describe('山屋惊魂预兆状态条', () => {
 
         const core = createRuntimeCore();
         core.currentExplorer.inventory = [
-            { id: 'omen-current', name: '黑暗预兆', kind: 'omen' },
+            { ...CURRENT_PLAYER_OMEN_CARD },
             { id: 'item-current', name: '幸运石', kind: 'item' },
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
             ...explorer,
             inventory: [
-                {
-                    id: `omen-other-${index + 1}`,
-                    name: `队友预兆${index + 1}`,
-                    kind: 'omen',
-                },
+                { ...TEAMMATE_OMEN_CARDS[index % TEAMMATE_OMEN_CARDS.length]! },
             ],
         }));
 
@@ -104,20 +117,16 @@ test.describe('山屋惊魂预兆状态条', () => {
         core.drawOrder = ['omen'];
         core.deckCounts.omen = 1;
         core.possessionOrderByKind.omen = [
-            { id: 'omen-final', name: '最后预兆', kind: 'omen' },
+            { ...FINAL_DRAW_OMEN_CARD },
         ];
         core.currentExplorer.inventory = [
-            { id: 'omen-current', name: '黑暗预兆', kind: 'omen' },
+            { ...CURRENT_PLAYER_OMEN_CARD },
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
             ...explorer,
             inventory: [
-                {
-                    id: `omen-other-${index + 1}`,
-                    name: `队友预兆${index + 1}`,
-                    kind: 'omen',
-                },
+                { ...TEAMMATE_OMEN_CARDS[index % TEAMMATE_OMEN_CARDS.length]! },
             ],
         }));
 
@@ -141,26 +150,17 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(page.getByTestId('betrayal-room-placement-panel')).toBeVisible();
         await page.getByTestId('betrayal-room-placement-confirm').click();
 
-        await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toBeVisible();
-        await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-haunt-reveal-cue'), '触发预兆来源确认前作祟揭示横幅不得抢先出现').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-scenario-reader-dialog'), '触发预兆来源确认前不得自动打开剧本书').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible();
+        await expect(page.getByTestId('betrayal-discovery-panel-content')).toContainText(FINAL_DRAW_OMEN_CARD.name);
+        await expect(page.getByTestId('betrayal-discovery-panel-content')).toContainText(/自动触发作祟|作祟/);
+        await expect(page.getByTestId('betrayal-discovery-panel-content')).not.toContainText('最后预兆');
+        await saveScreenshot(page, LAST_OMEN_DISCOVERY_SCREENSHOT);
         await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await expect(riskStatus).toHaveAttribute('data-haunt-started', 'true');
         await expect(riskStatus).toHaveText(/作祟已开始/);
         await expect(riskStatus).toHaveAttribute('title', /不再进行作祟检定/);
-        const scenarioReaderDialog = page.getByTestId('betrayal-scenario-reader-dialog');
-        await expect(
-            scenarioReaderDialog,
-            '最后预兆触发作祟这个状态变化后必须承接一次剧本阅读',
-        ).toBeVisible();
-        await expect(scenarioReaderDialog.getByTestId('betrayal-scenario-opening-stage')).toBeVisible();
-        await expect(scenarioReaderDialog).toContainText(/木乃伊横行|剧本1/);
-        await saveScreenshot(page, LAST_OMEN_READER_SCREENSHOT);
-        await page.getByTestId('betrayal-scenario-reader-close').click();
-        await expect(scenarioReaderDialog).toHaveCount(0);
-        await page.getByTestId('betrayal-haunt-reveal-close').click();
-        await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveCount(0);
-        await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible();
-        await expect(page.getByTestId('betrayal-discovery-panel-content')).toContainText(/最后一张预兆|自动触发作祟|作祟/);
         for (let safety = 0; safety < 4; safety += 1) {
             if (!await page.getByTestId('betrayal-discovery-continue').isVisible().catch(() => false)) {
                 break;
@@ -168,6 +168,18 @@ test.describe('山屋惊魂预兆状态条', () => {
             await page.getByTestId('betrayal-discovery-continue').click();
         }
         await expect(page.getByTestId('betrayal-discovery-panel')).toBeHidden();
+        const scenarioReaderDialog = page.getByTestId('betrayal-scenario-reader-dialog');
+        await expect(
+            scenarioReaderDialog,
+            '触发预兆导致作祟这个状态变化后必须承接一次剧本阅读',
+        ).toBeVisible();
+        await expect(scenarioReaderDialog.getByTestId('betrayal-scenario-opening-stage')).toBeVisible();
+        await expect(scenarioReaderDialog).toContainText(/木乃伊横行|剧本1/);
+        await saveScreenshot(page, LAST_OMEN_READER_SCREENSHOT);
+        await page.getByTestId('betrayal-scenario-reader-close').click();
+        await expect(scenarioReaderDialog).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-haunt-reveal-cue'), '触发预兆已经由剧本书承接后，不再追加作祟横幅').toHaveCount(0);
+        await expect(page.getByTestId('betrayal-discovery-panel'), '已确认过的触发预兆关闭剧本书后不得重复弹出').toHaveCount(0);
         await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await expect(riskStatus).toHaveAttribute('data-haunt-started', 'true');
         await expect(riskStatus).toHaveText(/作祟已开始/);

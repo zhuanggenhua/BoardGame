@@ -43,6 +43,8 @@ import type {
     VpAwardedEvent,
     ActionReturnToHandOptionArmedEvent,
     SpecialAfterScoringConsumedEvent,
+    MunchkinTreasureRewardDistributedEvent,
+    MunchkinTreasureRewardRevealedEvent,
 } from './types';
 import {
     PHASE_ORDER,
@@ -69,6 +71,7 @@ import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef, isBaseDefAvailableForRuntimeBasePool } from '../data/cards';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import { drawCards } from './utils';
 import {
     countMadnessCardsForPlayer,
@@ -264,6 +267,58 @@ function collectQualifiedPlayerPowers(
     }
 
     return playerPowers;
+}
+
+function getMunchkinTreasureRewardCountForScoringBase(base: BaseInPlay): number {
+    return (base.monsters ?? []).reduce((sum, monster) => {
+        const descriptor = getMunchkinSpecialCardDescriptor(monster.defId);
+        if (descriptor?.kind !== 'monster') return sum;
+        return sum + Math.max(0, descriptor.treasureReward ?? 0);
+    }, 0);
+}
+
+function buildMunchkinTreasureRewardEventsForScoringBase(
+    core: SmashUpCore,
+    base: BaseInPlay,
+    baseIndex: number,
+    rankings: Array<{ playerId: PlayerId; power: number; vp: number }>,
+    now: number,
+): {
+    revealEvent?: MunchkinTreasureRewardRevealedEvent;
+    distributeEvent?: MunchkinTreasureRewardDistributedEvent;
+} {
+    const rewardCount = getMunchkinTreasureRewardCountForScoringBase(base);
+    const revealCount = Math.min(rewardCount, core.treasureDeck?.length ?? 0);
+    if (revealCount <= 0) return {};
+
+    const eligiblePlayerIds = rankings.map(ranking => ranking.playerId);
+    if (eligiblePlayerIds.length === 0) return {};
+
+    const reason = 'munchkin_scoring_treasure_reward';
+    const revealEvent: MunchkinTreasureRewardRevealedEvent = {
+        type: SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED,
+        payload: {
+            baseIndex,
+            baseDefId: base.defId,
+            ...(base.instanceId ? { baseInstanceId: base.instanceId } : {}),
+            count: revealCount,
+            eligiblePlayerIds,
+            nextRecipientIndex: 0,
+            reason,
+        },
+        timestamp: now,
+    };
+    const distributeEvent: MunchkinTreasureRewardDistributedEvent = {
+        type: SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED,
+        payload: {
+            reason,
+            baseIndex,
+            ...(base.instanceId ? { baseInstanceId: base.instanceId } : {}),
+        },
+        timestamp: now,
+    };
+
+    return { revealEvent, distributeEvent };
 }
 
 function getPlayersWithPlayableAfterScoringResponses(state: MatchState<SmashUpCore>, now: number): PlayerId[] {
@@ -856,6 +911,19 @@ export function scoreOneBase(
     };
     events.push(scoreEvt);
 
+    const munchkinTreasureRewardEvents = buildMunchkinTreasureRewardEventsForScoringBase(
+        updatedCore,
+        scoringBase,
+        baseIndex,
+        rankings,
+        now,
+    );
+    if (munchkinTreasureRewardEvents.revealEvent) {
+        events.push(munchkinTreasureRewardEvents.revealEvent);
+        updatedCore = reduce(updatedCore, munchkinTreasureRewardEvents.revealEvent);
+        if (ms) ms = { ...ms, core: updatedCore };
+    }
+
     for (const m of scoringBase.minions) {
         const queued = collectTriggers(updatedCore, 'onMinionDiscardedFromBase', {
             state: updatedCore,
@@ -1007,6 +1075,9 @@ export function scoreOneBase(
 
     // 构建清场 + 换基地 + onBaseRevealed 触发队列（延迟到当前基地彻底结算后再补发）
     const postScoringEvents: SmashUpEvent[] = [];
+    if (munchkinTreasureRewardEvents.distributeEvent) {
+        postScoringEvents.push(munchkinTreasureRewardEvents.distributeEvent);
+    }
     const clearEvt: BaseClearedEvent = {
         type: SU_EVENTS.BASE_CLEARED,
         payload: { baseIndex, baseDefId: scoringBase.defId, baseInstanceId: scoringBase.instanceId },
@@ -2758,6 +2829,15 @@ function postProcessSystemEvents(
             const discardedCards = sourceCards
                 .filter(card => uidSet.has(card.uid))
                 .map(card => ({ uid: card.uid, defId: card.defId, ownerId: card.owner }));
+            if (discardedCards.length < uidSet.size) {
+                const seen = new Set(discardedCards.map(card => card.uid));
+                const fallbackDiscard = tempCore.players[discardEvt.payload.playerId]?.discard ?? [];
+                for (const card of fallbackDiscard) {
+                    if (!uidSet.has(card.uid) || seen.has(card.uid)) continue;
+                    discardedCards.push({ uid: card.uid, defId: card.defId, ownerId: card.owner });
+                    seen.add(card.uid);
+                }
+            }
             const queued = collectTriggers(tempCore, 'onCardsDiscarded', {
                 state: tempCore,
                 matchState: ms,

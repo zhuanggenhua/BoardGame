@@ -659,6 +659,20 @@ function countActiveMunchkinTreasureAttachments(ctx: PowerModifierContext): numb
 function registerMunchkinTreasureModifiers(): void {
     registerCustomPowerModifiers([
         {
+            sourceDefId: 'munchkin_dwarves_loot_lover',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'munchkin_dwarves_loot_lover')) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx) * 2;
+            },
+        },
+        {
+            sourceDefId: 'munchkin_dwarves_gem_grabber',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'munchkin_dwarves_gem_grabber')) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx) > 0 ? 2 : 0;
+            },
+        },
+        {
             sourceDefId: 'munchkin_treasure_loads_of_treasure',
             variantPolicy: 'baseOnly',
             compute: (ctx, helpers) => {
@@ -681,6 +695,15 @@ function registerMunchkinTreasureModifiers(): void {
                     )).length
                 ), 0)
             ),
+        },
+        {
+            sourceDefId: 'base_the_mines',
+            runtimeIdentity: 'synthetic',
+            compute: (ctx) => {
+                if (ctx.base.defId !== 'base_the_mines') return 0;
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx);
+            },
         },
     ]);
 }

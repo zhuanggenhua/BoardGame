@@ -107,6 +107,7 @@ type DisneyPromptContext = {
         | 'destroyOngoing'
         | 'protectMinionAffect'
         | 'playDeckMinion'
+        | 'scarDestroy'
         | 'shanYuDestroy';
     minions?: Array<MinionChoice & { label: string; counters?: number }>;
     bases?: Array<BaseChoice & { label: string }>;
@@ -352,6 +353,33 @@ function resolvePromptChoice(
                     sourceControllerId: context.playerId,
                     sourceBaseIndex: context.targetBaseIndex,
                 })],
+            };
+        }
+        case 'scarDestroy': {
+            const choice = value as MinionChoice;
+            const live = getLiveMinion(state.core, choice);
+            if (!live) return { events: [] };
+            const destroyedPower = getMinionPower(state.core, live.minion, live.baseIndex);
+            const destroyEvents = buildValidatedDestroyEvents(state, {
+                minionUid: live.minion.uid,
+                minionDefId: live.minion.defId,
+                fromBaseIndex: live.baseIndex,
+                destroyerId: context.playerId,
+                reason: context.reason,
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.reason,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.targetBaseIndex ?? live.baseIndex,
+                sourceKind: 'action',
+            });
+            return {
+                events: [
+                    ...destroyEvents,
+                    ...(live.minion.controller === context.playerId
+                        ? buildStandardDrawEvents(state.core, context.playerId, destroyedPower, random, timestamp)
+                        : []),
+                ],
             };
         }
         case 'destroyMinion':
@@ -1240,7 +1268,7 @@ function scar(ctx: AbilityContext): AbilityResult {
     return promptMinion(ctx, {
         sourceId: 'lion_king_scar',
         title: '刀疤：选择要摧毁的角色',
-        kind: 'destroyMinion',
+        kind: 'scarDestroy',
         minions: targets,
         reason: 'lion_king_scar',
     });
@@ -1553,6 +1581,25 @@ export function registerDisneyFourFactionsAbilities(): void {
     registerSimpleAbility('lion_king_the_hyenas', 'onPlay', theHyenas);
     registerSimpleAbility('lion_king_wildebeest_stampede', 'onPlay', wildebeestStampede);
     registerSimpleAbility('lion_king_lion_cub', 'special', ctx => ({ events: searchDeckByPower(ctx, 4, 'lion_king_lion_cub') }));
+    registerTrigger('lion_king_lion_cub', 'onMinionDiscardedFromBase', ctx => ({
+        events: revealAndPickFromDeck({
+            state: ctx.state,
+            random: ctx.random,
+            playerId: ctx.playerId,
+            predicate: card => (getMinionDef(card.defId)?.power ?? Infinity) <= 4,
+            maxPick: 1,
+            reason: 'lion_king_lion_cub',
+            now: ctx.now,
+            revealTo: ctx.playerId,
+        }).events,
+    }), {
+        perInstance: true,
+        optional: true,
+        playerContext: 'sourceController',
+        baseScoped: false,
+        canTrigger: ctx => ctx.triggerMinionDefId === 'lion_king_lion_cub'
+            && ctx.sourceCardUid === ctx.triggerMinionUid,
+    });
     registerSimpleAbility('lion_king_mufasa', 'special', ctx => addCounterToOwnMinion(ctx, 2, 'lion_king_mufasa'));
     registerSimpleAbility('lion_king_hyenas_den', 'special', (ctx) => {
         if (!hasMufasaInDiscard(ctx.state, ctx.playerId)) return { events: [] };

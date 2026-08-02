@@ -1,0 +1,21 @@
+{
+  "snapshot": {
+    "bodyText": "选择探索者\n玩家\n0/3\n已就绪\n伊莎·瓦伦西亚\n当前选择\n待确认\n属性\n力量\n3\n速度\n5\n知识\n4\n神志\n4\n特性：\n无特殊能力：\n基础版角色背景不改变规则；开局按角色卡属性轨放置夹子。\nP1\n玩家\n0/3\nP1\n玩家1\n待确认\n—\nP2\n玩家2\n空位\n—\nP3\n玩家3\n空位\n—\nP4\n—\n空位\n—\nP5\n—\n空位\n—\nP6\n—\n空位\n随机\n局内剧本\n顽石之血\n待确认剧本卡\n先选探索者\n确认\n🛠️\n剧本档案\n档案 01 / 山屋作祟记录\n局内确认\n翻阅候选剧本卡，确认当前提议后再进入探索。\n候选剧本卡\n7 张候选\n先选探索者\n木乃伊横行\n剧本卡 GIRL / 触发 女孩\n作祟 1\n可开局\n旧版 / 基础版第 1 作祟；当前默认首剧本运行时。英雄找出真名并驱逐木乃伊。\n赤红杰克归来\n剧本卡 NONE / 触发 A SPLASH OF CRIMSON\n作祟 1\n待接入\n3e 版本首作祟合同保留；当前默认首剧本已按用户裁定切到木乃伊横行。\n永远的朋友\n剧本卡 CURSED! / 触发 RING\n作祟 2\n待接入\n剧本合同已建档，运行时规则待接入。\n释放房产经纪人\n剧本卡 FOR SALE / 触发 DOG\n作祟 4\n待接入\n剧本合同已建档，运行时规则待接入。\n顽石之血\n剧本卡 PARANORMAL INVESTIGATORS / 触发 MASK\n作祟 5\n可开局\n当前可开局：已接入石像小天使放置、视线移动与伤害、玩躲猫猫、自然怪物回合和双方终局；更多边界继续按子账本补齐。\n当前提议\n继承\n剧本卡 A MYSTERIOUS INVITATION / 触发 DAGGER\n作祟 6\n待接入\n剧本合同已建档，运行时规则待接入。\nUpon Reflection\n剧本卡 NONE / 触发 怪异的镜子\n作祟 7\n待接入\n剧本合同已建档；本轮只接入怪异的镜子作祟检定入口和揭示代表态，完整秘密组合、镜中提示和怪物规则待接入。\n阅读完整剧本\n确认此剧本卡\n关闭\n山屋异象\n\n父母过去常拿赤红杰克吓唬孩子：“别在外面待得太晚，不然赤红杰克会来抓你。”\n\n当你们说起这名连环杀手的恶行时，一个同伴的嘴角掠过不自然的笑意。揭示作祟的探索者就是叛徒。\n\n序章\n继续",
+    "bloodStatus": "runtime-supported",
+    "bloodText": "顽石之血剧本卡 Paranormal Investigators / 触发 Mask作祟 5可开局当前可开局：已接入石像小天使放置、视线移动与伤害、玩躲猫猫、自然怪物回合和双方终局；更多边界继续按子账本补齐。当前提议",
+    "readerText": "山屋异象父母过去常拿赤红杰克吓唬孩子：“别在外面待得太晚，不然赤红杰克会来抓你。”当你们说起这名连环杀手的恶行时，一个同伴的嘴角掠过不自然的笑意。揭示作祟的探索者就是叛徒。序章继续",
+    "url": "http://127.0.0.1:4290/play/betrayal?players=3&seat0=human&seat1=human&seat2=human&playerID=0&seed=runtime-supported-ui"
+  },
+  "logs": [
+    "warning: The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio",
+    "warning: HTML5 Audio pool exhausted, returning potentially locked audio object.",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusin\",\"eventTargetTag\":\"BUTTON\",\"eventTargetTestId\":\"betrayal-character-scenario-button\",\"activeTag\":\"BUTTON\",\"activeTestId\":\"betrayal-character-scenario-button\",\"cssInset\":0,\"keyboardInset\":0}",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusin-clear-non-text-entry\"}",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusout\",\"activeTag\":\"BODY\",\"activeTestId\":null,\"cssInset\":0,\"keyboardInset\":0}",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusin\",\"eventTargetTag\":\"BUTTON\",\"eventTargetTestId\":\"betrayal-scenario-option-blood-from-a-stone\",\"activeTag\":\"BUTTON\",\"activeTestId\":\"betrayal-scenario-option-blood-from-a-stone\",\"cssInset\":0,\"keyboardInset\":0}",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusin-clear-non-text-entry\"}",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusout\",\"activeTag\":\"BODY\",\"activeTestId\":null,\"cssInset\":0,\"keyboardInset\":0}",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusin\",\"eventTargetTag\":\"BUTTON\",\"eventTargetTestId\":\"betrayal-scenario-detail-toggle\",\"activeTag\":\"BUTTON\",\"activeTestId\":\"betrayal-scenario-detail-toggle\",\"cssInset\":0,\"keyboardInset\":0}",
+    "warning: [mobile-text-proxy] {\"phase\":\"focusin-clear-non-text-entry\"}"
+  ]
+}

@@ -4,10 +4,12 @@ import {
   BetrayalDomain,
   EXPLORER_CATALOG,
   createBetrayalMonsterFromDefinition,
+  resolveBetrayalMonsterMovementGroups,
   resolveBetrayalMonsterMoveTargetRooms,
   type BetrayalCommand,
   type BetrayalCommandMap,
   type BetrayalCore,
+  type BetrayalMonsterMovementRollGroupResult,
   type BetrayalTraitKey,
 } from "../game";
 import {
@@ -324,6 +326,16 @@ function applyTutorialDiscoveryOrder(core: BetrayalCore): BetrayalCore {
     throw new Error("山屋教程缺少官方事件牌：外星几何");
   }
   core.eventOrder = [tutorialEvent];
+  core.deckCounts.event = core.eventOrder.length;
+  return core;
+}
+
+function applyBasicTutorialEventRoomDiscoveryOrder(core: BetrayalCore): BetrayalCore {
+  setFixtureRoomDiscoveryDeck(core, [
+    { floor: "ground", room: findFixtureRoomTemplate("ground", "kitchen") },
+    { floor: "upper", room: findFixtureRoomTemplate("upper", "tower") },
+    { floor: "basement", room: findFixtureRoomTemplate("basement", "chasm") },
+  ]);
   return core;
 }
 
@@ -463,7 +475,52 @@ function focusCoreOnExplorer(
 export function createStartedFirstScenarioTutorialCore(
   playerIds: string[] = ["0", "1", "2"],
 ): BetrayalCore {
-  return applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(playerIds));
+  const core = createStartedFirstScenarioCore(playerIds);
+  setFixtureExplorerInventory(core, "0", [
+    { id: "rope", name: "兔脚", kind: "item" },
+    { id: "omen-book", name: "书本", kind: "omen" },
+  ]);
+  core.usedCardIdsThisTurn = [];
+  return applyBasicTutorialEventRoomDiscoveryOrder(
+    applyTutorialDiscoveryOrder(core),
+  );
+}
+
+export function createSafeOmenPendingResolutionTutorialCore(): BetrayalCore {
+  let core = applyTutorialDiscoveryOrder(createStartedFirstScenarioCore(["0", "1", "2"]));
+  const dogOmen =
+    BETRAYAL_DISCOVERY_POOLS.possessions.omen.find((omen) => omen.id === "dog") ??
+    ({ id: "dog", name: "狗", kind: "omen" } as BetrayalCore["possessionOrderByKind"]["omen"][number]);
+
+  core.drawOrder = ["omen"];
+  core.possessionOrderByKind.omen = [{ ...dogOmen }];
+  core.currentExplorer.inventory = [];
+  core.currentExplorerInventory = [];
+  core.otherExplorers = core.otherExplorers.map((explorer) => ({
+    ...explorer,
+    inventory: [],
+  }));
+
+  core = applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.EXPLORE_ROOM,
+    "0",
+    { roomId: "ground-east" },
+    100,
+    createBetrayalScriptedRandom(1, 1, 1, 1),
+  );
+
+  if (core.phase !== "preHaunt" || core.scenarioRuntime.hauntTriggered) {
+    throw new Error("山屋教程预兆确认夹具不应进入作祟");
+  }
+  if (core.latestDiscovery?.kind !== "omen") {
+    throw new Error("山屋教程预兆确认夹具缺少预兆发现");
+  }
+  if (core.pendingCardResolutionQueue.length !== 1) {
+    throw new Error("山屋教程预兆确认夹具应只保留一次同屏确认");
+  }
+
+  return core;
 }
 
 function createScenarioHauntCore(
@@ -619,6 +676,99 @@ function setFixtureExplorerInventory(
   );
 }
 
+function clearTutorialBlockingState(core: BetrayalCore): void {
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
+  core.pendingCardResolutionQueue = [];
+  core.pendingEventChoice = null;
+  core.pendingDamageAllocation = null;
+  core.recentRoll = null;
+  core.activePlayerId = null;
+  core.usedCardIdsThisTurn = [];
+}
+
+function setFixtureExplorerTraitToMax(
+  core: BetrayalCore,
+  playerId: string,
+  trait: "might" | "speed",
+): void {
+  const updateExplorer = (
+    explorer: BetrayalCore["currentExplorer"],
+  ): BetrayalCore["currentExplorer"] => {
+    if (explorer.playerId !== playerId) {
+      return explorer;
+    }
+    const currentValue = explorer.traits[trait];
+    const values = Array.from({ length: 25 }, () => currentValue);
+    const position = 20;
+    return {
+      ...explorer,
+      traits: {
+        ...explorer.traits,
+        [trait]: currentValue,
+      },
+      traitTracks: {
+        ...explorer.traitTracks,
+        [trait]: {
+          ...explorer.traitTracks[trait],
+          values,
+          position,
+          startPosition: position,
+          criticalPosition: 0,
+          skullPosition: -1,
+          maxPosition: values.length - 1,
+        },
+      },
+    };
+  };
+
+  if (core.currentExplorer.playerId === playerId) {
+    core.currentExplorer = updateExplorer(core.currentExplorer);
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
+    return;
+  }
+  core.otherExplorers = core.otherExplorers.map(updateExplorer);
+}
+
+function completeMummyMonsterPreparationForAttackSlot(
+  core: BetrayalCore,
+  monsterId: string,
+): void {
+  const movementGroup = resolveBetrayalMonsterMovementGroups(core)
+    .find((group) => group.monsterIds.includes(monsterId));
+  if (!movementGroup) {
+    throw new Error(`木乃伊教程夹具找不到 ${monsterId} 的怪物移动骰组`);
+  }
+  const movementResult: BetrayalMonsterMovementRollGroupResult = {
+    groupId: movementGroup.groupId,
+    monsterName: movementGroup.monsterName,
+    monsterIds: [...movementGroup.monsterIds],
+    playerId: core.currentExplorer.playerId,
+    speed: movementGroup.speed,
+    diceCount: movementGroup.diceCount,
+    dice: Array.from({ length: movementGroup.diceCount }, () => 0),
+    total: 0,
+    moveAllowance: 0,
+    rollOnceForGroup: true,
+    minimumMoveAllowance: movementGroup.minimumMoveAllowance,
+  };
+  core.scenarioRuntime.monsterTurn = {
+    ...core.scenarioRuntime.monsterTurn,
+    resolvedStartMonsterIds: Array.from(new Set([
+      ...core.scenarioRuntime.monsterTurn.resolvedStartMonsterIds,
+      ...movementGroup.monsterIds,
+    ])),
+    movementRollsByGroupId: {
+      ...core.scenarioRuntime.monsterTurn.movementRollsByGroupId,
+      [movementGroup.groupId]: movementResult,
+    },
+    moveRemainingById: {
+      ...core.scenarioRuntime.monsterTurn.moveRemainingById,
+      ...Object.fromEntries(movementGroup.monsterIds.map((id) => [id, 0])),
+    },
+  };
+}
+
 export function createMummyReadyToBanishCore(): BetrayalCore {
   let core = createFirstScenarioHauntCore();
   const heroId = "0";
@@ -657,6 +807,161 @@ export function createMummyReadyToBanishCore(): BetrayalCore {
     core.scenarioRuntime.mummy!.sarcophagusRoomId,
   );
   return core;
+}
+
+export function createMummyReadyToBanishTutorialCore(): BetrayalCore {
+  return applyTutorialDiscoveryOrder(createMummyReadyToBanishCore());
+}
+
+export function createMummyTraitorVictoryReadyTutorialCore(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const traitorId = core.scenarioRuntime.traitorPlayerId!;
+  const mummyRuntime = core.scenarioRuntime.mummy!;
+  const traitorRoomId = mummyRuntime.sarcophagusRoomId;
+  const awayRoomId =
+    core.rooms.find((room) => room.state === "discovered" && room.id !== traitorRoomId)?.id ??
+    traitorRoomId;
+
+  core = focusCoreOnExplorer(core, traitorId);
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: traitorRoomId,
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => ({
+    ...explorer,
+    roomId: explorer.playerId === traitorId ? traitorRoomId : awayRoomId,
+  }));
+  setFixtureExplorerInventory(core, traitorId, [
+    { id: "holy-symbol", name: "圣符", kind: "omen" },
+  ]);
+  core.monsters = core.monsters.map((monster) =>
+    monster.id === mummyRuntime.mummyMonsterId || monster.definitionId === "mummy"
+      ? { ...monster, roomId: traitorRoomId }
+      : monster,
+  );
+  core.scenarioRuntime.mummy = {
+    ...mummyRuntime,
+    sarcophagusRoomId: traitorRoomId,
+    girlRoomId: traitorRoomId,
+    girlHolderPlayerId: null,
+    girlHeldByMummy: false,
+    mummyCarriedOmenIds: [],
+    mummyCarriedCards: [],
+  };
+  core.currentPlayer = traitorId;
+  core.activeRoomId = traitorRoomId;
+  core.currentExplorerRoomId = traitorRoomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+  core.usedCardIdsThisTurn = [];
+  core.pendingEventChoice = null;
+  core.pendingDamageAllocation = null;
+  core.latestDiscovery = null;
+  core.latestDiscoveryOwnerPlayerId = null;
+  core.pendingCardResolutionQueue = [];
+  core.recentRoll = null;
+  core.recommendedAction = "use";
+
+  return applyTutorialDiscoveryOrder(core);
+}
+
+export function createMummyMonsterMoveReadyTutorialCore(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const traitorId = core.scenarioRuntime.traitorPlayerId!;
+  const mummyRuntime = core.scenarioRuntime.mummy!;
+  const mummyMonsterId = mummyRuntime.mummyMonsterId;
+  const mummyRoomId = mummyRuntime.sarcophagusRoomId;
+  const girlRoomId = mummyRuntime.girlRoomId;
+  if (!girlRoomId) {
+    throw new Error("木乃伊怪物移动教程夹具缺少女孩房间");
+  }
+  const quietRoomId =
+    core.rooms.find((room) => (
+      room.state === "discovered"
+      && room.id !== mummyRoomId
+      && room.id !== girlRoomId
+    ))?.id ?? mummyRoomId;
+
+  core = focusCoreOnExplorer(core, traitorId);
+  core.currentExplorer = {
+    ...core.currentExplorer,
+    roomId: mummyRoomId,
+  };
+  core.otherExplorers = core.otherExplorers.map((explorer) => ({
+    ...explorer,
+    roomId: quietRoomId,
+  }));
+  core.monsters = core.monsters.map((monster) =>
+    monster.id === mummyMonsterId || monster.definitionId === "mummy"
+      ? { ...monster, roomId: mummyRoomId }
+      : monster,
+  );
+  core.scenarioRuntime.mummy = {
+    ...mummyRuntime,
+    girlRoomId,
+    girlHolderPlayerId: null,
+    girlHeldByMummy: false,
+  };
+  core.currentPlayer = traitorId;
+  core.activeRoomId = mummyRoomId;
+  core.currentExplorerRoomId = mummyRoomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+  core.recommendedAction = "use";
+  clearTutorialBlockingState(core);
+
+  return applyTutorialDiscoveryOrder(core);
+}
+
+export function createMummyMonsterAttackRewardReadyTutorialCore(): BetrayalCore {
+  let core = createFirstScenarioHauntCore();
+  const traitorId = core.scenarioRuntime.traitorPlayerId!;
+  const mummyRuntime = core.scenarioRuntime.mummy!;
+  const mummyMonsterId = mummyRuntime.mummyMonsterId;
+  const mummyRoomId = mummyRuntime.sarcophagusRoomId;
+  const [heroTargetId, deadHeroId] = core.playerIds.filter((playerId) => playerId !== traitorId);
+  if (!heroTargetId || !deadHeroId) {
+    throw new Error("木乃伊攻击教程夹具缺少英雄目标");
+  }
+
+  placeFixtureExplorerInRoom(core, traitorId, mummyRoomId);
+  placeFixtureExplorerInRoom(core, heroTargetId, mummyRoomId);
+  setFixtureExplorerInventory(core, heroTargetId, [
+    { id: "map", name: "地图", kind: "item" },
+    { id: "holy-symbol", name: "圣符", kind: "omen" },
+  ]);
+  placeFixtureExplorerInRoom(core, deadHeroId, mummyRoomId);
+  core.scenarioRuntime.deadExplorerPlayerIds = [deadHeroId];
+  setFixtureExplorerTraitToMax(core, heroTargetId, "speed");
+  setFixtureExplorerTraitToMax(core, heroTargetId, "might");
+
+  core = focusCoreOnExplorer(core, traitorId);
+  core.monsters = core.monsters.map((monster) =>
+    monster.id === mummyMonsterId || monster.definitionId === "mummy"
+      ? { ...monster, roomId: mummyRoomId }
+      : monster,
+  );
+  core.scenarioRuntime.mummy = {
+    ...mummyRuntime,
+    girlRoomId: null,
+    girlHolderPlayerId: null,
+    girlHeldByMummy: false,
+    mummyCarriedOmenIds: [],
+    mummyCarriedCards: [],
+  };
+  core.currentPlayer = traitorId;
+  core.activeRoomId = mummyRoomId;
+  core.currentExplorerRoomId = mummyRoomId;
+  core.currentExplorerTraits = { ...core.currentExplorer.traits };
+  core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
+  core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
+  core.recommendedAction = "use";
+  clearTutorialBlockingState(core);
+  completeMummyMonsterPreparationForAttackSlot(core, mummyMonsterId);
+
+  return applyTutorialDiscoveryOrder(core);
 }
 
 export function playMummyScenarioToSurvivorVictory(): BetrayalCore {
@@ -1754,9 +2059,14 @@ export function createJackSpiritPostReviveAttackReadyCore(): BetrayalCore {
 
 export function createJackSpiritPostReviveAttackReadyTutorialCore(): BetrayalCore {
   const attackReadyCore = createJackSpiritMovementRollReadyCore();
+  const jackSpiritRoomId = attackReadyCore.scenarioRuntime.jackSpiritRoomId;
+  if (!jackSpiritRoomId) {
+    throw new Error("山屋杰克之灵教程夹具缺少灵体所在房间");
+  }
+  placeFixtureExplorerInRoom(attackReadyCore, "0", jackSpiritRoomId);
   return applyTutorialDiscoveryOrder(
     {
-      ...attackReadyCore,
+      ...focusCoreOnExplorer(attackReadyCore, "2"),
       recentRoll: null,
     },
   );

@@ -418,6 +418,23 @@ export interface MonsterOnBase {
     metadata?: Record<string, unknown>;
 }
 
+/** Munchkin 基地计分后展示、尚未分发的公共宝藏。 */
+export interface MunchkinPendingTreasureRewardCard {
+    uid: string;
+    defId: string;
+    type: CardType;
+}
+
+export interface PendingMunchkinTreasureReward {
+    baseIndex: number;
+    baseDefId: string;
+    baseInstanceId?: string;
+    treasureCards: MunchkinPendingTreasureRewardCard[];
+    eligiblePlayerIds: PlayerId[];
+    nextRecipientIndex: number;
+    reason: string;
+}
+
 /** 场上的基地 */
 export interface BaseInPlay {
     /** 运行时基地实例身份；槽位编号只表示当前位置，不表示长期身份。 */
@@ -847,6 +864,8 @@ export interface SmashUpCore {
     treasureDeck?: string[];
     /** 宝藏弃牌堆（Munchkin 扩展，defId 列表；UI 暂不展示） */
     treasureDiscard?: string[];
+    /** Munchkin 基地计分后展示、尚未分发的公共宝藏奖励。 */
+    pendingMunchkinTreasureReward?: PendingMunchkinTreasureReward;
     cardsPlayedThisTurn?: number;
     /** 本回合每位玩家从手牌弃牌的数量。TURN_STARTED 时清空。 */
     cardsDiscardedFromHandThisTurn?: Record<PlayerId, number>;
@@ -880,6 +899,11 @@ export interface SmashUpCore {
      * 用于 Mergacon 这类“移动后直到回合结束失去 ongoing”效果。
      */
     titanOngoingSuppressedUntilTurnEnd?: string[];
+    /**
+     * 本回合暂时失去能力的场上卡牌 UID 列表。
+     * 用于麻痹药水这类“直到回合结束取消能力”的效果。
+     */
+    suppressedCardUidsUntilTurnEnd?: string[];
     /**
      * 彩虹鸟本轮“首次低战力随从进场”触发记录。
      * key = titanUid, value = 触发时的 turnNumber。
@@ -1361,6 +1385,20 @@ export interface TitanOngoingSuppressedEvent extends GameEvent<typeof SU_EVENTS.
     };
 }
 
+/** 本回合临时取消场上卡牌能力。 */
+export interface CardsSuppressedUntilTurnEndEvent extends GameEvent<typeof SU_EVENTS.CARDS_SUPPRESSED_UNTIL_TURN_END> {
+    payload: {
+        cardUids: string[];
+        baseIndex: number;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
 /** 埋葬卡事件：将一张卡面朝下放到基地旁 */
 export interface CardBuriedEvent extends GameEvent<typeof SU_EVENTS.CARD_BURIED> {
     payload: {
@@ -1685,10 +1723,17 @@ export type SmashUpEvent =
     | StoredCardReleasedEvent
     | HandShuffledIntoDeckEvent
     | StartingHandMulliganUsedEvent
+    | CardsSuppressedUntilTurnEndEvent
     | MadnessDrawnEvent
     | MadnessReturnedEvent
     | MunchkinMonsterDefeatedEvent
     | MunchkinTreasuresDrawnEvent
+    | MunchkinTreasuresMilledEvent
+    | MunchkinTreasureRecoveredFromDiscardEvent
+    | MunchkinTreasureFoundFromDeckEvent
+    | MunchkinTreasureRewardRevealedEvent
+    | MunchkinTreasureRewardClaimedEvent
+    | MunchkinTreasureRewardDistributedEvent
     | MunchkinTreasureDeckShuffledEvent
     | MunchkinTreasureToDeckBottomEvent
     | BaseDeckReorderedEvent
@@ -2139,6 +2184,91 @@ export interface MunchkinTreasuresDrawnEvent extends GameEvent<typeof SU_EVENTS.
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+    };
+}
+
+/** Munchkin 公共宝藏牌库顶牌进入公共宝藏弃牌堆。 */
+export interface MunchkinTreasuresMilledEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURES_MILLED> {
+    payload: {
+        count: number;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
+/** Munchkin 公共宝藏弃牌堆中的一张宝藏进入玩家手牌。 */
+export interface MunchkinTreasureRecoveredFromDiscardEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_RECOVERED_FROM_DISCARD> {
+    payload: {
+        playerId: PlayerId;
+        defId: string;
+        /** 预分配宝藏实例 UID；缺失时 reducer 用 nextUid 生成。 */
+        treasureUid?: string;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
+/** Munchkin 公共宝藏牌库检索：指定宝藏进入玩家手牌，剩余宝藏牌库按提供顺序重洗。 */
+export interface MunchkinTreasureFoundFromDeckEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_FOUND_FROM_DECK> {
+    payload: {
+        playerId: PlayerId;
+        defId: string;
+        deckIndex: number;
+        /** 预分配宝藏实例 UID；缺失时 reducer 用 nextUid 生成。 */
+        treasureUid?: string;
+        /** 移除所选宝藏后的牌库顺序。 */
+        shuffledDeckDefIds: string[];
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
+/** Munchkin 基地计分后：展示待分发的宝藏奖励，但暂不进入任何玩家手牌。 */
+export interface MunchkinTreasureRewardRevealedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED> {
+    payload: {
+        baseIndex: number;
+        baseDefId: string;
+        baseInstanceId?: string;
+        count: number;
+        eligiblePlayerIds: PlayerId[];
+        nextRecipientIndex?: number;
+        treasureUids?: string[];
+        reason: string;
+    };
+}
+
+/** Munchkin 基地计分后：玩家从已展示、未分发的宝藏里拿走一张。 */
+export interface MunchkinTreasureRewardClaimedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_REWARD_CLAIMED> {
+    payload: {
+        playerId: PlayerId;
+        treasureUid: string;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
+/** Munchkin 基地计分后：按战利品顺序分发剩余已展示宝藏并清理 pending 状态。 */
+export interface MunchkinTreasureRewardDistributedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED> {
+    payload: {
+        reason: string;
+        baseIndex?: number;
+        baseInstanceId?: string;
     };
 }
 

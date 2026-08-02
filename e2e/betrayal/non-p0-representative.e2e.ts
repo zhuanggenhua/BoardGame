@@ -228,6 +228,7 @@ const createOrdinaryRollEventCore = () => {
     const core = createStartedFirstScenarioCore(['0', '1', '2']);
     core.drawOrder = ['event'];
     core.eventOrder = [eventCard];
+    setNextE2EDiscoveryRoom(core, 'ground', 'kitchen');
     core.currentExplorer = {
         ...core.currentExplorer,
         roomId: 'hallway',
@@ -1031,6 +1032,9 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
 
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveAttribute('aria-label', /标本剥制/);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveAttribute('data-card-testid', 'betrayal-discovery-card-reveal');
+        await expect(page.getByTestId('betrayal-discovery-top-banner')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-discovery-resolution-steps')).toBeHidden();
+        await expect(page.getByTestId('betrayal-discovery-continue')).toHaveText(/^确认(?: \d+\/\d+)?$/);
         await saveLocatorScreenshot(page.getByTestId('betrayal-discovery-panel-content'), ORDINARY_ROLL_EVENT_CARD_FRONT_SCREENSHOT);
 
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(/检定|投|骰/);

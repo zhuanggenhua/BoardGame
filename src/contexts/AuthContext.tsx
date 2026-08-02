@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useMemo, useCallback, u
 import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
 import i18n from '../lib/i18n';
 import { normalizeDeveloperGameIds } from '../lib/developerGameAccess';
+import { getLocalStorage, readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
 
 export type UserRole = 'user' | 'developer' | 'admin';
 const BACKOFFICE_ROLES: ReadonlySet<UserRole> = new Set(['developer', 'admin']);
@@ -140,8 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     currentTokenRef.current = token;
 
     const clearLocalAuth = useCallback(() => {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
+        removeLocalStorageItem('auth_token');
+        removeLocalStorageItem('auth_user');
     }, []);
 
     const syncCurrentUser = useCallback(async (tokenToSync: string) => {
@@ -184,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
 
             setUser(normalized);
-            localStorage.setItem('auth_user', JSON.stringify(normalized));
+            writeLocalStorageItem('auth_user', JSON.stringify(normalized));
         } catch {
             // 网络异常时保留本地会话，避免误登出
         }
@@ -192,8 +193,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // 从 localStorage 加载 token
     useEffect(() => {
-        const savedToken = localStorage.getItem('auth_token');
-        const savedUser = localStorage.getItem('auth_user');
+        const savedToken = readLocalStorageItem('auth_token');
+        const savedUser = readLocalStorageItem('auth_user');
 
         if (savedToken) {
             setToken(savedToken);
@@ -205,10 +206,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (parsedUser) {
                     setUser(parsedUser);
                 } else {
-                    localStorage.removeItem('auth_user');
+                    removeLocalStorageItem('auth_user');
                 }
             } catch {
-                localStorage.removeItem('auth_user');
+                removeLocalStorageItem('auth_user');
             }
         }
         setIsLoading(false);
@@ -295,8 +296,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(token);
         setUser(normalizedUser);
 
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('auth_user', JSON.stringify(normalizedUser));
+        writeLocalStorageItem('auth_token', token);
+        writeLocalStorageItem('auth_user', JSON.stringify(normalizedUser));
     }, []);
 
     const sendRegisterCode = useCallback(async (email: string) => {
@@ -351,8 +352,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(data.token);
         setUser(normalizedUser);
 
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('auth_user', JSON.stringify(normalizedUser));
+        writeLocalStorageItem('auth_token', data.token);
+        writeLocalStorageItem('auth_user', JSON.stringify(normalizedUser));
     }, []);
 
     const resetPassword = useCallback(async (email: string, code: string, newPassword: string) => {
@@ -436,7 +437,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             throw new Error('用户信息更新失败');
         }
         setUser(updatedUser);
-        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+        writeLocalStorageItem('auth_user', JSON.stringify(updatedUser));
     }, [token]);
 
     const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
@@ -483,27 +484,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         const updatedUser = { ...user, ...data.user } as User;
         setUser(updatedUser);
-        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+        writeLocalStorageItem('auth_user', JSON.stringify(updatedUser));
 
         // 用户名变更后服务端签发了新 JWT，同步更新本地 token
         if (data.token) {
             setToken(data.token);
-            localStorage.setItem('auth_token', data.token);
+            writeLocalStorageItem('auth_token', data.token);
         }
 
         // 同步更新所有已存储的 match credentials 中的 playerName，
         // 避免 validateStoredMatchSeat 因 name_mismatch 清除凭据
+        const storage = getLocalStorage();
         const newUsername = updatedUser.username;
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
+        for (let i = 0; storage && i < storage.length; i++) {
+            const key = storage.key(i);
             if (!key || !key.startsWith('match_creds_')) continue;
             try {
-                const raw = localStorage.getItem(key);
+                const raw = storage.getItem(key);
                 if (!raw) continue;
                 const creds = JSON.parse(raw);
                 if (creds?.playerName && creds.playerName !== newUsername) {
                     creds.playerName = newUsername;
-                    localStorage.setItem(key, JSON.stringify(creds));
+                    storage.setItem(key, JSON.stringify(creds));
                 }
             } catch {
                 // 忽略解析失败
@@ -536,7 +538,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         const updatedUser = { ...user, ...data.user } as User;
         setUser(updatedUser);
-        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+        writeLocalStorageItem('auth_user', JSON.stringify(updatedUser));
         return updatedUser;
     }, [token, user]);
 
@@ -569,7 +571,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         const updatedUser = { ...user, ...data.user } as User;
         setUser(updatedUser);
-        localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+        writeLocalStorageItem('auth_user', JSON.stringify(updatedUser));
         return updatedUser;
     }, [token, user]);
 
@@ -585,7 +587,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 ...currentUser,
                 feedbackPoints: Math.max(0, (currentUser.feedbackPoints ?? 0) + Math.trunc(delta)),
             };
-            localStorage.setItem('auth_user', JSON.stringify(nextUser));
+            writeLocalStorageItem('auth_user', JSON.stringify(nextUser));
             return nextUser;
         });
     }, []);

@@ -1440,7 +1440,14 @@ export class GameTestContext {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness.state.get();
             const current = state.sys?.interaction?.current;
-            return current?.data?.options || [];
+            const data = current?.data;
+            if (typeof data?.optionsGenerator === 'function') {
+                const generatedOptions = data.optionsGenerator(state, data);
+                if (Array.isArray(generatedOptions)) {
+                    return generatedOptions;
+                }
+            }
+            return data?.options || [];
         });
     }
 
@@ -1460,7 +1467,10 @@ export class GameTestContext {
             const harness = (window as any).__BG_TEST_HARNESS__;
             const state = harness?.state?.get?.();
             const interaction = state?.sys?.interaction?.current;
-            const options = interaction?.data?.options ?? [];
+            const data = interaction?.data;
+            const options = typeof data?.optionsGenerator === 'function'
+                ? data.optionsGenerator(state, data)
+                : data?.options ?? [];
             const option = options.find((entry: any) => entry.id === id);
             return {
                 interactionPlayerId: interaction?.playerId ?? null,

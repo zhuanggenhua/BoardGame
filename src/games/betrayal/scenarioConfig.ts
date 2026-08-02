@@ -14,7 +14,7 @@ export type BetrayalScenarioCardId =
     | 'blood-from-a-stone'
     | 'inheritance'
     | 'upon-reflection';
-export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'contract-pending';
+export type BetrayalScenarioCardImplementationStatus = 'implemented' | 'runtime-supported' | 'contract-pending';
 export type BetrayalScenarioOutcome = 'survivors' | 'traitor' | 'solo' | 'haunt';
 export type BetrayalTraitorSelectionPolicy = 'last-explorer' | 'current-explorer';
 export type BetrayalSurvivorSelectionPolicy = 'all-non-traitor' | 'current-explorer-only';
@@ -419,17 +419,22 @@ export interface BetrayalEventSeed {
     );
 }
 
-// 12 号已接入官方 setup / 奇异护符控制权 / 巨魔手攻击和偷牌替代伤害。
-export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = [1, 3, 12, 33] as const;
+// 当前可进入正式运行链的作祟号；这不是“50 个作祟完整完成”的口径。
+export const BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS = [1, 3, 5, 12, 33] as const;
+export const BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS = BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS;
 const BETRAYAL_OPTIONAL_HAUNT_ROLL_RUNTIME_CARD_NUMBERS = [
-    ...BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS,
+    ...BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS,
     7,
 ] as const;
 
-export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): boolean {
-    return BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS.includes(
-        hauntCardNumber as typeof BETRAYAL_IMPLEMENTED_HAUNT_CARD_NUMBERS[number],
+export function isBetrayalHauntRuntimeSupported(hauntCardNumber: number): boolean {
+    return BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS.includes(
+        hauntCardNumber as typeof BETRAYAL_RUNTIME_SUPPORTED_HAUNT_CARD_NUMBERS[number],
     );
+}
+
+export function isImplementedBetrayalHauntCardNumber(hauntCardNumber: number): boolean {
+    return isBetrayalHauntRuntimeSupported(hauntCardNumber);
 }
 
 export function isBetrayalOptionalHauntRollRuntimeSupported(hauntCardNumber: number): boolean {
@@ -531,8 +536,8 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'Girl',
         triggerOmenLabel: '女孩',
         hauntNumber: 1,
-        summary: '旧版 / 基础版第 1 作祟；当前默认首剧本运行时。英雄找出真名并驱逐木乃伊。',
-        summaryEn: 'Legacy/base Haunt 1 and the current default runtime. Heroes learn the true name and banish the mummy.',
+        summary: '一名探索者倒向木乃伊。英雄必须找出真名、学会驱逐法术，并在木乃伊完成婚礼前驱逐它。',
+        summaryEn: 'One explorer turns toward the mummy. Heroes must learn the true name, learn the banishment spell, and banish the mummy before the wedding is completed.',
         implementationStatus: 'implemented',
         implementedScenarioId: 'first-scenario',
         sourcePath: 'docs/games/betrayal/haunts/01-mummy-rampage.md',
@@ -544,8 +549,8 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'NONE',
         triggerOmenLabel: 'A Splash of Crimson',
         hauntNumber: 1,
-        summary: '3e 版本首作祟合同保留；当前默认首剧本已按用户裁定切到木乃伊横行。',
-        summaryEn: '3e first-haunt contract retained; the default runtime now follows Mummy Rampage.',
+        summary: '赤红杰克的传说重新回到山屋。一名同伴暗中背叛，英雄需要调查杰克并完成驱魔。',
+        summaryEn: 'Crimson Jack returns to the house. One companion secretly betrays the group while the heroes investigate Jack and prepare an exorcism.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/01-stacked-like-cordwood-2.md',
     },
@@ -556,8 +561,8 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'Cursed!',
         triggerOmenLabel: 'Ring',
         hauntNumber: 2,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
+        summary: '诅咒把友情拖进时间循环。队伍需要分清谁还可信，并打破指环带来的恶意。',
+        summaryEn: 'A curse drags friendship into a time loop. The group must decide who can still be trusted and break the Ring’s malice.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/02-friends-forever.md',
     },
@@ -568,21 +573,22 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'For Sale',
         triggerOmenLabel: 'Dog',
         hauntNumber: 4,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
+        summary: '恶魔房产经纪人盯上了这座宅邸。英雄要净化房间，在交易完成前把它赶走。',
+        summaryEn: 'A demonic realtor has claimed the house. Heroes must cleanse rooms and drive it out before the deal is sealed.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/04-free-the-realtor.md',
     },
     {
         id: 'blood-from-a-stone',
-        title: '石中血',
+        title: '顽石之血',
         titleEn: 'Blood From a Stone',
         scenarioCardLabel: 'Paranormal Investigators',
         triggerOmenLabel: 'Mask',
         hauntNumber: 5,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
-        implementationStatus: 'contract-pending',
+        summary: '宅邸里的石像小天使开始移动。英雄要利用房间和视线，让石像彼此对望并全部消失。',
+        summaryEn: 'Stone Cherubs begin moving through the house. Heroes must use rooms and line of sight to make the statues face each other and vanish.',
+        implementationStatus: 'runtime-supported',
+        implementedScenarioId: 'first-scenario',
         sourcePath: 'docs/games/betrayal/haunts/05-blood-from-a-stone.md',
     },
     {
@@ -592,20 +598,20 @@ export const BETRAYAL_SCENARIO_CARD_CANDIDATES: readonly BetrayalScenarioCardCan
         scenarioCardLabel: 'A Mysterious Invitation',
         triggerOmenLabel: 'Dagger',
         hauntNumber: 6,
-        summary: '剧本合同已建档，运行时规则待接入。',
-        summaryEn: 'Contract documented; runtime rules are pending.',
+        summary: '遗产背后藏着杀机。探索者要追查证据，同时提防真正的继承人露出獠牙。',
+        summaryEn: 'An inheritance hides a murder plot. Explorers must uncover evidence while the true heir waits for the right moment.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/06-inheritance.md',
     },
     {
         id: 'upon-reflection',
-        title: 'Upon Reflection',
+        title: '镜中回望',
         titleEn: 'Upon Reflection',
         scenarioCardLabel: 'NONE',
         triggerOmenLabel: '怪异的镜子',
         hauntNumber: 7,
-        summary: '剧本合同已建档；本轮只接入怪异的镜子作祟检定入口和揭示代表态，完整秘密组合、镜中提示和怪物规则待接入。',
-        summaryEn: 'Contract documented; this pass only enables the Eerie Mirror haunt roll entry and representative reveal state.',
+        summary: '怪异的镜子让宅邸变得不可靠。英雄需要寻找正确组合，破解镜中的诅咒。',
+        summaryEn: 'The Eerie Mirror makes the house untrustworthy. Heroes must find the right combination and break the mirror curse.',
         implementationStatus: 'contract-pending',
         sourcePath: 'docs/games/betrayal/haunts/07-upon-reflection.md',
     },

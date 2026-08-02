@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as matchApi from '../../services/matchApi';
 import { GAME_SERVER_URL } from '../../config/server';
+import {
+    getLocalStorage,
+    readLocalStorageItem,
+    readSessionStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+    writeSessionStorageItem,
+} from '../../lib/browserStorage';
 
 export interface PlayerStatus {
     id: number;
@@ -32,7 +40,7 @@ const parseMatchCleanupNotice = (raw: string | null): MatchCleanupNotice | null 
 };
 
 export function readMatchCleanupNotice(): MatchCleanupNotice | null {
-    return parseMatchCleanupNotice(localStorage.getItem(MATCH_CLEANUP_NOTICE_KEY));
+    return parseMatchCleanupNotice(readLocalStorageItem(MATCH_CLEANUP_NOTICE_KEY));
 }
 
 export function publishMatchCleanupNotice(matchID: string, reason: MatchCleanupReason = 'destroyed'): MatchCleanupNotice | null {
@@ -43,7 +51,7 @@ export function publishMatchCleanupNotice(matchID: string, reason: MatchCleanupR
         timestamp: Date.now(),
         nonce: createMatchCleanupNonce(),
     };
-    localStorage.setItem(MATCH_CLEANUP_NOTICE_KEY, JSON.stringify(notice));
+    writeLocalStorageItem(MATCH_CLEANUP_NOTICE_KEY, JSON.stringify(notice));
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('match-cleanup-notice'));
     }
@@ -52,20 +60,12 @@ export function publishMatchCleanupNotice(matchID: string, reason: MatchCleanupR
 
 export function hasSeenMatchCleanupNotice(notice: MatchCleanupNotice): boolean {
     if (typeof window === 'undefined') return false;
-    try {
-        return sessionStorage.getItem(MATCH_CLEANUP_NOTICE_SEEN_KEY) === notice.nonce;
-    } catch {
-        return false;
-    }
+    return readSessionStorageItem(MATCH_CLEANUP_NOTICE_SEEN_KEY) === notice.nonce;
 }
 
 export function markMatchCleanupNoticeSeen(notice: MatchCleanupNotice): void {
     if (typeof window === 'undefined') return;
-    try {
-        sessionStorage.setItem(MATCH_CLEANUP_NOTICE_SEEN_KEY, notice.nonce);
-    } catch {
-        // 忽略 sessionStorage 不可用的情况
-    }
+    writeSessionStorageItem(MATCH_CLEANUP_NOTICE_SEEN_KEY, notice.nonce);
 }
 
 export function isMatchNotFoundError(err: unknown): boolean {
@@ -101,9 +101,9 @@ const parseOwnerActiveMatchSuppression = (raw: string | null): string[] => {
 
 const saveOwnerActiveMatchSuppression = (matchIDs: string[]): void => {
     if (matchIDs.length === 0) {
-        localStorage.removeItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY);
+        removeLocalStorageItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY);
     } else {
-        localStorage.setItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY, JSON.stringify(matchIDs));
+        writeLocalStorageItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY, JSON.stringify(matchIDs));
     }
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('owner-active-match-changed'));
@@ -111,7 +111,7 @@ const saveOwnerActiveMatchSuppression = (matchIDs: string[]): void => {
 };
 
 export function getSuppressedOwnerActiveMatches(): string[] {
-    return parseOwnerActiveMatchSuppression(localStorage.getItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY));
+    return parseOwnerActiveMatchSuppression(readLocalStorageItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY));
 }
 
 export function isOwnerActiveMatchSuppressed(matchID: string): boolean {
@@ -239,8 +239,8 @@ const resolveRejoinMatchError = (err: unknown): { error: Exclude<RejoinMatchErro
 
 export function clearMatchCredentials(matchID: string): void {
     if (!matchID) return;
-    localStorage.removeItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`);
-    localStorage.removeItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
+    removeLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`);
+    removeLocalStorageItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
 
     // 让同一标签页监听器（Home 活跃对局横幅、lobby 弹窗）立即刷新。
     // 原生 `storage` 事件不会在同一 document 触发。
@@ -252,7 +252,7 @@ export function clearMatchCredentials(matchID: string): void {
 export function readStoredAiSeatCredentials(matchID: string): StoredAiSeatCredentials {
     if (!matchID) return {};
     try {
-        const raw = localStorage.getItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
+        const raw = readLocalStorageItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
         if (!raw) return {};
         const parsed = JSON.parse(raw) as Record<string, unknown>;
         return Object.fromEntries(
@@ -269,9 +269,9 @@ export function persistAiSeatCredentials(matchID: string, seatCredentials: Store
         Object.entries(seatCredentials).filter((entry): entry is [string, string] => Boolean(entry[0]) && Boolean(entry[1])),
     );
     if (Object.keys(normalized).length === 0) {
-        localStorage.removeItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
+        removeLocalStorageItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
     } else {
-        localStorage.setItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(normalized));
+        writeLocalStorageItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(normalized));
     }
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('match-credentials-changed'));
@@ -374,7 +374,7 @@ export async function claimSeat(
 
 export function getOwnerActiveMatch(): OwnerActiveMatch | null {
     try {
-        const raw = localStorage.getItem(OWNER_ACTIVE_MATCH_KEY);
+        const raw = readLocalStorageItem(OWNER_ACTIVE_MATCH_KEY);
         if (!raw) return null;
         const parsed = JSON.parse(raw) as OwnerActiveMatch;
         if (!parsed?.matchID) return null;
@@ -387,7 +387,7 @@ export function getOwnerActiveMatch(): OwnerActiveMatch | null {
 export function setOwnerActiveMatch(payload: OwnerActiveMatch): void {
     if (!payload?.matchID) return;
     clearOwnerActiveMatchSuppression(payload.matchID);
-    localStorage.setItem(OWNER_ACTIVE_MATCH_KEY, JSON.stringify({
+    writeLocalStorageItem(OWNER_ACTIVE_MATCH_KEY, JSON.stringify({
         ...payload,
         updatedAt: Date.now(),
     }));
@@ -400,7 +400,7 @@ export function clearOwnerActiveMatch(matchID?: string): void {
     const existing = getOwnerActiveMatch();
     if (!existing) return;
     if (matchID && existing.matchID !== matchID) return;
-    localStorage.removeItem(OWNER_ACTIVE_MATCH_KEY);
+    removeLocalStorageItem(OWNER_ACTIVE_MATCH_KEY);
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('owner-active-match-changed'));
     }
@@ -419,15 +419,18 @@ const parseStoredCredentials = (raw: string | null): StoredMatchCredentials | nu
 
 export function readStoredMatchCredentials(matchID: string): StoredMatchCredentials | null {
     if (!matchID) return null;
-    return parseStoredCredentials(localStorage.getItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`));
+    return parseStoredCredentials(readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`));
 }
 
 export function listStoredMatchCredentials(): StoredMatchCredentials[] {
+    const storage = getLocalStorage();
+    if (!storage) return [];
+
     const results: StoredMatchCredentials[] = [];
-    for (let i = 0; i < localStorage.length; i += 1) {
-        const key = localStorage.key(i);
+    for (let i = 0; i < storage.length; i += 1) {
+        const key = storage.key(i);
         if (!key || !key.startsWith(MATCH_CREDENTIALS_PREFIX)) continue;
-        const raw = localStorage.getItem(key);
+        const raw = storage.getItem(key);
         const parsed = parseStoredCredentials(raw);
         if (parsed) {
             results.push(parsed);
@@ -493,7 +496,7 @@ export function pruneStoredMatchCredentials(keepMatchID?: string): string | null
     const toRemove = all.filter(item => item.matchID !== keepId);
     if (toRemove.length > 0) {
         toRemove.forEach(item => {
-            localStorage.removeItem(`${MATCH_CREDENTIALS_PREFIX}${item.matchID}`);
+            removeLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${item.matchID}`);
         });
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new Event('match-credentials-changed'));
@@ -517,14 +520,14 @@ export function persistMatchCredentials(
     if (options?.enforceSingle !== false) {
         pruneStoredMatchCredentials(matchID);
     }
-    const existing = parseStoredCredentials(localStorage.getItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`));
+    const existing = parseStoredCredentials(readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`));
     const payload: StoredMatchCredentials = {
         ...(existing && typeof existing === 'object' ? existing : {}),
         ...data,
         matchID,
         updatedAt: Date.now(),
     };
-    localStorage.setItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(payload));
+    writeLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(payload));
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('match-credentials-changed'));
     }
@@ -864,7 +867,7 @@ export async function rejoinMatch(
         const storageKey = `match_creds_${matchID}`;
         let existing: Record<string, unknown> | null = null;
         try {
-            const raw = localStorage.getItem(storageKey);
+            const raw = readLocalStorageItem(storageKey);
             if (raw) {
                 const parsed = JSON.parse(raw);
                 existing = typeof parsed === 'object' && parsed !== null ? parsed : null;

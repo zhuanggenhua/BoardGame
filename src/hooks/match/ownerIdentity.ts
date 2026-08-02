@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { readLocalStorageItem, readSessionStorageItem, writeLocalStorageItem, writeSessionStorageItem } from '../../lib/browserStorage';
 
 const GUEST_ID_KEY = 'guest_id';
 const GUEST_ID_COOKIE_KEY = 'bg_guest_id';
@@ -11,11 +12,11 @@ const readGuestId = (): string | null => {
     if (typeof window === 'undefined') return null;
     
     // 优先读取 localStorage
-    const fromLocal = localStorage.getItem(GUEST_ID_KEY);
+    const fromLocal = readLocalStorageItem(GUEST_ID_KEY);
     if (fromLocal) return fromLocal;
     
     // 回退到 sessionStorage（同一标签页内有效）
-    const fromSession = sessionStorage.getItem(GUEST_ID_KEY);
+    const fromSession = readSessionStorageItem(GUEST_ID_KEY);
     if (fromSession) return fromSession;
     
     // 回退到 cookie（跨标签页有效）
@@ -34,17 +35,9 @@ const writeGuestId = (id: string): void => {
     if (typeof window === 'undefined') return;
     
     // 写入所有存储，确保至少一个生效
-    try {
-        localStorage.setItem(GUEST_ID_KEY, id);
-    } catch {
-        // localStorage 可能被禁用或已满
-    }
+    writeLocalStorageItem(GUEST_ID_KEY, id);
     
-    try {
-        sessionStorage.setItem(GUEST_ID_KEY, id);
-    } catch {
-        // sessionStorage 可能被禁用
-    }
+    writeSessionStorageItem(GUEST_ID_KEY, id);
     
     // 写入 cookie，有效期 30 天
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString();

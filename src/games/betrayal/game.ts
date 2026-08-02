@@ -2881,8 +2881,9 @@ function createPendingCardResolutionQueue(options: {
             cardId: options.drawnCard.id,
             }]
             : [];
+    const visibleAcknowledgementSteps = collapseSameScreenOmenResolutionSteps(steps);
 
-    return steps.map((step, index) => {
+    return visibleAcknowledgementSteps.map((step, index) => {
         const card = step.cardId ? cardById.get(step.cardId) : undefined;
         const deckKind = step.deckKind === 'event' || step.deckKind === 'item' || step.deckKind === 'omen'
             ? step.deckKind
@@ -2899,9 +2900,37 @@ function createPendingCardResolutionQueue(options: {
             stepKind: step.kind,
             text: step.text,
             index: index + 1,
-            total: steps.length,
+            total: visibleAcknowledgementSteps.length,
         };
     });
+}
+
+function collapseSameScreenOmenResolutionSteps(
+    steps: BetrayalDiscoveryResolutionStep[],
+): BetrayalDiscoveryResolutionStep[] {
+    const collapsed: BetrayalDiscoveryResolutionStep[] = [];
+    for (let index = 0; index < steps.length; index += 1) {
+        const step = steps[index]!;
+        const nextStep = steps[index + 1];
+        if (
+            step.kind === 'drawn-card'
+            && nextStep?.kind === 'haunt-roll'
+            && step.deckKind === 'omen'
+            && nextStep.deckKind === 'omen'
+            && step.cardId
+            && step.cardId === nextStep.cardId
+        ) {
+            collapsed.push({
+                ...step,
+                id: `${step.id}-with-${nextStep.id}`,
+                text: `${step.text}；${nextStep.text}`,
+            });
+            index += 1;
+            continue;
+        }
+        collapsed.push(step);
+    }
+    return collapsed;
 }
 
 function withEventChoiceResolutionStep(discovery: BetrayalDiscoverySummary): BetrayalDiscoverySummary {
@@ -8643,7 +8672,7 @@ function resolveBetrayalHauntRiskNumberTrack(core: BetrayalCore): BetrayalNumber
         max: maxOmenCount,
         targetValue: maxOmenCount,
         currentLabel: `预兆 ${risk.omenCount}`,
-        targetLabel: '最后预兆',
+        targetLabel: '牌堆末张',
         statusLabel: risk.hauntStarted
             ? '作祟已开始'
             : risk.nextOmenAutomatic
@@ -12077,7 +12106,7 @@ function resolveHauntRoll(
 
 function formatHauntRollDiscoveryDetail(hauntRoll: BetrayalHauntRollResult): string {
     if (hauntRoll.automatic) {
-        return '最后一张预兆触发作祟';
+        return '预兆牌堆耗尽，自动触发作祟';
     }
     return `抽到预兆后进行作祟检定：总点数 ${hauntRoll.total}（${hauntRoll.dice.length} 颗骰子，${hauntRoll.triggered ? '已触发' : '未触发'}）`;
 }
@@ -15758,7 +15787,7 @@ function validateCommand(state: MatchState<BetrayalCore>, command: BetrayalComma
                 }
                 const implementedScenarioId = resolveImplementedScenarioIdForCard(core.proposedScenarioCardId);
                 if (!implementedScenarioId) {
-                    return { valid: false, error: '所选剧本卡的运行时规则尚未接入，不能开始剧本。' };
+                    return { valid: false, error: '这个剧本现在不能开始。' };
                 }
                 if (command.payload.scenarioId && command.payload.scenarioId !== implementedScenarioId) {
                     return { valid: false, error: '开始剧本与当前剧本卡提议不一致。' };

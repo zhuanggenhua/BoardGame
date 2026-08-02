@@ -170,8 +170,16 @@ const shouldAdvance = (events: GameEvent[], advanceOnEvents?: TutorialEventMatch
     return advanceOnEvents.some((matcher) => events.some((event) => isEventMatch(event, matcher)));
 };
 
-const buildManifestFromState = (tutorial: TutorialState): TutorialManifest | null => {
+const buildManifestFromState = (
+    tutorial: TutorialState,
+    fallbackManifest?: TutorialManifest,
+): TutorialManifest | null => {
     if (!tutorial.manifestId) return null;
+    if ((!tutorial.steps || tutorial.steps.length === 0)
+        && fallbackManifest?.id === tutorial.manifestId
+        && fallbackManifest.steps.length > 0) {
+        return fallbackManifest;
+    }
     return {
         id: tutorial.manifestId,
         steps: tutorial.steps,
@@ -187,12 +195,13 @@ const MAX_VALIDATOR_SKIP = 50;
 const advanceStep = <TCore>(
     state: MatchState<TCore>,
     timestamp: number,
-    validator?: StepValidatorFn
+    validator?: StepValidatorFn,
+    fallbackManifest?: TutorialManifest,
 ): HookResult<TCore> => {
     const tutorial = state.sys.tutorial;
     if (!tutorial.active) return { state };
 
-    const manifest = buildManifestFromState(tutorial);
+    const manifest = buildManifestFromState(tutorial, fallbackManifest);
     if (!manifest) {
         return { state: applyTutorialState(state, { ...DEFAULT_TUTORIAL_STATE }) };
     }
@@ -253,6 +262,9 @@ const clearAiActions = (tutorial: TutorialState): TutorialState => ({
 
 export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
     let activeStepValidator: StepValidatorFn | undefined;
+    const activeManifestById = new Map<string, TutorialManifest>();
+    const resolveActiveManifest = (tutorial: TutorialState): TutorialManifest | undefined =>
+        tutorial.manifestId ? activeManifestById.get(tutorial.manifestId) : undefined;
 
     return {
         id: SYSTEM_IDS.TUTORIAL,
@@ -280,6 +292,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
 
                 console.warn('[TutorialSystem] START: 教程启动', { manifestId: manifest.id, stepsCount: manifest.steps.length, firstStepId: manifest.steps[0]?.id });
 
+                activeManifestById.set(manifest.id, manifest);
                 activeStepValidator = manifest.stepValidator;
                 const nextTutorial = deriveStepState(manifest, 0);
                 const timestamp = resolveTimestamp(command);
@@ -293,6 +306,9 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
             if (command.type === TUTORIAL_COMMANDS.CLOSE) {
                 activeStepValidator = undefined;
                 const manifestId = state.sys.tutorial.manifestId ?? null;
+                if (manifestId) {
+                    activeManifestById.delete(manifestId);
+                }
                 const timestamp = resolveTimestamp(command);
                 return {
                     halt: true,
@@ -319,7 +335,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                     return { halt: true, error: TUTORIAL_ERRORS.STEP_LOCKED };
                 }
                 const timestamp = resolveTimestamp(command);
-                const result = advanceStep(state, timestamp, activeStepValidator);
+                const result = advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
                 return { ...result, halt: true };
             }
 
@@ -329,7 +345,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                     return { halt: true, state };
                 }
                 const timestamp = resolveTimestamp(command);
-                const result = advanceStep(state, timestamp, activeStepValidator);
+                const result = advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
                 return { ...result, halt: true };
             }
 
@@ -361,7 +377,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 if (activeStepValidator && state.sys.tutorial.step
                     && !activeStepValidator(state, state.sys.tutorial.step)) {
                     const timestamp = resolveTimestamp(command, events);
-                    return advanceStep(state, timestamp, activeStepValidator);
+                    return advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
                 }
                 return;
             }
@@ -380,7 +396,7 @@ export function createTutorialSystem<TCore>(): EngineSystem<TCore> {
                 };
             }
 
-            return advanceStep(state, timestamp, activeStepValidator);
+            return advanceStep(state, timestamp, activeStepValidator, resolveActiveManifest(state.sys.tutorial));
         },
     };
 }
