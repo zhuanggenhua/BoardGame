@@ -222,6 +222,7 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.SHARKS_POD, nameKey: 'factions.sharks_pod.name', icon: Fish, color: '#0e7490', descriptionKey: 'factions.sharks_pod.description' },
     { id: SMASHUP_FACTION_IDS.TORNADOS, nameKey: 'factions.tornados.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados.description' },
     { id: SMASHUP_FACTION_IDS.TORNADOS_POD, nameKey: 'factions.tornados_pod.name', icon: Orbit, color: '#64748b', descriptionKey: 'factions.tornados_pod.description' },
+    { id: SMASHUP_FACTION_IDS.PENGUINS, nameKey: 'factions.penguins.name', icon: Snowflake, color: '#0ea5e9', descriptionKey: 'factions.penguins.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS, nameKey: 'factions.mythic_greeks.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks.description', locales: ['zh-CN'] },
     { id: SMASHUP_FACTION_IDS.MYTHIC_GREEKS_POD, nameKey: 'factions.mythic_greeks_pod.name', icon: Sword, color: '#f59e0b', descriptionKey: 'factions.mythic_greeks_pod.description' },
     {

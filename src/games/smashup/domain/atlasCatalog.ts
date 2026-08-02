@@ -103,7 +103,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.BASE9, kind: 'base', image: 'smashup/base/yuanhou', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.BASE10, kind: 'base', image: 'smashup/base/zhongguo', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.CEASE_AND_DESIST_BASES, kind: 'base', image: 'smashup/base/cease_and_desist', grid: { rows: 4, cols: 2 } },
-    { id: SMASHUP_ATLAS_IDS.PENGUINS_BASES, kind: 'base', image: 'smashup/base/penguins', grid: { rows: 3, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.PENGUINS_BASES, kind: 'base', image: 'smashup/base/penguins', grid: { rows: 2, cols: 2 } },
     { id: SMASHUP_ATLAS_IDS.INTERNATIONAL_INCIDENT_BASES, kind: 'base', image: 'smashup/base/international_incident_bases', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.WHAT_WERE_WE_THINKING_BASES, kind: 'base', image: 'smashup/base/what_were_we_thinking_bases', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.HALF_THE_BATTLE_BASES, kind: 'base', image: 'smashup/base/half_the_battle_bases', grid: { rows: 2, cols: 4 } },
