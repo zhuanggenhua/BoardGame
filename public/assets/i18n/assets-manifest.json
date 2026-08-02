@@ -6700,14 +6700,9 @@
     "zh-CN/dicethrone/images/artificial/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "e6bb6e5e93687b69edab1934e5ecb2cf81c289920a379c5224104f1070bb2f82",
-          "bytes": 720,
+          "sha256": "0df23aa8f4032900736ebb80c5a20a31dab87f9fdb80485349ff4b875e88c328",
+          "bytes": 771,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "310d228f74c8bba1d08197d22f2058ccd77c734b09e2779abab42ef536131a07",
-          "bytes": 637977,
-          "mime": "image/png"
         }
       }
     },
@@ -7200,14 +7195,9 @@
     "zh-CN/dicethrone/images/cursed/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "90932ab98bd1ccc4cb1877325c421783e4ecc1a05d8cfe2135d96a09cd730a1f",
-          "bytes": 604,
+          "sha256": "c4dd8792f453fe8ea958fd7518992a7cbd8798d0d53160bf3a009c9eefeeef7b",
+          "bytes": 647,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "2053af2b6ba7f7b02ceabd24ca12bce88b9db8e19ad523f7ce649d33e0be294a",
-          "bytes": 317204,
-          "mime": "image/png"
         }
       }
     },
@@ -8312,14 +8302,9 @@
     "zh-CN/dicethrone/images/zhanshujia/status-icons-atlas": {
       "variants": {
         "json": {
-          "sha256": "8b68780c5ffa344de8872766cb24d961f214cb0bce0fac99f7e8d184a34dc031",
-          "bytes": 370,
+          "sha256": "9a292882e4f7c95f301dfaf7571d1e97179db9b3ab74738e340136522c3e29e8",
+          "bytes": 397,
           "mime": "application/json"
-        },
-        "png": {
-          "sha256": "c80e0501dfc6fa9455201642500bf9ad0875bac6348dbedceffa3dd0819a6434",
-          "bytes": 135997,
-          "mime": "image/png"
         }
       }
     },
@@ -11500,6 +11485,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/penguins": {
+      "variants": {
+        "webp": {
+          "sha256": "6ae3ed74cf5ab2e5aebd3517dba7d97e2adfce9f351541913a8f319f3fd43799",
+          "bytes": 1118082,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/pretty_pretty_pod": {
       "variants": {
         "webp": {
@@ -11703,6 +11697,15 @@
         "png": {
           "sha256": "3afd85778effdf3442c1ce2b6a9269b709269d486c31c5aa6c23d7299beaa99a",
           "bytes": 2679470,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/penguins": {
+      "variants": {
+        "png": {
+          "sha256": "6bee13fe3b910d0a4dd48c0f260ebdd5d38c0a958d434c4ba0ac4bdf164619c2",
+          "bytes": 4443493,
           "mime": "image/png"
         }
       }
@@ -12220,6 +12223,15 @@
         }
       }
     },
+    "zh-CN/smashup/cards/compressed/penguins": {
+      "variants": {
+        "webp": {
+          "sha256": "c7d03dba56947abe24b437472d2365d1ba725fb7b5f92338ec6347149c1047ab",
+          "bytes": 1902054,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/cards/compressed/polynesian_voyagers": {
       "variants": {
         "webp": {
@@ -12702,6 +12714,15 @@
         "png": {
           "sha256": "ae94250d829759bc88863b8099fcf48f710bfcc2f66a15029e956acfcddb0cc9",
           "bytes": 30567071,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/penguins": {
+      "variants": {
+        "png": {
+          "sha256": "b34ac6108260ecdcb21b3896a179438fa637fff65b73535c3b1e0bd2868b22b7",
+          "bytes": 26245540,
           "mime": "image/png"
         }
       }
