@@ -42,6 +42,8 @@
     "extra_minion_granted_after_interaction": "当前结算结束后，你将额外获得 {{count}} 次随从打出机会。",
     "extra_action_granted": "你额外获得了 {{count}} 次战术打出机会。",
     "extra_action_granted_after_interaction": "当前结算结束后，你将额外获得 {{count}} 次战术打出机会。",
+    "penguins_wish_play_titan_option": "打出企鹅帝皇到这里",
+    "penguins_wish_buff_option": "这里你的所有随从本回合 +1 力量",
     "select_minion_hint": "请选择一个随从来附着此卡",
     "your_turn": "轮到你了！",
     "me_first_your_turn": "轮到你响应 — 打出特殊牌或让过",
@@ -1585,6 +1587,10 @@
     "bear_cavalry": {
       "name": "熊骑兵",
       "description": "强迫移动对手，无情碾压。"
+    },
+    "penguins": {
+      "name": "企鹅",
+      "description": "从牌库顶翻出随从并额外打出，用滑稽又危险的连锁节奏铺满基地。"
     },
     "minions_of_cthulhu": {
       "name": "克苏鲁仆从",
@@ -4859,6 +4865,66 @@
     "penguins_emperor_penguin": {
       "name": "企鹅帝皇",
       "effectText": "特殊：在你的回合开始时，若你在一个基地有 3 个或更多随从，你可以将此泰坦打出到那里。持续：你可以从牌库顶打出随从到这里，以代替打出通常随从。天赋：展示你手牌或弃牌堆中一个力量 3 或更低的随从，并将其洗回牌库，以为此泰坦放置一枚 +1 力量指示物。"
+    },
+    "penguins_surfing_penguin": {
+      "name": "冲浪企鹅",
+      "abilityText": "你可以移动一个随从从这里到另一个基地。"
+    },
+    "penguins_dancing_penguin": {
+      "name": "跳舞企鹅",
+      "abilityText": "特殊：当你打出其他随从时，你可以打出这个随从到相同的基地代替。放置那个随从到拥有者的牌库底，他没有效果。"
+    },
+    "penguins_snazzy_penguin": {
+      "name": "时髦企鹅",
+      "abilityText": "如果这个随从是从牌库顶打出的，抽两张牌。"
+    },
+    "penguins_command_penguin": {
+      "name": "企鹅司令",
+      "abilityText": "打出一个你的牌库顶的随从作为额外的随从。"
+    },
+    "penguins_disguise_penguin": {
+      "name": "乔装企鹅",
+      "abilityText": "天赋：放置这个随从到你的牌库底来在这里打出一个你的牌库顶的随从作为额外的随从。乔装企鹅的能力每回合只能使用一次。"
+    },
+    "penguins_secret_mission": {
+      "name": "秘密任务",
+      "effectText": "放置任意数量的牌从你的手上到你的牌库底。抽等量的牌，然后重洗你的牌库。"
+    },
+    "penguins_the_hatching": {
+      "name": "破壳而出",
+      "effectText": "打出一个你的牌库顶的随从作为额外的随从。"
+    },
+    "penguins_regurgitating_penguin": {
+      "name": "反刍企鹅",
+      "abilityText": "展示你牌库顶的三张牌。你可以放置其中的一张行动到你的手上。其余的按任意顺序放回牌库顶。"
+    },
+    "penguins_baby_penguin": {
+      "name": "企鹅宝宝",
+      "abilityText": "如果这个随从是从牌库顶打出的，你可以在这里打出一个力量 3 或更少的随从作为额外的随从。"
+    },
+    "penguins_a_wish_for_wings_that_work": {
+      "name": "渴望飞翔的工作",
+      "effectText": "选择一个基地。打出企鹅帝皇到那里，或者所有你在那里的随从获得 +1 力量直到回合结束。"
+    },
+    "penguins_leaping_aboard": {
+      "name": "跳上船",
+      "effectText": "打出到基地上。特殊：这个基地计分后，打出一个你的牌库顶的随从作为额外的随从到替换的基地上。"
+    },
+    "penguins_i_cant_tell_them_apart": {
+      "name": "我不能区分他们",
+      "effectText": "把一个基地上任意数量的你的随从洗回你的牌库。在那个基地打出相同数量的你的牌库顶的随从作为额外的随从。"
+    },
+    "penguins_pebble_gift": {
+      "name": "水晶礼品",
+      "effectText": "打出到基地上。持续：每当你从你的牌库顶打出一个随从到这里后，抽一张牌。"
+    },
+    "penguins_under_the_ice": {
+      "name": "在冰下",
+      "effectText": "展示你的牌库顶的 5 张牌。打出它们中的一个随机随从作为额外随从。以任意顺序放置剩下的牌到拥有者的牌库底。"
+    },
+    "penguins_ice_slide": {
+      "name": "冰滑道",
+      "effectText": "打出到基地上。特殊：这个基地计分后，为从这里进入弃牌堆的每个你的随从抽一张牌。"
     },
     "sharks_helicoprion": {
       "name": "旋齿鲨",
@@ -10992,6 +11058,14 @@
     "base_tropical_paradise": {
       "name": "热带天堂",
       "abilityText": "若每位玩家在这里都有一个或更多随从，此基地的起始断点为 0。"
+    },
+    "base_ice_floe": {
+      "name": "浮冰",
+      "abilityText": "在你回合开始的时候，你可以放置这里的一个你的随从到你的牌库底来打出一个你的牌库顶的随从作为额外随从。"
+    },
+    "base_the_colony": {
+      "name": "殖民地",
+      "abilityText": "你的回合第一次你打出随从到这里后，你可以打出一个你的牌库顶的随从作为额外随从到这里。"
     },
     "new_round_table_knights_king_arthur": {
       "name": "亚瑟王",

@@ -60,6 +60,8 @@
     "extra_minion_granted_after_interaction": "After the current interaction ends, you will gain {{count}} extra minion play(s).",
     "extra_action_granted": "You gained {{count}} extra action play(s).",
     "extra_action_granted_after_interaction": "After the current interaction ends, you will gain {{count}} extra action play(s).",
+    "penguins_wish_play_titan_option": "Play Emperor Penguin here",
+    "penguins_wish_buff_option": "Your minions here get +1 power this turn",
     "select_minion_hint": "Select a minion to attach this card to",
     "your_turn": "Your Turn!",
     "me_first_your_turn": "Your response — play a Special or pass",
@@ -1602,6 +1604,10 @@
     "bear_cavalry": {
       "name": "Bear Cavalry",
       "description": "Force movement and crush opponents."
+    },
+    "penguins": {
+      "name": "Penguins",
+      "description": "Reveal and play minions from the top of the deck, chaining extra plays into sudden base pressure."
     },
     "minions_of_cthulhu": {
       "name": "Minions of Cthulhu",
@@ -3459,6 +3465,66 @@
     "penguins_emperor_penguin": {
       "name": "Emperor Penguin",
       "effectText": "Special: At the start of your turn, you may play this titan on a base where you have three or more minions. Ongoing: You may play minions off the top of your deck here instead of your regular minion play. Talent: Reveal a minion of power 3 or less in your hand or discard pile and shuffle it into your deck to place a +1 power counter on this titan."
+    },
+    "penguins_surfing_penguin": {
+      "name": "Surfing Penguin",
+      "abilityText": "You may move a minion from here to another base."
+    },
+    "penguins_dancing_penguin": {
+      "name": "Dancing Penguin",
+      "abilityText": "Special: When you play another minion, you may play this minion to the same base instead. Place that minion on the bottom of its owner's deck; it has no effect."
+    },
+    "penguins_snazzy_penguin": {
+      "name": "Snazzy Penguin",
+      "abilityText": "If this minion was played from the top of your deck, draw two cards."
+    },
+    "penguins_command_penguin": {
+      "name": "Command Penguin",
+      "abilityText": "Play a minion from the top of your deck as an extra minion."
+    },
+    "penguins_disguise_penguin": {
+      "name": "Disguise Penguin",
+      "abilityText": "Talent: Place this minion on the bottom of your deck to play a minion from the top of your deck here as an extra minion. Use this ability only once per turn."
+    },
+    "penguins_secret_mission": {
+      "name": "Secret Mission",
+      "effectText": "Place any number of cards from your hand on the bottom of your deck. Draw that many cards, then shuffle your deck."
+    },
+    "penguins_the_hatching": {
+      "name": "The Hatching",
+      "effectText": "Play a minion from the top of your deck as an extra minion."
+    },
+    "penguins_regurgitating_penguin": {
+      "name": "Regurgitating Penguin",
+      "abilityText": "Reveal the top three cards of your deck. You may place one action revealed this way into your hand. Put the rest back on top of your deck in any order."
+    },
+    "penguins_baby_penguin": {
+      "name": "Baby Penguin",
+      "abilityText": "If this minion was played from the top of your deck, you may play an extra minion of power 3 or less here."
+    },
+    "penguins_a_wish_for_wings_that_work": {
+      "name": "A Wish For Wings That Work",
+      "effectText": "Choose a base. Play Emperor Penguin there, OR your minions there gain +1 power until the end of the turn."
+    },
+    "penguins_leaping_aboard": {
+      "name": "Leaping Aboard",
+      "effectText": "Play on a base. Special: After this base scores, play a minion from the top of your deck as an extra minion on the replacement base."
+    },
+    "penguins_i_cant_tell_them_apart": {
+      "name": "I Can't Tell Them Apart",
+      "effectText": "Shuffle any number of your minions on a base into your deck. Play the same number of minions from the top of your deck as extra minions there."
+    },
+    "penguins_pebble_gift": {
+      "name": "Pebble Gift",
+      "effectText": "Play on a base. Ongoing: After you play a minion from the top of your deck here, draw a card."
+    },
+    "penguins_under_the_ice": {
+      "name": "Under the Ice",
+      "effectText": "Reveal the top five cards of your deck. Play a random minion among them as an extra minion. Place the rest on the bottom of their owners' decks in any order."
+    },
+    "penguins_ice_slide": {
+      "name": "Ice Slide",
+      "effectText": "Play on a base. Special: After this base scores, draw a card for each of your minions that goes from here to the discard pile."
     },
     "sharks_helicoprion": {
       "name": "Helicoprion",
@@ -11009,6 +11075,14 @@
     "base_tropical_paradise": {
       "name": "Tropical Paradise",
       "abilityText": "If each player has one or more minions here, this base's starting breakpoint is 0."
+    },
+    "base_ice_floe": {
+      "name": "Ice Floe",
+      "abilityText": "At the start of your turn, you may place one of your minions here on the bottom of your deck to play a minion from the top of your deck as an extra minion."
+    },
+    "base_the_colony": {
+      "name": "The Colony",
+      "abilityText": "The first time you play a minion here on your turn, you may play a minion from the top of your deck as an extra minion here."
     },
     "new_round_table_knights_king_arthur": {
       "name": "King Arthur",
