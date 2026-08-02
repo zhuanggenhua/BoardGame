@@ -48,9 +48,9 @@ interface TutorialContextType {
     unbindDispatch: (generation?: number) => void;
     syncTutorialState: (tutorial: TutorialState) => void;
     /** 由 useTutorialBridge 调用，标记 Board 已挂载 */
-    notifyBoardMounted: () => void;
+    notifyBoardMounted: (generation?: number) => void;
     /** 由 useTutorialBridge 调用，标记 Board 已卸载 */
-    notifyBoardUnmounted: () => void;
+    notifyBoardUnmounted: (generation?: number) => void;
 }
 
 const TutorialContext = createContext<TutorialContextType | undefined>(undefined);
@@ -113,6 +113,9 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const executedAiStepsRef = useRef<Set<string>>(new Set());
     // 代际计数器：防止旧 Board 的 unbindDispatch 清除新 Board 的 controller
     const bindGenerationRef = useRef(0);
+    // Board 挂载代际：防止 CriticalImageGate / StrictMode 的旧 Board 卸载把新 Board 的 mounted 标记清掉
+    const boardMountGenerationRef = useRef(0);
+    const isBoardMountedRef = useRef(false);
     // 兜底 timer：防止 bindDispatch 永远不执行导致教程卡死
     const fallbackTimerRef = useRef<number | undefined>(undefined);
     const toast = useToast();
@@ -120,6 +123,25 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     useEffect(() => {
         toastRef.current = toast;
     }, [toast]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const holder = window as Window & {
+            __E2E_TEST_MODE__?: boolean;
+            __BG_TUTORIAL_CONTEXT_DIAGNOSTICS__?: Record<string, unknown>;
+        };
+        if (!holder.__E2E_TEST_MODE__) return;
+        holder.__BG_TUTORIAL_CONTEXT_DIAGNOSTICS__ = {
+            isBoardMounted,
+            isControllerReady,
+            active: tutorial.active,
+            manifestId: tutorial.manifestId,
+            stepIndex: tutorial.stepIndex,
+            stepId: tutorial.step?.id ?? null,
+            stepAiActionCount: tutorial.step?.aiActions?.length ?? 0,
+            aiActionCount: tutorial.aiActions?.length ?? 0,
+        };
+    }, [isBoardMounted, isControllerReady, tutorial]);
 
     const bindDispatch = useCallback((dispatch: DispatchFn) => {
         // 清除兜底 timer（正常路径：bindDispatch 被调用）
@@ -135,6 +157,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (pendingStartRef.current) {
             controllerRef.current.start(pendingStartRef.current);
             pendingStartRef.current = null;
+            if (fallbackTimerRef.current !== undefined) {
+                window.clearTimeout(fallbackTimerRef.current);
+                fallbackTimerRef.current = undefined;
+            }
         }
         return bindGenerationRef.current;
     }, []);
@@ -147,6 +173,33 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const unbindDispatch = useCallback((_generation?: number) => {
         // 不清除 controller — 教程运行期间 controller 需要保持可用
         // controller 内部通过 dispatchRef 间接调用，Board 重挂载后 ref 自动指向新 dispatch
+    }, []);
+
+    const notifyBoardMounted = useCallback((generation?: number) => {
+        const activeGeneration = generation ?? bindGenerationRef.current;
+        boardMountGenerationRef.current = activeGeneration;
+        isBoardMountedRef.current = true;
+        setIsBoardMounted(true);
+        if (pendingStartRef.current && controllerRef.current) {
+            controllerRef.current.start(pendingStartRef.current);
+            pendingStartRef.current = null;
+            if (fallbackTimerRef.current !== undefined) {
+                window.clearTimeout(fallbackTimerRef.current);
+                fallbackTimerRef.current = undefined;
+            }
+        }
+    }, []);
+
+    const notifyBoardUnmounted = useCallback((generation?: number) => {
+        if (
+            generation !== undefined
+            && boardMountGenerationRef.current !== generation
+        ) {
+            return;
+        }
+        boardMountGenerationRef.current = 0;
+        isBoardMountedRef.current = false;
+        setIsBoardMounted(false);
     }, []);
 
     const syncTutorialState = useCallback((nextTutorial: TutorialState) => {
@@ -166,10 +219,9 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         
         executedAiStepsRef.current = new Set();
         
-        // 只有当前 Board 已真正挂载时，才允许直接使用现成 controller。
-        // 路由切换瞬间可能仍残留上一页的 controller，此时必须转为 pending，
-        // 等新的 TutorialDispatchBridge / Board 重新接线后再启动。
-        if (controllerRef.current && isBoardMounted) {
+        // START 只要求命令桥已就绪；真实棋盘挂载只控制浮层显示和 AI 自动动作。
+        // 这样 CriticalImageGate 能先看到 playing 状态并完成预加载，不会反过来卡住教程启动。
+        if (controllerRef.current) {
             controllerRef.current.start(manifest);
             pendingStartRef.current = null;
             return;
@@ -183,7 +235,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             fallbackTimerRef.current = undefined;
             
             if (pendingStartRef.current && controllerRef.current) {
-                // controller 在等待期间就绪了，直接启动
+                // controller 在等待期间就绪了，直接启动；浮层/AI 仍等 Board mounted。
                 controllerRef.current.start(pendingStartRef.current);
                 pendingStartRef.current = null;
             } else if (pendingStartRef.current) {
@@ -191,7 +243,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 toastRef.current.error('教程加载超时，请刷新页面重试');
             }
         }, 10000);
-    }, [isBoardMounted]);
+    }, []);
 
     const nextStep = useCallback((reason?: TutorialNextReason) => {
         controllerRef.current?.next(reason);
@@ -211,6 +263,7 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setTutorial({ ...DEFAULT_TUTORIAL_STATE });
         setIsControllerReady(false);
         // 重置 Board 挂载标记，防止下次进入教程时残留 true 导致弹窗提前出现
+        isBoardMountedRef.current = false;
         setIsBoardMounted(false);
     }, []);
 
@@ -307,10 +360,10 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             bindDispatch,
             unbindDispatch,
             syncTutorialState,
-            notifyBoardMounted: () => setIsBoardMounted(true),
-            notifyBoardUnmounted: () => setIsBoardMounted(false),
+            notifyBoardMounted,
+            notifyBoardUnmounted,
         };
-    }, [tutorial, isAiExecuting, isBoardMounted, bindDispatch, unbindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, startTutorial, syncTutorialState]);
+    }, [tutorial, isAiExecuting, isBoardMounted, bindDispatch, unbindDispatch, closeTutorial, consumeAi, animationComplete, nextStep, startTutorial, syncTutorialState, notifyBoardMounted, notifyBoardUnmounted]);
 
     return (
         <TutorialContext.Provider value={value}>
@@ -358,10 +411,10 @@ export const useTutorialBridge = (tutorial: TutorialState, dispatch: (type: stri
         // bindDispatch 返回代际号，cleanup 时传入以防止旧 Board 误清新 Board 的 controller
         const gen = contextRef.current?.bindDispatch((...args) => dispatchRef.current(...args));
         // 通知 TutorialContext Board 已挂载
-        contextRef.current?.notifyBoardMounted();
+        contextRef.current?.notifyBoardMounted(gen);
         return () => {
             contextRef.current?.unbindDispatch(gen);
-            contextRef.current?.notifyBoardUnmounted();
+            contextRef.current?.notifyBoardUnmounted(gen);
         };
     }, [isTutorialMode]);  
 };

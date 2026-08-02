@@ -5,6 +5,21 @@ const runtimeState = {
     nativeAndroid: false,
 };
 
+const originalWindowLocalStorageDescriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
+
+function replaceWindowLocalStorage(storage: Storage | null) {
+    Object.defineProperty(window, 'localStorage', {
+        configurable: true,
+        get: () => storage,
+    });
+}
+
+function restoreWindowLocalStorage() {
+    if (originalWindowLocalStorageDescriptor) {
+        Object.defineProperty(window, 'localStorage', originalWindowLocalStorageDescriptor);
+    }
+}
+
 vi.mock('../mobile/androidRuntime', () => ({
     isAndroidShellBuildMode: () => runtimeState.androidShellBuild,
     isNativeAndroidRuntime: () => runtimeState.nativeAndroid,
@@ -12,6 +27,7 @@ vi.mock('../mobile/androidRuntime', () => ({
 
 describe('homeV2Routing', () => {
     beforeEach(() => {
+        restoreWindowLocalStorage();
         runtimeState.androidShellBuild = false;
         runtimeState.nativeAndroid = false;
         window.localStorage.clear();
@@ -20,6 +36,7 @@ describe('homeV2Routing', () => {
     });
 
     afterEach(() => {
+        restoreWindowLocalStorage();
         vi.unstubAllEnvs();
     });
 
@@ -85,5 +102,14 @@ describe('homeV2Routing', () => {
 
         expect(isHomeV2DraftEnabled(new URLSearchParams('homeV2Draft=1'))).toBe(false);
         expect(resolveHomeEntryStyle(new URLSearchParams('homeStyle=book&homeV2Draft=1'))).toBe('classic');
+    });
+
+    it('原生壳 localStorage 为空时回到经典主页且不会崩溃', async () => {
+        runtimeState.nativeAndroid = true;
+        replaceWindowLocalStorage(null);
+        const { persistHomeEntryStyle, resolveHomeEntryStyle } = await import('../homeV2Routing');
+
+        expect(resolveHomeEntryStyle(new URLSearchParams('native.theme=1'))).toBe('classic');
+        expect(() => persistHomeEntryStyle('book')).not.toThrow();
     });
 });

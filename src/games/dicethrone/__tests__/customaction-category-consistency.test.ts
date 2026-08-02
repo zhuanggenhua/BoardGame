@@ -19,7 +19,7 @@ import type { CustomActionContext } from '../domain/effects';
 import type { DiceThroneEvent } from '../domain/types';
 import { ALL_TOKEN_DEFINITIONS, CHARACTER_DATA_MAP } from '../domain/characters';
 import { RESOURCE_IDS } from '../domain/resources';
-import { TOKEN_IDS } from '../domain/ids';
+import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 
 // ============================================================================
 // 事件类型 → 必需 category 映射
@@ -668,7 +668,7 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
         expect(handler!(nonTriggerCtx)).toEqual([]);
     });
 
-    it('barbarian-steadfast-remove-status-if-three-kind 仅按攻击骰三个相同数字请求移除自身状态', () => {
+    it('barbarian-steadfast-remove-status-if-three-kind 仅在攻击骰三个相同且自身有可移除状态时请求移除自身状态', () => {
         const handler = getCustomActionHandler('barbarian-steadfast-remove-status-if-three-kind');
         expect(handler).toBeDefined();
 
@@ -737,6 +737,26 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
                 },
             },
         });
+
+        const noRemovableStatusState = {
+            ...state,
+            players: {
+                ...state.players,
+                '0': {
+                    ...state.players['0'],
+                    statusEffects: { [STATUS_IDS.KNOCKDOWN]: 0 },
+                    tokens: {
+                        [STATUS_IDS.CONCUSSION]: 0,
+                        [STATUS_IDS.DAZE]: 0,
+                    },
+                },
+            },
+        };
+        const noRemovableStatusCtx = createMockContext(
+            'barbarian-steadfast-remove-status-if-three-kind',
+            noRemovableStatusState,
+        );
+        expect(handler!(noRemovableStatusCtx)).toEqual([]);
 
         const nonTriggerState = {
             ...state,

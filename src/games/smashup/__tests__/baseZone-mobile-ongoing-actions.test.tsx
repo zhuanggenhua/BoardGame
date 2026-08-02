@@ -459,4 +459,48 @@ describe('BaseZone 移动端 ongoing 交互', () => {
         fireEvent.click(firstMinion as Element);
         expect(onMinionSelect).toHaveBeenCalledWith('m1', 0);
     });
+
+    it('随从选择模式下收起附着行动浮层，避免源卡遮挡目标随从', () => {
+        renderBaseZone({
+            isMinionSelectMode: true,
+            selectableMinionUids: new Set(['target']),
+            minions: [
+                {
+                    uid: 'source',
+                    defId: 'pirate_first_mate',
+                    controller: '0',
+                    owner: '0',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [
+                        { uid: 'source-action', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: false },
+                    ],
+                },
+                {
+                    uid: 'target',
+                    defId: 'pirate_first_mate',
+                    controller: '1',
+                    owner: '1',
+                    basePower: 2,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                },
+            ],
+        });
+
+        const sourceMinion = document.querySelector('[data-minion-uid="source"]') as HTMLElement | null;
+        expect(sourceMinion).not.toBeNull();
+
+        fireEvent.mouseEnter(sourceMinion as Element);
+
+        expect(sourceMinion?.getAttribute('data-attached-overlay-visible')).toBe('false');
+        expect(document.querySelector('[data-attached-action-uid="source-action"]')?.parentElement?.className)
+            .toContain('pointer-events-none');
+    });
 });

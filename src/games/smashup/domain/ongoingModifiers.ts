@@ -1097,11 +1097,12 @@ export function getOngoingPowerModifierDetails(
         );
         const value = entry.modifier(ctx);
         if (value !== 0) {
-            // 通过 getCardDef 获取 i18n 名称，fallback 到 defId
+            // 修正来源可能是卡牌或基地；tooltip 里不要暴露内部 defId。
             const cardDef = getCardDef(entry.sourceDefId);
+            const baseDef = getBaseDef(entry.sourceDefId);
             details.push({
                 sourceDefId: entry.sourceDefId,
-                sourceName: cardDef?.name ?? entry.sourceDefId,
+                sourceName: cardDef?.name ?? baseDef?.name ?? entry.sourceDefId,
                 value,
             });
         }

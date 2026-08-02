@@ -319,7 +319,7 @@ describe('SmashUp Munchkin intake 静态合同', () => {
         expect(withoutMunchkin.treasureDeck).toBeUndefined();
     });
 
-    it('中英文 locale 覆盖派系和卡牌名称，中文行动牌保留未实现提示', () => {
+    it('中英文 locale 覆盖派系、卡牌名称和行动规则文本', () => {
         const zhCN = loadLocale('zh-CN');
         const en = loadLocale('en');
 
@@ -331,10 +331,14 @@ describe('SmashUp Munchkin intake 静态合同', () => {
                 expect(zhCN.cards[card.id]?.name, 'zh-CN cards.' + card.id + '.name').toBeTruthy();
                 expect(en.cards[card.id]?.name, 'en cards.' + card.id + '.name').toBeTruthy();
                 if (card.type === 'action') {
+                    const zhEffectText = zhCN.cards[(card as ActionCardDef).id]?.effectText;
+                    const enEffectText = en.cards[(card as ActionCardDef).id]?.effectText;
+                    expect(zhEffectText, 'zh-CN cards.' + card.id + '.effectText').toBeTruthy();
+                    expect(enEffectText, 'en cards.' + card.id + '.effectText').toBeTruthy();
                     expect(
-                        zhCN.cards[(card as ActionCardDef).id]?.effectText,
+                        zhEffectText,
                         'zh-CN cards.' + card.id + '.effectText',
-                    ).toContain('当前仅完成静态接入');
+                    ).not.toContain('当前仅完成静态接入');
                 }
             }
         }

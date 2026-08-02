@@ -26,14 +26,21 @@ import type {
     CardTransferredEvent,
     CardRecoveredFromDiscardEvent,
     CardStoredEvent,
+    CardsSuppressedUntilTurnEndEvent,
     StoredCardCounterChangedEvent,
     StoredCardReleasedEvent,
     HandShuffledIntoDeckEvent,
     MadnessDrawnEvent,
     MadnessReturnedEvent,
     MunchkinMonsterDefeatedEvent,
+    MunchkinTreasureRewardClaimedEvent,
+    MunchkinTreasureRewardDistributedEvent,
+    MunchkinTreasureRewardRevealedEvent,
     MunchkinTreasureDeckShuffledEvent,
     MunchkinTreasuresDrawnEvent,
+    MunchkinTreasuresMilledEvent,
+    MunchkinTreasureRecoveredFromDiscardEvent,
+    MunchkinTreasureFoundFromDeckEvent,
     MunchkinTreasureToDeckBottomEvent,
     BaseDeckReorderedEvent,
     BaseReplacedEvent,
@@ -81,6 +88,7 @@ import {
 import { canControllerPlayTitan, hasCthulhuExpansionFaction, hasMunchkinExpansionFaction } from './abilityHelpers';
 import { getMunchkinSpecialCardDescriptor, MUNCHKIN_MONSTER_DECK_DEF_IDS, MUNCHKIN_TREASURE_DECK_DEF_IDS } from '../data/factions/munchkin';
 import { normalizeScoringEligibleBaseIndices } from './ongoingModifiers';
+import { isCardSuppressed } from './ongoingEffects';
 import {
     getBestMatchingBaseLimitedPowerQuota,
     canUseBaseLimitedMinionQuota,
@@ -112,6 +120,24 @@ function removeTempBreakpointModifierAtBaseIndex(
         return acc;
     }, {});
     return Object.keys(adjusted).length > 0 ? adjusted : undefined;
+}
+
+function adjustPendingMunchkinTreasureRewardAfterBaseRemoved(
+    pending: SmashUpCore['pendingMunchkinTreasureReward'],
+    removedBaseIndex: number,
+    removedBaseInstanceId?: string,
+): SmashUpCore['pendingMunchkinTreasureReward'] {
+    if (!pending) return undefined;
+    if (
+        pending.baseIndex === removedBaseIndex
+        || (removedBaseInstanceId !== undefined && pending.baseInstanceId === removedBaseInstanceId)
+    ) {
+        return undefined;
+    }
+    if (pending.baseIndex > removedBaseIndex) {
+        return { ...pending, baseIndex: pending.baseIndex - 1 };
+    }
+    return pending;
 }
 
 interface MunchkinMonsterDealResult {
@@ -170,12 +196,49 @@ function allocateMunchkinTreasureUids(
     count: number,
 ): { treasureUids: string[]; nextUid: number } {
     const treasureUids = requestedUids?.slice(0, count) ?? [];
+    const occupied = collectOccupiedUids(state);
     let nextUid = state.nextUid;
     while (treasureUids.length < count) {
-        treasureUids.push(`munchkin_treasure_${nextUid}`);
+        while (occupied.has(`munchkin_treasure_${nextUid}`)) {
+            nextUid += 1;
+        }
+        const uid = `munchkin_treasure_${nextUid}`;
+        treasureUids.push(uid);
+        occupied.add(uid);
         nextUid += 1;
     }
     return { treasureUids, nextUid };
+}
+
+function getMunchkinTreasureCardType(defId: string): CardType {
+    return getCardDef(defId)?.type === 'minion' ? 'minion' : 'action';
+}
+
+function buildMunchkinTreasureCard(defId: string, uid: string, owner: PlayerId): CardInstance {
+    return {
+        uid,
+        defId,
+        type: getMunchkinTreasureCardType(defId),
+        owner,
+    };
+}
+
+function hasSameStringMultiset(left: readonly string[], right: readonly string[]): boolean {
+    if (left.length !== right.length) return false;
+    const counts = new Map<string, number>();
+    for (const value of left) {
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+    for (const value of right) {
+        const count = counts.get(value);
+        if (!count) return false;
+        if (count === 1) {
+            counts.delete(value);
+        } else {
+            counts.set(value, count - 1);
+        }
+    }
+    return counts.size === 0;
 }
 
 function removeTempBasePowerModifierAtBaseIndex(
@@ -316,6 +379,10 @@ function collectOccupiedUids(state: SmashUpCore): Set<string> {
         occupied.add(titan.uid);
     }
 
+    for (const card of state.pendingMunchkinTreasureReward?.treasureCards ?? []) {
+        occupied.add(card.uid);
+    }
+
     return occupied;
 }
 
@@ -386,6 +453,11 @@ function removeMinionUidFromBases(
     };
 }
 
+type AttachedActionOnHost = {
+    attached: MinionOnBase['attachedActions'][number];
+    host: MinionOnBase;
+};
+
 function detachCardUidFromBases(
     bases: BaseInPlay[],
     cardUid: string,
@@ -394,12 +466,12 @@ function detachCardUidFromBases(
     removedMinion?: MinionOnBase;
     removedOngoing?: BaseInPlay['ongoingActions'][number];
     removedAttachedAction?: MinionOnBase['attachedActions'][number];
-    detachedFromRemovedMinions: MinionOnBase['attachedActions'];
+    detachedFromRemovedMinions: AttachedActionOnHost[];
 } {
     let removedMinion: MinionOnBase | undefined;
     let removedOngoing: BaseInPlay['ongoingActions'][number] | undefined;
     let removedAttachedAction: MinionOnBase['attachedActions'][number] | undefined;
-    const detachedFromRemovedMinions: MinionOnBase['attachedActions'] = [];
+    const detachedFromRemovedMinions: AttachedActionOnHost[] = [];
 
     const nextBases = bases.map((base) => {
         const removedMinions = base.minions.filter(minion => minion.uid === cardUid);
@@ -412,7 +484,9 @@ function detachCardUidFromBases(
         }
         for (const minion of removedMinions) {
             if (minion.attachedActions.length > 0) {
-                detachedFromRemovedMinions.push(...minion.attachedActions);
+                detachedFromRemovedMinions.push(
+                    ...minion.attachedActions.map(attached => ({ attached, host: minion })),
+                );
             }
         }
 
@@ -465,6 +539,14 @@ function detachCardUidFromBases(
 
 type AttachedActionLeaveDestination = 'discard' | 'hand' | 'deckBottom';
 
+type AttachedActionLeaveContext = {
+    state: SmashUpCore;
+    host?: MinionOnBase;
+};
+
+const MUNCHKIN_DWARF_KING_DEF_ID = 'munchkin_dwarves_dwarf_king';
+const MUNCHKIN_TREASURE_FACTION_ID = 'munchkin_treasures';
+
 function isHalfTheBattleGalWomanTemporaryAction(attached: MinionOnBase['attachedActions'][number]): boolean {
     return attached.metadata?.halfTheBattleGalWomanTemporary === true;
 }
@@ -478,32 +560,60 @@ function attachedActionToCard(attached: MinionOnBase['attachedActions'][number])
     };
 }
 
+function isMunchkinTreasureAttachment(attached: MinionOnBase['attachedActions'][number]): boolean {
+    return getCardDef(attached.defId)?.faction === MUNCHKIN_TREASURE_FACTION_ID;
+}
+
+function getDwarfKingTreasureRecoveryPlayerId(
+    attached: MinionOnBase['attachedActions'][number],
+    context?: AttachedActionLeaveContext,
+): PlayerId | undefined {
+    const host = context?.host;
+    if (!context || !host || !isMunchkinTreasureAttachment(attached)) return undefined;
+    const controllerId = host.controller;
+    const hasActiveDwarfKing = context.state.bases.some(base =>
+        base.minions.some(minion =>
+            minion.controller === controllerId
+            && minion.defId === MUNCHKIN_DWARF_KING_DEF_ID
+            && !isCardSuppressed(context.state, minion.uid)
+        )
+    );
+    return hasActiveDwarfKing ? controllerId : undefined;
+}
+
 function placeAttachedActionLeavingPlay(
     players: SmashUpCore['players'],
     attached: MinionOnBase['attachedActions'][number],
     defaultDestination: AttachedActionLeaveDestination,
+    context?: AttachedActionLeaveContext,
 ): SmashUpCore['players'] {
-    const owner = players[attached.ownerId];
-    if (!owner) return players;
     const card = attachedActionToCard(attached);
+    const dwarfKingRecoveryPlayerId = defaultDestination === 'discard'
+        ? getDwarfKingTreasureRecoveryPlayerId(attached, context)
+        : undefined;
     const destination = isHalfTheBattleGalWomanTemporaryAction(attached)
         ? 'deckBottom'
+        : dwarfKingRecoveryPlayerId !== undefined
+            ? 'hand'
         : defaultDestination;
+    const receiverId = dwarfKingRecoveryPlayerId ?? attached.ownerId;
+    const receiver = players[receiverId];
+    if (!receiver) return players;
     if (destination === 'hand') {
         return {
             ...players,
-            [attached.ownerId]: { ...owner, hand: [...owner.hand, card] },
+            [receiverId]: { ...receiver, hand: [...receiver.hand, card] },
         };
     }
     if (destination === 'deckBottom') {
         return {
             ...players,
-            [attached.ownerId]: { ...owner, deck: [...owner.deck, card] },
+            [receiverId]: { ...receiver, deck: [...receiver.deck, card] },
         };
     }
     return {
         ...players,
-        [attached.ownerId]: { ...owner, discard: [...owner.discard, card] },
+        [receiverId]: { ...receiver, discard: [...receiver.discard, card] },
     };
 }
 
@@ -908,7 +1018,18 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.ACTION_PLAYED: {
-            const { playerId, cardUid, isExtraAction, fromBuried, fromDiscard, fromStored, ownerId, discardPlaySourceId, consumesNormalLimit } = event.payload as any;
+            const {
+                playerId,
+                cardUid,
+                isExtraAction,
+                fromBuried,
+                fromDiscard,
+                fromStored,
+                ownerId,
+                discardPlaySourceId,
+                consumesNormalLimit,
+                defId: payloadDefId,
+            } = event.payload as any;
             const player = state.players[playerId];
             const card = fromStored
                 ? player.storedCards?.find(c => c.uid === cardUid)
@@ -924,7 +1045,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 }
                 return undefined;
             })();
-            const defId = card?.defId ?? buriedLookup?.buried.defId;
+            const defId = card?.defId
+                ?? buriedLookup?.buried.defId
+                ?? (typeof payloadDefId === 'string' ? payloadDefId : undefined);
             const def = defId ? getCardDef(defId) : undefined;
             const isOngoing = def && def.type === 'action' && (def as ActionCardDef).subtype === 'ongoing';
             const isSpecial = def && def.type === 'action' && (def as ActionCardDef).subtype === 'special';
@@ -1182,6 +1305,22 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             return {
                 ...state,
                 titanOngoingSuppressedUntilTurnEnd: [...prev, titanUid],
+            };
+        }
+
+        case SU_EVENTS.CARDS_SUPPRESSED_UNTIL_TURN_END: {
+            const { cardUids } = (event as CardsSuppressedUntilTurnEndEvent).payload;
+            const prev = state.suppressedCardUidsUntilTurnEnd ?? [];
+            const next = [...prev];
+            for (const cardUid of cardUids) {
+                if (cardUid && !next.includes(cardUid)) {
+                    next.push(cardUid);
+                }
+            }
+            if (next.length === prev.length) return state;
+            return {
+                ...state,
+                suppressedCardUidsUntilTurnEnd: next,
             };
         }
 
@@ -1495,7 +1634,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             for (const m of scoredBase.minions) {
                 // Property 12: 随从附着的行动卡回各自所有者弃牌堆
                 for (const attached of m.attachedActions) {
-                    newPlayers = placeAttachedActionLeavingPlay(newPlayers, attached, 'discard');
+                    newPlayers = placeAttachedActionLeavingPlay(newPlayers, attached, 'discard', { state, host: m });
                 }
                 const returnedCard: CardInstance = {
                     uid: m.uid,
@@ -1554,6 +1693,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const newTempBasePowerModifiersByBaseId = scoredBase.instanceId
                 ? clearEntityScopedValue(state.tempBasePowerModifiersByBaseId, scoredBase.instanceId)
                 : state.tempBasePowerModifiersByBaseId;
+            const nextPendingTreasureReward = adjustPendingMunchkinTreasureRewardAfterBaseRemoved(
+                state.pendingMunchkinTreasureReward,
+                baseIndex,
+                scoredBase.instanceId,
+            );
             return {
                 ...state,
                 players: newPlayers,
@@ -1568,6 +1712,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 tempBreakpointModifiersByBaseId: newTempBreakpointModifiersByBaseId,
                 tempBasePowerModifiers: newTempBasePowerModifiers,
                 tempBasePowerModifiersByBaseId: newTempBasePowerModifiersByBaseId,
+                pendingMunchkinTreasureReward: nextPendingTreasureReward,
             };
         }
 
@@ -2005,6 +2150,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     return remaining.length ? remaining : undefined;
                 })(),
                 titanOngoingSuppressedUntilTurnEnd: undefined,
+                suppressedCardUidsUntilTurnEnd: undefined,
                 moonZeroThreeTriggeredTurnByTitan: undefined,
                 veryLargeBoulderTriggeredTurnByTitan: undefined,
                 // 清空本回合移动追踪
@@ -2473,19 +2619,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             // 附着的行动卡回各自所有者弃牌堆（与 MINION_DESTROYED 逻辑一致）
             if (minion) {
                 for (const attached of minion.attachedActions) {
-                    const attachedOwner = newPlayers[attached.ownerId];
-                    if (attachedOwner) {
-                        const attachedCard: CardInstance = {
-                            uid: attached.uid,
-                            defId: attached.defId,
-                            type: 'action',
-                            owner: attached.ownerId,
-                        };
-                        newPlayers = {
-                            ...newPlayers,
-                            [attached.ownerId]: { ...newPlayers[attached.ownerId], discard: [...newPlayers[attached.ownerId].discard, attachedCard] },
-                        };
-                    }
+                    newPlayers = placeAttachedActionLeavingPlay(newPlayers, attached, 'discard', { state, host: minion });
                 }
             }
             
@@ -2644,19 +2778,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             // Property 12: 附着的行动卡回各自所有者弃牌堆
             if (minion) {
                 for (const attached of minion.attachedActions) {
-                    const attachedOwner = newPlayers[attached.ownerId];
-                    if (attachedOwner) {
-                        const attachedCard: CardInstance = {
-                            uid: attached.uid,
-                            defId: attached.defId,
-                            type: 'action',
-                            owner: attached.ownerId,
-                        };
-                        newPlayers = {
-                            ...newPlayers,
-                            [attached.ownerId]: { ...newPlayers[attached.ownerId], discard: [...newPlayers[attached.ownerId].discard, attachedCard] },
-                        };
-                    }
+                    newPlayers = placeAttachedActionLeavingPlay(newPlayers, attached, 'discard', { state, host: minion });
                 }
             }
             // 追踪本回合被消灭的随从（用于 furthering_the_cause 等触发器，并阻止过期移动把弃牌堆里的牌复活）
@@ -2908,8 +3030,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 updatedPlayers[sourceOwnerId] = updateSourceOwnerZone(sourceOwner);
             }
 
-            for (const attached of detached.detachedFromRemovedMinions) {
-                updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, attached, 'discard');
+            for (const record of detached.detachedFromRemovedMinions) {
+                updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, record.attached, 'discard', {
+                    state,
+                    host: record.host,
+                });
             }
 
             const candidateMinionDef = getCardDef(candidateDefId);
@@ -3297,12 +3422,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             }
             // 从基地的 ongoingActions 或随从的 attachedActions 中移除
             let detachedAttachedAction: MinionOnBase['attachedActions'][number] | undefined;
+            let detachedAttachedHost: MinionOnBase | undefined;
             const newBases = state.bases.map(base => {
                 const filteredOngoing = base.ongoingActions.filter(o => o.uid !== cardUid);
                 const filteredMinions = base.minions.map(m => {
                     const matchedAttachment = m.attachedActions.find(a => a.uid === cardUid);
                     if (!detachedAttachedAction && matchedAttachment) {
                         detachedAttachedAction = matchedAttachment;
+                        detachedAttachedHost = m;
                     }
                     const hadAttachment = matchedAttachment !== undefined;
                     const filtered = m.attachedActions.filter(a => a.uid !== cardUid);
@@ -3348,6 +3475,16 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 }
             }
             const destinationZone = destination ?? 'discard';
+            if (detachedAttachedAction) {
+                return {
+                    ...state,
+                    bases: newBases,
+                    players: placeAttachedActionLeavingPlay(state.players, detachedAttachedAction, destinationZone, {
+                        state,
+                        host: detachedAttachedHost,
+                    }),
+                };
+            }
             return {
                 ...state,
                 bases: newBases,
@@ -3444,11 +3581,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             }
 
             const uniqueDetached = Array.from(
-                new Map(detached.detachedFromRemovedMinions.map((attached) => [attached.uid, attached])).values(),
+                new Map(detached.detachedFromRemovedMinions.map((record) => [record.attached.uid, record])).values(),
             );
             if (uniqueDetached.length > 0) {
-                for (const attached of uniqueDetached) {
-                    updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, attached, 'discard');
+                for (const record of uniqueDetached) {
+                    updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, record.attached, 'discard', {
+                        state,
+                        host: record.host,
+                    });
                 }
             }
 
@@ -3537,11 +3677,14 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             }
 
             const uniqueDetached = Array.from(
-                new Map(detached.detachedFromRemovedMinions.map((attached) => [attached.uid, attached])).values(),
+                new Map(detached.detachedFromRemovedMinions.map((record) => [record.attached.uid, record])).values(),
             );
             if (uniqueDetached.length > 0) {
-                for (const a of uniqueDetached) {
-                    updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, a, 'discard');
+                for (const record of uniqueDetached) {
+                    updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, record.attached, 'discard', {
+                        state,
+                        host: record.host,
+                    });
                 }
             }
 
@@ -3656,10 +3799,13 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 };
 
             const uniqueDetached = Array.from(
-                new Map(detached.detachedFromRemovedMinions.map((attached) => [attached.uid, attached])).values(),
+                new Map(detached.detachedFromRemovedMinions.map((record) => [record.attached.uid, record])).values(),
             );
-            for (const attached of uniqueDetached) {
-                updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, attached, 'discard');
+            for (const record of uniqueDetached) {
+                updatedPlayers = placeAttachedActionLeavingPlay(updatedPlayers, record.attached, 'discard', {
+                    state,
+                    host: record.host,
+                });
             }
 
             return {
@@ -3911,15 +4057,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const rewardCount = Math.min(descriptor.treasureReward ?? 0, state.treasureDeck.length);
             const drawnTreasureDefIds = state.treasureDeck.slice(0, rewardCount);
             const allocation = allocateMunchkinTreasureUids(state, treasureUids, rewardCount);
-            const awardedTreasures: CardInstance[] = drawnTreasureDefIds.map((defId, index) => {
-                const cardDef = getCardDef(defId);
-                return {
-                    uid: allocation.treasureUids[index],
-                    defId,
-                    type: cardDef?.type === 'minion' ? 'minion' : 'action',
-                    owner: playerId,
-                };
-            });
+            const awardedTreasures: CardInstance[] = drawnTreasureDefIds.map((defId, index) =>
+                buildMunchkinTreasureCard(defId, allocation.treasureUids[index], playerId)
+            );
             const nextBases = state.bases.map((candidateBase, index) => {
                 if (index !== baseIndex) return candidateBase;
                 return {
@@ -3951,15 +4091,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const drawCount = Math.min(count, state.treasureDeck.length);
             const drawnTreasureDefIds = state.treasureDeck.slice(0, drawCount);
             const allocation = allocateMunchkinTreasureUids(state, treasureUids, drawCount);
-            const drawnTreasures: CardInstance[] = drawnTreasureDefIds.map((defId, index) => {
-                const cardDef = getCardDef(defId);
-                return {
-                    uid: allocation.treasureUids[index],
-                    defId,
-                    type: cardDef?.type === 'minion' ? 'minion' : 'action',
-                    owner: playerId,
-                };
-            });
+            const drawnTreasures: CardInstance[] = drawnTreasureDefIds.map((defId, index) =>
+                buildMunchkinTreasureCard(defId, allocation.treasureUids[index], playerId)
+            );
 
             return {
                 ...state,
@@ -3972,6 +4106,204 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         hand: [...player.hand, ...drawnTreasures],
                     },
                 },
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_TREASURES_MILLED: {
+            const { count } = (event as MunchkinTreasuresMilledEvent).payload;
+            if (!state.treasureDeck || count <= 0) return state;
+            const millCount = Math.min(count, state.treasureDeck.length);
+            if (millCount <= 0) return state;
+            const milledTreasureDefIds = state.treasureDeck.slice(0, millCount);
+
+            return {
+                ...state,
+                treasureDeck: state.treasureDeck.slice(millCount),
+                treasureDiscard: [...(state.treasureDiscard ?? []), ...milledTreasureDefIds],
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_TREASURE_RECOVERED_FROM_DISCARD: {
+            const { playerId, defId, treasureUid } = (event as MunchkinTreasureRecoveredFromDiscardEvent).payload;
+            const player = state.players[playerId];
+            const treasureDiscard = state.treasureDiscard ?? [];
+            const discardIndex = treasureDiscard.indexOf(defId);
+            if (!player || discardIndex < 0) return state;
+
+            const allocation = allocateMunchkinTreasureUids(
+                state,
+                treasureUid ? [treasureUid] : undefined,
+                1,
+            );
+            const recoveredTreasure = buildMunchkinTreasureCard(defId, allocation.treasureUids[0], playerId);
+
+            return {
+                ...state,
+                treasureDiscard: [
+                    ...treasureDiscard.slice(0, discardIndex),
+                    ...treasureDiscard.slice(discardIndex + 1),
+                ],
+                nextUid: allocation.nextUid,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        hand: [...player.hand, recoveredTreasure],
+                    },
+                },
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_TREASURE_FOUND_FROM_DECK: {
+            const {
+                playerId,
+                defId,
+                deckIndex,
+                treasureUid,
+                shuffledDeckDefIds,
+            } = (event as MunchkinTreasureFoundFromDeckEvent).payload;
+            const player = state.players[playerId];
+            const treasureDeck = state.treasureDeck ?? [];
+            if (
+                !player
+                || !Number.isInteger(deckIndex)
+                || deckIndex < 0
+                || deckIndex >= treasureDeck.length
+                || treasureDeck[deckIndex] !== defId
+            ) {
+                return state;
+            }
+
+            const remainingDeck = [
+                ...treasureDeck.slice(0, deckIndex),
+                ...treasureDeck.slice(deckIndex + 1),
+            ];
+            const nextTreasureDeck = hasSameStringMultiset(shuffledDeckDefIds, remainingDeck)
+                ? shuffledDeckDefIds
+                : remainingDeck;
+            const allocation = allocateMunchkinTreasureUids(
+                state,
+                treasureUid ? [treasureUid] : undefined,
+                1,
+            );
+            const foundTreasure = buildMunchkinTreasureCard(defId, allocation.treasureUids[0], playerId);
+
+            return {
+                ...state,
+                treasureDeck: nextTreasureDeck,
+                nextUid: allocation.nextUid,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        hand: [...player.hand, foundTreasure],
+                    },
+                },
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED: {
+            const {
+                baseIndex,
+                baseDefId,
+                baseInstanceId,
+                count,
+                eligiblePlayerIds,
+                nextRecipientIndex,
+                treasureUids,
+                reason,
+            } = (event as MunchkinTreasureRewardRevealedEvent).payload;
+            if (!state.treasureDeck || count <= 0) return state;
+            const resolvedEligiblePlayerIds = eligiblePlayerIds.filter((playerId, index, all) =>
+                Boolean(state.players[playerId]) && all.indexOf(playerId) === index
+            );
+            if (resolvedEligiblePlayerIds.length === 0) return state;
+
+            const revealCount = Math.min(count, state.treasureDeck.length);
+            if (revealCount <= 0) return state;
+
+            const revealedTreasureDefIds = state.treasureDeck.slice(0, revealCount);
+            const allocation = allocateMunchkinTreasureUids(state, treasureUids, revealCount);
+            const normalizedNextRecipientIndex =
+                ((nextRecipientIndex ?? 0) % resolvedEligiblePlayerIds.length + resolvedEligiblePlayerIds.length)
+                % resolvedEligiblePlayerIds.length;
+
+            return {
+                ...state,
+                treasureDeck: state.treasureDeck.slice(revealCount),
+                nextUid: allocation.nextUid,
+                pendingMunchkinTreasureReward: {
+                    baseIndex,
+                    baseDefId,
+                    ...(baseInstanceId ? { baseInstanceId } : {}),
+                    treasureCards: revealedTreasureDefIds.map((defId, index) => ({
+                        uid: allocation.treasureUids[index],
+                        defId,
+                        type: getMunchkinTreasureCardType(defId),
+                    })),
+                    eligiblePlayerIds: resolvedEligiblePlayerIds,
+                    nextRecipientIndex: normalizedNextRecipientIndex,
+                    reason,
+                },
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_TREASURE_REWARD_CLAIMED: {
+            const { playerId, treasureUid } = (event as MunchkinTreasureRewardClaimedEvent).payload;
+            const pending = state.pendingMunchkinTreasureReward;
+            const player = state.players[playerId];
+            if (!pending || !player) return state;
+            const claimed = pending.treasureCards.find(card => card.uid === treasureUid);
+            if (!claimed) return state;
+
+            const remainingTreasureCards = pending.treasureCards.filter(card => card.uid !== treasureUid);
+            return {
+                ...state,
+                pendingMunchkinTreasureReward: remainingTreasureCards.length > 0
+                    ? { ...pending, treasureCards: remainingTreasureCards }
+                    : undefined,
+                players: {
+                    ...state.players,
+                    [playerId]: {
+                        ...player,
+                        hand: [
+                            ...player.hand,
+                            buildMunchkinTreasureCard(claimed.defId, claimed.uid, playerId),
+                        ],
+                    },
+                },
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED: {
+            const { baseIndex, baseInstanceId } = (event as MunchkinTreasureRewardDistributedEvent).payload;
+            const pending = state.pendingMunchkinTreasureReward;
+            if (!pending) return state;
+            if (baseIndex !== undefined && pending.baseIndex !== baseIndex) return state;
+            if (baseInstanceId !== undefined && pending.baseInstanceId !== baseInstanceId) return state;
+            if (pending.treasureCards.length === 0 || pending.eligiblePlayerIds.length === 0) {
+                return { ...state, pendingMunchkinTreasureReward: undefined };
+            }
+
+            const players = { ...state.players };
+            pending.treasureCards.forEach((card, index) => {
+                const recipientIndex = (pending.nextRecipientIndex + index) % pending.eligiblePlayerIds.length;
+                const recipientId = pending.eligiblePlayerIds[recipientIndex];
+                const recipient = players[recipientId];
+                if (!recipient) return;
+                players[recipientId] = {
+                    ...recipient,
+                    hand: [
+                        ...recipient.hand,
+                        buildMunchkinTreasureCard(card.defId, card.uid, recipientId),
+                    ],
+                };
+            });
+
+            return {
+                ...state,
+                players,
+                pendingMunchkinTreasureReward: undefined,
             };
         }
 

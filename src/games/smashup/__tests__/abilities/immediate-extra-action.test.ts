@@ -10,8 +10,11 @@ import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import type { SmashUpCore, TitanState } from '../../domain/types';
 import { SU_EVENTS } from '../../domain/types';
 import {
+    getFirstPrompt,
     getPromptHandlerData,
+    getOptionalSimpleChoicePrompt,
     getPromptOption,
+    getPromptOptions,
     getPromptOptionsGenerator,
     getPromptSourceId,
     getSimpleChoicePrompt,
@@ -65,6 +68,26 @@ function queueImmediateExtraMinion(matchState: MatchState<SmashUpCore>) {
     } as const;
 
     return queueImmediateExtraPlayInteractions(matchState, [immediateEvent as any]);
+}
+
+function queueImmediateSpecificExtraMinions(
+    matchState: MatchState<SmashUpCore>,
+    cardUids: string[],
+) {
+    const events = cardUids.map((cardUid, index) => ({
+        type: SU_EVENTS.LIMIT_MODIFIED,
+        payload: {
+            playerId: '0',
+            limitType: 'minion',
+            delta: 1,
+            reason: 'test_immediate_specific_extra_minion',
+            playTiming: 'immediate',
+            specificCardUid: cardUid,
+        },
+        timestamp: 1000 + index,
+    } as const));
+
+    return queueImmediateExtraPlayInteractions(matchState, events as any);
 }
 
 describe('立即额外行动交互', () => {
@@ -174,6 +197,86 @@ describe('立即额外行动交互', () => {
 
         expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'a1')).toBe(false);
         expect(result.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1')?.tempPowerModifier).toBe(3);
+    });
+
+    it('指定卡牌和指定宿主的立即额外行动应在计分前也能自动附着', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('spiky-1', 'munchkin_treasure_spiky_boots', 'action', '0')],
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_mines',
+                    minions: [
+                        makeMinion('host-1', 'munchkin_dwarves_loot_lover', '0', 3),
+                        makeMinion('opponent-1', 'pirate_buccaneer', '1', 4),
+                    ],
+                    ongoingActions: [],
+                }),
+                makeBase({
+                    defId: 'base_treasure_bath',
+                    minions: [makeMinion('away-host', 'alien_invader', '0', 3)],
+                    ongoingActions: [],
+                }),
+            ],
+        });
+        const matchState = makeMatchState(state);
+        matchState.sys.phase = 'scoreBases';
+        const queuedState = queueImmediateExtraPlayInteractions(matchState, [{
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: {
+                playerId: '0',
+                limitType: 'action',
+                delta: 1,
+                reason: 'munchkin_dwarves_salvage',
+                playTiming: 'immediate',
+                restrictToBase: 0,
+                restrictToCardUid: 'spiky-1',
+                restrictToMinionUid: 'host-1',
+                specialActionWindow: 'meFirst',
+            },
+            timestamp: 1000,
+        } as any]);
+
+        const prompt = getSimpleChoicePrompt(queuedState, 'smashup_immediate_extra_action');
+        const optionsGenerator = getPromptOptionsGenerator(prompt);
+        expect(typeof optionsGenerator).toBe('function');
+        expect(optionsGenerator!(queuedState, getPromptHandlerData(prompt)).map((option: any) => option.value?.cardUid)).toContain('spiky-1');
+        expect(getPromptOptions(prompt).map((option: any) => option.value?.cardUid)).toContain('spiky-1');
+
+        const result = resolveInteractionChain(
+            queuedState,
+            prompt => {
+                const sourceId = getPromptSourceId(prompt);
+                if (sourceId !== 'smashup_immediate_extra_action') {
+                    throw new Error(`unexpected prompt source: ${String(sourceId)}`);
+                }
+                const option = getPromptOption(
+                    prompt,
+                    candidate => candidate?.value?.cardUid === 'spiky-1',
+                    'restricted immediate extra action card option',
+                );
+                return { optionId: option.id };
+            },
+        );
+
+        expect(result.finalState.core.bases[0].minions[0].attachedActions).toContainEqual(expect.objectContaining({
+            uid: 'spiky-1',
+            defId: 'munchkin_treasure_spiky_boots',
+            ownerId: '0',
+        }));
+        expect(result.finalState.core.bases[0].minions[1].attachedActions).toEqual([]);
+        expect(result.finalState.core.bases[1].minions[0].attachedActions).toEqual([]);
+        expect(result.finalState.core.players['0'].hand).toEqual([]);
+        expect(result.finalState.core.players['0'].actionsPlayed).toBe(2);
+        expect(result.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(getOptionalSimpleChoicePrompt(result.finalState, 'smashup_immediate_extra_action')).toBeUndefined();
+        expect(getOptionalSimpleChoicePrompt(result.finalState, 'smashup_immediate_extra_action_minion')).toBeUndefined();
     });
 
     it('立即额外随从应推进到基地选择，不应停留在原交互', () => {
@@ -326,6 +429,76 @@ describe('立即额外行动交互', () => {
             zone: 'base',
             baseIndex: 1,
         });
+    });
+
+    it('指定卡牌的立即额外随从应在多基地链路中连续消费，不应留下空窗口', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('h1', 'zombie_walker', 'minion', '0'),
+                        makeCard('h2', 'alien_invader', 'minion', '0'),
+                    ],
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'base_secret_garden', minions: [], ongoingActions: [] }),
+                makeBase({ defId: 'base_the_jungle', minions: [], ongoingActions: [] }),
+            ],
+        });
+
+        const queuedState = queueImmediateSpecificExtraMinions(makeMatchState(state), ['h1', 'h2']);
+        const firstPrompt = getSimpleChoicePrompt(queuedState, 'smashup_immediate_extra_minion');
+        expect(getPromptOptions(firstPrompt).map((option: any) => option.value?.cardUid)).toContain('h1');
+        expect(getPromptOptions(firstPrompt).map((option: any) => option.value?.cardUid)).not.toContain('h2');
+
+        const firstOption = getPromptOption(
+            firstPrompt,
+            candidate => candidate?.value?.cardUid === 'h1',
+            'first specific immediate extra minion',
+        );
+        const afterFirstCardChoice = respondToPrompt(queuedState, firstOption.id, '0');
+        expect(afterFirstCardChoice.success).toBe(true);
+        expect(getPromptSourceId(getFirstPrompt(afterFirstCardChoice.finalState))).toBe('smashup_immediate_extra_minion_base');
+        expect(getSimpleChoicePrompt(afterFirstCardChoice.finalState, 'smashup_immediate_extra_minion')).toBeDefined();
+
+        const result = resolveInteractionChain(
+            queuedState,
+            prompt => {
+                const sourceId = getPromptSourceId(prompt);
+                if (sourceId === 'smashup_immediate_extra_minion') {
+                    const options = getPromptOptions(prompt);
+                    const expectedUid = options.some((option: any) => option.value?.cardUid === 'h1')
+                        ? 'h1'
+                        : 'h2';
+                    const option = getPromptOption(
+                        prompt,
+                        candidate => candidate?.value?.cardUid === expectedUid,
+                        `specific immediate extra minion ${expectedUid}`,
+                    );
+                    return { optionId: option.id };
+                }
+                if (sourceId === 'smashup_immediate_extra_minion_base') {
+                    const option = getPromptOption(
+                        prompt,
+                        candidate => candidate?.value?.baseIndex === 0,
+                        'specific immediate extra minion base',
+                    );
+                    return { optionId: option.id };
+                }
+                throw new Error(`unexpected prompt source: ${String(sourceId)}`);
+            },
+        );
+
+        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['h1', 'h2']);
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([]);
+        expect(result.finalState.core.players['0'].minionsPlayed).toBe(3);
+        expect(result.finalState.core.players['0'].minionLimit).toBe(3);
+        expect(getOptionalSimpleChoicePrompt(result.finalState, 'smashup_immediate_extra_minion')).toBeUndefined();
+        expect(getOptionalSimpleChoicePrompt(result.finalState, 'smashup_immediate_extra_minion_base')).toBeUndefined();
     });
 
     it('smashup_immediate_extra_minion 应允许当前控制者选择 borrowed setaside 泰坦', () => {

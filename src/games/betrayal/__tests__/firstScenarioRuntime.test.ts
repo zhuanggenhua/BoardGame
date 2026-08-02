@@ -784,6 +784,14 @@ function collectRuntimePossessionCards(): Array<BetrayalCore['currentExplorer'][
     return [...byId.values()];
 }
 
+function requireRuntimeOmenCard(cardId: string): BetrayalCore['currentExplorer']['inventory'][number] {
+    const card = BETRAYAL_DISCOVERY_POOLS.possessions.omen.find((candidate) => candidate.id === cardId);
+    if (!card) {
+        throw new Error(`山屋单测缺少真实预兆卡：${cardId}`);
+    }
+    return { ...card };
+}
+
 function collectRuntimePossessionCardNames(): string[] {
     return collectRuntimePossessionCards().map((card) => card.name);
 }
@@ -1458,8 +1466,21 @@ describe('Betrayal first scenario runtime', () => {
             createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
         )).toMatchObject({
             valid: false,
-            error: '所选剧本卡的运行时规则尚未接入，不能开始剧本。',
+            error: '这个剧本现在不能开始。',
         });
+
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.PROPOSE_SCENARIO_CARD, '0', {
+            candidateId: 'blood-from-a-stone',
+        });
+        expect(core.proposedScenarioCardId).toBe('blood-from-a-stone');
+        expect(core.scenarioCardConfirmations).toEqual({});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '0', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '1', {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD, '2', {});
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.START_SCENARIO, '0', {}),
+        )).toMatchObject({ valid: true });
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.PROPOSE_SCENARIO_CARD, '0', {
             candidateId: DEFAULT_BETRAYAL_SCENARIO_CARD_ID,
@@ -23987,7 +24008,7 @@ describe('Betrayal first scenario runtime', () => {
         },
     );
 
-    it('最后一张恶兆会自动触发 haunt', () => {
+    it('最后一张预兆会自动触发作祟', () => {
         const core = createStartedFirstScenarioCore();
         core.exploreIndex = 2;
         core.deckCounts.omen = 1;
@@ -26176,14 +26197,14 @@ describe('Betrayal first scenario runtime', () => {
     it('预兆状态按所有玩家当前持有预兆总数派生', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         core.currentExplorer.inventory = [
-            { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
+            requireRuntimeOmenCard('omen-book'),
             { id: 'item-alpha', name: '物品A', kind: 'item' },
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
             ...explorer,
             inventory: [
-                { id: `omen-${index + 1}`, name: `预兆${index + 1}`, kind: 'omen' },
+                requireRuntimeOmenCard(index === 0 ? 'dog' : 'mask'),
             ],
         }));
 
@@ -26204,7 +26225,7 @@ describe('Betrayal first scenario runtime', () => {
             max: 9,
             targetValue: 9,
             currentLabel: '预兆 3',
-            targetLabel: '最后预兆',
+            targetLabel: '牌堆末张',
             statusLabel: '预兆已发现',
             progressPercent: 33,
             source: 'base-rule',
@@ -26249,21 +26270,22 @@ describe('Betrayal first scenario runtime', () => {
         });
     });
 
-    it('抽到新预兆时作祟检定骰数和预兆状态模型一致', () => {
+    it('抽到预兆时作祟检定骰数和预兆状态模型一致', () => {
         let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        const triggerOmen = requireRuntimeOmenCard('holy-symbol');
         core.drawOrder = ['omen'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'omen');
         core.possessionOrderByKind.omen = [
-            { id: 'omen-new', name: '新预兆', kind: 'omen' },
+            { ...triggerOmen },
         ];
         core.currentExplorer.inventory = [
-            { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
+            requireRuntimeOmenCard('omen-book'),
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
             ...explorer,
             inventory: [
-                { id: `omen-${index + 1}`, name: `预兆${index + 1}`, kind: 'omen' },
+                requireRuntimeOmenCard(index === 0 ? 'dog' : 'mask'),
             ],
         }));
         const riskBeforeDraw = resolveBetrayalHauntRisk(core);
@@ -26286,10 +26308,11 @@ describe('Betrayal first scenario runtime', () => {
 
     it('抽到最后一张预兆时按公共规则自动触发作祟', () => {
         let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        const triggerOmen = BETRAYAL_DISCOVERY_POOLS.possessions.omen.find((card) => card.id === 'dog')!;
         core.drawOrder = ['omen'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'omen');
         core.possessionOrderByKind.omen = [
-            { id: 'omen-final', name: '最后预兆', kind: 'omen' },
+            { ...triggerOmen },
         ];
         core.deckCounts.omen = 1;
         const riskBeforeDraw = resolveBetrayalHauntRisk(core);
@@ -26307,35 +26330,37 @@ describe('Betrayal first scenario runtime', () => {
         );
 
         expect(core.latestDiscovery?.kind).toBe('omen');
-        expect(core.latestDiscovery?.detail).toContain('最后一张预兆触发作祟');
-        expect(core.latestDiscovery?.detail).not.toContain('抽到最后一张预兆');
+        expect(core.latestDiscovery?.title).toBe(triggerOmen.name);
+        expect(core.latestDiscovery?.detail).toContain('预兆牌堆耗尽，自动触发作祟');
+        expect(core.latestDiscovery?.detail).not.toContain('最后预兆');
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.scenarioRuntime.hauntRevealerPlayerId).toBe('0');
-        expect(core.scenarioRuntime.triggeringOmenName).toBe('最后预兆');
-        expect(core.pendingCardResolutionQueue.some((step) => step.stepKind === 'haunt-roll')).toBe(true);
+        expect(core.scenarioRuntime.triggeringOmenName).toBe(triggerOmen.name);
+        expect(core.pendingCardResolutionQueue).toEqual([
+            expect.objectContaining({
+                stepKind: 'drawn-card',
+                cardName: triggerOmen.name,
+                total: 1,
+            }),
+        ]);
+        expect(core.pendingCardResolutionQueue.some((step) => step.stepKind === 'haunt-roll')).toBe(false);
     });
 
     it('作祟检定按全员预兆总数请求骰数，但最多只投 8 颗骰', () => {
         let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        const triggerOmen = requireRuntimeOmenCard('dagger');
+        const heldOmenCards = BETRAYAL_DISCOVERY_POOLS.possessions.omen.map((card) => ({ ...card }));
         core.drawOrder = ['omen'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'omen');
         core.possessionOrderByKind.omen = [
-            { id: 'omen-new', name: '新预兆', kind: 'omen' },
+            { ...triggerOmen },
         ];
-        core.currentExplorer.inventory = Array.from({ length: 3 }, (_, index) => ({
-            id: `omen-current-${index + 1}`,
-            name: `当前预兆${index + 1}`,
-            kind: 'omen' as const,
-        }));
+        core.currentExplorer.inventory = heldOmenCards.slice(0, 3);
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.otherExplorers = core.otherExplorers.map((explorer, explorerIndex) => ({
             ...explorer,
-            inventory: Array.from({ length: 3 }, (_, index) => ({
-                id: `omen-${explorerIndex + 1}-${index + 1}`,
-                name: `预兆${explorerIndex + 1}-${index + 1}`,
-                kind: 'omen' as const,
-            })),
+            inventory: heldOmenCards.slice(3 + explorerIndex * 3, 6 + explorerIndex * 3),
         }));
         const riskBeforeDraw = resolveBetrayalHauntRisk(core);
 
@@ -26365,13 +26390,13 @@ describe('Betrayal first scenario runtime', () => {
             { id: 'omen-crimson-splash', name: 'A Splash of Crimson', kind: 'omen' },
         ];
         core.currentExplorer.inventory = [
-            { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
+            requireRuntimeOmenCard('omen-book'),
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
             ...explorer,
             inventory: [
-                { id: `omen-${index + 1}`, name: `预兆${index + 1}`, kind: 'omen' },
+                requireRuntimeOmenCard(index === 0 ? 'dog' : 'mask'),
             ],
         }));
 
@@ -26423,13 +26448,13 @@ describe('Betrayal first scenario runtime', () => {
             { id: 'omen-crimson-splash', name: 'A Splash of Crimson', kind: 'omen' },
         ];
         core.currentExplorer.inventory = [
-            { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
+            requireRuntimeOmenCard('omen-book'),
         ];
         core.currentExplorerInventory = [...core.currentExplorer.inventory];
         core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
             ...explorer,
             inventory: [
-                { id: `omen-${index + 1}`, name: `预兆${index + 1}`, kind: 'omen' },
+                requireRuntimeOmenCard(index === 0 ? 'dog' : 'mask'),
             ],
         }));
 
@@ -26445,21 +26470,19 @@ describe('Betrayal first scenario runtime', () => {
         expect(core.phase).toBe('haunt');
         expect(core.scenarioRuntime.hauntTriggered).toBe(true);
         expect(core.latestDiscovery?.kind).toBe('omen');
-        expect(core.pendingCardResolutionQueue).toHaveLength(2);
+        expect(core.latestDiscovery?.resolutionSteps?.map((step) => step.kind)).toEqual([
+            'drawn-card',
+            'haunt-roll',
+        ]);
+        expect(core.pendingCardResolutionQueue).toHaveLength(1);
         expect(core.pendingCardResolutionQueue[0]).toMatchObject({
             deckKind: 'omen',
             cardName: 'A Splash of Crimson',
             stepKind: 'drawn-card',
             index: 1,
-            total: 2,
+            total: 1,
         });
-        expect(core.pendingCardResolutionQueue[1]).toMatchObject({
-            deckKind: 'omen',
-            cardName: 'A Splash of Crimson',
-            stepKind: 'haunt-roll',
-            index: 2,
-            total: 2,
-        });
+        expect(core.pendingCardResolutionQueue[0]?.text).toContain('作祟检定');
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, core.currentPlayer, {
@@ -26468,16 +26491,6 @@ describe('Betrayal first scenario runtime', () => {
         )).toMatchObject({
             valid: false,
             error: '请先确认当前翻牌结算。',
-        });
-
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
-            resolutionId: core.pendingCardResolutionQueue[0]!.id,
-        });
-        expect(core.pendingCardResolutionQueue).toHaveLength(1);
-        expect(core.pendingCardResolutionQueue[0]).toMatchObject({
-            stepKind: 'haunt-roll',
-            index: 2,
-            total: 2,
         });
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {

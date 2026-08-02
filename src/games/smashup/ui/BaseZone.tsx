@@ -1421,11 +1421,13 @@ const MinionCard: React.FC<{
     // 合并：天赋或 special 都可以激活
     const canActivate = canUseTalent || canActivateSpecial;
     const hasAttachedActions = Boolean(minion.attachedActions?.length);
+    const isSelectionContext = !!isMinionSelectMode;
     const isRightmostBase = baseIndex === core.bases.length - 1;
     const isRightmostPlayer = pid === turnOrder[turnOrder.length - 1];
     const isFourPlayerGame = turnOrder.length === 4;
     const shouldShowAttachedLeft = isRightmostBase && isRightmostPlayer && isFourPlayerGame;
-    const shouldShowAttachedActions = Boolean(selectableOngoingUids) || (isCoarsePointer ? !!isExpanded : false);
+    const shouldShowAttachedActions =
+        !isSelectionContext && (Boolean(selectableOngoingUids) || (isCoarsePointer ? !!isExpanded : false));
     const [isAttachedOverlayPinned, setIsAttachedOverlayPinned] = React.useState(false);
     const attachedOverlayHideTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
     const attachedOverlayVisibilityChangeRef = React.useRef(onAttachedOverlayVisibilityChange);
@@ -1460,7 +1462,8 @@ const MinionCard: React.FC<{
             notifyAttachedOverlayVisibilityChange(false);
         }, 140);
     }, [clearAttachedOverlayHideTimer, notifyAttachedOverlayVisibilityChange, shouldShowAttachedActions]);
-    const isAttachedOverlayVisible = hasAttachedActions && (shouldShowAttachedActions || isAttachedOverlayPinned);
+    const isAttachedOverlayVisible =
+        hasAttachedActions && !isSelectionContext && (shouldShowAttachedActions || isAttachedOverlayPinned);
 
     React.useEffect(() => {
         if (!hasAttachedActions) {
@@ -1513,7 +1516,6 @@ const MinionCard: React.FC<{
         },
     });
 
-    const isSelectionContext = !!isMinionSelectMode;
     const isSelectableMinion = isSelectionContext && !isDimmed;
 
     const handleSelectCapture = useCallback((e: React.MouseEvent) => {

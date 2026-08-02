@@ -7,6 +7,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
+import { readLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
 
 // 提前刷新时间（提前1天刷新）
 const REFRESH_BEFORE_MS = 24 * 60 * 60 * 1000;
@@ -66,7 +67,7 @@ export function getTimeUntilExpiry(token: string): number | null {
  * 获取当前最新的 token（优先 localStorage，避免闭包捕获旧值）
  */
 function getCurrentToken(): string | null {
-    return localStorage.getItem('auth_token');
+    return readLocalStorageItem('auth_token');
 }
 
 /**
@@ -122,7 +123,7 @@ export function useTokenRefresh() {
      */
     const handleRefreshSuccess = useCallback((newToken: string) => {
         console.log('[TokenRefresh] Token 刷新成功');
-        localStorage.setItem('auth_token', newToken);
+        writeLocalStorageItem('auth_token', newToken);
         // 同步更新 React state，触发 effect 重新调度
         setTokenDirect(newToken);
     }, [setTokenDirect]);

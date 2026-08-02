@@ -61,6 +61,7 @@
     "extra_action_granted": "You gained {{count}} extra action play(s).",
     "extra_action_granted_after_interaction": "After the current interaction ends, you will gain {{count}} extra action play(s).",
     "select_minion_hint": "Select a minion to attach this card to",
+    "select_target_minion_hint": "Select a target minion",
     "your_turn": "Your Turn!",
     "me_first_your_turn": "Your response — play a Special or pass",
     "me_first_waiting": "Waiting for {{player}} to respond...",
@@ -1207,9 +1208,32 @@
     "avengers_black_widow_title": "Black Widow: you may destroy a minion here with power 5 or less",
     "avengers_assemble_title": "Avengers Assemble: choose up to two minions in your discard pile to shuffle into your deck",
     "avengers_repulsor_boots_move_title": "Repulsor Boots: choose a destination base",
+    "beauty_and_the_beast_belle_talent_draw": "Draw 1 card",
+    "beauty_and_the_beast_belle_talent_title": "Belle: choose to draw 1 card or discard 1 card",
+    "beauty_and_the_beast_petals_keep": "Keep current order",
+    "beauty_and_the_beast_petals_swap": "Swap the top two cards",
+    "beauty_and_the_beast_petals_title": "Petals of the Rose: inspect and reorder the top of your deck",
+    "munchkin_halflings_last_call_choose_minion_title": "Last Call: choose a minion to play to the scoring base",
+    "munchkin_halflings_shire_marshal_choose_base_title": "Shire Marshal: choose a base where another player has more power",
+    "munchkin_halflings_spoiled_brats_choose_minions_title": "Spoiled Brats: choose discard minions to put on top of your deck",
+    "munchkin_halflings_unexpected_party_choose_base_title": "Unexpected Party: choose a base where you have no minions",
     "munchkin_crossbow_choose_faction_title": "Crossbow: choose a faction",
+    "munchkin_dungeon_rulebook_destroy_title": "Dungeon Rulebook: choose an action to destroy",
+    "munchkin_anything_for_money_discard_title": "Anything for Money: choose any number of cards to discard",
+    "munchkin_cash_out_choose_treasures_title": "Cash Out: choose up to three Treasure cards to play",
+    "munchkin_cat_burglar_choose_treasures_title": "Cat Burglar: choose Treasure cards to reveal",
+    "munchkin_gold_digger_choose_treasure_title": "Gold Digger: choose a Treasure discard",
+    "munchkin_greed_is_good_choose_treasure_title": "Greed is Good: choose to draw or recover a Treasure",
+    "munchkin_greed_is_good_draw_treasure_option": "Draw a Treasure card",
+    "munchkin_mine_choose_treasure_title": "Mine!: choose a Treasure and host",
+    "munchkin_salvage_choose_treasure_title": "Salvage: choose a Treasure and host here",
+    "munchkin_halitosis_choose_player_title": "Potion of Halitosis: choose a player",
+    "munchkin_halitosis_move_title": "Potion of Halitosis: move one of your minions",
+    "munchkin_potion_of_duplication_choose_talent_title": "Potion of Duplication: choose another minion's talent",
     "munchkin_magic_missile_destroy_title": "Magic Missile: choose a target minion",
+    "munchkin_straight_line_running_away_choose_treasure_title": "Potion of Straight Line Running Away: choose a revealed treasure",
     "munchkin_rocket_boots_move_title": "Rocket Boots: choose a destination base",
+    "munchkin_no_my_precious_destroy_title": "No! My Precious!: choose an action on a minion",
     "avengers_repulsor_boots_source_special_title": "Repulsor Boots: choose Iron Man to move",
     "avengers_repulsor_boots_source_title": "Repulsor Boots: choose one of your minions to move",
     "avengers_iron_man_destination_title": "Iron Man: choose the base to move to",
@@ -11391,420 +11415,538 @@
       "abilityText": "At the start of each turn, all players' minions here gain +1 power until the end of the turn."
     },
     "munchkin_dwarves_dwarf_king": {
-      "name": "Dwarf King"
+      "name": "Dwarf King",
+      "abilityText": "Ongoing: When a Treasure card on one of your minions would go to the discard pile, place it into your hand instead."
     },
     "munchkin_dwarves_loot_lover": {
-      "name": "Loot Lover"
+      "name": "Loot Lover",
+      "abilityText": "Ongoing: This minion gains +2 power for each Treasure card on it."
     },
     "munchkin_dwarves_gold_digger": {
-      "name": "Gold Digger"
+      "name": "Gold Digger",
+      "abilityText": "Talent: Place a Treasure card from the discard pile into your hand."
     },
     "munchkin_dwarves_gem_grabber": {
-      "name": "Gem Grabber"
+      "name": "Gem Grabber",
+      "abilityText": "Ongoing: If this minion has a Treasure card on it, it gains +2 power."
     },
     "munchkin_halflings_shire_marshal": {
-      "name": "Shire Marshal"
+      "name": "Shire Marshal",
+      "abilityText": "Talent: Play an extra minion on a base where another player has more power than you."
     },
     "munchkin_halflings_pestling": {
-      "name": "Pestling"
+      "name": "Pestling",
+      "abilityText": "You may play an extra minion here."
     },
     "munchkin_halflings_bardling": {
-      "name": "Bardling"
+      "name": "Bardling",
+      "abilityText": "If another player has more power than you here, you may play an extra minion here."
     },
     "munchkin_halflings_quarterling": {
-      "name": "Quarterling"
+      "name": "Quarterling",
+      "abilityText": "If this is your only minion here, you may play an extra minion here."
     },
     "munchkin_thieves_master_thief": {
-      "name": "Master Thief"
+      "name": "Master Thief",
+      "abilityText": "Talent: Draw a Treasure card."
     },
     "munchkin_thieves_fence": {
-      "name": "Fence"
+      "name": "Fence",
+      "abilityText": "You may discard two Treasure cards to gain 1 VP."
     },
     "munchkin_thieves_cat_burglar": {
-      "name": "Cat Burglar"
+      "name": "Cat Burglar",
+      "abilityText": "Reveal any number of Treasure cards from your hand. For each card revealed, place a +1 power counter on this minion."
     },
     "munchkin_thieves_pickpocket": {
-      "name": "Pickpocket"
+      "name": "Pickpocket",
+      "abilityText": "If there is another Pickpocket here, draw a Treasure card."
     },
     "munchkin_mages_blaster_master": {
-      "name": "Blaster Master"
+      "name": "Blaster Master",
+      "abilityText": "Talent: Discard a card to destroy a minion of power 2 or less."
     },
     "munchkin_mages_happy_zapper": {
-      "name": "Happy Zapper"
+      "name": "Happy Zapper",
+      "abilityText": "Talent: Discard a card to give this minion +2 power until the end of the turn. Special: Before this base scores, you may use this minion's talent."
     },
     "munchkin_mages_wand_whiz": {
-      "name": "Wand Whiz"
+      "name": "Wand Whiz",
+      "abilityText": "You may discard a card to play an extra minion or play an extra action."
     },
     "munchkin_mages_scroll_shuffler": {
-      "name": "Scroll Shuffler"
+      "name": "Scroll Shuffler",
+      "abilityText": "Discard a card. Draw a card."
     },
     "munchkin_elves_fae_fighter": {
-      "name": "Fae Fighter"
+      "name": "Fae Fighter",
+      "abilityText": "Ongoing: After another player plays a minion, you may place a +1 power counter on it to place a +1 power counter on one of your minions here."
     },
     "munchkin_elves_lord_of_the_prance": {
-      "name": "Lord of the Prance"
+      "name": "Lord of the Prance",
+      "abilityText": "Talent: You choose another player to draw a card. Draw a card."
     },
     "munchkin_elves_flower_child": {
-      "name": "Flower Child"
+      "name": "Flower Child",
+      "abilityText": "You may give control of this minion to another player until it leaves play to control one of that player's minions of power 3 or less until it leaves play."
     },
     "munchkin_elves_elf_help_guru": {
-      "name": "Elf Help Guru"
+      "name": "Elf Help Guru",
+      "abilityText": "Talent: All other players' minions here gain +1 power until the end of the turn."
     },
     "munchkin_clerics_cardinal": {
-      "name": "Cardinal"
+      "name": "Cardinal",
+      "abilityText": "Talent: If your discard pile has at least five cards, randomly place two of them into your hand."
     },
     "munchkin_clerics_deep_friar": {
-      "name": "Deep Friar"
+      "name": "Deep Friar",
+      "abilityText": "Special: After this base scores, you may move another of your minions here to another base instead of it going to the discard pile."
     },
     "munchkin_clerics_turner": {
-      "name": "Turner"
+      "name": "Turner",
+      "abilityText": "Destroy an Undead Monster here, or shuffle a random minion from your discard pile into your deck."
     },
     "munchkin_clerics_holy_roller": {
-      "name": "Holy Roller"
+      "name": "Holy Roller",
+      "abilityText": "You may shuffle a random card from your discard pile into your deck."
     },
     "munchkin_orcs_sword_lord": {
-      "name": "Sword Lord"
+      "name": "Sword Lord",
+      "abilityText": "Ongoing: Each of your other minions gains +1 power."
     },
     "munchkin_orcs_topper_chopper": {
-      "name": "Topper Chopper"
+      "name": "Topper Chopper",
+      "abilityText": "Talent: Do nothing."
     },
     "munchkin_orcs_hammer_slammer": {
-      "name": "Hammer Slammer"
+      "name": "Hammer Slammer",
+      "abilityText": "Destroy a minion of power 2 or less."
     },
     "munchkin_orcs_dork_orc": {
-      "name": "Dork Orc"
+      "name": "Dork Orc",
+      "abilityText": "Ongoing: This minion is not affected by other players' actions."
     },
     "munchkin_warriors_big_hero": {
-      "name": "Big Hero"
+      "name": "Big Hero",
+      "abilityText": "Talent: Destroy a monster here OR play a monster here."
     },
     "munchkin_warriors_star_player": {
-      "name": "Star Player"
+      "name": "Star Player",
+      "abilityText": "Ongoing: After a monster is destroyed here, place a +1 power counter on this minion."
     },
     "munchkin_warriors_berserker": {
-      "name": "Berserker"
+      "name": "Berserker",
+      "abilityText": "Destroy a monster here with power less than or equal to this minion's power to place a +1 power counter on this minion."
     },
     "munchkin_warriors_taunter": {
-      "name": "Taunter"
+      "name": "Taunter",
+      "abilityText": "You may play a monster here."
     },
     "munchkin_dwarves_anything_for_money": {
       "name": "Anything for Money",
-      "effectText": "Pending: Anything for Money's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Discard any number of cards. For each card discarded, draw a Treasure card."
     },
     "munchkin_dwarves_cash_out": {
       "name": "Cash Out",
-      "effectText": "Pending: Cash Out's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play up to three Treasure cards from your hand as extra cards."
     },
     "munchkin_dwarves_cunning_plan": {
       "name": "Cunning Plan",
-      "effectText": "Pending: Cunning Plan's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: Before a base scores, play this. Draw a Treasure card. You may play it."
     },
     "munchkin_dwarves_greed_is_good": {
       "name": "Greed is Good",
-      "effectText": "Pending: Greed is Good's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Draw a Treasure card OR place a Treasure card from the discard pile into your hand. You may play an extra action."
     },
     "munchkin_dwarves_hidden_assets": {
       "name": "Hidden Assets",
-      "effectText": "Pending: Hidden Assets's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Place the top three cards of the Treasure deck into the discard pile. Draw a card. You may play an extra action."
     },
     "munchkin_dwarves_mine": {
       "name": "Mine!",
-      "effectText": "Pending: Mine!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Search the Treasure deck for a card that can be played on a minion. Play it on one of your minions as an extra action. Shuffle the Treasure deck."
     },
     "munchkin_dwarves_no_my_precious": {
       "name": "No! My Precious!",
-      "effectText": "Pending: No! My Precious!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Destroy an action played on a minion. If it is a Treasure card, you may play an extra action."
     },
     "munchkin_dwarves_salvage": {
       "name": "Salvage",
-      "effectText": "Pending: Salvage's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: Before a base scores, play this. Play a Treasure card from the discard pile on one of your minions there."
+    },
+    "munchkin_treasure_dwarf_hireling": {
+      "name": "Dwarf Hireling"
+    },
+    "munchkin_treasure_halfling_hireling": {
+      "name": "Halfling Hireling",
+      "abilityText": "After you play this minion, you may play an extra minion this turn. That extra minion may be a Treasure minion."
+    },
+    "munchkin_treasure_tiger_steed": {
+      "name": "Tiger Steed"
+    },
+    "munchkin_treasure_bag_of_caltrops": {
+      "name": "Bag of Caltrops",
+      "effectText": "Play on a base. Ongoing: After another player plays a minion of power 3 or less here, destroy that minion and destroy this card."
+    },
+    "munchkin_treasure_spiky_boots": {
+      "name": "Spiky Boots",
+      "effectText": "Play on a minion. Ongoing: This minion gains +1 power."
+    },
+    "munchkin_treasure_rocket_boots": {
+      "name": "Rocket Boots",
+      "effectText": "Play on a minion. Talent: Move this minion to another base. This card stays on it."
+    },
+    "munchkin_treasure_buckler_of_swashing": {
+      "name": "Buckler of Swashing",
+      "effectText": "Play on a minion. Ongoing: This minion cannot be destroyed."
+    },
+    "munchkin_treasure_bloody_dismemberment_chainsaw": {
+      "name": "Bloody Dismemberment Chainsaw",
+      "effectText": "Play on a minion. Ongoing: This minion gains +2 power."
+    },
+    "munchkin_treasure_loads_of_treasure": {
+      "name": "Loads of Treasure",
+      "effectText": "Play on a minion. Ongoing: This minion gains +1 power for each Treasure card on it."
+    },
+    "munchkin_treasure_crossbow": {
+      "name": "Crossbow",
+      "effectText": "Choose a base and a faction. Until the end of the turn, all minions of that faction there gain +2 power."
+    },
+    "munchkin_treasure_dungeon_rulebook": {
+      "name": "Dungeon Rulebook",
+      "effectText": "Destroy an action played on a minion or on a base. Special: You may play this before a base scores."
+    },
+    "munchkin_treasure_temporal_displacement_jetpack": {
+      "name": "Temporal Displacement Jetpack",
+      "effectText": "Play on a minion. Ongoing: When this minion would go from a base to the discard pile, place it into your hand instead. Then place this card into the discard pile."
+    },
+    "munchkin_treasure_kneepads_of_allure": {
+      "name": "Kneepads of Allure",
+      "effectText": "Play on a minion. Ongoing: Each minion here gains +1 power."
+    },
+    "munchkin_treasure_magic_missile": {
+      "name": "Magic Missile",
+      "effectText": "Play on a minion. Talent: Destroy a minion of power 3 or less here. Place this card on the bottom of the Treasure deck."
+    },
+    "munchkin_treasure_potion_of_cowardice": {
+      "name": "Potion of Cowardice",
+      "effectText": "Play on a minion. Ongoing: This minion gains -2 power and loses all abilities."
+    },
+    "munchkin_treasure_potion_of_halitosis": {
+      "name": "Potion of Halitosis",
+      "effectText": "Choose a base and a player. That player must move one of their minions there to another base. Special: You may play this before a base scores. You must choose the scoring base."
+    },
+    "munchkin_treasure_potion_of_idiotic_bravery": {
+      "name": "Potion of Idiotic Bravery",
+      "effectText": "Choose a minion. It gains +3 power until the end of the turn."
+    },
+    "munchkin_treasure_potion_of_straight_line_running_away": {
+      "name": "Potion of Straight Line Running Away",
+      "effectText": "Special: After a base scores, play this. Choose one of the revealed undistributed Treasure cards and place it into your hand."
+    },
+    "munchkin_treasure_potion_of_paralysis": {
+      "name": "Potion of Paralysis",
+      "effectText": "Special: You may play this before a base scores. Until the end of the turn, cancel the abilities of all cards and minions on the scoring base."
+    },
+    "munchkin_treasure_potion_of_duplication": {
+      "name": "Potion of Duplication",
+      "effectText": "Play on a minion. Talent: Choose another minion with a Talent. This minion uses that Talent and pays any costs for it."
+    },
+    "munchkin_treasure_treasure_finder": {
+      "name": "Treasure Finder",
+      "effectText": "Draw two Treasure cards. Shuffle this card and the Treasure discard pile into the Treasure deck."
+    },
+    "munchkin_treasure_wishing_ring": {
+      "name": "Wishing Ring",
+      "effectText": "Gain 1 VP. Place this card on the bottom of the Treasure deck."
     },
     "munchkin_halflings_last_call": {
       "name": "Last Call",
-      "effectText": "Pending: Last Call's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: Before a base scores, play this. Play a minion there. Cancel that minion's abilities until the end of the turn."
     },
     "munchkin_halflings_lunch_run": {
       "name": "Lunch Run",
-      "effectText": "Pending: Lunch Run's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a base. Ongoing: After each time you play a minion here, draw a card."
     },
     "munchkin_halflings_out_of_nowhere": {
       "name": "Out Of Nowhere",
-      "effectText": "Pending: Out Of Nowhere's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Reveal cards from the top of your deck until you reveal two minions. Place those minions into your hand. Shuffle the remaining cards into your deck."
     },
     "munchkin_halflings_rude_awakening": {
       "name": "Rude Awakening",
-      "effectText": "Pending: Rude Awakening's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose a base. Reveal your hand, then play all minions from it on that base as extra minions. Cancel their abilities until the end of the turn."
     },
     "munchkin_halflings_small_but_tough": {
       "name": "Small But Tough",
-      "effectText": "Pending: Small But Tough's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a minion. Ongoing: When this minion would go to the discard pile, place it on top of your deck instead."
     },
     "munchkin_halflings_sneaksy": {
       "name": "Sneaksy",
-      "effectText": "Pending: Sneaksy's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a base. Ongoing: Your minions here are not affected by other players' actions."
     },
     "munchkin_halflings_spoiled_brats": {
       "name": "Spoiled Brats",
-      "effectText": "Pending: Spoiled Brats's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose any number of minions from your discard pile, shuffle them, then place them on top of your deck."
     },
     "munchkin_halflings_unexpected_party": {
       "name": "Unexpected Party",
-      "effectText": "Pending: Unexpected Party's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play an extra minion on a base where you have no minions."
     },
     "munchkin_thieves_backstab": {
       "name": "Backstab",
-      "effectText": "Pending: Backstab's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Discard a Treasure card to destroy a minion of power 3 or less."
     },
     "munchkin_thieves_clever_distraction": {
       "name": "Clever Distraction",
-      "effectText": "Pending: Clever Distraction's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: After a base scores, play this if you have a minion there. The winner loses 1 VP, then you gain 1 VP."
     },
     "munchkin_thieves_mugging": {
       "name": "Mugging",
-      "effectText": "Pending: Mugging's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Transfer an action played on a minion to one of your minions."
     },
     "munchkin_thieves_potion_bandolier": {
       "name": "Potion Bandolier",
-      "effectText": "Pending: Potion Bandolier's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose a minion. Discard a Treasure card to give that minion +3 power until the end of the turn."
     },
     "munchkin_thieves_secret_stash": {
       "name": "Secret Stash",
-      "effectText": "Pending: Secret Stash's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a base. Ongoing: When this base scores, add two Treasure cards to the rewards."
     },
     "munchkin_thieves_smuggling": {
       "name": "Smuggling",
-      "effectText": "Pending: Smuggling's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Discard two Treasure cards to gain 1 VP. Shuffle your discard pile into your deck. Place this card on the bottom of your deck."
     },
     "munchkin_thieves_strip_bare": {
       "name": "Strip Bare",
-      "effectText": "Pending: Strip Bare's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose a Treasure card in play. Place it into your hand."
     },
     "munchkin_thieves_swipe": {
       "name": "Swipe",
-      "effectText": "Pending: Swipe's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Draw a Treasure card."
     },
     "munchkin_mages_charm": {
       "name": "Charm",
-      "effectText": "Pending: Charm's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Control a monster, then treat it as your minion until the end of the turn."
     },
     "munchkin_mages_embiggen": {
       "name": "Embiggen",
-      "effectText": "Pending: Embiggen's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose a minion. Discard any number of cards. For each card discarded, this minion gains +1 power until the end of the turn."
     },
     "munchkin_mages_mass_summoning": {
       "name": "Mass Summoning",
-      "effectText": "Pending: Mass Summoning's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play a monster on each base."
     },
     "munchkin_mages_portal_to_beyond": {
       "name": "Portal to Beyond",
-      "effectText": "Pending: Portal to Beyond's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a base. Talent: Discard a card to play a monster here."
     },
     "munchkin_mages_recover_arcane_wisdom": {
       "name": "Recover Arcane Wisdom",
-      "effectText": "Pending: Recover Arcane Wisdom's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Draw cards until you have five cards in your hand."
     },
     "munchkin_mages_some_enchanted_evening": {
       "name": "Some Enchanted Evening",
-      "effectText": "Pending: Some Enchanted Evening's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Discard any number of cards. For each card discarded, you may play a minion of power 3 or less as an extra minion."
     },
     "munchkin_mages_speed_reading": {
       "name": "Speed Reading",
-      "effectText": "Pending: Speed Reading's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Discard a card. Draw three cards."
     },
     "munchkin_mages_zzzzzap": {
       "name": "Zzzzzap!",
-      "effectText": "Pending: Zzzzzap!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Discard a card to destroy a minion of power 3 or less."
     },
     "munchkin_elves_after_you": {
       "name": "After You",
-      "effectText": "Pending: After You's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Each other player draws a card. Draw a card for each player in the game, including yourself."
     },
     "munchkin_elves_dancing_root": {
       "name": "Dancing Root",
-      "effectText": "Pending: Dancing Root's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "All players shuffle their discard piles into their decks. Draw a card."
     },
     "munchkin_elves_helping_hands": {
       "name": "Helping Hands",
-      "effectText": "Pending: Helping Hands's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: Play before a base where you have a minion scores. Choose another player. That player gains a total of +2 power; one of your minions gets -2 power (minimum 0). If that player is the winner, you may gain 1 VP from that player."
     },
     "munchkin_elves_pumping_iron": {
       "name": "Pumping Iron",
-      "effectText": "Pending: Pumping Iron's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose another player. That player chooses a minion to get +2 power until the end of the turn. You choose a minion to get +3 power until the end of the turn."
     },
     "munchkin_elves_run_away": {
       "name": "Run Away!",
-      "effectText": "Pending: Run Away!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: Play before a base where you have a minion scores. Move one of your minions and another player's minion from there to another base."
     },
     "munchkin_elves_run_away_more": {
       "name": "Run Away More!",
-      "effectText": "Pending: Run Away More!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: Play before a base scores. Move any number of your minions from there to another base."
     },
     "munchkin_elves_trade": {
       "name": "Trade",
-      "effectText": "Pending: Trade's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Randomly draw a card from another player's hand and put it into your hand, then put this card into that player's hand. You may play an extra action this turn."
     },
     "munchkin_elves_traveling_elf": {
       "name": "Traveling Elf",
-      "effectText": "Pending: Traveling Elf's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on one of your minions. Talent: Move this minion to another base."
     },
     "munchkin_clerics_bin_and_gone": {
       "name": "Bin and Gone",
-      "effectText": "Pending: Bin and Gone's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a base. Ongoing: After another base scores, you may move one of your minions there to here instead of the discard pile."
     },
     "munchkin_clerics_collection_plate": {
       "name": "Collection Plate",
-      "effectText": "Pending: Collection Plate's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Place two random cards from your discard pile into your hand."
     },
     "munchkin_clerics_curse_of_imprisonment": {
       "name": "Curse of Imprisonment",
-      "effectText": "Pending: Curse of Imprisonment's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a minion. Ongoing: This minion loses its abilities."
     },
     "munchkin_clerics_curse_of_uselessness": {
       "name": "Curse of Uselessness",
-      "effectText": "Pending: Curse of Uselessness's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a minion. Ongoing: This minion does not add its power to this base."
     },
     "munchkin_clerics_good_habits": {
       "name": "Good Habits",
-      "effectText": "Pending: Good Habits's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "All minions gain +1 power until the end of the turn."
     },
     "munchkin_clerics_join_the_club": {
       "name": "Join the Club",
-      "effectText": "Pending: Join the Club's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose a base. All minions there gain +1 power until the end of the turn."
     },
     "munchkin_clerics_remove_curse": {
       "name": "Remove Curse",
-      "effectText": "Pending: Remove Curse's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Destroy an action on a base or on a minion."
     },
     "munchkin_clerics_word_of_recall": {
       "name": "Word of Recall",
-      "effectText": "Pending: Word of Recall's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Randomly choose an action from each other player's discard pile. You may play one of them as an extra action. Return the rest."
     },
     "munchkin_orcs_and_stay_down": {
       "name": "And Stay Down!",
-      "effectText": "Pending: And Stay Down!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: Before a base scores, play this. If you have the highest total power here, other players cannot play or use Special abilities."
     },
     "munchkin_orcs_angry_pillagers": {
       "name": "Angry Pillagers",
-      "effectText": "Pending: Angry Pillagers's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Special: When a base scores, play this. If you have at least 3 more power than second place, gain 1 VP."
     },
     "munchkin_orcs_crush": {
       "name": "Crush",
-      "effectText": "Pending: Crush's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose a base and a player who has fewer minions there than you do. Destroy one of that player's minions there."
     },
     "munchkin_orcs_death_breath": {
       "name": "Death Breath",
-      "effectText": "Pending: Death Breath's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Place a minion of power 4 or less on the bottom of its owner's deck."
     },
     "munchkin_orcs_dogpile": {
       "name": "Dogpile",
-      "effectText": "Pending: Dogpile's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Move one of your minions to a base where you have at least two minions. Special: You may play this before a base scores."
     },
     "munchkin_orcs_gimme": {
       "name": "Gimme!",
-      "effectText": "Pending: Gimme!'s full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose an action on a minion. Destroy that minion, then transfer that action to one of your minions."
     },
     "munchkin_orcs_stalling": {
       "name": "Stalling",
-      "effectText": "Pending: Stalling's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a base. Ongoing: Whenever another player plays a card, you may choose that your minions here are not affected by it."
     },
     "munchkin_orcs_too_tough": {
       "name": "Too Tough",
-      "effectText": "Pending: Too Tough's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a minion. Ongoing: This minion is not affected by other players' actions."
     },
     "munchkin_warriors_campaign": {
       "name": "Campaign",
-      "effectText": "Pending: Campaign's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Your minions on each base that has a monster gain +2 power until the end of the turn."
     },
     "munchkin_warriors_cleave": {
       "name": "Cleave",
-      "effectText": "Pending: Cleave's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Destroy a monster. You may play any number of Treasure cards gained from destroying it as extra cards."
     },
     "munchkin_warriors_dumbbells": {
       "name": "Dumbbells",
-      "effectText": "Pending: Dumbbells's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a minion. Ongoing: This minion gains +3 power."
     },
     "munchkin_warriors_dungeon_bait": {
       "name": "Dungeon Bait",
-      "effectText": "Pending: Dungeon Bait's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play a monster on a base OR destroy a minion of power 2 or less."
     },
     "munchkin_warriors_eternal_hero": {
       "name": "Eternal Hero",
-      "effectText": "Pending: Eternal Hero's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on one of your minions. Ongoing: When this minion would go to the discard pile, place it and this action into your hand instead."
     },
     "munchkin_warriors_ruckus": {
       "name": "Ruckus",
-      "effectText": "Pending: Ruckus's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Choose a base. Play two monsters there OR destroy all monsters there without gaining any Treasure cards."
     },
     "munchkin_warriors_shield_of_ubiquity": {
       "name": "Shield of Ubiquity",
-      "effectText": "Pending: Shield of Ubiquity's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Play on a minion. Ongoing: This minion gains +2 power for each monster here."
     },
     "munchkin_warriors_war_cry": {
       "name": "War Cry",
-      "effectText": "Pending: War Cry's full effect depends on Munchkin treasure, monster, or related mechanics. Static intake is complete; rules text still needs card-image verification after mechanic modeling."
+      "effectText": "Destroy a monster to add its power to a minion on that base until the end of the turn."
     },
     "base_the_mines": {
       "name": "The Mines",
-      "abilityText": "Pending: The Mines's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "Each minion here gains +1 power for each Treasure on it."
     },
     "base_treasure_bath": {
       "name": "Treasure Bath",
-      "abilityText": "Pending: Treasure Bath's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "After the first time you play a minion here each turn, draw a Treasure card."
     },
     "base_birthday_party": {
       "name": "Birthday Party",
-      "abilityText": "Pending: Birthday Party's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "1 Monster. If you have no minions here, you cannot play minions on another base."
     },
     "base_subterranean_lair": {
       "name": "Subterranean Lair",
-      "abilityText": "Pending: Subterranean Lair's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "1 Monster. On your turn, if you have no minions at this base, you may play an extra minion here."
     },
     "base_the_coffers": {
       "name": "The Coffers",
-      "abilityText": "Pending: The Coffers's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "2 Monsters. When this base scores, each player with a minion here draws a Treasure card."
     },
     "base_thieves_guild": {
       "name": "Thieves' Guild",
-      "abilityText": "Pending: Thieves' Guild's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "1 Monster. After you play a Treasure card on this base or on a minion on this base, draw a card."
     },
     "base_dimension_doors": {
       "name": "Dimension Doors",
-      "abilityText": "Pending: Dimension Doors's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "1 Monster. After the first time you play a minion here each turn, you may discard a card to play an extra minion here."
     },
     "base_mages_tower": {
       "name": "Mage's Tower",
-      "abilityText": "Pending: Mage's Tower's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "1 Monster. After you play a minion here, you may draw a card."
     },
     "base_helpers_hollow": {
       "name": "Helper's Hollow",
-      "abilityText": "Pending: Helper's Hollow's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "2 Monsters. During each player's turn, other players' minions here gain +1 power."
     },
     "base_treehouse": {
       "name": "Treehouse",
-      "abilityText": "Pending: Treehouse's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "2 Monsters. After you play a minion here, choose another player. That player may draw a card."
     },
     "base_hotel_of_holiness": {
       "name": "Hotel of Holiness",
-      "abilityText": "Pending: Hotel of Holiness's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "2 Monsters. After this base scores, place the minions here on top of their owners' decks in any order instead of the discard pile."
     },
     "base_whack_a_ghoul": {
       "name": "Whack-A-Ghoul",
-      "abilityText": "Pending: Whack-A-Ghoul's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "3 Monsters. After an Undead Monster is played here, place it on the bottom of the monster deck."
     },
     "base_garrison": {
       "name": "Garrison",
-      "abilityText": "Pending: Garrison's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "When this base scores, if all players have 22 or more total power here, the top three players by power each gain 1 VP."
     },
     "base_the_pits": {
       "name": "The Pits",
-      "abilityText": "Pending: The Pits's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "Minions here are not affected by other players' actions."
     },
     "base_bastion": {
       "name": "Bastion",
-      "abilityText": "Pending: Bastion's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "After you destroy a monster here, draw a Treasure card."
     },
     "base_the_gauntlet": {
       "name": "The Gauntlet",
-      "abilityText": "Pending: The Gauntlet's base ability depends on Munchkin monster, treasure, or setup mechanics. Static intake is complete; rules text still needs base-card verification after mechanic modeling."
+      "abilityText": "After a monster is destroyed here, play a monster here."
     }
   },
   "debug": {

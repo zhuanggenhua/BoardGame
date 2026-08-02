@@ -856,6 +856,7 @@ export function collectTriggers(
     const buildExplicitSourceFallback = (entry: TriggerEntry): TriggerSourceLocation | undefined => {
         if (!entry.perInstance) return undefined;
         if (!ctx.sourceCardUid || ctx.sourceControllerId === undefined) return undefined;
+        if (isCardSuppressed(state, ctx.sourceCardUid)) return undefined;
         if (allowedSourceDefIds) {
             if (!allowedSourceDefIds.has(entry.sourceDefId)) return undefined;
         } else if (!ctx.sourceDefId || entry.sourceDefId !== ctx.sourceDefId) {
@@ -872,44 +873,45 @@ export function collectTriggers(
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
         if (allowedSourceDefIds && !allowedSourceDefIds.has(entry.sourceDefId)) continue;
+        const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
         // Only queue reaction-phase triggers (replacement effects must remain immediate)
         if (entry.phase === 'replacement') continue;
         if (entry.global) {
             const located = selectGlobalTriggerSourceLocation(
-                state,
+                filteredState,
                 entry,
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
                 pid,
                 ctx,
                 candidate => !entry.canTrigger
-                    || entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, candidate, ctx)),
+                    || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, candidate, ctx)),
             );
             if (!located) continue;
-            if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
-            const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
-            if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+            if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, located, ctx))) continue;
+            const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, located, ctx);
+            if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
             triggers.push(trigger);
             continue;
         }
 
-        const locatedSources = locateSources(state, entry.sourceDefId);
+        const locatedSources = locateSources(filteredState, entry.sourceDefId);
         if (locatedSources.length === 0) {
             const explicitSourceFallback = buildExplicitSourceFallback(entry);
             if (explicitSourceFallback) {
                 if (!isTriggerSourceEligible(entry, timing, explicitSourceFallback, ctx.baseIndex)) continue;
                 if (!isTurnBoundarySourceControllerEligible(entry, timing, explicitSourceFallback, pid)) continue;
-                if (shouldSkipTriggerInstance(state, entry, timing, explicitSourceFallback, ctx)) continue;
-                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, explicitSourceFallback, ctx))) continue;
-                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, explicitSourceFallback, ctx);
-                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+                if (shouldSkipTriggerInstance(filteredState, entry, timing, explicitSourceFallback, ctx)) continue;
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, explicitSourceFallback, ctx))) continue;
+                const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, explicitSourceFallback, ctx);
+                if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
                 triggers.push(trigger);
                 continue;
             }
-            if (!entry.perInstance && isSourceActive(state, entry.sourceDefId)) {
-                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, {}, ctx))) continue;
-                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, {}, ctx);
-                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+            if (!entry.perInstance && isSourceActive(filteredState, entry.sourceDefId)) {
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, {}, ctx))) continue;
+                const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, {}, ctx);
+                if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
                 triggers.push(trigger);
             }
             continue;
@@ -919,10 +921,10 @@ export function collectTriggers(
             for (const located of locatedSources) {
                 if (!isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)) continue;
                 if (!isTurnBoundarySourceControllerEligible(entry, timing, located, pid)) continue;
-                if (shouldSkipTriggerInstance(state, entry, timing, located, ctx)) continue;
-                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
-                const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
-                if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+                if (shouldSkipTriggerInstance(filteredState, entry, timing, located, ctx)) continue;
+                if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, located, ctx))) continue;
+                const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, located, ctx);
+                if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
                 triggers.push(trigger);
             }
             continue;
@@ -931,14 +933,14 @@ export function collectTriggers(
         const located = selectSpecificSourceLocation(locatedSources, ctx, candidate => {
             if (!isTriggerSourceEligible(entry, timing, candidate, ctx.baseIndex)) return false;
             if (!isTurnBoundarySourceControllerEligible(entry, timing, candidate, pid)) return false;
-            if (shouldSkipTriggerInstance(state, entry, timing, candidate, ctx)) return false;
+            if (shouldSkipTriggerInstance(filteredState, entry, timing, candidate, ctx)) return false;
             return !entry.canTrigger
-                || entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, candidate, ctx));
+                || entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, candidate, ctx));
         });
         if (!located) continue;
-        if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(state, entry, timing, now, pid, located, ctx))) continue;
-        const trigger = createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx);
-        if (!isQueuedTriggerPlayerEligible(state, trigger)) continue;
+        if (entry.canTrigger && !entry.canTrigger(buildTriggerEligibilityContext(filteredState, entry, timing, now, pid, located, ctx))) continue;
+        const trigger = createTriggerInstance(filteredState, entry, timing, now, triggers.length, pid, located, ctx);
+        if (!isQueuedTriggerPlayerEligible(filteredState, trigger)) continue;
         triggers.push(trigger);
     }
 
@@ -1447,7 +1449,10 @@ export function getModifiedBaseVp(
 }
 
 function getTurnScopedSuppressedCardUids(state: SmashUpCore): ReadonlySet<string> {
-    return new Set((state.suppressedCardsUntilTurnStart ?? []).map(entry => entry.cardUid));
+    return new Set([
+        ...(state.suppressedCardsUntilTurnStart ?? []).map(entry => entry.cardUid),
+        ...(state.suppressedCardUidsUntilTurnEnd ?? []),
+    ]);
 }
 
 function getSuppressedCardUids(state: SmashUpCore): Set<string> {

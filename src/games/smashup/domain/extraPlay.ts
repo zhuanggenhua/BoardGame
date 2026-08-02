@@ -4,6 +4,10 @@ import { validate } from './commands';
 import { execute } from './reducer';
 import { reduce } from './reduce';
 import {
+    queueInteraction as queueEngineInteraction,
+    type InteractionDescriptor,
+} from '../../../engine/systems/InteractionSystem';
+import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     createSkipOption,
@@ -48,6 +52,29 @@ type ImmediateBaseChoice = { baseIndex: number };
 type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
 let immediateExtraPromptCounter = 0;
+
+function queueImmediateExtraFollowUpInteraction(
+    context: { matchState: MatchState<SmashUpCore> },
+    interaction: InteractionDescriptor,
+): MatchState<SmashUpCore> {
+    const current = context.matchState.sys.interaction?.current;
+    if (!current) {
+        return queueEngineInteraction(context.matchState, interaction, { urgent: true });
+    }
+
+    const queue = context.matchState.sys.interaction?.queue ?? [];
+    return queueEngineInteraction({
+        ...context.matchState,
+        sys: {
+            ...context.matchState.sys,
+            interaction: {
+                ...context.matchState.sys.interaction,
+                current: undefined,
+                queue: [current, ...queue],
+            },
+        },
+    }, interaction, { urgent: true });
+}
 
 function isBaseModifierActionLike(def: ActionCardDef | FusionCardDef): boolean {
     if (def.type === 'fusion') {
@@ -110,7 +137,14 @@ function buildValidationState(
                 specificCardUid: extra.specificCardUid,
             },
         )
-        : grantExtraAction(extra.playerId, extra.reason, 0);
+        : grantExtraAction(extra.playerId, extra.reason, 0, {
+            restrictToBase: extra.restrictToBase,
+            restrictToMinionUid: extra.restrictToMinionUid,
+            specialActionWindow: extra.specialActionWindow,
+            restrictToCardUid: extra.restrictToCardUid,
+            restrictToCardDefId: extra.restrictToCardDefId,
+            restrictToBaseModifier: extra.restrictToBaseModifier,
+        });
 
     return {
         ...state,
@@ -291,11 +325,13 @@ function buildImmediateExtraActionCardOptions(
                     if (extra.specialActionWindow && isOperationRestricted(validationState.core, baseIndex, extra.playerId, 'play_action', {
                         activationWindow: extra.specialActionWindow,
                     })) return false;
-                    return base.minions.some(minion => validate(validationState, {
-                        type: SU_COMMANDS.PLAY_ACTION,
-                        playerId: extra.playerId,
-                        payload: { cardUid: card.uid, targetBaseIndex: baseIndex, targetMinionUid: minion.uid },
-                    }).valid);
+                    return base.minions.some(minion =>
+                        validate(validationState, {
+                            type: SU_COMMANDS.PLAY_ACTION,
+                            playerId: extra.playerId,
+                            payload: { cardUid: card.uid, targetBaseIndex: baseIndex, targetMinionUid: minion.uid },
+                        }).valid,
+                    );
                 });
             })();
 
@@ -483,7 +519,14 @@ function executeImmediateExtraActionPlay(
     }, random);
     return {
         state: execState,
-        events: [grantExtraAction(extra.playerId, extra.reason, timestamp), ...events],
+        events: [grantExtraAction(extra.playerId, extra.reason, timestamp, {
+            restrictToBase: extra.restrictToBase,
+            restrictToMinionUid: extra.restrictToMinionUid,
+            specialActionWindow: extra.specialActionWindow,
+            restrictToCardUid: extra.restrictToCardUid,
+            restrictToCardDefId: extra.restrictToCardDefId,
+            restrictToBaseModifier: extra.restrictToBaseModifier,
+        }), ...events],
     };
 }
 
@@ -525,6 +568,7 @@ const immediateExtraMinionBasePromptProgram = createPromptProgram<
     SmashUpEvent
 >({
     sourceId: 'smashup_immediate_extra_minion_base',
+    queueInteraction: queueImmediateExtraFollowUpInteraction,
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
             `smashup_immediate_extra_minion_base_${immediateExtraPromptCounter++}`,
@@ -654,6 +698,7 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
     SmashUpEvent
 >({
     sourceId: 'smashup_immediate_extra_action_base',
+    queueInteraction: queueImmediateExtraFollowUpInteraction,
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
             `smashup_immediate_extra_action_base_${immediateExtraPromptCounter++}`,
@@ -710,6 +755,7 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
     SmashUpEvent
 >({
     sourceId: 'smashup_immediate_extra_action_minion',
+    queueInteraction: queueImmediateExtraFollowUpInteraction,
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
             `smashup_immediate_extra_action_minion_${immediateExtraPromptCounter++}`,

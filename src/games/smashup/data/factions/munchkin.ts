@@ -23,14 +23,44 @@ export interface MunchkinSpecialCardDescriptor {
     };
 }
 
-function minion(faction: string, atlasId: string, seed: MinionSeed): MinionCardDef {
+function minion(
+    faction: string,
+    atlasId: string,
+    seed: MinionSeed,
+    abilityTags?: MinionCardDef['abilityTags'],
+): MinionCardDef {
     const [id, name, nameEn, power, count, index] = seed;
-    return { id, type: 'minion', name, nameEn, faction, power, count, previewRef: { type: 'atlas', atlasId, index } };
+    return {
+        id,
+        type: 'minion',
+        name,
+        nameEn,
+        faction,
+        power,
+        count,
+        previewRef: { type: 'atlas', atlasId, index },
+        ...(abilityTags ? { abilityTags } : {}),
+    };
 }
 
-function action(faction: string, atlasId: string, seed: ActionSeed): ActionCardDef {
+function action(
+    faction: string,
+    atlasId: string,
+    seed: ActionSeed,
+    abilityTags?: ActionCardDef['abilityTags'],
+): ActionCardDef {
     const [id, name, nameEn, count, index] = seed;
-    return { id, type: 'action', subtype: 'standard', name, nameEn, faction, count, previewRef: { type: 'atlas', atlasId, index } };
+    return {
+        id,
+        type: 'action',
+        subtype: 'standard',
+        name,
+        nameEn,
+        faction,
+        count,
+        previewRef: { type: 'atlas', atlasId, index },
+        ...(abilityTags ? { abilityTags } : {}),
+    };
 }
 
 function treasureMinion(
@@ -53,7 +83,7 @@ function treasureMinion(
 
 function treasureAction(
     card: MunchkinSpecialCardDescriptor,
-    options: Pick<ActionCardDef, 'subtype' | 'ongoingTarget' | 'playNeedsBase' | 'playNeedsMinion' | 'specialTiming' | 'abilityTags'>,
+    options: Pick<ActionCardDef, 'subtype' | 'ongoingTarget' | 'playNeedsBase' | 'playNeedsMinion' | 'specialTiming' | 'specialNeedsBase' | 'responseWindowTiming' | 'responseWindowNeedsBase' | 'abilityTags'>,
 ): ActionCardDef {
     return {
         id: card.id,
@@ -124,16 +154,16 @@ export const MUNCHKIN_TREASURE_CARD_DEFS: CardDef[] = [
     treasureAction(treasure('munchkin_treasure_bloody_dismemberment_chainsaw'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_loads_of_treasure'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_crossbow'), { subtype: 'standard', playNeedsBase: true, abilityTags: ['onPlay'] }),
-    treasureAction(treasure('munchkin_treasure_dungeon_rulebook'), { subtype: 'standard' }),
+    treasureAction(treasure('munchkin_treasure_dungeon_rulebook'), { subtype: 'standard', abilityTags: ['onPlay', 'special'], responseWindowTiming: 'beforeScoring' }),
     treasureAction(treasure('munchkin_treasure_temporal_displacement_jetpack'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_kneepads_of_allure'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
     treasureAction(treasure('munchkin_treasure_magic_missile'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true, abilityTags: ['talent'] }),
     treasureAction(treasure('munchkin_treasure_potion_of_cowardice'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
-    treasureAction(treasure('munchkin_treasure_potion_of_halitosis'), { subtype: 'standard', playNeedsBase: true }),
+    treasureAction(treasure('munchkin_treasure_potion_of_halitosis'), { subtype: 'standard', playNeedsBase: true, abilityTags: ['onPlay', 'special'], responseWindowTiming: 'beforeScoring', responseWindowNeedsBase: true }),
     treasureAction(treasure('munchkin_treasure_potion_of_idiotic_bravery'), { subtype: 'standard', playNeedsMinion: true, abilityTags: ['onPlay'] }),
     treasureAction(treasure('munchkin_treasure_potion_of_straight_line_running_away'), { subtype: 'special', specialTiming: 'afterScoring' }),
-    treasureAction(treasure('munchkin_treasure_potion_of_paralysis'), { subtype: 'special', specialTiming: 'beforeScoring', playNeedsBase: true }),
-    treasureAction(treasure('munchkin_treasure_potion_of_duplication'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true }),
+    treasureAction(treasure('munchkin_treasure_potion_of_paralysis'), { subtype: 'special', specialTiming: 'beforeScoring', specialNeedsBase: true }),
+    treasureAction(treasure('munchkin_treasure_potion_of_duplication'), { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true, abilityTags: ['talent'] }),
     treasureAction(treasure('munchkin_treasure_treasure_finder'), { subtype: 'standard', abilityTags: ['onPlay'] }),
     treasureAction(treasure('munchkin_treasure_wishing_ring'), { subtype: 'standard', abilityTags: ['onPlay'] }),
 ];
@@ -170,20 +200,28 @@ const DWARVES_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_DWARVES_BASES;
 
 export const MUNCHKIN_DWARVES_MINIONS: MinionCardDef[] = [
     minion(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_dwarf_king', '矮人王', 'Dwarf King', 5, 1, 0]),
-    minion(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_loot_lover', '宝藏爱好者', 'Loot Lover', 4, 2, 1]),
-    minion(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_gold_digger', '黄金挖掘者', 'Gold Digger', 3, 3, 3]),
-    minion(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_gem_grabber', '宝石抓取者', 'Gem Grabber', 2, 4, 6]),
+    minion(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_loot_lover', '宝藏爱好者', 'Loot Lover', 4, 2, 1], ['ongoing']),
+    minion(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_gold_digger', '黄金挖掘者', 'Gold Digger', 3, 3, 3], ['talent']),
+    minion(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_gem_grabber', '宝石抓取者', 'Gem Grabber', 2, 4, 6], ['ongoing']),
 ];
 
 export const MUNCHKIN_DWARVES_ACTIONS: ActionCardDef[] = [
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_anything_for_money', '为了钱什么都可以', 'Anything for Money', 1, 10]),
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_cash_out', '套现', 'Cash Out', 1, 11]),
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_cunning_plan', '狡猾计划', 'Cunning Plan', 1, 12]),
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_greed_is_good', '贪婪是好的', 'Greed is Good', 2, 13]),
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_hidden_assets', '隐藏资产', 'Hidden Assets', 2, 15]),
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_mine', '我的！', 'Mine!', 1, 17]),
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_no_my_precious', '不！我的宝贝！', 'No! My Precious!', 1, 18]),
-    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_salvage', '打捞', 'Salvage', 1, 19]),
+    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_anything_for_money', '为了钱什么都可以', 'Anything for Money', 1, 10], ['onPlay']),
+    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_cash_out', '套现', 'Cash Out', 1, 11], ['onPlay']),
+    {
+        ...action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_cunning_plan', '狡猾计划', 'Cunning Plan', 1, 12], ['special']),
+        subtype: 'special',
+        specialTiming: 'beforeScoring',
+    },
+    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_greed_is_good', '贪婪是好的', 'Greed is Good', 2, 13], ['onPlay']),
+    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_hidden_assets', '隐藏资产', 'Hidden Assets', 2, 15], ['onPlay']),
+    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_mine', '我的！', 'Mine!', 1, 17], ['onPlay']),
+    action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_no_my_precious', '不！我的宝贝！', 'No! My Precious!', 1, 18], ['onPlay']),
+    {
+        ...action(DWARVES, DWARVES_CARD_ATLAS, ['munchkin_dwarves_salvage', '打捞', 'Salvage', 1, 19], ['special']),
+        subtype: 'special',
+        specialTiming: 'beforeScoring',
+    },
 ];
 
 export const MUNCHKIN_DWARVES_CARDS: CardDef[] = [
@@ -201,21 +239,44 @@ const HALFLINGS_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_HALFLINGS_CARDS;
 const HALFLINGS_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_HALFLINGS_BASES;
 
 export const MUNCHKIN_HALFLINGS_MINIONS: MinionCardDef[] = [
-    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_shire_marshal', '夏尔首领', 'Shire Marshal', 4, 1, 0]),
-    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_pestling', '调皮鬼', 'Pestling', 3, 2, 1]),
-    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_bardling', '吟游诗人', 'Bardling', 2, 3, 3]),
-    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_quarterling', '半身人', 'Quarterling', 2, 4, 6]),
+    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_shire_marshal', '夏尔首领', 'Shire Marshal', 4, 1, 0], ['talent']),
+    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_pestling', '调皮鬼', 'Pestling', 3, 2, 1], ['onPlay', 'ongoing']),
+    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_bardling', '吟游诗人', 'Bardling', 2, 3, 3], ['onPlay', 'ongoing']),
+    minion(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_quarterling', '半身人', 'Quarterling', 2, 4, 6], ['onPlay']),
 ];
 
 export const MUNCHKIN_HALFLINGS_ACTIONS: ActionCardDef[] = [
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_last_call', '最后通牒', 'Last Call', 1, 10]),
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_lunch_run', '午餐散步', 'Lunch Run', 2, 11]),
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_out_of_nowhere', '偷袭', 'Out Of Nowhere', 1, 13]),
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_rude_awakening', '惊醒', 'Rude Awakening', 1, 14]),
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_small_but_tough', '小而坚韧', 'Small But Tough', 1, 15]),
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_sneaksy', '偷偷摸摸', 'Sneaksy', 1, 16]),
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_spoiled_brats', '被宠坏的小家伙', 'Spoiled Brats', 1, 17]),
-    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_unexpected_party', '意外的派对', 'Unexpected Party', 2, 18]),
+    {
+        ...action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_last_call', '最后通牒', 'Last Call', 1, 10], ['special']),
+        subtype: 'special',
+        specialTiming: 'beforeScoring',
+        specialNeedsBase: true,
+    },
+    {
+        ...action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_lunch_run', '午餐散步', 'Lunch Run', 2, 11], ['ongoing']),
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+    },
+    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_out_of_nowhere', '偷袭', 'Out Of Nowhere', 1, 13], ['onPlay']),
+    {
+        ...action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_rude_awakening', '惊醒', 'Rude Awakening', 1, 14], ['onPlay']),
+        playNeedsBase: true,
+    },
+    {
+        ...action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_small_but_tough', '小而坚韧', 'Small But Tough', 1, 15], ['ongoing']),
+        subtype: 'ongoing',
+        ongoingTarget: 'minion',
+        playNeedsMinion: true,
+    },
+    {
+        ...action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_sneaksy', '偷偷摸摸', 'Sneaksy', 1, 16], ['ongoing']),
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+    },
+    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_spoiled_brats', '被宠坏的小家伙', 'Spoiled Brats', 1, 17], ['onPlay']),
+    action(HALFLINGS, HALFLINGS_CARD_ATLAS, ['munchkin_halflings_unexpected_party', '意外的派对', 'Unexpected Party', 2, 18], ['onPlay']),
 ];
 
 export const MUNCHKIN_HALFLINGS_CARDS: CardDef[] = [
@@ -233,10 +294,10 @@ const THIEVES_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_THIEVES_CARDS;
 const THIEVES_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_THIEVES_BASES;
 
 export const MUNCHKIN_THIEVES_MINIONS: MinionCardDef[] = [
-    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_master_thief', '盗贼大师', 'Master Thief', 5, 1, 0]),
+    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_master_thief', '盗贼大师', 'Master Thief', 5, 1, 0], ['talent']),
     minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_fence', '销赃犯', 'Fence', 3, 2, 1]),
-    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_cat_burglar', '猫咪窃贼', 'Cat Burglar', 3, 3, 3]),
-    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_pickpocket', '扒手', 'Pickpocket', 2, 4, 6]),
+    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_cat_burglar', '猫咪窃贼', 'Cat Burglar', 3, 3, 3], ['onPlay']),
+    minion(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_pickpocket', '扒手', 'Pickpocket', 2, 4, 6], ['onPlay']),
 ];
 
 export const MUNCHKIN_THIEVES_ACTIONS: ActionCardDef[] = [
@@ -247,7 +308,7 @@ export const MUNCHKIN_THIEVES_ACTIONS: ActionCardDef[] = [
     action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_secret_stash', '秘密藏匿处', 'Secret Stash', 1, 15]),
     action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_smuggling', '走私', 'Smuggling', 1, 16]),
     action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_strip_bare', '剥光', 'Strip Bare', 1, 17]),
-    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_swipe', '顺手拿走', 'Swipe', 2, 18]),
+    action(THIEVES, THIEVES_CARD_ATLAS, ['munchkin_thieves_swipe', '顺手拿走', 'Swipe', 2, 18], ['onPlay']),
 ];
 
 export const MUNCHKIN_THIEVES_CARDS: CardDef[] = [

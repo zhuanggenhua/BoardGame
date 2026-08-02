@@ -1461,6 +1461,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
                                     const previewRef = buildRendererPreviewRef(defId);
                                     const name = def ? resolveCardName(def, t) : option.label;
+                                    const displayLabel = def && option.label && option.label !== name ? option.label : (name || option.label);
                                     const isSelected = selectedIds.includes(option.id);
                                     const isBase = !!getBaseDef(defId ?? '');
                                     const cardWidth = isBase ? 'w-[210px] sm:w-[232px] lg:w-[248px]' : 'w-[128px] sm:w-[142px] lg:w-[156px]';
@@ -1505,7 +1506,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 )}
                                             </div>
                                             <div className={`mt-2 text-center text-xs font-bold truncate ${cardLabelWidth} ${isSelected ? 'text-amber-300' : 'text-white/80'}`}>
-                                                {name || option.label}
+                                                {displayLabel}
                                             </div>
                                             {isMulti && isSelected && (
                                                 <div className="absolute -top-2 -right-2 min-w-8 h-8 px-1 bg-amber-400 rounded-full flex items-center justify-center shadow-lg">

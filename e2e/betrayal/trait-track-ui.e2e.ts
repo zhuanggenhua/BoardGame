@@ -126,7 +126,7 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
         await expect(speedTrack.locator('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
         await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toBeVisible();
-        await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'visible-physical-slot-boundaries');
+        await expect(speedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
         await expect(speedTrack.locator('[data-trait-track-tick="true"]')).toHaveCount(0);
         await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(1);
         await expect(speedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
@@ -143,7 +143,8 @@ test.describe('山屋惊魂属性轨 UI', () => {
             const boxes = slots.map((slot) => slot.getBoundingClientRect());
             return Math.round(boxes[1].left - boxes[0].right);
         });
-        expect(currentDuplicateSlotGap).toBeGreaterThanOrEqual(3);
+        expect(currentDuplicateSlotGap).toBeGreaterThanOrEqual(0);
+        expect(currentDuplicateSlotGap).toBeLessThanOrEqual(1);
         const currentSlotWidths = await speedTrack.locator('[data-trait-track-slot="true"]').evaluateAll((slots) =>
             slots.map((slot) => slot.getBoundingClientRect().width),
         );
@@ -187,7 +188,7 @@ test.describe('山屋惊魂属性轨 UI', () => {
         await expect(observedSpeedTrack.locator('[data-trait-track-rail="true"]')).toBeVisible();
         await expect(observedSpeedTrack.locator('[data-trait-track-rail="true"]')).toHaveAttribute('data-trait-track-rail-shape', 'continuous-segmented');
         await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toBeVisible();
-        await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'visible-physical-slot-boundaries');
+        await expect(observedSpeedTrack.locator('[data-trait-track-segmented-rail="true"]')).toHaveAttribute('data-trait-track-visual-separation', 'continuous-rail-internal-dividers');
         await expect(observedSpeedTrack.locator('[data-trait-track-tick="true"]')).toHaveCount(0);
         await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveCount(1);
         await expect(observedSpeedTrack.locator('[data-trait-track-pointer="true"]')).toHaveAttribute('data-trait-track-position', '2');
@@ -203,7 +204,8 @@ test.describe('山屋惊魂属性轨 UI', () => {
             const boxes = slots.map((slot) => slot.getBoundingClientRect());
             return Math.round(boxes[1].left - boxes[0].right);
         });
-        expect(observedDuplicateSlotGap).toBeGreaterThanOrEqual(3);
+        expect(observedDuplicateSlotGap).toBeGreaterThanOrEqual(0);
+        expect(observedDuplicateSlotGap).toBeLessThanOrEqual(1);
         const observedSlotWidths = await observedSpeedTrack.locator('[data-trait-track-slot="true"]').evaluateAll((slots) =>
             slots.map((slot) => slot.getBoundingClientRect().width),
         );

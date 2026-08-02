@@ -22,16 +22,15 @@ import {
 } from './betrayalTestHelpers';
 
 const EVIDENCE_DIR = 'evidence/betrayal-haunt-reveal-discovery-confirmation';
-const REVEAL_CUE_SCREENSHOT = `${EVIDENCE_DIR}/01-作祟揭示横幅与翻牌确认队列共存.jpg`;
-const DISCOVERY_FIRST_STEP_SCREENSHOT = `${EVIDENCE_DIR}/02-关闭横幅后保留获得预兆确认.jpg`;
-const DISCOVERY_SECOND_STEP_SCREENSHOT = `${EVIDENCE_DIR}/03-确认获得预兆后保留作祟检定确认.jpg`;
-const DISCOVERY_DONE_SCREENSHOT = `${EVIDENCE_DIR}/04-两步确认后回到作祟牌桌.jpg`;
-const SAFE_OMEN_FIRST_STEP_SCREENSHOT = `${EVIDENCE_DIR}/05-未触发作祟-获得预兆确认.jpg`;
-const SAFE_OMEN_SECOND_STEP_SCREENSHOT = `${EVIDENCE_DIR}/06-未触发作祟-作祟检定确认.jpg`;
+const DISCOVERY_CONFIRM_SCREENSHOT = `${EVIDENCE_DIR}/01-先翻预兆并同屏显示作祟检定.jpg`;
+const REVEAL_READER_SCREENSHOT = `${EVIDENCE_DIR}/02-确认预兆后打开剧本书.jpg`;
+const DISCOVERY_DONE_SCREENSHOT = `${EVIDENCE_DIR}/03-关闭剧本书后回到作祟牌桌.jpg`;
+const REMOTE_VIEWER_DISCOVERY_SCREENSHOT = `${EVIDENCE_DIR}/04-旁观视角先看触发预兆和检定.jpg`;
+const SAFE_OMEN_CONFIRM_SCREENSHOT = `${EVIDENCE_DIR}/05-未触发作祟-同屏确认预兆与作祟检定.jpg`;
 const SAFE_OMEN_DONE_SCREENSHOT = `${EVIDENCE_DIR}/07-未触发作祟-确认后回恶兆前牌桌.jpg`;
-const SAFE_OMEN_MATRIX_FIRST_CARD_SCREENSHOT = `${EVIDENCE_DIR}/08-当前9张预兆矩阵-首张获得确认.jpg`;
+const SAFE_OMEN_MATRIX_FIRST_CARD_SCREENSHOT = `${EVIDENCE_DIR}/08-当前9张预兆矩阵-首张同屏确认.jpg`;
 const SAFE_OMEN_MATRIX_DONE_SCREENSHOT = `${EVIDENCE_DIR}/09-当前9张预兆矩阵-末张确认后持有区.jpg`;
-const HAUNT_OMEN_MATRIX_REVEAL_SCREENSHOT = `${EVIDENCE_DIR}/10-当前9张预兆触发矩阵-首张作祟揭示.jpg`;
+const HAUNT_OMEN_MATRIX_REVEAL_SCREENSHOT = `${EVIDENCE_DIR}/10-当前9张预兆触发矩阵-首张先翻预兆.jpg`;
 const HAUNT_OMEN_MATRIX_DONE_SCREENSHOT = `${EVIDENCE_DIR}/11-当前9张预兆触发矩阵-末张确认后作祟牌桌.jpg`;
 const TEST_URL = '/play/betrayal?players=3&playerID=0&seat0=human&seat1=human&seat2=human&seed=haunt-reveal-discovery-confirmation';
 
@@ -43,6 +42,64 @@ const CURRENT_OMEN_DISCOVERY_CARDS: OmenDiscoveryCard[] =
 const DOG_OMEN_CARD =
     CURRENT_OMEN_DISCOVERY_CARDS.find((omen) => omen.id === 'dog') ??
     ({ id: 'dog', name: '狗', kind: 'omen' } satisfies OmenDiscoveryCard);
+const BOOK_OMEN_CARD =
+    CURRENT_OMEN_DISCOVERY_CARDS.find((omen) => omen.id === 'omen-book') ??
+    ({ id: 'omen-book', name: '书', kind: 'omen' } satisfies OmenDiscoveryCard);
+const MASK_OMEN_CARD =
+    CURRENT_OMEN_DISCOVERY_CARDS.find((omen) => omen.id === 'mask') ??
+    ({ id: 'mask', name: '面具', kind: 'omen' } satisfies OmenDiscoveryCard);
+const SKULL_OMEN_CARD =
+    CURRENT_OMEN_DISCOVERY_CARDS.find((omen) => omen.id === 'skull') ??
+    ({ id: 'skull', name: '骷髅', kind: 'omen' } satisfies OmenDiscoveryCard);
+const HELD_OMEN_CARDS = [BOOK_OMEN_CARD, MASK_OMEN_CARD, SKULL_OMEN_CARD] as const;
+
+function pickVisibleHeldOmenCards(excludedCardId: string): OmenDiscoveryCard[] {
+    const preferredCards = [
+        ...HELD_OMEN_CARDS,
+        ...CURRENT_OMEN_DISCOVERY_CARDS,
+    ].filter((card) => card.id !== excludedCardId);
+    const byId = new Map(preferredCards.map((card) => [card.id, card]));
+    const cards = [...byId.values()].slice(0, 3);
+    if (cards.length < 3) {
+        throw new Error('山屋 E2E 缺少足够真实预兆卡来构造作祟检定压力态');
+    }
+    return cards.map((card) => ({ ...card }));
+}
+
+function cloneExplorerForFixture(
+    explorer: BetrayalCore['currentExplorer'],
+): BetrayalCore['currentExplorer'] {
+    return {
+        ...explorer,
+        traits: { ...explorer.traits },
+        traitTracks: Object.fromEntries(
+            Object.entries(explorer.traitTracks).map(([trait, track]) => [
+                trait,
+                { ...track, values: [...track.values] },
+            ]),
+        ) as BetrayalCore['currentExplorer']['traitTracks'],
+        inventory: explorer.inventory.map((card) => ({ ...card })),
+    };
+}
+
+function focusFixtureOnPlayer(core: BetrayalCore, playerId: string): BetrayalCore {
+    const explorers = [core.currentExplorer, ...core.otherExplorers].map(cloneExplorerForFixture);
+    const currentExplorer = explorers.find((explorer) => explorer.playerId === playerId);
+    if (!currentExplorer) {
+        throw new Error(`普通预兆作祟 E2E 夹具缺少玩家：${playerId}`);
+    }
+    return {
+        ...core,
+        currentPlayer: playerId,
+        currentExplorer,
+        otherExplorers: explorers.filter((explorer) => explorer.playerId !== playerId),
+        activeRoomId: currentExplorer.roomId,
+        currentExplorerRoomId: currentExplorer.roomId,
+        currentExplorerTraits: { ...currentExplorer.traits },
+        currentExplorerInventory: currentExplorer.inventory.map((card) => ({ ...card })),
+        turnStartInventoryCardIds: currentExplorer.inventory.map((card) => card.id),
+    };
+}
 
 type HauntDiscoveryConfirmationState = {
     phase?: string;
@@ -73,32 +130,31 @@ type HauntDiscoveryConfirmationState = {
 };
 
 function createOmenHauntPendingResolutionCore(
-    omenCard: OmenDiscoveryCard = {
-        id: 'omen-crimson-splash',
-        name: 'A Splash of Crimson',
-        kind: 'omen',
-    },
+    omenCard: OmenDiscoveryCard = DOG_OMEN_CARD,
+    actorPlayerId = '0',
 ): BetrayalCore {
     let core = createStartedFirstScenarioCore(['0', '1', '2']);
+    core = focusFixtureOnPlayer(core, actorPlayerId);
     core.drawOrder = ['omen'];
     core.possessionOrderByKind.omen = [
         { ...omenCard },
     ];
+    const heldOmenCards = pickVisibleHeldOmenCards(omenCard.id);
     core.currentExplorer.inventory = [
-        { id: 'omen-alpha', name: '预兆A', kind: 'omen' },
+        { ...heldOmenCards[0]! },
     ];
     core.currentExplorerInventory = [...core.currentExplorer.inventory];
     core.otherExplorers = core.otherExplorers.map((explorer, index) => ({
         ...explorer,
         inventory: [
-            { id: `omen-${index + 1}`, name: `预兆${index + 1}`, kind: 'omen' },
+            { ...heldOmenCards[index + 1]! },
         ],
     }));
 
     core = applyBetrayalCommand(
         core,
         BETRAYAL_COMMANDS.EXPLORE_ROOM,
-        '0',
+        actorPlayerId,
         { roomId: 'ground-east' },
         100,
         createBetrayalScriptedRandom(3, 3, 3, 3),
@@ -113,8 +169,14 @@ function createOmenHauntPendingResolutionCore(
     if (core.latestDiscovery.title !== omenCard.name) {
         throw new Error(`普通预兆作祟 E2E 夹具翻出的不是预期预兆：${omenCard.name}`);
     }
-    if (core.pendingCardResolutionQueue.length !== 2) {
-        throw new Error('普通预兆作祟 E2E 夹具缺少两步翻牌确认队列');
+    if (core.latestDiscovery.resolutionSteps?.length !== 2) {
+        throw new Error('普通预兆作祟 E2E 夹具必须保留获得预兆和作祟检定两条结果事实');
+    }
+    if (core.pendingCardResolutionQueue.length !== 1) {
+        throw new Error('普通预兆作祟 E2E 夹具必须只保留一次玩家确认');
+    }
+    if (core.pendingCardResolutionQueue[0]?.stepKind !== 'drawn-card' || core.pendingCardResolutionQueue[0]?.total !== 1) {
+        throw new Error('普通预兆作祟 E2E 玩家确认不得暴露为确认 1/2、确认 2/2');
     }
     return core;
 }
@@ -149,8 +211,14 @@ function createSafeOmenPendingResolutionCore(
     if (core.latestDiscovery?.kind !== 'omen') {
         throw new Error('普通预兆未触发作祟 E2E 夹具缺少预兆发现');
     }
-    if (core.pendingCardResolutionQueue.length !== 2) {
-        throw new Error('普通预兆未触发作祟 E2E 夹具缺少两步翻牌确认队列');
+    if (core.latestDiscovery.resolutionSteps?.length !== 2) {
+        throw new Error('普通预兆未触发作祟 E2E 夹具必须保留获得预兆和作祟检定两条结果事实');
+    }
+    if (core.pendingCardResolutionQueue.length !== 1) {
+        throw new Error('普通预兆未触发作祟 E2E 夹具必须只保留一次玩家确认');
+    }
+    if (core.pendingCardResolutionQueue[0]?.stepKind !== 'drawn-card' || core.pendingCardResolutionQueue[0]?.total !== 1) {
+        throw new Error('普通预兆未触发作祟 E2E 玩家确认不得暴露为确认 1/2、确认 2/2');
     }
     return core;
 }
@@ -242,7 +310,17 @@ const readHauntDiscoveryConfirmationState = async (
         };
     });
 
-test('普通预兆触发作祟后关闭揭示横幅仍保留两步翻牌确认', async ({ page, context }) => {
+const closeScenarioReaderIfPresent = async (page: Page): Promise<void> => {
+    const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
+    if (!await scenarioReader.isVisible({ timeout: 800 }).catch(() => false)) {
+        return;
+    }
+    await expect(scenarioReader).toContainText('木乃伊横行');
+    await page.getByTestId('betrayal-scenario-reader-close').click();
+    await expect(scenarioReader).toHaveCount(0);
+};
+
+test('普通预兆触发作祟时先确认预兆和检定，再承接作祟揭示', async ({ page, context }) => {
     test.setTimeout(120000);
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(page, 'betrayal-haunt-reveal-discovery-confirmation');
@@ -254,49 +332,50 @@ test('普通预兆触发作祟后关闭揭示横幅仍保留两步翻牌确认',
     await injectCore(page, createOmenHauntPendingResolutionCore());
     await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
 
-    await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toBeVisible();
-    await expect(page.getByTestId('betrayal-haunt-reveal-source')).toContainText('A Splash of Crimson');
-    await expect(page.getByTestId('betrayal-discovery-panel'), '作祟横幅仍在时不应同时显示翻牌确认面板').toHaveCount(0);
+    await expect(page.getByTestId('betrayal-haunt-reveal-cue'), '预兆卡确认前作祟揭示横幅不得抢先出现').toHaveCount(0);
+    await expect(page.getByTestId('betrayal-scenario-reader-dialog'), '预兆卡确认前不得自动打开剧本书').toHaveCount(0);
+    const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+    await expect(discoveryPanel, '触发作祟的预兆卡必须先显示').toBeVisible({ timeout: 10000 });
+    await expect(discoveryPanel).toContainText(DOG_OMEN_CARD.name);
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(2);
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText(DOG_OMEN_CARD.name);
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText('作祟检定');
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认');
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
+        'data-pending-card-resolution-step',
+        '1/1',
+    );
+    await expect(discoveryPanel.getByTestId('betrayal-recent-roll-panel')).toBeVisible();
+    await expect(discoveryPanel.getByTestId('betrayal-house-dice-3d-group')).toBeVisible();
+    await expect(discoveryPanel.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
+    await expect(discoveryPanel.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
     await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
         phase: 'haunt',
-        latestDiscoveryTitle: 'A Splash of Crimson',
+        latestDiscoveryTitle: DOG_OMEN_CARD.name,
         latestDiscoveryKind: 'omen',
         pendingSteps: [
-            { stepKind: 'drawn-card', index: 1, total: 2, cardName: 'A Splash of Crimson' },
-            { stepKind: 'haunt-roll', index: 2, total: 2, cardName: 'A Splash of Crimson' },
+            { stepKind: 'drawn-card', index: 1, total: 1, cardName: DOG_OMEN_CARD.name },
         ],
         rejected: null,
     });
-    await saveScreenshot(page, REVEAL_CUE_SCREENSHOT);
-
-    await page.getByTestId('betrayal-haunt-reveal-close').click();
-    await expect(page.getByTestId('betrayal-haunt-reveal-cue')).toHaveCount(0);
-    await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('betrayal-discovery-panel')).toContainText('A Splash of Crimson');
-    await expect(page.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/2');
-    await expect(page.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
-        'data-pending-card-resolution-step',
-        '1/2',
-    );
-    await saveScreenshot(page, DISCOVERY_FIRST_STEP_SCREENSHOT);
-
-    await page.getByTestId('betrayal-discovery-continue').click();
-    await expect(page.getByTestId('betrayal-discovery-panel')).toBeVisible();
-    await expect(page.getByTestId('betrayal-discovery-continue')).toContainText('确认 2/2');
-    await expect(page.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
-        'data-pending-card-resolution-step',
-        '2/2',
-    );
     await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
         pendingSteps: [
-            { stepKind: 'haunt-roll', index: 2, total: 2, cardName: 'A Splash of Crimson' },
+            { stepKind: 'drawn-card', index: 1, total: 1, cardName: DOG_OMEN_CARD.name },
         ],
         rejected: null,
     });
-    await saveScreenshot(page, DISCOVERY_SECOND_STEP_SCREENSHOT);
+    await saveScreenshot(page, DISCOVERY_CONFIRM_SCREENSHOT);
 
-    await page.getByTestId('betrayal-discovery-continue').click();
-    await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
+    await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+    await expect(discoveryPanel).toHaveCount(0);
+    const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
+    await expect(scenarioReader, '确认触发来源后才自动打开一次剧本书').toBeVisible({ timeout: 10000 });
+    await expect(scenarioReader).toContainText('木乃伊横行');
+    await saveScreenshot(page, REVEAL_READER_SCREENSHOT);
+    await page.getByTestId('betrayal-scenario-reader-close').click();
+    await expect(scenarioReader).toHaveCount(0);
+    await expect(page.getByTestId('betrayal-haunt-reveal-cue'), '剧本书已承接本次作祟开始后，不再追加作祟横幅').toHaveCount(0);
+    await expect(page.getByTestId('betrayal-discovery-panel'), '已确认过的预兆卡关闭剧本书后不得重复弹出').toHaveCount(0);
     await expect(page.getByTestId('betrayal-open-scenario')).toBeVisible();
     await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
     await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
@@ -311,7 +390,56 @@ test('普通预兆触发作祟后关闭揭示横幅仍保留两步翻牌确认',
     ]);
 });
 
-test('普通预兆未触发作祟时仍显示获得预兆和作祟检定两步确认', async ({ page, context }) => {
+test('旁观视角也先看触发预兆和检定，再本地进入剧本阅读', async ({ page, context }) => {
+    test.setTimeout(120000);
+    await initBetrayalContext(context);
+    const diagnostics = attachPageDiagnostics(page, 'betrayal-haunt-reveal-remote-viewer-confirmation');
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await warmBetrayalFrontend(context);
+    await page.goto(TEST_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForBetrayalPageReady(page);
+    await injectCore(page, createOmenHauntPendingResolutionCore(DOG_OMEN_CARD, '1'));
+    await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
+
+    await expect(page.getByTestId('betrayal-haunt-reveal-cue'), '旁观视角在看完触发预兆结果前不得先显示作祟揭示').toHaveCount(0);
+    await expect(page.getByTestId('betrayal-scenario-reader-dialog'), '旁观视角在看完触发预兆结果前不得先打开剧本书').toHaveCount(0);
+    const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
+    await expect(discoveryPanel, '旁观视角也必须先看到触发作祟的预兆结果').toBeVisible({ timeout: 10000 });
+    await expect(discoveryPanel).toContainText(DOG_OMEN_CARD.name);
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(2);
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText('作祟检定');
+    await expect(discoveryPanel.getByTestId('betrayal-recent-roll-panel')).toBeVisible();
+    await expect(discoveryPanel.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
+    await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
+        phase: 'haunt',
+        latestDiscoveryTitle: DOG_OMEN_CARD.name,
+        latestDiscoveryKind: 'omen',
+        pendingSteps: [
+            { stepKind: 'drawn-card', index: 1, total: 1, cardName: DOG_OMEN_CARD.name },
+        ],
+        rejected: null,
+    });
+    await saveScreenshot(page, REMOTE_VIEWER_DISCOVERY_SCREENSHOT);
+
+    await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+    await expect(discoveryPanel).toHaveCount(0);
+    const scenarioReader = page.getByTestId('betrayal-scenario-reader-dialog');
+    await expect(scenarioReader, '旁观者本地确认看完结果后才进入剧本阅读').toBeVisible({ timeout: 10000 });
+    await expect(scenarioReader).toContainText('木乃伊横行');
+    await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
+        pendingSteps: [
+            { stepKind: 'drawn-card', index: 1, total: 1, cardName: DOG_OMEN_CARD.name },
+        ],
+        rejected: null,
+    });
+
+    await assertNoFatalFrontendErrors([
+        { label: 'betrayal-haunt-reveal-remote-viewer-confirmation', diagnostics },
+    ]);
+});
+
+test('普通预兆未触发作祟时同屏显示获得预兆和作祟检定且只需一次确认', async ({ page, context }) => {
     test.setTimeout(120000);
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(page, 'betrayal-safe-omen-discovery-confirmation');
@@ -330,38 +458,21 @@ test('普通预兆未触发作祟时仍显示获得预兆和作祟检定两步�
     await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(2);
     await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('狗');
     await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText('作祟检定');
-    await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/2');
+    await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认');
     await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
         'data-pending-card-resolution-step',
-        '1/2',
+        '1/1',
     );
     await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
         phase: 'preHaunt',
         latestDiscoveryTitle: '狗',
         latestDiscoveryKind: 'omen',
         pendingSteps: [
-            { stepKind: 'drawn-card', index: 1, total: 2, cardName: '狗' },
-            { stepKind: 'haunt-roll', index: 2, total: 2, cardName: '狗' },
+            { stepKind: 'drawn-card', index: 1, total: 1, cardName: '狗' },
         ],
         rejected: null,
     });
-    await saveScreenshot(page, SAFE_OMEN_FIRST_STEP_SCREENSHOT);
-
-    await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
-    await expect(discoveryPanel).toBeVisible();
-    await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 2/2');
-    await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
-        'data-pending-card-resolution-step',
-        '2/2',
-    );
-    await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
-        phase: 'preHaunt',
-        pendingSteps: [
-            { stepKind: 'haunt-roll', index: 2, total: 2, cardName: '狗' },
-        ],
-        rejected: null,
-    });
-    await saveScreenshot(page, SAFE_OMEN_SECOND_STEP_SCREENSHOT);
+    await saveScreenshot(page, SAFE_OMEN_CONFIRM_SCREENSHOT);
 
     await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
     await expect(discoveryPanel).toHaveCount(0);
@@ -382,7 +493,7 @@ test('普通预兆未触发作祟时仍显示获得预兆和作祟检定两步�
     ]);
 });
 
-test('当前9张预兆未触发作祟时均保留两步确认并进入持有区', async ({ page, context }) => {
+test('当前9张预兆未触发作祟时均只需一次确认并进入持有区', async ({ page, context }) => {
     test.setTimeout(240000);
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(page, 'betrayal-safe-omen-discovery-matrix');
@@ -409,18 +520,17 @@ test('当前9张预兆未触发作祟时均保留两步确认并进入持有区'
         await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText(
             '作祟检定',
         );
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/2');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
             'data-pending-card-resolution-step',
-            '1/2',
+            '1/1',
         );
         await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
             phase: 'preHaunt',
             latestDiscoveryTitle: omenCard.name,
             latestDiscoveryKind: 'omen',
             pendingSteps: [
-                { stepKind: 'drawn-card', index: 1, total: 2, cardName: omenCard.name },
-                { stepKind: 'haunt-roll', index: 2, total: 2, cardName: omenCard.name },
+                { stepKind: 'drawn-card', index: 1, total: 1, cardName: omenCard.name },
             ],
             rejected: null,
         });
@@ -428,21 +538,6 @@ test('当前9张预兆未触发作祟时均保留两步确认并进入持有区'
         if (index === 0) {
             await saveScreenshot(page, SAFE_OMEN_MATRIX_FIRST_CARD_SCREENSHOT);
         }
-
-        await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
-        await expect(discoveryPanel).toBeVisible();
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 2/2');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
-            'data-pending-card-resolution-step',
-            '2/2',
-        );
-        await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
-            phase: 'preHaunt',
-            pendingSteps: [
-                { stepKind: 'haunt-roll', index: 2, total: 2, cardName: omenCard.name },
-            ],
-            rejected: null,
-        });
 
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
         await expect(discoveryPanel).toHaveCount(0);
@@ -475,7 +570,7 @@ test('当前9张预兆未触发作祟时均保留两步确认并进入持有区'
     ]);
 });
 
-test('当前9张预兆触发作祟后关闭揭示横幅均保留两步确认并进入持有区', async ({ page, context }) => {
+test('当前9张预兆触发作祟时均先确认预兆和检定，再进入作祟承接', async ({ page, context }) => {
     test.setTimeout(300000);
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(page, 'betrayal-haunt-omen-discovery-matrix');
@@ -490,30 +585,20 @@ test('当前9张预兆触发作祟后关闭揭示横幅均保留两步确认并�
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
 
         const revealCue = page.getByTestId('betrayal-haunt-reveal-cue');
-        await expect(revealCue, `预兆「${omenCard.name}」触发作祟后应先显示作祟揭示横幅`).toBeVisible({
-            timeout: 10000,
-        });
-        await expect(page.getByTestId('betrayal-haunt-reveal-source')).toContainText(omenCard.name);
-        await expect(page.getByTestId('betrayal-discovery-panel'), `预兆「${omenCard.name}」作祟横幅未关闭前不应抢出发现面板`).toHaveCount(0);
+        await expect(revealCue, `预兆「${omenCard.name}」确认前作祟揭示横幅不得抢先出现`).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-scenario-reader-dialog'), `预兆「${omenCard.name}」确认前不得自动打开剧本书`).toHaveCount(0);
         await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
             phase: 'haunt',
             latestDiscoveryTitle: omenCard.name,
             latestDiscoveryKind: 'omen',
             pendingSteps: [
-                { stepKind: 'drawn-card', index: 1, total: 2, cardName: omenCard.name },
-                { stepKind: 'haunt-roll', index: 2, total: 2, cardName: omenCard.name },
+                { stepKind: 'drawn-card', index: 1, total: 1, cardName: omenCard.name },
             ],
             rejected: null,
         });
 
-        if (index === 0) {
-            await saveScreenshot(page, HAUNT_OMEN_MATRIX_REVEAL_SCREENSHOT);
-        }
-
-        await page.getByTestId('betrayal-haunt-reveal-close').click();
-        await expect(revealCue).toHaveCount(0);
         const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
-        await expect(discoveryPanel, `预兆「${omenCard.name}」关闭作祟横幅后应显示发现确认面板`).toBeVisible({
+        await expect(discoveryPanel, `预兆「${omenCard.name}」触发作祟时应先显示发现确认面板`).toBeVisible({
             timeout: 10000,
         });
         await expect(discoveryPanel).toContainText(omenCard.name);
@@ -524,29 +609,27 @@ test('当前9张预兆触发作祟后关闭揭示横幅均保留两步确认并�
         await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText(
             '作祟检定',
         );
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/2');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText('确认');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
             'data-pending-card-resolution-step',
-            '1/2',
+            '1/1',
         );
-
-        await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
-        await expect(discoveryPanel).toBeVisible();
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 2/2');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
-            'data-pending-card-resolution-step',
-            '2/2',
-        );
-        await expect.poll(() => readHauntDiscoveryConfirmationState(page)).toMatchObject({
-            phase: 'haunt',
-            pendingSteps: [
-                { stepKind: 'haunt-roll', index: 2, total: 2, cardName: omenCard.name },
-            ],
-            rejected: null,
-        });
+        await expect(discoveryPanel.getByTestId('betrayal-recent-roll-panel')).toBeVisible();
+        await expect(discoveryPanel.getByTestId('betrayal-house-dice-3d-group')).toBeVisible();
+        await expect(discoveryPanel.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '4');
+        await expect(discoveryPanel.getByTestId('betrayal-recent-roll-total')).toContainText('总点数');
+        if (index === 0) {
+            await saveScreenshot(page, HAUNT_OMEN_MATRIX_REVEAL_SCREENSHOT);
+        }
 
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
         await expect(discoveryPanel).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-scenario-reader-dialog'), `预兆「${omenCard.name}」确认后才打开剧本书承接`).toBeVisible({
+            timeout: 10000,
+        });
+        await closeScenarioReaderIfPresent(page);
+        await expect(revealCue, `预兆「${omenCard.name}」剧本书承接后不得再显示作祟揭示横幅`).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-discovery-panel'), `预兆「${omenCard.name}」确认过后关闭剧本书不得重复弹出`).toHaveCount(0);
         await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
         await expect.poll(async () => {
             const state = await readHauntDiscoveryConfirmationState(page);

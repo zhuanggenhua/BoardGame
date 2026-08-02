@@ -43,6 +43,7 @@
     "extra_action_granted": "你额外获得了 {{count}} 次战术打出机会。",
     "extra_action_granted_after_interaction": "当前结算结束后，你将额外获得 {{count}} 次战术打出机会。",
     "select_minion_hint": "请选择一个随从来附着此卡",
+    "select_target_minion_hint": "请选择一个目标随从",
     "your_turn": "轮到你了！",
     "me_first_your_turn": "轮到你响应 — 打出特殊牌或让过",
     "me_first_waiting": "等待 {{player}} 响应…",
@@ -1190,9 +1191,32 @@
     "avengers_black_widow_title": "黑寡妇：你可以摧毁这里一个力量5或更少的角色",
     "avengers_assemble_title": "复仇者集结：选择至多两名弃牌堆角色洗回牌库",
     "avengers_repulsor_boots_move_title": "斥力靴：选择目标基地",
+    "beauty_and_the_beast_belle_talent_draw": "摸 1 张牌",
+    "beauty_and_the_beast_belle_talent_title": "贝儿：选择摸 1 张牌或弃 1 张牌",
+    "beauty_and_the_beast_petals_keep": "保持当前顺序",
+    "beauty_and_the_beast_petals_swap": "交换前两张",
+    "beauty_and_the_beast_petals_title": "玫瑰花瓣：查看并重排牌库顶",
+    "munchkin_halflings_last_call_choose_minion_title": "最后通牒：选择要打到当前基地的随从",
+    "munchkin_halflings_shire_marshal_choose_base_title": "夏尔首领：选择另一玩家力量更大的基地",
+    "munchkin_halflings_spoiled_brats_choose_minions_title": "被宠坏的小家伙：选择要放到牌库顶的弃牌堆随从",
+    "munchkin_halflings_unexpected_party_choose_base_title": "意外的派对：选择没有己方随从的基地",
     "munchkin_crossbow_choose_faction_title": "十字弓：选择派系",
+    "munchkin_dungeon_rulebook_destroy_title": "地牢规则书：选择要摧毁的行动",
+    "munchkin_anything_for_money_discard_title": "为了钱什么都可以：选择任意数量手牌弃掉",
+    "munchkin_cash_out_choose_treasures_title": "套现：选择至多三张宝藏牌打出",
+    "munchkin_cat_burglar_choose_treasures_title": "猫咪窃贼：选择要展示的宝藏牌",
+    "munchkin_gold_digger_choose_treasure_title": "黄金挖掘者：选择宝藏弃牌",
+    "munchkin_greed_is_good_choose_treasure_title": "贪婪是好的：选择抽宝藏或回收宝藏弃牌",
+    "munchkin_greed_is_good_draw_treasure_option": "抽一张宝藏牌",
+    "munchkin_mine_choose_treasure_title": "我的！：选择宝藏和宿主",
+    "munchkin_salvage_choose_treasure_title": "打捞：选择宝藏和当前基地宿主",
+    "munchkin_halitosis_choose_player_title": "口臭药水：选择玩家",
+    "munchkin_halitosis_move_title": "口臭药水：移动你的仆从",
+    "munchkin_potion_of_duplication_choose_talent_title": "复制药水：选择另一个仆从的天赋",
     "munchkin_magic_missile_destroy_title": "魔法导弹：选择目标仆从",
+    "munchkin_straight_line_running_away_choose_treasure_title": "直线跑路药水：选择已展示的宝藏",
     "munchkin_rocket_boots_move_title": "火箭靴：选择目标基地",
+    "munchkin_no_my_precious_destroy_title": "不！我的宝贝！：选择仆从身上的行动",
     "avengers_repulsor_boots_source_special_title": "斥力靴：选择要移动的钢铁侠",
     "avengers_repulsor_boots_source_title": "斥力靴：选择要移动的你的角色",
     "avengers_iron_man_destination_title": "钢铁侠：选择要移动到的基地",
@@ -11374,420 +11398,538 @@
       "abilityText": "每回合开始时，这里所有玩家的随从直到回合结束 +1 战力。"
     },
     "munchkin_dwarves_dwarf_king": {
-      "name": "矮人王"
+      "name": "矮人王",
+      "abilityText": "持续：当一个你的仆从身上的宝藏牌进入弃牌堆时，放置它到你的手上代替。"
     },
     "munchkin_dwarves_loot_lover": {
-      "name": "宝藏爱好者"
+      "name": "宝藏爱好者",
+      "abilityText": "持续：这个仆从身上每有一张宝藏牌，它获得 +2 力量。"
     },
     "munchkin_dwarves_gold_digger": {
-      "name": "黄金挖掘者"
+      "name": "黄金挖掘者",
+      "abilityText": "天赋：从弃牌堆放置一张宝藏牌到你的手上。"
     },
     "munchkin_dwarves_gem_grabber": {
-      "name": "宝石抓取者"
+      "name": "宝石抓取者",
+      "abilityText": "持续：如果这个仆从身上拥有一张宝藏牌，它获得 +2 力量。"
     },
     "munchkin_halflings_shire_marshal": {
-      "name": "夏尔首领"
+      "name": "夏尔首领",
+      "abilityText": "天赋：在另一个玩家力量大于你的基地上打出一个额外的仆从。"
     },
     "munchkin_halflings_pestling": {
-      "name": "调皮鬼"
+      "name": "调皮鬼",
+      "abilityText": "你可以在这里打出一个额外的仆从。"
     },
     "munchkin_halflings_bardling": {
-      "name": "吟游诗人"
+      "name": "吟游诗人",
+      "abilityText": "如果另一位玩家在这里的力量大于你，你可以在这里打出一个额外的仆从。"
     },
     "munchkin_halflings_quarterling": {
-      "name": "半身人"
+      "name": "半身人",
+      "abilityText": "如果这是你在这里的唯一仆从，你可以在这里打出一个额外的仆从。"
     },
     "munchkin_thieves_master_thief": {
-      "name": "盗贼大师"
+      "name": "盗贼大师",
+      "abilityText": "天赋：抽一张宝藏牌。"
     },
     "munchkin_thieves_fence": {
-      "name": "销赃犯"
+      "name": "销赃犯",
+      "abilityText": "你可以丢弃两张宝藏牌来获得 1 VP。"
     },
     "munchkin_thieves_cat_burglar": {
-      "name": "猫咪窃贼"
+      "name": "猫咪窃贼",
+      "abilityText": "从你的手上展示任意数量的宝藏牌。每展示一张，放置一枚 +1 力量指示器到这个仆从身上。"
     },
     "munchkin_thieves_pickpocket": {
-      "name": "扒手"
+      "name": "扒手",
+      "abilityText": "如果这里有另一个扒手，抽一张宝藏牌。"
     },
     "munchkin_mages_blaster_master": {
-      "name": "爆破大师"
+      "name": "爆破大师",
+      "abilityText": "天赋：丢弃一张牌来摧毁一个力量 2 或更少的仆从。"
     },
     "munchkin_mages_happy_zapper": {
-      "name": "快乐小法师"
+      "name": "快乐小法师",
+      "abilityText": "天赋：丢弃一张牌来让这个仆从获得 +2 力量直到回合结束。特殊：这个基地计分前，你可以使用这个仆从的天赋。"
     },
     "munchkin_mages_wand_whiz": {
-      "name": "魔杖天才"
+      "name": "魔杖天才",
+      "abilityText": "你可以丢弃一张牌来打出一个额外的仆从或打出一个额外的行动。"
     },
     "munchkin_mages_scroll_shuffler": {
-      "name": "勤读者"
+      "name": "勤读者",
+      "abilityText": "丢弃一张牌。抽一张牌。"
     },
     "munchkin_elves_fae_fighter": {
-      "name": "精灵斗士"
+      "name": "精灵斗士",
+      "abilityText": "持续：另一个玩家打出一个仆从后，你可以在该仆从上放置一枚 +1 力量指示物，以在你这里的一个仆从上放置一枚 +1 力量指示物。"
     },
     "munchkin_elves_lord_of_the_prance": {
-      "name": "优雅贵族"
+      "name": "优雅贵族",
+      "abilityText": "天赋：你选择另一个玩家抽一张牌。你抽一张牌。"
     },
     "munchkin_elves_flower_child": {
-      "name": "花之子"
+      "name": "花之子",
+      "abilityText": "你可以将这个仆从的控制权交给另一个玩家直到它离开游戏，来控制那个玩家的一个力量 3 或更少的仆从直到它离开游戏。"
     },
     "munchkin_elves_elf_help_guru": {
-      "name": "精灵帮助大师"
+      "name": "精灵帮助大师",
+      "abilityText": "天赋：所有其他玩家在这里的仆从获得 +1 力量直到回合结束。"
     },
     "munchkin_clerics_cardinal": {
-      "name": "红衣主教"
+      "name": "红衣主教",
+      "abilityText": "天赋：如果你的弃牌堆有至少五张牌，随机放置其中两张到你的手上。"
     },
     "munchkin_clerics_deep_friar": {
-      "name": "资深修士"
+      "name": "资深修士",
+      "abilityText": "特殊：这个基地计分后，你可以移动这里的另一个你的仆从到另一个基地，代替进入弃牌堆。"
     },
     "munchkin_clerics_turner": {
-      "name": "特纳"
+      "name": "特纳",
+      "abilityText": "摧毁这里的一个亡灵怪物；或从你的弃牌堆重洗一个随机的仆从到你的牌库。"
     },
     "munchkin_clerics_holy_roller": {
-      "name": "圣临者"
+      "name": "圣临者",
+      "abilityText": "你可以从你的弃牌堆重洗一张随机的牌到你的牌库。"
     },
     "munchkin_orcs_sword_lord": {
-      "name": "剑王"
+      "name": "剑王",
+      "abilityText": "持续：每个你的其他仆从获得 +1 力量。"
     },
     "munchkin_orcs_topper_chopper": {
-      "name": "粉碎者"
+      "name": "粉碎者",
+      "abilityText": "天赋：什么都不做。"
     },
     "munchkin_orcs_hammer_slammer": {
-      "name": "重击者"
+      "name": "重击者",
+      "abilityText": "摧毁一个力量 2 或更少的仆从。"
     },
     "munchkin_orcs_dork_orc": {
-      "name": "呆瓜兽人"
+      "name": "呆瓜兽人",
+      "abilityText": "持续：这个仆从不受其他玩家的行动影响。"
     },
     "munchkin_warriors_big_hero": {
-      "name": "大英雄"
+      "name": "大英雄",
+      "abilityText": "天赋：摧毁这里一个怪物 OR 在这里打出一个怪物。"
     },
     "munchkin_warriors_star_player": {
-      "name": "明星勇士"
+      "name": "明星勇士",
+      "abilityText": "持续：一个怪物在这里被摧毁后，放置一枚 +1 力量指示器到这个仆从身上。"
     },
     "munchkin_warriors_berserker": {
-      "name": "狂战士"
+      "name": "狂战士",
+      "abilityText": "摧毁这里一个力量小于或等于这个仆从的怪物来放置一枚 +1 力量指示器到这个仆从身上。"
     },
     "munchkin_warriors_taunter": {
-      "name": "嘲讽者"
+      "name": "嘲讽者",
+      "abilityText": "你可以在这里打出一个怪物。"
     },
     "munchkin_dwarves_anything_for_money": {
       "name": "为了钱什么都可以",
-      "effectText": "待补：为了钱什么都可以 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "丢弃任意数量的牌。每丢弃一张牌，抽一张宝藏牌。"
     },
     "munchkin_dwarves_cash_out": {
       "name": "套现",
-      "effectText": "待补：套现 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "从你的手上打出至多三张宝藏牌作为额外的牌。"
     },
     "munchkin_dwarves_cunning_plan": {
       "name": "狡猾计划",
-      "effectText": "待补：狡猾计划 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：一个基地计分前打出。抽一张宝藏牌。你可以打出它。"
     },
     "munchkin_dwarves_greed_is_good": {
       "name": "贪婪是好的",
-      "effectText": "待补：贪婪是好的 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "抽一张宝藏牌 OR 从弃牌堆放置一张宝藏牌到你的手上。你可以打出一个额外的行动。"
     },
     "munchkin_dwarves_hidden_assets": {
       "name": "隐藏资产",
-      "effectText": "待补：隐藏资产 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "放置宝藏牌库顶的三张牌到弃牌堆。抽一张牌。你可以打出一个额外的行动。"
     },
     "munchkin_dwarves_mine": {
       "name": "我的！",
-      "effectText": "待补：我的！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "搜索宝藏牌库来寻找一张可以打出在仆从身上的牌。打出它到你的一个仆从身上作为额外的行动。重洗宝藏牌库。"
     },
     "munchkin_dwarves_no_my_precious": {
       "name": "不！我的宝贝！",
-      "effectText": "待补：不！我的宝贝！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "摧毁一个打出在仆从身上的行动。如果它是宝藏牌，你可以打出一个额外的行动。"
     },
     "munchkin_dwarves_salvage": {
       "name": "打捞",
-      "effectText": "待补：打捞 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：一个基地计分前打出。从弃牌堆打出一张宝藏牌到你在那里的一个仆从身上。"
+    },
+    "munchkin_treasure_dwarf_hireling": {
+      "name": "矮人雇佣兵"
+    },
+    "munchkin_treasure_halfling_hireling": {
+      "name": "半身人雇佣兵",
+      "abilityText": "当打出此仆从后，本回合你可以额外打出一个仆从。该额外仆从可以是一张宝藏仆从。"
+    },
+    "munchkin_treasure_tiger_steed": {
+      "name": "虎骑士"
+    },
+    "munchkin_treasure_bag_of_caltrops": {
+      "name": "一袋铁蒺藜",
+      "effectText": "打在一个基地上。持续：在另一个玩家将力量 3 或更少的仆从打到这里后，摧毁该仆从，并摧毁此牌。"
+    },
+    "munchkin_treasure_spiky_boots": {
+      "name": "尖刺靴",
+      "effectText": "打在一个仆从上。持续：此仆从获得 +1 力量。"
+    },
+    "munchkin_treasure_rocket_boots": {
+      "name": "火箭靴",
+      "effectText": "打在一个仆从上。天赋：移动此仆从到另一个基地。此牌保留在其身上。"
+    },
+    "munchkin_treasure_buckler_of_swashing": {
+      "name": "摆动的盾牌",
+      "effectText": "打在一个仆从上。持续：此仆从不能被摧毁。"
+    },
+    "munchkin_treasure_bloody_dismemberment_chainsaw": {
+      "name": "血腥肢解电锯",
+      "effectText": "打在一个仆从上。持续：此仆从获得 +2 力量。"
+    },
+    "munchkin_treasure_loads_of_treasure": {
+      "name": "大量宝藏",
+      "effectText": "打在一个仆从上。持续：此仆从身上每有一张宝藏牌，它获得 +1 力量。"
+    },
+    "munchkin_treasure_crossbow": {
+      "name": "十字弓",
+      "effectText": "选择一个基地和一个派系。直到回合结束，那里该派系的所有仆从获得 +2 力量。"
+    },
+    "munchkin_treasure_dungeon_rulebook": {
+      "name": "地牢规则书",
+      "effectText": "摧毁一个打出在仆从身上或基地上的行动。特殊：你可以在一个基地计分前打出此牌。"
+    },
+    "munchkin_treasure_temporal_displacement_jetpack": {
+      "name": "时间错乱的喷气背包",
+      "effectText": "打在一个仆从上。持续：当此仆从将从基地进入弃牌堆时，将其放置到你的手上代替。然后将此牌放置到弃牌堆。"
+    },
+    "munchkin_treasure_kneepads_of_allure": {
+      "name": "诱惑护膝",
+      "effectText": "打在一个仆从上。持续：这里每个仆从获得 +1 力量。"
+    },
+    "munchkin_treasure_magic_missile": {
+      "name": "魔法导弹",
+      "effectText": "打在一个仆从上。天赋：摧毁这里一个力量 3 或更少的仆从。将此牌放置到宝藏牌库底。"
+    },
+    "munchkin_treasure_potion_of_cowardice": {
+      "name": "怯懦药水",
+      "effectText": "打在一个仆从上。持续：此仆从获得 -2 力量，并失去所有能力。"
+    },
+    "munchkin_treasure_potion_of_halitosis": {
+      "name": "口臭药水",
+      "effectText": "选择一个基地和一个玩家。该玩家必须将他在那里一个仆从移动到另一个基地。特殊：你可以在一个基地计分前打出此牌；你必须选择正在计分的基地。"
+    },
+    "munchkin_treasure_potion_of_idiotic_bravery": {
+      "name": "愚蠢勇气药水",
+      "effectText": "选择一个仆从。该仆从直到回合结束获得 +3 力量。"
+    },
+    "munchkin_treasure_potion_of_straight_line_running_away": {
+      "name": "直线跑路药水",
+      "effectText": "特殊：在一个基地计分后打出此牌。从已展示但尚未分发的宝藏牌中选择一张放置到你的手上。"
+    },
+    "munchkin_treasure_potion_of_paralysis": {
+      "name": "麻痹药水",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。直到回合结束，取消正在计分基地上所有牌和仆从的能力。"
+    },
+    "munchkin_treasure_potion_of_duplication": {
+      "name": "复制药水",
+      "effectText": "打在一个仆从上。天赋：选择另一个有天赋的仆从。此仆从使用该天赋，并支付该天赋的任何成本。"
+    },
+    "munchkin_treasure_treasure_finder": {
+      "name": "探宝棒",
+      "effectText": "抽两张宝藏牌。将此牌和宝藏弃牌堆洗入宝藏牌库。"
+    },
+    "munchkin_treasure_wishing_ring": {
+      "name": "许愿指环",
+      "effectText": "获得 1 VP。将此牌放置到宝藏牌库底。"
     },
     "munchkin_halflings_last_call": {
       "name": "最后通牒",
-      "effectText": "待补：最后通牒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：一个基地计分前打出。打出一个仆从到那里。取消这个仆从的能力直到回合结束。"
     },
     "munchkin_halflings_lunch_run": {
       "name": "午餐散步",
-      "effectText": "待补：午餐散步 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个基地上。持续：你每次在这里打出一个仆从后，抽一张牌。"
     },
     "munchkin_halflings_out_of_nowhere": {
       "name": "偷袭",
-      "effectText": "待补：偷袭 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "展示你的牌库顶的牌直到展示出两个仆从。放置这些仆从到你的手上。重洗剩下的牌到你的牌库。"
     },
     "munchkin_halflings_rude_awakening": {
       "name": "惊醒",
-      "effectText": "待补：惊醒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择一个基地。展示你的手牌然后打出所有仆从到那个基地作为额外的仆从；取消它们的能力直到回合结束。"
     },
     "munchkin_halflings_small_but_tough": {
       "name": "小而坚韧",
-      "effectText": "待补：小而坚韧 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个仆从身上。持续：当这个仆从进入弃牌堆时，放置它到你的牌库顶代替。"
     },
     "munchkin_halflings_sneaksy": {
       "name": "偷偷摸摸",
-      "effectText": "待补：偷偷摸摸 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个基地上。持续：你这里的仆从不会受到其他玩家的行动影响。"
     },
     "munchkin_halflings_spoiled_brats": {
       "name": "被宠坏的小家伙",
-      "effectText": "待补：被宠坏的小家伙 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "从你的弃牌堆选择任意数量的仆从，重洗它们，然后放置它们到你的牌库顶。"
     },
     "munchkin_halflings_unexpected_party": {
       "name": "意外的派对",
-      "effectText": "待补：意外的派对 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "在你没有仆从的基地上打出一个额外的仆从。"
     },
     "munchkin_thieves_backstab": {
       "name": "背刺",
-      "effectText": "待补：背刺 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "丢弃一张宝藏牌来摧毁一个力量 3 或更少的仆从。"
     },
     "munchkin_thieves_clever_distraction": {
       "name": "转移注意力",
-      "effectText": "待补：转移注意力 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：一个基地计分后打出，如果你有一个仆从在那里。赢家失去 1 VP，然后你获得 1 VP。"
     },
     "munchkin_thieves_mugging": {
       "name": "打劫",
-      "effectText": "待补：打劫 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "转移一个打出到仆从身上的行动到一个你的仆从身上。"
     },
     "munchkin_thieves_potion_bandolier": {
       "name": "药水腰带",
-      "effectText": "待补：药水腰带 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择一个仆从。丢弃一张宝藏牌来让这个仆从获得 +3 力量直到回合结束。"
     },
     "munchkin_thieves_secret_stash": {
       "name": "秘密藏匿处",
-      "effectText": "待补：秘密藏匿处 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个基地上。持续：当这个基地计分时，添加两张宝藏牌到奖励里。"
     },
     "munchkin_thieves_smuggling": {
       "name": "走私",
-      "effectText": "待补：走私 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "丢弃两张宝藏牌来获得 1 VP。重洗你的弃牌堆到你的牌库。放置这张牌到你的牌库底。"
     },
     "munchkin_thieves_strip_bare": {
       "name": "剥光",
-      "effectText": "待补：剥光 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择游戏中的一张宝藏牌。放置它到你的手上。"
     },
     "munchkin_thieves_swipe": {
       "name": "顺手拿走",
-      "effectText": "待补：顺手拿走 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "抽一张宝藏牌。"
     },
     "munchkin_mages_charm": {
       "name": "魅力",
-      "effectText": "待补：魅力 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "控制一个怪物然后将它视为你的仆从直到回合结束。"
     },
     "munchkin_mages_embiggen": {
       "name": "大上一倍",
-      "effectText": "待补：大上一倍 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择一个仆从。丢弃任意数量的牌。每丢弃一张牌，这个仆从获得 +1 力量直到回合结束。"
     },
     "munchkin_mages_mass_summoning": {
       "name": "大召唤",
-      "effectText": "待补：大召唤 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "在每个基地上打出一个怪物。"
     },
     "munchkin_mages_portal_to_beyond": {
       "name": "通往次元之门",
-      "effectText": "待补：通往次元之门 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个基地上。天赋：丢弃一张牌来在这里打出一个怪物。"
     },
     "munchkin_mages_recover_arcane_wisdom": {
       "name": "恢复奥术智慧",
-      "effectText": "待补：恢复奥术智慧 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "抽牌直到你的手上有五张牌。"
     },
     "munchkin_mages_some_enchanted_evening": {
       "name": "神奇的夜晚",
-      "effectText": "待补：神奇的夜晚 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "丢弃任意数量的牌。每丢弃一张牌，你可以打出一个力量 3 或更少的仆从作为额外仆从。"
     },
     "munchkin_mages_speed_reading": {
       "name": "快速阅读",
-      "effectText": "待补：快速阅读 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "丢弃一张牌。抽三张牌。"
     },
     "munchkin_mages_zzzzzap": {
       "name": "快速攻击！",
-      "effectText": "待补：快速攻击！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "丢弃一张牌来摧毁一个力量 3 或更少的仆从。"
     },
     "munchkin_elves_after_you": {
       "name": "在你之后",
-      "effectText": "待补：在你之后 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "每个其他玩家抽一张牌。每有一个玩家在游戏中，抽一张牌，包括你自己。"
     },
     "munchkin_elves_dancing_root": {
       "name": "舞动之根",
-      "effectText": "待补：舞动之根 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "所有玩家重洗他们的弃牌堆到他们的牌库。抽一张牌。"
     },
     "munchkin_elves_helping_hands": {
       "name": "援手",
-      "effectText": "待补：援手 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：你可以在有你的仆从在那里的基地计分前打出此牌。选择另一个玩家。那个玩家总计获得 +2 力量；你的一个仆从获得 -2 力量（最低为 0）。如果那个玩家是赢家，你可以获得那个玩家的一点 VP。"
     },
     "munchkin_elves_pumping_iron": {
       "name": "力量训练",
-      "effectText": "待补：力量训练 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择另一个玩家。那个玩家选择一个仆从获得 +2 力量直到回合结束。你选择一个仆从获得 +3 力量直到回合结束。"
     },
     "munchkin_elves_run_away": {
       "name": "逃跑吧！",
-      "effectText": "待补：逃跑吧！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：你可以在有你的仆从在那里的基地计分前打出此牌。移动一个你的仆从和另一个玩家的仆从从那里到另一个基地。"
     },
     "munchkin_elves_run_away_more": {
       "name": "赶紧逃跑吧！",
-      "effectText": "待补：赶紧逃跑吧！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。移动任意数量你的仆从从那里到另一个基地。"
     },
     "munchkin_elves_trade": {
       "name": "贸易",
-      "effectText": "待补：贸易 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "从另一位玩家的手上随机抽一张牌然后放置到你的手上，然后放置这张牌到那个玩家的手上。本回合你可以打出一个额外的行动。"
     },
     "munchkin_elves_traveling_elf": {
       "name": "旅行精灵",
-      "effectText": "待补：旅行精灵 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个你的仆从身上。天赋：移动这个仆从到另一个基地。"
     },
     "munchkin_clerics_bin_and_gone": {
       "name": "垃圾处理",
-      "effectText": "待补：垃圾处理 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个基地上。持续：另一个基地计分后，你可以移动那里一个你的仆从到这里，代替进入弃牌堆。"
     },
     "munchkin_clerics_collection_plate": {
       "name": "光盘",
-      "effectText": "待补：光盘 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "从你的弃牌堆放置两张随机的牌到你的手上。"
     },
     "munchkin_clerics_curse_of_imprisonment": {
       "name": "监禁诅咒",
-      "effectText": "待补：监禁诅咒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个仆从身上。持续：这个仆从失去它的能力。"
     },
     "munchkin_clerics_curse_of_uselessness": {
       "name": "无用诅咒",
-      "effectText": "待补：无用诅咒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个仆从身上。持续：这个仆从不会将它的力量添加到这个基地。"
     },
     "munchkin_clerics_good_habits": {
       "name": "好习惯",
-      "effectText": "待补：好习惯 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "所有仆从获得 +1 力量直到回合结束。"
     },
     "munchkin_clerics_join_the_club": {
       "name": "加入团队",
-      "effectText": "待补：加入团队 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择一个基地。所有那里的仆从获得 +1 力量直到回合结束。"
     },
     "munchkin_clerics_remove_curse": {
       "name": "解除诅咒",
-      "effectText": "待补：解除诅咒 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "摧毁一个基地或仆从身上的行动。"
     },
     "munchkin_clerics_word_of_recall": {
       "name": "回忆祷词",
-      "effectText": "待补：回忆祷词 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "从每个其他玩家的弃牌堆随机选择一个行动。你可以打出它们中的一个作为额外的行动。返回剩下的。"
     },
     "munchkin_orcs_and_stay_down": {
       "name": "躺下！",
-      "effectText": "待补：躺下！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：在一个基地计分前打出此牌。如果你在这里有总计最高力量，其他玩家不能打出或使用特殊能力。"
     },
     "munchkin_orcs_angry_pillagers": {
       "name": "愤怒的掠夺者",
-      "effectText": "待补：愤怒的掠夺者 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "特殊：当一个基地计分时打出此牌。如果你比第二名多至少 3 力量，获得 1 VP。"
     },
     "munchkin_orcs_crush": {
       "name": "挤碎",
-      "effectText": "待补：挤碎 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择一个基地和一个在那里拥有比你更少仆从的玩家。摧毁那个玩家那里一个仆从。"
     },
     "munchkin_orcs_death_breath": {
       "name": "死亡之息",
-      "effectText": "待补：死亡之息 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "放置一个力量 4 或更少的仆从到它拥有者的牌库底。"
     },
     "munchkin_orcs_dogpile": {
       "name": "狗堆",
-      "effectText": "待补：狗堆 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "移动一个你的仆从到一个你至少有两个仆从的基地。特殊：你可以在一个基地计分前打出此牌。"
     },
     "munchkin_orcs_gimme": {
       "name": "给我！",
-      "effectText": "待补：给我！ 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择一个仆从身上的行动。摧毁那个仆从，然后转移那个行动到你的一个仆从身上。"
     },
     "munchkin_orcs_stalling": {
       "name": "洗手间",
-      "effectText": "待补：洗手间 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个基地上。持续：每当另一个玩家打出一张牌时，你可以选择你在这里的仆从不受它的影响。"
     },
     "munchkin_orcs_too_tough": {
       "name": "太难了",
-      "effectText": "待补：太难了 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个仆从身上。持续：这个仆从不受其他玩家的行动影响。"
     },
     "munchkin_warriors_campaign": {
       "name": "领导运动",
-      "effectText": "待补：领导运动 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "每个有怪物的基地上的你的仆从获得 +2 力量直到回合结束。"
     },
     "munchkin_warriors_cleave": {
       "name": "斩杀",
-      "effectText": "待补：斩杀 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "摧毁一个怪物。你可以打出摧毁它获得的任意数量的宝藏牌作为额外的牌。"
     },
     "munchkin_warriors_dumbbells": {
       "name": "哑铃",
-      "effectText": "待补：哑铃 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个仆从身上。持续：这个仆从获得 +3 力量。"
     },
     "munchkin_warriors_dungeon_bait": {
       "name": "地牢诱饵",
-      "effectText": "待补：地牢诱饵 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "在一个基地打出一个怪物 OR 摧毁一个力量 2 或更少的仆从。"
     },
     "munchkin_warriors_eternal_hero": {
       "name": "永恒的英雄",
-      "effectText": "待补：永恒的英雄 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个你的仆从身上。持续：当这个仆从进入弃牌堆时，放置它和这个行动到你的手上代替。"
     },
     "munchkin_warriors_ruckus": {
       "name": "骚乱",
-      "effectText": "待补：骚乱 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "选择一个基地。在那里打出两个怪物 OR 摧毁那里的所有怪物但不获得任何宝藏牌。"
     },
     "munchkin_warriors_shield_of_ubiquity": {
       "name": "无处不在之盾",
-      "effectText": "待补：无处不在之盾 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "打出到一个仆从身上。持续：这个仆从每有一个怪物在这里就获得 +2 力量。"
     },
     "munchkin_warriors_war_cry": {
       "name": "战争怒吼",
-      "effectText": "待补：战争怒吼 的完整效果涉及萌奇金宝物、怪物等新机制，需机制建模后按汉化卡图逐句复核；当前仅完成静态接入。"
+      "effectText": "摧毁一个怪物来添加它的力量到那个基地上的一个仆从身上直到回合结束。"
     },
     "base_the_mines": {
       "name": "矿洞",
-      "abilityText": "待补：矿洞 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "每有一个宝藏在身上，那个仆从在这里就获得 +1 力量。"
     },
     "base_treasure_bath": {
       "name": "宝藏池",
-      "abilityText": "待补：宝藏池 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "每回合第一次你在这里打出一个仆从后，抽一张宝藏牌。"
     },
     "base_birthday_party": {
       "name": "生日派对",
-      "abilityText": "待补：生日派对 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "1 怪物。如果你没有仆从在这里，你不能在另一个基地打出仆从。"
     },
     "base_subterranean_lair": {
       "name": "地下矮屋",
-      "abilityText": "待补：地下矮屋 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "1 怪物。轮到你时，如果你在这个基地没有仆从，你可以在这里打出一个额外的仆从。"
     },
     "base_the_coffers": {
       "name": "金库",
-      "abilityText": "待补：金库 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "2 怪物。当这个基地计分时，每个有仆从在这里的玩家抽一张宝藏牌。"
     },
     "base_thieves_guild": {
       "name": "盗贼公会",
-      "abilityText": "待补：盗贼公会 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "1 怪物。你打出一张宝藏牌到这个基地或基地上的仆从身上后，抽一张牌。"
     },
     "base_dimension_doors": {
       "name": "次元之门",
-      "abilityText": "待补：次元之门 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "1 怪物。每个回合第一次你打出一个仆从到这里后，你可以丢弃一张牌来在这里打出一个额外的仆从。"
     },
     "base_mages_tower": {
       "name": "法师之塔",
-      "abilityText": "待补：法师之塔 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "1 怪物。你打出一个仆从到这里后，你可以抽一张牌。"
     },
     "base_helpers_hollow": {
       "name": "援助山谷",
-      "abilityText": "待补：援助山谷 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "2 怪物。每个玩家的回合期间，其他玩家在这里的仆从获得 +1 力量。"
     },
     "base_treehouse": {
       "name": "树屋",
-      "abilityText": "待补：树屋 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "2 怪物。你打出一个仆从到这里后，选择另一个玩家。那个玩家可以抽一张牌。"
     },
     "base_hotel_of_holiness": {
       "name": "圣洁酒店",
-      "abilityText": "待补：圣洁酒店 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "2 怪物。这个基地计分后，以任意顺序放置这里的仆从到它拥有者的牌库顶，代替进入弃牌堆。"
     },
     "base_whack_a_ghoul": {
       "name": "抓鬼",
-      "abilityText": "待补：抓鬼 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "3 怪物。一个不死怪物打出到这里后，放置它到怪物牌库底。"
     },
     "base_garrison": {
       "name": "要塞",
-      "abilityText": "待补：要塞 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "当这个基地计分时，如果所有玩家在这里的总力量为 22 或更多，力量最高的三个玩家各自获得 1 VP。"
     },
     "base_the_pits": {
       "name": "坑洞",
-      "abilityText": "待补：坑洞 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "这里的仆从不会受到其他玩家的行动影响。"
     },
     "base_bastion": {
       "name": "堡垒",
-      "abilityText": "待补：堡垒 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "你在这里摧毁一个怪物后，抽一张宝藏牌。"
     },
     "base_the_gauntlet": {
       "name": "锦标赛",
-      "abilityText": "待补：锦标赛 的基地效果涉及萌奇金怪物、宝物设置，需机制建模后按汉化基地牌逐句复核；当前仅完成静态接入。"
+      "abilityText": "一个怪物在这里被摧毁后，在这里打出一个怪物。"
     }
   },
   "debug": {
