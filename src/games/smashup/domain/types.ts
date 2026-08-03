@@ -36,6 +36,30 @@ export const PHASE_ORDER: GamePhase[] = [
 
 export type SmashUpTeamMode = 'ffa' | '2v2';
 export type SmashUpTeamId = 'team_13' | 'team_24';
+export type SmashUpFactionSelectionMode =
+    | 'snakeDraft'
+    | 'straightDraft'
+    | 'openDraft'
+    | 'freePick'
+    | 'individualPools';
+export type SmashUpBanPolicy =
+    | 'none'
+    | 'preDraft'
+    | 'afterFirstRound'
+    | 'preAndAfterFirstRound';
+export type SmashUpBanStage = 'preDraft' | 'afterFirstRound';
+export type SmashUpFactionSelectionPhase =
+    | 'banPreDraft'
+    | 'selecting'
+    | 'banAfterFirstRound'
+    | 'ready';
+export type SmashUpFirstPlayerPolicy =
+    | 'sameDraftAndPlay'
+    | 'nextSeatPlaysFirst';
+export type SmashUpBasePoolPolicy =
+    | 'selectedFactionBases'
+    | 'selectedExpansionBases'
+    | 'allRegularBases';
 
 // ============================================================================
 // 卡牌定义（静态数据）
@@ -72,11 +96,13 @@ export interface SmashUpActivatableAbility {
  * - 'requireNoCharacters'：目标基地上不能有任何角色
  * - { type: 'requireOwnPower', minPower: N }：目标基地上己方力量必须 ≥ N
  * - 'onlyCardInHand'：本卡必须是手牌中的唯一一张
+ * - 'requireNoOwnActionsOnBase'：目标基地上不能有你的行动牌
  */
 export type PlayConstraint =
     | 'requireOwnMinion'
     | 'requireNoCharacters'
     | 'onlyCardInHand'
+    | 'requireNoOwnActionsOnBase'
     | { type: 'requireOwnPower'; minPower: number };
 
 export type PlayTargetMinionController = 'self' | 'opponent' | 'any';
@@ -305,8 +331,6 @@ export interface BaseCardDef {
     replaceOnSetup?: boolean;
     /** 显式允许多个泰坦共存（如未来 Kaiju Island） */
     allowMultipleTitans?: boolean;
-    /** Munchkin 基地进场时自动发到该基地的怪物数量 */
-    monsterCount?: number;
 }
 
 // ============================================================================
@@ -409,32 +433,6 @@ export interface BuriedCardOnBase {
     buriedFrom: 'hand' | 'discard' | 'play' | 'deck';
 }
 
-/** Munchkin 怪物：公开在基地下方的公共对象，不占玩家随从额度 */
-export interface MonsterOnBase {
-    uid: string;
-    defId: string;
-    /** 被玩家控制后才有控制者；未控制怪物保持 undefined */
-    controllerId?: PlayerId;
-    metadata?: Record<string, unknown>;
-}
-
-/** Munchkin 基地计分后展示、尚未分发的公共宝藏。 */
-export interface MunchkinPendingTreasureRewardCard {
-    uid: string;
-    defId: string;
-    type: CardType;
-}
-
-export interface PendingMunchkinTreasureReward {
-    baseIndex: number;
-    baseDefId: string;
-    baseInstanceId?: string;
-    treasureCards: MunchkinPendingTreasureRewardCard[];
-    eligiblePlayerIds: PlayerId[];
-    nextRecipientIndex: number;
-    reason: string;
-}
-
 /** 场上的基地 */
 export interface BaseInPlay {
     /** 运行时基地实例身份；槽位编号只表示当前位置，不表示长期身份。 */
@@ -443,8 +441,6 @@ export interface BaseInPlay {
     minions: MinionOnBase[];
     /** 持续行动卡列表 */
     ongoingActions: OngoingActionOnBase[];
-    /** Munchkin 怪物行：显示在基地卡下缘与玩家随从列之间 */
-    monsters?: MonsterOnBase[];
     /** 埋葬卡列表（面朝下） */
     buriedCards?: BuriedCardOnBase[];
     /** 额外元数据（用于临时基地级状态，如“我们上，你们下”） */
@@ -546,17 +542,6 @@ export const CTHULHU_EXPANSION_FACTIONS = [
     SMASHUP_FACTION_IDS.ELDER_THINGS,
     SMASHUP_FACTION_IDS.INNSMOUTH,
     SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
-] as const;
-/** Munchkin 扩展派系（使用怪物 / 宝藏公共牌库的派系） */
-export const MUNCHKIN_EXPANSION_FACTIONS = [
-    SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS,
-    SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_MAGES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_ELVES,
-    SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS,
-    SMASHUP_FACTION_IDS.MUNCHKIN_ORCS,
-    SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS,
 ] as const;
 
 /** 计分后触发的 special 延迟记录（Me First! 窗口打出，afterScoring 时兑现） */
@@ -828,12 +813,24 @@ export interface SmashUpCore {
     currentPlayerIndex: number;
     /** 对局规则模式 */
     teamMode?: SmashUpTeamMode;
+    /** 房间预设：选种族模式 */
+    factionSelectionMode?: SmashUpFactionSelectionMode;
+    /** 房间预设：每位玩家候选池规模（个人随机池/后续选秀池使用） */
+    factionCandidatePoolSize?: number;
+    /** 房间预设：Ban Pick 阶段策略 */
+    banPolicy?: SmashUpBanPolicy;
+    /** 房间预设：先选玩家与先玩玩家关系 */
+    firstPlayerPolicy?: SmashUpFirstPlayerPolicy;
+    /** 房间预设：选完派系后构建基地池的策略 */
+    basePoolPolicy?: SmashUpBasePoolPolicy;
     /** 场上基地 */
     bases: BaseInPlay[];
     /** 全局泰坦状态（牌库旁 / 在场） */
     titans?: TitanState[];
     /** 房间创建时启用的扩展集合 */
     enabledExpansions?: string[];
+    /** 房间创建时圈定的本局参与派系身份（POD/普通版共用同一身份） */
+    includedFactionIds?: string[];
     /** 是否允许查看牌库剩余牌详情 */
     deckQueryEnabled?: boolean;
     /** 基地牌库（defId 列表） */
@@ -856,16 +853,6 @@ export interface SmashUpCore {
     factionSelection?: FactionSelectionState;
     /** 疯狂牌库（克苏鲁扩展，defId 列表） */
     madnessDeck?: string[];
-    /** 怪物牌库（Munchkin 扩展，defId 列表） */
-    monsterDeck?: string[];
-    /** 怪物弃牌堆（Munchkin 扩展，defId 列表；UI 暂不展示） */
-    monsterDiscard?: string[];
-    /** 宝藏牌库（Munchkin 扩展，defId 列表） */
-    treasureDeck?: string[];
-    /** 宝藏弃牌堆（Munchkin 扩展，defId 列表；UI 暂不展示） */
-    treasureDiscard?: string[];
-    /** Munchkin 基地计分后展示、尚未分发的公共宝藏奖励。 */
-    pendingMunchkinTreasureReward?: PendingMunchkinTreasureReward;
     cardsPlayedThisTurn?: number;
     /** 本回合每位玩家从手牌弃牌的数量。TURN_STARTED 时清空。 */
     cardsDiscardedFromHandThisTurn?: Record<PlayerId, number>;
@@ -899,11 +886,6 @@ export interface SmashUpCore {
      * 用于 Mergacon 这类“移动后直到回合结束失去 ongoing”效果。
      */
     titanOngoingSuppressedUntilTurnEnd?: string[];
-    /**
-     * 本回合暂时失去能力的场上卡牌 UID 列表。
-     * 用于麻痹药水这类“直到回合结束取消能力”的效果。
-     */
-    suppressedCardUidsUntilTurnEnd?: string[];
     /**
      * 彩虹鸟本轮“首次低战力随从进场”触发记录。
      * key = titanUid, value = 触发时的 turnNumber。
@@ -964,6 +946,8 @@ export interface SmashUpCore {
     tempBasePowerModifiers?: Record<number, Record<PlayerId, number>>;
     /** 临时玩家-基地总力量修正（运行时基地实例 id → playerId → delta） */
     tempBasePowerModifiersByBaseId?: Record<string, Record<PlayerId, number>>;
+    /** 怨灵捕手总部：计分冠军在其下个回合待领取的一次“额外行动或额外随从”选择。 */
+    wraithrustlersHqPendingBonus?: Record<PlayerId, boolean>;
     /**
      * 本回合各限制组在各基地的 special 能力使用记录
      * key = limitGroup（如 'ninja_special'），value = 已使用的 baseIndex 列表
@@ -1053,6 +1037,44 @@ export interface SmashUpCore {
 }
 
 export interface FactionSelectionState {
+    /** 当前选种族模式；缺省按 snakeDraft 兼容旧存档 */
+    mode?: SmashUpFactionSelectionMode;
+    /** 每位玩家最终需要选择的派系数；当前正式规则默认 2 */
+    factionsPerPlayer?: number;
+    /** 个人随机池/后续候选池规模 */
+    candidatePoolSize?: number;
+    /** Ban Pick 阶段策略 */
+    banPolicy?: SmashUpBanPolicy;
+    /** 房主原始请求的 Ban Pick 策略；当容量不足降级时用于审计 */
+    requestedBanPolicy?: SmashUpBanPolicy;
+    /** Ban Pick 被降级/禁用时展示给玩家的 i18n 原因 key */
+    banPolicyDowngradeReason?: string;
+    /** 当前赛前状态机阶段 */
+    phase?: SmashUpFactionSelectionPhase;
+    /** 当前 Ban 阶段；仅 phase 为 banPreDraft/banAfterFirstRound 时使用 */
+    banStage?: SmashUpBanStage;
+    /** 已完成的 Ban 阶段 */
+    completedBanStages?: SmashUpBanStage[];
+    /** 每个 Ban 阶段中，各玩家已经 Ban 的派系 */
+    banSelections?: Partial<Record<SmashUpBanStage, Record<PlayerId, string[]>>>;
+    /** 已被 Ban 的派系 */
+    bannedFactions?: string[];
+    /** 直线/蛇形选秀的共享草案池 */
+    sharedCandidatePool?: string[];
+    /** 每位玩家可见候选池；individualPools 模式会使用 */
+    playerCandidatePools?: Record<PlayerId, string[]>;
+    /** 已确认 ready 的玩家；individualPools 模式会使用 */
+    readyPlayers?: PlayerId[];
+    /** 已锁定候选池/选择的玩家；后续 Redraw/Ready 流程使用 */
+    lockedPlayers?: PlayerId[];
+    /** 选种族起点与正式游戏先玩关系 */
+    firstPlayerPolicy?: SmashUpFirstPlayerPolicy;
+    /** 选种族阶段使用的轮转顺序 */
+    draftTurnOrder?: PlayerId[];
+    /** 选完种族后正式游戏使用的轮转顺序 */
+    playTurnOrder?: PlayerId[];
+    /** 选完派系后使用的基地池策略 */
+    basePoolPolicy?: SmashUpBasePoolPolicy;
     /** 已被选择的派系 */
     takenFactions: string[];
     /** 每位玩家已选的派系 */
@@ -1108,6 +1130,8 @@ export const SU_COMMANDS = {
     // === 新增 ===
     SELECT_FACTION: 'su:select_faction',
     DESELECT_FACTION: 'su:deselect_faction',
+    BAN_FACTION: 'su:ban_faction',
+    CONFIRM_FACTION_READY: 'su:confirm_faction_ready',
     SWAP_SEAT: 'su:swap_seat',
     USE_BASE_ABILITY: 'su:use_base_ability',
     USE_TALENT: 'su:use_talent',
@@ -1115,8 +1139,6 @@ export const SU_COMMANDS = {
     ACTIVATE_SPECIAL: 'su:activate_special',
     /** 激活在场泰坦的主动 ongoing 能力 */
     ACTIVATE_TITAN_ONGOING: 'su:activate_titan_ongoing',
-    /** 击败 Munchkin 怪物并获得其奖励宝藏 */
-    DEFEAT_MUNCHKIN_MONSTER: 'su:defeat_munchkin_monster',
 } as const;
 
 /** 打出随从 */
@@ -1126,6 +1148,8 @@ export interface PlayMinionCommand extends Command<typeof SU_COMMANDS.PLAY_MINIO
         baseIndex: number;
         /** 从弃牌堆打出（而非手牌）。由"它们为你而来"等持续效果启用 */
         fromDiscard?: boolean;
+        /** 从牌库打出（如异形变体牌库顶额外打出）。 */
+        fromDeck?: boolean;
         /** 从暂存区打出（如返时者停滞区）。 */
         fromStored?: boolean;
         /** 替代普通行动额度打出这张随从牌，不消耗普通随从额度。 */
@@ -1167,6 +1191,18 @@ export interface DeselectFactionCommand extends Command<typeof SU_COMMANDS.DESEL
     };
 }
 
+/** Ban 派系 */
+export interface BanFactionCommand extends Command<typeof SU_COMMANDS.BAN_FACTION> {
+    payload: {
+        factionId: string;
+    };
+}
+
+/** 确认个人随机池选择已锁定 */
+export interface ConfirmFactionReadyCommand extends Command<typeof SU_COMMANDS.CONFIRM_FACTION_READY> {
+    payload: Record<string, never>;
+}
+
 /** 调整选秀阶段座位顺序（影响先后手） */
 export interface SwapSeatCommand extends Command<typeof SU_COMMANDS.SWAP_SEAT> {
     payload: {
@@ -1178,6 +1214,10 @@ export interface SwapSeatCommand extends Command<typeof SU_COMMANDS.SWAP_SEAT> {
 export interface UseBaseAbilityCommand extends Command<typeof SU_COMMANDS.USE_BASE_ABILITY> {
     payload: {
         baseIndex: number;
+        /** 可选目标基地，供主动基地能力透传给能力实现。 */
+        targetBaseIndex?: number;
+        /** 可选目标随从，供主动基地能力透传给能力实现。 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1190,6 +1230,10 @@ export interface UseTalentCommand extends Command<typeof SU_COMMANDS.USE_TALENT>
         ongoingCardUid?: string;
         titanUid?: string;
         baseIndex: number;
+        /** 可选目标基地，供需要转移/选择基地的天赋透传给能力实现。 */
+        targetBaseIndex?: number;
+        /** 可选目标随从，供需要选择随从的天赋透传给能力实现。 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1201,6 +1245,8 @@ export interface ActivateSpecialCommand extends Command<typeof SU_COMMANDS.ACTIV
         discardCardUid?: string;
         handCardUid?: string;
         baseIndex: number;
+        /** 可选目标基地，供需要移动/转移到另一基地的特殊能力透传给能力实现。 */
+        targetBaseIndex?: number;
         targetMinionUid?: string;
     };
 }
@@ -1213,26 +1259,19 @@ export interface ActivateTitanOngoingCommand extends Command<typeof SU_COMMANDS.
     };
 }
 
-/** 击败基地上的 Munchkin 怪物 */
-export interface DefeatMunchkinMonsterCommand extends Command<typeof SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER> {
-    payload: {
-        baseIndex: number;
-        monsterUid: string;
-    };
-}
-
 export type SmashUpCommand =
     | PlayMinionCommand
     | PlayActionCommand
     | DiscardToLimitCommand
     | SelectFactionCommand
     | DeselectFactionCommand
+    | BanFactionCommand
+    | ConfirmFactionReadyCommand
     | SwapSeatCommand
     | UseBaseAbilityCommand
     | UseTalentCommand
     | ActivateSpecialCommand
-    | ActivateTitanOngoingCommand
-    | DefeatMunchkinMonsterCommand;
+    | ActivateTitanOngoingCommand;
 
 // ============================================================================
 // 事件类型
@@ -1382,20 +1421,6 @@ export interface TitanOngoingSuppressedEvent extends GameEvent<typeof SU_EVENTS.
     payload: {
         titanUid: string;
         reason: string;
-    };
-}
-
-/** 本回合临时取消场上卡牌能力。 */
-export interface CardsSuppressedUntilTurnEndEvent extends GameEvent<typeof SU_EVENTS.CARDS_SUPPRESSED_UNTIL_TURN_END> {
-    payload: {
-        cardUids: string[];
-        baseIndex: number;
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
     };
 }
 
@@ -1694,6 +1719,8 @@ export type SmashUpEvent =
     | LimitModifiedEvent
     | FactionSelectedEvent
     | FactionDeselectedEvent
+    | FactionBannedEvent
+    | FactionReadyConfirmedEvent
     | SeatSwappedEvent
     | AllFactionsSelectedEvent
     | MinionDestroyedEvent
@@ -1721,21 +1748,11 @@ export type SmashUpEvent =
     | CardStoredEvent
     | StoredCardCounterChangedEvent
     | StoredCardReleasedEvent
+    | WraithrustlersHqBonusUpdatedEvent
     | HandShuffledIntoDeckEvent
     | StartingHandMulliganUsedEvent
-    | CardsSuppressedUntilTurnEndEvent
     | MadnessDrawnEvent
     | MadnessReturnedEvent
-    | MunchkinMonsterDefeatedEvent
-    | MunchkinTreasuresDrawnEvent
-    | MunchkinTreasuresMilledEvent
-    | MunchkinTreasureRecoveredFromDiscardEvent
-    | MunchkinTreasureFoundFromDeckEvent
-    | MunchkinTreasureRewardRevealedEvent
-    | MunchkinTreasureRewardClaimedEvent
-    | MunchkinTreasureRewardDistributedEvent
-    | MunchkinTreasureDeckShuffledEvent
-    | MunchkinTreasureToDeckBottomEvent
     | BaseDeckReorderedEvent
     | RevealHandEvent
     | RevealDeckTopEvent
@@ -1770,6 +1787,20 @@ export interface FactionDeselectedEvent extends GameEvent<'su:faction_deselected
     payload: {
         playerId: PlayerId;
         factionId: string;
+    };
+}
+
+export interface FactionBannedEvent extends GameEvent<'su:faction_banned'> {
+    payload: {
+        playerId: PlayerId;
+        factionId: string;
+        stage: SmashUpBanStage;
+    };
+}
+
+export interface FactionReadyConfirmedEvent extends GameEvent<'su:faction_ready_confirmed'> {
+    payload: {
+        playerId: PlayerId;
     };
 }
 
@@ -2099,10 +2130,25 @@ export interface CardStoredEvent extends GameEvent<typeof SU_EVENTS.CARD_STORED>
         cardUid: string;
         defId: string;
         ownerId: PlayerId;
-        from: 'hand' | 'deck' | 'discard';
+        from: 'hand' | 'deck' | 'discard' | 'play';
+        /** from=play 时的来源基地索引。 */
+        sourceBaseIndex?: number;
+        /** from=play 时的来源实体类型。 */
+        sourceCardKind?: 'minion' | 'baseOngoingAction' | 'attachedAction';
+        /** from=play 且来源为附着行动时的宿主随从 uid。 */
+        targetMinionUid?: string;
         storedUnderUid?: string;
         storedUnderDefId?: string;
         counters?: number;
+        reason: string;
+    };
+}
+
+/** 怨灵捕手总部：记录/消费下个回合额外出牌选择。 */
+export interface WraithrustlersHqBonusUpdatedEvent extends GameEvent<typeof SU_EVENTS.WRAITHRUSTLERS_HQ_BONUS_UPDATED> {
+    payload: {
+        playerId: PlayerId;
+        pending: boolean;
         reason: string;
     };
 }
@@ -2154,152 +2200,6 @@ export interface MadnessReturnedEvent extends GameEvent<typeof SU_EVENTS.MADNESS
         playerId: PlayerId;
         cardUid: string;
         reason: string;
-    };
-}
-
-/** Munchkin 怪物被击败：移出基地并按怪物奖励给玩家宝藏 */
-export interface MunchkinMonsterDefeatedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED> {
-    payload: {
-        playerId: PlayerId;
-        baseIndex: number;
-        monsterUid: string;
-        /** 可选快照；reducer 以场上实际怪物为准，缺场上怪物时不生效 */
-        monsterDefId?: string;
-        /** 预分配宝藏实例 UID；不足时 reducer 用 nextUid 补足 */
-        treasureUids?: string[];
-        reason: string;
-    };
-}
-
-/** Munchkin 公共宝藏牌库抽宝藏到玩家手牌。 */
-export interface MunchkinTreasuresDrawnEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURES_DRAWN> {
-    payload: {
-        playerId: PlayerId;
-        count: number;
-        /** 预分配宝藏实例 UID；不足时 reducer 用 nextUid 补足 */
-        treasureUids?: string[];
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
-    };
-}
-
-/** Munchkin 公共宝藏牌库顶牌进入公共宝藏弃牌堆。 */
-export interface MunchkinTreasuresMilledEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURES_MILLED> {
-    payload: {
-        count: number;
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
-    };
-}
-
-/** Munchkin 公共宝藏弃牌堆中的一张宝藏进入玩家手牌。 */
-export interface MunchkinTreasureRecoveredFromDiscardEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_RECOVERED_FROM_DISCARD> {
-    payload: {
-        playerId: PlayerId;
-        defId: string;
-        /** 预分配宝藏实例 UID；缺失时 reducer 用 nextUid 生成。 */
-        treasureUid?: string;
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
-    };
-}
-
-/** Munchkin 公共宝藏牌库检索：指定宝藏进入玩家手牌，剩余宝藏牌库按提供顺序重洗。 */
-export interface MunchkinTreasureFoundFromDeckEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_FOUND_FROM_DECK> {
-    payload: {
-        playerId: PlayerId;
-        defId: string;
-        deckIndex: number;
-        /** 预分配宝藏实例 UID；缺失时 reducer 用 nextUid 生成。 */
-        treasureUid?: string;
-        /** 移除所选宝藏后的牌库顺序。 */
-        shuffledDeckDefIds: string[];
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
-    };
-}
-
-/** Munchkin 基地计分后：展示待分发的宝藏奖励，但暂不进入任何玩家手牌。 */
-export interface MunchkinTreasureRewardRevealedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED> {
-    payload: {
-        baseIndex: number;
-        baseDefId: string;
-        baseInstanceId?: string;
-        count: number;
-        eligiblePlayerIds: PlayerId[];
-        nextRecipientIndex?: number;
-        treasureUids?: string[];
-        reason: string;
-    };
-}
-
-/** Munchkin 基地计分后：玩家从已展示、未分发的宝藏里拿走一张。 */
-export interface MunchkinTreasureRewardClaimedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_REWARD_CLAIMED> {
-    payload: {
-        playerId: PlayerId;
-        treasureUid: string;
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
-    };
-}
-
-/** Munchkin 基地计分后：按战利品顺序分发剩余已展示宝藏并清理 pending 状态。 */
-export interface MunchkinTreasureRewardDistributedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED> {
-    payload: {
-        reason: string;
-        baseIndex?: number;
-        baseInstanceId?: string;
-    };
-}
-
-/** Munchkin 公共宝藏牌库重洗；用于探宝棒等把隐藏宝藏弃牌堆洗回牌库的效果。 */
-export interface MunchkinTreasureDeckShuffledEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_DECK_SHUFFLED> {
-    payload: {
-        deckDefIds: string[];
-        cardUid: string;
-        defId: string;
-        ownerId: PlayerId;
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
-    };
-}
-
-/** Munchkin 宝藏回到公共宝藏牌库底；不是玩家个人牌库。 */
-export interface MunchkinTreasureToDeckBottomEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURE_TO_DECK_BOTTOM> {
-    payload: {
-        cardUid: string;
-        defId: string;
-        ownerId: PlayerId;
-        reason: string;
-        sourcePlayerId?: PlayerId;
-        sourceCardUid?: string;
-        sourceDefId?: string;
-        sourceControllerId?: PlayerId;
-        sourceBaseIndex?: number;
     };
 }
 

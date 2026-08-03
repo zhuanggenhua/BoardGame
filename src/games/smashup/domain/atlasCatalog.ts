@@ -107,6 +107,7 @@ export const SMASHUP_ATLAS_DEFINITIONS: readonly SmashUpAtlasDefinition[] = [
     { id: SMASHUP_ATLAS_IDS.INTERNATIONAL_INCIDENT_BASES, kind: 'base', image: 'smashup/base/international_incident_bases', grid: { rows: 4, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.WHAT_WERE_WE_THINKING_BASES, kind: 'base', image: 'smashup/base/what_were_we_thinking_bases', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.HALF_THE_BATTLE_BASES, kind: 'base', image: 'smashup/base/half_the_battle_bases', grid: { rows: 2, cols: 4 } },
+    { id: SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_BASES, kind: 'base', image: 'smashup/base/excellent_movies_teens_bases', grid: { rows: 2, cols: 5 } },
     { id: SMASHUP_ATLAS_IDS.PRETTY_PRETTY_POD_BASES, kind: 'base', image: 'smashup/base/pretty_pretty_pod', grid: { rows: 2, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.POLYNESIAN_VOYAGERS_BASES, kind: 'base', image: 'smashup/base/polynesian_voyagers/atlas', grid: { rows: 3, cols: 4 } },
     { id: SMASHUP_ATLAS_IDS.DIY_KILLERS_BASES, kind: 'base', image: 'smashup/base/diy_killers_bases', grid: { rows: 1, cols: 2 } },

@@ -11359,6 +11359,15 @@
         }
       }
     },
+    "zh-CN/smashup/base/compressed/excellent_movies_teens_bases": {
+      "variants": {
+        "webp": {
+          "sha256": "8324058bbf9904c1974fd154d1f30a4e27a2c0a3ba24608b9dffb0256289ab4b",
+          "bytes": 2559806,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/smashup/base/compressed/half_the_battle_bases": {
       "variants": {
         "webp": {
@@ -11580,6 +11589,15 @@
         "png": {
           "sha256": "d7425df575c029fa85c4bdf2727c5c709dc672435a8cba8a19fac82d429a176e",
           "bytes": 2862123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/excellent_movies_teens_bases": {
+      "variants": {
+        "png": {
+          "sha256": "7482f58e74fe014eb496d401ea661c3b3602a95ec8cce0664a1c1abf51bbbdee",
+          "bytes": 15527208,
           "mime": "image/png"
         }
       }

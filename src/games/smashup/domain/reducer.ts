@@ -26,7 +26,6 @@
  */
 
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { createEntityId } from '../../../engine/primitives';
 import type {
     SmashUpCommand,
     SmashUpCore,
@@ -36,6 +35,8 @@ import type {
     CardsDiscardedEvent,
     FactionSelectedEvent,
     FactionDeselectedEvent,
+    FactionBannedEvent,
+    FactionReadyConfirmedEvent,
     SeatSwappedEvent,
     AllFactionsSelectedEvent,
     MinionDestroyedEvent,
@@ -46,7 +47,6 @@ import type {
     OngoingDetachedEvent,
     TalentUsedEvent,
     CardInstance,
-    BaseInPlay,
     PlayerState,
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
@@ -57,11 +57,10 @@ import type {
     SpecialAfterScoringArmedEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
-    MunchkinMonsterDefeatedEvent,
 } from './types';
 import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
-import { getMinionDef, getMinionLikePower, getCardDef, getBaseDefIdsForFactions, getFusionDef } from '../data/cards';
+import { getMinionDef, getMinionLikePower, getCardDef, getFusionDef } from '../data/cards';
 import type { ActionCardDef, FusionCardDef } from './types';
 import { buildCardInstanceFromObjectRef, getCardTransferObjectRef } from './objectProvenance';
 import {
@@ -97,6 +96,12 @@ import {
 } from './actionCounter';
 import { getSmashUpReactionWindowContext } from './reactionWindowState';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import {
+    buildSmashUpSetupBasesForSelectedFactions,
+    getSmashUpDraftTurnOrder,
+    getSmashUpFactionsPerPlayer,
+    shouldSmashUpEnterAfterFirstRoundBan,
+} from './pregameDraft';
 
 // ============================================================================
 // execute：命令 → 事件
@@ -104,6 +109,76 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 
 function findTitanByUid(core: SmashUpCore, titanUid: string) {
     return (core.titans ?? []).find(titan => titan.uid === titanUid);
+}
+
+function buildAllFactionsSelectedSetupEvent(
+    core: SmashUpCore,
+    playerSelections: Record<PlayerId, string[]>,
+    draftTurnOrder: PlayerId[],
+    factionsPerPlayer: number,
+    random: RandomFn,
+    now: number,
+): { event: AllFactionsSelectedEvent; mulliganPlayers: PlayerId[] } {
+    const readiedPlayers: AllFactionsSelectedEvent['payload']['readiedPlayers'] = {};
+    let nextUid = core.nextUid;
+    const mulliganPlayers: PlayerId[] = [];
+
+    const selectedFactions = Object.values(playerSelections).flatMap((items) => items);
+    const setupBases = buildSmashUpSetupBasesForSelectedFactions(
+        selectedFactions,
+        draftTurnOrder.length,
+        random,
+        core.enabledExpansions ?? ['titans', 'diy'],
+        core.factionSelection?.basePoolPolicy ?? core.basePoolPolicy ?? 'selectedFactionBases',
+    );
+
+    for (const pid of draftTurnOrder) {
+        const factions = playerSelections[pid];
+        if (factions && factions.length === factionsPerPlayer) {
+            const { deck, nextUid: afterDeckUid } = buildDeck(
+                [factions[0], factions[1]],
+                pid,
+                nextUid,
+                random,
+            );
+            nextUid = afterDeckUid;
+
+            const drawResult = drawCards(
+                {
+                    ...core.players[pid],
+                    deck,
+                    hand: [],
+                    discard: [],
+                } as PlayerState,
+                STARTING_HAND_SIZE,
+                random,
+            );
+
+            readiedPlayers[pid] = {
+                deck: drawResult.deck,
+                hand: drawResult.hand,
+            };
+            if (!drawResult.hand.some(isCardMinionLike)) {
+                mulliganPlayers.push(pid);
+            }
+        }
+    }
+
+    return {
+        event: {
+            type: SU_EVENTS.ALL_FACTIONS_SELECTED,
+            payload: {
+                readiedPlayers,
+                nextUid,
+                bases: setupBases.bases,
+                baseDeck: setupBases.baseDeck,
+                nextBaseInstanceId: setupBases.nextBaseInstanceId,
+                ...(mulliganPlayers.length > 0 ? { mulliganPlayers } : {}),
+            },
+            timestamp: now,
+        },
+        mulliganPlayers,
+    };
 }
 
 export function execute(
@@ -180,12 +255,15 @@ function executeCommand(
         case SU_COMMANDS.PLAY_MINION: {
             const player = core.players[command.playerId];
             const fromDiscard = command.payload.fromDiscard === true;
+            const fromDeck = command.payload.fromDeck === true;
             const fromStored = command.payload.fromStored === true;
             const card = fromStored
                 ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
                 : fromDiscard
                     ? player.discard.find(c => c.uid === command.payload.cardUid)!
-                    : player.hand.find(c => c.uid === command.payload.cardUid)!;
+                    : fromDeck
+                        ? player.deck.find(c => c.uid === command.payload.cardUid)!
+                        : player.hand.find(c => c.uid === command.payload.cardUid)!;
             if (!card) return state;
             const minionDef = getMinionDef(card.defId);
             const reactionWindow = getSmashUpReactionWindowContext(state);
@@ -205,12 +283,13 @@ function executeCommand(
                     baseDefId: core.bases[baseIndex].defId,
                     power: basePower,
                     fromDiscard: fromDiscard || undefined,
+                    fromDeck: fromDeck || undefined,
                     fromStored: fromStored || undefined,
                     ...(fromDiscard ? (() => {
                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
                         return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
                     })() : {}),
-                    ...(fromStored ? { consumesNormalLimit: false } : {}),
+                    ...(fromDeck || fromStored ? { consumesNormalLimit: false } : {}),
                     // meFirst 响应窗口中打出 beforeScoringPlayable 随从不消耗正常额度
                     ...(reactionWindow?.windowType === 'meFirst' && (() => {
                         if (minionDef?.beforeScoringPlayable) return true;
@@ -370,89 +449,31 @@ function executeCommand(
 
             // 检查选秀是否完成
             const selection = core.factionSelection!;
+            const factionsPerPlayer = getSmashUpFactionsPerPlayer(selection);
+            const draftTurnOrder = getSmashUpDraftTurnOrder(core);
             const newTakenCount = selection.takenFactions.length + 1;
-            const totalRequired = core.turnOrder.length * 2;
+            const totalRequired = draftTurnOrder.length * factionsPerPlayer;
+            const tempSelections = { ...selection.playerSelections };
+            tempSelections[command.playerId] = [
+                ...(tempSelections[command.playerId] || []),
+                factionId,
+            ];
 
-            if (newTakenCount >= totalRequired) {
-                // 预测更新后的选择
-                const tempSelections = { ...selection.playerSelections };
-                tempSelections[command.playerId] = [
-                    ...(tempSelections[command.playerId] || []),
-                    factionId,
-                ];
-
-                const readiedPlayers: AllFactionsSelectedEvent['payload']['readiedPlayers'] = {};
-                let nextUid = core.nextUid;
-                const mulliganPlayers: PlayerId[] = [];
-
-                const selectedFactions = Object.values(tempSelections).flatMap((items) => items);
-                const basePool = getBaseDefIdsForFactions(
-                    selectedFactions,
-                    core.enabledExpansions ?? ['titans', 'diy'],
-                    { includeInProgress: false },
+            if (newTakenCount >= totalRequired && selection.mode !== 'individualPools') {
+                const setupEvent = buildAllFactionsSelectedSetupEvent(
+                    core,
+                    tempSelections,
+                    draftTurnOrder,
+                    factionsPerPlayer,
+                    random,
+                    now,
                 );
-                const shuffledBasePool = random.shuffle(basePool);
-                const baseCount = core.turnOrder.length + 1;
-                const activeBases: BaseInPlay[] = shuffledBasePool.slice(0, baseCount).map((defId, index) => ({
-                    instanceId: createEntityId('smashup:base', index + 1),
-                    defId,
-                    minions: [],
-                    ongoingActions: [],
-                }));
-                const baseDeck = shuffledBasePool.slice(baseCount);
-
-                for (const pid of core.turnOrder) {
-                    const factions = tempSelections[pid];
-                    if (factions && factions.length === 2) {
-                        const { deck, nextUid: afterDeckUid } = buildDeck(
-                            [factions[0], factions[1]],
-                            pid,
-                            nextUid,
-                            random
-                        );
-                        nextUid = afterDeckUid;
-
-                        const drawResult = drawCards(
-                            {
-                                ...core.players[pid],
-                                deck,
-                                hand: [],
-                                discard: [],
-                            } as PlayerState,
-                            STARTING_HAND_SIZE,
-                            random
-                        );
-
-                        readiedPlayers[pid] = {
-                            deck: drawResult.deck,
-                            hand: drawResult.hand,
-                        };
-                        // 起手无随从 → 标记为可选择重抽一次（may）
-                        // 融合卡规则：未打出时同时算随从与战术，因此 fusion 也算“有随从”
-                        if (!drawResult.hand.some(isCardMinionLike)) {
-                            mulliganPlayers.push(pid);
-                        }
-                    }
-                }
-
-                const allSelectedEvt: AllFactionsSelectedEvent = {
-                    type: SU_EVENTS.ALL_FACTIONS_SELECTED,
-                    payload: {
-                        readiedPlayers,
-                        nextUid,
-                        bases: activeBases,
-                        baseDeck,
-                        nextBaseInstanceId: activeBases.length + 1,
-                        ...(mulliganPlayers.length > 0 ? { mulliganPlayers } : {}),
-                    },
-                    timestamp: now,
-                };
-                events.push(allSelectedEvt);
+                events.push(setupEvent.event);
 
                 // 规则：起手无随从“可”重抽一次 → 排队交互（不会影响核心事件链）
                 // 注意：这一步只改变 sys.interaction，不直接改 core；重抽由交互 handler 生成事件完成。
                 let updated = state;
-                for (const pid of mulliganPlayers) {
+                for (const pid of setupEvent.mulliganPlayers) {
                     updated = maybeQueueStartingHandMulliganPrompt(updated, pid, now);
                 }
                 return { events, updatedState: updated };
@@ -472,6 +493,56 @@ function executeCommand(
             return { events: [deselectedEvt] };
         }
 
+        case SU_COMMANDS.BAN_FACTION: {
+            const selection = core.factionSelection!;
+            const stage = selection.phase === 'banAfterFirstRound' ? 'afterFirstRound' : 'preDraft';
+            const bannedEvt: FactionBannedEvent = {
+                type: SU_EVENTS.FACTION_BANNED,
+                payload: {
+                    playerId: command.playerId,
+                    factionId: command.payload.factionId,
+                    stage,
+                },
+                sourceCommandType: command.type,
+                timestamp: now,
+            };
+            return { events: [bannedEvt] };
+        }
+
+        case SU_COMMANDS.CONFIRM_FACTION_READY: {
+            const selection = core.factionSelection!;
+            const draftTurnOrder = getSmashUpDraftTurnOrder(core);
+            const readyPlayers = new Set(selection.readyPlayers ?? []);
+            readyPlayers.add(command.playerId);
+            const readyEvt: FactionReadyConfirmedEvent = {
+                type: SU_EVENTS.FACTION_READY_CONFIRMED,
+                payload: { playerId: command.playerId },
+                sourceCommandType: command.type,
+                timestamp: now,
+            };
+            const events: SmashUpEvent[] = [readyEvt];
+
+            if (draftTurnOrder.every((playerId) => readyPlayers.has(playerId))) {
+                const setupEvent = buildAllFactionsSelectedSetupEvent(
+                    core,
+                    selection.playerSelections,
+                    draftTurnOrder,
+                    getSmashUpFactionsPerPlayer(selection),
+                    random,
+                    now,
+                );
+                events.push(setupEvent.event);
+
+                let updated = state;
+                for (const pid of setupEvent.mulliganPlayers) {
+                    updated = maybeQueueStartingHandMulliganPrompt(updated, pid, now);
+                }
+                return { events, updatedState: updated };
+            }
+
+            return { events };
+        }
+
         case SU_COMMANDS.SWAP_SEAT: {
             const targetPlayerId = String(command.payload.targetPlayerId) as PlayerId;
             const seatSwappedEvt: SeatSwappedEvent = {
@@ -487,7 +558,7 @@ function executeCommand(
         }
 
         case SU_COMMANDS.USE_BASE_ABILITY: {
-            const { baseIndex } = command.payload;
+            const { baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const base = core.bases[baseIndex];
             if (!base) return { events: [] };
 
@@ -512,6 +583,8 @@ function executeCommand(
                 baseIndex,
                 baseDefId: base.defId,
                 playerId: command.playerId,
+                targetBaseIndex,
+                targetMinionUid,
                 now,
             });
             events.push(...result.events);
@@ -523,7 +596,7 @@ function executeCommand(
         }
 
         case SU_COMMANDS.USE_TALENT: {
-            const { minionUid, ongoingCardUid, titanUid, baseIndex } = command.payload;
+            const { minionUid, ongoingCardUid, titanUid, baseIndex, targetBaseIndex, targetMinionUid } = command.payload;
             const base = core.bases[baseIndex];
             const events: SmashUpEvent[] = [];
 
@@ -553,6 +626,8 @@ function executeCommand(
                         cardUid: titanUid,
                         defId: titan.defId,
                         baseIndex,
+                        targetBaseIndex,
+                        targetMinionUid,
                         random,
                         now,
                     };
@@ -592,6 +667,8 @@ function executeCommand(
                         cardUid: titanUid,
                         defId: titan.defId,
                         baseIndex,
+                        targetBaseIndex,
+                        targetMinionUid,
                         random,
                         now,
                     };
@@ -637,6 +714,8 @@ function executeCommand(
                         cardUid: ongoingCardUid,
                         defId: ongoing.defId,
                         baseIndex,
+                        targetBaseIndex,
+                        targetMinionUid,
                         random,
                         now,
                     };
@@ -683,6 +762,8 @@ function executeCommand(
                     cardUid: minionUid!,
                     defId: minion.defId,
                     baseIndex,
+                    targetBaseIndex,
+                    targetMinionUid,
                     random,
                     now,
                 };
@@ -703,6 +784,7 @@ function executeCommand(
                 discardCardUid: spDiscardUid,
                 handCardUid: spHandUid,
                 baseIndex: spIdx,
+                targetBaseIndex: spTargetBaseIndex,
                 targetMinionUid: spTargetMinionUid,
             } = command.payload;
             const spBase = core.bases[spIdx];
@@ -720,6 +802,7 @@ function executeCommand(
                     cardUid: spTitanUid,
                     defId: titan.defId,
                     baseIndex: spIdx,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random,
                     now,
@@ -745,6 +828,7 @@ function executeCommand(
                     cardUid: spDiscardUid,
                     defId: discardCard.defId,
                     baseIndex: spIdx,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random,
                     now,
@@ -770,6 +854,7 @@ function executeCommand(
                     cardUid: spHandUid,
                     defId: handCard.defId,
                     baseIndex: spIdx,
+                    targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
                     random,
                     now,
@@ -793,6 +878,7 @@ function executeCommand(
                 cardUid: spUid,
                 defId: spMinion.defId,
                 baseIndex: spIdx,
+                targetBaseIndex: spTargetBaseIndex,
                 targetMinionUid: spTargetMinionUid,
                 random,
                 now,
@@ -827,22 +913,6 @@ function executeCommand(
                 return { events: result.events, updatedState: result.matchState };
             }
             return { events: result.events };
-        }
-
-        case SU_COMMANDS.DEFEAT_MUNCHKIN_MONSTER: {
-            const { baseIndex, monsterUid } = command.payload;
-            const event: MunchkinMonsterDefeatedEvent = {
-                type: SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED,
-                payload: {
-                    playerId: command.playerId,
-                    baseIndex,
-                    monsterUid,
-                    reason: command.type,
-                },
-                sourceCommandType: command.type,
-                timestamp: now,
-            };
-            return { events: [event] };
         }
 
         default:

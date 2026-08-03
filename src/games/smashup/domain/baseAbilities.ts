@@ -27,6 +27,9 @@ import {
     buildMinionTargetOptions,
     addTempPower,
     addPowerCounter,
+    grantExtraAction,
+    grantExtraMinion,
+    modifyBreakpoint,
     buildReplayMoveEvent,
     buildValidatedBaseMoveEvents,
     buildValidatedDestroyEvents,
@@ -108,6 +111,10 @@ export interface BaseAbilityContext {
     actionTargetType?: 'base' | 'minion';
     /** onActionPlayed 时：行动卡目标随从（附着行动卡时有值） */
     actionTargetMinionUid?: string;
+    /** 主动基地能力：玩家选择的目标基地。 */
+    targetBaseIndex?: number;
+    /** 主动基地能力：玩家选择的目标随从。 */
+    targetMinionUid?: string;
     /** onActionPlayed 时：刚打出的行动卡 uid / defId / owner */
     triggerCardUid?: string;
     triggerCardDefId?: string;
@@ -151,6 +158,16 @@ export type ActiveBaseAbilityRegistrationOptions = {
 
 type PirateCoveSysState = MatchState<SmashUpCore>['sys'] & { _pirateCoveTriggered?: Set<number> };
 type HandCardChoiceValue = { cardUid: string; defId: string };
+type ExcellentMoviesTeensStoreValue = {
+    skip?: boolean;
+    cardUid?: string;
+    minionUid?: string;
+    defId?: string;
+    ownerId?: PlayerId;
+    sourceBaseIndex?: number;
+    sourceCardKind?: 'minion' | 'baseOngoingAction' | 'attachedAction';
+    targetMinionUid?: string;
+};
 type WizardAcademyContinuationContext = {
     baseIndex: number;
     topCards: string[];
@@ -290,6 +307,112 @@ function getTurnMinionsPlayedAtBase(state: SmashUpCore, baseIndex: number): numb
 
 function isFirstMinionPlayedAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
     return getTurnMinionsPlayedAtBase(ctx.state, ctx.baseIndex) === 1;
+}
+
+function buildBaseMetadataUpdateEvent(
+    baseIndex: number,
+    metadataUpdate: Record<string, unknown>,
+    reason: string,
+    now: number,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.BASE_METADATA_UPDATED,
+        payload: { baseIndex, metadataUpdate, reason },
+        timestamp: now,
+    } as SmashUpEvent;
+}
+
+function buildBacktimersStasisStoreFromHandEvent(
+    playerId: PlayerId,
+    cardUid: string,
+    defId: string,
+    ownerId: PlayerId,
+    storedUnderDefId: string,
+    now: number,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.CARD_STORED,
+        payload: {
+            playerId,
+            cardUid,
+            defId,
+            ownerId,
+            from: 'hand',
+            storedUnderDefId,
+            counters: 2,
+            reason: 'backtimers_stasis',
+        },
+        timestamp: now,
+    } as SmashUpEvent;
+}
+
+function buildBacktimersStasisStoreFromPlayEvent(
+    playerId: PlayerId,
+    value: Required<Pick<ExcellentMoviesTeensStoreValue, 'cardUid' | 'defId' | 'ownerId' | 'sourceBaseIndex' | 'sourceCardKind'>>,
+    storedUnderDefId: string,
+    now: number,
+    targetMinionUid?: string,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.CARD_STORED,
+        payload: {
+            playerId,
+            cardUid: value.cardUid,
+            defId: value.defId,
+            ownerId: value.ownerId,
+            from: 'play',
+            sourceBaseIndex: value.sourceBaseIndex,
+            sourceCardKind: value.sourceCardKind,
+            ...(targetMinionUid ? { targetMinionUid } : {}),
+            storedUnderDefId,
+            counters: 2,
+            reason: 'backtimers_stasis',
+        },
+        timestamp: now,
+    } as SmashUpEvent;
+}
+
+function buildWraithrustlersHqPendingEvent(
+    playerId: PlayerId,
+    pending: boolean,
+    now: number,
+): SmashUpEvent {
+    return {
+        type: SU_EVENTS.WRAITHRUSTLERS_HQ_BONUS_UPDATED,
+        payload: { playerId, pending, reason: 'base_wraithrustlers_hq' },
+        timestamp: now,
+    } as SmashUpEvent;
+}
+
+function getRuntimeActionController(action: { ownerId: PlayerId; metadata?: Record<string, unknown> }): PlayerId {
+    return (action.metadata?.sourceControllerId as PlayerId | undefined)
+        ?? (action.metadata?.sourcePlayerId as PlayerId | undefined)
+        ?? action.ownerId;
+}
+
+function getPlayerMinionsAtBase(state: SmashUpCore, baseIndex: number, playerId: PlayerId): MinionOnBase[] {
+    return state.bases[baseIndex]?.minions.filter(minion => minion.controller === playerId) ?? [];
+}
+
+function getPromptCardName(defId: string): string {
+    return getCardDef(defId)?.name ?? defId;
+}
+
+function getPromptBaseName(state: SmashUpCore, baseIndex: number): string {
+    const defId = state.bases[baseIndex]?.defId;
+    return defId ? (getBaseDef(defId)?.name ?? defId) : '基地';
+}
+
+function getPlayerIdsFromCurrentPlayersLeft(state: SmashUpCore): PlayerId[] {
+    const turnOrder = state.turnOrder ?? [];
+    if (turnOrder.length === 0) return [];
+    const currentIndex = state.currentPlayerIndex >= 0 && state.currentPlayerIndex < turnOrder.length
+        ? state.currentPlayerIndex
+        : 0;
+    return [
+        ...turnOrder.slice(currentIndex + 1),
+        ...turnOrder.slice(0, currentIndex + 1),
+    ];
 }
 
 // ============================================================================
@@ -1682,6 +1805,260 @@ export function registerBaseAbilities(): void {
     }, {
     });
 
+    // === Excellent Movies, Dudes! / Teens 基地 ===
+
+    // 楼顶：回合开始时，若你在此恰好有 1 个佣兵，可使本基地临界点降低该佣兵战力直到回合结束；计分时该条件玩家各得 1VP。
+    registerBaseAbility('base_building_rooftop', 'onTurnStart', (ctx) => {
+        const ownMinions = getPlayerMinionsAtBase(ctx.state, ctx.baseIndex, ctx.playerId);
+        if (ownMinions.length !== 1 || !ctx.matchState) return { events: [] };
+        const minion = ownMinions[0];
+        const power = getEffectivePower(ctx.state, minion, ctx.baseIndex);
+        const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; baseIndex: number }>[] = [
+            {
+                id: 'apply',
+                label: '降低临界点 ' + power,
+                value: { minionUid: minion.uid, minionDefId: minion.defId, baseIndex: ctx.baseIndex },
+                displayMode: 'button' as const,
+            },
+            createSkipOption(),
+        ];
+        const interaction = createSimpleChoice(
+            'base_building_rooftop_' + ctx.playerId + '_' + ctx.now,
+            ctx.playerId,
+            '楼顶：是否按唯一己方佣兵的战力降低本基地临界点？',
+            options,
+            { sourceId: 'base_building_rooftop', targetType: 'minion', titleKey: 'ui.base_building_rooftop_title' },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        mandatory: false,
+        canTrigger: (ctx) => getPlayerMinionsAtBase(ctx.state, ctx.baseIndex, ctx.playerId).length === 1,
+    });
+
+    registerBaseAbility('base_building_rooftop', 'whenScoring', (ctx) => {
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base) return { events: [] };
+        const minionCounts = new Map<PlayerId, number>();
+        for (const minion of base.minions) {
+            minionCounts.set(minion.controller, (minionCounts.get(minion.controller) ?? 0) + 1);
+        }
+        const events: SmashUpEvent[] = [];
+        for (const [playerId, count] of minionCounts.entries()) {
+            if (count === 1) {
+                events.push({
+                    type: SU_EVENTS.VP_AWARDED,
+                    payload: { playerId, amount: 1, reason: '楼顶：计分时恰好 1 个佣兵' },
+                    timestamp: ctx.now,
+                } as VpAwardedEvent);
+            }
+        }
+        return { events };
+    });
+
+    // 丛林营地：计分后，冠军可以将其在此处的 1 个佣兵返回手牌。
+    registerBaseAbility('base_jungle_camp', 'afterScoring', (ctx) => {
+        const winnerId = ctx.rankings?.[0]?.playerId;
+        if (!winnerId || !ctx.matchState) return { events: [] };
+        const candidates = getPlayerMinionsAtBase(ctx.state, ctx.baseIndex, winnerId);
+        if (candidates.length === 0) return { events: [] };
+        const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; fromBaseIndex: number }>[] = [
+            createSkipOption(),
+            ...candidates.map((minion, index) => ({
+                id: 'minion-' + index,
+                label: getPromptCardName(minion.defId),
+                value: { minionUid: minion.uid, minionDefId: minion.defId, fromBaseIndex: ctx.baseIndex },
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            })),
+        ];
+        const interaction = createSimpleChoice(
+            'base_jungle_camp_' + winnerId + '_' + ctx.now,
+            winnerId,
+            '丛林营地：选择是否将冠军的 1 个佣兵返回手牌',
+            options,
+            { sourceId: 'base_jungle_camp', targetType: 'minion', titleKey: 'ui.base_jungle_camp_title' },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        mandatory: false,
+        ownerPlayerId: (ctx) => ctx.rankings?.[0]?.playerId,
+        canTrigger: (ctx) => {
+            const winnerId = ctx.rankings?.[0]?.playerId;
+            return !!winnerId && getPlayerMinionsAtBase(ctx.state, ctx.baseIndex, winnerId).length > 0;
+        },
+    });
+
+    // 另类现在：每回合你第一次在此处打出佣兵后，可以将 1 张手牌置入停滞并放 2 个标记。
+    registerBaseAbility('base_alternate_present', 'onMinionPlayed', (ctx) => {
+        const player = ctx.state.players[ctx.playerId];
+        if (!player || !ctx.matchState) return { events: [] };
+        if ((player.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0) !== 1) return { events: [] };
+        if (player.hand.length === 0) return { events: [] };
+        const options: PromptOption<{ skip: true } | ExcellentMoviesTeensStoreValue>[] = [
+            createSkipOption(),
+            ...player.hand.map((card, index) => ({
+                id: 'card-' + index,
+                label: getPromptCardName(card.defId),
+                value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+                _source: 'hand' as const,
+                displayMode: 'card' as const,
+            })),
+        ];
+        const interaction = createSimpleChoice(
+            'base_alternate_present_' + ctx.playerId + '_' + ctx.now,
+            ctx.playerId,
+            '另类现在：选择 1 张手牌置入停滞并放置 2 个停滞标记',
+            options,
+            { sourceId: 'base_alternate_present', targetType: 'hand', titleKey: 'ui.base_alternate_present_title' },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        mandatory: false,
+        canTrigger: (ctx) => {
+            const player = ctx.state.players[ctx.playerId];
+            return !!player && (player.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0) === 1 && player.hand.length > 0;
+        },
+    });
+
+    // 时间旅行汽车：计分后，冠军可以将其此处 1 个佣兵或行动置入停滞并放 2 个标记。
+    registerBaseAbility('base_time_traveling_car', 'afterScoring', (ctx) => {
+        const winnerId = ctx.rankings?.[0]?.playerId;
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!winnerId || !base || !ctx.matchState) return { events: [] };
+        const candidates: ExcellentMoviesTeensStoreValue[] = [
+            ...base.minions
+                .filter(minion => minion.controller === winnerId)
+                .map(minion => ({
+                    cardUid: minion.uid,
+                    minionUid: minion.uid,
+                    defId: minion.defId,
+                    ownerId: minion.owner,
+                    sourceBaseIndex: ctx.baseIndex,
+                    sourceCardKind: 'minion' as const,
+                })),
+            ...base.ongoingActions
+                .filter(action => getRuntimeActionController(action) === winnerId)
+                .map(action => ({
+                    cardUid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    sourceBaseIndex: ctx.baseIndex,
+                    sourceCardKind: 'baseOngoingAction' as const,
+                })),
+            ...base.minions.flatMap(minion => minion.attachedActions
+                .filter(action => getRuntimeActionController(action) === winnerId)
+                .map(action => ({
+                    cardUid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    sourceBaseIndex: ctx.baseIndex,
+                    sourceCardKind: 'attachedAction' as const,
+                    targetMinionUid: minion.uid,
+                }))),
+        ];
+        if (candidates.length === 0) return { events: [] };
+        const options: PromptOption<{ skip: true } | ExcellentMoviesTeensStoreValue>[] = [
+            createSkipOption(),
+            ...candidates.map((candidate, index) => ({
+                id: 'card-' + index,
+                label: getPromptCardName(candidate.defId ?? ''),
+                value: candidate,
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            })),
+        ];
+        const interaction = createSimpleChoice(
+            'base_time_traveling_car_' + winnerId + '_' + ctx.now,
+            winnerId,
+            '时间旅行汽车：选择 1 个冠军的佣兵或行动置入停滞',
+            options,
+            { sourceId: 'base_time_traveling_car', targetType: 'board', titleKey: 'ui.base_time_traveling_car_title' },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        mandatory: false,
+        ownerPlayerId: (ctx) => ctx.rankings?.[0]?.playerId,
+        canTrigger: (ctx) => {
+            const winnerId = ctx.rankings?.[0]?.playerId;
+            const base = ctx.state.bases[ctx.baseIndex];
+            if (!winnerId || !base) return false;
+            return base.minions.some(minion => minion.controller === winnerId)
+                || base.ongoingActions.some(action => getRuntimeActionController(action) === winnerId)
+                || base.minions.some(minion => minion.attachedActions.some(action => getRuntimeActionController(action) === winnerId));
+        },
+    });
+
+    // 育巢：计分前，从当前玩家左手边开始，每位在此有佣兵的玩家可以从牌库顶额外打出 1 个佣兵到此处。
+    registerBaseAbility('base_brood_hive', 'beforeScoring', (ctx) => {
+        const base = ctx.state.bases[ctx.baseIndex];
+        if (!base || !ctx.matchState) return { events: [] };
+        let matchState = ctx.matchState;
+        for (const playerId of getPlayerIdsFromCurrentPlayersLeft(ctx.state)) {
+            const player = ctx.state.players[playerId];
+            const topCard = player?.deck[0];
+            if (!player || !topCard || getCardDef(topCard.defId)?.type !== 'minion') continue;
+            if (!base.minions.some(minion => minion.controller === playerId)) continue;
+            const options: PromptOption<{ skip: true } | { cardUid: string; defId: string; baseIndex: number }>[] = [
+                createSkipOption(),
+                {
+                    id: 'play-top-minion',
+                    label: '额外打出 ' + getPromptCardName(topCard.defId) + ' 到' + getPromptBaseName(ctx.state, ctx.baseIndex),
+                    value: { cardUid: topCard.uid, defId: topCard.defId, baseIndex: ctx.baseIndex },
+                    _source: 'deck' as const,
+                    displayMode: 'card' as const,
+                },
+            ];
+            const interaction = createSimpleChoice(
+                'base_brood_hive_' + playerId + '_' + ctx.now,
+                playerId,
+                '育巢：是否从牌库顶额外打出 1 个佣兵到这里？',
+                options,
+                { sourceId: 'base_brood_hive', targetType: 'generic', titleKey: 'ui.base_brood_hive_title' },
+            );
+            matchState = queueInteraction(matchState, interaction);
+        }
+        return matchState === ctx.matchState ? { events: [] } : { events: [], matchState };
+    }, {
+        canTrigger: (ctx) => {
+            const base = ctx.state.bases[ctx.baseIndex];
+            return !!base && getPlayerIdsFromCurrentPlayersLeft(ctx.state).some(playerId => {
+                const topCard = ctx.state.players[playerId]?.deck[0];
+                return !!topCard
+                    && getCardDef(topCard.defId)?.type === 'minion'
+                    && base.minions.some(minion => minion.controller === playerId);
+            });
+        },
+    });
+
+    // 怨灵捕手总部：冠军在其下个回合可打出 1 张额外行动或 1 个额外佣兵。
+    registerBaseAbility('base_wraithrustlers_hq', 'afterScoring', (ctx) => {
+        const winnerId = ctx.rankings?.[0]?.playerId;
+        return winnerId ? { events: [buildWraithrustlersHqPendingEvent(winnerId, true, ctx.now)] } : { events: [] };
+    }, {
+        ownerPlayerId: (ctx) => ctx.rankings?.[0]?.playerId,
+        canTrigger: (ctx) => !!ctx.rankings?.[0]?.playerId,
+    });
+
+    registerBaseAbility('base_wraithrustlers_hq', 'onTurnStart', (ctx) => {
+        if (!ctx.state.wraithrustlersHqPendingBonus?.[ctx.playerId] || !ctx.matchState) return { events: [] };
+        const options: PromptOption<{ skip: true } | { choice: 'minion' | 'action' }>[] = [
+            { id: 'minion', label: '额外佣兵', labelKey: 'ui.base_wraithrustlers_hq_extra_minion_option', value: { choice: 'minion' }, displayMode: 'button' as const },
+            { id: 'action', label: '额外行动', labelKey: 'ui.base_wraithrustlers_hq_extra_action_option', value: { choice: 'action' }, displayMode: 'button' as const },
+            createSkipOption(),
+        ];
+        const interaction = createSimpleChoice(
+            'base_wraithrustlers_hq_' + ctx.playerId + '_' + ctx.now,
+            ctx.playerId,
+            '怨灵捕手总部：选择本回合的额外出牌额度',
+            options,
+            { sourceId: 'base_wraithrustlers_hq', targetType: 'button', titleKey: 'ui.base_wraithrustlers_hq_title' },
+        );
+        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        mandatory: false,
+        canTrigger: (ctx) => ctx.state.wraithrustlersHqPendingBonus?.[ctx.playerId] === true,
+    });
+
     // === 限制类基地已通过 BaseCardDef.restrictions 数据驱动，isOperationRestricted 自动解析 ===
 
     // === 被动保护类已在 baseAbilities_expansion.ts 中通过 registerProtection 注册 ===
@@ -2270,6 +2647,126 @@ export function registerBaseInteractionHandlers(): void {
                 sourceBaseIndex: ctx.targetBaseIndex,
                 reason: 'base_the_hill',
                 now: timestamp }) };
+    });
+
+    registerInteractionHandler('base_building_rooftop', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; baseIndex?: number };
+        if (selected.skip || !selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
+        const minion = state.core.bases[selected.baseIndex]?.minions.find(candidate =>
+            candidate.uid === selected.minionUid && candidate.controller === playerId,
+        );
+        if (!minion) return { state, events: [] };
+        const power = getEffectivePower(state.core, minion, selected.baseIndex);
+        return { state, events: [modifyBreakpoint(selected.baseIndex, -power, 'base_building_rooftop', timestamp)] };
+    });
+
+    registerInteractionHandler('base_jungle_camp', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; minionUid?: string; minionDefId?: string; fromBaseIndex?: number };
+        if (selected.skip || !selected.minionUid || !selected.minionDefId || selected.fromBaseIndex === undefined) {
+            return { state, events: [] };
+        }
+        const minion = state.core.bases[selected.fromBaseIndex]?.minions.find(candidate =>
+            candidate.uid === selected.minionUid && candidate.controller === playerId,
+        );
+        if (!minion) return { state, events: [] };
+        return {
+            state,
+            events: buildValidatedReturnEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.minionDefId,
+                fromBaseIndex: selected.fromBaseIndex,
+                reason: 'base_jungle_camp',
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceDefId: 'base_jungle_camp',
+                sourceControllerId: playerId,
+                sourceBaseIndex: selected.fromBaseIndex,
+            }),
+        };
+    });
+
+    registerInteractionHandler('base_alternate_present', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as ExcellentMoviesTeensStoreValue;
+        if (selected.skip || !selected.cardUid || !selected.defId || !selected.ownerId) return { state, events: [] };
+        const card = state.core.players[playerId]?.hand.find(candidate => candidate.uid === selected.cardUid);
+        if (!card) return { state, events: [] };
+        return {
+            state,
+            events: [buildBacktimersStasisStoreFromHandEvent(
+                playerId,
+                card.uid,
+                card.defId,
+                card.owner,
+                'base_alternate_present',
+                timestamp,
+            )],
+        };
+    });
+
+    registerInteractionHandler('base_time_traveling_car', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as ExcellentMoviesTeensStoreValue;
+        if (selected.skip
+            || !selected.cardUid
+            || !selected.defId
+            || !selected.ownerId
+            || selected.sourceBaseIndex === undefined
+            || !selected.sourceCardKind) {
+            return { state, events: [] };
+        }
+        const base = state.core.bases[selected.sourceBaseIndex];
+        const stillInPlay = selected.sourceCardKind === 'minion'
+            ? base?.minions.some(minion => minion.uid === selected.cardUid && minion.controller === playerId)
+            : selected.sourceCardKind === 'baseOngoingAction'
+                ? base?.ongoingActions.some(action => action.uid === selected.cardUid && getRuntimeActionController(action) === playerId)
+                : base?.minions.some(minion =>
+                    (!selected.targetMinionUid || minion.uid === selected.targetMinionUid)
+                    && minion.attachedActions.some(action => action.uid === selected.cardUid && getRuntimeActionController(action) === playerId),
+                );
+        if (!stillInPlay) return { state, events: [] };
+        return {
+            state,
+            events: [buildBacktimersStasisStoreFromPlayEvent(
+                playerId,
+                {
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId,
+                    sourceBaseIndex: selected.sourceBaseIndex,
+                    sourceCardKind: selected.sourceCardKind,
+                },
+                'base_time_traveling_car',
+                timestamp,
+                selected.targetMinionUid,
+            )],
+        };
+    });
+
+    registerInteractionHandler('base_brood_hive', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; cardUid?: string; defId?: string; baseIndex?: number };
+        if (selected.skip || !selected.cardUid || !selected.defId || selected.baseIndex === undefined) return { state, events: [] };
+        const topCard = state.core.players[playerId]?.deck[0];
+        const base = state.core.bases[selected.baseIndex];
+        if (!topCard || topCard.uid !== selected.cardUid || getCardDef(topCard.defId)?.type !== 'minion') return { state, events: [] };
+        if (!base?.minions.some(minion => minion.controller === playerId)) return { state, events: [] };
+        return {
+            state,
+            events: [grantExtraMinion(playerId, 'base_brood_hive', timestamp, selected.baseIndex, {
+                playTiming: 'immediate',
+                specificCardUid: selected.cardUid,
+            })],
+        };
+    });
+
+    registerInteractionHandler('base_wraithrustlers_hq', (state, playerId, value, _iData, _random, timestamp) => {
+        const selected = value as { skip?: boolean; choice?: 'minion' | 'action' };
+        if (!state.core.wraithrustlersHqPendingBonus?.[playerId]) return { state, events: [] };
+        const events: SmashUpEvent[] = [buildWraithrustlersHqPendingEvent(playerId, false, timestamp)];
+        if (selected.choice === 'minion') {
+            events.push(grantExtraMinion(playerId, 'base_wraithrustlers_hq', timestamp, undefined, { playTiming: 'banked' }));
+        } else if (selected.choice === 'action') {
+            events.push(grantExtraAction(playerId, 'base_wraithrustlers_hq', timestamp, { playTiming: 'banked' }));
+        }
+        return { state, events };
     });
 
     // === 扩展包基地交互处理函数 ===

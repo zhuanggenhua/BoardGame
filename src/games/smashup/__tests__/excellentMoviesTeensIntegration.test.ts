@@ -18,6 +18,8 @@ import { FACTION_METADATA } from '../ui/factionMeta';
 
 const CARD_PNG = 'public/assets/i18n/zh-CN/smashup/cards/excellent_movies_teens.png';
 const CARD_WEBP = 'public/assets/i18n/zh-CN/smashup/cards/compressed/excellent_movies_teens.webp';
+const BASE_PNG = 'public/assets/i18n/zh-CN/smashup/base/excellent_movies_teens_bases.png';
+const BASE_WEBP = 'public/assets/i18n/zh-CN/smashup/base/compressed/excellent_movies_teens_bases.webp';
 
 const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
@@ -39,15 +41,22 @@ describe('Excellent Movies + Teens 五派系静态接入', () => {
         { factionId: SMASHUP_FACTION_IDS.WRAITHRUSTLERS, cards: WRAITHRUSTLERS_CARDS, unique: 12, slots: [54, 65] },
     ] as const;
 
-    it('注册一个 10 x 7 中文卡牌 atlas 并写入 manifest', () => {
+    it('注册卡牌和基地 atlas 并写入 manifest', () => {
         expect(SMASHUP_ATLAS_DEFINITIONS).toEqual(expect.arrayContaining([{
             id: SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_CARDS,
             kind: 'card',
             image: 'smashup/cards/excellent_movies_teens',
             grid: { rows: 7, cols: 10 },
+        }, {
+            id: SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_BASES,
+            kind: 'base',
+            image: 'smashup/base/excellent_movies_teens_bases',
+            grid: { rows: 2, cols: 5 },
         }]));
         expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_CARDS))
             .toBe('smashup/cards/excellent_movies_teens');
+        expect(getSmashUpAtlasImageById(SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_BASES))
+            .toBe('smashup/base/excellent_movies_teens_bases');
 
         const rootManifest = JSON.parse(readFileSync('public/assets/i18n/assets-manifest.json', 'utf8'));
         const gameManifest = JSON.parse(readFileSync('public/assets/i18n/zh-CN/smashup/assets-manifest.json', 'utf8'));
@@ -56,10 +65,18 @@ describe('Excellent Movies + Teens 五派系静态接入', () => {
             .toBe(sha256(CARD_PNG));
         expect(rootManifest.files['zh-CN/smashup/cards/compressed/excellent_movies_teens'].variants.webp.sha256)
             .toBe(sha256(CARD_WEBP));
+        expect(rootManifest.files['zh-CN/smashup/base/excellent_movies_teens_bases'].variants.png.sha256)
+            .toBe(sha256(BASE_PNG));
+        expect(rootManifest.files['zh-CN/smashup/base/compressed/excellent_movies_teens_bases'].variants.webp.sha256)
+            .toBe(sha256(BASE_WEBP));
         expect(gameManifest.files['cards/excellent_movies_teens'].variants.png.sha256)
             .toBe(sha256(CARD_PNG));
         expect(gameManifest.files['cards/compressed/excellent_movies_teens'].variants.webp.sha256)
             .toBe(sha256(CARD_WEBP));
+        expect(gameManifest.files['base/excellent_movies_teens_bases'].variants.png.sha256)
+            .toBe(sha256(BASE_PNG));
+        expect(gameManifest.files['base/compressed/excellent_movies_teens_bases'].variants.webp.sha256)
+            .toBe(sha256(BASE_WEBP));
     });
 
     it('五个派系各自注册 20 张实体牌，且只消费槽位 0-65', () => {
@@ -83,7 +100,7 @@ describe('Excellent Movies + Teens 五派系静态接入', () => {
         expect(Math.max(...usedSlots)).toBe(65);
     });
 
-    it('基地文字定义进入基地池，且美术槽位保持未锁状态', () => {
+    it('基地定义进入基地池，且 10 张基地美术槽位按定义顺序锁定', () => {
         const baseCases = [
             [SMASHUP_FACTION_IDS.ACTION_HEROES, ['base_building_rooftop', 'base_jungle_camp']],
             [SMASHUP_FACTION_IDS.BACKTIMERS, ['base_alternate_present', 'base_time_traveling_car']],
@@ -96,7 +113,13 @@ describe('Excellent Movies + Teens 五派系静态接入', () => {
         for (const [factionId, baseIds] of baseCases) {
             expect(getBaseDefIdsForFactions([factionId]).sort()).toEqual([...baseIds].sort());
         }
-        expect(EXCELLENT_MOVIES_TEENS_BASES.every(base => base.previewRef === undefined)).toBe(true);
+        for (const [index, base] of EXCELLENT_MOVIES_TEENS_BASES.entries()) {
+            expect(base.previewRef).toEqual({
+                type: 'atlas',
+                atlasId: SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_BASES,
+                index,
+            });
+        }
     });
 
     it('派系选择 metadata 和双语 locale 已包含本批对象', () => {
@@ -107,7 +130,7 @@ describe('Excellent Movies + Teens 五派系静态接入', () => {
         for (const entry of factions) {
             const meta = metaById.get(entry.factionId);
             expect(meta?.nameKey).toBe(`factions.${entry.factionId}.name`);
-            expect(meta?.implementationStatus).toBe('in_progress');
+            expect(meta?.implementationStatus).toBeUndefined();
             expect(meta?.locales).toEqual(['zh-CN']);
             expect(typeof zhCN.factions?.[entry.factionId]?.name).toBe('string');
             expect(typeof en.factions?.[entry.factionId]?.name).toBe('string');

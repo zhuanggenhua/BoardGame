@@ -2,6 +2,7 @@ import type { ActionCardDef, BaseCardDef, CardDef, MinionCardDef } from '../../d
 import { SMASHUP_ATLAS_IDS, SMASHUP_FACTION_IDS } from '../../domain/ids';
 
 const CARD_ATLAS = SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_CARDS;
+const BASE_ATLAS = SMASHUP_ATLAS_IDS.EXCELLENT_MOVIES_TEENS_BASES;
 
 const ACTION_HEROES = SMASHUP_FACTION_IDS.ACTION_HEROES;
 const BACKTIMERS = SMASHUP_FACTION_IDS.BACKTIMERS;
@@ -53,6 +54,10 @@ function action(
         previewRef: { type: 'atlas', atlasId: CARD_ATLAS, index: slot },
         ...overrides,
     };
+}
+
+function basePreview(slot: number): BaseCardDef['previewRef'] {
+    return { type: 'atlas', atlasId: BASE_ATLAS, index: slot };
 }
 
 export const ACTION_HEROES_MINIONS: MinionCardDef[] = [
@@ -261,14 +266,14 @@ export const WRAITHRUSTLERS_MINIONS: MinionCardDef[] = [
 export const WRAITHRUSTLERS_ACTIONS: ActionCardDef[] = [
     action('wraithrustlers_ancient_sumerian_god', 'Ancient Sumerian God', WRAITHRUSTLERS, 1, 58, {
         subtype: 'ongoing',
-        abilityTags: ['ongoing', 'talent', 'extra'],
+        abilityTags: ['onPlay', 'ongoing', 'talent', 'onDestroy', 'extra'],
         ongoingTarget: 'base',
         playNeedsBase: true,
         activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }],
     }),
     action('wraithrustlers_demon_dogs', 'Demon Dogs', WRAITHRUSTLERS, 2, 59, {
         subtype: 'ongoing',
-        abilityTags: ['ongoing', 'onDestroy', 'extra'],
+        abilityTags: ['onPlay', 'ongoing', 'onDestroy', 'extra'],
         ongoingTarget: 'base',
         playNeedsBase: true,
     }),
@@ -323,14 +328,14 @@ export const EXCELLENT_MOVIES_TEENS_CARDS: CardDef[] = [
 ];
 
 export const EXCELLENT_MOVIES_TEENS_BASES: BaseCardDef[] = [
-    { id: 'base_building_rooftop', name: '楼顶', nameEn: 'Building Rooftop', breakpoint: 20, vpAwards: [3, 1, 1], faction: ACTION_HEROES },
-    { id: 'base_jungle_camp', name: '丛林营地', nameEn: 'Jungle Camp', breakpoint: 20, vpAwards: [3, 2, 1], faction: ACTION_HEROES },
-    { id: 'base_alternate_present', name: '另类现在', nameEn: 'Alternate Present', breakpoint: 20, vpAwards: [4, 2, 2], faction: BACKTIMERS },
-    { id: 'base_time_traveling_car', name: '时间旅行汽车', nameEn: 'Time-Traveling Car', breakpoint: 22, vpAwards: [3, 2, 1], faction: BACKTIMERS },
-    { id: 'base_ancient_crashed_ship', name: '古代坠毁飞船', nameEn: 'Ancient Crashed Ship', breakpoint: 21, vpAwards: [4, 2, 1], faction: EXTRAMORPHS },
-    { id: 'base_brood_hive', name: '育巢', nameEn: 'Brood Hive', breakpoint: 22, vpAwards: [4, 2, 1], faction: EXTRAMORPHS },
-    { id: 'base_cabin_in_the_woods', name: '林中小屋', nameEn: 'Cabin in the Woods', breakpoint: 24, vpAwards: [4, 3, 1], faction: TEENS },
-    { id: 'base_montridge_high', name: '蒙特里奇高中', nameEn: 'Montridge High', breakpoint: 20, vpAwards: [4, 2, 1], faction: TEENS },
-    { id: 'base_rooftop_portal', name: '屋顶传送门', nameEn: 'Rooftop Portal', breakpoint: 22, vpAwards: [5, 3, 2], faction: WRAITHRUSTLERS },
-    { id: 'base_wraithrustlers_hq', name: '怨灵捕手总部', nameEn: 'Wraithrustlers HQ', breakpoint: 20, vpAwards: [4, 2, 1], faction: WRAITHRUSTLERS },
+    { id: 'base_building_rooftop', name: '楼顶', nameEn: 'Building Rooftop', breakpoint: 20, vpAwards: [3, 1, 1], faction: ACTION_HEROES, previewRef: basePreview(0) },
+    { id: 'base_jungle_camp', name: '丛林营地', nameEn: 'Jungle Camp', breakpoint: 20, vpAwards: [3, 2, 1], faction: ACTION_HEROES, previewRef: basePreview(1) },
+    { id: 'base_alternate_present', name: '另类现在', nameEn: 'Alternate Present', breakpoint: 20, vpAwards: [4, 2, 2], faction: BACKTIMERS, previewRef: basePreview(2) },
+    { id: 'base_time_traveling_car', name: '时间旅行汽车', nameEn: 'Time-Traveling Car', breakpoint: 22, vpAwards: [3, 2, 1], faction: BACKTIMERS, previewRef: basePreview(3) },
+    { id: 'base_ancient_crashed_ship', name: '古代坠毁飞船', nameEn: 'Ancient Crashed Ship', breakpoint: 21, vpAwards: [4, 2, 1], faction: EXTRAMORPHS, previewRef: basePreview(4) },
+    { id: 'base_brood_hive', name: '育巢', nameEn: 'Brood Hive', breakpoint: 22, vpAwards: [4, 2, 1], faction: EXTRAMORPHS, previewRef: basePreview(5) },
+    { id: 'base_cabin_in_the_woods', name: '林中小屋', nameEn: 'Cabin in the Woods', breakpoint: 24, vpAwards: [4, 3, 1], faction: TEENS, previewRef: basePreview(6) },
+    { id: 'base_montridge_high', name: '蒙特里奇高中', nameEn: 'Montridge High', breakpoint: 20, vpAwards: [4, 2, 1], faction: TEENS, previewRef: basePreview(7) },
+    { id: 'base_rooftop_portal', name: '屋顶传送门', nameEn: 'Rooftop Portal', breakpoint: 22, vpAwards: [5, 3, 2], faction: WRAITHRUSTLERS, previewRef: basePreview(8) },
+    { id: 'base_wraithrustlers_hq', name: '怨灵捕手总部', nameEn: 'Wraithrustlers HQ', breakpoint: 20, vpAwards: [4, 2, 1], faction: WRAITHRUSTLERS, previewRef: basePreview(9) },
 ];

@@ -43,8 +43,6 @@ import type {
     VpAwardedEvent,
     ActionReturnToHandOptionArmedEvent,
     SpecialAfterScoringConsumedEvent,
-    MunchkinTreasureRewardDistributedEvent,
-    MunchkinTreasureRewardRevealedEvent,
 } from './types';
 import {
     PHASE_ORDER,
@@ -71,7 +69,13 @@ import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef, isBaseDefAvailableForRuntimeBasePool } from '../data/cards';
-import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
+import {
+    buildSmashUpPlayerCandidatePools,
+    buildSmashUpSharedCandidatePool,
+    getSmashUpInitialFactionSelectionPhase,
+    getSmashUpSelectableFactionIds,
+    resolveSmashUpSupportedBanPolicy,
+} from './pregameDraft';
 import { drawCards } from './utils';
 import {
     countMadnessCardsForPlayer,
@@ -267,62 +271,6 @@ function collectQualifiedPlayerPowers(
     }
 
     return playerPowers;
-}
-
-function getMunchkinTreasureRewardCountForScoringBase(base: BaseInPlay): number {
-    const monsterRewardCount = (base.monsters ?? []).reduce((sum, monster) => {
-        const descriptor = getMunchkinSpecialCardDescriptor(monster.defId);
-        if (descriptor?.kind !== 'monster') return sum;
-        return sum + Math.max(0, descriptor.treasureReward ?? 0);
-    }, 0);
-    const secretStashRewardCount = (base.ongoingActions ?? [])
-        .filter(action => action.defId === 'munchkin_thieves_secret_stash')
-        .length * 2;
-    return monsterRewardCount + secretStashRewardCount;
-}
-
-function buildMunchkinTreasureRewardEventsForScoringBase(
-    core: SmashUpCore,
-    base: BaseInPlay,
-    baseIndex: number,
-    rankings: Array<{ playerId: PlayerId; power: number; vp: number }>,
-    now: number,
-): {
-    revealEvent?: MunchkinTreasureRewardRevealedEvent;
-    distributeEvent?: MunchkinTreasureRewardDistributedEvent;
-} {
-    const rewardCount = getMunchkinTreasureRewardCountForScoringBase(base);
-    const revealCount = Math.min(rewardCount, core.treasureDeck?.length ?? 0);
-    if (revealCount <= 0) return {};
-
-    const eligiblePlayerIds = rankings.map(ranking => ranking.playerId);
-    if (eligiblePlayerIds.length === 0) return {};
-
-    const reason = 'munchkin_scoring_treasure_reward';
-    const revealEvent: MunchkinTreasureRewardRevealedEvent = {
-        type: SU_EVENTS.MUNCHKIN_TREASURE_REWARD_REVEALED,
-        payload: {
-            baseIndex,
-            baseDefId: base.defId,
-            ...(base.instanceId ? { baseInstanceId: base.instanceId } : {}),
-            count: revealCount,
-            eligiblePlayerIds,
-            nextRecipientIndex: 0,
-            reason,
-        },
-        timestamp: now,
-    };
-    const distributeEvent: MunchkinTreasureRewardDistributedEvent = {
-        type: SU_EVENTS.MUNCHKIN_TREASURE_REWARD_DISTRIBUTED,
-        payload: {
-            reason,
-            baseIndex,
-            ...(base.instanceId ? { baseInstanceId: base.instanceId } : {}),
-        },
-        timestamp: now,
-    };
-
-    return { revealEvent, distributeEvent };
 }
 
 function getPlayersWithPlayableAfterScoringResponses(state: MatchState<SmashUpCore>, now: number): PlayerId[] {
@@ -915,19 +863,6 @@ export function scoreOneBase(
     };
     events.push(scoreEvt);
 
-    const munchkinTreasureRewardEvents = buildMunchkinTreasureRewardEventsForScoringBase(
-        updatedCore,
-        scoringBase,
-        baseIndex,
-        rankings,
-        now,
-    );
-    if (munchkinTreasureRewardEvents.revealEvent) {
-        events.push(munchkinTreasureRewardEvents.revealEvent);
-        updatedCore = reduce(updatedCore, munchkinTreasureRewardEvents.revealEvent);
-        if (ms) ms = { ...ms, core: updatedCore };
-    }
-
     for (const m of scoringBase.minions) {
         const queued = collectTriggers(updatedCore, 'onMinionDiscardedFromBase', {
             state: updatedCore,
@@ -1079,9 +1014,6 @@ export function scoreOneBase(
 
     // 构建清场 + 换基地 + onBaseRevealed 触发队列（延迟到当前基地彻底结算后再补发）
     const postScoringEvents: SmashUpEvent[] = [];
-    if (munchkinTreasureRewardEvents.distributeEvent) {
-        postScoringEvents.push(munchkinTreasureRewardEvents.distributeEvent);
-    }
     const clearEvt: BaseClearedEvent = {
         type: SU_EVENTS.BASE_CLEARED,
         payload: { baseIndex, baseDefId: scoringBase.defId, baseInstanceId: scoringBase.instanceId },
@@ -1379,10 +1311,32 @@ function getSetupBaseDefIds(enabledExpansions: readonly string[]): string[] {
     return getAllBaseDefIds().filter((defId) => isBaseDefAvailableForRuntimeBasePool(defId, enabledExpansions));
 }
 
+function hasPregameDraftSetupField(setupData: Record<string, unknown> | undefined, fieldKey: string): boolean {
+    if (!setupData) return false;
+    if (setupData[fieldKey] !== undefined) return true;
+    const setupSelections = setupData.setupSelections;
+    return Boolean(
+        setupSelections
+        && typeof setupSelections === 'object'
+        && !Array.isArray(setupSelections)
+        && (setupSelections as Record<string, unknown>)[fieldKey] !== undefined,
+    );
+}
+
 function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<string, unknown>): SmashUpCore {
     const nextUid = 1;
     const runtimeSetup = readSmashUpRuntimeSetupConfig(setupData, { playerCount: playerIds.length });
-    const { enabledExpansions, deckQueryEnabled, teamMode } = runtimeSetup;
+    const {
+        enabledExpansions,
+        includedFactionIds,
+        deckQueryEnabled,
+        teamMode,
+        factionSelectionMode,
+        factionCandidatePoolSize,
+        banPolicy,
+        firstPlayerPolicy,
+        basePoolPolicy,
+    } = runtimeSetup;
     const seatOrder = [...playerIds];
 
     const players: Record<PlayerId, PlayerState> = {};
@@ -1460,15 +1414,60 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         }
     }
 
+    const playTurnOrder = firstPlayerPolicy === 'nextSeatPlaysFirst' && initialTurnOrder.length > 1
+        ? [...initialTurnOrder.slice(1), initialTurnOrder[0]]
+        : [...initialTurnOrder];
+    const playerCandidatePools = factionSelectionMode === 'individualPools'
+        ? buildSmashUpPlayerCandidatePools(
+            initialTurnOrder,
+            factionCandidatePoolSize,
+            random,
+            enabledExpansions,
+            includedFactionIds,
+        )
+        : {};
+    const usesExplicitSharedDraftPool = (
+        hasPregameDraftSetupField(setupData, 'factionSelectionMode')
+        || hasPregameDraftSetupField(setupData, 'factionCandidatePoolSize')
+        || hasPregameDraftSetupField(setupData, 'banPolicy')
+        || hasPregameDraftSetupField(setupData, 'smashupIncludedFactionIds')
+    );
+    const sharedCandidatePool = usesExplicitSharedDraftPool
+    && (factionSelectionMode === 'snakeDraft' || factionSelectionMode === 'straightDraft')
+        ? buildSmashUpSharedCandidatePool(
+            initialTurnOrder,
+            factionCandidatePoolSize,
+            random,
+            enabledExpansions,
+            includedFactionIds,
+        )
+        : [];
+    const availableFactionIdsForBanPolicy = getSmashUpSelectableFactionIds(enabledExpansions, includedFactionIds);
+    const resolvedBanPolicy = resolveSmashUpSupportedBanPolicy(
+        banPolicy,
+        factionSelectionMode,
+        initialTurnOrder,
+        2,
+        availableFactionIdsForBanPolicy,
+    );
+    const effectiveBanPolicy = resolvedBanPolicy.banPolicy;
+    const initialFactionSelectionPhase = getSmashUpInitialFactionSelectionPhase(effectiveBanPolicy);
+
     return {
         players,
         seatOrder,
         turnOrder: initialTurnOrder,
         currentPlayerIndex: 0,
         teamMode,
+        factionSelectionMode,
+        factionCandidatePoolSize,
+        banPolicy: effectiveBanPolicy,
+        firstPlayerPolicy,
+        basePoolPolicy,
         bases: activeBases,
         titans: [],
         enabledExpansions,
+        includedFactionIds,
         deckQueryEnabled,
         baseDeck,
         baseDiscard: [],
@@ -1478,6 +1477,25 @@ function setup(playerIds: PlayerId[], random: RandomFn, setupData?: Record<strin
         nextBaseInstanceId: activeBases.length + 1,
         gameResult: undefined,
         factionSelection: {
+            mode: factionSelectionMode,
+            factionsPerPlayer: 2,
+            candidatePoolSize: factionCandidatePoolSize,
+            banPolicy: effectiveBanPolicy,
+            requestedBanPolicy: banPolicy,
+            banPolicyDowngradeReason: resolvedBanPolicy.reason,
+            phase: initialFactionSelectionPhase.phase,
+            banStage: initialFactionSelectionPhase.banStage,
+            completedBanStages: [],
+            banSelections: {},
+            bannedFactions: [],
+            sharedCandidatePool,
+            playerCandidatePools,
+            readyPlayers: [],
+            lockedPlayers: [],
+            firstPlayerPolicy,
+            draftTurnOrder: [...initialTurnOrder],
+            playTurnOrder,
+            basePoolPolicy,
             takenFactions: [],
             playerSelections,
             completedPlayers: [],
@@ -1582,32 +1600,18 @@ function normalizeLegacySmashUpMatchState(
 
     const normalizedBases = core.bases.map((base) => {
         const buriedCards = normalizeSmashUpRuntimeObjectArray(base.buriedCards);
-        const monsters = normalizeSmashUpRuntimeObjectArray(base.monsters);
-        if (buriedCards === base.buriedCards && monsters === base.monsters) {
+        if (buriedCards === base.buriedCards) {
             return base;
         }
         changed = true;
         return {
             ...base,
-            monsters,
             buriedCards,
         };
     });
 
     const normalizedMadnessDeck = normalizeSmashUpRuntimeMadnessDeck(core.madnessDeck);
     if (normalizedMadnessDeck !== core.madnessDeck) {
-        changed = true;
-    }
-    const normalizedMonsterDeck = normalizeSmashUpRuntimeMadnessDeck(core.monsterDeck);
-    if (normalizedMonsterDeck !== core.monsterDeck) {
-        changed = true;
-    }
-    const normalizedTreasureDeck = normalizeSmashUpRuntimeMadnessDeck(core.treasureDeck);
-    if (normalizedTreasureDeck !== core.treasureDeck) {
-        changed = true;
-    }
-    const normalizedTreasureDiscard = normalizeSmashUpRuntimeMadnessDeck(core.treasureDiscard);
-    if (normalizedTreasureDiscard !== core.treasureDiscard) {
         changed = true;
     }
 
@@ -1618,9 +1622,6 @@ function normalizeLegacySmashUpMatchState(
             players: normalizedPlayers,
             bases: normalizedBases,
             madnessDeck: normalizedMadnessDeck,
-            monsterDeck: normalizedMonsterDeck,
-            treasureDeck: normalizedTreasureDeck,
-            treasureDiscard: normalizedTreasureDiscard,
         },
     } : state;
 
@@ -2833,15 +2834,6 @@ function postProcessSystemEvents(
             const discardedCards = sourceCards
                 .filter(card => uidSet.has(card.uid))
                 .map(card => ({ uid: card.uid, defId: card.defId, ownerId: card.owner }));
-            if (discardedCards.length < uidSet.size) {
-                const seen = new Set(discardedCards.map(card => card.uid));
-                const fallbackDiscard = tempCore.players[discardEvt.payload.playerId]?.discard ?? [];
-                for (const card of fallbackDiscard) {
-                    if (!uidSet.has(card.uid) || seen.has(card.uid)) continue;
-                    discardedCards.push({ uid: card.uid, defId: card.defId, ownerId: card.owner });
-                    seen.add(card.uid);
-                }
-            }
             const queued = collectTriggers(tempCore, 'onCardsDiscarded', {
                 state: tempCore,
                 matchState: ms,
@@ -2882,7 +2874,7 @@ function postProcessSystemEvents(
             const payload = event.payload;
             if (!inputEventsAlreadyReduced) {
                 tempCore = reduce(tempCore, event);
-            } else if (payload.fromDeck || payload.fromDiscard || payload.fromBuried) {
+            } else if (payload.fromDeck || payload.fromDiscard || payload.fromBuried || payload.fromStored) {
                 tempCore = reduce(tempCore, event);
             }
             

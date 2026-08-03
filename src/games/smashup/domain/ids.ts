@@ -104,6 +104,7 @@ export const SMASHUP_ATLAS_IDS = {
     RUSSIAN_FAIRY_TALES_POD_CARDS: 'smashup:russian-fairy-tales-pod-cards',
     ANANSI_TALES_POD_CARDS: 'smashup:anansi-tales-pod-cards',
     EXCELLENT_MOVIES_TEENS_CARDS: 'smashup:excellent-movies-teens-cards',
+    EXCELLENT_MOVIES_TEENS_BASES: 'smashup:excellent-movies-teens-bases',
     EXPLORERS_POD_CARDS: 'smashup:explorers-pod-cards',
     STAR_ROAMERS_POD_CARDS: 'smashup:star-roamers-pod-cards',
     VIGILANTES_POD_CARDS: 'smashup:vigilantes-pod-cards',

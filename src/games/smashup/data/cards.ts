@@ -2059,6 +2059,88 @@ export function getBaseDefIdsForFactions(
     return matched;
 }
 
+const BASE_EXPANSION_GROUPS: readonly (readonly BaseCardDef[])[] = [
+    BASE_CARDS,
+    BASE_CARDS_AL9000,
+    BASE_CARDS_PRETTY_PRETTY,
+    BASE_CARDS_HULUWAWA,
+    BASE_CARDS_PALADIN,
+    BASE_CARDS_OOPS_YOU_DID_IT_AGAIN,
+    BASE_CARDS_SET4,
+    BASE_CARDS_SCIENCE_FICTION_DOUBLE_FEATURE,
+    BASE_CARDS_MONSTER_SMASH,
+    BASE_CARDS_10TH_ANNIVERSARY,
+    BASE_CARDS_ITS_YOUR_FAULT,
+    BASE_CARDS_BIG_IN_JAPAN,
+    BASE_CARDS_ZHONGGUO,
+    CEASE_AND_DESIST_BASES,
+    INTERNATIONAL_INCIDENT_BASES,
+    WHAT_WERE_WE_THINKING_BASES,
+    EXCELLENT_MOVIES_TEENS_BASES,
+    DIY_KILLERS_BASES,
+    DIY_CLOWNS_BASES,
+    HALF_THE_BATTLE_BASES,
+    ANANSI_TALES_BASES,
+    GRIMMS_FAIRY_TALES_BASES,
+    RUSSIAN_FAIRY_TALES_BASES,
+    ANCIENT_INCAS_BASES,
+    POLYNESIAN_VOYAGERS_BASES,
+    PENGUINS_BASES,
+    BIG_HERO_6_BASES,
+    FROZEN_BASES,
+    LION_KING_BASES,
+    MULAN_BASES,
+    ALADDIN_BASES,
+    BEAUTY_AND_THE_BEAST_BASES,
+    NIGHTMARE_BEFORE_CHRISTMAS_BASES,
+    WRECK_IT_RALPH_BASES,
+    NEW_ROUND_TABLE_KNIGHTS_BASES,
+    NEW_GOBLINS_BASES,
+    MUNCHKIN_BASES,
+];
+
+function baseMatchesAnyFactionIdentity(base: BaseCardDef, selectedIdentities: Set<string>, selectedExactFactions: Set<string>): boolean {
+    if (base.faction && selectedIdentities.has(isPodVariantId(base.faction) ? base.faction.slice(0, -POD_SUFFIX.length) : base.faction)) {
+        return true;
+    }
+    return getBasePodFactionIds(base).some((factionId) => selectedExactFactions.has(factionId));
+}
+
+/** 根据已选派系所属的实体扩展组返回基地池。 */
+export function getBaseDefIdsForFactionExpansionSets(
+    factionIds: string[],
+    enabledExpansions: readonly string[] = ['titans', 'diy'],
+    options: BasePoolAvailabilityOptions = { includeInProgress: true },
+): string[] {
+    const selectedFactionIds = [...new Set(factionIds)];
+    const selectedExactFactions = new Set(selectedFactionIds);
+    const selectedIdentities = new Set(
+        selectedFactionIds.map((factionId) => isPodVariantId(factionId) ? factionId.slice(0, -POD_SUFFIX.length) : factionId),
+    );
+    const selectedPodBasePoolVariants = new Set(
+        selectedFactionIds.filter(factionId => usesSeparateSmashUpBasePoolVariant(factionId)),
+    );
+    const includedBaseIds = new Set<string>();
+    const result: string[] = [];
+
+    for (const group of BASE_EXPANSION_GROUPS) {
+        const groupMatchesSelectedFaction = group.some((base) =>
+            baseMatchesAnyFactionIdentity(base, selectedIdentities, selectedExactFactions),
+        );
+        if (!groupMatchesSelectedFaction) continue;
+
+        for (const base of group) {
+            if (!isBaseAvailableForBasePool(base, enabledExpansions, options)) continue;
+            const resolvedBaseId = getBasePodVariantId(base, selectedPodBasePoolVariants) ?? base.id;
+            if (includedBaseIds.has(resolvedBaseId)) continue;
+            includedBaseIds.add(resolvedBaseId);
+            result.push(resolvedBaseId);
+        }
+    }
+
+    return result;
+}
+
 export function getCardDef(defId: string): CardDef | undefined {
     return _cardRegistry.get(defId);
 }
