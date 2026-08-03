@@ -521,7 +521,8 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.basicSetup.steps.observeTeammate).toContain('进入观察前的位置');
         expect(zhCNLocale.tutorial.basicSetup.steps.focusSelfRoom).toContain('聚焦到我的房间');
         expect(zhCNLocale.tutorial.basicSetup.steps.focusSelfRoom).toContain('不是队友观察的返回按钮');
-        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('预兆进度条');
+        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('预兆条');
+        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('抽到预兆');
         expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('先选择持有区里的书本');
         expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('再点“使用”');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索的盖着房间');
@@ -545,9 +546,11 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('探索和预兆');
         expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('木乃伊横行');
         expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('作祟后目标已经变了');
-        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('英雄和叛徒分别怎么赢');
-        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('驱逐木乃伊不是凭空出现');
-        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('找出真名');
+        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('找真名');
+        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('叛徒怎样获胜');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('两个前置');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('石棺房、书房或图书馆');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('找到真名');
         expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('驱逐法术');
         expect(zhCNLocale.tutorial.hauntActions.steps.banishMummy).toContain('神志对抗');
         expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('驱逐成功');
@@ -583,5 +586,6 @@ describe('Betrayal 教程配置', () => {
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackReward).toContain('偷走地图');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.stealResult).toContain('奖励条关闭');
         expect(JSON.stringify(zhCNLocale.tutorial)).not.toMatch(/真实链路|运行态|不是动画|不是说明图层|不是教程按钮|E2E|正式验证|收口|收尾|终局页|房间焦点入口|对攻/);
+        expect(JSON.stringify(zhCNLocale.tutorial)).not.toMatch(/不常驻|写满公式|业务公式|悬浮提示才|验收|测试|AI|HUD|为什么和|不是凭空出现/);
     });
 });

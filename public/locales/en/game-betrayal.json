@@ -959,7 +959,7 @@
         "roomBoard": "The central room board is the main play area. Check where you are, which rooms connect, and where exploration can continue.",
         "observeTeammate": "Click a teammate panel to observe that explorer and move the camera to that explorer's room. Click the same teammate again to return to the place you were viewing before, not always to yourself.",
         "focusSelfRoom": "If you lose your place after panning the board, Focus My Room moves the camera back to your explorer's room. It is not a room details popup or the return control for teammate observation.",
-        "hauntRiskTrack": "Read the omen progress by slots: the highlighted slot is the number of discovered omens. The haunt-check details stay in hover help instead of filling the main HUD.",
+        "hauntRiskTrack": "The omen track shows how many omens have been discovered. The highlighted slot is the current count; when an omen is drawn, that count sets the dice used to check whether the haunt begins.",
         "inventoryAndHelp": "The lower-left area is your inventory. Items and omens stay here; later use, trade, and effect choices start from these cards.",
         "useBook": "Select the Book in your inventory, then click Use. The Book points the next non-combat check toward Knowledge.",
         "openMoveTargets": "Now choose Move. Glowing rooms are places you can still reach this turn.",
@@ -971,10 +971,10 @@
     },
     "omenConfirmation": {
       "title": "Omen: Confirm and Haunt Progress",
-      "description": "After drawing an omen, read the omen track, the single Confirm button, and why the haunt check appears on the same screen as the omen card.",
+      "description": "After drawing an omen, read the omen card and the haunt-check result on the same screen; press Confirm once when you are ready to return to the board.",
       "steps": {
         "setupOmenConfirmation": "Now look at an omen discovery. The omen card and haunt-check result belong to the same discovery, so they appear together in one result panel.",
-        "hauntRiskTrack": "This shows how many omens have been discovered. The highlighted slot is the current count; hover help expands how many dice roll and what total starts the haunt.",
+        "hauntRiskTrack": "The omen track shows the current discovered count. The highlighted slot is the count used for this haunt check: it sets the dice count and whether the haunt begins.",
         "confirmOmenCard": "The omen card and haunt-check result are already on the same screen. After reading them, press Confirm once to close this discovery and return to the board.",
         "review": "After confirmation, the omen is in your inventory and the board returns to pre-haunt play. This check did not start the haunt, so exploration continues."
       }
@@ -997,9 +997,9 @@
       "title": "After the Haunt: Read the Goal, Then Banish the Mummy",
       "description": "After the haunt begins, see why the goal changed before finishing the hero banishment check.",
       "steps": {
-        "setupReadyToExorcise": "Exploration and omens can push the house into the haunt. This is now Mummy Rampage: heroes must find the true name, learn the banishment spell, and banish the mummy before the traitor completes the wedding.",
-        "helpEntry": "The goal has changed after the haunt: heroes are no longer just exploring. Open the haunt reference to confirm how the heroes and traitor each win.",
-        "hauntActions": "Banish Mummy is not appearing out of nowhere. The heroes have already found the true name and learned the banishment spell, so the last step is a Sanity contest in the mummy's room.",
+        "setupReadyToExorcise": "Exploration and omens can push the house into the haunt. This is now Mummy Rampage: heroes must find the true name, have a Book carrier learn the banishment spell, then banish the mummy with Sanity in its room; the traitor is trying to complete the wedding.",
+        "helpEntry": "The goal has changed after the haunt. Open the haunt reference to see why heroes follow the true-name -> spell -> banishment chain, and how the traitor wins.",
+        "hauntActions": "In the current position, the heroes have completed two prerequisites: a Knowledge check in the Sarcophagus Room, Study, or Library found the true name, and a hero carrying the Book passed another Knowledge check to learn the banishment spell. With the Book in the mummy's room, the final Sanity banishment is now available.",
         "exorciseJack": "Use Banish Mummy now to make the Sanity check. Once the dice settle, compare the hero total against the mummy.",
         "banishMummy": "Use Banish Mummy now to make the Sanity contest. Once the dice settle, compare the hero total against the mummy.",
         "endgameReview": "The banishment succeeds. The mummy crumbles into sand, and the ending narration opens the final report."
