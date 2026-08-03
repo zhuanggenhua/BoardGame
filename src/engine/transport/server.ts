@@ -20,6 +20,7 @@ import { isMatchAuthMetadataProvider } from './storage';
 import type {
     MatchPlayerInfo,
     BatchDispatchMeta,
+    CommandDispatchMeta,
 } from './protocol';
 import type {
     TrainingCompletedMatch,
@@ -259,6 +260,7 @@ type CommandFailureFeedbackPayload = {
     gameId: string;
     playerId: string;
     incidentKind: 'command-failed';
+    feedbackSource: 'player-command-failure' | 'online-ai-watchdog';
     severity: 'medium' | 'high';
     commandType: string;
     reason: string;
@@ -578,10 +580,14 @@ const resolveOnlineAiFeedbackConfig = (): OnlineAiFeedbackConfig => {
 
 const ONLINE_AI_FEEDBACK_CONFIG = resolveOnlineAiFeedbackConfig();
 
-function shouldAutoReportCommandFailure(reason: string): boolean {
+function shouldAutoReportCommandFailure(
+    reason: string,
+    feedbackSource: CommandFailureFeedbackPayload['feedbackSource'] = 'player-command-failure',
+): boolean {
     return reason === GENERIC_COMMAND_FAILURE_REASON
         || reason === PIPELINE_FAILURE_REASON
-        || reason.startsWith(`${PIPELINE_FAILURE_REASON}:`);
+        || reason.startsWith(`${PIPELINE_FAILURE_REASON}:`)
+        || feedbackSource === 'online-ai-watchdog';
 }
 
 function resolveCommandFailureFeedbackSeverity(reason: string): CommandFailureFeedbackPayload['severity'] {
@@ -791,6 +797,8 @@ interface ActiveMatch {
 type ExecuteCommandInternalOptions = {
     suppressBroadcast?: boolean;
     reportFailureFeedback?: boolean;
+    feedbackSource?: CommandFailureFeedbackPayload['feedbackSource'];
+    expectedStateID?: number;
 };
 
 const GENERIC_COMMAND_FAILURE_REASON = 'command_failed';
@@ -948,6 +956,17 @@ export interface GameTransportServerConfig {
     commandFailureFeedbackReporter?: (payload: CommandFailureFeedbackPayload) => Promise<void>;
 }
 
+function cloneDiagnosticValue(value: unknown): unknown {
+    if (value === undefined) {
+        return null;
+    }
+    try {
+        return JSON.parse(JSON.stringify(value));
+    } catch {
+        return '[unserializable-diagnostic-value]';
+    }
+}
+
 export class GameTransportServer {
     private readonly io: IOServer;
     private readonly storage: MatchStorage;
@@ -1033,6 +1052,7 @@ export class GameTransportServer {
                 commandType: string,
                 payload: unknown,
                 credentials?: string,
+                commandMeta?: CommandDispatchMeta,
             ) => {
                 if (!matchID || !commandType) return;
                 const info = this.socketIndex.get(socket.id);
@@ -1063,7 +1083,23 @@ export class GameTransportServer {
                         isTutorialAiCommand: meta.isTutorialAiCommand,
                     })
                     : meta.normalizedPayload;
-                await this.handleCommand(matchID, resolvedPlayerId, commandType, tutorialInjectedPayload);
+                const expectedStateID = commandMeta?.expectedStateID;
+                if (typeof expectedStateID === 'number') {
+                    await this.handleCommand(
+                        matchID,
+                        resolvedPlayerId,
+                        commandType,
+                        tutorialInjectedPayload,
+                        { expectedStateID },
+                    );
+                } else {
+                    await this.handleCommand(
+                        matchID,
+                        resolvedPlayerId,
+                        commandType,
+                        tutorialInjectedPayload,
+                    );
+                }
             });
 
             socket.on('batch', async (
@@ -2096,6 +2132,10 @@ export class GameTransportServer {
                 {
                     interactionId: typeof currentInteraction.id === 'string' ? currentInteraction.id : undefined,
                 },
+                {
+                    reportFailureFeedback: true,
+                    feedbackSource: 'online-ai-watchdog',
+                },
             );
             return success;
         };
@@ -2263,6 +2303,10 @@ export class GameTransportServer {
                         currentCandidate.playerId,
                         nextCommandType,
                         nextCommand?.payload ?? {},
+                        {
+                            reportFailureFeedback: true,
+                            feedbackSource: 'online-ai-watchdog',
+                        },
                     );
                     if (!nextSuccess) {
                         const commandFailureReason = match.lastCommandFailureReason;
@@ -2777,6 +2821,10 @@ export class GameTransportServer {
                         interactionId: currentInteraction.id,
                         reason: 'repeated-recovery-limit',
                     },
+                    {
+                        reportFailureFeedback: true,
+                        feedbackSource: 'online-ai-watchdog',
+                    },
                 );
                 if (!cancelSuccess) {
                     await this.reportOnlineAiRepeatedRecoverySuppressed({
@@ -2811,6 +2859,10 @@ export class GameTransportServer {
                     args.candidate.playerId,
                     advanceCommand.type,
                     advanceCommand.payload ?? {},
+                    {
+                        reportFailureFeedback: true,
+                        feedbackSource: 'online-ai-watchdog',
+                    },
                 );
                 if (!advanceSuccess) {
                     await this.reportOnlineAiRepeatedRecoverySuppressed({
@@ -3564,14 +3616,55 @@ export class GameTransportServer {
         }
     }
 
+    private buildCommandFailureAiDiagnostic(args: {
+        match: ActiveMatch;
+        playerId: string;
+        visibleState: MatchState<unknown>;
+    }): {
+        seatControllerType: 'human' | 'local-ai' | 'remote-ai';
+        legalActions: OnlineAiRecoveryLegalActionSummary | null;
+    } {
+        const seatControllers = extractTrustedSetupSeatControllers(args.match.metadata.setupData);
+        const seatControllerType = resolveSeatControllerTypeForTraining(seatControllers, args.playerId);
+        if (seatControllerType === 'human') {
+            return { seatControllerType, legalActions: null };
+        }
+
+        try {
+            const decisionContext = buildAiDecisionContext({
+                gameId: args.match.gameId,
+                matchId: args.match.matchID,
+                playerId: args.playerId,
+                visibleState: args.visibleState,
+                rulesVersion: this.rulesVersion,
+                decisionBudgetMs: 250,
+                source: 'online',
+            });
+            return {
+                seatControllerType,
+                legalActions: summarizeOnlineAiRecoveryLegalActions(decisionContext.legalActions),
+            };
+        } catch (error) {
+            logger.warn('[GameTransport] failed to summarize command failure AI context', {
+                matchID: args.match.matchID,
+                gameId: args.match.gameId,
+                playerID: args.playerId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            return { seatControllerType, legalActions: null };
+        }
+    }
+
     private buildCommandFailureFeedbackPayload(args: {
         match: ActiveMatch;
         playerId: string;
         commandType: string;
         reason: string;
+        commandPayload: unknown;
         progressMarker: string;
         stateIdBefore: number;
         visibleState: MatchState<unknown>;
+        feedbackSource: CommandFailureFeedbackPayload['feedbackSource'];
     }): CommandFailureFeedbackPayload {
         const incidentKey = [
             args.playerId,
@@ -3581,12 +3674,18 @@ export class GameTransportServer {
         ].join(':');
         const phase = typeof args.match.state.sys?.phase === 'string' ? args.match.state.sys.phase : null;
         const turnNumber = typeof args.match.state.sys?.turnNumber === 'number' ? args.match.state.sys.turnNumber : null;
+        const aiContext = this.buildCommandFailureAiDiagnostic({
+            match: args.match,
+            playerId: args.playerId,
+            visibleState: args.visibleState,
+        });
 
         return {
             matchId: args.match.matchID,
             gameId: args.match.gameId,
             playerId: args.playerId,
             incidentKind: 'command-failed',
+            feedbackSource: args.feedbackSource,
             severity: resolveCommandFailureFeedbackSeverity(args.reason),
             commandType: args.commandType,
             reason: args.reason,
@@ -3598,8 +3697,14 @@ export class GameTransportServer {
                 reason: args.reason,
                 progressMarker: args.progressMarker,
                 stateIDBefore: args.stateIdBefore,
+                feedbackSource: args.feedbackSource,
                 phase,
                 turnNumber,
+                command: {
+                    type: args.commandType,
+                    payload: cloneDiagnosticValue(args.commandPayload),
+                },
+                aiContext,
                 visibleState: args.visibleState,
             }),
             actionLog: this.buildOnlineAiDiagnosticActionLog({
@@ -3608,6 +3713,8 @@ export class GameTransportServer {
                 progressMarker: args.progressMarker,
                 commandType: args.commandType,
                 reason: args.reason,
+                feedbackSource: args.feedbackSource,
+                commandPayload: args.commandPayload,
             }),
         };
     }
@@ -3657,6 +3764,8 @@ export class GameTransportServer {
         pendingDamage?: OnlineAiRecoveryPendingDamageDiagnostic | null;
         commandType?: string;
         reason?: string;
+        feedbackSource?: CommandFailureFeedbackPayload['feedbackSource'];
+        commandPayload?: unknown;
     }): string | undefined {
         const actionLogTail = this.extractOnlineAiRecoveryActionLogTail(args.state);
         const eventStreamTail = this.extractOnlineAiRecoveryEventTail(args.state);
@@ -3672,6 +3781,7 @@ export class GameTransportServer {
             && !hasResponseWindow
             && !hasPendingDamage
             && !args.blockerFingerprint
+            && !args.commandPayload
         ) {
             return undefined;
         }
@@ -3683,6 +3793,10 @@ export class GameTransportServer {
             ...(args.blockerFingerprint ? { blockerFingerprint: args.blockerFingerprint } : {}),
             ...(args.commandType ? { commandType: args.commandType } : {}),
             ...(args.reason ? { reason: args.reason } : {}),
+            ...(args.feedbackSource ? { feedbackSource: args.feedbackSource } : {}),
+            ...(args.commandPayload !== undefined
+                ? { commandPayload: cloneDiagnosticValue(args.commandPayload) }
+                : {}),
             actionLogTail,
             eventStreamTail,
             ...((hasSharedInteraction || args.interaction)
@@ -3802,19 +3916,20 @@ export class GameTransportServer {
 
     private async defaultCommandFailureFeedbackReporter(payload: CommandFailureFeedbackPayload): Promise<void> {
         const buildInfo = resolveServerFeedbackBuildInfo();
+        const isOnlineAiRecovery = payload.feedbackSource === 'online-ai-watchdog';
         await this.postInternalSystemFeedback({
-            content: `[system][command-failed] ${payload.commandType} ${payload.reason}`,
+            content: `[system][${payload.feedbackSource}] ${payload.commandType} ${payload.reason}`,
             type: 'bug',
             severity: payload.severity,
-            source: 'player-command-failure',
-            autoReportKind: payload.incidentKind,
+            source: payload.feedbackSource,
+            autoReportKind: isOnlineAiRecovery ? 'online-ai-command-failed' : payload.incidentKind,
             incidentKey: payload.incidentKey,
             gameName: payload.gameId,
-            contactInfo: 'system:player-command-failure',
+            contactInfo: `system:${payload.feedbackSource}`,
             actionLog: payload.actionLog,
             stateSnapshot: payload.stateSnapshot,
             clientContext: {
-                route: 'server-command',
+                route: isOnlineAiRecovery ? 'server-watchdog-command' : 'server-command',
                 mode: 'online',
                 matchId: payload.matchId,
                 playerId: payload.playerId,
@@ -3823,7 +3938,7 @@ export class GameTransportServer {
                 ...buildInfo,
             },
             errorContext: {
-                source: 'player-command-failure',
+                source: payload.feedbackSource,
                 message: payload.reason,
                 name: payload.commandType,
             },
@@ -4042,12 +4157,87 @@ export class GameTransportServer {
                 };
             }
 
+            let authoritativeValidation: { valid: boolean; error?: string } | null = null;
+            const isEngineSystemCommand = command.type.startsWith('SYS_')
+                || command.type === 'ADVANCE_PHASE'
+                || command.type === 'RESPONSE_PASS';
+            if (!isEngineSystemCommand) {
+                try {
+                    authoritativeValidation = match.engineConfig.domain.validate(match.state, {
+                        type: command.type,
+                        playerId: resolution.playerId,
+                        payload: command.payload,
+                        timestamp: Date.now(),
+                    } as Command);
+                } catch (error) {
+                    logger.warn('[GameTransport] online-ai-watchdog authoritative command precheck failed; deferring to pipeline', {
+                        matchID: match.matchID,
+                        gameId: match.gameId,
+                        playerID: resolution.playerId,
+                        commandType: command.type,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
+
+            if (authoritativeValidation && !authoritativeValidation.valid) {
+                const commandFailureReason = normalizeCommandFailureReason(authoritativeValidation.error);
+                match.lastCommandFailureReason = commandFailureReason;
+                const progressMarker = buildAiProgressMarker(match.state, {
+                    engineConfig: match.engineConfig,
+                    gameId: match.gameId,
+                });
+                const visibleState = this.stripStateForTraining(
+                    this.applyPlayerView(match, resolution.playerId),
+                ) as MatchState<unknown>;
+                logger.warn('[GameTransport] online-ai-watchdog skipped authoritative-invalid legal action', {
+                    matchID: match.matchID,
+                    gameId: match.gameId,
+                    playerID: resolution.playerId,
+                    commandType: command.type,
+                    commandPayload: cloneDiagnosticValue(command.payload),
+                    reason: commandFailureReason,
+                    stateIDBefore: match.stateID,
+                    progressMarker,
+                });
+
+                if (shouldAutoReportCommandFailure(commandFailureReason, 'online-ai-watchdog')) {
+                    await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
+                        match,
+                        playerId: resolution.playerId,
+                        commandType: command.type,
+                        reason: commandFailureReason,
+                        commandPayload: command.payload,
+                        progressMarker,
+                        stateIdBefore: match.stateID,
+                        visibleState,
+                        feedbackSource: 'online-ai-watchdog',
+                    }));
+                }
+
+                tracker.autoSubmittedAt = null;
+                return {
+                    applied: false,
+                    resolved: false,
+                    blockedReason: null,
+                    executedCommandTypes,
+                    outcome: 'legal-action-command-failed',
+                    failedCommandType: command.type,
+                    commandFailureReason,
+                    reportedAction: null,
+                };
+            }
+
             const success = await this.executeCommandInternal(
                 match,
                 resolution.playerId,
                 command.type,
                 command.payload,
-                { suppressBroadcast: true },
+                {
+                    suppressBroadcast: true,
+                    reportFailureFeedback: true,
+                    feedbackSource: 'online-ai-watchdog',
+                },
             );
             if (!success) {
                 const commandFailureReason = match.lastCommandFailureReason;
@@ -4318,6 +4508,7 @@ export class GameTransportServer {
         playerID: string,
         commandType: string,
         payload: unknown,
+        options?: ExecuteCommandInternalOptions,
     ): Promise<boolean> {
         const match = this.activeMatches.get(matchID);
         if (!match) return false;
@@ -4330,7 +4521,10 @@ export class GameTransportServer {
                     payload,
                     playerID,
                     stateIDAtEnqueue: match.stateID,
-                    options: { reportFailureFeedback: true },
+                    options: {
+                        reportFailureFeedback: true,
+                        expectedStateID: options?.expectedStateID,
+                    },
                     resolve,
                 });
             });
@@ -4343,7 +4537,10 @@ export class GameTransportServer {
                 playerID,
                 commandType,
                 payload,
-                { reportFailureFeedback: true },
+                {
+                    reportFailureFeedback: true,
+                    expectedStateID: options?.expectedStateID,
+                },
             );
             await this.drainCommandQueue(match);
             return success;
@@ -4886,12 +5083,40 @@ export class GameTransportServer {
 
         let effectiveCommandType = commandType;
         let effectivePayload = payload;
+        const feedbackSource: CommandFailureFeedbackPayload['feedbackSource'] =
+            options?.feedbackSource ?? 'player-command-failure';
         if (seatControllerType !== 'human' && commandType === INTERACTION_COMMANDS.RESPOND) {
             const cancelPayload = resolveAiEmergencySkipCancelPayload(preTrainingState, payload);
             if (cancelPayload) {
                 effectiveCommandType = INTERACTION_COMMANDS.CANCEL;
                 effectivePayload = cancelPayload;
             }
+        }
+
+        if (
+            seatControllerType !== 'human'
+            && typeof options?.expectedStateID === 'number'
+            && options.expectedStateID !== stateIdBefore
+        ) {
+            match.lastCommandFailureReason = 'stale_state';
+            logger.warn('[GameTransport] online AI command rejected due to stale state precondition', {
+                matchID: match.matchID,
+                gameId: engineConfig.gameId,
+                playerID,
+                commandType: effectiveCommandType,
+                commandPayload: cloneDiagnosticValue(effectivePayload),
+                expectedStateID: options.expectedStateID,
+                actualStateID: stateIdBefore,
+            });
+
+            const nsp = this.io.of('/game');
+            const sockets = match.connections.get(playerID);
+            if (sockets) {
+                for (const sid of sockets) {
+                    nsp.to(sid).emit('error', match.matchID, 'stale_state');
+                }
+            }
+            return false;
         }
 
         const command: Command = {
@@ -4917,7 +5142,14 @@ export class GameTransportServer {
                 match.matchID,
                 commandType,
                 playerID,
-                error instanceof Error ? error : new Error(String(error))
+                error instanceof Error ? error : new Error(String(error)),
+                {
+                    gameId: engineConfig.gameId,
+                    stateIDBefore: stateIdBefore,
+                    progressMarker: progressMarkerBeforeCommand,
+                    feedbackSource,
+                    commandPayload: cloneDiagnosticValue(effectivePayload),
+                },
             );
 
             // 通知发送者
@@ -4929,15 +5161,17 @@ export class GameTransportServer {
                 }
             }
 
-            if (options?.reportFailureFeedback && shouldAutoReportCommandFailure(failureReason)) {
+            if (options?.reportFailureFeedback && shouldAutoReportCommandFailure(failureReason, feedbackSource)) {
                 await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
                     match,
                     playerId: playerID,
                     commandType: effectiveCommandType,
                     reason: failureReason,
+                    commandPayload: effectivePayload,
                     progressMarker: progressMarkerBeforeCommand,
                     stateIdBefore,
                     visibleState: preTrainingState,
+                    feedbackSource,
                 }));
             }
 
@@ -4960,7 +5194,14 @@ export class GameTransportServer {
                 match.matchID,
                 commandType,
                 playerID,
-                new Error(failureReason)
+                new Error(failureReason),
+                {
+                    gameId: engineConfig.gameId,
+                    stateIDBefore: stateIdBefore,
+                    progressMarker: progressMarkerBeforeCommand,
+                    feedbackSource,
+                    commandPayload: cloneDiagnosticValue(effectivePayload),
+                },
             );
 
             // 通知发送者
@@ -4972,15 +5213,17 @@ export class GameTransportServer {
                 }
             }
 
-            if (options?.reportFailureFeedback && shouldAutoReportCommandFailure(failureReason)) {
+            if (options?.reportFailureFeedback && shouldAutoReportCommandFailure(failureReason, feedbackSource)) {
                 await this.reportCommandFailureFeedback(this.buildCommandFailureFeedbackPayload({
                     match,
                     playerId: playerID,
                     commandType: effectiveCommandType,
                     reason: failureReason,
+                    commandPayload: effectivePayload,
                     progressMarker: progressMarkerBeforeCommand,
                     stateIdBefore,
                     visibleState: preTrainingState,
+                    feedbackSource,
                 }));
             }
             return false;

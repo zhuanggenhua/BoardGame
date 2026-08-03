@@ -387,6 +387,13 @@ export function useOnlineAiSeatTransportRuntime(args: {
                     };
                     onlineAiTransportLogger.warn('transport-error', payload);
                     emitOnlineAiTransport('transport-error', payload);
+                    if (error === 'stale_state') {
+                        requestSeatResync({
+                            playerId,
+                            client: clientsRef.current[playerId] ?? client,
+                            reason: 'stale-command-state',
+                        });
+                    }
                 },
                 onDebugEvent: (event) => {
                     const payload = {
@@ -419,6 +426,7 @@ export function useOnlineAiSeatTransportRuntime(args: {
         engineConfig,
         engineConfig.gameId,
         matchId,
+        requestSeatResync,
         scheduleAiRetry,
         seatControllers,
         seatCredentials,

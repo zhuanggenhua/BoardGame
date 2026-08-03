@@ -40,6 +40,7 @@ export interface DiceResultState {
   results: DiceFaceResult[];
   attackType: 'melee' | 'ranged';
   hits: number;
+  attackEventId: number;
   isOpponentAttack: boolean;
   /** 本次攻击被减少的命中数（迷魂/神圣护盾等） */
   damageReduced?: number;
@@ -312,6 +313,7 @@ export function useGameEvents({
       results: attack.diceResults,
       attackType: attack.attackType,
       hits: attack.hits,
+      attackEventId: attack.attackEventId,
       isOpponentAttack: attack.isOpponentAttack,
       damageReduced: attack.damageReduced,
     });

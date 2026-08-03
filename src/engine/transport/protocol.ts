@@ -61,6 +61,11 @@ export interface BatchDispatchMeta {
     expectedStateID?: number;
 }
 
+export interface CommandDispatchMeta {
+    /** 单条命令发起时客户端所基于的权威 stateID */
+    expectedStateID?: number;
+}
+
 // ============================================================================
 // 客户端 → 服务端 事件
 // ============================================================================
@@ -70,7 +75,13 @@ export interface ClientToServerEvents {
     'sync': (matchID: string, playerID: string | null, credentials?: string) => void;
 
     /** 发送命令 */
-    'command': (matchID: string, commandType: string, payload: unknown, credentials?: string) => void;
+    'command': (
+        matchID: string,
+        commandType: string,
+        payload: unknown,
+        credentials?: string,
+        meta?: CommandDispatchMeta,
+    ) => void;
 
     /** 批量命令：将多个命令合并为一次网络请求发送 */
     'batch': (

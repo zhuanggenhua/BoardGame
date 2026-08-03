@@ -174,7 +174,7 @@ export const COMMON_UNITS_BARBARIC: UnitCard[] = [
     name: '祖灵法师',
     unitClass: 'common',
     faction: 'barbaric',
-    strength: 1,
+    strength: 3,
     life: 2,
     cost: 1,
     attackType: 'ranged',

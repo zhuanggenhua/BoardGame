@@ -763,6 +763,21 @@ describe('Feature: incremental-state-sync', () => {
       client.disconnect();
     });
 
+    it('sendCommand includes expectedStateID precondition after sync', () => {
+      const { client } = createConnectedClient();
+
+      simulateSync({ core: { hp: 100 } }, [{ id: 0 }], 7);
+      mockSocket.clearEmitted();
+
+      client.sendCommand('attack', { target: '1' });
+
+      const commandEmits = mockSocket.findEmitted('command');
+      expect(commandEmits).toHaveLength(1);
+      expect(commandEmits[0]?.args[4]).toEqual({ expectedStateID: 7 });
+
+      client.disconnect();
+    });
+
     /**
      * 需求 8.3：回滚广播全量 state:update
      *

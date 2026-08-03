@@ -1584,6 +1584,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   ? countHits(pendingEncourage.diceResults, pendingEncourage.attackType)
                   : diceResult?.hits ?? 0}
                 damageReduced={diceResult?.damageReduced}
+                resultKey={pendingEncourage
+                  ? `pending:${swInteraction?.id ?? 'unknown'}:${pendingEncourage.attackerId}`
+                  : diceResult
+                    ? `attack:${diceResult.attackEventId}`
+                    : undefined}
                 isOpponentAttack={diceResult?.isOpponentAttack ?? false}
                 duration={DICE_RESULT_OVERLAY_DURATION_MS}
                 pendingDecision={!!pendingEncourage}
