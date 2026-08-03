@@ -72,11 +72,13 @@ export interface SmashUpActivatableAbility {
  * - 'requireNoCharacters'：目标基地上不能有任何角色
  * - { type: 'requireOwnPower', minPower: N }：目标基地上己方力量必须 ≥ N
  * - 'onlyCardInHand'：本卡必须是手牌中的唯一一张
+ * - 'requireNoOwnActionsOnBase'：目标基地上不能有你的行动牌
  */
 export type PlayConstraint =
     | 'requireOwnMinion'
     | 'requireNoCharacters'
     | 'onlyCardInHand'
+    | 'requireNoOwnActionsOnBase'
     | { type: 'requireOwnPower'; minPower: number };
 
 export type PlayTargetMinionController = 'self' | 'opponent' | 'any';
@@ -1178,6 +1180,10 @@ export interface SwapSeatCommand extends Command<typeof SU_COMMANDS.SWAP_SEAT> {
 export interface UseBaseAbilityCommand extends Command<typeof SU_COMMANDS.USE_BASE_ABILITY> {
     payload: {
         baseIndex: number;
+        /** 可选目标基地，供主动基地能力透传给能力实现。 */
+        targetBaseIndex?: number;
+        /** 可选目标随从，供主动基地能力透传给能力实现。 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1190,6 +1196,10 @@ export interface UseTalentCommand extends Command<typeof SU_COMMANDS.USE_TALENT>
         ongoingCardUid?: string;
         titanUid?: string;
         baseIndex: number;
+        /** 可选目标基地，供需要转移/选择基地的天赋透传给能力实现。 */
+        targetBaseIndex?: number;
+        /** 可选目标随从，供需要选择随从的天赋透传给能力实现。 */
+        targetMinionUid?: string;
     };
 }
 
@@ -1201,6 +1211,8 @@ export interface ActivateSpecialCommand extends Command<typeof SU_COMMANDS.ACTIV
         discardCardUid?: string;
         handCardUid?: string;
         baseIndex: number;
+        /** 可选目标基地，供需要移动/转移到另一基地的特殊能力透传给能力实现。 */
+        targetBaseIndex?: number;
         targetMinionUid?: string;
     };
 }

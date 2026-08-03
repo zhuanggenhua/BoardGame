@@ -69,11 +69,11 @@ import { KITTY_CATS_CARDS } from './factions/kitty_cats';
 import { KITTY_CATS_POD_CARDS } from './factions/kitty_cats_pod';
 import { MYTHIC_HORSES_CARDS } from './factions/mythic_horses';
 import { MYTHIC_HORSES_POD_CARDS } from './factions/mythic_horses_pod';
-import { NEW_GOBLINS_BASES, NEW_GOBLINS_CARDS } from './factions/new_goblins';
+import { GOBLINS_BASES, GOBLINS_CARDS } from './factions/goblins';
 import {
-    NEW_ROUND_TABLE_KNIGHTS_BASES,
-    NEW_ROUND_TABLE_KNIGHTS_CARDS,
-} from './factions/new_round_table_knights';
+    ROUND_TABLE_KNIGHTS_BASES,
+    ROUND_TABLE_KNIGHTS_CARDS,
+} from './factions/round_table_knights';
 import { MUNCHKIN_BASES, MUNCHKIN_CARDS, MUNCHKIN_TREASURE_CARD_DEFS } from './factions/munchkin';
 import { PALADIN_CARDS } from './factions/paladins';
 import { PRINCESSES_CARDS } from './factions/princesses';
@@ -279,8 +279,8 @@ registerCards(KITTY_CATS_CARDS);
 registerCards(KITTY_CATS_POD_CARDS);
 registerCards(MYTHIC_HORSES_CARDS);
 registerCards(MYTHIC_HORSES_POD_CARDS);
-registerCards(NEW_ROUND_TABLE_KNIGHTS_CARDS);
-registerCards(NEW_GOBLINS_CARDS);
+registerCards(ROUND_TABLE_KNIGHTS_CARDS);
+registerCards(GOBLINS_CARDS);
 registerCards(MUNCHKIN_CARDS);
 registerCards(MUNCHKIN_TREASURE_CARD_DEFS);
 registerCards(PALADIN_CARDS);
@@ -1457,8 +1457,8 @@ registerBases(ALADDIN_BASES);
 registerBases(BEAUTY_AND_THE_BEAST_BASES);
 registerBases(NIGHTMARE_BEFORE_CHRISTMAS_BASES);
 registerBases(WRECK_IT_RALPH_BASES);
-registerBases(NEW_ROUND_TABLE_KNIGHTS_BASES);
-registerBases(NEW_GOBLINS_BASES);
+registerBases(ROUND_TABLE_KNIGHTS_BASES);
+registerBases(GOBLINS_BASES);
 registerBases(MUNCHKIN_BASES);
 
 registerPodBaseSkeletons();

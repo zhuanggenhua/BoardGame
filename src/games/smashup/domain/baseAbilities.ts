@@ -108,6 +108,10 @@ export interface BaseAbilityContext {
     actionTargetType?: 'base' | 'minion';
     /** onActionPlayed 时：行动卡目标随从（附着行动卡时有值） */
     actionTargetMinionUid?: string;
+    /** 主动基地能力：玩家选择的目标基地。 */
+    targetBaseIndex?: number;
+    /** 主动基地能力：玩家选择的目标随从。 */
+    targetMinionUid?: string;
     /** onActionPlayed 时：刚打出的行动卡 uid / defId / owner */
     triggerCardUid?: string;
     triggerCardDefId?: string;

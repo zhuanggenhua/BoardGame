@@ -484,6 +484,12 @@ export function checkPlayConstraint(
         return null;
     }
 
+    if (constraint === 'requireNoOwnActionsOnBase') {
+        const hasOwnAction = core.bases[baseIndex].ongoingActions.some(action => action.ownerId === playerId);
+        if (hasOwnAction) return '只能打到你没有行动牌的基地';
+        return null;
+    }
+
     if (typeof constraint === 'object' && constraint.type === 'requireOwnPower') {
         const base = core.bases[baseIndex];
         const myPower = getPlayerEffectivePowerOnBase(core, base, baseIndex, playerId);
