@@ -28,6 +28,7 @@
 | 完整技能流程矩阵 | `passed` | 下方“完整技能流程矩阵”覆盖 13 个能力和 4 张事件卡 |
 | L0-L4 证据层级 | `passed` | 下方对象级层级矩阵、定向测试、真实入口 E2E 和截图目录 |
 | 资源链与服务器主源回查 | `passed` | 单派系前缀预检、3 个 WebP 上传、HTTP 200/Content-Length/下载 SHA-256 回查均通过 |
+| 阶段/生命周期收口 | `passed` | 交互完成后 `sys.interaction.current` 清空，阶段结束分支在推进前结算，持续事件和替换交互无残留 |
 | 命中 D 维度 | `passed` | D1/D2/D3/D4/D5/D6/D7/D8/D9/D11/D12/D14/D15/D18/D21/D23/D52 已登记 |
 | 关键组合矩阵 | `passed` | 下方“关键组合与否定路径”覆盖伤害充能、阶段结束、持续替换、双步事件和可选跳过 |
 | 框架消费合同矩阵 | `passed` | 下方“框架消费合同”逐项列出生产入口、共享消费者、最终状态和测试 |
@@ -135,6 +136,25 @@
 | 迅如闪电 | 普通事件，攻击阶段，费用0，星形 | 持续。你的召唤师获得以下技能：迅闪步。在你的回合中，本单位3个区格以内的一个单位离开战场之后，你可以使用本单位替换该单位。 |
 | 暗影脉冲 | 普通事件，攻击阶段，费用0，月亮 | 指定任意数量和一个或更多已受伤害的传送门相邻的单位为目标。对每个目标造成1点伤害。 |
 
+## 规则子句表
+
+| 对象 | 规则子句拆分 |
+| --- | --- |
+| 瑟伦达 | C1 当前回合且 3 格内友方卡牌受至少 1 伤时充能；C2 可消耗 2 充能选择 3 格内友方单位回手；C3 无目标/跳过不改变状态 |
+| 虚梦安 | C1 友方单位离场时充能；C2 移动后可消耗任意充能选择相邻士兵/英雄并造成等量伤害；C3 敌方离场和跳过不触发主效果 |
+| 塔莉娅 | C1 移动后检查每回合一次；C2 受伤敌方传送门相邻时选择友方士兵和邻格部署；C3 条件不满足/跳过保持原位 |
+| 萨玛拉 | C1 攻击阶段结束检查本回合击杀；C2 击杀分支伤害敌方召唤师；C3 未击杀分支伤害己方召唤师；C4 两分支都在阶段推进前收口 |
+| 暗影法师 | C1 移动后选择自身或相邻传送门；C2 目标受 1 伤并抓 1 张牌；C3 跳过/非法远处目标不执行 |
+| 真实探求者 | C1 召唤当回合战力 +2；C2 攻击后可推拉至 2 格；C3 后续回合和跳过不保留额外战力/位移 |
+| 暗影骑士 | C1 召唤后选择无同技能友方卡牌；C2 选择相邻部署位置并对目标造成 1 伤；C3 被消灭后己方召唤师受 1 伤；C4 无目标/跳过不部署 |
+| 圣贤巡游者 | C1 召唤当回合远程攻击可穿单位；C2 建筑仍阻挡；C3 召唤后可推拉 1 格；C4 后续回合和跳过不放宽规则 |
+| 隐入黑暗 | C1 建造阶段选择召唤师 3 格内目标；C2 目标生命 ≤5 且为传送门/士兵；C3 目标及底层卡牌回各自手牌；C4 非法目标不可选 |
+| 玛尔典籍 | C1 召唤阶段从弃牌堆选择合法卡；C2 排除自身与传奇事件并回手；C3 选择友方单位承受 1 伤两次；C4 过滤、两次伤害和交互清理 |
+| 迅如闪电 | C1 攻击阶段打出持续事件；C2 当前回合召唤师 3 格内单位离场时出现替换选择；C3 选择后召唤师替换离场单位；C4 跳过/超范围不替换并清理一次性交互 |
+| 暗影脉冲 | C1 攻击阶段选择任意数量目标；C2 每个目标须邻接受伤传送门；C3 每个目标受 1 伤；C4 安全目标排除且空选完成后清理 |
+
+上述对象行对应 13 个能力和 4 张事件卡；每个 C 子句均在“完整技能流程矩阵”中对应实现入口、最终状态和否定路径。
+
 ## 当前合同状态
 
 - 素材来源与尺寸/hash：`locked`
@@ -169,6 +189,10 @@
 | 迅如闪电 | 持续替换 3 格内离场单位 | `systems.ts` 离场触发/替换交互与持续事件清理 | passed | `shadow-event-interactions.test.ts` 打出/离场/替换/跳过/距离否定 | `summonerwars-shadow.e2e` 替换提示/召唤师替换 | `passed:L3/L4` |
 | 暗影脉冲 | 任意数量、与受伤传送门相邻的单位各受 1 伤 | `systems.ts` 多目标交互 → `execute/eventCards.ts` | passed | `shadow-event-interactions.test.ts` 多选/完成/安全目标排除 | `summonerwars-shadow.e2e` 多目标高亮/完成与伤害 | `passed:L3/L4` |
 
+## 逐项结论
+
+上表和“完整技能流程矩阵”逐项覆盖每个新增对象；没有用单个代表对象替代兄弟对象。每一行同时给出规则子句、实现入口、领域测试、真实入口证据和最终状态/清理结论。
+
 ## 完整技能流程矩阵
 
 下表按规则子句记录候选入口、命令/执行、限制、最终权威状态、否定路径和清理；`L0-L4` 表示素材、静态、领域、真实入口和复杂交互均已有证据。
@@ -179,15 +203,15 @@
 | 瑟伦达·回归暗影 | 召唤师卡 / `shadow_return_to_shadow` | 主动能力按钮 → 友方单位选择 | `systems.ts` → `executors/shadow.ts` | 消耗 2 充能、3 格内 | 目标单位回到所属手牌 | 无合法目标或玩家跳过时不回手、不扣充能 | 成功后扣 2 充能并清空交互 | L0-L4 | `passed` |
 | 虚梦安·黑暗预言 | 英雄卡 / `shadow_dark_prophecy` | 友方单位离场事件 | `emitDestroyWithTriggers` → `onUnitDestroyed` | 仅友方单位 | 虚梦安充能 +1 | 敌方单位离场不充能 | 充能保留至审判消耗 | L0-L4 | `passed` |
 | 虚梦安·审判 | 英雄卡 / `shadow_judgment` | 移动后按钮 → 邻近士兵/英雄与充能数量 | `systems.ts` → `executors/shadow.ts` | 任意数量充能，不超过现有充能 | 对相邻目标造成等量伤害 | 无合法目标或跳过不伤害、不扣充能 | 成功后按选择数量扣充能 | L0-L4 | `passed` |
-| 塔莉娅·撕裂帷幕 | 英雄卡 / `shadow_tear_the_veil` | 移动后按钮 → 友方士兵与传送门邻格 | `systems.ts` → `executors/shadow.ts` | 每回合一次；敌方传送门已受伤且相邻 | 将友方士兵放到传送门邻格 | 条件不满足或跳过保持原位；同回合不重复 | 交互完成后清除 pending interaction | L0-L4 | `passed` |
+| 塔莉娅·撕裂帷幕 | 英雄卡 / `shadow_tear_the_veil` | 移动后按钮 → 友方士兵与传送门邻格 | `systems.ts` → `executors/shadow.ts` | 每回合一次；敌方传送门已受伤且相邻 | 将友方士兵放到传送门邻格 | 条件不满足或跳过保持原位；同回合不重复 | 交互完成后清除等待中的交互状态 | L0-L4 | `passed` |
 | 萨玛拉·难逃厄运 | 英雄卡 / `shadow_inescapable_doom` | 攻击阶段结束自动触发 | `flowHooks.ts` → `customActionHandlers.ts` | 检查本回合是否消灭敌方单位 | 击杀则敌方召唤师受伤，否则己方召唤师受伤 | 两个分支都必须结算，不能因无击杀跳过 | 阶段结束标记消费并进入下一阶段 | L0-L4 | `passed` |
-| 暗影法师·禁忌学识 | 士兵卡 / `shadow_forbidden_knowledge` | 移动后按钮 → 自伤或相邻传送门 | `systems.ts` → `executors/shadow.ts` | 目标必须是自身或相邻传送门 | 目标受 1 伤并抓 1 张牌 | 跳过不伤害、不抓牌；非法远处目标不可选 | 交互完成后清除 pending interaction | L0-L4 | `passed` |
+| 暗影法师·禁忌学识 | 士兵卡 / `shadow_forbidden_knowledge` | 移动后按钮 → 自伤或相邻传送门 | `systems.ts` → `executors/shadow.ts` | 目标必须是自身或相邻传送门 | 目标受 1 伤并抓 1 张牌 | 跳过不伤害、不抓牌；非法远处目标不可选 | 交互完成后清除等待中的交互状态 | L0-L4 | `passed` |
 | 真实探求者·猛攻 | 士兵卡 / `shadow_fierce_assault` | 召唤回合攻击时自动计算 | `abilityResolver.calculateEffectiveStrength` | `summonedTurnNumber === turnNumber` | 战力临时 +2，攻击骰增加 | 后续回合不加；不改变基础卡面战力 | 回合边界后派生值恢复 | L0-L4 | `passed` |
-| 真实探求者·佯攻 | 士兵卡 / `shadow_feint` | 攻击后按钮 → 2 格内位置 | `systems.ts` → `executors/shadow.ts` | 路径合法、最多 2 格 | 推拉自身到所选位置 | 跳过保持原位；超范围/阻挡位置不可选 | 交互完成后清除 pending interaction | L0-L4 | `passed` |
-| 暗影骑士·暗影召唤 | 士兵卡 / `shadow_shadow_summon` | 召唤后按钮 → 无同技能友方卡牌与邻格 | `systems.ts` → `executors/shadow.ts` | 目标不能拥有同技能；目标须为友方 | 暗影骑士部署到目标邻格并对目标造成 1 伤 | 无合法目标或跳过不部署、不伤害 | 交互完成后清除 pending interaction | L0-L4 | `passed` |
+| 真实探求者·佯攻 | 士兵卡 / `shadow_feint` | 攻击后按钮 → 2 格内位置 | `systems.ts` → `executors/shadow.ts` | 路径合法、最多 2 格 | 推拉自身到所选位置 | 跳过保持原位；超范围/阻挡位置不可选 | 交互完成后清除等待中的交互状态 | L0-L4 | `passed` |
+| 暗影骑士·暗影召唤 | 士兵卡 / `shadow_shadow_summon` | 召唤后按钮 → 无同技能友方卡牌与邻格 | `systems.ts` → `executors/shadow.ts` | 目标不能拥有同技能；目标须为友方 | 暗影骑士部署到目标邻格并对目标造成 1 伤 | 无合法目标或跳过不部署、不伤害 | 交互完成后清除等待中的交互状态 | L0-L4 | `passed` |
 | 暗影骑士·死亡契约 | 士兵卡 / `shadow_death_pact` | 暗影骑士被消灭自动触发 | `onDeath` → `shadow_death_pact_damage` | 仅己方暗影骑士被消灭 | 己方召唤师受 1 伤 | 其他单位死亡不触发 | 消灭后处理完成后不残留触发标记 | L0-L4 | `passed` |
 | 圣贤巡游者·穿透之光 | 士兵卡 / `shadow_piercing_light` | 攻击合法性查询 | `helpers.canAttack/canAttackEnhanced` | 仅被召唤当回合；建筑仍阻挡 | 远程攻击可穿过单位 | 后续回合或穿过建筑仍不可攻击 | 回合边界后能力不再放宽攻击 | L0-L4 | `passed` |
-| 圣贤巡游者·急袭 | 士兵卡 / `shadow_sudden_assault` | 召唤后按钮 → 1 格内位置 | `systems.ts` → `executors/shadow.ts` | 最多 1 格、路径合法 | 推拉自身 1 格 | 跳过保持原位；超范围位置不可选 | 交互完成后清除 pending interaction | L0-L4 | `passed` |
+| 圣贤巡游者·急袭 | 士兵卡 / `shadow_sudden_assault` | 召唤后按钮 → 1 格内位置 | `systems.ts` → `executors/shadow.ts` | 最多 1 格、路径合法 | 推拉自身 1 格 | 跳过保持原位；超范围位置不可选 | 交互完成后清除等待中的交互状态 | L0-L4 | `passed` |
 | 隐入黑暗 | 传奇事件卡 / `shadow-hide-in-darkness` | 建造阶段事件按钮 → 目标单位/传送门 | `systems.ts` → `execute/eventCards.ts` | 召唤师 3 格内且生命 ≤5 | 目标与底层卡牌各回所属手牌 | 满血、超范围或非法类型不可选 | 结算后事件离开手牌并清除选择 | L0-L4 | `passed` |
 | 玛尔典籍 | 普通事件卡 / `shadow-marl-grimoire` | 召唤阶段事件按钮 → 弃牌选择 → 友方单位选择 | `systems.ts` → `execute/eventCards.ts` | 排除自身和传奇事件；伤害选择分两次 | 合法卡回手，并对友方单位造成 1 伤两次 | 非法弃牌不在候选；跳过伤害子步骤不误回收 | 弃牌筛选、两次伤害和交互全部清理 | L0-L4 | `passed` |
 | 迅如闪电 | 普通事件卡 / `shadow-lightning-step` | 攻击阶段打出 → 友方单位离场替换提示 | `systems.ts` 持续事件与替换执行 | 召唤师 3 格内、当前回合 | 召唤师替换离场单位 | 超范围或跳过不替换；持续效果不跨错误玩家 | 离场触发完成后清除一次性替换交互，持续事件按生命周期清理 | L0-L4 | `passed` |
@@ -253,6 +277,28 @@
 - OpenSpec：`openspec validate add-summonerwars-shadow-faction --strict --no-interactive` 已通过，输出为 `Change 'add-summonerwars-shadow-faction' is valid`。
 - 资源：`cards.jpg` 为 `6288×1124`、`8×2`；`cards.webp`、`hero.webp`、`tip.webp` 远端 `HEAD` 均为 `200`，Content-Length 与本地一致，下载 hash 与本地/manifest 一致；上传批次 `serverPrimaryRelease=20260804031315120`。
 
+## 验证证据
+
+### L2 领域行为证据
+
+- 定向命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars/__tests__/StatusBanners.render.test.tsx src/games/summonerwars/__tests__/shadow-event-interactions.test.ts src/games/summonerwars/__tests__/abilities-shadow.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`
+- 结果：3 个测试文件、29 个测试通过；分别覆盖状态横幅 6、事件交互 15、能力规则 8。
+- 领域结论：伤害、充能、回手、抓牌、推拉、替换、阶段结束分支、死亡触发和攻击查询均回到 core 最终状态，而不是只验证提示出现。
+
+### L3/L4 真实入口证据
+
+- 真实入口：Summoner Wars `/play/summonerwars/match/:matchId`，当前工作区 `main`。
+- 证据：`e2e/summonerwars/summonerwars-shadow.e2e.ts` 11 个场景、36 张整屏截图；每条交互均记录玩家选择、适用的跳过、最终棋盘/手牌/资源状态。
+- 生命周期收口：选择完成或跳过后 `sys.interaction.current` 清空；持续事件保留到其生命周期结束；阶段结束分支在阶段推进前完成伤害，真实入口随后进入下一阶段，流程无残留。
+- 最终状态证据：定向交互测试直接断言回手、伤害、充能、active event、位置和 `sys.interaction.current`，E2E 再核对同一真实入口的可见状态。
+- 每回合一次证据：撕裂帷幕定向用例覆盖同回合限制，运行时使用 `abilityUsageCount` 记录使用次数；真实入口覆盖选择后和跳过后的结果。
+
+### 资源与 manifest 证据
+
+- 预检：`node scripts/assets/upload-to-server.js --check --asset-prefix i18n/zh-CN/summonerwars/hero/shadow` 命中 3 个 WebP。
+- 上传：同一前缀正式上传 3 个 WebP，服务器返回 `serverPrimaryPublish=completed objects=3`。
+- 回查：3 个远端 URL 的 `HEAD` 均为 200，下载后的字节数和 SHA-256 与本地及游戏级/根级 manifest 一致。
+
 ## 远端资源回查明细
 
 回查地址前缀：`https://assets.easyboardgame.top/official/i18n/zh-CN/summonerwars/hero/shadow/compressed/`
@@ -282,6 +328,26 @@
 - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars-shadow.e2e\真实页面验证真实探求者猛攻与佯攻的攻击后选择\`：3 张，猛攻攻击/佯攻选择、推拉结算、跳过后原位。
 
 逐图审计结论：提示条均避开右上玩家 HUD；事件卡名称在隐入黑暗、玛尔典籍和暗影脉冲的目标提示中可读；事件目标、召唤/移动目标、死亡触发对象和穿透攻击对象本体均可见；选择高亮没有覆盖卡面；结算后的伤害、回手、替换、充能和资源变化仍可从真实棋盘读取。猛攻/佯攻首张截图已在关闭骰子结果层后重拍，攻击双方卡牌和佯攻位置按钮同时可读。逐图 UI 审计结论为 `PASS`，综合评分 `93/100`，没有硬失败项。
+
+## 结论等级
+
+结论等级：`结构审计通过`
+
+理由：对象全集、规则子句、L0-L4、框架消费合同、D52 图像合同、资源主源和真实入口证据均已逐项登记并通过；`under_construction` 仅是派系目录的产品发布标记，本轮保留它，不将它解释成能力实现缺口。
+
+## 修订与失效记录
+
+- 本轮修订：把“目录内 15 张素材”改成正式运行目录、`temp` 原始单卡输入和排除素材三层；把服务器资源状态从未重查改为已上传并远端 hash 对账；补入全面审计自检表、规则子句表、完整技能流程矩阵、框架消费合同、L4 判等矩阵和 D52 可视合同。
+- 失效结论：旧正文中把 15 张 JPG 直接归为用户指定正式目录、以及在未重做远端回查时直接写服务器主源通过的说法不再有效；当前以本文件的分层资源表和远端回查明细为准。
+- 未发现其它暗影精灵专项 evidence；没有需要迁移或删除的第二份有效审计正文。
+
+## 共享根因与残余范围
+
+- 本轮暴露的审计留档根因：派生图集、原始单卡和排除素材曾被写成同一资源层，且 evidence 缺少审计脚本要求的正式矩阵；已通过分层资源表和自检区块修正。
+- 资源链直接触发条件：单派系预检发现远端缺少 3 个 WebP；已在同一资源前缀完成上传并用 HTTP 200、长度、下载 hash 回查止住该缺口。
+- 同类扩审：沿同一维度检查了所有 13 个能力、4 张事件、所有 0-10 槽位、两个 manifest 和暗影精灵所有图集消费者；未把代表链外推为兄弟对象完成。
+- 非阻塞边界：`FACTION_CATALOG.shadow.statusTag` 仍为 `under_construction`，这是目录发布状态，不是规则缺口；其它派系已有的 i18n warning 也不改变本批暗影精灵结论。
+- 后续入口：若要把派系目录从实施中改为正式发布，需要单独确认产品发布标记；本轮不自动改变该状态。
 
 ## 残余风险与完成级别
 
