@@ -1713,8 +1713,8 @@ describe('Betrayal Board foundation', () => {
         expect(riskStatus).toHaveTextContent('预兆状态');
         expect(riskStatus).toHaveTextContent('预兆 3');
         expect(riskStatus).not.toHaveTextContent(/下次掷|5\+ 作祟|再抽预兆时检定/);
-        expect(riskStatus).toHaveAttribute('title', expect.stringContaining('抽预兆后作祟检定'));
-        expect(riskStatus).toHaveAttribute('title', expect.stringContaining('5+ 作祟'));
+        expect(riskStatus).toHaveAttribute('title', expect.stringContaining('抽到预兆后'));
+        expect(riskStatus).toHaveAttribute('title', expect.stringContaining('总点数达到 5 点'));
         const riskProgress = screen.getByTestId('betrayal-haunt-risk-progress');
         expect(riskProgress).toHaveAttribute('data-number-track-id', 'haunt-risk');
         expect(riskProgress).toHaveAttribute('data-track-min', '0');
@@ -4789,7 +4789,7 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
         confirmPendingRoomPlacement();
 
-        expect(screen.getByTestId('betrayal-runtime-header-grid')).toHaveTextContent(/恶兆后|Haunt/i);
+        expect(screen.getByTestId('betrayal-runtime-header-grid')).toHaveTextContent(/作祟中|Haunt/i);
         expect(screen.queryByTestId('betrayal-haunt-reveal-cue')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-scenario-reader-dialog')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-discovery-panel')).toHaveAttribute(
@@ -5949,7 +5949,7 @@ describe('Betrayal Board foundation', () => {
             matchData: defaultMatchData.slice(0, 3),
         });
 
-        expect(screen.getByTestId('betrayal-phase-chip')).toHaveTextContent('恶兆后');
+        expect(screen.getByTestId('betrayal-phase-chip')).toHaveTextContent('作祟中');
         expect(screen.queryByRole('region', { name: '阶段提示' })).not.toBeInTheDocument();
         expect(screen.queryByText('推荐动作：移动')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-action-move')).toHaveTextContent('移动');

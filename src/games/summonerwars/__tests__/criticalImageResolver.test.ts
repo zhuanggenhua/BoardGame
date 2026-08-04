@@ -13,6 +13,7 @@ const ALL_HERO_ATLASES = [
     'summonerwars/hero/huijin/hero',
     'summonerwars/hero/shouren/hero',
     'summonerwars/hero/yongheng/hero',
+    'summonerwars/hero/shadow/hero',
 ];
 
 const ALL_TIP_IMAGES = [
@@ -26,6 +27,7 @@ const ALL_TIP_IMAGES = [
     'summonerwars/hero/huijin/tip',
     'summonerwars/hero/shouren/tip',
     'summonerwars/hero/yongheng/tip',
+    'summonerwars/hero/shadow/tip',
 ];
 
 const SELECTION_CRITICAL = [
@@ -153,5 +155,17 @@ describe('summonerWarsCriticalImageResolver', () => {
         expect(result.critical).toContain('summonerwars/hero/yongheng/hero');
         expect(result.critical).toContain('summonerwars/hero/yongheng/cards');
         expect(result.warm).not.toContain('summonerwars/hero/yongheng/cards');
+    });
+
+    it('暗影精灵进入对局时 hero 与 cards 图集都进入 critical', () => {
+        const result = summonerWarsCriticalImageResolver(
+            makeState(true, { '0': 'shadow', '1': 'necromancer' }),
+            undefined,
+            '0',
+        );
+
+        expect(result.critical).toContain('summonerwars/hero/shadow/hero');
+        expect(result.critical).toContain('summonerwars/hero/shadow/cards');
+        expect(result.warm).not.toContain('summonerwars/hero/shadow/cards');
     });
 });

@@ -95,8 +95,8 @@ function hasEnabledCardOptionOutsideHand(
 
 /**
  * 手牌类交互要先区分“由手牌区直接承接”还是“仍由 PromptOverlay 承接”：
- * - direct: 单选 hand prompt，手牌区直接点击选牌
- * - overlay: 多选 hand prompt，继续走 PromptOverlay
+ * - direct: 当前手牌本体能承接的 hand prompt，单选点卡即提交，多选点卡后确认
+ * - overlay: 选项不全在当前手牌本体上，仍由 PromptOverlay 承接
  * - none: 不是当前玩家的 hand prompt
  */
 export function resolveSmashUpHandPromptUiMode({
@@ -107,7 +107,6 @@ export function resolveSmashUpHandPromptUiMode({
 }: ResolveHandPromptUiModeInput): SmashUpHandPromptUiMode {
     if (!isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID })) return 'none';
     if (targetType !== 'hand') return 'none';
-    if (currentPrompt.multi) return 'overlay';
     if (hasEnabledCardOptionOutsideHand(currentPrompt, hand)) return 'overlay';
     return 'direct';
 }

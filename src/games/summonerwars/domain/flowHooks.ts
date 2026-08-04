@@ -77,7 +77,7 @@ export const PHASE_END_ABILITIES: Record<GamePhase, string[]> = {
   summon: [],
   move: ['mogu_decay'],
   build: [],
-  attack: ['feed_beast', 'mogu_parasite', 'huijin_call_guards'],
+  attack: ['feed_beast', 'mogu_parasite', 'huijin_call_guards', 'shadow_inescapable_doom'],
   magic: ['mogu_burst'],
   draw: [],
 };

@@ -33,6 +33,8 @@ import type {
     MadnessDrawnEvent,
     MadnessReturnedEvent,
     MunchkinMonsterDefeatedEvent,
+    MunchkinMonsterPlayedEvent,
+    MunchkinMonsterControlChangedEvent,
     MunchkinTreasureRewardClaimedEvent,
     MunchkinTreasureRewardDistributedEvent,
     MunchkinTreasureRewardRevealedEvent,
@@ -2310,6 +2312,31 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     }
                     return [];
                 }),
+                monsters: base.monsters?.map(monster => {
+                    const metadata = monster.metadata ?? {};
+                    if (
+                        metadata.temporaryControlPlayerId !== playerId
+                        || metadata.temporaryControlTurn !== state.turnNumber
+                    ) {
+                        return monster;
+                    }
+                    const originalController = metadata.temporaryControlOriginalControllerId;
+                    const {
+                        temporaryControlPlayerId: _temporaryControlPlayerId,
+                        temporaryControlTurn: _temporaryControlTurn,
+                        temporaryControlOriginalControllerId: _temporaryControlOriginalControllerId,
+                        ...remainingMetadata
+                    } = metadata;
+                    return {
+                        ...monster,
+                        ...(originalController === null
+                            ? { controllerId: undefined }
+                            : { controllerId: originalController as PlayerId }),
+                        ...(Object.keys(remainingMetadata).length > 0
+                            ? { metadata: remainingMetadata }
+                            : { metadata: undefined }),
+                    };
+                }),
             }));
             return {
                 ...state,
@@ -4084,6 +4111,60 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
         }
 
+        case SU_EVENTS.MUNCHKIN_MONSTER_PLAYED: {
+            const { baseIndex, monsterDefId, monsterUid } = (event as MunchkinMonsterPlayedEvent).payload;
+            const base = state.bases[baseIndex];
+            const monsterDeck = state.monsterDeck ?? [];
+            if (!base || monsterDeck[0] !== monsterDefId || !monsterUid) return state;
+            return {
+                ...state,
+                bases: state.bases.map((candidateBase, index) => index === baseIndex
+                    ? {
+                        ...candidateBase,
+                        monsters: [...(candidateBase.monsters ?? []), { uid: monsterUid, defId: monsterDefId }],
+                    }
+                    : candidateBase),
+                monsterDeck: monsterDeck.slice(1),
+                nextUid: state.nextUid + 1,
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_MONSTER_CONTROL_CHANGED: {
+            const payload = (event as MunchkinMonsterControlChangedEvent).payload;
+            const base = state.bases[payload.baseIndex];
+            if (!base) return state;
+            const monster = base.monsters?.find(candidate => candidate.uid === payload.monsterUid);
+            if (!monster) return state;
+            if (payload.fromControllerId !== undefined && monster.controllerId !== payload.fromControllerId) return state;
+
+            const nextMetadata = { ...(monster.metadata ?? {}) };
+            if (payload.temporaryUntilTurnEnd) {
+                nextMetadata.temporaryControlPlayerId = payload.toControllerId;
+                nextMetadata.temporaryControlTurn = state.turnNumber;
+                nextMetadata.temporaryControlOriginalControllerId = monster.controllerId ?? null;
+            } else {
+                delete nextMetadata.temporaryControlPlayerId;
+                delete nextMetadata.temporaryControlTurn;
+                delete nextMetadata.temporaryControlOriginalControllerId;
+            }
+            const metadata = Object.keys(nextMetadata).length > 0 ? nextMetadata : undefined;
+            return {
+                ...state,
+                bases: state.bases.map((candidateBase, index) => index !== payload.baseIndex
+                    ? candidateBase
+                    : {
+                        ...candidateBase,
+                        monsters: candidateBase.monsters?.map(candidate => candidate.uid !== payload.monsterUid
+                            ? candidate
+                            : {
+                                ...candidate,
+                                controllerId: payload.toControllerId,
+                                ...(metadata ? { metadata } : { metadata: undefined }),
+                            }),
+                    }),
+            };
+        }
+
         case SU_EVENTS.MUNCHKIN_TREASURES_DRAWN: {
             const { playerId, count, treasureUids } = (event as MunchkinTreasuresDrawnEvent).payload;
             const player = state.players[playerId];
@@ -4581,6 +4662,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 baseIndex: payload.baseIndex,
                 cardUid: payload.cardUid,
                 ...(payload.minionSnapshots ? { minionSnapshots: payload.minionSnapshots } : {}),
+                ...(payload.metadata ? { metadata: payload.metadata } : {}),
             };
             const newState = {
                 ...state,

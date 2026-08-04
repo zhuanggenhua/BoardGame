@@ -357,21 +357,26 @@ const MAGES_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_MAGES_CARDS;
 const MAGES_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_MAGES_BASES;
 
 export const MUNCHKIN_MAGES_MINIONS: MinionCardDef[] = [
-    minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_blaster_master', '爆破大师', 'Blaster Master', 5, 1, 0]),
-    minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_happy_zapper', '快乐小法师', 'Happy Zapper', 3, 2, 1]),
-    minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_wand_whiz', '魔杖天才', 'Wand Whiz', 3, 3, 3]),
-    minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_scroll_shuffler', '勤读者', 'Scroll Shuffler', 2, 4, 6]),
+    { ...minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_blaster_master', '爆破大师', 'Blaster Master', 5, 1, 0], ['talent']), activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }] },
+    { ...minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_happy_zapper', '快乐小法师', 'Happy Zapper', 3, 2, 1], ['talent', 'special']), activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }, { kind: 'special', zone: 'board', window: 'beforeScoring', sourceScope: 'scoringBase' }] },
+    { ...minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_wand_whiz', '魔杖天才', 'Wand Whiz', 3, 3, 3], ['onPlay']), },
+    { ...minion(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_scroll_shuffler', '勤读者', 'Scroll Shuffler', 2, 4, 6], ['onPlay']), },
 ];
 
 export const MUNCHKIN_MAGES_ACTIONS: ActionCardDef[] = [
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_charm', '魅力', 'Charm', 1, 10]),
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_embiggen', '大上一倍', 'Embiggen', 1, 11]),
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_mass_summoning', '大召唤', 'Mass Summoning', 1, 12]),
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_portal_to_beyond', '通往次元之门', 'Portal to Beyond', 1, 13]),
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_recover_arcane_wisdom', '恢复奥术智慧', 'Recover Arcane Wisdom', 2, 14]),
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_some_enchanted_evening', '神奇的夜晚', 'Some Enchanted Evening', 1, 16]),
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_speed_reading', '快速阅读', 'Speed Reading', 1, 17]),
-    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_zzzzzap', '快速攻击！', 'Zzzzzap!', 2, 18]),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_charm', '魅力', 'Charm', 1, 10], ['onPlay']),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_embiggen', '大上一倍', 'Embiggen', 1, 11], ['onPlay']),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_mass_summoning', '大召唤', 'Mass Summoning', 1, 12], ['onPlay']),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_portal_to_beyond', '通往次元之门', 'Portal to Beyond', 1, 13], {
+        subtype: 'ongoing',
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+        abilityTags: ['talent'],
+    }),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_recover_arcane_wisdom', '恢复奥术智慧', 'Recover Arcane Wisdom', 2, 14], ['onPlay']),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_some_enchanted_evening', '神奇的夜晚', 'Some Enchanted Evening', 1, 16], ['onPlay']),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_speed_reading', '快速阅读', 'Speed Reading', 1, 17], ['onPlay']),
+    action(MAGES, MAGES_CARD_ATLAS, ['munchkin_mages_zzzzzap', '快速攻击！', 'Zzzzzap!', 2, 18], ['onPlay']),
 ];
 
 export const MUNCHKIN_MAGES_CARDS: CardDef[] = [
@@ -389,21 +394,21 @@ const ELVES_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_ELVES_CARDS;
 const ELVES_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_ELVES_BASES;
 
 export const MUNCHKIN_ELVES_MINIONS: MinionCardDef[] = [
-    minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_fae_fighter', '精灵斗士', 'Fae Fighter', 5, 1, 0]),
-    minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_lord_of_the_prance', '优雅贵族', 'Lord of the Prance', 4, 2, 1]),
-    minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_flower_child', '花之子', 'Flower Child', 2, 3, 3]),
-    minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_elf_help_guru', '精灵帮助大师', 'Elf Help Guru', 2, 4, 6]),
+    minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_fae_fighter', '精灵斗士', 'Fae Fighter', 5, 1, 0], ['ongoing']),
+    { ...minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_lord_of_the_prance', '优雅贵族', 'Lord of the Prance', 4, 2, 1], ['talent']), activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }] },
+    minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_flower_child', '花之子', 'Flower Child', 2, 3, 3], ['onPlay']),
+    { ...minion(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_elf_help_guru', '精灵帮助大师', 'Elf Help Guru', 2, 4, 6], ['talent']), activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }] },
 ];
 
 export const MUNCHKIN_ELVES_ACTIONS: ActionCardDef[] = [
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_after_you', '在你之后', 'After You', 1, 10]),
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_dancing_root', '舞动之根', 'Dancing Root', 1, 11]),
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_helping_hands', '援手', 'Helping Hands', 1, 12]),
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_pumping_iron', '力量训练', 'Pumping Iron', 2, 13]),
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_run_away', '逃跑吧！', 'Run Away!', 1, 15]),
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_run_away_more', '赶紧逃跑吧！', 'Run Away More!', 1, 16]),
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_trade', '贸易', 'Trade', 2, 17]),
-    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_traveling_elf', '旅行精灵', 'Traveling Elf', 1, 19]),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_after_you', '在你之后', 'After You', 1, 10], ['onPlay']),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_dancing_root', '舞动之根', 'Dancing Root', 1, 11], ['onPlay']),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_helping_hands', '援手', 'Helping Hands', 1, 12], { subtype: 'special', abilityTags: ['special'], specialTiming: 'beforeScoring', specialNeedsBase: true }),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_pumping_iron', '力量训练', 'Pumping Iron', 2, 13], ['onPlay']),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_run_away', '逃跑吧！', 'Run Away!', 1, 15], { subtype: 'special', abilityTags: ['special'], specialTiming: 'beforeScoring', specialNeedsBase: true }),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_run_away_more', '赶紧逃跑吧！', 'Run Away More!', 1, 16], { subtype: 'special', abilityTags: ['special'], specialTiming: 'beforeScoring', specialNeedsBase: true }),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_trade', '贸易', 'Trade', 2, 17], ['onPlay']),
+    action(ELVES, ELVES_CARD_ATLAS, ['munchkin_elves_traveling_elf', '旅行精灵', 'Traveling Elf', 1, 19], { subtype: 'ongoing', ongoingTarget: 'minion', playNeedsMinion: true, playTargetMinionController: 'self', abilityTags: ['ongoing', 'talent'], activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }] }),
 ];
 
 export const MUNCHKIN_ELVES_CARDS: CardDef[] = [

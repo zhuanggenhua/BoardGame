@@ -38,7 +38,7 @@ import { useGameEvents } from './ui/useGameEvents';
 import { useFxBus, FxLayer } from '../../engine/fx';
 import { smashUpFxRegistry } from './ui/fxSetup';
 import { FactionSelection } from './ui/FactionSelection';
-import { PromptOverlay, resolveI18nKeys } from './ui/PromptOverlay';
+import { PromptOverlay, resolveI18nKeys, resolvePromptText } from './ui/PromptOverlay';
 import { getFactionMeta } from './ui/factionMeta';
 import { PLAYER_CONFIG } from './ui/playerConfig';
 import { BaseZone } from './ui/BaseZone';
@@ -563,8 +563,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [core, isMyTurn, phase, playerID]);
 
     // 手牌交互语义分流：
-    // - direct: 单选 hand prompt，由手牌区直接承接点击
-    // - overlay: 多选 hand prompt，继续走 PromptOverlay
+    // - direct: 当前手牌本体能承接的 hand prompt，由手牌区直接点击/多选确认
+    // - overlay: 选项不全在当前手牌本体上，继续走 PromptOverlay
     const currentInteraction = G?.sys?.interaction?.current;
     const currentPrompt = useMemo(() => asSimpleChoice(currentInteraction), [currentInteraction]);
     const respondCurrentPrompt = useCallback((payload: Record<string, unknown>) => {
@@ -612,6 +612,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         });
     }, [currentPrompt, currentPromptTargetType, myPlayer, playerID]);
     const handPromptSelectableUids = handPromptCardState.selectableCardUids;
+    const handPromptDisabledUids = handPromptCardState.disabledCardUids;
 
     const handPromptTitanUids = useMemo<Set<string>>(() => {
         if (!isDirectHandSelectPrompt || !currentPrompt) return new Set();
@@ -914,10 +915,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return isBoardSelectPrompt && !!currentPrompt?.multi;
     }, [isBoardSelectPrompt, currentPrompt]);
 
-    // 多选随从模式：已选中的 optionId 集合
+    // 多选交互模式：已选中的 optionId 集合
     const [multiSelectedOptionIds, setMultiSelectedOptionIds] = useState<Set<string>>(new Set());
 
-    // 多选随从模式：约束
+    // 多选交互模式：约束
     const multiMinionConstraints = useMemo(() => {
         if (!currentPrompt?.multi) {
             return { min: 0, max: Infinity };
@@ -925,6 +926,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const multi = currentPrompt.multi as { min?: number; max?: number };
         return { min: multi.min ?? 0, max: multi.max ?? Infinity };
     }, [currentPrompt]);
+    const isMultiDirectHandSelect = isDirectHandSelectPrompt
+        && !!currentPrompt?.multi
+        && multiMinionConstraints.max !== 1;
 
     // 多选随从已选中的 UID 集合（用于 BaseZone 高亮已选随从）
     const multiSelectedMinionUids = useMemo<Set<string>>(() => {
@@ -932,8 +936,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const uids = new Set<string>();
         for (const optId of multiSelectedOptionIds) {
             const opt = currentPrompt?.options.find(o => o.id === optId);
-            const val = opt?.value as { minionUid?: string } | undefined;
-            if (val?.minionUid) uids.add(val.minionUid);
+            const val = opt?.value as { minionUid?: string; cardUid?: string; targetType?: string } | undefined;
+            const minionUid = val?.minionUid ?? (val?.targetType === 'minion' ? val.cardUid : undefined);
+            if (minionUid) uids.add(minionUid);
         }
         return uids;
     }, [multiSelectedOptionIds, currentPrompt]);
@@ -948,6 +953,36 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         return uids;
     }, [multiSelectedOptionIds, currentPrompt]);
+
+    const multiSelectedHandCardUids = useMemo<Set<string>>(() => {
+        if (!isMultiDirectHandSelect || !currentPrompt) return new Set();
+        const uids = new Set<string>();
+        for (const optId of multiSelectedOptionIds) {
+            const opt = currentPrompt.options.find(o => o.id === optId);
+            const val = opt?.value as { cardUid?: string } | undefined;
+            if (val?.cardUid) uids.add(val.cardUid);
+        }
+        return uids;
+    }, [isMultiDirectHandSelect, multiSelectedOptionIds, currentPrompt]);
+
+    const handAreaCards = useMemo(() => {
+        const cards = isDirectHandSelectPrompt
+            ? (myPlayer?.hand ?? [])
+            : isAlternateView
+                ? (displayedDeckPlayer?.hand ?? [])
+                : (myPlayer?.hand ?? []);
+        if (!isDirectHandSelectPrompt) return cards;
+        return cards.filter(card =>
+            handPromptSelectableUids.has(card.uid) || multiSelectedHandCardUids.has(card.uid)
+        );
+    }, [
+        displayedDeckPlayer?.hand,
+        handPromptSelectableUids,
+        isAlternateView,
+        isDirectHandSelectPrompt,
+        multiSelectedHandCardUids,
+        myPlayer?.hand,
+    ]);
 
     const multiSelectedBuriedCardUids = useMemo<Set<string>>(() => {
         if (!isMultiBuriedSelect) return new Set();
@@ -976,9 +1011,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isBoardSelectPrompt || !currentPrompt) return new Set();
         const uids = new Set<string>();
         for (const opt of currentPrompt.options) {
-            const val = opt.value as { minionUid?: string; skip?: boolean } | undefined;
+            const val = opt.value as { minionUid?: string; cardUid?: string; targetType?: string; skip?: boolean } | undefined;
             if (val?.skip === true) continue;
-            if (val?.minionUid) uids.add(val.minionUid);
+            const minionUid = val?.minionUid ?? (val?.targetType === 'minion' ? val.cardUid : undefined);
+            if (minionUid) uids.add(minionUid);
         }
         return uids;
     }, [isBoardSelectPrompt, currentPrompt]);
@@ -1041,7 +1077,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isBoardSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isTitanReactionPrompt) raw = 'ui.titan_reaction_click_prompt';
-        return raw ? resolveI18nKeys(raw, t) : '';
+        return raw
+            ? resolvePromptText(raw, currentPrompt?.titleKey, currentPrompt?.titleParams, t)
+            : '';
     }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
 
     const interactionSelectSubtitle = useMemo(() => {
@@ -1052,7 +1090,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isBoardSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
-        return raw ? resolveI18nKeys(raw, t) : '';
+        return raw
+            ? resolvePromptText(raw, currentPrompt?.subtitleKey, currentPrompt?.subtitleParams, t)
+            : '';
     }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
 
     // 弃牌堆随从选择交互检测（僵尸领主等）：targetType === 'discard_minion'
@@ -2413,9 +2453,21 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         if (isDirectHandSelectPrompt && currentPrompt) {
             const option = currentPrompt.options.find(
-                opt => (opt.value as { cardUid?: string })?.cardUid === card.uid
+                opt => !opt.disabled && (opt.value as { cardUid?: string })?.cardUid === card.uid
             );
             if (option) {
+                if (isMultiDirectHandSelect) {
+                    setMultiSelectedOptionIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(option.id)) {
+                            next.delete(option.id);
+                        } else if (next.size < multiMinionConstraints.max) {
+                            next.add(option.id);
+                        }
+                        return next;
+                    });
+                    return;
+                }
                 respondCurrentPrompt({ optionId: option.id });
             } else {
                 playDeniedSound();
@@ -2589,7 +2641,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setSelectedCardUid(card.uid);
             setSelectedCardMode('minion');
         }
-    }, [activeSelectedSetAsideTitanUid, core, currentPrompt, discardCount, dispatch, enterActionTargetSelection, G, getDeployableBaseStateForCard, handlePlayActionWithoutTarget, isAfterScoringResponse, isDirectHandSelectPrompt, isMeFirstResponse, isMyTurn, isTutorialCommandAllowed, isTutorialTargetAllowed, myPlayer, needDiscard, pendingFusionChoiceUid, phase, reactionWindow, resolvePlayableCardMode, rootPid, selectedCardMode, selectedCardUid, shouldLockNormalHandInteraction, t, validateImmediateActionPlay, toastCommandFeedback, respondCurrentPrompt]);
+    }, [activeSelectedSetAsideTitanUid, currentPrompt, discardCount, enterActionTargetSelection, G, getDeployableBaseStateForCard, handlePlayActionWithoutTarget, isAfterScoringResponse, isDirectHandSelectPrompt, isMeFirstResponse, isMyTurn, isMultiDirectHandSelect, isTutorialCommandAllowed, isTutorialTargetAllowed, matchState, multiMinionConstraints.max, myPlayer, needDiscard, pendingFusionChoiceUid, phase, reactionWindow, resolvePlayableCardMode, rootPid, selectedCardMode, selectedCardUid, shouldLockNormalHandInteraction, t, validateImmediateActionPlay, toastCommandFeedback, respondCurrentPrompt]);
 
     const confirmFusionPlayAs = useCallback((playAs: 'minion' | 'action') => {
         if (!pendingFusionChoiceUid || !myPlayer) return;
@@ -2635,9 +2687,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if ((isMinionSelectPrompt || isBoardSelectPrompt) && currentPrompt) {
             const promptSelectableMinionUids = isBoardSelectPrompt ? boardSelectableMinionUids : selectableMinionUids;
             if (!promptSelectableMinionUids.has(minionUid)) return;
-            const option = currentPrompt.options.find(
-                opt => !opt.disabled && (opt.value as { minionUid?: string })?.minionUid === minionUid
-            );
+            const option = currentPrompt.options.find((opt) => {
+                if (opt.disabled) return false;
+                const value = opt.value as { minionUid?: string; cardUid?: string; targetType?: string } | undefined;
+                const optionMinionUid = value?.minionUid ?? (value?.targetType === 'minion' ? value.cardUid : undefined);
+                return optionMinionUid === minionUid;
+            });
             if (!option) return;
 
             // 多选模式：toggle 选中状态
@@ -3604,9 +3659,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     )}
                 </AnimatePresence>
 
-                {/* --- 手牌选择浮动操作栏（跳过按钮） --- */}
+                {/* --- 手牌选择浮动操作栏（多选确认 + 跳过按钮） --- */}
                 <AnimatePresence>
-                    {isDirectHandSelectPrompt && handSelectExtraOptions.length > 0 && (
+                    {isDirectHandSelectPrompt && (isMultiDirectHandSelect || handSelectExtraOptions.length > 0) && (
                         <motion.div
                             initial={{ y: 40, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -3614,13 +3669,50 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             className={floatingHintClassName}
                             style={floatingHintStyle}
                         >
-                            <div className="flex gap-3 pointer-events-auto">
+                            <div className="flex gap-3 items-center pointer-events-auto">
+                                {isMultiDirectHandSelect && (
+                                    <>
+                                        <div className="bg-slate-900/90 backdrop-blur-sm text-white px-4 py-2 rounded border border-slate-600 shadow-lg">
+                                            <span className="font-bold text-sm">
+                                                {multiMinionConstraints.max !== Infinity
+                                                    ? t('ui.selected_count_with_max', {
+                                                        count: multiSelectedOptionIds.size,
+                                                        max: multiMinionConstraints.max,
+                                                    })
+                                                    : t('ui.selected_count', { count: multiSelectedOptionIds.size })}
+                                            </span>
+                                        </div>
+                                        <SmashUpGameButton
+                                            variant="primary"
+                                            size="md"
+                                            disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
+                                            onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
+                                        >
+                                            {t('ui.confirm_selection')}
+                                        </SmashUpGameButton>
+                                        {multiSelectedOptionIds.size > 0 && (
+                                            <SmashUpGameButton
+                                                variant="secondary"
+                                                size="md"
+                                                onClick={() => setMultiSelectedOptionIds(new Set())}
+                                            >
+                                                {t('ui.clear_selection')}
+                                            </SmashUpGameButton>
+                                        )}
+                                    </>
+                                )}
                                 {handSelectExtraOptions.map(opt => (
                                     <SmashUpGameButton
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
+                                        onClick={() => {
+                                            if (isMultiDirectHandSelect) {
+                                                respondCurrentPrompt({ optionIds: [opt.id] });
+                                            } else {
+                                                respondCurrentPrompt({ optionId: opt.id });
+                                            }
+                                        }}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3964,12 +4056,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 style={{ height: `${layout.handAreaHeight}px` }}
                             >
                                 <HandArea
-                                    hand={isAlternateView ? (displayedDeckPlayer?.hand ?? []) : (myPlayer?.hand ?? [])}
+                                    hand={handAreaCards}
                                     selectedCardUid={selectedCardUid}
                                     onCardSelect={handleCardClick}
                                     compactLayout={isMobileViewport}
                                     isDiscardMode={needDiscard}
-                                    discardSelection={discardSelection}
+                                    discardSelection={isMultiDirectHandSelect ? multiSelectedHandCardUids : discardSelection}
                                     highlightCardUids={isDirectHandSelectPrompt ? handPromptSelectableUids : undefined}
                                     // 教学模式下，当不允许打出随从和行动时禁用手牌交互（摇头反馈）
                                     disableInteraction={
@@ -3979,9 +4071,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         !isTutorialCommandAllowed(SU_COMMANDS.PLAY_MINION) &&
                                         !isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)
                                     }
-                                    disabledCardUids={meFirstDisabledUids ?? tutorialDisabledUids}
+                                    disabledCardUids={isDirectHandSelectPrompt ? handPromptDisabledUids : (meFirstDisabledUids ?? tutorialDisabledUids)}
                                     onCardView={handleViewCardDetail}
-                                    isOpponentView={isAlternateView}
+                                    isOpponentView={isAlternateView && !isDirectHandSelectPrompt}
                                     interactionMode={handInteractionMode}
                                     onResolveDropTarget={resolveHandDropTarget}
                                     onCardDragPlay={handleCardDragPlay}

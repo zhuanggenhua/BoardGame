@@ -1,3 +1,18 @@
+## Current Session: 2026-08-04 召唤师战争暗影精灵派系接入
+
+- 已重新锁定当前目标：暗影精灵派系接入；旧的山屋惊魂进度仅保留在本文件下方，不能接管本轮。
+- 已确认当前工作区 `main`、其他未提交改动存在且需保留；没有执行分支、tag、worktree 或回滚操作。
+- 已重新读取项目 `AGENTS.md`、`openspec/AGENTS.md`、`openspec/project.md`、召唤师战争专项 workflow、新派系 skill 与当前素材 evidence。
+- 已确认摘要中的图集配置路径过时，实际入口是 `src/games/summonerwars/ui/cardAtlas.ts`。
+- 已确认静态链路、独立 8×2 图集、关键图预加载、本地化、manifest、13 个能力注册和领域/InteractionSystem 消费链均已落地；暗影精灵目录仍保持 `under_construction`。
+- 暗影精灵定向测试当前为 `3 files / 29 passed`；派系/资源合同测试为 `23 passed`。
+- 修正 `shadow-` 卡牌 ID 缺少 `faction` 时的图集回退映射；合同测试锁定中文名解析、30 张牌组、0-10 槽位、空白槽、六个正式媒体文件与两个 manifest。
+- 已按暗影精灵单派系前缀预检、上传 3 个 WebP，并完成远端 `HTTP 200`、长度与下载 SHA-256 回查；三项均与本地/manifest 一致。
+- 真实入口 E2E 已扩展为 `11 passed`、36 张原始截图，覆盖全部 13 个能力和 4 张事件卡的真实选择/结算路径；新增截图逐图 AI UI 审计 `PASS`（综合 `93/100`），不再保留暗影精灵能力级 `scoped-debt`。
+- `openspec validate add-summonerwars-shadow-faction --strict --no-interactive` 通过，输出 `Change 'add-summonerwars-shadow-faction' is valid`；`task-completion-guard` 返回 `COMPLETE`。
+
+---
+
 ## Session: 2026-07-27 作祟 3「灰尘」规则补漏实现
 
 - **Status:** active-rule-gap-implementation
@@ -11375,3 +11390,18 @@
 - 当前结论：
   - 这只证明非叛徒死亡的反向边界，避免把“死亡叛徒特殊规则”扩大到所有死亡探索者。
   - 不代表灰尘全部规则、全部搜尸 UI / E2E、全部死亡来源全排列完成。
+
+## Current Addendum（2026-08-04 暗影精灵真实入口完整能力收口）
+
+- [x] 真实入口 E2E 已修通并通过：客人选择“死灵法师”后准备，房主选择“暗影精灵”后开始，双方成功进入棋盘。
+- [x] 测试断言已限定房主自己的“起始城门”（`data-owner="0"`），避免双方同名城门触发严格模式错误。
+- [x] 本轮截图已生成到 `test-results/evidence-screenshots/summonerwars/summonerwars-shadow.e2e/`，当前共 11 个场景、36 张原始 JPG。
+- [x] 已完成截图逐图 AI 审计、完整 `npm run test:summonerwars`、玛尔典籍/暗影脉冲 InteractionSystem 管线和全部 13 个能力的真实入口覆盖。
+- [x] 新增 5 个场景已补齐鲜血魔法/黑暗预言、撕裂帷幕、难逃厄运、猛攻/佯攻、死亡契约/穿透之光，共 15 张截图；“猛攻/佯攻”截图已在关闭骰子结果层后重拍。
+
+### 截图审计结果
+
+- [x] 36 张当前真实入口截图已逐图读取，确认入口卡牌、选择状态、能力提示、事件目标、结算状态和起始棋盘均来自本工作区 `main` 的同一真实房间链。
+- [x] `ui-audit-loop` 结论：`PASS`，综合 `93/100`；未发现截图中的空素材、遮挡、裁切或主操作入口丢失。
+- [x] 该 PASS 覆盖派系选择/初始化和全部 13 个能力、4 张事件卡的真实选择/结算；能力级 L3/L4 不再保留暗影精灵 `scoped-debt`。
+- [x] OpenSpec strict validate 与完成门禁均通过，暗影精灵本轮目标已收口；派系目录仍按当前产品状态保留 `under_construction`。

@@ -146,6 +146,7 @@ export function applyAiAutoRecoveryRejection<T extends AiAutoRecoveryAttemptTrac
 
 const SILENT_ONLINE_AI_BATCH_REJECTION_REASONS = new Set([
     'stale_state',
+    'online_ai_circuit_open',
 ]);
 
 export function shouldSilentlyRetryOnlineAiBatchRejection(reason: string): boolean {

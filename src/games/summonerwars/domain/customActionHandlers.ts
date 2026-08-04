@@ -16,6 +16,7 @@ import type { AbilityContext } from './abilityResolver';
 import { SW_EVENTS } from './types';
 import {
     getUnitAt,
+    getSummoner,
     isCellEmpty,
     manhattanDistance,
     normalizeUnitBoosts,
@@ -99,6 +100,44 @@ swCustomActionRegistry.register('guidance_draw', ({ ctx, timestamp }) => {
         timestamp,
     }];
 });
+
+// --- 暗影精灵：死亡契约（本单位被消灭后伤害己方召唤师） ---
+swCustomActionRegistry.register('shadow_death_pact_damage', ({ ctx, timestamp }) => {
+    const summoner = getSummoner(ctx.state, ctx.ownerId);
+    if (!summoner) return [];
+    return [{
+        type: SW_EVENTS.UNIT_DAMAGED,
+        payload: {
+            position: summoner.position,
+            damage: 1,
+            reason: 'shadow_death_pact',
+            sourceAbilityId: 'shadow_death_pact',
+            sourcePlayerId: ctx.ownerId,
+        },
+        timestamp,
+    }];
+}, { categories: ['damage'] });
+
+// --- 暗影精灵：难逃厄运（攻击阶段结束时按本回合击杀结果伤害召唤师） ---
+swCustomActionRegistry.register('shadow_inescapable_doom_damage', ({ ctx, timestamp }) => {
+    const killerCount = ctx.state.unitKillCountThisTurn?.[ctx.sourceUnit.instanceId] ?? 0;
+    const targetPlayer = killerCount > 0
+        ? (ctx.ownerId === '0' ? '1' : '0')
+        : ctx.ownerId;
+    const targetSummoner = getSummoner(ctx.state, targetPlayer);
+    if (!targetSummoner) return [];
+    return [{
+        type: SW_EVENTS.UNIT_DAMAGED,
+        payload: {
+            position: targetSummoner.position,
+            damage: 1,
+            reason: 'shadow_inescapable_doom',
+            sourceAbilityId: 'shadow_inescapable_doom',
+            sourcePlayerId: ctx.ownerId,
+        },
+        timestamp,
+    }];
+}, { categories: ['damage'] });
 
 // --- 魔力成瘾（地精）：回合结束时有魔力花 1 魔力，否则弃置本单位 ---
 swCustomActionRegistry.register('magic_addiction_check', ({ ctx, timestamp }) => {

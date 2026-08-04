@@ -78,8 +78,12 @@ function buildAiBatchId(playerId: string, attemptKey: string): string {
     return `ai-${playerId}-${normalizedAttemptKey}`;
 }
 
+type OnlineAiResolutionClient = Pick<GameTransportClient, 'sendBatch' | 'sendCommand' | 'subscribeStateUpdate' | 'latestState' | 'updateLatestState' | 'resync'> & {
+    subscribeError?: (listener: (error: string) => void) => () => void;
+};
+
 type SubmitOnlineAiResolutionArgs = {
-    client: Pick<GameTransportClient, 'sendBatch' | 'sendCommand' | 'subscribeStateUpdate' | 'latestState' | 'updateLatestState' | 'resync'>;
+    client: OnlineAiResolutionClient;
     resolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
@@ -90,7 +94,7 @@ type SubmitOnlineAiResolutionArgs = {
 };
 
 type SubmitOnlineAiResolutionSequenceArgs = {
-    client: Pick<GameTransportClient, 'sendBatch' | 'sendCommand' | 'subscribeStateUpdate' | 'latestState' | 'updateLatestState' | 'resync'>;
+    client: OnlineAiResolutionClient;
     initialResolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
@@ -114,7 +118,7 @@ type SubmitOnlineAiResolutionSequenceArgs = {
 };
 
 type SubmitForceEndTurnRecoverySequenceArgs = {
-    client: Pick<GameTransportClient, 'sendBatch' | 'sendCommand' | 'subscribeStateUpdate' | 'latestState' | 'updateLatestState' | 'resync'>;
+    client: OnlineAiResolutionClient;
     candidate: ForceEndTurnStalledAiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
@@ -179,6 +183,7 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
         let settled = false;
         let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
         let unsubscribe: (() => void) | null = null;
+        let unsubscribeError: (() => void) | null = null;
 
         const cleanup = () => {
             if (timeoutHandle) {
@@ -187,7 +192,21 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
             }
             unsubscribe?.();
             unsubscribe = null;
+            unsubscribeError?.();
+            unsubscribeError = null;
         };
+
+        unsubscribeError = client.subscribeError?.((reason) => {
+            if (settled || reason !== 'online_ai_circuit_open') {
+                return;
+            }
+            settled = true;
+            cleanup();
+            if (lastAiAttemptKeyRef.current === resolution.attemptKey) {
+                lastAiAttemptKeyRef.current = null;
+            }
+            onRejected?.(reason);
+        }) ?? null;
 
         unsubscribe = client.subscribeStateUpdate((nextState) => {
             if (settled || !nextState || typeof nextState !== 'object') {
@@ -240,7 +259,7 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
             if (lastAiAttemptKeyRef.current === resolution.attemptKey) {
                 lastAiAttemptKeyRef.current = null;
             }
-            if (reason !== 'unauthorized') {
+            if (reason !== 'unauthorized' && reason !== 'online_ai_circuit_open') {
                 if (onWillResync) {
                     onWillResync(reason);
                 } else {

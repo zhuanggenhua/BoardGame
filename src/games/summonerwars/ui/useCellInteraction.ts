@@ -949,7 +949,10 @@ export function useCellInteraction({
   }, [dispatch, swInteraction]);
 
   const handleCancelEventTargetInteraction = useCallback(() => {
-    if (!swInteraction || swInteraction.type !== 'event_target') return;
+    if (
+      !swInteraction
+      || (swInteraction.type !== 'event_target' && swInteraction.type !== 'shadow_marl_select_damage')
+    ) return;
     dispatch(INTERACTION_COMMANDS.CANCEL, { interactionId: swInteraction.id });
   }, [dispatch, swInteraction]);
 
@@ -983,6 +986,7 @@ export function useCellInteraction({
     chantEntanglementMode: eventCardModes.chantEntanglementMode,
     moguSymbioticSelfHealingMode: eventCardModes.moguSymbioticSelfHealingMode,
     moguReleaseSporesMode: eventCardModes.moguReleaseSporesMode,
+    shadowPulseMode: eventCardModes.shadowPulseMode,
     sneakMode: eventCardModes.sneakMode,
     glacialShiftMode: eventCardModes.glacialShiftMode,
     withdrawMode: eventCardModes.withdrawMode,
@@ -998,6 +1002,7 @@ export function useCellInteraction({
     entanglementHighlights: eventCardModes.entanglementHighlights,
     moguSymbioticSelfHealingHighlights: eventCardModes.moguSymbioticSelfHealingHighlights,
     moguReleaseSporesHighlights: eventCardModes.moguReleaseSporesHighlights,
+    shadowPulseHighlights: eventCardModes.shadowPulseHighlights,
     sneakHighlights: eventCardModes.sneakHighlights,
     glacialShiftHighlights: eventCardModes.glacialShiftHighlights,
     withdrawHighlights: eventCardModes.withdrawHighlights,
@@ -1014,6 +1019,8 @@ export function useCellInteraction({
     handleSkipMoguSymbioticSelfHealing: eventCardModes.handleSkipMoguSymbioticSelfHealing,
     handleConfirmMoguReleaseSpores: eventCardModes.handleConfirmMoguReleaseSpores,
     handleSkipMoguReleaseSpores: eventCardModes.handleSkipMoguReleaseSpores,
+    handleConfirmShadowPulse: eventCardModes.handleConfirmShadowPulse,
+    handleSkipShadowPulse: eventCardModes.handleSkipShadowPulse,
     handleConfirmSneak: eventCardModes.handleConfirmSneak,
     handleConfirmGlacialShift: eventCardModes.handleConfirmGlacialShift,
     handleConfirmMindCapture,

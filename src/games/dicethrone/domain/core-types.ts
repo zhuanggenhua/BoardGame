@@ -69,7 +69,11 @@ export type DieFace =
     | 'skull'
     | 'wrench'
     | 'gear'
-    | 'electricity';
+    | 'electricity'
+    | 'blade'
+    | 'wing'
+    | 'cross'
+    | 'shield';
 
 // ============================================================================
 // 角色编目
@@ -89,6 +93,7 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'zhanshujia',
     'cursed_pirate',
     'artificer',
+    'tianshi',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -115,6 +120,7 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'zhanshujia', nameKey: 'characters.zhanshujia' },
     { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
     { id: 'artificer', nameKey: 'characters.artificer' },
+    { id: 'tianshi', nameKey: 'characters.tianshi' },
 ];
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(

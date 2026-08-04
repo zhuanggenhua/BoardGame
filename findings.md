@@ -1,3 +1,23 @@
+# Current Findings: 召唤师战争暗影精灵派系接入（2026-08-04）
+
+## 已确认事实
+
+- 当前工作区是 `D:\gongzuo\webgame\BoardGame` 的 `main`，原本存在大量其他未提交改动；本轮只沿暗影精灵接入链处理，不清理、不回滚、不扩大这些改动。
+- 用户指定的暗影精灵素材已经形成独立 `8x2`、单格 `786x562` 的 `cards.jpg`，槽位 `0-10` 为 11 张正式卡面，`11-15` 为空白；正式运行时资源目录保留 `cards.jpg`、`hero.jpg`、`tip.jpg` 与 `compressed/*.webp`。
+- `src/games/summonerwars/config/factions/shadow.ts`、派系目录、独立图集、关键图预加载、本地化和游戏级/根级 manifest 已接入；暗影精灵仍标记为 `under_construction`。
+- 13 个能力 ID 已注册；13 个能力和 4 张事件卡均已有领域/InteractionSystem L2 消费与定向测试，并已补齐真实入口浏览器级 L3/L4 证据。
+- 本轮新增的“召唤回合”状态字段由 `UNIT_SUMMONED` 归约写入，战力与远程攻击路径读取该字段；统一伤害后处理按实际 `UNIT_DAMAGED` 事件消费鲜血魔法。
+- `evidence/summonerwars/shadow-faction-intake.md` 已回写资源、L0-L4、D1-D7、起始坐标、测试和截图状态；真实入口共 11 个场景、36 张截图，全部通过逐图 UI 审计。
+- 项目 OpenSpec change `openspec/changes/add-summonerwars-shadow-faction/` 已创建；状态回写后仍需重新执行严格校验和完成门禁，派系目录本身继续保持 `under_construction`。
+
+## 关键判断
+
+- 运行时图集尺寸与旧派系不一致，暗影精灵必须新增独立 atlas 配置，不能覆盖 `MOGU_CARDS_ATLAS` / 旧共享 cards 合同。
+- 规则原文允许先实现能由当前 `AbilityDef`、执行器、事件卡结算和现有交互承载的部分；涉及新交互的能力必须先反查 `sys.interaction` 现有消费合同，不能仅凭卡面文字硬塞自动结算。
+- 在没有 L2/L3/L4 证据前，暗影精灵只能标记为 `under_construction` 或 evidence 中的 `blocked` / `scoped-debt`。
+
+---
+
 # Findings: 作祟 3「灰尘」规则补漏实现（2026-07-27）
 
 ## 当前已确认事实
@@ -4226,3 +4246,56 @@ v12 达标点：
   - 同房间存活探索者可从尸体搜刮地图，并把该尸体记入本回合已搜刮。
 - 验证命令：`node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/firstScenarioRuntime.test.ts --config vitest.config.core.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "灰尘非叛徒死亡时不会掩埋遗物"`，结果为 `1 passed / 410 skipped`；整份 `firstScenarioRuntime.test.ts` 为 `411 passed`；`npx eslint src/games/betrayal/__tests__/firstScenarioRuntime.test.ts` 为 0 errors。
 - 本条只锁反向边界，不表示灰尘规则、搜尸 UI / E2E 或全部死亡来源矩阵完成。
+
+## 2.63 暗影精灵真实入口准备同步与起始城门断言（2026-08-04）
+
+- 当前目标对象：召唤师战争真实联机入口中的暗影精灵派系选择、客人准备、房主开局和暗影精灵起始部署。
+- 第一次失败的“房主仍显示等待全员就绪”未在本次复跑中重现；随后真实开局已成功生成双方棋盘，说明客人 `sw:player_ready` 的权威状态已经同步到房主页面。
+- 第二次失败命中测试断言而非业务链路：页面同时显示房主与客人的“起始城门”，原断言未限定房主座位，Playwright 严格模式拒绝两个元素。最小修正是将断言限定为 `data-owner="0"`。
+- 修正后 `npm run test:e2e:file -- e2e/summonerwars/summonerwars-shadow.e2e.ts` 为 `1 passed`。
+- 当前真实截图：
+  - `test-results/evidence-screenshots/summonerwars/summonerwars-shadow.e2e/从派系选择到真实开局生成暗影精灵起始部署/01-暗影精灵派系入口可见.jpg`
+  - `test-results/evidence-screenshots/summonerwars/summonerwars-shadow.e2e/从派系选择到真实开局生成暗影精灵起始部署/02-暗影精灵派系已选择.jpg`
+  - `test-results/evidence-screenshots/summonerwars/summonerwars-shadow.e2e/从派系选择到真实开局生成暗影精灵起始部署/03-暗影精灵真实开局布局.jpg`
+- 截至本条仅完成真实入口功能证据；截图尚未按 `ui-audit-loop` 逐图判定 PASS，不能把当前 E2E 绿灯当作 UI 验收完成。
+
+### 当前截图逐图 UI 审计（2026-08-04）
+
+- `01-暗影精灵派系入口可见.jpg`：暗影精灵卡牌已在第二页真实视口内，入口箭头、阵营卡牌、状态条、玩家状态区和下方预览占位均可辨认；没有把旧第一页当作当前入口证据。
+- `02-暗影精灵派系已选择.jpg`：暗影精灵卡牌仍可见，P1 标记和下方玩家状态栏均显示已选择的暗影精灵，预览图与选择对象一致。
+- `03-暗影精灵真实开局布局.jpg`：棋盘中央可见瑟伦达、圣贤巡游者、暗影法师和房门，底部手牌、左下牌库、右下弃牌堆、右侧阶段栏与结束阶段按钮同时存在；未见对象重叠、素材破图或操作入口被遮挡。
+- UI 审计结论：`PASS`，评分 `92/100`。截图证据已经覆盖真实入口与起始布局，但只证明派系选择/开局层，不能外推所有暗影精灵能力交互已完成。
+## Current Session Findings（2026-08-04 暗影精灵剩余真实入口收口）
+
+- 当前问题对象已锁定为召唤师战争暗影精灵（`shadow`）剩余 8 个能力子句的浏览器级 L3/L4 证据缺口，不是静态接入或领域实现缺口。
+- 当前真相源为用户指定暗影精灵素材目录、`evidence/summonerwars/shadow-faction-intake.md` 的规则合同、当前工作区召唤师战争运行时，以及现有 `e2e/summonerwars/summonerwars-shadow.e2e.ts` 的真实入口链。
+- 当前执行现场为 `D:\gongzuo\webgame\BoardGame` 的 `main` 工作区；工作区已有大量未提交改动，本轮只在暗影精灵 E2E/evidence/计划状态相关范围内继续，保留其它改动。
+- 剩余 8 条已由当前矩阵直接列出：瑟伦达“鲜血魔法”、虚梦安“黑暗预言”、塔莉娅“撕裂帷幕”、萨玛拉“难逃厄运”、真实探求者“猛攻”和“佯攻”、暗影骑士“死亡契约”、圣贤巡游者“穿透之光”。
+- 这些条目的 L2 领域/交互测试已经存在；本轮验收必须回到真实 `/play/summonerwars/match/:matchId` 页面，覆盖触发前、真实对象选择/可见状态、最终结算和可选能力的跳过路径，不能用 prompt 出现或中间状态冒充 L3/L4。
+
+### 本轮执行记录
+
+- 首次暗影精灵整文件 CI：原有 6 条通过；新增 5 条中“难逃厄运”通过，鲜血魔法/黑暗预言、撕裂帷幕、真实探求者、死亡契约/穿透之光因测试夹具问题失败；没有证据表明领域机制本身失败。
+- 已修正：暗影脉冲临时卡 ID 改为正式 `shadow-shadow-pulse-<数字>` 基础 ID；撕裂帷幕跳过按钮限定在 `sw-ability-prompt`；猛攻骰数读取提前到攻击骰结果层出现时。
+- 已确认的第二次失败：鲜血魔法场景已经正确进入 `shadow_pulse_select_targets`，但测试错误读取了通用事件目标属性；暗影脉冲使用独立的多目标高亮，不写入 `data-valid-event-target`，该断言已删除。
+- 当前重跑阻塞：`test:e2e:ci:file` 被项目重任务护栏拒绝，因为另一条 Munchkin E2E 正在占用 `e2e-run` 预算。最小补救是等待该进程结束后，用“文件 + 精确用例名”入口逐条重跑；未经用户明确允许，不设置并发绕过变量，也不终止别人的运行。
+- 鲜血魔法真实入口进一步暴露并修复了一个运行时重复消费：一次友方受伤原先实际产生 2 点充能；`execute.ts` 和系统后处理入口都消费了同一伤害事件。现在后处理会识别同批次已有的鲜血魔法充能，避免重复追加；领域去重回归 `2 passed`，真实入口场景已验证最终为 `1` 点充能。
+- 黑暗预言真实入口已验证：友方单位被暗影脉冲消灭后从棋盘移除、进入己方弃牌堆，虚梦安获得 1 点充能。
+- 撕裂帷幕真实入口成功路径和跳过路径均已跑通；跳过后友方士兵保持原位，选择路径完成向受伤敌方传送门邻格传送。
+
+### 新增真实截图逐图 UI 审计（2026-08-04）
+
+- 已读取新增真实入口场景的 15 张原始整屏 JPG：鲜血魔法/黑暗预言 3 张，撕裂帷幕 3 张，难逃厄运 4 张，猛攻/佯攻 3 张，死亡契约/穿透之光 2 张。
+- 14 张图中，目标卡牌、提示条、合法选择、阶段按钮、双方状态和牌堆入口均可辨认，没有发现遮挡、裁切、素材破图或目标归属不清。
+- “猛攻/佯攻”第一张图发现攻击结果骰子层覆盖攻击双方卡牌，不能同时清楚证明攻击对象和佯攻选择；已将截图时机调整为关闭骰子结果层后再拍，攻击骰数继续由真实事件流断言证明。
+- 修正后的同一真实入口截图已重拍并复核通过；当前新增截图集合结论为 `PASS`，可以写入最终 evidence。
+
+### 暗影精灵真实入口完整能力收口（2026-08-04）
+
+- 新增 5 个真实入口场景已全部通过：鲜血魔法/黑暗预言、撕裂帷幕、难逃厄运、猛攻/佯攻、死亡契约/穿透之光；加上既有 6 个场景共 `11 passed`，当前截图目录共 `36` 张原始 JPG。
+- 新增 8 个能力子句均已回到真实 `/play/summonerwars/match/:matchId` 入口完成触发、目标/位置选择或阶段结算，以及适用的跳过路径；此前的 `scoped-debt` 已从暗影精灵矩阵移除。
+- 新增 15 张截图逐张 AI UI 审计：第一次发现猛攻/佯攻选择态被攻击结果骰子层遮挡，已把截图时机调整为关闭骰子层后重拍；修正后的原图中攻击双方卡牌、佯攻位置按钮、跳过入口和阶段栏同时可读，最终结论 `PASS`。
+- 复核后的新增截图集合综合评分 `93/100`，无硬失败项。无关 Splendor 图片加载日志仍是范围外环境噪声，不纳入暗影精灵结论。
+- `openspec validate add-summonerwars-shadow-faction --strict --no-interactive` 输出 `Change 'add-summonerwars-shadow-faction' is valid`；`task-completion-guard` 输出 `COMPLETE`。
+
+---

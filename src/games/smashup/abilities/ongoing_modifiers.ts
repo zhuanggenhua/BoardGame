@@ -727,6 +727,19 @@ function registerBaseModifiers(): void {
     ]);
 }
 
+function registerMunchkinElvesModifiers(): void {
+    registerCustomBasePowerModifiers([
+        {
+            defId: 'base_helpers_hollow',
+            compute: (ctx) => {
+                if (ctx.base.defId !== 'base_helpers_hollow' || isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
+                return currentPlayerId && currentPlayerId !== ctx.playerId ? 1 : 0;
+            },
+        },
+    ]);
+}
+
 // ============================================================================
 // 狼人派系
 // ============================================================================
@@ -978,6 +991,7 @@ function registerHalfTheBattleModifiers(): void {
 /** 注册所有持续力量修正 */
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
+    registerMunchkinElvesModifiers();
     registerStructuredOngoingPowerModifiers();
     registerDinosaurModifiers();
     registerRobotModifiers();

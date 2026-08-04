@@ -23,6 +23,7 @@ import type {
   GlacialShiftModeState,
   WithdrawModeState,
   TelekinesisTargetModeState,
+  ShadowPulseModeState,
 } from './modeTypes';
 
 // ============================================================================
@@ -83,7 +84,9 @@ interface StatusBannersProps {
   rapidFireMode: import('./modeTypes').RapidFireModeState | null;
   telekinesisTargetMode: TelekinesisTargetModeState | null;
   magicEventChoiceMode: { cardId: string } | null;
-  eventTargetMode: { cardId: string } | null;
+  eventTargetMode: { cardId: string; card?: { name: string } } | null;
+  shadowPulseMode: ShadowPulseModeState | null;
+  shadowLightningStepMode: boolean;
   systemGrabFollowMode: boolean;
   systemFeedBeastMode: boolean;
   systemMoguParasiteMode: boolean;
@@ -130,6 +133,10 @@ interface StatusBannersProps {
   onDiscardMagicEvent: () => void;
   onCancelMagicEventChoice: () => void;
   onCancelEventTargetInteraction: () => void;
+  onConfirmShadowPulse: () => void;
+  onSkipShadowPulse: () => void;
+  onConfirmShadowLightningStep: () => void;
+  onSkipShadowLightningStep: () => void;
 }
 
 // ============================================================================
@@ -191,6 +198,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   mindControlMode, chantEntanglementMode, moguSymbioticSelfHealingMode, moguReleaseSporesMode, sneakMode, glacialShiftMode, withdrawMode, stunMode, hypnoticLureMode,
   mindCaptureMode, afterAttackAbilityMode, rapidFireMode, telekinesisTargetMode, magicEventChoiceMode,
   eventTargetMode,
+  shadowPulseMode,
+  shadowLightningStepMode,
   systemGrabFollowMode, systemFeedBeastMode, systemMoguParasiteMode,
   onCancelAbility, onConfirmBeforeAttackCards, onConfirmBloodRune, onSkipGrabFollow, onConfirmFeedBeastSelfDestroy, onConfirmMoguParasite,
   onCancelBeforeAttack, onCancelBloodSummon, onContinueBloodSummon,
@@ -211,7 +220,8 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
   onAfterMoveSelfCharge,
   onSystemAbilityChoice,
   onPlayMagicEvent, onDiscardMagicEvent, onCancelMagicEventChoice,
-  onCancelEventTargetInteraction,
+  onCancelEventTargetInteraction, onConfirmShadowPulse, onSkipShadowPulse,
+  onConfirmShadowLightningStep, onSkipShadowLightningStep,
 }) => {
   const { t } = useTranslation('game-summonerwars');
 
@@ -233,9 +243,37 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
     return (
       <div data-testid="sw-ability-prompt" className="bg-purple-900/95 px-4 py-2 rounded-lg border border-purple-500/40 flex items-center gap-3 shadow-lg">
         <span className="text-purple-200 text-sm font-bold">
-          {t('statusBanners.eventTarget.message')}
+          {t('statusBanners.eventTarget.message', { cardName: eventTargetMode.card?.name })}
         </span>
         <GameButton onClick={onCancelEventTargetInteraction} variant="secondary" size="sm">{t('actions.cancel')}</GameButton>
+      </div>
+    );
+  }
+
+  if (shadowPulseMode) {
+    return (
+      <div data-testid="sw-ability-prompt" className="bg-violet-900/95 px-4 py-2 rounded-lg border border-violet-400/40 flex items-center gap-3 shadow-lg">
+        <span className="text-violet-200 text-sm font-bold">
+          {t('statusBanners.shadowPulse.message', { count: shadowPulseMode.selectedTargets.length })}
+        </span>
+        <GameButton onClick={onConfirmShadowPulse} variant="primary" size="sm">{t('actions.finish')}</GameButton>
+        <GameButton onClick={onSkipShadowPulse} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
+      </div>
+    );
+  }
+
+  if (shadowLightningStepMode) {
+    return (
+      <div data-testid="sw-ability-prompt" className="bg-violet-900/95 px-4 py-2 rounded-lg border border-violet-400/40 flex items-center gap-3 shadow-lg">
+        <span className="text-violet-200 text-sm font-bold">
+          {t('interaction.sw.shadowLightningStep')}
+        </span>
+        <GameButton onClick={onConfirmShadowLightningStep} variant="primary" size="sm">
+          {t('actions.shadowLightningStepReplace')}
+        </GameButton>
+        <GameButton onClick={onSkipShadowLightningStep} variant="secondary" size="sm">
+          {t('actions.skip')}
+        </GameButton>
       </div>
     );
   }
@@ -281,7 +319,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
 
   if (abilityMode) {
     return (
-      <div data-testid="sw-ability-prompt" className="bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex items-center gap-3 shadow-lg">
+      <div data-testid="sw-ability-prompt" className="w-max max-w-[calc(100vw-1rem)] lg:max-w-[min(1000px,calc(100vw-28rem))] bg-amber-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-amber-500/40 flex flex-wrap items-center justify-center gap-3 shadow-lg">
         <span className="text-amber-200 text-sm font-bold">
           {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectCard' && t('statusBanners.ability.reviveUndead.selectCard')}
           {abilityMode.abilityId === 'revive_undead' && abilityMode.step === 'selectPosition' && t('statusBanners.ability.reviveUndead.selectPosition')}
@@ -306,6 +344,13 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
           )}
           {abilityMode.abilityId === 'mogu_transmission' && t('statusBanners.ability.moguTransmission')}
           {abilityMode.abilityId === 'mogu_fanatical_fungus' && t('statusBanners.ability.moguFanaticalFungus')}
+          {abilityMode.abilityId === 'shadow_return_to_shadow' && t('statusBanners.ability.shadowReturnToShadow')}
+          {abilityMode.abilityId === 'shadow_judgment' && t('statusBanners.ability.shadowJudgment')}
+          {abilityMode.abilityId === 'shadow_tear_the_veil' && t('statusBanners.ability.shadowTearTheVeil')}
+          {abilityMode.abilityId === 'shadow_forbidden_knowledge' && t('statusBanners.ability.shadowForbiddenKnowledge')}
+          {abilityMode.abilityId === 'shadow_feint' && t('statusBanners.ability.shadowFeint')}
+          {abilityMode.abilityId === 'shadow_shadow_summon' && t('statusBanners.ability.shadowSummon')}
+          {abilityMode.abilityId === 'shadow_sudden_assault' && t('statusBanners.ability.shadowSuddenAssault')}
           {getAbilityModeBannerFallbackText(t, abilityMode)}
           {abilityMode.abilityId === 'vanish' && t('statusBanners.ability.vanish')}
         </span>
@@ -324,7 +369,10 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
             )}
           </>
         )}
-        {abilityMode.step === 'selectChoice' && YONGHENG_BUTTON_CHOICE_ABILITIES.includes(abilityMode.abilityId as never) && (
+        {abilityMode.step === 'selectChoice' && (
+          YONGHENG_BUTTON_CHOICE_ABILITIES.includes(abilityMode.abilityId as never)
+          || ['shadow_judgment', 'shadow_tear_the_veil', 'shadow_forbidden_knowledge', 'shadow_feint', 'shadow_shadow_summon', 'shadow_sudden_assault'].includes(abilityMode.abilityId)
+        ) && (
           <>
             {(abilityMode.systemChoiceOptions ?? []).map((option) => (
               <GameButton
@@ -408,6 +456,12 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
           'yongheng_application',
           'yongheng_arouse_fear',
           'yongheng_punish',
+          'shadow_judgment',
+          'shadow_tear_the_veil',
+          'shadow_forbidden_knowledge',
+          'shadow_feint',
+          'shadow_shadow_summon',
+          'shadow_sudden_assault',
         ].includes(abilityMode.abilityId) && (
           <GameButton onClick={onCancelAbility} variant="secondary" size="sm">{t('actions.skip')}</GameButton>
         )}
@@ -437,6 +491,13 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
           'shouren_brute_impact',
           'shouren_primal_fury',
           'vanish',
+          'shadow_return_to_shadow',
+          'shadow_judgment',
+          'shadow_tear_the_veil',
+          'shadow_forbidden_knowledge',
+          'shadow_feint',
+          'shadow_shadow_summon',
+          'shadow_sudden_assault',
           'ice_ram',
           'life_drain',
           ...YONGHENG_SYSTEM_ABILITY_IDS,

@@ -183,8 +183,15 @@ function isBrowserExtensionInjectionNoise(payload: ClientAutoReportPayload): boo
         return false;
     }
 
-    return normalizedMessage.includes('cannot redefine property: ethereum')
-        || normalizedMessage.includes('func sseerror not found');
+    if (normalizedMessage.includes('cannot redefine property: ethereum')
+        || normalizedMessage.includes('func sseerror not found')) {
+        return true;
+    }
+
+    return normalizedStack.includes('chrome-extension://')
+        || normalizedStack.includes('moz-extension://')
+        || normalizedStack.includes('safari-web-extension://')
+        || normalizedStack.includes('ms-browser-extension://');
 }
 
 function isCloudflareBeaconNoise(payload: ClientAutoReportPayload): boolean {

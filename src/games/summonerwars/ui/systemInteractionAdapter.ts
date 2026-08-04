@@ -39,6 +39,7 @@ export const ACTIVATED_ABILITY_IDS = [
   'high_telekinesis_instead',
   'vanish',
   'mogu_blood_infusion',
+  'shadow_return_to_shadow',
 ] as const;
 
 type ActivatedAbilityId = typeof ACTIVATED_ABILITY_IDS[number];
@@ -860,6 +861,15 @@ export function findSystemAbilityUnitOptionByPosition(
     );
   }
 
+  if (abilityMode.abilityId === 'shadow_return_to_shadow') {
+    return findActivatedAbilityTargetOptionByPosition(
+      swInteraction,
+      'shadow_return_to_shadow',
+      position,
+      'selectUnit',
+    );
+  }
+
   if (abilityMode.abilityId === 'huijin_ram' && swInteraction.type === 'after_attack_huijin_ram_target') {
     return swInteraction.options.find((option) => {
       const value = option.value as { action?: string; targetPosition?: CellCoord } | undefined;
@@ -989,6 +999,7 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'yongheng_mental_invasion'
       || abilityMode.abilityId === 'yongheng_collision'
       || abilityMode.abilityId === 'yongheng_application'
+      || abilityMode.abilityId === 'shadow_return_to_shadow'
     )
   ) {
     return 'board-cell-unit';
@@ -1003,6 +1014,12 @@ export function getSystemAbilityUiRoute(
     && (
       abilityMode.abilityId === 'yongheng_draw'
       || abilityMode.abilityId === 'yongheng_continuance'
+      || abilityMode.abilityId === 'shadow_judgment'
+      || abilityMode.abilityId === 'shadow_tear_the_veil'
+      || abilityMode.abilityId === 'shadow_forbidden_knowledge'
+      || abilityMode.abilityId === 'shadow_feint'
+      || abilityMode.abilityId === 'shadow_shadow_summon'
+      || abilityMode.abilityId === 'shadow_sudden_assault'
     )
   ) {
     return 'status-banner-choice';
@@ -1055,6 +1072,28 @@ export function deriveSystemAbilityMode(
   }
 
   if (!meta.sourceUnitId) return null;
+
+  const shadowChoiceAbilityByType = {
+    shadow_judgment: 'shadow_judgment',
+    shadow_tear_the_veil: 'shadow_tear_the_veil',
+    shadow_forbidden_knowledge: 'shadow_forbidden_knowledge',
+    shadow_feint: 'shadow_feint',
+    shadow_shadow_summon: 'shadow_shadow_summon',
+    shadow_sudden_assault: 'shadow_sudden_assault',
+  } as const;
+  const shadowChoiceAbility = shadowChoiceAbilityByType[swInteraction.type as keyof typeof shadowChoiceAbilityByType];
+  if (shadowChoiceAbility) {
+    return {
+      abilityId: shadowChoiceAbility,
+      step: 'selectChoice',
+      sourceUnitId: meta.sourceUnitId,
+      systemChoiceOptions: swInteraction.options.map((option) => ({
+        id: option.id,
+        label: typeof option.label === 'string' ? option.label : undefined,
+        labelKey: typeof option.labelKey === 'string' ? option.labelKey : undefined,
+      })),
+    };
+  }
 
   const shourenPositionInteraction = getShourenPositionInteraction(swInteraction.type);
   if (shourenPositionInteraction) {
@@ -1313,6 +1352,14 @@ export function deriveSystemAbilityMode(
   }
 
   if (swInteraction.type === 'activated_ability_target' && isActivatedAbilityId(meta.abilityId)) {
+    if (meta.abilityId === 'shadow_return_to_shadow' && meta.step === 'selectUnit') {
+      return {
+        abilityId: 'shadow_return_to_shadow',
+        step: 'selectUnit',
+        sourceUnitId: meta.sourceUnitId,
+      };
+    }
+
     if (meta.abilityId === 'vanish' && meta.step === 'selectUnit') {
       return {
         abilityId: 'vanish',

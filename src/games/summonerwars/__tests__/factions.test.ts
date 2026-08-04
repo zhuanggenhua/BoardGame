@@ -7,7 +7,11 @@
  * - cardRegistry：卡牌池去重正确性（修复起始单位 ID 冲突）
  */
 
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
+import sharp from 'sharp';
 import {
     resolveFactionId,
     FACTION_NAME_TO_ID,
@@ -28,7 +32,12 @@ import {
     SHOUREN_HERO_ATLAS,
     YONGHENG_CARDS_ATLAS,
     YONGHENG_HERO_ATLAS,
+    SHADOW_CARDS_ATLAS,
+    SHADOW_HERO_ATLAS,
+    resolveCardAtlasId,
 } from '../ui/cardAtlas';
+
+const sha256 = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex');
 
 const createEmptyBoard = () => Array.from({ length: 6 }, () => Array.from({ length: 8 }, () => ({})));
 
@@ -84,6 +93,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('灰烬')).toBe('huijin');
         expect(resolveFactionId('冰苔兽人')).toBe('shouren');
         expect(resolveFactionId('永恒议会')).toBe('yongheng');
+        expect(resolveFactionId('暗影精灵')).toBe('shadow');
     });
 
     it('英文阵营 ID 应原样返回', () => {
@@ -97,6 +107,7 @@ describe('resolveFactionId', () => {
         expect(resolveFactionId('huijin')).toBe('huijin');
         expect(resolveFactionId('shouren')).toBe('shouren');
         expect(resolveFactionId('yongheng')).toBe('yongheng');
+        expect(resolveFactionId('shadow')).toBe('shadow');
     });
 
     it('未知字符串应原样返回（兜底）', () => {
@@ -136,6 +147,17 @@ describe('召唤师战争卡面数值录入', () => {
 
         expect(deck.summoner.name).toBe('思尼克斯');
         expect(deck.summoner.strength).toBe(3);
+    });
+
+    it('炽原精灵祖灵法师的攻击力应录入为 3 点战力', () => {
+        const deck = createDeckByFactionId('barbaric');
+        const spiritMage = deck.deck.find(card => card.id.startsWith('barbaric-spirit-mage-'));
+
+        expect(spiritMage).toMatchObject({
+            name: '祖灵法师',
+            strength: 3,
+            attackRange: 3,
+        });
     });
 
     it('莫古应作为实施中新派系接入基础牌组与新格式图集', () => {
@@ -249,6 +271,99 @@ describe('召唤师战争卡面数值录入', () => {
 
         expect(YONGHENG_HERO_ATLAS).toMatchObject({ imageW: 1269, imageH: 929, cols: 1, rows: 1 });
         expect(YONGHENG_CARDS_ATLAS).toMatchObject({ imageW: 8088, imageH: 1454, cols: 8, rows: 2 });
+    });
+
+    it('暗影精灵牌组、起始阵型与独立图集合同应接入并保留实施中标记', () => {
+        const catalogEntry = FACTION_CATALOG.find(faction => faction.id === 'shadow');
+        expect(catalogEntry).toMatchObject({
+            nameKey: 'factions.shadow',
+            heroImagePath: 'summonerwars/hero/shadow/hero',
+            tipImagePath: 'summonerwars/hero/shadow/tip',
+            selectable: true,
+            statusTag: 'under_construction',
+        });
+
+        const deck = createDeckByFactionId('shadow');
+        expect(deck.summoner).toMatchObject({
+            name: '瑟伦达',
+            strength: 5,
+            life: 11,
+            attackType: 'ranged',
+            spriteAtlas: 'hero',
+        });
+        expect(deck.summonerPosition).toEqual({ row: 0, col: 3 });
+        expect(deck.startingGatePosition).toEqual({ row: 1, col: 3 });
+        expect(deck.startingUnits.map(({ unit, position }) => ({ name: unit.name, position }))).toEqual([
+            { name: '圣贤巡游者', position: { row: 2, col: 3 } },
+            { name: '暗影法师', position: { row: 2, col: 2 } },
+        ]);
+        expect(deck.deck).toHaveLength(30);
+        expect(deck.deck.filter(card => card.cardType === 'unit' && card.unitClass === 'champion')).toHaveLength(3);
+        expect(deck.deck.filter(card => card.cardType === 'unit' && card.unitClass === 'common')).toHaveLength(16);
+        expect(deck.deck.filter(card => card.cardType === 'event')).toHaveLength(8);
+        expect(deck.deck.filter(card => card.cardType === 'structure')).toHaveLength(3);
+        expect(SHADOW_HERO_ATLAS).toMatchObject({ imageW: 786, imageH: 562, cols: 1, rows: 1 });
+        expect(SHADOW_CARDS_ATLAS).toMatchObject({ imageW: 6288, imageH: 1124, cols: 8, rows: 2 });
+    });
+
+    it('暗影精灵每张运行时卡牌都应归属 shadow，并严格消费 0-10 槽位', () => {
+        const deck = createDeckByFactionId('shadow');
+        const allCards = [deck.summoner, ...deck.deck];
+        const cardsBySpriteIndex = new Map(
+            deck.deck
+                .filter(card => card.spriteAtlas === 'cards')
+                .map(card => [card.spriteIndex, card.name]),
+        );
+
+        expect(new Set(allCards.map(card => card.faction))).toEqual(new Set(['shadow']));
+        expect([...cardsBySpriteIndex.keys()].sort((a, b) => a - b)).toEqual(
+            Array.from({ length: 11 }, (_, index) => index),
+        );
+        expect(Object.fromEntries(cardsBySpriteIndex)).toEqual({
+            0: '虚梦安',
+            1: '塔莉娅',
+            2: '萨玛拉',
+            3: '暗影法师',
+            4: '真实探求者',
+            5: '暗影骑士',
+            6: '圣贤巡游者',
+            7: '隐入黑暗',
+            8: '玛尔典籍',
+            9: '迅如闪电',
+            10: '暗影脉冲',
+        });
+        expect(resolveCardAtlasId({ id: 'shadow-shadow-mage' }, 'cards')).toBe('sw:shadow:cards');
+        expect(resolveCardAtlasId({ id: 'shadow-summoner' }, 'hero')).toBe('sw:shadow:hero');
+    });
+
+    it('暗影精灵正式图集与游戏级/根级 manifest 应匹配本地媒体', async () => {
+        const assets = [
+            { key: 'hero/shadow/cards', extension: 'jpg', path: 'cards.jpg', size: [6288, 1124] },
+            { key: 'hero/shadow/hero', extension: 'jpg', path: 'hero.jpg', size: [786, 562] },
+            { key: 'hero/shadow/tip', extension: 'jpg', path: 'tip.jpg', size: [786, 562] },
+            { key: 'hero/shadow/compressed/cards', extension: 'webp', path: 'compressed/cards.webp', size: [6288, 1124] },
+            { key: 'hero/shadow/compressed/hero', extension: 'webp', path: 'compressed/hero.webp', size: [786, 562] },
+            { key: 'hero/shadow/compressed/tip', extension: 'webp', path: 'compressed/tip.webp', size: [786, 562] },
+        ] as const;
+        const assetRoot = resolve(__dirname, '../../../../public/assets/i18n/zh-CN/summonerwars/');
+        const gameManifest = JSON.parse(readFileSync(resolve(assetRoot, 'assets-manifest.json'), 'utf8')) as {
+            files: Record<string, { variants: Record<string, { sha256: string; bytes: number }> }>;
+        };
+        const rootManifest = JSON.parse(readFileSync(resolve(__dirname, '../../../../public/assets/i18n/assets-manifest.json'), 'utf8')) as {
+            files: Record<string, { variants: Record<string, { sha256: string; bytes: number }> }>;
+        };
+
+        for (const asset of assets) {
+            const filePath = resolve(assetRoot, 'hero/shadow', asset.path);
+            const metadata = await sharp(filePath).metadata();
+            const digest = sha256(filePath);
+            const bytes = readFileSync(filePath).byteLength;
+            const rootKey = `zh-CN/summonerwars/${asset.key}`;
+
+            expect([metadata.width, metadata.height]).toEqual(asset.size);
+            expect(gameManifest.files[asset.key]?.variants[asset.extension]).toMatchObject({ sha256: digest, bytes });
+            expect(rootManifest.files[rootKey]?.variants[asset.extension]).toMatchObject({ sha256: digest, bytes });
+        }
     });
 });
 

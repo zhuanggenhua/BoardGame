@@ -21,6 +21,7 @@ import type { PlayerId } from '../../../engine/types';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef, getBaseDef, resolveCardName } from '../data/cards';
+import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import type { CardPreviewRef } from '../../../core';
 import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
 import { useToast } from '../../../contexts/ToastContext';
@@ -76,11 +77,24 @@ interface Props {
 
 function buildRendererPreviewRef(defId: string | undefined): CardPreviewRef | undefined {
     if (!defId) return undefined;
+    const munchkinSpecial = getMunchkinSpecialCardDescriptor(defId);
+    if (munchkinSpecial) return munchkinSpecial.previewRef;
     return {
         type: 'renderer',
         rendererId: 'smashup-card-renderer',
         payload: { defId },
     };
+}
+
+function resolvePromptCardName(
+    defId: string | undefined,
+    label: string | undefined,
+    t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+    if (!defId) return label ?? '';
+    const def = getCardDef(defId) ?? getBaseDef(defId);
+    if (def) return resolveCardName(def, t) || label || defId;
+    return getMunchkinSpecialCardDescriptor(defId)?.name ?? label ?? defId;
 }
 
 const CARD_ASPECT_RATIO = 0.714;
@@ -187,6 +201,18 @@ export function resolveI18nParams(
     );
 }
 
+function interpolatePromptParams(
+    text: string,
+    params: Record<string, string | number> | undefined,
+): string {
+    if (!params) return text;
+
+    return text.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (match, rawName: string) => {
+        const entry = Object.entries(params).find(([name]) => name.toLowerCase() === rawName.toLowerCase());
+        return entry ? String(entry[1]) : match;
+    });
+}
+
 export function resolvePromptText(
     text: string,
     key: string | undefined,
@@ -195,16 +221,15 @@ export function resolvePromptText(
     i18n?: { exists: (key: string, opts?: Record<string, unknown>) => boolean },
 ): string {
     if (typeof key === 'string') {
-        if (i18n && i18n.exists(key, { ns: 'game-smashup' })) {
-            return t(key, {
-                ...(resolveI18nParams(params, t) ?? {}),
-                defaultValue: resolveI18nKeys(text, t),
-            });
-        }
-        return t(key, {
-            ...(resolveI18nParams(params, t) ?? {}),
+        const resolvedParams = resolveI18nParams(params, t) ?? {};
+        const options = {
+            ...resolvedParams,
             defaultValue: resolveI18nKeys(text, t),
-        });
+        };
+        if (i18n && i18n.exists(key, { ns: 'game-smashup' })) {
+            return interpolatePromptParams(t(key, options), resolvedParams);
+        }
+        return interpolatePromptParams(t(key, options), resolvedParams);
     }
     return resolveI18nKeys(text, t);
 }
@@ -444,6 +469,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
     // 上下文卡图（牌库顶查看等场景）
     const contextPreviewRef = useMemo(() => prompt ? extractContextPreview(prompt) : undefined, [prompt]);
+    const shouldDockMunchkinPlayerPrompt = !contextPreviewRef
+        && (promptTitleKey?.startsWith('ui.munchkin_elves_') === true
+            || promptTitleKey?.startsWith('ui.base_treehouse_') === true);
 
     // 少量选项 + 非卡牌模式 → 内联面板
     const useInlineMode = !isMulti && !useCardMode && hasOptions && (prompt?.options?.length ?? 0) <= 3;
@@ -1160,7 +1188,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className="fixed inset-0 flex items-center justify-center pointer-events-none"
+                className={`fixed inset-x-0 ${shouldDockMunchkinPlayerPrompt ? 'top-[6rem]' : 'inset-0 items-center'} flex justify-center pointer-events-none`}
                 style={{ zIndex: UI_Z_INDEX.overlay }}
             >
                 <div className="flex flex-col items-center gap-4 pointer-events-auto">
@@ -1360,8 +1388,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         const visibleCardOptions = normalizedCardSearch
             ? cardOptions.filter((option) => {
                 const defId = extractDefId(option);
-                const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
-                const name = def ? resolveCardName(def, t) : option.label;
+                const name = resolvePromptCardName(defId, option.label, t);
                 const haystack = [name, option.label, defId].filter(Boolean).join(' ').toLowerCase();
                 return haystack.includes(normalizedCardSearch);
             })
@@ -1460,7 +1487,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     const defId = extractDefId(option);
                                     const def = defId ? (getCardDef(defId) ?? getBaseDef(defId)) : undefined;
                                     const previewRef = buildRendererPreviewRef(defId);
-                                    const name = def ? resolveCardName(def, t) : option.label;
+                                    const name = resolvePromptCardName(defId, option.label, t);
                                     const displayLabel = def && option.label && option.label !== name ? option.label : (name || option.label);
                                     const isSelected = selectedIds.includes(option.id);
                                     const isBase = !!getBaseDef(defId ?? '');

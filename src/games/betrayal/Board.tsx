@@ -5402,6 +5402,8 @@ function RecentRollPanel({
   landscapeResultDock = false,
   floatingResultClassName = "",
   openTableResultDocked = false,
+  resultStageClassName = "",
+  compactRowsClassName = "",
   actionSlot = null,
   onDiceSettledChange,
 }: {
@@ -5424,6 +5426,8 @@ function RecentRollPanel({
   landscapeResultDock?: boolean;
   floatingResultClassName?: string;
   openTableResultDocked?: boolean;
+  resultStageClassName?: string;
+  compactRowsClassName?: string;
   actionSlot?: React.ReactNode;
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
 }) {
@@ -5487,13 +5491,18 @@ function RecentRollPanel({
       showOutcome ||
       (showBreakdown && attackComparisonText),
   );
-  const resultGridColumns = showResultCopy
-    ? actionSlot
-      ? "grid-cols-[minmax(0,1fr)_auto_auto]"
-      : "grid-cols-[minmax(0,1fr)_auto]"
-    : actionSlot
-      ? "grid-cols-[auto_auto]"
-      : "grid-cols-[auto]";
+  const actionSlotBelowResult = Boolean(actionSlot && openTable && !denseResult);
+  const resultGridColumns = actionSlotBelowResult
+    ? showResultCopy
+      ? "grid-cols-[minmax(0,1fr)_auto]"
+      : "grid-cols-[auto]"
+    : showResultCopy
+      ? actionSlot
+        ? "grid-cols-[minmax(0,1fr)_auto_auto]"
+        : "grid-cols-[minmax(0,1fr)_auto]"
+      : actionSlot
+        ? "grid-cols-[auto_auto]"
+        : "grid-cols-[auto]";
   const breakdownStage = showBreakdown ? (
     <div
       data-testid="betrayal-recent-roll-breakdown"
@@ -5547,13 +5556,15 @@ function RecentRollPanel({
             : "min-h-[112px] gap-4 px-4 py-3"
       } ${resultGridColumns} ${
         showResultCopy ? "" : "justify-end"
-      } items-center ${denseResult ? "overflow-hidden" : "overflow-visible"} text-left ${
+      } items-center ${denseResult ? "overflow-hidden" : "overflow-visible"} text-left ${resultStageClassName} ${
         denseResult
           ? openTable
             ? "bg-transparent shadow-none"
             : ""
-          : openTable
-          ? "bg-transparent shadow-none"
+        : openTable
+          ? compactResult
+            ? "rounded-[14px] border border-[rgba(211,179,109,0.20)] bg-[rgba(7,11,9,0.42)] shadow-[0_10px_24px_rgba(0,0,0,0.20)]"
+            : "bg-transparent shadow-none"
           : "rounded-[12px] border border-[rgba(211,179,109,0.24)] bg-[rgba(9,10,8,0.72)] shadow-[0_8px_22px_rgba(0,0,0,0.28)]"
       }`}
     >
@@ -5611,7 +5622,13 @@ function RecentRollPanel({
         {breakdownStage}
       </div>
       {actionSlot ? (
-        <div className="pointer-events-auto flex justify-end pl-1">
+        <div
+          className={`pointer-events-auto flex ${
+            actionSlotBelowResult
+              ? "col-span-full justify-center border-t border-[rgba(211,179,109,0.16)] pt-2"
+              : "justify-end pl-1"
+          }`}
+        >
           {actionSlot}
         </div>
       ) : null}
@@ -5712,7 +5729,7 @@ function RecentRollPanel({
         <div
           className={`relative z-10 grid h-full min-h-[260px] ${
             compactResult
-              ? "grid-rows-[minmax(174px,1fr)_auto]"
+              ? compactRowsClassName || "grid-rows-[minmax(174px,1fr)_auto]"
               : "grid-rows-[minmax(154px,1fr)_auto]"
           } gap-2`}
         >
@@ -14774,40 +14791,44 @@ export default function BetrayalBoard({
                         roll={core.recentRoll}
                         className={
                           isPhoneLandscapeLayout
-                            ? "h-[min(72vh,320px)] min-h-[286px] w-full"
-                            : "h-[min(48vh,430px)] min-h-[340px] w-full"
+                            ? "h-[min(72vh,320px)] min-h-[286px] w-full rounded-[18px] border border-[rgba(211,179,109,0.30)] bg-[rgba(8,12,10,0.34)] p-2 shadow-[0_16px_34px_rgba(0,0,0,0.24)]"
+                            : "h-[min(42vh,360px)] min-h-[300px] w-[min(560px,calc(100vw-2rem))] rounded-[18px] border border-[rgba(211,179,109,0.40)] bg-[rgba(15,24,19,0.54)] p-3 shadow-[0_16px_34px_rgba(0,0,0,0.30)]"
                         }
                         diceClassName={
                           isPhoneLandscapeLayout
                             ? "min-h-[204px]"
-                            : "min-h-[260px]"
+                            : "min-h-[190px]"
                         }
                         effectiveLocale={effectiveLocale}
                         openTable
                         compactResult
+                        resultStageClassName="w-full max-w-[520px] justify-self-center"
+                        compactRowsClassName="grid-rows-[minmax(150px,1fr)_auto]"
+                        actionSlot={
+                          isExorciseRollReview ? (
+                            <button
+                              type="button"
+                              data-testid="betrayal-exorcise-roll-continue"
+                              className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+                              onClick={handleConfirmExorciseRollReview}
+                            >
+                              {isEndgameExorciseRollReview
+                                ? t("board.endgame.enterEndgame")
+                                : t("board.roll.backToBoard")}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              data-testid="betrayal-roll-continue"
+                              className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
+                              onClick={handleDismissRecentRoll}
+                            >
+                              {t("board.roll.backToBoard")}
+                            </button>
+                          )
+                        }
                         onDiceSettledChange={handleRecentRollDiceSettledChange}
                       />
-                      {isExorciseRollReview ? (
-                        <button
-                          type="button"
-                          data-testid="betrayal-exorcise-roll-continue"
-                          className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
-                          onClick={handleConfirmExorciseRollReview}
-                        >
-                          {isEndgameExorciseRollReview
-                            ? t("board.endgame.enterEndgame")
-                            : t("board.roll.backToBoard")}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          data-testid="betrayal-roll-continue"
-                          className="inline-flex min-h-[42px] min-w-[168px] items-center justify-center border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a]"
-                          onClick={handleDismissRecentRoll}
-                        >
-                          {t("board.roll.backToBoard")}
-                        </button>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -18534,6 +18555,7 @@ export default function BetrayalBoard({
                     type="button"
                     onClick={openScenarioReference}
                     data-testid="betrayal-open-scenario"
+                    data-tutorial-id="betrayal-open-scenario"
                     className={`inline-flex h-[40px] min-w-[84px] items-center gap-1.5 rounded-[7px] border border-[#58472f] bg-[linear-gradient(180deg,rgba(25,24,19,0.9),rgba(13,15,12,0.94))] px-2.5 text-[#d8bf81] transition hover:border-[#8b744d] ${
                       activeHauntTargetGuide ? "opacity-[0.72]" : ""
                     }`}
@@ -19546,6 +19568,7 @@ export default function BetrayalBoard({
                     type="button"
                     onClick={openScenarioReference}
                     data-testid="betrayal-open-scenario"
+                    data-tutorial-id="betrayal-open-scenario"
                     className={`mx-auto inline-flex min-h-[30px] items-center justify-center gap-1 rounded-[5px] border border-[rgba(211,179,109,0.28)] bg-[rgba(10,13,10,0.48)] px-2 text-[10px] font-semibold tracking-[0.04em] text-[#fff1b8] transition hover:border-[#e2c57e] hover:bg-[rgba(211,179,109,0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#e2c57e] ${
                       activeHauntTargetGuide ? "opacity-[0.72]" : ""
                     }`}

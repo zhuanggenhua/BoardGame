@@ -1,3 +1,48 @@
+# Current Task Plan: 召唤师战争暗影精灵派系接入（2026-08-04）
+
+目标状态：active
+当前目标：在当前工作区完成暗影精灵（`shadow`）从用户指定素材到召唤师战争真实入口的接入；逐项保留卡面规则原文、资源链、机制实现、测试与 evidence 状态。未验证或未实现项必须保持 `blocked` / `scoped-debt`，不得把静态显示接入称为可玩完成。
+目标对象：召唤师瑟伦达、3 张英雄、4 类士兵、4 张事件、起始城门、预构筑牌组、暗影精灵派系目录与其图集。
+真相来源：`public/assets/i18n/zh-CN/summonerwars/hero/shadow/` 用户指定素材；`evidence/summonerwars/shadow-faction-intake.md` 记录的素材与规则合同；当前工作区召唤师战争运行时消费代码。
+目标入口/环境：`D:\gongzuo\webgame\BoardGame` 的 `main` 工作区，召唤师战争派系选择、开局部署、牌组/卡图和领域机制链。
+验收口径：以 `.codex/skill/add-new-faction/SKILL.md` 与 `docs/games/summonerwars/workflows/summonerwars-faction-intake.md` 为准，分开报告数据、资源、机制、审计与 E2E；保留同工作区其它未提交改动。
+
+## 当前任务拆解
+
+- [x] 读取项目规则、OpenSpec、召唤师战争专项 workflow、新派系 skill，并核对当前工作区与素材合同。
+- [x] 建立暗影精灵 OpenSpec change 与对象级任务矩阵。
+- [x] 完成派系注册、图集、关键图片预加载、本地化、卡池与资源 manifest 接入。
+- [x] 按卡面规则实现现有引擎可承载的能力与事件效果；无法闭合的交互必须明确阻塞。
+- [x] 补静态/L2 测试、真实入口验证与对象级 evidence；13 个能力和 4 张事件卡均已补齐浏览器级 L3/L4。
+- [x] 补齐暗影精灵图集回退映射、牌组/槽位/manifest 本地合同测试，并回写 evidence 的素材层级与全面审计矩阵。
+- [x] 运行单派系资源预检、3 个 WebP 上传和远端 HTTP/hash 回查。
+- [ ] 重跑 typecheck、真实入口 E2E、OpenSpec strict validate、evidence selfcheck，并据当前结果更新完成状态。
+
+### 本轮进展（2026-08-04）
+
+- 13 个能力和 4 张事件卡已接入现有领域事件、执行器和 InteractionSystem；本轮当前定向测试为 `3 files / 29 passed`，派系/资源合同测试为 `23 passed`。
+- 修正 `shadow-` 卡牌 ID 缺少 `faction` 时的图集回退映射；本地 6 个正式媒体文件与两个 manifest 的尺寸/hash/字节数合同测试通过。
+- 单派系资源预检命中 3 个 WebP，已上传并完成远端回查：3 个 URL 均 `HTTP 200`，远端下载 hash 与本地/manifest 一致；上传返回 `serverPrimaryRelease=20260804031315120`。
+- 真实入口 E2E 为 `11 passed`、共 36 张原始截图，覆盖派系选择/初始化及全部能力与事件卡的真实选择/结算路径；逐图 UI 审计 `PASS`，综合评分 `93/100`。
+- 当前仍保留的边界：派系目录仍保留 `under_construction`，本轮不将其擅自改为正式发布标记；与暗影精灵无关的 i18n warning 不纳入本批结论。
+- `openspec validate add-summonerwars-shadow-faction --strict --no-interactive`：通过，输出 `Change 'add-summonerwars-shadow-faction' is valid`。
+- `python D:\\codex-home\\skills\\task-completion-guard\\scripts\\check_completion.py --state temp\\summonerwars-shadow-task.json`：`COMPLETE`。
+
+### 本轮真实入口补齐（2026-08-04）
+
+- [x] 新增并通过鲜血魔法/黑暗预言、撕裂帷幕、难逃厄运、猛攻/佯攻、死亡契约/穿透之光 5 个真实入口场景，共 15 张新截图。
+- [x] 修正鲜血魔法同一伤害事件重复充能的领域实现，并新增去重回归；真实入口确认一次受伤只增加 1 点充能。
+- [x] 逐张审计新增 15 张原始截图；发现猛攻/佯攻首张截图被骰子层遮挡后，调整截图时机、重跑该场景并复核为 `PASS`。
+
+## 当前错误记录
+
+| 错误 | 尝试 | 处理 |
+| --- | --- | --- |
+| `request_user_input` 在 Default mode 不可用 | 1 | 不再重复请求交互式输入，按当前用户目标和本地证据继续；若出现实质方案分歧再停在阻塞点。 |
+| 摘要中的 `src/games/summonerwars/config/cardAtlas.ts` 不存在 | 1 | 已定位真实文件为 `src/games/summonerwars/ui/cardAtlas.ts`，后续按真实入口修改。 |
+
+---
+
 # Task Plan: 作祟 3「灰尘」规则补漏实现（2026-07-27）
 
 目标状态：active

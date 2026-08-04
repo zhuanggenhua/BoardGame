@@ -3387,6 +3387,144 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(persisted.state?._stateID).toBe(1);
     });
 
+    it('线上形状：同一 AI 座位的旧卡牌命令与 watchdog 失败共用预算，达到预算后不再进入领域管线', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const validateSpy = vi.fn(() => ({ valid: false, error: '手牌中没有该卡牌' }));
+        const feedbackReporter = vi.fn(async () => undefined);
+        const baseEngineConfig = createEngineConfig();
+
+        await storage.createMatch('match-ai-circuit-breaker-production-shape', {
+            initialState: createOnlineAiRecoveryState({ phase: 'playCards' }),
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [{
+                ...baseEngineConfig,
+                domain: {
+                    ...baseEngineConfig.domain,
+                    validate: validateSpy,
+                },
+            }],
+            onlineAiCircuitFailureBudget: 3,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: Record<string, unknown>,
+            ) => Promise<boolean>;
+        };
+        const match = await serverInternal.loadMatch('match-ai-circuit-breaker-production-shape');
+
+        for (let index = 0; index < 3; index += 1) {
+            match.stateID = index;
+            match.state = {
+                ...match.state,
+                sys: {
+                    ...match.state.sys,
+                    turnNumber: index + 1,
+                },
+            };
+            await expect(serverInternal.executeCommandInternal(
+                match,
+                '1',
+                'su:play_minion',
+                { cardUid: `old-card-${index}` },
+                {
+                    expectedStateID: index,
+                    onlineAiCircuitSource: index === 1 ? 'watchdog' : 'client',
+                    feedbackSource: index === 1 ? 'online-ai-watchdog' : 'player-command-failure',
+                },
+            )).resolves.toBe(false);
+        }
+
+        match.stateID = 3;
+        const fourthAttempt = await serverInternal.executeCommandInternal(
+            match,
+            '1',
+            'su:play_minion',
+            { cardUid: 'old-card-4' },
+            {
+                expectedStateID: 3,
+                onlineAiCircuitSource: 'watchdog',
+                feedbackSource: 'online-ai-watchdog',
+            },
+        );
+
+        expect(fourthAttempt).toBe(false);
+        expect(match.lastCommandFailureReason).toBe('online_ai_circuit_open');
+        expect(validateSpy).toHaveBeenCalledTimes(3);
+        expect(feedbackReporter).toHaveBeenCalledTimes(1);
+        const payload = feedbackReporter.mock.calls[0]?.[0] as {
+            incidentKind?: string;
+            stateSnapshot?: string;
+        } | undefined;
+        expect(payload?.incidentKind).toBe('circuit-breaker-tripped');
+        const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+        expect(snapshot.circuit.failureCount).toBe(3);
+        expect(snapshot.circuit.recentFailures).toHaveLength(3);
+        expect(snapshot.circuit.recentFailures[0].commandSummary).toContain('old-card-0');
+        expect(snapshot.circuit.recentFailures[1].source).toBe('watchdog');
+    });
+
+    it('排队后因权威状态前进而丢弃的 AI 命令，也会消耗同一座位的 stale 预算', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-ai-queued-stale-circuit', {
+            initialState: createOnlineAiRecoveryState({ phase: 'playCards' }),
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+        });
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            handleCommand: (
+                matchID: string,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+            drainCommandQueue: (match: any) => Promise<void>;
+            onlineAiCircuitBreaker: { getSnapshot: (matchID: string, playerID: string) => any };
+        };
+        const match = await serverInternal.loadMatch('match-ai-queued-stale-circuit');
+        match.executing = true;
+
+        const queuedResult = serverInternal.handleCommand(
+            'match-ai-queued-stale-circuit',
+            '1',
+            'su:play_minion',
+            { cardUid: 'queued-old-card' },
+        );
+        match.stateID = 1;
+        match.executing = false;
+        await serverInternal.drainCommandQueue(match);
+
+        await expect(queuedResult).resolves.toBe(false);
+        const snapshot = serverInternal.onlineAiCircuitBreaker.getSnapshot(
+            'match-ai-queued-stale-circuit',
+            '1',
+        );
+        expect(snapshot.failureCount).toBe(1);
+        expect(snapshot.recentFailures[0]).toMatchObject({
+            commandType: 'su:play_minion',
+            reason: 'stale_state',
+            expectedStateID: 0,
+        });
+    });
+
     it('在线 AI watchdog 选出的动作若被权威领域状态拒绝，应跳过管线并自动记录失败现场', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

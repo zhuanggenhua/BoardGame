@@ -492,7 +492,9 @@ export function canAttack(
     // 远程：最多3格直线，路径必须无遮挡
     if (distance > RANGED_ATTACK_RANGE || distance === 0) return false;
     if (!isInStraightLine(attacker, target)) return false;
-    return isRangedPathClear(state, attacker, target, attackerUnit.owner);
+    const canPierceUnits = state.turnNumber === attackerUnit.summonedTurnNumber
+      && getUnitAbilities(attackerUnit, state).includes('shadow_piercing_light');
+    return isRangedPathClear(state, attacker, target, attackerUnit.owner, canPierceUnits);
   }
 }
 
@@ -1213,7 +1215,15 @@ export function canAttackEnhanced(
     if (distance > range || distance === 0) return false;
     if (!isInStraightLine(attacker, target)) return false;
     const canFlameBreathThroughUnits = getUnitAbilities(attackerUnit, state).includes('huijin_flame_breath');
-    return isRangedPathClear(state, attacker, target, attackerUnit.owner, canFlameBreathThroughUnits);
+    const canPierceUnits = state.turnNumber === attackerUnit.summonedTurnNumber
+      && getUnitAbilities(attackerUnit, state).includes('shadow_piercing_light');
+    return isRangedPathClear(
+      state,
+      attacker,
+      target,
+      attackerUnit.owner,
+      canFlameBreathThroughUnits || canPierceUnits,
+    );
   }
 }
 

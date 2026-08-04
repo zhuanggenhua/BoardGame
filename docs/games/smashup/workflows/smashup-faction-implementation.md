@@ -135,7 +135,7 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
   - 单测 / 行为测试证明 reducer、helper、shared mechanism 语义成立
 - **L3 真实入口 E2E**
   - 从真实打牌 / 真实触发 / 真实天赋入口进入，不靠“prompt 预打开”的注入型捷径收口
-  - 任何对象 / 目标 / 支付物 / 顺序 / 数量 / 模式选择都必须证明玩家手动选择；即使当前合法候选只有 1 个，也必须截图并断言该选择态真实停住，不能被 `autoResolveIfSingle` 或等价默认隐式代选吞掉。只有所有玩家决策都完成后的固定结果收口，才允许自动推进。
+  - 任何对象 / 目标 / 支付物 / 顺序 / 数量 / 模式选择都必须证明玩家手动选择；即使当前合法候选只有 1 个，也必须截图并断言该选择态真实停住，不能被 `autoResolveIfSingle` 或等价默认隐式代选吞掉。截图里的候选本体必须清楚无遮挡；如果被卡牌预览、hover 特写、displayCard、提示浮层或 HUD 遮住，不能算该步 L3 证据。只有所有玩家决策都完成后的固定结果收口，才允许自动推进。
 - **L4 流程态与权威状态**
   - 强制补看 `finalState / triggerQueue / reaction session`
   - 只要 effect atom 链路涉及 reaction / afterScoring / beforeScoring / uncover / discard special / ongoing talent，就必须按该 effect atom 补到这一层，不能只抽样同类对象

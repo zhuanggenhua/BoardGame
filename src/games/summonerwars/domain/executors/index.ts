@@ -20,3 +20,4 @@ import './mogu';
 import './huijin';
 import './shouren';
 import './yongheng';
+import './shadow';

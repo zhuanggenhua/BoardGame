@@ -60,6 +60,9 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.MOGU_RELEASE_SPORES,
   CARD_IDS.SHOUREN_FREEZE,
   CARD_IDS.HUIJIN_SCORCH,
+  CARD_IDS.SHADOW_HIDE_IN_DARKNESS,
+  CARD_IDS.SHADOW_MARL_GRIMOIRE,
+  CARD_IDS.SHADOW_SHADOW_PULSE,
 ]);
 
 const hasAdjacentEmptyCell = (core: SummonerWarsCore, position: CellCoord): boolean => {
@@ -173,6 +176,49 @@ const hasValidEventInteractionTargets = (
     }
     case CARD_IDS.HUIJIN_SCORCH: {
       return getHuijinScorchTargets(core, playerId).length > 0;
+    }
+    case CARD_IDS.SHADOW_HIDE_IN_DARKNESS: {
+      if (!summoner) return false;
+      const hasUnitTarget = core.board.some((row) => row.some((cell) => {
+        const unit = cell.unit;
+        return !!unit
+          && unit.card.unitClass === 'common'
+          && unit.card.life - unit.damage <= 5
+          && manhattanDistance(summoner.position, unit.position) <= 3;
+      }));
+      const hasGateTarget = Array.from({ length: BOARD_ROWS }).some((_, row) =>
+        Array.from({ length: BOARD_COLS }).some((__, col) => {
+          const gate = getStructureAt(core, { row, col });
+          return !!gate
+            && gate.card.isGate === true
+            && gate.card.life - gate.damage <= 5
+            && manhattanDistance(summoner.position, { row, col }) <= 3;
+        }),
+      );
+      return hasUnitTarget || hasGateTarget;
+    }
+    case CARD_IDS.SHADOW_MARL_GRIMOIRE: {
+      const hasRetrievableCard = core.players[playerId].discard.some((discarded) =>
+        getBaseCardId(discarded.id) !== CARD_IDS.SHADOW_MARL_GRIMOIRE
+        && !(discarded.cardType === 'event' && discarded.eventType === 'legendary'),
+      );
+      return hasRetrievableCard && friendlyUnits.length > 0;
+    }
+    case CARD_IDS.SHADOW_SHADOW_PULSE: {
+      const isAdjacentToWoundedGate = (position: CellCoord): boolean => [
+        { row: position.row - 1, col: position.col },
+        { row: position.row + 1, col: position.col },
+        { row: position.row, col: position.col - 1 },
+        { row: position.row, col: position.col + 1 },
+      ].some((gatePosition) => {
+        const gate = isValidCoord(gatePosition) ? getStructureAt(core, gatePosition) : undefined;
+        return !!gate?.card.isGate && gate.damage > 0;
+      });
+      return Array.from({ length: BOARD_ROWS }).some((_, row) =>
+        Array.from({ length: BOARD_COLS }).some((__, col) =>
+          !!getUnitAt(core, { row, col }) && isAdjacentToWoundedGate({ row, col }),
+        ),
+      );
     }
     default:
       return false;

@@ -38,7 +38,8 @@
     "mogu": "Mogu",
     "huijin": "Ashen Phoenix",
     "shouren": "Tundra Orcs",
-    "yongheng": "Eternal Council"
+    "yongheng": "Eternal Council",
+    "shadow": "Shadow Elves"
   },
   "configReview": {
     "eyebrow": "Config review table",
@@ -260,6 +261,7 @@
     "continue": "Continue",
     "finish": "Finish",
     "skip": "Skip",
+    "shadowLightningStepReplace": "Use Swift Step",
     "skipPush": "Skip Push",
     "push": "Push",
     "pull": "Pull",
@@ -628,6 +630,7 @@
     "reviveUndead": "Revive Undead: Select an undead unit from the discard pile",
     "infection": "Infection: Select a plague zombie from the discard pile",
     "fortressPower": "Fortress Power: Select a fortress unit from the discard pile",
+    "shadowMarlGrimoire": "Marl Grimoire: Select a card from the discard pile",
     "default": "Select a card",
     "empty": "No eligible cards"
   },
@@ -677,7 +680,10 @@
     "insufficientMagic": "Insufficient magic",
     "insufficientCharge": "Requires at least 1 charge",
     "eventTarget": {
-      "message": "Choose an event target"
+      "message": "{{cardName}}: choose a target"
+    },
+    "shadowPulse": {
+      "message": "Shadow Pulse: Select targets ({{count}} selected)"
     },
     "magicEventChoice": {
       "message": "Choose: Play event card or discard for magic"
@@ -725,7 +731,14 @@
       "vanish": "Vanish: Select a 0-cost friendly unit to swap positions",
       "moguBloodInfusion": "Blood Infusion: Select a friendly unit within 2 spaces",
       "moguTransmission": "Fungal Transmission: Choose charge transfer mode",
-      "moguFanaticalFungus": "Fanatical Fungus: choose no push/pull or a destination"
+      "moguFanaticalFungus": "Fanatical Fungus: choose no push/pull or a destination",
+      "shadowReturnToShadow": "Return to Shadow: Select a friendly unit within 3 spaces",
+      "shadowJudgment": "Judgment: Select a target and the charges to spend",
+      "shadowTearTheVeil": "Tear the Veil: Select a friendly soldier and a gate-adjacent space",
+      "shadowForbiddenKnowledge": "Forbidden Knowledge: Hurt this unit or an adjacent gate",
+      "shadowFeint": "Feint: Select a position to push or pull this unit",
+      "shadowSummon": "Shadow Summon: Select a target and placement space",
+      "shadowSuddenAssault": "Sudden Assault: Select a position to push or pull this unit"
     },
     "beforeAttack": {
       "lifeDrain": "Pre-attack: Life Drain ready, select an attack target",
@@ -891,7 +904,19 @@
       "yonghengApplicationCard": "Application: choose a hand card to place on the bottom of your deck",
       "yonghengApplicationTarget": "Application: choose an adjacent unit to deal 1 damage",
       "yonghengForcedDiscard": "Eternal Council: choose a hand card to discard",
-      "yonghengContinuance": "Continuance: spend 2 charges to keep this continuous event"
+      "yonghengContinuance": "Continuance: spend 2 charges to keep this continuous event",
+      "shadowLightningStep": "Lightning Step: replace the unit that left play?",
+      "shadowReturnToShadow": "Return to Shadow: Select a friendly unit within 3 spaces",
+      "shadowJudgment": "Judgment: Select a target and the charges to spend",
+      "shadowTearTheVeil": "Tear the Veil: Select a friendly soldier and a gate-adjacent space",
+      "shadowForbiddenKnowledge": "Forbidden Knowledge: Hurt this unit or an adjacent gate",
+      "shadowFeint": "Feint: Select a position to push or pull this unit",
+      "shadowSummon": "Shadow Summon: Select a target and placement space",
+      "shadowSuddenAssault": "Sudden Assault: Select a position to push or pull this unit",
+      "shadowMarlGrimoireCard": "Marl Grimoire: Select a card from the discard pile",
+      "shadowMarlGrimoireDamage": "Marl Grimoire: Select a friendly unit to take 1 damage",
+      "shadowLightningStep": "Lightning Step: replace the unit that left play?",
+      "shadowPulse": "Shadow Pulse: Select targets ({{count}} selected)"
     },
     "fireSacrifice": {
       "mustSelectAlly": "Please select an ally unit to sacrifice"
@@ -1379,6 +1404,58 @@
     "yongheng_application": {
       "name": "Application",
       "description": "After this unit attacks an enemy unit, you may choose a card from your hand and place it on the bottom of your deck to target an adjacent unit. Deal 1 damage to that target."
+    },
+    "shadow_blood_magic": {
+      "name": "Blood Magic",
+      "description": "During your turn, whenever a friendly card within 3 spaces of this unit is dealt 1 or more damage, charge this unit."
+    },
+    "shadow_return_to_shadow": {
+      "name": "Return to Shadow",
+      "description": "During your turn, you may spend 2 charges to target a friendly unit within 3 spaces of this unit. Return the target to its owner's hand."
+    },
+    "shadow_dark_prophecy": {
+      "name": "Dark Prophecy",
+      "description": "Whenever a friendly unit leaves play, charge this unit."
+    },
+    "shadow_judgment": {
+      "name": "Judgment",
+      "description": "After this unit moves, you may spend any number of charges to deal that much damage to an adjacent soldier or champion."
+    },
+    "shadow_tear_the_veil": {
+      "name": "Tear the Veil",
+      "description": "Once per turn, after this unit moves, if it is adjacent to a wounded enemy gate, you may place a friendly soldier adjacent to that gate."
+    },
+    "shadow_inescapable_doom": {
+      "name": "Inescapable Doom",
+      "description": "At the end of your Attack phase, if this unit destroyed an enemy unit this turn, deal 1 damage to the enemy Summoner; otherwise, deal 1 damage to your Summoner."
+    },
+    "shadow_forbidden_knowledge": {
+      "name": "Forbidden Knowledge",
+      "description": "After this unit moves, you may deal 1 damage to this unit or an adjacent gate to draw a card."
+    },
+    "shadow_fierce_assault": {
+      "name": "Fierce Assault",
+      "description": "This unit gains +2 strength during the turn it is summoned."
+    },
+    "shadow_feint": {
+      "name": "Feint",
+      "description": "After this unit attacks, you may push or pull it up to 2 spaces."
+    },
+    "shadow_shadow_summon": {
+      "name": "Shadow Summon",
+      "description": "When summoning this unit, target a friendly card without Shadow Summon. Place this unit adjacent to the target and deal 1 damage to the target."
+    },
+    "shadow_death_pact": {
+      "name": "Death Pact",
+      "description": "After this unit is destroyed, deal 1 damage to your Summoner."
+    },
+    "shadow_piercing_light": {
+      "name": "Piercing Light",
+      "description": "During the turn it is summoned, this unit's attacks may pass through units."
+    },
+    "shadow_sudden_assault": {
+      "name": "Sudden Assault",
+      "description": "After summoning this unit, you may push or pull it 1 space."
     }
   },
   "buffs": {

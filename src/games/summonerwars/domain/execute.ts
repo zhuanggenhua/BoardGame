@@ -62,6 +62,7 @@ import {
   postProcessDeathChecks,
   getFuneralPyreChargeEvents,
   applyHuijinPhoenixSoulBonus,
+  getShadowBloodMagicChargeEvents,
 } from './execute/helpers';
 import { executeActivateAbility } from './execute/abilities';
 import { executePlayEvent } from './execute/eventCards';
@@ -505,6 +506,9 @@ export function executeCommand(
             'mogu_transmission', // 鲜血萨满：移动后传输充能
             'huijin_quick_shot',  // 灰烬弓箭手：移动后快速射击
             'yongheng_intelligence', // 城塞参谋：移动后可抓1
+            'shadow_judgment',    // 审判：消耗充能伤害相邻士兵/英雄
+            'shadow_tear_the_veil', // 撕裂帷幕：传送友方士兵/英雄
+            'shadow_forbidden_knowledge', // 禁忌学识：自伤/伤害传送门后抓牌
           ];
           for (const abilityId of afterMoveChoiceAbilities) {
             if (unitAbilities.includes(abilityId)) {
@@ -1620,6 +1624,9 @@ export function executeCommand(
 
   // 后处理2：自动补全死亡检测（UNIT_DAMAGED → UNIT_DESTROYED）
   const processedEvents = postProcessDeathChecks(events, core);
+
+  // 暗影精灵“鲜血魔法”必须在统一伤害链上消费实际伤害事件，不能只依赖卡面/技能注册。
+  processedEvents.push(...getShadowBloodMagicChargeEvents(processedEvents, core, timestamp));
 
   // 后处理2：扫描所有 UNIT_DESTROYED 事件，为殉葬火堆生成充能事件
   const destroyCount = processedEvents.filter(e => e.type === SW_EVENTS.UNIT_DESTROYED).length;

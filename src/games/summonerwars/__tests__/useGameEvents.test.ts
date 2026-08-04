@@ -186,6 +186,7 @@ describe('systemInteractionAdapter', () => {
       'high_telekinesis_instead',
       'vanish',
       'mogu_blood_infusion',
+      'shadow_return_to_shadow',
     ]);
   });
 

@@ -285,7 +285,7 @@ const waitForHauntRuntime = async (
 ) => {
   await expect(page.getByTestId("betrayal-board")).toBeVisible({ timeout });
   await expect(page.getByTestId("betrayal-runtime-header-grid")).toContainText(
-    /恶兆后|Haunt/i,
+    /作祟中|Haunt/i,
     { timeout },
   );
 };
@@ -1349,7 +1349,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     ).toHaveCount(0);
     await expect(page.getByTestId("betrayal-action-move")).toBeVisible();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "底部动作",
+      "在你的回合中",
     );
     await saveScreenshot(page, STEP_01);
 
@@ -1371,7 +1371,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "骷髅",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "重复数字仍是连续方格",
+      "重复的数字仍分别占格",
     );
     await saveScreenshot(page, STEP_36);
 
@@ -1381,7 +1381,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       page.locator('[data-tutorial-id="betrayal-moves-remaining"]'),
     ).toBeVisible();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "移动圆牌",
+      "本回合还剩的移动力",
     );
     await saveScreenshot(page, STEP_02);
 
@@ -1395,7 +1395,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await clickNext(page);
     await waitForStep(page, "observe-teammate");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "观察视角",
+      "可观察该探险者",
     );
     await expect(
       page.locator('[data-tutorial-id="betrayal-bottom-teammate-1"]'),
@@ -1450,7 +1450,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await clickNext(page);
     await waitForStep(page, "haunt-risk-track");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "右侧预兆条",
+      "预兆进度条",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
       "抽到预兆",
@@ -1471,7 +1471,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await clickNext(page);
     await waitForStep(page, "inventory-and-help");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "物品和预兆会留在这里",
+      "物品和预兆放在你面前",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
       "帮助入口",
@@ -1529,13 +1529,10 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       await expect(autoScenarioReaderDialog).toBeHidden();
     }
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "作祟后目标已经变了",
+      "打开剧本书",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "找真名",
-    );
-    await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "叛徒怎样获胜",
+      "目标与胜利条件",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
       "帮助入口",
@@ -1547,7 +1544,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "替代",
     );
     await expect(
-      page.locator('[data-tutorial-id="betrayal-reference-entry"]'),
+      page.locator('[data-tutorial-id="betrayal-open-scenario"]'),
     ).toBeVisible();
     await expect(
       page.getByTestId("betrayal-monster-board-token-mummy"),
@@ -1610,10 +1607,10 @@ test.describe("山屋惊魂教程最小真实链路", () => {
 
     await waitForStep(page, "haunt-actions");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "两个前置",
+      "6+ 知识考验",
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "石棺房、书房或图书馆",
+      "石棺房、研究室或图书馆",
     );
     await expect(
       page.getByTestId("betrayal-action-use"),
@@ -1669,7 +1666,7 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     assertNoFatalFrontendErrors([{ label: "betrayal-tutorial", diagnostics }]);
   });
 
-  test("[omen-confirm] 预兆确认教程会解释单次确认和作祟进度", async ({
+  test("[omen-confirm] 预兆教程会按规则解释作祟检定并保留一次确认", async ({
     page,
     context,
   }) => {
@@ -1698,6 +1695,10 @@ test.describe("山屋惊魂教程最小真实链路", () => {
     await expect(latestDiscovery).toBeVisible();
     await expect(page.getByTestId("betrayal-discovery-panel-main")).toBeVisible();
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
+      "所有玩家持有的预兆总数",
+    );
+    await expect(page.getByTestId("tutorial-overlay-card")).toContainText("5+");
+    await expect(page.getByTestId("tutorial-overlay-card")).not.toContainText(
       "同一画面",
     );
     await expect(discoveryContinue).toHaveText(/^确认$/);
@@ -1716,17 +1717,17 @@ test.describe("山屋惊魂教程最小真实链路", () => {
       "狗",
     );
     await expect(page.getByTestId("betrayal-runtime-header-grid")).toContainText(
-      /恶兆前|Pre-Haunt/i,
+      /作祟前|Pre-Haunt/i,
     );
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "预兆进入持有区",
+      "你获得这张预兆",
     );
     await saveScreenshot(page, STEP_42);
 
     await clickNext(page);
     await waitForStep(page, "haunt-risk-track");
     await expect(page.getByTestId("tutorial-overlay-card")).toContainText(
-      "当前格高亮",
+      "高亮格表示已发现的预兆数",
     );
     await expect(
       page.locator('[data-tutorial-id="betrayal-haunt-risk-status"]'),

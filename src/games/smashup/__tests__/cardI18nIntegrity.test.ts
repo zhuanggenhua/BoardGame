@@ -274,6 +274,22 @@ describe('SmashUp 卡牌 i18n 完整性', () => {
     )).toBe('超级佐德：要在该基地计分前移动到托尔图加吗？');
   });
 
+  it('resolvePromptText 能兼容大小写不一致的标题占位符', () => {
+    const translator = (key: string, opts?: { defaultValue?: string; [k: string]: unknown }) => {
+      if (key === 'ui.pirate_first_mate_choose_base_title') {
+        return '{{MATENAME}}：你可以移动此随从到其他基地（而不是弃牌堆）';
+      }
+      return opts?.defaultValue ?? key;
+    };
+
+    expect(resolvePromptText(
+      'fallback title',
+      'ui.pirate_first_mate_choose_base_title',
+      { mateName: '大副' },
+      translator,
+    )).toBe('大副：你可以移动此随从到其他基地（而不是弃牌堆）');
+  });
+
   it('Oops 四派系 POD 卡牌的关键中文效果文本已修正', () => {
     expect(zhCN.cards?.ancient_egyptians_mummy_pod?.abilityText).toBe(
       '特殊：本基地计分后，你可以将此随从埋葬到另一个基地。',

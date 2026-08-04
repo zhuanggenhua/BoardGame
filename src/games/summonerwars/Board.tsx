@@ -495,6 +495,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const effectiveRapidFireMode = useMemo(() => {
     return deriveRapidFireMode(swInteraction);
   }, [swInteraction]);
+  const shadowLightningStepMode = swInteraction?.type === 'shadow_lightning_step';
 
   const abilityMode = systemAbilityMode;
   const abilityUiRoute = useMemo(
@@ -529,6 +530,16 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const systemInfectionCards = useMemo(() => {
     return deriveInteractionCardsByOptionIds(swInteraction, 'infection', core.players[myPlayerId]?.discard ?? []);
   }, [core.players, myPlayerId, swInteraction]);
+
+  const isShadowMarlCardSelectorActive = swInteraction?.type === 'shadow_marl_select_card';
+  const shadowMarlCardSelectorCards = useMemo(() => {
+    if (!isShadowMarlCardSelectorActive) return [];
+    const selectableIds = new Set(swInteraction?.options.map((option) => {
+      const value = option.value as { action?: string; targetCardId?: string } | undefined;
+      return value?.action === 'shadow_marl_card' ? value.targetCardId : undefined;
+    }).filter((cardId): cardId is string => !!cardId));
+    return (core.players[myPlayerId]?.discard ?? []).filter((card) => selectableIds.has(card.id));
+  }, [core.players, isShadowMarlCardSelectorActive, myPlayerId, swInteraction]);
 
   const systemGrabFollowMode = isSwSimpleChoiceType(swInteraction, 'grab_follow');
   const systemFeedBeastMode = isSwSimpleChoiceType(swInteraction, 'feed_beast');
@@ -948,6 +959,22 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       cancelSwInteraction(true);
     }
   }, [cancelSwInteraction, effectiveRapidFireMode]);
+  const handleConfirmShadowLightningStep = useCallback(() => {
+    if (!shadowLightningStepMode) return;
+    const optionId = findInteractionOptionId((option) => {
+      const value = option.value as { action?: string; skip?: boolean } | undefined;
+      return value?.action === 'shadow_lightning_step_replace' && value.skip !== true;
+    });
+    respondInteractionOption(optionId);
+  }, [findInteractionOptionId, respondInteractionOption, shadowLightningStepMode]);
+  const handleSkipShadowLightningStep = useCallback(() => {
+    if (!shadowLightningStepMode) return;
+    const optionId = findInteractionOptionId((option) => {
+      const value = option.value as { action?: string; skip?: boolean } | undefined;
+      return option.id === 'skip' || value?.skip === true;
+    });
+    respondInteractionOption(optionId);
+  }, [findInteractionOptionId, respondInteractionOption, shadowLightningStepMode]);
   // 鲜血符文选择回调
   const handleConfirmBloodRune = useCallback((choice: 'damage' | 'charge') => {
     if (abilityMode?.abilityId !== 'blood_rune') return;
@@ -1214,6 +1241,8 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         moguSymbioticSelfHealingSelectedTargets={interaction.moguSymbioticSelfHealingMode?.selectedTargets ?? []}
                         moguReleaseSporesHighlights={interaction.moguReleaseSporesHighlights}
                         moguReleaseSporesSelectedTargets={interaction.moguReleaseSporesMode?.selectedTargets ?? []}
+                        shadowPulseHighlights={interaction.shadowPulseHighlights}
+                        shadowPulseSelectedTargets={interaction.shadowPulseMode?.selectedTargets ?? []}
                         sneakHighlights={interaction.sneakHighlights}
                         glacialShiftHighlights={interaction.glacialShiftHighlights}
                         withdrawHighlights={interaction.withdrawHighlights}
@@ -1426,7 +1455,9 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                       afterAttackAbilityMode={afterAttackAbilityMode}
                       telekinesisTargetMode={interaction.telekinesisTargetMode}
                       magicEventChoiceMode={interaction.magicEventChoiceMode}
-                      eventTargetMode={interaction.eventTargetMode}
+                       eventTargetMode={interaction.eventTargetMode}
+                       shadowPulseMode={interaction.shadowPulseMode}
+                       shadowLightningStepMode={shadowLightningStepMode}
                       systemGrabFollowMode={systemGrabFollowMode}
                       systemFeedBeastMode={systemFeedBeastMode}
                       systemMoguParasiteMode={systemMoguParasiteMode}
@@ -1473,6 +1504,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                       onDiscardMagicEvent={interaction.handleDiscardMagicEvent}
                       onCancelMagicEventChoice={interaction.handleCancelMagicEventChoice}
                       onCancelEventTargetInteraction={interaction.handleCancelEventTargetInteraction}
+                       onConfirmShadowPulse={interaction.handleConfirmShadowPulse}
+                       onSkipShadowPulse={interaction.handleSkipShadowPulse}
+                       onConfirmShadowLightningStep={handleConfirmShadowLightningStep}
+                       onSkipShadowLightningStep={handleSkipShadowLightningStep}
                     />
                   </div>
                 </div>
@@ -1538,6 +1573,21 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   onSelect={handleSelectInfectionCard}
                   onCancel={handleSkipInfection}
                   cancelLabelKey="actions.skip"
+                />
+              )}
+
+              {isShadowMarlCardSelectorActive && swInteraction && (
+                <CardSelectorOverlay
+                  title={t('cardSelector.shadowMarlGrimoire')}
+                  cards={shadowMarlCardSelectorCards}
+                  onSelect={(card) => {
+                    const option = swInteraction.options.find((candidate) => {
+                      const value = candidate.value as { action?: string; targetCardId?: string } | undefined;
+                      return value?.action === 'shadow_marl_card' && value.targetCardId === card.id;
+                    });
+                    if (option) respondInteractionOption(option.id);
+                  }}
+                  onCancel={() => cancelSwInteraction(true)}
                 />
               )}
 

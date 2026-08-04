@@ -630,6 +630,7 @@ WEB_ORIGINS=https://your-domain.com
 - 仓库提供 `scripts/deploy/watch-game-server-cpu.sh` 作为宿主机 CPU 高水位止血脚本：默认采样 3 次、每次间隔 20 秒，只有全部样本超过 `BG_GAME_SERVER_CPU_THRESHOLD`（默认 80%）才触发；触发前会保存 `docker stats`、`docker inspect`、宿主机快照、容器进程、最近日志，以及高 CPU 现场的宿主进程、线程、`/proc`、fd 和容器内进程快照。
 - 脚本默认会留档并通过内部反馈入口写一条系统反馈（`source=infra-cpu-watch`），但不会重启；生产定时器或 systemd service 需要显式设置 `BG_GAME_SERVER_CPU_WATCH_RESTART=1` 才会执行 `docker restart boardgame-game-server`。建议同时设置 `BG_GAME_SERVER_CPU_RESTART_COOLDOWN_SECONDS=600` 或更高，避免重启风暴。
 - 每次运行都会追加一行历史记录到 `BG_GAME_SERVER_CPU_HISTORY_LOG`（默认 `./logs/game-server-cpu-watch/restart-history.log`），包含 `decision`、`restarted`、`reason`、平均 CPU、触发样本数和证据文件路径；事后用 `tail -n 50 ./logs/game-server-cpu-watch/restart-history.log` 就能看是否重启以及监控判定原因。
+- 在线 AI watchdog 执行恢复命令失败时，会额外写入 `source=online-ai-watchdog` 的命令失败反馈，并记录实际命令参数、失败前状态版本、进度标记、AI 座位类型和当前合法动作摘要；CPU 现场应将这些反馈与高水位证据文件、`command_failed` 日志按房间和时间关联分析。
 - `reason=sustained_high_cpu` 只表示“监控确认持续高 CPU 并触发止血动作”，不是 CPU 打满的业务根因。若要定位根因，必须回到证据文件里的进程/线程快照、最近日志、房间或请求关联继续分析；若没有 profiler、堆栈或循环位置证据，只能说“已止血，根因未定位”。
 - 高 CPU 系统反馈默认 10 分钟冷却一次（`BG_GAME_SERVER_CPU_FEEDBACK_COOLDOWN_SECONDS=600`），避免同一段持续高水位刷屏；如果 `.env` 缺少 `INTERNAL_FEEDBACK_TOKEN`，脚本仍会本地留档，但不会写反馈。
 

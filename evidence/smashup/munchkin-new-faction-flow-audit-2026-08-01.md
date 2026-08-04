@@ -19,7 +19,7 @@
 
 ## 全面审计自检表
 
-> 这个表用于防止把“已有 UI 和静态数据”误报成“已审计完成”。只要下表仍有 `blocked`、`scoped_debt` 或 `representative_only`，就禁止说 Munchkin 新派系流程完成。
+> 这个表用于防止把“已有 UI 和静态数据”误报成“全批次完成”。只要下表仍有 `blocked`、`scoped_debt` 或 `representative_only`，就禁止说 Munchkin 新派系流程完成。
 
 | 自检项 | 状态 | 证据 / 缺口 |
 | --- | --- | --- |
@@ -52,7 +52,7 @@
 
 ## 缺口分类与范围裁定
 
-| 条目 | 分类 | 是否阻塞当前规则实现 | 是否阻塞已审计/已收口口径 | 当前范围裁定 | 后续入口 |
+| 条目 | 分类 | 是否阻塞当前规则实现 | 是否阻塞全批次完成口径 | 当前范围裁定 | 后续入口 |
 | --- | --- | --- | --- | --- | --- |
 | 怪物如何进入基地、如何增加/影响破坏门槛、如何被击败 | `功能实现阻塞` | 部分是 | 是 | 当前范围内 | 入基地、未受控怪物提高破坏门槛、受控怪物计入控制者力量、清场移走、击败怪物命令与事件结算已有 L2；UI 本体点击击败已有 L3 真实入口 E2E |
 | 宝藏如何获得、进入谁的区域、何时能使用、是否占普通行动/随从额度 | `功能实现阻塞` | 部分是 | 是 | 当前范围内 | 击败怪物奖励现在进入玩家手牌；宝藏静态定义已改为混合牌种：矮人雇佣兵、半身人雇佣兵、虎骑士是仆从，其余按普通/持续/特殊行动接入；宝藏仆从走普通随从额度，宝藏行动走普通行动额度已有 L2；半身人雇佣兵打出后给额外随从额度、愚蠢勇气药水给目标随从本回合 +3 已有 L2；矮人雇佣兵从手牌按宝藏随从打到基地、消耗普通随从额度且不创建长期宝藏区已有 L3 真实入口；半身人雇佣兵从手牌按宝藏随从打出、开放第二个随从额度，并让虎骑士作为第二张宝藏随从继续打出已有 L3 真实入口；愚蠢勇气药水手牌打出并给目标随从本回合 +3 已有 L3 真实入口；尖刺靴、血腥肢解电锯、大量宝藏、诱惑护膝、怯懦药水的持续力量修正、怯懦药水失去能力、摆动的盾牌防摧毁、时间错乱的喷气背包回手牌触发、火箭靴天赋移动宿主、魔法导弹天赋回公共宝藏牌库底并摧毁低力量仆从、许愿指环获得 1VP 并回公共宝藏牌库底、探宝棒抽两张宝藏并重洗公共宝藏牌库、十字弓选择基地和派系批量 +2、半身人雇佣兵手牌打出后开放第二个随从额度并允许第二张宝藏随从继续打出、一袋铁蒺藜对方低力触发并摧毁自身和目标、对方高力/己方低力不触发、地牢规则书普通打出和计分前打出均可摧毁场上行动、口臭药水普通打出和计分前打出均可让被选玩家移动自己的仆从、直线跑路药水计分后展示待分发宝藏并可在计分后响应窗拿走其中 1 张、麻痹药水计分前取消正在计分基地上所有牌和仆从能力直到回合结束已有 L2；复制药水让宿主使用另一个仆从天赋已有 L2 与真实入口 L3；魔法导弹附着行动卡本体点击并摧毁同基地低力仆从已有 L3；口臭药水普通打出、直线跑路药水计分后响应入口、麻痹药水计分前响应入口已补到 L3/L4；许愿指环、探宝棒和十字弓真实入口使用链已补 L3；一袋铁蒺藜、愚蠢勇气药水、矮人雇佣兵、半身人雇佣兵、尖刺靴、血腥肢解电锯、大量宝藏、诱惑护膝、怯懦药水和摆动的盾牌真实入口使用链已补 L3；仍不升级为全部宝藏真实入口完成口径，因逐卡完整流程矩阵、可选/跳过和计分前后组合尚未审完；时间错乱的喷气背包真实队列 L4 已补代表链 |
@@ -155,9 +155,9 @@
 | --- | --- | --- | --- | --- |
 | 矮人 | 矮人王、宝藏爱好者、黄金挖掘者、宝石抓取者、为了钱什么都可以、套现、狡猾计划、贪婪是好的、隐藏资产、我的！、不！我的宝贝！、打捞；基地：矿洞、宝藏池 | `locked_rules / object_l3_passed`：2026-08-02 08:43 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-02 11:55 已补全部矮人对象 L2；2026-08-02 12:02 已补矮人王 L3；2026-08-02 12:08 已补宝藏池 L3；2026-08-02 12:21 已补宝藏爱好者 / 宝石抓取者 L3；2026-08-02 12:35 已补黄金挖掘者 L3；2026-08-02 12:45 已补隐藏资产 L3；2026-08-02 12:58 已补为了钱什么都可以 L3；2026-08-02 13:05 已补贪婪是好的 L3；2026-08-02 13:15 已补矿洞 L3；2026-08-02 14:24 已补套现 L3；2026-08-02 14:44 已补狡猾计划 L3；2026-08-02 15:00 已补我的！ L3；2026-08-02 15:20 已补打捞 L3/L4；2026-08-02 18:02 已补不！我的宝贝！ L3 | L0/L1 静态定义和双语 locale 已接；矮人 12 张牌 + 2 个基地的对象级 L3 真实入口证据已齐；其中打捞已覆盖计分清场 L4。整体 Munchkin 仍未完成，因为其它普通派系逐卡实现 / L2-L4 还没完成 | 转入其它普通派系逐卡实现与 L2-L4 证据，继续禁止升级为 Munchkin 新派系完成口径 |
 | 半身人 | 夏尔首领、调皮鬼、吟游诗人、半身人、最后通牒、午餐散步、偷袭、惊醒、小而坚韧、偷偷摸摸、被宠坏的小家伙、意外的派对；基地：生日派对、地下矮屋 | `locked_rules / object_l3_l4_passed`：2026-08-02 09:00 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-02 18:30 已补半身人、生日派对、地下矮屋 L2+L3；2026-08-02 18:55 已补夏尔首领、调皮鬼、吟游诗人 L2；2026-08-02 20:25 已补午餐散步、偷偷摸摸、偷袭、最后通牒、惊醒、小而坚韧、被宠坏的小家伙、意外的派对 L2，整表 83 passed；2026-08-02 21:45 已补夏尔首领、调皮鬼、吟游诗人 L3；2026-08-02 22:35 已补 8 张行动牌 L3/L4 真实入口截图 115-138 | L0/L1 静态定义和双语 locale 已接；半身人 12 张牌 + 2 个基地对象级 L2 已过且对象级 L3 真实入口证据已齐；最后通牒、小而坚韧等流程态已补 L4 观察。整体 Munchkin 仍未完成，因为盗贼、法师、木精灵、牧师、兽人、勇士仍未逐卡实现 / L2-L4 验证 | 半身人对象级证据可转为 passed；下一步转入盗贼、法师、木精灵、牧师、兽人、勇士逐卡实现与 L2-L4 证据；不得升级为 Munchkin 新派系完成 |
-| 盗贼 | 盗贼大师、销赃犯、猫咪窃贼、扒手、背刺、转移注意力、打劫、药水腰带、秘密藏匿处、走私、剥光、顺手拿走；基地：金库、盗贼公会 | `locked_rules / positive_paths_passed / manual_choice_reaudit_pending`：2026-08-02 09:04 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-02 22:59 已补盗贼大师、猫咪窃贼、扒手、顺手拿走对象级 L2；2026-08-02 23:40 已补这 4 张真实入口正向链；2026-08-03 已补销赃犯、背刺、药水腰带、走私正向链和图面审计；2026-08-03 已补转移注意力、打劫、秘密藏匿处、剥光、金库、盗贼公会正向链与图面审计；2026-08-03 规范回代后发现旧审计未把“单候选也必须手选、不得隐式代选”作为硬门禁逐项核销 | L0/L1 静态定义和双语 locale 已接；盗贼 12 张牌 + 2 个基地均已有 handler、L2 测试和真实入口正向 E2E，但对象级 L3/L4 收口结论已降级：必须重新逐交互审计 `autoResolveIfSingle` / 等价隐式代选默认，证明每个对象 / 目标 / 支付物 / 顺序 / 数量 / 模式选择即使单候选也真实停住并由玩家手动点选 | 下一步不是转入其它派系，而是先按单候选手选门禁重审盗贼和同批 Munchkin 新交互；重审通过后才允许恢复盗贼对象级收口口径 |
+| 盗贼 | 盗贼大师、销赃犯、猫咪窃贼、扒手、背刺、转移注意力、打劫、药水腰带、秘密藏匿处、走私、剥光、顺手拿走；基地：金库、盗贼公会 | `locked_rules / positive_paths_passed / mugging_visual_fixed / manual_choice_reaudit_pending`：2026-08-02 09:04 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-02 22:59 已补盗贼大师、猫咪窃贼、扒手、顺手拿走对象级 L2；2026-08-02 23:40 已补这 4 张真实入口正向链；2026-08-03 已补销赃犯、背刺、药水腰带、走私正向链和图面审计；2026-08-03 已补转移注意力、打劫、秘密藏匿处、剥光、金库、盗贼公会正向链与图面审计；2026-08-03 规范回代后发现旧审计未把“单候选也必须手选、不得隐式代选”作为硬门禁逐项核销；2026-08-03 22:33 已重拍打劫 167/168，修复行动卡特写遮挡目标候选的问题 | L0/L1 静态定义和双语 locale 已接；盗贼 12 张牌 + 2 个基地均已有 handler、L2 测试和真实入口正向 E2E；打劫单链视觉证据已修复，但对象级 L3/L4 批次收口仍保持降级：必须重新逐交互审计 `autoResolveIfSingle` / 等价隐式代选默认，证明每个对象 / 目标 / 支付物 / 顺序 / 数量 / 模式选择即使单候选也真实停住并由玩家手动点选 | 下一步不是转入其它派系，而是先按单候选手选门禁重审盗贼和同批 Munchkin 新交互；重审通过后才允许恢复盗贼对象级收口口径 |
 | 法师 | 爆破大师、快乐小法师、魔杖天才、勤读者、魅力、大上一倍、大召唤、通往次元之门、恢复奥术智慧、神奇的夜晚、快速阅读、快速攻击！；基地：次元之门、法师之塔 | `locked_rules / implementation_blocked`：2026-08-02 09:14 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方法师矩阵实现弃牌成本、摧毁低力、控制怪物、打怪物、抽牌直到 5 张、额外随从和基地每回合一次链 |
-| 木精灵 | 精灵斗士、优雅贵族、花之子、精灵帮助大师、在你之后、舞动之根、援手、力量训练、逃跑吧！、赶紧逃跑吧！、贸易、旅行精灵；基地：援助山谷、树屋 | `locked_rules / implementation_blocked`：2026-08-02 09:19 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方木精灵矩阵实现 +1 指示物互惠、让对手抽牌、临时控制交换、计分前移动、交换手牌和基地互惠抽牌链 |
+| 木精灵 | 精灵斗士、优雅贵族、花之子、精灵帮助大师、在你之后、舞动之根、援手、力量训练、逃跑吧！、赶紧逃跑吧！、贸易、旅行精灵；基地：援助山谷、树屋 | `locked_rules / representative_paths_passed / scoped_debt`：2026-08-02 09:19 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-04 已完成花之子、力量训练、赶紧逃跑吧、树屋四条代表链的真实入口 E2E 与逐图审计 | L0/L1 静态定义和双语 locale 已接；上述四条链已覆盖跨玩家手动选择、随从本体选择、多选/空选、目标玩家手动抽牌或跳过；其余木精灵卡牌与援助山谷仍未逐卡完成 L2/L3/L4 | 继续按木精灵对象矩阵补剩余卡牌与基地链；不得把四条代表链升级为木精灵整派系或 Munchkin 新派系完成 |
 | 牧师 | 红衣主教、资深修士、特纳、圣临者、垃圾处理、光盘、监禁诅咒、无用诅咒、好习惯、加入团队、解除诅咒、回忆祷词；基地：圣洁酒店、抓鬼 | `locked_rules / implementation_blocked`：2026-08-02 09:26 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方牧师矩阵实现弃牌堆随机回收、计分后替代弃牌、亡灵怪物处理、能力压制、力量不计入基地和基地清场回牌库顶链 |
 | 兽人 | 剑王、粉碎者、重击者、呆瓜兽人、躺下！、愤怒的掠夺者、挤碎、死亡之息、狗堆、给我！、洗手间、太难了；基地：要塞、坑洞 | `locked_rules / implementation_blocked`：2026-08-02 09:34 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方兽人矩阵实现其他玩家行动保护、低力摧毁/回牌库底、计分前特殊压制、计分 VP 奖励、转移动作和基地总力量奖励链 |
 | 勇士 | 大英雄、明星勇士、狂战士、嘲讽者、领导运动、斩杀、哑铃、地牢诱饵、永恒的英雄、骚乱、无处不在之盾、战争怒吼；基地：堡垒、锦标赛 | `locked_rules / implementation_blocked`：2026-08-02 09:40 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方勇士矩阵实现怪物打出/摧毁、击败奖励宝藏额外打出、+1 指示物、附着替代回手、按怪物数量力量修正和基地触发链 |
@@ -781,7 +781,7 @@
 | 定向静态检查 | `npx eslint e2e\smashup\smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：0 errors / 0 warnings |
 | 截图核验 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\不！我的宝贝！可摧毁仆从身上的宝藏行动并继续打出额外行动\90-不！我的宝贝！手牌与可摧毁附着行动.jpg`；`...\91-不！我的宝贝！选择仆从身上的宝藏行动.jpg`；`...\92-不！我的宝贝！摧毁宝藏后获得额外行动.jpg`；`...\93-不！我的宝贝！额外打出许愿指环后收口.jpg` | `passed`：90 显示手牌中有不！我的宝贝！和许愿指环，矿洞宿主身上有宝藏附着与普通附着，基地行动在基地上方单独存在；91 显示临时选择态只用于选择仆从身上的行动；92 显示宝藏附着被移除并获得 1 次额外行动，普通附着和基地行动保留；93 显示许愿指环打出后 P0 VP=7、公共宝藏小牌 x1，怪物 / 宝藏小牌仍在抽牌堆旁，无破图、无明显重叠、无主 UI 常驻规则说明正文 |
 
-> 历史状态：18:02 时矮人 12 张牌 + 2 个基地的对象级 L3 真实入口证据已齐；但当时这只代表矮人对象级证据收口，不能升级为 Munchkin 新派系整体完成。22:35 后半身人对象级证据也已收口，剩余普通派系缺口为盗贼、法师、木精灵、牧师、兽人、勇士。
+> 历史状态：18:02 时矮人 12 张牌 + 2 个基地的对象级 L3 真实入口证据已齐；但当时这只代表矮人对象级证据已记录，不能升级为 Munchkin 新派系整体完成。22:35 后半身人对象级证据也已记录，剩余普通派系缺口为盗贼、法师、木精灵、牧师、兽人、勇士。
 
 ## 2026-08-02 18:30 续审记录
 
@@ -870,15 +870,15 @@
 | 截图核验 | 原始截图 153-165；AI 自审接触表 `D:\gongzuo\webgame\BoardGame\temp\munchkin-thieves-batch2-contact-sheet.jpg` | `PASS / 92`：截图能看见手牌、基地、怪物行、公共宝藏 / 怪物小牌、交互选择层和结算后状态。怪物仍在基地下方排布，宝藏小牌只在抽牌堆旁显示数量，弃牌区没有重复小牌；手牌区、行动卡、右侧弃牌区和公共小牌没有互相遮挡；提示为短操作文案，没有常驻规则正文 |
 | 残余范围 | 本记录 | `in_progress / scoped_debt`：盗贼大师、顺手拿走、扒手、销赃犯、背刺、药水腰带、走私已可记为 `passed_object_l3`；猫咪窃贼为 `passed_object_l3_l4`。但盗贼整派系仍未完成：转移注意力、打劫、秘密藏匿处、剥光、金库、盗贼公会仍待 L2-L4 实现与验证 |
 
-## 2026-08-03 续审记录：盗贼剩余对象与计分链
+## 2026-08-03 续审记录：盗贼剩余对象与计分链（修复前降级证据）
 
 | 项目 | 证据 | 结论 |
 | --- | --- | --- |
-| 盗贼剩余对象 L2/L3/L4 实现 | `src\games\smashup\abilities\munchkin.ts`；`src\games\smashup\data\factions\munchkin.ts`；`src\games\smashup\domain\index.ts`；`src\games\smashup\__tests__\munchkinMechanics.test.ts`；`e2e\smashup\smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed_object_l3_l4`：转移注意力、打劫、秘密藏匿处、剥光、金库、盗贼公会均已接入真实入口和行为验证。打劫覆盖从仆从身上转移行动到己方另一个仆从；剥光覆盖从场上拿走宝藏牌进当前玩家手牌；盗贼公会覆盖宝藏行动打到本基地后抽普通牌；金库计分链覆盖秘密藏匿处额外宝藏奖励、转移注意力 afterScoring 响应入口和计分后抽宝藏收口 |
+| 盗贼剩余对象 L2/L3/L4 实现 | `src\games\smashup\abilities\munchkin.ts`；`src\games\smashup\data\factions\munchkin.ts`；`src\games\smashup\domain\index.ts`；`src\games\smashup\__tests__\munchkinMechanics.test.ts`；`e2e\smashup\smashup-munchkin-monster-treasure-ui.e2e.ts` | `positive_paths_passed / visual_revise`：转移注意力、打劫、秘密藏匿处、剥光、金库、盗贼公会均已有行为实现和正向 E2E 入口。打劫功能路径能从仆从身上转移行动到己方另一个仆从；剥光能从场上拿走宝藏牌进当前玩家手牌；盗贼公会能在宝藏行动打到本基地后抽普通牌；金库计分链能处理秘密藏匿处额外宝藏奖励、转移注意力 afterScoring 响应入口和计分后抽宝藏收口。但 168 截图未能清楚展示“选择另一个随从”的候选本体，不能继续记为对象级 L3/L4 收口 |
 | 定向验证 | `npm run test:e2e:file -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "打劫可从真实手牌入口"`；同入口分别运行 `"剥光可从真实手牌入口"` / `"盗贼公会在宝藏行动"` / `"金库计分链"`；`node scripts\infra\vitest-cli-safe.mjs run src\games\smashup\__tests__\munchkinMechanics.test.ts --configLoader native -t "转移注意力\|打劫\|秘密藏匿处\|剥光\|金库\|盗贼公会"`；完整 `munchkinMechanics.test.ts`；`npx eslint src/games/smashup/abilities/munchkin.ts src/games/smashup/data/factions/munchkin.ts src/games/smashup/domain/index.ts src/games/smashup/__tests__/munchkinMechanics.test.ts src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：4 条剩余对象真实入口 E2E 均已单独通过并生成截图 166-178；定向 L2 行为测试 6 passed；完整 Munchkin 行为测试 97 passed；ESLint 0 errors。第一次用组合 grep 未命中属于 runner 参数转义问题，不是玩法失败；完整 `interactionTargetTypeAudit` 仍有历史基线债，本轮新增的通用牌库检索交互已通过窄审计 |
-| 真实入口截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\打劫可从真实手牌入口转移仆从身上的行动到己方另一个仆从\166-打劫打出前附着行动与己方目标.jpg` 至 `169-打劫结算后行动附着到己方目标.jpg`；`...\剥光可从真实手牌入口拿走场上的宝藏牌进当前玩家手牌\170-剥光打出前场上宝藏牌.jpg` 至 `172-剥光结算后宝藏牌进入手牌.jpg`；`...\盗贼公会在宝藏行动打到本基地后从真实入口抽一张普通牌\173-盗贼公会打出宝藏行动前.jpg` / `174-盗贼公会触发后普通牌进手牌.jpg`；`...\金库计分链同时处理秘密藏匿处、转移注意力和计分后抽宝藏\175-金库计分前转移注意力与秘密藏匿处.jpg` 至 `178-金库计分后宝藏奖励与转移注意力收口.jpg` | `passed`：截图覆盖打出前、选择态、响应入口和结算收口；玩家从真实手牌、真实场上行动卡、真实计分响应窗完成操作，不依赖临时 mock 页面 |
-| AI 图面审计 | 原始截图 166-178；AI 自审联系表 `D:\gongzuo\webgame\BoardGame\temp\munchkin-thieves-batch3-audit\thieves-batch3-166-178-contact.jpg`；用户验收图集 `D:\gongzuo\webgame\BoardGame\evidence\smashup\munchkin-thieves-batch3-l3-l4-contact-sheet-2026-08-03.jpg` | `layout_pass / interaction_gate_pending`：布局维度 PASS / 93，怪物仍在基地下方排成一排并允许局部重叠；公共宝藏 / 怪物小牌只在抽牌堆旁显示数量，弃牌区没有重复小牌；未发现破图、空白、明显遮挡、常驻规则正文或卡牌标题 / 规则正文重复展示。但该图面审计没有逐项核销“单候选也必须手选、不得隐式代选”的交互语义门禁，不能继续单独支撑对象级 L3/L4 收口 |
-| 残余范围 | 本记录 | `manual_choice_reaudit_pending`：盗贼 12 张牌 + 2 个基地已有正向功能链和布局截图，但对象级收口结论暂停。必须重审所有新增 Munchkin 交互：每个对象 / 目标 / 支付物 / 顺序 / 数量 / 模式选择是否即使单候选也停在玩家可见选择态，并由玩家手动点击 / 确认推进；未完成前不得说盗贼对象级 L3/L4 已齐 |
+| 真实入口截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\打劫可从真实手牌入口转移仆从身上的行动到己方另一个仆从\166-打劫打出前附着行动与己方目标.jpg` 至 `169-打劫结算后行动附着到己方目标.jpg`；`...\剥光可从真实手牌入口拿走场上的宝藏牌进当前玩家手牌\170-剥光打出前场上宝藏牌.jpg` 至 `172-剥光结算后宝藏牌进入手牌.jpg`；`...\盗贼公会在宝藏行动打到本基地后从真实入口抽一张普通牌\173-盗贼公会打出宝藏行动前.jpg` / `174-盗贼公会触发后普通牌进手牌.jpg`；`...\金库计分链同时处理秘密藏匿处、转移注意力和计分后抽宝藏\175-金库计分前转移注意力与秘密藏匿处.jpg` 至 `178-金库计分后宝藏奖励与转移注意力收口.jpg` | `visual_revise`：166/167/169 可作为打出前、行动选择和结算后诊断图；168 不能作为“选择己方另一个随从”的合格 L3 图，因为原图中大号打劫卡牌预览压在场地中央，目标随从候选本体被遮挡，玩家不能第一眼确认要点哪个另一个随从 |
+| AI 图面审计 | 原始截图 168；原始截图 166-178；AI 自审联系表 `D:\gongzuo\webgame\BoardGame\temp\munchkin-thieves-batch3-audit\thieves-batch3-166-178-contact.jpg`；用户验收图集 `D:\gongzuo\webgame\BoardGame\evidence\smashup\munchkin-thieves-batch3-l3-l4-contact-sheet-2026-08-03.jpg` | `REVISE / 74`：168 进入了“打劫：选择你的一个仆从”的状态，但目标候选被大卡预览和场面叠放遮住，只能从测试代码 / 文件名推断存在候选；这违反“选择态截图必须显示被选候选本体”和“玩家第一眼知道该点什么”。联系表初审未逐张打开原图，旧 `PASS / 93` 作废 |
+| 残余范围 | 本记录 | `visual_revise / manual_choice_reaudit_pending`：盗贼 12 张牌 + 2 个基地已有正向功能链，但对象级收口结论暂停。必须先修复或重拍打劫第二步，让“另一个随从”候选清楚可见并由玩家手动点击；再重审所有新增 Munchkin 交互的单候选手选门禁。未完成前不得说盗贼对象级 L3/L4 已齐 |
 
 ## 2026-08-03 规范回代：单候选手选门禁
 
@@ -887,11 +887,82 @@
 | 上位规范真相源 | `D:\codex-home\skills\game-ui-design\SKILL.md`；`docs\ai-rules\ui-ux.md` 第 109 行 | `canonical_source_confirmed`：玩家决策点不得因“只有一个候选”被系统隐式代选；当前仍需选择对象、目标、支付物、顺序、数量或模式时，即使候选只有 1 个，也必须手动点选。`docs\ai-rules\ui-ux.md` 已有等价项目 UI 规则，本轮补强全局 game-ui-design，并让新增派系 / Smash Up workflow 做薄适配 |
 | 治理规范回代 | `D:\codex-home\skills\skill-governance\SKILL.md` | `passed`：已补“不得把跨项目不变量降级为单项目特例”：当用户质疑是否只改单游戏规范时，必须先检查上位 canonical-source；已有上位规则则按未执行已有规范处理，缺规则才更新全局 skill |
 | 项目适配 | `.codex\skill\add-new-faction\SKILL.md`；`docs\games\smashup\workflows\smashup-faction-implementation.md` | `passed_adapter`：新增派系和 Smash Up 专项 workflow 已明确：命中共享选择 helper / prompt / interaction 时必须反查 `autoResolveIfSingle` 或等价隐式代选默认；L3/E2E 必须逐段证明交互真实停住、玩家手动点选、再进入下一段或结算 |
-| 当前审计影响 | 本文盗贼记录 | `reclassified`：此前盗贼 166-178 的 `PASS / 93` 仅保留为布局图面结论；对象级 L3/L4 收口结论降级为 `manual_choice_reaudit_pending`，待重新审计后再恢复或继续修复 |
+| 当前审计影响 | 本文盗贼记录 | `pre_fix_reclassified`：此前盗贼 166-178 的 `PASS / 93` 作废；旧 168 已明确判为 `REVISE`，对象级 L3/L4 收口结论降级为 `visual_revise / manual_choice_reaudit_pending`。2026-08-03 22:33 已完成打劫单链修复 / 重拍 / 重审，见下节；批次级手动选择重审仍未完成 |
+
+## 2026-08-03 22:33 修复记录：打劫目标选择态重拍
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 实现修复 | `src\games\smashup\abilities\munchkin.ts` | `fixed_scoped`：打劫第二段“选择你的一个仆从”不再携带源卡 `displayCard`。这只影响第二步目标选择态，避免源卡预览和场上目标候选争前景；第一段“选择附着行动”仍保留真实场上附着行动选择路径 |
+| E2E 防回归 | `e2e\smashup\smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：在打劫截图 167/168 前等待行动卡展示特效退场；168 前新增目标随从可见性断言，反向检查 `smashup-action-fx-card`、`prompt-context-card`、放大层、卡牌查看面板等不会覆盖己方目标随从本体。该断言防止以后再用 DOM 选项存在或文件名推断替代玩家可见候选 |
+| 定向验证 | `npx eslint src/games/smashup/abilities/munchkin.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`npm run test:e2e:file -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "打劫可从真实手牌入口"`；`git diff --check -- src/games/smashup/abilities/munchkin.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：ESLint 0 errors；打劫单条真实入口 E2E 1 passed，截图 166-169 已在 2026-08-03 22:33 重新生成；diff check 0 errors，仅 Windows LF/CRLF 提示 |
+| 新真实入口截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\打劫可从真实手牌入口转移仆从身上的行动到己方另一个仆从\167-打劫选择仆从身上的行动.jpg`；同目录 `168-打劫选择己方另一个仆从.jpg`；`169-打劫结算后行动附着到己方目标.jpg` | `visual_fixed`：167 可见附着行动本体且无大号“打劫”特写遮挡；168 可见己方目标随从本体、绿色候选高亮和短 prompt，目标不再被行动卡特写 / displayCard / hover 特写遮住；169 可见行动已从原宿主转移到己方目标随从身上 |
+| AI 图面审计 | 逐张打开原始截图 167、168、169；未使用联系表替代 | `PASS / 92`：修复后的打劫单链玩家第一眼能理解两步手动选择：先点场上附着行动，再点己方目标随从；选择候选本体清楚可见，未发现破图、空白、常驻规则正文、前景大卡遮挡或与手牌 / 牌堆 / 记分板 / 结束回合按钮抢位 |
+| 残余范围 | 本记录 | `manual_choice_reaudit_pending`：只恢复打劫单链视觉证据；不恢复盗贼整批对象级 L3/L4 收口。仍需按“单候选也必须手选、不得隐式代选”门禁重审盗贼和同批 Munchkin 新增交互 |
+
+## 2026-08-04 续审记录：手牌直选与场上随从直选回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 手牌直选实现 | \`src/games/smashup/ui/interactionMode.ts\`；\`src/games/smashup/Board.tsx\` | \`fixed_scoped\`：当前玩家的手牌候选继续由底部真实手牌承接；多选手牌保留“已选数量 / 确认选择 / 清空选择”；\`max=1\` 的单候选成本牌点击后直接提交，但不会自动代选；无关普通手牌隐藏，中央 PromptOverlay 不再复制同一套候选卡 |
+| 打劫第二步实现 | \`src/games/smashup/abilities/munchkin.ts\`；\`src/games/smashup/Board.tsx\`；\`src/games/smashup/ui/BaseZone.tsx\` | \`fixed_scoped\`：第二步移除源卡大卡展示；合法随从选择态抬到堆叠上层；玩家必须先点击附着行动，再点击己方另一个随从 |
+| 混合棋盘选项 UID 修复 | \`src/games/smashup/Board.tsx\`；\`buildStripBareTreasureOptions\` 的 \`targetType=minion + cardUid\` | \`fixed_scoped\`：剥光的宝藏随从选项使用 \`cardUid\` 表示随从本体，棋盘选择层已按对象类型解析为随从 UID，并接入高亮与真实点击 |
+| 定向 E2E | \`node scripts\\infra\\run-e2e-single.mjs ci e2e\\smashup\\smashup-munchkin-monster-treasure-ui.e2e.ts\` 分别筛选 \`为了钱什么都可以\` / \`套现\` / \`金库计分链\` / \`猫咪窃贼\` / \`销赃犯\`；此前已通过背刺、药水腰带、走私、打劫、剥光、盗贼公会 | \`passed\`：本轮“为了钱什么都可以” 1 passed、“套现” 1 passed、“金库计分链” 1 passed、“猫咪窃贼” 1 passed、“销赃犯” 1 passed；连同此前结果，背刺 1、药水腰带 1、走私 1、打劫 1、剥光 2（行动卡本体路径 + 随从本体路径）、盗贼公会 1 继续通过。所有目标选择均由真实可见本体点击，不用测试 harness 直接提交选项 |
+| 定向静态检查 | \`npx eslint src/games/smashup/Board.tsx src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/interactionMode.ts src/games/smashup/abilities/munchkin.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts\`；\`git diff --check\` | \`passed\`：0 errors；剩余 11 个 warning 为 Smash Up Board 原有依赖 / 未使用变量 / purity warning，未新增 error。diff check 无内容错误，仅有 Windows 换行提示 |
+| AI 逐图审计 | 原始截图：147、148、154、157、158、161、164、167、168、171、172b、172c、70、71、78、79、178 | \`PASS\`：多选手牌候选、单候选手牌成本、打劫两段选择、剥光混合棋盘候选、为了钱什么都可以 / 套现多选及金库计分后状态均能看见真实对象本体；70、78 的手牌候选与 \`已选 0/2\`、确认入口同屏，71、79 分别证明抽宝藏收口与第一张额外随从选择，178 在等待稳定后没有淡入过渡帧；无中央重复大卡、无 prompt-context 遮挡、无普通手牌伪候选 |
+| 回归补齐 | \`为了钱什么都可以\`：69-71；\`套现\`：77-81；\`金库计分链\`：175-178；\`猫咪窃贼\`：146-150；\`销赃犯\`：153-155；当前工作区真实入口 E2E 均为 1 passed | \`passed\`：此前外部 runtime 占用造成的阻塞已解除；五条多选 / 计分链均沿原 E2E 入口重新执行并通过，截图已由当前现场重新生成和逐张核验 |
+| 当前范围裁决 | 本记录及本文总账 | \`in_progress / scoped_debt\`：本轮修复并验证了手牌直选、单候选手选、打劫两段选择、剥光随从本体选择，以及为了钱什么都可以 / 套现 / 金库 / 猫咪窃贼 / 销赃犯五条回归；不把这些代表链升级为盗贼整派系或 Munchkin 新派系完成 |
+
+## 2026-08-04 续审记录：法师代表链与打劫截图回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 法师真实入口 E2E | `npm run test:e2e:ci:file -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts 法师` | `passed`：4/4 通过，覆盖快速攻击先手动选择弃牌成本再手动选择力量目标、大召唤把怪物逐基地放入基地下方、魅力手动选择公共怪物并暂时控制、次元之门 / 法师之塔触发后的手动选择；本轮运行实际进入真实浏览器入口 |
+| 法师截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\法师魅力让玩家手动选择一个公共怪物并暂时控制它\法师-魅力-手动选择怪物.jpg`；同目录 `法师-快速攻击-手动选择目标随从.jpg`、`法师-大召唤-三个基地的怪物行.jpg`、`法师-次元之门-手动选择是否额外打出.jpg` | `visual_pass`：魅力候选实际显示两张怪物卡和中文名“大脚怪 / 食尸鬼”，没有空白卡或英文 ID；快速攻击目标、三基地怪物行、次元之门手动提示没有被大卡预览、泰坦、持续行动或手牌区遮挡 |
+| 打劫目标截图回归 | `npm run test:e2e:ci:file -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts 打劫可从真实手牌入口`；`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\打劫可从真实手牌入口转移仆从身上的行动到己方另一个仆从\168-打劫选择己方另一个仆从.jpg` | `passed / visual_pass`：1/1 通过；新截图中左侧己方目标随从本体有绿色候选高亮，右侧源随从和附着行动仍可见，顶部提示为“打劫：选择你的一个仆从”，不再被源卡特写或显示卡遮住；玩家仍需先点击附着行动，再手动点击己方目标随从 |
+| 当前范围裁决 | 本记录及本文总账 | `representative_only / scoped_debt`：本轮只补齐法师 4 条真实入口代表链和打劫目标选择态图面回归；法师其余对象、木精灵、牧师、兽人、勇士及 Munchkin 全批次逐卡 L2/L3/L4 仍不能由这些代表链外推完成 |
+
+## 2026-08-04 续审记录：木精灵四条手动交互链与 P2 目标页面复核
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 树屋重复上下文卡修复 | `src/games/smashup/abilities/munchkin_elves.ts`；树屋选择玩家与目标玩家抽牌的交互不再传 `displayCard` | `fixed_scoped`：树屋基地本体已经在牌桌上，PromptOverlay 不再在中央重复渲染同一张树屋大卡；牌桌基地仍保留，玩家没有丢失规则对象 |
+| 树屋 P2 目标页面 | `test-results/evidence-screenshots/smashup/munchkin-new-faction-flow/树屋-P2-手动选择抽牌或跳过.png` | `visual_pass`：目标玩家页面顶部显示“树屋：选择是否抽一张牌”，两个真实按钮“抽一张牌 / 跳过”同时可见；无重复上下文卡、无中央大卡遮挡、牌桌基地和玩家面板仍可见 |
+| 树屋抽牌后手牌槽 | `test-results/evidence-screenshots/smashup/munchkin-new-faction-flow/树屋-P2-选择抽牌后.png`；E2E 的 `waitForSmashUpHandCardToSettle` | `visual_pass`：目标玩家手牌实际增加“第一水手”，卡面完整落在底部手牌安全槽内；截图不再捕获入场动画中只露半张牌的过渡帧 |
+| 木精灵四条真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts\\infra\\run-e2e-single.mjs ci e2e\\smashup\\smashup-munchkin-monster-treasure-ui.e2e.ts "木精灵"` | `passed`：4/4 通过；花之子先选玩家再选随从，力量训练按玩家→对方随从→己方随从，赶紧逃跑吧覆盖基地选择→多选/空选，树屋覆盖玩家选择→目标玩家手动抽牌或跳过 |
+| 木精灵逐图视觉审计 | 原始截图：`木精灵-花之子-手动选择力量不超过3的随从.jpg`、`力量训练-P2-对方手动选择随从.png`、`木精灵-力量训练-己方手动选择随从.jpg`、`木精灵-赶紧逃跑吧-选择路径-手动多选随从.jpg`、上述两张树屋 P2 PNG | `PASS / 92`：逐张打开原图；候选随从本体位于基地下方并保持可读，选择态没有被 PromptOverlay、卡牌特写、泰坦/行动卡或手牌槽遮住；树屋提示与按钮只有一个主交互焦点。负向影响检查：移除的只是重复上下文卡，牌桌基地、力量标记、记分板、牌堆、弃牌堆、手牌和结束回合入口仍有承载 |
+| 领域单测与静态检查 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-elves.test.ts --configLoader native`；`npm run typecheck`；`npx eslint src/games/smashup/abilities/munchkin_elves.ts src/games/smashup/ui/PromptOverlay.tsx e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check` | `passed`：木精灵领域单测 6/6、类型检查通过、ESLint 0 errors（本次定向输出 34 个 warning，未产生 error）、diff check 无内容错误 |
+| 当前范围裁决 | 本记录及上述截图 | `representative_only / scoped_debt`：四条代表链已完成当前入口的功能和图面复核；其余木精灵卡牌与援助山谷仍不能由代表链外推完成，木精灵整派系及 Munchkin 新派系仍未收口 |
+
+## 2026-08-04 续审记录：木精灵贸易与逃跑吧空目标回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 贸易规则修复 | `src/games/smashup/abilities/munchkin_elves.ts` | `fixed_scoped`：选择目标玩家后，交给对方的是正在打出的“贸易”行动卡；己方从对方手牌随机取得 1 张；额外行动额度仍正确增加。选择提示移除重复的源卡大卡，保留手动“玩家 1”选择。 |
+| 逃跑吧空目标修复 | `src/games/smashup/abilities/munchkin_elves.ts` | `fixed_scoped`：基地只有己方随从时，玩家仍必须手动点击己方随从，但不会继续排出不存在的“对方随从”第二步。 |
+| 新增真实入口 E2E | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`PW_E2E_SERVICE_REUSE=isolated node scripts\\infra\\run-e2e-single.mjs ci e2e\\smashup\\smashup-munchkin-monster-treasure-ui.e2e.ts "木精灵"` | `passed`：完整木精灵筛选 6/6；新增贸易和逃跑吧各 1 条真实入口链，连同此前花之子、力量训练、赶紧逃跑吧、树屋继续通过。贸易另在玩家 1 页面验证收到贸易本卡；逃跑吧验证选择后交互源为空。 |
+| 贸易截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵贸易把正在打出的行动卡交给目标玩家，并把对方手牌换回己方/木精灵-贸易-手动选择目标玩家.jpg`；同目录 `木精灵-贸易-交换结算后.jpg`；`test-results/evidence-screenshots/smashup/munchkin-new-faction-flow/贸易-P2-收到贸易行动卡.png` | `visual_pass`：选择态只保留短提示和“玩家 1”按钮；结算态没有特写压住基地；玩家 0 看见换回的第一水手，玩家 1 页面看见实际收到的贸易卡。旧的未等待特写退场截图不作为验收证据。 |
+| 逃跑吧截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵逃跑吧！只有己方随从时手动选择后不产生空的对手随从选择/木精灵-逃跑吧-手动选择己方随从且无对手目标.jpg`；同目录 `木精灵-逃跑吧-选择后无空第二步.jpg` | `visual_pass`：选择态唯一己方随从本体可见并被高亮，没有“选择另一位玩家的随从”空提示；结算态进入真实计分反馈，未出现空交互或遮挡。 |
+| AI 逐图审计 | 上述 5 张最终原始截图，逐张打开核对；未用联系表代替 | `PASS / 92`：玩家第一眼能识别当前选择对象和下一步动作；候选本体、提示 UI、基地、记分板、牌堆、弃牌区、手牌与结束回合入口均未被新提示抢位；贸易重复源卡已移除。 |
+| 领域与静态验证 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-elves.test.ts --configLoader native`；`npm run typecheck`；`npx eslint src/games/smashup/abilities/munchkin_elves.ts src/games/smashup/__tests__/abilities/munchkin-elves.test.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check` | `passed`：木精灵领域单测 13/13，类型检查通过，ESLint 0 errors（13 warnings），diff check 无内容错误。 |
+| 当前范围裁决 | 本记录及上述截图 | `representative_only / scoped_debt`：木精灵目前完成 6 条代表链的功能和图面复核；精灵斗士、优雅贵族、精灵帮助大师、在你之后、舞动之根、援手、旅行精灵、援助山谷及其它未覆盖对象仍没有逐对象 L2/L3/L4 全证据，木精灵整派系及 Munchkin 新派系仍未收口。 |
+
+## 2026-08-04 续审记录：援手后续响应标题占位符回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 原始失败图 | `test-results/evidence-screenshots/smashup/munchkin-new-faction-flow/援手-P1-后续响应手动让过.png`（修复前） | `visual_revise`：P1 后续响应顶部显示 `{{MATENAME}}：你可以移动此随从到其他基地（而不是弃牌堆）`；交互数据中已有海盗大副名称和 `titleParams`，失败不是规则数据缺失，而是基地选择横幅绕过参数化标题解析。 |
+| 实际显示 owner | `src/games/smashup/Board.tsx` 的基地/随从选择提示横幅 | `root_cause_confirmed`：`targetType=base` 时真实页面由 Board 横幅承接标题，旧实现只调用 `resolveI18nKeys(currentPrompt.title, t)`，没有消费同一交互里的 `titleKey/titleParams`；因此通用 `PromptOverlay` 的参数处理并未覆盖这张真实截图。 |
+| 标题解析修复 | `src/games/smashup/Board.tsx`；`src/games/smashup/ui/PromptOverlay.tsx` | `fixed_scoped`：Board 横幅改用统一的 `resolvePromptText`；PromptOverlay 解析器补充大小写不敏感的占位符兜底，兼容 `{{mateName}}` / `{{MATENAME}}` 这类混合 locale 文本，不改规则、交互顺序或牌桌布局。 |
+| 回归断言 | `src/games/smashup/__tests__/cardI18nIntegrity.test.ts` | `passed`：新增断言覆盖 `{{MATENAME}}` 与 `titleParams.mateName` 的真实替换；标题 i18n 回归文件 26/26 通过，PromptOverlay 交互回归此前 14/14 通过。 |
+| 真实入口 E2E | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "木精灵援手在计分前手动选择玩家和己方随从，并在赢家确认后手动选择 VP" --project=chromium` | `passed`：1/1 通过；重新进入援手真实链，P1 页面实际经过后续响应并手动点击“跳过”，不是状态注入后直接宣称完成。 |
+| P1 截图时序复核 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` 的 P1 `targetPage` 截图前等待；同一用例重跑 1/1 | `fixed_scoped`：首次重跑虽 E2E 通过，但 P1 原图仍抓到援手大卡特写，不能作为验收图；已将 `waitForSmashUpFxToSettle` 补到截图所属的 P1 页面，重跑后特写退场，P1 标题、跳过按钮和桌面上下文同时可见。 |
+| 修复后原始截图 | `test-results/evidence-screenshots/smashup/munchkin-new-faction-flow/援手-P1-后续响应手动让过.png`；`test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵援手在计分前手动选择玩家和己方随从，并在赢家确认后手动选择-VP/木精灵-援手-计分前.jpg`、`木精灵-援手-手动选择目标玩家.jpg`、`木精灵-援手-手动选择己方随从.jpg`、`木精灵-援手-计分后手动选择是否获得VP.jpg`、`木精灵-援手-获得VP后结算.jpg` | `PASS / 92`：逐张打开当前工作区新生成的 6 张原始图；P1 标题已显示“ 大副：你可以移动此随从到其他基地（而不是弃牌堆） ”且无占位符，玩家选择、己方随从高亮、VP 选择和结算状态均可见；基地高亮、记分板、牌库/弃牌堆、手牌和公共小牌没有被标题修复抢位或遮挡。 |
+| 静态检查与范围裁决 | `npx eslint src/games/smashup/Board.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/__tests__/cardI18nIntegrity.test.ts`；`git diff --check` | `passed`：0 errors；现有 Smash Up Board/PromptOverlay warnings 保留，未新增 error；本条只收口援手代表链的标题修复和真实图面证据，不能外推为木精灵整派系或 Munchkin 新派系完成。 |
 
 ## 对外汇报口径
 
-- 允许说：Munchkin 扩展已经完成静态 intake、资源本地链路、新 UI 代表态验证、怪物 / 宝藏基础机制 L2/L3、宝藏牌代表链，以及矮人、半身人、盗贼的多条真实入口正向链；其中打捞、最后通牒、小而坚韧、猫咪窃贼空选分支、直线跑路药水、麻痹药水、时间错乱的喷气背包，以及盗贼的转移注意力 / 秘密藏匿处 / 金库计分链已有流程态观察。
-- 允许补充说：盗贼 12 张牌 + 2 个基地已有正向功能链和布局截图，截图 139-178 的布局图面审计已判 `PASS`；但 2026-08-03 规范回代后，盗贼对象级 L3/L4 收口结论已暂停，必须先按“单候选也必须手选、不得隐式代选”门禁重审。
-- 禁止说：Munchkin 新派系已完成、已全面审计、已可玩、已收口、全部宝藏具体牌效已完成、全部宝藏使用真实入口已完成、或全部普通派系逐卡能力已完成。
-- 下一步默认动作：先重审 Munchkin 本轮新增交互的单候选手选门禁，修复或补证后再恢复盗贼 / 其它派系对象级 L3/L4 结论；不得直接转入法师、木精灵、牧师、兽人、勇士并把旧 PASS 当作可继承前提。
+- 允许说：Munchkin 扩展已经完成静态 intake、资源本地链路、新 UI 代表态验证、怪物 / 宝藏基础机制 L2/L3、宝藏牌代表链，以及矮人、半身人、盗贼的多条真实入口正向链；其中打捞、最后通牒、小而坚韧、猫咪窃贼空选分支、直线跑路药水、麻痹药水、时间错乱的喷气背包，以及盗贼的转移注意力 / 秘密藏匿处 / 金库计分链已有流程态观察，其中金库已补齐当前真实入口正向回归。
+- 允许补充说：盗贼 12 张牌 + 2 个基地已有正向功能链；旧截图 168 不能证明打劫第二步“选择另一个随从”，旧图面 `PASS / 93` 作废；2026-08-03 22:33 已修复并重拍打劫单链，新的 167/168/169 逐图审计 `PASS / 92`。但这只恢复打劫单链视觉证据，盗贼对象级 L3/L4 批次收口仍因单候选手选门禁未全量重审而暂停。
+- 禁止说：Munchkin 新派系整体完成、全批次验收通过、已可玩、全部宝藏具体牌效已完成、全部宝藏使用真实入口已完成、或全部普通派系逐卡能力已完成。
+- 下一步默认动作：继续按对象级矩阵推进法师剩余未覆盖对象、木精灵剩余卡牌与援助山谷，再逐派系处理牧师、兽人、勇士；不得把本轮法师 4 条代表链、木精灵 6 条代表链或打劫单链图面回归外推成整批 Munchkin 完成。

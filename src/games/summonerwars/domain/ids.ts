@@ -13,7 +13,7 @@ import type { FactionId, UnitCard } from './types';
 
 /** 所有合法阵营 ID（从 FactionId 类型派生） */
 export const VALID_FACTION_IDS: readonly FactionId[] = [
-  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren', 'yongheng',
+  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow',
 ] as const;
 
 // ============================================================================
@@ -82,6 +82,12 @@ export const CARD_IDS = {
   YONGHENG_INSIGHT: 'yongheng-insight',
   YONGHENG_SEARCH: 'yongheng-search',
   YONGHENG_MENTAL_INVASION: 'yongheng-mental-invasion',
+
+  // 暗影精灵事件卡
+  SHADOW_HIDE_IN_DARKNESS: 'shadow-hide-in-darkness',
+  SHADOW_MARL_GRIMOIRE: 'shadow-marl-grimoire',
+  SHADOW_LIGHTNING_STEP: 'shadow-lightning-step',
+  SHADOW_SHADOW_PULSE: 'shadow-shadow-pulse',
 } as const;
 
 // ============================================================================

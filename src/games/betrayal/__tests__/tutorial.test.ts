@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import zhCNLocale from '../../../../public/locales/zh-CN/game-betrayal.json';
+import enLocale from '../../../../public/locales/en/game-betrayal.json';
 import {
     buildDiscoveryAtlasImageStyle,
     EVENT_FRONT_ATLAS,
@@ -15,6 +16,15 @@ import {
     createMummyReadyToBanishTutorialCore,
     createMummyTraitorVictoryReadyTutorialCore,
 } from '../testing/firstScenarioTestUtils';
+
+const collectPlayerText = (value: unknown): string[] => {
+    if (typeof value === 'string') return [value];
+    if (Array.isArray(value)) return value.flatMap(collectPlayerText);
+    if (value && typeof value === 'object') {
+        return Object.values(value).flatMap(collectPlayerText);
+    }
+    return [];
+};
 
 const LOCKED_EVENT_FRONT_FRAMES = {
     标本剥制: 0,
@@ -94,7 +104,7 @@ describe('Betrayal 教程配置', () => {
         expect(tutorialCatalog.tutorials['traitor-path']?.hiddenFromCatalog).not.toBe(true);
     });
 
-    it('默认教程会合并恶兆前基础回合，并覆盖首轮必需的规则入口', () => {
+    it('默认教程会合并作祟前基础回合，并覆盖首轮必需的规则入口', () => {
         const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
         expect(manifest?.steps.map((step) => step.id)).toEqual([
             'setup-runtime',
@@ -218,7 +228,7 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'trade-review')?.highlightTarget).toBe('betrayal-room-latest-feedback');
     });
 
-    it('预兆确认教程会解释同屏结果和作祟进度，而不是把内部队列当玩家步骤', () => {
+    it('预兆教程使用规则原文解释作祟检定，并保留一次确认动作', () => {
         const manifest = tutorialCatalog.tutorials['omen-confirmation-and-haunt-risk']?.manifest;
         expect(manifest?.steps.map((step) => step.id)).toEqual([
             'setup-omen-confirmation',
@@ -295,7 +305,7 @@ describe('Betrayal 教程配置', () => {
         const traitorManifest = tutorialCatalog.tutorials['traitor-path']?.manifest;
         const mummyMonsterManifest = tutorialCatalog.tutorials['mummy-monster-actions']?.manifest;
         expect(objectiveManifest).toBe(hauntActionsManifest);
-        expect(hauntActionsManifest?.steps.find((step) => step.id === 'help-entry')?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(hauntActionsManifest?.steps.find((step) => step.id === 'help-entry')?.highlightTarget).toBe('betrayal-open-scenario');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'haunt-actions')?.highlightTarget).toBe('betrayal-action-use');
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'banish-mummy')?.allowedCommands).toEqual(['BANISH_MUMMY']);
         expect(hauntActionsManifest?.steps.find((step) => step.id === 'banish-mummy')?.randomPolicy).toEqual({
@@ -314,7 +324,7 @@ describe('Betrayal 教程配置', () => {
             'hero-attack-review',
         ]);
         const heroAttackObjective = heroAttackManifest?.steps.find((step) => step.id === 'hero-attack-objective');
-        expect(heroAttackObjective?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(heroAttackObjective?.highlightTarget).toBe('betrayal-open-scenario');
         expect(heroAttackObjective?.requireAction).toBe(true);
         expect(heroAttackObjective?.allowedCommands).toEqual([]);
         expect(heroAttackObjective?.infoStep).not.toBe(true);
@@ -330,7 +340,7 @@ describe('Betrayal 教程配置', () => {
             'jack-spirit-review',
         ]);
         const jackSpiritObjective = jackSpiritManifest?.steps.find((step) => step.id === 'jack-spirit-objective');
-        expect(jackSpiritObjective?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(jackSpiritObjective?.highlightTarget).toBe('betrayal-open-scenario');
         expect(jackSpiritObjective?.requireAction).toBe(true);
         expect(jackSpiritObjective?.allowedCommands).toEqual([]);
         expect(jackSpiritObjective?.infoStep).not.toBe(true);
@@ -349,7 +359,7 @@ describe('Betrayal 教程配置', () => {
         ]);
         expect(traitorManifest?.steps.find((step) => step.id === 'setup-traitor-turn')?.viewAs).toBe('2');
         const traitorObjective = traitorManifest?.steps.find((step) => step.id === 'traitor-objective');
-        expect(traitorObjective?.highlightTarget).toBe('betrayal-reference-entry');
+        expect(traitorObjective?.highlightTarget).toBe('betrayal-open-scenario');
         expect(traitorObjective?.requireAction).toBe(true);
         expect(traitorObjective?.allowedCommands).toEqual([]);
         expect(traitorObjective?.infoStep).not.toBe(true);
@@ -510,82 +520,101 @@ describe('Betrayal 教程配置', () => {
     });
 
     it('中文教程文案会聚焦玩家能理解的规则动作与结果', () => {
+        const officialOmenRuleZh = '抽到预兆卡时，大声朗读，把它放在自己面前并获得。然后进行作祟检定：按所有玩家持有的预兆总数掷骰；若作祟检定结果为 5+，作祟开始。';
+        const officialOmenRuleEn = 'When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.';
+        expect(zhCNLocale.tutorial.basicSetup.description).toContain('按任意顺序');
+        expect(zhCNLocale.tutorial.basicSetup.description).toContain('探索新房间会结束你的回合');
+        expect(enLocale.tutorial.basicSetup.description).toContain('in any order');
+        expect(enLocale.tutorial.basicSetup.description).toContain('Discovering a new room ends your turn');
+        expect(zhCNLocale.tutorial.omenConfirmation.description).toBe(officialOmenRuleZh);
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.setupOmenConfirmation).toBe(officialOmenRuleZh);
+        expect(enLocale.tutorial.omenConfirmation.description).toBe(officialOmenRuleEn);
+        expect(enLocale.tutorial.omenConfirmation.steps.setupOmenConfirmation).toBe(officialOmenRuleEn);
         expect(zhCNLocale.tutorial.basicSetup.steps.setupRuntime).toContain('基础回合');
-        expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('底部动作');
+        expect(zhCNLocale.tutorial.basicSetup.steps.objectiveAndTurn).toContain('在你的回合中');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitsAndSpeed).toContain('速度');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitTrackReading).toContain('绿色数字');
         expect(zhCNLocale.tutorial.basicSetup.steps.traitTrackReading).toContain('骷髅');
-        expect(zhCNLocale.tutorial.basicSetup.steps.traitTrackReading).toContain('重复数字仍是连续方格');
-        expect(zhCNLocale.tutorial.basicSetup.steps.movesRemaining).toContain('移动圆牌');
-        expect(zhCNLocale.tutorial.basicSetup.steps.observeTeammate).toContain('观察视角');
+        expect(zhCNLocale.tutorial.basicSetup.steps.traitTrackReading).toContain('重复的数字仍分别占格');
+        expect(zhCNLocale.tutorial.basicSetup.steps.movesRemaining).toContain('本回合还剩的移动力');
+        expect(zhCNLocale.tutorial.basicSetup.steps.observeTeammate).toContain('观察该探险者');
         expect(zhCNLocale.tutorial.basicSetup.steps.observeTeammate).toContain('进入观察前的位置');
         expect(zhCNLocale.tutorial.basicSetup.steps.focusSelfRoom).toContain('聚焦到我的房间');
-        expect(zhCNLocale.tutorial.basicSetup.steps.focusSelfRoom).toContain('不是队友观察的返回按钮');
-        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('预兆条');
-        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('抽到预兆');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('先选择持有区里的书本');
-        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('再点“使用”');
+        expect(zhCNLocale.tutorial.basicSetup.steps.focusSelfRoom).toContain('回到自己所在房间');
+        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('预兆进度条');
+        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('所有玩家持有的预兆总数');
+        expect(zhCNLocale.tutorial.basicSetup.steps.hauntRiskTrack).toContain('5+');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('选择持有区里的书本');
+        expect(zhCNLocale.tutorial.basicSetup.steps.useBook).toContain('点“使用”');
         expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('可探索的盖着房间');
-        expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('待放置状态');
+        expect(zhCNLocale.tutorial.basicSetup.steps.exploreUpper).toContain('未探索走廊');
         expect(zhCNLocale.tutorial.basicSetup.steps.confirmRoomPlacement).toContain('确认放置');
         expect(zhCNLocale.tutorial.basicSetup.steps.finish).toContain('兔脚');
         expect(zhCNLocale.tutorial.omenConfirmation.title).toContain('预兆');
+        expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('所有玩家持有的预兆总数');
+        expect(zhCNLocale.tutorial.omenConfirmation.description).toContain('5+');
         expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('点“确认”');
-        expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('同一画面');
-        expect(zhCNLocale.tutorial.omenConfirmation.steps.review).toContain('持有区');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('所有玩家持有的预兆总数');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('5+');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).toContain('完成这次检定');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.confirmOmenCard).not.toContain('预兆牌和作祟检定结果');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.review).toContain('结果低于 5+');
+        expect(zhCNLocale.tutorial.omenConfirmation.steps.review).toContain('你获得这张预兆');
         expect(zhCNLocale.tutorial.tradeAndAgreement.title).toContain('交易');
-        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).toContain('双方都要同意');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.setupTrade).toContain('双方同意');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeItem).toContain('兔脚');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.chooseTradeTarget).toContain('同房间队友');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.sendTradeRequest).toContain('提出交易');
-        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.requestWaiting).toContain('等待对方同意');
+        expect(zhCNLocale.tutorial.tradeAndAgreement.steps.requestWaiting).toContain('接收方作出选择前');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.acceptTradeRequest).toContain('同意交易');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.acceptTradeRequest).toContain('拒绝');
         expect(zhCNLocale.tutorial.tradeAndAgreement.steps.tradeReview).toContain('进入队友持有区');
-        expect(zhCNLocale.tutorial.hauntActions.title).toContain('看目标，再驱逐木乃伊');
-        expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('探索和预兆');
-        expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('木乃伊横行');
-        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('作祟后目标已经变了');
-        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('找真名');
-        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('叛徒怎样获胜');
-        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('两个前置');
-        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('石棺房、书房或图书馆');
+        expect(zhCNLocale.tutorial.hauntActions.title).toContain('英雄目标与驱逐');
+        expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('英雄胜利条件');
+        expect(zhCNLocale.tutorial.hauntActions.steps.setupReadyToExorcise).toContain('让木乃伊与女孩成婚');
+        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('打开剧本书');
+        expect(zhCNLocale.tutorial.hauntActions.steps.helpEntry).toContain('目标与胜利条件');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('6+ 知识考验');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('石棺房、研究室或图书馆');
         expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('找到真名');
         expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('驱逐法术');
-        expect(zhCNLocale.tutorial.hauntActions.steps.banishMummy).toContain('神志对抗');
-        expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('驱逐成功');
-        expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('终幕报告');
-        expect(zhCNLocale.tutorial.heroAttackPath.steps.heroAttackObjective).toContain('打开剧本');
+        expect(zhCNLocale.tutorial.hauntActions.steps.hauntActions).toContain('每名英雄每回合只能尝试一个步骤');
+        expect(zhCNLocale.tutorial.hauntActions.steps.banishMummy).toContain('用神志攻击木乃伊');
+        expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('英雄胜利');
+        expect(zhCNLocale.tutorial.hauntActions.steps.endgameReview).toContain('细砂');
+        expect(zhCNLocale.tutorial.heroAttackPath.steps.heroAttackObjective).toContain('打开英雄剧本');
         expect(zhCNLocale.tutorial.heroAttackPath.steps.attackTraitor).toContain('攻击叛徒');
-        expect(zhCNLocale.tutorial.heroAttackPath.steps.heroAttackReview).toContain('攻击骰');
+        expect(zhCNLocale.tutorial.heroAttackPath.steps.heroAttackReview).toContain('按差值结算伤害');
         expect(zhCNLocale.tutorial.jackSpiritPath.title).toContain('杰克之灵');
-        expect(zhCNLocale.tutorial.jackSpiritPath.steps.setupJackSpirit).toContain('会继续行动的怪物');
-        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritObjective).toContain('回到尸体房间');
-        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritAttack).toContain('怪物攻击');
-        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritReview).toContain('同一套攻击骰盘');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.setupJackSpirit).toContain('作为怪物继续行动');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritObjective).toContain('叛徒尸体所在房间');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritAttack).toContain('同房间的英雄');
+        expect(zhCNLocale.tutorial.jackSpiritPath.steps.jackSpiritReview).toContain('按差值结算伤害');
         expect(zhCNLocale.tutorial.traitorPath.title).toContain('叛徒帮助木乃伊');
         expect(zhCNLocale.tutorial.traitorPath.steps.setupTraitorTurn).toContain('女孩和圣符或指环');
-        expect(zhCNLocale.tutorial.traitorPath.steps.traitorObjective).toContain('叛徒剧本书');
+        expect(zhCNLocale.tutorial.traitorPath.steps.traitorObjective).toContain('打开叛徒剧本');
         expect(zhCNLocale.tutorial.traitorPath.steps.pickUpGirl).toContain('拾起女孩');
         expect(zhCNLocale.tutorial.traitorPath.steps.giveGirlToMummy).toContain('交出女孩');
         expect(zhCNLocale.tutorial.traitorPath.steps.giveOmenToMummy).toContain('交出圣符');
         expect(zhCNLocale.tutorial.traitorPath.steps.traitorFinish).toContain('叛徒胜利');
         expect(zhCNLocale.tutorial.mummyMonsterActions.title).toContain('木乃伊怪物行动');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupMonsterMove).toContain('怪物回合');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.setupMonsterMove).toContain('石棺房间');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterTurnStart).toContain('木乃伊开回合');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRoll).toContain('木乃伊移动骰');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('读完骰盘');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).toContain('移动骰结果');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterRollReview).not.toContain('0 点');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('瞬移机会');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('未发现房间不会成为目标');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('女孩标记变成木乃伊持有');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackForced).toContain('不能先移动离开');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackTarget).toContain('叛徒和已死亡角色不会成为攻击目标');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('读完攻击骰盘');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).not.toContain('总点数');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('结果为 0 或 1');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveTarget).toContain('已发现房间');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.monsterMoveResult).toContain('可以持有女孩');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackForced).toContain('必须先攻击英雄');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackTarget).toContain('叛徒和已死亡探险者不是攻击目标');
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackRollReview).toContain('选择造成伤害或偷窃');
         expect(zhCNLocale.tutorial.mummyMonsterActions.steps.attackReward).toContain('偷走地图');
-        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.stealResult).toContain('奖励条关闭');
-        expect(JSON.stringify(zhCNLocale.tutorial)).not.toMatch(/真实链路|运行态|不是动画|不是说明图层|不是教程按钮|E2E|正式验证|收口|收尾|终局页|房间焦点入口|对攻/);
-        expect(JSON.stringify(zhCNLocale.tutorial)).not.toMatch(/不常驻|写满公式|业务公式|悬浮提示才|验收|测试|AI|HUD|为什么和|不是凭空出现/);
+        expect(zhCNLocale.tutorial.mummyMonsterActions.steps.stealResult).toContain('被偷的英雄不扣减能力');
+        const playerTutorialText = collectPlayerText(zhCNLocale.tutorial).join('\n');
+        const englishTutorialText = collectPlayerText(enLocale.tutorial).join('\n');
+        expect(playerTutorialText).not.toMatch(/真实链路|运行态|不是动画|不是说明图层|不是教程按钮|E2E|正式验证|收口|收尾|终局页|房间焦点入口|对攻/);
+        expect(playerTutorialText).not.toMatch(/不常驻|写满公式|业务公式|悬浮提示才|验收|测试|AI|HUD|为什么和|不是凭空出现|同一画面|同屏|同一次发现|结果面板|日志摘要|奖励条|行动槽|终幕报告|背景说明|为了演示|演示|面板会|面板|摘要|队列|待放置状态|主视区|动作区|结果区|横幅|提示条|底部动作|移动圆牌|读完骰盘|读完攻击骰盘|在这里|实现|运行态/);
+        expect(englishTutorialText).not.toMatch(/same screen|same frame|result panel|summary|queue|for this .*demo|demo|placement preview|bottom actions|movement medallion|dice table|attack dice, bonus, and result|screen|panel|summary|queue|banner|implementation|runtime|here\./i);
     });
 });

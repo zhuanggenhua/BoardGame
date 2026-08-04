@@ -72,6 +72,7 @@ export type ClientConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 export class GameTransportClient {
     private readonly stateUpdateSubscribers = new Set<(state: unknown) => void>();
+    private readonly errorSubscribers = new Set<(error: string) => void>();
     private readonly uiEventSubscribers = new Set<(event: MatchUiEvent) => void>();
     private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
     private readonly config: GameTransportClientConfig;
@@ -114,6 +115,23 @@ export class GameTransportClient {
         return () => {
             this.stateUpdateSubscribers.delete(listener);
         };
+    }
+
+    subscribeError(listener: (error: string) => void): () => void {
+        this.errorSubscribers.add(listener);
+        return () => {
+            this.errorSubscribers.delete(listener);
+        };
+    }
+
+    private notifyErrorSubscribers(error: string): void {
+        for (const subscriber of this.errorSubscribers) {
+            try {
+                subscriber(error);
+            } catch {
+                // 调试/辅助订阅者异常不应影响主错误处理链路
+            }
+        }
     }
 
     private notifyStateUpdateSubscribers(state: unknown): void {
@@ -278,6 +296,7 @@ export class GameTransportClient {
 
         socket.on('error', (matchID, error) => {
             if (this._destroyed || matchID !== this.config.matchID) return;
+            this.notifyErrorSubscribers(error);
             if (GameTransportClient.TERMINAL_ERRORS.has(error)) {
                 this.handleTerminalError(error);
             }
