@@ -1,6 +1,7 @@
 import type { PlayerId } from '../../../engine/types';
 import { registerAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
+import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { reduce } from '../domain/reduce';
@@ -74,11 +75,15 @@ function drawThenDiscard(state: SmashUpCore, playerId: PlayerId, count: number, 
 }
 
 function actionPlayedFromHand(card: CardInstance, playerId: PlayerId, now: number): SmashUpEvent {
-    return {
-        type: SU_EVENTS.ACTION_PLAYED,
-        payload: { playerId, cardUid: card.uid, isExtraAction: true, consumesNormalLimit: false },
+    return buildActionPlayedEvent({
+        playerId,
+        cardUid: card.uid,
+        defId: card.defId,
+        ownerId: card.owner,
+        isExtraAction: true,
+        consumesNormalLimit: false,
         timestamp: now,
-    } as SmashUpEvent;
+    });
 }
 
 function shuffleDiscardCardIntoDeck(
