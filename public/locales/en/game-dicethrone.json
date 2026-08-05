@@ -352,6 +352,12 @@
       "description": [
         "Negative status effect, limit 3. When detonated, deals 1/3/5 damage by stack count. During the holder's Upkeep, roll 1 die for each stack and remove 1 stack for each 6."
       ]
+    },
+    "dazzle": {
+      "name": "Dazzle",
+      "description": [
+        "At the end of the holder's next Offensive Roll Phase, remove this status and roll 1 die: 1 makes the attack deal no damage; 2-3 halves this attack's damage, rounded up; 4-6 resolves normally."
+      ]
     }
   },
   "confirmRemoveKnockdown": {
@@ -437,6 +443,24 @@
       "name": "Blessing of Divinity",
       "description": [
         "When your HP drops to 0, remove this token and set HP to 1. This token cannot be removed, transferred, or stolen. Does not stack."
+      ]
+    },
+    "flight": {
+      "name": "Flight",
+      "description": [
+        "During any roll phase, spend 1 Flight and roll 2 dice. If either die is a 6, the attack is undefendable during an Offensive Roll Phase, or all incoming damage is ignored during a Defensive Roll Phase."
+      ]
+    },
+    "divine_arrival": {
+      "name": "Divine Arrival",
+      "description": [
+        "During your Upkeep, deal damage equal to your Divine Arrival stacks to each real opponent. Cannot be transferred; can be removed."
+      ]
+    },
+    "dazzle": {
+      "name": "Dazzle",
+      "description": [
+        "At the end of the holder's next Offensive Roll Phase, remove this status and roll 1 die: 1 makes the attack deal no damage; 2-3 halves this attack's damage, rounded up; 4-6 resolves normally."
       ]
     },
     "loaded": {
@@ -704,7 +728,8 @@
     "moon_elf": "Moon Elf",
     "paladin": "Paladin",
     "gunslinger": "Gunslinger",
-    "samurai": "Samurai"
+    "samurai": "Samurai",
+    "tianshi": "Seraph"
   },
   "characters": {
     "monk": "Monk",
@@ -719,7 +744,8 @@
     "ninja": "Ninja",
     "zhanshujia": "Tactician",
     "cursed_pirate": "Cursed Pirate",
-    "artificer": "Artificer"
+    "artificer": "Artificer",
+    "tianshi": "Seraph"
   },
   "config": {
     "dice": {
@@ -742,7 +768,8 @@
       "treant": { "name": "Treant Dice" },
       "ninja": { "name": "Ninja Dice" },
       "zhanshujia": { "name": "Tactician Dice" },
-      "artificer": { "name": "Artificer Dice" }
+      "artificer": { "name": "Artificer Dice" },
+      "tianshi": { "name": "Seraph Dice" }
     },
     "resources": {
       "cp": { "name": "CP" },
@@ -867,7 +894,11 @@
       "skull": "Skull",
       "wrench": "Wrench",
       "gear": "Gear",
-      "electricity": "Electricity"
+      "electricity": "Electricity",
+      "blade": "Blade",
+      "wing": "Wing",
+      "cross": "Cross",
+      "shield": "Holy Pendant"
     }
   },
   "bonusDie": {
@@ -925,6 +956,7 @@
       "gunslingerEatMyLead.otherContribution": "Non-bullet face: no extra damage",
       "gunslingerEatMyLead.result": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack and inflict Knockdown",
+      "tianshi.divinePunishment": "Divine Punishment: resolve damage, Flight, Purify, and Dazzle from the extra dice",
       "barbarianSuppress": "This die's {{value}} counts toward the final damage; reaching the threshold also inflicts Concussion",
       "energeticStrength": "Strength! Heal 2 and inflict Concussion",
       "energeticOther": "Draw 1 card",
@@ -1112,7 +1144,14 @@
       "artificerCollectPartsElectricity": "Collect Parts II: Electricity gains 2 Synth",
       "artificerNanobombUpkeep": "Nanobomb: remove 1 stack on a 6",
       "artificerHealBot": "Heal Bot: heal based on the die face",
-      "artificerPerfectlyCalibrated": "Perfectly Calibrated: gain Synth equal to half the die value, rounded up"
+      "artificerPerfectlyCalibrated": "Perfectly Calibrated: gain Synth equal to half the die value, rounded up",
+      "tianshi.flight": "Flight: roll 2 dice; a 6 on either die activates this phase's effect",
+      "tianshi.dazzle": "Dazzle: this attack roll result is {{value}}",
+      "tianshi.triumphantReturn": "Triumphant Return: Blade +1, Wing +2, Cross +3; Holy Pendant makes the attack undefendable",
+      "tianshi.angelicCloak": "Angelic Cloak: counterattack, gain Flight, or prevent damage based on the die face",
+      "tianshi.holyStrike": "Holy Strike: each Blade adds +1 attack damage; Holy Pendant inflicts Dazzle",
+      "tianshi.angelicTactics": "Angelic Tactics: Blade +3 damage; Wing gains Flight; Cross gains Purify; Holy Pendant gains Divine Arrival",
+      "tianshi.supremeHoliness": "Supreme Holiness: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -1303,7 +1342,11 @@
       "medal": "Medal",
       "cutlass": "Cutlass",
       "loot": "Loot",
-      "skull": "Skull"
+      "skull": "Skull",
+      "blade": "Blade",
+      "wing": "Wing",
+      "cross": "Cross",
+      "shield": "Holy Pendant"
     },
     "trigger": {
       "generic": "variant condition",
@@ -1571,6 +1614,18 @@
       "s0_a0_d1_p1": "After cultivate: 1 Divine; opponent gains Life Sap",
       "s1_a0_d1_p1": "After cultivate: 1 Seedling, 1 Divine; opponent gains Life Sap",
       "s0_a1_d1_p1": "After cultivate: 1 Sapling, 1 Divine; opponent gains Life Sap"
+    },
+    "tianshi": {
+      "player": "Player {{player}}",
+      "divinePurification": { "title": "Divine Purification: choose a player" },
+      "gospelArrival": { "title": "Gospel Arrival: choose an opponent to Dazzle" },
+      "divineCommand": { "title": "Divine Command: choose an opponent to take 4 undefendable damage" },
+      "divineProtection": { "title": "Divine Protection: choose a player to gain 2 Purify and 2 Flight" },
+      "takeoff": { "title": "Takeoff: choose a player to gain Flight and take 3 undefendable damage" },
+      "divineArbitrationDazzle": { "title": "Divine Arbitration: choose a player to gain Dazzle" },
+      "divineArbitrationFlight": { "title": "Divine Arbitration: choose a player to gain 2 Flight" },
+      "divineArbitrationPurify": { "title": "Divine Arbitration: choose a player to gain Purify" },
+      "ascension": { "title": "Ascension: choose a player to gain Flight" }
     }
   },
   "common": {
@@ -4175,7 +4230,117 @@
       "effects": {
         "roll": "Roll 1 die and gain Synth equal to half the value, rounded up."
       }
-    }
+    },
+    "holy-blade": {
+      "name": "Holy Blade",
+      "description": "3/4/5 Blade faces: deal 5/6/7 damage.",
+      "effects": { "damage5": "Deal 5 damage", "damage6": "Deal 6 damage", "damage7": "Deal 7 damage" }
+    },
+    "holy-blade-2": {
+      "name": "Holy Blade II",
+      "description": "3/4/5 Blade faces: deal 6/7/8 damage.",
+      "effects": { "damage6": "Deal 6 damage", "damage7": "Deal 7 damage", "damage8": "Deal 8 damage" }
+    },
+    "holy-blade-3": {
+      "name": "Holy Blade III",
+      "description": "3/4/5 Blade faces: deal 5/7/9 damage; if 4 dice show the same number, inflict Dazzle on an opponent.",
+      "effects": { "damage5": "Deal 5 damage", "damage7": "Deal 7 damage", "damage9": "Deal 9 damage", "dazzleIfFourKind": "If 4 dice show the same number, inflict 1 Dazzle on an opponent" }
+    },
+    "holy-radiance": {
+      "name": "Holy Radiance",
+      "description": "3 Blade + 1 Wing: gain 1 Flight and deal 6 damage.",
+      "effects": { "gainFlight": "Gain 1 Flight", "damage6": "Deal 6 damage" }
+    },
+    "holy-radiance-2": {
+      "name": "Holy Radiance II",
+      "description": "3 Blade + 1 Wing: gain 1 Flight and deal 7 damage.",
+      "effects": { "gainFlight": "Gain 1 Flight", "damage7": "Deal 7 damage" }
+    },
+    "divine-purification": {
+      "name": "Divine Purification",
+      "description": "2 Cross + 1 Holy Pendant: choose a player; deal 5 undefendable damage to an opponent or heal yourself for 4, then optionally remove 1 removable status.",
+      "effects": { "resolve": "Choose a player: deal 5 undefendable damage to an opponent or heal yourself for 4, then choose 1 removable status to remove." }
+    },
+    "divine-purification-2": {
+      "name": "Divine Purification II",
+      "description": "2 Cross + 1 Holy Pendant: choose a player; deal 6 undefendable damage to an opponent or heal yourself for 5, then optionally remove 1 removable status.",
+      "effects": { "resolve": "Choose a player: deal 6 undefendable damage to an opponent or heal yourself for 5, then choose 1 removable status to remove." }
+    },
+    "divine-punishment": {
+      "name": "Divine Punishment",
+      "description": "At least 1 Blade, Wing, Cross and Holy Pendant: each Blade deals 2 damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle.",
+      "effects": { "resolve": "Each Blade deals 2 damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle." }
+    },
+    "divine-punishment-2": {
+      "name": "Divine Punishment II",
+       "description": "At least 1 Blade, Wing, Cross and Holy Pendant: each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle.",
+       "effects": { "resolve": "Each Blade deals 2 undefendable damage; each Wing gains Flight; each Cross gains Purify; each Holy Pendant inflicts Dazzle." }
+    },
+    "triumphant-return": {
+      "name": "Triumphant Return",
+      "description": "Small Straight: deal 6 damage, then roll 1 bonus die.",
+      "effects": { "damage6": "Deal 6 damage", "roll": "Roll 1 bonus die: Blade +1 damage, Wing +2, Cross +3, Holy Pendant makes the attack undefendable" }
+    },
+    "triumphant-return-2": {
+      "name": "Triumphant Return II",
+      "description": "Small Straight: deal 8 damage, then roll 1 bonus die.",
+      "effects": { "damage8": "Deal 8 damage", "roll": "Roll 1 bonus die: Blade +1 damage, Wing +2, Cross +3, Holy Pendant makes the attack undefendable" }
+    },
+    "supreme-power": {
+      "name": "Supreme Power",
+      "description": "4 Holy Pendants: gain Flight and Divine Arrival, inflict Dazzle, then deal 8 damage.",
+      "effects": { "gainFlight": "Gain 1 Flight", "gainDivineArrival": "Gain 1 Divine Arrival", "dazzle": "Inflict 1 Dazzle on the opponent", "damage8": "Deal 8 damage" }
+    },
+    "supreme-power-2": {
+      "name": "Supreme Power II",
+      "description": "4 Holy Pendants: gain Flight and Divine Arrival, inflict Dazzle, then deal 10 damage.",
+      "effects": { "gainFlight": "Gain 1 Flight", "gainDivineArrival": "Gain 1 Divine Arrival", "dazzle": "Inflict 1 Dazzle on the opponent", "damage10": "Deal 10 damage" }
+    },
+    "archangel-resolve": {
+      "name": "Archangel Resolve",
+      "description": "Large Straight: gain Flight, inflict Dazzle, then deal 8 damage.",
+      "effects": { "gainFlight": "Gain 1 Flight", "dazzle": "Inflict 1 Dazzle on the opponent", "damage8": "Deal 8 damage" }
+    },
+    "archangel-resolve-2": {
+      "name": "Archangel Resolve II",
+      "description": "Large Straight: gain Flight, inflict Dazzle, then deal 9 damage.",
+      "effects": { "gainFlight": "Gain 1 Flight", "dazzle": "Inflict 1 Dazzle on the opponent", "damage9": "Deal 9 damage" }
+    },
+    "angelic-cloak": {
+      "name": "Angelic Cloak",
+      "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once.",
+      "effects": { "resolve": "Resolve the defensive bonus die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once." }
+    },
+    "angelic-cloak-2": {
+      "name": "Angelic Cloak II",
+      "description": "Defensive roll 1 die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once.",
+      "effects": { "resolve": "Resolve the defensive bonus die: Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once." }
+    },
+    "angelic-cloak-3": {
+      "name": "Angelic Cloak III",
+      "description": "Defensive roll 1 die: Blade counterattacks for 3, Wing gains Flight, Cross prevents 3, Holy Pendant prevents 4; reroll once.",
+      "effects": { "resolve": "Resolve the defensive bonus die: Blade counterattacks for 3, Wing gains Flight, Cross prevents 3, Holy Pendant prevents 4; reroll once." }
+    },
+    "heavenly-severing": {
+      "name": "Heavenly Severing",
+      "description": "5 Holy Pendants: gain Flight, Divine Arrival and Blessing of Divinity, then deal 13 damage.",
+      "effects": { "gainFlight": "Gain 1 Flight", "gainDivineArrival": "Gain 1 Divine Arrival", "gainBlessing": "Gain 1 Blessing of Divinity", "damage13": "Deal 13 damage" }
+    },
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "effects": { "upgrade": "Upgrade Supreme Power to level II.", "secondary": "Gain Divine Arrival, 2 Flight and 2 Purify, then inflict Dazzle on an opponent." } },
+    "upgrade-tianshi-divine-punishment-2-divine-command": { "effects": { "upgrade": "Upgrade Divine Punishment to level II.", "secondary": "Heal 1, then deal 4 undefendable damage to an opponent." } },
+    "upgrade-tianshi-divine-purification-2": { "effects": { "upgrade": "Upgrade Divine Purification to level II." } },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "effects": { "upgrade": "Upgrade Archangel Resolve to level II.", "secondary": "Choose a player to gain 2 Purify and 2 Flight." } },
+    "upgrade-tianshi-angelic-cloak-3": { "effects": { "upgrade": "Upgrade Angelic Cloak to level III." } },
+    "upgrade-tianshi-angelic-cloak-2": { "effects": { "upgrade": "Upgrade Angelic Cloak to level II." } },
+    "upgrade-tianshi-triumphant-return-2": { "effects": { "upgrade": "Upgrade Triumphant Return to level II." } },
+    "upgrade-tianshi-holy-radiance-2-takeoff": { "effects": { "upgrade": "Upgrade Holy Radiance to level II.", "secondary": "Choose a player to gain Flight and take 3 undefendable damage." } },
+    "upgrade-tianshi-holy-blade-3-cherub-2": { "effects": { "upgrade": "Upgrade Holy Blade to level III.", "secondary": "Gain Flight, Purify and Divine Arrival." } },
+     "upgrade-tianshi-holy-blade-2-cherub": { "effects": { "upgrade": "Upgrade Holy Blade to level II.", "secondary": "Gain Flight and Divine Arrival." } },
+     "card-tianshi-holy-strike": { "effects": { "resolve": "Roll 5 bonus dice; each Blade adds +1 attack damage, and each Holy Pendant inflicts Dazzle on the opponent." } },
+    "card-tianshi-angelic-tactics": { "effects": { "resolve": "Roll 1 bonus die: Blade adds +3 attack damage; Wing gains Flight; Cross gains Purify; Holy Pendant gains Divine Arrival." } },
+     "card-tianshi-divine-arbitration": { "effects": { "resolve": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify." } },
+    "card-tianshi-supreme-holiness": { "effects": { "resolve": "Roll 1 bonus die: Holy Pendant gains 2 Flight and 2 Purify; otherwise draw 1 card." } },
+    "card-tianshi-ascension": { "effects": { "resolve": "Choose a player to gain Flight." } }
   },
   "cards": {
     "card-enlightenment": {
@@ -5217,7 +5382,22 @@
     "ninja-card-dojo": {
       "name": "Dojo!",
       "description": "Roll 1 die. If you roll Mask, gain Smoke Bomb and 2 Ninjutsu. Otherwise, draw 1."
-    }
+    },
+     "card-tianshi-holy-strike": { "name": "Holy Strike!", "description": "Attack modifier: roll 5 bonus dice; each Blade adds +1 attack damage, and each Holy Pendant inflicts Dazzle on the opponent." },
+    "card-tianshi-angelic-tactics": { "name": "Angelic Tactics!", "description": "Attack modifier: roll 1 bonus die; Blade adds +3 attack damage, Wing gains Flight, Cross gains Purify, and Holy Pendant gains Divine Arrival." },
+    "upgrade-tianshi-supreme-power-2-gospel-arrival": { "name": "Supreme Power II / Gospel Arrival", "description": "Top: Supreme Power II. Bottom: gain Divine Arrival, 2 Flight and 2 Purify, then inflict Dazzle on an opponent." },
+    "upgrade-tianshi-divine-punishment-2-divine-command": { "name": "Divine Punishment II / Divine Command", "description": "Top: Divine Punishment II. Bottom: heal 1, then deal 4 undefendable damage to an opponent." },
+    "upgrade-tianshi-divine-purification-2": { "name": "Divine Purification II", "description": "Upgrade Divine Purification: increase the damage to 6 and the self-heal to 5." },
+    "upgrade-tianshi-archangel-resolve-2-divine-protection": { "name": "Archangel Resolve II / Divine Protection", "description": "Top: Archangel Resolve II. Bottom: choose a player to gain 2 Purify and 2 Flight." },
+    "upgrade-tianshi-angelic-cloak-3": { "name": "Angelic Cloak III", "description": "Defensive roll 1 die; Blade counterattacks for 3, Wing gains Flight, Cross prevents 3, Holy Pendant prevents 4; reroll once." },
+    "upgrade-tianshi-angelic-cloak-2": { "name": "Angelic Cloak II", "description": "Defensive roll 1 die; Blade counterattacks for 2, Wing gains Flight, Cross prevents 2, Holy Pendant prevents 3; reroll once." },
+    "upgrade-tianshi-triumphant-return-2": { "name": "Triumphant Return II", "description": "Small Straight deals 8 damage; bonus die: Blade +1, Wing +2, Cross +3, Holy Pendant makes the attack undefendable." },
+    "upgrade-tianshi-holy-radiance-2-takeoff": { "name": "Holy Radiance II / Takeoff", "description": "Top: Holy Radiance II. Bottom: choose a player to gain Flight and take 3 undefendable damage." },
+     "upgrade-tianshi-holy-blade-3-cherub-2": { "name": "Holy Blade III / Cherub II", "description": "Top: Holy Blade III. Bottom: gain Flight, Purify and Divine Arrival." },
+     "card-tianshi-divine-arbitration": { "name": "Divine Arbitration!", "description": "Gain Divine Arrival; choose a player to gain Dazzle, then choose a player to gain 2 Flight, then choose a player to gain Purify." },
+    "card-tianshi-supreme-holiness": { "name": "Supreme Holiness!", "description": "Roll 1 bonus die; Holy Pendant gains 2 Flight and 2 Purify, otherwise draw 1 card." },
+    "card-tianshi-ascension": { "name": "Ascension!", "description": "Choose a player to gain Flight." },
+     "upgrade-tianshi-holy-blade-2-cherub": { "name": "Holy Blade II / Cherub", "description": "Top: Holy Blade II. Bottom: gain Flight and Divine Arrival." }
   },
   "passive": {
     "tithes": {

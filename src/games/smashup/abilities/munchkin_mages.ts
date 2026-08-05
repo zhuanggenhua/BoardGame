@@ -256,6 +256,7 @@ function scrollShufflerOnPlay(ctx: AbilityContext): AbilityResult {
         SCROLL_SHUFFLER_DISCARD_SOURCE_ID,
         'ui.munchkin_mages_scroll_shuffler_discard_title',
         SCROLL_SHUFFLER,
+        true,
     );
     return matchState ? { events: [], matchState } : { events: [] };
 }
@@ -536,7 +537,7 @@ function magesTowerOnMinionPlayed(ctx: BaseAbilityContext): BaseAbilityResult {
         ctx.playerId,
         '法师之塔：是否抽一张牌',
         [
-            { id: 'draw', label: '抽一张牌', value: { draw: true }, displayMode: 'button' },
+            { id: 'draw', label: '抽一张牌', labelKey: 'ui.munchkin_mages_base_mages_tower_draw_option', value: { draw: true }, displayMode: 'button' },
             createSkipOption('不抽牌', 'ui.munchkin_mages_base_mages_tower_skip'),
         ],
         {
@@ -759,8 +760,8 @@ export function registerMunchkinMagesInteractionHandlers(): void {
             playerId,
             '魔杖天才：选择额外出牌类型',
             [
-                { id: 'minion', label: '额外随从', value: { mode: 'minion' }, displayMode: 'button' },
-                { id: 'action', label: '额外行动', value: { mode: 'action' }, displayMode: 'button' },
+                { id: 'minion', label: '额外随从', labelKey: 'ui.munchkin_mages_wand_whiz_minion_option', value: { mode: 'minion' }, displayMode: 'button' },
+                { id: 'action', label: '额外行动', labelKey: 'ui.munchkin_mages_wand_whiz_action_option', value: { mode: 'action' }, displayMode: 'button' },
             ],
             {
                 sourceId: WAND_WHIZ_MODE_SOURCE_ID,

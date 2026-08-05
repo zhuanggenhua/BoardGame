@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
 import type { Page } from '@playwright/test';
-import { readCoreState } from '../helpers/smashup';
+import { hideSmashUpDebugPanelForEvidence, readCoreState } from '../helpers/smashup';
 import {
     MUNCHKIN_MONSTER_DECK_DEF_IDS,
     MUNCHKIN_TREASURE_DECK_DEF_IDS,
@@ -222,6 +222,22 @@ async function waitForSmashUpFxToSettle(page: Page): Promise<void> {
     await expect(spotlightQueue).toHaveCount(0, { timeout: 3000 });
     await expect(page.getByTestId('smashup-action-fx-card')).toHaveCount(0, { timeout: 5000 });
     await expect(page.locator('[data-testid^="smashup-triggered-fx-"]')).toHaveCount(0, { timeout: 8000 });
+    await expect(page.locator('[data-testid^="su-vp-gain-feedback-"]')).toHaveCount(0, { timeout: 8000 });
+    await page.waitForFunction(() => {
+        const handCards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="su-hand-area"] [data-card-uid]'));
+        return handCards.every((card) => {
+            const rect = card.getBoundingClientRect();
+            const opacity = Number.parseFloat(window.getComputedStyle(card).opacity);
+            return opacity > 0.99
+                && rect.width > 24
+                && rect.height > 24
+                && rect.bottom <= window.innerHeight + 1;
+        });
+    }, { timeout: 5000 });
+    await page.waitForFunction(() => {
+        const baseArts = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="base-zone-"] .bg-slate-200.border-slate-300'));
+        return baseArts.length === 0 || baseArts.every((art) => Number.parseFloat(window.getComputedStyle(art).opacity) > 0.99);
+    }, { timeout: 5000 });
 }
 
 function handCardSelector(cardUid: string): string {
@@ -4595,6 +4611,528 @@ const buildMunchkinMagesBaseInteractionScene = (): SmashUpSceneConfig => ({
     },
 });
 
+const buildMunchkinOrcsHammerSlammerScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'orcs-hammer-1', defId: 'munchkin_orcs_hammer_slammer', type: 'minion', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 25,
+            nextUid: 2500,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_treasure_bath',
+                    minions: [
+                        minion('orcs-hammer-weak-0', 'alien_invader', '1', 2),
+                        minion('orcs-hammer-strong-0', 'alien_scout', '1', 3),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [minion('orcs-hammer-weak-1', 'pirate_first_mate', '1', 2)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsTopperChopperScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'orcs-topper-1', defId: 'munchkin_orcs_topper_chopper', type: 'minion', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 25,
+            nextUid: 2520,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_treasure_bath',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsGimmeScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [
+            { uid: 'orcs-gimme-1', defId: 'munchkin_orcs_gimme', type: 'action', owner: '0' },
+        ],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 25,
+            nextUid: 2540,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_treasure_bath',
+                    minions: [{
+                        ...minion('orcs-gimme-host', 'alien_invader', '1', 3),
+                        attachedActions: [{ uid: 'orcs-gimme-attached', defId: 'munchkin_orcs_and_stay_down', ownerId: '1' }],
+                    }],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [minion('orcs-gimme-target', 'pirate_first_mate', '0', 2)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsAndStayDownScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-stay-down-1', defId: 'munchkin_orcs_and_stay_down', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 26,
+            nextUid: 2600,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-stay-down-own', 'alien_invader', '0', 8),
+                        minion('orcs-stay-down-enemy', 'pirate_first_mate', '1', 5),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsAngryPillagersScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-angry-1', defId: 'munchkin_orcs_angry_pillagers', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 27,
+            nextUid: 2700,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-angry-own', 'alien_invader', '0', 8),
+                        minion('orcs-angry-enemy', 'pirate_first_mate', '1', 5),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsBaseScoringScene = (options: {
+    baseDefId: 'base_garrison' | 'base_the_pits';
+    ownPower: number;
+    opponentPower: number;
+    turnNumber: number;
+}): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: options.turnNumber,
+            nextUid: options.turnNumber * 100,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: options.baseDefId,
+                    minions: [
+                        minion('orcs-score-own', 'alien_invader', '0', options.ownPower),
+                        minion('orcs-score-opponent', 'pirate_first_mate', '1', options.opponentPower),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsDogpileSpecialScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-dogpile-special-1', defId: 'munchkin_orcs_dogpile', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 28,
+            nextUid: 2800,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-dogpile-source', 'alien_invader', '0', 5),
+                        minion('orcs-dogpile-keep', 'alien_scout', '0', 4),
+                        minion('orcs-dogpile-enemy', 'pirate_first_mate', '1', 5),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        minion('orcs-dogpile-target-a', 'alien_invader', '0', 3),
+                        minion('orcs-dogpile-target-b', 'alien_scout', '0', 2),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsStallingScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-stalling-action-1', defId: 'munchkin_orcs_crush', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 29,
+            nextUid: 2900,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        minion('orcs-stalling-attacker-a', 'alien_invader', '0', 3),
+                        minion('orcs-stalling-attacker-b', 'alien_scout', '0', 2),
+                        minion('orcs-stalling-defender', 'pirate_first_mate', '1', 3),
+                    ],
+                    ongoingActions: [{ uid: 'orcs-stalling-card', defId: 'munchkin_orcs_stalling', ownerId: '1' }],
+                    monsters: [],
+                },
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinOrcsTooToughScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'orcs-too-tough-action-1', defId: 'munchkin_orcs_death_breath', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_orcs_sword_lord', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 18),
+        discard: [],
+        factions: ['munchkin_orcs', 'pirates'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 30,
+            nextUid: 3000,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_garrison',
+                    minions: [
+                        {
+                            ...minion('orcs-too-tough-protected', 'pirate_first_mate', '1', 3),
+                            attachedActions: [{ uid: 'orcs-too-tough-card', defId: 'munchkin_orcs_too_tough', ownerId: '1' }],
+                        },
+                        minion('orcs-too-tough-free', 'alien_scout', '1', 3),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
 type MunchkinMagesBaseSeed = {
     defId: string;
     minions: ReturnType<typeof minion>[];
@@ -5392,6 +5930,630 @@ const buildMunchkinElvesHelperHollowScene = (currentPlayer: '0' | '1'): SmashUpS
     },
 });
 
+const buildMunchkinClericsRemoveCurseScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-remove-curse-1', defId: 'munchkin_clerics_remove_curse', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 42,
+            nextUid: 4200,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [{
+                defId: 'base_the_mines',
+                minions: [{
+                    ...minion('clerics-curse-host', 'munchkin_orcs_dork_orc', '1', 2),
+                    attachedActions: [{ uid: 'clerics-imprisonment-1', defId: 'munchkin_clerics_curse_of_imprisonment', ownerId: '0', talentUsed: false }],
+                }],
+                ongoingActions: [{ uid: 'clerics-base-action-1', defId: 'munchkin_clerics_bin_and_gone', ownerId: '1' }],
+                monsters: [],
+            }],
+        },
+    },
+});
+
+const buildMunchkinClericsCardinalScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-cardinal-hand-1', defId: 'alien_probe', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_collection_plate', 12),
+        discard: [
+            { uid: 'clerics-cardinal-discard-1', defId: 'munchkin_clerics_collection_plate', type: 'action', owner: '0' },
+            { uid: 'clerics-cardinal-discard-2', defId: 'munchkin_clerics_good_habits', type: 'action', owner: '0' },
+            { uid: 'clerics-cardinal-discard-3', defId: 'munchkin_clerics_join_the_club', type: 'action', owner: '0' },
+            { uid: 'clerics-cardinal-discard-4', defId: 'munchkin_clerics_remove_curse', type: 'action', owner: '0' },
+            { uid: 'clerics-cardinal-discard-5', defId: 'munchkin_clerics_word_of_recall', type: 'action', owner: '0' },
+        ],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 49,
+            nextUid: 4900,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [{
+                defId: 'base_the_homeworld',
+                minions: [minion('clerics-cardinal-1', 'munchkin_clerics_cardinal', '0', 5)],
+                ongoingActions: [],
+                monsters: [],
+            }],
+        },
+    },
+});
+
+const buildMunchkinClericsCollectionPlateScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-plate-1', defId: 'munchkin_clerics_collection_plate', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [
+            { uid: 'clerics-plate-discard-1', defId: 'munchkin_clerics_cardinal', type: 'minion', owner: '0' },
+            { uid: 'clerics-plate-discard-2', defId: 'munchkin_clerics_good_habits', type: 'action', owner: '0' },
+            { uid: 'clerics-plate-discard-3', defId: 'munchkin_clerics_join_the_club', type: 'action', owner: '0' },
+            { uid: 'clerics-plate-discard-4', defId: 'munchkin_clerics_remove_curse', type: 'action', owner: '0' },
+            { uid: 'clerics-plate-discard-5', defId: 'munchkin_clerics_word_of_recall', type: 'action', owner: '0' },
+        ],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 50,
+            nextUid: 5000,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [{
+                defId: 'base_the_homeworld',
+                minions: [minion('clerics-plate-host', 'munchkin_clerics_cardinal', '0', 5)],
+                ongoingActions: [],
+                monsters: [],
+            }],
+        },
+    },
+});
+
+const buildMunchkinClericsGoodHabitsScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-habits-1', defId: 'munchkin_clerics_good_habits', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 51,
+            nextUid: 5100,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld', 'base_the_mothership'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        minion('clerics-habits-own', 'munchkin_clerics_cardinal', '0', 5),
+                        minion('clerics-habits-enemy', 'munchkin_orcs_dork_orc', '1', 2),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_mothership',
+                    minions: [minion('clerics-habits-other-base', 'munchkin_orcs_dork_orc', '1', 2)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinClericsJoinTheClubScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-club-1', defId: 'munchkin_clerics_join_the_club', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 52,
+            nextUid: 5200,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld', 'base_the_mothership'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [minion('clerics-club-base-0', 'munchkin_clerics_cardinal', '0', 5)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_mothership',
+                    minions: [minion('clerics-club-base-1', 'munchkin_orcs_dork_orc', '1', 2)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinClericsCurseScene = (curseDefId: string, cardUid: string): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: cardUid, defId: curseDefId, type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 53,
+            nextUid: 5300,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [{
+                defId: 'base_the_homeworld',
+                minions: [
+                    minion('clerics-curse-target', 'munchkin_clerics_cardinal', '1', 5),
+                    minion('clerics-curse-other', 'alien_invader', '0', 2),
+                ],
+                ongoingActions: [],
+                monsters: [],
+            }],
+        },
+    },
+});
+
+const buildMunchkinClericsDeepFriarScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 2,
+        minionLimit: 2,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 43,
+            nextUid: 4300,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld', 'base_the_mothership'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        minion('clerics-friar-1', 'munchkin_clerics_deep_friar', '0', 4),
+                        minion('clerics-friar-move', 'alien_invader', '0', 30),
+                    ],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+                { defId: 'base_the_mothership', minions: [], ongoingActions: [], monsters: [] },
+            ],
+        },
+    },
+});
+
+const buildMunchkinClericsTurnerScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-turner-1', defId: 'munchkin_clerics_turner', type: 'minion', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [{ uid: 'clerics-turner-discard-minion', defId: 'munchkin_clerics_cardinal', type: 'minion', owner: '0' }],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 44,
+            nextUid: 4400,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [{
+                defId: 'base_the_homeworld',
+                minions: [],
+                ongoingActions: [],
+                monsters: [
+                    { uid: 'clerics-turner-undead', defId: 'munchkin_monster_ghoul' },
+                    { uid: 'clerics-turner-living', defId: 'munchkin_monster_bigfoot' },
+                ],
+            }],
+        },
+    },
+});
+
+const buildMunchkinClericsHolyRollerScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-holy-roller-1', defId: 'munchkin_clerics_holy_roller', type: 'minion', owner: '0' }],
+        deck: [{ uid: 'clerics-holy-deck-1', defId: 'alien_invader', type: 'minion', owner: '0' }],
+        discard: [{ uid: 'clerics-holy-discard-1', defId: 'pirate_first_mate', type: 'minion', owner: '0' }],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 45,
+            nextUid: 4500,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [{ defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] }],
+        },
+    },
+});
+
+const buildMunchkinClericsBinAndGoneScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 1,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 46,
+            nextUid: 4600,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld', 'base_the_mothership'],
+            baseDiscard: [],
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [],
+                    ongoingActions: [{ uid: 'clerics-bin-1', defId: 'munchkin_clerics_bin_and_gone', ownerId: '0' }],
+                    monsters: [],
+                },
+                {
+                    defId: 'base_the_mothership',
+                    // 22 点足以让“母舰”（临界点 20）计分，但移动到“家园”（临界点 23）后不应触发第二次计分。
+                    minions: [minion('clerics-bin-move', 'alien_invader', '0', 22)],
+                    ongoingActions: [],
+                    monsters: [],
+                },
+            ],
+        },
+    },
+});
+
+const buildMunchkinClericsHotelScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [],
+        deck: [{ uid: 'clerics-hotel-deck-0', defId: 'munchkin_clerics_cardinal', type: 'minion', owner: '0' }],
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 2,
+        minionLimit: 2,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: [{ uid: 'clerics-hotel-deck-1', defId: 'munchkin_orcs_dork_orc', type: 'minion', owner: '1' }],
+        discard: [],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 47,
+            nextUid: 4700,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_hotel_of_holiness', 'base_the_mothership'],
+            baseDiscard: [],
+            bases: [{
+                defId: 'base_hotel_of_holiness',
+                minions: [
+                    minion('clerics-hotel-own', 'alien_invader', '0', 10),
+                    minion('clerics-hotel-other', 'pirate_first_mate', '1', 10),
+                ],
+                ongoingActions: [],
+                monsters: [],
+            }, { defId: 'base_the_mothership', minions: [], ongoingActions: [], monsters: [] }],
+        },
+    },
+});
+
+const buildMunchkinClericsWordRecallScene = (): SmashUpSceneConfig => ({
+    gameId: 'smashup',
+    currentPlayer: '0',
+    phase: 'playCards',
+    player0: {
+        hand: [{ uid: 'clerics-recall-1', defId: 'munchkin_clerics_word_of_recall', type: 'action', owner: '0' }],
+        deck: deckCards('0', 'munchkin_clerics_cardinal', 12),
+        discard: [],
+        factions: ['munchkin_clerics', 'munchkin_warriors'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 4,
+    },
+    player1: {
+        hand: [],
+        deck: deckCards('1', 'munchkin_orcs_dork_orc', 12),
+        discard: [{ uid: 'clerics-recall-target', defId: 'munchkin_clerics_collection_plate', type: 'action', owner: '1' }],
+        factions: ['munchkin_orcs', 'ninjas'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+        vp: 5,
+    },
+    extra: {
+        core: {
+            turnOrder: ['0', '1'],
+            seatOrder: ['0', '1'],
+            turnNumber: 48,
+            nextUid: 4800,
+            deckQueryEnabled: false,
+            enabledExpansions: ['munchkin'],
+            monsterDeck: MUNCHKIN_MONSTER_DECK_DEF_IDS,
+            treasureDeck: MUNCHKIN_TREASURE_DECK_DEF_IDS,
+            baseDeck: ['base_the_homeworld'],
+            baseDiscard: [],
+            bases: [{ defId: 'base_the_homeworld', minions: [], ongoingActions: [], monsters: [] }],
+        },
+    },
+});
+
 test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
     test('怪物行和公共小牌堆不抢原版布局', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
@@ -5491,6 +6653,604 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         expect(core.treasureDeck).toHaveLength(19);
     });
 
+    test('Munchkin 新 UI 移动端横屏保留怪物行与公共小牌堆入口', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 844, height: 390 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinMonsterTreasureScene());
+
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-special-supply-row')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-munchkin-monster-supply-count')).toHaveText('x 20');
+        await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 22');
+        await expect(page.getByTestId('su-base-monster-row-0')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-monster-uid]')).toHaveCount(3);
+        await expect(page.getByTestId('su-base-titan-titan-on-base-0')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-ongoing-uid="ongoing-full-sail-0"]')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-testid="su-munchkin-monster-discard"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="su-munchkin-treasure-discard"]')).toHaveCount(0);
+
+        const mobileLayoutEvidence = await page.evaluate(() => {
+            const rectOf = (selector: string) => {
+                const element = document.querySelector<HTMLElement>(selector);
+                if (!element) return null;
+                const rect = element.getBoundingClientRect();
+                return {
+                    top: rect.top,
+                    bottom: rect.bottom,
+                    left: rect.left,
+                    right: rect.right,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            };
+            const monsterRow = rectOf('[data-testid="su-base-monster-row-0"]');
+            const baseCard = rectOf('[data-base-index="0"]');
+            const playerColumn = rectOf('[data-testid="su-base-player-column-0-0"]');
+            const hand = rectOf('[data-testid="su-hand-area"]');
+            const supply = rectOf('[data-testid="su-special-supply-row"]');
+            const endTurn = rectOf('button[aria-label*="结束回合"], button[aria-label*="End turn"]');
+            const withinViewport = (rect: ReturnType<typeof rectOf>) => !!rect
+                && rect.left >= -2
+                && rect.right <= window.innerWidth + 2
+                && rect.top >= -2
+                && rect.bottom <= window.innerHeight + 2;
+
+            return {
+                monsterBelowBase: !!monsterRow && !!baseCard && monsterRow.top >= baseCard.bottom - 8,
+                monsterAbovePlayerColumn: !!monsterRow && !!playerColumn && monsterRow.bottom <= playerColumn.top + 12,
+                handVisibleInViewport: withinViewport(hand),
+                supplyVisibleInViewport: withinViewport(supply),
+                endTurnVisibleInViewport: withinViewport(endTurn),
+                noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
+            };
+        });
+
+        expect(mobileLayoutEvidence, '移动端怪物行、公共小牌堆、手牌和结束回合入口应保持可见且不产生横向溢出').toEqual({
+            monsterBelowBase: true,
+            monsterAbovePlayerColumn: true,
+            handVisibleInViewport: true,
+            supplyVisibleInViewport: true,
+            endTurnVisibleInViewport: true,
+            noUnexpectedOverflow: true,
+        });
+
+        await game.screenshot('移动端横屏-怪物行和公共小牌堆不抢原版布局', testInfo);
+    });
+
+    test('兽人重击者真实入口手动选择力量目标，单候选也不自动结算', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsHammerSlammerScene());
+
+        await expect(page.locator('[data-card-uid="orcs-hammer-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-hammer-weak-0"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-hammer-strong-0"]').first()).toBeVisible({ timeout: 15000 });
+
+        await game.playCard('munchkin_orcs_hammer_slammer', { targetBaseIndex: 0 });
+        await game.waitForInteraction('munchkin_orcs_hammer_slammer_target', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-hammer-weak-0',
+            '重击者选择态应显示力量 2 的目标本体',
+            { forbidPromptContext: true },
+        );
+        await expect(page.locator('[data-minion-uid="orcs-hammer-weak-1"]').first()).toBeVisible({ timeout: 15000 });
+
+        const targetOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(targetOptions.filter(option => option.value?.minionUid?.startsWith('orcs-hammer-weak')).length).toBe(2);
+        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-hammer-strong-0')).toBe(false);
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-重击者-手动选择力量目标', testInfo);
+
+        await clickManualMinionChoice(page, 'orcs-hammer-weak-0', '重击者选择目标随从');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-minion-uid="orcs-hammer-weak-0"]')).toHaveCount(0);
+        await expect(page.locator('[data-minion-uid="orcs-hammer-weak-1"]')).toHaveCount(1);
+        await expect(page.locator('[data-minion-uid="orcs-hammer-strong-0"]')).toHaveCount(1);
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-重击者-结算后', testInfo);
+    });
+
+    test('兽人粉碎者真实入口保留手动天赋按钮并记录已使用状态', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsTopperChopperScene());
+
+        await game.playCard('munchkin_orcs_topper_chopper', { targetBaseIndex: 0 });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-minion-uid="orcs-topper-1"]').first()).toBeVisible({ timeout: 15000 });
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-粉碎者-天赋可用', testInfo);
+
+        await page.locator('[data-minion-uid="orcs-topper-1"]').first().click({ force: true });
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.getByTestId('su-minion-used-badge-orcs-topper-1')).toBeVisible({ timeout: 15000 });
+        const core = await readCoreState(page) as { bases: Array<{ minions: Array<{ uid: string; talentUsed?: boolean }> }> };
+        expect(core.bases.flatMap(base => base.minions).find(minion => minion.uid === 'orcs-topper-1')?.talentUsed).toBe(true);
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-粉碎者-天赋已使用', testInfo);
+    });
+
+    test('兽人给我！真实入口先选附着行动再选己方新宿主', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsGimmeScene());
+
+        const host = page.locator('[data-minion-uid="orcs-gimme-host"]').first();
+        const target = page.locator('[data-minion-uid="orcs-gimme-target"]').first();
+        await expect(page.locator('[data-card-uid="orcs-gimme-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(host).toBeVisible({ timeout: 15000 });
+        await expect(target).toBeVisible({ timeout: 15000 });
+        await host.hover();
+        await expect(page.locator('[data-attached-action-uid="orcs-gimme-attached"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('兽人-给我-打出前附着行动与新宿主', testInfo);
+
+        await game.playCard('munchkin_orcs_gimme');
+        await game.waitForInteraction('munchkin_orcs_gimme_action', 10000);
+        await waitForSmashUpFxToSettle(page);
+        const actionOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(actionOptions.some(option => option.value?.cardUid === 'orcs-gimme-attached')).toBe(true);
+        await page.mouse.move(24, 24);
+        await expectManualChoiceVisible(
+            page,
+            '[data-attached-action-uid="orcs-gimme-attached"]',
+            '给我第一步选择附着行动卡本体',
+            { forbidPromptContext: true },
+        );
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-给我-第一步手动选择附着行动', testInfo);
+        await page.locator('[data-attached-action-uid="orcs-gimme-attached"]').first().click({ force: true });
+
+        await game.waitForInteraction('munchkin_orcs_gimme_minion', 10000);
+        await waitForSmashUpFxToSettle(page);
+        const minionOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(minionOptions.some(option => option.value?.minionUid === 'orcs-gimme-target')).toBe(true);
+        expect(minionOptions.some(option => option.value?.minionUid === 'orcs-gimme-host')).toBe(false);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-gimme-target',
+            '给我第二步选择己方新宿主随从本体',
+            { forbidPromptContext: true },
+        );
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-给我-第二步手动选择己方新宿主', testInfo);
+        await clickManualMinionChoice(page, 'orcs-gimme-target', '给我选择己方新宿主');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const core = state.core as RocketBootsCoreState;
+            const sourceHost = core.bases[0].minions.find(minion => minion.uid === 'orcs-gimme-host');
+            const newHost = core.bases[1].minions.find(minion => minion.uid === 'orcs-gimme-target');
+            const player1 = core.players?.['1'] as SmashUpPlayerCoreSlice | undefined;
+            return {
+                sourceHostPresent: Boolean(sourceHost),
+                targetAttachedUids: newHost?.attachedActions?.map(action => action.uid) ?? [],
+                player1DiscardDefIds: player1?.discard?.map(card => card.defId) ?? [],
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            sourceHostPresent: false,
+            targetAttachedUids: ['orcs-gimme-attached'],
+            player1DiscardDefIds: [],
+            interactionSourceId: null,
+        });
+        await target.hover();
+        await expect(target.locator('[data-attached-action-uid="orcs-gimme-attached"]').first()).toBeVisible({ timeout: 15000 });
+        await hideSmashUpDebugPanelForEvidence(page);
+        await game.screenshot('兽人-给我-转移后行动保留在新宿主', testInfo);
+    });
+
+    test('兽人躺下！计分前真实响应先手动选择行动并压制其他玩家特殊能力', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsAndStayDownScene());
+
+        await expect(page.locator('[data-card-uid="orcs-stay-down-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-base-index="0"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('兽人-躺下-计分前手牌与要塞', testInfo);
+
+        await game.advancePhase();
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.sys?.phase === 'scoreBases'
+                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
+                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+            },
+            { timeout: 20000, polling: 200 },
+        );
+
+        await expect.poll(async () => {
+            const options = await game.getInteractionOptions() as InteractionOption[];
+            return options.some(option =>
+                option.value?.kind === 'play_action'
+                && option.value?.cardUid === 'orcs-stay-down-1'
+                && option.value?.targetBaseIndex === 0,
+            );
+        }, { timeout: 10000 }).toBe(true);
+        await game.screenshot('兽人-躺下-计分前手动选择响应', testInfo);
+
+        await game.selectInteractionOptionBy(
+            option => option.value?.kind === 'play_action'
+                && option.value?.cardUid === 'orcs-stay-down-1'
+                && option.value?.targetBaseIndex === 0,
+            '计分前选择躺下',
+        );
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const entries = (state.sys?.eventStream?.entries ?? []).map((entry: EventStreamEntry) => entry.event);
+            return {
+                hasSuppressionEvent: entries.some((event: any) =>
+                    event?.type === 'su:base_metadata_updated'
+                    && event.payload?.baseIndex === 0
+                    && event.payload?.metadataUpdate?.andStayDownSuppressorPlayerId === '0',
+                ),
+                hasCardInDiscard: state.core.players?.['0']?.discard?.some((card: any) => card.uid === 'orcs-stay-down-1') ?? false,
+            };
+        }, { timeout: 15000 }).toEqual({ hasSuppressionEvent: true, hasCardInDiscard: true });
+        await waitForSmashUpFxToSettle(page);
+        await game.screenshot('兽人-躺下-压制状态结算后', testInfo);
+    });
+
+    test('兽人愤怒的掠夺者计分前真实响应手动选择后获得 1 VP', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsAngryPillagersScene());
+
+        await expect(page.locator('[data-card-uid="orcs-angry-1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.advancePhase();
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.sys?.phase === 'scoreBases'
+                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
+                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+            },
+            { timeout: 20000, polling: 200 },
+        );
+
+        await expect.poll(async () => {
+            const options = await game.getInteractionOptions() as InteractionOption[];
+            return options.some(option =>
+                option.value?.kind === 'play_action'
+                && option.value?.cardUid === 'orcs-angry-1'
+                && option.value?.targetBaseIndex === 0,
+            );
+        }, { timeout: 10000 }).toBe(true);
+        await game.screenshot('兽人-愤怒的掠夺者-计分前手动选择响应', testInfo);
+
+        await game.selectInteractionOptionBy(
+            option => option.value?.kind === 'play_action'
+                && option.value?.cardUid === 'orcs-angry-1'
+                && option.value?.targetBaseIndex === 0,
+            '计分前选择愤怒的掠夺者',
+        );
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const events = (state.sys?.eventStream?.entries ?? []).map((entry: EventStreamEntry) => entry.event);
+            return {
+                vp: state.core.players?.['0']?.vp ?? 0,
+                hasCardInDiscard: state.core.players?.['0']?.discard?.some((card: any) => card.uid === 'orcs-angry-1') ?? false,
+                hasAngryBonus: events.some((event: any) =>
+                    event?.type === 'su:vp_awarded'
+                    && event.payload?.playerId === '0'
+                    && event.payload?.amount === 1
+                    && event.payload?.reason === 'munchkin_orcs_angry_pillagers',
+                ),
+            };
+        }, { timeout: 15000 }).toEqual({ vp: 8, hasCardInDiscard: true, hasAngryBonus: true });
+        await waitForSmashUpFxToSettle(page);
+        await game.screenshot('兽人-愤怒的掠夺者-获得 VP 后', testInfo);
+    });
+
+    test('兽人要塞真实计分按玩家总力量 22 门槛给两名最高玩家额外 VP', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsBaseScoringScene({
+            baseDefId: 'base_garrison',
+            ownPower: 11,
+            opponentPower: 11,
+            turnNumber: 31,
+        }));
+
+        await expect(page.locator('[data-base-index="0"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-score-own"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-score-opponent"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('兽人-要塞-计分前总力量达到22', testInfo);
+
+        await game.advancePhase();
+        await game.waitForPhase('scoreBases', 10000);
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.sys?.phase === 'scoreBases'
+                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
+                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+            },
+            { timeout: 15000, polling: 200 },
+        );
+        const responseOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(responseOptions.some(option => option.value?.kind === 'pass')).toBe(true);
+        await game.screenshot('兽人-要塞-计分前响应入口', testInfo);
+
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const state = await game.getState();
+            if (state.sys?.phase === 'playCards' && !state.sys?.interaction?.current) break;
+            const didPass = await passOpenReactionOrResponseWindow(page, game, `要塞计分前让过响应 ${attempt + 1}`);
+            if (!didPass) await page.waitForTimeout(300);
+        }
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state.sys?.phase,
+                ownVp: state.core.players?.['0']?.vp ?? 0,
+                opponentVp: state.core.players?.['1']?.vp ?? 0,
+                scoredBaseDiscarded: state.core.baseDiscard?.some((base: any) => base.defId === 'base_garrison') ?? false,
+                scoredBaseCleared: state.core.bases?.[0]?.minions?.length === 0,
+            };
+        }, { timeout: 20000 }).toEqual({
+            phase: 'playCards',
+            ownVp: 8,
+            opponentVp: 7,
+            scoredBaseDiscarded: true,
+            scoredBaseCleared: true,
+        });
+        await waitForSmashUpFxToSettle(page);
+        await game.screenshot('兽人-要塞-达到22后两名玩家获得额外VP', testInfo);
+    });
+
+    test('兽人坑洞真实计分达到16后清场并保留原版计分布局', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsBaseScoringScene({
+            baseDefId: 'base_the_pits',
+            ownPower: 9,
+            opponentPower: 7,
+            turnNumber: 32,
+        }));
+
+        await expect(page.locator('[data-base-index="0"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-score-own"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-score-opponent"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('兽人-坑洞-计分前总力量达到16', testInfo);
+
+        await game.advancePhase();
+        await game.waitForPhase('scoreBases', 10000);
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.sys?.phase === 'scoreBases'
+                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
+                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+            },
+            { timeout: 15000, polling: 200 },
+        );
+        const responseOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(responseOptions.some(option => option.value?.kind === 'pass')).toBe(true);
+        await game.screenshot('兽人-坑洞-计分前响应入口', testInfo);
+
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const state = await game.getState();
+            if (state.sys?.phase === 'playCards' && !state.sys?.interaction?.current) break;
+            const didPass = await passOpenReactionOrResponseWindow(page, game, `坑洞计分前让过响应 ${attempt + 1}`);
+            if (!didPass) await page.waitForTimeout(300);
+        }
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state.sys?.phase,
+                ownVp: state.core.players?.['0']?.vp ?? 0,
+                opponentVp: state.core.players?.['1']?.vp ?? 0,
+                scoredBaseDiscarded: state.core.baseDiscard?.some((base: any) => base.defId === 'base_the_pits') ?? false,
+                scoredBaseCleared: state.core.bases?.[0]?.minions?.length === 0,
+            };
+        }, { timeout: 20000 }).toEqual({
+            phase: 'playCards',
+            ownVp: 8,
+            opponentVp: 6,
+            scoredBaseDiscarded: true,
+            scoredBaseCleared: true,
+        });
+        await waitForSmashUpFxToSettle(page);
+        await game.screenshot('兽人-坑洞-计分清场后保留原版布局', testInfo);
+    });
+
+    test('兽人狗堆在计分前真实响应仍按随从再基地手动选择', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsDogpileSpecialScene());
+
+        await expect(page.locator('[data-card-uid="orcs-dogpile-special-1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.advancePhase();
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.sys?.phase === 'scoreBases'
+                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
+                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+            },
+            { timeout: 20000, polling: 200 },
+        );
+
+        await game.selectInteractionOptionBy(
+            option => option.value?.kind === 'play_action'
+                && option.value?.cardUid === 'orcs-dogpile-special-1'
+                && option.value?.targetBaseIndex === 0,
+            '计分前选择狗堆',
+        );
+        await game.waitForInteraction('munchkin_orcs_dogpile_minion', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-dogpile-source',
+            '狗堆计分前响应第一步应显示待移动随从本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('兽人-狗堆-计分前手动选择随从', testInfo);
+        await clickManualMinionChoice(page, 'orcs-dogpile-source', '狗堆选择计分前移动随从');
+
+        await game.waitForInteraction('munchkin_orcs_dogpile_base', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-base-index="1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('兽人-狗堆-计分前手动选择目标基地', testInfo);
+        await game.selectInteractionOptionBy(option => option.value?.baseIndex === 1, '狗堆选择计分前目标基地');
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                sourcePresent: state.core.bases[0].minions.some((entry: any) => entry.uid === 'orcs-dogpile-source'),
+                targetPresent: state.core.bases[1].minions.some((entry: any) => entry.uid === 'orcs-dogpile-source'),
+                hasCardInDiscard: state.core.players?.['0']?.discard?.some((card: any) => card.uid === 'orcs-dogpile-special-1') ?? false,
+            };
+        }, { timeout: 15000 }).toEqual({ sourcePresent: false, targetPresent: true, hasCardInDiscard: true });
+        await waitForSmashUpFxToSettle(page);
+        await game.screenshot('兽人-狗堆-计分前移动结算后', testInfo);
+    });
+
+    test('兽人洗手间在对手行动后把手动保护选择交给行动卡控制者', async ({ page, game }, _testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true, seat1: 'human', playerID: '0' }, 20000);
+        await game.setupScene(buildMunchkinOrcsStallingScene());
+        const targetPage = await openSmashUpPlayerView(page, '1');
+
+        try {
+            await expect(page.locator('[data-card-uid="orcs-stalling-action-1"]').first()).toBeVisible({ timeout: 15000 });
+            await expect(page.locator('[data-minion-uid="orcs-stalling-defender"]').first()).toBeVisible({ timeout: 15000 });
+            const initialState = await game.getState();
+            await mirrorSmashUpHarnessState(targetPage, initialState);
+            await expect(targetPage.locator('[data-minion-uid="orcs-stalling-defender"]').first()).toBeVisible({ timeout: 15000 });
+
+            await game.playCard('munchkin_orcs_crush');
+            await game.waitForInteraction('munchkin_orcs_crush_base', 10000);
+            await game.selectInteractionOptionBy(option => option.value?.baseIndex === 0, '挤碎选择洗手间所在基地');
+            await waitForSmashUpFxToSettle(page);
+
+            const reactionState = await game.getState();
+            await mirrorSmashUpHarnessState(targetPage, reactionState);
+            await targetPage.waitForFunction(
+                () => (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.sourceId
+                    === 'munchkin_orcs_stalling_minion',
+                { timeout: 10000, polling: 200 },
+            );
+            await waitForSmashUpFxToSettle(targetPage);
+            await expectManualMinionChoiceVisible(
+                targetPage,
+                'orcs-stalling-defender',
+                '洗手间应把保护选择交给控制者并显示随从本体',
+                { forbidPromptContext: true },
+            );
+            await saveMunchkinEvidenceScreenshot(targetPage, '兽人-洗手间-手动选择保护随从.png');
+            await clickManualMinionChoice(targetPage, 'orcs-stalling-defender', '洗手间选择保护随从');
+            await targetPage.waitForFunction(
+                () => (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.data?.sourceId
+                    === 'munchkin_orcs_crush_player',
+                { timeout: 10000, polling: 200 },
+            );
+
+            const protectedState = await targetPage.evaluate(() => (
+                (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.()
+            ));
+            await mirrorSmashUpHarnessState(page, protectedState);
+
+            await game.waitForInteraction('munchkin_orcs_crush_player', 10000);
+            await game.selectInteractionOptionBy(
+                option => option.value?.targetPlayerId === '1',
+                '挤碎手动选择仆从更少的玩家',
+            );
+            await waitForSmashUpFxToSettle(page);
+
+            await game.waitForInteraction('munchkin_orcs_crush_minion', 10000);
+            await game.selectInteractionOptionBy(
+                option => option.value?.minionUid === 'orcs-stalling-defender',
+                '挤碎手动选择目标玩家的仆从',
+            );
+            await waitForSmashUpFxToSettle(page);
+            await expect.poll(async () => {
+                const state = await game.getState();
+                const protectedMinion = state.core.bases[0].minions.find((entry: any) => entry.uid === 'orcs-stalling-defender');
+                return {
+                    protectedAction: protectedMinion?.metadata?.stallingProtectedActionDefId ?? null,
+                    protectedTurn: protectedMinion?.metadata?.stallingProtectedTurnNumber ?? null,
+                    interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                };
+            }, { timeout: 10000 }).toEqual({
+                protectedAction: 'munchkin_orcs_crush',
+                protectedTurn: 29,
+                    interactionSourceId: null,
+                });
+            const finalState = await game.getState();
+            await mirrorSmashUpHarnessState(targetPage, finalState);
+            await saveMunchkinEvidenceScreenshot(targetPage, '兽人-洗手间-保护状态结算后.png');
+        } finally {
+            await targetPage.close();
+        }
+    });
+
+    test('兽人太难了从行动目标候选中排除受保护随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinOrcsTooToughScene());
+
+        await expect(page.locator('[data-card-uid="orcs-too-tough-action-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-too-tough-protected"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="orcs-too-tough-free"]').first()).toBeVisible({ timeout: 15000 });
+
+        await game.playCard('munchkin_orcs_death_breath');
+        await game.waitForInteraction('munchkin_orcs_death_breath_target', 10000);
+        await waitForSmashUpFxToSettle(page);
+        const targetOptions = await game.getInteractionOptions() as InteractionOption[];
+        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-too-tough-free')).toBe(true);
+        expect(targetOptions.some(option => option.value?.minionUid === 'orcs-too-tough-protected')).toBe(false);
+        await expectManualMinionChoiceVisible(
+            page,
+            'orcs-too-tough-free',
+            '太难了应把未受保护随从作为唯一可选目标',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('兽人-太难了-过滤受保护目标', testInfo);
+        await clickManualMinionChoice(page, 'orcs-too-tough-free', '死亡之息选择未受保护随从');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect(page.locator('[data-minion-uid="orcs-too-tough-free"]')).toHaveCount(0);
+        await expect(page.locator('[data-minion-uid="orcs-too-tough-protected"]')).toHaveCount(1);
+        const state = await game.getState();
+        expect(state.core.players?.['1']?.deck?.some((card: any) => card.uid === 'orcs-too-tough-free')).toBe(true);
+        await game.screenshot('兽人-太难了-受保护随从保留', testInfo);
+    });
+
     test('法师快速攻击先手动选弃牌成本，再手动选力量目标', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
@@ -5535,6 +7295,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await expect(page.locator('[data-minion-uid="mages-strong-target"]')).toHaveCount(1);
         await expect(page.locator('[data-card-uid="mages-cost-1"]')).toHaveCount(0);
         await expect(page.locator('[data-card-uid="mages-zzzzzap-1"]')).toHaveCount(0);
+        await expect(page.getByTestId('su-interaction-select-banner')).toHaveCount(0);
         await game.screenshot('法师-快速攻击-结算后', testInfo);
     });
 
@@ -5591,15 +7352,16 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.playCard('munchkin_mages_charm');
         await game.waitForInteraction('munchkin_mages_charm_target', 10000);
         await waitForSmashUpFxToSettle(page);
-        await expect(page.getByTestId('prompt-card-grid')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('[data-testid^="prompt-card-"][data-card-def-id^="munchkin_monster_"]')).toHaveCount(2);
-        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await expect(page.getByTestId('su-interaction-select-banner')).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('prompt-card-grid')).toHaveCount(0);
+        await expect(page.locator('[data-monster-uid="mages-charm-monster"][data-monster-selectable="true"]')).toHaveCount(1);
+        await expect(page.locator('[data-monster-uid="mages-charm-monster-2"][data-monster-selectable="true"]')).toHaveCount(1);
         await game.screenshot('法师-魅力-手动选择怪物', testInfo);
 
         const charmOptions = await game.getInteractionOptions() as InteractionOption[];
         const charmTarget = charmOptions.find((option) => option.value?.monsterUid === 'mages-charm-monster');
         expect(charmTarget, '魅力必须把怪物作为可见候选交给玩家手动选择').toBeTruthy();
-        await page.locator(`[data-option-id="${charmTarget!.id}"]`).click({ force: true });
+        await page.locator('[data-monster-uid="mages-charm-monster"] button').click();
         await game.waitForNoInteraction(10000);
         await waitForSmashUpFxToSettle(page);
 
@@ -5638,6 +7400,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await expect(page.getByRole('heading', { name: '法师之塔' })).toBeVisible({ timeout: 15000 });
         await expect(page.getByRole('button', { name: '抽一张牌' })).toBeVisible({ timeout: 15000 });
         await expect(page.getByRole('button', { name: '不抽牌' })).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-testid^="su-vp-gain-feedback-"]:visible')).toHaveCount(0);
         await game.screenshot('法师-法师之塔-手动选择抽牌', testInfo);
         await page.getByRole('button', { name: '抽一张牌' }).click({ force: true });
         await game.waitForNoInteraction(10000);
@@ -5645,6 +7408,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
 
         const state = await game.getState();
         expect(state.core.players['0'].deck).toHaveLength(7);
+        await waitForSmashUpHandCardToSettle(page, handCardSelector('0-deck-0'));
         await game.screenshot('法师-法师之塔-抽牌后', testInfo);
     });
 
@@ -5658,7 +7422,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 mageCard('mages-blaster-1', 'munchkin_mages_blaster_master', 'minion'),
                 mageCard('mages-blaster-cost', 'munchkin_mages_speed_reading', 'action'),
             ],
-            bases: [mageBase('base_the_homeworld', [
+            bases: [mageBase('base_the_mothership', [
                 minion('mages-blaster-target', 'alien_invader', '1', 2),
                 minion('mages-blaster-high', 'pirate_first_mate', '1', 5),
             ])],
@@ -5686,7 +7450,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await waitForSmashUpFxToSettle(page);
 
         const state = await game.getState();
-        expect(state.core.bases[0].minions.map((entry: any) => entry.uid)).toEqual(['mages-blaster-1', 'mages-blaster-high']);
+        expect(state.core.bases[0].minions.map((entry: any) => entry.uid)).toEqual(['mages-blaster-high', 'mages-blaster-1']);
         expect(state.core.players['0'].discard.map((entry: any) => entry.uid)).toEqual(['mages-blaster-cost']);
         await game.screenshot('法师-爆破大师-摧毁目标后', testInfo);
     });
@@ -5701,7 +7465,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 mageCard('mages-happy-1', 'munchkin_mages_happy_zapper', 'minion'),
                 mageCard('mages-happy-cost', 'munchkin_mages_speed_reading', 'action'),
             ],
-            bases: [mageBase('base_the_homeworld')],
+            bases: [mageBase('base_the_mothership')],
         }));
 
         await game.playCard('munchkin_mages_happy_zapper', { targetBaseIndex: 0 });
@@ -5721,6 +7485,101 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('法师-快乐小法师-获得临时力量后', testInfo);
     });
 
+    test('法师快乐小法师在计分前从真实响应窗口手动激活特殊能力', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinMagesRemainingScene({
+            hand: [
+                mageCard('mages-happy-special-1', 'munchkin_mages_happy_zapper', 'minion'),
+                mageCard('mages-happy-special-cost', 'munchkin_mages_speed_reading', 'action'),
+            ],
+            bases: [mageBase('base_the_mothership', [
+                minion('mages-happy-special-board', 'munchkin_mages_happy_zapper', '0', 3),
+                minion('mages-happy-special-scorer', 'alien_invader', '0', 30),
+            ])],
+        }));
+
+        await expect(page.locator('[data-minion-uid="mages-happy-special-board"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('法师-快乐小法师特殊-计分前响应前', testInfo);
+
+        await game.advancePhase();
+        await game.waitForPhase('scoreBases', 10000);
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.sys?.phase === 'scoreBases'
+                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
+                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+            },
+            { timeout: 15000, polling: 200 },
+        );
+
+        await expect.poll(async () => {
+            const options = await game.getInteractionOptions() as InteractionOption[];
+            return options.some(option =>
+                option.value?.kind === 'activate_special'
+                && option.value?.minionUid === 'mages-happy-special-board'
+                && option.value?.baseIndex === 0,
+            );
+        }, { timeout: 10000 }).toBe(true);
+        const specialMinionBox = await page.locator('[data-minion-uid="mages-happy-special-board"]').first().boundingBox();
+        const specialButtonBox = await page.getByRole('button', { name: /快乐小法师\s*特殊能力/ }).boundingBox();
+        expect(specialMinionBox, '快乐小法师本体必须可见').not.toBeNull();
+        expect(specialButtonBox, '快乐小法师特殊能力按钮必须可见').not.toBeNull();
+        if (specialMinionBox && specialButtonBox) {
+            const overlaps = specialMinionBox.x < specialButtonBox.x + specialButtonBox.width
+                && specialMinionBox.x + specialMinionBox.width > specialButtonBox.x
+                && specialMinionBox.y < specialButtonBox.y + specialButtonBox.height
+                && specialMinionBox.y + specialMinionBox.height > specialButtonBox.y;
+            expect(overlaps, '响应选择按钮不能遮住快乐小法师本体').toBe(false);
+        }
+        await game.screenshot('法师-快乐小法师特殊-手动选择特殊能力', testInfo);
+
+        await game.selectInteractionOptionBy(
+            option => option.value?.kind === 'activate_special'
+                && option.value?.minionUid === 'mages-happy-special-board'
+                && option.value?.baseIndex === 0,
+            '计分前选择快乐小法师特殊能力',
+        );
+        await game.waitForInteraction('munchkin_mages_happy_zapper_discard', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualChoiceVisible(
+            page,
+            handCardSelector('mages-happy-special-cost'),
+            '快乐小法师特殊能力选择弃牌成本',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('法师-快乐小法师特殊-手动选择弃牌成本', testInfo);
+        await page.locator(handCardSelector('mages-happy-special-cost')).first().click({ force: true });
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const events = (state.sys?.eventStream?.entries ?? []).map((entry: EventStreamEntry) => entry.event);
+            return {
+                hasTempPowerEvent: events.some((event: any) =>
+                    event?.type === 'su:temp_power_added'
+                    && event.payload?.minionUid === 'mages-happy-special-board'
+                    && event.payload?.amount === 2,
+                ),
+                hasCostInDiscard: state.core.players?.['0']?.discard?.some((card: any) =>
+                    card.uid === 'mages-happy-special-cost',
+                ) ?? false,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+            };
+        }, { timeout: 15000 }).toEqual({
+            hasTempPowerEvent: true,
+            hasCostInDiscard: true,
+            interactionSourceId: null,
+            responseWindowType: null,
+        });
+        await game.screenshot('法师-快乐小法师特殊-结算后', testInfo);
+    });
+
     test('法师魔杖天才手动选择弃牌成本和额外出牌类型', async ({ page, game }, testInfo) => {
         test.setTimeout(60000);
 
@@ -5731,17 +7590,17 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 mageCard('mages-wand-1', 'munchkin_mages_wand_whiz', 'minion'),
                 mageCard('mages-wand-cost', 'munchkin_mages_speed_reading', 'action'),
             ],
-            bases: [mageBase('base_the_homeworld')],
+            bases: [mageBase('base_the_mothership')],
         }));
 
         await game.playCard('munchkin_mages_wand_whiz', { targetBaseIndex: 0 });
-        await game.waitForNoInteraction(10000);
-        await page.locator('[data-minion-uid="mages-wand-1"]').first().click({ force: true });
         await game.waitForInteraction('munchkin_mages_wand_whiz_discard', 10000);
         await waitForSmashUpFxToSettle(page);
-        await expectManualChoiceVisible(page, handCardSelector('mages-wand-cost'), '魔杖天才选择弃牌成本', { forbidPromptContext: true });
+        const wandCostSelector = handCardSelector('mages-wand-cost');
+        await expectManualChoiceVisible(page, wandCostSelector, '魔杖天才选择弃牌成本', { forbidPromptContext: true });
+        await waitForSmashUpHandCardToSettle(page, wandCostSelector);
         await game.screenshot('法师-魔杖天才-手动选择弃牌成本', testInfo);
-        await page.locator(handCardSelector('mages-wand-cost')).first().click({ force: true });
+        await page.locator(wandCostSelector).first().click({ force: true });
         await game.waitForInteraction('munchkin_mages_wand_whiz_mode', 10000);
         await waitForSmashUpFxToSettle(page);
         await expect(page.getByRole('button', { name: '额外随从' })).toBeVisible({ timeout: 15000 });
@@ -5768,7 +7627,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 mageCard('mages-scroll-cost', 'munchkin_mages_speed_reading', 'action'),
             ],
             deck: [{ uid: 'mages-scroll-draw', defId: 'alien_invader', type: 'minion', owner: '0' }],
-            bases: [mageBase('base_the_homeworld')],
+            bases: [mageBase('base_the_mothership')],
         }));
 
         await game.playCard('munchkin_mages_scroll_shuffler', { targetBaseIndex: 0 });
@@ -5782,7 +7641,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
 
         const state = await game.getState();
         expect(state.core.players['0'].hand.map((entry: any) => entry.uid)).toContain('mages-scroll-draw');
-        expect(state.core.players['0'].discard.map((entry: any) => entry.uid)).toEqual(['mages-scroll-1', 'mages-scroll-cost']);
+        expect(state.core.players['0'].discard.map((entry: any) => entry.uid)).toEqual(['mages-scroll-cost']);
+        expect(state.core.bases[0].minions.map((entry: any) => entry.uid)).toEqual(['mages-scroll-1']);
+        await waitForSmashUpHandCardToSettle(page, handCardSelector('mages-scroll-draw'));
         await game.screenshot('法师-勤读者-抽牌后', testInfo);
     });
 
@@ -5839,7 +7700,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 mageCard('mages-portal-cost', 'munchkin_mages_speed_reading', 'action'),
             ],
             monsterDeck: ['munchkin_monster_bigfoot'],
-            bases: [mageBase('base_mages_tower')],
+            bases: [mageBase('base_the_mothership')],
         }));
 
         await game.playCard('munchkin_mages_portal_to_beyond', { targetBaseIndex: 0 });
@@ -5861,6 +7722,83 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         expect(state.core.bases[0].monsters[0].defId).toBe('munchkin_monster_bigfoot');
         expect(state.core.players['0'].discard.map((entry: any) => entry.uid)).toEqual(['mages-portal-cost']);
         await game.screenshot('法师-通往次元之门-召唤怪物后', testInfo);
+    });
+
+    test('牧师抓鬼从真实法师天赋入口拦截亡灵怪物并保留普通怪物', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinMagesRemainingScene({
+            hand: [
+                mageCard('clerics-whack-portal-undead', 'munchkin_mages_portal_to_beyond', 'action'),
+                mageCard('clerics-whack-cost-undead', 'munchkin_mages_speed_reading', 'action'),
+                mageCard('clerics-whack-portal-living', 'munchkin_mages_portal_to_beyond', 'action'),
+                mageCard('clerics-whack-cost-living', 'munchkin_mages_speed_reading', 'action'),
+            ],
+            monsterDeck: ['munchkin_monster_ghoul', 'munchkin_monster_bigfoot'],
+            actionLimit: 2,
+            nextUid: 5200,
+            bases: [mageBase('base_whack_a_ghoul')],
+        }));
+
+        await game.screenshot('牧师-抓鬼-召唤前怪物牌库与基地', testInfo);
+
+        await game.playCard('munchkin_mages_portal_to_beyond', { targetBaseIndex: 0 });
+        await game.waitForNoInteraction(10000);
+        const undeadPortal = page.locator('[data-ongoing-uid="clerics-whack-portal-undead"]').first();
+        await expect(undeadPortal).toBeVisible({ timeout: 15000 });
+        await undeadPortal.click({ force: true });
+        await game.waitForInteraction('munchkin_mages_portal_to_beyond_discard', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualChoiceVisible(
+            page,
+            handCardSelector('clerics-whack-cost-undead'),
+            '抓鬼召唤亡灵怪物时选择弃牌成本',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-抓鬼-召唤亡灵时手动选择弃牌', testInfo);
+        await page.locator(handCardSelector('clerics-whack-cost-undead')).first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const undeadState = await game.getState();
+        expect(undeadState.core.bases[0].monsters ?? []).toEqual([]);
+        expect(undeadState.core.monsterDeck).toEqual(['munchkin_monster_bigfoot', 'munchkin_monster_ghoul']);
+        expect(undeadState.core.monsterDiscard ?? []).toEqual([]);
+        expect(undeadState.core.players['0'].discard.map((entry: any) => entry.uid)).toContain('clerics-whack-cost-undead');
+        await expect(page.getByTestId('su-base-monster-row-0')).toHaveCount(0);
+        await game.screenshot('牧师-抓鬼-亡灵怪物被放回怪物牌库底', testInfo);
+
+        await game.playCard('munchkin_mages_portal_to_beyond', { targetBaseIndex: 0 });
+        await game.waitForNoInteraction(10000);
+        const livingPortal = page.locator('[data-ongoing-uid="clerics-whack-portal-living"]').first();
+        await expect(livingPortal).toBeVisible({ timeout: 15000 });
+        await livingPortal.click({ force: true });
+        await game.waitForInteraction('munchkin_mages_portal_to_beyond_discard', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualChoiceVisible(
+            page,
+            handCardSelector('clerics-whack-cost-living'),
+            '抓鬼召唤普通怪物时选择弃牌成本',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-抓鬼-召唤普通怪物时手动选择弃牌', testInfo);
+        await page.locator(handCardSelector('clerics-whack-cost-living')).first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const livingState = await game.getState();
+        expect(livingState.core.bases[0].monsters).toEqual([
+            expect.objectContaining({ defId: 'munchkin_monster_bigfoot' }),
+        ]);
+        expect(livingState.core.monsterDeck).toEqual(['munchkin_monster_ghoul']);
+        expect(livingState.core.monsterDiscard ?? []).toEqual([]);
+        await expect(page.getByTestId('su-base-monster-row-0')).toBeVisible();
+        const livingMonsterUid = livingState.core.bases[0].monsters?.[0]?.uid;
+        expect(livingMonsterUid).toBeTruthy();
+        await expect(page.locator(`[data-monster-uid="${livingMonsterUid}"]`)).toBeVisible();
+        await game.screenshot('牧师-抓鬼-普通怪物保留在基地下方', testInfo);
     });
 
     test('法师恢复奥术智慧抽牌直到手上有五张', async ({ page, game }, testInfo) => {
@@ -5896,6 +7834,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             'mages-recover-draw-c',
             'mages-recover-draw-d',
         ]);
+        await waitForSmashUpHandCardToSettle(page, handCardSelector('mages-recover-draw-d'));
         await game.screenshot('法师-恢复奥术智慧-手上五张牌', testInfo);
     });
 
@@ -5910,7 +7849,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 mageCard('mages-evening-cost', 'munchkin_mages_speed_reading', 'action'),
                 mageCard('mages-evening-extra', 'alien_invader', 'minion'),
             ],
-            bases: [mageBase('base_mages_tower')],
+            bases: [mageBase('base_the_mothership')],
         }));
 
         await game.playCard('munchkin_mages_some_enchanted_evening');
@@ -5975,6 +7914,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             'mages-speed-draw-c',
         ]);
         expect(state.core.players['0'].discard.map((entry: any) => entry.uid)).toEqual(['mages-speed-1', 'mages-speed-cost']);
+        await waitForSmashUpHandCardToSettle(page, handCardSelector('mages-speed-draw-c'));
         await game.screenshot('法师-快速阅读-抽三张牌后', testInfo);
     });
 
@@ -11051,5 +12991,442 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         } finally {
             await targetPage.close();
         }
+    });
+
+    test('牧师解除诅咒从真实行动卡入口手动选择场上附着行动', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true, seat1: 'human' }, 20000);
+        await game.setupScene(buildMunchkinClericsRemoveCurseScene());
+
+        await expect(page.locator('[data-card-uid="clerics-remove-curse-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-attached-action-uid="clerics-imprisonment-1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_clerics_remove_curse');
+        await game.waitForInteraction('munchkin_clerics_remove_curse_action', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualChoiceVisible(
+            page,
+            '[data-attached-action-uid="clerics-imprisonment-1"]',
+            '解除诅咒应显示场上附着行动本体供玩家手动选择',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-解除诅咒-手动选择附着行动', testInfo);
+        await page.locator('[data-attached-action-uid="clerics-imprisonment-1"]').first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].minions[0].attachedActions).toEqual([]);
+        expect(state.core.players['0'].discard.map((card: any) => card.uid)).toContain('clerics-imprisonment-1');
+        await game.screenshot('牧师-解除诅咒-附着行动被摧毁后', testInfo);
+    });
+
+    test('牧师红衣主教从真实天赋入口随机回收两张弃牌堆牌', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsCardinalScene());
+
+        const cardinal = page.locator('[data-minion-uid="clerics-cardinal-1"]').first();
+        await expect(cardinal).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-uid="clerics-cardinal-hand-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-红衣主教-天赋触发前', testInfo);
+
+        await cardinal.click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+        const recoveredUids = player0?.hand?.map(card => card.uid).filter(uid => uid.startsWith('clerics-cardinal-discard-')) ?? [];
+        const cardinalState = core.bases[0].minions.find(entry => entry.uid === 'clerics-cardinal-1');
+
+        expect(recoveredUids).toHaveLength(2);
+        expect(player0?.hand?.map(card => card.uid)).toContain('clerics-cardinal-hand-1');
+        expect(player0?.discard?.map(card => card.uid)).toHaveLength(3);
+        expect(player0?.discard?.every(card => card.uid.startsWith('clerics-cardinal-discard-'))).toBe(true);
+        expect(cardinalState?.talentUsed).toBe(true);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        expect(state.sys?.responseWindow?.current ?? null).toBeNull();
+
+        await expect(page.getByTestId('su-minion-used-badge-clerics-cardinal-1')).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-红衣主教-随机回收两张牌后', testInfo);
+    });
+
+    test('牧师光盘从真实手牌入口自动回收两张弃牌堆牌', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsCollectionPlateScene());
+
+        await expect(page.locator('[data-card-uid="clerics-plate-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="clerics-plate-host"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-光盘-打出前弃牌堆与手牌', testInfo);
+
+        await game.playCard('munchkin_clerics_collection_plate');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+        const recoveredUids = player0?.hand?.map(card => card.uid).filter(uid => uid.startsWith('clerics-plate-discard-')) ?? [];
+
+        expect(recoveredUids).toHaveLength(2);
+        expect(player0?.hand?.map(card => card.uid)).not.toContain('clerics-plate-1');
+        expect(player0?.discard?.map(card => card.uid)).toContain('clerics-plate-1');
+        expect(player0?.discard?.map(card => card.uid)).toHaveLength(4);
+        expect(player0?.actionsPlayed).toBe(1);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        expect(state.sys?.responseWindow?.current ?? null).toBeNull();
+        await expect(page.getByTestId('su-hand-area')).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-光盘-自动回收两张牌后无确认交互', testInfo);
+    });
+
+    test('牧师好习惯从真实手牌入口给所有基地随从增加临时力量', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsGoodHabitsScene());
+
+        await expect(page.locator('[data-card-uid="clerics-habits-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="clerics-habits-own"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="clerics-habits-other-base"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-好习惯-打出前两座基地随从', testInfo);
+
+        await game.playCard('munchkin_clerics_good_habits');
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+        const allMinions = core.bases.flatMap(base => base.minions);
+
+        expect(allMinions.map(entry => entry.tempPowerModifier)).toEqual([1, 1, 1]);
+        expect(player0?.actionsPlayed).toBe(1);
+        expect(player0?.discard?.map(card => card.uid)).toEqual(['clerics-habits-1']);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        expect(state.sys?.responseWindow?.current ?? null).toBeNull();
+        await game.screenshot('牧师-好习惯-两座基地所有随从获得临时力量', testInfo);
+    });
+
+    test('牧师加入团队从真实手牌入口先高亮基地再手动选择目标基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsJoinTheClubScene());
+
+        await expect(page.locator('[data-card-uid="clerics-club-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-base-index="0"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-base-index="1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-加入团队-打出前两个基地', testInfo);
+
+        await page.locator('[data-card-uid="clerics-club-1"]').first().click({ force: true });
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-base-index="0"] > div').first()).toHaveClass(/ring-(green|emerald)-400/);
+        await expect(page.locator('[data-base-index="1"] > div').first()).toHaveClass(/ring-(green|emerald)-400/);
+        await game.screenshot('牧师-加入团队-手动选择目标基地', testInfo);
+        await page.locator('[data-base-index="1"]').first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+
+        expect(core.bases[0].minions.map(entry => entry.tempPowerModifier)).toEqual([0]);
+        expect(core.bases[1].minions.map(entry => entry.tempPowerModifier)).toEqual([1]);
+        expect(player0?.actionsPlayed).toBe(1);
+        expect(player0?.discard?.map(card => card.uid)).toEqual(['clerics-club-1']);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        expect(state.sys?.responseWindow?.current ?? null).toBeNull();
+        await game.screenshot('牧师-加入团队-目标基地获得临时力量', testInfo);
+    });
+
+    test('牧师监禁诅咒从真实手牌入口手动选择对手随从并附着', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsCurseScene('munchkin_clerics_curse_of_imprisonment', 'clerics-imprisonment-play-1'));
+
+        await expect(page.locator('[data-card-uid="clerics-imprisonment-play-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="clerics-curse-target"]').first()).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-监禁诅咒-打出前手牌与目标随从', testInfo);
+
+        await page.locator('[data-card-uid="clerics-imprisonment-play-1"]').first().click({ force: true });
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'clerics-curse-target',
+            '监禁诅咒应显示对手随从本体供玩家手动选择',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-监禁诅咒-手动选择对手随从', testInfo);
+        await page.locator('[data-minion-uid="clerics-curse-target"]').first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+        const target = core.bases[0].minions.find(entry => entry.uid === 'clerics-curse-target');
+
+        expect(target?.attachedActions?.map(action => action.defId)).toContain('munchkin_clerics_curse_of_imprisonment');
+        expect(player0?.hand?.map(card => card.uid)).not.toContain('clerics-imprisonment-play-1');
+        expect(player0?.actionsPlayed).toBe(1);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        expect(state.sys?.responseWindow?.current ?? null).toBeNull();
+        await game.screenshot('牧师-监禁诅咒-附着到目标随从后', testInfo);
+    });
+
+    test('牧师无用诅咒从真实手牌入口手动选择对手随从并排除基地力量', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsCurseScene('munchkin_clerics_curse_of_uselessness', 'clerics-uselessness-play-1'));
+
+        await expect(page.locator('[data-card-uid="clerics-uselessness-play-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('su-base-score-0-1')).toHaveText('5', { timeout: 15000 });
+        await game.screenshot('牧师-无用诅咒-打出前基地力量', testInfo);
+
+        await page.locator('[data-card-uid="clerics-uselessness-play-1"]').first().click({ force: true });
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'clerics-curse-target',
+            '无用诅咒应显示对手随从本体供玩家手动选择',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-无用诅咒-手动选择对手随从', testInfo);
+        await page.locator('[data-minion-uid="clerics-curse-target"]').first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        const core = state.core as RocketBootsCoreState;
+        const player0 = core.players?.['0'] as SmashUpPlayerCoreSlice | undefined;
+        const target = core.bases[0].minions.find(entry => entry.uid === 'clerics-curse-target');
+
+        expect(target?.attachedActions?.map(action => action.defId)).toContain('munchkin_clerics_curse_of_uselessness');
+        expect(await page.getByTestId('su-base-score-0-1').textContent()).toBe('0');
+        expect(player0?.hand?.map(card => card.uid)).not.toContain('clerics-uselessness-play-1');
+        expect(player0?.actionsPlayed).toBe(1);
+        expect(state.sys?.interaction?.current ?? null).toBeNull();
+        expect(state.sys?.responseWindow?.current ?? null).toBeNull();
+        await game.screenshot('牧师-无用诅咒-附着后基地力量排除目标随从', testInfo);
+    });
+
+    test('牧师资深修士从计分后真实响应窗口先选随从再选基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsDeepFriarScene());
+
+        await expect(page.locator('[data-minion-uid="clerics-friar-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="clerics-friar-move"]').first()).toBeVisible({ timeout: 15000 });
+        await game.advancePhase();
+        await page.waitForFunction(
+            () => {
+                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
+                return state?.sys?.phase === 'scoreBases'
+                    && state?.sys?.responseWindow?.current?.windowType === 'afterScoring'
+                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
+            },
+            { timeout: 20000, polling: 200 },
+        );
+
+        await game.selectInteractionOptionBy(
+            option => option.value?.kind === 'activate_special'
+                && option.value?.minionUid === 'clerics-friar-1'
+                && option.value?.baseIndex === 0,
+            '计分后选择资深修士特殊能力',
+        );
+        await game.waitForInteraction('munchkin_clerics_deep_friar_minion', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'clerics-friar-move',
+            '资深修士第一步应显示另一个己方随从本体',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-资深修士-手动选择另一个己方随从', testInfo);
+        await clickManualMinionChoice(page, 'clerics-friar-move', '资深修士选择要移动的随从');
+
+        await game.waitForInteraction('munchkin_clerics_deep_friar_base', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.locator('[data-base-index="1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('牧师-资深修士-手动选择另一个基地', testInfo);
+        await game.selectInteractionOptionBy(option => option.value?.baseIndex === 1, '资深修士选择目标基地');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].minions.map((entry: any) => entry.uid)).toEqual(['clerics-friar-1']);
+        expect(state.core.bases[1].minions.map((entry: any) => entry.uid)).toContain('clerics-friar-move');
+        await game.screenshot('牧师-资深修士-随从移动后', testInfo);
+    });
+
+    test('牧师特纳从真实打出入口先选模式再手动选亡灵怪物', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsTurnerScene());
+
+        await expect(page.locator('[data-card-uid="clerics-turner-1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_clerics_turner', { targetBaseIndex: 0 });
+        await game.waitForInteraction('munchkin_clerics_turner_mode', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.getByRole('button', { name: '摧毁这里的亡灵怪物' })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: '将弃牌堆随机随从重洗进牌库' })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('牧师-特纳-手动选择效果模式', testInfo);
+        await page.getByRole('button', { name: '摧毁这里的亡灵怪物' }).click({ force: true });
+
+        await game.waitForInteraction('munchkin_clerics_turner_monster', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualChoiceVisible(
+            page,
+            '[data-monster-uid="clerics-turner-undead"]',
+            '特纳第二步应显示亡灵怪物本体供玩家手动选择',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-特纳-手动选择亡灵怪物', testInfo);
+        await page.locator('[data-monster-uid="clerics-turner-undead"]').first().click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].monsters.map((entry: any) => entry.uid)).toEqual(['clerics-turner-living']);
+        await game.screenshot('牧师-特纳-亡灵怪物被摧毁后', testInfo);
+    });
+
+    test('牧师圣临者从真实打出入口必须手动确认或跳过回收', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsHolyRollerScene());
+
+        await expect(page.locator('[data-card-uid="clerics-holy-roller-1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_clerics_holy_roller', { targetBaseIndex: 0 });
+        await game.waitForInteraction('munchkin_clerics_holy_roller_mode', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.getByRole('button', { name: '重洗一张' })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: '跳过' })).toBeVisible({ timeout: 15000 });
+        await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
+        await game.screenshot('牧师-圣临者-手动选择回收或跳过', testInfo);
+        await page.getByRole('button', { name: '跳过' }).click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.players['0'].discard.map((entry: any) => entry.uid)).toEqual(['clerics-holy-discard-1']);
+        expect(state.core.players['0'].deck.map((entry: any) => entry.uid)).toEqual(['clerics-holy-deck-1']);
+        expect(state.core.bases[0].minions.map((entry: any) => entry.uid)).toEqual(['clerics-holy-roller-1']);
+        await game.screenshot('牧师-圣临者-跳过后弃牌堆与牌库不变', testInfo);
+    });
+
+    test('牧师垃圾处理在计分后从真实持续行动入口手动移动另一个基地的随从', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsBinAndGoneScene());
+        await expect(page.locator('[data-ongoing-uid="clerics-bin-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="clerics-bin-move"]').first()).toBeVisible({ timeout: 15000 });
+        await game.advancePhase();
+        await game.waitForInteraction('munchkin_clerics_bin_and_gone_minion', 20000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(
+            page,
+            'clerics-bin-move',
+            '垃圾处理应显示计分基地上的己方随从本体供手动选择',
+            { forbidPromptContext: true },
+        );
+        await game.screenshot('牧师-垃圾处理-计分后手动选择随从', testInfo);
+        await clickManualMinionChoice(page, 'clerics-bin-move', '垃圾处理选择移动随从');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.bases[0].minions.map((entry: any) => entry.uid)).toContain('clerics-bin-move');
+        expect(state.core.bases[1].minions.map((entry: any) => entry.uid)).not.toContain('clerics-bin-move');
+        await game.screenshot('牧师-垃圾处理-随从移动到持续行动基地', testInfo);
+    });
+
+    test('牧师圣洁酒店在计分后逐张手动选择随从顺序并回各自牌库顶', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsHotelScene());
+        await expect(page.locator('[data-minion-uid="clerics-hotel-own"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="clerics-hotel-other"]').first()).toBeVisible({ timeout: 15000 });
+        await game.advancePhase();
+        await game.waitForInteraction('munchkin_clerics_hotel_of_holiness_minion', 20000);
+        await waitForSmashUpFxToSettle(page);
+        await expectManualMinionChoiceVisible(page, 'clerics-hotel-own', '圣洁酒店应显示己方随从本体', { forbidPromptContext: true });
+        await expectManualMinionChoiceVisible(page, 'clerics-hotel-other', '圣洁酒店应显示其他玩家随从本体', { forbidPromptContext: true });
+        await game.screenshot('牧师-圣洁酒店-手动选择第一张随从', testInfo);
+        await clickManualMinionChoice(page, 'clerics-hotel-other', '圣洁酒店先选择其他玩家随从');
+        await game.waitForInteraction('munchkin_clerics_hotel_of_holiness_minion', 10000);
+        await expectManualMinionChoiceVisible(page, 'clerics-hotel-own', '圣洁酒店第二步应保留未选己方随从', { forbidPromptContext: true });
+        await game.screenshot('牧师-圣洁酒店-手动选择第二张随从', testInfo);
+        await clickManualMinionChoice(page, 'clerics-hotel-own', '圣洁酒店再选择己方随从');
+        await game.waitForNoInteraction(15000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.players['1'].deck[0].uid).toBe('clerics-hotel-other');
+        expect(state.core.players['0'].deck[0].uid).toBe('clerics-hotel-own');
+        expect(state.core.bases[0].minions).toEqual([]);
+        await game.screenshot('牧师-圣洁酒店-按选择顺序回各自牌库顶', testInfo);
+    });
+
+    test('牧师回忆祷词从其他玩家弃牌堆手动选择一张行动作为额外行动', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene(buildMunchkinClericsWordRecallScene());
+        await expect(page.locator('[data-card-uid="clerics-recall-1"]').first()).toBeVisible({ timeout: 15000 });
+        await game.playCard('munchkin_clerics_word_of_recall');
+        await game.waitForInteraction('munchkin_clerics_word_of_recall_action', 10000);
+        await waitForSmashUpFxToSettle(page);
+        await expect(page.getByTestId('prompt-card-grid')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-card-def-id="munchkin_clerics_collection_plate"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: '不打出' })).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-回忆祷词-手动选择其他玩家行动或不打出', testInfo);
+        await game.selectInteractionOptionBy(
+            option => option.value?.cardUid === 'clerics-recall-target',
+            '回忆祷词选择其他玩家弃牌堆行动',
+        );
+        await game.waitForInteraction('smashup_immediate_extra_action', 10000);
+        await expect(page.locator('[data-card-uid="clerics-recall-target"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: '放弃这次额外战术', exact: true })).toBeVisible({ timeout: 15000 });
+        await game.screenshot('牧师-回忆祷词-手动确认额外行动或放弃', testInfo);
+        await page.getByRole('button', { name: '放弃这次额外战术', exact: true }).click({ force: true });
+        await game.waitForNoInteraction(10000);
+        await waitForSmashUpFxToSettle(page);
+
+        const state = await game.getState();
+        expect(state.core.players['0'].hand.map((entry: any) => entry.uid)).toContain('clerics-recall-target');
+        expect(state.core.players['1'].discard.map((entry: any) => entry.uid)).not.toContain('clerics-recall-target');
+        expect(state.core.players['0'].actionLimit).toBe(1);
+        await game.screenshot('牧师-回忆祷词-行动转入手牌并获得额外行动', testInfo);
     });
 });

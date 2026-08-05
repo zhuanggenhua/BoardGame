@@ -1,3 +1,16 @@
+## Current Session: 2026-08-05 DiceThrone 炽天使规则缺口收口
+
+- 已重新锁定当前目标：继续已批准的炽天使派系接入，只处理官方卡槽图直接命中的规则缺口；旧的召唤师战争、山屋惊魂等计划继续作为历史背景，不接管本轮。
+- 上一轮已修复凯旋归来 II 8 点伤害、福音临世 2 个飞行、圣刃 III 四同眩光；本轮又修复圣击圣洁吊坠眩光、神圣惩戒 II 2 点不可防御伤害、神圣裁决 2 个飞行选择、圣刃 II / 小天使不发净化。
+- 已同步中英文能力文案、三份炽天使规则文档和 DiceThrone evidence；仍保留未覆盖规则组合的 scoped-debt，不外推为全部规则完成。
+- 定向回归：`tianshi-behavior.test.ts`、`tianshi-rule-matrix.test.ts`、`tianshi-intake.test.ts` 共 3 文件 / 52 条断言通过。
+- 共享合同回归：`customaction-category-consistency.test.ts`、`character-catalog-i18n.test.ts` 共 2 文件 / 13 条断言通过；仅保留与本轮无关的工匠既有建议 warning。
+- `npm run typecheck`、炽天使改动文件定向 ESLint、OpenSpec strict validate、炽天使 evidence 定向 selfcheck、全仓 `npm run i18n:check` 和相关 `git diff --check` 均通过。
+- 为收口全仓 i18n 门禁，补齐 SmashUp 牧师、木精灵和法师现有按钮/提示的本地化键与木精灵共享选择提示参数；这只修正本地化合同，不改变玩法结算或选择顺序。
+- 神圣裁决与圣刃 II / 小天使真实入口各 1/1 通过；预算释放后已回到同一官方入口重跑神圣裁决，三张新原始截图逐张 AI 审计为 PASS。
+
+---
+
 ## Current Session: 2026-08-04 召唤师战争暗影精灵派系接入
 
 - 已重新锁定当前目标：暗影精灵派系接入；旧的山屋惊魂进度仅保留在本文件下方，不能接管本轮。
@@ -8,6 +21,8 @@
 - 暗影精灵定向测试当前为 `3 files / 29 passed`；派系/资源合同测试为 `23 passed`。
 - 修正 `shadow-` 卡牌 ID 缺少 `faction` 时的图集回退映射；合同测试锁定中文名解析、30 张牌组、0-10 槽位、空白槽、六个正式媒体文件与两个 manifest。
 - 已按暗影精灵单派系前缀预检、上传 3 个 WebP，并完成远端 `HTTP 200`、长度与下载 SHA-256 回查；三项均与本地/manifest 一致。
+- 当前真实入口复验：同一 `test:e2e:ci:file` 入口最终完成 `11 passed`，总耗时约 `10.9m`；此前超时后的暗影精灵 runtime 已由项目安全清理入口回收，等待共享预算释放期间未抢占或终止其它 E2E。
+- 暗影精灵 evidence 的整文件 E2E / 批次状态已回写为 `passed`；保留 36 张同入口截图作为逐图 UI 审计证据，本轮回写后已重跑 `npm run audit:evidence:selfcheck -- evidence/summonerwars/shadow-faction-intake.md` 并通过。
 - 真实入口 E2E 已扩展为 `11 passed`、36 张原始截图，覆盖全部 13 个能力和 4 张事件卡的真实选择/结算路径；新增截图逐图 AI UI 审计 `PASS`（综合 `93/100`），不再保留暗影精灵能力级 `scoped-debt`。
 - `openspec validate add-summonerwars-shadow-faction --strict --no-interactive` 通过，输出 `Change 'add-summonerwars-shadow-faction' is valid`；`task-completion-guard` 返回 `COMPLETE`。
 

@@ -209,6 +209,15 @@ export function getMunchkinSpecialCardDescriptor(defId: string): MunchkinSpecial
     return MUNCHKIN_SPECIAL_CARD_BY_ID.get(defId);
 }
 
+export function isMunchkinUndeadMonster(defId: string): boolean {
+    return new Set([
+        'munchkin_monster_undead_horseman',
+        'munchkin_monster_tutankhamen',
+        'munchkin_monster_ghoul',
+        'munchkin_monster_fowl_fiend',
+    ]).has(defId);
+}
+
 const DWARVES = SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES;
 const DWARVES_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_DWARVES_CARDS;
 const DWARVES_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_DWARVES_BASES;
@@ -426,21 +435,44 @@ const CLERICS_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_CLERICS_CARDS;
 const CLERICS_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_CLERICS_BASES;
 
 export const MUNCHKIN_CLERICS_MINIONS: MinionCardDef[] = [
-    minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_cardinal', '红衣主教', 'Cardinal', 5, 1, 0]),
-    minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_deep_friar', '资深修士', 'Deep Friar', 4, 2, 1]),
-    minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_turner', '特纳', 'Turner', 3, 3, 3]),
-    minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_holy_roller', '圣临者', 'Holy Roller', 2, 4, 6]),
+    minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_cardinal', '红衣主教', 'Cardinal', 5, 1, 0], ['talent']),
+    {
+        ...minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_deep_friar', '资深修士', 'Deep Friar', 4, 2, 1], ['special']),
+        activatableAbilities: [{ kind: 'special', zone: 'board', window: 'afterScoring', sourceScope: 'scoringBase' }],
+    },
+    minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_turner', '特纳', 'Turner', 3, 3, 3], ['onPlay']),
+    minion(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_holy_roller', '圣临者', 'Holy Roller', 2, 4, 6], ['onPlay']),
 ];
 
 export const MUNCHKIN_CLERICS_ACTIONS: ActionCardDef[] = [
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_bin_and_gone', '垃圾处理', 'Bin and Gone', 1, 10]),
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_collection_plate', '光盘', 'Collection Plate', 2, 11]),
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_curse_of_imprisonment', '监禁诅咒', 'Curse of Imprisonment', 1, 13]),
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_curse_of_uselessness', '无用诅咒', 'Curse of Uselessness', 1, 14]),
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_good_habits', '好习惯', 'Good Habits', 1, 15]),
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_join_the_club', '加入团队', 'Join the Club', 2, 16]),
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_remove_curse', '解除诅咒', 'Remove Curse', 1, 18]),
-    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_word_of_recall', '回忆祷词', 'Word of Recall', 1, 19]),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_bin_and_gone', '垃圾处理', 'Bin and Gone', 1, 10], {
+        subtype: 'ongoing',
+        abilityTags: ['ongoing'],
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+    }),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_collection_plate', '光盘', 'Collection Plate', 2, 11], ['onPlay']),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_curse_of_imprisonment', '监禁诅咒', 'Curse of Imprisonment', 1, 13], {
+        subtype: 'ongoing',
+        abilityTags: ['ongoing'],
+        ongoingTarget: 'minion',
+        playNeedsMinion: true,
+        playTargetMinionController: 'any',
+    }),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_curse_of_uselessness', '无用诅咒', 'Curse of Uselessness', 1, 14], {
+        subtype: 'ongoing',
+        abilityTags: ['ongoing'],
+        ongoingTarget: 'minion',
+        playNeedsMinion: true,
+        playTargetMinionController: 'any',
+    }),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_good_habits', '好习惯', 'Good Habits', 1, 15], ['onPlay']),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_join_the_club', '加入团队', 'Join the Club', 2, 16], {
+        abilityTags: ['onPlay'],
+        playNeedsBase: true,
+    }),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_remove_curse', '解除诅咒', 'Remove Curse', 1, 18], ['onPlay']),
+    action(CLERICS, CLERICS_CARD_ATLAS, ['munchkin_clerics_word_of_recall', '回忆祷词', 'Word of Recall', 1, 19], ['onPlay']),
 ];
 
 export const MUNCHKIN_CLERICS_CARDS: CardDef[] = [
@@ -458,21 +490,47 @@ const ORCS_CARD_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_ORCS_CARDS;
 const ORCS_BASE_ATLAS = SMASHUP_ATLAS_IDS.MUNCHKIN_ORCS_BASES;
 
 export const MUNCHKIN_ORCS_MINIONS: MinionCardDef[] = [
-    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_sword_lord', '剑王', 'Sword Lord', 5, 1, 0]),
-    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_topper_chopper', '粉碎者', 'Topper Chopper', 5, 2, 1]),
-    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_hammer_slammer', '重击者', 'Hammer Slammer', 3, 3, 3]),
-    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_dork_orc', '呆瓜兽人', 'Dork Orc', 2, 4, 6]),
+    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_sword_lord', '剑王', 'Sword Lord', 5, 1, 0], ['ongoing']),
+    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_topper_chopper', '粉碎者', 'Topper Chopper', 5, 2, 1], ['talent']),
+    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_hammer_slammer', '重击者', 'Hammer Slammer', 3, 3, 3], ['onPlay']),
+    minion(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_dork_orc', '呆瓜兽人', 'Dork Orc', 2, 4, 6], ['ongoing']),
 ];
 
 export const MUNCHKIN_ORCS_ACTIONS: ActionCardDef[] = [
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_and_stay_down', '躺下！', 'And Stay Down!', 1, 10]),
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_angry_pillagers', '愤怒的掠夺者', 'Angry Pillagers', 2, 11]),
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_crush', '挤碎', 'Crush', 1, 13]),
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_death_breath', '死亡之息', 'Death Breath', 1, 14]),
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_dogpile', '狗堆', 'Dogpile', 2, 15]),
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_gimme', '给我！', 'Gimme!', 1, 17]),
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_stalling', '洗手间', 'Stalling', 1, 18]),
-    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_too_tough', '太难了', 'Too Tough', 1, 19]),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_and_stay_down', '躺下！', 'And Stay Down!', 1, 10], {
+        subtype: 'special',
+        abilityTags: ['special'],
+        specialTiming: 'beforeScoring',
+        specialNeedsBase: true,
+    }),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_angry_pillagers', '愤怒的掠夺者', 'Angry Pillagers', 2, 11], {
+        subtype: 'special',
+        abilityTags: ['special'],
+        specialTiming: 'beforeScoring',
+        specialNeedsBase: true,
+    }),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_crush', '挤碎', 'Crush', 1, 13], ['onPlay']),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_death_breath', '死亡之息', 'Death Breath', 1, 14], ['onPlay']),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_dogpile', '狗堆', 'Dogpile', 2, 15], {
+        subtype: 'standard',
+        abilityTags: ['onPlay', 'special'],
+        responseWindowTiming: 'beforeScoring',
+        responseWindowNeedsBase: true,
+    }),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_gimme', '给我！', 'Gimme!', 1, 17], ['onPlay']),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_stalling', '洗手间', 'Stalling', 1, 18], {
+        subtype: 'ongoing',
+        abilityTags: ['ongoing'],
+        ongoingTarget: 'base',
+        playNeedsBase: true,
+    }),
+    action(ORCS, ORCS_CARD_ATLAS, ['munchkin_orcs_too_tough', '太难了', 'Too Tough', 1, 19], {
+        subtype: 'ongoing',
+        abilityTags: ['ongoing'],
+        ongoingTarget: 'minion',
+        playNeedsMinion: true,
+        playTargetMinionController: 'any',
+    }),
 ];
 
 export const MUNCHKIN_ORCS_CARDS: CardDef[] = [

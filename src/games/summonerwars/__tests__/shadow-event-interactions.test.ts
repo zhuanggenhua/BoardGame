@@ -101,6 +101,16 @@ function run(
   );
 }
 
+function cancelPrompt(state: MatchState<SummonerWarsCore>, playerId: '0' | '1' = '0') {
+  const interactionId = state.sys.interaction.current?.id;
+  if (!interactionId) throw new Error('测试夹具缺少待取消交互');
+  return run(state, {
+    type: INTERACTION_COMMANDS.CANCEL,
+    playerId,
+    payload: { interactionId },
+  });
+}
+
 function playLightningStep(state: MatchState<SummonerWarsCore>) {
   return run(state, {
     type: SW_COMMANDS.PLAY_EVENT,
@@ -260,12 +270,21 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       payload: { from: fixture.source.position, to: { row: 4, col: 3 } },
     });
     expect(moved.success).toBe(true);
-    expect(getPromptSwType(moved.state)).toBe('shadow_judgment');
-    expect(getPromptOptionIds(moved.state)).toContain(`target:${target.instanceId}:amount:2`);
+    expect(getPromptSwType(moved.state)).toBe('shadow_judgment_select_target');
+    expect(getPromptOptionIds(moved.state)).toContain(`target:${target.instanceId}`);
+    expect(getPromptOptionIds(moved.state)).not.toContain('skip');
+
+    const selectedTarget = run(
+      moved.state,
+      createPromptResponseCommand(moved.state, '0', `target:${target.instanceId}`),
+    );
+    expect(selectedTarget.success).toBe(true);
+    expect(getPromptSwType(selectedTarget.state)).toBe('shadow_judgment_select_amount');
+    expect(getPromptOptionIds(selectedTarget.state)).toEqual(['amount:1', 'amount:2']);
 
     const resolved = run(
-      moved.state,
-      createPromptResponseCommand(moved.state, '0', `target:${target.instanceId}:amount:2`),
+      selectedTarget.state,
+      createPromptResponseCommand(selectedTarget.state, '0', 'amount:2'),
     );
     expect(resolved.success).toBe(true);
     expect(resolved.state.core.board[4][4].unit?.damage).toBe(2);
@@ -298,21 +317,34 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       playerId: '0',
       payload: { from: fixture.source.position, to: { row: 4, col: 3 } },
     });
-    const targetOptionId = `unit:${friendlySoldier.instanceId}:gate:4,4:pos:3,4`;
-    expect(getPromptSwType(moved.state)).toBe('shadow_tear_the_veil');
-    expect(getPromptOptionIds(moved.state)).toContain(targetOptionId);
+    const targetUnitOptionId = `unit:${friendlySoldier.instanceId}`;
+    expect(getPromptSwType(moved.state)).toBe('shadow_tear_the_veil_select_unit');
+    expect(getPromptOptionIds(moved.state)).toContain(targetUnitOptionId);
+    expect(getPromptOptionIds(moved.state)).not.toContain('skip');
 
-    const skipped = run(
-      moved.state,
-      createPromptResponseCommand(moved.state, '0', 'skip'),
-    );
+    const skipped = cancelPrompt(moved.state);
     expect(skipped.success).toBe(true);
     expect(skipped.state.core.board[4][1].unit?.instanceId).toBe(friendlySoldier.instanceId);
     expect(skipped.state.core.board[3][4].unit).toBeUndefined();
 
-    const resolved = run(
+    const selectedUnit = run(
       moved.state,
-      createPromptResponseCommand(moved.state, '0', targetOptionId),
+      createPromptResponseCommand(moved.state, '0', targetUnitOptionId),
+    );
+    expect(selectedUnit.success).toBe(true);
+    expect(getPromptSwType(selectedUnit.state)).toBe('shadow_tear_the_veil_select_gate');
+    expect(getPromptOptionIds(selectedUnit.state)).toEqual(['gate:4,4']);
+    const selectedGate = run(
+      selectedUnit.state,
+      createPromptResponseCommand(selectedUnit.state, '0', 'gate:4,4'),
+    );
+    expect(selectedGate.success).toBe(true);
+    expect(getPromptSwType(selectedGate.state)).toBe('shadow_tear_the_veil_select_position');
+    expect(getPromptOptionIds(selectedGate.state)).toContain('pos:3,4');
+    expect(getPromptOptionIds(selectedGate.state)).not.toContain('skip');
+    const resolved = run(
+      selectedGate.state,
+      createPromptResponseCommand(selectedGate.state, '0', 'pos:3,4'),
     );
     expect(resolved.success).toBe(true);
     expect(resolved.state.core.board[4][1].unit).toBeUndefined();
@@ -352,13 +384,10 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       payload: { attacker: source.position, target: { row: 4, col: 3 } },
     });
     expect(attacked.success).toBe(true);
-    expect(getPromptSwType(attacked.state)).toBe('shadow_feint');
-    expect(getPromptOptionIds(attacked.state)).toContain('skip');
+    expect(getPromptSwType(attacked.state)).toBe('shadow_feint_select_position');
+    expect(getPromptOptionIds(attacked.state)).not.toContain('skip');
 
-    const skipped = run(
-      attacked.state,
-      createPromptResponseCommand(attacked.state, '0', 'skip'),
-    );
+    const skipped = cancelPrompt(attacked.state);
     expect(skipped.success).toBe(true);
     expect(skipped.state.core.board[4][2].unit?.instanceId).toBe(source.instanceId);
   });
@@ -394,21 +423,27 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       payload: { cardId: knight.id, position: { row: 4, col: 3 } },
     });
     expect(summoned.success).toBe(true);
-    expect(getPromptSwType(summoned.state)).toBe('shadow_shadow_summon');
-    const targetOptionId = `target:${target.instanceId}:pos:4,4`;
+    expect(getPromptSwType(summoned.state)).toBe('shadow_shadow_summon_select_target');
+    const targetOptionId = `unit:${target.instanceId}`;
     expect(getPromptOptionIds(summoned.state)).toContain(targetOptionId);
+    expect(getPromptOptionIds(summoned.state)).not.toContain('skip');
 
-    const skipped = run(
-      summoned.state,
-      createPromptResponseCommand(summoned.state, '0', 'skip'),
-    );
+    const skipped = cancelPrompt(summoned.state);
     expect(skipped.success).toBe(true);
     expect(skipped.state.core.board[4][3].unit?.cardId).toBe(knight.id);
     expect(skipped.state.core.board[3][4].unit?.damage).toBe(0);
 
-    const resolved = run(
+    const selectedTarget = run(
       summoned.state,
       createPromptResponseCommand(summoned.state, '0', targetOptionId),
+    );
+    expect(selectedTarget.success).toBe(true);
+    expect(getPromptSwType(selectedTarget.state)).toBe('shadow_shadow_summon_select_position');
+    expect(getPromptOptionIds(selectedTarget.state)).toContain('pos:4,4');
+    expect(getPromptOptionIds(selectedTarget.state)).not.toContain('skip');
+    const resolved = run(
+      selectedTarget.state,
+      createPromptResponseCommand(selectedTarget.state, '0', 'pos:4,4'),
     );
     expect(resolved.success).toBe(true);
     expect(resolved.state.core.board[4][3].unit).toBeUndefined();
@@ -443,13 +478,10 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       payload: { cardId: rover.id, position: { row: 4, col: 3 } },
     });
     expect(summoned.success).toBe(true);
-    expect(getPromptSwType(summoned.state)).toBe('shadow_sudden_assault');
+    expect(getPromptSwType(summoned.state)).toBe('shadow_sudden_assault_select_position');
     expect(getPromptOptionIds(summoned.state)).toContain('pos:4,4');
 
-    const skipped = run(
-      summoned.state,
-      createPromptResponseCommand(summoned.state, '0', 'skip'),
-    );
+    const skipped = cancelPrompt(summoned.state);
     expect(skipped.success).toBe(true);
     expect(skipped.state.core.board[4][3].unit?.cardId).toBe(rover.id);
     expect(skipped.state.core.board[4][4].unit).toBeUndefined();
@@ -472,10 +504,7 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       playerId: '0',
       payload: { from: fixture.source.position, to: { row: 4, col: 3 } },
     });
-    const skipped = run(
-      moved.state,
-      createPromptResponseCommand(moved.state, '0', 'skip'),
-    );
+    const skipped = cancelPrompt(moved.state);
     expect(skipped.success).toBe(true);
     expect(skipped.state.core.board[4][4].unit?.damage).toBe(0);
     expect(skipped.state.core.board[4][3].unit?.boosts).toBe(2);
@@ -490,12 +519,12 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       playerId: '0',
       payload: { from: fixture.source.position, to: { row: 4, col: 3 } },
     });
-    expect(getPromptSwType(moved.state)).toBe('shadow_forbidden_knowledge');
-    expect(getPromptOptionIds(moved.state)).toEqual(expect.arrayContaining(['self', 'skip']));
+    expect(getPromptSwType(moved.state)).toBe('shadow_forbidden_knowledge_select_target');
+    expect(getPromptOptionIds(moved.state)).toEqual(['target:4,3']);
 
     const resolved = run(
       moved.state,
-      createPromptResponseCommand(moved.state, '0', 'self'),
+      createPromptResponseCommand(moved.state, '0', 'target:4,3'),
     );
     expect(resolved.success).toBe(true);
     expect(resolved.state.core.board[4][3].unit?.damage).toBe(1);
@@ -507,10 +536,7 @@ describe('暗影精灵能力：移动后与主动交互', () => {
       playerId: '0',
       payload: { from: skipFixture.source.position, to: { row: 4, col: 3 } },
     });
-    const skipped = run(
-      skipMoved.state,
-      createPromptResponseCommand(skipMoved.state, '0', 'skip'),
-    );
+    const skipped = cancelPrompt(skipMoved.state);
     expect(skipped.success).toBe(true);
     expect(skipped.state.core.board[4][3].unit?.damage).toBe(0);
     expect(skipped.state.core.players['0'].hand.length).toBe(skipFixture.state.core.players['0'].hand.length);

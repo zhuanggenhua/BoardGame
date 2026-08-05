@@ -71,7 +71,7 @@
 | `munchkin_thieves` 盗贼：12 唯一卡 / 20 实体 + 2 基地 | `passed` | `passed` | `in_progress: 盗贼大师、猫咪窃贼、扒手、顺手拿走已过对象级 L2/L3；猫咪窃贼已补 L4 分支观察；其余对象未实现` | `in_progress: 第一批 4 张已过对象级图面审计；整派系未完成` | `in_progress: 第一批 4 张真实入口已过；剩余对象待补` | `in_progress` |
 | `munchkin_mages` 法师：12 唯一卡 / 20 实体 + 2 基地 | `passed` | `passed` | `blocked: 行动牌和随从能力未建模` | `blocked` | `pending` | `in_progress` |
 | `munchkin_elves` 木精灵：12 唯一卡 / 20 实体 + 2 基地 | `passed` | `passed` | `blocked: 行动牌和随从能力未建模` | `blocked` | `pending` | `in_progress` |
-| `munchkin_clerics` 牧师：12 唯一卡 / 20 实体 + 2 基地 | `passed` | `passed` | `blocked: 行动牌和随从能力未建模` | `blocked` | `pending` | `in_progress` |
+| `munchkin_clerics` 牧师：12 唯一卡 / 20 实体 + 2 基地 | `passed` | `passed` | `passed: 12 张卡牌 + 2 个基地均有对象级 L2；9 个玩家决策交互均明确关闭单候选自动结算` | `representative_only: 解除诅咒桌面选择态/结算态逐图 PASS / 92；其余对象尚未逐图审计` | `representative_only: 解除诅咒真实入口 1 条 E2E 通过` | `in_progress` |
 | `munchkin_orcs` 兽人：12 唯一卡 / 20 实体 + 2 基地 | `passed` | `passed` | `blocked: 行动牌和随从能力未建模` | `blocked` | `pending` | `in_progress` |
 | `munchkin_warriors` 勇士：12 唯一卡 / 20 实体 + 2 基地 | `passed` | `passed` | `blocked: 行动牌和随从能力未建模` | `blocked` | `pending` | `in_progress` |
 | `munchkin_treasure_deck` 宝藏公共牌堆：22 张 | `passed` | `passed` | `in_progress: 击败怪物奖励进入玩家手牌已有 reducer/命令 L2 + 真实点击 L3；宝藏混合牌种、宝藏仆从普通打出、宝藏附着行动基础打出已有 L2；半身人雇佣兵、愚蠢勇气药水、5 张宝藏持续力量牌、怯懦药水失去能力、摆动的盾牌防摧毁、时间错乱的喷气背包回手牌触发、火箭靴附着行动天赋移动宿主、魔法导弹附着行动天赋回公共宝藏牌库底并摧毁低力量仆从、许愿指环获得 1VP 并回公共宝藏牌库底、探宝棒抽两张宝藏并重洗公共宝藏牌库、十字弓选择基地和派系批量 +2、半身人雇佣兵手牌打出后开放第二个随从额度并允许第二张宝藏随从继续打出、一袋铁蒺藜对方低力触发并摧毁自身和目标、对方高力/己方低力不触发、地牢规则书普通打出和计分前打出均可摧毁场上行动、口臭药水普通打出和计分前打出均可让被选玩家移动自己的仆从、直线跑路药水计分后展示待分发宝藏并可在计分后响应窗拿走其中 1 张、麻痹药水计分前取消正在计分基地上所有牌和仆从能力直到回合结束、复制药水让宿主使用另一个仆从天赋已有 L2；火箭靴、复制药水、魔法导弹、地牢规则书、口臭药水已有真实入口 L3，直线跑路药水已有真实计分后响应入口 L3/L4，麻痹药水已有真实计分前响应入口 L3/L4；许愿指环、探宝棒和十字弓真实入口使用链已补 L3；一袋铁蒺藜、愚蠢勇气药水、矮人雇佣兵、半身人雇佣兵、尖刺靴、血腥肢解电锯、大量宝藏、诱惑护膝、怯懦药水和摆动的盾牌真实入口使用链已补 L3；仍不升级为全部宝藏真实入口完成口径，因逐卡完整流程矩阵、可选/跳过和计分前后组合尚未审完；时间错乱的喷气背包真实队列 L4 已补代表链` | `blocked` | `representative_only: 小牌堆数量可见；真实点击后数量从 x22 到 x19 已通过 E2E；火箭靴附着行动卡本体点击与移动宿主、复制药水附着行动卡本体点击、魔法导弹附着行动卡本体点击并摧毁同基地低力仆从、地牢规则书手牌打出摧毁场上行动、口臭药水手牌打出后点击被选玩家仆从移动、直线跑路药水计分后响应窗选择已展示宝藏进手牌、麻痹药水计分前响应窗打出并压制当前计分基地能力已通过 E2E；时间错乱的喷气背包真实计分清场队列回手牌已通过 E2E；许愿指环、探宝棒和十字弓已补真实入口 E2E；一袋铁蒺藜、愚蠢勇气药水、矮人雇佣兵、半身人雇佣兵、尖刺靴、血腥肢解电锯、大量宝藏、诱惑护膝、怯懦药水和摆动的盾牌已补真实入口 E2E；仍不升级为全部宝藏真实入口完成口径，因逐卡完整流程矩阵、可选/跳过和计分前后组合尚未审完` | `in_progress` |
@@ -158,7 +158,7 @@
 | 盗贼 | 盗贼大师、销赃犯、猫咪窃贼、扒手、背刺、转移注意力、打劫、药水腰带、秘密藏匿处、走私、剥光、顺手拿走；基地：金库、盗贼公会 | `locked_rules / positive_paths_passed / mugging_visual_fixed / manual_choice_reaudit_pending`：2026-08-02 09:04 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-02 22:59 已补盗贼大师、猫咪窃贼、扒手、顺手拿走对象级 L2；2026-08-02 23:40 已补这 4 张真实入口正向链；2026-08-03 已补销赃犯、背刺、药水腰带、走私正向链和图面审计；2026-08-03 已补转移注意力、打劫、秘密藏匿处、剥光、金库、盗贼公会正向链与图面审计；2026-08-03 规范回代后发现旧审计未把“单候选也必须手选、不得隐式代选”作为硬门禁逐项核销；2026-08-03 22:33 已重拍打劫 167/168，修复行动卡特写遮挡目标候选的问题 | L0/L1 静态定义和双语 locale 已接；盗贼 12 张牌 + 2 个基地均已有 handler、L2 测试和真实入口正向 E2E；打劫单链视觉证据已修复，但对象级 L3/L4 批次收口仍保持降级：必须重新逐交互审计 `autoResolveIfSingle` / 等价隐式代选默认，证明每个对象 / 目标 / 支付物 / 顺序 / 数量 / 模式选择即使单候选也真实停住并由玩家手动点选 | 下一步不是转入其它派系，而是先按单候选手选门禁重审盗贼和同批 Munchkin 新交互；重审通过后才允许恢复盗贼对象级收口口径 |
 | 法师 | 爆破大师、快乐小法师、魔杖天才、勤读者、魅力、大上一倍、大召唤、通往次元之门、恢复奥术智慧、神奇的夜晚、快速阅读、快速攻击！；基地：次元之门、法师之塔 | `locked_rules / implementation_blocked`：2026-08-02 09:14 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方法师矩阵实现弃牌成本、摧毁低力、控制怪物、打怪物、抽牌直到 5 张、额外随从和基地每回合一次链 |
 | 木精灵 | 精灵斗士、优雅贵族、花之子、精灵帮助大师、在你之后、舞动之根、援手、力量训练、逃跑吧！、赶紧逃跑吧！、贸易、旅行精灵；基地：援助山谷、树屋 | `locked_rules / representative_paths_passed / scoped_debt`：2026-08-02 09:19 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-04 已完成花之子、力量训练、赶紧逃跑吧、树屋四条代表链的真实入口 E2E 与逐图审计 | L0/L1 静态定义和双语 locale 已接；上述四条链已覆盖跨玩家手动选择、随从本体选择、多选/空选、目标玩家手动抽牌或跳过；其余木精灵卡牌与援助山谷仍未逐卡完成 L2/L3/L4 | 继续按木精灵对象矩阵补剩余卡牌与基地链；不得把四条代表链升级为木精灵整派系或 Munchkin 新派系完成 |
-| 牧师 | 红衣主教、资深修士、特纳、圣临者、垃圾处理、光盘、监禁诅咒、无用诅咒、好习惯、加入团队、解除诅咒、回忆祷词；基地：圣洁酒店、抓鬼 | `locked_rules / implementation_blocked`：2026-08-02 09:26 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方牧师矩阵实现弃牌堆随机回收、计分后替代弃牌、亡灵怪物处理、能力压制、力量不计入基地和基地清场回牌库顶链 |
+| 牧师 | 红衣主教、资深修士、特纳、圣临者、垃圾处理、光盘、监禁诅咒、无用诅咒、好习惯、加入团队、解除诅咒、回忆祷词；基地：圣洁酒店、抓鬼 | `locked_rules / object_l2_passed / representative_l3_l4_passed / scoped_debt`：2026-08-02 09:26 已按完整单卡和基地图锁规则原文与 C 子句；2026-08-04 已完成 12 张卡牌 + 2 个基地对象级 L2，并补解除诅咒真实入口代表链 | L0/L1 静态定义、双语 locale、能力标签、handler 和对象级 L2 已接；桌面端解除诅咒选择态/结算态 L3/L4 已通过，牧师其余对象及移动端仍待逐图审计 | 继续按对象矩阵补牧师其余真实交互链和图面证据；不得把解除诅咒代表链外推为牧师整派系 L3/L4 完成 |
 | 兽人 | 剑王、粉碎者、重击者、呆瓜兽人、躺下！、愤怒的掠夺者、挤碎、死亡之息、狗堆、给我！、洗手间、太难了；基地：要塞、坑洞 | `locked_rules / implementation_blocked`：2026-08-02 09:34 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方兽人矩阵实现其他玩家行动保护、低力摧毁/回牌库底、计分前特殊压制、计分 VP 奖励、转移动作和基地总力量奖励链 |
 | 勇士 | 大英雄、明星勇士、狂战士、嘲讽者、领导运动、斩杀、哑铃、地牢诱饵、永恒的英雄、骚乱、无处不在之盾、战争怒吼；基地：堡垒、锦标赛 | `locked_rules / implementation_blocked`：2026-08-02 09:40 已按完整单卡和基地图锁规则原文与 C 子句 | L0/L1 静态定义和双语 locale 已接；能力标签、handler、L2/L3/L4 尚未实现/验证 | 先按下方勇士矩阵实现怪物打出/摧毁、击败奖励宝藏额外打出、+1 指示物、附着替代回手、按怪物数量力量修正和基地触发链 |
 
@@ -269,24 +269,24 @@
 
 ### 牧师规则原文与子句锁定（2026-08-02 09:26）
 
-> 本节只完成 S1 规则录入合同和 locale 占位替换，不代表牧师能力已经实现。主真相源是 `D:\gongzuo\webgame\gameasset\Smash Up! by Mervil (2833984701)-汉化图\新6扩小白\牧师\*.jpg/png`；重复副本只作为覆盖线索，正式读取对象为非“副本”的 12 张手牌 + 2 个基地。临时核对图落在 `D:\gongzuo\webgame\BoardGame\temp\munchkin-clerics-rule-crops\`，不进入正式资源树。
+> 本节保留最初的 S1 规则录入合同和 locale 真相源；对象状态已由后续续审记录更新。主真相源是 `D:\gongzuo\webgame\gameasset\Smash Up! by Mervil (2833984701)-汉化图\新6扩小白\牧师\*.jpg/png`；重复副本只作为覆盖线索，正式读取对象为非“副本”的 12 张手牌 + 2 个基地。临时核对图落在 `D:\gongzuo\webgame\BoardGame\temp\munchkin-clerics-rule-crops\`，不进入正式资源树。
 
 | 对象 | 原文 / 基地图文字 | 子句拆分 | 当前实现状态 |
 | --- | --- | --- | --- |
-| 红衣主教 | `天赋：如果你的弃牌堆有至少五张牌，随机放置其中两张到你的手上。` | C1 天赋入口；C2 检查你的弃牌堆至少 5 张牌；C3 随机选择其中 2 张；C4 放入你的手牌 | `blocked`: 只有 locale 文本；缺天赋入口、弃牌堆数量校验、随机选择和回手牌 L2/L3 |
-| 资深修士 | `特殊：这个基地计分后，你可以移动这里的另一个你的仆从到另一个基地代替进入弃牌堆。` | C1 afterScoring 特殊触发；C2 选择这里另一个你的仆从；C3 将其移动到另一个基地；C4 以移动替代进入弃牌堆；C5 需要可拒绝、目标基地和“另一个”边界 | `blocked`: 缺计分后清场替代、移动目标基地、skip 和收口验证 |
-| 特纳 | `摧毁这里的一个亡灵怪物 OR 从你的弃牌堆重洗一个随机的仆从到你的牌库。` | C1 二选一：摧毁这里 1 个亡灵怪物；C2 或从你的弃牌堆随机选 1 个仆从；C3 将该仆从重洗进你的牌库；C4 两边无合法目标时阻塞 | `blocked`: 缺亡灵怪物分类、二选一、随机弃牌堆仆从和重洗进牌库验证 |
-| 圣临者 | `你可以从你的弃牌堆重洗一张随机的牌到你的牌库。` | C1 可选效果；C2 从你的弃牌堆随机选 1 张牌；C3 将其重洗进你的牌库；C4 需要可拒绝和弃牌堆为空负向路径 | `blocked`: 缺随机弃牌堆牌、重洗进牌库和 skip / 空弃牌堆验证 |
-| 垃圾处理 | `打出到一个基地上。持续：另一个基地计分后，你可以移动那里一个你的仆从到这里代替进入弃牌堆。` | C1 打到基地上；C2 监听另一个基地计分后；C3 可选择那里 1 个你的仆从；C4 将其移动到本行动所在基地；C5 以移动替代进入弃牌堆；C6 需要可拒绝和“另一个基地”边界 | `blocked`: 缺基地持续行动、计分后清场替代和跨基地移动验证 |
-| 光盘 | `从你的弃牌堆放置两张随机的牌到你的手上。` | C1 从你的弃牌堆随机选择 2 张牌；C2 放入你的手牌；C3 弃牌堆少于 2 张时边界需实现时裁定 | `blocked`: 缺随机弃牌堆回手牌和数量不足边界 |
-| 监禁诅咒 | `打出到一个仆从身上。持续：这个仆从失去它的能力。` | C1 附着到 1 个仆从；C2 宿主持续失去能力；C3 离场 / 附着移除后恢复；C4 需要验证天赋、持续和触发能力均被压制 | `blocked`: 缺附着行动、能力压制消费合同和恢复边界 |
-| 无用诅咒 | `打出到一个仆从身上。持续：这个仆从不会将它的力量添加到这个基地。` | C1 附着到 1 个仆从；C2 宿主力量不计入所在基地；C3 宿主自身力量显示 / 其他用途边界需实现时裁定；C4 附着移除后恢复计入 | `blocked`: 缺基地力量合计排除、显示 / 破坏门槛消费和恢复验证 |
-| 好习惯 | `所有仆从获得+1力量直到回合结束。` | C1 全场所有仆从本回合 +1；C2 回合结束清理；C3 新进入仆从是否获得需实现时按持续 / 一次性口径裁定 | `blocked`: 缺全场临时力量和回合结束清理验证 |
-| 加入团队 | `选择一个基地。所有那里的仆从获得+1力量直到回合结束。` | C1 选择 1 个基地；C2 该基地所有仆从本回合 +1；C3 回合结束清理；C4 需要无仆从基地和新进入仆从边界 | `blocked`: 缺基地选择、该基地临时力量和清理验证 |
-| 解除诅咒 | `摧毁一个基地或仆从身上的行动。` | C1 选择附着在基地或仆从身上的 1 张行动；C2 摧毁该行动；C3 不应选择非附着行动或其他卡牌类型 | `blocked`: 缺附着行动目标筛选和摧毁链 |
-| 回忆祷词 | `从每个其他玩家的弃牌堆随机选择一个行动。你可以打出它们中的一个作为额外的行动。返回剩下的。` | C1 从每个其他玩家弃牌堆随机选 1 张行动；C2 你可以选择其中 1 张作为额外行动打出；C3 其余返回各自弃牌堆；C4 需要可拒绝、无行动弃牌堆和跨玩家归属验证 | `blocked`: 缺多玩家弃牌堆随机选择、临时展示选择、额外行动打出和剩余牌返回 |
-| 圣洁酒店 | `15 / 4-3-2 / 2怪物。这个基地计分后，以任意顺序放置这里的仆从到它拥有者的牌库顶代替进入弃牌堆。` | C1 基地破坏点 15；C2 VP 4/3/2；C3 初始/补充 2 怪物；C4 计分后这里的仆从不进弃牌堆；C5 由对应拥有者以任意顺序放到各自牌库顶；C6 怪物清理仍按怪物规则处理 | `blocked`: 静态 breakpoint/VP/monsterCount 已接；缺计分后清场替代、按拥有者回牌库顶和排序交互 |
-| 抓鬼 | `12 / 3-2-1 / 3怪物。一个不死怪物打出到这里后，放置它到怪物牌库底。` | C1 基地破坏点 12；C2 VP 3/2/1；C3 初始/补充 3 怪物；C4 不死怪物打到这里后触发；C5 将该怪物放到怪物牌库底；C6 非不死怪物不触发 | `blocked`: 静态 breakpoint/VP/monsterCount 已接；缺不死怪物分类、怪物入基地后替代去牌库底和负向验证 |
+| 红衣主教 | `天赋：如果你的弃牌堆有至少五张牌，随机放置其中两张到你的手上。` | C1 天赋入口；C2 检查你的弃牌堆至少 5 张牌；C3 随机选择其中 2 张；C4 放入你的手牌 | `implemented / L2_passed / representative_L3_L4_passed`：真实天赋入口、最终手牌/弃牌堆状态和桌面截图均已通过 |
+| 资深修士 | `特殊：这个基地计分后，你可以移动这里的另一个你的仆从到另一个基地代替进入弃牌堆。` | C1 afterScoring 特殊触发；C2 选择这里另一个你的仆从；C3 将其移动到另一个基地；C4 以移动替代进入弃牌堆；C5 需要可拒绝、目标基地和“另一个”边界 | `implemented / L2_passed / representative_L3_L4_passed`：计分后先选己方随从、再选基地，单候选仍手动，真实入口已通过 |
+| 特纳 | `摧毁这里的一个亡灵怪物 OR 从你的弃牌堆重洗一个随机的仆从到你的牌库。` | C1 二选一：摧毁这里 1 个亡灵怪物；C2 或从你的弃牌堆随机选 1 个仆从；C3 将该仆从重洗进你的牌库；C4 两边无合法目标时阻塞 | `implemented / L2_passed / representative_L3_L4_passed`：模式和亡灵怪物目标均保留手动选择，真实入口已通过 |
+| 圣临者 | `你可以从你的弃牌堆重洗一张随机的牌到你的牌库。` | C1 可选效果；C2 从你的弃牌堆随机选 1 张牌；C3 将其重洗进你的牌库；C4 需要可拒绝和弃牌堆为空负向路径 | `implemented / L2_passed / representative_L3_L4_passed`：真实入口停在“回收/跳过”手动确认态，跳过负向路径已通过 |
+| 垃圾处理 | `打出到一个基地上。持续：另一个基地计分后，你可以移动那里一个你的仆从到这里代替进入弃牌堆。` | C1 打到基地上；C2 监听另一个基地计分后；C3 可选择那里 1 个你的仆从；C4 将其移动到本行动所在基地；C5 以移动替代进入弃牌堆；C6 需要可拒绝和“另一个基地”边界 | `implemented / L2_passed / representative_L3_L4_passed`：计分后真实响应窗口和手动随从移动链已通过 |
+| 光盘 | `从你的弃牌堆放置两张随机的牌到你的手上。` | C1 从你的弃牌堆随机选择 2 张牌；C2 放入你的手牌；C3 弃牌堆少于 2 张时边界需实现时裁定 | `implemented / L2_passed / representative_L3_passed`：强制回收真实手牌入口、手牌/弃牌堆最终状态和截图已通过 |
+| 监禁诅咒 | `打出到一个仆从身上。持续：这个仆从失去它的能力。` | C1 附着到 1 个仆从；C2 宿主持续失去能力；C3 离场 / 附着移除后恢复；C4 需要验证天赋、持续和触发能力均被压制 | `implemented / L2_passed / representative_L3_L4_passed`：真实手动选择对手随从并附着，能力压制和附着状态已通过 |
+| 无用诅咒 | `打出到一个仆从身上。持续：这个仆从不会将它的力量添加到这个基地。` | C1 附着到 1 个仆从；C2 宿主力量不计入所在基地；C3 宿主自身力量显示 / 其他用途边界需实现时裁定；C4 附着移除后恢复计入 | `implemented / L2_passed / representative_L3_L4_passed`：真实手动选择对手随从，基地力量排除和附着状态已通过 |
+| 好习惯 | `所有仆从获得+1力量直到回合结束。` | C1 全场所有仆从本回合 +1；C2 回合结束清理；C3 新进入仆从是否获得需实现时按持续 / 一次性口径裁定 | `implemented / L2_passed / representative_L3_passed`：真实手牌入口覆盖全场临时力量和结果图面 |
+| 加入团队 | `选择一个基地。所有那里的仆从获得+1力量直到回合结束。` | C1 选择 1 个基地；C2 该基地所有仆从本回合 +1；C3 回合结束清理；C4 需要无仆从基地和新进入仆从边界 | `implemented / L2_passed / representative_L3_L4_passed`：多个基地进入高亮，玩家手动选择目标基地，结果只作用于目标基地 |
+| 解除诅咒 | `摧毁一个基地或仆从身上的行动。` | C1 选择附着在基地或仆从身上的 1 张行动；C2 摧毁该行动；C3 不应选择非附着行动或其他卡牌类型 | `implemented / L2_passed / representative_L3_L4_passed`：真实场上附着行动本体可见、可手动选择并摧毁 |
+| 回忆祷词 | `从每个其他玩家的弃牌堆随机选择一个行动。你可以打出它们中的一个作为额外的行动。返回剩下的。` | C1 从每个其他玩家弃牌堆随机选 1 张行动；C2 你可以选择其中 1 张作为额外行动打出；C3 其余返回各自弃牌堆；C4 需要可拒绝、无行动弃牌堆和跨玩家归属验证 | `implemented / L2_passed / representative_L3_L4_passed`：跨玩家行动选择和第二步“立即打出/放弃”均由玩家手动完成，真实入口已通过 |
+| 圣洁酒店 | `15 / 4-3-2 / 2怪物。这个基地计分后，以任意顺序放置这里的仆从到它拥有者的牌库顶代替进入弃牌堆。` | C1 基地破坏点 15；C2 VP 4/3/2；C3 初始/补充 2 怪物；C4 计分后这里的仆从不进弃牌堆；C5 由对应拥有者以任意顺序放到各自牌库顶；C6 怪物清理仍按怪物规则处理 | `implemented / L2_passed / representative_L3_L4_passed`：逐张手动选择随从顺序、按拥有者回各自牌库顶，真实入口已通过 |
+| 抓鬼 | `12 / 3-2-1 / 3怪物。一个不死怪物打出到这里后，放置它到怪物牌库底。` | C1 基地破坏点 12；C2 VP 3/2/1；C3 初始/补充 3 怪物；C4 不死怪物打到这里后触发；C5 将该怪物放到怪物牌库底；C6 非不死怪物不触发 | `implemented / L2_passed / representative_L3_L4_passed`: 已接不死怪物分类、怪物入基地后的牌库底替代，并由真实法师天赋召唤链验证亡灵与普通怪物的正负边界 |
 
 ### 兽人规则原文与子句锁定（2026-08-02 09:34）
 
@@ -960,9 +960,153 @@
 | 修复后原始截图 | `test-results/evidence-screenshots/smashup/munchkin-new-faction-flow/援手-P1-后续响应手动让过.png`；`test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/木精灵援手在计分前手动选择玩家和己方随从，并在赢家确认后手动选择-VP/木精灵-援手-计分前.jpg`、`木精灵-援手-手动选择目标玩家.jpg`、`木精灵-援手-手动选择己方随从.jpg`、`木精灵-援手-计分后手动选择是否获得VP.jpg`、`木精灵-援手-获得VP后结算.jpg` | `PASS / 92`：逐张打开当前工作区新生成的 6 张原始图；P1 标题已显示“ 大副：你可以移动此随从到其他基地（而不是弃牌堆） ”且无占位符，玩家选择、己方随从高亮、VP 选择和结算状态均可见；基地高亮、记分板、牌库/弃牌堆、手牌和公共小牌没有被标题修复抢位或遮挡。 |
 | 静态检查与范围裁决 | `npx eslint src/games/smashup/Board.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/__tests__/cardI18nIntegrity.test.ts`；`git diff --check` | `passed`：0 errors；现有 Smash Up Board/PromptOverlay warnings 保留，未新增 error；本条只收口援手代表链的标题修复和真实图面证据，不能外推为木精灵整派系或 Munchkin 新派系完成。 |
 
+## 2026-08-04 续审记录：法师快乐小法师计分前特殊能力与响应槽位回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 快乐小法师特殊 L2 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-mages.test.ts --configLoader native` | `passed`：法师能力测试 12/12；新增计分前 `special` 执行合同，仍要求手动选择 1 张手牌成本，并产生本回合 +2 力量事件。 |
+| 原始 UI 失败 | 首次真实入口截图 `法师-快乐小法师特殊-手动选择特殊能力.jpg`（修复前） | `visual_revise`：通用响应动作选择默认居中，按钮压在基地和快乐小法师本体上；虽然内部选项可点，但玩家第一眼不能把特殊能力和场上来源对应起来。 |
+| 响应选择槽位修复 | `src/games/smashup/ui/PromptOverlay.tsx`；`smashup_reaction_choose` 改为顶部停靠，避开基地/随从主舞台；E2E 增加按钮与快乐小法师本体不重叠断言 | `fixed_scoped`：只调整响应动作选择的承载位置，不改变响应顺序、规则效果或其他提示的选择语义。 |
+| 法师特殊真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated npm run test:e2e:ci:file -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "法师快乐小法师在计分前从真实响应窗口手动激活特殊能力" --project=chromium` | `passed`：1/1；真实进入 `scoreBases`，玩家手动选择“快乐小法师 特殊能力”，再手动选择手牌成本，临时加力事件存在，响应窗口和交互最终清空。 |
+| 修复后原始截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\法师快乐小法师在计分前从真实响应窗口手动激活特殊能力\法师-快乐小法师特殊-计分前响应前.jpg`、`法师-快乐小法师特殊-手动选择特殊能力.jpg`、`法师-快乐小法师特殊-手动选择弃牌成本.jpg`、`法师-快乐小法师特殊-结算后.jpg` | `PASS / 92`：逐张打开当前工作区最新原图；响应按钮位于顶部空槽位，快乐小法师本体和基地完整可见；成本手牌可读且高亮；结算后场上对象清理、计分和公共怪物/宝藏小牌位置正常。 |
+| 静态检查与范围裁决 | `npx eslint src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/__tests__/abilities/munchkin-mages.test.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check` | `passed`：ESLint 0 errors、74 个既有 warning；diff check 无内容错误，仅有 Windows 换行提示。本条只证明快乐小法师特殊响应及其通用壳层在该场景的定向表现，不外推为所有响应窗口均已完成视觉审计。 |
+
 ## 对外汇报口径
 
 - 允许说：Munchkin 扩展已经完成静态 intake、资源本地链路、新 UI 代表态验证、怪物 / 宝藏基础机制 L2/L3、宝藏牌代表链，以及矮人、半身人、盗贼的多条真实入口正向链；其中打捞、最后通牒、小而坚韧、猫咪窃贼空选分支、直线跑路药水、麻痹药水、时间错乱的喷气背包，以及盗贼的转移注意力 / 秘密藏匿处 / 金库计分链已有流程态观察，其中金库已补齐当前真实入口正向回归。
 - 允许补充说：盗贼 12 张牌 + 2 个基地已有正向功能链；旧截图 168 不能证明打劫第二步“选择另一个随从”，旧图面 `PASS / 93` 作废；2026-08-03 22:33 已修复并重拍打劫单链，新的 167/168/169 逐图审计 `PASS / 92`。但这只恢复打劫单链视觉证据，盗贼对象级 L3/L4 批次收口仍因单候选手选门禁未全量重审而暂停。
 - 禁止说：Munchkin 新派系整体完成、全批次验收通过、已可玩、全部宝藏具体牌效已完成、全部宝藏使用真实入口已完成、或全部普通派系逐卡能力已完成。
-- 下一步默认动作：继续按对象级矩阵推进法师剩余未覆盖对象、木精灵剩余卡牌与援助山谷，再逐派系处理牧师、兽人、勇士；不得把本轮法师 4 条代表链、木精灵 6 条代表链或打劫单链图面回归外推成整批 Munchkin 完成。
+- 下一步默认动作：继续按对象级矩阵推进法师剩余未覆盖对象、木精灵剩余卡牌与援助山谷，再逐派系处理牧师、兽人、勇士；不得把本轮法师代表链、木精灵 6 条代表链或打劫单链图面回归外推成整批 Munchkin 完成。
+
+## 2026-08-04 续审记录：牧师对象级 L2 与解除诅咒真实入口
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 牧师 12 张卡牌 + 2 个基地 L2 | `src/games/smashup/__tests__/abilities/munchkin-clerics.test.ts`；定向运行结果为 14 tests passed | `passed`：四张随从、八张行动和圣洁酒店 / 抓鬼均有对象级领域行为覆盖；随机回收、计分后移动、附着能力压制、力量排除、回合临时力量清理、跨玩家弃牌堆行动和怪物牌库底事件均回到最终状态断言 |
+| 牧师真实入口 E2E | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师解除诅咒从真实行动卡入口手动选择场上附着行动"` | `passed`：1/1；从真实手牌打出“解除诅咒”，玩家手动点击场上附着行动本体，结算后附着行动从随从移除并进入拥有者弃牌堆 |
+| 真实入口截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\牧师解除诅咒从真实行动卡入口手动选择场上附着行动\牧师-解除诅咒-手动选择附着行动.jpg`；同目录 `牧师-解除诅咒-附着行动被摧毁后.jpg` | 当前工作区、桌面端 1440x900、真实路由；选择态与结算态截图均来自同一 E2E 现场 |
+| AI 逐图图面审计 | 上述两张原始截图，逐张读取；负向影响检查覆盖基地、随从、附着行动、行动卡、手牌、牌库、弃牌堆、记分板、结束回合入口 | `PASS / 92`：选择态候选附着行动本体可见并有绿色反馈；提示只保留一步动作；无中央重复源卡、无重叠遮挡、无空的第二步选择。当前只完成桌面端这条真实交互链，移动端和牧师其它交互态仍未取得 L3/L4 图证 |
+| 共享回归与静态检查 | `npx vitest run src/games/smashup/__tests__/abilities/munchkin-clerics.test.ts src/games/smashup/__tests__/munchkinMechanics.test.ts src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts src/games/smashup/__tests__/cardI18nIntegrity.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`；`npm run typecheck`；定向 ESLint；`openspec validate add-smashup-munchkin-clerics-faction --strict --no-interactive` | `passed`：4 files / 147 tests passed；类型检查 0 errors；定向 ESLint 0 errors（仅 warnings）；OpenSpec 严格校验通过 |
+| 当前范围裁决 | 本记录与牧师 change tasks | `representative_only / scoped_debt`：牧师 14 个对象的 L2 已完成，解除诅咒补齐 1 条真实入口 L3/L4 代表链；不能把该条真实链外推为牧师所有对象的完整 L3/L4，也不能升级为 Munchkin 新派系整体完成 |
+
+## 2026-08-04 续审记录：圣洁酒店与大副 LKI 回归
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 原始失败 | 圣洁酒店真实 E2E 事件流：回牌库顶后仍有 `pirate_first_mate` 计分后触发，并产生错误移动 | `root_cause_confirmed`：大副已被圣洁酒店放入拥有者牌库，但计分后队列仍用 LKI 快照把它当作可移动随从重新构造 |
+| 生产修复 | `src/games/smashup/abilities/pirates.ts`：大副计分后能力在源 UID 已位于拥有者手牌或牌库时直接结束 | `fixed_scoped`：正常基地清场后进入拥有者弃牌堆的大副仍保留移动替代清场能力；已进入手牌 / 牌库的源卡不再被快照复活 |
+| 领域回归 | `src/games/smashup/__tests__/temple-firstmate-afterscore.test.ts`；圣洁酒店 + 大副 LKI 场景；牧师能力测试 | `passed`：大副时序文件 7/7，牧师能力文件 14/14，共 21/21；新增场景确认源卡在牌库时不创建移动交互、不回到基地 |
+| 圣洁酒店真实入口 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师圣洁酒店在计分后逐张手动选择随从顺序并回各自牌库顶"` | `passed`：1/1；两张随从按玩家手动选择顺序分别进入各自拥有者牌库顶，基地清空，未发生大副二次移动 |
+| 圣洁酒店截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\牧师圣洁酒店在计分后逐张手动选择随从顺序并回各自牌库顶\牧师-圣洁酒店-手动选择第一张随从.jpg`、`牧师-圣洁酒店-手动选择第二张随从.jpg`、`牧师-圣洁酒店-按选择顺序回各自牌库顶.jpg` | `PASS / 92`：候选随从本体可见，最终基地清空；牌库旁公共怪物 / 宝藏小牌、记分板、结束回合和弃牌区没有被新流程遮挡或重复显示 |
+| 回忆祷词测试收口 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `fixed_scoped`：补齐选择行动后的第二个“立即打出额外战术 / 放弃”手动交互；行动额度断言按 `playTiming: immediate` 合同收敛为保持原行动上限 `1` |
+| 回忆祷词真实入口状态 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师回忆祷词从其他玩家弃牌堆手动选择一张行动作为额外行动"`；同一真实 single-worker runtime | `passed`：1/1；先手动选择其他玩家弃牌堆中的“光盘”，再手动处理第二步“立即打出一张额外战术 / 放弃这次机会”，没有自动代选；`playTiming: immediate` 不增加永久行动额度，最终行动上限保持为 1。此前的共享 runtime / 重任务占用已解除，本次已取得最终真实入口通过结果 |
+| 回忆祷词截图与图面审计 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师回忆祷词从其他玩家弃牌堆手动选择一张行动作为额外行动/牧师-回忆祷词-手动选择其他玩家行动或不打出.jpg`；同目录 `牧师-回忆祷词-手动确认额外行动或放弃.jpg` | `PASS / 92`：第一张清楚显示“选择一张行动作为额外行动打出，或不打出”及行动卡本体；第二张清楚显示“立即打出一张额外战术，或放弃这次机会”和手动放弃按钮；两步均为显式交互，基地、手牌、牌库、弃牌堆、记分板与结束回合入口未被遮挡或重复显示 |
+| 当前范围裁决 | 本记录与牧师 change tasks | `representative_only / scoped_debt`：圣洁酒店 + 大副回归已收口，回忆祷词真实入口已补齐最终 E2E 与图面证据；牧师整派系和 Munchkin 新派系仍不能由这些代表链外推完成 |
+
+## 2026-08-05 续审记录：牧师红衣主教真实天赋入口
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 红衣主教真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师红衣主教从真实天赋入口随机回收两张弃牌堆牌"` | `passed`：1/1；从牌桌上的红衣主教本体点击天赋，权威状态显示当前玩家手牌由 1 张增加到 3 张、弃牌堆由 5 张减少到 3 张，回收的是弃牌堆中的 2 张牌；红衣主教标记为已使用，交互和响应窗口均已清空 |
+| 红衣主教截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师红衣主教从真实天赋入口随机回收两张弃牌堆牌/牧师-红衣主教-天赋触发前.jpg`；同目录 `牧师-红衣主教-随机回收两张牌后.jpg` | `PASS / 92`：触发前能看见可发动的红衣主教本体、当前回合、牌桌基地、牌堆和弃牌堆；结果图能看见两张回收牌进入手牌、弃牌堆数量变为 3、红衣主教已用状态；公共怪物 / 宝藏小牌仍只在牌库旁显示，未出现遮挡或重复显示 |
+| 静态检查 | `npx eslint e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：ESLint 0 errors，仅保留该大型 E2E 文件既有 `no-explicit-any` warnings；diff check 无内容错误 |
+| 当前范围裁决 | 本记录与牧师对象矩阵 | `representative_only / scoped_debt`：牧师当前已有红衣主教、解除诅咒、资深修士、特纳、圣临者、垃圾处理、圣洁酒店、回忆祷词的 L2/真实入口代表证据；光盘、监禁诅咒、无用诅咒、好习惯、加入团队、抓鬼及移动端图面仍未逐对象收口，不能升级为牧师整派系或 Munchkin 新派系完成 |
+
+## 2026-08-05 续审记录：牧师光盘普通行动真实入口
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 光盘真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师光盘从真实手牌入口自动回收两张弃牌堆牌"`；本次因共享端口被占用按官方流程使用隔离端口 `6274/20101/21101` | `passed`：1/1；从真实手牌打出“光盘”，权威状态显示两张弃牌堆牌进入手牌，光盘本身进入弃牌堆，弃牌堆最终为 4 张，行动额度已消耗，交互和响应窗口均为空；规则为强制效果，没有新增确认或跳过按钮 |
+| 光盘截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师光盘从真实手牌入口自动回收两张弃牌堆牌/牧师-光盘-打出前弃牌堆与手牌.jpg`；同目录 `牧师-光盘-自动回收两张牌后无确认交互.jpg` | `PASS / 92`：打出前能看见手牌中的光盘、牌桌基地和弃牌堆数量；结算后两张回收牌进入手牌，光盘出现在弃牌堆，行动额度减少且没有阻塞层；公共怪物 / 宝藏小牌仍只在牌库旁显示，未出现遮挡或重复显示 |
+| 静态检查与环境记录 | `npx eslint e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：ESLint 0 errors，仅保留大型 E2E 文件既有 `no-explicit-any` warnings；diff check 无内容错误。共享 single-worker 端口占用导致一次回退，隔离 runtime 的用例实际通过，不影响本条业务结论 |
+| 当前范围裁决 | 本记录与牧师对象矩阵 | `representative_only / scoped_debt`：牧师当前已有红衣主教、光盘、解除诅咒、资深修士、特纳、圣临者、垃圾处理、圣洁酒店、回忆祷词的 L2/真实入口代表证据；监禁诅咒、无用诅咒、好习惯、加入团队、抓鬼及移动端图面仍未逐对象收口，不能升级为牧师整派系或 Munchkin 新派系完成 |
+
+## 2026-08-05 续审记录：牧师好习惯全基地临时力量链
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 好习惯真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师好习惯从真实手牌入口给所有基地随从增加临时力量"`；本次因共享端口被占用按官方流程使用隔离端口 `6273/20100/21100` | `passed`：1/1；从真实手牌打出“好习惯”，权威状态确认两座基地的 3 个随从都获得 `tempPowerModifier=1`，行动卡进入弃牌堆，行动额度已消耗，交互和响应窗口均为空；规则为强制效果，没有新增确认或跳过按钮 |
+| 好习惯截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师好习惯从真实手牌入口给所有基地随从增加临时力量/牧师-好习惯-打出前两座基地随从.jpg`；同目录 `牧师-好习惯-两座基地所有随从获得临时力量.jpg` | `PASS / 92`：打出前能看见两座基地和三个随从；结算后三个随从本体旁都出现绿色 `+1` 标记，基地力量同步变化，行动卡进入弃牌堆；公共怪物 / 宝藏小牌、手牌、弃牌堆和结束回合入口未被遮挡或重复显示 |
+| 静态检查与环境记录 | `npx eslint e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：ESLint 0 errors，仅保留大型 E2E 文件既有 `no-explicit-any` warnings；diff check 无内容错误。共享端口占用与 CPU 预算等待属于本次运行环境记录，不影响隔离 runtime 中的业务通过结果 |
+| 当前范围裁决 | 本记录与牧师对象矩阵 | `representative_only / scoped_debt`：牧师当前已有红衣主教、光盘、好习惯、解除诅咒、资深修士、特纳、圣临者、垃圾处理、圣洁酒店、回忆祷词的 L2/真实入口代表证据；监禁诅咒、无用诅咒、加入团队、抓鬼及移动端图面仍未逐对象收口，不能升级为牧师整派系或 Munchkin 新派系完成 |
+
+## 2026-08-05 续审记录：牧师加入团队手动基地选择链
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 加入团队真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师加入团队从真实手牌入口先高亮基地再手动选择目标基地"` | `passed`：1/1；从真实手牌打出“加入团队”后两个基地进入可选高亮，测试实际点击第二座基地；结算后仅目标基地的随从获得 `tempPowerModifier=1`，另一座基地保持 0，行动卡进入弃牌堆，交互和响应窗口清空 |
+| 加入团队截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师加入团队从真实手牌入口先高亮基地再手动选择目标基地/牧师-加入团队-打出前两个基地.jpg`；同目录 `牧师-加入团队-手动选择目标基地.jpg`、`牧师-加入团队-目标基地获得临时力量.jpg` | `PASS / 92`：中间选择态两个基地均有清晰绿色高亮，行动卡文本显示“选择一个基地”；结算态只有被点击基地的随从出现绿色 `+1`，另一基地没有误加，牌库、弃牌堆、手牌和结束回合入口没有被新交互遮挡或重复显示 |
+| 静态检查与范围记录 | `npx eslint e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：ESLint 0 errors，仅保留大型 E2E 文件既有 `no-explicit-any` warnings；diff check 无内容错误。选择态断言按当前前端实际 `ring-emerald-400` 基地高亮承载修正，未改变交互语义 |
+| 当前范围裁决 | 本记录与牧师对象矩阵 | `representative_only / scoped_debt`：牧师当前已有红衣主教、光盘、好习惯、加入团队、解除诅咒、资深修士、特纳、圣临者、垃圾处理、圣洁酒店、回忆祷词的 L2/真实入口代表证据；监禁诅咒、无用诅咒、抓鬼及移动端图面仍未逐对象收口，不能升级为牧师整派系或 Munchkin 新派系完成 |
+
+## 2026-08-05 续审记录：牧师两张诅咒牌的手动随从目标链
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 监禁诅咒真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师监禁诅咒从真实手牌入口手动选择对手随从并附着"` | `passed`：1/1；从真实手牌打出后停在对手随从选择态，玩家点击目标随从本体，权威状态显示监禁诅咒已附着，行动卡不再留在手牌，交互和响应窗口清空 |
+| 监禁诅咒截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师监禁诅咒从真实手牌入口手动选择对手随从并附着/牧师-监禁诅咒-手动选择对手随从.jpg`；同目录 `牧师-监禁诅咒-附着到目标随从后.jpg` | `PASS / 92`：目标随从本体有绿色候选高亮；结算后监禁诅咒卡清楚附着在目标随从上，没有中央重复源卡或空的后续选择层 |
+| 无用诅咒真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师无用诅咒从真实手牌入口手动选择对手随从并排除基地力量"` | `passed`：1/1；玩家手动点击对手随从本体后，无用诅咒附着成功，页面中的对手基地力量贡献从 5 变为 0，行动卡不再留在手牌，交互和响应窗口清空 |
+| 无用诅咒截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师无用诅咒从真实手牌入口手动选择对手随从并排除基地力量/牧师-无用诅咒-手动选择对手随从.jpg`；同目录 `牧师-无用诅咒-附着后基地力量排除目标随从.jpg` | `PASS / 92`：选择态候选随从本体可读且没有被提示层挡住；结算图同时显示无用诅咒附着和对手力量贡献归零，牌桌其它区域没有被新附着卡遮挡或重复显示 |
+| 静态检查与范围裁决 | `npx eslint e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：ESLint 0 errors，仅保留大型 E2E 文件既有 `no-explicit-any` warnings；diff check 无内容错误。本条诅咒批次记录截稿时，抓鬼尚未取得真实入口证据；该缺口已由 2026-08-05 的抓鬼续审记录补齐，移动端图面仍未收口，不能据此宣称牧师整派系或 Munchkin 新派系完成 |
+
+## 2026-08-05 续审记录：牧师抓鬼真实召唤链
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 抓鬼真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "牧师抓鬼从真实法师天赋入口拦截亡灵怪物并保留普通怪物"` | `passed`：1/1；玩家先从场上《通往次元之门》卡本体打开天赋，再手动选择弃牌成本召唤怪物。第一次召唤亡灵怪物后，抓鬼基地不保留该怪物，怪物牌库顺序变为“普通怪物、亡灵怪物”；第二次召唤普通怪物后，普通怪物留在基地下方，亡灵怪物仍在牌库底，怪物弃牌堆保持为空 |
+| 抓鬼截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/牧师抓鬼从真实法师天赋入口拦截亡灵怪物并保留普通怪物/牧师-抓鬼-召唤前怪物牌库与基地.jpg`、`牧师-抓鬼-召唤亡灵时手动选择弃牌.jpg`、`牧师-抓鬼-亡灵怪物被放回怪物牌库底.jpg`、`牧师-抓鬼-召唤普通怪物时手动选择弃牌.jpg`、`牧师-抓鬼-普通怪物保留在基地下方.jpg` | `PASS / 92`：逐张核对当前工作区桌面端 1440×900 原始截图；两次弃牌成本均显示真实手牌目标且没有自动代选，亡灵召唤结算后基地怪物行退场，普通怪物结算后以一行排在基地下方；怪物牌库与宝藏牌库小牌仍只显示数量，未出现怪物弃牌堆或重复信息 |
+| 静态检查与范围裁决 | `npx eslint e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`git diff --check -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `passed`：ESLint 0 errors，仅有大型 E2E 文件既有 `no-explicit-any` warnings；diff check 无内容错误。当前牧师 12 张卡牌均已有真实入口代表证据；桌面端代表链已补齐，移动端图面仍未审计，牧师整派系和 Munchkin 新派系仍保持 `representative_only / scoped_debt`，不能升级为整体完成 |
+
+## 2026-08-05 续审记录：Munchkin 新 UI 移动端横屏压力态
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 移动端真实入口 E2E | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "Munchkin 新 UI 移动端横屏保留怪物行与公共小牌堆入口"` | `passed`：1/1；当前工作区真实 Smash Up 牌桌在 844×390 横屏视口完成压力态渲染，公共怪物 / 宝藏牌库数量、三张场上怪物、泰坦、持续行动、手牌和结束回合入口均存在；几何断言确认无横向溢出，怪物行在基地下方且位于玩家随从列上方 |
+| 移动端截图 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/Munchkin-新-UI-移动端横屏保留怪物行与公共小牌堆入口/移动端横屏-怪物行和公共小牌堆不抢原版布局.jpg` | `PASS / 91`：逐张核对当前工作区 844×390 原始横屏截图；怪物行仍贴在基地下方，泰坦与持续行动保留在基地上方，公共两种小牌堆贴着左侧牌库，手牌在底部、结束回合在右侧；未出现怪物弃牌堆、宝藏弃牌堆、关键入口遮挡或横向裁切。竖屏截图因进入明确的“建议旋转至横屏”提示态，只作为诊断，不纳入最终移动验收图 |
+| 当前移动端范围裁决 | `src/games/smashup/manifest.ts`；`src/games/smashup/ui/layoutConfig.ts`；上述 E2E 与截图 | `representative_only / scoped_debt`：已收口 Munchkin 公共新 UI 的横屏压力态和抓鬼桌面真实链；这不等于牧师每张卡牌的移动端交互均已逐对象审计，也不等于牧师整派系或 Munchkin 新派系整体完成 |
+
+## 2026-08-05 续审记录：兽人计分前响应与单候选手选补强
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 领域边界补强 | `src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts` | `passed`：兽人定向领域测试由 12 条增至 14 条；新增“躺下！平手仍算最高、落后不能使用”和“愤怒的掠夺者领先第二名不足 3 点不奖励”两个负向边界。 |
+| 真实入口场景 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `implemented_pending_runtime`：新增“躺下！”计分前手动选择行动、“愤怒的掠夺者”计分前手动选择并获得 VP、“狗堆”计分前先选随从再选基地三条真实入口链；每个候选即使只有一个也使用显式手动选择，截图点位围绕手牌、基地、随从本体和响应窗口。 |
+| 静态验证 | `npx eslint src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`npm run typecheck`；兽人定向 Vitest；`git diff --check` | `passed`：ESLint 0 errors（大型 E2E 文件保留既有 warning）；类型检查通过；兽人领域 14/14 通过；diff check 无内容错误，仅有 Windows 换行提示。 |
+| 真实 E2E 阻塞 | `npm run test:e2e:ci:file -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人躺下|兽人愤怒的掠夺者|兽人狗堆"`；端口 `6174/20000/21000` | `blocked_environment`：命令未进入兽人业务断言，固定共享端口仍被天师真实入口任务占用；运行时管理器等待后退出并报告端口冲突。没有使用隔离端口或手工注入结果替代这条既定真实入口链。 |
+| 当前范围裁决 | 本记录与兽人 OpenSpec tasks | `representative_only / scoped_debt`：兽人领域规则和真实入口测试代码已补，但三条新增真实页面链尚未取得当前现场截图与 AI 图面审计；因此不能勾选兽人完整真实入口、不能宣称兽人整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-05 续审记录：兽人狗堆混合牌入口修复后的验证状态
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 狗堆入口定义修复 | `src/games/smashup/data/factions/munchkin.ts`；狗堆同时声明普通行动 `standard`、计分前响应 `beforeScoring`、需要基地响应目标，以及 `onPlay` / `special` 两个能力标签 | `fixed_scoped`：计分前特殊入口不会再因为缺少混合牌响应元数据而跳过狗堆的移动能力；规则层仍保持“先选己方随从、再选目标基地”。 |
+| 狗堆领域回归 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts --configLoader native` | `passed`：兽人定向文件 15/15；覆盖普通打出、计分前特殊打出、单候选不自动选择和最终移动结果。 |
+| 静态门禁 | 定向 ESLint、`npm run typecheck`、`git diff --check`、`openspec validate add-smashup-munchkin-orcs-faction --strict --no-interactive` | `passed`：ESLint 0 errors（保留现有 warning）；类型检查、差异格式检查和 OpenSpec 严格校验通过。 |
+| 临时诊断清理 | `e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts` | `fixed_scoped`：删除狗堆 E2E 中的临时 `[兽人狗堆调试]` 状态打印，保留源基地消失、目标基地出现、行动卡入弃牌堆的正式断言。 |
+| 修复后真实入口 E2E | `npm run test:e2e:isolated -- e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts -g "兽人狗堆在计分前真实响应仍按随从再基地手动选择"` | `blocked_environment`：命令在进入 Playwright 业务断言前被 `heavy-task-guard` 拒绝；当前工作区已有天师真实入口 E2E 持有 `e2e-run`，其 runtime 注册为 `active-unhealthy` 并持续被新 owner 接续。未停止该任务、未并发抢占、未用领域测试或旧截图替代真实入口证据。 |
+| 当前范围裁决 | 本记录与兽人 OpenSpec tasks | `representative_only / scoped_debt`：狗堆修复和领域层已通过，但“躺下！”、“愤怒的掠夺者”和“狗堆”三条修复后真实页面链仍缺当前现场 E2E 结果与图面审计，不能勾选兽人完整真实入口，也不能宣称兽人整派系或 Munchkin 新派系完成。 |
+
+## 2026-08-05 续审记录：狗堆真实入口单用例收口
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 修复后真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人狗堆在计分前真实响应仍按随从再基地手动选择"` | `passed`：Playwright 明确执行 `--grep 兽人狗堆在计分前真实响应仍按随从再基地手动选择`，1/1 通过，29.6 秒完成；真实计分前响应中先手动选择己方随从，再手动选择目标基地，最终源基地不再有该随从、目标基地出现该随从，狗堆进入弃牌堆。 |
+| 真实截图与运行现场 | 当前工作区 `D:\gongzuo\webgame\BoardGame`；桌面视口 `1440×900`；同一真实 Smash Up 入口生成的三张原始图 | `verified`：三张图时间为 2026-08-05 04:37:44-04:37:50，来自本次通过运行；不引用此前错误整文件命令留下的候选图。 |
+| 截图 1：手动选择随从 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/兽人狗堆在计分前真实响应仍按随从再基地手动选择/兽人-狗堆-计分前手动选择随从.jpg` | `PASS`：顶部只提示“狗堆：选择要移动的己方仆从”，场上合法己方随从本体可见并高亮，源行动卡位于右下弃牌区；基地、记分板、公共怪物 / 宝藏牌堆数量均保持可读。 |
+| 截图 2：手动选择基地 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/兽人狗堆在计分前真实响应仍按随从再基地手动选择/兽人-狗堆-计分前手动选择目标基地.jpg` | `PASS`：顶部提示切换为“狗堆：选择目标基地”，合法目标基地本体高亮、非目标基地降噪；没有保留旧的随从选择 prompt，也没有用中央重复卡片代替基地本体。 |
+| 截图 3：移动结算 | `test-results/evidence-screenshots/smashup/smashup-munchkin-monster-treasure-ui.e2e/兽人狗堆在计分前真实响应仍按随从再基地手动选择/兽人-狗堆-计分前移动结算后.jpg` | `PASS`：随从已从源基地移动到目标基地，狗堆进入弃牌堆；顶部“选择先结算的强制效果”是移动后合法进入的下一计分阶段，不是狗堆旧 prompt 残留。基地、公共小牌堆、记分板、右下弃牌区无重叠或重复信息。 |
+| AI 图面审计 | 上述三张当前工作区原始截图；`ui-audit-loop` 逐图核验 | `PASS / 92`：任务清晰度、目标本体可识别性、选择高亮、阶段切换、布局完整性和持续可读对象均通过；无硬失败项。 |
+| 当前范围裁决 | 本记录与兽人 OpenSpec tasks | `representative_only / scoped_debt`：狗堆真实入口已收口；“躺下！”和“愤怒的掠夺者”仍需各自完成修复后真实 E2E 与截图审计，兽人整派系及 Munchkin 新派系仍不能宣称完成。 |
+
+## 2026-08-05 续审记录：兽人洗手间真实保护链与太难了目标过滤
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 洗手间真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人洗手间在对手行动后把手动保护选择交给行动卡控制者"` | `passed`：1/1；真实入口按“挤碎”基地、玩家、随从三步手动选择后，洗手间把保护选择交给行动卡控制者；点击保护随从后，挤碎继续完成，受保护随从保留，交互清空。 |
+| 洗手间截图 1 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\munchkin-new-faction-flow\兽人-洗手间-手动选择保护随从.png` | `PASS / 92`：1440×900 当前工作区真实入口截图；顶部提示只说明“选择不受这张牌影响的己方仆从”，目标随从本体露出绿色候选高亮；“不保护”是显式可选项。没有中央重复源卡，基地、记分板、公共怪物 / 宝藏牌库和弃牌区仍可读。 |
+| 洗手间截图 2 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\munchkin-new-faction-flow\兽人-洗手间-保护状态结算后.png` | `PASS / 92`：保护后“挤碎”继续完成，目标随从仍在洗手间所在基地；没有残留保护 prompt、遮挡层或自动跳过造成的隐藏状态。 |
+| 太难了真实入口 E2E | `PW_E2E_SERVICE_REUSE=isolated node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人太难了从行动目标候选中排除受保护随从"` | `passed`：1/1；真实行动目标候选中受保护随从不出现，未受保护随从仍需玩家手动点击；结算后未受保护随从回到拥有者牌库，受保护随从留在基地。 |
+| 太难了截图 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人太难了从行动目标候选中排除受保护随从\兽人-太难了-过滤受保护目标.jpg`；`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-munchkin-monster-treasure-ui.e2e\兽人太难了从行动目标候选中排除受保护随从\兽人-太难了-受保护随从保留.jpg` | `PASS / 92`：1440×900 当前工作区真实入口截图；选择态只高亮未受保护随从，提示条、基地、记分板、牌库和结束回合入口没有重叠；结算态目标随从已离场，受保护随从仍清楚可见。 |
+| 实现与领域回归 | `src/games/smashup/abilities/munchkin_orcs.ts`；`src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts` | `passed`：多步行动完成基地选择后复用现有 `onActionPlayed` 触发器，真实链路可进入洗手间保护交互；坑洞保护额外确认目标随从仍在坑洞，避免错误保护其它基地；兽人领域测试 `18/18` 通过。 |
+| 静态验证 | `npx eslint src/games/smashup/abilities/munchkin_orcs.ts e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts`；`npm run typecheck` | `passed`：0 errors；仅保留大型 E2E 文件和兽人能力文件已有 warning。 |
+| 当前范围裁决 | 本记录与兽人 OpenSpec tasks | `representative_only / scoped_debt`：洗手间、太难了、挤碎、死亡之息、狗堆、给我！以及计分前代表链已有当前真实入口证据；兽人剩余对象的逐卡 L2/L3/L4、两个基地完整真实入口和移动端逐对象图面仍未全部收口，因此不能升级为兽人整派系或 Munchkin 新派系完成。 |

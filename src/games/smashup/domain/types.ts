@@ -2553,6 +2553,21 @@ export interface SpecialAfterScoringArmedEvent extends GameEvent<typeof SU_EVENT
     };
 }
 
+/** 将基地上的怪物放回公共怪物牌库底，不触发击败奖励。 */
+export interface MunchkinMonsterToDeckBottomEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_MONSTER_TO_DECK_BOTTOM> {
+    payload: {
+        baseIndex: number;
+        monsterUid: string;
+        monsterDefId: string;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
+    };
+}
+
 /** 清理：某条计分后 special 标记已消费 */
 export interface SpecialAfterScoringConsumedEvent extends GameEvent<typeof SU_EVENTS.SPECIAL_AFTER_SCORING_CONSUMED> {
     payload: {

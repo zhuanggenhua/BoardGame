@@ -740,6 +740,22 @@ function registerMunchkinElvesModifiers(): void {
     ]);
 }
 
+function registerMunchkinOrcsModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'munchkin_orcs_sword_lord',
+            compute: (ctx, helpers) => helpers.countMinionsOnBaseMatchingRuntimeDefId(
+                ctx,
+                'munchkin_orcs_sword_lord',
+                {
+                    controllerId: ctx.minion.controller,
+                    excludeSelf: true,
+                },
+            ),
+        },
+    ]);
+}
+
 // ============================================================================
 // 狼人派系
 // ============================================================================
@@ -992,6 +1008,7 @@ function registerHalfTheBattleModifiers(): void {
 export function registerAllOngoingModifiers(): void {
     registerBaseModifiers();
     registerMunchkinElvesModifiers();
+    registerMunchkinOrcsModifiers();
     registerStructuredOngoingPowerModifiers();
     registerDinosaurModifiers();
     registerRobotModifiers();

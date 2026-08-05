@@ -124,32 +124,57 @@ type SwInteractionMeta =
       targetPosition: CellCoord;
     }
   | {
-      type: 'shadow_judgment';
+      type: 'shadow_judgment_select_target';
       sourceUnitId: string;
       sourcePosition: CellCoord;
     }
   | {
-      type: 'shadow_tear_the_veil';
+      type: 'shadow_judgment_select_amount';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetPosition: CellCoord;
+  }
+  | {
+      type: 'shadow_tear_the_veil_select_unit';
       sourceUnitId: string;
       sourcePosition: CellCoord;
     }
   | {
-      type: 'shadow_forbidden_knowledge';
+      type: 'shadow_tear_the_veil_select_gate';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetUnitId: string;
+    }
+  | {
+      type: 'shadow_tear_the_veil_select_position';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+      targetUnitId: string;
+      gatePosition: CellCoord;
+  }
+  | {
+      type: 'shadow_forbidden_knowledge_select_target';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+  }
+  | {
+      type: 'shadow_feint_select_position';
+      sourceUnitId: string;
+      sourcePosition: CellCoord;
+  }
+  | {
+      type: 'shadow_shadow_summon_select_target';
       sourceUnitId: string;
       sourcePosition: CellCoord;
     }
   | {
-      type: 'shadow_feint';
+      type: 'shadow_shadow_summon_select_position';
       sourceUnitId: string;
       sourcePosition: CellCoord;
-    }
+      targetPosition: CellCoord;
+  }
   | {
-      type: 'shadow_shadow_summon';
-      sourceUnitId: string;
-      sourcePosition: CellCoord;
-    }
-  | {
-      type: 'shadow_sudden_assault';
+      type: 'shadow_sudden_assault_select_position';
       sourceUnitId: string;
       sourcePosition: CellCoord;
     }
@@ -540,10 +565,14 @@ type SwInteractionValue =
   | { action: 'shadow_pulse_target'; targetPosition: CellCoord }
   | { action: 'shadow_pulse_finish'; skip?: boolean }
   | { action: 'shadow_lightning_step_replace'; targetPosition: CellCoord }
+  | { action: 'shadow_judgment_target'; targetPosition: CellCoord }
   | { action: 'shadow_judgment'; targetPosition: CellCoord; amount: number }
+  | { action: 'shadow_tear_the_veil_target_unit'; targetUnitId: string; targetPosition: CellCoord }
+  | { action: 'shadow_tear_the_veil_target_gate'; gatePosition: CellCoord }
   | { action: 'shadow_tear_the_veil'; targetUnitId: string; gatePosition: CellCoord; newPosition: CellCoord }
   | { action: 'shadow_forbidden_knowledge'; targetPosition: CellCoord }
   | { action: 'shadow_feint'; newPosition: CellCoord }
+  | { action: 'shadow_shadow_summon_target'; targetPosition: CellCoord }
   | { action: 'shadow_shadow_summon'; targetPosition: CellCoord; newPosition: CellCoord }
   | { action: 'shadow_sudden_assault'; newPosition: CellCoord }
   | { action: 'magic_event_play' }
@@ -2357,38 +2386,27 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
           const shadowSourceUnit = getUnitAt(newState.core, sourcePosition);
 
           if ((actionId === 'shadow_judgment_request' || actionId === 'afterMove:shadow_judgment') && shadowSourceUnit) {
-            const chargeCount = normalizeUnitBoosts(shadowSourceUnit.boosts);
             const targets = getAdjacentCells(sourcePosition)
               .map((pos) => getUnitAt(newState.core, pos))
               .filter((unit): unit is BoardUnit => !!unit
                 && (unit.card.unitClass === 'common' || unit.card.unitClass === 'champion'));
-            const options: PromptOption<SwInteractionValue>[] = [];
-            for (const target of targets) {
-              for (let amount = 1; amount <= chargeCount; amount += 1) {
-                options.push({
-                  id: `target:${target.instanceId}:amount:${amount}`,
-                  label: `${target.card.name}（${amount}点）`,
-                  value: {
-                    action: 'shadow_judgment',
-                    targetPosition: target.position,
-                    amount,
-                  } as SwInteractionValue,
-                });
-              }
-            }
+            const options: PromptOption<SwInteractionValue>[] = targets.map((target) => ({
+              id: `target:${target.instanceId}`,
+              label: target.card.name,
+              value: { action: 'shadow_judgment_target', targetPosition: target.position },
+            }));
             if (options.length > 0) {
-              options.push({ id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } });
               const interaction = createSimpleChoice(
-                `sw-shadow-judgment-${event.timestamp ?? 0}-${sourceUnitId}`,
+                `sw-shadow-judgment-target-${event.timestamp ?? 0}-${sourceUnitId}`,
                 shadowSourceUnit.owner,
                 'interaction.sw.shadowJudgment',
                 options,
-                { sourceId: 'shadow_judgment', targetType: 'button', autoResolveIfSingle: false },
+                { sourceId: 'shadow_judgment', targetType: 'minion', autoResolveIfSingle: false },
               );
               const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
               interaction.data = {
                 ...interactionData,
-                sw: { type: 'shadow_judgment', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
+                sw: { type: 'shadow_judgment_select_target', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
               };
               newState = queueInteraction(newState, interaction);
             }
@@ -2399,40 +2417,34 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             && canActivateAbility(newState.core, shadowSourceUnit, 'shadow_tear_the_veil', shadowSourceUnit.owner)) {
             const gates = getAdjacentCells(sourcePosition).filter((pos) => {
               const gate = getStructureAt(newState.core, pos);
-              return !!gate?.card.isGate && gate.owner !== shadowSourceUnit.owner && gate.damage > 0;
+              return !!gate?.card.isGate && gate.owner !== shadowSourceUnit.owner && gate.damage > 0
+                && getAdjacentCells(pos).some((destination) => isCellEmpty(newState.core, destination));
             });
-            const friendlySoldiers = getPlayerUnits(newState.core, shadowSourceUnit.owner)
-              .filter((unit) => unit.card.unitClass === 'common');
-            const options: PromptOption<SwInteractionValue>[] = [];
-            for (const gatePosition of gates) {
-              for (const unit of friendlySoldiers) {
-                for (const newPosition of getAdjacentCells(gatePosition).filter((pos) => isCellEmpty(newState.core, pos))) {
-                  options.push({
-                    id: `unit:${unit.instanceId}:gate:${gatePosition.row},${gatePosition.col}:pos:${newPosition.row},${newPosition.col}`,
-                    label: `${unit.card.name} → ${formatCellCoord(newPosition)}`,
-                    value: {
-                      action: 'shadow_tear_the_veil',
-                      targetUnitId: unit.instanceId,
-                      gatePosition,
-                      newPosition,
-                    } as SwInteractionValue,
-                  });
-                }
-              }
-            }
+            const friendlySoldiers = gates.length > 0
+              ? getPlayerUnits(newState.core, shadowSourceUnit.owner)
+                .filter((unit) => unit.card.unitClass === 'common')
+              : [];
+            const options: PromptOption<SwInteractionValue>[] = friendlySoldiers.map((unit) => ({
+              id: `unit:${unit.instanceId}`,
+              label: unit.card.name,
+              value: {
+                action: 'shadow_tear_the_veil_target_unit',
+                targetUnitId: unit.instanceId,
+                targetPosition: unit.position,
+              },
+            }));
             if (options.length > 0) {
-              options.push({ id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } });
               const interaction = createSimpleChoice(
-                `sw-shadow-tear-the-veil-${event.timestamp ?? 0}-${sourceUnitId}`,
+                `sw-shadow-tear-the-veil-unit-${event.timestamp ?? 0}-${sourceUnitId}`,
                 shadowSourceUnit.owner,
                 'interaction.sw.shadowTearTheVeil',
                 options,
-                { sourceId: 'shadow_tear_the_veil', targetType: 'button', autoResolveIfSingle: false },
+                { sourceId: 'shadow_tear_the_veil', targetType: 'minion', autoResolveIfSingle: false },
               );
               const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
               interaction.data = {
                 ...interactionData,
-                sw: { type: 'shadow_tear_the_veil', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
+                sw: { type: 'shadow_tear_the_veil_select_unit', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
               };
               newState = queueInteraction(newState, interaction);
             }
@@ -2440,61 +2452,53 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
 
           if ((actionId === 'shadow_forbidden_knowledge_request' || actionId === 'afterMove:shadow_forbidden_knowledge')
             && shadowSourceUnit) {
-            const options: PromptOption<SwInteractionValue>[] = [
-              {
-                id: 'self',
-                label: `${shadowSourceUnit.card.name}（自伤）`,
-                value: { action: 'shadow_forbidden_knowledge', targetPosition: sourcePosition } as SwInteractionValue,
-              },
-              ...getAdjacentCells(sourcePosition).flatMap((pos) => {
-                const gate = getStructureAt(newState.core, pos);
-                return gate?.card.isGate
-                  ? [{
-                    id: `gate:${pos.row},${pos.col}`,
-                    label: `${gate.card.name}（伤害）`,
-                    value: { action: 'shadow_forbidden_knowledge', targetPosition: pos } as SwInteractionValue,
-                  }]
-                  : [];
-              }),
-              { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
+            const targetPositions = [
+              sourcePosition,
+              ...getAdjacentCells(sourcePosition).filter((pos) => getStructureAt(newState.core, pos)?.card.isGate),
             ];
-            const interaction = createSimpleChoice(
-              `sw-shadow-forbidden-knowledge-${event.timestamp ?? 0}-${sourceUnitId}`,
-              shadowSourceUnit.owner,
-              'interaction.sw.shadowForbiddenKnowledge',
-              options,
-              { sourceId: 'shadow_forbidden_knowledge', targetType: 'button', autoResolveIfSingle: false },
-            );
-            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
-            interaction.data = {
-              ...interactionData,
-              sw: { type: 'shadow_forbidden_knowledge', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
-            };
-            newState = queueInteraction(newState, interaction);
+            const options: PromptOption<SwInteractionValue>[] = targetPositions.map((targetPosition) => ({
+              id: `target:${targetPosition.row},${targetPosition.col}`,
+              label: targetPosition.row === sourcePosition.row && targetPosition.col === sourcePosition.col
+                ? shadowSourceUnit.card.name
+                : getStructureAt(newState.core, targetPosition)?.card.name ?? formatCellCoord(targetPosition),
+              value: { action: 'shadow_forbidden_knowledge', targetPosition },
+            }));
+            if (options.length > 0) {
+              const interaction = createSimpleChoice(
+                `sw-shadow-forbidden-knowledge-${event.timestamp ?? 0}-${sourceUnitId}`,
+                shadowSourceUnit.owner,
+                'interaction.sw.shadowForbiddenKnowledge',
+                options,
+                { sourceId: 'shadow_forbidden_knowledge', targetType: 'generic', autoResolveIfSingle: false },
+              );
+              const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+              interaction.data = {
+                ...interactionData,
+                sw: { type: 'shadow_forbidden_knowledge_select_target', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
+              };
+              newState = queueInteraction(newState, interaction);
+            }
           }
 
           if (actionId === 'shadow_feint_request' && shadowSourceUnit) {
             const destinations = getForceDestinations(newState.core, sourcePosition, 2);
-            const options: PromptOption<SwInteractionValue>[] = [
-              ...destinations.map((destination) => ({
-                id: `pos:${destination.position.row},${destination.position.col}`,
-                label: formatCellCoord(destination.position),
-                value: { action: 'shadow_feint', newPosition: destination.position } as SwInteractionValue,
-              })),
-              { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
-            ];
-            if (destinations.length > 0) {
+            const options: PromptOption<SwInteractionValue>[] = destinations.map((destination) => ({
+              id: `pos:${destination.position.row},${destination.position.col}`,
+              label: formatCellCoord(destination.position),
+              value: { action: 'shadow_feint', newPosition: destination.position },
+            }));
+            if (options.length > 0) {
               const interaction = createSimpleChoice(
                 `sw-shadow-feint-${event.timestamp ?? 0}-${sourceUnitId}`,
                 shadowSourceUnit.owner,
                 'interaction.sw.shadowFeint',
                 options,
-                { sourceId: 'shadow_feint', targetType: 'button', autoResolveIfSingle: false },
+                { sourceId: 'shadow_feint', targetType: 'generic', autoResolveIfSingle: false },
               );
               const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
               interaction.data = {
                 ...interactionData,
-                sw: { type: 'shadow_feint', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
+                sw: { type: 'shadow_feint_select_position', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
               };
               newState = queueInteraction(newState, interaction);
             }
@@ -2504,51 +2508,40 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             const options: PromptOption<SwInteractionValue>[] = [];
             const friendlyTargets = getPlayerUnits(newState.core, shadowSourceUnit.owner)
               .filter((unit) => unit.instanceId !== sourceUnitId
-                && !(unit.card.abilities ?? []).includes('shadow_shadow_summon'));
+                && !(unit.card.abilities ?? []).includes('shadow_shadow_summon'))
+              .filter((unit) => getAdjacentCells(unit.position).some((pos) => isCellEmpty(newState.core, pos)));
             for (const target of friendlyTargets) {
-              for (const newPosition of getAdjacentCells(target.position).filter((pos) => isCellEmpty(newState.core, pos))) {
-                options.push({
-                  id: `target:${target.instanceId}:pos:${newPosition.row},${newPosition.col}`,
-                  label: `${target.card.name} → ${formatCellCoord(newPosition)}`,
-                  value: {
-                    action: 'shadow_shadow_summon',
-                    targetPosition: target.position,
-                    newPosition,
-                  } as SwInteractionValue,
-                });
-              }
+              options.push({
+                id: `unit:${target.instanceId}`,
+                label: target.card.name,
+                value: { action: 'shadow_shadow_summon_target', targetPosition: target.position },
+              });
             }
             for (let row = 0; row < BOARD_ROWS; row += 1) {
               for (let col = 0; col < BOARD_COLS; col += 1) {
                 const targetPosition = { row, col };
                 const targetStructure = getStructureAt(newState.core, targetPosition);
-                if (!targetStructure || targetStructure.owner !== shadowSourceUnit.owner) continue;
-                for (const newPosition of getAdjacentCells(targetPosition).filter((pos) => isCellEmpty(newState.core, pos))) {
-                  options.push({
-                    id: `structure:${row},${col}:pos:${newPosition.row},${newPosition.col}`,
-                    label: `${targetStructure.card.name} → ${formatCellCoord(newPosition)}`,
-                    value: {
-                      action: 'shadow_shadow_summon',
-                      targetPosition,
-                      newPosition,
-                    } as SwInteractionValue,
-                  });
-                }
+                if (!targetStructure || targetStructure.owner !== shadowSourceUnit.owner
+                  || !getAdjacentCells(targetPosition).some((pos) => isCellEmpty(newState.core, pos))) continue;
+                options.push({
+                  id: `structure:${row},${col}`,
+                  label: targetStructure.card.name,
+                  value: { action: 'shadow_shadow_summon_target', targetPosition },
+                });
               }
             }
             if (options.length > 0) {
-              options.push({ id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } });
               const interaction = createSimpleChoice(
-                `sw-shadow-summon-${event.timestamp ?? 0}-${sourceUnitId}`,
+                `sw-shadow-summon-target-${event.timestamp ?? 0}-${sourceUnitId}`,
                 shadowSourceUnit.owner,
                 'interaction.sw.shadowSummon',
                 options,
-                { sourceId: 'shadow_shadow_summon', targetType: 'button', autoResolveIfSingle: false },
+                { sourceId: 'shadow_shadow_summon', targetType: 'generic', autoResolveIfSingle: false },
               );
               const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
               interaction.data = {
                 ...interactionData,
-                sw: { type: 'shadow_shadow_summon', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
+                sw: { type: 'shadow_shadow_summon_select_target', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
               };
               newState = queueInteraction(newState, interaction);
             }
@@ -2556,26 +2549,23 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
 
           if (actionId === 'shadow_sudden_assault_request' && shadowSourceUnit) {
             const destinations = getForceDestinations(newState.core, sourcePosition, 1);
-            const options: PromptOption<SwInteractionValue>[] = [
-              ...destinations.map((destination) => ({
-                id: `pos:${destination.position.row},${destination.position.col}`,
-                label: formatCellCoord(destination.position),
-                value: { action: 'shadow_sudden_assault', newPosition: destination.position } as SwInteractionValue,
-              })),
-              { id: 'skip', label: '跳过', labelKey: 'actions.skip', value: { skip: true } },
-            ];
-            if (destinations.length > 0) {
+            const options: PromptOption<SwInteractionValue>[] = destinations.map((destination) => ({
+              id: `pos:${destination.position.row},${destination.position.col}`,
+              label: formatCellCoord(destination.position),
+              value: { action: 'shadow_sudden_assault', newPosition: destination.position },
+            }));
+            if (options.length > 0) {
               const interaction = createSimpleChoice(
                 `sw-shadow-sudden-assault-${event.timestamp ?? 0}-${sourceUnitId}`,
                 shadowSourceUnit.owner,
                 'interaction.sw.shadowSuddenAssault',
                 options,
-                { sourceId: 'shadow_sudden_assault', targetType: 'button', autoResolveIfSingle: false },
+                { sourceId: 'shadow_sudden_assault', targetType: 'generic', autoResolveIfSingle: false },
               );
               const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
               interaction.data = {
                 ...interactionData,
-                sw: { type: 'shadow_sudden_assault', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
+                sw: { type: 'shadow_sudden_assault_select_position', sourceUnitId, sourcePosition } satisfies SwInteractionMeta,
               };
               newState = queueInteraction(newState, interaction);
             }
@@ -3912,14 +3902,179 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             });
           }
 
-          if (sw.type === 'shadow_judgment'
-            || sw.type === 'shadow_tear_the_veil'
-            || sw.type === 'shadow_forbidden_knowledge'
-            || sw.type === 'shadow_feint'
-            || sw.type === 'shadow_shadow_summon'
-            || sw.type === 'shadow_sudden_assault') {
+          if (sw.type === 'shadow_judgment_select_target') {
+            const picked = values.find((item) => item.action === 'shadow_judgment_target') as
+              { action: 'shadow_judgment_target'; targetPosition?: CellCoord } | undefined;
+            const target = picked?.targetPosition ? getUnitAt(newState.core, picked.targetPosition) : undefined;
+            const sourceUnit = getUnitAt(newState.core, sw.sourcePosition);
+            if (!picked?.targetPosition || !target || !sourceUnit
+              || (target.card.unitClass !== 'common' && target.card.unitClass !== 'champion')) continue;
+            const chargeCount = normalizeUnitBoosts(sourceUnit.boosts);
+            const options: PromptOption<SwInteractionValue>[] = [];
+            for (let amount = 1; amount <= chargeCount; amount += 1) {
+              options.push({
+                id: `amount:${amount}`,
+                label: `${amount}点`,
+                value: { action: 'shadow_judgment', targetPosition: picked.targetPosition, amount },
+              });
+            }
+            if (options.length === 0) continue;
+            const interaction = createSimpleChoice(
+              `sw-shadow-judgment-amount-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.shadowJudgment',
+              options,
+              { sourceId: 'shadow_judgment', targetType: 'button', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'shadow_judgment_select_amount',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetPosition: picked.targetPosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'shadow_tear_the_veil_select_unit') {
+            const picked = values.find((item) => item.action === 'shadow_tear_the_veil_target_unit') as
+              { action: 'shadow_tear_the_veil_target_unit'; targetUnitId?: string } | undefined;
+            const sourceUnit = getUnitAt(newState.core, sw.sourcePosition);
+            const target = picked?.targetUnitId ? findUnitPositionByInstanceId(newState.core, picked.targetUnitId) : undefined;
+            if (!picked?.targetUnitId || !sourceUnit || !target) continue;
+            const gates = getAdjacentCells(sw.sourcePosition).filter((pos) => {
+              const gate = getStructureAt(newState.core, pos);
+              return !!gate?.card.isGate && gate.owner !== sourceUnit.owner && gate.damage > 0
+                && getAdjacentCells(pos).some((destination) => isCellEmpty(newState.core, destination));
+            });
+            const options: PromptOption<SwInteractionValue>[] = gates.map((gatePosition) => ({
+              id: `gate:${gatePosition.row},${gatePosition.col}`,
+              label: getStructureAt(newState.core, gatePosition)?.card.name ?? formatCellCoord(gatePosition),
+              value: { action: 'shadow_tear_the_veil_target_gate', gatePosition },
+            }));
+            if (options.length === 0) continue;
+            const interaction = createSimpleChoice(
+              `sw-shadow-tear-the-veil-gate-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.shadowTearTheVeil',
+              options,
+              { sourceId: 'shadow_tear_the_veil', targetType: 'generic', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'shadow_tear_the_veil_select_gate',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetUnitId: picked.targetUnitId,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'shadow_tear_the_veil_select_gate') {
+            const picked = values.find((item) => item.action === 'shadow_tear_the_veil_target_gate') as
+              { action: 'shadow_tear_the_veil_target_gate'; gatePosition?: CellCoord } | undefined;
+            const sourceUnit = getUnitAt(newState.core, sw.sourcePosition);
+            const gate = picked?.gatePosition ? getStructureAt(newState.core, picked.gatePosition) : undefined;
+            if (!picked?.gatePosition || !sourceUnit || !gate
+              || !gate.card.isGate || gate.owner === sourceUnit.owner || gate.damage <= 0) continue;
+            const positions = getAdjacentCells(picked.gatePosition).filter((pos) => isCellEmpty(newState.core, pos));
+            const options: PromptOption<SwInteractionValue>[] = positions.map((newPosition) => ({
+              id: `pos:${newPosition.row},${newPosition.col}`,
+              label: formatCellCoord(newPosition),
+              value: {
+                action: 'shadow_tear_the_veil',
+                targetUnitId: sw.targetUnitId,
+                gatePosition: picked.gatePosition,
+                newPosition,
+              },
+            }));
+            if (options.length === 0) continue;
+            const interaction = createSimpleChoice(
+              `sw-shadow-tear-the-veil-position-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.shadowTearTheVeil',
+              options,
+              { sourceId: 'shadow_tear_the_veil', targetType: 'generic', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'shadow_tear_the_veil_select_position',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetUnitId: sw.targetUnitId,
+                gatePosition: picked.gatePosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          if (sw.type === 'shadow_shadow_summon_select_target') {
+            const picked = values.find((item) => item.action === 'shadow_shadow_summon_target') as
+              { action: 'shadow_shadow_summon_target'; targetPosition?: CellCoord } | undefined;
+            const sourceUnit = getUnitAt(newState.core, sw.sourcePosition);
+            const targetUnit = picked?.targetPosition ? getUnitAt(newState.core, picked.targetPosition) : undefined;
+            const targetStructure = picked?.targetPosition ? getStructureAt(newState.core, picked.targetPosition) : undefined;
+            const targetIsValid = (targetUnit
+              && targetUnit.owner === payload.playerId
+              && targetUnit.instanceId !== sw.sourceUnitId
+              && !(targetUnit.card.abilities ?? []).includes('shadow_shadow_summon'))
+              || (targetStructure && targetStructure.owner === payload.playerId);
+            if (!picked?.targetPosition || !sourceUnit || !targetIsValid) continue;
+            const positions = getAdjacentCells(picked.targetPosition).filter((pos) => isCellEmpty(newState.core, pos));
+            const options: PromptOption<SwInteractionValue>[] = positions.map((newPosition) => ({
+              id: `pos:${newPosition.row},${newPosition.col}`,
+              label: formatCellCoord(newPosition),
+              value: {
+                action: 'shadow_shadow_summon',
+                targetPosition: picked.targetPosition,
+                newPosition,
+              },
+            }));
+            if (options.length === 0) continue;
+            const interaction = createSimpleChoice(
+              `sw-shadow-summon-position-${event.timestamp ?? 0}-${sw.sourceUnitId}`,
+              payload.playerId,
+              'interaction.sw.shadowSummon',
+              options,
+              { sourceId: 'shadow_shadow_summon', targetType: 'generic', autoResolveIfSingle: false },
+            );
+            const interactionData = (interaction.data ?? {}) as Record<string, unknown>;
+            interaction.data = {
+              ...interactionData,
+              sw: {
+                type: 'shadow_shadow_summon_select_position',
+                sourceUnitId: sw.sourceUnitId,
+                sourcePosition: sw.sourcePosition,
+                targetPosition: picked.targetPosition,
+              } satisfies SwInteractionMeta,
+            };
+            newState = queueInteraction(newState, interaction);
+          }
+
+          const shadowAbilityId = sw.type === 'shadow_judgment_select_amount'
+            ? 'shadow_judgment'
+            : sw.type === 'shadow_tear_the_veil_select_position'
+              ? 'shadow_tear_the_veil'
+              : sw.type === 'shadow_forbidden_knowledge_select_target'
+                ? 'shadow_forbidden_knowledge'
+                : sw.type === 'shadow_feint_select_position'
+                  ? 'shadow_feint'
+                  : sw.type === 'shadow_shadow_summon_select_position'
+                    ? 'shadow_shadow_summon'
+                    : sw.type === 'shadow_sudden_assault_select_position'
+                      ? 'shadow_sudden_assault'
+                      : null;
+          if (shadowAbilityId) {
             const picked = values.find((item) => (
-              item.action === sw.type
+              item.action === shadowAbilityId
             )) as {
               action: 'shadow_judgment'
                 | 'shadow_tear_the_veil'
@@ -3935,7 +4090,7 @@ export function createSummonerWarsInteractionSystem(): EngineSystem<SummonerWars
             } | undefined;
             if (!picked) continue;
             const abilityPayload: Record<string, unknown> = {
-              abilityId: sw.type,
+              abilityId: shadowAbilityId,
               sourceUnitId: sw.sourceUnitId,
               _noSnapshot: true,
             };

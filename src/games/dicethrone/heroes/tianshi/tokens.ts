@@ -25,7 +25,7 @@ export const TIANSHI_TOKENS: TokenDef[] = [
         stackLimit: 3,
         category: 'consumable',
         activeUse: {
-            timing: ['beforeDamageDealt', 'beforeDamageReceived'],
+            timing: ['beforeDamageDealt', 'beforeDamageReceived', 'duringRoll'],
             consumeAmount: 1,
             effect: { type: 'modifyDamageDealt', value: 0 },
             customActionId: 'tianshi-use-flight',

@@ -82,6 +82,8 @@ export class GameTransportClient {
     private _destroyed = false;
     /** 最近一次成功处理的 stateID，用于增量同步连续性校验 */
     private _lastReceivedStateID: number | null = null;
+    /** 正在等待全量权威状态；此期间禁止用旧 stateID 继续发命令。 */
+    private _syncInFlight = false;
     private _syncTimer: ReturnType<typeof setTimeout> | null = null;
     private _syncRetries = 0;
     private _healthCheckTimer: ReturnType<typeof setInterval> | null = null;
@@ -90,6 +92,7 @@ export class GameTransportClient {
     private static readonly SYNC_MAX_RETRIES = 5;
     private static readonly HEALTH_CHECK_INTERVAL_MS = 30000; // 30秒检查一次
     private static readonly TERMINAL_ERRORS = new Set(['match_not_found', 'unauthorized']);
+    private static readonly COMMAND_REJECTION_RESYNC_ERRORS = new Set(['stale_state', 'player_mismatch']);
 
     constructor(config: GameTransportClientConfig) {
         this.config = config;
@@ -220,6 +223,7 @@ export class GameTransportClient {
             if (this._destroyed || matchID !== this.config.matchID) return;
             this.clearSyncTimer();
             this._syncRetries = 0;
+            this._syncInFlight = false;
             this._connectionState = 'connected';
             this._latestState = state;
             this._matchPlayers = matchPlayers;
@@ -299,6 +303,10 @@ export class GameTransportClient {
             this.notifyErrorSubscribers(error);
             if (GameTransportClient.TERMINAL_ERRORS.has(error)) {
                 this.handleTerminalError(error);
+            } else if (GameTransportClient.COMMAND_REJECTION_RESYNC_ERRORS.has(error)) {
+                // 服务端拒绝说明本地命令所依据的状态可能已经落后；
+                // 在新的全量状态回来前禁止继续发送旧命令，避免连续 stale_state / player_mismatch。
+                this.sendSync(`command-rejected:${error}`);
             }
             this.config.onError?.(error);
         });
@@ -339,6 +347,13 @@ export class GameTransportClient {
     /** 发送命令 */
     sendCommand(commandType: string, payload: unknown): void {
         if (!this.socket || this._destroyed) return;
+        if (this._syncInFlight) {
+            console.warn('[GameTransportClient] 全量同步进行中，命令被延后丢弃', {
+                commandType,
+                matchID: this.config.matchID,
+            });
+            return;
+        }
         // 检查连接状态：只有在完成 sync 握手后才能发送命令
         if (this._connectionState !== 'connected') {
             console.warn('[GameTransportClient] 连接未就绪，命令被忽略', {
@@ -388,6 +403,14 @@ export class GameTransportClient {
         onRejected?: (reason: string) => void,
     ): void {
         if (!this.socket || this._destroyed) return;
+        if (this._syncInFlight) {
+            console.warn('[GameTransportClient] 全量同步进行中，批量命令被延后丢弃', {
+                batchId,
+                commandCount: commands.length,
+                matchID: this.config.matchID,
+            });
+            return;
+        }
         // 检查连接状态：只有在完成 sync 握手后才能发送命令
         if (this._connectionState !== 'connected') {
             console.warn('[GameTransportClient] 连接未就绪，批量命令被拒绝', {
@@ -473,6 +496,9 @@ export class GameTransportClient {
         if (this._destroyed || this._terminalError || !this.socket) return;
         if (this.socket.connected) {
             // 连接正常：直接发送 sync 获取最新状态
+            // 命令拒绝已经触发同步时，合并上层 recovery 的重复 resync；
+            // 初始同步尚未建立 stateID 基线时仍允许手动重发。
+            if (this._syncInFlight && this._lastReceivedStateID !== null) return;
             this.sendSync('manual-resync');
         } else {
             // 连接已断：强制重连（socket.io 可能因后台节流未及时重连）
@@ -487,6 +513,7 @@ export class GameTransportClient {
     /** 发送 sync 请求并启动超时重试 */
     private sendSync(reason: string): void {
         if (this._destroyed || this._terminalError || !this.socket?.connected) return;
+        this._syncInFlight = true;
         this.clearSyncTimer();
         this.config.onDebugEvent?.({
             stage: 'sync-requested',
@@ -567,6 +594,7 @@ export class GameTransportClient {
         this.clearHealthCheck();
         this._syncRetries = 0;
         this._connectionState = 'disconnected';
+        this._syncInFlight = false;
         this.config.onConnectionChange?.(false);
         if (this.socket) {
             this.socket.removeAllListeners();

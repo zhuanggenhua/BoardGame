@@ -404,6 +404,7 @@ function queueTargetChoice(
     playerId: PlayerId,
     id: string,
     title: string,
+    titleKey: string,
     sourceId: string,
     options: PromptOption<MinionChoice>[],
     data: InteractionData,
@@ -412,6 +413,7 @@ function queueTargetChoice(
     const interaction = createSimpleChoice<MinionChoice>(id, playerId, title, options, {
         sourceId,
         targetType: 'minion',
+        titleKey,
         autoResolveIfSingle: false,
         responseValidationMode: 'live',
         autoRefresh: 'field',
@@ -452,7 +454,7 @@ function helpingHandsAfterScoring(ctx: TriggerContext): SmashUpEvent[] | { event
         entry.playerId,
         '援手：是否从获胜玩家处获得 1 VP？',
         [
-            { id: 'take', label: '获得 1 VP', value: { take: true }, displayMode: 'button' },
+            { id: 'take', label: '获得 1 VP', labelKey: 'ui.munchkin_elves_helping_hands_vp_take_option', value: { take: true }, displayMode: 'button' },
             skipOption('不获得'),
         ],
         { sourceId: HELPING_CHOOSE_VP, targetType: 'button', titleKey: 'ui.munchkin_elves_helping_hands_vp_title', autoResolveIfSingle: false, displayCard: { defId: HELPING_HANDS, cardUid: entry.cardUid } },
@@ -484,7 +486,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
         const options = minionOptionsAtBase(state.core, sourceBaseIndex, playerId, choice.targetPlayerId, FLOWER_CHILD)
             .filter(option => getEffectivePower(state.core, state.core.bases[sourceBaseIndex].minions.find(minion => minion.uid === option.value.minionUid)!, sourceBaseIndex) <= 3);
         if (options.length === 0) return { state, events: [] };
-        return { state: queueTargetChoice(state, playerId, `${FLOWER_CHOOSE_MINION}_${sourceCardUid}_${timestamp}`, '花之子：选择对方力量 3 或更少的随从', FLOWER_CHOOSE_MINION, options, { sourcePlayerId: playerId, targetPlayerId: choice.targetPlayerId, sourceCardUid, sourceBaseIndex }, { defId: FLOWER_CHILD, cardUid: sourceCardUid }), events: [] };
+        return { state: queueTargetChoice(state, playerId, `${FLOWER_CHOOSE_MINION}_${sourceCardUid}_${timestamp}`, '花之子：选择对方力量 3 或更少的随从', 'ui.munchkin_elves_flower_child_minion_title', FLOWER_CHOOSE_MINION, options, { sourcePlayerId: playerId, targetPlayerId: choice.targetPlayerId, sourceCardUid, sourceBaseIndex }, { defId: FLOWER_CHILD, cardUid: sourceCardUid }), events: [] };
     });
 
     registerInteractionHandler(FLOWER_CHOOSE_MINION, (state, playerId, value, data, _random, timestamp) => {
@@ -505,7 +507,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
         if (!targetPlayerId || !sourcePlayerId) return { state, events: [] };
         const options = minionOptions(state.core, Object.values(state.core.bases).flatMap(base => base.minions).filter(minion => minion.controller === targetPlayerId), targetPlayerId, PUMPING_IRON);
         if (options.length === 0) return { state, events: [] };
-        return { state: queueTargetChoice(state, targetPlayerId, `${PUMPING_CHOOSE_OTHER_MINION}_${timestamp}`, '力量训练：选择一个己方随从获得 +2', PUMPING_CHOOSE_OTHER_MINION, options, { sourcePlayerId, targetPlayerId, sourceCardUid: data?.sourceCardUid }, { defId: PUMPING_IRON, cardUid: data?.sourceCardUid as string | undefined }), events: [] };
+        return { state: queueTargetChoice(state, targetPlayerId, `${PUMPING_CHOOSE_OTHER_MINION}_${timestamp}`, '力量训练：选择一个己方随从获得 +2', 'ui.munchkin_elves_pumping_iron_other_minion_title', PUMPING_CHOOSE_OTHER_MINION, options, { sourcePlayerId, targetPlayerId, sourceCardUid: data?.sourceCardUid }, { defId: PUMPING_IRON, cardUid: data?.sourceCardUid as string | undefined }), events: [] };
     });
 
     registerInteractionHandler(PUMPING_CHOOSE_OTHER_MINION, (state, playerId, value, data, _random, timestamp) => {
@@ -516,7 +518,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
         const own = findMinion(state.core, choice.baseIndex, choice.minionUid)?.minion;
         const options = minionOptions(state.core, Object.values(state.core.bases).flatMap(base => base.minions).filter(minion => minion.controller === sourcePlayerId), sourcePlayerId, PUMPING_IRON);
         if (!own || own.controller !== playerId || options.length === 0) return { state, events: [] };
-        return { state: queueTargetChoice(state, sourcePlayerId, `${PUMPING_CHOOSE_SELF_MINION}_${timestamp}`, '力量训练：选择一个己方随从获得 +3', PUMPING_CHOOSE_SELF_MINION, options, { sourcePlayerId, otherMinionUid: own.uid, otherBaseIndex: choice.baseIndex, sourceCardUid }, { defId: PUMPING_IRON, cardUid: sourceCardUid }), events: [] };
+        return { state: queueTargetChoice(state, sourcePlayerId, `${PUMPING_CHOOSE_SELF_MINION}_${timestamp}`, '力量训练：选择一个己方随从获得 +3', 'ui.munchkin_elves_pumping_iron_self_minion_title', PUMPING_CHOOSE_SELF_MINION, options, { sourcePlayerId, otherMinionUid: own.uid, otherBaseIndex: choice.baseIndex, sourceCardUid }, { defId: PUMPING_IRON, cardUid: sourceCardUid }), events: [] };
     });
 
     registerInteractionHandler(PUMPING_CHOOSE_SELF_MINION, (state, playerId, value, data, _random, timestamp) => {
@@ -539,7 +541,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
             .filter(option => state.core.bases[sourceBaseIndex].minions.find(minion => minion.uid === option.value.minionUid)?.controller !== playerId);
         const sourceCardUid = data?.sourceCardUid as string | undefined;
         if (options.length === 0 || !sourceCardUid) return { state, events: [] };
-        return { state: queueTargetChoice(state, playerId, `${RUN_CHOOSE_OTHER_MINION}_${timestamp}`, '逃跑吧：选择另一位玩家的随从', RUN_CHOOSE_OTHER_MINION, options.filter(option => state.core.bases[sourceBaseIndex].minions.find(minion => minion.uid === option.value.minionUid)?.controller !== playerId), { sourceBaseIndex, sourceCardUid, ownMinionUid: choice.minionUid }, { defId: RUN_AWAY, cardUid: sourceCardUid }), events: [] };
+        return { state: queueTargetChoice(state, playerId, `${RUN_CHOOSE_OTHER_MINION}_${timestamp}`, '逃跑吧：选择另一位玩家的随从', 'ui.munchkin_elves_run_away_other_minion_title', RUN_CHOOSE_OTHER_MINION, options.filter(option => state.core.bases[sourceBaseIndex].minions.find(minion => minion.uid === option.value.minionUid)?.controller !== playerId), { sourceBaseIndex, sourceCardUid, ownMinionUid: choice.minionUid }, { defId: RUN_AWAY, cardUid: sourceCardUid }), events: [] };
     });
 
     registerInteractionHandler(RUN_CHOOSE_OTHER_MINION, (state, playerId, value, data, _random, timestamp) => {
@@ -630,7 +632,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
         if (!targetPlayerId || sourceBaseIndex === undefined || !sourceCardUid) return { state, events: [] };
         const options = minionOptionsAtBase(state.core, sourceBaseIndex, playerId, playerId, HELPING_HANDS);
         if (options.length === 0) return { state, events: [] };
-        return { state: queueTargetChoice(state, playerId, `${HELPING_CHOOSE_MINION}_${timestamp}`, '援手：选择一个己方随从获得 -2（最低为 0）', HELPING_CHOOSE_MINION, options, { targetPlayerId, sourceBaseIndex, sourceCardUid }, { defId: HELPING_HANDS, cardUid: sourceCardUid }), events: [] };
+        return { state: queueTargetChoice(state, playerId, `${HELPING_CHOOSE_MINION}_${timestamp}`, '援手：选择一个己方随从获得 -2（最低为 0）', 'ui.munchkin_elves_helping_hands_minion_title', HELPING_CHOOSE_MINION, options, { targetPlayerId, sourceBaseIndex, sourceCardUid }, { defId: HELPING_HANDS, cardUid: sourceCardUid }), events: [] };
     });
 
     registerInteractionHandler(HELPING_CHOOSE_MINION, (state, playerId, value, data, _random, timestamp) => {
@@ -661,7 +663,7 @@ export function registerMunchkinElvesInteractionHandlers(): void {
     registerInteractionHandler(TREEHOUSE_CHOOSE_PLAYER, (state, playerId, value, data, _random, timestamp) => {
         const targetPlayerId = (value as PlayerChoice)?.targetPlayerId;
         if (!targetPlayerId || targetPlayerId === playerId) return { state, events: [] };
-        const interaction = createSimpleChoice<{ draw?: boolean }>(`${TREEHOUSE_CHOOSE_DRAW}_${timestamp}`, targetPlayerId, '树屋：是否抽一张牌？', [{ id: 'draw', label: '抽一张牌', value: { draw: true }, displayMode: 'button' }, skipOption('跳过')], { sourceId: TREEHOUSE_CHOOSE_DRAW, targetType: 'button', titleKey: 'ui.base_treehouse_draw_title', autoResolveIfSingle: false });
+        const interaction = createSimpleChoice<{ draw?: boolean }>(`${TREEHOUSE_CHOOSE_DRAW}_${timestamp}`, targetPlayerId, '树屋：是否抽一张牌？', [{ id: 'draw', label: '抽一张牌', labelKey: 'ui.base_treehouse_draw_option', value: { draw: true }, displayMode: 'button' }, skipOption('跳过')], { sourceId: TREEHOUSE_CHOOSE_DRAW, targetType: 'button', titleKey: 'ui.base_treehouse_draw_title', autoResolveIfSingle: false });
         return { state: queueSimpleChoice(state, { ...interaction, data: { ...interaction.data, sourcePlayerId: playerId } }), events: [] };
     });
 

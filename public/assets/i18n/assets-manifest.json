@@ -8024,12 +8024,111 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/tianshi/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
+          "bytes": 14654587,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/tianshi/cards": {
       "variants": {
         "png": {
           "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
           "bytes": 14654587,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/飞行": {
+      "variants": {
+        "webp": {
+          "sha256": "3027dde589601f7d8287992ff2679aefd0d971b9cac6552280c1c3b215c9e395",
+          "bytes": 15206,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣降临 ": {
+      "variants": {
+        "webp": {
+          "sha256": "3c7e1d981a3d9bac25c1db9b7f1f21b88efae343ff513ec88a9678b7580993e4",
+          "bytes": 17874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/神圣祝福": {
+      "variants": {
+        "webp": {
+          "sha256": "e8f79df39d5ff61b60593763996130ac59216c9de916f7fe933df3dea57bc873",
+          "bytes": 29734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/炫光": {
+      "variants": {
+        "webp": {
+          "sha256": "fba6a5faca41197c6a71355297fc8644a85ca41e7a37ed71291c5dee7af5f488",
+          "bytes": 22126,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "eba3741c9783ccc2fecfdef9d13c09070c6423cc782a38a87936c800b798a64c",
+          "bytes": 2226894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "eba3741c9783ccc2fecfdef9d13c09070c6423cc782a38a87936c800b798a64c",
+          "bytes": 2226894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "65450ae53be098d0ab974d2e39eb79a62ac09781ee4b345d34ed7ed32663c88a",
+          "bytes": 36796,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "6a4ae546327bda781e8563df32e96a9801bc6015271f2db1ad119498a2b06be4",
+          "bytes": 1963960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "da4f66bd5a3bf98ac5606c8d4b67431e44e378dd659d7ba4e2746864f96ba10c",
+          "bytes": 87764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "186274a3d0fac112846a9b7b19870af6c81a0a54253295a74730865509ae5726",
+          "bytes": 702920,
+          "mime": "image/webp"
         }
       }
     },
@@ -8047,6 +8146,20 @@
         "png": {
           "sha256": "3ffa794ae27cf1fdb1809ea7cf542e4849083254f7204f09b10cc1a294a442ae",
           "bytes": 10830955,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/tianshi/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "f081694215d3a8656801f3aa90b2eb228ee225c2777f5ca3f4d0f5d60157bea6",
+          "bytes": 612,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "dcdb39a70056badef9b068fe5be38a94693bb71ff770cb19456120af493976ec",
+          "bytes": 407076,
           "mime": "image/png"
         }
       }

@@ -471,7 +471,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     const contextPreviewRef = useMemo(() => prompt ? extractContextPreview(prompt) : undefined, [prompt]);
     const shouldDockMunchkinPlayerPrompt = !contextPreviewRef
         && (promptTitleKey?.startsWith('ui.munchkin_elves_') === true
-            || promptTitleKey?.startsWith('ui.base_treehouse_') === true);
+            || promptTitleKey?.startsWith('ui.base_treehouse_') === true
+            // 法师天赋的额外出牌类型是屏幕按钮选择，不能压在基地下方随从上。
+            || promptTitleKey === 'ui.munchkin_mages_wand_whiz_mode_title'
+            // 计分前响应动作选择必须避开正在被选择的基地与随从。
+            || prompt?.sourceId === 'smashup_reaction_choose');
 
     // 少量选项 + 非卡牌模式 → 内联面板
     const useInlineMode = !isMulti && !useCardMode && hasOptions && (prompt?.options?.length ?? 0) <= 3;

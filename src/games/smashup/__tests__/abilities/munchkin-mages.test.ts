@@ -135,22 +135,55 @@ describe('Munchkin 法师派系能力', () => {
         expect(resolved.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(2);
     });
 
+    it('快乐小法师在计分前也必须手动激活同一套弃牌与加力能力', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('cost', 'test_action', 'action', '0')],
+                    discard: [],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [
+                makeMinion('zapper', 'munchkin_mages_happy_zapper', '0', 2),
+            ])],
+        });
+
+        const ability = invoke(core, 'munchkin_mages_happy_zapper', 'special', 'zapper');
+        const prompt = getSimpleChoicePrompt(ability.matchState!, 'munchkin_mages_happy_zapper_discard');
+        expect(prompt.options).toHaveLength(1);
+
+        const resolved = respondToPromptOption(
+            ability.matchState!,
+            option => option.value?.cardUid === 'cost',
+            '选择快乐小法师特殊能力的弃牌成本',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'zapper', amount: 2 }),
+        }));
+        expect(resolved.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(2);
+    });
+
     it('勤读者弃牌后抽一张牌，行动卡来源按弃牌堆校验', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
                     hand: [makeCard('cost', 'test_action', 'action', '0')],
                     deck: [makeCard('drawn', 'test_minion', 'minion', '0')],
-                    discard: [makeCard('scroll', 'munchkin_mages_scroll_shuffler', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
             },
-            bases: [makeBase('test_base')],
+            bases: [makeBase('test_base', [makeMinion('scroll', 'munchkin_mages_scroll_shuffler', '0', 2)])],
         });
 
         const ability = invoke(core, 'munchkin_mages_scroll_shuffler', 'onPlay', 'scroll');
         const prompt = getSimpleChoicePrompt(ability.matchState!, 'munchkin_mages_scroll_shuffler_discard');
-        expect(prompt.data?.sourceBaseIndex).toBeUndefined();
+        expect(prompt.sourceBaseIndex).toBe(0);
         const resolved = respondToPromptOption(
             ability.matchState!,
             option => option.value?.cardUid === 'cost',
@@ -160,8 +193,9 @@ describe('Munchkin 法师派系能力', () => {
         );
 
         expect(resolved.success).toBe(true);
-        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['scroll', 'cost']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['cost']);
         expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('drawn');
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['scroll']);
     });
 
     it('快速阅读弃牌后抽三张牌', () => {

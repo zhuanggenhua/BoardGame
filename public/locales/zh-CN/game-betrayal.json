@@ -884,8 +884,11 @@
       "addedToInventory": "已加入持有区",
       "readyToUse": "已选中，可直接使用",
       "rollModifierTag": "改骰",
+      "finalEffectLabel": "最终效果",
       "confirmCard": "确认",
-      "confirmCardStep": "确认 {{current}}/{{total}}"
+      "confirmCardStep": "确认本步（步骤 {{current}}/{{total}}）",
+      "confirmationProgress": "玩家确认 {{confirmed}}/{{total}}",
+      "waitingForAll": "等待全员确认 {{confirmed}}/{{total}}"
     },
     "roll": {
       "fallbackLabel": "投骰",

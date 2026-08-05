@@ -565,6 +565,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
     hasEngineInteraction: engineInteractionBusy,
     hasSwInteraction: !!swInteraction,
   });
+  const shouldHidePhaseControlsForPrompt = isMyTurn && (!!abilityMode || engineInteractionBusy);
 
   const startPendingAttackVisual = useCallback((reason: 'dice-reveal-complete' | 'dice-close') => {
     const pending = pendingAttackRef.current;
@@ -1407,9 +1408,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 </div>
 
                 {/* 右下区域：结束阶段按钮 + 弃牌堆 */}
-                <div className={phaseControlsClass} data-testid="sw-phase-controls">
-                  {phaseControlsNode}
-                </div>
+                {!shouldHidePhaseControlsForPrompt && (
+                  <div className={phaseControlsClass} data-testid="sw-phase-controls">
+                    {phaseControlsNode}
+                  </div>
+                )}
 
                 {/* 右侧：阶段指示器（桌面端独立右侧中线 rail，不再和对手/底部 HUD 共用经验值定位） */}
                 <div className={phaseTrackerRailClass}>

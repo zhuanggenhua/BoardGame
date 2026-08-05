@@ -10568,6 +10568,15 @@ export default function BetrayalBoard({
         : latestDiscoveryDetailSteps,
     [latestDiscoveryDetailSteps, shouldCompactLatestDiscoveryResolutionSteps],
   );
+  const latestDiscoveryFinalEffectText = React.useMemo(() => {
+    if (latestDiscoveryDetailSteps.length > 0) {
+      return latestDiscoveryDetailSteps
+        .map(compactVisibleDiscoveryResolutionStep)
+        .filter((step) => step.length > 0)
+        .join("；");
+    }
+    return latestDiscovery?.detail?.trim() ?? "";
+  }, [latestDiscovery, latestDiscoveryDetailSteps]);
   const latestDiscoveryPendingCardResolution =
     React.useMemo<BetrayalPendingCardResolutionState | null>(() => {
       const pendingResolution = activePendingCardResolution;
@@ -10586,8 +10595,34 @@ export default function BetrayalBoard({
       latestDiscovery,
       latestDiscoveryOwnerPlayerId,
     ]);
+  const latestDiscoveryCardResolutionRequiredPlayerIds =
+    latestDiscoveryPendingCardResolution?.requiredPlayerIds?.length
+      ? latestDiscoveryPendingCardResolution.requiredPlayerIds
+      : latestDiscoveryPendingCardResolution
+        ? [latestDiscoveryPendingCardResolution.playerId]
+        : [];
+  const latestDiscoveryCardResolutionAcknowledgedPlayerIds =
+    latestDiscoveryPendingCardResolution?.acknowledgedPlayerIds ?? [];
+  const latestDiscoveryCardResolutionConfirmedCount =
+    latestDiscoveryCardResolutionRequiredPlayerIds.filter((playerId) =>
+      latestDiscoveryCardResolutionAcknowledgedPlayerIds.includes(playerId),
+    ).length;
+  const latestDiscoveryCardResolutionTotalCount =
+    latestDiscoveryCardResolutionRequiredPlayerIds.length;
+  const latestDiscoveryViewerHasAcknowledgedCardResolution =
+    latestDiscoveryCardResolutionAcknowledgedPlayerIds.includes(viewerPlayerId);
+  const canCurrentViewerAcknowledgeCardResolution = Boolean(
+    latestDiscoveryPendingCardResolution
+      && latestDiscoveryCardResolutionRequiredPlayerIds.includes(viewerPlayerId)
+      && !latestDiscoveryViewerHasAcknowledgedCardResolution,
+  );
   const latestDiscoveryContinueLabel = latestDiscoveryPendingCardResolution
-    ? latestDiscoveryPendingCardResolution.total > 1
+    ? latestDiscoveryViewerHasAcknowledgedCardResolution
+      ? t("board.discovery.waitingForAll", {
+          confirmed: latestDiscoveryCardResolutionConfirmedCount,
+          total: latestDiscoveryCardResolutionTotalCount,
+        })
+      : latestDiscoveryPendingCardResolution.total > 1
       ? t("board.discovery.confirmCardStep", {
           current: latestDiscoveryPendingCardResolution.index,
           total: latestDiscoveryPendingCardResolution.total,
@@ -10596,6 +10631,10 @@ export default function BetrayalBoard({
     : t("board.roll.backToBoard");
   const shouldShowLatestDiscoveryStepProgress =
     latestDiscoveryDetailSteps.length > 1;
+  const latestDiscoveryPendingResolutionSeenRef = React.useRef<{
+    sourceKey: string;
+    resolutionId: string;
+  } | null>(null);
   const handleDismissLatestDiscovery = React.useCallback(() => {
     if (!latestDiscoveryKey) {
       return;
@@ -10623,27 +10662,40 @@ export default function BetrayalBoard({
   ]);
   const handleContinueLatestDiscovery = React.useCallback(() => {
     if (latestDiscoveryPendingCardResolution) {
-      if (latestDiscoveryPendingCardResolution.playerId !== viewerPlayerId) {
-        handleDismissLatestDiscovery();
+      if (!canCurrentViewerAcknowledgeCardResolution) {
         return;
       }
       dispatchCommand(BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, {
         resolutionId: latestDiscoveryPendingCardResolution.id,
       });
-      if (
-        latestDiscoveryPendingCardResolution.index >=
-        latestDiscoveryPendingCardResolution.total
-      ) {
-        handleDismissLatestDiscovery();
-      }
       return;
     }
     handleDismissLatestDiscovery();
   }, [
     dispatchCommand,
     handleDismissLatestDiscovery,
+    canCurrentViewerAcknowledgeCardResolution,
     latestDiscoveryPendingCardResolution,
-    viewerPlayerId,
+  ]);
+  React.useEffect(() => {
+    const pendingResolution = latestDiscoveryPendingCardResolution;
+    if (pendingResolution && latestDiscoveryEntry?.sourceKey) {
+      latestDiscoveryPendingResolutionSeenRef.current = {
+        sourceKey: latestDiscoveryEntry.sourceKey,
+        resolutionId: pendingResolution.id,
+      };
+      return;
+    }
+    const seenResolution = latestDiscoveryPendingResolutionSeenRef.current;
+    if (!seenResolution || seenResolution.sourceKey !== latestDiscoveryEntry?.sourceKey) {
+      return;
+    }
+    latestDiscoveryPendingResolutionSeenRef.current = null;
+    handleDismissLatestDiscovery();
+  }, [
+    handleDismissLatestDiscovery,
+    latestDiscoveryEntry?.sourceKey,
+    latestDiscoveryPendingCardResolution,
   ]);
   const handleDismissHauntRevealCue = () => {
     if (!hauntRevealDiscoveryKey) {
@@ -13999,23 +14051,25 @@ export default function BetrayalBoard({
                 <div className="-mt-4 flex justify-center px-2">
                   <div className="relative inline-flex min-w-[194px] max-w-[214px] items-center justify-between gap-2 overflow-hidden rounded-[7px] border border-[rgba(103,82,48,0.62)] bg-[linear-gradient(180deg,rgba(14,18,16,0.9),rgba(9,12,10,0.96))] px-2.5 py-1.5 shadow-[0_8px_16px_rgba(0,0,0,0.14)]">
                     <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
-                    {renderAttackImpactSurface(
-                      observedExplorer.playerId,
-                      "current-panel",
-                      <ExplorerFigureToken
-                        explorer={observedExplorer}
-                        locale={effectiveLocale}
-                        label={resolvePlayerName(
+                    {shouldShowMobileEventStatusRail
+                      ? renderAttackImpactSurface(
                           observedExplorer.playerId,
-                          observedExplorer.displayName,
-                          matchData,
-                        )}
-                        tone={isObservingOtherExplorer ? "ally" : "self"}
-                        size="panel"
-                        testIdPrefix="betrayal-current-panel-token"
-                      />,
-                      "panel",
-                    )}
+                          "current-panel",
+                          <ExplorerFigureToken
+                            explorer={observedExplorer}
+                            locale={effectiveLocale}
+                            label={resolvePlayerName(
+                              observedExplorer.playerId,
+                              observedExplorer.displayName,
+                              matchData,
+                            )}
+                            tone={isObservingOtherExplorer ? "ally" : "self"}
+                            size="panel"
+                            testIdPrefix="betrayal-current-panel-token"
+                          />,
+                          "panel",
+                        )
+                      : null}
                     <div className="min-w-0">
                       <div className="text-[8px] uppercase tracking-[0.18em] text-[#95876d]">
                         {t("board.hud.locationLabel")}
@@ -14047,10 +14101,6 @@ export default function BetrayalBoard({
                       isObservingOtherExplorer ? "true" : "false"
                     }
                     data-observed-player-id={observedExplorer.playerId}
-                    data-token-asset={
-                      observedExplorer.tokenAsset ??
-                      observedExplorer.portraitAsset
-                    }
                   >
                     <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
                     <div className="mb-1 flex items-center justify-between border-b border-[rgba(96,80,54,0.42)] pb-1">
@@ -14199,9 +14249,6 @@ export default function BetrayalBoard({
                       data-observed-player={
                         isObservedExplorer ? "true" : "false"
                       }
-                      data-token-asset={
-                        explorer.tokenAsset ?? explorer.portraitAsset
-                      }
                       title={`切换观察视角：${resolvePlayerName(
                         explorer.playerId,
                         explorer.displayName,
@@ -14234,25 +14281,6 @@ export default function BetrayalBoard({
                             draggable={false}
                           />
                         </span>
-                        <div className="pointer-events-none absolute -bottom-1 -right-1">
-                          {renderAttackImpactSurface(
-                            explorer.playerId,
-                            "teammate-panel",
-                            <ExplorerFigureToken
-                              explorer={explorer}
-                              locale={effectiveLocale}
-                              label={resolvePlayerName(
-                                explorer.playerId,
-                                explorer.displayName,
-                                matchData,
-                              )}
-                              tone="ally"
-                              size="panel"
-                              testIdPrefix="betrayal-teammate-panel-token"
-                            />,
-                            "panel",
-                          )}
-                        </div>
                         {isObservedExplorer ? (
                           <span
                             data-testid={`betrayal-teammate-observed-${explorer.playerId}`}
@@ -14483,7 +14511,7 @@ export default function BetrayalBoard({
                 {shouldShowLatestDiscovery && !shouldAutoReturnAfterLatestDiscovery ? (
                   <span>
                     {t("board.discovery.label")} {latestDiscovery!.title}{" "}
-                    {latestDiscovery!.summary} {latestDiscovery!.detail}
+                    {latestDiscovery!.summary} {latestDiscoveryFinalEffectText}
                   </span>
                 ) : null}
                 {roomFocusState ? <span>{roomFocusState.label}</span> : null}
@@ -14555,8 +14583,21 @@ export default function BetrayalBoard({
                           isPhoneLandscapeLayout ? "text-[13px]" : "text-[16px]"
                         }`}
                       >
-                        {latestDiscovery!.summary} {latestDiscovery!.detail}
+                        {latestDiscovery!.summary} {latestDiscoveryFinalEffectText}
                       </span>
+                      {latestDiscoveryPendingCardResolution ? (
+                        <span
+                          data-testid="betrayal-discovery-confirmation-status"
+                          className={`basis-full text-[#fff1b8] ${
+                            isPhoneLandscapeLayout ? "text-[12px]" : "text-[14px]"
+                          }`}
+                        >
+                          {t("board.discovery.confirmationProgress", {
+                            confirmed: latestDiscoveryCardResolutionConfirmedCount,
+                            total: latestDiscoveryCardResolutionTotalCount,
+                          })}
+                        </span>
+                      ) : null}
                     </div>
                   )}
                   <div
@@ -14588,6 +14629,22 @@ export default function BetrayalBoard({
                           latestDiscoveryPendingCardResolution
                             ? `${latestDiscoveryPendingCardResolution.index}/${latestDiscoveryPendingCardResolution.total}`
                             : undefined
+                        }
+                        data-card-resolution-confirmed-count={
+                          latestDiscoveryPendingCardResolution
+                            ? String(latestDiscoveryCardResolutionConfirmedCount)
+                            : undefined
+                        }
+                        data-card-resolution-required-count={
+                          latestDiscoveryPendingCardResolution
+                            ? String(latestDiscoveryCardResolutionTotalCount)
+                            : undefined
+                        }
+                        disabled={
+                          Boolean(
+                            latestDiscoveryPendingCardResolution
+                              && !canCurrentViewerAcknowledgeCardResolution,
+                          )
                         }
                         className="pointer-events-auto absolute right-2 top-2 z-20 inline-flex min-h-[44px] min-w-[92px] shrink-0 items-center justify-center border border-[#d6b56d] bg-[rgba(214,181,109,0.22)] px-3 py-1.5 text-[12px] font-bold leading-tight tracking-[0.10em] text-[#fff1b8] shadow-[0_8px_18px_rgba(0,0,0,0.26)] transition hover:bg-[rgba(214,181,109,0.32)]"
                         onClick={handleContinueLatestDiscovery}
@@ -14683,6 +14740,30 @@ export default function BetrayalBoard({
                         />
                       ) : null}
                     </div>
+                    {latestDiscoveryFinalEffectText ? (
+                      <div
+                        data-testid="betrayal-discovery-final-effect"
+                        className="grid w-full max-w-[min(760px,calc(100vw-2rem))] gap-1.5 rounded-[9px] border border-[rgba(214,181,109,0.28)] bg-[rgba(12,14,11,0.78)] px-3 py-2 text-left shadow-[0_10px_22px_rgba(0,0,0,0.20)]"
+                      >
+                        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#c4a265]">
+                          {t("board.discovery.finalEffectLabel")}
+                        </span>
+                        <span className="text-[12px] font-semibold leading-snug text-[#f3e5bd]">
+                          {latestDiscoveryFinalEffectText}
+                        </span>
+                        {latestDiscoveryPendingCardResolution ? (
+                          <span
+                            data-testid="betrayal-discovery-final-effect-confirmation"
+                            className="text-[11px] font-semibold text-[#fff1b8]"
+                          >
+                            {t("board.discovery.confirmationProgress", {
+                              confirmed: latestDiscoveryCardResolutionConfirmedCount,
+                              total: latestDiscoveryCardResolutionTotalCount,
+                            })}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {shouldKeepLatestDiscoveryResolutionLedger ? (
                       <ol
                         hidden
@@ -14733,6 +14814,22 @@ export default function BetrayalBoard({
                           latestDiscoveryPendingCardResolution
                             ? `${latestDiscoveryPendingCardResolution.index}/${latestDiscoveryPendingCardResolution.total}`
                             : undefined
+                        }
+                        data-card-resolution-confirmed-count={
+                          latestDiscoveryPendingCardResolution
+                            ? String(latestDiscoveryCardResolutionConfirmedCount)
+                            : undefined
+                        }
+                        data-card-resolution-required-count={
+                          latestDiscoveryPendingCardResolution
+                            ? String(latestDiscoveryCardResolutionTotalCount)
+                            : undefined
+                        }
+                        disabled={
+                          Boolean(
+                            latestDiscoveryPendingCardResolution
+                              && !canCurrentViewerAcknowledgeCardResolution,
+                          )
                         }
                         className="pointer-events-auto min-h-[42px] shrink-0 border border-[#d6b56d] bg-[rgba(214,181,109,0.20)] px-5 py-2 text-[12px] font-bold tracking-[0.12em] text-[#fff1b8] shadow-[0_10px_22px_rgba(0,0,0,0.22)] transition hover:bg-[rgba(214,181,109,0.30)]"
                         onClick={handleContinueLatestDiscovery}
@@ -18693,9 +18790,6 @@ export default function BetrayalBoard({
                         data-observed-player={
                           isObservedExplorer ? "true" : "false"
                         }
-                        data-token-asset={
-                          explorer.tokenAsset ?? explorer.portraitAsset
-                        }
                         className={`group pointer-events-auto relative grid grid-cols-[34px_minmax(0,1fr)] items-start gap-2 rounded-[8px] border px-1.5 py-1.5 text-left transition ${
                           isSelectedTradeTarget
                             ? "border-[#eecc7e] bg-[linear-gradient(180deg,rgba(53,40,20,0.72),rgba(22,19,14,0.82))] shadow-[0_0_0_1px_rgba(24,17,8,0.92),0_0_18px_rgba(238,204,126,0.34)]"
@@ -18737,25 +18831,6 @@ export default function BetrayalBoard({
                               draggable={false}
                             />
                           </span>
-                          <div className="pointer-events-none absolute -bottom-2 -right-2">
-                            {renderAttackImpactSurface(
-                              explorer.playerId,
-                              "bottom-teammate",
-                              <ExplorerFigureToken
-                                explorer={explorer}
-                                locale={effectiveLocale}
-                                label={resolvePlayerName(
-                                  explorer.playerId,
-                                  explorer.displayName,
-                                  matchData,
-                                )}
-                                tone="ally"
-                                size="panel"
-                                testIdPrefix="betrayal-bottom-teammate-token"
-                              />,
-                              "panel",
-                            )}
-                          </div>
                           <span
                             className={`pointer-events-none absolute inset-0 rounded-[6px] ring-1 ${
                               isObservedExplorer
@@ -19185,16 +19260,17 @@ export default function BetrayalBoard({
           </div>
         </MagnifyOverlay>
 
-        {previewRoom && previewRoomVisual ? (
-          <div
-            className="absolute inset-0 z-50 grid place-items-center bg-[rgba(3,6,5,0.76)] p-4"
-            data-testid="betrayal-room-preview-overlay"
-            onClick={() => setRoomPreviewId(null)}
-          >
-            <div
-              className="pointer-events-auto max-h-[92vh] max-w-[92vw]"
-              onClick={(event) => event.stopPropagation()}
-            >
+        <MagnifyOverlay
+          isOpen={Boolean(previewRoom && previewRoomVisual)}
+          onClose={() => setRoomPreviewId(null)}
+          overlayTestId="betrayal-room-preview-overlay"
+          overlayClassName="bg-[rgba(3,6,5,0.76)] p-4 md:p-6"
+          containerClassName="rounded-none overflow-visible bg-transparent"
+          closeLabel={t("board.reference.close")}
+          closeButtonClassName="!top-2 !right-2 !min-h-11 !min-w-[72px] !border !border-[rgba(238,204,126,0.55)] !bg-[rgba(18,15,12,0.90)] !text-[#f3dfab] !opacity-100 shadow-[0_8px_18px_rgba(0,0,0,0.36)]"
+        >
+          {previewRoom && previewRoomVisual ? (
+            <div className="pointer-events-auto max-h-[92vh] max-w-[92vw]">
               <span className="sr-only">
                 {t("board.rooms.preview")} {previewRoom.name}
               </span>
@@ -19205,8 +19281,8 @@ export default function BetrayalBoard({
                 className="aspect-square h-[min(92vh,92vw)] w-[min(92vh,92vw)] max-h-[92vh] max-w-[92vw] drop-shadow-[0_26px_70px_rgba(0,0,0,0.55)]"
               />
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </MagnifyOverlay>
 
         <MagnifyOverlay
           isOpen={Boolean(previewInventoryCard)}

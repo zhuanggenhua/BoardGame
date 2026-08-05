@@ -36,6 +36,8 @@ import { registerInteractionHandler } from '../domain/abilityInteractionHandlers
 import { revealTopAndDrawMatches } from './disney_shared';
 import { registerMunchkinMagesAbilities, registerMunchkinMagesBaseAbilities, registerMunchkinMagesInteractionHandlers } from './munchkin_mages';
 import { registerMunchkinElvesAbilities, registerMunchkinElvesBaseAbilities, registerMunchkinElvesInteractionHandlers } from './munchkin_elves';
+import { registerMunchkinClericsAbilities, registerMunchkinClericsInteractionHandlers } from './munchkin_clerics';
+import { registerMunchkinOrcsAbilities, registerMunchkinOrcsInteractionHandlers } from './munchkin_orcs';
 
 const BAG_OF_CALTROPS = 'munchkin_treasure_bag_of_caltrops';
 const CROSSBOW = 'munchkin_treasure_crossbow';
@@ -3095,6 +3097,8 @@ export function registerMunchkinAbilities(): void {
     registerMunchkinMagesBaseAbilities();
     registerMunchkinElvesAbilities();
     registerMunchkinElvesBaseAbilities();
+    registerMunchkinClericsAbilities();
+    registerMunchkinOrcsAbilities();
     registerAbility('munchkin_treasure_halfling_hireling', 'onPlay', halflingHirelingOnPlay);
     registerAbility(HALFLINGS_SHIRE_MARSHAL, 'talent', {
         execute: shireMarshalTalent,
@@ -3234,6 +3238,8 @@ export function registerMunchkinAbilities(): void {
 export function registerMunchkinInteractionHandlers(): void {
     registerMunchkinMagesInteractionHandlers();
     registerMunchkinElvesInteractionHandlers();
+    registerMunchkinClericsInteractionHandlers();
+    registerMunchkinOrcsInteractionHandlers();
     registerInteractionHandler(HALFLINGS_SHIRE_MARSHAL_CHOOSE_BASE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
         const choice = value as ShireMarshalBaseChoice | undefined;
         const data = interactionData as ShireMarshalInteractionData | undefined;

@@ -244,7 +244,7 @@ export async function hideSmashUpDebugPanelForEvidence(page: Page) {
         (window as Window & { __BG_HIDE_DEBUG_PANEL__?: boolean }).__BG_HIDE_DEBUG_PANEL__ = true;
     });
     await page.addStyleTag({
-        content: '[data-testid="debug-toggle-container"] { pointer-events: none !important; opacity: 0 !important; }',
+        content: '[data-testid="debug-toggle-container"], [data-testid="debug-panel"] { pointer-events: none !important; opacity: 0 !important; }',
     }).catch(() => {});
     await page.waitForTimeout(80);
 }

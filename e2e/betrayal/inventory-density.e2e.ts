@@ -22,6 +22,7 @@ const PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-高密度持有区-�
 const EXTREME_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-极限持有区-运行时.png`;
 const EXTREME_INVENTORY_SECTION_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-极限持有区-局部.png`;
 const MOBILE_MAP_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-手机横屏-地图卡放大完整显示.png`;
+const ROOM_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/12-山屋惊魂-房间板块放大-明确收起入口.png`;
 const MAP_USE_READY_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-地图物品-使用前牌桌可操作.png`;
 const MAP_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-地图物品-地图本体已选中.png`;
 const MAP_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/08-山屋惊魂-地图物品-房间牌直选目标.png`;
@@ -326,6 +327,53 @@ test.describe("山屋惊魂持有区高密度证据", () => {
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-map-card-mobile-preview", diagnostics },
+    ]);
+  });
+
+  test("房间板块放大使用固定放大层和明确收起入口", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(120000);
+    await initBetrayalContext(context);
+    const diagnostics = attachPageDiagnostics(
+      page,
+      "betrayal-room-preview-close",
+    );
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await warmBetrayalFrontend(context);
+    await page.goto("/play/betrayal", { waitUntil: "domcontentloaded" });
+    await waitForBetrayalPageReady(page);
+    await injectCore(page, createRuntimeCore());
+    await expect(page.getByTestId("betrayal-board")).toBeVisible({
+      timeout: 30000,
+    });
+
+    const previewButton = page.locator(
+      '[data-testid^="betrayal-room-preview-"]',
+    ).first();
+    await expect(previewButton).toBeVisible();
+    await previewButton.click();
+
+    const previewOverlay = page.getByTestId("betrayal-room-preview-overlay");
+    await expect(previewOverlay).toBeVisible();
+    await expect(previewOverlay).toHaveCSS("position", "fixed");
+    const closeButton = previewOverlay.getByRole("button", { name: "收起" });
+    await expect(closeButton).toBeVisible();
+    const closeButtonMetrics = await closeButton.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    });
+    expect(closeButtonMetrics.width).toBeGreaterThanOrEqual(44);
+    expect(closeButtonMetrics.height).toBeGreaterThanOrEqual(44);
+    await saveScreenshot(page, ROOM_PREVIEW_SCREENSHOT);
+
+    await closeButton.click();
+    await expect(previewOverlay).toBeHidden();
+
+    assertNoFatalFrontendErrors([
+      { label: "betrayal-room-preview-close", diagnostics },
     ]);
   });
 

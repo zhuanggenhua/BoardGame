@@ -11,6 +11,7 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
+    dispatchHarnessCommand,
     expectPhysicalDiceSeparated,
     expectVisiblePhysicalDiceBox,
     initBetrayalContext,
@@ -130,6 +131,48 @@ type OrdinaryItemDiscoveryState = {
         cardName?: string;
     }>;
     rejected?: { commandType?: string; error?: string } | null;
+};
+
+const readCurrentCore = async (page: Page): Promise<BetrayalCore> => {
+    const core = await page.evaluate(() => (
+        window as typeof window & {
+            __BG_TEST_HARNESS__?: {
+                state?: { get?: () => { core?: BetrayalCore } };
+            };
+        }
+    ).__BG_TEST_HARNESS__?.state?.get?.().core);
+    if (!core) {
+        throw new Error('山屋测试 harness 未返回当前 core');
+    }
+    return core;
+};
+
+const acknowledgeOtherPlayersForResolution = async (
+    page: Page,
+    resolutionId: string,
+) => {
+    for (let safety = 0; safety < 12; safety += 1) {
+        const core = await readCurrentCore(page);
+        const pending = core.pendingCardResolutionQueue?.[0];
+        if (!pending || pending.id !== resolutionId) {
+            return;
+        }
+        const requiredPlayerIds = pending.requiredPlayerIds?.length
+            ? pending.requiredPlayerIds
+            : [pending.playerId];
+        const acknowledgedPlayerIds = new Set(pending.acknowledgedPlayerIds ?? []);
+        const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
+        if (!nextPlayerId) {
+            return;
+        }
+        await dispatchHarnessCommand(
+            page,
+            'ACKNOWLEDGE_CARD_RESOLUTION',
+            nextPlayerId,
+            { resolutionId },
+        );
+    }
+    throw new Error(`山屋测试 harness 确认队列未能完成：${resolutionId}`);
 };
 
 const readOrdinaryItemDiscoveryState = async (
@@ -348,14 +391,19 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(1);
         await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('已加入持有区');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('手电筒');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/1');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到厨房');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('拿到了手电筒');
         await expect(page.locator('[data-testid="betrayal-inventory-flashlight-0"]')).toBeVisible();
         await saveScreenshot(page, ORDINARY_ITEM_DISCOVERY_SCREENSHOT);
 
+        const ordinaryResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+        if (!ordinaryResolutionId) {
+            throw new Error('普通物品发现缺少待确认结算');
+        }
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await acknowledgeOtherPlayersForResolution(page, ordinaryResolutionId);
         await expect(discoveryPanel).toHaveCount(0);
         await expect(page.locator('[data-testid="betrayal-inventory-flashlight-0"]')).toBeVisible();
         await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
@@ -394,7 +442,7 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
             await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText(
                 itemCard.name,
             );
-            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/1');
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认');
             await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
                 'data-pending-card-resolution-step',
                 '1/1',
@@ -415,7 +463,12 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
                 await saveScreenshot(page, ORDINARY_ITEM_MATRIX_FIRST_CARD_SCREENSHOT);
             }
 
+            const matrixResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+            if (!matrixResolutionId) {
+                throw new Error(`物品「${itemCard.name}」缺少待确认结算`);
+            }
             await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+            await acknowledgeOtherPlayersForResolution(page, matrixResolutionId);
             await expect(discoveryPanel).toHaveCount(0);
             await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(itemCard.name);
             await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
@@ -475,23 +528,38 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('拿到了砍刀、急救包');
         await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toBeVisible();
         await expect(page.locator('[data-testid="betrayal-inventory-medical-kit-0"]')).toBeVisible();
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 1/3');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认本步（步骤 1/3）');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/3');
         await saveScreenshot(page, ARMORY_DISCOVERY_FIRST_STEP_SCREENSHOT);
 
+        const armoryFirstResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+        if (!armoryFirstResolutionId) {
+            throw new Error('器械库第一步缺少待确认结算');
+        }
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await acknowledgeOtherPlayersForResolution(page, armoryFirstResolutionId);
         await expect(discoveryPanel).toBeVisible();
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 2/3');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认本步（步骤 2/3）');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '2/3');
         await saveScreenshot(page, ARMORY_DISCOVERY_SECOND_STEP_SCREENSHOT);
 
+        const armorySecondResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+        if (!armorySecondResolutionId) {
+            throw new Error('器械库第二步缺少待确认结算');
+        }
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await acknowledgeOtherPlayersForResolution(page, armorySecondResolutionId);
         await expect(discoveryPanel).toBeVisible();
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认 3/3');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认本步（步骤 3/3）');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '3/3');
         await saveScreenshot(page, ARMORY_DISCOVERY_THIRD_STEP_SCREENSHOT);
 
+        const armoryThirdResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+        if (!armoryThirdResolutionId) {
+            throw new Error('器械库第三步缺少待确认结算');
+        }
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await acknowledgeOtherPlayersForResolution(page, armoryThirdResolutionId);
         await expect(discoveryPanel).toHaveCount(0);
         await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toBeVisible();
         await expect(page.locator('[data-testid="betrayal-inventory-medical-kit-0"]')).toBeVisible();

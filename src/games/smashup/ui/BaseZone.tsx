@@ -139,11 +139,16 @@ export const BaseZone: React.FC<{
     usableTitanOngoingUids?: Set<string>;
     reactionTitanTriggerUids?: Set<string>;
     onResolveTitanReaction?: (titanUid: string) => void;
+    /** 交互驱动的怪物选择：直接复用基地下方的怪物行 */
+    isMonsterSelectMode?: boolean;
+    /** 怪物选择模式下可点击的怪物 UID */
+    selectableMonsterUids?: Set<string>;
+    onMonsterSelect?: (baseIndex: number, monsterUid: string) => void;
     defeatableMonsterUids?: Set<string>;
     onDefeatMonster?: (baseIndex: number, monsterUid: string) => void;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, multiSelectedOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, isMonsterSelectMode, selectableMonsterUids, onMonsterSelect, defeatableMonsterUids, onDefeatMonster, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -742,12 +747,18 @@ export const BaseZone: React.FC<{
         const controllerLabel = monster.controllerId !== undefined
             ? (playerNames?.[monster.controllerId] ?? `P${Number(monster.controllerId) + 1}`)
             : undefined;
+        const canSelectMonster = monster.controllerId === undefined
+            && isMonsterSelectMode === true
+            && selectableMonsterUids?.has(monster.uid) === true;
         const canDefeatMonster = monster.controllerId === undefined && defeatableMonsterUids?.has(monster.uid) === true;
+        const canInteractWithMonster = canSelectMonster || canDefeatMonster;
         const rotation = (idx - (total - 1) / 2) * 2.2;
         const title = controllerLabel ? `${monsterDef.name} · ${controllerLabel}` : monsterDef.name;
         const monsterCard = (
             <div className={`relative h-full w-full overflow-hidden rounded-[0.18vw] border-[0.1vw] bg-slate-900 shadow-md transition-[box-shadow,filter] duration-200 ${
-                canDefeatMonster
+                canSelectMonster
+                    ? 'border-cyan-200/95 shadow-[0_0_16px_rgba(34,211,238,0.6)] group-hover:shadow-[0_0_22px_rgba(34,211,238,0.82)]'
+                    : canDefeatMonster
                     ? 'border-emerald-300/90 shadow-[0_0_16px_rgba(52,211,153,0.55)] group-hover:shadow-[0_0_22px_rgba(52,211,153,0.78)]'
                     : 'border-amber-200/70 group-hover:shadow-[0_0_14px_rgba(251,191,36,0.45)]'
             }`}>
@@ -765,8 +776,9 @@ export const BaseZone: React.FC<{
                 data-testid={`su-base-monster-${monster.uid}`}
                 data-monster-uid={monster.uid}
                 data-monster-controller-id={monster.controllerId}
+                data-monster-selectable={canSelectMonster ? 'true' : undefined}
                 data-defeatable-monster={canDefeatMonster ? 'true' : undefined}
-                className={`group relative transition-[transform,filter] duration-200 hover:z-40 hover:-translate-y-[0.2vw] ${canDefeatMonster ? 'cursor-pointer' : 'cursor-default'}`}
+                className={`group relative transition-[transform,filter] duration-200 ${canInteractWithMonster ? 'z-40 cursor-pointer' : 'z-0 cursor-default'} hover:z-50 hover:-translate-y-[0.2vw]`}
                 style={{
                     width: layoutInlineSize(monsterCardWidth, layout),
                     height: layoutInlineSize(monsterCardHeight, layout),
@@ -775,7 +787,19 @@ export const BaseZone: React.FC<{
                 }}
                 title={title}
             >
-                {canDefeatMonster ? (
+                {canSelectMonster ? (
+                    <button
+                        type="button"
+                        aria-label={`选择${monsterDef.name}`}
+                        className="block h-full w-full rounded-[0.18vw] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onMonsterSelect?.(baseIndex, monster.uid);
+                        }}
+                    >
+                        {monsterCard}
+                    </button>
+                ) : canDefeatMonster ? (
                     <button
                         type="button"
                         aria-label={`击败${monsterDef.name}`}

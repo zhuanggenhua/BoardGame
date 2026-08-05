@@ -344,13 +344,6 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
           )}
           {abilityMode.abilityId === 'mogu_transmission' && t('statusBanners.ability.moguTransmission')}
           {abilityMode.abilityId === 'mogu_fanatical_fungus' && t('statusBanners.ability.moguFanaticalFungus')}
-          {abilityMode.abilityId === 'shadow_return_to_shadow' && t('statusBanners.ability.shadowReturnToShadow')}
-          {abilityMode.abilityId === 'shadow_judgment' && t('statusBanners.ability.shadowJudgment')}
-          {abilityMode.abilityId === 'shadow_tear_the_veil' && t('statusBanners.ability.shadowTearTheVeil')}
-          {abilityMode.abilityId === 'shadow_forbidden_knowledge' && t('statusBanners.ability.shadowForbiddenKnowledge')}
-          {abilityMode.abilityId === 'shadow_feint' && t('statusBanners.ability.shadowFeint')}
-          {abilityMode.abilityId === 'shadow_shadow_summon' && t('statusBanners.ability.shadowSummon')}
-          {abilityMode.abilityId === 'shadow_sudden_assault' && t('statusBanners.ability.shadowSuddenAssault')}
           {getAbilityModeBannerFallbackText(t, abilityMode)}
           {abilityMode.abilityId === 'vanish' && t('statusBanners.ability.vanish')}
         </span>
@@ -371,7 +364,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         )}
         {abilityMode.step === 'selectChoice' && (
           YONGHENG_BUTTON_CHOICE_ABILITIES.includes(abilityMode.abilityId as never)
-          || ['shadow_judgment', 'shadow_tear_the_veil', 'shadow_forbidden_knowledge', 'shadow_feint', 'shadow_shadow_summon', 'shadow_sudden_assault'].includes(abilityMode.abilityId)
+          || abilityMode.abilityId === 'shadow_judgment'
         ) && (
           <>
             {(abilityMode.systemChoiceOptions ?? []).map((option) => (

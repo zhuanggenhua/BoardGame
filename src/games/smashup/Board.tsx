@@ -818,6 +818,40 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return data?.targetType === 'minion';
     }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer, shouldRenderPromptInOverlay]);
 
+    // 怪物选择交互直接复用基地下方的怪物行，避免同一只怪物同时出现在棋盘和中央卡牌弹窗。
+    // `monster` 是怪物专用目标类型，`generic` 是历史兼容格式，两者都必须走场上怪物本体。
+    const isMonsterSelectPrompt = useMemo(() => {
+        if (!isCurrentPromptForPlayer || !currentPrompt) return false;
+        const data = currentInteraction?.data as Record<string, unknown> | undefined;
+        if (data?.targetType !== 'generic' && data?.targetType !== 'monster') return false;
+
+        let monsterOptionCount = 0;
+        for (const option of currentPrompt.options) {
+            if (option.disabled) continue;
+            const value = option.value as { monsterUid?: unknown; baseIndex?: unknown; skip?: unknown; done?: unknown } | undefined;
+            if (value?.skip === true || value?.done === true) continue;
+            if (typeof value?.monsterUid !== 'string' || typeof value.baseIndex !== 'number' || value.baseIndex < 0) {
+                return false;
+            }
+            const monster = coreBases[value.baseIndex]?.monsters?.find(candidate => candidate.uid === value.monsterUid);
+            if (!monster) return false;
+            monsterOptionCount += 1;
+        }
+        return monsterOptionCount > 0;
+    }, [coreBases, currentInteraction, currentPrompt, isCurrentPromptForPlayer]);
+
+    const selectableMonsterUids = useMemo<Set<string>>(() => {
+        if (!isMonsterSelectPrompt || !currentPrompt) return new Set();
+        const uids = new Set<string>();
+        for (const option of currentPrompt.options) {
+            if (option.disabled) continue;
+            const value = option.value as { monsterUid?: unknown; skip?: unknown; done?: unknown } | undefined;
+            if (value?.skip === true || value?.done === true) continue;
+            if (typeof value?.monsterUid === 'string') uids.add(value.monsterUid);
+        }
+        return uids;
+    }, [currentPrompt, isMonsterSelectPrompt]);
+
     // 可选随从 UID 集合（只高亮候选随从，排除跳过选项）
     const selectableMinionUids = useMemo<Set<string>>(() => {
         if (!isMinionSelectPrompt || !currentPrompt) return new Set();
@@ -1073,6 +1107,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (isBaseSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isBuriedSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.title;
+        else if (isMonsterSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isBoardSelectPrompt && currentPrompt) raw = currentPrompt.title;
@@ -1080,20 +1115,21 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return raw
             ? resolvePromptText(raw, currentPrompt?.titleKey, currentPrompt?.titleParams, t)
             : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
 
     const interactionSelectSubtitle = useMemo(() => {
         let raw = '';
         if (isBaseSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isBuriedSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
+        else if (isMonsterSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         else if (isBoardSelectPrompt && currentPrompt) raw = currentPrompt.subtitle ?? '';
         return raw
             ? resolvePromptText(raw, currentPrompt?.subtitleKey, currentPrompt?.subtitleParams, t)
             : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isMonsterSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isBoardSelectPrompt, currentPrompt, t]);
 
     // 弃牌堆随从选择交互检测（僵尸领主等）：targetType === 'discard_minion'
     const isDiscardMinionPrompt = useMemo(() => {
@@ -1139,7 +1175,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const activePromptSurface = useMemo<'none' | 'hand' | 'board' | 'overlay'>(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return 'none';
         if (isDirectHandSelectPrompt) return 'hand';
-        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isDiscardMinionPrompt || isDiscardCardPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
+        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isMonsterSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isDiscardMinionPrompt || isDiscardCardPrompt || isTitanReactionPrompt || titanPromptBaseSelection) {
             return 'board';
         }
         return 'overlay';
@@ -1152,6 +1188,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         isDirectHandSelectPrompt,
         isTitanReactionPrompt,
         isMinionSelectPrompt,
+        isMonsterSelectPrompt,
         isOngoingSelectPrompt,
         isBoardSelectPrompt,
         isCurrentPromptForPlayer,
@@ -2681,6 +2718,18 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setSelectedCardMode('action');
     }, [enterActionTargetSelection, myPlayer, pendingFusionChoiceUid, phase, t]);
 
+    const handleMonsterSelect = useCallback((baseIndex: number, monsterUid: string) => {
+        if (!isMonsterSelectPrompt || !currentPrompt) return;
+        const option = currentPrompt.options.find((candidate) => {
+            if (candidate.disabled) return false;
+            const value = candidate.value as { monsterUid?: unknown; baseIndex?: unknown } | undefined;
+            return value?.monsterUid === monsterUid && value.baseIndex === baseIndex;
+        });
+        if (!option) return;
+
+        respondCurrentPrompt({ optionId: option.id });
+    }, [currentPrompt, isMonsterSelectPrompt, respondCurrentPrompt]);
+
     /** 随从点击回调：ongoing-minion 模式下附着行动卡到随从，或交互驱动的随从选择 */
     const handleMinionSelect = useCallback((minionUid: string, baseIndex: number) => {
         // 交互驱动的随从选择
@@ -3500,16 +3549,17 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* --- 交互选择提示横幅（基地/随从/手牌选择） --- */}
                 <AnimatePresence>
-                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isTitanReactionPrompt) && (
+                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isMonsterSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isBoardSelectPrompt || isTitanReactionPrompt) && (
                         <motion.div
                             initial={{ y: -20, opacity: 0, scale: 0.95 }}
                             animate={{ y: 0, opacity: 1, scale: 1 }}
-                            exit={{ y: -20, opacity: 0, scale: 0.95 }}
+                            // 交互切换时旧横幅不能与新 PromptOverlay 同屏残留。
+                            exit={{ y: 0, opacity: 0, scale: 1, transition: { duration: 0 } }}
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                             className="absolute inset-x-0 z-30 flex justify-center pointer-events-none"
                             style={{ top: `${layout.hudTopOffset}px` }}
                         >
-                            <div className="bg-slate-900/95 backdrop-blur-sm text-white px-8 py-3 rounded border border-slate-600 shadow-[0_4px_0_#334155,0_8px_24px_rgba(0,0,0,0.5)]">
+                            <div data-testid="su-interaction-select-banner" className="bg-slate-900/95 backdrop-blur-sm text-white px-8 py-3 rounded border border-slate-600 shadow-[0_4px_0_#334155,0_8px_24px_rgba(0,0,0,0.5)]">
                                 <div className="flex max-w-[min(92vw,52rem)] flex-col items-center text-center">
                                     <span className="font-black text-lg uppercase tracking-tighter">
                                         {interactionSelectTitle}
@@ -3956,6 +4006,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     usableTitanOngoingUids={usableTitanOngoingUids}
                                     reactionTitanTriggerUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
                                     onResolveTitanReaction={handleTitanReactionTrigger}
+                                    isMonsterSelectMode={isMonsterSelectPrompt}
+                                    selectableMonsterUids={isMonsterSelectPrompt ? selectableMonsterUids : undefined}
+                                    onMonsterSelect={handleMonsterSelect}
                                     defeatableMonsterUids={defeatableMonsterUids}
                                     onDefeatMonster={handleDefeatMunchkinMonster}
                                     canUseBaseAbility={usableActiveBaseAbilityIndices.has(idx)}
@@ -4204,6 +4257,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 <FxLayer
                     bus={fxBus}
                     getCellPosition={() => ({ left: 0, top: 0, width: 0, height: 0 })}
+                    // 阻塞性交互优先于瞬时视觉反馈，避免 VP/卡牌飞行动画盖住可操作按钮。
+                    className={isCurrentPromptForPlayer && currentPrompt ? 'invisible' : undefined}
                 />
 
                 {/* 回合切换提示 */}
@@ -4260,6 +4315,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         && !isBaseSelectPrompt
                         && !isBuriedSelectPrompt
                         && !isMinionSelectPrompt
+                        && !isMonsterSelectPrompt
                         && !isOngoingSelectPrompt
                         && !isBoardSelectPrompt
                         && !isDiscardCardPrompt

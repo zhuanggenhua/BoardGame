@@ -49,6 +49,9 @@ export interface ProtectionCheckContext {
 
     sourceKind?: 'action' | 'nonAction';
 
+    /** 造成当前影响的牌定义，用于“只保护本次牌”的选择性保护。 */
+    sourceDefId?: string;
+
     sourceBaseIndex?: number;
 
     protectionType: ProtectionType;
@@ -1557,7 +1560,7 @@ export function isMinionProtected(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceDefId?: string; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1568,6 +1571,7 @@ export function isMinionProtected(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceDefId: options?.sourceDefId,
         sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
@@ -1596,7 +1600,7 @@ export function isMinionProtectedNonConsumable(
     targetBaseIndex: number,
     sourcePlayerId: PlayerId,
     protectionType: ProtectionType,
-    options?: { sourceKind?: 'action' | 'nonAction'; sourceBaseIndex?: number },
+    options?: { sourceKind?: 'action' | 'nonAction'; sourceDefId?: string; sourceBaseIndex?: number },
 ): boolean {
     if (hasTurnScopedMetadataProtection(state, targetMinion, protectionType, sourcePlayerId)) return true;
     if (protectionRegistry.length === 0) return false;
@@ -1607,6 +1611,7 @@ export function isMinionProtectedNonConsumable(
         targetBaseIndex,
         sourcePlayerId,
         sourceKind: options?.sourceKind,
+        sourceDefId: options?.sourceDefId,
         sourceBaseIndex: options?.sourceBaseIndex,
         protectionType };
 
@@ -2312,6 +2317,11 @@ function selectGlobalTriggerSourceLocation(
 
  */
 function isSourceActive(state: SmashUpCore, sourceDefId: string): boolean {
+    // 特殊响应牌打出后会进入弃牌堆，但其本回合的限制仍由基地 metadata 承载。
+    if (sourceDefId === 'munchkin_orcs_and_stay_down'
+        && state.bases.some(base => typeof base.metadata?.andStayDownTurnNumber === 'number')) {
+        return true;
+    }
     // PR63: Tricksters POD「睡眠印记」会写入 sleepMarkedPlayers / sleepMoveMarkedPlayers，
     // 同时使用 registerInterceptor('trickster_mark_of_sleep_pod') 拦截 MINION_MOVED。
     //

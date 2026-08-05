@@ -34,6 +34,7 @@ import type {
     MadnessReturnedEvent,
     MunchkinMonsterDefeatedEvent,
     MunchkinMonsterPlayedEvent,
+    MunchkinMonsterToDeckBottomEvent,
     MunchkinMonsterControlChangedEvent,
     MunchkinTreasureRewardClaimedEvent,
     MunchkinTreasureRewardDistributedEvent,
@@ -2278,11 +2279,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     }
                     const returnPlayerId = currentMetadata?.ittyCrittersReturnToDeckBottomPlayerId;
                     if (returnPlayerId !== playerId || current.controller !== playerId) {
-                        return [current];
+                        return [{ ...current, tempPowerModifier: 0 }];
                     }
 
                     const owner = updatedPlayers[playerId];
-                    if (!owner) return [current];
+                    if (!owner) return [{ ...current, tempPowerModifier: 0 }];
                     const returnedCard: CardInstance = {
                         uid: current.uid,
                         defId: current.defId,
@@ -4126,6 +4127,20 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     : candidateBase),
                 monsterDeck: monsterDeck.slice(1),
                 nextUid: state.nextUid + 1,
+            };
+        }
+
+        case SU_EVENTS.MUNCHKIN_MONSTER_TO_DECK_BOTTOM: {
+            const { baseIndex, monsterUid, monsterDefId } = (event as MunchkinMonsterToDeckBottomEvent).payload;
+            const base = state.bases[baseIndex];
+            const monster = base?.monsters?.find(candidate => candidate.uid === monsterUid);
+            if (!base || !monster || monster.defId !== monsterDefId) return state;
+            return {
+                ...state,
+                bases: state.bases.map((candidateBase, index) => index === baseIndex
+                    ? { ...candidateBase, monsters: candidateBase.monsters?.filter(candidate => candidate.uid !== monsterUid) }
+                    : candidateBase),
+                monsterDeck: [...(state.monsterDeck ?? []), monster.defId],
             };
         }
 

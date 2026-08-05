@@ -632,4 +632,65 @@ test.describe('召唤师战争冰苔兽人真实入口与关键交互 E2E', () =
       await guestContext.close().catch(() => {});
     }
   });
+
+  test('原始狂怒组合：激励保留或重摇后仍可进入位移并获得额外攻击', async ({ browser }, testInfo) => {
+    test.setTimeout(180000);
+    const match = await setupSWOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined, 'shouren', 'necromancer');
+    if (!match) { test.skip(true, 'Game server unavailable or room creation failed'); return; }
+    const { hostPage, hostContext, guestContext, matchId } = match;
+    const hostGame = new GameTestContext(hostPage);
+    const summonerPos = { row: 4, col: 2 };
+    const targetPos = { row: 4, col: 3 };
+    const movePos = { row: 4, col: 1 };
+
+    const prepare = async (id: string, initialDice: number[]) => {
+      const core = await readCoreState(hostPage) as SummonerWarsCore;
+      resetCore(core, 'attack');
+      const summoner = addRequiredSummoners(core, summonerPos);
+      summoner.boosts = 1;
+      core.players['0'].activeEvents = [makeEvent(primalFuryEvent, `shouren-primal-fury-${id}`)];
+      addEnemy(core, targetPos, `${id}-target`);
+      await applyCoreState(hostPage, core);
+      await closeDebugPanelIfOpen(hostPage);
+      await waitForPhase(hostPage, 'attack');
+      await triggerAttack(hostPage, summonerPos, targetPos, initialDice);
+      const overlay = hostPage.getByTestId('sw-dice-result-overlay');
+      await expect(overlay.getByRole('button', { name: /保留|Keep/i })).toBeVisible({ timeout: 8000 });
+      return overlay;
+    };
+
+    try {
+      const keepOverlay = await prepare('0-1', [1, 1, 1, 1]);
+      await keepOverlay.getByRole('button', { name: /保留|Keep/i }).click();
+      await waitForSwInteraction(hostPage, matchId, 'after_attack_shouren_primal_fury');
+      await dismissDiceResultOverlay(hostPage);
+      await expect(hostPage.getByTestId(`sw-cell-${movePos.row}-${movePos.col}`))
+        .toHaveAttribute('data-valid-ability-pos', 'true', { timeout: 8000 });
+      await hostGame.screenshot('12-激励保留后原始狂怒位移入口', testInfo);
+      await clickBoardElement(hostPage, `[data-testid="sw-cell-${movePos.row}-${movePos.col}"]`);
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        const unit = state.board[movePos.row][movePos.col].unit;
+        return { extraAttacks: unit?.extraAttacks ?? 0, boosts: unit?.boosts ?? 0 };
+      }, { timeout: 10000 }).toEqual({ extraAttacks: 1, boosts: 1 });
+
+      const rerollOverlay = await prepare('0-2', [5, 5, 5, 5]);
+      await setHarnessDiceValues(hostPage, [1, 1, 1, 1]);
+      await rerollOverlay.getByRole('button', { name: /重掷|Reroll/i }).click();
+      await waitForSwInteraction(hostPage, matchId, 'after_attack_shouren_primal_fury');
+      await dismissDiceResultOverlay(hostPage);
+      await expect(hostPage.getByTestId(`sw-cell-${movePos.row}-${movePos.col}`))
+        .toHaveAttribute('data-valid-ability-pos', 'true', { timeout: 8000 });
+      await hostGame.screenshot('13-激励重摇后原始狂怒位移入口', testInfo);
+      await clickBoardElement(hostPage, `[data-testid="sw-cell-${movePos.row}-${movePos.col}"]`);
+      await expect.poll(async () => {
+        const state = await readCoreState(hostPage) as SummonerWarsCore;
+        const unit = state.board[movePos.row][movePos.col].unit;
+        return { extraAttacks: unit?.extraAttacks ?? 0, boosts: unit?.boosts ?? 0 };
+      }, { timeout: 10000 }).toEqual({ extraAttacks: 1, boosts: 0 });
+    } finally {
+      await hostContext.close().catch(() => {});
+      await guestContext.close().catch(() => {});
+    }
+  });
 });

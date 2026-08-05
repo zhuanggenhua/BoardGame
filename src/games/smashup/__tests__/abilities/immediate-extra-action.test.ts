@@ -155,6 +155,15 @@ describe('立即额外行动交互', () => {
         const result = resolveInteractionChain(
             queueImmediateExtraAction(makeMatchState(state)),
             prompt => {
+                const sourceId = getPromptSourceId(prompt);
+                if (sourceId === 'smashup_immediate_extra_action_base') {
+                    const baseOption = getPromptOption(
+                        prompt,
+                        candidate => candidate?.value?.baseIndex === 0,
+                        'immediate extra action base option',
+                    );
+                    return { optionId: baseOption.id };
+                }
                 const option = getPromptOption(
                     prompt,
                     candidate => candidate?.value?.defId === 'ancient_egyptians_you_can_take_it_with_you',
@@ -186,6 +195,15 @@ describe('立即额外行动交互', () => {
         const result = resolveInteractionChain(
             queueImmediateExtraAction(makeMatchState(state)),
             prompt => {
+                const sourceId = getPromptSourceId(prompt);
+                if (sourceId === 'smashup_immediate_extra_action_minion') {
+                    const minionOption = getPromptOption(
+                        prompt,
+                        candidate => candidate?.value?.minionUid === 'ally-1',
+                        'immediate extra action minion option',
+                    );
+                    return { optionId: minionOption.id };
+                }
                 const option = getPromptOption(
                     prompt,
                     candidate => candidate?.value?.defId === 'samurai_way_of_the_warrior',
@@ -199,7 +217,7 @@ describe('立即额外行动交互', () => {
         expect(result.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1')?.tempPowerModifier).toBe(3);
     });
 
-    it('指定卡牌和指定宿主的立即额外行动应在计分前也能自动附着', () => {
+    it('指定卡牌和指定宿主的立即额外行动应在计分前手动选择宿主后附着', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -253,6 +271,14 @@ describe('立即额外行动交互', () => {
             queuedState,
             prompt => {
                 const sourceId = getPromptSourceId(prompt);
+                if (sourceId === 'smashup_immediate_extra_action_minion') {
+                    const minionOption = getPromptOption(
+                        prompt,
+                        candidate => candidate?.value?.minionUid === 'host-1',
+                        'restricted immediate extra action host option',
+                    );
+                    return { optionId: minionOption.id };
+                }
                 if (sourceId !== 'smashup_immediate_extra_action') {
                     throw new Error(`unexpected prompt source: ${String(sourceId)}`);
                 }

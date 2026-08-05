@@ -131,17 +131,33 @@ async function readShadowInteraction(page: import('@playwright/test').Page, matc
   };
 }
 
-async function clickShadowChoice(
+async function clickShadowBoardChoice(
   page: import('@playwright/test').Page,
   matchId: string,
+  objectKind: 'unit' | 'structure' | 'cell',
   predicate: (option: ShadowInteractionOption) => boolean,
+  highlightKind: 'unit' | 'pos' = objectKind === 'unit' ? 'unit' : 'pos',
 ): Promise<ShadowInteractionOption> {
   const interaction = await readShadowInteraction(page, matchId);
   const option = interaction.options.find(predicate);
-  if (!option?.label) {
-    throw new Error(`找不到带可见文案的暗影精灵交互选项: ${JSON.stringify(interaction)}`);
+  const value = option?.value;
+  const position = (objectKind === 'structure'
+    ? value?.gatePosition ?? value?.targetPosition
+    : objectKind === 'cell'
+      ? value?.newPosition ?? value?.targetPosition
+      : value?.targetPosition) as CellCoord | undefined;
+  if (!option || !position) {
+    throw new Error(`找不到暗影精灵棋盘直选选项: ${JSON.stringify(interaction)}`);
   }
-  await page.getByTestId('sw-ability-prompt').getByRole('button', { name: option.label, exact: true }).click();
+  await expect(page.getByTestId('sw-end-phase')).toBeHidden();
+  await expect(page.getByTestId(`sw-cell-${position.row}-${position.col}`))
+    .toHaveAttribute(`data-valid-ability-${highlightKind}`, 'true', { timeout: 8000 });
+  const testId = objectKind === 'unit'
+    ? `sw-unit-${position.row}-${position.col}`
+    : objectKind === 'structure'
+      ? `sw-structure-${position.row}-${position.col}`
+      : `sw-cell-${position.row}-${position.col}`;
+  await clickBoardElement(page, `[data-testid="${testId}"]`);
   return option;
 }
 
@@ -348,18 +364,21 @@ test.describe('召唤师战争暗影精灵真实入口', () => {
       await prepareMoveState(judgmentCore);
       await clickBoardElement(hostPage, `[data-testid="sw-unit-${sourcePosition.row}-${sourcePosition.col}"][data-owner="0"]`);
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${movedPosition.row}-${movedPosition.col}"]`);
-      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_judgment');
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_judgment_select_target');
       await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/审判|Judgment/i);
       await hostGame.screenshot('审判移动后目标与充能选择', testInfo);
 
-      await clickShadowChoice(hostPage, matchId, (option) => {
+      await clickShadowBoardChoice(hostPage, matchId, 'unit', (option) => {
         const value = option.value;
-        return value?.action === 'shadow_judgment'
+        return value?.action === 'shadow_judgment_target'
           && value.targetPosition
           && (value.targetPosition as CellCoord).row === judgmentTarget.position.row
-          && (value.targetPosition as CellCoord).col === judgmentTarget.position.col
-          && value.amount === 2;
+          && (value.targetPosition as CellCoord).col === judgmentTarget.position.col;
       });
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_judgment_select_amount');
+      await expect(hostPage.getByTestId('sw-end-phase')).toBeHidden();
+      await expect(hostPage.getByRole('button', { name: /^2点$|^2 damage$/i })).toBeVisible();
+      await hostPage.getByRole('button', { name: /^2点$|^2 damage$/i }).click();
       await expect.poll(async () => {
         const state = await readCoreState(hostPage) as SummonerWarsCore;
         return {
@@ -383,17 +402,17 @@ test.describe('召唤师战争暗影精灵真实入口', () => {
       await prepareMoveState(forbiddenCore);
       await clickBoardElement(hostPage, `[data-testid="sw-unit-${sourcePosition.row}-${sourcePosition.col}"][data-owner="0"]`);
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${movedPosition.row}-${movedPosition.col}"]`);
-      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_forbidden_knowledge');
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_forbidden_knowledge_select_target');
       await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/禁忌学识|Forbidden Knowledge/i);
       await hostGame.screenshot('禁忌学识移动后自伤或传送门选择', testInfo);
 
-      await clickShadowChoice(hostPage, matchId, (option) => {
+      await clickShadowBoardChoice(hostPage, matchId, 'unit', (option) => {
         const value = option.value;
         return value?.action === 'shadow_forbidden_knowledge'
           && value.targetPosition
           && (value.targetPosition as CellCoord).row === movedPosition.row
           && (value.targetPosition as CellCoord).col === movedPosition.col;
-      });
+      }, 'pos');
       await expect.poll(async () => {
         const state = await readCoreState(hostPage) as SummonerWarsCore;
         return {
@@ -454,15 +473,22 @@ test.describe('召唤师战争暗影精灵真实入口', () => {
         '0',
       );
       await prepareSummonState(shadowSummonCore, shadowKnight);
-      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_shadow_summon');
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_shadow_summon_select_target');
       await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/暗影召唤|Shadow Summon/i);
       await hostGame.screenshot('暗影召唤选择目标与放置位置', testInfo);
-      await clickShadowChoice(hostPage, matchId, (option) => {
+      await clickShadowBoardChoice(hostPage, matchId, 'unit', (option) => {
         const value = option.value;
-        return value?.action === 'shadow_shadow_summon'
+        return value?.action === 'shadow_shadow_summon_target'
           && value.targetPosition
           && (value.targetPosition as CellCoord).row === shadowSummonTarget.position.row
-          && (value.targetPosition as CellCoord).col === shadowSummonTarget.position.col
+          && (value.targetPosition as CellCoord).col === shadowSummonTarget.position.col;
+      }, 'pos');
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_shadow_summon_select_position');
+      await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/空格|placement/i);
+      await hostGame.screenshot('暗影召唤选中目标后选择放置格', testInfo);
+      await clickShadowBoardChoice(hostPage, matchId, 'cell', (option) => {
+        const value = option.value;
+        return value?.action === 'shadow_shadow_summon'
           && value.newPosition
           && (value.newPosition as CellCoord).row === 4
           && (value.newPosition as CellCoord).col === 4;
@@ -489,10 +515,10 @@ test.describe('召唤师战争暗影精灵真实入口', () => {
       placeGate(assaultCore, gatePosition, '0');
       const sageRover = { ...COMMON_UNITS_SHADOW[3], id: 'shadow-sage-rover-0-99' };
       await prepareSummonState(assaultCore, sageRover);
-      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_sudden_assault');
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_sudden_assault_select_position');
       await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/急袭|Sudden Assault/i);
       await hostGame.screenshot('急袭召唤后推拉选择', testInfo);
-      await clickShadowChoice(hostPage, matchId, (option) => {
+      await clickShadowBoardChoice(hostPage, matchId, 'cell', (option) => {
         const value = option.value;
         return value?.action === 'shadow_sudden_assault'
           && value.newPosition
@@ -834,14 +860,32 @@ test.describe('召唤师战争暗影精灵真实入口', () => {
         .toHaveAttribute('data-valid-move', 'true', { timeout: 8000 });
       await clickBoardElement(hostPage, `[data-testid="sw-cell-${movedPosition.row}-${movedPosition.col}"]`);
       await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 })
-        .toBe('shadow_tear_the_veil');
+        .toBe('shadow_tear_the_veil_select_unit');
       await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/撕裂帷幕|Tear the Veil/i);
     };
 
     try {
       await prepare('move');
       await hostGame.screenshot('撕裂帷幕选择友方士兵传送', testInfo);
-      await clickShadowChoice(hostPage, matchId, (option) => {
+      await clickShadowBoardChoice(hostPage, matchId, 'unit', (option) => {
+        const value = option.value;
+        return value?.action === 'shadow_tear_the_veil_target_unit'
+          && value.targetUnitId === `shadow-sage-target-move-shadow-e2e-${targetPosition.row}-${targetPosition.col}`
+          && (value.targetPosition as CellCoord | undefined)?.row === targetPosition.row
+          && (value.targetPosition as CellCoord | undefined)?.col === targetPosition.col;
+      });
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 })
+        .toBe('shadow_tear_the_veil_select_gate');
+      await clickShadowBoardChoice(hostPage, matchId, 'structure', (option) => {
+        const value = option.value;
+        const gate = value?.gatePosition as CellCoord | undefined;
+        return value?.action === 'shadow_tear_the_veil_target_gate'
+          && gate?.row === gatePosition.row
+          && gate?.col === gatePosition.col;
+      });
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 })
+        .toBe('shadow_tear_the_veil_select_position');
+      await clickShadowBoardChoice(hostPage, matchId, 'cell', (option) => {
         const value = option.value;
         const newPosition = value?.newPosition as CellCoord | undefined;
         const gate = value?.gatePosition as CellCoord | undefined;
@@ -982,7 +1026,7 @@ test.describe('召唤师战争暗影精灵真实入口', () => {
         .reverse()
         .find((entry) => entry.event?.type === 'sw:unit_attacked');
       expect(attackEntry?.event?.payload?.diceCount).toBe(3);
-      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_feint');
+      await expect.poll(() => readShadowInteractionType(hostPage, matchId), { timeout: 10000 }).toBe('shadow_feint_select_position');
       await expect(hostPage.getByTestId('sw-ability-prompt')).toContainText(/佯攻|Feint/i);
     };
 
@@ -990,7 +1034,7 @@ test.describe('召唤师战争暗影精灵真实入口', () => {
       await prepare('move');
       await dismissShadowDiceOverlay(hostPage);
       await hostGame.screenshot('猛攻增加真实探求者当回合攻击骰数并出现佯攻', testInfo);
-      await clickShadowChoice(hostPage, matchId, (option) => {
+      await clickShadowBoardChoice(hostPage, matchId, 'cell', (option) => {
         const value = option.value;
         const newPosition = value?.newPosition as CellCoord | undefined;
         return value?.action === 'shadow_feint'

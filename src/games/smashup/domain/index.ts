@@ -71,7 +71,7 @@ import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef, isBaseDefAvailableForRuntimeBasePool } from '../data/cards';
-import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
+import { getMunchkinSpecialCardDescriptor, isMunchkinUndeadMonster } from '../data/factions/munchkin';
 import { drawCards } from './utils';
 import {
     countMadnessCardsForPlayer,
@@ -125,6 +125,7 @@ type SmashUpRuntimeSystemState = MatchState<SmashUpCore>['sys'] & {
     _ppseImmediateStartTurnProcessedMinionUids?: string[];
     _processedTitanPositionEvents?: Set<string>;
     _processedTitanRemovedEvents?: Set<string>;
+    _processedMunchkinMonsterPlayedEvents?: Set<string>;
 };
 
 function getSmashUpRuntimeSys(state: MatchState<SmashUpCore>): SmashUpRuntimeSystemState {
@@ -2746,6 +2747,11 @@ function postProcessSystemEvents(
         sysState._processedPlayedEvents = new Set<string>();
     }
     const processedSet = sysState._processedPlayedEvents;
+
+    if (!(sysState._processedMunchkinMonsterPlayedEvents instanceof Set)) {
+        sysState._processedMunchkinMonsterPlayedEvents = new Set<string>();
+    }
+    const processedMunchkinMonsterPlayedEvents = sysState._processedMunchkinMonsterPlayedEvents;
     
     // 【修复】清理返回手牌的随从的去重标记
     // 当随从返回手牌后再次打出时，应该重新触发 onPlay 能力
@@ -3005,6 +3011,42 @@ function postProcessSystemEvents(
             }
 
             ms = tempMatchState;
+            prePlayEvents.push(event);
+        } else if (event.type === SU_EVENTS.MUNCHKIN_MONSTER_PLAYED) {
+            const playedEvt = event as SmashUpEvent & {
+                payload: { baseIndex: number; monsterDefId: string; monsterUid: string };
+            };
+            const eventKey = `MONSTER:${playedEvt.payload.monsterUid}@${playedEvt.payload.baseIndex}`;
+            if (processedMunchkinMonsterPlayedEvents.has(eventKey)) {
+                prePlayEvents.push(event);
+                continue;
+            }
+            processedMunchkinMonsterPlayedEvents.add(eventKey);
+            let tempCore = state;
+            for (const preEvt of prePlayEvents) {
+                tempCore = reduce(tempCore, preEvt);
+            }
+            if (!inputEventsAlreadyReduced) {
+                tempCore = reduce(tempCore, event);
+            }
+            const base = tempCore.bases[playedEvt.payload.baseIndex];
+            const monster = base?.monsters?.find(candidate => candidate.uid === playedEvt.payload.monsterUid);
+            if (
+                base?.defId === 'base_whack_a_ghoul'
+                && monster
+                && isMunchkinUndeadMonster(monster.defId)
+            ) {
+                derivedEvents.push({
+                    type: SU_EVENTS.MUNCHKIN_MONSTER_TO_DECK_BOTTOM,
+                    payload: {
+                        baseIndex: playedEvt.payload.baseIndex,
+                        monsterUid: monster.uid,
+                        monsterDefId: monster.defId,
+                        reason: 'base_whack_a_ghoul',
+                    },
+                    timestamp: event.timestamp,
+                } as SmashUpEvent);
+            }
             prePlayEvents.push(event);
         } else {
             prePlayEvents.push(event);

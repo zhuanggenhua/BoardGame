@@ -24,12 +24,6 @@ const damage = (
     timing: opts?.timing,
 });
 
-const heal = (value: number, description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
-    description,
-    action: { type: 'heal', target: 'self', value },
-    timing,
-});
-
 const grantToken = (tokenId: string, value: number, description: string, timing: EffectTiming = 'preDefense'): AbilityEffect => ({
     description,
     action: { type: 'grantToken', target: 'self', tokenId, value },
@@ -73,9 +67,33 @@ export const HOLY_BLADE_3: AbilityDef = {
     name: abilityText('holy-blade-3', 'name'),
     description: abilityText('holy-blade-3', 'description'),
     variants: [
-        { id: 'holy-blade-3-3', trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 3 } }, effects: [damage(5, abilityEffectText('holy-blade-3', 'damage5'))], priority: 0 },
-        { id: 'holy-blade-3-4', trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 4 } }, effects: [damage(7, abilityEffectText('holy-blade-3', 'damage7'))], priority: 1 },
-        { id: 'holy-blade-3-5', trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 5 } }, effects: [damage(9, abilityEffectText('holy-blade-3', 'damage9'))], priority: 2 },
+        {
+            id: 'holy-blade-3-3',
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 3 } },
+            effects: [
+                damage(5, abilityEffectText('holy-blade-3', 'damage5')),
+                custom('tianshi-holy-blade-3-four-kind-dazzle', abilityEffectText('holy-blade-3', 'dazzleIfFourKind')),
+            ],
+            priority: 0,
+        },
+        {
+            id: 'holy-blade-3-4',
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 4 } },
+            effects: [
+                damage(7, abilityEffectText('holy-blade-3', 'damage7')),
+                custom('tianshi-holy-blade-3-four-kind-dazzle', abilityEffectText('holy-blade-3', 'dazzleIfFourKind')),
+            ],
+            priority: 1,
+        },
+        {
+            id: 'holy-blade-3-5',
+            trigger: { type: 'diceSet', faces: { [FACE.BLADE]: 5 } },
+            effects: [
+                damage(9, abilityEffectText('holy-blade-3', 'damage9')),
+                custom('tianshi-holy-blade-3-four-kind-dazzle', abilityEffectText('holy-blade-3', 'dazzleIfFourKind')),
+            ],
+            priority: 2,
+        },
     ],
 };
 
@@ -91,12 +109,12 @@ export const DIVINE_PURIFICATION_2: AbilityDef = {
 };
 
 export const DIVINE_PUNISHMENT_2: AbilityDef = {
-    ...replaceable('divine-punishment', 'divine-punishment-2', 'divine-punishment-2', { type: 'allSymbolsPresent', symbols: [FACE.BLADE, FACE.WING, FACE.CROSS, FACE.SHIELD] }, [custom('tianshi-divine-punishment', abilityEffectText('divine-punishment-2', 'resolve'), 'preDefense', { damagePerBlade: 3 })]),
+    ...replaceable('divine-punishment', 'divine-punishment-2', 'divine-punishment-2', { type: 'allSymbolsPresent', symbols: [FACE.BLADE, FACE.WING, FACE.CROSS, FACE.SHIELD] }, [custom('tianshi-divine-punishment', abilityEffectText('divine-punishment-2', 'resolve'), 'preDefense', { damagePerBlade: 2 })]),
 };
 
 export const TRIUMPHANT_RETURN_2: AbilityDef = {
     ...replaceable('triumphant-return', 'triumphant-return-2', 'triumphant-return-2', { type: 'smallStraight' }, [
-        damage(7, abilityEffectText('triumphant-return-2', 'damage7')),
+        damage(8, abilityEffectText('triumphant-return-2', 'damage8')),
         custom('tianshi-triumphant-return-roll', abilityEffectText('triumphant-return-2', 'roll'), 'preDefense'),
     ]),
 };

@@ -20,6 +20,7 @@ import {
 } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
 import {
   createRuntimeCore,
+  dispatchHarnessCommand,
   initBetrayalContext,
   injectCore,
   saveScreenshot,
@@ -277,7 +278,30 @@ async function dismissDiscoveryPanel(page: Page) {
     }
     const continueButton = page.getByTestId("betrayal-discovery-continue");
     if (await continueButton.isVisible().catch(() => false)) {
-      await continueButton.click();
+      if (await continueButton.isEnabled().catch(() => false)) {
+        await continueButton.click();
+      }
+      for (let acknowledgement = 0; acknowledgement < 12; acknowledgement += 1) {
+        const core = await readCurrentCore(page);
+        const pending = core.pendingCardResolutionQueue?.[0];
+        if (!pending) {
+          break;
+        }
+        const requiredPlayerIds = pending.requiredPlayerIds?.length
+          ? pending.requiredPlayerIds
+          : [pending.playerId];
+        const acknowledgedPlayerIds = new Set(pending.acknowledgedPlayerIds ?? []);
+        const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
+        if (!nextPlayerId) {
+          break;
+        }
+        await dispatchHarnessCommand(
+          page,
+          BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+          nextPlayerId,
+          { resolutionId: pending.id },
+        );
+      }
       await expect(discoveryPanel).toBeHidden({ timeout: 1200 }).catch(
         () => undefined,
       );
@@ -6672,7 +6696,7 @@ test.describe("山屋惊魂事件牌真实页面选择承接", () => {
       /事件牌 蜘蛛！/,
     );
     await expect(spiderDiscoveryPanel).toContainText("事件效果");
-    await expect(spiderDiscoveryPanel).toContainText("确认 1/1");
+    await expect(spiderDiscoveryPanel).toContainText("确认");
     await expect(
       spiderDiscoveryPanel.getByTestId("betrayal-discovery-continue"),
     ).toHaveAttribute("data-pending-card-resolution-step", "1/1");

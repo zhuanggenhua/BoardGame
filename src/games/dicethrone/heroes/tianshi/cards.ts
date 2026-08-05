@@ -6,7 +6,7 @@ import { abilityEffectText } from '../../../../engine/primitives/ability';
 import type { AbilityCard } from '../../types';
 import type { AbilityDef, AbilityEffect } from '../../domain/combat';
 import { COMMON_CARDS, injectCommonCardPreviewRefs, type CommonCardAtlasIndexMap } from '../../domain/commonCards';
-import { DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../../domain/ids';
+import { DICETHRONE_CARD_ATLAS_IDS } from '../../domain/ids';
 import {
     ANGELIC_CLOAK_2, ANGELIC_CLOAK_3, ARCHANGEL_RESOLVE_2, DIVINE_PURIFICATION_2,
     DIVINE_PUNISHMENT_2, HOLY_BLADE_2, HOLY_BLADE_3, HOLY_RADIANCE_2,
@@ -157,7 +157,7 @@ const TIANSHi_HERO_CARDS: AbilityCard[] = [
         name: cardText('upgrade-tianshi-holy-blade-2-cherub', 'name'),
         type: 'upgrade', cpCost: 2, timing: 'main', description: cardText('upgrade-tianshi-holy-blade-2-cherub', 'description'),
         previewRef: atlasPreview(31), sourceAtlasIndex: 31,
-        effects: [replaceAbility('holy-blade', HOLY_BLADE_2, 2, abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'upgrade')), custom('tianshi-cherub-card', abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'secondary'))],
+        effects: [replaceAbility('holy-blade', HOLY_BLADE_2, 2, abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'upgrade')), custom('tianshi-cherub-basic-card', abilityEffectText('upgrade-tianshi-holy-blade-2-cherub', 'secondary'))],
     },
 ];
 

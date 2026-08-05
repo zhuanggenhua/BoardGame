@@ -391,6 +391,11 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
             add(fp.writes, { kind: 'madnessDeck' });
             addPlayerZoneWrites(fp, playerId(payload.playerId), ['hand']);
             break;
+        case SU_EVENTS.MUNCHKIN_MONSTER_TO_DECK_BOTTOM:
+            addGenericResourcesFromValue(fp, payload, 'write');
+            add(fp.writes, { kind: 'base', index: numberValue(payload.baseIndex) ?? -1 });
+            add(fp.writes, { kind: 'monsterDeck' });
+            break;
         case SU_EVENTS.LIMIT_MODIFIED:
         case SU_EVENTS.SPECIAL_LIMIT_USED:
         case SU_EVENTS.TALENT_USED:

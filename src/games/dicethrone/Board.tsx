@@ -1356,6 +1356,9 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     localInteraction.selectedStatus.playerId,
                     localInteraction.selectedStatus.statusId
                 );
+            } else if (activeInteraction.minSelectCount === 0) {
+                // 可选状态移除允许确认空选；这不是取消整张卡牌/整段交互。
+                engineMoves.resolveInteraction([], []);
             }
         } else if (activeInteraction.type === 'selectPlayer') {
             // 根据交互意图决定操作
