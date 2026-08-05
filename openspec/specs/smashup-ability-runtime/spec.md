@@ -21,6 +21,22 @@ Smash Up ability runtime SHALL 内建 prompt、sequence、branch、stop 等最�
 - **THEN** 它 MUST 可以先产出 prompt 节点再继续执行后续节点
 - **AND** 运行时 MUST 在收到 prompt 结果后恢复同一 program 的后续步骤
 
+### Requirement: Player-choice targets SHALL remain explicit even when only one legal target exists
+
+当 Smash Up 能力的规则语义要求玩家选择目标时，运行时 SHALL 将“选择来源卡牌”和“选择目标”保持为独立交互步骤；合法目标只有一个时，也不得用候选数量替玩家静默提交目标。
+
+#### Scenario: Immediate extra action with one legal base
+- **GIVEN** 一张即时额外行动只能合法作用于一个基地
+- **WHEN** 玩家选择这张额外行动
+- **THEN** 运行时 MUST 继续打开基地目标交互
+- **AND** 只有玩家提交该基地后，系统 MUST 执行额外行动及其目标效果
+
+#### Scenario: Immediate extra action with one legal minion
+- **GIVEN** 一张即时额外行动只能合法作用于一个随从
+- **WHEN** 玩家选择这张额外行动
+- **THEN** 运行时 MUST 继续打开随从目标交互
+- **AND** 只有玩家提交该随从后，系统 MUST 执行额外行动及其目标效果
+
 ### Requirement: 缺失 executor 或非法运行时输出 SHALL fail-fast
 Smash Up ability runtime 对缺失 executor、非法 program、非法 prompt 恢复或未声明 bridge SHALL 直接抛错，不得静默吞掉该能力。
 

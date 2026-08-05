@@ -28,7 +28,6 @@ import {
     type ActionCardDef,
     type FusionCardDef,
     type LimitModifiedEvent,
-    type MinionOnBase,
     type SmashUpCore,
     type SmashUpEvent,
 } from './types';
@@ -674,11 +673,6 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
         if (baseOptions.length === 0) {
             return { state, events: [] };
         }
-        if (baseOptions.length === 1) {
-            const selected = baseOptions[0].value as ImmediateBaseChoice;
-            return executeImmediateExtraMinionPlay(state, context.extra, choice, selected.baseIndex, timestamp, random);
-        }
-
         return {
             state,
             events: [],
@@ -866,10 +860,6 @@ const immediateExtraActionPromptProgram = createPromptProgram<
             if (baseOptions.length === 0) {
                 return { state, events: [] };
             }
-            if (baseOptions.length === 1) {
-                const selected = baseOptions[0].value as ImmediateBaseChoice;
-                return executeImmediateExtraActionPlay(state, context.extra, choice, timestamp, random, selected.baseIndex);
-            }
             return {
                 state,
                 events: [],
@@ -886,11 +876,6 @@ const immediateExtraActionPromptProgram = createPromptProgram<
         if (minionOptions.length === 0) {
             return { state, events: [] };
         }
-        if (minionOptions.length === 1) {
-            const selected = minionOptions[0].value as ImmediateMinionTargetChoice;
-            return executeImmediateExtraActionPlay(state, context.extra, choice, timestamp, random, selected.baseIndex, selected.minionUid);
-        }
-
         return {
             state,
             events: [],
