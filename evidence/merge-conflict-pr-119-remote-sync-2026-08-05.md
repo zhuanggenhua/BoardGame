@@ -52,5 +52,5 @@
 ## 5. 结果
 
 - 归并提交：`9f977e79fa23852b736d1ce620c10c8fb6153cec`
-- 补记提交：待本文件提交后写入最终哈希
+- 补记提交：`f083da2d9f5a91b6d1d6d1b51d19a4290d1f667d`
 - 推送目标：`deathcats4/BoardGame` 的 `codex/smashup-goblins-round-table-knights-only`
