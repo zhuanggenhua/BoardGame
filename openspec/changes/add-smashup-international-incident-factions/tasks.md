@@ -40,6 +40,7 @@
 - [x] 5.2 实现火枪手全部额外行动、连续行动、让路/护卫和其它规则子句
 - [x] 5.3 实现 Bastion Saint-Gervais 与 The Golden Lily 基地能力
 - [ ] 5.4 补火枪手 L2 行为测试、真实入口 L3/L4 E2E 和 evidence
+- [x] 5.5 将即时额外出牌的显式目标选择契约同步到国际事件回归测试与 OpenSpec
 
 ## 6. Mounties
 

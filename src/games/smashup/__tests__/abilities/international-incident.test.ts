@@ -458,7 +458,15 @@ describe('国际事件四派系代表性玩法行为', () => {
             FIXED_RANDOM,
         );
         expect(minionPlayed.success, minionPlayed.error).toBe(true);
-        expect(minionPlayed.events).toEqual(expect.arrayContaining([
+        const minionBaseSelected = respondToPromptOption(
+            minionPlayed.finalState,
+            option => option.value?.baseIndex === 0,
+            '投入战斗选择额外随从基地',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(minionBaseSelected.success, minionBaseSelected.error).toBe(true);
+        expect(minionBaseSelected.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.MINION_PLAYED,
                 payload: expect.objectContaining({ cardUid: 'extra-minion' }),
@@ -477,17 +485,25 @@ describe('国际事件四派系代表性玩法行为', () => {
                 payload: expect.objectContaining({ playerId: '0' }),
             }),
         ]));
-        expect(minionPlayed.finalState.core.players['0'].pendingMinionPlayEffects ?? []).toHaveLength(0);
+        expect(minionBaseSelected.finalState.core.players['0'].pendingMinionPlayEffects ?? []).toHaveLength(0);
 
         const actionPlayed = respondToPromptOption(
-            minionPlayed.finalState,
+            minionBaseSelected.finalState,
             option => option.value?.cardUid === 'all-for-one',
             '投入战斗绑定额外行动',
             '0',
             FIXED_RANDOM,
         );
         expect(actionPlayed.success, actionPlayed.error).toBe(true);
-        expect(actionPlayed.events).toEqual(expect.arrayContaining([
+        const actionTargetSelected = respondToPromptOption(
+            actionPlayed.finalState,
+            option => option.value?.baseIndex === 0 && option.value?.minionUid === 'extra-minion',
+            '投入战斗选择额外行动目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(actionTargetSelected.success, actionTargetSelected.error).toBe(true);
+        expect(actionTargetSelected.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.LIMIT_MODIFIED,
                 payload: expect.objectContaining({
@@ -504,7 +520,7 @@ describe('国际事件四派系代表性玩法行为', () => {
                 }),
             }),
         ]));
-        expect(actionPlayed.finalState.core.bases[0].minions[0].attachedActions).toEqual([
+        expect(actionTargetSelected.finalState.core.bases[0].minions[0].attachedActions).toEqual([
             expect.objectContaining({ uid: 'all-for-one', defId: 'musketeers_all_for_one' }),
         ]);
     });
@@ -537,8 +553,15 @@ describe('国际事件四派系代表性玩法行为', () => {
             '0',
             FIXED_RANDOM,
         );
-        const actionPlayed = respondToPromptOption(
+        const minionBaseSelected = respondToPromptOption(
             minionPlayed.finalState,
+            option => option.value?.baseIndex === 0,
+            '投入战斗选择额外随从基地',
+            '0',
+            FIXED_RANDOM,
+        );
+        const actionPlayed = respondToPromptOption(
+            minionBaseSelected.finalState,
             option => option.value?.cardUid === 'en-garde',
             '投入战斗绑定预备姿势',
             '0',
@@ -546,7 +569,15 @@ describe('国际事件四派系代表性玩法行为', () => {
         );
 
         expect(actionPlayed.success, actionPlayed.error).toBe(true);
-        expect(actionPlayed.events).toEqual(expect.arrayContaining([
+        const actionTargetSelected = respondToPromptOption(
+            actionPlayed.finalState,
+            option => option.value?.baseIndex === 0 && option.value?.minionUid === 'extra-minion',
+            '投入战斗选择预备姿势目标随从',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(actionTargetSelected.success, actionTargetSelected.error).toBe(true);
+        expect(actionTargetSelected.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.ACTION_PLAYED,
                 payload: expect.objectContaining({
@@ -576,7 +607,7 @@ describe('国际事件四派系代表性玩法行为', () => {
                 }),
             }),
         ]));
-        expect(actionPlayed.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(2);
+        expect(actionTargetSelected.finalState.core.bases[0].minions[0].tempPowerModifier).toBe(2);
     });
 
     it('火枪手随从在行动直接影响对应随从后触发各自奖励', () => {
@@ -804,7 +835,15 @@ describe('国际事件四派系代表性玩法行为', () => {
             FIXED_RANDOM,
         );
         expect(extraAction.success, extraAction.error).toBe(true);
-        expect(extraAction.events).toContainEqual(expect.objectContaining({
+        const extraActionTargetSelected = respondToPromptOption(
+            extraAction.finalState,
+            option => option.value?.baseIndex === 0 && option.value?.minionUid === 'aramis',
+            'Aramis 额外行动选择唯一目标',
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(extraActionTargetSelected.success, extraActionTargetSelected.error).toBe(true);
+        expect(extraActionTargetSelected.events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.ACTION_PLAYED,
             payload: expect.objectContaining({
                 cardUid: 'biding-time',
@@ -812,8 +851,8 @@ describe('国际事件四派系代表性玩法行为', () => {
                 targetMinionUid: 'aramis',
             }),
         }));
-        expect(extraAction.finalState.core.bases[0].minions.find(minion => minion.uid === 'aramis')?.tempPowerModifier).toBe(3);
-        expect(extraAction.finalState.core.bases[0].minions.find(minion => minion.uid === 'other')?.tempPowerModifier ?? 0).toBe(0);
+        expect(extraActionTargetSelected.finalState.core.bases[0].minions.find(minion => minion.uid === 'aramis')?.tempPowerModifier).toBe(3);
+        expect(extraActionTargetSelected.finalState.core.bases[0].minions.find(minion => minion.uid === 'other')?.tempPowerModifier ?? 0).toBe(0);
     });
 
     it('火枪手一为全在多基地候选中只强化所选基地的己方随从并给额外行动', () => {
