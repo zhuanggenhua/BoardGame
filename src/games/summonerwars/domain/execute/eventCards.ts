@@ -716,6 +716,112 @@ export function executePlayEvent(
         break;
       }
 
+      // ============ 暗影精灵事件卡 ============
+
+      case CARD_IDS.SHADOW_HIDE_IN_DARKNESS: {
+        // 隐入黑暗：召唤师3格内、剩余生命不超过5的传送门或士兵回到其拥有者手牌。
+        if (!summoner || !targets || targets.length === 0) break;
+        const targetPosition = targets[0];
+        if (manhattanDistance(summoner.position, targetPosition) > 3) break;
+        const targetUnit = getUnitAt(core, targetPosition);
+        const targetStructure = getStructureAt(core, targetPosition);
+        if (targetUnit && targetUnit.card.unitClass === 'common'
+          && targetUnit.card.life - targetUnit.damage <= 5) {
+          events.push({
+            type: SW_EVENTS.UNIT_RETURNED_TO_HAND,
+            payload: {
+              position: targetPosition,
+              unitId: targetUnit.instanceId,
+              cardId: targetUnit.cardId,
+              card: targetUnit.card,
+              owner: targetUnit.owner,
+              attachedUnits: targetUnit.attachedUnits,
+              attachedCards: targetUnit.attachedCards,
+              sourceAbilityId: CARD_IDS.SHADOW_HIDE_IN_DARKNESS,
+            },
+            timestamp,
+          });
+        } else if (targetStructure?.card.isGate && targetStructure.card.life - targetStructure.damage <= 5) {
+          events.push({
+            type: SW_EVENTS.STRUCTURE_RETURNED_TO_HAND,
+            payload: {
+              position: targetPosition,
+              card: targetStructure.card,
+              owner: targetStructure.owner,
+              sourceAbilityId: CARD_IDS.SHADOW_HIDE_IN_DARKNESS,
+            },
+            timestamp,
+          });
+        }
+        break;
+      }
+
+      case CARD_IDS.SHADOW_MARL_GRIMOIRE: {
+        // 玛尔典籍：回收一张合法弃牌，并对两个选定友方单位各造成1点伤害。
+        const targetCardId = payload.targetCardId as string | undefined;
+        const damageTargets = payload.damageTargets as CellCoord[] | undefined;
+        const retrieved = targetCardId
+          ? player.discard.find((discarded) => discarded.id === targetCardId)
+          : undefined;
+        if (retrieved
+          && getBaseCardId(retrieved.id) !== CARD_IDS.SHADOW_MARL_GRIMOIRE
+          && !(retrieved.cardType === 'event' && retrieved.eventType === 'legendary')) {
+          events.push({
+            type: SW_EVENTS.CARD_RETRIEVED,
+            payload: { playerId, cardId: retrieved.id, sourceAbilityId: CARD_IDS.SHADOW_MARL_GRIMOIRE },
+            timestamp,
+          });
+        }
+        for (const targetPosition of (damageTargets ?? []).slice(0, 2)) {
+          const target = getUnitAt(core, targetPosition);
+          if (!target || target.owner !== playerId) continue;
+          events.push({
+            type: SW_EVENTS.UNIT_DAMAGED,
+            payload: {
+              position: targetPosition,
+              damage: 1,
+              reason: 'shadow_marl_grimoire',
+              sourceAbilityId: CARD_IDS.SHADOW_MARL_GRIMOIRE,
+              sourcePlayerId: playerId,
+            },
+            timestamp,
+          });
+        }
+        break;
+      }
+
+      case CARD_IDS.SHADOW_SHADOW_PULSE: {
+        // 暗影脉冲：对任意数量、且与一个或更多受伤传送门相邻的单位造成1点伤害。
+        const woundedGateAdjacent = (position: CellCoord): boolean => {
+          const directions = [
+            { row: -1, col: 0 }, { row: 1, col: 0 },
+            { row: 0, col: -1 }, { row: 0, col: 1 },
+          ];
+          return directions.some((direction) => {
+            const gatePosition = { row: position.row + direction.row, col: position.col + direction.col };
+            const gate = isValidCoord(gatePosition) ? getStructureAt(core, gatePosition) : undefined;
+            return Boolean(gate?.card.isGate && gate.damage > 0);
+          });
+        };
+
+        for (const targetPosition of targets ?? []) {
+          const target = getUnitAt(core, targetPosition);
+          if (!target || !woundedGateAdjacent(targetPosition)) continue;
+          events.push({
+            type: SW_EVENTS.UNIT_DAMAGED,
+            payload: {
+              position: targetPosition,
+              damage: 1,
+              reason: 'shadow_pulse',
+              sourceAbilityId: CARD_IDS.SHADOW_SHADOW_PULSE,
+              sourcePlayerId: playerId,
+            },
+            timestamp,
+          });
+        }
+        break;
+      }
+
       case CARD_IDS.HUIJIN_DAZZLING_LIGHT:
       case CARD_IDS.HUIJIN_DIVINE_REVENGE:
       case CARD_IDS.HUIJIN_PHOENIX_SOUL: {

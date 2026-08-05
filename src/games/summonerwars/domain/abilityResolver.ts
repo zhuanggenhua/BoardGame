@@ -785,6 +785,16 @@ export function calculateEffectiveStrength(
   const abilities = getUnitAbilities(unit, state);
   const abilityIds = new Set(abilities.map(a => a.id));
 
+  // 猛攻：真实召唤当回合获得 +2 战力；不能用永久卡面战力覆盖后续回合。
+  if (abilityIds.has('shadow_fierce_assault') && unit.summonedTurnNumber === state.turnNumber) {
+    strength += 2;
+    modifiers.push({
+      source: 'shadow_fierce_assault',
+      sourceName: abilityRegistry.get('shadow_fierce_assault')?.name ?? '猛攻',
+      value: 2,
+    });
+  }
+
   if (abilityIds.has('shouren_reckless_strike')) {
     strength += 2;
     modifiers.push({ source: 'shouren_reckless_strike', sourceName: '鲁莽打击', value: 2 });

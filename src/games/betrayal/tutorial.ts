@@ -321,7 +321,7 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
         {
             id: 'help-entry',
             content: 'game-betrayal:tutorial.hauntActions.steps.helpEntry',
-            highlightTarget: 'betrayal-reference-entry',
+            highlightTarget: 'betrayal-open-scenario',
             position: 'center',
             infoStep: true,
             viewAs: '0',
@@ -330,7 +330,7 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
             id: 'haunt-actions',
             content: 'game-betrayal:tutorial.hauntActions.steps.hauntActions',
             highlightTarget: 'betrayal-action-use',
-            position: 'top',
+            position: 'right',
             infoStep: true,
             viewAs: '0',
         },
@@ -379,7 +379,7 @@ const BETRAYAL_HERO_ATTACK_PATH: TutorialManifest = {
         {
             id: 'hero-attack-objective',
             content: 'game-betrayal:tutorial.heroAttackPath.steps.heroAttackObjective',
-            highlightTarget: 'betrayal-reference-entry',
+            highlightTarget: 'betrayal-open-scenario',
             position: 'left',
             requireAction: true,
             allowedCommands: [],
@@ -430,7 +430,7 @@ const BETRAYAL_JACK_SPIRIT_PATH: TutorialManifest = {
         {
             id: 'jack-spirit-objective',
             content: 'game-betrayal:tutorial.jackSpiritPath.steps.jackSpiritObjective',
-            highlightTarget: 'betrayal-reference-entry',
+            highlightTarget: 'betrayal-open-scenario',
             position: 'left',
             requireAction: true,
             allowedCommands: [],
@@ -481,7 +481,7 @@ const BETRAYAL_TRAITOR_PATH: TutorialManifest = {
         {
             id: 'traitor-objective',
             content: 'game-betrayal:tutorial.traitorPath.steps.traitorObjective',
-            highlightTarget: 'betrayal-reference-entry',
+            highlightTarget: 'betrayal-open-scenario',
             position: 'left',
             requireAction: true,
             allowedCommands: [],

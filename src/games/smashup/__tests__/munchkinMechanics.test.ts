@@ -1294,24 +1294,42 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         ]);
 
         const firstPrompt = getSimpleChoicePrompt(choseTreasures.finalState, 'smashup_immediate_extra_minion');
-        const playedFirst = respondToPromptOption(
+        const playedFirstCard = respondToPromptOption(
             choseTreasures.finalState,
             option => option.value?.cardUid === 'treasure-minion-a',
             '套现第一张宝藏随从',
             '0',
             fixedRandom,
         );
+        const firstBasePrompt = getSimpleChoicePrompt(playedFirstCard.finalState, 'smashup_immediate_extra_minion_base');
+        const playedFirst = respondToPromptOption(
+            playedFirstCard.finalState,
+            option => option.value?.baseIndex === 0,
+            '套现第一张宝藏随从选择基地',
+            '0',
+            fixedRandom,
+        );
         const secondPrompt = getSimpleChoicePrompt(playedFirst.finalState, 'smashup_immediate_extra_minion');
-        const playedSecond = respondToPromptOption(
+        const playedSecondCard = respondToPromptOption(
             playedFirst.finalState,
             option => option.value?.cardUid === 'treasure-minion-b',
             '套现第二张宝藏随从',
             '0',
             fixedRandom,
         );
+        const secondBasePrompt = getSimpleChoicePrompt(playedSecondCard.finalState, 'smashup_immediate_extra_minion_base');
+        const playedSecond = respondToPromptOption(
+            playedSecondCard.finalState,
+            option => option.value?.baseIndex === 0,
+            '套现第二张宝藏随从选择基地',
+            '0',
+            fixedRandom,
+        );
 
         expect(firstPrompt.options.map((option: any) => option.value?.cardUid)).toContain('treasure-minion-a');
+        expect(firstBasePrompt.options.map((option: any) => option.value?.baseIndex)).toContain(0);
         expect(secondPrompt.options.map((option: any) => option.value?.cardUid)).toContain('treasure-minion-b');
+        expect(secondBasePrompt.options.map((option: any) => option.value?.baseIndex)).toContain(0);
         expect(playedSecond.success).toBe(true);
         expect(playedSecond.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual([
             'treasure-minion-a',
@@ -1546,15 +1564,24 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         const prompt = getSimpleChoicePrompt(activated.finalState, 'smashup_immediate_extra_minion');
         expect(prompt.options.map((option: any) => option.value?.cardUid)).toContain('munchkin_treasure_1660');
 
-        const playedTreasure = respondToPromptOption(
+        const playedTreasureCard = respondToPromptOption(
             activated.finalState,
             option => option.value?.cardUid === 'munchkin_treasure_1660',
             '狡猾计划打出刚抽到的矮人雇佣兵',
             '0',
             fixedRandom,
         );
+        const basePrompt = getSimpleChoicePrompt(playedTreasureCard.finalState, 'smashup_immediate_extra_minion_base');
+        const playedTreasure = respondToPromptOption(
+            playedTreasureCard.finalState,
+            option => option.value?.baseIndex === 0,
+            '狡猾计划选择矮人雇佣兵的基地',
+            '0',
+            fixedRandom,
+        );
 
         expect(playedTreasure.success).toBe(true);
+        expect(basePrompt.options.map((option: any) => option.value?.baseIndex)).toContain(0);
         expect(playedTreasure.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('munchkin_treasure_1660');
         expect(playedTreasure.finalState.core.players['0'].hand).toEqual([]);
         expect(playedTreasure.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['cunning-1']);
@@ -1720,15 +1747,24 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         const extraPrompt = getSimpleChoicePrompt(choseTreasure.finalState, 'smashup_immediate_extra_action');
         expect(extraPrompt.options.map((option: any) => option.value?.cardUid)).toContain('munchkin_treasure_1680');
 
-        const attached = respondToPromptOption(
+        const attachedCard = respondToPromptOption(
             choseTreasure.finalState,
             option => option.value?.cardUid === 'munchkin_treasure_1680',
             '我的！打出尖刺靴到己方宿主',
             '0',
             fixedRandom,
         );
+        const hostPrompt = getSimpleChoicePrompt(attachedCard.finalState, 'smashup_immediate_extra_action_minion');
+        const attached = respondToPromptOption(
+            attachedCard.finalState,
+            option => option.value?.minionUid === 'host-1',
+            '我的！选择尖刺靴的己方宿主',
+            '0',
+            fixedRandom,
+        );
 
         expect(attached.success).toBe(true);
+        expect(hostPrompt.options.map((option: any) => option.value?.minionUid)).toContain('host-1');
         expect(attached.finalState.core.bases[0].minions[0].attachedActions).toContainEqual(expect.objectContaining({
             uid: 'munchkin_treasure_1680',
             defId: 'munchkin_treasure_spiky_boots',
@@ -1911,15 +1947,24 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         const extraPrompt = getSimpleChoicePrompt(choseTreasure.finalState, 'smashup_immediate_extra_action');
         expect(extraPrompt.options.map((option: any) => option.value?.cardUid)).toContain('munchkin_treasure_1700');
 
-        const attached = respondToPromptOption(
+        const attachedCard = respondToPromptOption(
             choseTreasure.finalState,
             option => option.value?.cardUid === 'munchkin_treasure_1700',
             '打捞打出尖刺靴到当前基地己方宿主',
             '0',
             fixedRandom,
         );
+        const hostPrompt = getSimpleChoicePrompt(attachedCard.finalState, 'smashup_immediate_extra_action_minion');
+        const attached = respondToPromptOption(
+            attachedCard.finalState,
+            option => option.value?.minionUid === 'host-1',
+            '打捞选择尖刺靴的当前基地己方宿主',
+            '0',
+            fixedRandom,
+        );
 
         expect(attached.success).toBe(true);
+        expect(hostPrompt.options.map((option: any) => option.value?.minionUid)).toContain('host-1');
         expect(attached.finalState.core.bases[0].minions[0].attachedActions).toContainEqual(expect.objectContaining({
             uid: 'munchkin_treasure_1700',
             defId: 'munchkin_treasure_spiky_boots',
@@ -4373,14 +4418,23 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         const extraPrompt = getSimpleChoicePrompt(choseBase.finalState, 'smashup_immediate_extra_minion');
         expect(extraPrompt.options.map((option: any) => option.value?.cardUid)).toContain('party-minion-1');
 
-        const playedMinion = respondToPromptOption(
+        const playedMinionCard = respondToPromptOption(
             choseBase.finalState,
             option => option.value?.cardUid === 'party-minion-1',
             '意外的派对额外随从',
             '0',
             fixedRandom,
         );
+        const extraBasePrompt = getSimpleChoicePrompt(playedMinionCard.finalState, 'smashup_immediate_extra_minion_base');
+        const playedMinion = respondToPromptOption(
+            playedMinionCard.finalState,
+            option => option.value?.baseIndex === 1,
+            '意外的派对选择额外随从基地',
+            '0',
+            fixedRandom,
+        );
         expect(playedMinion.success).toBe(true);
+        expect(extraBasePrompt.options.map((option: any) => option.value?.baseIndex)).toContain(1);
         expect(playedMinion.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['enemy-1', 'party-minion-1']);
 
         const skippedStart = runCommand(makeMatchState(state), {

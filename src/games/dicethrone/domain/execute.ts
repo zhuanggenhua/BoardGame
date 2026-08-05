@@ -977,6 +977,19 @@ export function execute(
             }
 
             const interaction = currentInteraction.data as PendingInteraction;
+            if (interaction.type === 'selectStatus' && interaction.minSelectCount === 0) {
+                events.push({
+                    type: 'INTERACTION_COMPLETED',
+                    payload: {
+                        interactionId: currentInteraction.id,
+                        sourceCardId: interaction.sourceCardId ?? '',
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent);
+                break;
+            }
+
             if (interaction.type === 'selectHandCard') {
                 const { selectedCardIds = [] } = command.payload as { selectedCardIds?: string[] };
                 const player = state.players[interaction.playerId];
@@ -1156,7 +1169,7 @@ export function execute(
         case DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN:
         case 'REROLL_BONUS_DIE':
         case 'SKIP_BONUS_DICE_REROLL':
-            return executeTokenCommand(state, command, random, timestamp);
+            return executeTokenCommand(state, command, random, timestamp, phase);
 
         case 'USE_PASSIVE_ABILITY': {
             const { passiveId, actionIndex, targetDieId } = command.payload as {

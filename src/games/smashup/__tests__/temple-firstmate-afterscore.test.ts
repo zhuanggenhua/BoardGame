@@ -5,10 +5,13 @@ import { clearBaseAbilityRegistry, triggerBaseAbility } from '../domain/baseAbil
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { SmashUpCore } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
-import { getSimpleChoicePrompt, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState, respondToPromptOption } from './helpers';
+import { expectNoPrompt, getSimpleChoicePrompt, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState, respondToPromptOption } from './helpers';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { reduce } from '../domain/reducer';
 import { fireTriggers } from '../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { defaultTestRandom } from './testRunner';
+import type { TriggerInstance } from '../domain/types';
 
 beforeAll(() => {
     clearRegistry();
@@ -279,5 +282,56 @@ describe('Temple of Goju + First Mate 时序测试', () => {
 
         expect(result.events.length).toBe(0);
         expect(getSimpleChoicePrompt(result.matchState!, 'pirate_first_mate_choose_base')).toBeDefined();
+    });
+
+    it('场景6: 大副已被计分后能力放入牌库时，不得用 LKI 快照重新移动', () => {
+        const trigger: TriggerInstance = {
+            id: 'queued-first-mate-after-hotel',
+            timing: 'afterScoring',
+            sourceDefId: 'pirate_first_mate',
+            sourceCardUid: 'first-mate-hotel',
+            sourceControllerId: '0',
+            sourceOwnerPlayerId: '0',
+            sourceBaseIndex: 0,
+            mandatory: true,
+            resolutionClass: 'mandatory',
+            ownerPlayerId: '0',
+            eventPlayerId: '0',
+            witnessRequirement: 'inPlayAtTriggerTime',
+            witnessed: true,
+            baseIndex: 0,
+            triggerMinionUid: 'first-mate-hotel',
+            triggerMinionDefId: 'pirate_first_mate',
+            lkiMinion: {
+                uid: 'first-mate-hotel',
+                defId: 'pirate_first_mate',
+                owner: '0',
+                controller: '0',
+                baseIndex: 0,
+                basePower: 2,
+                powerCounters: 0,
+                powerModifier: 0,
+                tempPowerModifier: 0,
+            },
+        };
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('first-mate-hotel', 'pirate_first_mate', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_other', []), makeBase('base_target', [])],
+            triggerQueue: [trigger],
+        });
+
+        const resolved = maybeResolveReactionQueue(makeMatchState(core), defaultTestRandom, 3000);
+
+        expect(resolved).toBeDefined();
+        expectNoPrompt(resolved!.state);
+        expect(resolved!.state.core.triggerQueue ?? []).toHaveLength(0);
+        expect(resolved!.state.core.bases.flatMap(base => base.minions)).toHaveLength(0);
+        expect(resolved!.state.core.players['0'].deck.map(card => card.uid)).toEqual(['first-mate-hotel']);
     });
 });

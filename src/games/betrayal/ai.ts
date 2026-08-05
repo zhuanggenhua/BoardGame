@@ -90,6 +90,15 @@ interface BetrayalAiRecentRoll {
     consumedRabbitFootCardIds: string[];
 }
 
+interface BetrayalAiPendingDamageAllocation {
+    playerId: string;
+    damageKind: 'physical' | 'mental' | 'general';
+    amount: number;
+    allowedTraits: BetrayalTraitKey[];
+    damageReplacement?: unknown;
+    forcedTraitSequence?: BetrayalTraitKey[];
+}
+
 interface BetrayalAiRoom {
     id: string;
     name: string;
@@ -133,9 +142,12 @@ interface BetrayalAiCore {
         targetPlayerId: string;
         cardIds: string[];
     } | null;
+    pendingDamageAllocation: BetrayalAiPendingDamageAllocation | null;
     pendingCardResolutionQueue?: Array<{
         id: string;
         playerId: string;
+        requiredPlayerIds?: string[];
+        acknowledgedPlayerIds?: string[];
         cardName: string;
         text: string;
     }>;
@@ -197,6 +209,7 @@ const ACTION_KINDS = {
     ACKNOWLEDGE_CARD_RESOLUTION: 'acknowledge-card-resolution',
     END_TURN: 'end-turn',
     ACKNOWLEDGE_TURN_END_ROLL: 'acknowledge-turn-end-roll',
+    RESOLVE_DAMAGE_ALLOCATION: 'resolve-damage-allocation',
     MOVE_TROLL_HAND: 'move-troll-hand',
     TROLL_HAND_ATTACK: 'troll-hand-attack',
     END_TROLL_HAND_MONSTER_TURN: 'end-troll-hand-monster-turn',
@@ -1104,6 +1117,88 @@ function buildRabbitFootActions(
         .filter((action): action is AiLegalAction => Boolean(action));
 }
 
+function buildDamageTraitPayloads(
+    allowedTraits: BetrayalTraitKey[],
+    amount: number,
+): EventChoicePayload[] {
+    const normalizedAmount = Math.max(0, Math.floor(amount));
+    if (normalizedAmount === 0 || allowedTraits.length === 0) {
+        return [{ traits: [] }];
+    }
+
+    const payloads: EventChoicePayload[] = [];
+    const maxCandidates = 4096;
+    const visit = (traits: BetrayalTraitKey[]): void => {
+        if (payloads.length >= maxCandidates) {
+            return;
+        }
+        if (traits.length === normalizedAmount) {
+            payloads.push({ traits: [...traits] });
+            return;
+        }
+        for (const trait of allowedTraits) {
+            visit([...traits, trait]);
+            if (payloads.length >= maxCandidates) {
+                return;
+            }
+        }
+    };
+    visit([]);
+    return payloads;
+}
+
+function buildDamageAllocationActions(
+    validate: BetrayalAiValidator,
+    state: BetrayalState,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    const pending = state.core.pendingDamageAllocation;
+    if (!pending || pending.playerId !== playerId || pending.amount < 0) {
+        return [];
+    }
+
+    const candidates: Array<{ traits: BetrayalTraitKey[]; useBrooch?: boolean }> = [];
+    const addCandidates = (allowedTraits: BetrayalTraitKey[], useBrooch = false) => {
+        for (const payload of buildDamageTraitPayloads(allowedTraits, pending.amount)) {
+            candidates.push({
+                traits: payload.traits ?? [],
+                ...(useBrooch ? { useBrooch: true } : {}),
+            });
+        }
+    };
+
+    if (pending.forcedTraitSequence) {
+        candidates.push({ traits: [...pending.forcedTraitSequence] });
+    } else {
+        addCandidates(pending.allowedTraits);
+        if (pending.damageReplacement && pending.damageKind !== 'general') {
+            addCandidates(BETRAYAL_AI_TRAITS, true);
+        }
+    }
+
+    return candidates
+        .map((candidate, index) => createValidatedAction({
+            validate,
+            state,
+            playerId,
+            type: BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION,
+            payload: candidate,
+            kind: ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION,
+            label: candidate.useBrooch ? '用胸针替换并分配伤害' : '分配当前伤害',
+            idParts: [
+                candidate.useBrooch ? 'brooch' : 'damage',
+                ...candidate.traits,
+            ],
+            metadata: {
+                strategicScore: 1500 - index,
+                traits: candidate.traits,
+                useBrooch: candidate.useBrooch === true,
+                visibleStepDelayPolicy: 'visible',
+            },
+        }))
+        .filter((action): action is AiLegalAction => Boolean(action));
+}
+
 function buildRoomEffectActions(
     validate: BetrayalAiValidator,
     state: BetrayalState,
@@ -1419,7 +1514,13 @@ function buildCardResolutionAcknowledgementActions(
     playerId: PlayerId,
 ): AiLegalAction[] {
     const pendingResolution = state.core.pendingCardResolutionQueue?.[0];
-    if (!pendingResolution || pendingResolution.playerId !== playerId) {
+    const requiredPlayerIds = pendingResolution?.requiredPlayerIds?.length
+        ? pendingResolution.requiredPlayerIds
+        : pendingResolution
+            ? [pendingResolution.playerId]
+            : [];
+    const acknowledgedPlayerIds = pendingResolution?.acknowledgedPlayerIds ?? [];
+    if (!pendingResolution || !requiredPlayerIds.includes(playerId) || acknowledgedPlayerIds.includes(playerId)) {
         return [];
     }
     const action = createValidatedAction({
@@ -1452,6 +1553,11 @@ function buildBetrayalAiLegalActions(
 
     if (state.core.phase === 'characterSelect') {
         return buildCharacterSelectActions(validate, state, args.playerId);
+    }
+
+    const damageAllocationActions = buildDamageAllocationActions(validate, state, args.playerId);
+    if (damageAllocationActions.length > 0) {
+        return damageAllocationActions;
     }
 
     const eventChoiceActions = buildEventChoiceActions(validate, state, args.playerId);
@@ -1672,6 +1778,8 @@ function scoreAction(context: AiDecisionContext, action: AiLegalAction): number 
             return 1200;
         case ACTION_KINDS.RESOLVE_EVENT_CHOICE:
             return 1150 + scoreEventChoice(core, action);
+        case ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION:
+            return strategicScore;
         case ACTION_KINDS.EXORCISE_JACK:
             return 1200;
         case ACTION_KINDS.TRAITOR_ATTACK_HERO:
@@ -1781,6 +1889,7 @@ export function createBetrayalAiRuntime(args: {
                 ACTION_KINDS.LOOT_CORPSE,
                 ACTION_KINDS.USE_RABBIT_FOOT,
                 ACTION_KINDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION,
                 ACTION_KINDS.USE_ROOM_EFFECT,
                 ACTION_KINDS.MOVE_TROLL_HAND,
                 ACTION_KINDS.TROLL_HAND_ATTACK,

@@ -38,7 +38,8 @@
     "mogu": "莫古",
     "huijin": "灰烬",
     "shouren": "冰苔兽人",
-    "yongheng": "永恒议会"
+    "yongheng": "永恒议会",
+    "shadow": "暗影精灵"
   },
   "configReview": {
     "eyebrow": "配置审查表",
@@ -260,6 +261,7 @@
     "continue": "继续",
     "finish": "完成",
     "skip": "跳过",
+    "shadowLightningStepReplace": "使用迅闪步",
     "skipPush": "跳过推拉",
     "push": "推开",
     "pull": "拉近",
@@ -628,6 +630,7 @@
     "reviveUndead": "复活死灵：选择弃牌堆中的亡灵单位",
     "infection": "感染：选择弃牌堆中的疫病体",
     "fortressPower": "城塞之力：选择弃牌堆中的城塞单位",
+    "shadowMarlGrimoire": "玛尔典籍：选择弃牌堆中的卡牌",
     "default": "选择卡牌",
     "empty": "没有符合条件的卡牌"
   },
@@ -720,7 +723,29 @@
       "yonghengApplicationCard": "运用：选择一张手牌放到牌库底",
       "yonghengApplicationTarget": "运用：选择相邻单位造成 1 点伤害",
       "yonghengForcedDiscard": "永恒议会：选择要弃除的手牌",
-      "yonghengContinuance": "延续：消耗 2 点充能保留持续事件"
+      "yonghengContinuance": "延续：消耗 2 点充能保留持续事件",
+      "shadowLightningStep": "迅如闪电：是否使用召唤师替换离场单位",
+      "shadowReturnToShadow": "回归暗影：选择 3 格内的友方单位回手",
+      "shadowJudgment": "审判：选择目标和消耗的充能数量",
+      "shadowJudgmentTarget": "审判：选择相邻目标",
+      "shadowJudgmentAmount": "审判：选择消耗的充能数量",
+      "shadowTearTheVeil": "撕裂帷幕：选择友方士兵和传送门邻格",
+      "shadowTearTheVeilUnit": "撕裂帷幕：选择友方普通士兵",
+      "shadowTearTheVeilGate": "撕裂帷幕：选择受伤的敌方传送门",
+      "shadowTearTheVeilPosition": "撕裂帷幕：选择传送门旁的空格",
+      "shadowForbiddenKnowledge": "禁忌学识：选择自伤或伤害相邻传送门",
+      "shadowForbiddenKnowledgeTarget": "禁忌学识：选择本单位或相邻传送门",
+      "shadowFeint": "佯攻：选择推拉本单位的位置",
+      "shadowFeintPosition": "佯攻：选择本单位的推拉落点",
+      "shadowSummon": "暗影召唤：选择目标和放置位置",
+      "shadowSummonTarget": "暗影召唤：选择友方单位或建筑",
+      "shadowSummonPosition": "暗影召唤：选择目标相邻的空格",
+      "shadowSuddenAssault": "急袭：选择推拉本单位的位置",
+      "shadowSuddenAssaultPosition": "急袭：选择本单位的推拉落点",
+      "shadowMarlGrimoireCard": "玛尔典籍：选择弃牌堆中的卡牌",
+      "shadowMarlGrimoireDamage": "玛尔典籍：选择承受 1 点伤害的友方单位",
+      "shadowLightningStep": "迅如闪电：是否使用召唤师替换离场单位",
+      "shadowPulse": "暗影脉冲：选择目标（已选 {{count}}）"
     },
     "fireSacrifice": {
       "mustSelectAlly": "请选择一个友方单位作为牺牲品"
@@ -739,7 +764,10 @@
     "insufficientMagic": "魔力不足",
     "insufficientCharge": "至少需要 1 点充能",
     "eventTarget": {
-      "message": "选择事件卡目标"
+      "message": "{{cardName}}：选择目标"
+    },
+    "shadowPulse": {
+      "message": "暗影脉冲：选择目标（已选 {{count}} 个）"
     },
     "magicEventChoice": {
       "message": "选择：打出事件卡或弃牌换魔力"
@@ -787,7 +815,14 @@
       "vanish": "神出鬼没：选择一个 0 费友方单位交换位置",
       "moguBloodInfusion": "鲜血灌注：选择 2 格内一个友方单位",
       "moguTransmission": "菌落传导：选择充能传输方式",
-      "moguFanaticalFungus": "狂热菌菇：选择不推拉或推拉落点"
+      "moguFanaticalFungus": "狂热菌菇：选择不推拉或推拉落点",
+      "shadowReturnToShadow": "回归暗影：选择 3 格内的友方单位回手",
+      "shadowJudgment": "审判：选择目标和消耗的充能数量",
+      "shadowTearTheVeil": "撕裂帷幕：选择友方士兵和传送门邻格",
+      "shadowForbiddenKnowledge": "禁忌学识：选择自伤或伤害相邻传送门",
+      "shadowFeint": "佯攻：选择推拉本单位的位置",
+      "shadowSummon": "暗影召唤：选择目标和放置位置",
+      "shadowSuddenAssault": "急袭：选择推拉本单位的位置"
     },
     "beforeAttack": {
       "lifeDrain": "攻击前技能：吸取生命已就绪，选择攻击目标",
@@ -1379,6 +1414,58 @@
     "yongheng_application": {
       "name": "运用",
       "description": "在本单位攻击一个敌方单位之后，你可以从你的手牌选择一张卡牌放置到你的牌库底部以指定一个相邻单位为目标。对目标造成 1 点伤害。"
+    },
+    "shadow_blood_magic": {
+      "name": "鲜血魔法",
+      "description": "在你的回合中，每次在本单位 3 个区格以内的一张友方卡牌被造成 1 点或更多伤害后，将本单位充能。"
+    },
+    "shadow_return_to_shadow": {
+      "name": "回归暗影",
+      "description": "在你的回合中，你可以消耗 2 点充能，以指定本单位 3 个区格以内的一个友方单位为目标。将目标返回到你的手牌。"
+    },
+    "shadow_dark_prophecy": {
+      "name": "黑暗预言",
+      "description": "每当一个友方单位离开战场时，将本单位充能。"
+    },
+    "shadow_judgment": {
+      "name": "审判",
+      "description": "在本单位移动之后，你可以消耗任意数量充能，以对一个相邻士兵或英雄造成相同点数的伤害。"
+    },
+    "shadow_tear_the_veil": {
+      "name": "撕裂帷幕",
+      "description": "每回合一次，在本单位移动之后，如果和一个已受伤害的敌方传送门相邻，则你可以将战场上一个友方士兵放置到该传送门相邻的区格。"
+    },
+    "shadow_inescapable_doom": {
+      "name": "难逃厄运",
+      "description": "在你的攻击阶段结束时，如果本单位在本回合中消灭了敌方单位，则对敌方召唤师造成 1 点伤害；否则，对你的召唤师造成 1 点伤害。"
+    },
+    "shadow_forbidden_knowledge": {
+      "name": "禁忌学识",
+      "description": "在本单位移动之后，你可以对本单位或一个相邻传送门造成 1 点伤害，以抓取一张卡牌。"
+    },
+    "shadow_fierce_assault": {
+      "name": "猛攻",
+      "description": "本单位在被召唤的回合中，获得战力 +2。"
+    },
+    "shadow_feint": {
+      "name": "佯攻",
+      "description": "在本单位攻击之后，你可以将其推拉至 2 个区格。"
+    },
+    "shadow_shadow_summon": {
+      "name": "暗影召唤",
+      "description": "当召唤本单位时，指定一张没有暗影召唤技能的友方卡牌为目标。将本单位放置到目标相邻的区格，对目标造成 1 点伤害。"
+    },
+    "shadow_death_pact": {
+      "name": "死亡契约",
+      "description": "本单位被消灭之后，对你的召唤师造成 1 点伤害。"
+    },
+    "shadow_piercing_light": {
+      "name": "穿透之光",
+      "description": "本单位在被召唤的回合中，其攻击可以穿过单位。"
+    },
+    "shadow_sudden_assault": {
+      "name": "急袭",
+      "description": "在召唤本单位之后，你可以将其推拉 1 个区格。"
     }
   },
   "buffs": {

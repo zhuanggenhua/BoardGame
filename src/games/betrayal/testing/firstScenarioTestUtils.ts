@@ -162,22 +162,46 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
 }
 
 export function acknowledgePendingCardResolutions(core: BetrayalCore): BetrayalCore {
-  let nextCore = core;
-  let safety = 0;
-  while ((nextCore.pendingCardResolutionQueue ?? []).length > 0) {
+    let nextCore = core;
+    let safety = 0;
+    while ((nextCore.pendingCardResolutionQueue ?? []).length > 0) {
     if (safety >= 20) {
       throw new Error("山屋测试夹具确认牌面队列超过安全上限");
     }
-    const pendingResolution = nextCore.pendingCardResolutionQueue[0]!;
-    nextCore = applyBetrayalCommand(
-      nextCore,
-      BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
-      pendingResolution.playerId,
-      { resolutionId: pendingResolution.id },
-    );
-    safety += 1;
-  }
+        const pendingResolution = nextCore.pendingCardResolutionQueue[0]!;
+        const requiredPlayerIds = pendingResolution.requiredPlayerIds?.length
+            ? pendingResolution.requiredPlayerIds
+            : [pendingResolution.playerId];
+        const acknowledgedPlayerIds = new Set(pendingResolution.acknowledgedPlayerIds ?? []);
+        const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
+        if (!nextPlayerId) {
+            throw new Error("山屋测试夹具发现牌确认状态无法继续推进");
+        }
+        nextCore = applyBetrayalCommand(
+            nextCore,
+            BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+            nextPlayerId,
+            { resolutionId: pendingResolution.id },
+        );
+        safety += 1;
+    }
   return nextCore;
+}
+
+export function acknowledgePendingCardResolution(
+  core: BetrayalCore,
+  playerId: string,
+): BetrayalCore {
+  const pendingResolution = core.pendingCardResolutionQueue?.[0];
+  if (!pendingResolution) {
+    throw new Error("山屋测试夹具当前没有待确认的牌面结算");
+  }
+  return applyBetrayalCommand(
+    core,
+    BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+    playerId,
+    { resolutionId: pendingResolution.id },
+  );
 }
 
 function findFixtureExplorer(

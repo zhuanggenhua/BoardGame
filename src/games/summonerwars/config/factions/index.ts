@@ -12,6 +12,7 @@ export * from './mogu';
 export * from './huijin';
 export * from './shouren';
 export * from './yongheng';
+export * from './shadow';
 export { DECK_SYMBOLS } from '../symbols';
 
 import { createNecromancerDeck } from './necromancer';
@@ -24,6 +25,7 @@ import { createMoguDeck } from './mogu';
 import { createHuijinDeck } from './huijin';
 import { createShourenDeck } from './shouren';
 import { createYonghengDeck } from './yongheng';
+import { createShadowDeck } from './shadow';
 import type { FactionId } from '../../domain/types';
 
 // 派系 ID 常量
@@ -38,6 +40,7 @@ export const FACTION_IDS = {
   HUIJIN: 'huijin',
   SHOUREN: 'shouren',
   YONGHENG: 'yongheng',
+  SHADOW: 'shadow',
 } as const;
 
 /** 中文阵营名 → 阵营 ID 映射 */
@@ -52,6 +55,7 @@ export const FACTION_NAME_TO_ID: Record<string, FactionId> = {
   '灰烬': 'huijin',
   '冰苔兽人': 'shouren',
   '永恒议会': 'yongheng',
+  '暗影精灵': 'shadow',
 };
 
 /** 将中文阵营名或阵营 ID 统一解析为 FactionId */
@@ -147,6 +151,14 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = [
     selectable: true,
     statusTag: 'under_construction',
   },
+  {
+    id: 'shadow',
+    nameKey: 'factions.shadow',
+    heroImagePath: 'summonerwars/hero/shadow/hero',
+    tipImagePath: 'summonerwars/hero/shadow/tip',
+    selectable: true,
+    statusTag: 'under_construction',
+  },
 ];
 
 /** 根据阵营 ID 创建牌组 */
@@ -162,6 +174,7 @@ export function createDeckByFactionId(factionId: FactionId) {
     case 'huijin': return createHuijinDeck();
     case 'shouren': return createShourenDeck();
     case 'yongheng': return createYonghengDeck();
+    case 'shadow': return createShadowDeck();
     default: return createNecromancerDeck();
   }
 }

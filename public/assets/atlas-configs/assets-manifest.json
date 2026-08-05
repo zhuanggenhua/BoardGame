@@ -25,8 +25,8 @@
     "dicethrone/ability-cards-gunslinger.atlas": {
       "variants": {
         "json": {
-          "sha256": "b006ff82bb0dcfb4b949349628f1235f883f84e0fc0b3b84c0d7fe36e4a24c42",
-          "bytes": 2088,
+          "sha256": "9e462b4ac975030a8332436ba89ea0977b68027de36463f845d18ecaa3a2f564",
+          "bytes": 2047,
           "mime": "application/json"
         }
       }
@@ -54,6 +54,15 @@
         "json": {
           "sha256": "e5b00d850184f45219040f82513b8036bcf457ab4e980f29f7b3d681bc006c77",
           "bytes": 3390,
+          "mime": "application/json"
+        }
+      }
+    },
+    "dicethrone/ability-cards-tianshi.atlas": {
+      "variants": {
+        "json": {
+          "sha256": "eb27e7537c76cc4864207635e609156273ef923a7ad26aa442a59b7a01389f3f",
+          "bytes": 461,
           "mime": "application/json"
         }
       }

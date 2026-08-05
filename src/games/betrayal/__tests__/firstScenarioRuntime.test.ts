@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    acknowledgePendingCardResolution,
     acknowledgePendingCardResolutions,
     applyBetrayalCommand,
     BETRAYAL_FIXED_RANDOM,
@@ -3927,6 +3928,15 @@ describe('Betrayal first scenario runtime', () => {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
 
+        expect(core.pendingCardResolutionQueue[0]?.acknowledgedPlayerIds).toEqual(['0']);
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.END_TURN, '0', {}),
+        )).toMatchObject({
+            valid: false,
+            error: '请先确认当前翻牌结算。',
+        });
+        core = acknowledgePendingCardResolutions(core);
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -4446,6 +4456,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
+        core = acknowledgePendingCardResolutions(core);
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -5759,6 +5770,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
+        core = acknowledgePendingCardResolutions(core);
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.traits.might).toBe(3);
         expect(core.currentExplorer.traits.sanity).toBe(5);
@@ -16348,6 +16360,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
+        core = acknowledgePendingCardResolutions(core);
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(traitTrackPosition(core, '0', 'knowledge')).toBe(knowledgePositionBeforeSkippingHaunt + 1);
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -16406,6 +16419,7 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
+        core = acknowledgePendingCardResolutions(core);
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(core.currentExplorer.inventory.at(-1)?.name).toBe('魔法相机');
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -20435,10 +20449,12 @@ describe('Betrayal first scenario runtime', () => {
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
             resolutionId: core.pendingCardResolutionQueue[0]!.id,
         });
+        expect(core.pendingCardResolutionQueue[0]?.acknowledgedPlayerIds).toEqual(['0']);
+        expect(core.pendingCardResolutionQueue.map((resolution) => resolution.index)).toEqual([1, 2]);
+        core = acknowledgePendingCardResolution(core, '1');
+        core = acknowledgePendingCardResolution(core, '2');
         expect(core.pendingCardResolutionQueue.map((resolution) => resolution.index)).toEqual([2]);
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
-            resolutionId: core.pendingCardResolutionQueue[0]!.id,
-        });
+        core = acknowledgePendingCardResolutions(core);
         expect(core.pendingCardResolutionQueue).toEqual([]);
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -26544,9 +26560,7 @@ describe('Betrayal first scenario runtime', () => {
             error: '请先确认当前翻牌结算。',
         });
 
-        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION, '0', {
-            resolutionId: core.pendingCardResolutionQueue[0]!.id,
-        });
+        core = acknowledgePendingCardResolutions(core);
         expect(core.pendingCardResolutionQueue).toEqual([]);
     });
 });

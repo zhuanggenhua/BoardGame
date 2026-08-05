@@ -3889,11 +3889,53 @@ describe('submitOnlineAiResolution', () => {
             vi.useRealTimers();
         }
     });
+
+    it('单命令收到 online_ai_circuit_open 后应立即停止当前尝试，不再安排重试', () => {
+        const retry = vi.fn();
+        const onRejected = vi.fn();
+        const unsubscribeState = vi.fn();
+        const unsubscribeError = vi.fn();
+        const subscribeStateUpdate = vi.fn(() => unsubscribeState);
+        let errorListener: ((error: string) => void) | null = null;
+        const subscribeError = vi.fn((listener: (error: string) => void) => {
+            errorListener = listener;
+            return unsubscribeError;
+        });
+        const lastAiAttemptKeyRef = { current: null as string | null };
+
+        submitOnlineAiResolution({
+            client: {
+                sendBatch: vi.fn(),
+                sendCommand: vi.fn(),
+                subscribeStateUpdate,
+                subscribeError,
+                latestState: buildOnlineAiSeatState({ nextId: 16 }),
+                updateLatestState: vi.fn(),
+                resync: vi.fn(),
+            },
+            resolution: buildResolution({
+                attemptKey: 'attempt-single-circuit-open',
+                commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } }],
+            }),
+            lastAiAttemptKeyRef,
+            scheduleRetry: retry,
+            onRejected,
+        });
+
+        errorListener?.('online_ai_circuit_open');
+
+        expect(lastAiAttemptKeyRef.current).toBeNull();
+        expect(retry).not.toHaveBeenCalled();
+        expect(onRejected).toHaveBeenCalledWith('online_ai_circuit_open');
+        expect(unsubscribeState).toHaveBeenCalledTimes(1);
+        expect(unsubscribeError).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe('shouldSilentlyRetryOnlineAiBatchRejection', () => {
     it('仅对 stale_state 走静默重试分支', () => {
         expect(shouldSilentlyRetryOnlineAiBatchRejection('stale_state')).toBe(true);
+        expect(shouldSilentlyRetryOnlineAiBatchRejection('online_ai_circuit_open')).toBe(true);
         expect(shouldSilentlyRetryOnlineAiBatchRejection('command_failed')).toBe(false);
         expect(shouldSilentlyRetryOnlineAiBatchRejection('unauthorized')).toBe(false);
     });

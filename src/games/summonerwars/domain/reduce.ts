@@ -62,6 +62,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
       newBoard[position.row][position.col].unit = {
         instanceId, cardId, card, owner: playerId, position, damage: 0, boosts: 0, hasMoved: false, hasAttacked: false,
+        summonedTurnNumber: core.turnNumber,
       };
       const player = core.players[playerId];
       if (fromDiscard) {
@@ -169,7 +170,9 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       const unit = newBoard[from.row][from.col].unit;
       if (!unit) return { ...core, board: newBoard };
       newBoard[from.row][from.col].unit = undefined;
-      const consumesMoveAction = reason !== 'grab' && reason !== 'huijin_call_guards';
+      const consumesMoveAction = reason !== 'grab'
+        && reason !== 'huijin_call_guards'
+        && reason !== 'shadow_lightning_step';
       newBoard[to.row][to.col].unit = { ...unit, position: to, hasMoved: consumesMoveAction ? true : unit.hasMoved };
       const pid = unit.owner as PlayerId;
       return {
@@ -182,6 +185,58 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
           },
         },
       };
+    }
+
+    case SW_EVENTS.UNIT_RETURNED_TO_HAND: {
+      const { position, unitId, owner: returnedOwner } = payload as {
+        position: CellCoord;
+        unitId?: string;
+        owner: PlayerId;
+        cardId: string;
+        card: UnitCard;
+        attachedUnits?: { cardId: string; card: UnitCard; owner: PlayerId }[];
+        attachedCards?: EventCard[];
+      };
+      const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
+      let targetCell = newBoard[position.row]?.[position.col];
+      let targetUnit = targetCell?.unit;
+      if (unitId && !targetUnit) {
+        for (const row of newBoard) {
+          const match = row.find((cell) => cell.unit?.instanceId === unitId);
+          if (match?.unit) {
+            targetCell = match;
+            targetUnit = match.unit;
+            break;
+          }
+        }
+      }
+      if (!targetCell || !targetUnit) return core;
+
+      const actualOwner = returnedOwner ?? targetUnit.owner;
+      const ownerPlayer = core.players[actualOwner];
+      const attachedUnits = targetUnit.attachedUnits ?? [];
+      const attachedCards = targetUnit.attachedCards ?? [];
+      targetCell.unit = undefined;
+
+      const nextPlayers = { ...core.players };
+      nextPlayers[actualOwner] = {
+        ...ownerPlayer,
+        hand: [
+          ...ownerPlayer.hand,
+          targetUnit.card,
+          ...attachedCards,
+        ],
+      };
+      for (const attached of attachedUnits) {
+        const attachedOwner = nextPlayers[attached.owner];
+        if (!attachedOwner) continue;
+        nextPlayers[attached.owner] = {
+          ...attachedOwner,
+          hand: [...attachedOwner.hand, attached.card],
+        };
+      }
+
+      return { ...core, board: newBoard, players: nextPlayers };
     }
 
     // 消耗移动次数但不移动单位（技能代替移动，如预备）
@@ -605,6 +660,32 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       return {
         ...core,
         players: crPlayers,
+      };
+    }
+
+    case SW_EVENTS.STRUCTURE_RETURNED_TO_HAND: {
+      const { position, owner: returnedOwner } = payload as {
+        position: CellCoord;
+        owner: PlayerId;
+        card: StructureCard;
+      };
+      const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
+      const cell = newBoard[position.row]?.[position.col];
+      if (!cell?.structure) return core;
+      const actualOwner = returnedOwner ?? cell.structure.owner;
+      const ownerPlayer = core.players[actualOwner];
+      const returnedCard = cell.structure.card;
+      cell.structure = undefined;
+      return {
+        ...core,
+        board: newBoard,
+        players: {
+          ...core.players,
+          [actualOwner]: {
+            ...ownerPlayer,
+            hand: [...ownerPlayer.hand, returnedCard],
+          },
+        },
       };
     }
 

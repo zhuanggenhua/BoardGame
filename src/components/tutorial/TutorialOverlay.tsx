@@ -188,6 +188,11 @@ export const TutorialOverlay: React.FC = () => {
     if (lastStepIdRef.current !== stepId) {
       lastStepIdRef.current = stepId;
       hasAutoScrolledRef.current = false;
+      // 新步骤先解除旧步骤留下的高度上限，再按当前正文重新测量。
+      // 否则长说明会继承上一张气泡的 max-height，测量结果也会被永久截短。
+      if (tooltipRef.current) {
+        tooltipRef.current.style.maxHeight = "none";
+      }
     }
 
     let resizeObserver: ResizeObserver | null = null;
@@ -597,7 +602,31 @@ export const TutorialOverlay: React.FC = () => {
         position: "fixed",
         zIndex: UI_Z_INDEX.tutorial,
       };
-      const topValue = typeof styles.top === "number" ? styles.top : minTop;
+      const isLateralPlacement =
+        selectedPlacement?.placement === "left" ||
+        selectedPlacement?.placement === "right";
+      const minimumLateralHeight = Math.min(
+        320,
+        viewportHeight - safeArea.top - safeArea.bottom - safeMargin * 2,
+      );
+      const topValue =
+        typeof styles.top === "number"
+          ? isLateralPlacement
+            ? Math.max(
+                minTop,
+                Math.min(
+                  styles.top,
+                  viewportHeight -
+                    Math.max(tooltipHeight, minimumLateralHeight) -
+                    safeArea.bottom -
+                    safeMargin,
+                ),
+              )
+            : styles.top
+          : minTop;
+      if (isLateralPlacement && typeof styles.top === "number") {
+        styles.top = topValue;
+      }
       styles.maxHeight =
         viewportHeight - topValue - safeArea.bottom - safeMargin;
 

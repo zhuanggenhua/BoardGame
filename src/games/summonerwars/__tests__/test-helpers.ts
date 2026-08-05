@@ -102,6 +102,7 @@ export function placeTestUnit(
     boosts: overrides.boosts ?? 0,
     hasMoved: overrides.hasMoved ?? false,
     hasAttacked: overrides.hasAttacked ?? false,
+    summonedTurnNumber: overrides.summonedTurnNumber,
     extraAttacks: overrides.extraAttacks,
     attachedCards: overrides.attachedCards,
     healingMode: overrides.healingMode,

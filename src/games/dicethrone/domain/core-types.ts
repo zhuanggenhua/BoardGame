@@ -69,7 +69,11 @@ export type DieFace =
     | 'skull'
     | 'wrench'
     | 'gear'
-    | 'electricity';
+    | 'electricity'
+    | 'blade'
+    | 'wing'
+    | 'cross'
+    | 'shield';
 
 // ============================================================================
 // 角色编目
@@ -89,6 +93,7 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'zhanshujia',
     'cursed_pirate',
     'artificer',
+    'tianshi',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -115,6 +120,7 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'zhanshujia', nameKey: 'characters.zhanshujia' },
     { id: 'cursed_pirate', nameKey: 'characters.cursed_pirate' },
     { id: 'artificer', nameKey: 'characters.artificer' },
+    { id: 'tianshi', nameKey: 'characters.tianshi' },
 ];
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(
@@ -277,6 +283,14 @@ export interface PendingAttack {
     blindedCheckResolved?: boolean;
     /** 致盲判定最终是否让攻击失败。 */
     blindedCheckMissed?: boolean;
+    /** 眩光判定是否已完成；仅消费本次攻击上的一层眩光。 */
+    dazzleCheckResolved?: boolean;
+    /** 眩光判定是否让本次攻击无效。 */
+    dazzleCheckMissed?: boolean;
+    /** 眩光对本次攻击主伤害的百分比修正（-50 表示伤害减半）。 */
+    dazzleDamagePercent?: number;
+    /** 防御掷骰阶段激活飞行后，本次攻击主伤害完全免除。 */
+    defensiveFlightActivated?: boolean;
     /** 攻击链内的后续选择结果（例如工匠扳手攻击的追加分支），用于交互后恢复同一条攻击。 */
     followUpChoiceBySourceAbilityId?: Record<string, string>;
     /** 树精神圣防止即将受到的负面状态的可选响应决定。 */

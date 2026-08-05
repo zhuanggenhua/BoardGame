@@ -72,13 +72,13 @@ export const LeftSidebar = ({
 }) => {
     return (
         <div
-            className="absolute left-[1.5vw] top-0 bottom-[1.5vw] w-[15vw] flex flex-col items-center pointer-events-auto"
+            className="absolute left-[1.5vw] top-0 bottom-[1.5vw] w-[15vw] flex flex-col items-center pointer-events-none"
             style={{ zIndex: UI_Z_INDEX.hud }}
         >
             {/* 回合顺序 - 上移 */}
             <div className="w-full pt-[0.2rem] px-[1vw]"><PhaseIndicator currentPhase={currentPhase} /></div>
             <div className="flex-grow" />
-            <div className="w-full flex flex-col items-center gap-[0.5vw]">
+            <div className="w-full flex flex-col items-center gap-[0.5vw] pointer-events-auto">
                 {/*
                  * selfBuffRef is used as the end position for buff/status flying effects.
                  * Use a small offset above the HP container so the effect doesn't land too low.

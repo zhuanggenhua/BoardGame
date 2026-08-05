@@ -763,6 +763,59 @@ describe('Feature: incremental-state-sync', () => {
       client.disconnect();
     });
 
+    it('sendCommand includes expectedStateID precondition after sync', () => {
+      const { client } = createConnectedClient();
+
+      simulateSync({ core: { hp: 100 } }, [{ id: 0 }], 7);
+      mockSocket.clearEmitted();
+
+      client.sendCommand('attack', { target: '1' });
+
+      const commandEmits = mockSocket.findEmitted('command');
+      expect(commandEmits).toHaveLength(1);
+      expect(commandEmits[0]?.args[4]).toEqual({ expectedStateID: 7 });
+
+      client.disconnect();
+    });
+
+    it.each(['stale_state', 'player_mismatch'])('command rejection %s triggers resync and blocks commands until the new state arrives', (reason) => {
+      const onError = vi.fn();
+      const client = new GameTransportClient({
+        server: '',
+        matchID: 'test-match',
+        playerID: '0',
+        credentials: 'test-cred',
+        onError,
+      });
+      client.connect();
+      mockSocket.simulateEvent('connect');
+      simulateSync({ core: { turn: 0 } }, [{ id: 0 }], 7);
+      mockSocket.clearEmitted();
+
+      client.sendCommand('attack', { target: '1' });
+      expect(mockSocket.findEmitted('command')).toHaveLength(1);
+
+      mockSocket.simulateEvent('error', 'test-match', reason);
+      expect(onError).toHaveBeenCalledWith(reason);
+      expect(mockSocket.findEmitted('sync')).toHaveLength(1);
+      // 上层 recovery 也会调用 resync，但不能重复发送第二个同步请求。
+      client.resync();
+      expect(mockSocket.findEmitted('sync')).toHaveLength(1);
+
+      // 全量同步尚未回来时，不能继续发送仍基于旧 stateID 的命令。
+      client.sendCommand('defend', { target: '1' });
+      expect(mockSocket.findEmitted('command')).toHaveLength(1);
+
+      // 收到新权威状态后才恢复发送，并使用新的 stateID。
+      simulateSync({ core: { turn: 1 } }, [{ id: 0 }], 9);
+      client.sendCommand('defend', { target: '1' });
+      const commandEmits = mockSocket.findEmitted('command');
+      expect(commandEmits).toHaveLength(2);
+      expect(commandEmits[1]?.args[4]).toEqual({ expectedStateID: 9 });
+
+      client.disconnect();
+    });
+
     /**
      * 需求 8.3：回滚广播全量 state:update
      *

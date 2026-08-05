@@ -1196,7 +1196,8 @@ export function getEffectivePower(
 
 function isMinionPowerContributionCancelled(state: SmashUpCore, minion: MinionOnBase): boolean {
     return minion.attachedActions.some(action => (
-        normalizeDefId(action.defId) === 'luchadors_pin'
+        (normalizeDefId(action.defId) === 'luchadors_pin'
+            || normalizeDefId(action.defId) === 'munchkin_clerics_curse_of_uselessness')
         && !isCardSuppressed(state, action.uid)
     ));
 }

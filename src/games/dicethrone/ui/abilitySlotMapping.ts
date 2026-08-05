@@ -147,6 +147,17 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         meditate: ['tinker'],
         ultimate: ['maximum-power'],
     },
+    tianshi: {
+        fist: ['holy-blade'],
+        chi: ['holy-radiance'],
+        sky: ['divine-purification'],
+        lotus: ['divine-punishment'],
+        combo: ['triumphant-return'],
+        lightning: ['supreme-power'],
+        calm: ['archangel-resolve'],
+        meditate: ['angelic-cloak'],
+        ultimate: ['heavenly-severing'],
+    },
 };
 
 const CURSED_PIRATE_NORMAL_SLOT_ABILITY_OVERRIDES: Record<string, string[]> = {

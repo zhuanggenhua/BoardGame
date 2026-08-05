@@ -190,6 +190,33 @@ export const YONGHENG_HERO_ATLAS: SpriteAtlasConfig = {
 export const YONGHENG_CARDS_ATLAS = MOGU_CARDS_ATLAS;
 
 /**
+ * shadow/cards.jpg 配置（暗影精灵独立手工图集）
+ * 原图 6288x1124，8列2行，每帧 786x562，slot 11-15 为空白占位。
+ */
+export const SHADOW_CARDS_ATLAS: SpriteAtlasConfig = {
+  imageW: 6288,
+  imageH: 1124,
+  cols: 8,
+  rows: 2,
+  colStarts: [0, 786, 1572, 2358, 3144, 3930, 4716, 5502],
+  colWidths: [786, 786, 786, 786, 786, 786, 786, 786],
+  rowStarts: [0, 562],
+  rowHeights: [562, 562],
+};
+
+/** shadow/hero.jpg 配置（暗影精灵单张召唤师图） */
+export const SHADOW_HERO_ATLAS: SpriteAtlasConfig = {
+  imageW: 786,
+  imageH: 562,
+  cols: 1,
+  rows: 1,
+  colStarts: [0],
+  colWidths: [786],
+  rowStarts: [0],
+  rowHeights: [562],
+};
+
+/**
  * dice.png 配置（骰子面精灵图）
  * 3x3 布局，约 1024x1024
  */
@@ -228,10 +255,11 @@ const FACTION_DIR_MAP: Record<FactionId, string> = {
   huijin: 'huijin',
   shouren: 'shouren',
   yongheng: 'yongheng',
+  shadow: 'shadow',
 };
 
 /** 所有阵营目录名列表 */
-const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin', 'shouren', 'yongheng'] as const;
+const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow'] as const;
 
 /**
  * 根据阵营名获取精灵图 atlas ID
@@ -256,6 +284,7 @@ const CARD_ID_PREFIX_MAP: Record<string, FactionId> = {
   huijin: 'huijin',
   shouren: 'shouren',
   yongheng: 'yongheng',
+  shadow: 'shadow',
 };
 
 function getHeroAtlasConfig(dir: string): SpriteAtlasConfig {
@@ -263,6 +292,7 @@ function getHeroAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'huijin') return HUIJIN_HERO_ATLAS;
   if (dir === 'shouren') return SHOUREN_HERO_ATLAS;
   if (dir === 'yongheng') return YONGHENG_HERO_ATLAS;
+  if (dir === 'shadow') return SHADOW_HERO_ATLAS;
   return HERO_ATLAS;
 }
 
@@ -272,6 +302,7 @@ function getCardsAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'huijin') return HUIJIN_CARDS_ATLAS;
   if (dir === 'shouren') return SHOUREN_CARDS_ATLAS;
   if (dir === 'yongheng') return YONGHENG_CARDS_ATLAS;
+  if (dir === 'shadow') return SHADOW_CARDS_ATLAS;
   return CARDS_ATLAS;
 }
 

@@ -575,6 +575,8 @@ export interface PendingAfterScoringSpecial {
         baseIndex: number;
         counterAmount: number;
     }>;
+    /** 能力在计分前保存的后续选择上下文。 */
+    metadata?: Record<string, unknown>;
 }
 
 /**
@@ -1739,6 +1741,8 @@ export type SmashUpEvent =
     | MadnessDrawnEvent
     | MadnessReturnedEvent
     | MunchkinMonsterDefeatedEvent
+    | MunchkinMonsterPlayedEvent
+    | MunchkinMonsterControlChangedEvent
     | MunchkinTreasuresDrawnEvent
     | MunchkinTreasuresMilledEvent
     | MunchkinTreasureRecoveredFromDiscardEvent
@@ -2183,6 +2187,30 @@ export interface MunchkinMonsterDefeatedEvent extends GameEvent<typeof SU_EVENTS
     };
 }
 
+/** 从公共怪物牌库将一张怪物打到基地。 */
+export interface MunchkinMonsterPlayedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_MONSTER_PLAYED> {
+    payload: {
+        playerId: PlayerId;
+        baseIndex: number;
+        monsterDefId: string;
+        monsterUid: string;
+        reason: string;
+    };
+}
+
+/** 临时控制一个怪物；回合结束时由归约器恢复原控制状态。 */
+export interface MunchkinMonsterControlChangedEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_MONSTER_CONTROL_CHANGED> {
+    payload: {
+        playerId: PlayerId;
+        baseIndex: number;
+        monsterUid: string;
+        fromControllerId?: PlayerId;
+        toControllerId?: PlayerId;
+        temporaryUntilTurnEnd?: boolean;
+        reason: string;
+    };
+}
+
 /** Munchkin 公共宝藏牌库抽宝藏到玩家手牌。 */
 export interface MunchkinTreasuresDrawnEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_TREASURES_DRAWN> {
     payload: {
@@ -2533,6 +2561,22 @@ export interface SpecialAfterScoringArmedEvent extends GameEvent<typeof SU_EVENT
             baseIndex: number;
             counterAmount: number;
         }>;
+        metadata?: Record<string, unknown>;
+    };
+}
+
+/** 将基地上的怪物放回公共怪物牌库底，不触发击败奖励。 */
+export interface MunchkinMonsterToDeckBottomEvent extends GameEvent<typeof SU_EVENTS.MUNCHKIN_MONSTER_TO_DECK_BOTTOM> {
+    payload: {
+        baseIndex: number;
+        monsterUid: string;
+        monsterDefId: string;
+        reason: string;
+        sourcePlayerId?: PlayerId;
+        sourceCardUid?: string;
+        sourceDefId?: string;
+        sourceControllerId?: PlayerId;
+        sourceBaseIndex?: number;
     };
 }
 

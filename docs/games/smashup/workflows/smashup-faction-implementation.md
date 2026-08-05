@@ -135,6 +135,7 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
   - 单测 / 行为测试证明 reducer、helper、shared mechanism 语义成立
 - **L3 真实入口 E2E**
   - 从真实打牌 / 真实触发 / 真实天赋入口进入，不靠“prompt 预打开”的注入型捷径收口
+  - 任何对象 / 目标 / 支付物 / 顺序 / 数量 / 模式选择都必须证明玩家手动选择；即使当前合法候选只有 1 个，也必须截图并断言该选择态真实停住，不能被 `autoResolveIfSingle` 或等价默认隐式代选吞掉。截图里的候选本体必须清楚无遮挡；如果被卡牌预览、hover 特写、displayCard、提示浮层或 HUD 遮住，不能算该步 L3 证据。只有所有玩家决策都完成后的固定结果收口，才允许自动推进。
 - **L4 流程态与权威状态**
   - 强制补看 `finalState / triggerQueue / reaction session`
   - 只要 effect atom 链路涉及 reaction / afterScoring / beforeScoring / uncover / discard special / ongoing talent，就必须按该 effect atom 补到这一层，不能只抽样同类对象
@@ -287,6 +288,7 @@ Smash Up 派系对象在重审 / 重录 / 补证时，默认按以下层级验�
 - 相关 Vitest / GameTestRunner，证明核心规则链确实生效
 - 受影响的审计测试，证明结构接入没有漏注册或漏声明
 - 至少 1 条关键真实交互 E2E，入口必须来自真实打牌 / 真实触发 / 真实响应窗口
+- 涉及多段选择时，E2E 必须逐段证明 `交互出现 -> 玩家点击候选 -> 下一段交互 / 结算`，并覆盖单候选仍需手选的代表态；不能只用最终状态或下一段 prompt 存在来证明前一段选择合格
 - 1 份 evidence 文档，明确写清当前结论等级、残余范围、共享根因
 - 若该对象链路涉及反应窗、延迟结算、挖掘后续、计分后续或多段交互，evidence 必须显式写出 `finalState / triggerQueue / reaction session` 的观察结论
 

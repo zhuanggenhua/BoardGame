@@ -72,8 +72,10 @@ interface SimpleChoiceConfig {
 9. **`responseWindow` 与 `simple-choice` 可以并存，命令放行权必须归 `ResponseWindowSystem`**。当 `state.sys.interaction.current.kind === 'simple-choice'` 且同时存在活动 `state.sys.responseWindow.current` 时，`SimpleChoiceSystem` 不能一刀切拦截同玩家的普通非 `SYS_` 命令；此时命令是否合法必须交给 `ResponseWindowSystem` 裁决。只有在没有活动响应窗口时，`SimpleChoiceSystem` 才负责阻塞“请先完成当前选择”类普通命令。
 10. **一个 interaction kind 只能表达一种稳定业务语义（强制）**。`simple-choice` 只保留真正的分支/按钮/数值选择；像“为当前 pendingAttack 选 defender”“选择 compare-roll 胜方”“奖励骰重掷结算确认”这类有独立业务语义的步骤，必须建 dedicated kind / dedicated reader / dedicated modal，禁止继续把不同职责塞进同一个 `simple-choice` / `selectPlayer` 壳子里。
 11. **能直接消费现有交互对象时，不得再创造第二个交互对象（强制）**。如果当前 live interaction / prompt option 已经完整表达了玩家这一步要操作的业务对象（例如卡牌 `cardUid`、基地 `baseIndex`、随从 `minionUid`、已存在的 `optionId`），UI 必须优先直接让玩家点击这个现有对象，并把点击结果回送到同一个 live option / interaction；禁止再额外包一层“先选一个动作/先选一个分支/先开一个总弹窗”的二次交互壳，只是把同一批对象重新描述一遍。只有在**确实新增了一个原交互对象里不存在的新决策步骤**时，才允许创建新的 interaction kind / prompt。
-11. **阻塞交互的前台承载默认走 modal stack（强制）**。如果某个前台直接拥有当前交互步骤的确认权，或它的关闭/确认会决定业务是否继续推进，那么它必须作为 modal stack entry 承载；只有纯展示、不会改变交互 ownership 的特写/放大层，才允许保留在 overlay 通道。
-12. **modal stack entry 的真实可点击内容必须与 entry 同树（强制）**。一旦前台已经进栈，禁止其内部再通过 `HudPortal` / `modal-root` / 其它 portal 把主体内容挪到栈外；否则会出现“栈里的 fixed 空层拦截点击、真正内容在另一棵树里单飞”的命中错误。若同一组件既要支持 overlay 展示态、也要支持入栈阻塞态，必须提供 `usePortal=false` 这类底层开关，让栈式场景原位渲染。
+12. **组合选择不得预展开为按钮组合**。当一个效果依次需要选择单位、建筑/区域、落点或数量时，必须用引擎交互状态表达每一步；当前步骤的可见对象直接消费原交互选项，下一步在上一选择 resolve 后再创建。只有数量、确认、跳过、取消等语义分支可以保留为按钮；不得用 `targetType: 'button'` 把对象 × 对象 × 位置的笛卡尔积一次性渲染出来。
+13. **取消入口只能有一个前台承载**。如果横幅已经提供跳过/取消并能回送当前 interaction，就不要再在同一 interaction.options 中增加同义“跳过”选项；若业务必须让 AI/服务端看到可跳过值，应使用同一个引擎取消/跳过语义，不得让玩家看到两个重复按钮。
+14. **阻塞交互的前台承载默认走 modal stack（强制）**。如果某个前台直接拥有当前交互步骤的确认权，或它的关闭/确认会决定业务是否继续推进，那么它必须作为 modal stack entry 承载；只有纯展示、不会改变交互 ownership 的特写/放大层，才允许保留在 overlay 通道。
+15. **modal stack entry 的真实可点击内容必须与 entry 同树（强制）**。一旦前台已经进栈，禁止其内部再通过 `HudPortal` / `modal-root` / 其它 portal 把主体内容挪到栈外；否则会出现“栈里的 fixed 空层拦截点击、真正内容在另一棵树里单飞”的命中错误。若同一组件既要支持 overlay 展示态、也要支持入栈阻塞态，必须提供 `usePortal=false` 这类底层开关，让栈式场景原位渲染。
 
 ### PromptOption.displayMode（渲染模式声明）
 

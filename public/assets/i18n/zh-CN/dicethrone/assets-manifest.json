@@ -905,6 +905,24 @@
         }
       }
     },
+    "images/lieren/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "ed1e8043acb45ab3d345695202f0ee9cbb4d3ebefe0029fddae6e16ab1c6f9b0",
+          "bytes": 11549952,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/lieren/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "b9005884ea62ac6bbc1d1cbe3734a375d48874e5348333182028b12c94502b96",
+          "bytes": 1481068,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "images/monk/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -1486,6 +1504,191 @@
         "png": {
           "sha256": "24eee5d2515fb1c183289cb9cdabc22c5ad62388cb6b965aa386ebe2a98f2d43",
           "bytes": 9059653,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/飞行": {
+      "variants": {
+        "png": {
+          "sha256": "d6917ba0ad9e929cf13f8bd65797e82d449599ffef75016daa5cff8abdf80daa",
+          "bytes": 68756,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/神圣降临 ": {
+      "variants": {
+        "png": {
+          "sha256": "ae30332db891f3589b325778bfd9e5aa7ff43185dfc8448250bf6f1ed75e1dbf",
+          "bytes": 101236,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/神圣祝福": {
+      "variants": {
+        "png": {
+          "sha256": "ac9418b6d3495e3092a29024cf05866887c8ee9e3c3a414887112c39f6354453",
+          "bytes": 162242,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/炫光": {
+      "variants": {
+        "png": {
+          "sha256": "77b40b01d8cf405454fefa139660735eea538dbd8cb689eb14b99f01ed96651f",
+          "bytes": 112218,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
+          "bytes": 14654587,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/cards": {
+      "variants": {
+        "png": {
+          "sha256": "ac2262cf4fb6de5f5da69043c931f3d25b3f5bc6f5716c602d555f5a3e3d8de2",
+          "bytes": 14654587,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/compressed/飞行": {
+      "variants": {
+        "webp": {
+          "sha256": "3027dde589601f7d8287992ff2679aefd0d971b9cac6552280c1c3b215c9e395",
+          "bytes": 15206,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/神圣降临 ": {
+      "variants": {
+        "webp": {
+          "sha256": "3c7e1d981a3d9bac25c1db9b7f1f21b88efae343ff513ec88a9678b7580993e4",
+          "bytes": 17874,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/神圣祝福": {
+      "variants": {
+        "webp": {
+          "sha256": "e8f79df39d5ff61b60593763996130ac59216c9de916f7fe933df3dea57bc873",
+          "bytes": 29734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/炫光": {
+      "variants": {
+        "webp": {
+          "sha256": "fba6a5faca41197c6a71355297fc8644a85ca41e7a37ed71291c5dee7af5f488",
+          "bytes": 22126,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "eba3741c9783ccc2fecfdef9d13c09070c6423cc782a38a87936c800b798a64c",
+          "bytes": 2226894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "eba3741c9783ccc2fecfdef9d13c09070c6423cc782a38a87936c800b798a64c",
+          "bytes": 2226894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "65450ae53be098d0ab974d2e39eb79a62ac09781ee4b345d34ed7ed32663c88a",
+          "bytes": 36796,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "6a4ae546327bda781e8563df32e96a9801bc6015271f2db1ad119498a2b06be4",
+          "bytes": 1963960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "da4f66bd5a3bf98ac5606c8d4b67431e44e378dd659d7ba4e2746864f96ba10c",
+          "bytes": 87764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "186274a3d0fac112846a9b7b19870af6c81a0a54253295a74730865509ae5726",
+          "bytes": 702920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/tianshi/dice": {
+      "variants": {
+        "png": {
+          "sha256": "3fc0926e3a9907d76f2375a954d1891f9bc80722cc0378f8f37de295d8a7b66d",
+          "bytes": 54780,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "3ffa794ae27cf1fdb1809ea7cf542e4849083254f7204f09b10cc1a294a442ae",
+          "bytes": 10830955,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/status-icons-atlas": {
+      "variants": {
+        "json": {
+          "sha256": "f081694215d3a8656801f3aa90b2eb228ee225c2777f5ca3f4d0f5d60157bea6",
+          "bytes": 612,
+          "mime": "application/json"
+        },
+        "png": {
+          "sha256": "dcdb39a70056badef9b068fe5be38a94693bb71ff770cb19456120af493976ec",
+          "bytes": 407076,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/tianshi/tip": {
+      "variants": {
+        "png": {
+          "sha256": "c9b9cf8579cfc880c543ed184e83ffb46a2494408ded49a799169d3fc8d9a7bb",
+          "bytes": 4377670,
           "mime": "image/png"
         }
       }

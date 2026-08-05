@@ -60,8 +60,9 @@ const ADVISORY_EVENT_CATEGORY_MAP: Record<string, string | string[]> = {
 function createMockState(actionId: string): any {
     const isSamuraiDefense = actionId === 'samurai-stand-tall' || actionId === 'samurai-stand-tall-2';
     const isNinjaDefense = actionId === 'ninja-blink' || actionId === 'ninja-blink-2';
+    const isTianshi = actionId.startsWith('tianshi-');
 
-    const p0CharId = isSamuraiDefense ? 'samurai' : isNinjaDefense ? 'ninja' : 'pyromancer';
+    const p0CharId = isTianshi ? 'tianshi' : isSamuraiDefense ? 'samurai' : isNinjaDefense ? 'ninja' : 'pyromancer';
     const p1CharId = 'monk';
 
     const p0Data = CHARACTER_DATA_MAP[p0CharId];
@@ -72,8 +73,12 @@ function createMockState(actionId: string): any {
             '0': {
                 characterId: p0CharId,
                 resources: { [RESOURCE_IDS.HP]: 50, [RESOURCE_IDS.CP]: 5 },
-                tokens: isSamuraiDefense || isNinjaDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 3 },
-                tokenStackLimits: isSamuraiDefense || isNinjaDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 5 },
+                tokens: isTianshi
+                    ? (actionId === 'tianshi-divine-arrival-upkeep' ? { [TOKEN_IDS.DIVINE_ARRIVAL]: 1 } : {})
+                    : isSamuraiDefense || isNinjaDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 3 },
+                tokenStackLimits: isTianshi
+                    ? { [TOKEN_IDS.DIVINE_ARRIVAL]: 2 }
+                    : isSamuraiDefense || isNinjaDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 5 },
                 statusEffects: {},
                 abilities: p0Data.abilities,
                 hand: [{ id: 'test-card', name: 'Test', type: 'action' as const, cost: 0, effects: [], description: '', timing: 'instant' as const }],
@@ -849,6 +854,14 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'cursed-pirate-human-verdict-command',
             'cursed-pirate-human-defense',
             'cursed-pirate-still-wet-behind-ears-defense',
+            // 炽天使：这些动作把伤害留给后续选择、当前攻击加伤或奖励骰收口；当前 handler 调用本身不直接产出 DAMAGE_DEALT
+            'tianshi-divine-purification',
+            'tianshi-divine-punishment',
+            'tianshi-triumphant-return-roll',
+            'tianshi-holy-strike-card',
+            'tianshi-angelic-tactics-card',
+            'tianshi-divine-command-card',
+            'tianshi-takeoff-card',
         ]);
 
         for (const actionId of registeredIds) {

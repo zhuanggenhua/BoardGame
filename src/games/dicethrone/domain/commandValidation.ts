@@ -1241,6 +1241,12 @@ const validateResolveInteraction = (
         }
         return ok();
     }
+    if (pendingInteraction.type === 'selectStatus') {
+        if ((pendingInteraction.minSelectCount ?? 1) > 0) {
+            return fail('status_selection_requires_choice');
+        }
+        return ok();
+    }
     if (pendingInteraction.type !== 'selectPlayer') {
         return fail('invalid_interaction_type');
     }
@@ -1298,9 +1304,43 @@ const validateCancelInteraction = (
 const validateUseToken = (
     state: DiceThroneCore,
     cmd: UseTokenCommand,
-    playerId: PlayerId
+    playerId: PlayerId,
+    phase: TurnPhase,
 ): ValidationResult => {
     const pendingDamage = state.pendingDamage;
+
+    const tokenDef = state.tokenDefinitions.find(t => t.id === cmd.payload.tokenId);
+    if (!tokenDef) {
+        return fail('unknown_token');
+    }
+
+    const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
+    const canUseDuringRoll = isRollPhase
+        && tokenDef.activeUse?.timing?.includes('duringRoll');
+    if (canUseDuringRoll) {
+        if (pendingDamage) {
+            return fail('invalid_token_timing');
+        }
+        if (getRollerId(state, phase) !== playerId) {
+            return fail('player_mismatch');
+        }
+        if (!state.pendingAttack) {
+            return fail('no_pending_attack');
+        }
+
+        const currentAmount = state.players[playerId]?.tokens[cmd.payload.tokenId] ?? 0;
+        if (currentAmount <= 0) {
+            return fail('no_token');
+        }
+        if (cmd.payload.amount <= 0) {
+            return fail('invalid_amount');
+        }
+        if (!getTokenUseOptions(tokenDef, currentAmount).includes(cmd.payload.amount)) {
+            return fail('invalid_amount');
+        }
+        return ok();
+    }
+
     if (!pendingDamage) {
         return fail('no_pending_damage');
     }
@@ -1310,11 +1350,6 @@ const validateUseToken = (
 
     const p = state.players[playerId];
     if (!p) return fail('player_not_found');
-
-    const tokenDef = state.tokenDefinitions.find(t => t.id === cmd.payload.tokenId);
-    if (!tokenDef) {
-        return fail('unknown_token');
-    }
 
     const isArtificerBot = cmd.payload.tokenId === TOKEN_IDS.NANOBOT
         || cmd.payload.tokenId === TOKEN_IDS.SHOCK_BOT
@@ -1655,7 +1690,7 @@ export const validateCommand = (
     if (isCommandType(command, 'RESOLVE_INTERACTION')) return validateResolveInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CONFIRM_INTERACTION')) return validateConfirmInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CANCEL_INTERACTION')) return validateCancelInteraction(state, command, playerId, pendingInteraction);
-    if (isCommandType(command, 'USE_TOKEN')) return validateUseToken(state, command, playerId);
+    if (isCommandType(command, 'USE_TOKEN')) return validateUseToken(state, command, playerId, phase);
     if (isCommandType(command, 'SKIP_TOKEN_RESPONSE')) return validateSkipTokenResponse(state, command, playerId);
     if (isCommandType(command, 'USE_PURIFY')) return validateUsePurify(state, command, playerId);
     if (isCommandType(command, DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN)) {

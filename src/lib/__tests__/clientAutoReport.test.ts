@@ -602,6 +602,44 @@ describe('clientAutoReport', () => {
         expect(globalThis.fetch).not.toHaveBeenCalled();
     });
 
+    it('纯浏览器扩展栈的空节点 removeAttribute 报错会被过滤，不进入自动反馈', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('extension-remove-attribute-null-noise', {
+            content: "[auto][unhandledrejection] Cannot read properties of null (reading 'removeAttribute')",
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of null (reading 'removeAttribute')",
+            errorSource: 'window.unhandledrejection',
+            stack: "TypeError: Cannot read properties of null (reading 'removeAttribute')\n    at chrome-extension://iikmkjmpaadaobahmlepeloendndfphd/userscript.html?name=testcsdn.user.js&id=b6de601d-911a-4bd4-b2a6-f3c385814ac5:16:17\n    at Object.<anonymous> (chrome-extension://iikmkjmpaadaobahmlepeloendndfphd/userscript.html?name=testcsdn.user.js&id=b6de601d-911a-4bd4-b2a6-f3c385814ac5:25:3)",
+        });
+
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+    });
+
+    it('扩展栈混入站内帧时仍会上报', async () => {
+        (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+
+        await reportClientAutoFeedbackOnce('extension-with-app-frame', {
+            content: "[auto][unhandledrejection] Cannot read properties of null (reading 'removeAttribute')",
+            autoReportKind: 'unhandled-rejection',
+            source: 'client-unhandled-rejection',
+            gameId: 'unknown',
+            gameName: 'client',
+            errorName: 'TypeError',
+            errorMessage: "Cannot read properties of null (reading 'removeAttribute')",
+            errorSource: 'window.unhandledrejection',
+            stack: "TypeError: Cannot read properties of null (reading 'removeAttribute')\n    at chrome-extension://iikmkjmpaadaobahmlepeloendndfphd/userscript.html:16:17\n    at reportAppError (https://easyboardgame.top/assets/index-Cmi8y5la.js:120:15)",
+        });
+
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it('Cloudflare 统计脚本 readyState 噪音会被过滤，不进入自动反馈', async () => {
         (window as Window & { __BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__?: boolean }).__BG_ALLOW_CLIENT_AUTO_REPORT_IN_TEST__ = true;
         const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');

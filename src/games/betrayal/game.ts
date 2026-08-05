@@ -849,6 +849,8 @@ export type BetrayalPendingCardResolutionStepKind = Extract<
 export interface BetrayalPendingCardResolutionState {
     id: string;
     playerId: string;
+    requiredPlayerIds?: string[];
+    acknowledgedPlayerIds?: string[];
     deckKind?: BetrayalDeckKind;
     cardId?: string;
     cardName: string;
@@ -1867,6 +1869,8 @@ type BetrayalEvent =
         playerId: string;
         resolution: BetrayalPendingCardResolutionState;
         remainingCount: number;
+        acknowledgedPlayerIds?: string[];
+        remainingAcknowledgementCount?: number;
         logText: string;
     }>
     | GameEvent<typeof EVENTS.POSSESSION_USED, {
@@ -2835,7 +2839,39 @@ function cloneDiscoverySummary(discovery: BetrayalDiscoverySummary): BetrayalDis
 function clonePendingCardResolution(
     resolution: BetrayalPendingCardResolutionState,
 ): BetrayalPendingCardResolutionState {
-    return { ...resolution };
+    return {
+        ...resolution,
+        requiredPlayerIds: resolution.requiredPlayerIds
+            ? [...resolution.requiredPlayerIds]
+            : undefined,
+        acknowledgedPlayerIds: resolution.acknowledgedPlayerIds
+            ? [...resolution.acknowledgedPlayerIds]
+            : undefined,
+    };
+}
+
+function resolvePendingCardResolutionRequiredPlayerIds(
+    resolution: BetrayalPendingCardResolutionState,
+): string[] {
+    const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
+    return configuredPlayerIds.length > 0 ? configuredPlayerIds : [resolution.playerId];
+}
+
+function resolvePendingCardResolutionAcknowledgedPlayerIds(
+    resolution: BetrayalPendingCardResolutionState,
+): string[] {
+    return Array.from(new Set(
+        resolution.acknowledgedPlayerIds?.filter((playerId) => playerId.length > 0) ?? [],
+    ));
+}
+
+function isPendingCardResolutionFullyAcknowledged(
+    core: Pick<BetrayalCore, 'playerIds'>,
+    resolution: BetrayalPendingCardResolutionState,
+    acknowledgedPlayerIds = resolvePendingCardResolutionAcknowledgedPlayerIds(resolution),
+): boolean {
+    const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(resolution);
+    return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
 }
 
 function isPendingCardResolutionStepKind(
@@ -2851,6 +2887,7 @@ function isPendingCardResolutionStepKind(
 
 function createPendingCardResolutionQueue(options: {
     playerId: string;
+    requiredPlayerIds: string[];
     roomId: string;
     timestamp: number;
     deckKind: BetrayalDeckKind | null;
@@ -2893,6 +2930,8 @@ function createPendingCardResolutionQueue(options: {
         return {
             id: `${options.playerId}-${options.roomId}-${options.timestamp}-${step.id}`,
             playerId: options.playerId,
+            requiredPlayerIds: Array.from(new Set(options.requiredPlayerIds)),
+            acknowledgedPlayerIds: [],
             deckKind,
             cardId: step.cardId,
             cardName: card?.name ?? (step.kind === 'room-effect' ? step.text : deckKind === 'event' ? options.discovery.title : step.text),
@@ -14189,8 +14228,13 @@ function validateCardResolutionAcknowledgement(core: BetrayalCore, command: Betr
     if (!pendingResolution) {
         return { valid: false, error: '当前没有待确认的翻牌结算。' };
     }
-    if (pendingResolution.playerId !== command.playerId) {
-        return { valid: false, error: '必须由抽到该卡的玩家确认。' };
+    const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(pendingResolution);
+    if (!requiredPlayerIds.includes(command.playerId)) {
+        return { valid: false, error: '只有本局玩家可以确认当前翻牌结算。' };
+    }
+    const acknowledgedPlayerIds = resolvePendingCardResolutionAcknowledgedPlayerIds(pendingResolution);
+    if (acknowledgedPlayerIds.includes(command.playerId)) {
+        return { valid: false, error: '你已经确认过当前翻牌结算。' };
     }
     if (command.payload.resolutionId && command.payload.resolutionId !== pendingResolution.id) {
         return { valid: false, error: '必须按当前翻牌顺序确认。' };
@@ -16365,11 +16409,33 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 return [];
             }
             const actor = findExplorerByPlayerId(core, command.playerId) ?? core.currentExplorer;
+            const requiredPlayerIds = resolvePendingCardResolutionRequiredPlayerIds(pendingResolution);
+            const acknowledgedPlayerIds = Array.from(new Set([
+                ...resolvePendingCardResolutionAcknowledgedPlayerIds(pendingResolution),
+                command.playerId,
+            ]));
+            const isComplete = isPendingCardResolutionFullyAcknowledged(
+                core,
+                pendingResolution,
+                acknowledgedPlayerIds,
+            );
             return [nowEvent(EVENTS.CARD_RESOLUTION_ACKNOWLEDGED, {
                 playerId: command.playerId,
-                resolution: clonePendingCardResolution(pendingResolution),
-                remainingCount: Math.max(0, (core.pendingCardResolutionQueue ?? []).length - 1),
-                logText: `${actor.displayName}确认${pendingResolution.cardName}：${pendingResolution.text}`,
+                resolution: clonePendingCardResolution({
+                    ...pendingResolution,
+                    requiredPlayerIds,
+                    acknowledgedPlayerIds,
+                }),
+                remainingCount: Math.max(
+                    0,
+                    (core.pendingCardResolutionQueue ?? []).length - (isComplete ? 1 : 0),
+                ),
+                acknowledgedPlayerIds,
+                remainingAcknowledgementCount: Math.max(
+                    0,
+                    requiredPlayerIds.length - acknowledgedPlayerIds.length,
+                ),
+                logText: `${actor.displayName}确认${pendingResolution.cardName}（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）：${pendingResolution.text}`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL: {
@@ -19111,6 +19177,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             core.pendingEventChoice = null;
             core.pendingCardResolutionQueue = createPendingCardResolutionQueue({
                 playerId: event.payload.playerId,
+                requiredPlayerIds: core.playerIds,
                 roomId: event.payload.roomId,
                 timestamp: event.timestamp,
                 deckKind: event.payload.deckKind,
@@ -19475,6 +19542,7 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                 ? []
                 : createPendingCardResolutionQueue({
                     playerId: event.payload.playerId,
+                    requiredPlayerIds: core.playerIds,
                     roomId: core.currentExplorer.roomId,
                     timestamp: event.timestamp,
                     deckKind: 'event',
@@ -19535,8 +19603,25 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return nextCore;
         }
         case EVENTS.CARD_RESOLUTION_ACKNOWLEDGED: {
+            const acknowledgedPlayerIds = event.payload.acknowledgedPlayerIds
+                ?? event.payload.resolution.acknowledgedPlayerIds
+                ?? [];
+            const acknowledgedResolution = {
+                ...event.payload.resolution,
+                acknowledgedPlayerIds: [...acknowledgedPlayerIds],
+            };
+            const isComplete = isPendingCardResolutionFullyAcknowledged(
+                core,
+                acknowledgedResolution,
+                acknowledgedPlayerIds,
+            );
             core.pendingCardResolutionQueue = (core.pendingCardResolutionQueue ?? [])
-                .filter((resolution) => resolution.id !== event.payload.resolution.id);
+                .flatMap((resolution) => {
+                    if (resolution.id !== event.payload.resolution.id) {
+                        return [resolution];
+                    }
+                    return isComplete ? [] : [acknowledgedResolution];
+                });
             const synced = syncCurrentExplorerProjection(core);
             return {
                 ...synced,

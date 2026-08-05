@@ -101,7 +101,7 @@ test.describe("山屋惊魂探索后结束回合", () => {
     const nextCore = await readCore(page);
     expect(nextCore.currentPlayer).toBe("1");
     expect(nextCore.turnEndedByDiscovery).toBe(false);
-    await expect(page.getByTestId("betrayal-current-panel-token-1")).toBeVisible();
+    await expect(page.getByTestId("betrayal-explorer-figure-token-1")).toBeVisible();
     await saveScreenshot(page, NEXT_PLAYER_SCREENSHOT);
 
     assertNoFatalFrontendErrors([

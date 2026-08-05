@@ -1,3 +1,89 @@
+# Current Task Plan: DiceThrone 炽天使规则缺口收口（2026-08-05）
+
+目标状态：complete
+当前目标：继续已批准的炽天使（`tianshi`）派系接入，修复当前规则审查直接命中的七项缺口：上一轮的凯旋归来 II 伤害、福音临世漏发飞行、圣刃 III 四同眩光，以及本轮的圣击眩光骰面、神圣惩戒 II 伤害、神圣裁决缺少 2 个飞行选择、圣刃 II / 小天使误发净化；完成窄领域回归、类型/定向静态检查、OpenSpec 校验，并同步规则账本与 evidence。不得把这轮收口外推为全部规则组合完成。
+问题对象：DiceThrone 炽天使的圣击、神圣惩戒 II、神圣裁决、圣刃 II / 小天使，以及上一轮已修复的三项。
+真相来源：炽天使官方能力/卡牌临时槽位图（`temp/dicethrone-intake/tianshi/ability-card-slots/slot-17.webp` 至 `slot-31.webp`）、当前运行时代码、现有规则账本与定向领域测试。
+目标入口/环境：`D:\gongzuo\webgame\BoardGame` 的 `main` 工作区；保留其他模块现有脏改动，不创建/切换/删除分支或 worktree。
+验收口径：回到炽天使领域测试的能力结算位点，确认圣击仅圣洁吊坠触发眩光、神圣惩戒 II 每个炽炎剑 2 点不可防御伤害、神圣裁决三段选择和 2 个飞行、圣刃 II / 小天使不获得净化；再运行炽天使定向测试、typecheck、定向 ESLint、全仓 i18n 与 OpenSpec strict validate。全仓 i18n 若命中范围外并行改动，需补齐其本地化合同后再收口。
+
+## 当前任务拆解
+
+- [x] 重新锁定当前目标、真相源、实施现场和验收口径。
+- [x] 建立本轮四项规则缺口的实现—测试—文案映射。
+- [x] 实施本轮四项最小规则修复并补窄测试。
+- [x] 同步三份炽天使规则文档与 evidence，保留未覆盖组合的 scoped-debt，并收口全仓 i18n 门禁。
+- [x] 运行定向测试、typecheck、定向 ESLint、OpenSpec strict validate 并记录结果。
+
+## 本轮结果（2026-08-05）
+
+- 本轮追加修复 4 项：圣击改为圣洁吊坠触发眩光；神圣惩戒 II 每个炽炎剑改为 2 点不可防御伤害；神圣裁决补齐 2 个飞行的第三段选择；圣刃 II / 小天使拆出只发放飞行和神圣降临的处理器。
+- `tianshi-behavior.test.ts`、`tianshi-rule-matrix.test.ts`、`tianshi-intake.test.ts`：3 个文件 / 52 条断言通过。
+- 神圣裁决与圣刃 II / 小天使两条真实入口分别通过，均使用同一官方 runner；神圣裁决真实入口已验证三段选择和最终状态。
+- 为视觉审计补拍神圣裁决中间选择态时曾被另一条 SmashUp E2E 占用全局预算；预算释放后已回到同一官方 runner 重跑，三张新原始截图已逐张审计为 PASS。
+
+- 此前分阶段记录（已被本轮最终结果覆盖）：`tianshi-behavior.test.ts`、`tianshi-rule-matrix.test.ts`、`tianshi-intake.test.ts` 曾为 3 个文件 / 50 条断言通过；当前最终结果为 52 条通过。
+- `customaction-category-consistency.test.ts`、`character-catalog-i18n.test.ts`：2 个文件 / 13 条共享门禁断言通过；仅有 1 条与本轮无关的工匠既有建议 warning。
+- `npm run typecheck`：通过。
+- 炽天使改动文件定向 ESLint（`--max-warnings 0`）：通过。
+- `openspec validate add-dicethrone-tianshi-faction --strict --no-interactive`：通过。
+- `npm run audit:evidence:selfcheck -- evidence/dicethrone/dicethrone-tianshi-intake-audit-2026-08-04.md`：通过；`git diff --check`：通过。
+- `npm run i18n:check`：通过；补齐 SmashUp 牧师、木精灵和法师现有按钮/提示的本地化键与木精灵共享选择提示参数，未改变玩法结算或选择顺序。
+
+## 本轮错误记录
+
+| 错误 | 尝试 | 处理 |
+| --- | --- | --- |
+| 既有 `task_plan.md` 顶部仍是已完成的召唤师战争目标 | 1 | 未按旧目标继续；新增本轮炽天使计划段，旧内容保留为历史背景。 |
+
+---
+
+# Current Task Plan: 召唤师战争暗影精灵派系接入（2026-08-04）
+
+目标状态：complete
+当前目标：在当前工作区完成暗影精灵（`shadow`）从用户指定素材到召唤师战争真实入口的接入；逐项保留卡面规则原文、资源链、机制实现、测试与 evidence 状态。未验证或未实现项必须保持 `blocked` / `scoped-debt`，不得把静态显示接入称为可玩完成。
+目标对象：召唤师瑟伦达、3 张英雄、4 类士兵、4 张事件、起始城门、预构筑牌组、暗影精灵派系目录与其图集。
+真相来源：`public/assets/i18n/zh-CN/summonerwars/hero/shadow/` 用户指定素材；`evidence/summonerwars/shadow-faction-intake.md` 记录的素材与规则合同；当前工作区召唤师战争运行时消费代码。
+目标入口/环境：`D:\gongzuo\webgame\BoardGame` 的 `main` 工作区，召唤师战争派系选择、开局部署、牌组/卡图和领域机制链。
+验收口径：以 `.codex/skill/add-new-faction/SKILL.md` 与 `docs/games/summonerwars/workflows/summonerwars-faction-intake.md` 为准，分开报告数据、资源、机制、审计与 E2E；保留同工作区其它未提交改动。
+
+## 当前任务拆解
+
+- [x] 读取项目规则、OpenSpec、召唤师战争专项 workflow、新派系 skill，并核对当前工作区与素材合同。
+- [x] 建立暗影精灵 OpenSpec change 与对象级任务矩阵。
+- [x] 完成派系注册、图集、关键图片预加载、本地化、卡池与资源 manifest 接入。
+- [x] 按卡面规则实现现有引擎可承载的能力与事件效果；无法闭合的交互必须明确阻塞。
+- [x] 补静态/L2 测试、真实入口验证与对象级 evidence；13 个能力和 4 张事件卡均已补齐浏览器级 L3/L4。
+- [x] 补齐暗影精灵图集回退映射、牌组/槽位/manifest 本地合同测试，并回写 evidence 的素材层级与全面审计矩阵。
+- [x] 运行单派系资源预检、3 个 WebP 上传和远端 HTTP/hash 回查。
+- [x] 重跑 typecheck、OpenSpec strict validate 和 evidence selfcheck；静态合同与资源验证通过。
+- [x] 真实入口整文件 E2E：同一 `npm run test:e2e:ci:file -- e2e/summonerwars/summonerwars-shadow.e2e.ts` 入口最终完成 `11 passed`，总耗时约 `10.9m`，共 36 张原始截图；此前的 5 分钟超时和 SmashUp 共享预算占用已解除，不作为当前阻塞。
+
+### 本轮进展（2026-08-04）
+
+- 13 个能力和 4 张事件卡已接入现有领域事件、执行器和 InteractionSystem；本轮当前定向测试为 `3 files / 29 passed`，派系/资源合同测试为 `23 passed`。
+- 修正 `shadow-` 卡牌 ID 缺少 `faction` 时的图集回退映射；本地 6 个正式媒体文件与两个 manifest 的尺寸/hash/字节数合同测试通过。
+- 单派系资源预检命中 3 个 WebP，已上传并完成远端回查：3 个 URL 均 `HTTP 200`，远端下载 hash 与本地/manifest 一致；上传返回 `serverPrimaryRelease=20260804031315120`。
+- 真实入口 E2E 为 `11 passed`、共 36 张原始截图，覆盖派系选择/初始化及全部能力与事件卡的真实选择/结算路径；逐图 UI 审计 `PASS`，综合评分 `93/100`。
+- 当前仍保留的边界：派系目录仍保留 `under_construction`，本轮不将其擅自改为正式发布标记；与暗影精灵无关的 i18n warning 不纳入本批结论。
+- `openspec validate add-summonerwars-shadow-faction --strict --no-interactive`：通过，输出 `Change 'add-summonerwars-shadow-faction' is valid`。
+- `python D:\\codex-home\\skills\\task-completion-guard\\scripts\\check_completion.py --state temp\\summonerwars-shadow-task.json`：`COMPLETE`。
+
+### 本轮真实入口补齐（2026-08-04）
+
+- [x] 新增并通过鲜血魔法/黑暗预言、撕裂帷幕、难逃厄运、猛攻/佯攻、死亡契约/穿透之光 5 个真实入口场景，共 15 张新截图。
+- [x] 修正鲜血魔法同一伤害事件重复充能的领域实现，并新增去重回归；真实入口确认一次受伤只增加 1 点充能。
+- [x] 逐张审计新增 15 张原始截图；发现猛攻/佯攻首张截图被骰子层遮挡后，调整截图时机、重跑该场景并复核为 `PASS`。
+
+## 当前错误记录
+
+| 错误 | 尝试 | 处理 |
+| --- | --- | --- |
+| `request_user_input` 在 Default mode 不可用 | 1 | 不再重复请求交互式输入，按当前用户目标和本地证据继续；若出现实质方案分歧再停在阻塞点。 |
+| 摘要中的 `src/games/summonerwars/config/cardAtlas.ts` 不存在 | 1 | 已定位真实文件为 `src/games/summonerwars/ui/cardAtlas.ts`，后续按真实入口修改。 |
+
+---
+
 # Task Plan: 作祟 3「灰尘」规则补漏实现（2026-07-27）
 
 目标状态：active

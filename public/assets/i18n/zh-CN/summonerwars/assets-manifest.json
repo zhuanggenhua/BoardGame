@@ -292,6 +292,60 @@
         }
       }
     },
+    "hero/shadow/cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "93be01d71bd1971d73111a986afbac7ab34257ac101ac733abef86cf7e73780d",
+          "bytes": 1712169,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/shadow/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "5c123ef9633982a1f85d9cbf98e606bf26d518ecadb88e75cf495cdf795324fc",
+          "bytes": 1392428,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/shadow/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "c6dfde095ec62bc89689d4dc9eab6ef851536adb09a5661d0ebdbf8076151f53",
+          "bytes": 124048,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/shadow/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "5b648edcdc9dc451bea09e18649957193454f57e1373d2ff549eeebdd2afaab7",
+          "bytes": 137360,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/shadow/hero": {
+      "variants": {
+        "jpg": {
+          "sha256": "e04bc9cb1b6c2553757909b145a84bf554b02fcd95f77566577ed3343ddf9622",
+          "bytes": 112060,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "hero/shadow/tip": {
+      "variants": {
+        "jpg": {
+          "sha256": "d90b3f7c34fe363de401a1cf81ab2fb489a36ab241232c88c95a5c24de5953e0",
+          "bytes": 114078,
+          "mime": "image/jpeg"
+        }
+      }
+    },
     "hero/shouren/cards": {
       "variants": {
         "jpg": {

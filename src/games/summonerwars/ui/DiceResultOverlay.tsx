@@ -20,6 +20,8 @@ interface DiceResultOverlayProps {
   hits: number;
   /** 被减少的命中数（迷魂/神圣护盾等） */
   damageReduced?: number;
+  /** 区分相同骰面但不同攻击/不同激励决策，避免复用旧展示状态。 */
+  resultKey?: string;
   /** 是否为对手攻击（用于翻转显示） */
   isOpponentAttack?: boolean;
   duration?: number;
@@ -163,6 +165,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
   attackType,
   hits,
   damageReduced,
+  resultKey,
   isOpponentAttack: _isOpponentAttack = false,
   duration = 2500,
   pendingDecision = false,
@@ -172,7 +175,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation('game-summonerwars');
-  const resultSignature = useMemo(() => JSON.stringify(results ?? []), [results]);
+  const resultSignature = useMemo(() => resultKey ?? JSON.stringify(results ?? []), [resultKey, results]);
   const hasResults = Boolean(results && results.length > 0);
   const [dismissedSignature, setDismissedSignature] = useState<string | null>(null);
   const dismissed = dismissedSignature === resultSignature;

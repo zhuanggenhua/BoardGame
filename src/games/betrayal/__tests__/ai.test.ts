@@ -23,6 +23,7 @@ import {
     createFirstScenarioReadyToLearnAboutJackCore,
     createFirstScenarioReadyToStudyExorcismCore,
     createFirstScenarioReadyToTraitorVictoryCore,
+    createFirstScenarioHauntCore,
     createHeroAttackTraitorReadyCore,
     createJackSpiritMovementRollReadyCore,
     createStartedFirstScenarioCore,
@@ -307,12 +308,11 @@ describe('小黑屋本地 AI', () => {
 
         const seatControllers = {
             '0': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
-            '1': { type: 'human' as const },
-            '2': { type: 'human' as const },
+            '1': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
+            '2': { type: 'local-ai' as const, minimumActionDelayMs: 0 },
         };
-        const initialPendingCount = state.core.pendingCardResolutionQueue.length;
 
-        for (let step = 0; step < initialPendingCount; step += 1) {
+        for (let step = 0; step < 6 && state.core.pendingCardResolutionQueue.length > 0; step += 1) {
             const resolution = await resolveNextLocalAiAction({
                 engineConfig,
                 state,
@@ -335,6 +335,47 @@ describe('小黑屋本地 AI', () => {
                 timestamp: 1,
             } as BetrayalCommand,
         ).valid).toBe(true);
+    });
+
+    test('待分配伤害时必须生成并执行伤害分配动作，不能把阶段推进当成唯一动作', async () => {
+        const core = createFirstScenarioHauntCore();
+        const target = core.currentExplorer;
+        core.currentPlayer = target.playerId;
+        core.activePlayerId = target.playerId;
+        core.pendingDamageAllocation = {
+            id: 'ai-pending-damage',
+            playerId: target.playerId,
+            sourceTitle: '攻击',
+            damageKind: 'physical',
+            amount: 2,
+            originalAmount: 2,
+            allowedTraits: ['might', 'speed'],
+            allowSkull: true,
+            traitsBeforeDamage: { ...target.traits },
+        };
+
+        const state = stateOf(core, 'betrayal-ai-pending-damage');
+        const actions = buildActions(state, target.playerId);
+
+        expect(actions.some((action) => (
+            action.kind === 'resolve-damage-allocation'
+            && action.commands[0]?.type === BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION
+        ))).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'betrayal-ai-pending-damage-execution',
+            seatControllers: {
+                [target.playerId]: { type: 'local-ai', minimumActionDelayMs: 0 },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe(BETRAYAL_AI_ACTION_KINDS.RESOLVE_DAMAGE_ALLOCATION);
+        expect(resolution?.action.commands[0]?.type).toBe(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION);
+
+        const nextState = applyAiResolution(state, resolution!);
+        expect(nextState.core.pendingDamageAllocation).toBeNull();
     });
 
     test('待处理事件选择只生成领域校验通过的动作', () => {

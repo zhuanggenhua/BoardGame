@@ -101,4 +101,44 @@ describe('DiceResultOverlay', () => {
     act(() => vi.advanceTimersByTime(3000));
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('相同骰面用于新攻击时应按 resultKey 重新触发揭示完成', () => {
+    vi.useFakeTimers();
+    const onRevealComplete = vi.fn();
+    const onClose = vi.fn();
+    const sameResults = [{ faceIndex: 7, marks: ['melee', 'special'] as const }];
+
+    const { rerender } = render(
+      <DiceResultOverlay
+        results={sameResults}
+        resultKey="attack:1"
+        attackType="melee"
+        hits={1}
+        duration={1000}
+        onRevealComplete={onRevealComplete}
+        onClose={onClose}
+      />,
+    );
+
+    act(() => vi.advanceTimersByTime(800));
+    expect(onRevealComplete).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('sw-dice-result-overlay'));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <DiceResultOverlay
+        results={sameResults}
+        resultKey="attack:2"
+        attackType="melee"
+        hits={1}
+        duration={1000}
+        onRevealComplete={onRevealComplete}
+        onClose={onClose}
+      />,
+    );
+
+    act(() => vi.advanceTimersByTime(800));
+    expect(onRevealComplete).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('sw-dice-result-overlay')).toBeInTheDocument();
+  });
 });

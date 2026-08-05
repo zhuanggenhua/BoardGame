@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "image": "status-icons-atlas.png",
+    "size": {
+      "w": 1576,
+      "h": 400
+    }
+  },
+  "frames": {
+    "flight": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      }
+    },
+    "dazzle": {
+      "frame": {
+        "x": 402,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      }
+    },
+    "divine_arrival": {
+      "frame": {
+        "x": 804,
+        "y": 0,
+        "w": 368,
+        "h": 399
+      }
+    },
+    "guardian-angel": {
+      "frame": {
+        "x": 1174,
+        "y": 0,
+        "w": 402,
+        "h": 370
+      }
+    }
+  }
+}

@@ -28,6 +28,7 @@ import {
   createPromptResponseCommand,
   generateInstanceId,
   getPromptOptionIds,
+  getPromptSwType,
   hasActivePrompt,
   placeTestUnit,
 } from './test-helpers';
@@ -1110,6 +1111,50 @@ describe('冰苔兽人 - 原始狂怒', () => {
       ['0', '1'],
     );
     expect(nonSummonerAttack.state.sys.interaction.current).toBeUndefined();
+  });
+
+  it('激励先重摇/保留攻击结果后仍应触发原始狂怒位移交互', () => {
+    const systems = [
+      createInteractionSystem<SummonerWarsCore>(),
+      createSimpleChoiceSystem<SummonerWarsCore>(),
+      createSummonerWarsInteractionSystem(),
+    ];
+
+    for (const choice of ['keep', 'reroll'] as const) {
+      const core = createState();
+      core.phase = 'attack';
+      core.players['0'].activeEvents.push({ ...EVENT_CARDS_SHOUREN[2], id: 'shouren-primal-fury-0-1' });
+      const summoner = place(core, { row: 4, col: 2 }, SUMMONER_SHOUREN, '0', { boosts: 1 });
+      place(core, { row: 4, col: 3 }, {
+        ...COMMON_UNITS_SHOUREN[3], id: `primal-fury-${choice}-target`, name: '原始狂怒重摇目标',
+        faction: 'necromancer', abilities: [], life: 20,
+      }, '1');
+
+      let state: MatchState<SummonerWarsCore> = {
+        core,
+        sys: createInitialSystemState(['0', '1'], systems),
+      };
+      const requested = executePipeline(
+        { domain: SummonerWarsDomain, systems },
+        state,
+        { type: SW_COMMANDS.DECLARE_ATTACK, playerId: '0', payload: { attacker: summoner.position, target: { row: 4, col: 3 } } },
+        testRandom([0]),
+        ['0', '1'],
+      );
+      expect(getPromptSwType(requested.state)).toBe('shouren_encourage');
+      state = requested.state;
+      const resolved = executePipeline(
+        { domain: SummonerWarsDomain, systems },
+        state,
+        createPromptResponseCommand(state, '0', choice),
+        testRandom([0]),
+        ['0', '1'],
+      );
+
+      expect(resolved.success).toBe(true);
+      expect(getPromptSwType(resolved.state), choice).toBe('after_attack_shouren_primal_fury');
+      expect(resolved.state.core.board[4][3].unit?.damage).toBe(4);
+    }
   });
 });
 

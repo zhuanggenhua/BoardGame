@@ -755,38 +755,57 @@ test.describe("山屋惊魂基本流程", () => {
       page.getByTestId("betrayal-room-floor-ground"),
     ).toHaveAttribute("aria-pressed", "true");
 
-    const teammatePanel = page.getByTestId("betrayal-bottom-teammate-1");
-    const teammatePanelToken = page.getByTestId(
-      "betrayal-bottom-teammate-token-1",
-    );
-    await expect(teammatePanel).toBeVisible();
-    await expect(teammatePanelToken).toBeVisible();
-    const panelAsset = await teammatePanel.getAttribute("data-token-asset");
-    await expect(teammatePanelToken).toHaveAttribute(
-      "data-token-asset",
-      panelAsset ?? "",
-    );
+      const teammatePanel = page.getByTestId("betrayal-bottom-teammate-1");
+      await expect(teammatePanel).toBeVisible();
+      await expect(teammatePanel).not.toHaveAttribute("data-token-asset");
+      const expectedTeammateTokenAsset =
+        teammateOne.tokenAsset ?? teammateOne.portraitAsset;
+      const desktopTeammatePanel = page.getByTestId(
+        "betrayal-teammate-panel-1",
+      );
+      await expect(desktopTeammatePanel).not.toHaveAttribute("data-token-asset");
+      await expect(
+        page.getByTestId("betrayal-teammate-panel-token-1"),
+      ).toHaveCount(0);
 
-    await teammatePanel.click();
+      await teammatePanel.click();
+      await expect(teammatePanel).toHaveAttribute("data-observed-player", "true");
+      await expect(
+        page.getByTestId("betrayal-bottom-teammate-observed-1"),
+      ).toBeVisible();
+      await expect(
+        page.getByTestId("betrayal-bottom-teammate-token-1"),
+      ).toHaveCount(0);
+      await expect(
+        page.getByTestId("betrayal-explorer-detail-dialog-1"),
+      ).toHaveCount(0);
+
+    const mapTeammateToken = page.getByTestId(
+      "betrayal-room-occupant-basement-landing-1",
+    );
+    await expect(mapTeammateToken).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-room-floor-basement"),
+    ).toHaveAttribute("aria-pressed", "true");
+    await mapTeammateToken.click();
     const panelDetail = page.getByTestId("betrayal-explorer-detail-dialog-1");
     await expect(panelDetail).toBeVisible();
     await expect(panelDetail).toHaveAttribute(
       "data-token-asset",
-      panelAsset ?? "",
+      expectedTeammateTokenAsset,
     );
     await expect(
       page.getByTestId("betrayal-explorer-detail-token-1"),
-    ).toHaveAttribute("data-token-asset", panelAsset ?? "");
-    await expect(
-      page.getByTestId("betrayal-room-floor-ground"),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      page.getByTestId("betrayal-room-shell-basement-landing"),
-    ).toHaveCount(0);
+    ).toHaveAttribute("data-token-asset", expectedTeammateTokenAsset);
     await saveScreenshot(page, TOKEN_DETAIL_PANEL_SCREENSHOT);
     await page.getByTestId("betrayal-explorer-detail-close").click();
     await expect(panelDetail).toBeHidden();
 
+    await page.getByTestId("betrayal-room-floor-up").click();
+    await expect(page.getByTestId("betrayal-room-floor-ground")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     await page.getByTestId("betrayal-room-floor-up").click();
     await expect(page.getByTestId("betrayal-room-floor-upper")).toHaveAttribute(
       "aria-pressed",

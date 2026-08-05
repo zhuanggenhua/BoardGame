@@ -529,6 +529,31 @@ function resolveEffectAction(
 
                 // 统一使用 createDamageCalculation 引擎原语计算伤害
                 // bonusDamage 作为 additionalModifier 传入，确保在 breakdown 中显示
+                const isCurrentAttackDamage = (action.damageScope ?? 'attack') === 'attack'
+                    && !ctx.isDefensiveContext
+                    && state.pendingAttack?.attackerId === attackerId
+                    && state.pendingAttack?.defenderId === dmgTargetId;
+                const dazzlePercent = isCurrentAttackDamage
+                    ? state.pendingAttack?.dazzleDamagePercent
+                    : undefined;
+                const additionalModifiers = [
+                    ...(bonusDmg !== 0 ? [{
+                        id: '__bonus_damage_from_config__',
+                        type: 'flat' as const,
+                        value: bonusDmg,
+                        priority: 15,
+                        source: 'attack_modifier',
+                        description: 'actionLog.damageSource.attackModifier',
+                    }] : []),
+                    ...(typeof dazzlePercent === 'number' ? [{
+                        id: '__tianshi_dazzle__',
+                        type: 'percent' as const,
+                        value: dazzlePercent,
+                        priority: 19,
+                        source: STATUS_IDS.DAZZLE,
+                        description: 'tokens.dazzle.name',
+                    }] : []),
+                ];
                 const calc = createDamageCalculation({
                     baseDamage,
                     source: { playerId: attackerId, abilityId: sourceAbilityId },
@@ -543,21 +568,20 @@ function resolveEffectAction(
                     passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
                     timestamp,
                     // bonusDamage 作为显式修正传入（而非直接加到 baseDamage）
-                    additionalModifiers: bonusDmg !== 0 ? [{
-                        id: '__bonus_damage_from_config__',
-                        type: 'flat',
-                        value: bonusDmg,
-                        priority: 15,
-                        source: 'attack_modifier',
-                        description: 'actionLog.damageSource.attackModifier',
-                    }] : [],
+                    additionalModifiers,
                 });
                 const result = calc.resolve();
 
                 // 收集 PassiveTrigger 产生的副作用事件（removeStatus / custom handler）
                 events.push(...result.sideEffectEvents);
 
-                if (result.finalDamage <= 0) continue;
+                const finalDamage = (
+                    state.pendingAttack?.defensiveFlightActivated
+                    || state.pendingAttack?.dazzleCheckMissed
+                ) && isCurrentAttackDamage
+                    ? 0
+                    : result.finalDamage;
+                if (finalDamage <= 0) continue;
 
                 // 将引擎层 modifiers 转为 DamageModifier 格式（用于 Token 响应窗口的 pendingDamage）
                 const passiveModifiers: import('./events').DamageModifier[] = result.modifiers.map(m => ({
@@ -580,8 +604,8 @@ function resolveEffectAction(
                             type: 'DAMAGE_DEALT',
                             payload: {
                                 targetId: dmgTargetId,
-                                amount: result.finalDamage,
-                                actualDamage: result.finalDamage,
+                                amount: finalDamage,
+                                actualDamage: finalDamage,
                                 sourceAbilityId,
                                 damageScope: action.damageScope ?? 'attack',
                                 ...(passiveModifiers.length > 0 ? { modifiers: passiveModifiers } : {}),
@@ -601,13 +625,13 @@ function resolveEffectAction(
                 // 没有可用 Token，直接生成伤害事件
                 const dmgTarget = state.players[dmgTargetId];
                 const dmgTargetHp = dmgTarget?.resources[RESOURCE_IDS.HP] ?? 0;
-                const actualDamage = dmgTarget ? Math.min(result.finalDamage, dmgTargetHp) : 0;
+                const actualDamage = dmgTarget ? Math.min(finalDamage, dmgTargetHp) : 0;
 
                 const event: DamageDealtEvent = {
                     type: 'DAMAGE_DEALT',
                     payload: {
                         targetId: dmgTargetId,
-                        amount: result.finalDamage,
+                        amount: finalDamage,
                         actualDamage,
                         sourceAbilityId,
                         damageScope: action.damageScope ?? 'attack',
@@ -839,6 +863,28 @@ function resolveEffectAction(
                     if (handledEvent.type === 'DAMAGE_DEALT') {
                         const dmgPayload = (handledEvent as DamageDealtEvent).payload;
                         const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
+                        const isCurrentAttackDamage = damageScope === 'attack'
+                            && !ctx.isDefensiveContext
+                            && state.pendingAttack?.attackerId === attackerId
+                            && state.pendingAttack?.defenderId === dmgPayload.targetId;
+                        if (isCurrentAttackDamage && typeof state.pendingAttack?.dazzleDamagePercent === 'number') {
+                            const multiplier = Math.max(0, 1 + state.pendingAttack.dazzleDamagePercent / 100);
+                            dmgPayload.amount = Math.ceil(dmgPayload.amount * multiplier);
+                            dmgPayload.actualDamage = Math.min(
+                                dmgPayload.amount,
+                                state.players[dmgPayload.targetId]?.resources[RESOURCE_IDS.HP] ?? dmgPayload.amount,
+                            );
+                        }
+                        if (
+                            isCurrentAttackDamage
+                            && (
+                                state.pendingAttack?.defensiveFlightActivated
+                                || state.pendingAttack?.dazzleCheckMissed
+                            )
+                        ) {
+                            dmgPayload.amount = 0;
+                            dmgPayload.actualDamage = 0;
+                        }
                         const tokenResponseEvent = maybeCreateDamageResponseEvent({
                             state,
                             attackerId,

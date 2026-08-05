@@ -13,6 +13,7 @@ import { NINJA_CARDS } from '../heroes/ninja/cards';
 import { ZHANSHUJIA_CARDS } from '../heroes/zhanshujia/cards';
 import { CURSED_PIRATE_CARDS } from '../heroes/cursed_pirate/cards';
 import { ARTIFICER_CARDS } from '../heroes/artificer/cards';
+import { TIANSHI_CARDS } from '../heroes/tianshi/cards';
 import type { HeroState } from '../domain/types';
 import { getSlotBaseAbilityIdForCharacter } from './abilitySlotMapping';
 
@@ -30,6 +31,7 @@ export const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     zhanshujia: ZHANSHUJIA_CARDS,
     cursed_pirate: CURSED_PIRATE_CARDS,
     artificer: ARTIFICER_CARDS,
+    tianshi: TIANSHI_CARDS,
 };
 
 export function getSlotAbilityId(

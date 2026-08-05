@@ -412,18 +412,18 @@
       "dustResearchTokensLabel": "Research Tokens",
       "magicCameraHeroObjectiveLabel": "Hero Objective",
       "magicCameraEssenceLabel": "Essence",
-      "hauntRisk": "Omens {{omenCount}}",
-      "hauntRiskLastOmen": "Current omens {{omenCount}}; the next omen starts the haunt",
+      "hauntRisk": "Omens discovered {{omenCount}}",
+      "hauntRiskLastOmen": "Omens discovered {{omenCount}}; the next Omen starts the haunt",
       "hauntRiskShort": "Omens {{omenCount}}",
-      "hauntRiskLastOmenShort": "Next omen starts haunt",
-      "hauntRiskRuleDetail": "{{omenCount}} omen(s) have been discovered. After drawing an omen, make a haunt roll with {{diceCount}} dice; {{threshold}}+ starts the haunt. The last omen triggers the haunt automatically.",
-      "hauntRiskLastOmenDetail": "{{omenCount}} omen(s) have been discovered. The omen deck is down to its last card; if the haunt has not started, the next omen triggers it automatically.",
+      "hauntRiskLastOmenShort": "Next Omen: Haunt",
+      "hauntRiskRuleDetail": "After an Omen is drawn, roll dice equal to the number of Omens discovered; a total of 5 or more starts the haunt.",
+      "hauntRiskLastOmenDetail": "Only the last Omen remains in the deck; drawing it starts the haunt automatically.",
       "hauntRiskStartedDetail": "The haunt has begun; no further haunt rolls are made.",
       "hauntRiskStarted": "The haunt has begun",
       "hauntRiskPhasePreHaunt": "Before haunt",
       "hauntRiskPhaseHaunt": "Haunt",
       "hauntRevealPlayerTitle": "Public Reveal: Haunt begins",
-      "hauntRevealLead": "Scenario switched.",
+      "hauntRevealLead": "The haunt begins.",
       "hauntRevealSource": "Scenario {{scenarioCard}} / trigger {{omen}} / haunt {{number}}",
       "hauntRevealDismiss": "Close"
     },
@@ -444,7 +444,7 @@
       "button": "Scenario",
       "title": "First Scenario",
       "objectiveLabel": "Objective",
-      "objective": "Explore before the haunt; after it begins, learn the mummy's true name, learn the banishment spell, and banish the mummy before the wedding is completed.",
+      "objective": "Keep exploring before the haunt begins; after the haunt begins, find the mummy's true name, learn the banishment spell, and banish it before the wedding.",
       "heroGoalLabel": "Hero Goal",
       "heroGoal": "Find the true name in the sarcophagus room, Study, or Library; have the Book holder learn the spell; bring the Book to the mummy and win the Sanity contest.",
       "traitorGoalLabel": "Traitor Goal",
@@ -480,7 +480,7 @@
         "spiritManualLabel": "Mummy",
         "spiritManual": "The mummy is a monster with Might 8, Speed 3, and Sanity 5. It is not stunned by normal attacks, and heroes may not make Speed attacks against it.\n\nWhen rolling for the mummy's movement, a result of 0 or 1 lets it move instantly to any room in the house. The mummy can carry items and can steal instead of dealing damage.",
         "exorcismManualLabel": "Final Exorcism",
-        "exorcismManual": "Runtime actions open by progress: find the true name, learn the banishment spell, then banish the mummy.\n\nEach hero can attempt only one haunt special action per turn. The Book must be in the final room, but the hero who starts the banishment does not have to personally hold it.",
+        "exorcismManual": "Heroes must complete these steps in order: find the true name, learn the banishment spell, then banish the mummy.\n\nEach hero can attempt only one haunt special action per turn. The Book must be in the final room, but the hero who starts the banishment does not have to personally hold it.",
         "endingManualLabel": "Win Conditions",
         "endingManual": "Heroes win by finding the true name, learning the spell, and banishing the mummy with Sanity.\n\nThe traitor wins when the mummy returns to the sarcophagus with the Girl and either the Holy Symbol or Ring, or when all heroes die."
       },
@@ -883,8 +883,11 @@
       "addedToInventory": "Added to inventory",
       "readyToUse": "Selected and ready to use",
       "rollModifierTag": "Modify Dice",
+      "finalEffectLabel": "Final effect",
       "confirmCard": "Confirm",
-      "confirmCardStep": "Confirm {{current}}/{{total}}"
+      "confirmCardStep": "Confirm this step ({{current}}/{{total}})",
+      "confirmationProgress": "Players confirmed {{confirmed}}/{{total}}",
+      "waitingForAll": "Waiting for all players ({{confirmed}}/{{total}})"
     },
     "roll": {
       "fallbackLabel": "Dice Roll",
@@ -949,110 +952,110 @@
   "tutorial": {
     "basicSetup": {
       "title": "Core Turn: Use, Move, Explore",
-      "description": "Start from the pre-haunt board, then use a possession, move, explore, and resolve a discovery check.",
+      "description": "Before the haunt begins, you may move, discover a new room, trade Items and Omens with an explorer on your tile, and take special actions in any order. Discovering a new room ends your turn.",
       "steps": {
-        "setupRuntime": "The haunt has not started yet. Walk through a core turn: read the board, use a possession, move, explore an unknown room, and resolve the discovery.",
-        "objectiveAndTurn": "Your goal is to keep exploring the house. The bottom actions are the main entry points: Move, Explore, Trade, Use, and End Turn.",
-        "traitsAndSpeed": "Read Speed before moving. Speed tells you the farthest you can move this turn.",
-        "traitTrackReading": "Read each trait as separate physical slots: the current slot is highlighted, the green number is the starting value, and the skull is death, not a number. Repeated values are still separate slots.",
-        "movesRemaining": "The movement medallion in the upper-right shows how many steps remain right now. It decreases as you move, so it may not equal your full Speed.",
-        "roomBoard": "The central room board is the main play area. Check where you are, which rooms connect, and where exploration can continue.",
-        "observeTeammate": "Click a teammate panel to observe that explorer and move the camera to that explorer's room. Click the same teammate again to return to the place you were viewing before, not always to yourself.",
-        "focusSelfRoom": "If you lose your place after panning the board, Focus My Room moves the camera back to your explorer's room. It is not a room details popup or the return control for teammate observation.",
-        "hauntRiskTrack": "Read the omen progress by slots: the highlighted slot is the number of discovered omens. The haunt-check details stay in hover help instead of filling the main HUD.",
-        "inventoryAndHelp": "The lower-left area is your inventory. Items and omens stay here; later use, trade, and effect choices start from these cards.",
-        "useBook": "Select the Book in your inventory, then click Use. The Book points the next non-combat check toward Knowledge.",
-        "openMoveTargets": "Now choose Move. Glowing rooms are places you can still reach this turn.",
-        "moveToHallway": "Move into the Hallway. It connects to a new exit, so the next step can reveal an unknown room.",
-        "exploreUpper": "Select the explorable face-down room. First choose the exit; the new room reveals into a placement preview.",
-        "confirmRoomPlacement": "After checking the room orientation and connected doorway, choose Confirm Placement. Only then does the room symbol resolve and draw the discovery card.",
-        "finish": "The discovery has entered a Knowledge check. After the dice stop, you may use Rabbit's Foot to reroll one die; continue only when you do not want to change the result."
+        "setupRuntime": "Before the haunt begins, you may move, discover a new room, trade Items and Omens with an explorer on your tile, and take special actions in any order. Discovering a new room ends your turn. Start with one core turn.",
+        "objectiveAndTurn": "On your turn, you may move, discover a new room, trade Items and Omens with an explorer on your tile, and take special actions in any order. Start with Move.",
+        "traitsAndSpeed": "At the start of your turn, check your Speed. It is the most rooms your explorer can move this turn.",
+        "traitTrackReading": "The green number on a trait track is the starting value; the highlighted slot is the current value, and the skull is death, not a number. Repeated values are still separate slots.",
+        "movesRemaining": "Check Speed at the start of the turn; the movement marker in the upper-right shows the movement left this turn. A mid-turn Speed change does not change movement already set for the turn.",
+        "roomBoard": "Each point of movement lets you move to an adjacent tile. Adjacent tiles share a directly connected doorway. Check your room, the connected rooms, and the unexplored doorways.",
+        "observeTeammate": "Click a teammate's character area to observe that explorer and move the camera to that room. Click the same teammate again to return to the place you were viewing before, not always to yourself.",
+        "focusSelfRoom": "After the camera leaves your position, Focus My Room returns it to your explorer's room.",
+        "hauntRiskTrack": "The omen track records the number of Omens discovered, and the highlighted slot is the current value. When an Omen is drawn, roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
+        "inventoryAndHelp": "Items and Omens stay in front of you; choose the relevant card here when you use, trade, or resolve a card effect.",
+        "useBook": "Select the Book in your inventory and click Use. Your next non-combat trait check uses Knowledge and costs 1 Sanity.",
+        "openMoveTargets": "Choose Move, then choose an adjacent room. Each point of movement reaches one adjacent room.",
+        "moveToHallway": "Move into the Hallway; its unexplored doorway can reveal a new room.",
+        "exploreUpper": "Choose the explorable face-down room, then choose an exit. After revealing it, connect one of its doorways to the unexplored doorway.",
+        "confirmRoomPlacement": "Rotate the new room so one doorway connects to the unexplored doorway, then choose Confirm Placement. Resolve its text and symbol after placement; your turn ends when the exploration is complete.",
+        "finish": "This is a Knowledge check: roll dice equal to current Knowledge and add the faces. After the result appears, Rabbit's Foot can reroll one die; continue without changing the result."
       }
     },
     "omenConfirmation": {
-      "title": "Omen: Confirm and Haunt Progress",
-      "description": "After drawing an omen, read the omen track, the single Confirm button, and why the haunt check appears on the same screen as the omen card.",
+      "title": "Omen: Haunt Roll",
+      "description": "When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
       "steps": {
-        "setupOmenConfirmation": "Now look at an omen discovery. The omen card and haunt-check result belong to the same discovery, so they appear together in one result panel.",
-        "hauntRiskTrack": "This shows how many omens have been discovered. The highlighted slot is the current count; hover help expands how many dice roll and what total starts the haunt.",
-        "confirmOmenCard": "The omen card and haunt-check result are already on the same screen. After reading them, press Confirm once to close this discovery and return to the board.",
-        "review": "After confirmation, the omen is in your inventory and the board returns to pre-haunt play. This check did not start the haunt, so exploration continues."
+        "setupOmenConfirmation": "When you draw an Omen card, read its text aloud, place it face-up in front of you, and make a haunt roll. Roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
+        "hauntRiskTrack": "The highlighted slot shows the number of Omens discovered. The haunt roll uses the total number of Omens held by all players; on a result of 5+, the haunt begins.",
+        "confirmOmenCard": "When you draw an Omen, roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins. After this roll is complete, press Confirm to continue.",
+        "review": "The haunt roll was below 5+; you now possess the Omen, and the haunt has not begun."
       }
     },
     "tradeAndAgreement": {
       "title": "Trade: Request, Then Agreement",
-      "description": "In the same room, choose possessions from either side and a teammate, propose the trade, then let the other player accept or decline.",
+      "description": "Trade Items and Omens with an explorer in the same room; the trade completes only when both explorers agree.",
       "steps": {
-        "setupTrade": "Trading happens on the same tile. You may choose Items or Omens you give, and you may choose possessions the other explorer gives; both explorers must agree.",
-        "chooseTradeItem": "Select Rabbit's Foot in your inventory first. This only marks the possession you want to give; it does not move yet.",
-        "chooseTradeTarget": "Now select the teammate token in the same room. After the teammate is selected, that player's possessions appear beside the bottom trade flow; click any card you want that player to give.",
-        "chooseTradeReturn": "For this two-sided trade demo, click that player's Map. You can also leave their possessions unselected and propose a trade where only Rabbit's Foot moves.",
-        "sendTradeRequest": "The summary states what you give and what the other explorer gives. When it is correct, click Propose Trade; the receiver must respond before anything moves.",
-        "requestWaiting": "The request has been sent. The requester now only sees the waiting state; they cannot swap Rabbit's Foot and Map by themselves.",
-        "acceptTradeRequest": "Now view the request as the receiver. The panel lists requester gives Rabbit's Foot and receiver gives Map; Accept Trade resolves it, while Decline keeps both inventories unchanged.",
-        "tradeReview": "The trade has resolved. Map enters the requester inventory, Rabbit's Foot enters the teammate inventory, and the request panel clears back to the board."
+        "setupTrade": "On your turn, you can trade Items and Omens with an explorer on the same tile, as long as both explorers agree. The trade can be unequal, and either side may only give or only take.",
+        "chooseTradeItem": "Select Rabbit's Foot in your inventory first. A trade can give without taking; nothing moves until both explorers agree.",
+        "chooseTradeTarget": "Select the teammate in the same room. You can give or take Items and Omens; click the card you want.",
+        "chooseTradeReturn": "To have the teammate give the Map, click the Map in that explorer's inventory. You can also propose a trade where only Rabbit's Foot is given.",
+        "sendTradeRequest": "After choosing what each side gives or takes, click Propose Trade. The receiver must agree before the trade completes.",
+        "requestWaiting": "Both explorers must agree; nothing moves while the receiver has not chosen.",
+        "acceptTradeRequest": "The receiver confirms the trade: Accept Trade completes it, while Decline leaves both inventories unchanged.",
+        "tradeReview": "The trade is complete: Map enters the requester inventory and Rabbit's Foot enters the teammate inventory."
       }
     },
     "hauntActions": {
-      "title": "After the Haunt: Read the Goal, Then Banish the Mummy",
-      "description": "After the haunt begins, see why the goal changed before finishing the hero banishment check.",
+      "title": "Mummy Rampage: Hero Goal and Banishment",
+      "description": "Heroes must speak the mummy's true name and banish it before the wedding; the traitor seeks to unite the Mummy and the Girl.",
       "steps": {
-        "setupReadyToExorcise": "Exploration and omens can push the house into the haunt. This is now Mummy Rampage: heroes must find the true name, learn the banishment spell, and banish the mummy before the traitor completes the wedding.",
-        "helpEntry": "The goal has changed after the haunt: heroes are no longer just exploring. Open the haunt reference to confirm how the heroes and traitor each win.",
-        "hauntActions": "Banish Mummy is not appearing out of nowhere. The heroes have already found the true name and learned the banishment spell, so the last step is a Sanity contest in the mummy's room.",
-        "exorciseJack": "Use Banish Mummy now to make the Sanity check. Once the dice settle, compare the hero total against the mummy.",
-        "banishMummy": "Use Banish Mummy now to make the Sanity contest. Once the dice settle, compare the hero total against the mummy.",
-        "endgameReview": "The banishment succeeds. The mummy crumbles into sand, and the ending narration opens the final report."
+        "setupReadyToExorcise": "Hero victory: banish the Mummy before it marries the Girl. Traitor victory: bring the Mummy and Girl together.",
+        "helpEntry": "Open the haunt book and read your goal and victory condition.",
+        "hauntActions": "Heroes must speak the Mummy's true name. In order, make a 6+ Knowledge check in the Sarcophagus Room, Study, or Library to find it; then a hero carrying the Book makes a 6+ Knowledge check to learn the banishment spell. With 2 tokens and the Book in the Mummy's room, any hero in that room can attack with Sanity. Each hero may try only one step per turn.",
+        "exorciseJack": "Choose Banish Mummy to attack the Mummy with Sanity.",
+        "banishMummy": "Attack the Mummy with Sanity; heroes win when the hero Sanity total is strictly higher than the Mummy's.",
+        "endgameReview": "The Mummy crumbles into sand and blows away. The heroes win."
       }
     },
     "heroAttackPath": {
       "title": "Hero Attacks the Traitor",
-      "description": "After opening the haunt reference, show how a hero uses the real attack entry to pressure the traitor.",
+      "description": "After investigating Jack, a hero can attack the traitor to help release Jack's Spirit.",
       "steps": {
-        "setupHeroAttack": "Now look at the hero attack branch. The hero has investigated Jack; when the traitor is in the same room, the hero can attack to help release Jack's Spirit.",
-        "heroAttackObjective": "Open the haunt reference first. Heroes do more than exorcise: before the final exorcism, a hero may need to attack the traitor to advance the scenario.",
-        "attackTraitor": "Choose Attack Traitor first to enter target selection, then click the traitor token on the map. Both sides roll dice; because the hero investigated Jack, this attack gains an extra bonus.",
-        "heroAttackReview": "The hero attack has resolved. This view shows the attack dice, the bonus, and the result instead of only describing the rule."
+        "setupHeroAttack": "The hero has investigated Jack; when the traitor is in the same room, attacking the traitor grants an extra bonus.",
+        "heroAttackObjective": "Open the Hero book and read the goal involving the traitor and Jack's Spirit.",
+        "attackTraitor": "Choose Attack Traitor, then click the traitor on the map. The attacker and defender roll the attributes required by the attack; investigating Jack grants an extra bonus.",
+        "heroAttackReview": "The attacker and defender roll, compare their results, and resolve damage from the difference."
       }
     },
     "jackSpiritPath": {
       "title": "Jack's Spirit Acts",
-      "description": "After the traitor falls, show Jack's Spirit continuing as a monster that moves and attacks heroes.",
+      "description": "After the traitor dies, Jack's Spirit moves and attacks heroes as a monster.",
       "steps": {
-        "setupJackSpirit": "After the traitor is knocked down, Jack's Spirit has appeared and becomes the active threat. It is not background text; it is a monster that keeps acting.",
-        "jackSpiritObjective": "Open the haunt reference first. Jack's Spirit attacks heroes and tries to return to the corpse room so the traitor can revive.",
-        "jackSpiritAttack": "Choose Attack Hero first to enter target selection, then click the hero token in the same room for the monster attack. Jack's Spirit uses the same real attack roll flow.",
-        "jackSpiritReview": "Jack's Spirit attack has resolved. The same attack dice table shows the dice, total, and outcome."
+        "setupJackSpirit": "After the traitor dies, Jack's Spirit continues acting as a monster.",
+        "jackSpiritObjective": "Jack's Spirit attacks heroes; when it returns to the traitor's corpse room, the traitor revives and returns to play.",
+        "jackSpiritAttack": "Choose Attack Hero, then click the hero in the same room.",
+        "jackSpiritReview": "The monster attacks with Might; compare the attacker and defender results and resolve damage from the difference."
       }
     },
     "traitorPath": {
       "title": "Helping the Mummy",
-      "description": "Switch to the traitor side, pick up the Girl, give her to the Mummy, hand over the Holy Symbol, and trigger the traitor ending.",
+      "description": "Traitor victory: the Mummy carries the Girl and the Holy Symbol or Ring back to the Sarcophagus; the traitor also wins if all heroes die.",
       "steps": {
-        "setupTraitorTurn": "Now switch to the traitor side. The traitor does not banish the Mummy; the traitor wins by helping the Mummy return to the Sarcophagus with the Girl and either the Holy Symbol or the Ring.",
-        "traitorObjective": "Open the Traitor's Tome first. The goal is the Girl, one required omen, and the Sarcophagus all coming together before the heroes banish the Mummy.",
-        "pickUpGirl": "The Girl token is in this room. Choose Pick Up Girl to move her from the room token into the traitor's public custody.",
-        "giveGirlToMummy": "The traitor is in the same room as the Mummy. Choose Give Girl to move the Girl from the traitor to the Mummy.",
-        "giveOmenToMummy": "The Mummy has the Girl and still needs the Holy Symbol or the Ring. Choose Give Holy Symbol so the Mummy carries the required omen in the Sarcophagus room.",
-        "traitorFinish": "The Mummy returns to the Sarcophagus with the Girl and the Holy Symbol, so the traitor wins. This shows the ending narration and final report."
+        "setupTraitorTurn": "Switch to the traitor side. Help the Mummy carry the Girl and the Holy Symbol or Ring back to the Sarcophagus.",
+        "traitorObjective": "Open the Traitor's Tome and read the victory condition and the Mummy's rules.",
+        "pickUpGirl": "Entering the room with the Girl token lets you take the Girl Omen; choose Pick Up Girl.",
+        "giveGirlToMummy": "While carrying the Girl in the Mummy's room, you may give her to the Mummy; choose Give Girl.",
+        "giveOmenToMummy": "The Mummy carries the Girl; give the Holy Symbol or Ring to the Mummy in the same room. Choose Give Holy Symbol.",
+        "traitorFinish": "The Mummy carries the Girl and the Holy Symbol or Ring back to the Sarcophagus. The traitor wins."
       }
     },
     "mummyMonsterActions": {
       "title": "Mummy Monster Actions",
-      "description": "Switch to the Mummy's monster turn and complete movement, forced attack, and the steal reward.",
+      "description": "The traitor controls the Mummy through movement, same-room attack, and stealing.",
       "steps": {
-        "setupMonsterMove": "Now watch the Mummy's own monster turn. It starts in the Sarcophagus room, the Girl is in a distant room, and the traitor controls the Mummy.",
-        "monsterTurnStart": "Choose Start Mummy. This moves the Mummy from goal text back into the real monster action slot.",
-        "monsterRoll": "Choose Mummy Movement. The dice table shows how far the Mummy may move this turn.",
-        "monsterRollReview": "Read the dice table, then return to the board.",
-        "monsterMoveTarget": "The movement roll gives the Mummy a teleport. Choose Move Mummy, click the Mummy token, then click the discovered room with the Girl. Undiscovered rooms are not targets.",
-        "monsterMoveResult": "After the Mummy teleports to the Girl's room, the Girl token becomes held by the Mummy. This is a board result, not a log summary.",
-        "setupAttack": "Now check same-room combat. The Mummy, the traitor, and one living hero share a room, and the hero carries the Map and Holy Symbol.",
-        "attackForced": "When the Mummy shares a room with a hero, Mummy Attack appears first. It cannot move away before attacking.",
-        "attackTarget": "Choose Mummy Attack, then click the Mummy token and the hero in the same room. The traitor and dead explorer are not attack targets.",
-        "attackRollReview": "Read the attack dice table, then return to the board. The damage-or-steal choice comes next.",
-        "attackReward": "Choose Steal Map here. Stealing replaces this damage and transfers the item from the hero to the Mummy.",
-        "stealResult": "The Mummy has taken the Map, the reward bar is closed, and the board feedback shows the steal result."
+        "setupMonsterMove": "The Mummy starts in the Sarcophagus room; the Girl is in a distant room, and the traitor controls the Mummy.",
+        "monsterTurnStart": "Choose Start Mummy.",
+        "monsterRoll": "Choose Mummy Movement. The result determines the Mummy's movement; on 0 or 1, it can teleport to any room in the house.",
+        "monsterRollReview": "Read the Mummy's movement result, then choose Back to Board.",
+        "monsterMoveTarget": "On 0 or 1, the Mummy can teleport to any room in the house. Choose Move Mummy, then click the Mummy and the discovered room with the Girl.",
+        "monsterMoveResult": "After teleporting to the Girl's room, the Mummy can carry the Girl.",
+        "setupAttack": "When the Mummy shares a room with a hero, it must attack the hero if possible.",
+        "attackForced": "When the Mummy shares a room with a hero, it must attack the hero first.",
+        "attackTarget": "Choose Mummy Attack, then click the hero in the same room. The traitor and a dead explorer are not attack targets.",
+        "attackRollReview": "After comparing the attacker and defender results, choose damage or steal; then choose Back to Board.",
+        "attackReward": "After dealing 2 or more damage, the Mummy may steal one Item or Omen instead of dealing damage; choose Steal Map.",
+        "stealResult": "Stealing replaces damage; the robbed hero does not lose traits."
       }
     }
   }

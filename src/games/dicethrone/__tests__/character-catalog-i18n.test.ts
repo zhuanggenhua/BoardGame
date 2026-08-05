@@ -18,5 +18,6 @@ describe('DiceThrone 角色名 i18n 合同', () => {
     it('新增英雄不应在共享映射里丢失 nameKey', () => {
         expect(getDiceThroneCharacterNameKey('zhanshujia')).toBe('characters.zhanshujia');
         expect(getDiceThroneCharacterNameKey('cursed_pirate')).toBe('characters.cursed_pirate');
+        expect(getDiceThroneCharacterNameKey('tianshi')).toBe('characters.tianshi');
     });
 });

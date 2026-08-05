@@ -12,6 +12,7 @@ const REQUIRED_LITERAL_IDS = [
     'betrayal-room-board',
     'betrayal-haunt-risk-status',
     'betrayal-focus-self-room',
+    'betrayal-open-scenario',
     'betrayal-reference-entry',
     'betrayal-latest-discovery',
     'betrayal-endgame-screen',

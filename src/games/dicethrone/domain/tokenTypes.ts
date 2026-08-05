@@ -44,6 +44,7 @@ export type ActiveTiming =
     | 'beforeDamageDealt'     // 造成伤害前（太极加伤）
     | 'beforeDamageReceived'  // 受到伤害前（太极减伤、闪避）
     | 'onOffensiveRollEnd'    // 攻击掷骰阶段结束时（暴击、精准）
+    | 'duringRoll'             // 进攻/防御掷骰阶段中（飞行）
     | 'anytime';              // 任意时点（净化）
 
 // ============================================================================

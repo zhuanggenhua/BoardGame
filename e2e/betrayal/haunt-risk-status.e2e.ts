@@ -72,8 +72,8 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(riskStatus).toHaveText(/预兆状态/);
         await expect(riskStatus).toHaveText(/预兆 3/);
         await expect(riskStatus).not.toHaveText(/再抽预兆时检定/);
-        await expect(riskStatus).toHaveAttribute('title', /抽预兆后作祟检定/);
-        await expect(riskStatus).toHaveAttribute('title', /5\+ 作祟/);
+        await expect(riskStatus).toHaveAttribute('title', /抽到预兆后/);
+        await expect(riskStatus).toHaveAttribute('title', /总点数达到 5 点/);
         const riskProgress = page.getByTestId('betrayal-haunt-risk-progress');
         await expect(riskProgress).toHaveAttribute('data-track-min', '0');
         await expect(riskProgress).toHaveAttribute('data-track-max', '9');
@@ -96,7 +96,7 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(page.getByTestId('betrayal-haunt-risk-pointer')).toHaveCount(0);
         const oldRiskCopy = new RegExp(['下次' + '掷', `${5}\\+ 作祟`].join('|'));
         await expect(riskStatus).not.toHaveText(oldRiskCopy);
-        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆前|Pre-Haunt/i);
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟前|Pre-Haunt/i);
 
         await saveScreenshot(page, THREE_OMEN_SCREENSHOT);
 
@@ -139,7 +139,7 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(riskStatus).toHaveAttribute('data-next-omen-automatic', 'true');
         await expect(riskStatus).toHaveAttribute('data-haunt-started', 'false');
         await expect(riskStatus).toHaveText(/再抽即作祟/);
-        await expect(riskStatus).toHaveAttribute('title', /最后一张/);
+        await expect(riskStatus).toHaveAttribute('title', /最后一张预兆/);
         await saveScreenshot(page, LAST_OMEN_READY_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-move').click();
@@ -157,7 +157,7 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(page.getByTestId('betrayal-discovery-panel-content')).toContainText(/自动触发作祟|作祟/);
         await expect(page.getByTestId('betrayal-discovery-panel-content')).not.toContainText('最后预兆');
         await saveScreenshot(page, LAST_OMEN_DISCOVERY_SCREENSHOT);
-        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟中|Haunt/i);
         await expect(riskStatus).toHaveAttribute('data-haunt-started', 'true');
         await expect(riskStatus).toHaveText(/作祟已开始/);
         await expect(riskStatus).toHaveAttribute('title', /不再进行作祟检定/);
@@ -180,7 +180,7 @@ test.describe('山屋惊魂预兆状态条', () => {
         await expect(scenarioReaderDialog).toHaveCount(0);
         await expect(page.getByTestId('betrayal-haunt-reveal-cue'), '触发预兆已经由剧本书承接后，不再追加作祟横幅').toHaveCount(0);
         await expect(page.getByTestId('betrayal-discovery-panel'), '已确认过的触发预兆关闭剧本书后不得重复弹出').toHaveCount(0);
-        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/恶兆后|Haunt/i);
+        await expect(page.getByTestId('betrayal-runtime-header-grid')).toContainText(/作祟中|Haunt/i);
         await expect(riskStatus).toHaveAttribute('data-haunt-started', 'true');
         await expect(riskStatus).toHaveText(/作祟已开始/);
         await saveScreenshot(page, LAST_OMEN_TRIGGERED_SCREENSHOT);
