@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerAbility } from '../domain/abilityRegistry';
@@ -29,7 +29,6 @@ import { getBaseDef, getCardDef } from '../data/cards';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { SU_EVENTS, type SmashUpCore, type SmashUpEvent } from '../domain/types';
 
-const SWORD_LORD = 'munchkin_orcs_sword_lord';
 const TOPPER_CHOPPER = 'munchkin_orcs_topper_chopper';
 const HAMMER_SLAMMER = 'munchkin_orcs_hammer_slammer';
 const DORK_ORC = 'munchkin_orcs_dork_orc';
@@ -72,10 +71,6 @@ type GimmeInteractionData = {
     hostBaseIndex?: number;
 };
 type StallingInteractionData = { sourceBaseIndex?: number; protectedActionDefId?: string };
-
-function actionController(action: { ownerId: PlayerId; metadata?: Record<string, unknown> }): PlayerId {
-    return (action.metadata?.sourceControllerId as PlayerId | undefined) ?? action.ownerId;
-}
 
 function cardName(defId: string): string {
     return getCardDef(defId)?.name ?? defId;
@@ -309,7 +304,7 @@ function buildDogpileMinionOptions(state: SmashUpCore, playerId: PlayerId) {
     return buildMinionTargetOptions(
         state.bases.flatMap((base, baseIndex) => base.minions
             .filter(minion => minion.controller === playerId)
-            .filter(minion => state.bases.some((targetBase, targetBaseIndex) => targetBaseIndex !== baseIndex
+            .filter(() => state.bases.some((targetBase, targetBaseIndex) => targetBaseIndex !== baseIndex
                 && targetBase.minions.filter(candidate => candidate.controller === playerId).length >= 2))
             .map(minion => ({ uid: minion.uid, defId: minion.defId, baseIndex, label: `${cardName(minion.defId)}（${baseName(base.defId)}）` }))),
         { state, sourcePlayerId: playerId, sourceDefId: DOGPILE, sourceKind: 'action', effectType: 'move' },
