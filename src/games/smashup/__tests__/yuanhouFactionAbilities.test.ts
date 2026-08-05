@@ -2024,6 +2024,11 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'enemy-owner-extra-mimic')).toBeTruthy();
         expect(findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'wrong-owner-mimic')).toBeUndefined();
         const resolved = resolveInteractionChain(result.finalState, currentPrompt => {
+            if (currentPrompt?.data?.sourceId === 'smashup_immediate_extra_minion_base') {
+                const base = findInteractionOption(currentPrompt, candidate => candidate.value?.baseIndex === 0);
+                expect(base).toBeTruthy();
+                return { optionId: base.id };
+            }
             const option = findInteractionOption(currentPrompt, candidate => candidate.value?.cardUid === 'enemy-owner-extra-mimic');
             expect(option).toBeTruthy();
             return { optionId: option.id };
@@ -2116,17 +2121,17 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(destroyed.success).toBe(true);
         expect(destroyed.finalState.sys.interaction.current?.data?.sourceId).toBe('smashup_immediate_extra_minion');
 
-        const extraPrompt = destroyed.finalState.sys.interaction.current;
-        const extraMimic = findInteractionOption(extraPrompt, candidate => candidate.value?.cardUid === 'extra-mimic');
-        expect(extraMimic).toBeTruthy();
+        const played = resolveInteractionChain(destroyed.finalState, currentPrompt => {
+            if (currentPrompt?.data?.sourceId === 'smashup_immediate_extra_minion_base') {
+                const base = findInteractionOption(currentPrompt, candidate => candidate.value?.baseIndex === 0);
+                expect(base).toBeTruthy();
+                return { optionId: base.id };
+            }
+            const extraMimic = findInteractionOption(currentPrompt, candidate => candidate.value?.cardUid === 'extra-mimic');
+            expect(extraMimic).toBeTruthy();
+            return { optionId: extraMimic.id };
+        });
 
-        const played = runCommand(destroyed.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionId: extraMimic.id },
-        } as any);
-
-        expect(played.success).toBe(true);
         expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['extra-mimic']);
         expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toContain('target');
         expect(played.finalState.sys.interaction.current).toBeUndefined();
@@ -3440,7 +3445,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-a')?.attachedActions).toEqual([]);
     });
 
-    it('电子猿：Baboom 的额外行动只有一个合法目标时自动附着到 Baboom', () => {
+    it('电子猿：Baboom 的额外行动只有一个合法目标时仍需显式确认附着到 Baboom', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -3464,17 +3469,20 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             playerId: '0',
             payload: { minionUid: 'baboom-a', baseIndex: 0 },
         } as any);
-        const actionPrompt = talent.finalState.sys.interaction.current;
-        const boost = findInteractionOption(actionPrompt, candidate => candidate.value?.cardUid === 'boost-a');
-        const pickedAction = runCommand(talent.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionId: boost.id },
-        } as any);
+        const resolved = resolveInteractionChain(talent.finalState, prompt => {
+            if (prompt?.data?.sourceId === 'smashup_immediate_extra_action') {
+                const boost = findInteractionOption(prompt, candidate => candidate.value?.cardUid === 'boost-a');
+                expect(boost).toBeTruthy();
+                return { optionId: boost.id };
+            }
+            const target = findInteractionOption(prompt, candidate => candidate.value?.minionUid === 'baboom-a');
+            expect(target).toBeTruthy();
+            return { optionId: target.id };
+        });
 
-        expect(pickedAction.finalState.sys.interaction.current).toBeUndefined();
-        expect(pickedAction.finalState.core.bases[0].minions.find(minion => minion.uid === 'baboom-a')?.attachedActions.map(action => action.uid)).toEqual(['boost-a']);
-        expect(pickedAction.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-a')?.attachedActions).toEqual([]);
+        expect(resolved.finalState.sys.interaction.current).toBeUndefined();
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'baboom-a')?.attachedActions.map(action => action.uid)).toEqual(['boost-a']);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-a')?.attachedActions).toEqual([]);
     });
 
     it('电子猿：Baboom 选择跳过额外行动后应直接收口且不强制打出任何行动', () => {
@@ -3522,7 +3530,7 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         expect(skipped.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-a')?.attachedActions).toEqual([]);
     });
 
-    it('电子猿：Baboom 有多张合法额外行动时应允许选择非第一张并只打出所选那张', () => {
+    it('电子猿：Baboom 有多张合法额外行动时应允许选择非第一张并显式确认附着目标', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -3555,20 +3563,22 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         const secondAction = findInteractionOption(actionPrompt, candidate => candidate.value?.cardUid === 'boost-b');
         expect(secondAction).toBeTruthy();
 
-        const pickedSecond = runCommand(talent.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionId: secondAction.id },
-        } as any);
+        const pickedSecond = resolveInteractionChain(talent.finalState, prompt => {
+            if (prompt?.data?.sourceId === 'smashup_immediate_extra_action') {
+                return { optionId: secondAction.id };
+            }
+            const target = findInteractionOption(prompt, candidate => candidate.value?.minionUid === 'baboom-a');
+            expect(target).toBeTruthy();
+            return { optionId: target.id };
+        });
 
-        expect(pickedSecond.success).toBe(true);
         expect(pickedSecond.finalState.sys.interaction.current).toBeUndefined();
         expect(pickedSecond.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['boost-a']);
         expect(pickedSecond.finalState.core.bases[0].minions.find(minion => minion.uid === 'baboom-a')?.attachedActions.map(action => action.uid)).toEqual(['boost-b']);
         expect(pickedSecond.finalState.core.bases[0].minions.find(minion => minion.uid === 'other-a')?.attachedActions).toEqual([]);
     });
 
-    it('电子猿：Baboom 当前牌池中的所有合法额外行动都应直接附着到 source 本体且不进入第二层目标选择 prompt', () => {
+    it('电子猿：Baboom 当前牌池中的所有合法额外行动都应显式确认附着到 source 本体', () => {
         const core = {
             players: {
                 '0': makePlayer('0', {
@@ -3630,13 +3640,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
             const option = findInteractionOption(actionPrompt, candidate => candidate.value?.cardUid === cardUid);
             expect(option).toBeTruthy();
 
-            const resolved = runCommand(talent.finalState, {
-                type: 'SYS_INTERACTION_RESPOND',
-                playerId: '0',
-                payload: { optionId: option.id },
-            } as any);
+            const resolved = resolveInteractionChain(talent.finalState, prompt => {
+                if (prompt?.data?.sourceId === 'smashup_immediate_extra_action') {
+                    return { optionId: option.id };
+                }
+                const target = findInteractionOption(prompt, candidate => candidate.value?.minionUid === 'baboom-a');
+                expect(target).toBeTruthy();
+                return { optionId: target.id };
+            });
 
-            expect(resolved.success).toBe(true);
             expect(resolved.finalState.sys.interaction.current).toBeUndefined();
             expect(
                 resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'baboom-a')?.attachedActions.map(action => action.uid),
@@ -3682,13 +3694,15 @@ describe('yuanhou 四派系代表性玩法行为', () => {
         const selectedAction = findInteractionOption(actionPrompt, candidate => candidate.value?.cardUid === 'boost-a');
         expect(selectedAction).toBeTruthy();
 
-        const picked = runCommand(talent.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionId: selectedAction.id },
-        } as any);
+        const picked = resolveInteractionChain(talent.finalState, prompt => {
+            if (prompt?.data?.sourceId === 'smashup_immediate_extra_action') {
+                return { optionId: selectedAction.id };
+            }
+            const target = findInteractionOption(prompt, candidate => candidate.value?.minionUid === 'baboom-source');
+            expect(target).toBeTruthy();
+            return { optionId: target.id };
+        });
 
-        expect(picked.success).toBe(true);
         expect(picked.finalState.sys.interaction.current).toBeUndefined();
         expect(picked.finalState.core.bases[0].minions.find(minion => minion.uid === 'baboom-source')?.attachedActions.map(action => action.uid)).toEqual(['boost-a']);
         expect(picked.finalState.core.bases[0].minions.find(minion => minion.uid === 'baboom-other')?.attachedActions).toEqual([]);
