@@ -69,6 +69,7 @@ import { registerGrimmsFairyTalesAbilities, registerGrimmsFairyTalesInteractionH
 import { registerRussianFairyTalesAbilities, registerRussianFairyTalesInteractionHandlers } from './russian_fairy_tales';
 import { registerAncientIncasAbilities, registerAncientIncasInteractionHandlers } from './ancient_incas';
 import { registerPolynesianVoyagersAbilities } from './polynesian_voyagers';
+import { registerPenguinsAbilities } from './penguins';
 import { registerExcellentMoviesTeensAbilities } from './excellent_movies_teens';
 import { registerDiyKillersAbilities } from './diy_killers';
 import { registerDiyClownsAbilities } from './diy_clowns';
@@ -78,6 +79,7 @@ import { registerBeautyAndTheBeastAbilities } from './beauty_and_the_beast';
 import { registerNightmareBeforeChristmasAbilities } from './nightmare_before_christmas';
 import { registerWreckItRalphAbilities } from './wreck_it_ralph';
 import { registerHalfTheBattleAbilities } from './half_the_battle';
+import { registerMunchkinAbilities, registerMunchkinInteractionHandlers } from './munchkin';
 import { registerGoblinAbilities } from './goblins';
 import { registerRoundTableKnightAbilities } from './round_table_knights';
 import { registerBuryInteractionHandlers } from '../domain/bury';
@@ -223,6 +225,7 @@ export function initAllAbilities(): void {
     registerAncientIncasAbilities();
     registerAncientIncasInteractionHandlers();
     registerPolynesianVoyagersAbilities();
+    registerPenguinsAbilities();
     registerExcellentMoviesTeensAbilities();
     registerDiyKillersAbilities();
     registerDiyClownsAbilities();
@@ -232,6 +235,8 @@ export function initAllAbilities(): void {
     registerNightmareBeforeChristmasAbilities();
     registerWreckItRalphAbilities();
     registerHalfTheBattleAbilities();
+    registerMunchkinAbilities();
+    registerMunchkinInteractionHandlers();
     registerRoundTableKnightAbilities();
     registerGoblinAbilities();
     registerTitanAbilities();
