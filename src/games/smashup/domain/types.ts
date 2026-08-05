@@ -590,6 +590,8 @@ export type PendingPostScoringAction =
         ownerId?: PlayerId;
         /** 默认从牌库打出；少数计分后效果会从手牌预约到替换基地。 */
         fromZone?: 'deck' | 'hand';
+        /** 允许来源已被同一计分 frame 预约移出，最终落地时跳过当前位置检查。 */
+        allowImplicitSource?: boolean;
         baseIndex: number;
         targetBaseDefId: string;
         power: number;
@@ -730,6 +732,8 @@ export interface TriggerInstance {
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
     triggerMinionPower?: number;
+    /** onMinionPlayed 时：本次随从是否从牌库打出 */
+    triggerMinionFromDeck?: boolean;
     triggerCardUid?: string;
     triggerCardDefId?: string;
     triggerCardOwnerId?: PlayerId;
@@ -1128,10 +1132,14 @@ export interface PlayMinionCommand extends Command<typeof SU_COMMANDS.PLAY_MINIO
         baseIndex: number;
         /** 从弃牌堆打出（而非手牌）。由"它们为你而来"等持续效果启用 */
         fromDiscard?: boolean;
+        /** 从牌库打出（如普通企鹅的牌库顶额外打出）。 */
+        fromDeck?: boolean;
         /** 从暂存区打出（如返时者停滞区）。 */
         fromStored?: boolean;
         /** 替代普通行动额度打出这张随从牌，不消耗普通随从额度。 */
         playAsAction?: boolean;
+        /** 跳舞企鹅：用手牌中的跳舞企鹅替代本次普通手牌随从打出。 */
+        replacementHandCardUid?: string;
     };
 }
 

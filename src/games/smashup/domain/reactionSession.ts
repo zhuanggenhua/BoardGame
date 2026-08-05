@@ -978,6 +978,7 @@ function executeQueuedTrigger(
         triggerMinionUid: trigger.triggerMinionUid,
         triggerMinionDefId: trigger.triggerMinionDefId,
         triggerMinionPower: trigger.triggerMinionPower,
+        triggerMinionFromDeck: trigger.triggerMinionFromDeck,
         triggerCardUid: trigger.triggerCardUid,
         triggerCardDefId: trigger.triggerCardDefId,
         triggerCardOwnerId: trigger.triggerCardOwnerId,

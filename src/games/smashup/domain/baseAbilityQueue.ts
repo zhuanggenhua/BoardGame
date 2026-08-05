@@ -128,6 +128,7 @@ export function collectBaseAbilityTriggers(params: {
   triggerMinionUid?: string;
   triggerMinionDefId?: string;
   triggerMinionPower?: number;
+  triggerMinionFromDeck?: boolean;
   destroyerId?: PlayerId;
   controllerId?: PlayerId;
   reason?: string;
@@ -150,6 +151,7 @@ export function collectBaseAbilityTriggers(params: {
     triggerMinionUid,
     triggerMinionDefId,
     triggerMinionPower,
+    triggerMinionFromDeck,
     destroyerId,
     controllerId,
     reason,
@@ -177,6 +179,7 @@ export function collectBaseAbilityTriggers(params: {
     minionUid: triggerMinionUid,
     minionDefId: triggerMinionDefId,
     minionPower: triggerMinionPower,
+    triggerMinionFromDeck,
     destroyerId,
     controllerId,
     reason,
@@ -224,6 +227,7 @@ export function collectBaseAbilityTriggers(params: {
     triggerMinionUid,
     triggerMinionDefId,
     triggerMinionPower,
+    triggerMinionFromDeck,
     destroyerId,
     controllerId,
     reason,
@@ -303,6 +307,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
   triggerMinionUid?: string;
   triggerMinionDefId?: string;
   triggerMinionPower?: number;
+  triggerMinionFromDeck?: boolean;
   destroyerId?: PlayerId;
   controllerId?: PlayerId;
   reason?: string;
@@ -324,6 +329,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
     triggerMinionUid,
     triggerMinionDefId,
     triggerMinionPower,
+    triggerMinionFromDeck,
     destroyerId,
     controllerId,
     reason,
@@ -349,6 +355,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
     minionUid: triggerMinionUid,
     minionDefId: triggerMinionDefId,
     minionPower: triggerMinionPower,
+    triggerMinionFromDeck,
     destroyerId,
     controllerId,
     reason,
@@ -397,6 +404,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
     triggerMinionUid,
     triggerMinionDefId,
     triggerMinionPower,
+    triggerMinionFromDeck,
     destroyerId,
     controllerId,
     reason,

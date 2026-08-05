@@ -7,6 +7,7 @@ import type { CardInstance, SmashUpCore } from '../domain/types';
 export type MinionUiPlayPlan = {
     validation: ValidationResult;
     playAsAction: boolean;
+    replacementHandCardUid?: string;
 };
 
 export function resolveMinionUiPlayPlan(
@@ -21,7 +22,34 @@ export function resolveMinionUiPlayPlan(
         payload: { cardUid: card.uid, baseIndex },
     });
     const canPlayAsAction = card.type === 'minion' && getMinionDef(card.defId)?.playAsAction === true;
-    if (normalValidation.valid || !canPlayAsAction) {
+    if (normalValidation.valid) {
+        return {
+            validation: normalValidation,
+            playAsAction: false,
+        };
+    }
+
+    const dancingPenguin = state.core.players[playerId]?.hand.find(candidate =>
+        candidate.uid !== card.uid
+        && candidate.defId === 'penguins_dancing_penguin'
+        && candidate.type === 'minion'
+    );
+    if (dancingPenguin) {
+        const replacementValidation = validate(state, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId,
+            payload: { cardUid: card.uid, baseIndex, replacementHandCardUid: dancingPenguin.uid },
+        });
+        if (replacementValidation.valid) {
+            return {
+                validation: replacementValidation,
+                playAsAction: false,
+                replacementHandCardUid: dancingPenguin.uid,
+            };
+        }
+    }
+
+    if (!canPlayAsAction) {
         return {
             validation: normalValidation,
             playAsAction: false,

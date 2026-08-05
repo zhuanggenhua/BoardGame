@@ -285,6 +285,8 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     titan_ninjas_invisible_ninja_ongoing: '持续效果分支包含多维上下文，不能简化为单一实体直选。',
     titan_ninjas_invisible_ninja_start_turn: '回合开始分支选择依赖持续状态上下文，需保留 generic。',
     titan_penguins_emperor_penguin_talent: '天赋候选是复合分支，不对应单一实体直选。',
+    penguins_regurgitating_penguin: '反刍企鹅候选项来自牌库顶揭示快照，拿走行动后还要串联剩余牌排序，不是当前手牌或棋盘实体直选。',
+    penguins_regurgitating_penguin_order: '反刍企鹅剩余揭示牌需要按玩家选择顺序回到牌库顶，必须保留排序快照语义。',
     titan_vampires_ancient_lord_special: '特殊触发候选包含场上目标与额外语义，需保留 generic。',
     vampire_crack_of_dusk_pod: '候选项来自弃牌堆随从卡面，不是当前棋盘实体，也不是当前手牌直选。',
     vikings_berserk_card: '候选项来自手牌卡面并串联后续目标选择，保留 generic 以承载链路上下文。',

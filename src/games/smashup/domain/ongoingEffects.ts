@@ -172,6 +172,8 @@ export interface TriggerContext {
     triggerMinionDefId?: string;
     /** 触发相关随从力量 */
     triggerMinionPower?: number;
+    /** onMinionPlayed 时：触发相关随从是否从牌库打出 */
+    triggerMinionFromDeck?: boolean;
     /** 触发相关场上行动牌 UID */
     triggerCardUid?: string;
     /** 触发相关场上行动牌 defId */
@@ -632,6 +634,7 @@ function createTriggerInstance(
         triggerMinionUid: ctx.triggerMinionUid,
         triggerMinionDefId: ctx.triggerMinionDefId,
         triggerMinionPower: ctx.triggerMinionPower,
+        triggerMinionFromDeck: ctx.triggerMinionFromDeck,
         triggerCardUid: ctx.triggerCardUid,
         triggerCardDefId: ctx.triggerCardDefId,
         triggerCardOwnerId: ctx.triggerCardOwnerId,

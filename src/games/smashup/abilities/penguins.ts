@@ -1,911 +1,1035 @@
-import type { PlayerId, RandomFn } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
-import { registerAbility } from '../domain/abilityRegistry';
-import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
+import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
+import {
+    createSimpleChoice,
+    getCurrentTrackedCardTopSnapshot,
+    queueInteraction,
+    type PromptOption,
+} from '../../../engine/systems/InteractionSystem';
+import { registerAbility, registerSimpleAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { registerBaseAbility, type BaseAbilityContext, type BaseAbilityResult } from '../domain/baseAbilities';
-import { registerTrigger, type TriggerContext, type TriggerResult } from '../domain/ongoingEffects';
+import { registerActiveBaseAbility, registerBaseAbility, type BaseAbilityContext, type BaseAbilityResult } from '../domain/baseAbilities';
 import {
     addTempPower,
-    buildAbilityFeedback,
+    buildBaseTargetOptions,
+    buildMinionTargetOptions,
     buildStandardDrawEvents,
+    buildValidatedCardToDeckBottomEvents,
     buildValidatedMoveEvents,
+    canControllerPlayTitan,
     createSkipOption,
+    fireMinionPlayedTriggers,
     inspectDeck,
+    peekDeckTop,
+    playTitan,
     revealDeckTop,
 } from '../domain/abilityHelpers';
-import {
-    appendPendingPostScoringActions,
-    getDeferredReplacementBaseDefId,
-    isScoringSessionAwaitingDeferredResolution,
-} from '../domain/scoringSession';
-import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
-import {
-    SU_EVENTS,
-    type CardInstance,
-    type CardToDeckBottomEvent,
-    type CardsDrawnEvent,
-    type DeckReorderedEvent,
-    type MinionMetadataUpdatedEvent,
-    type MinionOnBase,
-    type MinionPlayedEvent,
-    type PendingPostScoringAction,
-    type SmashUpCore,
-    type SmashUpEvent,
-    type TitanPlayedEvent,
+import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
+import { appendPendingPostScoringActions, getDeferredReplacementBaseDefId } from '../domain/scoringSession';
+import { getBaseDef, getCardDef, getMinionLikePower } from '../data/cards';
+import { reduce } from '../domain/reduce';
+import { SU_EVENTS } from '../domain/types';
+import type {
+    CardInstance,
+    CardsDrawnEvent,
+    CardToDeckBottomEvent,
+    DeckReorderedEvent,
+    HandShuffledIntoDeckEvent,
+    MinionOnBase,
+    MinionPlayedEvent,
+    PendingPostScoringAction,
+    SmashUpCore,
+    SmashUpEvent,
+    TitanState,
 } from '../domain/types';
 
-type MinionMoveChoice = {
-    minionUid: string;
-    minionDefId: string;
-    fromBaseIndex: number;
-    toBaseIndex: number;
-    toBaseDefId?: string;
+const EMPEROR_PENGUIN = 'penguins_emperor_penguin';
+
+const FALLBACK_RANDOM: RandomFn = {
+    shuffle: <T>(arr: T[]) => [...arr],
+    random: () => 0.5,
+    d: (max: number) => Math.max(1, Math.floor(max / 2)),
+    range: (min: number, max: number) => Math.floor((min + max) / 2),
 };
-type CardChoice = { cardUid?: string; defId?: string; skip?: boolean };
-type WishChoice = { mode: 'titan' | 'buff'; baseIndex: number; baseDefId?: string; skip?: boolean };
-type ApartChoice = { minionUid: string; minionDefId: string; baseIndex: number };
 
-const BABY = 'penguins_baby_penguin';
-const COMMAND = 'penguins_command_penguin';
-const DISGUISE = 'penguins_disguise_penguin';
-const DANCING = 'penguins_dancing_penguin';
-const HATCHING = 'penguins_the_hatching';
-const SNAZZY = 'penguins_snazzy_penguin';
-const REGURGITATING = 'penguins_regurgitating_penguin';
-const SURFING = 'penguins_surfing_penguin';
-const WISH = 'penguins_a_wish_for_wings_that_work';
-const LEAPING = 'penguins_leaping_aboard';
-const APART = 'penguins_i_cant_tell_them_apart';
-const PEBBLE = 'penguins_pebble_gift';
-const UNDER = 'penguins_under_the_ice';
-const ICE_SLIDE = 'penguins_ice_slide';
-const ICE_FLOE = 'base_ice_floe';
-const COLONY = 'base_the_colony';
-const EMPEROR = 'penguins_emperor_penguin';
+type BaseChoice = { skip?: boolean; baseIndex?: number; baseDefId?: string };
+type MinionChoice = {
+    skip?: boolean;
+    minionUid?: string;
+    minionDefId?: string;
+    defId?: string;
+    baseIndex?: number;
+    ownerId?: PlayerId;
+    controllerId?: PlayerId;
+};
+type CardChoice = {
+    skip?: boolean;
+    cardUid?: string;
+    defId?: string;
+    ownerId?: PlayerId;
+    power?: number;
+};
+type OrderChoice = { cardUid?: string; defId?: string };
 
-function cardLabel(defId: string): string {
+function cardName(defId: string): string {
     return getCardDef(defId)?.name ?? defId;
 }
 
-function baseLabel(core: SmashUpCore, baseIndex: number): string {
-    return getBaseDef(core.bases[baseIndex]?.defId ?? '')?.name ?? `基地 ${baseIndex + 1}`;
+function baseName(defId: string): string {
+    return getBaseDef(defId)?.name ?? defId;
 }
 
-function isMinionCard(card: CardInstance): boolean {
-    return card.type === 'minion' || getCardDef(card.defId)?.type === 'minion';
+function isMinionCard(card: CardInstance | undefined): card is CardInstance {
+    if (!card) return false;
+    return getCardDef(card.defId)?.type === 'minion';
 }
 
-function isActionCard(card: CardInstance): boolean {
-    return card.type === 'action' || getCardDef(card.defId)?.type === 'action';
+function isActionCard(card: CardInstance | undefined): card is CardInstance {
+    if (!card) return false;
+    return getCardDef(card.defId)?.type === 'action';
 }
 
-function minionPower(defId: string): number {
-    return getMinionDef(defId)?.power ?? 0;
-}
-
-function deckReordered(playerId: PlayerId, deckUids: string[], now: number): DeckReorderedEvent {
-    return {
-        type: SU_EVENTS.DECK_REORDERED,
-        payload: { playerId, deckUids },
-        timestamp: now,
-    };
-}
-
-function cardToDeckBottom(
-    cardUid: string,
-    defId: string,
-    ownerId: PlayerId,
-    reason: string,
-    now: number,
-    source?: { sourcePlayerId?: PlayerId; sourceCardUid?: string; sourceDefId?: string; sourceControllerId?: PlayerId; sourceBaseIndex?: number },
-): CardToDeckBottomEvent {
-    return {
-        type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-        payload: {
-            cardUid,
-            defId,
-            ownerId,
-            reason,
-            ...(source?.sourcePlayerId ? { sourcePlayerId: source.sourcePlayerId } : {}),
-            ...(source?.sourceCardUid ? { sourceCardUid: source.sourceCardUid } : {}),
-            ...(source?.sourceDefId ? { sourceDefId: source.sourceDefId } : {}),
-            ...(source?.sourceControllerId ? { sourceControllerId: source.sourceControllerId } : {}),
-            ...(source?.sourceBaseIndex !== undefined ? { sourceBaseIndex: source.sourceBaseIndex } : {}),
-        },
-        timestamp: now,
-    };
-}
-
-function minionMetadataUpdated(
-    minionUid: string,
-    baseIndex: number,
-    metadataUpdate: Record<string, unknown>,
-    reason: string,
-    now: number,
-): MinionMetadataUpdatedEvent {
-    return {
-        type: SU_EVENTS.MINION_METADATA_UPDATED,
-        payload: { minionUid, baseIndex, metadataUpdate, reason },
-        timestamp: now,
-    };
-}
-
-function playMinionEvent(
+function playMinionEventFromCard(
     state: SmashUpCore,
     playerId: PlayerId,
     card: CardInstance,
     baseIndex: number,
-    reason: string,
     now: number,
+    options: {
+        fromDeck?: boolean;
+        reason?: string;
+        ownerId?: PlayerId;
+    } = {},
 ): MinionPlayedEvent | undefined {
     const base = state.bases[baseIndex];
-    if (!base || !isMinionCard(card)) return undefined;
+    if (!base) return undefined;
     return {
         type: SU_EVENTS.MINION_PLAYED,
         payload: {
             playerId,
             cardUid: card.uid,
             defId: card.defId,
-            ownerId: card.owner,
+            ownerId: options.ownerId ?? card.owner,
             baseIndex,
             baseDefId: base.defId,
-            power: minionPower(card.defId),
-            fromDeck: true,
+            power: getMinionLikePower(card.defId) ?? 0,
+            ...(options.fromDeck ? { fromDeck: true } : {}),
             consumesNormalLimit: false,
-            discardPlaySourceId: reason,
+            ...(options.reason ? { discardPlaySourceId: options.reason } : {}),
         },
         timestamp: now,
     };
 }
 
-function revealUntilMinionFromDeck(params: {
-    state: SmashUpCore;
-    random: RandomFn;
-    playerId: PlayerId;
-    baseIndex: number;
-    reason: string;
-    now: number;
-}): { events: SmashUpEvent[]; picked?: CardInstance; missed: CardInstance[] } {
-    const { state, random, playerId, baseIndex, reason, now } = params;
-    const player = state.players[playerId];
-    if (!player) return { events: [], missed: [] };
+function buildPlayTopDeckMinionEvents(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+    random: RandomFn,
+    now: number,
+    reason: string,
+): SmashUpEvent[] {
+    const peek = peekDeckTop(state, random, playerId, 'all', reason, now, playerId);
+    if (!peek) return [];
+    const events: SmashUpEvent[] = [...peek.events];
+    if (!isMinionCard(peek.card)) return events;
+    const played = playMinionEventFromCard(state, playerId, peek.card, baseIndex, now, { fromDeck: true, reason });
+    if (played) events.push(played);
+    return events;
+}
 
-    let deckSim = [...player.deck];
-    let discardSim = [...player.discard];
-    const revealed: CardInstance[] = [];
-    const missed: CardInstance[] = [];
-    let picked: CardInstance | undefined;
+function buildPlayTopDeckMinionResult(
+    state: SmashUpCore,
+    matchState: MatchState<SmashUpCore> | undefined,
+    playerId: PlayerId,
+    baseIndex: number,
+    random: RandomFn,
+    now: number,
+    reason: string,
+): AbilityResult {
+    const peek = peekDeckTop(state, random, playerId, 'all', reason, now, playerId);
+    if (!peek) return { events: [] };
+    const events: SmashUpEvent[] = [...peek.events];
+    if (!isMinionCard(peek.card)) return { events };
+    const played = playMinionEventFromCard(state, playerId, peek.card, baseIndex, now, { fromDeck: true, reason });
+    if (!played) return { events };
 
-    while (!picked) {
-        if (deckSim.length === 0) {
-            if (discardSim.length === 0) break;
-            deckSim = random.shuffle([...discardSim]);
-            discardSim = [];
-        }
-        const card = deckSim[0];
-        if (!card) break;
-        deckSim = deckSim.slice(1);
-        revealed.push(card);
-        if (isMinionCard(card)) {
-            picked = card;
-            break;
-        }
-        missed.push(card);
+    events.push(played);
+    if (!matchState) return { events };
+
+    const coreAfterPlayed = reduce(state, played);
+    const triggerResult = fireMinionPlayedTriggers({
+        core: coreAfterPlayed,
+        matchState: { ...matchState, core: coreAfterPlayed },
+        playerId,
+        cardUid: played.payload.cardUid,
+        defId: played.payload.defId,
+        baseIndex: played.payload.baseIndex,
+        power: played.payload.power,
+        random,
+        now,
+        playedEvt: played,
+    });
+
+    return {
+        events: [...events, ...triggerResult.events],
+        ...(triggerResult.matchState ? { matchState: triggerResult.matchState } : {}),
+    };
+}
+
+function buildPlayDeckMinionsFromOrderedDeckEvents(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+    orderedDeck: CardInstance[],
+    count: number,
+    now: number,
+    reason: string,
+): SmashUpEvent[] {
+    const events: SmashUpEvent[] = [];
+    const attempts = orderedDeck.slice(0, count);
+    for (const card of attempts) {
+        events.push(inspectDeck(playerId, playerId, 1, reason, now));
+        events.push(revealDeckTop(playerId, 'all', [{ uid: card.uid, defId: card.defId }], 1, reason, now, playerId));
+        if (!isMinionCard(card)) break;
+        const played = playMinionEventFromCard(state, playerId, card, baseIndex, now, { fromDeck: true, reason });
+        if (played) events.push(played);
     }
-
-    if (revealed.length === 0) return { events: [], missed: [] };
-
-    const remainingDeck = picked
-        ? [picked, ...random.shuffle([...deckSim, ...missed])]
-        : random.shuffle([...deckSim, ...missed]);
-    const play = picked ? playMinionEvent(state, playerId, picked, baseIndex, reason, now) : undefined;
-    const events: SmashUpEvent[] = [
-        inspectDeck(playerId, playerId, revealed.length, reason, now),
-        revealDeckTop(playerId, 'all', revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, reason, now, playerId),
-        deckReordered(playerId, remainingDeck.map(card => card.uid), now),
-        ...(play ? [play] : [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', now)]),
-    ];
-
-    return { events, picked, missed };
+    return events;
 }
 
-function revealTopAndPlayRandomMinion(params: {
-    state: SmashUpCore;
-    random: RandomFn;
-    playerId: PlayerId;
-    baseIndex: number;
-    count: number;
-    reason: string;
-    now: number;
-}): SmashUpEvent[] {
-    const { state, random, playerId, baseIndex, count, reason, now } = params;
-    const player = state.players[playerId];
-    if (!player) return [];
-
-    const revealed = player.deck.slice(0, count);
-    if (revealed.length === 0) return [];
-    const minions = revealed.filter(isMinionCard);
-    const picked = minions.length > 0 ? minions[random.range(0, minions.length - 1)] : undefined;
-    const missed = revealed.filter(card => card.uid !== picked?.uid);
-    const rest = player.deck.slice(revealed.length);
-    const nextDeck = [...rest, ...missed];
-    const play = picked ? playMinionEvent(state, playerId, picked, baseIndex, reason, now) : undefined;
-
-    return [
-        inspectDeck(playerId, playerId, revealed.length, reason, now),
-        revealDeckTop(playerId, 'all', revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, reason, now, playerId),
-        deckReordered(playerId, picked ? [picked.uid, ...nextDeck.map(card => card.uid)] : nextDeck.map(card => card.uid), now),
-        ...(play ? [play] : [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', now)]),
-    ];
+function ownMinionsAtBase(state: SmashUpCore, playerId: PlayerId, baseIndex: number): Array<MinionOnBase & { baseIndex: number }> {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+    return base.minions
+        .filter(minion => minion.controller === playerId)
+        .map(minion => ({ ...minion, baseIndex }));
 }
 
-function targetBaseIndex(ctx: AbilityContext): number {
-    return ctx.targetBaseIndex ?? ctx.baseIndex;
+function ownMinionTargetOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+): PromptOption<MinionChoice>[] {
+    return buildMinionTargetOptions(
+        ownMinionsAtBase(state, playerId, baseIndex).map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: cardName(minion.defId),
+        })),
+        { state, sourcePlayerId: playerId, semanticRole: 'reference' },
+    ).map(option => ({
+        ...option,
+        value: {
+            ...option.value,
+            ownerId: state.bases[baseIndex]?.minions.find(minion => minion.uid === option.value.minionUid)?.owner,
+            controllerId: playerId,
+        },
+    }));
 }
 
-function playTopDeckMinionOnPlay(ctx: AbilityContext): AbilityResult {
-    return {
-        events: revealUntilMinionFromDeck({
-            state: ctx.state,
-            random: ctx.random,
-            playerId: ctx.playerId,
-            baseIndex: targetBaseIndex(ctx),
-            reason: ctx.defId,
-            now: ctx.now,
-        }).events,
-    };
-}
-
-function commandPenguin(ctx: AbilityContext): AbilityResult {
-    return {
-        events: revealUntilMinionFromDeck({
-            state: ctx.state,
-            random: ctx.random,
-            playerId: ctx.playerId,
-            baseIndex: ctx.baseIndex,
-            reason: COMMAND,
-            now: ctx.now,
-        }).events,
-    };
-}
-
-function babyPenguin(ctx: AbilityContext): AbilityResult {
-    const self = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
-    if (self?.metadata?.playedFrom !== 'deck') return { events: [] };
-    return {
-        events: [
-            // 这里是“从手牌额外打出力量 3 或更低的随从”，不继承 fromDeck。
-            ...[],
-        ],
-        matchState: queueInteraction(ctx.matchState, createSimpleChoice<CardChoice>(
-            `${BABY}_${ctx.cardUid}_${ctx.now}`,
-            ctx.playerId,
-            '企鹅宝宝：选择一张力量 3 或更低的随从额外打出到这里',
-            [
-                createSkipOption('不打出随从', 'ui.skip_option') as PromptOption<CardChoice>,
-                ...ctx.state.players[ctx.playerId].hand
-                    .filter(card => isMinionCard(card) && minionPower(card.defId) <= 3)
-                    .map((card, index) => ({
-                        id: `minion-${index}`,
-                        label: cardLabel(card.defId),
-                        value: { cardUid: card.uid, defId: card.defId },
-                        displayMode: 'card' as const,
-                    })),
-            ],
-            {
-                sourceId: BABY,
-                targetType: 'card',
-                responseValidationMode: 'live',
-                autoResolveIfSingle: false,
-                continuationContext: { baseIndex: ctx.baseIndex },
-            },
+function otherBaseOptions(state: SmashUpCore, fromBaseIndex: number): PromptOption<BaseChoice>[] {
+    return buildBaseTargetOptions(
+        state.bases.flatMap((base, baseIndex) => (
+            baseIndex === fromBaseIndex
+                ? []
+                : [{ baseIndex, label: baseName(base.defId) }]
         )),
-    };
+        state,
+    );
 }
 
-function snazzyPenguin(ctx: AbilityContext): AbilityResult {
-    const self = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
-    if (self?.metadata?.playedFrom !== 'deck') return { events: [] };
-    return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now) };
+function queueChoice<T>(
+    matchState: MatchState<SmashUpCore> | undefined,
+    playerId: PlayerId,
+    id: string,
+    title: string,
+    options: PromptOption<T>[],
+    config: {
+        sourceId: string;
+        targetType: 'base' | 'minion' | 'hand' | 'button' | 'generic';
+        titleKey?: string;
+        autoResolveIfSingle?: boolean;
+        multi?: { min?: number; max?: number; ordered?: boolean };
+        continuationContext?: Record<string, unknown>;
+    },
+): AbilityResult {
+    if (!matchState || options.length === 0) return { events: [] };
+    const interaction = createSimpleChoice(
+        id,
+        playerId,
+        title,
+        options,
+        {
+            sourceId: config.sourceId,
+            targetType: config.targetType,
+            titleKey: config.titleKey,
+            autoResolveIfSingle: config.autoResolveIfSingle,
+            multi: config.multi,
+        },
+    );
+    if (config.continuationContext) {
+        (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = config.continuationContext;
+    }
+    return { events: [], matchState: queueInteraction(matchState, interaction) };
 }
 
-function disguisePenguin(ctx: AbilityContext): AbilityResult {
-    const sourceBase = ctx.state.bases[ctx.baseIndex];
-    const self = sourceBase?.minions.find(minion => minion.uid === ctx.cardUid);
-    if (!self || self.controller !== ctx.playerId) return { events: [] };
-    return {
-        events: [
-            cardToDeckBottom(ctx.cardUid, ctx.defId, self.owner, DISGUISE, ctx.now, {
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: DISGUISE,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-            }),
-            ...revealUntilMinionFromDeck({
-                state: ctx.state,
-                random: ctx.random,
-                playerId: ctx.playerId,
-                baseIndex: ctx.baseIndex,
-                reason: DISGUISE,
-                now: ctx.now,
-            }).events,
-        ],
-    };
+function queueChoiceFromBase<T>(
+    ctx: BaseAbilityContext,
+    id: string,
+    title: string,
+    options: PromptOption<T>[],
+    config: Parameters<typeof queueChoice<T>>[5],
+): BaseAbilityResult {
+    const result = queueChoice(ctx.matchState, ctx.playerId, id, title, options, config);
+    return { events: result.events, matchState: result.matchState };
 }
 
 function surfingPenguin(ctx: AbilityContext): AbilityResult {
-    const sourceBase = ctx.state.bases[ctx.baseIndex];
-    if (!sourceBase) return { events: [] };
-    const options: PromptOption<MinionMoveChoice>[] = sourceBase.minions.flatMap((minion) =>
-        ctx.state.bases
-            .map((base, toBaseIndex) => ({ base, toBaseIndex }))
-            .filter(({ toBaseIndex }) => toBaseIndex !== ctx.baseIndex)
-            .map(({ base, toBaseIndex }) => ({
-                id: `${minion.uid}-${toBaseIndex}`,
-                label: `${cardLabel(minion.defId)} → ${baseLabel(ctx.state, toBaseIndex)}`,
-                value: {
-                    minionUid: minion.uid,
-                    minionDefId: minion.defId,
-                    fromBaseIndex: ctx.baseIndex,
-                    toBaseIndex,
-                    toBaseDefId: base.defId,
-                },
-                displayMode: 'card' as const,
-            })),
-    );
-    if (options.length === 0) return { events: [] };
-    const interaction = createSimpleChoice<MinionMoveChoice>(
-        `${SURFING}_${ctx.cardUid}_${ctx.now}`,
+    const options = [
+        createSkipOption('不移动伙伴', 'ui.penguins_surfing_penguin_skip_move_option'),
+        ...ownMinionTargetOptions(ctx.state, ctx.playerId, ctx.baseIndex),
+    ];
+    return queueChoice(
+        ctx.matchState,
         ctx.playerId,
-        '冲浪企鹅：移动一个这里的随从到另一个基地',
+        `penguins_surfing_penguin_${ctx.cardUid}_${ctx.now}`,
+        '冲浪企鹅：选择要移动的你的伙伴',
         options,
         {
-            sourceId: SURFING,
+            sourceId: 'penguins_surfing_penguin',
             targetType: 'minion',
-            responseValidationMode: 'live',
+            titleKey: 'ui.penguins_surfing_penguin_title',
             autoResolveIfSingle: false,
+            continuationContext: {
+                sourceCardUid: ctx.cardUid,
+                sourceBaseIndex: ctx.baseIndex,
+            },
         },
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function snazzyPenguin(ctx: AbilityContext): AbilityResult {
+    if (!ctx.fromDeck) return { events: [] };
+    return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now) };
+}
+
+function commandPenguin(ctx: AbilityContext): AbilityResult {
+    return buildPlayTopDeckMinionResult(
+        ctx.state,
+        ctx.matchState,
+        ctx.playerId,
+        ctx.baseIndex,
+        ctx.random,
+        ctx.now,
+        'penguins_command_penguin',
+    );
+}
+
+function disguisePenguinTalent(ctx: AbilityContext): AbilityResult {
+    const self = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
+    if (!self || self.controller !== ctx.playerId) return { events: [] };
+    return {
+        events: [
+            ...buildValidatedCardToDeckBottomEvents(ctx.state, {
+                cardUid: self.uid,
+                defId: self.defId,
+                ownerId: self.owner,
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: self.uid,
+                sourceDefId: 'penguins_disguise_penguin',
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
+                expectedLocation: 'bases',
+                reason: 'penguins_disguise_penguin',
+                now: ctx.now,
+            }),
+            ...buildPlayTopDeckMinionEvents(
+                ctx.state,
+                ctx.playerId,
+                ctx.baseIndex,
+                ctx.random,
+                ctx.now,
+                'penguins_disguise_penguin',
+            ),
+        ],
+    };
+}
+
+function secretMission(ctx: AbilityContext): AbilityResult {
+    const hand = ctx.state.players[ctx.playerId]?.hand ?? [];
+    const options: PromptOption<CardChoice>[] = hand.map((card, index) => ({
+        id: `card-${index}`,
+        label: cardName(card.defId),
+        value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+        displayMode: 'card',
+        _source: 'hand' as const,
+    }));
+    return queueChoice(
+        ctx.matchState,
+        ctx.playerId,
+        `penguins_secret_mission_${ctx.cardUid}_${ctx.now}`,
+        '秘密任务：选择任意数量的手牌放到牌库底',
+        options,
+        {
+            sourceId: 'penguins_secret_mission',
+            targetType: 'hand',
+            titleKey: 'ui.penguins_secret_mission_title',
+            autoResolveIfSingle: false,
+            multi: { min: 0, max: hand.length },
+        },
+    );
+}
+
+function theHatching(ctx: AbilityContext): AbilityResult {
+    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
+    return {
+        events: buildPlayTopDeckMinionEvents(
+            ctx.state,
+            ctx.playerId,
+            baseIndex,
+            ctx.random,
+            ctx.now,
+            'penguins_the_hatching',
+        ),
+    };
 }
 
 function regurgitatingPenguin(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player) return { events: [] };
-    const revealed = player.deck.slice(0, 3);
-    if (revealed.length === 0) return { events: [] };
-    const actions = revealed.filter(isActionCard);
-    if (actions.length === 0) {
-        return {
-            events: [
-                inspectDeck(ctx.playerId, ctx.playerId, revealed.length, REGURGITATING, ctx.now),
-                revealDeckTop(ctx.playerId, ctx.playerId, revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, REGURGITATING, ctx.now, ctx.playerId),
-            ],
-        };
-    }
-    const interaction = createSimpleChoice<CardChoice>(
-        `${REGURGITATING}_${ctx.cardUid}_${ctx.now}`,
-        ctx.playerId,
-        '反刍企鹅：选择展示牌中的一张行动加入手牌',
-        [
-            createSkipOption('不拿行动', 'ui.skip_option') as PromptOption<CardChoice>,
-            ...actions.map((card, index) => ({
-                id: `action-${index}`,
-                label: cardLabel(card.defId),
-                value: { cardUid: card.uid, defId: card.defId },
-                displayMode: 'card' as const,
-            })),
-        ],
-        {
-            sourceId: REGURGITATING,
-            targetType: 'card',
-            responseValidationMode: 'snapshot',
-            autoResolveIfSingle: false,
-            continuationContext: { revealed: revealed.map(card => ({ uid: card.uid, defId: card.defId })) },
-        },
-    );
-    return {
-        events: [
-            inspectDeck(ctx.playerId, ctx.playerId, revealed.length, REGURGITATING, ctx.now),
-            revealDeckTop(ctx.playerId, ctx.playerId, revealed.map(card => ({ uid: card.uid, defId: card.defId })), revealed.length, REGURGITATING, ctx.now, ctx.playerId),
-        ],
-        matchState: queueInteraction(ctx.matchState, interaction),
-    };
-}
-
-function secretMission(ctx: AbilityContext): AbilityResult {
-    const hand = ctx.state.players[ctx.playerId]?.hand.filter(card => card.uid !== ctx.cardUid) ?? [];
-    if (hand.length === 0) return { events: [] };
-    const interaction = createSimpleChoice<CardChoice>(
-        `penguins_secret_mission_${ctx.cardUid}_${ctx.now}`,
-        ctx.playerId,
-        '秘密任务：选择任意数量手牌放到牌库底',
-        [
-            createSkipOption('不放牌', 'ui.skip_option') as PromptOption<CardChoice>,
-            ...hand.map((card, index) => ({
-                id: `hand-${index}`,
-                label: cardLabel(card.defId),
-                value: { cardUid: card.uid, defId: card.defId },
-                displayMode: 'card' as const,
-            })),
-        ],
-        {
-            sourceId: 'penguins_secret_mission',
-            targetType: 'card',
-            multi: { min: 0, max: hand.length },
-            responseValidationMode: 'live',
-            autoResolveIfSingle: false,
-        },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-function wish(ctx: AbilityContext): AbilityResult {
-    const baseIndex = targetBaseIndex(ctx);
-    const titan = ctx.state.titans?.find(candidate =>
-        candidate.defId === EMPEROR
-        && candidate.controllerId === ctx.playerId
-        && candidate.location.zone === 'setaside',
-    );
-    const ownMinions = ctx.state.bases[baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
-    const options: PromptOption<WishChoice>[] = [
-        ...(titan ? [{
-            id: 'titan',
-            label: '打出企鹅帝皇到这里',
-            labelKey: 'ui.penguins_wish_play_titan_option',
-            value: { mode: 'titan' as const, baseIndex, baseDefId: ctx.state.bases[baseIndex]?.defId },
-            displayMode: 'button' as const,
-        }] : []),
-        ...(ownMinions.length > 0 ? [{
-            id: 'buff',
-            label: '这里你的所有随从本回合 +1 力量',
-            labelKey: 'ui.penguins_wish_buff_option',
-            value: { mode: 'buff' as const, baseIndex, baseDefId: ctx.state.bases[baseIndex]?.defId },
-            displayMode: 'button' as const,
-        }] : []),
+    const top = player.deck.slice(0, 3);
+    if (top.length === 0) return { events: [] };
+    const events: SmashUpEvent[] = [
+        inspectDeck(ctx.playerId, ctx.playerId, top.length, 'penguins_regurgitating_penguin', ctx.now),
+        revealDeckTop(
+            ctx.playerId,
+            ctx.playerId,
+            top.map(card => ({ uid: card.uid, defId: card.defId })),
+            top.length,
+            'penguins_regurgitating_penguin',
+            ctx.now,
+            ctx.playerId,
+        ),
     ];
-    if (options.length === 0) return { events: [] };
-    const interaction = createSimpleChoice<WishChoice>(
-        `${WISH}_${ctx.cardUid}_${ctx.now}`,
+    const actionOptions: PromptOption<CardChoice>[] = top
+        .filter(isActionCard)
+        .map((card, index) => ({
+            id: `action-${index}`,
+            label: cardName(card.defId),
+            value: { cardUid: card.uid, defId: card.defId, ownerId: card.owner },
+            displayMode: 'card',
+    }));
+    if (actionOptions.length === 0) return { events };
+    if (!ctx.matchState) return { events };
+    const interaction = createSimpleChoice(
+        `penguins_regurgitating_penguin_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
-        '渴望飞翔的工作：选择一个效果',
+        '反刍企鹅：选择一张行动加入手牌',
+        [createSkipOption('不拿行动', 'ui.penguins_regurgitating_penguin_skip_take_action_option'), ...actionOptions],
+        {
+            sourceId: 'penguins_regurgitating_penguin',
+            targetType: 'generic',
+            titleKey: 'ui.penguins_regurgitating_penguin_title',
+            autoResolveIfSingle: false,
+        },
+    );
+    (interaction.data as { continuationContext?: Record<string, unknown> }).continuationContext = {
+        topCards: top.map(card => ({ uid: card.uid, defId: card.defId })),
+    };
+    return { events, matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+function babyPenguin(ctx: AbilityContext): AbilityResult {
+    if (!ctx.fromDeck) return { events: [] };
+    const player = ctx.state.players[ctx.playerId];
+    if (!player) return { events: [] };
+    const options: PromptOption<CardChoice>[] = player.hand
+        .filter(card => isMinionCard(card) && (getMinionLikePower(card.defId) ?? 0) <= 3)
+        .map((card, index) => ({
+            id: `card-${index}`,
+            label: cardName(card.defId),
+            value: {
+                cardUid: card.uid,
+                defId: card.defId,
+                ownerId: card.owner,
+                power: getMinionLikePower(card.defId) ?? 0,
+            },
+            displayMode: 'card',
+            _source: 'hand' as const,
+        }));
+    if (options.length === 0) return { events: [] };
+    return queueChoice(
+        ctx.matchState,
+        ctx.playerId,
+        `penguins_baby_penguin_${ctx.cardUid}_${ctx.now}`,
+        '企鹅宝宝：选择一张力量 3 或更少的伙伴额外打出到这里',
+        [createSkipOption('不打出伙伴', 'ui.penguins_baby_penguin_skip_play_option'), ...options],
+        {
+            sourceId: 'penguins_baby_penguin',
+            targetType: 'hand',
+            titleKey: 'ui.penguins_baby_penguin_title',
+            autoResolveIfSingle: false,
+            continuationContext: { baseIndex: ctx.baseIndex },
+        },
+    );
+}
+
+function wishForWings(ctx: AbilityContext): AbilityResult {
+    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
+    const base = ctx.state.bases[baseIndex];
+    if (!base) return { events: [] };
+    const titan = findPlayableEmperorPenguin(ctx.state, ctx.playerId);
+    const ownMinions = ownMinionsAtBase(ctx.state, ctx.playerId, baseIndex);
+    if (!titan) {
+        return { events: buildWishPowerEvents(ctx.state, ctx.playerId, baseIndex, ctx.cardUid, ctx.now) };
+    }
+    const options: PromptOption<{ mode: 'titan' | 'power' }>[] = [
+        {
+            id: 'titan',
+            label: '打出企鹅帝皇',
+            labelKey: 'ui.penguins_a_wish_for_wings_that_work_play_titan_option',
+            value: { mode: 'titan' },
+            displayMode: 'button',
+        },
+        ...(ownMinions.length > 0
+            ? [{
+                id: 'power',
+                label: '这里你的伙伴本回合 +1',
+                labelKey: 'ui.penguins_a_wish_for_wings_that_work_power_option',
+                value: { mode: 'power' as const },
+                displayMode: 'button' as const,
+            }]
+            : []),
+    ];
+    return queueChoice(
+        ctx.matchState,
+        ctx.playerId,
+        `penguins_a_wish_for_wings_that_work_${ctx.cardUid}_${ctx.now}`,
+        '渴望飞翔的工作：选择效果',
         options,
         {
-            sourceId: WISH,
-            targetType: 'generic',
-            responseValidationMode: 'live',
-            autoResolveIfSingle: false,
+            sourceId: 'penguins_a_wish_for_wings_that_work',
+            targetType: 'button',
+            titleKey: 'ui.penguins_a_wish_for_wings_that_work_title',
+            autoResolveIfSingle: true,
+            continuationContext: { baseIndex, sourceCardUid: ctx.cardUid },
         },
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-function apart(ctx: AbilityContext): AbilityResult {
-    const baseIndex = targetBaseIndex(ctx);
-    const ownMinions = ctx.state.bases[baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
-    if (ownMinions.length === 0) return { events: [] };
-    const interaction = createSimpleChoice<ApartChoice>(
-        `${APART}_${ctx.cardUid}_${ctx.now}`,
+function iCantTellThemApart(ctx: AbilityContext): AbilityResult {
+    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
+    const options = ownMinionTargetOptions(ctx.state, ctx.playerId, baseIndex);
+    return queueChoice(
+        ctx.matchState,
         ctx.playerId,
-        '我不能区分他们：选择任意数量这里的己方随从洗回牌库',
-        ownMinions.map((minion, index) => ({
-            id: `minion-${index}`,
-            label: cardLabel(minion.defId),
-            value: { minionUid: minion.uid, minionDefId: minion.defId, baseIndex },
-            displayMode: 'card' as const,
-        })),
+        `penguins_i_cant_tell_them_apart_${ctx.cardUid}_${ctx.now}`,
+        '我不能区分他们：选择任意数量这里你的伙伴洗回牌库',
+        options,
         {
-            sourceId: APART,
+            sourceId: 'penguins_i_cant_tell_them_apart',
             targetType: 'minion',
-            multi: { min: 1, max: ownMinions.length },
-            responseValidationMode: 'live',
+            titleKey: 'ui.penguins_i_cant_tell_them_apart_title',
             autoResolveIfSingle: false,
+            multi: { min: 0, max: options.length },
+            continuationContext: { baseIndex, sourceCardUid: ctx.cardUid },
         },
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function underTheIce(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    if (!player) return { events: [] };
+    const revealed = player.deck.slice(0, 5);
+    if (revealed.length === 0) return { events: [] };
+    const minions = revealed.filter(isMinionCard);
+    const events: SmashUpEvent[] = [
+        inspectDeck(ctx.playerId, ctx.playerId, revealed.length, 'penguins_under_the_ice', ctx.now),
+        revealDeckTop(
+            ctx.playerId,
+            'all',
+            revealed.map(card => ({ uid: card.uid, defId: card.defId })),
+            revealed.length,
+            'penguins_under_the_ice',
+            ctx.now,
+            ctx.playerId,
+        ),
+    ];
+    const remainingDeck = player.deck.slice(revealed.length);
+    if (minions.length === 0) {
+        events.push({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: { playerId: ctx.playerId, deckUids: [...remainingDeck, ...revealed].map(card => card.uid) },
+            timestamp: ctx.now,
+        } as DeckReorderedEvent);
+        return { events };
+    }
+    const selected = (ctx.random.shuffle(minions)[0] ?? minions[0]) as CardInstance;
+    const restRevealed = revealed.filter(card => card.uid !== selected.uid);
+    const orderedDeck = [selected, ...remainingDeck, ...restRevealed];
+    events.push({
+        type: SU_EVENTS.DECK_REORDERED,
+        payload: { playerId: ctx.playerId, deckUids: orderedDeck.map(card => card.uid) },
+        timestamp: ctx.now,
+    } as DeckReorderedEvent);
+    const played = playMinionEventFromCard(ctx.state, ctx.playerId, selected, ctx.targetBaseIndex ?? ctx.baseIndex, ctx.now, {
+        fromDeck: true,
+        reason: 'penguins_under_the_ice',
+    });
+    if (played) events.push(played);
+    return { events };
+}
+
+function findPlayableEmperorPenguin(state: SmashUpCore, playerId: PlayerId): TitanState | undefined {
+    return (state.titans ?? []).find(titan =>
+        titan.defId === EMPEROR_PENGUIN
+        && titan.controllerId === playerId
+        && titan.location.zone === 'setaside'
+        && canControllerPlayTitan(state, playerId, titan.uid),
+    );
+}
+
+function buildWishPowerEvents(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+    sourceCardUid: string | undefined,
+    now: number,
+): SmashUpEvent[] {
+    return ownMinionsAtBase(state, playerId, baseIndex).map(minion =>
+        addTempPower(minion.uid, baseIndex, 1, 'penguins_a_wish_for_wings_that_work', now, {
+            sourcePlayerId: playerId,
+            sourceCardUid,
+            sourceDefId: 'penguins_a_wish_for_wings_that_work',
+            sourceControllerId: playerId,
+            sourceBaseIndex: baseIndex,
+        }) as SmashUpEvent,
+    );
+}
+
+function leapingAboardAfterScoring(ctx: TriggerContext): AbilityResult {
+    const sourceBaseIndex = ctx.sourceBaseIndex ?? ctx.baseIndex;
+    if (sourceBaseIndex === undefined) return { events: [] };
+    const playerId = ctx.sourceControllerId ?? ctx.playerId;
+    const player = ctx.state.players[playerId];
+    if (!player) return { events: [] };
+    const top = player.deck[0];
+    if (!isMinionCard(top)) return { events: [] };
+    const targetBaseDefId = (ctx.matchState ? getDeferredReplacementBaseDefId(ctx.matchState) : undefined)
+        ?? ctx.state.bases[sourceBaseIndex]?.defId;
+    if (!targetBaseDefId) return { events: [] };
+    const pending: PendingPostScoringAction = {
+        kind: 'playMinionOnReplacementBase',
+        playerId,
+        cardUid: top.uid,
+        defId: top.defId,
+        ownerId: top.owner,
+        fromZone: 'deck',
+        allowImplicitSource: true,
+        baseIndex: sourceBaseIndex,
+        targetBaseDefId,
+        power: getMinionLikePower(top.defId) ?? 0,
+    };
+    const matchState = ctx.matchState;
+    if (!matchState) return { events: [] };
+    const updatedMatchState = appendPendingPostScoringActions(matchState, [pending]);
+    if (updatedMatchState === matchState) return { events: [] };
     return {
-        events: revealTopAndPlayRandomMinion({
-            state: ctx.state,
-            random: ctx.random,
-            playerId: ctx.playerId,
-            baseIndex: targetBaseIndex(ctx),
-            count: 5,
-            reason: UNDER,
-            now: ctx.now,
-        }),
+        events: [{
+            type: SU_EVENTS.CARD_REMOVED_FROM_DECK,
+            payload: {
+                playerId,
+                cardUid: top.uid,
+                defId: top.defId,
+                reason: 'penguins_leaping_aboard',
+            },
+            timestamp: ctx.now,
+        } as SmashUpEvent],
+        matchState: updatedMatchState,
     };
 }
 
-function hasDeckPlayedMinion(ctx: TriggerContext, sourceId: string): boolean {
-    return ctx.timing === 'onMinionPlayed'
-        && ctx.baseIndex !== undefined
-        && ctx.triggerMinion?.metadata?.playedFrom === 'deck'
-        && ctx.triggerMinion.controller === ctx.playerId
-        && ctx.sourceDefId === sourceId;
-}
-
-function pebbleGift(ctx: TriggerContext): SmashUpEvent[] {
-    if (!hasDeckPlayedMinion(ctx, PEBBLE)) return [];
-    return buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
-}
-
-function colony(ctx: BaseAbilityContext): BaseAbilityResult {
-    if (ctx.minionUid === undefined || ctx.minionDefId === undefined) return { events: [] };
-    if (ctx.baseIndex === undefined) return { events: [] };
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base || ctx.playerId === undefined) return { events: [] };
-    const played = base.minions.find(minion => minion.uid === ctx.minionUid);
-    if (!played || played.controller !== ctx.playerId) return { events: [] };
-    if (Number(played.metadata?.penguinsColonyExtraTriggeredTurn ?? -1) === ctx.state.turnNumber) return { events: [] };
-    if ((ctx.state.players[ctx.playerId]?.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0) > 1) return { events: [] };
+function pebbleGiftTrigger(ctx: TriggerContext): AbilityResult {
+    if (!canTriggerPebbleGift(ctx)) return { events: [] };
+    const playerId = ctx.sourceControllerId ?? ctx.playerId;
     return {
-        events: [
-            minionMetadataUpdated(ctx.minionUid, ctx.baseIndex, { penguinsColonyExtraTriggeredTurn: ctx.state.turnNumber }, COLONY, ctx.now),
-            ...revealUntilMinionFromDeck({
-                state: ctx.state,
-                random: ctx.random!,
-                playerId: ctx.playerId,
-                baseIndex: ctx.baseIndex,
-                reason: COLONY,
-                now: ctx.now,
-            }).events,
-        ],
+        events: buildStandardDrawEvents(ctx.state, playerId, 1, ctx.random ?? FALLBACK_RANDOM, ctx.now),
     };
+}
+
+function canTriggerPebbleGift(ctx: TriggerContext): boolean {
+    const sourceBaseIndex = ctx.sourceBaseIndex;
+    if (sourceBaseIndex === undefined || ctx.baseIndex !== sourceBaseIndex) return false;
+    if (ctx.triggerMinionFromDeck !== true) return false;
+    const playerId = ctx.sourceControllerId ?? ctx.playerId;
+    return ctx.playerId === playerId;
+}
+
+function iceSlideAfterScoring(ctx: TriggerContext): AbilityResult {
+    const sourceBaseIndex = ctx.sourceBaseIndex ?? ctx.baseIndex;
+    if (sourceBaseIndex === undefined) return { events: [] };
+    const playerId = ctx.sourceControllerId ?? ctx.playerId;
+    const count = ctx.state.bases[sourceBaseIndex]?.minions.filter(minion => minion.controller === playerId).length ?? 0;
+    return { events: buildStandardDrawEvents(ctx.state, playerId, count, ctx.random ?? FALLBACK_RANDOM, ctx.now) };
 }
 
 function iceFloe(ctx: BaseAbilityContext): BaseAbilityResult {
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
-    const ownMinions = base.minions.filter(minion => minion.controller === ctx.playerId);
-    if (ownMinions.length === 0) return { events: [] };
-    const interaction = createSimpleChoice<ApartChoice>(
-        `${ICE_FLOE}_${ctx.playerId}_${ctx.now}`,
-        ctx.playerId,
-        '浮冰：选择一个这里的己方随从放到牌库底',
-        [
-            createSkipOption('不发动浮冰', 'ui.skip_option') as PromptOption<ApartChoice>,
-            ...ownMinions.map((minion, index) => ({
-                id: `minion-${index}`,
-                label: cardLabel(minion.defId),
-                value: { minionUid: minion.uid, minionDefId: minion.defId, baseIndex: ctx.baseIndex },
-                displayMode: 'card' as const,
-            })),
-        ],
+    const options = ownMinionTargetOptions(ctx.state, ctx.playerId, ctx.baseIndex);
+    if (options.length === 0) return { events: [] };
+    return queueChoiceFromBase(
+        ctx,
+        `base_ice_floe_${ctx.playerId}_${ctx.now}`,
+        '浮冰：选择这里你的一个伙伴放到牌库底',
+        [createSkipOption('不使用浮冰', 'ui.base_ice_floe_skip_option'), ...options],
         {
-            sourceId: ICE_FLOE,
+            sourceId: 'base_ice_floe',
             targetType: 'minion',
-            responseValidationMode: 'live',
+            titleKey: 'ui.base_ice_floe_title',
             autoResolveIfSingle: false,
+            continuationContext: { baseIndex: ctx.baseIndex },
         },
     );
-    return { events: [], matchState: ctx.matchState ? queueInteraction(ctx.matchState, interaction) : undefined };
 }
 
-function iceSlide(ctx: TriggerContext): SmashUpEvent[] {
-    if (ctx.baseIndex === undefined || ctx.sourceDefId !== ICE_SLIDE) return [];
-    const count = ctx.state.bases[ctx.baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId).length ?? 0;
-    return buildStandardDrawEvents(ctx.state, ctx.playerId, count, ctx.random, ctx.now);
+function theColony(ctx: BaseAbilityContext): BaseAbilityResult {
+    const playedHereCount = ctx.state.players[ctx.playerId]?.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0;
+    if (playedHereCount !== 1) return { events: [] };
+    return buildPlayTopDeckMinionResult(
+        ctx.state,
+        ctx.matchState,
+        ctx.playerId,
+        ctx.baseIndex,
+        ctx.random ?? FALLBACK_RANDOM,
+        ctx.now,
+        'base_the_colony',
+    );
 }
 
-function leapingAboard(ctx: TriggerContext): TriggerResult {
-    if (ctx.baseIndex === undefined || ctx.sourceDefId !== LEAPING) return { events: [] };
-    const top = revealUntilMinionFromDeck({
-        state: ctx.state,
-        random: ctx.random,
-        playerId: ctx.playerId,
-        baseIndex: ctx.baseIndex,
-        reason: LEAPING,
-        now: ctx.now,
+function registerNoopSpecial(defId: string, error: string): void {
+    registerAbility(defId, 'special', {
+        execute: () => ({ events: [] }),
+        validateUse: () => error,
     });
-    if (!top.picked || !ctx.matchState) return { events: top.events };
-    if (!isScoringSessionAwaitingDeferredResolution(ctx.matchState)) return { events: top.events };
-    const targetBaseDefId = getDeferredReplacementBaseDefId(ctx.matchState);
-    if (!targetBaseDefId) return { events: top.events };
-    const pendingAction: PendingPostScoringAction = {
-        kind: 'playMinionOnReplacementBase',
-        playerId: ctx.playerId,
-        cardUid: top.picked.uid,
-        defId: top.picked.defId,
-        ownerId: top.picked.owner,
-        baseIndex: ctx.baseIndex,
-        targetBaseDefId,
-        power: minionPower(top.picked.defId),
-    };
-    return {
-        events: top.events.filter(event => event.type !== SU_EVENTS.MINION_PLAYED),
-        matchState: appendPendingPostScoringActions(ctx.matchState, [pendingAction]),
-    };
 }
 
-function dancingPenguin(ctx: TriggerContext): SmashUpEvent[] {
-    if (ctx.baseIndex === undefined || ctx.triggerMinionDefId === DANCING) return [];
-    const player = ctx.state.players[ctx.playerId];
-    const dancing = player?.hand.find(card => card.defId === DANCING);
-    const played = ctx.triggerMinion;
-    if (!player || !dancing || !played || played.controller !== ctx.playerId) return [];
-    const play = playMinionEvent(ctx.state, ctx.playerId, dancing, ctx.baseIndex, DANCING, ctx.now);
-    if (!play) return [];
-    return [
-        cardToDeckBottom(played.uid, played.defId, played.owner, DANCING, ctx.now, {
-            sourcePlayerId: ctx.playerId,
-            sourceCardUid: dancing.uid,
-            sourceDefId: DANCING,
-            sourceControllerId: ctx.playerId,
-            sourceBaseIndex: ctx.baseIndex,
-        }),
-        {
-            ...play,
-            payload: {
-                ...play.payload,
-                fromDeck: undefined,
-                consumesNormalLimit: false,
+export function registerPenguinAbilities(): void {
+    registerSimpleAbility('penguins_surfing_penguin', 'onPlay', surfingPenguin);
+    registerNoopSpecial('penguins_dancing_penguin', '跳舞企鹅通过替代普通手牌伙伴打出的流程发动');
+    registerSimpleAbility('penguins_snazzy_penguin', 'onPlay', snazzyPenguin);
+    registerSimpleAbility('penguins_command_penguin', 'onPlay', commandPenguin);
+    registerSimpleAbility('penguins_disguise_penguin', 'talent', disguisePenguinTalent);
+    registerSimpleAbility('penguins_secret_mission', 'onPlay', secretMission);
+    registerSimpleAbility('penguins_the_hatching', 'onPlay', theHatching);
+    registerSimpleAbility('penguins_regurgitating_penguin', 'onPlay', regurgitatingPenguin);
+    registerSimpleAbility('penguins_baby_penguin', 'onPlay', babyPenguin);
+    registerSimpleAbility('penguins_a_wish_for_wings_that_work', 'onPlay', wishForWings);
+    registerNoopSpecial('penguins_leaping_aboard', '跳上船在计分后通过持续效果自动触发');
+    registerSimpleAbility('penguins_i_cant_tell_them_apart', 'onPlay', iCantTellThemApart);
+    registerSimpleAbility('penguins_under_the_ice', 'onPlay', underTheIce);
+    registerNoopSpecial('penguins_ice_slide', '冰滑道在计分后通过持续效果自动触发');
+
+    registerTrigger('penguins_leaping_aboard', 'afterScoring', leapingAboardAfterScoring, {
+        mandatory: true,
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('penguins_pebble_gift', 'onMinionPlayed', pebbleGiftTrigger, {
+        mandatory: true,
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+        canTrigger: canTriggerPebbleGift,
+    });
+    registerTrigger('penguins_ice_slide', 'afterScoring', iceSlideAfterScoring, {
+        mandatory: true,
+        perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+
+    registerActiveBaseAbility('base_ice_floe', iceFloe, {
+        oncePerTurn: true,
+        canUse: ctx => ownMinionsAtBase(ctx.state, ctx.playerId, ctx.baseIndex).length > 0,
+    });
+    registerBaseAbility('base_the_colony', 'onMinionPlayed', theColony, {
+        mandatory: false,
+        canTrigger: ctx => (ctx.state.players[ctx.playerId]?.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0) === 1,
+    });
+}
+
+export function registerPenguinInteractionHandlers(): void {
+    registerInteractionHandler('penguins_surfing_penguin', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as MinionChoice | undefined;
+        if (selected?.skip || !selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
+        const continuation = data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined;
+        const options = otherBaseOptions(state.core, selected.baseIndex);
+        if (options.length === 0) return { state, events: [] };
+        const next = createSimpleChoice(
+            `penguins_surfing_penguin_choose_base_${timestamp}`,
+            playerId,
+            '冲浪企鹅：选择目的基地',
+            options,
+            {
+                sourceId: 'penguins_surfing_penguin_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.penguins_surfing_penguin_choose_base_title',
+                autoResolveIfSingle: true,
             },
-        } as MinionPlayedEvent,
-    ];
-}
-
-export function registerPenguinsAbilities(): void {
-    registerAbility(SURFING, 'onPlay', surfingPenguin);
-    registerAbility(COMMAND, 'onPlay', commandPenguin);
-    registerAbility(DISGUISE, 'talent', disguisePenguin);
-    registerAbility(SNAZZY, 'onPlay', snazzyPenguin);
-    registerAbility(BABY, 'onPlay', babyPenguin);
-    registerAbility(REGURGITATING, 'onPlay', regurgitatingPenguin);
-    registerAbility('penguins_secret_mission', 'onPlay', secretMission);
-    registerAbility(HATCHING, 'onPlay', playTopDeckMinionOnPlay);
-    registerAbility(WISH, 'onPlay', wish);
-    registerAbility(APART, 'onPlay', apart);
-    registerAbility(UNDER, 'onPlay', underTheIce);
-
-    registerTrigger(DANCING, 'onMinionPlayed', dancingPenguin, {
-        optional: true,
-        global: true,
-        globalZones: ['hand'],
-        playerContext: 'eventPlayer',
-    });
-    registerTrigger(PEBBLE, 'onMinionPlayed', pebbleGift, {
-        optional: true,
-        playerContext: 'sourceController',
-        sourceScope: 'triggerBase',
-    });
-    registerTrigger(ICE_SLIDE, 'afterScoring', iceSlide, {
-        optional: true,
-        playerContext: 'sourceController',
-        sourceScope: 'triggerBase',
-        perInstance: true,
-    });
-    registerTrigger(LEAPING, 'afterScoring', leapingAboard, {
-        optional: true,
-        playerContext: 'sourceController',
-        sourceScope: 'triggerBase',
-        perInstance: true,
-    });
-
-    registerBaseAbility(ICE_FLOE, 'onTurnStart', iceFloe, { mandatory: false });
-    registerBaseAbility(COLONY, 'onMinionPlayed', colony, { mandatory: false });
-
-    registerInteractionHandler(BABY, (state, playerId, value, data, _random, timestamp) => {
-        const selected = value as CardChoice | undefined;
-        const baseIndex = (data as { continuationContext?: { baseIndex?: number } } | undefined)?.continuationContext?.baseIndex;
-        if (!selected?.cardUid || !selected.defId || baseIndex === undefined || selected.skip) return { state, events: [] };
-        const card = state.core.players[playerId]?.hand.find(candidate => candidate.uid === selected.cardUid && candidate.defId === selected.defId);
-        if (!card || !isMinionCard(card) || minionPower(card.defId) > 3) return { state, events: [] };
-        return {
-            state,
-            events: [{
-                type: SU_EVENTS.MINION_PLAYED,
-                payload: {
-                    playerId,
-                    cardUid: card.uid,
-                    defId: card.defId,
-                    ownerId: card.owner,
-                    baseIndex,
-                    baseDefId: state.core.bases[baseIndex]?.defId,
-                    power: minionPower(card.defId),
-                    consumesNormalLimit: false,
-                },
-                timestamp,
-            } as MinionPlayedEvent],
+        );
+        (next.data as any).continuationContext = {
+            minionUid: selected.minionUid,
+            minionDefId: selected.minionDefId ?? selected.defId,
+            fromBaseIndex: selected.baseIndex,
+            sourceCardUid: continuation?.sourceCardUid,
+            sourceBaseIndex: continuation?.sourceBaseIndex,
         };
+        return { state: queueInteraction(state, next, { urgent: true }), events: [] };
     });
 
-    registerInteractionHandler(SURFING, (state, playerId, value, _data, _random, timestamp) => {
-        const selected = value as MinionMoveChoice | undefined;
-        if (!selected?.minionUid || selected.toBaseIndex === undefined) return { state, events: [] };
+    registerInteractionHandler('penguins_surfing_penguin_choose_base', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as BaseChoice | undefined;
+        const context = data?.continuationContext as {
+            minionUid?: string;
+            minionDefId?: string;
+            fromBaseIndex?: number;
+            sourceCardUid?: string;
+            sourceBaseIndex?: number;
+        } | undefined;
+        if (selected?.skip || selected?.baseIndex === undefined || !context?.minionUid || context.fromBaseIndex === undefined) {
+            return { state, events: [] };
+        }
         return {
             state,
-            events: buildValidatedMoveEvents(state.core, {
-                minionUid: selected.minionUid,
-                minionDefId: selected.minionDefId,
-                fromBaseIndex: selected.fromBaseIndex,
-                toBaseIndex: selected.toBaseIndex,
-                toBaseDefId: selected.toBaseDefId,
-                reason: SURFING,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: context.minionUid,
+                minionDefId: context.minionDefId ?? '',
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: 'penguins_surfing_penguin',
                 now: timestamp,
                 sourcePlayerId: playerId,
-                sourceDefId: SURFING,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: 'penguins_surfing_penguin',
                 sourceControllerId: playerId,
-                sourceBaseIndex: selected.fromBaseIndex,
+                sourceBaseIndex: context.sourceBaseIndex,
                 sourceKind: 'nonAction',
             }),
         };
     });
 
-    registerInteractionHandler(REGURGITATING, (state, playerId, value, data, _random, timestamp) => {
-        const selected = value as CardChoice | undefined;
-        const revealed = ((data as { continuationContext?: { revealed?: Array<{ uid: string; defId: string }> } } | undefined)?.continuationContext?.revealed ?? []);
-        const player = state.core.players[playerId];
-        if (!player || selected?.skip) return { state, events: [] };
-        const selectedUid = selected?.cardUid;
-        const revealedUids = new Set(revealed.map(card => card.uid));
-        const chosen = selectedUid ? player.deck.find(card => card.uid === selectedUid && revealedUids.has(card.uid) && isActionCard(card)) : undefined;
-        const remaining = player.deck.filter(card => !revealedUids.has(card.uid) || card.uid === selectedUid);
-        return {
-            state,
-            events: [
-                ...(chosen ? [{
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId, count: 1, cardUids: [chosen.uid] },
-                    timestamp,
-                } as CardsDrawnEvent] : []),
-                deckReordered(playerId, [
-                    ...revealed
-                        .filter(card => card.uid !== chosen?.uid)
-                        .map(card => card.uid),
-                    ...remaining.filter(card => card.uid !== chosen?.uid).map(card => card.uid),
-                ], timestamp),
-            ],
-        };
-    });
-
     registerInteractionHandler('penguins_secret_mission', (state, playerId, value, _data, random, timestamp) => {
-        const selectedValues = Array.isArray(value) ? value as CardChoice[] : value ? [value as CardChoice] : [];
-        const selected = selectedValues.filter(choice => choice.cardUid && !choice.skip);
+        const selections = (Array.isArray(value) ? value : []) as CardChoice[];
         const player = state.core.players[playerId];
-        if (!player || selected.length === 0) return { state, events: [] };
-        const selectedCards = selected
-            .map(choice => player.hand.find(card => card.uid === choice.cardUid && card.defId === choice.defId))
-            .filter((card): card is CardInstance => card !== undefined);
-        const drawn = player.deck.slice(0, selectedCards.length);
-        const remainingDeck = player.deck.slice(drawn.length);
-        const shuffledAfterDraw = random.shuffle([
-            ...remainingDeck,
-            ...selectedCards,
-        ]);
+        if (!player || selections.length === 0) return { state, events: [] };
+        const selectedUids = selections
+            .map(selection => selection.cardUid)
+            .filter((uid): uid is string => typeof uid === 'string');
+        const selectedSet = new Set(selectedUids);
+        const selectedCards = player.hand.filter(card => selectedSet.has(card.uid));
+        if (selectedCards.length === 0) return { state, events: [] };
+        const deckAfterBottom = [...player.deck, ...selectedCards];
+        const drawCards = deckAfterBottom.slice(0, selectedCards.length);
+        const remainingAfterDraw = deckAfterBottom.filter(card => !drawCards.some(drawn => drawn.uid === card.uid));
+        const shuffledRemaining = random.shuffle(remainingAfterDraw);
         return {
             state,
             events: [
-                ...selectedCards.map(card => cardToDeckBottom(card.uid, card.defId, card.owner, 'penguins_secret_mission', timestamp, {
-                    sourcePlayerId: playerId,
-                    sourceDefId: 'penguins_secret_mission',
-                    sourceControllerId: playerId,
-                })),
-                ...(drawn.length > 0 ? [{
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId, count: drawn.length, cardUids: drawn.map(card => card.uid) },
+                {
+                    type: SU_EVENTS.HAND_SHUFFLED_INTO_DECK,
+                    payload: {
+                        playerId,
+                        newDeckUids: deckAfterBottom.map(card => card.uid),
+                        reason: 'penguins_secret_mission_bottom',
+                    },
                     timestamp,
-                } as CardsDrawnEvent] : []),
-                deckReordered(playerId, shuffledAfterDraw.map(card => card.uid), timestamp),
+                } as HandShuffledIntoDeckEvent,
+                ...(drawCards.length > 0
+                    ? [{
+                        type: SU_EVENTS.CARDS_DRAWN,
+                        payload: { playerId, count: drawCards.length, cardUids: drawCards.map(card => card.uid) },
+                        timestamp,
+                    } as CardsDrawnEvent]
+                    : []),
+                {
+                    type: SU_EVENTS.DECK_REORDERED,
+                    payload: { playerId, deckUids: shuffledRemaining.map(card => card.uid) },
+                    timestamp,
+                } as DeckReorderedEvent,
             ],
         };
     });
 
-    registerInteractionHandler(WISH, (state, playerId, value, _data, _random, timestamp) => {
-        const selected = value as WishChoice | undefined;
-        if (!selected || selected.skip) return { state, events: [] };
-        if (selected.mode === 'titan') {
-            const titan = state.core.titans?.find(candidate =>
-                candidate.defId === EMPEROR
-                && candidate.controllerId === playerId
-                && candidate.location.zone === 'setaside',
-            );
-            if (!titan) return { state, events: [] };
+    registerInteractionHandler('penguins_regurgitating_penguin', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        const tracked = (data?.continuationContext as { topCards?: CardInstance[] } | undefined)?.topCards ?? [];
+        const player = state.core.players[playerId];
+        if (!player || tracked.length === 0) return { state, events: [] };
+        const currentTop = getCurrentTrackedCardTopSnapshot(player.deck, tracked);
+        const chosenUid = selected?.skip ? undefined : selected?.cardUid;
+        const chosen = currentTop.find(card => card.uid === chosenUid && isActionCard(card));
+        const remaining = currentTop.filter(card => card.uid !== chosen?.uid);
+        const events: SmashUpEvent[] = chosen
+            ? [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId, count: 1, cardUids: [chosen.uid] },
+                timestamp,
+            } as CardsDrawnEvent]
+            : [];
+        if (remaining.length <= 1) return { state, events };
+        const options: PromptOption<OrderChoice>[] = remaining.map((card, index) => ({
+            id: `card-${index}`,
+            label: cardName(card.defId),
+            value: { cardUid: card.uid, defId: card.defId },
+            displayMode: 'card',
+        }));
+        const next = createSimpleChoice(
+            `penguins_regurgitating_penguin_order_${timestamp}`,
+            playerId,
+            '反刍企鹅：决定其余牌放回牌库顶的顺序',
+            options,
+            {
+                sourceId: 'penguins_regurgitating_penguin_order',
+                targetType: 'generic',
+                titleKey: 'ui.penguins_regurgitating_penguin_order_title',
+                multi: { min: remaining.length, max: remaining.length, ordered: true },
+                autoResolveIfSingle: true,
+            },
+        );
+        (next.data as any).continuationContext = { remainingCards: remaining.map(card => ({ uid: card.uid, defId: card.defId })) };
+        return { state: queueInteraction(state, next, { urgent: true }), events };
+    });
+
+    registerInteractionHandler('penguins_regurgitating_penguin_order', (state, playerId, value, data, _random, timestamp) => {
+        const ordered = (Array.isArray(value) ? value : []) as OrderChoice[];
+        const context = data?.continuationContext as { remainingCards?: CardInstance[] } | undefined;
+        const tracked = context?.remainingCards ?? [];
+        const player = state.core.players[playerId];
+        if (!player || tracked.length === 0 || ordered.length === 0) return { state, events: [] };
+        const currentTop = getCurrentTrackedCardTopSnapshot(player.deck, tracked);
+        if (currentTop.length === 0) return { state, events: [] };
+        const byUid = new Map(currentTop.map(card => [card.uid, card]));
+        const orderedCards = ordered
+            .map(choice => choice.cardUid ? byUid.get(choice.cardUid) : undefined)
+            .filter((card): card is CardInstance => card !== undefined);
+        const missing = currentTop.filter(card => !orderedCards.some(orderedCard => orderedCard.uid === card.uid));
+        const restDeck = player.deck.filter(card => !currentTop.some(topCard => topCard.uid === card.uid));
+        return {
+            state,
+            events: [{
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: { playerId, deckUids: [...orderedCards, ...missing, ...restDeck].map(card => card.uid) },
+                timestamp,
+            } as DeckReorderedEvent],
+        };
+    });
+
+    registerInteractionHandler('penguins_baby_penguin', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as CardChoice | undefined;
+        const baseIndex = (data?.continuationContext as { baseIndex?: number } | undefined)?.baseIndex;
+        if (selected?.skip || !selected?.cardUid || !selected.defId || baseIndex === undefined) return { state, events: [] };
+        const card = state.core.players[playerId]?.hand.find(candidate => candidate.uid === selected.cardUid && candidate.defId === selected.defId);
+        if (!card || !isMinionCard(card) || (getMinionLikePower(card.defId) ?? 0) > 3) return { state, events: [] };
+        const played = playMinionEventFromCard(state.core, playerId, card, baseIndex, timestamp, { reason: 'penguins_baby_penguin' });
+        return { state, events: played ? [played] : [] };
+    });
+
+    registerInteractionHandler('penguins_a_wish_for_wings_that_work', (state, playerId, value, data, _random, timestamp) => {
+        const selected = value as { mode?: 'titan' | 'power' } | undefined;
+        const context = data?.continuationContext as { baseIndex?: number; sourceCardUid?: string } | undefined;
+        if (!selected?.mode || context?.baseIndex === undefined) return { state, events: [] };
+        if (selected.mode === 'power') {
             return {
                 state,
-                events: [{
-                    type: SU_EVENTS.TITAN_PLAYED,
-                    payload: {
-                        titanUid: titan.uid,
-                        defId: titan.defId,
-                        ownerId: titan.ownerId,
-                        controllerId: playerId,
-                        baseIndex: selected.baseIndex,
-                        baseDefId: selected.baseDefId,
-                        reason: WISH,
-                    },
-                    timestamp,
-                } as TitanPlayedEvent],
+                events: buildWishPowerEvents(state.core, playerId, context.baseIndex, context.sourceCardUid, timestamp),
             };
         }
-        const base = state.core.bases[selected.baseIndex];
+        const titan = findPlayableEmperorPenguin(state.core, playerId);
+        if (!titan) return { state, events: [] };
         return {
             state,
-            events: base?.minions
-                .filter(minion => minion.controller === playerId)
-                .map(minion => addTempPower(minion.uid, selected.baseIndex, 1, WISH, timestamp, {
-                    sourcePlayerId: playerId,
-                    sourceDefId: WISH,
-                    sourceControllerId: playerId,
-                    sourceBaseIndex: selected.baseIndex,
-                })) ?? [],
+            events: [playTitan(titan, playerId, context.baseIndex, 'penguins_a_wish_for_wings_that_work', timestamp, state.core.bases[context.baseIndex]?.defId)],
         };
     });
 
-    registerInteractionHandler(APART, (state, playerId, value, _data, random, timestamp) => {
-        const selectedValues = Array.isArray(value) ? value as ApartChoice[] : value ? [value as ApartChoice] : [];
-        const selected = selectedValues.filter(choice => choice.minionUid);
-        if (selected.length === 0) return { state, events: [] };
-        const baseIndex = selected[0].baseIndex;
-        const returned = selected
-            .map(choice => state.core.bases[choice.baseIndex]?.minions.find(minion => minion.uid === choice.minionUid && minion.controller === playerId))
-            .filter((minion): minion is MinionOnBase => minion !== undefined);
+    registerInteractionHandler('penguins_i_cant_tell_them_apart', (state, playerId, value, data, random, timestamp) => {
+        const selected = (Array.isArray(value) ? value : []) as MinionChoice[];
+        const context = data?.continuationContext as { baseIndex?: number; sourceCardUid?: string } | undefined;
+        if (context?.baseIndex === undefined || selected.length === 0) return { state, events: [] };
+        const base = state.core.bases[context.baseIndex];
         const player = state.core.players[playerId];
-        if (!player || returned.length === 0) return { state, events: [] };
-        const reshuffled = random.shuffle([
-            ...player.deck,
-            ...returned.map(minion => ({ uid: minion.uid, defId: minion.defId, type: 'minion' as const, owner: minion.owner })),
-        ]);
-        const playedEvents = Array.from({ length: returned.length }).flatMap(() =>
-            revealUntilMinionFromDeck({
-                state: {
-                    ...state.core,
-                    players: {
-                        ...state.core.players,
-                        [playerId]: {
-                            ...player,
-                            deck: reshuffled,
-                        },
-                    },
-                },
-                random,
-                playerId,
-                baseIndex,
-                reason: APART,
+        if (!base || !player) return { state, events: [] };
+        const selectedMinions = selected.flatMap(choice => {
+            if (!choice.minionUid) return [];
+            const minion = base.minions.find(candidate => candidate.uid === choice.minionUid && candidate.controller === playerId);
+            return minion ? [minion] : [];
+        });
+        if (selectedMinions.length === 0) return { state, events: [] };
+        const selectedCards: CardInstance[] = selectedMinions.map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            type: 'minion',
+            owner: minion.owner,
+        }));
+        const deckAfterReturn = [...player.deck, ...selectedCards];
+        const shuffledDeck = random.shuffle(deckAfterReturn);
+        const events: SmashUpEvent[] = selectedMinions.flatMap(minion =>
+            buildValidatedCardToDeckBottomEvents(state.core, {
+                cardUid: minion.uid,
+                defId: minion.defId,
+                ownerId: minion.owner,
+                sourcePlayerId: playerId,
+                sourceCardUid: context.sourceCardUid,
+                sourceDefId: 'penguins_i_cant_tell_them_apart',
+                sourceControllerId: playerId,
+                sourceBaseIndex: context.baseIndex,
+                expectedLocation: 'bases',
+                reason: 'penguins_i_cant_tell_them_apart',
                 now: timestamp,
-            }).events,
+            }),
         );
+        events.push({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: { playerId, deckUids: shuffledDeck.map(card => card.uid) },
+            timestamp,
+        } as DeckReorderedEvent);
+        events.push(...buildPlayDeckMinionsFromOrderedDeckEvents(
+            state.core,
+            playerId,
+            context.baseIndex,
+            shuffledDeck,
+            selectedMinions.length,
+            timestamp,
+            'penguins_i_cant_tell_them_apart',
+        ));
+        return { state, events };
+    });
+
+    registerInteractionHandler('base_ice_floe', (state, playerId, value, data, random, timestamp) => {
+        const selected = value as MinionChoice | undefined;
+        const baseIndex = (data?.continuationContext as { baseIndex?: number } | undefined)?.baseIndex;
+        if (selected?.skip || !selected?.minionUid || baseIndex === undefined) return { state, events: [] };
+        const base = state.core.bases[baseIndex];
+        const minion = base?.minions.find(candidate => candidate.uid === selected.minionUid && candidate.controller === playerId);
+        if (!base || !minion) return { state, events: [] };
         return {
             state,
             events: [
-                ...returned.map(minion => cardToDeckBottom(minion.uid, minion.defId, minion.owner, APART, timestamp, {
+                ...buildValidatedCardToDeckBottomEvents(state.core, {
+                    cardUid: minion.uid,
+                    defId: minion.defId,
+                    ownerId: minion.owner,
                     sourcePlayerId: playerId,
-                    sourceDefId: APART,
+                    sourceDefId: 'base_ice_floe',
                     sourceControllerId: playerId,
                     sourceBaseIndex: baseIndex,
-                })),
-                deckReordered(playerId, reshuffled.map(card => card.uid), timestamp),
-                ...playedEvents,
-            ],
-        };
-    });
-
-    registerInteractionHandler(ICE_FLOE, (state, playerId, value, _data, random, timestamp) => {
-        const selected = value as ApartChoice | undefined;
-        if (!selected?.minionUid || selected.skip) return { state, events: [] };
-        const minion = state.core.bases[selected.baseIndex]?.minions.find(candidate => candidate.uid === selected.minionUid && candidate.controller === playerId);
-        if (!minion) return { state, events: [] };
-        return {
-            state,
-            events: [
-                cardToDeckBottom(minion.uid, minion.defId, minion.owner, ICE_FLOE, timestamp, {
-                    sourcePlayerId: playerId,
-                    sourceDefId: ICE_FLOE,
-                    sourceControllerId: playerId,
-                    sourceBaseIndex: selected.baseIndex,
-                }),
-                ...revealUntilMinionFromDeck({
-                    state: state.core,
-                    random,
-                    playerId,
-                    baseIndex: selected.baseIndex,
-                    reason: ICE_FLOE,
+                    expectedLocation: 'bases',
+                    reason: 'base_ice_floe',
                     now: timestamp,
-                }).events,
+                }),
+                ...buildPlayTopDeckMinionEvents(state.core, playerId, baseIndex, random, timestamp, 'base_ice_floe'),
             ],
         };
     });

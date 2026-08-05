@@ -180,12 +180,22 @@ function executeCommand(
         case SU_COMMANDS.PLAY_MINION: {
             const player = core.players[command.playerId];
             const fromDiscard = command.payload.fromDiscard === true;
+            const fromDeck = command.payload.fromDeck === true;
             const fromStored = command.payload.fromStored === true;
-            const card = fromStored
+            const originalCard = fromStored
                 ? player.storedCards?.find(c => c.uid === command.payload.cardUid)
                 : fromDiscard
                     ? player.discard.find(c => c.uid === command.payload.cardUid)!
-                    : player.hand.find(c => c.uid === command.payload.cardUid)!;
+                    : fromDeck
+                        ? player.deck.find(c => c.uid === command.payload.cardUid)!
+                        : player.hand.find(c => c.uid === command.payload.cardUid)!;
+            const replacementCard = (!fromDiscard && !fromDeck && !fromStored && command.payload.replacementHandCardUid)
+                ? player.hand.find(c =>
+                    c.uid === command.payload.replacementHandCardUid
+                    && c.defId === 'penguins_dancing_penguin'
+                )
+                : undefined;
+            const card = replacementCard ?? originalCard;
             if (!card) return state;
             const minionDef = getMinionDef(card.defId);
             const reactionWindow = getSmashUpReactionWindowContext(state);
@@ -205,12 +215,13 @@ function executeCommand(
                     baseDefId: core.bases[baseIndex].defId,
                     power: basePower,
                     fromDiscard: fromDiscard || undefined,
+                    fromDeck: fromDeck || undefined,
                     fromStored: fromStored || undefined,
                     ...(fromDiscard ? (() => {
                         const info = canPlayFromDiscard(core, command.playerId, card.uid, baseIndex);
                         return info ? { discardPlaySourceId: info.sourceId, consumesNormalLimit: info.consumesNormalLimit } : {};
                     })() : {}),
-                    ...(fromStored ? { consumesNormalLimit: false } : {}),
+                    ...(fromDeck || fromStored ? { consumesNormalLimit: false } : {}),
                     // meFirst 响应窗口中打出 beforeScoringPlayable 随从不消耗正常额度
                     ...(reactionWindow?.windowType === 'meFirst' && (() => {
                         if (minionDef?.beforeScoringPlayable) return true;
@@ -224,6 +235,24 @@ function executeCommand(
                 sourceCommandType: command.type,
                 timestamp: now,
             };
+            if (replacementCard && originalCard && originalCard.uid !== replacementCard.uid) {
+                events.push({
+                    type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                    payload: {
+                        cardUid: originalCard.uid,
+                        defId: originalCard.defId,
+                        ownerId: originalCard.owner,
+                        sourcePlayerId: command.playerId,
+                        sourceCardUid: replacementCard.uid,
+                        sourceDefId: replacementCard.defId,
+                        sourceControllerId: command.playerId,
+                        sourceBaseIndex: baseIndex,
+                        reason: 'penguins_dancing_penguin',
+                    },
+                    timestamp: now,
+                } as CardToDeckBottomEvent);
+            }
+
             events.push(playedEvt);
 
             const responseLimitGroup = reactionWindow?.windowType

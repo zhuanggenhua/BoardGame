@@ -449,7 +449,7 @@ export function buildPendingPostScoringActionEvents(
                 && card.defId === action.defId
                 && card.type === 'minion',
             );
-            if (!player || !sourceCard) {
+            if (!player || (!sourceCard && !action.allowImplicitSource)) {
                 continue;
             }
             events.push({
@@ -462,7 +462,8 @@ export function buildPendingPostScoringActionEvents(
                     baseDefId: action.targetBaseDefId,
                     power: action.power,
                     ...(fromZone === 'deck' ? { fromDeck: true } : {}),
-                    ownerId: action.ownerId ?? sourceCard.owner,
+                    ownerId: action.ownerId ?? sourceCard?.owner ?? action.playerId,
+                    ...(action.allowImplicitSource ? { allowImplicitSource: true } : {}),
                     consumesNormalLimit: false,
                 },
                 timestamp,
