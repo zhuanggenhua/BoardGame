@@ -73,14 +73,6 @@ function drawThenDiscard(state: SmashUpCore, playerId: PlayerId, count: number, 
     return [...drawEvents, ...discardFirstHandCards(projected, playerId, count, now)];
 }
 
-function cardToDeckTop(card: CardInstance, ownerId: PlayerId, reason: string, now: number): SmashUpEvent {
-    return {
-        type: SU_EVENTS.CARD_TO_DECK_TOP,
-        payload: { cardUid: card.uid, defId: card.defId, ownerId, reason },
-        timestamp: now,
-    } as SmashUpEvent;
-}
-
 function actionPlayedFromHand(card: CardInstance, playerId: PlayerId, now: number): SmashUpEvent {
     return {
         type: SU_EVENTS.ACTION_PLAYED,

@@ -1191,7 +1191,11 @@ export function registerBaseAbilities(): void {
                     defId: m.defId,
                     ownerId: m.owner,
                     sourcePlayerId: m.controller,
-                    reason: '仪式场所：随从洗回牌库' },
+                    reason: '仪式场所：随从洗回牌库',
+                    sourceDefId: 'base_ritual_site',
+                    sourceControllerId: ctx.playerId,
+                    sourceBaseIndex: ctx.baseIndex,
+                },
                 timestamp: ctx.now } as CardToDeckBottomEvent);
         }
         return { events };

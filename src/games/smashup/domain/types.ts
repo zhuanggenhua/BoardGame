@@ -979,6 +979,8 @@ export interface SmashUpCore {
     greatWolfSpiritDoubleTalentCardUids?: string[];
     /** 计分后触发的 special 延迟记录（回合开始自动清空） */
     pendingAfterScoringSpecials?: PendingAfterScoringSpecial[];
+    /** 仪式场所把计分基地上的随从放回牌库后，仍可由大副触发恢复移动的随从 UID。 */
+    afterScoringRitualSiteDeckedMinionUids?: string[];
     /**
      * 进入 scoreBases 阶段时锁定的 eligible 基地索引列表。
      * 规则：一旦基地在进入计分阶段时达到 breakpoint，即使 Me First! 响应窗口中
