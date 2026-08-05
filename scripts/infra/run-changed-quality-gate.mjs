@@ -1531,11 +1531,14 @@ async function summarizeCurrentLint(filesToCheck) {
     fatalErrorCount: 0,
   };
   const chunks = chunkValues(filesToCheck, ESLINT_WARNING_DELTA_CHUNK_SIZE);
+  // Reuse one ESLint instance across chunks. Creating a new instance for every
+  // two files retains parser/plugin state on large pre-push scopes and can push
+  // the single quality-gate process into an 8GB heap/OOM stall on Windows.
+  const eslint = new ESLint({
+    cwd: repoRoot,
+  });
 
   for (const chunk of chunks) {
-    const eslint = new ESLint({
-      cwd: repoRoot,
-    });
     const results = await eslint.lintFiles(chunk);
     const chunkSummary = summarizeEslintResults(results);
     summary.warningCount += chunkSummary.warningCount;
