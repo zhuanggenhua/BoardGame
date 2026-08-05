@@ -1515,7 +1515,9 @@
     "all_protected": "All targets are protected",
     "ability_not_implemented": "Ability not yet implemented",
     "base_deck_empty": "Base deck is empty",
-    "no_minion_cards_in_hand": "No minion cards in hand"
+    "no_minion_cards_in_hand": "No minion cards in hand",
+    "goblins_make_your_own_luck_changed": "Make Your Own Luck changed the coin result.",
+    "goblins_make_your_own_luck_ready": "Make Your Own Luck is ready to change a coin result."
   },
   "actionLog": {
     "playerLabel": "P{{playerId}}",

@@ -1498,7 +1498,9 @@
     "all_protected": "所有目标都受到保护",
     "ability_not_implemented": "功能尚未实现",
     "base_deck_empty": "基地牌库为空",
-    "no_minion_cards_in_hand": "手牌中没有随从卡"
+    "no_minion_cards_in_hand": "手牌中没有随从卡",
+    "goblins_make_your_own_luck_changed": "自己制造好运已改变硬币结果。",
+    "goblins_make_your_own_luck_ready": "自己制造好运已准备好改变硬币结果。"
   },
   "actionLog": {
     "playerLabel": "玩家{{playerId}}",
@@ -2194,11 +2196,11 @@
     },
     "round_table_knights": {
       "name": "圆桌骑士",
-      "description": "围绕基地行动、移动和高力量随从协同的正统派系。玩法能力已按 Fandom / POD 勘误实现。"
+      "description": "围绕基地行动、移动和高力量随从协同的正统派系。玩法能力已按官方资料与 POD 勘误实现。"
     },
     "goblins": {
       "name": "哥布林",
-      "description": "围绕投硬币和 +1 力量指示物展开的正统派系。投硬币玩法能力已按 Fandom / POD 勘误实现。"
+      "description": "围绕投硬币和 +1 力量指示物展开的正统派系。投硬币玩法能力已按官方资料与 POD 勘误实现。"
     },
     "adolescent_epic_geckos": {
       "name": "忍者神龟",
@@ -11132,7 +11134,7 @@
       "effectText": "打出到一个你的仆从身上。你可以移动这个仆从。持续：当这个仆从将要进入弃牌堆时，放置它到你的牌库顶代替。"
     },
     "round_table_knights_excalibur": {
-      "name": "圣剑 Excalibur",
+      "name": "圣剑",
       "effectText": "打出到一个你的仆从身上。持续：这个仆从获得+2力量且不能被其他玩家的牌摧毁。特殊：当这个基地计分时，如果这个仆从是亚瑟王，获得1VP。"
     },
     "round_table_knights_good_deed": {
@@ -11193,7 +11195,7 @@
     },
     "goblins_gobbo": {
       "name": "哥布林",
-      "abilityText": "为场上每个 Gobbo（包括这个）各投一枚硬币。每有一个正面，在这个随从上放置 1 枚 +1 力量指示物。"
+      "abilityText": "为场上每个哥布林（包括这个）各投一枚硬币。每有一个正面，在这个随从上放置 1 枚 +1 力量指示物。"
     },
     "goblins_magic_helmet": {
       "name": "“魔法”头盔",
