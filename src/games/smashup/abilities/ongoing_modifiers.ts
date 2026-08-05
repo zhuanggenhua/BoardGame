@@ -67,6 +67,9 @@ const STRUCTURED_ONGOING_POWER_MODIFIERS: readonly OngoingPowerModifierDefinitio
     { defId: 'superheroes_expanded_power', location: 'minion', target: 'self', delta: 1 },
     { defId: 'vigilantes_tough_it_out', location: 'minion', target: 'self', delta: 2 },
     { defId: 'mounties_haich_q', location: 'base', target: 'ownerMinions', delta: 1 },
+    { defId: 'munchkin_treasure_spiky_boots', location: 'minion', target: 'self', delta: 1, variantPolicy: 'baseOnly' },
+    { defId: 'munchkin_treasure_bloody_dismemberment_chainsaw', location: 'minion', target: 'self', delta: 2, variantPolicy: 'baseOnly' },
+    { defId: 'munchkin_treasure_potion_of_cowardice', location: 'minion', target: 'self', delta: -2, variantPolicy: 'baseOnly' },
 ];
 
 function registerStructuredOngoingPowerModifiers(): void {
@@ -641,6 +644,69 @@ function registerMythicHorsesModifiers(): void {
         },
     ]);
 }
+
+function isMunchkinTreasureAttachment(defId: string): boolean {
+    return getCardDef(defId)?.faction === 'munchkin_treasures';
+}
+
+function countActiveMunchkinTreasureAttachments(ctx: PowerModifierContext): number {
+    return ctx.minion.attachedActions.filter(action => (
+        isMunchkinTreasureAttachment(action.defId)
+        && !isCardSuppressed(ctx.state, action.uid)
+    )).length;
+}
+
+function registerMunchkinTreasureModifiers(): void {
+    registerCustomPowerModifiers([
+        {
+            sourceDefId: 'munchkin_dwarves_loot_lover',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'munchkin_dwarves_loot_lover')) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx) * 2;
+            },
+        },
+        {
+            sourceDefId: 'munchkin_dwarves_gem_grabber',
+            compute: (ctx, helpers) => {
+                if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'munchkin_dwarves_gem_grabber')) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx) > 0 ? 2 : 0;
+            },
+        },
+        {
+            sourceDefId: 'munchkin_treasure_loads_of_treasure',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => {
+                const sourceCount = helpers.countMinionAttachmentsMatchingRuntimeDefId(
+                    ctx,
+                    'munchkin_treasure_loads_of_treasure',
+                );
+                if (sourceCount === 0) return 0;
+                return sourceCount * countActiveMunchkinTreasureAttachments(ctx);
+            },
+        },
+        {
+            sourceDefId: 'munchkin_treasure_kneepads_of_allure',
+            variantPolicy: 'baseOnly',
+            compute: (ctx, helpers) => (
+                ctx.base.minions.reduce((total, minion) => (
+                    total + minion.attachedActions.filter(action => (
+                        helpers.matchesRuntimeDefId(action.defId, 'munchkin_treasure_kneepads_of_allure')
+                        && !isCardSuppressed(ctx.state, action.uid)
+                    )).length
+                ), 0)
+            ),
+        },
+        {
+            sourceDefId: 'base_the_mines',
+            runtimeIdentity: 'synthetic',
+            compute: (ctx) => {
+                if (ctx.base.defId !== 'base_the_mines') return 0;
+                if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return 0;
+                return countActiveMunchkinTreasureAttachments(ctx);
+            },
+        },
+    ]);
+}
 // ============================================================================
 // 基地持续力量修正
 // ============================================================================
@@ -1014,6 +1080,7 @@ export function registerAllOngoingModifiers(): void {
     registerKaijuModifiers();
     registerKittyCatsModifiers();
     registerMythicHorsesModifiers();
+    registerMunchkinTreasureModifiers();
     registerWerewolfModifiers();
     registerDragonModifiers();
     registerSuperheroesModifiers();
