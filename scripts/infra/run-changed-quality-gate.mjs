@@ -301,7 +301,7 @@ function getConflictFilesFromCommitMessage(commit) {
 }
 
 function hasMergeConflictEvidenceInCommit(commit) {
-  const changedFiles = runGit(['show', '--pretty=format:', '--name-only', '--no-renames', commit], { allowFailure: true })
+  const changedFiles = runGit(['show', '-m', '--pretty=format:', '--name-only', '--no-renames', commit], { allowFailure: true })
     .split(/\r?\n/)
     .map((value) => value.trim())
     .filter(Boolean);
