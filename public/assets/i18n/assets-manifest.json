@@ -11466,8 +11466,8 @@
     "zh-CN/smashup/base/compressed/disney_bases": {
       "variants": {
         "webp": {
-          "sha256": "2cbbc4ed8b68ed678774883d3088c7c93997de68dc6a68721cdadabfd7c9aca7",
-          "bytes": 1534842,
+          "sha256": "91636d5dc93dc1096188749eca359309459a22cf3e8b612d65c3936ab94eeac2",
+          "bytes": 2143032,
           "mime": "image/webp"
         }
       }
@@ -11475,8 +11475,8 @@
     "zh-CN/smashup/base/compressed/disney_four_faction_bases": {
       "variants": {
         "webp": {
-          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
-          "bytes": 1261136,
+          "sha256": "c3a28ecf191dcc601f3fdf1d71963f40d5b863fc54c10d0bedbeb756fbae0214",
+          "bytes": 2646702,
           "mime": "image/webp"
         }
       }
@@ -11691,8 +11691,8 @@
     "zh-CN/smashup/base/disney_bases": {
       "variants": {
         "jpg": {
-          "sha256": "d0a91b1dff2831eb77ff25f7eee8845ee29e37f942ebc7c6ad9855267c1037b1",
-          "bytes": 1253348,
+          "sha256": "8f3acc0b73b890c607e6a2d2aca79ec30827481f2f46b07ff51190e844ad5059",
+          "bytes": 3250237,
           "mime": "image/jpeg"
         }
       }
@@ -11700,8 +11700,8 @@
     "zh-CN/smashup/base/disney_four_faction_bases": {
       "variants": {
         "webp": {
-          "sha256": "bf006a3fb947f35656f4c63927e79c5b773a3aca2e6a114f8df1bb587b07119f",
-          "bytes": 1261136,
+          "sha256": "c3a28ecf191dcc601f3fdf1d71963f40d5b863fc54c10d0bedbeb756fbae0214",
+          "bytes": 2646702,
           "mime": "image/webp"
         }
       }
