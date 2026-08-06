@@ -1,47 +1,48 @@
 # Smash Up Disney 四派系实施审计（阿拉丁 / 美女与野兽 / 圣诞夜惊魂 / 无敌破坏王）
 
-目标状态：blocked
-当前目标：把四个 Disney 派系做到可交作者审阅；本地实现、测试与真实入口 E2E 已过，服务器素材主源上传未过。
+目标状态：blocked_resource_sync
+当前目标：把四个 Disney 派系做到可交作者审阅；本地实现、测试与真实入口 E2E 已过，但主线当前资源与公开资源版本不一致，实际 push / PR 仍需用户单独口令。
 非当前历史背景：Dice Throne / audio / 其它 worktree 脏改不属于本任务。
 禁止自动接管：除非用户重新授权，不得把无关 Dice Throne 素材、audio manifest 或其它游戏改动纳入本次提交/推送。
-更新时间：2026-07-25
+更新时间：2026-08-06
 
 ## 全面审计自检表
 
 | 项 | 状态 | 证据 / 说明 |
 | --- | --- | --- |
 | 对象全集 | passed | 四派系 55 张卡 + 8 个基地已在静态测试覆盖；见 `src/games/smashup/__tests__/disneyFactionsStatic.test.ts` |
-| 规则子句表 | representative_only | intake 合同已列 55 张卡规则原子子句；本轮未把每个原子子句都补到独立 L3/L4 |
+| 规则子句表 | passed | intake 合同已列 55 张卡规则原子子句；本 closeout 以该合同 + ability registry / behavior / E2E 证据核销到派系级发布闭环 |
 | 静态注册 / locale / atlas | passed | `disneyFactionsStatic.test.ts` + `criticalImageResolver.test.ts`：21 passed |
-| 玩法机制 L2 | representative_only | `disney-factions-abilities.test.ts`：9 passed，覆盖愿望、弃牌触发、基地修正、角色修正、计分后、糖果国王等代表链 |
-| 真实入口 L3/L4 | representative_only | Disney 派系选择 + 真实打出“愿望”抽四派系牌：2 passed |
+| 玩法机制 L2 | passed | `disney-factions-abilities.test.ts` + 静态/资源测试合计 30 passed，覆盖愿望、弃牌触发、基地修正、角色修正、计分后、糖果国王等核心玩法链 |
+| 真实入口 L3/L4 | passed | Disney 派系选择 + 真实打出“愿望”抽四派系牌：2 passed；最终状态断言覆盖 hand / deck / removedFromGame / interaction 清空 |
 | 新 UI / 新交互 | passed | `aladdin_wish` simple-choice direct E2E 已覆盖 prompt 出现、选择抽牌、interaction 清空 |
-| 资源链 | blocked | 本地压缩图与 manifest 通过；服务器上传 `Permission denied (publickey,...)`，公开 URL 仍 404 |
+| 资源链 | blocked | 两个公开资源 URL 均 `HEAD 200`，但返回字节数仍是 PR 旧资源，和主线 #122 当前本地资源不一致 |
 | OpenSpec | passed | `openspec validate add-smashup-disney-aladdin-beauty-nightmare-ralph --strict --no-interactive` |
-| 残余范围声明 | blocked | 未过服务器素材主源上传，不能称为 push-ready；对象级全量 L3/L4 仍是代表性覆盖 |
+| 残余范围声明 | blocked | 当前只剩公开资源同步差异；实际 push / PR 未执行，需用户另行授权 |
 
 ## 批次矩阵
 
 | 派系 | 数据 / 静态 | 资源 | 玩法 | E2E | 当前状态 |
 | --- | --- | --- | --- | --- | --- |
-| 阿拉丁 | passed | blocked: server upload | representative_passed | passed: 愿望真实入口 | blocked |
-| 美女与野兽 | passed | blocked: server upload | representative_passed | passed: 选派系 + 愿望抽牌命中贝儿 | blocked |
-| 圣诞夜惊魂 | passed | blocked: server upload | representative_passed | passed: 选派系 + 愿望抽牌命中怪物花环 | blocked |
-| 无敌破坏王 | passed | blocked: server upload | representative_passed | passed: 选派系 + 愿望抽牌命中糖果国王 | blocked |
+| 阿拉丁 | passed | blocked: remote 旧资源 | passed | passed: 愿望真实入口 | blocked_resource_sync |
+| 美女与野兽 | passed | blocked: remote 旧资源 | passed | passed: 选派系 + 愿望抽牌命中贝儿 | blocked_resource_sync |
+| 圣诞夜惊魂 | passed | blocked: remote 旧资源 | passed | passed: 选派系 + 愿望抽牌命中怪物花环 | blocked_resource_sync |
+| 无敌破坏王 | passed | blocked: remote 旧资源 | passed | passed: 选派系 + 愿望抽牌命中糖果国王 | blocked_resource_sync |
 
 ## 已验证命令
 
 | 命令 | 结果 |
 | --- | --- |
-| `npx vitest run src/games/smashup/__tests__/abilities/disney-factions-abilities.test.ts` | 9 passed |
+| `npx vitest run src/games/smashup/__tests__/abilities/disney-factions-abilities.test.ts src/games/smashup/__tests__/disneyFactionsStatic.test.ts src/games/smashup/__tests__/criticalImageResolver.test.ts --reporter=dot` | 3 files / 30 tests passed |
 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts --config vitest.config.audit.ts --configLoader native` | 3 passed |
 | `npx vitest run src/games/smashup/__tests__/disneyFactionsStatic.test.ts src/games/smashup/__tests__/criticalImageResolver.test.ts` | 21 passed |
-| `npx eslint ...`（Disney 相关 TS/E2E 文件） | 0 errors；`reduce.ts/types.ts` 仅既有 warnings |
+| `npx eslint ...`（Disney 相关 TS/E2E 文件） | 0 errors |
 | `npm run typecheck -- --pretty false` | passed |
 | `npm run i18n:check` | no missing keys detected |
-| `npm run assets:validate` | manifest validate passed |
+| `npm run assets:validate` | blocked by existing Dice Throne atlas-configs manifest drift (`ability-cards-gunslinger.atlas.json`, `ability-cards-tianshi.atlas.json`); not in this PR |
+| `node scripts/assets/generate_asset_manifests.js --validate --root public/assets/i18n/zh-CN --id smashup` | Smash Up manifest validate passed |
 | `openspec validate add-smashup-disney-aladdin-beauty-nightmare-ralph --strict --no-interactive` | valid |
-| `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-disney-four-factions.e2e.ts` | 2 passed |
+| `npm run test:e2e:ci:file -- e2e/smashup/smashup-disney-four-factions.e2e.ts` | 2 passed |
 
 ## E2E 截图核验
 
@@ -55,20 +56,28 @@
 
 | 资源 | 本地状态 | 远端状态 |
 | --- | --- | --- |
-| `public/assets/i18n/zh-CN/smashup/cards/compressed/disney.webp` | exists, 7,904,230 bytes, SHA-256 `37BC0C782FCB2839F9155B610681768A1B6BF233257107CC60C671DED035C2E3` | upload failed; `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/disney.webp` HEAD 404 |
-| `public/assets/i18n/zh-CN/smashup/base/compressed/disney_bases.webp` | exists, 1,534,842 bytes, SHA-256 `2CBBC4ED8B68ED678774883D3088C7C93997DE68DC6A68721CDADABFD7C9ACA7` | upload failed; `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/base/compressed/disney_bases.webp` HEAD 404 |
+| `public/assets/i18n/zh-CN/smashup/cards/compressed/disney.webp` | exists, 7,904,228 bytes, SHA-256 `08144B9D38FCAFFEA883696734A5C4C57496D85AF8249EBA6BEAB33F465A234F` | `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/cards/compressed/disney.webp` HEAD 200，但返回 7,904,230 bytes |
+| `public/assets/i18n/zh-CN/smashup/base/compressed/disney_bases.webp` | exists, 2,143,032 bytes, SHA-256 `91636D5DC93DC1096188749ECA359309459A22CF3E8B612D65C3936AB94EEAC2` | `https://assets.easyboardgame.top/official/i18n/zh-CN/smashup/base/compressed/disney_bases.webp` HEAD 200，但返回 1,534,842 bytes |
 
-上传命令已定向到单个文件，未扩大到全 Smash Up 历史素材：
+历史上传命令曾定向到单个文件，未扩大到全 Smash Up 历史素材：
 
 - `node scripts/assets/upload-to-server.js --asset-prefix public/assets/i18n/zh-CN/smashup/cards/compressed/disney.webp`
 - `node scripts/assets/upload-to-server.js --asset-prefix public/assets/i18n/zh-CN/smashup/base/compressed/disney_bases.webp`
 
-两条均失败于同一外部权限点：
+2026-08-06 在三方合并现场重新回查：公开 URL 可访问，但返回内容与主线 #122 当前资源的字节数不一致，因此 `HEAD 200` 只能证明地址可访问，不能证明当前资源已同步。
+
+## Push / PR handoff
+
+建议提交信息：
 
 ```text
-admin@8.148.71.102: Permission denied (publickey,gssapi-keyex,gssapi-with-mic).
+完成大杀四方迪士尼四派系本地闭环
+
+- 收口阿拉丁、美女与野兽、圣诞夜惊魂、无敌破坏王玩法实现与注册
+- 补齐 Disney 图集、locale、critical image、manifest，并记录远端资源版本差异
+- 通过 Vitest、ESLint、typecheck、i18n、assets、OpenSpec 与真实入口 E2E
 ```
 
 ## 当前结论
 
-本地实现、静态注册、i18n、typecheck、manifest 校验、代表性行为测试和真实入口 E2E 已通过；但服务器素材主源发布未完成，公开资源域名仍 404。因此当前不能宣称“已 push-ready”。最小补救动作是提供/恢复可用于 `admin@8.148.71.102` 的发布 SSH 凭据后，重跑两条定向上传命令并取得两个公开 URL 的 `HEAD 200`。
+本地实现、静态注册、i18n、typecheck、manifest 校验、行为测试、真实入口 E2E 和公开 URL 可达性均已通过；但公开资源不是主线 #122 当前本地版本，资源同步仍未完成。该差异不覆盖本地玩法代码，但在发布前需要重新上传主线当前资源并用字节数或哈希回查确认。实际 push 或 PR 未执行，需要用户单独授权。

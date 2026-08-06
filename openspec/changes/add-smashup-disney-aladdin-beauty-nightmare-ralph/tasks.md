@@ -2,7 +2,7 @@
 
 - [x] 0.1 Obtain explicit approval to implement `add-smashup-disney-aladdin-beauty-nightmare-ralph`
 - [x] 0.2 Move implementation target to a clean branch/worktree separate from the dirty POD worktree
-- [ ] 0.3 Confirm release target: push-ready local branch, actual push, or PR handoff
+- [x] 0.3 Confirm release target: merge PR #124 after three-way conflict resolution; resource publication remains a separate deployment action
 
 ## 1. Intake Contract
 
@@ -28,33 +28,33 @@
 
 - [x] 3.1 Implement all locked 阿拉丁 card/base effect atoms using existing shared mechanisms where possible
 - [x] 3.2 Add focused L2 behavior tests for search, discard-action costs, extra actions, movement, power counters, one-use Wish effects, and before-scoring special clauses as applicable
-- [ ] 3.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
+- [x] 3.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
 
 ## 4. 美女与野兽
 
 - [x] 4.1 Implement all locked 美女与野兽 card/base effect atoms using existing shared mechanisms where possible
 - [x] 4.2 Add focused L2 behavior tests for extra actions, extra characters, draws, power counters, deck/discard search, ongoing/base-modifier clauses, and villain interaction clauses as applicable
-- [ ] 4.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
+- [x] 4.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
 
 ## 5. 圣诞夜惊魂
 
 - [x] 5.1 Implement all locked 圣诞夜惊魂 card/base effect atoms using existing shared mechanisms where possible
 - [x] 5.2 Add focused L2 behavior tests for character equipment, movement, draw/discard, power gain, deck reveal, base scoring, and per-turn equipment clauses as applicable
-- [ ] 5.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
+- [x] 5.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
 
 ## 6. 无敌破坏王
 
 - [x] 6.1 Implement all locked 无敌破坏王 card/base effect atoms using existing shared mechanisms where possible
 - [x] 6.2 Add focused L2 behavior tests for base modifiers, character modifiers, power counters, movement, destruction/replacement, stasis/box-style handling if applicable, and base-breakpoint reduction as applicable
-- [ ] 6.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
+- [x] 6.3 Add real-entry L3/L4 E2E and object-level evidence, including skip/empty-selection coverage for optional clauses
 
 ## 7. Audit And Closeout
 
 - [x] 7.1 Run strict OpenSpec validation
-- [x] 7.2 Run focused Vitest, ESLint on changed TS/TSX files, typecheck, i18n check, and asset validation
+- [x] 7.2 Run focused Vitest, ESLint on changed TS/TSX files, typecheck, i18n check, and targeted Smash Up asset validation; full repository validation remains blocked by pre-existing Dice Throne manifest drift
 - [x] 7.3 Run target Smash Up E2E and inspect at least one screenshot per new interaction/UI type
-- [ ] 7.4 Upload runtime resources to the server asset source and verify representative public URLs with `HEAD 200`
-- [ ] 7.5 Write final full-object audit evidence with L0/L1/L2/L3/L4 matrix and residual-risk statement
-  - Current evidence is a representative-verification / blocked-status record; full-object L3/L4 remains incomplete until server assets and object-level coverage are closed.
+- [ ] 7.4 Upload the mainline runtime resources to the server asset source and verify that representative public URLs match the current local bytes/hash
+- [x] 7.5 Write final full-object audit evidence with L0/L1/L2/L3/L4 matrix and residual-risk statement
+  - 2026-08-06 merge evidence records Vitest / ESLint / typecheck / i18n / targeted Smash Up assets / OpenSpec / E2E results, the unrelated full-asset-validation blocker, public resource `HEAD 200`, and the current local-versus-remote byte mismatch.
 - [x] 7.6 Update every task checkbox only after evidence supports the status
-- [ ] 7.7 Prepare push/PR handoff with a Chinese, information-dense commit message covering all four factions
+- [x] 7.7 Prepare push/PR handoff with a Chinese, information-dense commit message covering all four factions

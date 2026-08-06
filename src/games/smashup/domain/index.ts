@@ -2838,9 +2838,13 @@ function postProcessSystemEvents(
             const discardEvt = event as { type: string; payload: { playerId: PlayerId; cardUids: string[] }; timestamp: number };
             const tempCore = prePlayEvents.reduce((acc, preEvt) => reduce(acc, preEvt), state);
             const sourceZone = event.type === SU_EVENTS.CARDS_MILLED ? 'deck' : 'hand';
-            const sourceCards = sourceZone === 'deck'
-                ? tempCore.players[discardEvt.payload.playerId]?.deck ?? []
-                : tempCore.players[discardEvt.payload.playerId]?.hand ?? [];
+            // 初始命令事件在进入这里前可能已经被管线归约；此时卡牌已经离开手牌/牌库，
+            // 只能从归约后的各玩家弃牌堆按 UID 回查，才能为弃牌触发保留完整卡牌快照。
+            const sourceCards = inputEventsAlreadyReduced
+                ? Object.values(tempCore.players).flatMap(player => player.discard ?? [])
+                : sourceZone === 'deck'
+                    ? tempCore.players[discardEvt.payload.playerId]?.deck ?? []
+                    : tempCore.players[discardEvt.payload.playerId]?.hand ?? [];
             const uidSet = new Set(discardEvt.payload.cardUids);
             const discardedCards = sourceCards
                 .filter(card => uidSet.has(card.uid))
